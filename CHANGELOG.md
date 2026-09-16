@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.3.5 — 2026-09-16
+
+- Complete merge-target workspace handover so successful merges activate the target workspace and archive the clean source workspace.
+- Improve Claude account setup, authentication entry points, provider configuration and related workspace/UI behavior.
+
 ## 1.3.4 — 2026-09-16
 
 - Show the workspace directory and checked-out branch in separate composer context pills.
