@@ -26,7 +26,6 @@ import { KeyboardDock } from "@/components/keyboard-dock";
 import { FileDropZone } from "@/components/file-drop/file-drop-zone";
 import { useRetainedPanelActive } from "@/components/retained-panel";
 import { Composer } from "@/composer";
-import { useWorkspaceHasDiffStat } from "@/composer/workspace-diff-stat";
 import {
   resolveComposerTrackControlClearance,
   resolveComposerTrackTailClearance,
@@ -83,7 +82,7 @@ import {
   deriveRouteBottomAnchorRequest,
 } from "@/screens/agent/agent-ready-screen-bottom-anchor";
 import { WorkspaceDraftAgentTab } from "@/composer/draft/workspace-tab";
-import { AgentTracks, hasAgentTracks } from "@/panels/agent-tracks";
+import { AgentTracks } from "@/panels/agent-tracks";
 import { useCreateFlowStore } from "@/stores/create-flow-store";
 import { buildDraftStoreKey, generateDraftId } from "@/stores/draft-keys";
 import {
@@ -1284,11 +1283,6 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
     rows: subagentRows,
   });
   const hasActiveComposer = !agentState.archivedAt && !isArchivingCurrentAgent;
-  const hasVisibleAgentTracks = hasAgentTracks({
-    subagentRows,
-    tasks,
-    archiveFinishedStatus: archiveFinishedSubagents.status,
-  });
   const rawAgentInputDraft = useAgentInputDraft({
     draftKey: buildDraftStoreKey({
       serverId,
@@ -1359,13 +1353,11 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
         <AgentStreamSection
           streamViewRef={streamViewRef}
           serverId={serverId}
-          workspaceId={workspaceId}
           agentId={agentId}
           agent={effectiveAgent}
           routeBottomAnchorRequest={routeBottomAnchorRequest}
           hasAppliedAuthoritativeHistory={hasAppliedAuthoritativeHistory}
           hasActiveComposer={hasActiveComposer}
-          hasVisibleAgentTracks={hasVisibleAgentTracks}
           toast={toastApi}
           onOpenWorkspaceFile={onOpenWorkspaceFile}
         />
@@ -1454,32 +1446,26 @@ function DockedChatSurface({ children, disabled }: { children: ReactNode; disabl
 const AgentStreamSection = memo(function AgentStreamSection({
   streamViewRef,
   serverId,
-  workspaceId,
   agentId,
   agent,
   routeBottomAnchorRequest,
   hasAppliedAuthoritativeHistory,
   hasActiveComposer,
-  hasVisibleAgentTracks,
   toast,
   onOpenWorkspaceFile,
 }: {
   streamViewRef: React.RefObject<AgentStreamViewHandle | null>;
   serverId: string;
-  workspaceId: string;
   agentId?: string;
   agent: AgentScreenAgent;
   routeBottomAnchorRequest: RouteBottomAnchorRequest;
   hasAppliedAuthoritativeHistory: boolean;
   hasActiveComposer: boolean;
-  hasVisibleAgentTracks: boolean;
   toast: ReturnType<typeof useToastHost>["api"];
   onOpenWorkspaceFile?: (request: WorkspaceFileOpenRequest) => void;
 }) {
   const isCompactFormFactor = useIsCompactFormFactor();
-  const hasWorkspaceDiffStat = useWorkspaceHasDiffStat(serverId, workspaceId);
-  const hasVisibleComposerTracks =
-    hasActiveComposer && (hasVisibleAgentTracks || hasWorkspaceDiffStat);
+  const hasVisibleComposerTracks = hasActiveComposer;
   const bottomOverlayTailClearance = hasVisibleComposerTracks
     ? resolveComposerTrackTailClearance(isCompactFormFactor)
     : 0;

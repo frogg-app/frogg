@@ -1,6 +1,6 @@
 import { memo, useCallback, type ReactElement } from "react";
 import { WorkspaceDiffStatPill } from "@/composer/diff-stat-pill";
-import { useWorkspaceHasDiffStat } from "@/composer/workspace-diff-stat";
+import { WorkspaceContextPill } from "@/composer/workspace-context-pill";
 import { AgentTaskList } from "@/composer/task-list";
 import { ComposerTrackBar } from "@/composer/tracks";
 import { supportsDesktopPaneSplits, useIsCompactFormFactor } from "@/constants/layout";
@@ -45,7 +45,6 @@ export const AgentTracks = memo(function AgentTracks({
   onArchiveFinished: () => void;
 }): ReactElement | null {
   const { tabId, openTab } = usePaneContext();
-  const hasWorkspaceDiffStat = useWorkspaceHasDiffStat(serverId, workspaceId);
   const isCompact = useIsCompactFormFactor();
   const canSplit = supportsDesktopPaneSplits() && !isCompact;
   const openInSidePane = useSettings((settings) => settings.openInSidePane);
@@ -107,19 +106,9 @@ export const AgentTracks = memo(function AgentTracks({
     });
   }, [cwd, isCompact, openInSidePane, serverId, workspaceKey]);
 
-  if (
-    !hasWorkspaceDiffStat &&
-    !hasAgentTracks({
-      subagentRows,
-      tasks,
-      archiveFinishedStatus,
-    })
-  ) {
-    return null;
-  }
-
   return (
     <ComposerTrackBar>
+      <WorkspaceContextPill serverId={serverId} workspaceId={workspaceId} cwd={cwd} />
       <AgentTaskList tasks={tasks} />
       <SubagentsTrack
         rows={subagentRows}
@@ -138,15 +127,3 @@ export const AgentTracks = memo(function AgentTracks({
     </ComposerTrackBar>
   );
 });
-
-export function hasAgentTracks({
-  subagentRows,
-  tasks,
-  archiveFinishedStatus,
-}: {
-  subagentRows: readonly SubagentRow[];
-  tasks: readonly TodoEntry[] | undefined;
-  archiveFinishedStatus: ArchiveFinishedStatus;
-}): boolean {
-  return subagentRows.length > 0 || Boolean(tasks?.length) || archiveFinishedStatus.kind !== "idle";
-}

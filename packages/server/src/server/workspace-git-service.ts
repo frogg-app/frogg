@@ -3031,13 +3031,11 @@ export class WorkspaceGitServiceImpl implements WorkspaceGitService {
     }
 
     const refreshWorktree = request.refreshWorktree || target.latestGit === null;
-    const diffStat = refreshWorktree
+    const worktree = refreshWorktree
       ? await this.deps
-          .getCheckoutShortstat(cwd, context, {
-            force: request.force || target.latestGit !== null,
-          })
+          .getCheckoutWorktreeState(cwd, context, checkoutStatus.isDirty)
           .catch(() => null)
-      : (target.latestGit?.diffStat ?? null);
+      : null;
 
     target.latestGit = {
       isGit: true,
@@ -3047,7 +3045,7 @@ export class WorkspaceGitServiceImpl implements WorkspaceGitService {
       remoteUrl: checkoutStatus.remoteUrl,
       isFroggOwnedWorktree: checkoutStatus.isFroggOwnedWorktree,
       isDirty: refreshWorktree
-        ? checkoutStatus.isDirty
+        ? (worktree?.isDirty ?? checkoutStatus.isDirty)
         : (target.latestGit?.isDirty ?? checkoutStatus.isDirty),
       baseRef: checkoutStatus.baseRef,
       aheadBehind: checkoutStatus.aheadBehind,
@@ -3055,7 +3053,9 @@ export class WorkspaceGitServiceImpl implements WorkspaceGitService {
       aheadOfOrigin: checkoutStatus.aheadOfOrigin,
       behindOfOrigin: checkoutStatus.behindOfOrigin,
       hasRemote: checkoutStatus.hasRemote,
-      diffStat,
+      diffStat: refreshWorktree
+        ? (worktree?.diffStat ?? null)
+        : (target.latestGit?.diffStat ?? null),
     };
     const loadedAtMs = this.deps.now().getTime();
     target.latestGitLoadedAtMs = loadedAtMs;

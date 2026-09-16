@@ -172,16 +172,16 @@ function createService(
       })),
       getCheckoutStatus,
       getCheckoutShortstat,
-      getCheckoutWorktreeState: vi.fn(async (cwd: string) => {
-        const status = await getCheckoutStatus(cwd);
-        if (!status.isGit) {
-          throw new Error("Expected a git checkout");
-        }
-        return {
-          isDirty: status.isDirty,
-          diffStat: await getCheckoutShortstat(),
-        };
-      }),
+      getCheckoutWorktreeState: vi.fn(
+        async (cwd: string, _context: unknown, knownIsDirty?: boolean) => {
+          const status = knownIsDirty === undefined ? await getCheckoutStatus(cwd) : null;
+          if (status && !status.isGit) throw new Error("Expected a git checkout");
+          return {
+            isDirty: knownIsDirty ?? status?.isDirty ?? false,
+            diffStat: await getCheckoutShortstat(),
+          };
+        },
+      ),
       resolveAbsoluteGitDir: vi.fn(async () => GIT_DIR),
       hasOriginRemote: vi.fn(async () => false),
       runGitCommand: vi.fn(async () => ({
