@@ -24,6 +24,10 @@ the current uncommitted working-tree diff, including
 untracked text files; it does not include committed changes merely because the branch differs
 from its base. Branch divergence remains available in the Git views.
 
+Removing a project from the sidebar and archiving an ordinary workspace happen immediately and
+do not change files on disk. Archiving a Frogg-managed worktree is different: it can remove the
+managed worktree directory, so Frogg keeps its confirmation before that destructive operation.
+
 ## Add a project
 
 - App: **Add project** in the sidebar, then choose a folder on the daemon host.
