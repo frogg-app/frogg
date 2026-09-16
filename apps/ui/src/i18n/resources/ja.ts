@@ -2446,7 +2446,8 @@ export const ja: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} は <paseo>Paseo</paseo> をベースにしています。",
+      attribution: "{{brandFullName}} は <upstream>Frogg</upstream> をベースにしています。",
+      attributionUpstream: "Frogg は <upstream>Paseo</upstream> をベースにしています。",
       title: "アプリ情報",
       appVersion: "アプリバージョン",
       thisDevice: "このデバイス",

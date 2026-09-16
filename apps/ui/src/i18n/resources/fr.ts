@@ -2481,7 +2481,8 @@ export const fr: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} est basé sur <paseo>Paseo</paseo>.",
+      attribution: "{{brandFullName}} est basé sur <upstream>Frogg</upstream>.",
+      attributionUpstream: "Frogg est basé sur <upstream>Paseo</upstream>.",
       title: "À propos",
       appVersion: "Version de l'application",
       thisDevice: "Cet appareil",

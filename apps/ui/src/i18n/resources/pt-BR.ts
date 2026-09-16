@@ -2461,7 +2461,8 @@ export const ptBR: TranslationResources = {
       },
     },
     about: {
-      attribution: "O {{brandFullName}} é baseado no <paseo>Paseo</paseo>.",
+      attribution: "O {{brandFullName}} é baseado no <upstream>Frogg</upstream>.",
+      attributionUpstream: "O Frogg é baseado no <upstream>Paseo</upstream>.",
       title: "Sobre",
       appVersion: "Versão do app",
       thisDevice: "Este dispositivo",

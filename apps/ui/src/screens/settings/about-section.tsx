@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { Trans, useTranslation } from "react-i18next";
+import { brand } from "@frogg/branding";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { useHostRuntimeIsConnected, useHosts } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
@@ -11,6 +12,7 @@ import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { settingsStyles } from "@/styles/settings";
 import { openExternalUrl } from "@/utils/open-external-url";
 
+const FROGG_URL = "https://github.com/frogg-app/frogg";
 const PASEO_URL = "https://github.com/getpaseo/paseo";
 
 export interface AboutSectionProps {
@@ -42,20 +44,28 @@ export function AboutSection({ appVersion, appVersionText, isDesktopApp }: About
 }
 
 function Attribution() {
-  const handleOpenPaseo = useCallback(() => {
-    void openExternalUrl(PASEO_URL);
-  }, []);
+  const isStockBrand = brand.legacyFrogg;
+  const handleOpenUpstream = useCallback(() => {
+    void openExternalUrl(isStockBrand ? PASEO_URL : FROGG_URL);
+  }, [isStockBrand]);
   const components = useMemo(
     () => ({
-      paseo: (
-        <Text style={styles.attributionLink} accessibilityRole="link" onPress={handleOpenPaseo} />
+      upstream: (
+        <Text
+          style={styles.attributionLink}
+          accessibilityRole="link"
+          onPress={handleOpenUpstream}
+        />
       ),
     }),
-    [handleOpenPaseo],
+    [handleOpenUpstream],
   );
   return (
     <Text style={styles.attribution} testID="settings-about-attribution">
-      <Trans i18nKey="settings.about.attribution" components={components} />
+      <Trans
+        i18nKey={isStockBrand ? "settings.about.attributionUpstream" : "settings.about.attribution"}
+        components={components}
+      />
     </Text>
   );
 }

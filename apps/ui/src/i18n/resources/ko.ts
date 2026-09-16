@@ -2435,7 +2435,8 @@ export const ko: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}}는 <paseo>Paseo</paseo>를 기반으로 합니다.",
+      attribution: "{{brandFullName}}는 <upstream>Frogg</upstream>를 기반으로 합니다.",
+      attributionUpstream: "Frogg는 <upstream>Paseo</upstream>를 기반으로 합니다.",
       title: "정보",
       appVersion: "앱 버전",
       thisDevice: "이 기기",

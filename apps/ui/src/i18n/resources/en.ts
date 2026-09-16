@@ -2469,7 +2469,8 @@ export const en = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} is based on <paseo>Paseo</paseo>.",
+      attribution: "{{brandFullName}} is based on <upstream>Frogg</upstream>.",
+      attributionUpstream: "Frogg is based on <upstream>Paseo</upstream>.",
       title: "About",
       appVersion: "App version",
       thisDevice: "This device",

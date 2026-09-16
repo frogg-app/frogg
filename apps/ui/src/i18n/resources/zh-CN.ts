@@ -2382,7 +2382,8 @@ export const zhCN: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} 基于 <paseo>Paseo</paseo> 构建。",
+      attribution: "{{brandFullName}} 基于 <upstream>Frogg</upstream> 构建。",
+      attributionUpstream: "Frogg 基于 <upstream>Paseo</upstream> 构建。",
       title: "关于",
       appVersion: "应用版本",
       thisDevice: "此设备",

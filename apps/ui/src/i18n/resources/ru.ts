@@ -2463,7 +2463,8 @@ export const ru: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} основан на <paseo>Paseo</paseo>.",
+      attribution: "{{brandFullName}} основан на <upstream>Frogg</upstream>.",
+      attributionUpstream: "Frogg основан на <upstream>Paseo</upstream>.",
       title: "О приложении",
       appVersion: "Версия приложения",
       thisDevice: "Это устройство",

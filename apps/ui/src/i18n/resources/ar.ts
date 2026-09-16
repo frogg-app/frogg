@@ -2416,7 +2416,8 @@ export const ar: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} مبني على <paseo>Paseo</paseo>.",
+      attribution: "{{brandFullName}} مبني على <upstream>Frogg</upstream>.",
+      attributionUpstream: "Frogg مبني على <upstream>Paseo</upstream>.",
       title: "عن",
       appVersion: "نسخة التطبيق",
       thisDevice: "هذا الجهاز",
