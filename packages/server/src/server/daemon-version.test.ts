@@ -34,6 +34,52 @@ describe("resolveDaemonVersion", () => {
     expect(resolveDaemonVersion(moduleUrl)).toBe("9.8.7");
   });
 
+  it("prefers the matching bundle manifest version for a downstream release", () => {
+    const root = createTempDir();
+    writeFileSync(
+      path.join(root, "manifest.json"),
+      JSON.stringify({
+        version: "1.3.2-xx.1",
+        brand: { id: "frogg", applicationId: "app.frogg.frogg" },
+      }),
+      "utf8",
+    );
+    mkdirSync(path.join(root, "daemon", "packages", "server"), { recursive: true });
+    writeFileSync(
+      path.join(root, "daemon", "packages", "server", "package.json"),
+      JSON.stringify({ name: "@frogg/server", version: "1.3.2" }),
+      "utf8",
+    );
+    const nestedDir = path.join(root, "daemon", "packages", "server", "dist", "server");
+    mkdirSync(nestedDir, { recursive: true });
+
+    const moduleUrl = pathToFileURL(path.join(nestedDir, "index.js")).href;
+    expect(resolveDaemonVersion(moduleUrl)).toBe("1.3.2-xx.1");
+  });
+
+  it("ignores a bundle manifest for another product", () => {
+    const root = createTempDir();
+    writeFileSync(
+      path.join(root, "manifest.json"),
+      JSON.stringify({
+        version: "1.3.2-xx.1",
+        brand: { id: "other", applicationId: "com.example.other" },
+      }),
+      "utf8",
+    );
+    mkdirSync(path.join(root, "daemon", "packages", "server"), { recursive: true });
+    writeFileSync(
+      path.join(root, "daemon", "packages", "server", "package.json"),
+      JSON.stringify({ name: "@frogg/server", version: "1.3.2" }),
+      "utf8",
+    );
+    const nestedDir = path.join(root, "daemon", "packages", "server", "dist", "server");
+    mkdirSync(nestedDir, { recursive: true });
+
+    const moduleUrl = pathToFileURL(path.join(nestedDir, "index.js")).href;
+    expect(resolveDaemonVersion(moduleUrl)).toBe("1.3.2");
+  });
+
   it("throws when @frogg/server package metadata cannot be resolved", () => {
     const root = createTempDir();
     writeFileSync(

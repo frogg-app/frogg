@@ -618,6 +618,11 @@ export class VoiceAssistantWebSocketServer {
   private readonly browserToolsRegistrations = new Map<string, BrowserToolsRegistration>();
   private connectionLifecycle: "starting" | "accepting" | "stopping" = "accepting";
   private readonly advertiseDaemonStatusRpc: boolean;
+
+  /** Unique authenticated client sessions currently backed by a live socket. */
+  getConnectedClientCount(): number {
+    return new Set(this.sessions.values()).size;
+  }
   private readonly advertiseRelayConfig: boolean;
   private readonly directorySync = new DirectorySyncService();
   private readonly orchestrationSkills: SessionOptions["orchestrationSkills"];

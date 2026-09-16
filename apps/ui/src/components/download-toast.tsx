@@ -111,8 +111,11 @@ const styles = StyleSheet.create((theme) => ({
     left: theme.spacing[4],
     right: theme.spacing[4],
     zIndex: 1000,
+    alignItems: "center",
   },
   toast: {
+    maxWidth: "92%",
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[3],

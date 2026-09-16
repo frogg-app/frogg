@@ -5,7 +5,7 @@ description: Implement the Frogg Electron app-only desktop shell, native bridge,
 
 # Frogg desktop development
 
-Own `apps/desktop-electron`; coordinate shared UI and protocol changes with their
+Own `apps/desktop`; coordinate shared UI and protocol changes with their
 owners. Read root instructions and, under `website/src/content/docs/docs/`,
 `desktop-mobile-cli/desktop.mdx`, `contributing/development-setup.mdx`,
 `contributing/coding-standards.mdx` and `contributing/testing.mdx` before changing

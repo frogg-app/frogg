@@ -17,7 +17,7 @@ Frogg is an Electron app-only desktop client for AI coding agents, forked
 from Paseo v0.7.2. Follow root and scoped `AGENTS.md` instructions. Use the
 assigned checkout; leave other worktrees alone.
 
-- `apps/` holds deliverables (`desktop-electron` = Electron app-only, `ui` = Expo web client, `cli`).
+- `apps/` holds deliverables (`desktop` = Electron app-only, `ui` = Expo web client, `cli`).
 - `packages/` holds libraries only (`protocol`, `client`, `server`, `relay`, `highlight`,
   `plugin`, ...). No `index.ts` barrel files.
 - `scripts/` is split into `dev/`, `release/`, `ci/`. `deploy/` holds Docker and Nix.

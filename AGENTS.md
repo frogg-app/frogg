@@ -36,7 +36,7 @@ The code is the source of truth. If a page disagrees with the code, fix the page
 
 ## Code map
 
-- `apps/desktop-electron/`: Electron app-only shell, native bridge and SSH deployment; see
+- `apps/desktop/`: Electron app-only shell, native bridge and SSH deployment; see
   [desktop app](website/src/content/docs/docs/desktop-mobile-cli/desktop.mdx).
 - `apps/ui/`: shared Expo/React Native UI for desktop, web, and mobile.
 - `apps/cli/`: command-line client and daemon launcher.

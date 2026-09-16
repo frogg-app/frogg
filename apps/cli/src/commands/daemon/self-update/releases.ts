@@ -6,7 +6,7 @@ import { compareVersions, isNewerVersion, parseVersion } from "./semver.js";
 
 /**
  * Release lookup against the GitHub Releases API, mirroring
- * apps/desktop/src-tauri/src/updates/github.rs: `FROGG_GITHUB_TOKEN` raises the
+ * apps/desktop-tauri/src-tauri/src/updates/github.rs: `FROGG_GITHUB_TOKEN` raises the
  * rate limit and lets a private repository answer, and is never logged.
  */
 export const DEFAULT_RELEASES_API = brand.distribution.releasesApi ?? "";

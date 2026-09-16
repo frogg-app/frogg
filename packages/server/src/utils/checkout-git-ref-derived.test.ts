@@ -130,15 +130,8 @@ test("one comparison refresh updates a shared base and upstream ref", async () =
     ref: "refs/remotes/origin/main",
     aheadBehind: { ahead: 1, behind: 0 },
   });
-  expect(result.diffStat).toEqual({ additions: 1, deletions: 0 });
-  expect(metrics.submissions.map((command) => command.args[0]).sort()).toEqual([
-    "diff",
-    "diff",
-    "ls-files",
-    "merge-base",
-    "merge-tree",
-    "rev-list",
-  ]);
+  expect(result.diffStat).toBeNull();
+  expect(metrics.submissions.map((command) => command.args[0]).sort()).toEqual(["rev-list"]);
 });
 
 test("an upstream move refreshes the main checkout shortstat", async () => {
@@ -154,7 +147,7 @@ test("an upstream move refreshes the main checkout shortstat", async () => {
 
   expect(result).toEqual({
     aheadBehind: null,
-    diffStat: null,
+    diffStat: { additions: 1, deletions: 0 },
     upstreamStatus: {
       ref: "refs/remotes/origin/main",
       aheadBehind: { ahead: 0, behind: 0 },
@@ -183,5 +176,9 @@ test("an origin move refreshes an untracked main checkout shortstat", async () =
       { aheadBehind: null, diffStat: { additions: 1, deletions: 0 } },
       new Set(["origin/main"]),
     ),
-  ).toEqual({ aheadBehind: null, diffStat: null, upstreamStatus: null });
+  ).toEqual({
+    aheadBehind: null,
+    diffStat: { additions: 1, deletions: 0 },
+    upstreamStatus: null,
+  });
 });

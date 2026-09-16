@@ -14,7 +14,7 @@ export function localBuildSteps(target) {
   }
   const windows = target === "windows";
   const triple = windows ? "x86_64-pc-windows-msvc" : "x86_64-unknown-linux-gnu";
-  const releaseDir = `apps/desktop/src-tauri/target/${triple}/release`;
+  const releaseDir = `apps/desktop-tauri/src-tauri/target/${triple}/release`;
   return [
     { name: "dependencies", command: "npm", args: ["run", "build:app-deps"] },
     {
@@ -111,7 +111,7 @@ export function runLocalBuild({ target, jobs, root = REPO_ROOT, run = spawnSync 
     ...process.env,
     CI: "true",
     CARGO_BUILD_JOBS: String(jobs),
-    CARGO_TARGET_DIR: path.join(root, "apps/desktop/src-tauri/target"),
+    CARGO_TARGET_DIR: path.join(root, "apps/desktop-tauri/src-tauri/target"),
     ONNXRUNTIME_NODE_INSTALL: "skip",
   };
   const started = performance.now();

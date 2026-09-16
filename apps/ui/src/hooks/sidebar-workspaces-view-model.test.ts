@@ -245,6 +245,22 @@ describe("buildSidebarProjectsFromStructure", () => {
     });
   });
 
+  it("deduplicates repeated workspace identities without merging hosts", () => {
+    const projects = buildSidebarProjectsFromStructure({
+      projects: [
+        project({
+          projectKey: "project-1",
+          workspaceKeys: ["host-a:same", "host-a:same", "host-b:same"],
+        }),
+      ],
+    });
+
+    expect(projects[0]?.workspaces.map((placement) => placement.workspaceKey)).toEqual([
+      "host-a:same",
+      "host-b:same",
+    ]);
+  });
+
   it("preserves the structure hook project order", () => {
     const projects = buildSidebarProjectsFromStructure({
       projects: [

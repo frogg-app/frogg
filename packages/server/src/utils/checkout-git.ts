@@ -2879,7 +2879,6 @@ function getCheckoutRefMovement(
   baseMoved: boolean;
   comparisonRef: string | null;
   currentBranch: string | null;
-  normalizedResolvedBase: string | null;
   upstreamMoved: boolean;
   upstreamRef: string | null;
 } {
@@ -2905,7 +2904,6 @@ function getCheckoutRefMovement(
     baseMoved,
     comparisonRef,
     currentBranch,
-    normalizedResolvedBase,
     upstreamMoved,
     upstreamRef,
   };
@@ -2918,30 +2916,19 @@ export async function getCheckoutRefDerivedState(
   movedRemoteRefs: ReadonlySet<string>,
   context?: CheckoutContext,
 ): Promise<CheckoutRefDerivedState> {
-  const {
-    baseMoved,
-    comparisonRef,
-    currentBranch,
-    normalizedResolvedBase,
-    upstreamMoved,
-    upstreamRef,
-  } = getCheckoutRefMovement(facts, movedRemoteRefs);
+  const { baseMoved, comparisonRef, currentBranch, upstreamMoved, upstreamRef } =
+    getCheckoutRefMovement(facts, movedRemoteRefs);
 
   let aheadBehind = current.aheadBehind;
-  let diffStat = current.diffStat;
+  const diffStat = current.diffStat;
   if (baseMoved && currentBranch && facts.resolvedBaseRef) {
     aheadBehind = await getAheadBehind(cwd, facts.resolvedBaseRef, currentBranch, {
       ...context,
       facts,
     });
   }
-  if (baseMoved || (upstreamMoved && currentBranch === normalizedResolvedBase)) {
-    diffStat = await getCheckoutShortstatUncached(
-      cwd,
-      { ...context, facts },
-      { throwOnGitError: true },
-    );
-  }
+  // `diffStat` is the working-tree stat shown by workspace surfaces. A remote ref movement
+  // changes branch divergence, not files in the checkout, so retain the last worktree value.
 
   let upstreamStatus = facts.upstreamStatus;
   if (upstreamMoved && currentBranch && upstreamRef) {
@@ -2967,13 +2954,48 @@ export interface CheckoutWorktreeState {
   diffStat: CheckoutShortstat | null;
 }
 
+/**
+ * Lines changed in the checkout right now, relative to HEAD. This deliberately excludes
+ * committed branch work: callers that label a value as a working-tree change must not show the
+ * branch's unmerged diff instead.
+ */
+export async function getCheckoutWorkingTreeShortstat(
+  cwd: string,
+  context?: CheckoutContext,
+): Promise<CheckoutShortstat | null> {
+  if (context?.facts?.isGit === false) return null;
+  if (!context?.facts?.isGit) {
+    try {
+      await requireGitRepo(cwd, context);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const run = getRunGitCommand(context);
+    const [{ stdout }, untrackedAdditions] = await Promise.all([
+      run(["diff", "--shortstat", "HEAD"], { cwd, envOverlay: READ_ONLY_GIT_ENV }),
+      countUntrackedAdditions(cwd, context),
+    ]);
+    const tracked = parseCheckoutShortstat(stdout);
+    if (tracked) {
+      return { additions: tracked.additions + untrackedAdditions, deletions: tracked.deletions };
+    }
+    return untrackedAdditions > 0 ? { additions: untrackedAdditions, deletions: 0 } : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getCheckoutWorktreeState(
   cwd: string,
   context: CheckoutContext,
+  knownIsDirty?: boolean,
 ): Promise<CheckoutWorktreeState> {
   const [isDirty, diffStat] = await Promise.all([
-    isWorkingTreeDirty(cwd, context),
-    getCheckoutShortstat(cwd, context, { force: true }),
+    knownIsDirty === undefined ? isWorkingTreeDirty(cwd, context) : Promise.resolve(knownIsDirty),
+    getCheckoutWorkingTreeShortstat(cwd, context),
   ]);
   return { isDirty, diffStat };
 }

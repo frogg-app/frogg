@@ -462,19 +462,22 @@ export function buildSidebarProjectsFromHostProjects(input: {
     return EMPTY_PROJECTS;
   }
 
-  return input.projects.map((project) => ({
-    viewKey: project.viewKey,
-    projectName: project.projectName,
-    projectKind: project.projectKind,
-    iconWorkingDir: project.iconWorkingDir,
-    hosts: project.hosts,
-    workspaces: project.workspaceKeys.map((workspaceKey) =>
-      createStructuralWorkspaceEntry({
-        project,
-        workspaceKey,
-      }),
-    ),
-  }));
+  return input.projects.map((project) => {
+    const seenWorkspaceKeys = new Set<string>();
+    const workspaces = project.workspaceKeys.flatMap((workspaceKey) => {
+      if (seenWorkspaceKeys.has(workspaceKey)) return [];
+      seenWorkspaceKeys.add(workspaceKey);
+      return [createStructuralWorkspaceEntry({ project, workspaceKey })];
+    });
+    return {
+      viewKey: project.viewKey,
+      projectName: project.projectName,
+      projectKind: project.projectKind,
+      iconWorkingDir: project.iconWorkingDir,
+      hosts: project.hosts,
+      workspaces,
+    };
+  });
 }
 
 // Host labels disambiguate which machine a workspace lives on; they only earn their

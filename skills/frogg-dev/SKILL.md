@@ -141,7 +141,7 @@ npx vitest run <path> --bail=1 > /tmp/t.log 2>&1   # broad sweep, then read the 
 
 ## Where things live
 
-- `apps/` holds deliverables: `desktop-electron` (Electron app-only), `ui` (Expo client, `@frogg/app`), `cli`.
+- `apps/` holds deliverables: `desktop` (Electron app-only), `ui` (Expo client, `@frogg/app`), `cli`.
 - `packages/` holds libraries only: `protocol`, `client`, `server`, `relay`, `highlight`.
 - `scripts/` splits into `dev/`, `release/`, `ci/`. New scripts go in one of those, not the root.
 - Documentation lives in `website/src/content/docs/docs/` (published at https://frogg.app/docs/).

@@ -20,7 +20,7 @@ test("macOS inspection accepts stable bundle names and rejects missing executabl
       path.join(cwd, "scripts/dev/branding/load.cjs"),
       'exports.loadBrand = () => ({id:"acme", applicationId:"com.acme.studio", artifactPrefix:"acme", name:"Acme Studio"});',
     );
-    const output = path.join(cwd, "apps/desktop-electron/release");
+    const output = path.join(cwd, "apps/desktop/release");
     const contents = path.join(output, "mac-arm64/acme.app/Contents");
     mkdirSync(path.join(contents, "Resources/app-dist"), { recursive: true });
     mkdirSync(path.join(contents, "MacOS"), { recursive: true });

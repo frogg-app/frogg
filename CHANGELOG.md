@@ -2,6 +2,57 @@
 
 ## Unreleased
 
+## 1.3.4 — 2026-09-16
+
+- Show the workspace directory and checked-out branch in separate composer context pills.
+  For Frogg-managed worktrees, the directory pill now identifies the source project checkout,
+  rather than Frogg's internal worktree directory.
+- Remove confirmation dialogs for sidebar-only project removal and ordinary workspace archiving.
+  Frogg retains the confirmation before archiving a managed worktree because that cleanup can
+  remove the worktree directory.
+
+## 1.3.3 — 2026-09-16
+
+- Show the active workspace directory and checked-out branch continuously beside the composer.
+  The workspace change badge now reports only uncommitted tracked and untracked changes, rather
+  than committed differences between the current branch and its base.
+- Credit Frogg, rather than its upstream predecessor, in branded app About screens.
+- Read the signed product manifest in daemon bundles so branded daemon status reports the same
+  downstream version suffix as the client, including versions such as `1.3.3-xx.1`.
+
+## 1.3.2 — 2026-09-16
+
+- Report the live authenticated client count in `frogg daemon claim-status --json` under
+  `daemon.connectedClients`, and keep the live daemon pairing decision only under `daemon`.
+
+## 1.3.1 — 2026-09-16
+
+- Write daemon service environment settings using each brand's environment namespace, so custom
+  installations retain their configured listen address, web UI and execution-service mode.
+- Allow a branded Electron renderer's `<brand-scheme>://app` WebSocket origin while retaining
+  stock `frogg://app` compatibility and the existing restrictive origin allowlist.
+
+## 1.3.0 — 2026-09-15
+
+- Stop automatic project registration when agents, workspaces, terminals or scripts use a new
+  directory. Projects are added only through an explicit project action; worktrees stay under
+  their main checkout's project.
+- Add isolated Claude account provider profiles. Each profile launches with its own
+  `CLAUDE_CONFIG_DIR` and may share only selected content directories; credentials and settings
+  remain private to that account.
+
+## 1.2.0 — 2026-09-15
+
+- **Custom-brand environment migration:** a branded daemon and desktop now use the
+  brand's `envPrefix` for all Frogg settings. Replace inherited `FROGG_*` entries
+  in branded service units and `.env` files with the equivalent `<BRAND>_*` entry
+  (for example, `ACME_LISTEN` and `ACME_HOME`). Branded builds deliberately ignore
+  `FROGG_*` settings to prevent an upstream deployment's configuration leaking into
+  the branded product. This affects custom brands only; official Frogg continues to
+  use `FROGG_*`.
+- Register and handle the configured brand deep-link scheme for desktop agent links;
+  branded desktop apps continue to accept existing `frogg://` agent links.
+
 ## 1.1.3 — 2026-09-15
 
 - Show the Electron updater's installer progress so the app continues to report what is happening after download and verification.

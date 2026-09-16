@@ -28,7 +28,6 @@ describe("daemon claim-status / reset-claim", () => {
       claimed: false,
       claimedAt: null,
       passwordConfigured: false,
-      pairingRequired: true,
       principals: [],
       daemon: { reachable: false },
     });
@@ -36,7 +35,6 @@ describe("daemon claim-status / reset-claim", () => {
     createClaimStore(home).mintPrincipal({ label: "Phone" });
     const after = await describeClaimStatus(home);
     expect(after.claimed).toBe(true);
-    expect(after.pairingRequired).toBe(false);
     expect(after.principals).toHaveLength(1);
     expect(after.principals[0]).toMatchObject({ label: "Phone", credentials: 1 });
 

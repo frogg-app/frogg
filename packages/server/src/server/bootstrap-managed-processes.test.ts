@@ -10,7 +10,11 @@ import type {
   ManagedProcessRegistry,
   ManagedProcessReapResult,
 } from "./managed-processes/managed-processes.js";
-import { createFroggDaemon, type FroggDaemonConfig } from "./bootstrap.js";
+import {
+  createFixedAllowedOrigins,
+  createFroggDaemon,
+  type FroggDaemonConfig,
+} from "./bootstrap.js";
 import { createTestAgentClients } from "./test-utils/fake-agent-client.js";
 
 let tempRoot: string | null = null;
@@ -26,6 +30,21 @@ afterEach(async () => {
 });
 
 describe("daemon managed process bootstrap", () => {
+  test("allows the branded Electron renderer origin without widening the allowlist", () => {
+    expect(
+      createFixedAllowedOrigins({
+        scheme: "glade",
+        listenTarget: { type: "tcp", host: "127.0.0.1", port: 9999 },
+      }),
+    ).toEqual(expect.arrayContaining(["glade://app", "frogg://app", "http://127.0.0.1:9999"]));
+    expect(
+      createFixedAllowedOrigins({
+        scheme: "glade",
+        listenTarget: { type: "socket", path: "/tmp/frogg.sock" },
+      }),
+    ).not.toContain("https://evil.test");
+  });
+
   test("reaps stale helper process records during daemon bootstrap", async () => {
     tempRoot = await mkdtemp(path.join(os.tmpdir(), "frogg-managed-bootstrap-"));
     staticDir = await mkdtemp(path.join(os.tmpdir(), "frogg-static-"));

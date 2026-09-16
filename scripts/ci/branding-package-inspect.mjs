@@ -6,7 +6,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { loadBrand } from "../dev/branding/load.cjs";
 const brand = loadBrand();
-const root = path.resolve("apps/desktop-electron/release");
+const root = path.resolve("apps/desktop/release");
 const version = JSON.parse(await readFile("package.json", "utf8")).version;
 const platform = process.platform === "win32" ? "win" : process.platform;
 let folder = platform === "win" ? "win-unpacked" : "linux-unpacked";

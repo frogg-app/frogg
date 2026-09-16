@@ -36,6 +36,11 @@ import { useProviderSettingsStore } from "@/stores/provider-settings-store";
 import { confirmDialog } from "@/utils/confirm-dialog";
 import { filterSelectableModels } from "@/provider-selection/model-catalog";
 import { ChevronRight, MoreHorizontal, Trash2 } from "lucide-react-native";
+import { ClaudeAccountDialog } from "@/components/claude-account-dialog";
+import {
+  buildClaudeAccountProvider,
+  type ClaudeAccountContent,
+} from "@/screens/settings/claude-account";
 
 type ProviderDefinition = ReturnType<typeof buildProviderDefinitions>[number];
 type ProviderEntry = NonNullable<ReturnType<typeof useProvidersSnapshot>["entries"]>[number];
@@ -55,12 +60,24 @@ function getProviderStatus(
   t: TFunction,
 ): ProviderStatus {
   if (!enabled)
-    return { tone: "muted", label: t("settings.providers.statuses.disabled"), modelCount: null };
+    return {
+      tone: "muted",
+      label: t("settings.providers.statuses.disabled"),
+      modelCount: null,
+    };
   if (status === "loading") {
-    return { tone: "loading", label: t("settings.providers.statuses.loading"), modelCount: null };
+    return {
+      tone: "loading",
+      label: t("settings.providers.statuses.loading"),
+      modelCount: null,
+    };
   }
   if (status === "error") {
-    return { tone: "danger", label: t("settings.providers.statuses.error"), modelCount: null };
+    return {
+      tone: "danger",
+      label: t("settings.providers.statuses.error"),
+      modelCount: null,
+    };
   }
   if (status === "ready") {
     return {
@@ -140,7 +157,9 @@ function ProviderActionsMenu({
         onPressIn={stopPressInPropagation}
         style={triggerStyle}
         accessibilityRole="button"
-        accessibilityLabel={t("settings.providers.actions.menu", { name: providerLabel })}
+        accessibilityLabel={t("settings.providers.actions.menu", {
+          name: providerLabel,
+        })}
         testID={`provider-actions-${providerId}`}
       >
         {({ hovered, open }) => (
@@ -217,7 +236,9 @@ function ProviderRow({
       style={rowStyle}
       onPress={handlePress}
       accessibilityRole="button"
-      accessibilityLabel={t("settings.providers.providerDetails", { name: def.label })}
+      accessibilityLabel={t("settings.providers.providerDetails", {
+        name: def.label,
+      })}
     >
       {({ hovered }: PressableStateCallbackType & { hovered?: boolean }) => (
         <>
@@ -247,7 +268,9 @@ function ProviderRow({
               value={enabled}
               onValueChange={handleToggleValueChange}
               disabled={isToggling || isRemoving}
-              accessibilityLabel={t("settings.providers.enableProvider", { name: def.label })}
+              accessibilityLabel={t("settings.providers.enableProvider", {
+                name: def.label,
+              })}
             />
             <View style={styles.menuSlot}>
               {canRemove ? (
@@ -307,7 +330,9 @@ function StatusIndicator({ status, compact }: { status: ProviderStatus; compact:
               <Text style={styles.statusLabel}>
                 {status.modelCount === 1
                   ? t("settings.providers.models.one")
-                  : t("settings.providers.models.many", { count: status.modelCount })}
+                  : t("settings.providers.models.many", {
+                      count: status.modelCount,
+                    })}
               </Text>
             </>
           ) : null}
@@ -326,12 +351,15 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
   const isConnected = useHostRuntimeIsConnected(serverId);
   const supportsProviderRemoval = useHostFeature(serverId, "providerRemoval");
   const { entries, isLoading, refresh } = useProvidersSnapshot(serverId);
-  const { patchConfig } = useDaemonConfig(serverId);
+  const { config, patchConfig } = useDaemonConfig(serverId);
   const openProviderSettings = useProviderSettingsStore((state) => state.open);
   const [pendingProviderId, setPendingProviderId] = useState<string | null>(null);
   const [removingProviderId, setRemovingProviderId] = useState<string | null>(null);
   const removingProviderIdRef = useRef<string | null>(null);
   const [installingProviderId, setInstallingProviderId] = useState<string | null>(null);
+  const [addingClaudeAccount, setAddingClaudeAccount] = useState(false);
+  const [claudeAccountError, setClaudeAccountError] = useState<string | null>(null);
+  const [savingClaudeAccount, setSavingClaudeAccount] = useState(false);
 
   const providerDefinitions = useMemo(() => buildProviderDefinitions(entries), [entries]);
   const hasServer = serverId.length > 0;
@@ -367,7 +395,9 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
       setRemovingProviderId(providerId);
       try {
         const confirmed = await confirmDialog({
-          title: t("settings.providers.remove.confirmTitle", { name: providerLabel }),
+          title: t("settings.providers.remove.confirmTitle", {
+            name: providerLabel,
+          }),
           message: t("settings.providers.remove.confirmMessage"),
           confirmLabel: t("settings.providers.remove.confirm"),
           destructive: true,
@@ -410,6 +440,32 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
     },
     [installingProviderId, patchConfig, refresh, t],
   );
+
+  const handleSaveClaudeAccount = useCallback(
+    async (label: string, sharedContent: ClaudeAccountContent[]) => {
+      if (!config?.providers) return;
+      setSavingClaudeAccount(true);
+      setClaudeAccountError(null);
+      try {
+        const generated = buildClaudeAccountProvider(label, sharedContent, config.providers);
+        await patchConfig({
+          providers: { [generated.id]: generated.provider },
+        });
+        setAddingClaudeAccount(false);
+        await refresh([generated.id]);
+      } catch (error) {
+        setClaudeAccountError(error instanceof Error ? error.message : String(error));
+      } finally {
+        setSavingClaudeAccount(false);
+      }
+    },
+    [config?.providers, patchConfig, refresh],
+  );
+  const openClaudeAccountDialog = useCallback(() => {
+    setClaudeAccountError(null);
+    setAddingClaudeAccount(true);
+  }, []);
+  const closeClaudeAccountDialog = useCallback(() => setAddingClaudeAccount(false), []);
 
   return (
     <>
@@ -459,6 +515,13 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
           testID="host-page-add-provider-card"
           style={styles.addProviderSection}
         >
+          <Pressable
+            style={styles.addClaudeButton}
+            onPress={openClaudeAccountDialog}
+            testID="add-claude-account"
+          >
+            <Text style={styles.addClaudeText}>{t("settings.providers.claudeAccount.add")}</Text>
+          </Pressable>
           <ProviderCatalogList
             serverId={serverId}
             installingProviderId={installingProviderId}
@@ -466,6 +529,13 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
           />
         </SettingsSection>
       ) : null}
+      <ClaudeAccountDialog
+        visible={addingClaudeAccount}
+        onClose={closeClaudeAccountDialog}
+        onSave={handleSaveClaudeAccount}
+        saving={savingClaudeAccount}
+        error={claudeAccountError}
+      />
     </>
   );
 }
@@ -554,5 +624,14 @@ const styles = StyleSheet.create((theme) => ({
   },
   menuButtonPressed: {
     backgroundColor: theme.colors.surface3,
+  },
+  addClaudeButton: {
+    padding: theme.spacing[3],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  addClaudeText: {
+    color: theme.colors.accent,
+    fontWeight: theme.fontWeight.semibold,
   },
 }));

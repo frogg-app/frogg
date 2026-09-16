@@ -17,6 +17,8 @@ export interface DaemonIdentity {
   hostname: string;
   version: string;
   listen: string | null;
+  /** Unique authenticated WebSocket client sessions currently connected. */
+  connectedClients: number;
   /**
    * Whether *this requester* must pair (or use a password) before it can
    * connect. False for loopback, for the LAN while `lanTrusted`, and for
@@ -35,6 +37,7 @@ export interface IdentityRouteDependencies {
   hostname: () => string;
   listen: () => string | null;
   isClaimed: () => boolean;
+  connectedClients: () => number;
   trustLan: () => boolean;
   /** Loopback or trusted-LAN requester (see access-policy.ts). */
   isTrustedClient: (req: RequestLike) => boolean;
@@ -51,6 +54,7 @@ export function describeDaemonIdentity(
     hostname: deps.hostname(),
     version: deps.version,
     listen: deps.listen(),
+    connectedClients: deps.connectedClients(),
     pairingRequired: !deps.isClaimed() && !deps.isTrustedClient(req),
     lanTrusted: deps.trustLan(),
   };

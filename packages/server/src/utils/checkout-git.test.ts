@@ -28,6 +28,7 @@ import {
   getCurrentBranch,
   getCheckoutDiff,
   getCheckoutShortstat,
+  getCheckoutWorkingTreeShortstat,
   getPullRequestStatus,
   getCheckoutStatus,
   checkoutResolvedBranch,
@@ -1023,6 +1024,20 @@ const x = 1;
     const shortstat = await getCheckoutShortstat(repoDir);
 
     expect(shortstat).toBeNull();
+  });
+
+  it("reports only uncommitted working-tree lines, not committed branch work", async () => {
+    setupRemoteTrackingMain(repoDir, tempDir);
+    execFileSync("git", ["checkout", "-b", "feature/working-tree-stat"], { cwd: repoDir });
+    commitFile(repoDir, "committed.txt", "committed\n", "feature work");
+
+    expect(await getCheckoutWorkingTreeShortstat(repoDir)).toBeNull();
+
+    writeFileSync(join(repoDir, "committed.txt"), "committed\nlocal\n");
+    expect(await getCheckoutWorkingTreeShortstat(repoDir)).toEqual({
+      additions: 1,
+      deletions: 0,
+    });
   });
 
   it("does not report incoming deletions when the base branch is behind its remote", async () => {

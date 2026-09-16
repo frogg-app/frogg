@@ -306,13 +306,11 @@ function createService(options?: CreateServiceTestOptions) {
   const deps = { ...buildDefaultTestServiceDeps(), ...options };
   deps.getCheckoutWorktreeState =
     options?.getCheckoutWorktreeState ??
-    vi.fn(async (cwd: string) => {
-      const status = await deps.getCheckoutStatus(cwd);
-      if (!status.isGit) {
-        throw new Error("Expected a git checkout");
-      }
+    vi.fn(async (cwd: string, _context: unknown, knownIsDirty?: boolean) => {
+      const status = knownIsDirty === undefined ? await deps.getCheckoutStatus(cwd) : null;
+      if (status && !status.isGit) throw new Error("Expected a git checkout");
       return {
-        isDirty: status.isDirty,
+        isDirty: knownIsDirty ?? status?.isDirty ?? false,
         diffStat: await deps.getCheckoutShortstat(),
       };
     });
@@ -1367,10 +1365,10 @@ describe("WorkspaceGitServiceImpl", () => {
         return createAsyncSubscription();
       },
     );
-    const getCheckoutWorktreeState = vi.fn(async () => ({
-      isDirty: true,
-      diffStat: { additions: 8, deletions: 3 },
-    }));
+    const getCheckoutWorktreeState = vi
+      .fn()
+      .mockResolvedValueOnce({ isDirty: true, diffStat: { additions: 1, deletions: 0 } })
+      .mockResolvedValue({ isDirty: true, diffStat: { additions: 8, deletions: 3 } });
     const backgroundFetch = createDeferred<void>();
     const service = createService({
       getCheckoutWorktreeState,

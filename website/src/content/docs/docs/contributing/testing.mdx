@@ -103,11 +103,11 @@ them, and some flows target specific past bugs.
 ## Desktop tests
 
 ```bash
-npm run test --workspace=@frogg/desktop-electron        # vitest on src, then node --test test/*.test.mjs
-npm run test:smoke --workspace=@frogg/desktop-electron  # Playwright Electron smoke
+npm run test --workspace=@frogg/desktop        # vitest on src, then node --test test/*.test.mjs
+npm run test:smoke --workspace=@frogg/desktop  # Playwright Electron smoke
 ```
 
-The smoke test (`apps/desktop-electron/e2e/smoke.mjs`) launches the app twice with a temporary
+The smoke test (`apps/desktop/e2e/smoke.mjs`) launches the app twice with a temporary
 profile. It checks sandbox and context isolation, settings persistence across launches, that
 daemon commands are rejected, and that no daemon state is created. Without
 `FROGG_ELECTRON_SMOKE_EXECUTABLE` it runs the unpacked app against `apps/ui/dist`, so run
@@ -129,7 +129,7 @@ Runs `node --test` over `scripts/ci/*.test.mjs`, `scripts/dev/*.test.mjs` and
 - `npm run brand:check` validates the selected brand.
 - `npm run test --workspace=@frogg/branding` runs the brand schema tests.
 - `.github/workflows/branding.yml` runs on pull requests that touch `brands/`,
-  `packages/branding/`, branding scripts, `scripts/release/`, `apps/desktop-electron/`,
+  `packages/branding/`, branding scripts, `scripts/release/`, `apps/desktop/`,
   `deploy/` or `.github/`. It builds `brands/frogg` and `brands/example` and runs
   `branding-acceptance.mjs`, `branding-contribution.mjs` (see
   [Coding standards](/docs/contributing/coding-standards/#no-hard-coded-product-names)),
@@ -158,7 +158,7 @@ Other workflows:
 - `release.yml`: runs the Electron smoke test on Linux. See
   [Release process](/docs/contributing/release-process/).
 
-No workflow builds or tests the Rust sources in `apps/desktop/src-tauri` or `apps/daemon-rs`.
+No workflow builds or tests the Rust sources in `apps/desktop-tauri/src-tauri` or `apps/daemon-rs`.
 The `apps/desktop` TypeScript is still typechecked by `npm run typecheck`.
 `.github/workflows/android-startup.yml` is an Android startup diagnostic (manual dispatch, or
 pushes to `fix/android-launch-crash`), not a gate.
