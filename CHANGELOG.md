@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 1.3.3 — 2026-09-16
+
+- Show the active workspace directory and checked-out branch continuously beside the composer.
+  The workspace change badge now reports only uncommitted tracked and untracked changes, rather
+  than committed differences between the current branch and its base.
+- Credit Frogg, rather than its upstream predecessor, in branded app About screens.
+- Read the signed product manifest in daemon bundles so branded daemon status reports the same
+  downstream version suffix as the client, including versions such as `1.3.3-xx.1`.
+
 ## 1.3.2 — 2026-09-16
 
 - Report the live authenticated client count in `frogg daemon claim-status --json` under
