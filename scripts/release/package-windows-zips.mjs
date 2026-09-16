@@ -9,7 +9,7 @@ import { desktopArtifactName } from "../../packages/branding/src/artifact-contra
 //
 // The installer zip is what both updaters consume: tauri-plugin-updater unpacks a
 // zipped NSIS installer itself, and the GitHub-release path in
-// apps/desktop/src-tauri/src/updates/install.rs extracts it before running it.
+// apps/desktop-tauri/src-tauri/src/updates/install.rs extracts it before running it.
 // No dependencies: the zips are written with Node's zlib (deflate + crc32).
 
 import { loadBrand } from "../dev/branding/load.cjs";
@@ -33,7 +33,7 @@ function resolveReleaseDir(override) {
   if (override) {
     return path.resolve(REPO_ROOT, override);
   }
-  return path.join(REPO_ROOT, "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release");
+  return path.join(REPO_ROOT, "apps/desktop-tauri/src-tauri/target/x86_64-pc-windows-msvc/release");
 }
 
 export function buildReadme(version) {

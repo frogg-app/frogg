@@ -223,11 +223,11 @@ as unvalidated.
 **Desktop (Electron).** Install the Electron binary, then build for one target:
 
 ```bash
-npm run install:electron --workspace=@frogg/desktop-electron
+npm run install:electron --workspace=@frogg/desktop
 npm run build:desktop -- --target linux-x64   # linux|darwin|win - x64|arm64
 ```
 
-Output goes to `apps/desktop-electron/release/`. macOS artifacts must be built on macOS
+Output goes to `apps/desktop/release/`. macOS artifacts must be built on macOS
 (`build-electron.mjs` refuses otherwise). Windows signing uses Azure Trusted Signing only when
 `TRUSTED_SIGNING_ACCOUNT`, `TRUSTED_SIGNING_ENDPOINT` and `TRUSTED_SIGNING_PROFILE` are set.
 macOS builds are not notarized.

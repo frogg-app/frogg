@@ -17,9 +17,9 @@ const port = Number(process.env.FROGG_ELECTRON_UI_PORT ?? 18000 + offset);
 mkdirSync(state, { recursive: true });
 const env = electronDevEnvironment({ state, port, brand: loadBrand() });
 for (const args of [
-  ["run", "install:electron", "--workspace=@frogg/desktop-electron"],
+  ["run", "install:electron", "--workspace=@frogg/desktop-tauri"],
   ["run", "build:app-deps"],
-  ["run", "build:main", "--workspace=@frogg/desktop-electron"],
+  ["run", "build:main", "--workspace=@frogg/desktop-tauri"],
 ]) {
   const npm = portableCommand("npm", args);
   const result = spawnSync(npm.command, npm.args, {
@@ -94,4 +94,4 @@ while (!stopping) {
   }
   await new Promise((resolve) => setTimeout(resolve, 500));
 }
-if (!stopping) launch(require("electron"), [path.join(root, "apps/desktop-electron")], root);
+if (!stopping) launch(require("electron"), [path.join(root, "apps/desktop")], root);

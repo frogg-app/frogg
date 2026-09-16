@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { test } from "node:test";
 import vm from "node:vm";
 const root = path.resolve(import.meta.dirname, "../../..");
-const desktop = path.join(root, "apps/desktop-electron");
+const desktop = path.join(root, "apps/desktop");
 const require = createRequire(import.meta.url);
 function configFor(brand, env = {}) {
   const context = {
@@ -55,9 +55,9 @@ test("production packages use branded identity and register branded deep links",
 });
 test("root aliases default to Electron and preserve Tauri comparison commands", () => {
   const { scripts } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
-  assert.match(scripts["dev:desktop"], /@frogg\/desktop-electron/);
-  assert.match(scripts["build:desktop"], /@frogg\/desktop-electron/);
-  assert.match(scripts["dev:desktop:tauri"], /@frogg\/desktop --/);
+  assert.match(scripts["dev:desktop"], /@frogg\/desktop/);
+  assert.match(scripts["build:desktop"], /@frogg\/desktop/);
+  assert.match(scripts["dev:desktop:tauri"], /@frogg\/desktop-tauri --/);
   assert.match(scripts["build:desktop:tauri:win"], /@frogg\/desktop/);
 });
 

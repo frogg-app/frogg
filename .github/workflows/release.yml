@@ -299,21 +299,21 @@ jobs:
           subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
           token: ${{ secrets.BRANDING_READ_TOKEN }}
       - uses: ./.github/actions/setup-node-deps
-      - run: npm run install:electron --workspace=@frogg/desktop-electron
+      - run: npm run install:electron --workspace=@frogg/desktop
       - name: Build app-only Electron bundles
         run: npm run build:desktop -- --target ${{ matrix.target }}
       - name: Collect release assets
         run: |
           mkdir -p release-assets
-          find apps/desktop-electron/release -maxdepth 1 -type f             \( -name '*.exe' -o -name '*.zip' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.tar.gz' -o -name '*.blockmap' \)             -exec cp {} release-assets/ \;
+          find apps/desktop/release -maxdepth 1 -type f             \( -name '*.exe' -o -name '*.zip' -o -name '*.dmg' -o -name '*.AppImage' -o -name '*.deb' -o -name '*.tar.gz' -o -name '*.blockmap' \)             -exec cp {} release-assets/ \;
       - name: Smoke packaged Linux startup and relaunch
         if: matrix.platform == 'linux'
         env:
           FROGG_ELECTRON_SMOKE_NO_SANDBOX: "1"
         run: |
           binary=$(node -p 'require("./.generated/branding/brand.json").id')
-          FROGG_ELECTRON_SMOKE_EXECUTABLE="$PWD/apps/desktop-electron/release/linux-unpacked/$binary" \
-            xvfb-run -a npm run test:smoke --workspace=@frogg/desktop-electron
+          FROGG_ELECTRON_SMOKE_EXECUTABLE="$PWD/apps/desktop/release/linux-unpacked/$binary" \
+            xvfb-run -a npm run test:smoke --workspace=@frogg/desktop
       - name: Upload to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

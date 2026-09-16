@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - apps/desktop-electron/**
+      - apps/desktop/**
       - apps/ui/**
       - packages/**
       - scripts/dev/electron-dev*.mjs
@@ -34,10 +34,10 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run install:electron --workspace=@frogg/desktop-electron
+      - run: npm run install:electron --workspace=@frogg/desktop
       - run: npm run build:app-deps
-      - run: npm run typecheck --workspace=@frogg/desktop-electron
-      - run: npm run test --workspace=@frogg/desktop-electron
+      - run: npm run typecheck --workspace=@frogg/desktop
+      - run: npm run test --workspace=@frogg/desktop
       - run: npm run build:desktop:electron -- --target ${{ matrix.target }}
       - uses: actions/upload-artifact@v4
         with:
@@ -45,6 +45,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
           path: |
-            apps/desktop-electron/release/SHA256SUMS
-            apps/desktop-electron/release/*.exe
-            apps/desktop-electron/release/*.zip
+            apps/desktop/release/SHA256SUMS
+            apps/desktop/release/*.exe
+            apps/desktop/release/*.zip

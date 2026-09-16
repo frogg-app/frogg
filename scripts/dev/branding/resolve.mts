@@ -78,7 +78,7 @@ export function resolveBrand(directory?: string) {
     for (const assetDirectory of [
       "apps/ui/assets/images",
       "apps/ui/public",
-      "apps/desktop/src-tauri/icons",
+      "apps/desktop-tauri/src-tauri/icons",
     ]) {
       for (const file of readdirSync(path.join(root, assetDirectory), { withFileTypes: true })
         .filter((entry) => entry.isFile())

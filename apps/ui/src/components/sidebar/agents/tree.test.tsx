@@ -86,6 +86,34 @@ const toastApi = { show: vi.fn(), copied: vi.fn(), error: vi.fn() };
 afterEach(cleanup);
 
 describe("sidebar subagent interaction", () => {
+  it("keeps a meaningful name ahead of a long description", () => {
+    const longDescription =
+      "Investigate multiple accounts implementation details and report the affected flows";
+    const namedChild: SidebarAgentNode = {
+      ...child,
+      row: {
+        ...child.row,
+        title: "Fix pr27",
+        description: longDescription,
+      } as SidebarAgentNode["row"],
+    };
+    // eslint-disable-next-line eslint-plugin-react-perf/jsx-no-new-object-as-prop
+    const namedParent = { ...parent, children: [namedChild] };
+    render(
+      <I18nextProvider i18n={i18n}>
+        <SidebarAgentBranch
+          node={namedParent}
+          discovery={new Map()}
+          connectionStatus="online"
+          selectedTarget={null}
+          onOpen={vi.fn()}
+        />
+      </I18nextProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Fix pr27" })).toBeTruthy();
+    expect(screen.getByText(longDescription)).toHaveAttribute("numberOfLines", "1");
+  });
+
   it("opens the child's own runtime and preserves the tree when collapsing and reopening", () => {
     const onOpen = vi.fn();
     render(

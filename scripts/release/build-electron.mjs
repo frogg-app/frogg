@@ -8,7 +8,7 @@ import { writeElectronChecksums } from "./electron-checksums.mjs";
 import { writeElectronInstallerZips } from "./electron-installer-zip.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
-const desktop = path.join(root, "apps/desktop-electron");
+const desktop = path.join(root, "apps/desktop");
 const { values } = parseArgs({
   options: {
     target: {
@@ -37,7 +37,7 @@ function run(script, args = []) {
   if (result.status !== 0) throw new Error(`${script} failed (${result.status})`);
 }
 run("build:ui");
-run("build:main", ["--workspace=@frogg/desktop-electron"]);
+run("build:main", ["--workspace=@frogg/desktop"]);
 const builder = path.join(root, "node_modules/electron-builder/cli.js");
 const platformFlag = platform === "darwin" ? "--mac" : `--${platform}`;
 rmSync(path.join(desktop, "release"), { recursive: true, force: true });

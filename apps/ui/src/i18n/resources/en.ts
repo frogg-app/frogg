@@ -2073,6 +2073,8 @@ export const en = {
     hostUnavailable: "Download host is unavailable.",
     cancelled: "Download was cancelled.",
     failed: "Failed to download file.",
+    browserUnavailable: "Downloads are unavailable in this browser.",
+    noDirectory: "No writable download directory is available.",
     shareFile: "Share file",
     shareFileNamed: "Share {{fileName}}",
   },
@@ -3073,6 +3075,28 @@ export const en = {
     providers: {
       title: "Providers",
       addProvider: "Add provider",
+      claudeAccount: {
+        add: "Add Claude account",
+        title: "Add Claude account",
+        description:
+          "Create a separate Claude account profile. Credentials and settings are never shared.",
+        label: "Account label",
+        placeholder: "e.g. Work",
+        required: "Enter an account label",
+        sharedContent: "Share content from your main Claude account",
+        saving: "Saving...",
+        save: "Save account",
+        content: {
+          commands: "Commands",
+          hooks: "Hooks",
+          plans: "Plans",
+          plugins: "Plugins",
+          projects: "Projects",
+          skills: "Skills",
+          todos: "Todos",
+        },
+      },
+
       providerDetails: "{{name}} provider details",
       enableProvider: "Enable {{name}}",
       unavailable: "Connect to this host to see providers",

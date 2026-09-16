@@ -22,7 +22,7 @@ function fixture(t) {
 
 test("local Windows builds refresh the UI before packaging and collect from the cross-build target", (t) => {
   const root = fixture(t);
-  const release = path.join(root, "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release");
+  const release = path.join(root, "apps/desktop-tauri/src-tauri/target/x86_64-pc-windows-msvc/release");
   mkdirSync(path.join(release, "bundle"), { recursive: true });
   writeFileSync(path.join(release, "bundle", "old-installer.exe"), "old");
   writeFileSync(path.join(release, "compiler-cache"), "cached");
@@ -51,7 +51,7 @@ test("local Windows builds refresh the UI before packaging and collect from the 
   const collect = calls.at(-1);
   assert.equal(
     collect.args[collect.args.indexOf("--release-dir") + 1],
-    "apps/desktop/src-tauri/target/x86_64-pc-windows-msvc/release",
+    "apps/desktop-tauri/src-tauri/target/x86_64-pc-windows-msvc/release",
   );
   assert.equal(collect.args.at(-1), outputDir);
   assert.equal(JSON.parse(readFileSync(path.join(outputDir, "timings.json"))).status, "success");

@@ -92,7 +92,7 @@ for (const workspacePath of workspacePaths) {
 
 // The Tauri shell keeps its version in two Rust-side files that npm never
 // touches. Root package.json stays the source of truth for both.
-const tauriConfigPath = path.join(rootDir, "apps/desktop/src-tauri/tauri.conf.json");
+const tauriConfigPath = path.join(rootDir, "apps/desktop-tauri/src-tauri/tauri.conf.json");
 if (existsSync(tauriConfigPath)) {
   const tauriConfig = JSON.parse(readFileSync(tauriConfigPath, "utf8"));
   if (tauriConfig.version !== rootVersion) {
@@ -103,7 +103,7 @@ if (existsSync(tauriConfigPath)) {
 }
 
 for (const [directory, name] of [
-  ["apps/desktop/src-tauri", "frogg"],
+  ["apps/desktop-tauri/src-tauri", "frogg"],
   ["apps/daemon-rs", "frogg-daemon"],
 ]) {
   const cargoManifestPath = path.join(rootDir, directory, "Cargo.toml");

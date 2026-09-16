@@ -102,7 +102,7 @@ export const useDownloadStore = create<DownloadState>()((set, get) => ({
       );
 
       if (isWeb) {
-        triggerBrowserDownload(downloadUrl, resolvedFileName);
+        await triggerBrowserDownload(downloadUrl, resolvedFileName);
         get().completeDownload(id);
         return;
       }
@@ -299,27 +299,36 @@ function buildDownloadUrl(
   return url.toString();
 }
 
-function triggerBrowserDownload(url: string, fileName: string) {
+async function triggerBrowserDownload(url: string, fileName: string): Promise<void> {
   if (typeof document === "undefined") {
     if (typeof window !== "undefined") {
-      void openExternalUrl(url);
+      await openExternalUrl(url);
+      return;
     }
-    return;
+    throw new Error(i18n.t("downloads.browserUnavailable"));
   }
 
+  // Synthetic anchors cannot report HTTP failures such as expired tokens.
+  const response = await fetch(url, { credentials: "include" });
+  if (!response.ok) {
+    throw new Error(`${i18n.t("downloads.failed")} (${response.status})`);
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = url;
-  link.download = fileName;
+  link.href = objectUrl;
+  link.download = sanitizeDownloadFileName(fileName);
   link.rel = "noopener";
   document.body.appendChild(link);
   link.click();
   link.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 function resolveDownloadTargetFile(fileName: string): FSFile {
   const directory = Paths.cache ?? Paths.document;
   if (!directory) {
-    throw new Error("No download directory available.");
+    throw new Error(i18n.t("downloads.noDirectory"));
   }
 
   const safeName = sanitizeDownloadFileName(fileName);

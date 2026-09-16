@@ -14,7 +14,7 @@ import {
 // is copied under the renamed name plus `.sig`.
 //
 // Usage: node scripts/release/collect-desktop-bundles.mjs --platform linux|windows|macos
-//        --arch x86_64|aarch64 [--release-dir apps/desktop/src-tauri/target/release]
+//        --arch x86_64|aarch64 [--release-dir apps/desktop-tauri/src-tauri/target/release]
 //        [--out-dir release-assets] [--version 1.2.3]
 
 import { loadBrand } from "../dev/branding/load.cjs";
@@ -187,7 +187,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       platform: { type: "string" },
       arch: { type: "string" },
       version: { type: "string" },
-      "release-dir": { type: "string", default: "apps/desktop/src-tauri/target/release" },
+      "release-dir": { type: "string", default: "apps/desktop-tauri/src-tauri/target/release" },
       "out-dir": { type: "string", default: "release-assets" },
     },
   });
