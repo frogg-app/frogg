@@ -21,7 +21,10 @@ export function WorkspaceContextPills({
   cwd: string;
 }) {
   const workspace = useWorkspaceFields(serverId, workspaceId, (value) => ({
-    directory: value.workspaceDirectory,
+    directory:
+      value.workspaceKind === "worktree" || value.worktreeSlug
+        ? value.projectRootPath
+        : value.workspaceDirectory,
     branch: value.gitRuntime?.currentBranch ?? null,
   }));
   const directory = shortenPath(workspace?.directory || cwd);
