@@ -8328,6 +8328,8 @@ pub struct CheckoutMergeResponsePayload {
     pub cwd: String,
     pub success: bool,
     pub error: serde_json::Value,
+    #[serde(rename = "targetCwd", skip_serializing_if = "Option::is_none")]
+    pub target_cwd: Option<String>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

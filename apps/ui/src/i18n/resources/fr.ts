@@ -781,6 +781,12 @@ export const fr: TranslationResources = {
           label: "Fusionner localement",
           pending: "Fusion...",
           success: "Fusionné",
+
+          moved: "Merged and moved to the target workspace",
+          reused: "Merged; opened the existing target workspace",
+          partial: "Merged, but the source workspace could not be archived",
+          conflict: "Merge conflict; the source workspace was kept",
+          failed: "Merge failed; the source workspace was kept",
         },
         mergeFromBase: {
           label: "Mise à jour de{{baseRef}}",

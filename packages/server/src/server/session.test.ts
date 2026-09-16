@@ -2171,6 +2171,7 @@ describe("session checkout merge handling", () => {
         cwd: "/tmp/request-worktree",
         success: true,
         error: null,
+        targetCwd: "/tmp/base-worktree",
         requestId: "request-1",
       },
     });

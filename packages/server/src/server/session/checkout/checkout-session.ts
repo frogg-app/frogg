@@ -789,6 +789,7 @@ export class CheckoutSession {
           cwd,
           success: true,
           error: null,
+          targetCwd: mutatedCwd,
           requestId,
         },
       });

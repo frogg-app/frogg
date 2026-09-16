@@ -776,6 +776,12 @@ export const ko: TranslationResources = {
           label: "로컬에서 병합",
           pending: "병합하는 중...",
           success: "병합됨",
+
+          moved: "Merged and moved to the target workspace",
+          reused: "Merged; opened the existing target workspace",
+          partial: "Merged, but the source workspace could not be archived",
+          conflict: "Merge conflict; the source workspace was kept",
+          failed: "Merge failed; the source workspace was kept",
         },
         mergeFromBase: {
           label: "{{baseRef}}에서 업데이트",

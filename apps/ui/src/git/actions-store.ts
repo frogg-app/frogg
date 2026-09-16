@@ -119,7 +119,11 @@ interface CheckoutGitActionsStoreState {
     method: CheckoutPrMergeMethod;
   }) => Promise<void>;
   disablePrAutoMerge: (params: { serverId: string; cwd: string }) => Promise<void>;
-  mergeBranch: (params: { serverId: string; cwd: string; baseRef: string }) => Promise<void>;
+  mergeBranch: (params: {
+    serverId: string;
+    cwd: string;
+    baseRef: string;
+  }) => Promise<string | null>;
   mergeFromBase: (params: { serverId: string; cwd: string; baseRef: string }) => Promise<void>;
   discardChanges: (params: { serverId: string; cwd: string; paths: string[] }) => Promise<void>;
 }
@@ -336,6 +340,7 @@ export const useCheckoutGitActionsStore = create<CheckoutGitActionsStoreState>()
   },
 
   mergeBranch: async ({ serverId, cwd, baseRef }) => {
+    let targetCwd: string | null = null;
     await runCheckoutAction({
       serverId,
       cwd,
@@ -350,8 +355,10 @@ export const useCheckoutGitActionsStore = create<CheckoutGitActionsStoreState>()
         if (payload.error) {
           throw new Error(payload.error.message);
         }
+        targetCwd = payload.targetCwd ?? null;
       },
     });
+    return targetCwd;
   },
 
   mergeFromBase: async ({ serverId, cwd, baseRef }) => {
