@@ -17,6 +17,16 @@ import { loadBrand } from "../dev/branding/load.cjs";
 const brand = loadBrand();
 const repo = path.resolve(import.meta.dirname, "../..");
 
+test("installer service launch paths use the generated environment namespace", () => {
+  const source = readFileSync(path.join(repo, "deploy/install.sh"), "utf8");
+  for (const suffix of ["LISTEN", "WEB_UI_ENABLED", "INSTALL_DIR"]) {
+    assert.match(source, new RegExp(`\\$\\{BRAND_ENV_PREFIX\\}_${suffix}`));
+  }
+  assert.match(source, /Environment=\$\{BRAND_ENV_PREFIX\}_EXECUTION_SERVICE=1/);
+  assert.doesNotMatch(source, /Environment=FROGG_(?:LISTEN|WEB_UI_ENABLED|EXECUTION_SERVICE)/);
+  assert.doesNotMatch(source, /<key>FROGG_(?:LISTEN|WEB_UI_ENABLED|INSTALL_DIR)<\/key>/);
+});
+
 test(
   "generated installer owns only its commands and rejects a foreign uninstall",
   { skip: process.platform === "win32" },

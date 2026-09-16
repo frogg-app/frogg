@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Write daemon service environment settings using each brand's environment namespace, so custom
+  installations retain their configured listen address, web UI and execution-service mode.
+
 ## 1.3.0 — 2026-09-15
 
 - Stop automatic project registration when agents, workspaces, terminals or scripts use a new

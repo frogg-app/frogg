@@ -288,7 +288,7 @@ write_systemd_unit() {
   stop_command=
   if [ "${FROGG_EXECUTION_SERVICE:-}" = 1 ]; then
     kill_mode=process
-    execution_env=Environment=FROGG_EXECUTION_SERVICE=1
+    execution_env=Environment=${BRAND_ENV_PREFIX}_EXECUTION_SERVICE=1
     stop_command="ExecStop=$(systemd_quote "${FROGG_INSTALL_DIR}/current/bin/${BRAND_CLI}") daemon stop --force"
   fi
   unit_dir="${XDG_CONFIG_HOME:-${HOME}/.config}/systemd/user"
@@ -304,8 +304,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 ExecStart=$(systemd_quote "${FROGG_INSTALL_DIR}/current/bin/${BRAND_CLI}") daemon start --foreground
-Environment=FROGG_LISTEN=${FROGG_LISTEN}
-Environment=FROGG_WEB_UI_ENABLED=true
+Environment=${BRAND_ENV_PREFIX}_LISTEN=${FROGG_LISTEN}
+Environment=${BRAND_ENV_PREFIX}_WEB_UI_ENABLED=true
 Environment=$(systemd_quote "PATH=${FROGG_BIN_DIR}:${PATH}")
 Environment=$(systemd_quote "${BRAND_ENV_PREFIX}_INSTALL_DIR=${FROGG_INSTALL_DIR}")
 ${FROGG_HOME:+Environment=$(systemd_quote "${BRAND_ENV_PREFIX}_HOME=${FROGG_HOME}")}
@@ -348,10 +348,10 @@ start_detached_daemon() {
   log_dir="${FROGG_INSTALL_DIR}/logs"
   mkdir -p "${log_dir}"
   if [ -n "${FROGG_HOME}" ]; then
-    nohup env FROGG_LISTEN="${FROGG_LISTEN}" FROGG_WEB_UI_ENABLED=true FROGG_INSTALL_DIR="${FROGG_INSTALL_DIR}" "${BRAND_ENV_PREFIX}_HOME=${FROGG_HOME}" \
+    nohup env "${BRAND_ENV_PREFIX}_LISTEN=${FROGG_LISTEN}" "${BRAND_ENV_PREFIX}_WEB_UI_ENABLED=true" "${BRAND_ENV_PREFIX}_INSTALL_DIR=${FROGG_INSTALL_DIR}" "${BRAND_ENV_PREFIX}_HOME=${FROGG_HOME}" \
       "${FROGG_INSTALL_DIR}/current/bin/${BRAND_CLI}" daemon start --foreground >> "${log_dir}/fallback-daemon.log" 2>&1 < /dev/null &
   else
-    nohup env FROGG_LISTEN="${FROGG_LISTEN}" FROGG_WEB_UI_ENABLED=true FROGG_INSTALL_DIR="${FROGG_INSTALL_DIR}" \
+    nohup env "${BRAND_ENV_PREFIX}_LISTEN=${FROGG_LISTEN}" "${BRAND_ENV_PREFIX}_WEB_UI_ENABLED=true" "${BRAND_ENV_PREFIX}_INSTALL_DIR=${FROGG_INSTALL_DIR}" \
       "${FROGG_INSTALL_DIR}/current/bin/${BRAND_CLI}" daemon start --foreground >> "${log_dir}/fallback-daemon.log" 2>&1 < /dev/null &
   fi
   log "started the daemon for this login; its fallback log is ${log_dir}/fallback-daemon.log"
@@ -377,10 +377,10 @@ write_launchd_plist() {
   </array>
   <key>EnvironmentVariables</key>
   <dict>
-    <key>FROGG_LISTEN</key><string>${FROGG_LISTEN}</string>
-    <key>FROGG_WEB_UI_ENABLED</key><string>true</string>
+    <key>${BRAND_ENV_PREFIX}_LISTEN</key><string>${FROGG_LISTEN}</string>
+    <key>${BRAND_ENV_PREFIX}_WEB_UI_ENABLED</key><string>true</string>
     <key>PATH</key><string>$(xml "${FROGG_BIN_DIR}:${PATH}")</string>
-    <key>FROGG_INSTALL_DIR</key><string>$(xml "${FROGG_INSTALL_DIR}")</string>
+    <key>${BRAND_ENV_PREFIX}_INSTALL_DIR</key><string>$(xml "${FROGG_INSTALL_DIR}")</string>
 ${FROGG_HOME:+    <key>${BRAND_ENV_PREFIX}_HOME</key><string>$(xml "${FROGG_HOME}")</string>}
   </dict>
   <key>RunAtLoad</key><true/>
