@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.3.2 — 2026-09-16
+
+- Report the live authenticated client count in `frogg daemon claim-status --json` under
+  `daemon.connectedClients`, and keep the live daemon pairing decision only under `daemon`.
+
 ## 1.3.1 — 2026-09-16
 
 - Write daemon service environment settings using each brand's environment namespace, so custom
