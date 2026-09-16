@@ -38,11 +38,9 @@ export interface ClaimStatusResult {
   passwordConfigured: boolean;
   /** daemon.auth.trustLan: private-network clients connect without pairing or a password. */
   lanTrusted: boolean;
-  /** True when a client beyond loopback (beyond the LAN while `lanTrusted`) must pair or use a password. */
-  pairingRequired: boolean;
   principals: ClaimPrincipalSummary[];
   daemon:
-    | { reachable: true; listen: string | null; pairingRequired: boolean }
+    | { reachable: true; listen: string | null; pairingRequired: boolean; connectedClients: number }
     | { reachable: false };
 }
 
@@ -52,13 +50,6 @@ export interface ResetClaimResult {
   principalsPath: string;
   removedPrincipals: number;
   message: string;
-}
-
-function describePairingNeeded(data: ClaimStatusResult): string {
-  if (!data.pairingRequired) return "no";
-  return data.lanTrusted
-    ? "yes, for clients beyond the private network"
-    : "yes, for clients beyond loopback";
 }
 
 const claimStatusSchema: OutputSchema<ClaimStatusResult> = {
@@ -76,11 +67,10 @@ const claimStatusSchema: OutputSchema<ClaimStatusResult> = {
       `Claimed:        ${data.claimed ? `yes (${data.claimedAt ?? "unknown time"})` : "no"}`,
       `Password:       ${data.passwordConfigured ? "configured" : "not configured"}`,
       `LAN trusted:    ${data.lanTrusted ? `yes (${brand.cliName} daemon trust-lan off to require pairing on the LAN)` : "no"}`,
-      `Pairing needed: ${describePairingNeeded(data)}`,
       `Principals:     ${data.principalsPath}`,
       `Daemon:         ${
         data.daemon.reachable
-          ? `reachable at ${data.daemon.listen ?? "?"} (pairingRequired=${data.daemon.pairingRequired})`
+          ? `reachable at ${data.daemon.listen ?? "?"} (pairingRequired=${data.daemon.pairingRequired}, connectedClients=${data.daemon.connectedClients})`
           : "not reachable over HTTP"
       }`,
     ];
@@ -111,7 +101,12 @@ async function probeDaemonIdentity(listen: string): Promise<ClaimStatusResult["d
   if (!base) return { reachable: false };
   try {
     const identity = await daemonHttpJson<DaemonIdentity>({ base, path: "/api/identity" });
-    return { reachable: true, listen: identity.listen, pairingRequired: identity.pairingRequired };
+    return {
+      reachable: true,
+      listen: identity.listen,
+      pairingRequired: identity.pairingRequired,
+      connectedClients: identity.connectedClients,
+    };
   } catch {
     return { reachable: false };
   }
@@ -133,7 +128,6 @@ export async function describeClaimStatus(home?: string): Promise<ClaimStatusRes
     claimedAt: file.claimedAt ?? null,
     passwordConfigured,
     lanTrusted,
-    pairingRequired: !claimed && !passwordConfigured,
     principals: file.principals.map((principal) => ({
       id: principal.id,
       label: principal.label,

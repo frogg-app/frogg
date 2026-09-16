@@ -938,6 +938,7 @@ export async function createFroggDaemon(
       version: daemonVersion,
       hostname: getHostname,
       listen: () => formatListenTarget(publicListenTarget()),
+      connectedClients: () => wsServer?.getConnectedClientCount() ?? 0,
       isClaimed: () => claimStore.isClaimed() || Boolean(config.auth?.password),
       trustLan: () => authConfig.access?.trustLan() ?? DEFAULT_TRUST_LAN,
       isTrustedClient: (req) => authConfig.access?.isTrustedClient(req) ?? false,

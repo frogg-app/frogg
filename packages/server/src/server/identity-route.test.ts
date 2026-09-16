@@ -46,6 +46,7 @@ describe("GET /api/identity", () => {
       hostname: () => "devbox",
       listen: () => "0.0.0.0:9999",
       isClaimed: () => claimed,
+      connectedClients: () => 2,
       trustLan: () => true,
       isTrustedClient: () => trusted,
     };
@@ -56,6 +57,7 @@ describe("GET /api/identity", () => {
       hostname: "devbox",
       version: "1.2.3",
       listen: "0.0.0.0:9999",
+      connectedClients: 2,
       pairingRequired: true,
       lanTrusted: true,
     });
@@ -77,6 +79,7 @@ describe("GET /api/identity", () => {
         hostname: () => "devbox",
         listen: () => null,
         isClaimed: () => false,
+        connectedClients: () => 0,
         trustLan: () => false,
         isTrustedClient: (req) => req.socket.remoteAddress === "127.0.0.1",
       }),
@@ -94,6 +97,7 @@ describe("GET /api/identity", () => {
       hostname: "devbox",
       version: "0.0.0",
       listen: null,
+      connectedClients: 0,
       pairingRequired: false,
       lanTrusted: false,
     });

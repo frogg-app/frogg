@@ -119,9 +119,15 @@ frogg auth claim-status
 Claimed:        yes
 Password:       not configured
 LAN trusted:    yes (frogg daemon trust-lan off to require pairing on the LAN)
-Pairing needed: yes, for clients beyond the private network
 Principals:     /home/you/.frogg/principals.json
+Daemon:         reachable at 0.0.0.0:9999 (pairingRequired=false, connectedClients=1)
 ```
+
+`Claimed` records saved device credentials; it does not show whether anyone is using the
+daemon now. For automation, use `frogg daemon claim-status --json` and read
+`daemon.connectedClients` for live authenticated WebSocket sessions and
+`daemon.pairingRequired` for the daemon's current access decision. The top-level claim fields
+describe persisted configuration only.
 
 There is no per-device revoke. To remove access, forget **all** devices and pair the ones
 you keep again:
