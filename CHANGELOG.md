@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.3.4 — 2026-09-16
+
+- Show the workspace directory and checked-out branch in separate composer context pills.
+  For Frogg-managed worktrees, the directory pill now identifies the source project checkout,
+  rather than Frogg's internal worktree directory.
+
 ## 1.3.3 — 2026-09-16
 
 - Show the active workspace directory and checked-out branch continuously beside the composer.
