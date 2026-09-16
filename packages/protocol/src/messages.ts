@@ -5354,6 +5354,7 @@ export const CheckoutMergeResponseSchema = z.object({
     cwd: z.string(),
     success: z.boolean(),
     error: CheckoutErrorSchema.nullable(),
+    targetCwd: z.string().optional(),
     requestId: z.string(),
   }),
 });

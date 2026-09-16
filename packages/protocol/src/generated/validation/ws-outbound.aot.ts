@@ -11255,6 +11255,8 @@ if(__o_4261["error"]!==null){if(typeof __o_4261["error"]!=="object"||__o_4261["e
 if(typeof __o_4262["message"]!=="string"){_e.push({code:"invalid_type",expected:"string",input:__o_4262["message"],path:["message"].concat("payload").concat("error").concat("message")});}
 }
 }
+if(__o_4261["targetCwd"]!==undefined){if(typeof __o_4261["targetCwd"]!=="string"){_e.push({code:"invalid_type",expected:"string",input:__o_4261["targetCwd"],path:["message"].concat("payload").concat("targetCwd")});}
+}
 if(typeof __o_4261["requestId"]!=="string"){_e.push({code:"invalid_type",expected:"string",input:__o_4261["requestId"],path:["message"].concat("payload").concat("requestId")});}
 }
 }

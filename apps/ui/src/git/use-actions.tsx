@@ -22,9 +22,12 @@ import type { CheckoutPrMergeMethod } from "@frogg/protocol/messages";
 import { openExternalUrl } from "@/utils/open-external-url";
 import { useToast } from "@/contexts/toast-context";
 import { useSessionStore, type WorkspaceDescriptor } from "@/stores/session-store";
+import { archiveWorkspaceOptimistically } from "@/workspace/workspace-archive";
+import { getHostRuntimeStore } from "@/runtime/host-runtime";
+import { type ActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
 import {
+  navigateToWorkspace,
   useActiveWorkspaceSelection,
-  type ActiveWorkspaceSelection,
 } from "@/stores/navigation-active-workspace-store";
 import { redirectIfArchivingActiveWorkspace } from "@/utils/sidebar-workspace-archive-redirect";
 import { type WorktreeArchiveWarningLabels } from "@/git/worktree-archive-warning";
@@ -597,9 +600,41 @@ export function useGitActions({ serverId, cwd, icons }: UseGitActionsInput): Use
     }
     void persistShipDefault("merge");
     void runMergeBranch({ serverId, cwd, baseRef })
-      .then(() => {
-        setPostShipArchiveSuggested(true);
-        toastActionSuccess(t("workspace.git.actions.mergeBranch.success"));
+      .then(async (targetCwd) => {
+        if (targetCwd && targetCwd !== cwd) {
+          const target = useSessionStore.getState().sessions[serverId]?.workspaces;
+          const targetWorkspace = target
+            ? [...target.values()].find((workspace) => workspace.workspaceDirectory === targetCwd)
+            : undefined;
+          if (targetWorkspace) {
+            navigateToWorkspace({ serverId, workspaceId: targetWorkspace.id });
+            const source = [...target.values()].find(
+              (workspace) => workspace.workspaceDirectory === cwd,
+            );
+            if (source && !hasUncommittedChanges && source.id !== targetWorkspace.id) {
+              try {
+                await archiveWorkspaceOptimistically({
+                  client: (() => {
+                    const client = getHostRuntimeStore().getClient(serverId);
+                    if (!client) throw new Error("Host unavailable");
+                    return client;
+                  })(),
+                  workspace: { serverId, workspaceId: source.id },
+                });
+                toastActionSuccess(t("workspace.git.actions.mergeBranch.moved"));
+              } catch {
+                toastActionSuccess(t("workspace.git.actions.mergeBranch.partial"));
+              }
+            } else {
+              toastActionSuccess(t("workspace.git.actions.mergeBranch.reused"));
+            }
+          } else {
+            toastActionSuccess(t("workspace.git.actions.mergeBranch.success"));
+          }
+        } else {
+          setPostShipArchiveSuggested(true);
+          toastActionSuccess(t("workspace.git.actions.mergeBranch.success"));
+        }
         return;
       })
       .catch((err) => {
@@ -610,6 +645,7 @@ export function useGitActions({ serverId, cwd, icons }: UseGitActionsInput): Use
     cwd,
     persistShipDefault,
     runMergeBranch,
+    hasUncommittedChanges,
     serverId,
     t,
     toast,

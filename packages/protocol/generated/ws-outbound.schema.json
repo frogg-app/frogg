@@ -39446,6 +39446,9 @@
                         }
                       ]
                     },
+                    "targetCwd": {
+                      "type": "string"
+                    },
                     "requestId": {
                       "type": "string"
                     }
