@@ -1,6 +1,6 @@
 import { memo, useCallback, type ReactElement } from "react";
 import { WorkspaceDiffStatPill } from "@/composer/diff-stat-pill";
-import { WorkspaceContextPill } from "@/composer/workspace-context-pill";
+import { WorkspaceContextPills } from "@/composer/workspace-context-pill";
 import { AgentTaskList } from "@/composer/task-list";
 import { ComposerTrackBar } from "@/composer/tracks";
 import { supportsDesktopPaneSplits, useIsCompactFormFactor } from "@/constants/layout";
@@ -108,7 +108,7 @@ export const AgentTracks = memo(function AgentTracks({
 
   return (
     <ComposerTrackBar>
-      <WorkspaceContextPill serverId={serverId} workspaceId={workspaceId} cwd={cwd} />
+      <WorkspaceContextPills serverId={serverId} workspaceId={workspaceId} cwd={cwd} />
       <AgentTaskList tasks={tasks} />
       <SubagentsTrack
         rows={subagentRows}

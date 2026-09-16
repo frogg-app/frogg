@@ -11,7 +11,7 @@ const ThemedGitBranch = withUnistyles(GitBranch);
 const iconColor = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
 /** Persistent, read-only identity for the checkout the composer will use. */
-export function WorkspaceContextPill({
+export function WorkspaceContextPills({
   serverId,
   workspaceId,
   cwd,
@@ -28,25 +28,30 @@ export function WorkspaceContextPill({
   const branch = normalizeBranch(workspace?.branch) ?? "—";
 
   return (
-    <View
-      accessible
-      accessibilityLabel={[directory, branch].filter(Boolean).join(", ")}
-      style={[composerPillStyles.body, styles.body]}
-      testID="composer-workspace-context"
-    >
-      <View style={styles.segment}>
+    <>
+      <View
+        accessible
+        accessibilityLabel={directory}
+        style={[composerPillStyles.body, styles.directoryPill]}
+        testID="composer-workspace-directory"
+      >
         <ThemedFolder size={14} uniProps={iconColor} />
         <Text numberOfLines={1} style={composerPillStyles.label}>
           {directory}
         </Text>
       </View>
-      <View style={styles.segment}>
+      <View
+        accessible
+        accessibilityLabel={branch}
+        style={composerPillStyles.body}
+        testID="composer-workspace-branch"
+      >
         <ThemedGitBranch size={14} uniProps={iconColor} />
         <Text numberOfLines={1} style={composerPillStyles.label}>
           {branch}
         </Text>
       </View>
-    </View>
+    </>
   );
 }
 
@@ -55,17 +60,10 @@ function normalizeBranch(value: string | null | undefined): string | null {
   return branch && branch !== "HEAD" ? branch : null;
 }
 
-const styles = StyleSheet.create((theme) => ({
-  body: {
+const styles = StyleSheet.create({
+  directoryPill: {
     flexShrink: 1,
     minWidth: 0,
     maxWidth: "100%",
   },
-  segment: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexShrink: 1,
-    gap: theme.spacing[1],
-    minWidth: 0,
-  },
-}));
+});
