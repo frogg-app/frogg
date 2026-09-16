@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.1 — 2026-09-16
+
 - Write daemon service environment settings using each brand's environment namespace, so custom
   installations retain their configured listen address, web UI and execution-service mode.
 - Allow a branded Electron renderer's `<brand-scheme>://app` WebSocket origin while retaining
