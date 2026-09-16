@@ -833,23 +833,10 @@ export async function createFroggDaemon(
   }
 
   // CORS - allow same-origin + configured origins
-  const fixedAllowedOrigins = [
-    // Frogg's Electron renderer used the custom frogg:// scheme.
-    "frogg://app",
-    // The Frogg Tauri shell: WebKit reports `tauri://localhost`, WebView2 (Windows)
-    // `http://tauri.localhost` (or https on newer builds).
-    "tauri://localhost",
-    "http://tauri.localhost",
-    "https://tauri.localhost",
-    // For TCP, add localhost variants
-    ...(listenTarget.type === "tcp"
-      ? [
-          `http://${listenTarget.host}:${listenTarget.port}`,
-          `http://localhost:${listenTarget.port}`,
-          `http://127.0.0.1:${listenTarget.port}`,
-        ]
-      : []),
-  ];
+  const fixedAllowedOrigins = createFixedAllowedOrigins({
+    scheme: brand.scheme,
+    listenTarget,
+  });
   const allowedOrigins = new Set([...config.corsAllowedOrigins, ...fixedAllowedOrigins]);
   daemonConfigStore.onFieldChange("cors.allowedOrigins", (value) => {
     allowedOrigins.clear();
@@ -2133,6 +2120,30 @@ export async function createFroggDaemon(
     stop,
     getListenTarget: () => boundListenTarget,
   };
+}
+
+export function createFixedAllowedOrigins(input: {
+  scheme: string;
+  listenTarget: ListenTarget;
+}): string[] {
+  return [
+    // The Electron renderer is served from the brand's own scheme.
+    `${input.scheme}://app`,
+    // Keep the upstream scheme so a stock client can connect to a branded daemon.
+    "frogg://app",
+    // The Frogg Tauri shell: WebKit reports `tauri://localhost`, WebView2 (Windows)
+    // `http://tauri.localhost` (or https on newer builds).
+    "tauri://localhost",
+    "http://tauri.localhost",
+    "https://tauri.localhost",
+    ...(input.listenTarget.type === "tcp"
+      ? [
+          `http://${input.listenTarget.host}:${input.listenTarget.port}`,
+          `http://localhost:${input.listenTarget.port}`,
+          `http://127.0.0.1:${input.listenTarget.port}`,
+        ]
+      : []),
+  ];
 }
 
 async function closeAllAgents(logger: Logger, agentManager: AgentManager): Promise<void> {

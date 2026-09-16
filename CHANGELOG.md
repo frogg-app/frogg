@@ -4,6 +4,8 @@
 
 - Write daemon service environment settings using each brand's environment namespace, so custom
   installations retain their configured listen address, web UI and execution-service mode.
+- Allow a branded Electron renderer's `<brand-scheme>://app` WebSocket origin while retaining
+  stock `frogg://app` compatibility and the existing restrictive origin allowlist.
 
 ## 1.3.0 — 2026-09-15
 
