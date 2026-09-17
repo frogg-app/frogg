@@ -78,6 +78,15 @@ pub fn parse_version(text: &str) -> Option<Version> {
 
 /// The newest release worth offering, or `None` when the running version is
 /// the latest for this channel.
+///
+/// NOTE: `version > current` and `Channel::allows` use plain semver ordering,
+/// which ranks a downstream rebuild tag (`1.3.5-acme.2`) *below* the release it
+/// rebuilds and classifies it as a prerelease. The TypeScript updaters share a
+/// corrected implementation in `packages/protocol/src/release-version.ts`
+/// (rebuild suffixes sort above the release; only known upstream channel names
+/// such as `beta` sort below it). This crate is not built or shipped by any
+/// workflow in `.github/workflows`, so the discrepancy is inert; port that rule
+/// here before this path goes live again.
 pub fn select_release<'a>(
     releases: &'a [Release],
     current: &Version,

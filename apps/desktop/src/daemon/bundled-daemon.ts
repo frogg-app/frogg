@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { app } from "electron";
 import { brandIdentity } from "@frogg/branding";
+import { isSameUpstreamRelease } from "@frogg/protocol/release-version";
 import { createBundledDaemonService } from "./bundle-service.js";
 import {
   resolveDaemonBundleRoot,
@@ -31,7 +32,11 @@ async function inspect(): Promise<{ version: string; path: string }> {
       throw new Error("Bundled daemon belongs to another product.");
     if (manifest.platform !== platform || manifest.arch !== process.arch)
       throw new Error("Bundled daemon does not match this platform and architecture.");
-    if (manifest.version !== version)
+    // The bundle manifest records the daemon's *full* version, which for a
+    // downstream rebuild carries a suffix (`1.3.5-acme.2`) the Electron app's
+    // `package.json` version does not. Same upstream release is the match that
+    // matters; a strict equality here would reject a correctly paired bundle.
+    if (typeof manifest.version !== "string" || !isSameUpstreamRelease(manifest.version, version))
       throw new Error(
         "Bundled daemon version does not match this Electron app. Reinstall the app.",
       );

@@ -1,4 +1,11 @@
-import { gte, rcompare, valid } from "semver";
+// Release ordering comes from the shared module, not npm `semver`: a downstream
+// rebuild tag (`1.3.5-acme.2`) is formally a prerelease and plain semver would rank
+// it below `1.3.5`, so an update between two rebuilds reads as "up to date".
+import {
+  compareVersionStrings,
+  isStableVersion,
+  parseVersion,
+} from "@frogg/protocol/release-version";
 import {
   fetchReleaseDescriptor,
   parseReleaseDescriptor,
@@ -78,16 +85,18 @@ async function resolveLegacyFeed(input: {
       if (!release || typeof release !== "object") return [];
       const value = release as Record<string, unknown>;
       if (value.draft !== false || typeof value.tag_name !== "string") return [];
-      const version = valid(value.tag_name);
+      const version = parseVersion(value.tag_name)?.raw;
       if (!version) return [];
       return [{ tag: value.tag_name, version }];
     })
-    .sort((a, b) => rcompare(a.version, b.version));
+    .sort((a, b) => -compareVersionStrings(a.version, b.version));
   const release = candidates[0];
   if (!release) throw new Error("No published desktop release is available.");
   return {
     url: `${input.releaseBase!.replace(/\/$/, "")}/download/${encodeURIComponent(release.tag)}`,
-    channel: release.version.includes("-") ? "electron-beta" : "electron-latest",
+    // A downstream rebuild of a stable release is still stable, so classify by
+    // the upstream prerelease channel rather than by "has a suffix".
+    channel: isStableVersion(release.version) ? "electron-latest" : "electron-beta",
   };
 }
 
@@ -111,8 +120,8 @@ export async function resolveElectronUpdateFeed(input: {
   const update = selectElectronUpdatePath(descriptor);
   if (
     !input.currentVersion ||
-    !valid(input.currentVersion) ||
-    !gte(input.currentVersion, update.minimumClientVersion)
+    !parseVersion(input.currentVersion) ||
+    compareVersionStrings(input.currentVersion, update.minimumClientVersion) < 0
   ) {
     throw new Error(
       `This release requires a manual upgrade from clients older than ${update.minimumClientVersion}.`,

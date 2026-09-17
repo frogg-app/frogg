@@ -77,6 +77,26 @@ it("graduates beta users to a newer stable release using stable metadata", async
   ).resolves.toEqual({ url: `${releaseBase}/download/v0.7.0`, channel: "electron-latest" });
 });
 
+it("offers the newest downstream rebuild of a release rather than the release itself", async () => {
+  // Plain semver ranks `0.7.0-acme.2` below `0.7.0` because the suffix is formally
+  // a prerelease, which reported a newer rebuild as "already up to date".
+  await expect(
+    resolveElectronUpdateFeed({
+      releaseBase,
+      releaseChannel: "beta",
+      fetchReleases: async () => [
+        { tag_name: "v0.7.0", draft: false },
+        { tag_name: "v0.7.0-acme.1", draft: false },
+        { tag_name: "v0.7.0-acme.2", draft: false },
+      ],
+    }),
+  ).resolves.toEqual({
+    url: `${releaseBase}/download/v0.7.0-acme.2`,
+    // A rebuild of a stable release is stable, not a beta.
+    channel: "electron-latest",
+  });
+});
+
 it("keeps stable, explicit generic feeds, and disabled distributions out of beta discovery", async () => {
   const fetchReleases = vi.fn(async () => {
     throw new Error("unexpected discovery");
