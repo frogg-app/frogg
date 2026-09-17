@@ -8,6 +8,13 @@ import { loadConfig, resolveFroggHome, spawnProcess } from "@frogg/server";
 import treeKill from "tree-kill";
 import { stopOwnedDaemonService } from "./service/stop.js";
 import { tryConnectToDaemon } from "../../utils/client.js";
+import { resolveConnectableTcpHost } from "./listen-target.js";
+
+export {
+  normalizeListenTargetForConnect,
+  resolveConnectableTcpHost,
+  resolveTcpHostFromListen,
+} from "./listen-target.js";
 
 export interface DaemonStartOptions {
   port?: string;
@@ -418,7 +425,7 @@ async function waitForDaemonUnreachable(
   state: LocalDaemonProcessState,
   timeoutMs: number,
 ): Promise<boolean> {
-  const host = resolveTcpHostFromListen(state.listen);
+  const host = resolveConnectableTcpHost(state.listen);
   if (!host) {
     return true;
   }
@@ -486,7 +493,7 @@ function createStopTimeoutError(
   timeoutMs: number,
 ): Error {
   if (!state.running) {
-    const host = resolveTcpHostFromListen(state.listen);
+    const host = resolveConnectableTcpHost(state.listen);
     return new Error(
       `Timed out waiting for daemon${
         host ? ` at ${host}` : ""
@@ -544,33 +551,6 @@ function getErrorMessage(error: unknown): string {
 
 export function resolveLocalFroggHome(home?: string): string {
   return resolveFroggHome(envWithHome(home));
-}
-
-export function resolveTcpHostFromListen(listen: string): string | null {
-  const normalized = listen.trim();
-  if (!normalized) {
-    return null;
-  }
-
-  if (
-    normalized.startsWith("/") ||
-    normalized.startsWith("unix://") ||
-    normalized.startsWith("pipe://") ||
-    normalized.startsWith("\\\\.\\pipe\\") ||
-    /^[A-Za-z]:[/\\]/.test(normalized)
-  ) {
-    return null;
-  }
-
-  if (/^\d+$/.test(normalized)) {
-    return `127.0.0.1:${normalized}`;
-  }
-
-  if (normalized.includes(":")) {
-    return normalized;
-  }
-
-  return null;
 }
 
 export function resolveLocalDaemonState(options: { home?: string } = {}): LocalDaemonState {
@@ -738,7 +718,7 @@ async function requestLifecycleShutdown(
   state: LocalDaemonProcessState,
   timeoutMs: number,
 ): Promise<LifecycleShutdownAttempt> {
-  const host = resolveTcpHostFromListen(state.listen);
+  const host = resolveConnectableTcpHost(state.listen);
   if (!host) {
     return {
       requested: false,

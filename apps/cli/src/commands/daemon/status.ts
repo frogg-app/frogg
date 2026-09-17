@@ -6,6 +6,7 @@ import { getOrCreateServerId, findExecutable, execCommand } from "@frogg/server"
 import { connectToDaemon } from "../../utils/client.js";
 import type { CommandOptions, ListResult, OutputSchema } from "../../output/index.js";
 import { resolveLocalDaemonDiagnosticState } from "./local-daemon.js";
+import { normalizeListenTargetForConnect } from "./listen-target.js";
 import { resolveNodePathFromPid } from "./runtime-toolchain.js";
 import { resolveLanTrusted } from "./trust-lan.js";
 
@@ -399,13 +400,22 @@ export function selectRelayStatus(input: {
 
 export type StatusResult = ListResult<StatusRow>;
 
+/**
+ * The address the status probe dials. The daemon reports its *bind* address,
+ * and a wildcard bind (`:::9999`, `0.0.0.0:9999`) is not a destination — dialing
+ * it verbatim reports a healthy daemon as unresponsive. Empty when unset.
+ */
+function resolveStatusProbeTarget(listen: string): string {
+  return normalizeListenTargetForConnect(listen) ?? "";
+}
+
 export async function runStatusCommand(
   options: CommandOptions,
   _command: Command,
 ): Promise<StatusResult> {
   const home = typeof options.home === "string" ? options.home : undefined;
   const state = resolveLocalDaemonDiagnosticState({ home });
-  const daemonTarget = state.listen.trim();
+  const daemonTarget = resolveStatusProbeTarget(state.listen);
 
   const owner = resolveOwnerLabel(state.pidInfo?.uid, state.pidInfo?.hostname);
   let daemonNode = await resolveDaemonNodeLabel(state);
