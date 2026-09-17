@@ -105,7 +105,7 @@
     "cross-env": "^10.1.0",
     "fflate": "^0.8.3",
     "get-port-cli": "^3.0.0",
-    "knip": "^5.82.1",
+    "knip": "^6.35.1",
     "oxfmt": "0.46.0",
     "oxlint": "1.61.0",
     "oxlint-tsgolint": "^0.22.1",
