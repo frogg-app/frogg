@@ -36,6 +36,10 @@
   wildcard address: the listen target is now normalised to a connectable host
   before probing. This also restores the `Daemon Version` field, which was blank
   whenever the probe failed.
+- Remove the unused Tauri desktop shell (`apps/desktop-tauri`), its build and
+  packaging entry points, and the Electron settings migration that imported
+  preferences from a Tauri install. The Electron app in `apps/desktop` is the
+  desktop client; no workflow built or released the Tauri shell.
 
 ## 1.3.5 — 2026-09-16
 
