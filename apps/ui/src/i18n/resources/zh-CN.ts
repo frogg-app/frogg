@@ -1054,6 +1054,8 @@ export const zhCN: TranslationResources = {
   },
   sidebar: {
     workspaceDraft: "新建工作区（草稿）",
+    // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
+    workspaceAccount: "账号：{{value}}",
     hostsMenu: {
       trigger: "主机",
       addHost: "添加主机",

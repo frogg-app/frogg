@@ -11,12 +11,15 @@ import type { SidebarAgentNode } from "./model";
 
 const EMPTY_NODES: SidebarAgentNode[] = [];
 interface WorkspaceAgentTree {
+  /** Every agent the workspace owns a row for, before the single-root collapse below. */
+  roots: SidebarAgentNode[];
   nodes: SidebarAgentNode[];
   expanded: boolean;
   singleRootKey: string | undefined;
   toggle: () => void;
 }
 const WorkspaceAgentTreeContext = createContext<WorkspaceAgentTree>({
+  roots: EMPTY_NODES,
   nodes: EMPTY_NODES,
   expanded: false,
   singleRootKey: undefined,
@@ -52,8 +55,8 @@ export function WorkspaceAgentTreeState({
   const toggle = useCallback(() => setExpanded(!expanded), [expanded]);
   const singleRootKey = roots.length === 1 ? roots[0].key : undefined;
   const value = useMemo(
-    () => ({ nodes, expanded, singleRootKey, toggle }),
-    [nodes, expanded, singleRootKey, toggle],
+    () => ({ roots, nodes, expanded, singleRootKey, toggle }),
+    [roots, nodes, expanded, singleRootKey, toggle],
   );
   return (
     <WorkspaceAgentTreeContext.Provider value={value}>

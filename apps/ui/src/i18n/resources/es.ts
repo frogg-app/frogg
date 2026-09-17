@@ -1096,6 +1096,8 @@ export const es: TranslationResources = {
   },
   sidebar: {
     workspaceDraft: "Nuevo espacio de trabajo (borrador)",
+    // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
+    workspaceAccount: "Cuenta: {{value}}",
     hostsMenu: {
       trigger: "Anfitriones",
       addHost: "Agregar anfitrión",

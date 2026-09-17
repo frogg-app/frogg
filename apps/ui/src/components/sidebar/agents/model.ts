@@ -9,6 +9,12 @@ export interface SidebarAgentNode {
   serverId: string;
   workspaceId: string;
   row: SubagentRow;
+  /**
+   * COMPAT(perAgentProviderAccounts): the account the agent's provider process runs as,
+   * three-valued exactly like the composer pill's selection — `undefined` on daemons too
+   * old to report it, which resolves to the provider's active account.
+   */
+  providerAccountId?: string | null;
   target: WorkspaceTabTarget;
   children: SidebarAgentNode[];
 }
@@ -46,6 +52,7 @@ export function buildSidebarAgentTrees(input: {
           createdAt: agent.createdAt,
         },
         target: { kind: "agent", agentId: agent.id },
+        providerAccountId: agent.providerAccountId,
         children: [],
       });
     }
@@ -69,7 +76,12 @@ export function buildSidebarAgentTrees(input: {
         workspaces.set(key, roots);
       }
     }
-    appendProviderChildren({ host, nodes, descriptors: input.descriptors, hidden: input.hidden });
+    appendProviderChildren({
+      host,
+      nodes,
+      descriptors: input.descriptors,
+      hidden: input.hidden,
+    });
     for (const node of nodes.values()) node.children.sort(byCreatedAt);
     pruneWorkspaceChildren(workspaces, host);
   }

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Sidebar workspace rows now carry a small account glyph when the workspace's
+  agent runs under a provider you have signed into more than once. It is icon
+  only so the diff stat and timestamp keep the trailing slot, and hovering it
+  names the account.
 - Self-update now reconciles who owns the running daemon before restarting a
   registered service. If the systemd unit or launchd agent is inactive while a
   hand-started daemon is running, that daemon is stopped first so the unit's

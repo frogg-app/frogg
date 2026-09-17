@@ -1076,6 +1076,8 @@ export const ja: TranslationResources = {
   },
   sidebar: {
     workspaceDraft: "新しいワークスペース（下書き）",
+    // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
+    workspaceAccount: "アカウント: {{value}}",
     hostsMenu: {
       trigger: "ホスト",
       addHost: "ホストを追加",

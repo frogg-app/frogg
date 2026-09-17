@@ -1071,6 +1071,8 @@ export const en = {
   },
   sidebar: {
     workspaceDraft: "New workspace (draft)",
+    // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
+    workspaceAccount: "Account: {{value}}",
     hostsMenu: {
       trigger: "Hosts",
       addHost: "Add a host",

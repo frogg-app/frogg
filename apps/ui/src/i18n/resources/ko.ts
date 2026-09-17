@@ -1071,6 +1071,8 @@ export const ko: TranslationResources = {
   },
   sidebar: {
     workspaceDraft: "새 작업 공간 (초안)",
+    // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
+    workspaceAccount: "계정: {{value}}",
     hostsMenu: {
       trigger: "호스트",
       addHost: "호스트 추가",

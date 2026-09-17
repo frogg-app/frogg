@@ -1080,6 +1080,8 @@ export const ru: TranslationResources = {
   },
   sidebar: {
     workspaceDraft: "Новое рабочее пространство (черновик)",
+    // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
+    workspaceAccount: "Аккаунт: {{value}}",
     hostsMenu: {
       trigger: "Хосты",
       addHost: "Добавить хост",

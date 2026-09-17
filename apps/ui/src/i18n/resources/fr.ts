@@ -1095,6 +1095,8 @@ export const fr: TranslationResources = {
   },
   sidebar: {
     workspaceDraft: "Nouvel espace de travail (brouillon)",
+    // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
+    workspaceAccount: "Compte : {{value}}",
     hostsMenu: {
       trigger: "Hôtes",
       addHost: "Ajouter un hôte",

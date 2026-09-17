@@ -29,6 +29,7 @@ import { StatusRing } from "@/components/status-ring";
 import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sidebar-workspace-title";
 import { TrailingActionScrim } from "@/components/ui/trailing-action-scrim";
 import { useWorkspaceLabelDefinitions } from "@/workspace-labels";
+import { SidebarWorkspaceAccountIndicator } from "@/components/sidebar/workspace-account";
 
 import { SidebarWorkspaceAgents } from "./agents/tree";
 import { WorkspaceAgentTreeScope, WorkspaceAgentDisclosure } from "./agents/workspace-tree";
@@ -178,6 +179,7 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
               {workspaceLabel}
             </Text>
             <View style={sidebarWorkspaceRowStyles.rowRight}>
+              <SidebarWorkspaceAccountIndicator serverId={workspace.serverId} />
               {children}
               <WorkspaceAgentDisclosure label={workspaceLabel} />
             </View>

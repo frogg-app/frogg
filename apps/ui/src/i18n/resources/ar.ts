@@ -1062,6 +1062,8 @@ export const ar: TranslationResources = {
   },
   sidebar: {
     workspaceDraft: "مساحة عمل جديدة (مسودة)",
+    // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
+    workspaceAccount: "الحساب: {{value}}",
     hostsMenu: {
       trigger: "المضيفون",
       addHost: "إضافة مضيف",
