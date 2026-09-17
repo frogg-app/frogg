@@ -16,6 +16,7 @@ import {
   type AgentFeature,
   type AgentProvider,
   type AgentSessionConfig,
+  type ProviderSnapshotAccount,
   type ProviderSnapshotEntry,
 } from "../../agent/agent-sdk-types.js";
 import type { ProviderAvailability } from "../../agent/agent-manager.js";
@@ -48,6 +49,16 @@ export interface ProviderCatalogSessionHost {
   supportsCustomModeIcons(): boolean;
   supportsCompactProviderSnapshots(): boolean;
   listProviderAvailability(): Promise<ProviderAvailability[]>;
+  /**
+   * COMPAT(perAgentProviderAccounts): the sign-in accounts to advertise for a
+   * provider on the snapshot, so the composer's account picker rides along with
+   * the model picker instead of making a second round-trip. Returns undefined
+   * when the daemon does not advertise `features.providerAccounts` or the
+   * provider has no accounts capability.
+   */
+  listProviderSnapshotAccounts(
+    provider: string,
+  ): { accounts: ProviderSnapshotAccount[]; defaultAccountId: string | null } | undefined;
   listDraftFeatures(config: AgentSessionConfig): Promise<AgentFeature[]>;
 }
 
@@ -99,7 +110,7 @@ export class ProviderCatalogSession {
         this.host.isProviderVisibleToClient(entry.provider),
       );
       const snapshotCwd = isGlobalProviderSnapshotKey(cwd) ? undefined : cwd;
-      const clientEntries = this.downgradeEntryModesForClient(visibleEntries);
+      const clientEntries = this.buildClientEntries(visibleEntries);
       if (this.host.supportsCompactProviderSnapshots()) {
         const encoded = encodeProviderSnapshot(clientEntries);
         this.host.emit({
@@ -143,6 +154,20 @@ export class ProviderCatalogSession {
     return modes.map((mode) =>
       mode.icon && !LEGACY_MODE_ICONS.has(mode.icon) ? { ...mode, icon: "ShieldCheck" } : mode,
     );
+  }
+
+  // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+  private decorateEntriesWithAccounts(entries: ProviderSnapshotEntry[]): ProviderSnapshotEntry[] {
+    return entries.map((entry) => {
+      const accounts = this.host.listProviderSnapshotAccounts(entry.provider);
+      return accounts
+        ? { ...entry, accounts: accounts.accounts, defaultAccountId: accounts.defaultAccountId }
+        : entry;
+    });
+  }
+
+  private buildClientEntries(entries: ProviderSnapshotEntry[]): ProviderSnapshotEntry[] {
+    return this.downgradeEntryModesForClient(this.decorateEntriesWithAccounts(entries));
   }
 
   private downgradeEntryModesForClient<T extends { modes?: { icon?: string }[] }>(
@@ -396,7 +421,7 @@ export class ProviderCatalogSession {
     const entries = this.providerSnapshotManager
       .getSnapshot(snapshotCwd)
       .filter((entry) => this.host.isProviderVisibleToClient(entry.provider));
-    const clientEntries = this.downgradeEntryModesForClient(entries);
+    const clientEntries = this.buildClientEntries(entries);
 
     if (this.host.supportsCompactProviderSnapshots()) {
       const encoded = encodeProviderSnapshot(clientEntries);

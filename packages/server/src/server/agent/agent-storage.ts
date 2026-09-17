@@ -15,6 +15,8 @@ const SERIALIZABLE_CONFIG_SCHEMA = z
     modeId: z.string().nullable().optional(),
     model: z.string().nullable().optional(),
     thinkingOptionId: z.string().nullable().optional(),
+    // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+    providerAccountId: z.string().nullable().optional(),
     featureValues: z.record(z.string(), z.unknown()).nullable().optional(),
     providerOptions: z.record(z.string(), z.json()).nullable().optional(),
     toolPolicy: z
@@ -88,6 +90,7 @@ export type SerializableAgentConfig = Pick<
   | "modeId"
   | "model"
   | "thinkingOptionId"
+  | "providerAccountId"
   | "featureValues"
   | "providerOptions"
   | "toolPolicy"

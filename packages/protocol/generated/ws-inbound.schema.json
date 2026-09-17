@@ -3806,6 +3806,12 @@
                     "thinkingOptionId": {
                       "type": "string"
                     },
+                    "providerAccountId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
                     "featureValues": {
                       "type": "object",
                       "propertyNames": {
@@ -4516,6 +4522,12 @@
                     },
                     "thinkingOptionId": {
                       "type": "string"
+                    },
+                    "providerAccountId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "featureValues": {
                       "type": "object",

@@ -125,6 +125,7 @@ import {
   type AgentPermissionResponse,
   type AgentRunOptions,
   type AgentSessionConfig,
+  type ProviderSnapshotAccount,
 } from "./agent/agent-sdk-types.js";
 import type { StoredAgentRecord } from "./agent/agent-storage.js";
 import type { AgentStorage } from "./agent/agent-storage.js";
@@ -948,6 +949,9 @@ export class Session {
         supportsCompactProviderSnapshots: () => this.supports(CLIENT_CAPS.compactProviderSnapshots),
         listProviderAvailability: () => this.agentManager.listProviderAvailability(),
         listDraftFeatures: (config) => this.agentManager.listDraftFeatures(config),
+        // COMPAT(perAgentProviderAccounts): gated on the same capability manifest
+        // that drives `server_info.features.providerAccounts`.
+        listProviderSnapshotAccounts: (provider) => this.listProviderSnapshotAccounts(provider),
       },
       providerSnapshotManager,
       providerUsageService,
@@ -1848,6 +1852,37 @@ export class Session {
     registeredProviderIds = new Set(this.providerSnapshotManager.listRegisteredProviderIds()),
   ): AgentSnapshotPayload {
     return buildStoredAgentPayload(record, registeredProviderIds);
+  }
+
+  /**
+   * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+   * The provider's sign-in accounts, ridden along on the provider snapshot so a
+   * composer account picker needs no second fetch. Returns undefined — which
+   * leaves both snapshot fields absent — when the provider has no enabled
+   * accounts capability, matching the `providerAccounts` feature gate.
+   */
+  private listProviderSnapshotAccounts(
+    provider: string,
+  ): { accounts: ProviderSnapshotAccount[]; defaultAccountId: string | null } | undefined {
+    try {
+      const capability = this.providerAccountStore.getCapability(provider);
+      if (!capability?.enabled) return undefined;
+      const accounts = this.providerAccountStore.list(provider).map((account) => ({
+        id: account.id,
+        name: account.name,
+        authenticated: account.authenticated,
+      }));
+      return {
+        accounts,
+        defaultAccountId: this.providerAccountStore.activeAccountIds()[provider] ?? null,
+      };
+    } catch (error) {
+      this.sessionLogger.warn(
+        { err: error, provider },
+        "Failed to list provider accounts for the provider snapshot",
+      );
+      return undefined;
+    }
   }
 
   private isProviderVisibleToClient(_provider: string): boolean {

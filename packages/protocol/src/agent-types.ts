@@ -102,6 +102,13 @@ export function normalizeAgentModelDefinition(model: AgentModelDefinition): Agen
   return { ...model, defaultThinkingOptionId };
 }
 
+/** COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17. */
+export interface ProviderSnapshotAccount {
+  id: string;
+  name: string;
+  authenticated: boolean;
+}
+
 export interface ProviderSnapshotEntry {
   provider: AgentProvider;
   status: ProviderStatus;
@@ -114,6 +121,9 @@ export interface ProviderSnapshotEntry {
   label?: string;
   description?: string;
   defaultModeId?: string | null;
+  // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+  accounts?: ProviderSnapshotAccount[];
+  defaultAccountId?: string | null;
 }
 
 export interface AgentFeatureToggle {
@@ -504,6 +514,12 @@ export interface AgentSessionConfig {
   modeId?: string;
   model?: string;
   thinkingOptionId?: string;
+  /**
+   * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+   * Provider sign-in account this agent launches with. Absent = the provider's
+   * daemon-wide active account; `null` = the provider's primary config dir.
+   */
+  providerAccountId?: string | null;
   featureValues?: Record<string, unknown>;
   title?: string | null;
   providerOptions?: ProviderOptions;

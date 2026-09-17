@@ -44260,6 +44260,35 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "accounts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "authenticated": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "authenticated"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "defaultAccountId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -44342,6 +44371,35 @@
                                 "type": "string"
                               },
                               "defaultModeId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "accounts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "authenticated": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "name",
+                                    "authenticated"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "defaultAccountId": {
                                 "type": [
                                   "string",
                                   "null"
@@ -44658,6 +44716,35 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "accounts": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "authenticated": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "authenticated"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "defaultAccountId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -44740,6 +44827,35 @@
                                 "type": "string"
                               },
                               "defaultModeId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "accounts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string"
+                                    },
+                                    "authenticated": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "name",
+                                    "authenticated"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "defaultAccountId": {
                                 "type": [
                                   "string",
                                   "null"

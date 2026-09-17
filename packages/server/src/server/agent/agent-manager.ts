@@ -162,6 +162,11 @@ function buildStoredAgentConfig(record: StoredAgentRecord): AgentSessionConfig {
   if (record.config.thinkingOptionId != null) {
     config.thinkingOptionId = record.config.thinkingOptionId;
   }
+  // COMPAT(perAgentProviderAccounts): `null` is meaningful (explicit provider
+  // default), so this restores undefined-vs-null rather than truthiness.
+  if (record.config.providerAccountId !== undefined) {
+    config.providerAccountId = record.config.providerAccountId;
+  }
   if (record.config.featureValues != null) {
     config.featureValues = record.config.featureValues;
   }
@@ -272,6 +277,16 @@ export interface CreateAgentOptions {
 
 export interface AgentManagerOptions {
   clients?: ProviderClientMap;
+  /**
+   * COMPAT(perAgentProviderAccounts): resolves the env overlay for the provider
+   * sign-in account an agent was launched with. Supplied by the provider
+   * snapshot manager, which has already removed any key the user pinned in
+   * `agents.providers.<id>.env` so config.json still wins.
+   */
+  resolveAgentProviderAccountEnv?: (
+    provider: string,
+    accountId: string | null | undefined,
+  ) => { env: Record<string, string>; unknownAccountId?: string };
   providerDefinitions?: ProviderEnabledMap;
   idFactory?: () => string;
   registry?: AgentStorage;
@@ -672,6 +687,10 @@ function detachedAgentLabelPatch(labels: Record<string, string>): AgentLabelPatc
 
 export class AgentManager {
   private readonly clients = new Map<AgentProvider, AgentClient>();
+  private readonly resolveAgentProviderAccountEnv?: (
+    provider: string,
+    accountId: string | null | undefined,
+  ) => { env: Record<string, string>; unknownAccountId?: string };
   private readonly providerEnabled = new Map<AgentProvider, boolean>();
   private readonly providerDefinitions = new Map<AgentProvider, ProviderEnabledFlag>();
   private readonly agents = new Map<string, LiveManagedAgent>();
@@ -725,6 +744,7 @@ export class AgentManager {
         options.rescueTimeouts?.interruptSessionMs ?? INTERRUPT_SESSION_TIMEOUT_MS,
     };
     this.beforeSteerUnavailableFallback = options.beforeSteerUnavailableFallback;
+    this.resolveAgentProviderAccountEnv = options.resolveAgentProviderAccountEnv;
     this.agentStreamCoalescer = new AgentStreamCoalescer({
       windowMs: options.agentStreamCoalesceWindowMs ?? AGENT_STREAM_COALESCE_DEFAULT_WINDOW_MS,
       timers: { setTimeout, clearTimeout },
@@ -1166,7 +1186,7 @@ export class AgentManager {
     const launchContext = await this.buildLaunchContext(
       resolvedAgentId,
       client,
-      storedConfig.cwd,
+      storedConfig,
       options?.env,
     );
     const providerLaunchConfig = this.resolveProviderLaunchConfig(launchConfig, launchContext);
@@ -1248,7 +1268,7 @@ export class AgentManager {
         `Provider '${handle.provider}' is not available. Please ensure the CLI is installed.`,
       );
     }
-    const launchContext = await this.buildLaunchContext(resolvedAgentId, client, storedConfig.cwd);
+    const launchContext = await this.buildLaunchContext(resolvedAgentId, client, storedConfig);
     const providerLaunchConfig = this.resolveProviderLaunchConfig(launchConfig, launchContext);
     const session = await client.resumeSession(
       handle,
@@ -1296,7 +1316,7 @@ export class AgentManager {
       },
       resolvedAgentId,
     );
-    const launchContext = await this.buildLaunchContext(resolvedAgentId, client, storedConfig.cwd);
+    const launchContext = await this.buildLaunchContext(resolvedAgentId, client, storedConfig);
     const providerLaunchConfig = this.resolveProviderLaunchConfig(launchConfig, launchContext);
     const imported = await client.importSession(
       {
@@ -1377,7 +1397,7 @@ export class AgentManager {
       provider,
     } as AgentSessionConfig;
     const { storedConfig, launchConfig } = await this.prepareSessionConfig(refreshConfig, agentId);
-    const launchContext = await this.buildLaunchContext(agentId, client, storedConfig.cwd);
+    const launchContext = await this.buildLaunchContext(agentId, client, storedConfig);
     const providerLaunchConfig = this.resolveProviderLaunchConfig(launchConfig, launchContext);
 
     const session = handle
@@ -4847,12 +4867,14 @@ export class AgentManager {
   private async buildLaunchContext(
     agentId: string,
     client: AgentClient,
-    cwd: string,
+    config: Pick<AgentSessionConfig, "provider" | "cwd" | "providerAccountId">,
     env?: Record<string, string>,
   ): Promise<AgentLaunchContext> {
+    const cwd = config.cwd;
     const context: AgentLaunchContext = {
       agentId,
       env: {
+        ...this.resolveProviderAccountLaunchEnv(agentId, config),
         ...env,
         FROGG_AGENT_ID: agentId,
         FROGG_AGENT_CWD: cwd,
@@ -4866,6 +4888,38 @@ export class AgentManager {
       context.froggTools = await this.froggToolCatalogFactory({ callerAgentId: agentId });
     }
     return context;
+  }
+
+  /**
+   * COMPAT(perAgentProviderAccounts): the agent's own account wins over the
+   * provider's daemon-wide active account. A `providerAccountId` that no longer
+   * resolves (the account was deleted) must never fail the launch: the resolver
+   * falls back to default resolution and we log it.
+   */
+  private resolveProviderAccountLaunchEnv(
+    agentId: string,
+    config: Pick<AgentSessionConfig, "provider" | "providerAccountId">,
+  ): Record<string, string> {
+    if (!this.resolveAgentProviderAccountEnv) return {};
+    try {
+      const resolved = this.resolveAgentProviderAccountEnv(
+        config.provider,
+        config.providerAccountId,
+      );
+      if (resolved.unknownAccountId) {
+        this.logger.warn(
+          { agentId, provider: config.provider, accountId: resolved.unknownAccountId },
+          "Provider account for agent no longer exists; falling back to the provider default account",
+        );
+      }
+      return resolved.env;
+    } catch (error) {
+      this.logger.warn(
+        { err: error, agentId, provider: config.provider },
+        "Failed to resolve provider account env for agent launch",
+      );
+      return {};
+    }
   }
 
   private resolveProviderLaunchConfig(

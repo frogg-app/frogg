@@ -9355,6 +9355,10 @@ pub struct GetProvidersSnapshotResponsePayloadEntriesItem {
     pub description: Option<String>,
     #[serde(rename = "defaultModeId", skip_serializing_if = "Option::is_none")]
     pub default_mode_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accounts: Option<Vec<GetProvidersSnapshotResponsePayloadEntriesItemAccountsItem>>,
+    #[serde(rename = "defaultAccountId", skip_serializing_if = "Option::is_none")]
+    pub default_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9432,6 +9436,13 @@ pub struct GetProvidersSnapshotResponsePayloadEntriesItemModesItem {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GetProvidersSnapshotResponsePayloadEntriesItemAccountsItem {
+    pub id: String,
+    pub name: String,
+    pub authenticated: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GetProvidersSnapshotResponsePayloadCompactSnapshot {
     pub entries: Vec<GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItem>,
     #[serde(rename = "thinkingSets")]
@@ -9457,6 +9468,11 @@ pub struct GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItem {
     pub description: Option<String>,
     #[serde(rename = "defaultModeId", skip_serializing_if = "Option::is_none")]
     pub default_mode_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accounts:
+        Option<Vec<GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItemAccountsItem>>,
+    #[serde(rename = "defaultAccountId", skip_serializing_if = "Option::is_none")]
+    pub default_account_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub models:
         Option<Vec<GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItemModelsItem>>,
@@ -9492,6 +9508,13 @@ pub struct GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItemModesIte
     pub icon: Option<String>,
     #[serde(rename = "colorTier", skip_serializing_if = "Option::is_none")]
     pub color_tier: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItemAccountsItem {
+    pub id: String,
+    pub name: String,
+    pub authenticated: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9580,6 +9603,10 @@ pub struct ProvidersSnapshotUpdatePayloadEntriesItem {
     pub description: Option<String>,
     #[serde(rename = "defaultModeId", skip_serializing_if = "Option::is_none")]
     pub default_mode_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accounts: Option<Vec<ProvidersSnapshotUpdatePayloadEntriesItemAccountsItem>>,
+    #[serde(rename = "defaultAccountId", skip_serializing_if = "Option::is_none")]
+    pub default_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9657,6 +9684,13 @@ pub struct ProvidersSnapshotUpdatePayloadEntriesItemModesItem {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProvidersSnapshotUpdatePayloadEntriesItemAccountsItem {
+    pub id: String,
+    pub name: String,
+    pub authenticated: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProvidersSnapshotUpdatePayloadCompactSnapshot {
     pub entries: Vec<ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItem>,
     #[serde(rename = "thinkingSets")]
@@ -9682,6 +9716,10 @@ pub struct ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItem {
     pub description: Option<String>,
     #[serde(rename = "defaultModeId", skip_serializing_if = "Option::is_none")]
     pub default_mode_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub accounts: Option<Vec<ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItemAccountsItem>>,
+    #[serde(rename = "defaultAccountId", skip_serializing_if = "Option::is_none")]
+    pub default_account_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub models: Option<Vec<ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItemModelsItem>>,
 }
@@ -9716,6 +9754,13 @@ pub struct ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItemModesItem {
     pub icon: Option<String>,
     #[serde(rename = "colorTier", skip_serializing_if = "Option::is_none")]
     pub color_tier: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItemAccountsItem {
+    pub id: String,
+    pub name: String,
+    pub authenticated: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

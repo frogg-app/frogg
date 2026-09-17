@@ -7,7 +7,10 @@ import {
 import { OpenCodeBridge } from "./providers/opencode/bridge.js";
 import type { FroggToolCatalog } from "./tools/types.js";
 import { ProviderAccountStore } from "../provider-accounts/provider-account-store.js";
-import { resolveProviderAccountEnv } from "../provider-accounts/provider-account-env.js";
+import {
+  resolveAgentProviderAccountEnv,
+  resolveProviderAccountEnv,
+} from "../provider-accounts/provider-account-env.js";
 
 export interface AgentProviderRuntime {
   snapshotManager: ProviderSnapshotManager;
@@ -41,6 +44,17 @@ export async function createAgentProviderRuntime(
             "Failed to resolve provider account env overlay",
           );
           return undefined;
+        }
+      },
+      providerAccountEnvForAgent: (providerId, accountId) => {
+        try {
+          return resolveAgentProviderAccountEnv(providerAccountStore, providerId, accountId);
+        } catch (error) {
+          options.logger.warn(
+            { err: error, providerId, accountId },
+            "Failed to resolve per-agent provider account env overlay",
+          );
+          return { env: {} };
         }
       },
     });

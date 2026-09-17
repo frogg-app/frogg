@@ -53,3 +53,51 @@ export function resolveProviderAccountEnvById(
     },
   };
 }
+
+/**
+ * The env overlay for one agent, given the account the agent was launched with.
+ *
+ * Precedence, highest first:
+ *   1. an explicit `agents.providers.<id>.env` from config.json (applied by the
+ *      caller, which strips those keys from this overlay),
+ *   2. the agent's own `providerAccountId`,
+ *   3. the provider's daemon-wide active account.
+ *
+ * `accountId === null` is the explicit "Default" pick: it pins the provider's
+ * primary config dir so a daemon-wide active account does NOT leak into this
+ * agent. `undefined` falls back to the daemon-wide active account.
+ *
+ * An account id that no longer exists (deleted while a picker was open, or an
+ * agent rehydrated after its account was removed) must never fail a launch: it
+ * falls back to default resolution and reports the fallback to the caller.
+ */
+export function resolveAgentProviderAccountEnv(
+  store: Pick<
+    ProviderAccountStore,
+    "getCapability" | "activeAccountIds" | "findAccount" | "primaryConfigDir"
+  >,
+  provider: string,
+  accountId: string | null | undefined,
+): { env: ProviderAccountEnvOverlay; unknownAccountId?: string } {
+  const capability = store.getCapability(provider);
+  if (!capability || !capability.enabled) {
+    return { env: {} };
+  }
+
+  if (accountId === undefined) {
+    return { env: resolveProviderAccountEnv(store, provider) };
+  }
+
+  if (accountId === null) {
+    const primaryDir = store.primaryConfigDir(provider);
+    return primaryDir ? { env: { [capability.configDirEnv]: primaryDir } } : { env: {} };
+  }
+
+  const account = store.findAccount(accountId);
+  if (!account || account.provider !== provider) {
+    // Deleted (or foreign-provider) account: fall back to default resolution.
+    return { env: resolveProviderAccountEnv(store, provider), unknownAccountId: accountId };
+  }
+
+  return { env: { [capability.configDirEnv]: account.configDir } };
+}

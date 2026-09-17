@@ -122,11 +122,37 @@ Account names are lowercase slugs (`[a-z0-9-]`, no leading, trailing or doubled 
 Sign an account in by opening a terminal for it: the daemon launches the provider's
 interactive login command with `CLAUDE_CONFIG_DIR` pointed at that account's directory, and
 you run `/login` inside it. An account shows as authenticated once its credential file
-(`.credentials.json`) exists. Agents launched for the provider inherit the active account's
-config directory; an explicit `agents.providers.<id>.env` in `config.json` still wins.
+(`.credentials.json`) exists.
 
 Deleting an account only removes it from Frogg's list — the config directory, and the
-credentials in it, are left on disk for you to remove.
+credentials in it, are left on disk for you to remove. An agent that was launched with an
+account you later delete keeps working: its next launch quietly falls back to the provider's
+default account and the daemon logs a warning.
+
+### Which account an agent uses
+
+The account is picked **per agent, when the agent is created**, and it sticks: the agent keeps
+that account when it is resumed or rehydrated after a daemon restart. Changing an agent's
+account means starting a new agent.
+
+An agent can be launched with:
+
+- **Default** — the provider's primary config directory (`~/.claude`), ignoring whichever
+  account is marked active,
+- any account configured for that provider,
+- or no choice at all, which uses the provider's **active** account — the same daemon-wide
+  behaviour as before, and what every existing agent keeps doing.
+
+Resolution order for the provider's config-directory variable (`CLAUDE_CONFIG_DIR` for
+Claude), highest first:
+
+1. an explicit `agents.providers.<id>.env` in
+   [`config.json`](/docs/reference/configuration/#agents),
+2. the account chosen for that agent,
+3. the provider's daemon-wide active account.
+
+**Make active** therefore sets the default for agents that do not choose, and no longer
+silently retargets every agent on the provider.
 
 ### From the app
 
@@ -146,7 +172,8 @@ daemon that does not report the feature.
    so the action needs at least one workspace on the host; it is disabled when there is none.
 3. **Refresh** re-reads the list once the CLI's login finishes, which is what flips the row to
    signed in.
-4. **Make active** points the provider's agents at that account. **Remove** asks first and
+4. **Make active** makes that account the default for agents that do not pick one in the
+   composer. **Remove** asks first and
    then tells you the config directory it left behind.
 
 </Steps>

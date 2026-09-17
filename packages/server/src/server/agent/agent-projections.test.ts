@@ -202,6 +202,19 @@ describe("toStoredAgentRecord", () => {
     expect(record.lastUserMessageAt).toBeNull();
   });
 
+  // COMPAT(perAgentProviderAccounts): a resumed agent must keep the account it
+  // launched with, including the explicit "provider default" pick.
+  it("persists the agent's provider account id, including an explicit null", () => {
+    const withAccount = createManagedAgent({ config: { providerAccountId: "acct-peter" } });
+    expect(toStoredAgentRecord(withAccount).config?.providerAccountId).toBe("acct-peter");
+
+    const withDefault = createManagedAgent({ config: { providerAccountId: null } });
+    expect(toStoredAgentRecord(withDefault).config?.providerAccountId).toBeNull();
+
+    const unset = createManagedAgent({ config: { modeId: "auto" } });
+    expect(toStoredAgentRecord(unset).config?.providerAccountId).toBeUndefined();
+  });
+
   it("omits config when no serializable fields exist", () => {
     const agent = createManagedAgent({
       config: {

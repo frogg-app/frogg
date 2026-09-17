@@ -315,6 +315,11 @@ function buildSerializableConfig(config: AgentSessionConfig): SerializableAgentC
   if (config.thinkingOptionId) {
     serializable.thinkingOptionId = config.thinkingOptionId;
   }
+  // COMPAT(perAgentProviderAccounts): `null` (explicit provider default) must
+  // round-trip, so this is a presence check, not a truthiness check.
+  if (config.providerAccountId !== undefined) {
+    serializable.providerAccountId = config.providerAccountId;
+  }
   if (Object.prototype.hasOwnProperty.call(config, "featureValues")) {
     const featureValues = sanitizeMetadata(config.featureValues);
     if (featureValues !== undefined) {

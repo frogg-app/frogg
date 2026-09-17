@@ -102,6 +102,14 @@ export interface ProviderSnapshotManagerOptions {
   openCodeBridge?: OpenCodeBridge;
   /** Active sign-in account env overlay per provider (multi-sign-in). */
   providerAccountEnv?: (providerId: string) => Record<string, string> | undefined;
+  /**
+   * COMPAT(perAgentProviderAccounts): env overlay for ONE agent's chosen account.
+   * `undefined` accountId means "use the provider's daemon-wide active account".
+   */
+  providerAccountEnvForAgent?: (
+    providerId: string,
+    accountId: string | null | undefined,
+  ) => { env: Record<string, string>; unknownAccountId?: string };
 }
 
 interface ProviderSnapshotRefreshOptions {
@@ -214,6 +222,10 @@ export class ProviderSnapshotManager {
   private readonly managedProcesses?: ManagedProcessRegistry;
   private readonly openCodeBridge?: OpenCodeBridge;
   private readonly providerAccountEnv?: (providerId: string) => Record<string, string> | undefined;
+  private readonly providerAccountEnvForAgent?: (
+    providerId: string,
+    accountId: string | null | undefined,
+  ) => { env: Record<string, string>; unknownAccountId?: string };
   private readonly isDev: boolean;
   private readonly extraClients: Partial<Record<AgentProvider, AgentClient>>;
   private runtimeSettings: AgentProviderRuntimeSettingsMap | undefined;
@@ -229,6 +241,7 @@ export class ProviderSnapshotManager {
     this.managedProcesses = options.managedProcesses;
     this.openCodeBridge = options.openCodeBridge;
     this.providerAccountEnv = options.providerAccountEnv;
+    this.providerAccountEnvForAgent = options.providerAccountEnvForAgent;
     this.isDev = options.isDev === true;
     this.extraClients = options.extraClients ?? {};
     this.runtimeSettings = options.runtimeSettings;
@@ -599,6 +612,38 @@ export class ProviderSnapshotManager {
     if (this.destroyed) return;
     this.providerRegistry = this.buildRegistry();
     this.providerClients = { ...this.extraClients } as Record<AgentProvider, AgentClient>;
+    // The account list rides on the provider snapshot, so a create/delete/
+    // set_active has to re-push it or an open composer keeps a stale picker.
+    for (const cwdKey of this.snapshots.keys()) {
+      this.emitChange(cwdKey);
+    }
+  }
+
+  /**
+   * COMPAT(perAgentProviderAccounts): the env overlay for one agent's account,
+   * with any key the user set explicitly in `agents.providers.<id>.env` removed
+   * so config.json keeps winning. The result is applied as a launch-context
+   * overlay, which sits ABOVE the registry-level (daemon-wide active account)
+   * env and below the explicit config env that was just stripped.
+   */
+  resolveAgentProviderAccountEnv(
+    provider: string,
+    accountId: string | null | undefined,
+  ): { env: Record<string, string>; unknownAccountId?: string } {
+    const resolved = this.providerAccountEnvForAgent?.(provider, accountId);
+    if (!resolved) return { env: {} };
+    const explicitEnv = {
+      ...this.runtimeSettings?.[provider]?.env,
+      ...this.providerOverrides?.[provider]?.env,
+    };
+    const env: Record<string, string> = {};
+    for (const [key, value] of Object.entries(resolved.env)) {
+      if (!(key in explicitEnv)) env[key] = value;
+    }
+    return {
+      env,
+      ...(resolved.unknownAccountId ? { unknownAccountId: resolved.unknownAccountId } : {}),
+    };
   }
 
   private buildRegistry(): Record<AgentProvider, ProviderDefinition> {

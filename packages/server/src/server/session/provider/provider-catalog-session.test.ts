@@ -54,6 +54,7 @@ function makeSubsystem(options: MakeOptions = {}) {
     supportsCompactProviderSnapshots: () => options.supportsCompactProviderSnapshots ?? false,
     listProviderAvailability: async () => [],
     listDraftFeatures: async () => [],
+    listProviderSnapshotAccounts: () => undefined,
     ...options.host,
   };
   const providerSnapshotManager = createStub<ProviderSnapshotManager>({
@@ -161,6 +162,47 @@ describe("ProviderCatalogSession", () => {
 
     const pull = findByType(emitted, "get_providers_snapshot_response");
     expect(pull?.payload.entries[0]?.modes?.[0]?.icon).toBe("Sparkles");
+  });
+
+  // COMPAT(perAgentProviderAccounts): the composer account picker is driven off
+  // the provider snapshot, so it must never need a second round-trip.
+  it("carries provider accounts and the daemon-wide default on snapshot entries", async () => {
+    const { subsystem, emitted } = makeSubsystem({
+      snapshot: { getSnapshot: () => makeEntries() },
+      host: {
+        listProviderSnapshotAccounts: (provider) =>
+          provider === "codex"
+            ? {
+                accounts: [{ id: "acct-peter", name: "peter", authenticated: true }],
+                defaultAccountId: "acct-peter",
+              }
+            : undefined,
+      },
+    });
+
+    await subsystem.handleGetProvidersSnapshotRequest({
+      type: "get_providers_snapshot_request",
+      requestId: "accounts-1",
+    });
+
+    const entry = findByType(emitted, "get_providers_snapshot_response")?.payload.entries[0];
+    expect(entry?.accounts).toEqual([{ id: "acct-peter", name: "peter", authenticated: true }]);
+    expect(entry?.defaultAccountId).toBe("acct-peter");
+  });
+
+  it("leaves account fields absent when the accounts feature is off", async () => {
+    const { subsystem, emitted } = makeSubsystem({
+      snapshot: { getSnapshot: () => makeEntries() },
+    });
+
+    await subsystem.handleGetProvidersSnapshotRequest({
+      type: "get_providers_snapshot_request",
+      requestId: "accounts-2",
+    });
+
+    const entry = findByType(emitted, "get_providers_snapshot_response")?.payload.entries[0];
+    expect(entry?.accounts).toBeUndefined();
+    expect(entry?.defaultAccountId).toBeUndefined();
   });
 
   it("sends capable clients a compact snapshot and returns not-modified for its hash", async () => {

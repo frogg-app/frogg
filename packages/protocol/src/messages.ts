@@ -393,6 +393,19 @@ const AgentModelDefinitionSchema = z.object({
   defaultThinkingOptionId: z.string().optional(),
 }) satisfies z.ZodType<AgentModelDefinition>;
 
+/**
+ * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+ * The sign-in accounts configured for a provider, carried on the provider
+ * snapshot so a composer account picker needs no extra round-trip. Only present
+ * when the daemon advertises `features.providerAccounts`.
+ */
+export const ProviderSnapshotAccountSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  /** True when the account's credential files exist in its config dir. */
+  authenticated: z.boolean(),
+});
+
 export const ProviderSnapshotEntrySchema = z.object({
   provider: AgentProviderSchema,
   status: ProviderStatusSchema,
@@ -405,6 +418,13 @@ export const ProviderSnapshotEntrySchema = z.object({
   label: z.string().optional(),
   description: z.string().optional(),
   defaultModeId: z.string().nullable().optional(),
+  // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+  accounts: z.array(ProviderSnapshotAccountSchema).optional(),
+  /**
+   * The account used when an agent does not name one (the provider's daemon-wide
+   * active account). `null`/absent means the provider's primary config dir.
+   */
+  defaultAccountId: z.string().nullable().optional(),
 });
 
 export const CompactProviderSnapshotModelSchema = AgentModelDefinitionSchema.omit({
@@ -507,6 +527,14 @@ const AgentSessionConfigSchema = z.object({
   modeId: z.string().optional(),
   model: z.string().optional(),
   thinkingOptionId: z.string().optional(),
+  /**
+   * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+   * Provider sign-in account this agent launches with.
+   * - absent/undefined: the provider's daemon-wide active account (if any).
+   * - `null`: explicitly the provider's primary config dir (the "Default" pick).
+   * - a string: that account's config dir.
+   */
+  providerAccountId: z.string().nullable().optional(),
   featureValues: z.record(z.string(), z.unknown()).optional(),
   title: z.string().trim().min(1).max(MAX_EXPLICIT_AGENT_TITLE_CHARS).optional().nullable(),
   providerOptions: ProviderOptionsSchema.optional(),

@@ -121,6 +121,16 @@ export class ProviderAccountStore {
     return undefined;
   }
 
+  /**
+   * The provider's primary (default) config directory — the one a user gets with
+   * no accounts configured, e.g. `~/.claude`. Returns undefined for providers
+   * with no accounts capability.
+   */
+  primaryConfigDir(provider: string): string | undefined {
+    const capability = this.getCapability(provider);
+    return capability ? path.join(this.homeDir, capability.primaryDirName) : undefined;
+  }
+
   create(input: CreateProviderAccountInput): ProviderAccountMutationResult {
     const capability = this.requireEnabledCapability(input.provider);
     const slug = toProviderAccountSlug(input.name);

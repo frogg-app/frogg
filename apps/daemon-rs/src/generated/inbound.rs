@@ -1829,6 +1829,8 @@ pub struct CreateAgentRequestConfig {
     pub model: Option<String>,
     #[serde(rename = "thinkingOptionId", skip_serializing_if = "Option::is_none")]
     pub thinking_option_id: Option<String>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
     #[serde(rename = "featureValues", skip_serializing_if = "Option::is_none")]
     pub feature_values: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2037,6 +2039,8 @@ pub struct ResumeAgentRequestOverrides {
     pub model: Option<String>,
     #[serde(rename = "thinkingOptionId", skip_serializing_if = "Option::is_none")]
     pub thinking_option_id: Option<String>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
     #[serde(rename = "featureValues", skip_serializing_if = "Option::is_none")]
     pub feature_values: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]

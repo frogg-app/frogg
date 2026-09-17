@@ -1088,6 +1088,9 @@ export async function createFroggDaemon(
     clients: initialAgentManagerState.clients,
     providerDefinitions: initialAgentManagerState.providerDefinitions,
     registry: agentStorage,
+    // COMPAT(perAgentProviderAccounts): per-agent sign-in account -> env overlay.
+    resolveAgentProviderAccountEnv: (provider, accountId) =>
+      providerSnapshotManager.resolveAgentProviderAccountEnv(provider, accountId),
     appendSystemPrompt: config.appendSystemPrompt,
     onWorkspaceFilesMayHaveChanged: ({ cwd }) => {
       workspaceGitService.onWorkspaceFilesMayHaveChanged(cwd);
