@@ -149,6 +149,13 @@ function parseCli() {
       "node-version": { type: "string", default: DEFAULT_NODE_VERSION },
       "out-dir": { type: "string", default: path.join(REPO_ROOT, "dist", "bundles") },
       "keep-staging": { type: "boolean", default: false },
+      // The version recorded in manifest.json, which is what install.sh uses for
+      // its `versions/<v>` directory. Defaults to package.json. A downstream
+      // rebuild of the same upstream release (`vX.Y.Z-gl.N`) must pass the full
+      // tag here, or every rebuild installs over the same directory and looks
+      // already-current to anything comparing installed versions. Artifact
+      // *filenames* deliberately keep the bare upstream version.
+      "release-version": { type: "string", default: "" },
     },
   });
   return {
@@ -156,6 +163,7 @@ function parseCli() {
     nodeVersion: values["node-version"],
     outDir: path.resolve(values["out-dir"]),
     keepStaging: values["keep-staging"],
+    releaseVersion: values["release-version"] || process.env.FROGG_RELEASE_VERSION || "",
   };
 }
 
@@ -337,9 +345,18 @@ export function daemonAssetName(version, platform, arch) {
 }
 
 async function main() {
-  const { platform, arch, npmPlatform, isWindows, nodeVersion, outDir, keepStaging } = parseCli();
+  const { platform, arch, npmPlatform, isWindows, nodeVersion, outDir, keepStaging, releaseVersion } =
+    parseCli();
   const rootPackage = JSON.parse(await readFile(path.join(REPO_ROOT, "package.json"), "utf8"));
   const version = rootPackage.version;
+  // Guard the two apart: the manifest version may add a downstream suffix, but it
+  // must still describe this build, so it has to start with the workspace version.
+  if (releaseVersion && releaseVersion !== version && !releaseVersion.startsWith(`${version}-`)) {
+    throw new Error(
+      `--release-version ${releaseVersion} does not match package.json ${version}; expected ${version} or ${version}-<suffix>`,
+    );
+  }
+  const manifestVersion = releaseVersion || version;
   const bundleName = `${brand.daemonArtifactPrefix}-${version}-${platform}-${arch}`;
   const archiveName = daemonAssetName(version, platform, arch);
   const stagingDir = path.join(outDir, "staging", bundleName);
@@ -386,7 +403,7 @@ async function main() {
       await readFile(path.join(REPO_ROOT, ".generated/branding/provenance.json"), "utf8"),
     ),
     name: brand.daemonArtifactPrefix,
-    version,
+    version: manifestVersion,
     platform,
     arch,
     node: nodeVersion,
