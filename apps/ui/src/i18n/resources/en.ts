@@ -206,7 +206,6 @@ export const en = {
     account: {
       title: "Account",
       default: "Default",
-      defaultWithName: "Default ({{name}})",
       notSignedIn: "Not signed in",
       selectWithValue: "Select provider account ({{value}})",
     },

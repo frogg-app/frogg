@@ -49,16 +49,12 @@ export function toProviderAccountSelection(optionId: string): string | null {
   return optionId === DEFAULT_PROVIDER_ACCOUNT_OPTION_ID ? null : optionId;
 }
 
-function buildDefaultLabel(
-  accounts: readonly ProviderSnapshotAccount[],
-  defaultAccountId: string | null | undefined,
-): string {
-  const active = defaultAccountId
-    ? accounts.find((account) => account.id === defaultAccountId)
-    : undefined;
-  return active
-    ? i18n.t("agentControls.account.defaultWithName", { name: active.name })
-    : i18n.t("agentControls.account.default");
+// The Default row sends `null`, which pins the provider's primary config dir
+// (`~/.claude`) and deliberately ignores whichever account is marked active
+// daemon-wide. Naming the active account here would therefore be a lie: that
+// account has its own row, and picking this one does not select it.
+function buildDefaultLabel(): string {
+  return i18n.t("agentControls.account.default");
 }
 
 /**
@@ -72,7 +68,10 @@ export function resolveProviderAccountControlModel(input: {
   defaultAccountId: string | null | undefined;
   selection: ProviderAccountSelection;
 }): ProviderAccountControlModel | null {
-  const { accounts, defaultAccountId, selection } = input;
+  // `defaultAccountId` is accepted (callers read it straight off the provider
+  // snapshot) but intentionally unused: the Default row pins the primary config
+  // dir rather than following the daemon-wide active account.
+  const { accounts, selection } = input;
   if (accounts === undefined || accounts.length === 0) {
     return null;
   }
@@ -80,7 +79,7 @@ export function resolveProviderAccountControlModel(input: {
   const options: ProviderAccountOption[] = [
     {
       id: DEFAULT_PROVIDER_ACCOUNT_OPTION_ID,
-      label: buildDefaultLabel(accounts, defaultAccountId),
+      label: buildDefaultLabel(),
       authenticated: true,
       isDefaultRow: true,
     },

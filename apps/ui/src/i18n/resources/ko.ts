@@ -208,7 +208,6 @@ export const ko: TranslationResources = {
     account: {
       title: "계정",
       default: "기본값",
-      defaultWithName: "기본값 ({{name}})",
       notSignedIn: "로그인되지 않음",
       selectWithValue: "프로바이더 계정 선택 ({{value}})",
     },

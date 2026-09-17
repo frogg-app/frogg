@@ -208,7 +208,6 @@ export const zhCN: TranslationResources = {
     account: {
       title: "账号",
       default: "默认",
-      defaultWithName: "默认（{{name}}）",
       notSignedIn: "未登录",
       selectWithValue: "选择 Provider 账号（{{value}}）",
     },

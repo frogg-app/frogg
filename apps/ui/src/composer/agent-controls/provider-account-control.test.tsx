@@ -168,8 +168,12 @@ describe("ProviderAccountControl", () => {
     expect(onSelectAccount).not.toHaveBeenCalled();
   });
 
-  it("names the daemon-wide active account on the pill", () => {
+  // Default pins the primary config dir rather than following the active
+  // account, so the pill must not advertise that account's name.
+  it("shows a plain Default on the pill even when an account is active", () => {
     renderControl({ accounts: [STEVE], defaultAccountId: "acct-steve" });
-    expect(screen.getByTestId("provider-account-control").textContent).toContain("Default (steve)");
+    const label = screen.getByTestId("provider-account-control").textContent ?? "";
+    expect(label).toContain("Default");
+    expect(label).not.toContain("steve");
   });
 });

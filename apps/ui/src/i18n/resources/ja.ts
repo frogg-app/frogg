@@ -208,7 +208,6 @@ export const ja: TranslationResources = {
     account: {
       title: "アカウント",
       default: "デフォルト",
-      defaultWithName: "デフォルト（{{name}}）",
       notSignedIn: "サインインしていません",
       selectWithValue: "プロバイダーアカウントを選択（{{value}}）",
     },

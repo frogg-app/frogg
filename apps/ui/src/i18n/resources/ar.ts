@@ -208,7 +208,6 @@ export const ar: TranslationResources = {
     account: {
       title: "الحساب",
       default: "افتراضي",
-      defaultWithName: "افتراضي ({{name}})",
       notSignedIn: "لم يتم تسجيل الدخول",
       selectWithValue: "حدد حساب المزود ({{value}})",
     },

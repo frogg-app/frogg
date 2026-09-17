@@ -208,7 +208,6 @@ export const es: TranslationResources = {
     account: {
       title: "Cuenta",
       default: "Predeterminada",
-      defaultWithName: "Predeterminada ({{name}})",
       notSignedIn: "Sin iniciar sesión",
       selectWithValue: "Seleccione la cuenta del proveedor ({{value}})",
     },

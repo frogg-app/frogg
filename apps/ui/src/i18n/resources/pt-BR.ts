@@ -208,7 +208,6 @@ export const ptBR: TranslationResources = {
     account: {
       title: "Conta",
       default: "Padrão",
-      defaultWithName: "Padrão ({{name}})",
       notSignedIn: "Não conectado",
       selectWithValue: "Selecionar conta do provedor ({{value}})",
     },

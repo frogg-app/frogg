@@ -208,7 +208,6 @@ export const ru: TranslationResources = {
     account: {
       title: "Аккаунт",
       default: "По умолчанию",
-      defaultWithName: "По умолчанию ({{name}})",
       notSignedIn: "Вход не выполнен",
       selectWithValue: "Выбрать аккаунт провайдера ({{value}})",
     },

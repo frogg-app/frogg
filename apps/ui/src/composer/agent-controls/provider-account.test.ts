@@ -44,14 +44,17 @@ describe("resolveProviderAccountControlModel", () => {
     expect(model?.options[0]?.label).toBe("Default");
   });
 
-  it("names the daemon-wide active account on the Default row", () => {
+  // The Default row sends `null`, which pins the primary config dir and ignores
+  // the daemon-wide active account. Naming that account here would claim the row
+  // selects it, when it does the opposite — and the account has its own row.
+  it("does not name the daemon-wide active account on the Default row", () => {
     const model = resolveProviderAccountControlModel({
       accounts: [STEVE],
       defaultAccountId: "acct-steve",
       selection: undefined,
     });
-    expect(model?.options[0]?.label).toBe("Default (steve)");
-    expect(model?.displayLabel).toBe("Default (steve)");
+    expect(model?.options[0]?.label).toBe("Default");
+    expect(model?.displayLabel).toBe("Default");
   });
 
   it("highlights Default for an absent selection and for an explicit null", () => {
