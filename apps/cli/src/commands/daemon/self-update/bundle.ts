@@ -1,4 +1,5 @@
 import { brand } from "@frogg/branding";
+import { artifactVersion } from "./semver.js";
 import { matchesBrand, type BrandIdentity } from "@frogg/branding/identity";
 import { daemonArtifactName } from "@frogg/branding/artifacts";
 import { spawnSync } from "node:child_process";
@@ -55,8 +56,13 @@ export function detectBundleTarget(
   return { platform: bundlePlatform, arch: bundleArch };
 }
 
+/**
+ * Release artifact filenames carry the bare upstream version: a downstream
+ * rebuild tagged `v1.3.5-gl.3` still ships `...-1.3.5-<platform>-<arch>`, so the
+ * rebuild counter is stripped before the name is built. See `artifactVersion`.
+ */
 export function bundleAssetName(version: string, target: BundleTarget): string {
-  return daemonArtifactName(brand, version, target.platform, target.arch);
+  return daemonArtifactName(brand, artifactVersion(version), target.platform, target.arch);
 }
 
 export async function sha256File(filePath: string): Promise<string> {

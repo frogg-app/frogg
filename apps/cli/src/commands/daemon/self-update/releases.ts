@@ -2,7 +2,7 @@ import { brand } from "@frogg/branding";
 import { brandEnv } from "@frogg/branding/identity";
 import { z } from "zod";
 import { readGitHubCliToken } from "./github-auth.js";
-import { compareVersions, isNewerVersion, parseVersion } from "./semver.js";
+import { compareVersions, isNewerVersion, isStableVersion, parseVersion } from "./semver.js";
 
 /**
  * Release lookup against the GitHub Releases API, mirroring
@@ -153,7 +153,9 @@ function releaseVersion(release: GitHubRelease): string | null {
 function matchesChannel(release: GitHubRelease, channel: UpdateChannel): boolean {
   if (release.draft) return false;
   if (channel === "stable") {
-    return release.prerelease !== true && parseVersion(release.tag_name)?.prerelease === null;
+    // A downstream rebuild (`v1.3.5-gl.2`) is a rebuild of a stable release, not
+    // a prerelease of one, so it belongs to the stable channel too.
+    return release.prerelease !== true && isStableVersion(release.tag_name);
   }
   return true;
 }

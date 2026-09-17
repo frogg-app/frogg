@@ -150,3 +150,77 @@ describe("release source", () => {
     expect(releases[0]?.tag_name).toBe("v0.1.13");
   });
 });
+
+describe("selectRelease with downstream rebuild tags", () => {
+  // The fork rebuilds an upstream release under `vX.Y.Z-gl.N`; the artifact
+  // filename keeps the bare upstream version.
+  const releases = [release("v1.3.5"), release("v1.3.5-gl.1"), release("v1.3.5-gl.2")];
+
+  test("looks the asset up under the bare upstream version", () => {
+    expect(assetName("1.3.5-gl.2")).toBe(assetName("1.3.5"));
+  });
+
+  test("offers the newest rebuild to a daemon on the plain release", () => {
+    const candidate = selectRelease({
+      releases,
+      currentVersion: "1.3.5",
+      channel: "stable",
+      assetName,
+    });
+    expect(candidate?.version).toBe("1.3.5-gl.2");
+  });
+
+  test("offers the next rebuild to a daemon on an earlier rebuild", () => {
+    const candidate = selectRelease({
+      releases,
+      currentVersion: "1.3.5-gl.1",
+      channel: "stable",
+      assetName,
+    });
+    expect(candidate?.version).toBe("1.3.5-gl.2");
+  });
+
+  test("offers nothing to a daemon already on the newest rebuild", () => {
+    expect(
+      selectRelease({ releases, currentVersion: "1.3.5-gl.2", channel: "stable", assetName }),
+    ).toBeNull();
+  });
+
+  test("never offers the plain release as a downgrade from a rebuild", () => {
+    expect(
+      selectRelease({
+        releases: [release("v1.3.5")],
+        currentVersion: "1.3.5-gl.1",
+        channel: "stable",
+        assetName,
+      }),
+    ).toBeNull();
+  });
+
+  test("keeps rebuild tags in the stable channel", () => {
+    const candidate = selectRelease({
+      releases: [release("v1.3.5-gl.2")],
+      currentVersion: "1.3.5",
+      channel: "stable",
+      assetName,
+    });
+    expect(candidate?.version).toBe("1.3.5-gl.2");
+  });
+
+  test("resolves a pinned rebuild version exactly", () => {
+    const candidate = selectRelease({
+      releases,
+      currentVersion: "1.3.5-gl.2",
+      channel: "stable",
+      assetName,
+      version: "v1.3.5-gl.1",
+    });
+    expect(candidate?.version).toBe("1.3.5-gl.1");
+  });
+
+  test("downloads a rebuild from its own tag directory", () => {
+    expect(releaseDownloadUrl("https://dl.example/r", "1.3.5-gl.2", assetName("1.3.5-gl.2"))).toBe(
+      `https://dl.example/r/download/v1.3.5-gl.2/${assetName("1.3.5")}`,
+    );
+  });
+});
