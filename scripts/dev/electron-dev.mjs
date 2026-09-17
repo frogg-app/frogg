@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Own only the children and state of this checkout; the Tauri dev loop can run alongside it.
+// Own only the children and state of this checkout, so parallel checkouts can run side by side.
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdirSync } from "node:fs";
@@ -17,9 +17,9 @@ const port = Number(process.env.FROGG_ELECTRON_UI_PORT ?? 18000 + offset);
 mkdirSync(state, { recursive: true });
 const env = electronDevEnvironment({ state, port, brand: loadBrand() });
 for (const args of [
-  ["run", "install:electron", "--workspace=@frogg/desktop-tauri"],
+  ["run", "install:electron", "--workspace=@frogg/desktop"],
   ["run", "build:app-deps"],
-  ["run", "build:main", "--workspace=@frogg/desktop-tauri"],
+  ["run", "build:main", "--workspace=@frogg/desktop"],
 ]) {
   const npm = portableCommand("npm", args);
   const result = spawnSync(npm.command, npm.args, {

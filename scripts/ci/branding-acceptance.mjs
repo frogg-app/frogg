@@ -97,28 +97,16 @@ try {
     `${manifest.name} reference for managing projects, workspaces, workspace scripts, agents, schedules, and heartbeats.`,
     "product punctuation remains a literal YAML description",
   );
-  const nativeBefore = JSON.parse(
-    await readFile(path.join(root, ".generated/branding/tauri.conf.json"), "utf8"),
-  );
-  assert.equal(nativeBefore.productName, manifest.id, "native package identity is stable");
   manifest.name = "新しい Atlas Studio";
   manifest.publisher = "A different publisher";
   await writeFile(path.join(scratch, "brand.json"), JSON.stringify(manifest));
   prepare(scratch);
-  const nativeAfter = JSON.parse(
-    await readFile(path.join(root, ".generated/branding/tauri.conf.json"), "utf8"),
+  const renamed = JSON.parse(
+    await readFile(path.join(root, ".generated/branding/brand.json"), "utf8"),
   );
-  assert.equal(nativeAfter.productName, nativeBefore.productName);
-  assert.equal(nativeAfter.identifier, nativeBefore.identifier);
-  assert.equal(nativeAfter.mainBinaryName, nativeBefore.mainBinaryName);
-  const installer = await readFile(nativeAfter.bundle.windows.nsis.template, "utf8");
-  assert.ok(installer.includes("Uninstall\\${BUNDLEID}"));
-  assert.ok(installer.includes("$LOCALAPPDATA\\${BUNDLEID}"));
-  assert.equal(nativeAfter.bundle.shortDescription, manifest.name);
-  const desktopEntry = await readFile(Object.values(nativeAfter.bundle.linux.deb.files)[0], "utf8");
-  assert.ok(desktopEntry.includes(`Exec=/usr/bin/${nativeAfter.mainBinaryName} %U\n`));
-  const portableEntry = await readFile(nativeAfter.bundle.linux.deb.desktopTemplate, "utf8");
-  assert.ok(portableEntry.includes("Exec={{exec}} %U"), "AppImage remains relocatable");
+  assert.equal(renamed.name, manifest.name, "a rename reaches the generated brand");
+  assert.equal(renamed.id, manifest.id, "package identity survives a rename");
+  assert.equal(renamed.applicationId, manifest.applicationId);
   const previous = await fingerprint();
   const artwork = await readFile(path.join(scratch, "icon.svg"), "utf8");
   await writeFile(
