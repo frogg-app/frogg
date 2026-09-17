@@ -2,6 +2,41 @@
 
 ## Unreleased
 
+- Add provider accounts (multi-sign-in). A provider can be signed in as several
+  accounts, each backed by its own CLI config directory with selected folders
+  symlinked from the primary one, so commands, skills, agents, projects and
+  sessions stay shared while credentials stay separate. Manage them under
+  Settings > Providers > Provider sign-ins; signing in opens a terminal running
+  the provider's own login command. Choose an account per agent from the picker
+  beside the model selector, which appears only for providers that have
+  accounts. Claude is enabled; other providers are declared but disabled pending
+  verification of their config directories and credential files.
+- Mark the disabled provider account manifests as unverified. Their config
+  directory, environment variable and credential filenames are best-known
+  guesses rather than tested values, so they now carry a `verified: false` flag
+  and a note saying what was never confirmed. The settings UI shows the note,
+  the daemon warns at startup when a `config.json` override enables one, and
+  account creation returns the same warning.
+- **Breaking:** remove the `params.claudeAccount` provider mechanism added in
+  1.3.0, superseded by provider accounts. Existing `providers.*` entries using it
+  still parse and are ignored; the daemon logs a startup warning naming them.
+  There is no automatic migration — recreate those accounts under Provider
+  sign-ins and delete the stale entries from `config.json`.
+- Report a daemon's full version, including any downstream build suffix, and rank
+  a downstream rebuild above the release it rebuilds when checking for updates.
+  Daemon bundles record the full version in their manifest, so rebuilds no longer
+  install over each other.
+- Apply that same ordering to the desktop app's update check, which previously
+  used plain semver and so reported one downstream rebuild as already up to date
+  when a newer one was published. The rule now lives in one shared module used by
+  the CLI and the desktop app. The desktop app also accepts a bundled daemon
+  whose manifest carries a rebuild suffix the app's own version does not, instead
+  of refusing to start.
+- Fix `daemon status` reporting a healthy daemon as unresponsive when it binds a
+  wildcard address: the listen target is now normalised to a connectable host
+  before probing. This also restores the `Daemon Version` field, which was blank
+  whenever the probe failed.
+
 ## 1.3.5 — 2026-09-16
 
 - Complete merge-target workspace handover so successful merges activate the target workspace and archive the clean source workspace.
