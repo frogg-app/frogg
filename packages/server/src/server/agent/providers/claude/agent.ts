@@ -400,71 +400,6 @@ interface ClaudeAgentClientOptions {
   resolveBinary?: () => Promise<string>;
   resolveVersion?: (signal?: AbortSignal) => Promise<string>;
   configDir?: string;
-  accountProfile?: ClaudeAccountProfile | null;
-}
-
-export const CLAUDE_SHARED_CONTENT = [
-  "commands",
-  "hooks",
-  "plans",
-  "plugins",
-  "projects",
-  "skills",
-  "todos",
-] as const;
-
-export type ClaudeSharedContent = (typeof CLAUDE_SHARED_CONTENT)[number];
-
-export interface ClaudeAccountProfile {
-  configDir: string;
-  sharedFrom: string;
-  sharedContent: ClaudeSharedContent[];
-}
-
-export function resolveClaudeAccountProfile(value: unknown): ClaudeAccountProfile | null {
-  if (!isObjectRecord(value) || !isObjectRecord(value.claudeAccount)) return null;
-  const account = value.claudeAccount;
-  const configDir = readNonEmptyString(account.configDir);
-  if (!configDir) return null;
-  const sharedFrom = readNonEmptyString(account.sharedFrom) ?? path.join(os.homedir(), ".claude");
-  const sharedContent = Array.isArray(account.sharedContent)
-    ? account.sharedContent.filter(
-        (entry): entry is ClaudeSharedContent =>
-          typeof entry === "string" && (CLAUDE_SHARED_CONTENT as readonly string[]).includes(entry),
-      )
-    : [];
-  return {
-    configDir: resolveClaudeAccountDirectory(configDir),
-    sharedFrom: resolveClaudeAccountDirectory(sharedFrom),
-    sharedContent: [...new Set(sharedContent)],
-  };
-}
-
-function resolveClaudeAccountDirectory(input: string): string {
-  return input === "~" || input.startsWith("~/")
-    ? path.join(os.homedir(), input.slice(2))
-    : path.resolve(input);
-}
-
-export async function prepareClaudeAccountProfile(profile: ClaudeAccountProfile): Promise<void> {
-  await fsPromises.mkdir(profile.configDir, { recursive: true });
-  for (const entry of profile.sharedContent) {
-    const source = path.join(profile.sharedFrom, entry);
-    const target = path.join(profile.configDir, entry);
-    try {
-      await fsPromises.lstat(target);
-      continue;
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-    }
-    try {
-      await fsPromises.lstat(source);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") continue;
-      throw error;
-    }
-    await fsPromises.symlink(source, target, process.platform === "win32" ? "junction" : "dir");
-  }
 }
 
 interface ClaudeAgentSessionOptions {
@@ -1569,21 +1504,11 @@ export class ClaudeAgentClient implements AgentClient {
   private readonly resolveBinary: () => Promise<string>;
   private readonly resolveVersion: (signal?: AbortSignal) => Promise<string>;
   private readonly configDir?: string;
-  private readonly accountProfile: ClaudeAccountProfile | null;
 
   constructor(options: ClaudeAgentClientOptions) {
     this.defaults = options.defaults;
     this.logger = options.logger.child({ module: "agent", provider: "claude" });
-    this.accountProfile = options.accountProfile ?? null;
-    this.runtimeSettings = this.accountProfile
-      ? {
-          ...options.runtimeSettings,
-          env: {
-            ...options.runtimeSettings?.env,
-            CLAUDE_CONFIG_DIR: this.accountProfile.configDir,
-          },
-        }
-      : options.runtimeSettings;
+    this.runtimeSettings = options.runtimeSettings;
     this.queryFactory = options.queryFactory;
     this.resolveBinary = options.resolveBinary ?? (() => resolveClaudeBinary(this.runtimeSettings));
     this.resolveVersion =
@@ -1602,9 +1527,6 @@ export class ClaudeAgentClient implements AgentClient {
     options?: AgentCreateSessionOptions,
   ): Promise<AgentSession> {
     const claudeConfig = this.assertConfig(config);
-    if (this.accountProfile) {
-      await prepareClaudeAccountProfile(this.accountProfile);
-    }
     return new ClaudeAgentSession(claudeConfig, {
       defaults: this.defaults,
       runtimeSettings: this.runtimeSettings,
@@ -1633,9 +1555,6 @@ export class ClaudeAgentClient implements AgentClient {
       cwd: merged.cwd,
     };
     const claudeConfig = this.assertConfig(mergedConfig);
-    if (this.accountProfile) {
-      await prepareClaudeAccountProfile(this.accountProfile);
-    }
     return new ClaudeAgentSession(claudeConfig, {
       defaults: this.defaults,
       runtimeSettings: this.runtimeSettings,

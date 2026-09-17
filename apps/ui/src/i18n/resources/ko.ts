@@ -3093,27 +3093,6 @@ export const ko: TranslationResources = {
     providers: {
       title: "프로바이더",
       addProvider: "프로바이더 추가",
-      claudeAccount: {
-        add: "Add Claude account",
-        title: "Add Claude account",
-        description:
-          "Create a separate Claude account profile. Credentials and settings are never shared.",
-        label: "Account label",
-        placeholder: "e.g. Work",
-        required: "Enter an account label",
-        sharedContent: "Share content from your main Claude account",
-        saving: "Saving...",
-        save: "Save account",
-        content: {
-          commands: "Commands",
-          hooks: "Hooks",
-          plans: "Plans",
-          plugins: "Plugins",
-          projects: "Projects",
-          skills: "Skills",
-          todos: "Todos",
-        },
-      },
       providerDetails: "{{name}} 프로바이더 세부 정보",
       enableProvider: "{{name}} 활성화",
       unavailable: "프로바이더를 보려면 이 호스트에 연결하세요",

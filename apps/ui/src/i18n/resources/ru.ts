@@ -3130,27 +3130,6 @@ export const ru: TranslationResources = {
     providers: {
       title: "Провайдеры",
       addProvider: "Добавить провайдера",
-      claudeAccount: {
-        add: "Add Claude account",
-        title: "Add Claude account",
-        description:
-          "Create a separate Claude account profile. Credentials and settings are never shared.",
-        label: "Account label",
-        placeholder: "e.g. Work",
-        required: "Enter an account label",
-        sharedContent: "Share content from your main Claude account",
-        saving: "Saving...",
-        save: "Save account",
-        content: {
-          commands: "Commands",
-          hooks: "Hooks",
-          plans: "Plans",
-          plugins: "Plugins",
-          projects: "Projects",
-          skills: "Skills",
-          todos: "Todos",
-        },
-      },
       providerDetails: "Сведения о провайдере {{name}}",
       enableProvider: "Включить {{name}}",
       unavailable: "Подключитесь к этому хосту, чтобы увидеть провайдеров",

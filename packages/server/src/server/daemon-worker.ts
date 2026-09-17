@@ -3,7 +3,7 @@ import { normalizeBrandEnvironment } from "@frogg/branding/identity";
 import { appendFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { createFroggDaemon } from "./bootstrap.js";
-import { loadConfig } from "./config.js";
+import { findLegacyAccountProviderIds, loadConfig } from "./config.js";
 import { parseDaemonCliOverrides } from "./daemon-cli-overrides.js";
 import { getExecutionServiceStatus } from "./execution-service/client.js";
 import { createGatewayDaemon } from "./execution-service/gateway-daemon.js";
@@ -71,12 +71,27 @@ function writeWorkerLifecycleLog(
   }
 }
 
+function warnOnLegacyAccountProviders(
+  config: BootstrapResult["config"],
+  logger: BootstrapResult["logger"],
+): void {
+  const providerIds = findLegacyAccountProviderIds(config.providerOverrides);
+  if (providerIds.length === 0) return;
+  logger.warn(
+    { providerIds },
+    "Ignoring provider entries that use the removed Claude multi-account provider params. " +
+      "Recreate these accounts under Settings > Providers > Provider sign-ins, then delete the " +
+      "stale provider entries from config.json.",
+  );
+}
+
 function bootstrapFromEnvironment(): BootstrapResult {
   try {
     normalizeBrandEnvironment(brand, process.env);
     const froggHome = resolveFroggHome();
     const config = loadConfig(froggHome, { cli: parseDaemonCliOverrides(process.argv.slice(2)) });
     const logger = createRootLogger({ log: config.log }, { froggHome, file: false });
+    warnOnLegacyAccountProviders(config, logger);
     return { froggHome, logger, config };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

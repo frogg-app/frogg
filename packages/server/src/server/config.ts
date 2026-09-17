@@ -245,6 +245,26 @@ function extractProviderOverrides(
   return providerOverrides.length > 0 ? Object.fromEntries(providerOverrides) : undefined;
 }
 
+/** Param key written by the removed upstream Claude multi-account provider mechanism. */
+const LEGACY_CLAUDE_ACCOUNT_PARAM = "claudeAccount";
+
+/**
+ * Provider entries left behind by the removed upstream Claude multi-account mechanism.
+ *
+ * Those entries still parse (provider `params` is an opaque record), so they never fail
+ * config load; they simply no longer do anything. Report them so the daemon can point the
+ * operator at the provider accounts feature that replaced them.
+ */
+export function findLegacyAccountProviderIds(
+  providerOverrides: Record<string, ProviderOverride> | undefined,
+): string[] {
+  if (!providerOverrides) return [];
+  return Object.entries(providerOverrides)
+    .filter(([, provider]) => provider.params?.[LEGACY_CLAUDE_ACCOUNT_PARAM] !== undefined)
+    .map(([providerId]) => providerId)
+    .sort();
+}
+
 function extractAgentProviderSettings(
   providerOverrides: Record<string, ProviderOverride> | undefined,
 ): AgentProviderRuntimeSettingsMap | undefined {

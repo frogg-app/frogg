@@ -3141,27 +3141,6 @@ export const es: TranslationResources = {
     providers: {
       title: "Proveedores",
       addProvider: "Agregar proveedor",
-      claudeAccount: {
-        add: "Add Claude account",
-        title: "Add Claude account",
-        description:
-          "Create a separate Claude account profile. Credentials and settings are never shared.",
-        label: "Account label",
-        placeholder: "e.g. Work",
-        required: "Enter an account label",
-        sharedContent: "Share content from your main Claude account",
-        saving: "Saving...",
-        save: "Save account",
-        content: {
-          commands: "Commands",
-          hooks: "Hooks",
-          plans: "Plans",
-          plugins: "Plugins",
-          projects: "Projects",
-          skills: "Skills",
-          todos: "Todos",
-        },
-      },
       providerDetails: "Detalles del proveedor{{name}}",
       enableProvider: "Habilitar{{name}}",
       unavailable: "Conéctese a este host para ver proveedores",

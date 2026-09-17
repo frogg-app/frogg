@@ -3150,27 +3150,6 @@ export const fr: TranslationResources = {
     providers: {
       title: "Fournisseurs",
       addProvider: "Ajouter un fournisseur",
-      claudeAccount: {
-        add: "Add Claude account",
-        title: "Add Claude account",
-        description:
-          "Create a separate Claude account profile. Credentials and settings are never shared.",
-        label: "Account label",
-        placeholder: "e.g. Work",
-        required: "Enter an account label",
-        sharedContent: "Share content from your main Claude account",
-        saving: "Saving...",
-        save: "Save account",
-        content: {
-          commands: "Commands",
-          hooks: "Hooks",
-          plans: "Plans",
-          plugins: "Plugins",
-          projects: "Projects",
-          skills: "Skills",
-          todos: "Todos",
-        },
-      },
       providerDetails: "Détails du fournisseur{{name}}",
       enableProvider: "Activer{{name}}",
       unavailable: "Connectez-vous à cet hôte pour voir les fournisseurs",

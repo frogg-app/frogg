@@ -4,7 +4,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, test } from "vitest";
 
-import { loadConfig, resolveBundledWebUiDistDir, resolveConfigFromPersisted } from "./config.js";
+import {
+  findLegacyAccountProviderIds,
+  loadConfig,
+  resolveBundledWebUiDistDir,
+  resolveConfigFromPersisted,
+} from "./config.js";
 import { loadPersistedConfig } from "./persisted-config.js";
 
 const roots: string[] = [];
@@ -242,5 +247,44 @@ describe("server config", () => {
         resourcesPath: packageRoot,
       }),
     ).toBe(path.join(packageRoot, "app-dist"));
+  });
+
+  test("keeps loading a config that still declares removed Claude account providers", async () => {
+    const home = await mkdtemp(path.join(os.tmpdir(), "frogg-legacy-account-config-"));
+    roots.push(home);
+    await writeFile(
+      path.join(home, "config.json"),
+      JSON.stringify({
+        agents: {
+          providers: {
+            "claude-account2": {
+              extends: "claude",
+              label: "Claude account 2",
+              params: {
+                claudeAccount: {
+                  configDir: "~/.claude-account2",
+                  sharedFrom: "~/.claude",
+                  sharedContent: ["skills"],
+                },
+              },
+            },
+            "claude-plain": { extends: "claude", label: "Plain" },
+          },
+        },
+      }),
+    );
+
+    const config = loadConfig(home, { env: {} });
+
+    expect(config.providerOverrides?.["claude-account2"]?.extends).toBe("claude");
+    expect(config.providerOverrides?.["claude-plain"]?.label).toBe("Plain");
+    expect(findLegacyAccountProviderIds(config.providerOverrides)).toEqual(["claude-account2"]);
+  });
+
+  test("reports no legacy account providers for ordinary overrides", async () => {
+    expect(findLegacyAccountProviderIds(undefined)).toEqual([]);
+    expect(
+      findLegacyAccountProviderIds({ claude: { params: { other: true } }, codex: {} }),
+    ).toEqual([]);
   });
 });

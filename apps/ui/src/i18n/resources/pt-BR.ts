@@ -3125,27 +3125,6 @@ export const ptBR: TranslationResources = {
     providers: {
       title: "Provedores",
       addProvider: "Adicionar provedor",
-      claudeAccount: {
-        add: "Add Claude account",
-        title: "Add Claude account",
-        description:
-          "Create a separate Claude account profile. Credentials and settings are never shared.",
-        label: "Account label",
-        placeholder: "e.g. Work",
-        required: "Enter an account label",
-        sharedContent: "Share content from your main Claude account",
-        saving: "Saving...",
-        save: "Save account",
-        content: {
-          commands: "Commands",
-          hooks: "Hooks",
-          plans: "Plans",
-          plugins: "Plugins",
-          projects: "Projects",
-          skills: "Skills",
-          todos: "Todos",
-        },
-      },
       providerDetails: "Detalhes do provedor {{name}}",
       enableProvider: "Ativar {{name}}",
       unavailable: "Conecte-se a este host para ver provedores",
