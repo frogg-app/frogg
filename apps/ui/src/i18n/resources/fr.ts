@@ -2917,6 +2917,47 @@ export const fr: TranslationResources = {
         scopeUser: "Utilisateur",
         scopeProject: "Projet",
       },
+      providerAccounts: {
+        sectionTitle: "Connexions fournisseur",
+        sectionInfo:
+          "Conservez plusieurs connexions pour la CLI d'un fournisseur sur cet hôte. Chaque compte reçoit son propre répertoire de configuration, et les dossiers partagés restent liés au répertoire principal.",
+        unavailable: "Connectez-vous à cet hôte pour gérer les connexions fournisseur.",
+        loadFailed: "Impossible de charger les connexions fournisseur",
+        empty: "Aucune connexion pour l'instant",
+        noEnabledProviders:
+          "Aucun fournisseur de cet hôte ne prend en charge plusieurs connexions.",
+        addAccount: "Ajouter un compte",
+        addAccountTitle: "Ajouter un compte {{provider}}",
+        nameLabel: "Nom du compte",
+        namePlaceholder: "travail",
+        nameHint: "Minuscules, chiffres et traits d'union simples.",
+        nameInvalid: "Utilisez des minuscules, des chiffres et des traits d'union simples.",
+        nameDuplicate: "Un compte nommé « {{slug}} » existe déjà.",
+        slugPreview: "Identifiant : {{slug}}",
+        configDirPreview: "Répertoire de configuration : {{path}}",
+        configDirEnvHint: "Appliqué via {{env}} tant que ce compte est actif.",
+        sharedFoldersLabel: "Dossiers partagés",
+        sharedFoldersHint:
+          "Les dossiers cochés sont liés au répertoire de configuration principal afin de rester partagés entre les connexions.",
+        sharedFoldersEmpty: "Ce fournisseur ne partage aucun dossier.",
+        create: "Créer le compte",
+        active: "Actif",
+        authenticated: "Connecté",
+        notAuthenticated: "Non connecté",
+        authenticate: "Se connecter",
+        authenticateHint:
+          "La connexion ouvre un terminal qui exécute la procédure du fournisseur. Actualisez cette liste une fois terminé.",
+        authenticateNoWorkspace:
+          "La connexion nécessite un espace de travail sur cet hôte pour ouvrir le terminal.",
+        authenticateTerminalName: "Connexion : {{name}}",
+        authenticateFailed: "Impossible d'ouvrir le terminal de connexion",
+        makeActive: "Rendre actif",
+        remove: "Supprimer",
+        removeConfirmTitle: "Supprimer {{name}} ?",
+        removeConfirmMessage:
+          "Frogg oublie ce compte. Son répertoire de configuration {{path}} et les identifiants qu'il contient restent sur le disque.",
+        refresh: "Actualiser",
+      },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",
       },

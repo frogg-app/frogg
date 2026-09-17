@@ -87,6 +87,10 @@ import type {
   RefreshProvidersSnapshotResponseMessage,
   ProviderDiagnosticResponseMessage,
   ProviderUsageListResponseMessage,
+  ProviderAccountListResponseMessage,
+  ProviderAccountCreateResponseMessage,
+  ProviderAccountDeleteResponseMessage,
+  ProviderAccountSetActiveResponseMessage,
   DaemonGetStatusResponse,
   DaemonGetPairingOfferResponse,
   DaemonConfigReloadResponse,
@@ -465,6 +469,10 @@ type GetProvidersSnapshotPayload = GetProvidersSnapshotResponseMessage["payload"
 type RefreshProvidersSnapshotPayload = RefreshProvidersSnapshotResponseMessage["payload"];
 type ProviderDiagnosticPayload = ProviderDiagnosticResponseMessage["payload"];
 type ProviderUsageListPayload = ProviderUsageListResponseMessage["payload"];
+type ProviderAccountListPayload = ProviderAccountListResponseMessage["payload"];
+type ProviderAccountCreatePayload = ProviderAccountCreateResponseMessage["payload"];
+type ProviderAccountDeletePayload = ProviderAccountDeleteResponseMessage["payload"];
+type ProviderAccountSetActivePayload = ProviderAccountSetActiveResponseMessage["payload"];
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DiagnosticsPayload = DiagnosticsResponse["payload"];
@@ -5184,6 +5192,70 @@ export class DaemonClient {
     });
   }
 
+  /**
+   * Provider accounts (multi-sign-in). Every response carries the whole screen —
+   * accounts, the capability manifest and the active account per provider — so a
+   * caller replaces its state from the payload of whichever call it made.
+   */
+  async listProviderAccounts(options?: {
+    provider?: AgentProvider;
+    requestId?: string;
+  }): Promise<ProviderAccountListPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: options?.requestId,
+      message: {
+        type: "provider.account.list.request",
+        ...(options?.provider ? { provider: options.provider } : {}),
+      },
+    });
+  }
+
+  async createProviderAccount(input: {
+    provider: AgentProvider;
+    name: string;
+    linkedFolders?: string[];
+    requestId?: string;
+  }): Promise<ProviderAccountCreatePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.create.request",
+        provider: input.provider,
+        name: input.name,
+        ...(input.linkedFolders ? { linkedFolders: input.linkedFolders } : {}),
+      },
+    });
+  }
+
+  async deleteProviderAccount(input: {
+    accountId: string;
+    requestId?: string;
+  }): Promise<ProviderAccountDeletePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.delete.request",
+        accountId: input.accountId,
+      },
+    });
+  }
+
+  /** `accountId: null` clears the provider's active account and its env overlay. */
+  async setActiveProviderAccount(input: {
+    provider: AgentProvider;
+    accountId: string | null;
+    requestId?: string;
+  }): Promise<ProviderAccountSetActivePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.set_active.request",
+        provider: input.provider,
+        accountId: input.accountId,
+      },
+    });
+  }
+
   async listCommands(options: ListCommandsOptions): Promise<ListCommandsPayload>;
   async listCommands(agentId: string, requestId?: string): Promise<ListCommandsPayload>;
   async listCommands(
@@ -5506,6 +5578,12 @@ export class DaemonClient {
       args?: string[];
       workspaceId?: string;
       size?: { rows: number; cols: number };
+      /**
+       * Run the PTY under a provider account's config directory. With no
+       * `command`, the daemon launches that provider's interactive login
+       * command. The env overlay is resolved server-side; clients never send env.
+       */
+      providerAccountId?: string;
     },
   ): Promise<CreateTerminalPayload> {
     const resolvedRequestId = this.createRequestId(requestId);
@@ -5518,6 +5596,9 @@ export class DaemonClient {
       args: options?.args,
       ...(options?.workspaceId !== undefined ? { workspaceId: options.workspaceId } : {}),
       ...(options?.size !== undefined ? { size: options.size } : {}),
+      ...(options?.providerAccountId !== undefined
+        ? { providerAccountId: options.providerAccountId }
+        : {}),
       requestId: resolvedRequestId,
     });
     return this.sendCorrelatedRequest({
