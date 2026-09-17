@@ -937,6 +937,14 @@ export const AgentSnapshotPayloadSchema = z.object({
   attentionTimestamp: z.string().nullable().optional(),
   archivedAt: z.string().nullable().optional(),
   providerUnavailable: z.boolean().optional(),
+  /**
+   * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+   * The account this agent launched with, echoed back so the composer can show
+   * a read-only account pill. Same three-valued shape as the launch config:
+   * absent = the provider's daemon-wide active account, `null` = the primary
+   * config dir, a string = that account.
+   */
+  providerAccountId: z.string().nullable().optional(),
 });
 
 export type AgentSnapshotPayload = z.infer<typeof AgentSnapshotPayloadSchema>;

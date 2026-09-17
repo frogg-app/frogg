@@ -208,11 +208,13 @@ export const en = {
       default: "Default",
       notSignedIn: "Not signed in",
       selectWithValue: "Select provider account ({{value}})",
+      lockedWithValue: "Provider account ({{value}}), fixed for this agent",
     },
     hints: {
       thinking: "Thinking mode",
       model: "Change model",
       account: "Change account",
+      accountLocked: "Account is fixed for this agent",
       mode: "Change mode",
     },
   },

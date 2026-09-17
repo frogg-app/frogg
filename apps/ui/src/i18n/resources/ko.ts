@@ -210,11 +210,13 @@ export const ko: TranslationResources = {
       default: "기본값",
       notSignedIn: "로그인되지 않음",
       selectWithValue: "프로바이더 계정 선택 ({{value}})",
+      lockedWithValue: "프로바이더 계정 ({{value}}), 이 에이전트에서는 변경할 수 없음",
     },
     hints: {
       thinking: "사고 모드",
       model: "모델 변경",
       account: "계정 변경",
+      accountLocked: "이 에이전트에서는 계정을 변경할 수 없습니다",
       mode: "모드 변경",
     },
   },

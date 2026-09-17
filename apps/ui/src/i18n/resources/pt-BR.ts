@@ -210,11 +210,13 @@ export const ptBR: TranslationResources = {
       default: "Padrão",
       notSignedIn: "Não conectado",
       selectWithValue: "Selecionar conta do provedor ({{value}})",
+      lockedWithValue: "Conta do provedor ({{value}}), fixa para este agente",
     },
     hints: {
       thinking: "Modo de raciocínio",
       model: "Alterar modelo",
       account: "Alterar conta",
+      accountLocked: "A conta é fixa para este agente",
       mode: "Alterar modo de permissão",
     },
   },

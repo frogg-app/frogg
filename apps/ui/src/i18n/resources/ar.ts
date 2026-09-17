@@ -210,11 +210,13 @@ export const ar: TranslationResources = {
       default: "افتراضي",
       notSignedIn: "لم يتم تسجيل الدخول",
       selectWithValue: "حدد حساب المزود ({{value}})",
+      lockedWithValue: "حساب المزود ({{value}})، ثابت لهذا الوكيل",
     },
     hints: {
       thinking: "وضع التفكير",
       model: "تغيير النموذج",
       account: "تغيير الحساب",
+      accountLocked: "الحساب ثابت لهذا الوكيل",
       mode: "تغيير الوضع",
     },
   },

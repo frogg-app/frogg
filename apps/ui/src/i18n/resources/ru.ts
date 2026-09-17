@@ -210,11 +210,13 @@ export const ru: TranslationResources = {
       default: "По умолчанию",
       notSignedIn: "Вход не выполнен",
       selectWithValue: "Выбрать аккаунт провайдера ({{value}})",
+      lockedWithValue: "Аккаунт провайдера ({{value}}), фиксирован для этого агента",
     },
     hints: {
       thinking: "Режим рассуждений",
       model: "Изменить модель",
       account: "Изменить аккаунт",
+      accountLocked: "Аккаунт зафиксирован для этого агента",
       mode: "Изменить режим",
     },
   },

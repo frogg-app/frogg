@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 1.4.0 — 2026-09-17
+
+- Keep the provider account pill in the chat composer once an agent is running.
+  It shows the account the agent actually runs as — including the active account
+  a launch without an explicit pick resolved to — but is greyed out and does not
+  open, since the account is fixed when the agent starts. The daemon now echoes
+  the agent's `providerAccountId` on its snapshot; older daemons simply show the
+  provider's active account.
+
 ## 1.3.6 — 2026-09-17
 
 - Add provider accounts (multi-sign-in). A provider can be signed in as several

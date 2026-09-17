@@ -69,6 +69,29 @@ describe("resolveProviderAccountControlModel", () => {
     }
   });
 
+  // Read-only surfaces describe an agent that is already running, where an
+  // absent selection resolved to the provider's active account at launch.
+  it("resolves an absent selection to the active account only when asked to", () => {
+    const model = resolveProviderAccountControlModel({
+      accounts: [STEVE],
+      defaultAccountId: "acct-steve",
+      selection: undefined,
+      resolveAbsentToActiveAccount: true,
+    });
+    expect(model?.selectedOptionId).toBe("acct-steve");
+    expect(model?.displayLabel).toBe("steve");
+  });
+
+  it("leaves an explicit null on Default even when resolving absent selections", () => {
+    const model = resolveProviderAccountControlModel({
+      accounts: [STEVE],
+      defaultAccountId: "acct-steve",
+      selection: null,
+      resolveAbsentToActiveAccount: true,
+    });
+    expect(model?.selectedOptionId).toBe(DEFAULT_PROVIDER_ACCOUNT_OPTION_ID);
+  });
+
   it("marks an account with no credentials as not ready", () => {
     const model = resolveProviderAccountControlModel({
       accounts: [STEVE, NEW],

@@ -1035,6 +1035,8 @@ pub struct HubExecutionAgentUpdatePayloadAgent {
         skip_serializing_if = "Option::is_none"
     )]
     pub provider_unavailable: Option<bool>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -3620,6 +3622,8 @@ pub struct AgentStatusPayloadInfo {
         skip_serializing_if = "Option::is_none"
     )]
     pub provider_unavailable: Option<bool>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -4165,6 +4169,8 @@ pub struct FetchAgentsResponsePayloadEntriesItemAgent {
         skip_serializing_if = "Option::is_none"
     )]
     pub provider_unavailable: Option<bool>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -4795,6 +4801,8 @@ pub struct FetchAgentHistoryResponsePayloadEntriesItemAgent {
         skip_serializing_if = "Option::is_none"
     )]
     pub provider_unavailable: Option<bool>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -6219,6 +6227,8 @@ pub struct ClearAgentAttentionResponsePayloadAgentsItem {
         skip_serializing_if = "Option::is_none"
     )]
     pub provider_unavailable: Option<bool>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

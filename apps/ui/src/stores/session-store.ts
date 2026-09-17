@@ -95,6 +95,12 @@ export interface Agent {
   model: string | null;
   features?: AgentFeature[];
   thinkingOptionId?: string | null;
+  /**
+   * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+   * The account this agent launched with. `undefined` (including on daemons too
+   * old to send it) means the provider's daemon-wide active account.
+   */
+  providerAccountId?: string | null;
   requiresAttention?: boolean;
   attentionReason?: "finished" | "error" | "permission" | null;
   attentionTimestamp?: Date | null;

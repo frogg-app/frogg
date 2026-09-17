@@ -52,6 +52,9 @@ export function projectAgentSnapshot(agent: Agent): AgentSnapshotPayload {
     model: agent.model,
     ...(agent.features ? { features: agent.features } : {}),
     thinkingOptionId: agent.thinkingOptionId ?? null,
+    ...(agent.providerAccountId !== undefined
+      ? { providerAccountId: agent.providerAccountId }
+      : {}),
     createdAt: agent.createdAt.toISOString(),
     updatedAt: agent.updatedAt.toISOString(),
     lastUserMessageAt: agent.lastUserMessageAt?.toISOString() ?? null,
@@ -114,6 +117,9 @@ export function normalizeAgentSnapshot(snapshot: AgentSnapshotPayload, serverId:
     model: snapshot.model ?? null,
     features: snapshot.features,
     thinkingOptionId: snapshot.thinkingOptionId ?? null,
+    // Deliberately not coalesced: `undefined` means "the provider's active
+    // account", which is distinct from the explicit `null` Default pick.
+    providerAccountId: snapshot.providerAccountId,
     requiresAttention: snapshot.requiresAttention ?? false,
     attentionReason: snapshot.attentionReason ?? null,
     attentionTimestamp,

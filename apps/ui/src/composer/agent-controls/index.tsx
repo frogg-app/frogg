@@ -105,6 +105,9 @@ type AgentControlSelector = "provider" | "mode" | "model" | "thinking" | `featur
 
 const EMPTY_AGENT_PROVIDER_DEFINITIONS: AgentProviderDefinition[] = [];
 
+/** The read-only account pill never selects; it only reports what the agent runs as. */
+function noopSelectAccount(): void {}
+
 interface ControlledAgentControlsProps {
   provider: string;
   providerOptions?: AgentControlOption[];
@@ -252,19 +255,22 @@ function resolveHasAnyControl({
   thinkingOptions,
   features,
   hasMode,
+  providerAccountControl,
 }: {
   providerOptions: AgentControlOption[] | undefined;
   canSelectModel: boolean;
   thinkingOptions: AgentControlOption[] | undefined;
   features: AgentFeature[] | undefined;
   hasMode: boolean;
+  providerAccountControl: ProviderAccountControlValue | null | undefined;
 }) {
   return (
     Boolean(providerOptions?.length) ||
     canSelectModel ||
     Boolean(thinkingOptions?.length) ||
     Boolean(features?.length) ||
-    hasMode
+    hasMode ||
+    Boolean(providerAccountControl?.accounts?.length)
   );
 }
 
@@ -403,6 +409,7 @@ type AgentControlsSlice = {
   model: string | null | undefined;
   features: AgentFeature[] | undefined;
   thinkingOptionId: string | null | undefined;
+  providerAccountId: string | null | undefined;
   lastUsage: unknown;
 } | null;
 
@@ -422,6 +429,10 @@ function selectAgentControlsSlice(
     model: currentAgent.model,
     features: currentAgent.features,
     thinkingOptionId: currentAgent.thinkingOptionId,
+    // COMPAT(perAgentProviderAccounts): undefined on daemons too old to send it,
+    // which resolves to the provider's active account just like a launch that
+    // omitted the field.
+    providerAccountId: currentAgent.providerAccountId,
     lastUsage: currentAgent.lastUsage,
   };
 }
@@ -453,6 +464,26 @@ function buildAgentProviderDefinitions(
     ? resolveProviderDefinition(agentProvider, snapshotEntries)
     : undefined;
   return definition ? [definition] : [];
+}
+
+/**
+ * COMPAT(perAgentProviderAccounts): a launched agent is bound to the config dir its
+ * provider process started with, so its pill stays visible but read-only rather
+ * than disappearing once the agent exists. Null when the provider has no accounts.
+ */
+function buildReadOnlyProviderAccountControl(
+  entry: ReturnType<typeof resolveSnapshotSelectedEntry>,
+  providerAccountId: string | null | undefined,
+): ProviderAccountControlValue | null {
+  const accounts = entry?.accounts;
+  if (!accounts) return null;
+  return {
+    accounts,
+    defaultAccountId: entry?.defaultAccountId,
+    selectedAccountId: providerAccountId,
+    onSelectAccount: noopSelectAccount,
+    readOnly: true,
+  };
 }
 
 function buildAgentProviderModels(
@@ -555,6 +586,7 @@ function ControlledAgentControls({
     thinkingOptions,
     features,
     hasMode: modeControl !== null && modeControl !== undefined,
+    providerAccountControl,
   });
   const featureControls = useMemo(
     () =>
@@ -1794,6 +1826,11 @@ export const AgentControls = memo(function AgentControls({
     [refreshSnapshot],
   );
 
+  const providerAccountControl = useMemo(
+    () => buildReadOnlyProviderAccountControl(snapshotSelectedEntry, agent?.providerAccountId),
+    [agent?.providerAccountId, snapshotSelectedEntry],
+  );
+
   if (!agent) {
     return null;
   }
@@ -1825,6 +1862,7 @@ export const AgentControls = memo(function AgentControls({
         onDropdownClose={onDropdownClose}
         disabled={!client}
         modeControl={modeControl}
+        providerAccountControl={providerAccountControl}
         modelSelectorServerId={serverId}
         isCompactLayout={isCompactLayout}
       />

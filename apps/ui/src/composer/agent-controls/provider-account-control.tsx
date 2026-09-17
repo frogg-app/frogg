@@ -27,6 +27,12 @@ export interface ProviderAccountControlValue {
   selectedAccountId: ProviderAccountSelection;
   onSelectAccount: (accountId: string | null) => void;
   disabled?: boolean;
+  /**
+   * A launched agent cannot change account: the provider process is already
+   * running against one config dir. The pill stays on the toolbar so the agent's
+   * account is still visible, but it is greyed out and never opens a dropdown.
+   */
+  readOnly?: boolean;
 }
 
 function ProviderAccountComboboxOption({
@@ -81,6 +87,7 @@ export function ProviderAccountControl({
   selectedAccountId,
   onSelectAccount,
   disabled = false,
+  readOnly = false,
   surface = "toolbar",
   onClose,
 }: ProviderAccountControlValue & { surface?: "toolbar" | "sheet"; onClose?: () => void }) {
@@ -95,8 +102,9 @@ export function ProviderAccountControl({
         accounts,
         defaultAccountId,
         selection: selectedAccountId,
+        resolveAbsentToActiveAccount: readOnly,
       }),
-    [accounts, defaultAccountId, selectedAccountId],
+    [accounts, defaultAccountId, readOnly, selectedAccountId],
   );
 
   const optionsById = useMemo(() => {
@@ -117,7 +125,10 @@ export function ProviderAccountControl({
     },
     [onClose],
   );
-  const handlePress = useCallback(() => handleOpenChange(!open), [handleOpenChange, open]);
+  const handlePress = useCallback(() => {
+    if (readOnly) return;
+    handleOpenChange(!open);
+  }, [handleOpenChange, open, readOnly]);
   const handleSelect = useCallback(
     (optionId: string) => {
       // Unauthenticated rows render disabled, but never trust the view layer to
@@ -174,33 +185,39 @@ export function ProviderAccountControl({
             surface={surface}
             label={t("agentControls.account.title")}
             value={model.displayLabel}
-            showCaret={surface === "toolbar" && presentation.showCarets}
+            showCaret={!readOnly && surface === "toolbar" && presentation.showCarets}
             open={open}
-            disabled={disabled}
+            disabled={disabled || readOnly}
             onPress={handlePress}
-            accessibilityLabel={t("agentControls.account.selectWithValue", {
-              value: model.displayLabel,
-            })}
+            accessibilityLabel={
+              readOnly
+                ? t("agentControls.account.lockedWithValue", { value: model.displayLabel })
+                : t("agentControls.account.selectWithValue", { value: model.displayLabel })
+            }
             testID="provider-account-control"
           />
         </TooltipTrigger>
         <TooltipContent side="top" align="center" offset={8}>
-          <Text style={styles.tooltipText}>{t("agentControls.hints.account")}</Text>
+          <Text style={styles.tooltipText}>
+            {readOnly ? t("agentControls.hints.accountLocked") : t("agentControls.hints.account")}
+          </Text>
         </TooltipContent>
       </Tooltip>
-      <Combobox
-        options={comboboxOptions}
-        value={model.selectedOptionId}
-        onSelect={handleSelect}
-        searchable={false}
-        open={open}
-        onOpenChange={handleOpenChange}
-        anchorRef={anchorRef}
-        desktopPlacement="top-start"
-        desktopMinWidth={240}
-        header={sheetHeader}
-        renderOption={renderOption}
-      />
+      {readOnly ? null : (
+        <Combobox
+          options={comboboxOptions}
+          value={model.selectedOptionId}
+          onSelect={handleSelect}
+          searchable={false}
+          open={open}
+          onOpenChange={handleOpenChange}
+          anchorRef={anchorRef}
+          desktopPlacement="top-start"
+          desktopMinWidth={240}
+          header={sheetHeader}
+          renderOption={renderOption}
+        />
+      )}
     </>
   );
 }

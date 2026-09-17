@@ -168,6 +168,42 @@ describe("ProviderAccountControl", () => {
     expect(onSelectAccount).not.toHaveBeenCalled();
   });
 
+  describe("read-only (a launched agent)", () => {
+    it("keeps the pill on the toolbar but never opens the picker", () => {
+      const { onSelectAccount } = renderControl({
+        readOnly: true,
+        selectedAccountId: "acct-steve",
+      });
+      const pill = screen.getByTestId("provider-account-control");
+      expect(pill.textContent).toContain("steve");
+      openPicker();
+      expect(screen.queryByTestId("combobox")).toBeNull();
+      expect(onSelectAccount).not.toHaveBeenCalled();
+    });
+
+    // A launch that omitted `providerAccountId` ran on the provider's active
+    // account, so the pill must name it rather than claim "Default".
+    it("resolves an absent selection to the daemon-wide active account", () => {
+      renderControl({
+        readOnly: true,
+        selectedAccountId: undefined,
+        defaultAccountId: "acct-steve",
+      });
+      expect(screen.getByTestId("provider-account-control").textContent).toContain("steve");
+    });
+
+    it("still shows Default for an explicit null pick", () => {
+      renderControl({
+        readOnly: true,
+        selectedAccountId: null,
+        defaultAccountId: "acct-steve",
+      });
+      const label = screen.getByTestId("provider-account-control").textContent ?? "";
+      expect(label).toContain("Default");
+      expect(label).not.toContain("steve");
+    });
+  });
+
   // Default pins the primary config dir rather than following the active
   // account, so the pill must not advertise that account's name.
   it("shows a plain Default on the pill even when an account is active", () => {

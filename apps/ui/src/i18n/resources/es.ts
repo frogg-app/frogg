@@ -210,11 +210,13 @@ export const es: TranslationResources = {
       default: "Predeterminada",
       notSignedIn: "Sin iniciar sesión",
       selectWithValue: "Seleccione la cuenta del proveedor ({{value}})",
+      lockedWithValue: "Cuenta del proveedor ({{value}}), fija para este agente",
     },
     hints: {
       thinking: "Modo de pensamiento",
       model: "Cambiar modelo",
       account: "Cambiar cuenta",
+      accountLocked: "La cuenta es fija para este agente",
       mode: "Cambiar modo",
     },
   },

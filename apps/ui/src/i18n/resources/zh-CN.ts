@@ -210,11 +210,13 @@ export const zhCN: TranslationResources = {
       default: "默认",
       notSignedIn: "未登录",
       selectWithValue: "选择 Provider 账号（{{value}}）",
+      lockedWithValue: "Provider 账号（{{value}}），此 Agent 不可更改",
     },
     hints: {
       thinking: "Thinking mode",
       model: "切换 Model",
       account: "切换账号",
+      accountLocked: "此 Agent 的账号不可更改",
       mode: "更改模式",
     },
   },

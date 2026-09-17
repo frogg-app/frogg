@@ -135,6 +135,11 @@ export function toAgentPayload(
     persistence: projectPersistenceHandleForWire(agent.persistence),
     title: options?.title ?? null,
     labels: agent.labels,
+    // COMPAT(perAgentProviderAccounts): only present when the agent pinned an
+    // account, so `undefined` keeps meaning "the provider's active account".
+    ...(agent.config.providerAccountId !== undefined
+      ? { providerAccountId: agent.config.providerAccountId }
+      : {}),
   };
 
   const usage = sanitizeUsage(agent.lastUsage);
@@ -244,6 +249,9 @@ export function buildStoredAgentPayload(
     attentionTimestamp: record.attentionTimestamp ?? null,
     archivedAt: record.archivedAt ?? null,
     labels: normalizeLabels(record.labels),
+    ...(record.config?.providerAccountId !== undefined
+      ? { providerAccountId: record.config.providerAccountId }
+      : {}),
     ...(providerAvailable ? {} : { providerUnavailable: true }),
   };
 }

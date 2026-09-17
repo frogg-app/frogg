@@ -1940,6 +1940,12 @@
                             },
                             "providerUnavailable": {
                               "type": "boolean"
+                            },
+                            "providerAccountId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -3226,6 +3232,12 @@
                         },
                         "providerUnavailable": {
                           "type": "boolean"
+                        },
+                        "providerAccountId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -10066,6 +10078,12 @@
                             },
                             "providerUnavailable": {
                               "type": "boolean"
+                            },
+                            "providerAccountId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -15574,6 +15592,12 @@
                         },
                         "providerUnavailable": {
                           "type": "boolean"
+                        },
+                        "providerAccountId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "required": [
@@ -16645,6 +16669,12 @@
                               },
                               "providerUnavailable": {
                                 "type": "boolean"
+                              },
+                              "providerAccountId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               }
                             },
                             "required": [
@@ -17884,6 +17914,12 @@
                               },
                               "providerUnavailable": {
                                 "type": "boolean"
+                              },
+                              "providerAccountId": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               }
                             },
                             "required": [
@@ -20961,6 +20997,12 @@
                             },
                             "providerUnavailable": {
                               "type": "boolean"
+                            },
+                            "providerAccountId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -22074,6 +22116,12 @@
                             },
                             "providerUnavailable": {
                               "type": "boolean"
+                            },
+                            "providerAccountId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -30773,6 +30821,12 @@
                             },
                             "providerUnavailable": {
                               "type": "boolean"
+                            },
+                            "providerAccountId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -31859,6 +31913,12 @@
                           },
                           "providerUnavailable": {
                             "type": "boolean"
+                          },
+                          "providerAccountId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -36369,6 +36429,12 @@
                             },
                             "providerUnavailable": {
                               "type": "boolean"
+                            },
+                            "providerAccountId": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "required": [

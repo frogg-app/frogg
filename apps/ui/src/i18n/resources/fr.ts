@@ -212,11 +212,13 @@ export const fr: TranslationResources = {
       default: "Par défaut",
       notSignedIn: "Non connecté",
       selectWithValue: "Sélectionnez le compte du fournisseur ({{value}})",
+      lockedWithValue: "Compte du fournisseur ({{value}}), fixe pour cet agent",
     },
     hints: {
       thinking: "Mode réflexion",
       model: "Changer de modèle",
       account: "Changer de compte",
+      accountLocked: "Le compte est fixe pour cet agent",
       mode: "Changer de mode",
     },
   },

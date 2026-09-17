@@ -239,6 +239,22 @@ describe("toStoredAgentRecord", () => {
 });
 
 describe("toAgentPayload", () => {
+  // COMPAT(perAgentProviderAccounts): the composer shows a read-only account pill
+  // for a launched agent, which needs the account echoed back on the snapshot.
+  it("echoes the agent's provider account id, including an explicit null", () => {
+    expect(
+      toAgentPayload(createManagedAgent({ config: { providerAccountId: "acct-peter" } }))
+        .providerAccountId,
+    ).toBe("acct-peter");
+
+    const withDefault = toAgentPayload(createManagedAgent({ config: { providerAccountId: null } }));
+    expect(withDefault.providerAccountId).toBeNull();
+
+    // Absent stays absent: that means "the provider's daemon-wide active account".
+    const unset = toAgentPayload(createManagedAgent());
+    expect("providerAccountId" in unset).toBe(false);
+  });
+
   it("serializes dates, clones arrays, and hides session", () => {
     const permissionA = createPermission({ id: "perm-a" });
     const permissionB = createPermission({

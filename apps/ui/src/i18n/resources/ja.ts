@@ -210,11 +210,13 @@ export const ja: TranslationResources = {
       default: "デフォルト",
       notSignedIn: "サインインしていません",
       selectWithValue: "プロバイダーアカウントを選択（{{value}}）",
+      lockedWithValue: "プロバイダーアカウント（{{value}}）、このエージェントでは変更できません",
     },
     hints: {
       thinking: "思考モード",
       model: "モデルを変更",
       account: "アカウントを変更",
+      accountLocked: "このエージェントではアカウントを変更できません",
       mode: "権限モードを変更",
     },
   },

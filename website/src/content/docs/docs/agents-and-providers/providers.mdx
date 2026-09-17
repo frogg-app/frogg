@@ -160,15 +160,19 @@ The composer shows an **account** control immediately to the right of the model 
 appears only when the provider actually has accounts — a provider with none, or one whose
 accounts capability is off, shows the same row of controls as before.
 
-The list is **Default** followed by every account for that provider. When an account is
-active, the Default row names it, so you can see what the agent gets if you leave the control
-alone. An account that is not signed in yet is shown greyed out with *Not signed in* and
-cannot be chosen, rather than launching an agent that would fail to authenticate.
+The list is **Default** followed by every account for that provider. **Default** always means
+the primary config directory, so it is never relabelled with the active account's name — that
+account has its own row. An account that is not signed in yet is shown greyed out with
+*Not signed in* and cannot be chosen, rather than launching an agent that would fail to
+authenticate.
 
-The choice applies to the agent you are about to start. Because the account is fixed at
-launch, a running agent's control row has no account control; start a new agent to use a
-different one. Adding, removing or signing in to an account updates an open composer
-straight away — there is nothing to refresh.
+The choice applies to the agent you are about to start. Adding, removing or signing in to an
+account updates an open composer straight away — there is nothing to refresh.
+
+Once the agent is running, the account control stays in the chat composer but is greyed out
+and does not open: it names the account the agent runs as, including the active account it
+resolved to when the agent was launched without a choice. Because the account is fixed at
+launch, start a new agent to use a different one.
 
 ### From the app
 
