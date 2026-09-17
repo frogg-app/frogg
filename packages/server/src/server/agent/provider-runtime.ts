@@ -6,6 +6,8 @@ import {
 } from "./provider-snapshot-manager.js";
 import { OpenCodeBridge } from "./providers/opencode/bridge.js";
 import type { FroggToolCatalog } from "./tools/types.js";
+import { ProviderAccountStore } from "../provider-accounts/provider-account-store.js";
+import { resolveProviderAccountEnv } from "../provider-accounts/provider-account-env.js";
 
 export interface AgentProviderRuntime {
   snapshotManager: ProviderSnapshotManager;
@@ -23,12 +25,24 @@ export async function createAgentProviderRuntime(
   options: CreateAgentProviderRuntimeOptions,
 ): Promise<AgentProviderRuntime> {
   const bridge = new OpenCodeBridge({ froggHome: options.froggHome, logger: options.logger });
+  const providerAccountStore = new ProviderAccountStore({ froggHome: options.froggHome });
   try {
     await bridge.start();
     const snapshotManager = new ProviderSnapshotManager({
       ...options.snapshotManager,
       logger: options.logger.child({ module: "provider-snapshot-manager" }),
       openCodeBridge: bridge,
+      providerAccountEnv: (providerId) => {
+        try {
+          return resolveProviderAccountEnv(providerAccountStore, providerId);
+        } catch (error) {
+          options.logger.warn(
+            { err: error, providerId },
+            "Failed to resolve provider account env overlay",
+          );
+          return undefined;
+        }
+      },
     });
     let shutdownPromise: Promise<void> | null = null;
     return {

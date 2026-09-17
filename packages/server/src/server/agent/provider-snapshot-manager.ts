@@ -100,6 +100,8 @@ export interface ProviderSnapshotManagerOptions {
   refreshTimeoutMs?: number;
   diagnosticTimeoutMs?: number;
   openCodeBridge?: OpenCodeBridge;
+  /** Active sign-in account env overlay per provider (multi-sign-in). */
+  providerAccountEnv?: (providerId: string) => Record<string, string> | undefined;
 }
 
 interface ProviderSnapshotRefreshOptions {
@@ -211,6 +213,7 @@ export class ProviderSnapshotManager {
   private readonly workspaceGitService?: Pick<WorkspaceGitService, "resolveRepoRoot">;
   private readonly managedProcesses?: ManagedProcessRegistry;
   private readonly openCodeBridge?: OpenCodeBridge;
+  private readonly providerAccountEnv?: (providerId: string) => Record<string, string> | undefined;
   private readonly isDev: boolean;
   private readonly extraClients: Partial<Record<AgentProvider, AgentClient>>;
   private runtimeSettings: AgentProviderRuntimeSettingsMap | undefined;
@@ -225,6 +228,7 @@ export class ProviderSnapshotManager {
     this.workspaceGitService = options.workspaceGitService;
     this.managedProcesses = options.managedProcesses;
     this.openCodeBridge = options.openCodeBridge;
+    this.providerAccountEnv = options.providerAccountEnv;
     this.isDev = options.isDev === true;
     this.extraClients = options.extraClients ?? {};
     this.runtimeSettings = options.runtimeSettings;
@@ -587,6 +591,16 @@ export class ProviderSnapshotManager {
     this.providerLoads.clear();
   }
 
+  /**
+   * Rebuilds the registry so a provider-account switch takes effect on the next
+   * agent launch without restarting the daemon.
+   */
+  refreshProviderAccounts(): void {
+    if (this.destroyed) return;
+    this.providerRegistry = this.buildRegistry();
+    this.providerClients = { ...this.extraClients } as Record<AgentProvider, AgentClient>;
+  }
+
   private buildRegistry(): Record<AgentProvider, ProviderDefinition> {
     const registry = buildProviderRegistry(this.logger, {
       runtimeSettings: this.runtimeSettings,
@@ -594,6 +608,7 @@ export class ProviderSnapshotManager {
       workspaceGitService: this.workspaceGitService,
       managedProcesses: this.managedProcesses,
       openCodeBridge: this.openCodeBridge,
+      ...(this.providerAccountEnv ? { providerAccountEnv: this.providerAccountEnv } : {}),
       isDev: this.isDev,
     });
 

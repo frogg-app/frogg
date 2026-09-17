@@ -41,6 +41,7 @@ import {
   type SessionOptions,
   type SessionRuntimeMetrics,
 } from "./session.js";
+import { ProviderAccountStore } from "./provider-accounts/provider-account-store.js";
 import type { HubRelationshipManagement } from "./hub/relationship-controller.js";
 import { WorkspaceSetupRuntime } from "./workspace-setup-runtime.js";
 import type { HubExecutionAgents } from "./hub/daemon-executions.js";
@@ -1632,6 +1633,19 @@ export class VoiceAssistantWebSocketServer {
     );
   }
 
+  // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.
+  // True when the capability manifest, after config.json overrides, has at least
+  // one provider whose accounts are enabled.
+  private get providerAccountsEnabled(): boolean {
+    try {
+      return new ProviderAccountStore({ froggHome: this.froggHome })
+        .listCapabilities()
+        .some((capability) => capability.enabled);
+    } catch {
+      return false;
+    }
+  }
+
   private buildServerInfoStatusPayload(session: Session): ServerInfoStatusPayload {
     return {
       status: "server_info",
@@ -1648,6 +1662,9 @@ export class VoiceAssistantWebSocketServer {
         directorySync: true,
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.
         providerAgentDefinitions: true,
+        // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.
+        // Advertised only when at least one provider has accounts enabled.
+        ...(this.providerAccountsEnabled ? { providerAccounts: true } : {}),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.

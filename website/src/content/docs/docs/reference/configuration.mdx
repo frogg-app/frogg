@@ -131,6 +131,39 @@ is set, the app shows the endpoint read-only.
 | `agents.metadataGeneration.providers` | array  | unset    | Ordered `[{ provider, model?, thinkingOptionId? }]` used to generate titles, branch names, commit messages and PR text |
 | `agents.skills.selection`            | object  | all      | `{ "mode": "all" }` or `{ "mode": "custom", "skills": ["frogg", "frogg-help"] }`. See [skills](/docs/agents-and-providers/skills/) |
 
+## `providerAccounts`
+
+Multi-sign-in state, keyed by provider id. Only `claude` supports accounts today; the other
+entries exist so enabling one is a config edit. See
+[provider accounts](/docs/agents-and-providers/providers/#provider-accounts-multi-sign-in).
+
+| Key                                      | Type             | Default              | Meaning |
+| ---------------------------------------- | ---------------- | -------------------- | ------- |
+| `providerAccounts.<provider>.enabled`    | boolean          | `true` for `claude`, `false` otherwise | Whether the daemon accepts account management for the provider |
+| `providerAccounts.<provider>.activeAccountId` | string \| null | unset                | Account whose config directory the provider's agents use |
+| `providerAccounts.<provider>.accounts`   | array            | `[]`                 | Managed accounts; written by the daemon, not hand-edited |
+
+```json
+{
+  "providerAccounts": {
+    "claude": {
+      "enabled": true,
+      "activeAccountId": "4d1c…",
+      "accounts": [
+        {
+          "id": "4d1c…",
+          "provider": "claude",
+          "name": "peter",
+          "configDir": "/home/frogg/.claude-peter",
+          "linkedFolders": ["commands", "skills", "agents", "projects", "sessions", "shell-snapshots"],
+          "createdAt": "2026-09-17T09:00:00.000Z"
+        }
+      ]
+    }
+  }
+}
+```
+
 ## `worktrees`
 
 | Key                       | Type   | Default              | Meaning |

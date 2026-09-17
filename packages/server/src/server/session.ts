@@ -176,6 +176,9 @@ import {
 } from "./session/checkout/git-metadata-generator.js";
 import { ScheduleSession } from "./session/schedule/schedule-session.js";
 import { ProviderCatalogSession } from "./session/provider/provider-catalog-session.js";
+import { ProviderAccountSession } from "./session/provider/provider-account-session.js";
+import { ProviderAccountStore } from "./provider-accounts/provider-account-store.js";
+import { resolveProviderAccountEnvById } from "./provider-accounts/provider-account-env.js";
 import { WorkspaceFilesSession } from "./session/files/workspace-files-session.js";
 import { listProviderAgentDefinitions } from "./agent/provider-agent-definitions.js";
 import { AgentConfigSession } from "./session/agent-config/agent-config-session.js";
@@ -717,6 +720,8 @@ export class Session {
   private readonly checkoutSession: CheckoutSession;
   private readonly scheduleSession: ScheduleSession;
   private readonly providerCatalogSession: ProviderCatalogSession;
+  private readonly providerAccountSession: ProviderAccountSession;
+  private readonly providerAccountStore: ProviderAccountStore;
   private readonly workspaceFilesSession: WorkspaceFilesSession;
   private readonly agentConfigSession: AgentConfigSession;
   private readonly projectConfigSession: ProjectConfigSession;
@@ -948,6 +953,15 @@ export class Session {
       providerUsageService,
       logger: this.sessionLogger,
     });
+    this.providerAccountStore = new ProviderAccountStore({ froggHome: this.froggHome });
+    this.providerAccountSession = new ProviderAccountSession({
+      host: {
+        emit: (msg) => this.emit(msg),
+        onProviderAccountsChanged: () => providerSnapshotManager.refreshProviderAccounts(),
+      },
+      store: this.providerAccountStore,
+      logger: this.sessionLogger,
+    });
     this.agentConfigSession = new AgentConfigSession({
       host: {
         emit: (msg) => this.emit(msg),
@@ -1017,6 +1031,8 @@ export class Session {
       clientSupportsWrapReflow: () =>
         this.clientCapabilities.has(CLIENT_CAPS.terminalReflowableSnapshot),
       getClientBufferedAmount: () => this.getTransportBufferedAmount(),
+      resolveProviderAccountLaunch: (accountId) =>
+        resolveProviderAccountEnvById(this.providerAccountStore, accountId),
     });
     this.agentUpdates = createAgentUpdatesService({
       emit: (message) => this.emit(message),
@@ -2577,6 +2593,14 @@ export class Session {
         return this.providerCatalogSession.handleProviderDiagnosticRequest(msg);
       case "provider.usage.list.request":
         return this.providerCatalogSession.handleProviderUsageListRequest(msg);
+      case "provider.account.list.request":
+        return this.providerAccountSession.handleProviderAccountListRequest(msg);
+      case "provider.account.create.request":
+        return this.providerAccountSession.handleProviderAccountCreateRequest(msg);
+      case "provider.account.delete.request":
+        return this.providerAccountSession.handleProviderAccountDeleteRequest(msg);
+      case "provider.account.set_active.request":
+        return this.providerAccountSession.handleProviderAccountSetActiveRequest(msg);
       default:
         return undefined;
     }

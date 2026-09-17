@@ -104,6 +104,12 @@ export interface ProviderDefinition extends AgentProviderDefinition {
 
 export interface BuildProviderRegistryOptions {
   runtimeSettings?: AgentProviderRuntimeSettingsMap;
+  /**
+   * Env overlay contributed by the provider's active sign-in account
+   * (multi-sign-in). It sits BELOW `runtimeSettings.env` and the config.json
+   * provider override, so an explicit `providers.<id>.env` always wins.
+   */
+  providerAccountEnv?: (providerId: string) => Record<string, string> | undefined;
   providerOverrides?: Record<string, ProviderOverride>;
   workspaceGitService?: Pick<WorkspaceGitService, "resolveRepoRoot">;
   managedProcesses?: ManagedProcessRegistry;
@@ -295,6 +301,21 @@ function mergeRuntimeSettings(
         ? [...(base?.disallowedTools ?? []), ...(override?.disallowedTools ?? [])]
         : undefined,
   };
+}
+
+/**
+ * Folds a provider account's env overlay under the configured runtime settings.
+ * The account overlay is the LOWEST-priority env source: an explicit
+ * `agents.providers.<id>.env` in config.json overrides it key by key.
+ */
+export function applyProviderAccountEnv(
+  accountEnv: Record<string, string> | undefined,
+  runtimeSettings: ProviderRuntimeSettings | undefined,
+): ProviderRuntimeSettings | undefined {
+  if (!accountEnv || Object.keys(accountEnv).length === 0) {
+    return runtimeSettings;
+  }
+  return mergeRuntimeSettings({ env: accountEnv }, runtimeSettings);
 }
 
 function applyOverrideToDefinition(
@@ -705,7 +726,11 @@ function buildResolvedBuiltinProviders(
   runtimeSettings: AgentProviderRuntimeSettingsMap | undefined,
   options: Pick<
     BuildProviderRegistryOptions,
-    "workspaceGitService" | "managedProcesses" | "ompRuntime" | "openCodeBridge"
+    | "workspaceGitService"
+    | "managedProcesses"
+    | "ompRuntime"
+    | "openCodeBridge"
+    | "providerAccountEnv"
   >,
   isDev: boolean,
 ): Map<string, ResolvedProvider> {
@@ -718,9 +743,9 @@ function buildResolvedBuiltinProviders(
   for (const definition of definitions) {
     const override = providerOverrides[definition.id];
     const factory = getProviderClientFactory(definition.id);
-    const mergedRuntimeSettings = mergeRuntimeSettings(
-      runtimeSettings?.[definition.id],
-      toRuntimeSettings(override),
+    const mergedRuntimeSettings = applyProviderAccountEnv(
+      options.providerAccountEnv?.(definition.id),
+      mergeRuntimeSettings(runtimeSettings?.[definition.id], toRuntimeSettings(override)),
     );
 
     resolvedProviders.set(definition.id, {
@@ -873,6 +898,7 @@ export function buildProviderRegistry(
       managedProcesses: options?.managedProcesses,
       ompRuntime: options?.ompRuntime,
       openCodeBridge: options?.openCodeBridge,
+      ...(options?.providerAccountEnv ? { providerAccountEnv: options.providerAccountEnv } : {}),
     },
     options?.isDev === true,
   );

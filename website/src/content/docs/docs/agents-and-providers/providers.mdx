@@ -104,6 +104,35 @@ Toggle providers in **host settings → Providers**, or in config:
 
 Apply with `frogg reload`.
 
+## Provider accounts (multi-sign-in)
+
+A provider CLI keeps its sign-in in one config directory. Frogg can manage more than one of
+those directories so you can switch between logins — a personal and a work Claude
+subscription, for example — without signing out.
+
+Creating an account makes `<home>/.claude-<name>` and symlinks the shared folders
+(`commands`, `skills`, `agents`, `projects`, `sessions`, `shell-snapshots`) back to the
+primary `~/.claude`, so commands, skills and history stay shared while credentials do not.
+You pick which folders to link; a folder that does not exist in the primary directory is
+skipped with a warning. On Windows, creating symlinks needs Developer Mode or an elevated
+shell; links that fail are reported per folder and the account still works.
+
+Account names are lowercase slugs (`[a-z0-9-]`, no leading, trailing or doubled hyphens).
+
+Sign an account in by opening a terminal for it: the daemon launches the provider's
+interactive login command with `CLAUDE_CONFIG_DIR` pointed at that account's directory, and
+you run `/login` inside it. An account shows as authenticated once its credential file
+(`.credentials.json`) exists. Agents launched for the provider inherit the active account's
+config directory; an explicit `agents.providers.<id>.env` in `config.json` still wins.
+
+Deleting an account only removes it from Frogg's list — the config directory, and the
+credentials in it, are left on disk for you to remove.
+
+Only Claude has accounts enabled. Other providers are declared but off; turn one on with
+`providerAccounts.<provider>.enabled` in
+[`config.json`](/docs/reference/configuration/#provideraccounts) once its layout is
+verified.
+
 ## Usage and limits
 
 **Host settings → Usage** shows provider-reported quota where the provider exposes it

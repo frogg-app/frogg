@@ -83,6 +83,15 @@ export interface TerminalSessionControllerOptions {
   // Bytes queued on the client transport but not yet sent, or null when the
   // transport exposes no backpressure signal (e.g. the multiplexed relay socket).
   getClientBufferedAmount?: () => number | null;
+  // Resolves a provider sign-in account to the env overlay and interactive login
+  // command the daemon applies to the PTY. The client only ever names an account
+  // id; it never supplies an env map.
+  resolveProviderAccountLaunch?: (accountId: string) => ProviderAccountLaunch | null;
+}
+
+export interface ProviderAccountLaunch {
+  env: Record<string, string>;
+  loginCommand: { command: string; args: string[] };
 }
 
 interface TerminalWorkspaceRef {
@@ -131,6 +140,9 @@ export class TerminalSessionController {
   private readonly listTerminalWorkspaceRoots: () => Promise<readonly string[]>;
   private readonly clientSupportsWrapReflow: () => boolean;
   private readonly getClientBufferedAmount: () => number | null;
+  private readonly resolveProviderAccountLaunch:
+    | ((accountId: string) => ProviderAccountLaunch | null)
+    | undefined;
   private readonly terminalSizeOwner = {};
 
   // A subscription is scoped to a (cwd, workspaceId) pair, keyed by
@@ -159,6 +171,7 @@ export class TerminalSessionController {
       options.listTerminalWorkspaceRoots ??
       (async () => (await this.listTerminalWorkspaceRefs()).map((workspace) => workspace.cwd));
     this.clientSupportsWrapReflow = options.clientSupportsWrapReflow ?? (() => false);
+    this.resolveProviderAccountLaunch = options.resolveProviderAccountLaunch;
     this.getClientBufferedAmount = options.getClientBufferedAmount ?? (() => 0);
   }
 
@@ -558,12 +571,34 @@ export class TerminalSessionController {
         return;
       }
 
+      let accountLaunch: ProviderAccountLaunch | null = null;
+      if (msg.providerAccountId) {
+        accountLaunch = this.resolveProviderAccountLaunch?.(msg.providerAccountId) ?? null;
+        if (!accountLaunch) {
+          this.emit({
+            type: "create_terminal_response",
+            payload: {
+              terminal: null,
+              error: `Unknown or disabled provider account ${msg.providerAccountId}`,
+              requestId: msg.requestId,
+            },
+          });
+          return;
+        }
+      }
+
+      // With an account but no explicit command, run the provider's interactive
+      // login command so the user can sign that account in.
+      const command = msg.command ?? accountLaunch?.loginCommand.command;
+      const args = msg.command ? msg.args : (accountLaunch?.loginCommand.args ?? msg.args);
+
       const session = await this.terminalManager.createTerminal({
         cwd: msg.cwd,
         workspaceId,
         name: msg.name,
-        command: msg.command,
-        args: msg.args,
+        command,
+        args,
+        ...(accountLaunch ? { env: accountLaunch.env } : {}),
         rows: msg.size?.rows,
         cols: msg.size?.cols,
       });
