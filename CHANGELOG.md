@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.3.6 — 2026-09-17
+
 - Add provider accounts (multi-sign-in). A provider can be signed in as several
   accounts, each backed by its own CLI config directory with selected folders
   symlinked from the primary one, so commands, skills, agents, projects and
