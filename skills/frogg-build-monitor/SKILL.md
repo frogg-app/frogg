@@ -96,7 +96,6 @@ Prefer Windows hosted runners for native Electron packaging; local Linux daemon
 builds are useful with warm dependencies. Android may use a local Linux builder
 only when the SDK/JDK, disk and memory are already adequate and the estimate beats
 CI. A Linux desktop build does not validate Windows. Do not use the historical
-`build:local` Tauri helper for production Electron artifacts.
 
 Build independent targets concurrently on different builders. On one shared VM,
 start with one heavy build; add concurrency only when observed memory/CPU/disk

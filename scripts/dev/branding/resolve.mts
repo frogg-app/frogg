@@ -75,11 +75,7 @@ export function resolveBrand(directory?: string) {
   ])
     hash.update(readFileSync(path.join(root, "deploy", file)));
   if (official) {
-    for (const assetDirectory of [
-      "apps/ui/assets/images",
-      "apps/ui/public",
-      "apps/desktop-tauri/src-tauri/icons",
-    ]) {
+    for (const assetDirectory of ["apps/ui/assets/images", "apps/ui/public"]) {
       for (const file of readdirSync(path.join(root, assetDirectory), { withFileTypes: true })
         .filter((entry) => entry.isFile())
         .sort((a, b) => a.name.localeCompare(b.name))) {

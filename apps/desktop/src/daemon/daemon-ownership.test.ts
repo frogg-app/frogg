@@ -4,7 +4,7 @@ import { DaemonOwnership } from "./daemon-ownership.js";
 it("only stops the supervisor this app actually spawned", () => {
   const owner = new DaemonOwnership();
   const status = { pid: 123, desktopManaged: true };
-  expect(owner.owns(status)).toBe(false); // Existing Tauri/another Electron daemon.
+  expect(owner.owns(status)).toBe(false); // Another Electron desktop's daemon.
   owner.recordStarted(456, status); // Another daemon won the startup race.
   expect(owner.owns(status)).toBe(false);
   owner.recordStarted(123, status);

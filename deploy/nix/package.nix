@@ -52,7 +52,6 @@ buildNpmPackage rec {
       # Exclude non-daemon workspace contents (keep package.json for workspace resolution)
       !(lib.hasPrefix "/apps/ui/android" relPath)
       && !(lib.hasPrefix "/apps/ui/ios" relPath)
-      && !(lib.hasPrefix "/apps/desktop/src-tauri/target" relPath)
       # Documentation, CI definitions and agent/editor configuration. None of
       # these reach the build.
       && !(lib.hasPrefix "/docs" relPath)

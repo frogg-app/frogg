@@ -44,16 +44,6 @@ updates:
       - dependency-name: "@codemirror/view"
       - dependency-name: "@tanstack/react-query"
 
-  - package-ecosystem: cargo
-    directory: /apps/desktop/src-tauri
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
-    groups:
-      cargo-minor-and-patch:
-        update-types: [minor, patch]
-
   - package-ecosystem: github-actions
     directory: /
     schedule:

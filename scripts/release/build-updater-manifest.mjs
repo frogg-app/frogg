@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 import { desktopArtifactName } from "../../packages/branding/src/artifact-contract.mjs";
-// Writes the `latest.json` that tauri-plugin-updater fetches (see
-// `plugins.updater.endpoints` in apps/desktop-tauri/src-tauri/tauri.conf.json) from the
-// renamed release assets and their minisign `.sig` files.
+// Writes the `latest.json` that the signed updater fetches, from the renamed
+// release assets and their minisign `.sig` files.
 //
 // Usage: node scripts/release/build-updater-manifest.mjs --version 1.2.3 --tag v1.2.3
 //        --repo frogg-app/frogg [--assets-dir release-assets] [--out latest.json]

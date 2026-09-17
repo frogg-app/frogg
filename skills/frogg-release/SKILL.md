@@ -14,14 +14,14 @@ permission to publish, delete releases, modify other machines, or use signing ke
 ## Identify the release and installed client
 
 Before changing assets, record source commit, root version, lockfile, brand,
-platform/architecture, runtime (Electron or historical Tauri), and installation
+platform/architecture, runtime, and installation
 form (installer, portable, AppImage, deb, DMG, APK). Inspect actual assets through
 `gh release view TAG --json assets,isDraft,isPrerelease`; do not infer filenames.
 A tag and a draft are not a publicly discoverable release.
 
 For an update failure, trace the installed client's selection, download,
 verification, extraction, replacement and relaunch behavior. Fixing discovery alone
-is not a valid migration. Never alias an Electron portable ZIP into Tauri's
+is not a valid migration. Never alias an Electron portable ZIP into the legacy
 single-executable replacement path. Record manual migration explicitly when the
 installed updater cannot safely perform the transition; a new JSON file cannot
 teach an already installed old client a new protocol.

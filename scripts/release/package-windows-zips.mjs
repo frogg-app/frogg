@@ -7,9 +7,8 @@ import { desktopArtifactName } from "../../packages/branding/src/artifact-contra
 //   Frogg-<version>-win-x64-portable.zip  Frogg-<version>-portable/{Frogg.exe,README.txt}
 //   Frogg-<version>-win-x64-setup.zip     Frogg-<version>-win-x64-setup.exe
 //
-// The installer zip is what both updaters consume: tauri-plugin-updater unpacks a
-// zipped NSIS installer itself, and the GitHub-release path in
-// apps/desktop-tauri/src-tauri/src/updates/install.rs extracts it before running it.
+// The installer zip is what the updater consumes: it extracts the zipped NSIS
+// installer before running it.
 // No dependencies: the zips are written with Node's zlib (deflate + crc32).
 
 import { loadBrand } from "../dev/branding/load.cjs";
@@ -24,16 +23,14 @@ const portableBinaryName = brand.legacyFrogg ? "Frogg" : brand.desktopBinaryName
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(here, "../..");
-// Default is the cargo-xwin cross-compile layout. A native Windows build (CI on
-// windows-latest) writes to target/release instead; point at it with
-// FROGG_WINDOWS_RELEASE_DIR or `--release-dir <dir>`.
-const WINDOWS_RELEASE_DIR = resolveReleaseDir(process.env.FROGG_WINDOWS_RELEASE_DIR);
-
+// Callers name the directory the Windows build wrote, either with
+// `--release-dir <dir>` or FROGG_WINDOWS_RELEASE_DIR.
 function resolveReleaseDir(override) {
-  if (override) {
-    return path.resolve(REPO_ROOT, override);
+  const value = override ?? process.env.FROGG_WINDOWS_RELEASE_DIR;
+  if (!value) {
+    throw new Error("Pass --release-dir <dir> or set FROGG_WINDOWS_RELEASE_DIR");
   }
-  return path.join(REPO_ROOT, "apps/desktop-tauri/src-tauri/target/x86_64-pc-windows-msvc/release");
+  return path.resolve(REPO_ROOT, value);
 }
 
 export function buildReadme(version) {
@@ -164,16 +161,16 @@ function readPackageVersion() {
 
 export function packagePortableWindows({
   version,
-  releaseDir = WINDOWS_RELEASE_DIR,
-  exePath = path.join(releaseDir, `${brand.desktopBinaryName}.exe`),
-  outputDir = path.join(releaseDir, "bundle/portable"),
+  releaseDir,
+  exePath = path.join(resolveReleaseDir(releaseDir), `${brand.desktopBinaryName}.exe`),
+  outputDir = path.join(resolveReleaseDir(releaseDir), "bundle/portable"),
 } = {}) {
   const resolvedVersion = version ?? readPackageVersion();
   let exe;
   try {
     exe = readFileSync(exePath);
   } catch {
-    throw new Error(`Windows binary not found at ${exePath}. Run the Tauri Windows build first.`);
+    throw new Error(`Windows binary not found at ${exePath}. Run the Windows build first.`);
   }
   const folder = `${brand.artifactPrefix}-${resolvedVersion}-portable`;
   const mtime = statSync(exePath).mtime;
@@ -191,7 +188,7 @@ export function packagePortableWindows({
 }
 
 /**
- * Zips the NSIS installer Tauri wrote under `bundle/nsis/` into
+ * Zips the NSIS installer the bundler wrote under `bundle/nsis/` into
  * `bundle/nsis-zip/Frogg-<version>-win-x64-setup.zip`, holding a single entry named
  * `Frogg-<version>-win-x64-setup.exe`. The installer's own `.sig` does not carry over:
  * the updater verifies whatever it downloads, so the zip is signed after this
@@ -199,17 +196,17 @@ export function packagePortableWindows({
  */
 export function packageWindowsInstallerZip({
   version,
-  releaseDir = WINDOWS_RELEASE_DIR,
-  nsisDir = path.join(releaseDir, "bundle/nsis"),
-  outputDir = path.join(releaseDir, "bundle/nsis-zip"),
+  releaseDir,
+  nsisDir = path.join(resolveReleaseDir(releaseDir), "bundle/nsis"),
+  outputDir = path.join(resolveReleaseDir(releaseDir), "bundle/nsis-zip"),
 } = {}) {
   const resolvedVersion = version ?? readPackageVersion();
   const installers = listSetupExecutables(nsisDir);
   if (installers.length === 0) {
-    throw new Error(`No NSIS installer found in ${nsisDir}. Run the Tauri Windows build first.`);
+    throw new Error(`No NSIS installer found in ${nsisDir}. Run the Windows build first.`);
   }
   // A dev checkout's target dir keeps every version ever built, so prefer the one
-  // Tauri just wrote for this version (`FROGG_<version>_x64-setup.exe`) and only
+  // just written for this version (`FROGG_<version>_x64-setup.exe`) and only
   // fall back to "there must be exactly one" when the name does not match.
   const forThisVersion = installers.filter((entry) => entry.includes(`_${resolvedVersion}_`));
   const candidates = forThisVersion.length > 0 ? forThisVersion : installers;
@@ -244,8 +241,9 @@ function listSetupExecutables(dir) {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const flagIndex = process.argv.indexOf("--release-dir");
-    const releaseDir =
-      flagIndex === -1 ? WINDOWS_RELEASE_DIR : resolveReleaseDir(process.argv[flagIndex + 1]);
+    const releaseDir = resolveReleaseDir(
+      flagIndex === -1 ? undefined : process.argv[flagIndex + 1],
+    );
     for (const result of [
       packagePortableWindows({ releaseDir }),
       packageWindowsInstallerZip({ releaseDir }),

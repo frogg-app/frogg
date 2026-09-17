@@ -81,7 +81,6 @@ The existing monitor owns post-merge follow-through:
 ### CI and merging
 
 - **Branding acceptance fails on every branch** (the `nix` and `desktop (macos-latest, brands/example)` jobs). Fix it or drop it so it stops hiding real failures.
-- **The desktop crate isn't on the PR gate.** Tauri Rust changes still need a local build or a `workflow_dispatch` run.
 
 ## Awaiting owner decisions / explanation
 

@@ -5,8 +5,7 @@ import { readGitHubCliToken } from "./github-auth.js";
 import { compareVersions, isNewerVersion, isStableVersion, parseVersion } from "./semver.js";
 
 /**
- * Release lookup against the GitHub Releases API, mirroring
- * apps/desktop-tauri/src-tauri/src/updates/github.rs: `FROGG_GITHUB_TOKEN` raises the
+ * Release lookup against the GitHub Releases API. `FROGG_GITHUB_TOKEN` raises the
  * rate limit and lets a private repository answer, and is never logged.
  */
 export const DEFAULT_RELEASES_API = brand.distribution.releasesApi ?? "";

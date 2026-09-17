@@ -4,7 +4,7 @@ Frogg runs and monitors coding agents across
 Electron desktop, Expo mobile/web, and CLI clients connected to independently
 installed Node daemons. Forked from Paseo v0.7.2, it is maintained independently.
 The desktop is app-only: it never bundles or manages a local daemon. Windows,
-macOS and Linux are first-class. Inactive native-shell and Rust-daemon reference
+macOS and Linux are first-class. The Rust-daemon reference
 sources are excluded from production releases.
 
 The parent [AGENTS.md](../AGENTS.md) also applies (shared VM, git identity,

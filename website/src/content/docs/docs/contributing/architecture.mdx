@@ -78,11 +78,9 @@ Protocol rules for adding or changing messages are in
 | `apps/ui`               | `@frogg/app`              | Expo client for web, iOS, Android and the desktop renderer    |
 | `apps/desktop` | `@frogg/desktop` | Production Electron app-only shell                            |
 | `apps/cli`              | `@frogg/cli`              | `frogg` command-line client and daemon launcher                 |
-| `apps/desktop-tauri`    | `@frogg/desktop-tauri`    | Inactive Tauri shell. Reference source only                   |
 | `apps/daemon-rs`        | none (Cargo crate)      | Inactive Rust daemon. Reference source only                   |
 
-`apps/desktop-tauri` and `apps/daemon-rs` are excluded from releases. Do not build features on them.
-`apps/desktop-tauri` is still an npm workspace, so root `typecheck` and `build` include it.
+`apps/daemon-rs` is excluded from releases. Do not build features on it.
 
 ### packages/
 

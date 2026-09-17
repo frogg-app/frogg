@@ -3,18 +3,18 @@ import {
   desktopArtifactName,
   legacyDesktopSuffix,
 } from "../../packages/branding/src/artifact-contract.mjs";
-// Copies the bundles `cargo tauri build` wrote under <release-dir>/bundle/ into one
+// Copies the bundles the desktop build wrote under <release-dir>/bundle/ into one
 // flat directory with the release asset names in packages/branding/src/artifact-contract.mjs:
 //
 //   Frogg-<version>-linux-x86_64.deb      Frogg-<version>-linux-x86_64.AppImage
 //   Frogg-<version>-win-x64-setup.zip     Frogg-<version>-win-x64-portable.zip
 //   Frogg-<version>-mac-<arch>.dmg        Frogg-<version>-mac-<arch>.app.tar.gz
 //
-// A `.sig` next to any bundle (present when TAURI_SIGNING_PRIVATE_KEY was set)
-// is copied under the renamed name plus `.sig`.
+// A `.sig` next to any bundle (present when the bundler signed it) is copied
+// under the renamed name plus `.sig`.
 //
 // Usage: node scripts/release/collect-desktop-bundles.mjs --platform linux|windows|macos
-//        --arch x86_64|aarch64 [--release-dir apps/desktop-tauri/src-tauri/target/release]
+//        --arch x86_64|aarch64 --release-dir <dir>
 //        [--out-dir release-assets] [--version 1.2.3]
 
 import { loadBrand } from "../dev/branding/load.cjs";
@@ -37,7 +37,7 @@ const brand = loadBrand();
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(here, "../..");
 
-/** Bundle kinds per platform: where Tauri writes them and what they become. */
+/** Bundle kinds per platform: where the bundler writes them and what they become. */
 const BUNDLE_RULES = {
   linux: [
     {
@@ -109,8 +109,8 @@ export function planBundleRenames({ platform, arch, version, files }) {
     }
     const target = rule.name(version, arch);
     // A dev checkout's target dir keeps every version ever built. Prefer the
-    // exact version being collected whether the source uses Tauri's underscores
-    // or our former dashed release name.
+    // exact version being collected whether the source uses underscores or our
+    // former dashed release name.
     const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const versionPattern = new RegExp(`[_-]${escapedVersion}[_-]`);
     const named = matches.filter((file) => versionPattern.test(path.posix.basename(file)));
@@ -151,7 +151,7 @@ export function collectDesktopBundles({ platform, arch, version, releaseDir, out
   const files = [...dirs].flatMap((dir) => listFiles(releaseDir, dir));
   const renames = planBundleRenames({ platform, arch, version, files });
   if (renames.length === 0) {
-    throw new Error(`No bundles found under ${releaseDir}. Run the Tauri build first.`);
+    throw new Error(`No bundles found under ${releaseDir}. Run the desktop build first.`);
   }
   if (brand.legacyFrogg) {
     const prefix = `${brand.artifactPrefix}-${version}-`;
@@ -187,13 +187,13 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       platform: { type: "string" },
       arch: { type: "string" },
       version: { type: "string" },
-      "release-dir": { type: "string", default: "apps/desktop-tauri/src-tauri/target/release" },
+      "release-dir": { type: "string" },
       "out-dir": { type: "string", default: "release-assets" },
     },
   });
   try {
-    if (!values.platform || !values.arch) {
-      throw new Error("--platform and --arch are required");
+    if (!values.platform || !values.arch || !values["release-dir"]) {
+      throw new Error("--platform, --arch and --release-dir are required");
     }
     const version =
       values.version ??

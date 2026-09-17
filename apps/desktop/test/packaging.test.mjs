@@ -53,12 +53,12 @@ test("production packages use branded identity and register branded deep links",
   assert.ok(config.mac.target.includes("dmg"));
   assert.ok(config.linux.target.includes("AppImage"));
 });
-test("root aliases default to Electron and preserve Tauri comparison commands", () => {
+test("root desktop aliases target the Electron workspace", () => {
   const { scripts } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
-  assert.match(scripts["dev:desktop"], /@frogg\/desktop/);
-  assert.match(scripts["build:desktop"], /@frogg\/desktop/);
-  assert.match(scripts["dev:desktop:tauri"], /@frogg\/desktop-tauri --/);
-  assert.match(scripts["build:desktop:tauri:win"], /@frogg\/desktop/);
+  assert.match(scripts["dev:desktop"], /@frogg\/desktop --/);
+  assert.match(scripts["build:desktop"], /@frogg\/desktop --/);
+  assert.match(scripts["dev:desktop:electron"], /@frogg\/desktop --/);
+  assert.match(scripts["build:desktop:electron"], /@frogg\/desktop --/);
 });
 
 test("configured Windows Trusted Signing carries through to Electron packaging", () => {

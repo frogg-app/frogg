@@ -20,8 +20,7 @@ npm run version:sync-internal
 
 This runs `scripts/release/sync-workspace-versions.mjs`. It sets every workspace `version` to
 the root version and rewrites internal `@frogg/*` dependency ranges: `*` for private workspaces,
-the exact version for publishable ones. It also updates the version in the inactive Tauri and
-Rust manifests.
+the exact version for publishable ones. It also updates the version in the Rust manifest.
 
 Give every release a `CHANGELOG.md` section headed `## <version>`, for example
 `## 0.6.19 — 2026-09-13`. The workflow uses that section as the release notes. Without it, the

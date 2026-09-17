@@ -158,7 +158,7 @@ Other workflows:
 - `release.yml`: runs the Electron smoke test on Linux. See
   [Release process](/docs/contributing/release-process/).
 
-No workflow builds or tests the Rust sources in `apps/desktop-tauri/src-tauri` or `apps/daemon-rs`.
+No workflow builds or tests the Rust sources in `apps/daemon-rs`.
 The `apps/desktop` TypeScript is still typechecked by `npm run typecheck`.
 `.github/workflows/android-startup.yml` is an Android startup diagnostic (manual dispatch, or
 pushes to `fix/android-launch-crash`), not a gate.

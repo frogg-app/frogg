@@ -255,7 +255,6 @@ The docs rewrite (2026-09-13) replaced `docs/` with the Astro/Starlight site in
 - [ ] **Stale CLI hints.** `frogg daemon self-update` in the `install.sh` header;
       `daemon trust-lan` / `daemon pair` hints in CLI output and i18n.
 - [ ] **Settings copy** reads "while a Frogg is in the foreground".
-- [ ] **`NOTICE` says the desktop shell was rewritten in Tauri**; it is Electron.
 - [ ] **`frogg.json` desktop service** runs `packages/desktop/scripts/dev.sh`, which
       does not exist.
 - [ ] **Per-device revoke** for paired devices does not exist.
