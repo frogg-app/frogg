@@ -154,10 +154,10 @@ describe("release source", () => {
 describe("selectRelease with downstream rebuild tags", () => {
   // The fork rebuilds an upstream release under `vX.Y.Z-gl.N`; the artifact
   // filename keeps the bare upstream version.
-  const releases = [release("v1.3.5"), release("v1.3.5-gl.1"), release("v1.3.5-gl.2")];
+  const releases = [release("v1.3.5"), release("v1.3.5-acme.1"), release("v1.3.5-acme.2")];
 
   test("looks the asset up under the bare upstream version", () => {
-    expect(assetName("1.3.5-gl.2")).toBe(assetName("1.3.5"));
+    expect(assetName("1.3.5-acme.2")).toBe(assetName("1.3.5"));
   });
 
   test("offers the newest rebuild to a daemon on the plain release", () => {
@@ -167,22 +167,22 @@ describe("selectRelease with downstream rebuild tags", () => {
       channel: "stable",
       assetName,
     });
-    expect(candidate?.version).toBe("1.3.5-gl.2");
+    expect(candidate?.version).toBe("1.3.5-acme.2");
   });
 
   test("offers the next rebuild to a daemon on an earlier rebuild", () => {
     const candidate = selectRelease({
       releases,
-      currentVersion: "1.3.5-gl.1",
+      currentVersion: "1.3.5-acme.1",
       channel: "stable",
       assetName,
     });
-    expect(candidate?.version).toBe("1.3.5-gl.2");
+    expect(candidate?.version).toBe("1.3.5-acme.2");
   });
 
   test("offers nothing to a daemon already on the newest rebuild", () => {
     expect(
-      selectRelease({ releases, currentVersion: "1.3.5-gl.2", channel: "stable", assetName }),
+      selectRelease({ releases, currentVersion: "1.3.5-acme.2", channel: "stable", assetName }),
     ).toBeNull();
   });
 
@@ -190,7 +190,7 @@ describe("selectRelease with downstream rebuild tags", () => {
     expect(
       selectRelease({
         releases: [release("v1.3.5")],
-        currentVersion: "1.3.5-gl.1",
+        currentVersion: "1.3.5-acme.1",
         channel: "stable",
         assetName,
       }),
@@ -199,28 +199,28 @@ describe("selectRelease with downstream rebuild tags", () => {
 
   test("keeps rebuild tags in the stable channel", () => {
     const candidate = selectRelease({
-      releases: [release("v1.3.5-gl.2")],
+      releases: [release("v1.3.5-acme.2")],
       currentVersion: "1.3.5",
       channel: "stable",
       assetName,
     });
-    expect(candidate?.version).toBe("1.3.5-gl.2");
+    expect(candidate?.version).toBe("1.3.5-acme.2");
   });
 
   test("resolves a pinned rebuild version exactly", () => {
     const candidate = selectRelease({
       releases,
-      currentVersion: "1.3.5-gl.2",
+      currentVersion: "1.3.5-acme.2",
       channel: "stable",
       assetName,
-      version: "v1.3.5-gl.1",
+      version: "v1.3.5-acme.1",
     });
-    expect(candidate?.version).toBe("1.3.5-gl.1");
+    expect(candidate?.version).toBe("1.3.5-acme.1");
   });
 
   test("downloads a rebuild from its own tag directory", () => {
-    expect(releaseDownloadUrl("https://dl.example/r", "1.3.5-gl.2", assetName("1.3.5-gl.2"))).toBe(
-      `https://dl.example/r/download/v1.3.5-gl.2/${assetName("1.3.5")}`,
-    );
+    expect(
+      releaseDownloadUrl("https://dl.example/r", "1.3.5-acme.2", assetName("1.3.5-acme.2")),
+    ).toBe(`https://dl.example/r/download/v1.3.5-acme.2/${assetName("1.3.5")}`);
   });
 });

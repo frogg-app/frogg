@@ -58,7 +58,7 @@ export function detectBundleTarget(
 
 /**
  * Release artifact filenames carry the bare upstream version: a downstream
- * rebuild tagged `v1.3.5-gl.3` still ships `...-1.3.5-<platform>-<arch>`, so the
+ * rebuild tagged `v1.3.5-acme.3` still ships `...-1.3.5-<platform>-<arch>`, so the
  * rebuild counter is stripped before the name is built. See `artifactVersion`.
  */
 export function bundleAssetName(version: string, target: BundleTarget): string {

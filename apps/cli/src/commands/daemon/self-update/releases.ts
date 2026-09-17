@@ -153,7 +153,7 @@ function releaseVersion(release: GitHubRelease): string | null {
 function matchesChannel(release: GitHubRelease, channel: UpdateChannel): boolean {
   if (release.draft) return false;
   if (channel === "stable") {
-    // A downstream rebuild (`v1.3.5-gl.2`) is a rebuild of a stable release, not
+    // A downstream rebuild (`v1.3.5-acme.2`) is a rebuild of a stable release, not
     // a prerelease of one, so it belongs to the stable channel too.
     return release.prerelease !== true && isStableVersion(release.tag_name);
   }
