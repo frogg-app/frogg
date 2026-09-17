@@ -4369,6 +4369,102 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "provider.account.list.request"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.create.request"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "linkedFolders": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "provider",
+                "name",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.delete.request"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "accountId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.set_active.request"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "accountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "provider",
+                "accountId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "resume_agent_request"
                 },
                 "handle": {
@@ -7241,6 +7337,9 @@
                   "items": {
                     "type": "string"
                   }
+                },
+                "providerAccountId": {
+                  "type": "string"
                 },
                 "size": {
                   "type": "object",

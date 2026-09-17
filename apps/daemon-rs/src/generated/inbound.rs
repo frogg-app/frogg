@@ -250,6 +250,14 @@ pub enum SessionMessage {
     ProviderDiagnosticRequest(ProviderDiagnosticRequest),
     #[serde(rename = "provider.usage.list.request")]
     ProviderUsageListRequest(ProviderUsageListRequest),
+    #[serde(rename = "provider.account.list.request")]
+    ProviderAccountListRequest(ProviderAccountListRequest),
+    #[serde(rename = "provider.account.create.request")]
+    ProviderAccountCreateRequest(ProviderAccountCreateRequest),
+    #[serde(rename = "provider.account.delete.request")]
+    ProviderAccountDeleteRequest(ProviderAccountDeleteRequest),
+    #[serde(rename = "provider.account.set_active.request")]
+    ProviderAccountSetActiveRequest(ProviderAccountSetActiveRequest),
     #[serde(rename = "resume_agent_request")]
     ResumeAgentRequest(ResumeAgentRequest),
     #[serde(rename = "import_agent_request")]
@@ -1974,6 +1982,41 @@ pub struct ProviderUsageListRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountListRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountCreateRequest {
+    pub provider: String,
+    pub name: String,
+    #[serde(rename = "linkedFolders", skip_serializing_if = "Option::is_none")]
+    pub linked_folders: Option<Vec<String>>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountDeleteRequest {
+    #[serde(rename = "accountId")]
+    pub account_id: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetActiveRequest {
+    pub provider: String,
+    #[serde(rename = "accountId", skip_serializing_if = "Option::is_none")]
+    pub account_id: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ResumeAgentRequest {
     pub handle: serde_json::Value,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -3173,6 +3216,8 @@ pub struct CreateTerminalRequest {
     pub command: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub args: Option<Vec<String>>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<CreateTerminalRequestSize>,
     #[serde(rename = "requestId")]

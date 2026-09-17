@@ -20,6 +20,10 @@ import { CLIENT_CAPS } from "./client-capabilities.js";
 import { AGENT_LIFECYCLE_STATUSES } from "./agent-lifecycle.js";
 import { MAX_EXPLICIT_AGENT_TITLE_CHARS } from "./agent-title-limits.js";
 import { AgentProviderSchema } from "./provider-manifest.js";
+import {
+  ProviderAccountCapabilitySchema,
+  ProviderAccountStateSchema,
+} from "./provider-accounts.js";
 import { TOOL_CALL_ICON_NAMES } from "./agent-types.js";
 import { WORKSPACE_LABEL_COLORS } from "./workspace-labels.js";
 import {
@@ -1762,6 +1766,34 @@ export const ProviderUsageListRequestMessageSchema = z.object({
   requestId: z.string(),
 });
 
+export const ProviderAccountListRequestMessageSchema = z.object({
+  type: z.literal("provider.account.list.request"),
+  provider: AgentProviderSchema.optional(),
+  requestId: z.string(),
+});
+
+export const ProviderAccountCreateRequestMessageSchema = z.object({
+  type: z.literal("provider.account.create.request"),
+  provider: AgentProviderSchema,
+  name: z.string(),
+  linkedFolders: z.array(z.string()).optional(),
+  requestId: z.string(),
+});
+
+export const ProviderAccountDeleteRequestMessageSchema = z.object({
+  type: z.literal("provider.account.delete.request"),
+  accountId: z.string(),
+  requestId: z.string(),
+});
+
+export const ProviderAccountSetActiveRequestMessageSchema = z.object({
+  type: z.literal("provider.account.set_active.request"),
+  provider: AgentProviderSchema,
+  // null clears the active account and removes the env overlay for the provider.
+  accountId: z.string().nullable(),
+  requestId: z.string(),
+});
+
 export const ResumeAgentRequestMessageSchema = z.object({
   type: z.literal("resume_agent_request"),
   handle: AgentPersistenceHandleSchema,
@@ -2900,6 +2932,11 @@ export const CreateTerminalRequestSchema = z.object({
   agentId: z.string().optional(),
   command: z.string().optional(),
   args: z.array(z.string()).optional(),
+  // Run the terminal under a provider account's config directory. The daemon
+  // resolves the account server-side and applies its env overlay to the PTY;
+  // clients never supply an env map. With no `command`, the capability's
+  // interactive login command is launched so the user can sign in.
+  providerAccountId: z.string().optional(),
   // Initial PTY size. Added in v0.1.107; the app no longer sends it (the estimate cache that fed
   // it was removed — the pane-focus resize claim sizes the PTY instead). Kept and honored
   // permanently: released v0.1.107 clients still send it, and programmatic callers may pass an
@@ -3160,6 +3197,10 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   RefreshProvidersSnapshotRequestMessageSchema,
   ProviderDiagnosticRequestMessageSchema,
   ProviderUsageListRequestMessageSchema,
+  ProviderAccountListRequestMessageSchema,
+  ProviderAccountCreateRequestMessageSchema,
+  ProviderAccountDeleteRequestMessageSchema,
+  ProviderAccountSetActiveRequestMessageSchema,
   ResumeAgentRequestMessageSchema,
   ImportAgentRequestMessageSchema,
   RefreshAgentRequestMessageSchema,
@@ -3595,6 +3636,8 @@ export const ServerInfoStatusPayloadSchema = z
         workspaceCreatedAt: z.boolean().optional(),
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.
         providerAgentDefinitions: z.boolean().optional(),
+        // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.
+        providerAccounts: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the
@@ -6196,6 +6239,42 @@ export const ProviderUsageListResponseMessageSchema = z.object({
   }),
 });
 
+/**
+ * Every provider-account response carries the same payload: the full account
+ * list plus the capability manifest, so one round trip is enough for a client
+ * to render the enabled provider set and the linkable-folder checkboxes.
+ */
+const ProviderAccountResponsePayloadSchema = z.object({
+  requestId: z.string(),
+  accounts: z.array(ProviderAccountStateSchema),
+  capabilities: z.array(ProviderAccountCapabilitySchema),
+  // Active account id per provider; a provider with no active account is absent.
+  activeAccountIds: z.record(z.string(), z.string()),
+  // Non-fatal provisioning problems (e.g. a symlink that could not be created).
+  warnings: z.array(z.string()).optional(),
+  error: z.string().nullable(),
+});
+
+export const ProviderAccountListResponseMessageSchema = z.object({
+  type: z.literal("provider.account.list.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
+export const ProviderAccountCreateResponseMessageSchema = z.object({
+  type: z.literal("provider.account.create.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
+export const ProviderAccountDeleteResponseMessageSchema = z.object({
+  type: z.literal("provider.account.delete.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
+export const ProviderAccountSetActiveResponseMessageSchema = z.object({
+  type: z.literal("provider.account.set_active.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
 const AgentSlashCommandSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -6693,6 +6772,10 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   RefreshProvidersSnapshotResponseMessageSchema,
   ProviderDiagnosticResponseMessageSchema,
   ProviderUsageListResponseMessageSchema,
+  ProviderAccountListResponseMessageSchema,
+  ProviderAccountCreateResponseMessageSchema,
+  ProviderAccountDeleteResponseMessageSchema,
+  ProviderAccountSetActiveResponseMessageSchema,
   ListCommandsResponseSchema,
   ListTerminalsResponseSchema,
   TerminalsChangedSchema,
@@ -6901,6 +6984,32 @@ export type ProviderUsageDetail = z.infer<typeof ProviderUsageDetailSchema>;
 export type ProviderUsageListResponseMessage = z.infer<
   typeof ProviderUsageListResponseMessageSchema
 >;
+
+export type ProviderAccountListRequestMessage = z.infer<
+  typeof ProviderAccountListRequestMessageSchema
+>;
+export type ProviderAccountCreateRequestMessage = z.infer<
+  typeof ProviderAccountCreateRequestMessageSchema
+>;
+export type ProviderAccountDeleteRequestMessage = z.infer<
+  typeof ProviderAccountDeleteRequestMessageSchema
+>;
+export type ProviderAccountSetActiveRequestMessage = z.infer<
+  typeof ProviderAccountSetActiveRequestMessageSchema
+>;
+export type ProviderAccountListResponseMessage = z.infer<
+  typeof ProviderAccountListResponseMessageSchema
+>;
+export type ProviderAccountCreateResponseMessage = z.infer<
+  typeof ProviderAccountCreateResponseMessageSchema
+>;
+export type ProviderAccountDeleteResponseMessage = z.infer<
+  typeof ProviderAccountDeleteResponseMessageSchema
+>;
+export type ProviderAccountSetActiveResponseMessage = z.infer<
+  typeof ProviderAccountSetActiveResponseMessageSchema
+>;
+export type ProviderAccountResponsePayload = z.infer<typeof ProviderAccountResponsePayloadSchema>;
 export type ChatCreateResponse = z.infer<typeof ChatCreateResponseSchema>;
 export type ChatListResponse = z.infer<typeof ChatListResponseSchema>;
 export type ChatInspectResponse = z.infer<typeof ChatInspectResponseSchema>;

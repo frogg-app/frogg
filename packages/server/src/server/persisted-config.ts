@@ -17,6 +17,7 @@ import {
   TerminalProfileSchema,
 } from "@frogg/protocol/messages";
 import { FroggServicePortAllocationSchema } from "@frogg/protocol/frogg-config-schema";
+import { ProviderAccountSchema } from "@frogg/protocol/provider-accounts";
 
 export const LogLevelSchema = z.enum(["trace", "debug", "info", "warn", "error", "fatal"]);
 export const LogFormatSchema = z.enum(["pretty", "json"]);
@@ -196,6 +197,22 @@ const AgentMetadataGenerationSchema = z
   })
   .strict();
 
+/**
+ * Multi-sign-in state, keyed by provider id. `enabled` overrides the shipped
+ * capability manifest (`PROVIDER_ACCOUNT_CAPABILITIES`), so turning accounts on
+ * for another provider is a config edit. The account list and the active
+ * account id are persisted here by the provider-account store.
+ */
+const ProviderAccountsProviderSchema = z
+  .object({
+    enabled: z.boolean().optional(),
+    activeAccountId: z.string().min(1).nullable().optional(),
+    accounts: z.array(ProviderAccountSchema).optional(),
+  })
+  .strict();
+
+export const ProviderAccountsConfigSchema = z.record(z.string(), ProviderAccountsProviderSchema);
+
 const BUILTIN_PROVIDER_IDS = ["claude", "codex", "copilot", "opencode", "pi", "omp"] as const;
 
 function isLegacyProviderEntry(value: unknown): boolean {
@@ -344,6 +361,7 @@ export const PersistedConfigSchema = z
       .optional(),
 
     providers: ProvidersSchema.optional(),
+    providerAccounts: ProviderAccountsConfigSchema.optional(),
     // COMPAT(pluginsRemoved): plugin support was removed; keys written by older daemons are
     // accepted and ignored so existing config files still load. Remove after 2027-09-13.
     pluginsEnabled: z.unknown().optional(),
