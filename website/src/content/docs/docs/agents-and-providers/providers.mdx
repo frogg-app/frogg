@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-import { Screenshot } from "@/components/docs";
+import { Screenshot, Steps } from "@/components/docs";
 import appHostProvidersImg from "@/assets/docs/app/host-providers.png";
 
 Frogg does not ship a model or an agent of its own. The daemon runs agent CLIs that you
@@ -127,6 +127,33 @@ config directory; an explicit `agents.providers.<id>.env` in `config.json` still
 
 Deleting an account only removes it from Frogg's list — the config directory, and the
 credentials in it, are left on disk for you to remove.
+
+### From the app
+
+**Host settings → Providers → Provider sign-ins** lists every provider whose accounts the
+daemon has enabled, with that provider's accounts under it. Each row shows the account name,
+its config directory, whether it is signed in, and whether it is the active account, with
+actions to make it active, sign it in, and remove it. The section is hidden entirely on a
+daemon that does not report the feature.
+
+<Steps>
+
+1. **Add account** opens a form. Type a name: the page validates it as you type and shows the
+   slug and the config directory that will be created. Every shareable folder is checked by
+   default; uncheck the ones this account should keep to itself.
+2. **Sign in** opens a Frogg terminal running that provider's own login with the account's
+   config directory applied — for Claude, run `/login` in it. Terminals belong to a workspace,
+   so the action needs at least one workspace on the host; it is disabled when there is none.
+3. **Refresh** re-reads the list once the CLI's login finishes, which is what flips the row to
+   signed in.
+4. **Make active** points the provider's agents at that account. **Remove** asks first and
+   then tells you the config directory it left behind.
+
+</Steps>
+
+Provisioning warnings from the daemon — a folder it could not link, for example — are shown
+verbatim next to the list, and a rejected name or duplicate keeps the form open with what you
+typed.
 
 Only Claude has accounts enabled. Other providers are declared but off; turn one on with
 `providerAccounts.<provider>.enabled` in
