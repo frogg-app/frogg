@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.1 — 2026-09-17
 
 - Sidebar workspace rows now carry a small account glyph when the workspace's
   agent runs under a provider you have signed into more than once. It is icon
