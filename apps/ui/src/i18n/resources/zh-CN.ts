@@ -2844,6 +2844,8 @@ export const zhCN: TranslationResources = {
         authenticateHint: "登录会打开一个运行提供商自身登录流程的终端。完成后请刷新此列表。",
         authenticateNoWorkspace: "登录需要此主机上有一个工作区来打开终端。",
         authenticateTerminalName: "登录：{{name}}",
+        unverified: "未验证：{{note}} 在依赖此列表之前，请对照提供商的 CLI 核实这些值。",
+        unverifiedDefaultNote: "其配置目录和凭据文件从未经过 CLI 核实。",
         authenticateFailed: "无法打开登录终端",
         makeActive: "设为使用中",
         remove: "删除",

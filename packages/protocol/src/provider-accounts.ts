@@ -33,6 +33,19 @@ export const ProviderAccountCapabilitySchema = z.object({
   credentialFiles: z.array(z.string().min(1)),
   /** Whether the daemon accepts account management for this provider. */
   enabled: z.boolean(),
+  /**
+   * Whether `configDirEnv`, `primaryDirName`, `linkableFolders` and
+   * `credentialFiles` were confirmed against a real install of the provider's
+   * CLI, or are best-known guesses.
+   *
+   * Optional and additive on the wire: a daemon that predates this field sends
+   * nothing and clients must not treat that as a warning, so only an explicit
+   * `false` means "unverified". Use {@link isProviderAccountCapabilityUnverified}
+   * rather than reading the field directly.
+   */
+  verified: z.boolean().optional(),
+  /** Why the entry is unverified, shown to anyone enabling it. Only set when `verified` is false. */
+  verificationNote: z.string().min(1).optional(),
 });
 
 export type ProviderAccountCapability = z.infer<typeof ProviderAccountCapabilitySchema>;
@@ -41,6 +54,15 @@ export type ProviderAccountCapability = z.infer<typeof ProviderAccountCapability
  * The shipped manifest. Only `claude` is enabled; the remaining entries are
  * declared so turning one on is a one-line change here (or a `config.json`
  * override) instead of new code.
+ *
+ * Every disabled entry also carries `verified: false`. Its directory names,
+ * config-dir environment variable and credential filenames were never tested
+ * against that CLI — they are best-known guesses, and acting on a wrong guess
+ * means pointing a provider at the wrong directory or reporting an account as
+ * signed in when it is not. Enabling one of these is a request to verify it
+ * first: confirm the values against the CLI, then flip `verified` to true in
+ * the same change. The daemon warns at startup when a `config.json` override
+ * enables an unverified entry, and the settings UI labels it.
  */
 export const PROVIDER_ACCOUNT_CAPABILITIES: readonly ProviderAccountCapability[] = [
   {
@@ -52,6 +74,7 @@ export const PROVIDER_ACCOUNT_CAPABILITIES: readonly ProviderAccountCapability[]
     loginCommand: { command: "claude", args: [] },
     credentialFiles: [".credentials.json"],
     enabled: true,
+    verified: true,
   },
   {
     provider: "codex",
@@ -61,40 +84,78 @@ export const PROVIDER_ACCOUNT_CAPABILITIES: readonly ProviderAccountCapability[]
     loginCommand: { command: "codex", args: ["login"] },
     credentialFiles: ["auth.json"],
     enabled: false,
+    verified: false,
+    verificationNote:
+      "CODEX_HOME, ~/.codex, the shareable prompts folder and auth.json have not been confirmed against a codex install.",
   },
   {
     provider: "opencode",
     configDirEnv: "OPENCODE_CONFIG_DIR",
     primaryDirName: ".config/opencode",
-    // UNVERIFIED: the shareable sub-directory layout has not been confirmed
-    // against a real opencode install; left empty until it is.
     linkableFolders: [],
     loginCommand: { command: "opencode", args: ["auth", "login"] },
     credentialFiles: ["auth.json"],
     enabled: false,
+    verified: false,
+    verificationNote:
+      "OPENCODE_CONFIG_DIR, ~/.config/opencode and auth.json have not been confirmed against an opencode install, and no shareable sub-directory layout is known.",
   },
   {
     provider: "pi",
     configDirEnv: "PI_CONFIG_DIR",
     primaryDirName: ".pi",
-    // UNVERIFIED: no confirmed shared-state folders for pi.
     linkableFolders: [],
     loginCommand: { command: "pi", args: ["login"] },
     credentialFiles: ["auth.json"],
     enabled: false,
+    verified: false,
+    verificationNote:
+      "PI_CONFIG_DIR, ~/.pi and auth.json have not been confirmed against a pi install, and no shared-state folders are known.",
   },
   {
     provider: "copilot",
     configDirEnv: "COPILOT_CONFIG_DIR",
     primaryDirName: ".copilot",
-    // UNVERIFIED: GitHub Copilot CLI stores credentials through the GitHub CLI
-    // host config; the per-account layout has not been confirmed.
     linkableFolders: [],
     loginCommand: { command: "copilot", args: [] },
     credentialFiles: ["apps.json", "hosts.json"],
     enabled: false,
+    verified: false,
+    verificationNote:
+      "GitHub Copilot CLI stores credentials through the GitHub CLI host config; COPILOT_CONFIG_DIR, ~/.copilot and the per-account layout have not been confirmed.",
   },
 ];
+
+/**
+ * True when the manifest entry explicitly declares its directory and credential
+ * values unverified. An absent `verified` field means "not stated" — an older
+ * daemon, or an operator-supplied entry — and is deliberately not a warning.
+ */
+export function isProviderAccountCapabilityUnverified(
+  capability: Pick<ProviderAccountCapability, "verified">,
+): boolean {
+  return capability.verified === false;
+}
+
+/**
+ * Provider ids that a `config.json` override switches on while the shipped
+ * manifest still marks them unverified. The daemon reports these at startup so
+ * the guesses are seen by the person acting on them.
+ *
+ * @param overrides the `providerAccounts` section of `config.json`.
+ */
+export function findEnabledUnverifiedProviders(
+  overrides: Record<string, { enabled?: boolean } | undefined> | undefined,
+): string[] {
+  if (!overrides) return [];
+  return PROVIDER_ACCOUNT_CAPABILITIES.filter(
+    (capability) =>
+      isProviderAccountCapabilityUnverified(capability) &&
+      overrides[capability.provider]?.enabled === true,
+  )
+    .map((capability) => capability.provider)
+    .sort();
+}
 
 export function findProviderAccountCapability(
   provider: string,

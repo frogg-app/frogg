@@ -2903,6 +2903,8 @@ export const ko: TranslationResources = {
         authenticateNoWorkspace:
           "로그인하려면 터미널을 열 수 있는 워크스페이스가 이 호스트에 있어야 합니다.",
         authenticateTerminalName: "로그인: {{name}}",
+        unverified: "미검증: {{note}} 이 목록을 신뢰하기 전에 공급자 CLI에서 이 값들을 확인하세요.",
+        unverifiedDefaultNote: "설정 디렉터리와 자격 증명 파일이 CLI에서 확인되지 않았습니다.",
         authenticateFailed: "로그인 터미널을 열지 못했습니다",
         makeActive: "활성으로 설정",
         remove: "삭제",

@@ -2940,6 +2940,10 @@ export const en = {
         authenticateNoWorkspace:
           "Signing in needs a workspace on this host to open the terminal in.",
         authenticateTerminalName: "Sign in: {{name}}",
+        unverified:
+          "Unverified: {{note}} Verify these values against the provider’s CLI before relying on this list.",
+        unverifiedDefaultNote:
+          "its config directory and credential files were never confirmed against the CLI.",
         authenticateFailed: "Couldn't open the sign-in terminal",
         makeActive: "Make active",
         remove: "Remove",

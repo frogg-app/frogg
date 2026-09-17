@@ -2934,6 +2934,10 @@ export const ptBR: TranslationResources = {
         authenticateNoWorkspace:
           "Para entrar é preciso um workspace neste host onde abrir o terminal.",
         authenticateTerminalName: "Login: {{name}}",
+        unverified:
+          "Não verificado: {{note}} Confirme esses valores na CLI do provedor antes de confiar nesta lista.",
+        unverifiedDefaultNote:
+          "o diretório de configuração e os arquivos de credenciais nunca foram confirmados na CLI.",
         authenticateFailed: "Não foi possível abrir o terminal de login",
         makeActive: "Tornar ativa",
         remove: "Remover",

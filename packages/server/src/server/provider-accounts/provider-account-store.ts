@@ -5,6 +5,7 @@ import path from "node:path";
 
 import {
   findProviderAccountCapability,
+  isProviderAccountCapabilityUnverified,
   PROVIDER_ACCOUNT_CAPABILITIES,
   toProviderAccountSlug,
   type ProviderAccount,
@@ -183,6 +184,14 @@ export class ProviderAccountStore {
     });
 
     return this.buildResult([
+      ...(isProviderAccountCapabilityUnverified(capability)
+        ? [
+            `Provider "${input.provider}" has an unverified account manifest: ${
+              capability.verificationNote ??
+              "its config directory and credential files were never confirmed against the CLI."
+            } Sign-in may write to the wrong directory or report the wrong state.`,
+          ]
+        : []),
       ...unknownFolders.map(
         (folder) => `Ignored unknown linkable folder "${folder}" for provider "${input.provider}".`,
       ),
@@ -255,7 +264,13 @@ export class ProviderAccountStore {
     }
     if (!capability.enabled) {
       throw new ProviderAccountError(
-        `Provider accounts are disabled for "${provider}". Enable them with providerAccounts.${provider}.enabled in config.json.`,
+        `Provider accounts are disabled for "${provider}". Enable them with providerAccounts.${provider}.enabled in config.json.` +
+          (isProviderAccountCapabilityUnverified(capability)
+            ? ` Note that this provider's account manifest is unverified: ${
+                capability.verificationNote ??
+                "its config directory and credential files were never confirmed against the CLI."
+              }`
+            : ""),
       );
     }
     return capability;

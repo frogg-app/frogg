@@ -320,6 +320,15 @@ function ProviderAccountsCard({
           {t("settings.host.providerAccounts.addAccount")}
         </Button>
       </View>
+      {capability.verified === false ? (
+        <Text style={styles.warning} testID={`provider-accounts-unverified-${capability.provider}`}>
+          {t("settings.host.providerAccounts.unverified", {
+            note:
+              capability.verificationNote ??
+              t("settings.host.providerAccounts.unverifiedDefaultNote"),
+          })}
+        </Text>
+      ) : null}
       <View style={settingsStyles.card}>
         {accounts.length === 0 ? (
           <Text style={styles.message} testID={`provider-accounts-empty-${capability.provider}`}>

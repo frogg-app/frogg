@@ -2940,6 +2940,10 @@ export const ru: TranslationResources = {
         authenticateNoWorkspace:
           "Для входа нужно рабочее пространство на этом хосте, где откроется терминал.",
         authenticateTerminalName: "Вход: {{name}}",
+        unverified:
+          "Не проверено: {{note}} Сверьте эти значения с CLI провайдера, прежде чем полагаться на этот список.",
+        unverifiedDefaultNote:
+          "каталог конфигурации и файлы учётных данных никогда не проверялись через CLI.",
         authenticateFailed: "Не удалось открыть терминал для входа",
         makeActive: "Сделать активной",
         remove: "Удалить",

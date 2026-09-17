@@ -2921,6 +2921,9 @@ export const ja: TranslationResources = {
         authenticateNoWorkspace:
           "サインインには、ターミナルを開くためのワークスペースがこのホストに必要です。",
         authenticateTerminalName: "サインイン: {{name}}",
+        unverified:
+          "未検証: {{note}} この一覧を信頼する前に、プロバイダーの CLI でこれらの値を確認してください。",
+        unverifiedDefaultNote: "設定ディレクトリと認証情報ファイルは CLI で確認されていません。",
         authenticateFailed: "サインイン用ターミナルを開けませんでした",
         makeActive: "有効にする",
         remove: "削除",

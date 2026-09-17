@@ -2958,6 +2958,10 @@ export const fr: TranslationResources = {
         authenticateNoWorkspace:
           "La connexion nécessite un espace de travail sur cet hôte pour ouvrir le terminal.",
         authenticateTerminalName: "Connexion : {{name}}",
+        unverified:
+          "Non vérifié : {{note}} Vérifiez ces valeurs avec la CLI du fournisseur avant de vous fier à cette liste.",
+        unverifiedDefaultNote:
+          "son répertoire de configuration et ses fichiers d’identifiants n’ont jamais été confirmés avec la CLI.",
         authenticateFailed: "Impossible d'ouvrir le terminal de connexion",
         makeActive: "Rendre actif",
         remove: "Supprimer",

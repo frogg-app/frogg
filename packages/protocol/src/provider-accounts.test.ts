@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  findEnabledUnverifiedProviders,
   findProviderAccountCapability,
+  isProviderAccountCapabilityUnverified,
   PROVIDER_ACCOUNT_CAPABILITIES,
+  ProviderAccountCapabilitySchema,
   ProviderAccountStateSchema,
   toProviderAccountSlug,
 } from "./provider-accounts.js";
@@ -64,6 +67,71 @@ describe("PROVIDER_ACCOUNT_CAPABILITIES", () => {
   it("has a unique config dir env per provider", () => {
     const envs = PROVIDER_ACCOUNT_CAPABILITIES.map((entry) => entry.configDirEnv);
     expect(new Set(envs).size).toBe(envs.length);
+  });
+
+  it("marks every entry it does not enable as unverified, with a reason", () => {
+    for (const capability of PROVIDER_ACCOUNT_CAPABILITIES) {
+      expect(capability.verified).toBe(capability.enabled);
+      if (capability.verified === false) {
+        expect(capability.verificationNote?.length ?? 0).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+describe("isProviderAccountCapabilityUnverified", () => {
+  it("only treats an explicit false as unverified", () => {
+    expect(isProviderAccountCapabilityUnverified({ verified: false })).toBe(true);
+    expect(isProviderAccountCapabilityUnverified({ verified: true })).toBe(false);
+    // Absent means "not stated" - an older daemon - and must not raise a warning.
+    expect(isProviderAccountCapabilityUnverified({ verified: undefined })).toBe(false);
+  });
+});
+
+describe("findEnabledUnverifiedProviders", () => {
+  it("reports only the unverified providers a config override switches on", () => {
+    expect(
+      findEnabledUnverifiedProviders({
+        claude: { enabled: true },
+        codex: { enabled: true },
+        copilot: { enabled: true },
+        pi: { enabled: false },
+        opencode: {},
+      }),
+    ).toEqual(["codex", "copilot"]);
+  });
+
+  it("is empty for no overrides and for unknown providers", () => {
+    expect(findEnabledUnverifiedProviders(undefined)).toEqual([]);
+    expect(findEnabledUnverifiedProviders({})).toEqual([]);
+    expect(findEnabledUnverifiedProviders({ nonesuch: { enabled: true } })).toEqual([]);
+  });
+});
+
+describe("ProviderAccountCapabilitySchema", () => {
+  const base = {
+    provider: "claude",
+    configDirEnv: "CLAUDE_CONFIG_DIR",
+    primaryDirName: ".claude",
+    linkableFolders: [],
+    loginCommand: { command: "claude", args: [] },
+    credentialFiles: [".credentials.json"],
+    enabled: true,
+  };
+
+  it("keeps the verification fields optional, so an older daemon still parses", () => {
+    expect(ProviderAccountCapabilitySchema.parse(base).verified).toBeUndefined();
+  });
+
+  it("round-trips the verification fields when present", () => {
+    const parsed = ProviderAccountCapabilitySchema.parse({
+      ...base,
+      enabled: false,
+      verified: false,
+      verificationNote: "never confirmed",
+    });
+    expect(parsed.verified).toBe(false);
+    expect(parsed.verificationNote).toBe("never confirmed");
   });
 });
 

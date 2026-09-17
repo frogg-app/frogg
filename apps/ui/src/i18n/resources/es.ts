@@ -2952,6 +2952,10 @@ export const es: TranslationResources = {
         authenticateNoWorkspace:
           "Para iniciar sesión hace falta un espacio de trabajo en este host donde abrir el terminal.",
         authenticateTerminalName: "Inicio de sesión: {{name}}",
+        unverified:
+          "Sin verificar: {{note}} Comprueba estos valores con la CLI del proveedor antes de fiarte de esta lista.",
+        unverifiedDefaultNote:
+          "su directorio de configuración y sus archivos de credenciales nunca se confirmaron con la CLI.",
         authenticateFailed: "No se pudo abrir el terminal de inicio de sesión",
         makeActive: "Activar",
         remove: "Eliminar",

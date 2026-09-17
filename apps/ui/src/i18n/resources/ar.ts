@@ -2885,6 +2885,9 @@ export const ar: TranslationResources = {
         authenticateNoWorkspace:
           "يحتاج تسجيل الدخول إلى مساحة عمل على هذا المضيف لفتح الطرفية فيها.",
         authenticateTerminalName: "تسجيل الدخول: {{name}}",
+        unverified:
+          "غير مُتحقَّق منه: {{note}} تحقَّق من هذه القيم عبر واجهة الموفّر قبل الاعتماد على هذه القائمة.",
+        unverifiedDefaultNote: "لم يتم التأكّد من دليل الإعداد وملفات بيانات الاعتماد عبر الواجهة.",
         authenticateFailed: "تعذر فتح طرفية تسجيل الدخول",
         makeActive: "تعيين كنشط",
         remove: "إزالة",

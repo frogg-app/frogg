@@ -10029,6 +10029,10 @@ pub struct ProviderAccountListResponsePayloadCapabilitiesItem {
     #[serde(rename = "credentialFiles")]
     pub credential_files: Vec<String>,
     pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10091,6 +10095,10 @@ pub struct ProviderAccountCreateResponsePayloadCapabilitiesItem {
     #[serde(rename = "credentialFiles")]
     pub credential_files: Vec<String>,
     pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10153,6 +10161,10 @@ pub struct ProviderAccountDeleteResponsePayloadCapabilitiesItem {
     #[serde(rename = "credentialFiles")]
     pub credential_files: Vec<String>,
     pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10215,6 +10227,10 @@ pub struct ProviderAccountSetActiveResponsePayloadCapabilitiesItem {
     #[serde(rename = "credentialFiles")]
     pub credential_files: Vec<String>,
     pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

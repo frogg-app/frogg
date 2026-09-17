@@ -11,6 +11,8 @@ import { resolveFroggHome } from "./frogg-home.js";
 import { createRootLogger } from "./logger.js";
 import type { DaemonLifecycleIntent } from "./bootstrap.js";
 import { getProcessDiagnostics } from "./process-diagnostics.js";
+import { findEnabledUnverifiedProviders } from "@frogg/protocol/provider-accounts";
+import { loadPersistedConfig } from "./persisted-config.js";
 
 process.title = `${brand.name} Daemon`;
 
@@ -85,6 +87,33 @@ function warnOnLegacyAccountProviders(
   );
 }
 
+/**
+ * Provider account manifests for everything but `claude` are unverified guesses
+ * at that CLI's config directory and credential files. They are inert while
+ * disabled, so the moment worth saying so is when a config override turns one
+ * on.
+ */
+function warnOnUnverifiedProviderAccounts(
+  froggHome: string,
+  logger: BootstrapResult["logger"],
+): void {
+  let providerIds: string[] = [];
+  try {
+    providerIds = findEnabledUnverifiedProviders(loadPersistedConfig(froggHome).providerAccounts);
+  } catch {
+    // A config that cannot be read is reported by the normal config load path.
+    return;
+  }
+  if (providerIds.length === 0) return;
+  logger.warn(
+    { providerIds },
+    "Provider accounts are enabled for providers whose config directory and credential files " +
+      "are unverified guesses. Sign-in may write to the wrong directory or report the wrong " +
+      "state. Verify the entry in the provider account capability manifest against the CLI " +
+      "before relying on it.",
+  );
+}
+
 function bootstrapFromEnvironment(): BootstrapResult {
   try {
     normalizeBrandEnvironment(brand, process.env);
@@ -92,6 +121,7 @@ function bootstrapFromEnvironment(): BootstrapResult {
     const config = loadConfig(froggHome, { cli: parseDaemonCliOverrides(process.argv.slice(2)) });
     const logger = createRootLogger({ log: config.log }, { froggHome, file: false });
     warnOnLegacyAccountProviders(config, logger);
+    warnOnUnverifiedProviderAccounts(froggHome, logger);
     return { froggHome, logger, config };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
