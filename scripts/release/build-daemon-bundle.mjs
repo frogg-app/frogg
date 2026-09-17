@@ -345,8 +345,16 @@ export function daemonAssetName(version, platform, arch) {
 }
 
 async function main() {
-  const { platform, arch, npmPlatform, isWindows, nodeVersion, outDir, keepStaging, releaseVersion } =
-    parseCli();
+  const {
+    platform,
+    arch,
+    npmPlatform,
+    isWindows,
+    nodeVersion,
+    outDir,
+    keepStaging,
+    releaseVersion,
+  } = parseCli();
   const rootPackage = JSON.parse(await readFile(path.join(REPO_ROOT, "package.json"), "utf8"));
   const version = rootPackage.version;
   // Guard the two apart: the manifest version may add a downstream suffix, but it
