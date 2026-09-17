@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { resolveLocalDaemonState, stopLocalDaemon } from "../local-daemon.js";
 import { bundleLauncherPath } from "./bundle.js";
-import { currentLinkPath } from "./layout.js";
+import { appendSelfUpdateLog, currentLinkPath } from "./layout.js";
 
 /**
  * How the daemon gets restarted after `current` is flipped. The installer
@@ -24,11 +24,69 @@ export interface ServiceManager {
   isRunning(): Promise<boolean>;
 }
 
-export interface UnmanagedServiceOptions {
+export interface ServiceOptions {
   installDir: string;
   home: string | undefined;
   listen: string | null;
   platform: NodeJS.Platform;
+}
+
+/** Historical name; the same options now describe every service kind. */
+export type UnmanagedServiceOptions = ServiceOptions;
+
+/**
+ * The parts of "who currently owns the running daemon" that a managed service
+ * manager has to consult, injected so the reconciliation can be tested without
+ * a systemd or launchd host.
+ */
+export interface OwnershipDeps {
+  /** True when the registered unit itself is running the daemon. */
+  isUnitActive(): Promise<boolean>;
+  /** True when the pid lock under `home` names a live daemon process. */
+  isDaemonRunning(): boolean;
+  /** Graceful stop through the pid lock (RPC, then signal). */
+  stopDaemon(): Promise<void>;
+  log(line: string): void;
+}
+
+export type OwnershipOutcome = "unit_active" | "no_daemon" | "stopped_unowned_daemon";
+
+/**
+ * An installed unit that targets this install is not proof that the unit is
+ * running the daemon: the unit can sit inactive while someone has started the
+ * daemon by hand. Starting the inactive unit in that state hits the running
+ * daemon's idempotent start, which succeeds without moving the daemon onto the
+ * newly linked version. Hand the unit an unowned daemon by stopping it first,
+ * so the restart genuinely starts the new code.
+ */
+export async function reconcileDaemonOwnership(deps: OwnershipDeps): Promise<OwnershipOutcome> {
+  if (await deps.isUnitActive()) return "unit_active";
+  if (!deps.isDaemonRunning()) return "no_daemon";
+  deps.log(
+    "service unit is inactive while a daemon is running outside it; stopping that daemon so the unit can take ownership",
+  );
+  await deps.stopDaemon();
+  return "stopped_unowned_daemon";
+}
+
+function ownershipDeps(
+  options: ServiceOptions | undefined,
+  isUnitActive: () => Promise<boolean>,
+  overrides: Partial<OwnershipDeps> | undefined,
+): OwnershipDeps {
+  return {
+    isUnitActive,
+    isDaemonRunning: () => resolveLocalDaemonState({ home: options?.home }).running,
+    stopDaemon: async () => {
+      // `stopService` stays off: the unit is inactive, and the daemon to
+      // displace is the hand-started one the pid lock names.
+      await stopLocalDaemon({ home: options?.home, force: true });
+    },
+    log: (line: string) => {
+      if (options) appendSelfUpdateLog(options.installDir, line);
+    },
+    ...overrides,
+  };
 }
 
 function run(command: string, args: string[]): { status: number | null; stderr: string } {
@@ -58,34 +116,43 @@ export function isInsideSystemdUnit(unit: string = SYSTEMD_UNIT): boolean {
   }
 }
 
-export function createSystemdServiceManager(): ServiceManager {
+export function createSystemdServiceManager(
+  options?: ServiceOptions,
+  overrides?: Partial<OwnershipDeps>,
+): ServiceManager {
+  const isRunning = async () =>
+    run("systemctl", ["--user", "is-active", "--quiet", SYSTEMD_UNIT]).status === 0;
+  const deps = ownershipDeps(options, isRunning, overrides);
   return {
     kind: "systemd",
     async restart() {
+      await reconcileDaemonOwnership(deps);
       const result = run("systemctl", ["--user", "restart", SYSTEMD_UNIT]);
       if (result.status !== 0) {
         throw new Error(`systemctl --user restart ${SYSTEMD_UNIT} failed: ${result.stderr.trim()}`);
       }
     },
-    async isRunning() {
-      return run("systemctl", ["--user", "is-active", "--quiet", SYSTEMD_UNIT]).status === 0;
-    },
+    isRunning,
   };
 }
 
-export function createLaunchdServiceManager(): ServiceManager {
+export function createLaunchdServiceManager(
+  options?: ServiceOptions,
+  overrides?: Partial<OwnershipDeps>,
+): ServiceManager {
   const target = `gui/${process.getuid?.() ?? 501}/${LAUNCHD_LABEL}`;
+  const isRunning = async () => run("launchctl", ["print", target]).status === 0;
+  const deps = ownershipDeps(options, isRunning, overrides);
   return {
     kind: "launchd",
     async restart() {
+      await reconcileDaemonOwnership(deps);
       const result = run("launchctl", ["kickstart", "-k", target]);
       if (result.status !== 0) {
         throw new Error(`launchctl kickstart -k ${target} failed: ${result.stderr.trim()}`);
       }
     },
-    async isRunning() {
-      return run("launchctl", ["print", target]).status === 0;
-    },
+    isRunning,
   };
 }
 
@@ -162,13 +229,13 @@ export function detectServiceManager(options: UnmanagedServiceOptions): ServiceM
     options.platform === "linux" &&
     serviceFileTargetsInstall(systemdUnitPath(), options.installDir)
   ) {
-    return createSystemdServiceManager();
+    return createSystemdServiceManager(options);
   }
   if (
     options.platform === "darwin" &&
     serviceFileTargetsInstall(launchdPlistPath(), options.installDir)
   ) {
-    return createLaunchdServiceManager();
+    return createLaunchdServiceManager(options);
   }
   return createUnmanagedServiceManager(options);
 }

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Self-update now reconciles who owns the running daemon before restarting a
+  registered service. If the systemd unit or launchd agent is inactive while a
+  hand-started daemon is running, that daemon is stopped first so the unit's
+  restart actually brings up the newly installed version instead of hitting the
+  running daemon's idempotent start.
+
 ## 1.4.0 — 2026-09-17
 
 - Keep the provider account pill in the chat composer once an agent is running.

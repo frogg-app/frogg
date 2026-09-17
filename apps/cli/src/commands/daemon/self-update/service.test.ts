@@ -2,7 +2,12 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
-import { detectServiceManager, serviceFileTargetsInstall } from "./service.js";
+import {
+  detectServiceManager,
+  reconcileDaemonOwnership,
+  serviceFileTargetsInstall,
+  type OwnershipDeps,
+} from "./service.js";
 
 const dirs: string[] = [];
 function makeDir(): string {
@@ -39,5 +44,55 @@ describe("service detection", () => {
       platform: "linux",
     });
     expect(manager.kind).toBe("unmanaged");
+  });
+});
+
+describe("daemon ownership reconciliation", () => {
+  function deps(overrides: Partial<OwnershipDeps>): {
+    deps: OwnershipDeps;
+    stops: number;
+    logs: string[];
+  } {
+    const state = { stops: 0, logs: [] as string[] };
+    const base: OwnershipDeps = {
+      isUnitActive: async () => false,
+      isDaemonRunning: () => false,
+      stopDaemon: async () => {
+        state.stops += 1;
+      },
+      log: (line) => state.logs.push(line),
+      ...overrides,
+    };
+    return {
+      deps: base,
+      get stops() {
+        return state.stops;
+      },
+      get logs() {
+        return state.logs;
+      },
+    };
+  }
+
+  test("leaves an active unit alone", async () => {
+    const harness = deps({
+      isUnitActive: async () => true,
+      isDaemonRunning: () => true,
+    });
+    expect(await reconcileDaemonOwnership(harness.deps)).toBe("unit_active");
+    expect(harness.stops).toBe(0);
+  });
+
+  test("does nothing when no daemon is running at all", async () => {
+    const harness = deps({});
+    expect(await reconcileDaemonOwnership(harness.deps)).toBe("no_daemon");
+    expect(harness.stops).toBe(0);
+  });
+
+  test("stops a hand-started daemon so an inactive unit can take over", async () => {
+    const harness = deps({ isDaemonRunning: () => true });
+    expect(await reconcileDaemonOwnership(harness.deps)).toBe("stopped_unowned_daemon");
+    expect(harness.stops).toBe(1);
+    expect(harness.logs.join("\n")).toContain("inactive");
   });
 });
