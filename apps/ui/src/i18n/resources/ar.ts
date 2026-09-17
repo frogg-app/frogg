@@ -204,9 +204,18 @@ export const ar: TranslationResources = {
       searchPlaceholder: "أوضاع البحث...",
       selectWithValue: "حدد وضع الوكيل ({{value}})",
     },
+    // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+    account: {
+      title: "الحساب",
+      default: "افتراضي",
+      defaultWithName: "افتراضي ({{name}})",
+      notSignedIn: "لم يتم تسجيل الدخول",
+      selectWithValue: "حدد حساب المزود ({{value}})",
+    },
     hints: {
       thinking: "وضع التفكير",
       model: "تغيير النموذج",
+      account: "تغيير الحساب",
       mode: "تغيير الوضع",
     },
   },

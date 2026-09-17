@@ -204,9 +204,18 @@ export const ru: TranslationResources = {
       searchPlaceholder: "Поиск режимов...",
       selectWithValue: "Выбрать режим агента ({{value}})",
     },
+    // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+    account: {
+      title: "Аккаунт",
+      default: "По умолчанию",
+      defaultWithName: "По умолчанию ({{name}})",
+      notSignedIn: "Вход не выполнен",
+      selectWithValue: "Выбрать аккаунт провайдера ({{value}})",
+    },
     hints: {
       thinking: "Режим рассуждений",
       model: "Изменить модель",
+      account: "Изменить аккаунт",
       mode: "Изменить режим",
     },
   },

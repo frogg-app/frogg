@@ -204,9 +204,18 @@ export const zhCN: TranslationResources = {
       searchPlaceholder: "搜索 modes...",
       selectWithValue: "选择 Agent mode（{{value}}）",
     },
+    // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+    account: {
+      title: "账号",
+      default: "默认",
+      defaultWithName: "默认（{{name}}）",
+      notSignedIn: "未登录",
+      selectWithValue: "选择 Provider 账号（{{value}}）",
+    },
     hints: {
       thinking: "Thinking mode",
       model: "切换 Model",
+      account: "切换账号",
       mode: "更改模式",
     },
   },

@@ -204,9 +204,18 @@ export const ko: TranslationResources = {
       searchPlaceholder: "모드 검색...",
       selectWithValue: "에이전트 모드 선택 ({{value}})",
     },
+    // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+    account: {
+      title: "계정",
+      default: "기본값",
+      defaultWithName: "기본값 ({{name}})",
+      notSignedIn: "로그인되지 않음",
+      selectWithValue: "프로바이더 계정 선택 ({{value}})",
+    },
     hints: {
       thinking: "사고 모드",
       model: "모델 변경",
+      account: "계정 변경",
       mode: "모드 변경",
     },
   },

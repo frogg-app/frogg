@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { AgentProviderDefinition } from "@frogg/protocol/provider-manifest";
 import type {
   AgentMode,
   AgentModelDefinition,
   AgentProvider,
+  ProviderSnapshotAccount,
   ProviderSnapshotEntry,
 } from "@frogg/protocol/agent-types";
 import { useHosts } from "@/runtime/host-runtime";
@@ -39,6 +40,7 @@ import {
   type ProviderModelsByProvider,
 } from "@/provider-selection/resolve-agent-form";
 import type { MaterializedAgentProfile } from "@/agent-profiles";
+import type { ProviderAccountSelection } from "@/composer/agent-controls/provider-account";
 
 export type { FormInitialValues } from "@/provider-selection/resolve-agent-form";
 
@@ -83,6 +85,19 @@ export interface UseAgentFormStateResult {
   setProviderAndModelFromUser: (provider: AgentProvider, modelId: string) => void;
   applyProfileFromUser: (profile: MaterializedAgentProfile) => void;
   clearProviderSelectionFromUser: () => void;
+  // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+  /** The selected provider's sign-in accounts, or undefined when it has none. */
+  providerAccounts: ProviderSnapshotAccount[] | undefined;
+  /** The provider's daemon-wide active account id, or null. */
+  providerDefaultAccountId: string | null;
+  /**
+   * Three-valued and never to be read for truthiness: `undefined` means the user
+   * has not picked, so `providerAccountId` is omitted from the launch config and
+   * the daemon-wide active account applies; `null` is the explicit "Default"
+   * pick; a string names an account.
+   */
+  selectedProviderAccountId: ProviderAccountSelection;
+  setProviderAccountFromUser: (accountId: string | null) => void;
   workingDirIsEmpty: boolean;
   persistFormPreferences: () => Promise<void>;
 }
@@ -628,6 +643,30 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
 
   const workingDirIsEmpty = !formState.workingDir.trim();
 
+  // COMPAT(perAgentProviderAccounts): the account pick is per provider so that
+  // switching provider and back does not silently carry another provider's
+  // account over. A provider missing from the record has made no pick at all,
+  // which is distinct from a recorded `null` ("Default").
+  const [providerAccountSelections, setProviderAccountSelections] = useState<
+    Record<string, string | null>
+  >({});
+  const selectedProvider = formState.provider;
+  const selectedProviderAccountId = useMemo<ProviderAccountSelection>(() => {
+    if (!selectedProvider) return undefined;
+    return Object.hasOwn(providerAccountSelections, selectedProvider)
+      ? providerAccountSelections[selectedProvider]
+      : undefined;
+  }, [providerAccountSelections, selectedProvider]);
+  const setProviderAccountFromUser = useCallback(
+    (accountId: string | null) => {
+      if (!selectedProvider) return;
+      setProviderAccountSelections((current) => ({ ...current, [selectedProvider]: accountId }));
+    },
+    [selectedProvider],
+  );
+  const providerAccounts = snapshotSelectedEntry?.accounts;
+  const providerDefaultAccountId = snapshotSelectedEntry?.defaultAccountId ?? null;
+
   return useMemo(
     () => ({
       selectedServerId: formState.serverId,
@@ -661,6 +700,10 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
       setProviderAndModelFromUser,
       applyProfileFromUser,
       clearProviderSelectionFromUser,
+      providerAccounts,
+      providerDefaultAccountId,
+      selectedProviderAccountId,
+      setProviderAccountFromUser,
       workingDirIsEmpty,
       persistFormPreferences,
     }),
@@ -696,6 +739,10 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
       setProviderAndModelFromUser,
       applyProfileFromUser,
       clearProviderSelectionFromUser,
+      providerAccounts,
+      providerDefaultAccountId,
+      selectedProviderAccountId,
+      setProviderAccountFromUser,
       workingDirIsEmpty,
       persistFormPreferences,
     ],

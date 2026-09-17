@@ -154,6 +154,9 @@ async function submitDraftCreateRequest(input: {
     effectiveModelId: string | null;
     effectiveThinkingOptionId: string | null;
     featureValues: Record<string, unknown> | undefined;
+    // COMPAT(perAgentProviderAccounts): undefined means "not picked", so the key
+    // is left off the launch config entirely; null is the explicit "Default".
+    selectedProviderAccountId: string | null | undefined;
   };
   hostDisconnectedMessage: string;
   selectModelMessage: string;
@@ -194,6 +197,9 @@ async function submitDraftCreateRequest(input: {
     thinkingOptionId:
       autoSubmitConfig?.thinkingOptionId ?? (composerState.effectiveThinkingOptionId || undefined),
     featureValues: autoSubmitConfig?.featureValues ?? composerState.featureValues,
+    ...(composerState.selectedProviderAccountId !== undefined
+      ? { providerAccountId: composerState.selectedProviderAccountId }
+      : {}),
   });
 
   const imagesData = await encodeImages(images);

@@ -50,6 +50,16 @@ export function buildDraftAgentControls(input: {
     onRetryModelProvider: formState.refreshProviderModels,
     isRetryingModelProvider: formState.isProviderModelsRefreshing,
     modelSelectorServerId: formState.selectedServerId,
+    // COMPAT(perAgentProviderAccounts): null when the provider has no accounts,
+    // which keeps the pill row identical to before the picker existed.
+    providerAccountControl: formState.providerAccounts
+      ? {
+          accounts: formState.providerAccounts,
+          defaultAccountId: formState.providerDefaultAccountId,
+          selectedAccountId: formState.selectedProviderAccountId,
+          onSelectAccount: formState.setProviderAccountFromUser,
+        }
+      : null,
   };
 }
 

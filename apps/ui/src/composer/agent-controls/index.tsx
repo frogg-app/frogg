@@ -82,6 +82,10 @@ import { ComposerToolbarGlyph } from "@/composer/agent-controls/glyph";
 import { AgentControlTrigger } from "@/composer/agent-controls/control";
 import { CompactModelSheet } from "@/composer/agent-controls/model-sheet";
 import {
+  ProviderAccountControl,
+  type ProviderAccountControlValue,
+} from "@/composer/agent-controls/provider-account-control";
+import {
   useAgentProfileEditor,
   useAgentProfilePicker,
   type AgentProfileApplyTarget,
@@ -128,6 +132,8 @@ interface ControlledAgentControlsProps {
   onRetryModelProvider?: (provider: AgentProvider) => void;
   isRetryingModelProvider?: boolean;
   modeControl?: AgentModeControlValue | null;
+  // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+  providerAccountControl?: ProviderAccountControlValue | null;
   modelSelectorServerId?: string | null;
   isCompactLayout?: boolean;
 }
@@ -156,6 +162,8 @@ export interface DraftAgentControlsProps {
   onRetryModelProvider?: (provider: AgentProvider) => void;
   isRetryingModelProvider?: boolean;
   disabled?: boolean;
+  // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+  providerAccountControl?: ProviderAccountControlValue | null;
   modelSelectorServerId?: string | null;
   isCompactLayout?: boolean;
 }
@@ -498,6 +506,7 @@ function ControlledAgentControls({
   onRetryModelProvider,
   isRetryingModelProvider = false,
   modeControl,
+  providerAccountControl = null,
   modelSelectorServerId = null,
   isCompactLayout,
 }: ControlledAgentControlsProps) {
@@ -778,6 +787,7 @@ function ControlledAgentControls({
             handleNestedOpenChange={handleSheetOpenChange}
             renderThinkingOption={renderThinkingOption}
             modeControl={modeControl}
+            providerAccountControl={providerAccountControl}
             presentation={presentation}
             glyphSize={layoutContextValue.glyphSize}
             activeSheet={activeSheet}
@@ -818,6 +828,7 @@ function ControlledAgentControls({
             handleOpenChange={handleSheetOpenChange}
             renderThinkingOption={renderThinkingOption}
             modeControl={modeControl}
+            providerAccountControl={providerAccountControl}
             glyphSize={layoutContextValue.glyphSize}
             modelSelectorServerId={modelSelectorServerId}
             canSwitchProvider={Boolean(onSelectProviderAndModel)}
@@ -878,6 +889,7 @@ interface DesktopAgentControlsContentProps {
     onPress: () => void;
   }) => ReactElement;
   modeControl?: AgentModeControlValue | null;
+  providerAccountControl: ProviderAccountControlValue | null;
   presentation: ComposerControlPresentation;
   glyphSize: number;
   activeSheet: ActiveSheet;
@@ -935,6 +947,7 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
     handleNestedOpenChange,
     renderThinkingOption,
     modeControl,
+    providerAccountControl,
     presentation,
     glyphSize,
     activeSheet,
@@ -1011,6 +1024,12 @@ function DesktopAgentControlsContent(props: DesktopAgentControlsContentProps) {
             <Text style={styles.tooltipText}>{t(getAgentControlHintKey("model"))}</Text>
           </TooltipContent>
         </Tooltip>
+      ) : null}
+
+      {/* COMPAT(perAgentProviderAccounts): sits immediately right of the model
+          selector, and renders nothing unless the provider has accounts. */}
+      {providerAccountControl ? (
+        <ProviderAccountControl {...providerAccountControl} onClose={onDropdownClose} />
       ) : null}
 
       {thinkingOptions && thinkingOptions.length > 0 ? (
@@ -1141,6 +1160,7 @@ interface SheetAgentControlsContentProps {
     onPress: () => void;
   }) => ReactElement;
   modeControl?: AgentModeControlValue | null;
+  providerAccountControl: ProviderAccountControlValue | null;
   glyphSize: number;
   modelSelectorServerId: string | null;
   canSwitchProvider: boolean;
@@ -1180,6 +1200,7 @@ function SheetAgentControlsContent(props: SheetAgentControlsContentProps) {
     handleOpenChange,
     renderThinkingOption,
     modeControl,
+    providerAccountControl,
     glyphSize,
     modelSelectorServerId,
     canSwitchProvider,
@@ -1203,6 +1224,10 @@ function SheetAgentControlsContent(props: SheetAgentControlsContentProps) {
 
   const sheetControls = (
     <View style={styles.combinedSheetControls} testID="agent-controls-combined-sheet-controls">
+      {providerAccountControl ? (
+        <ProviderAccountControl {...providerAccountControl} surface="sheet" />
+      ) : null}
+
       {hasThinking ? (
         <>
           <AgentControlTrigger
@@ -1831,6 +1856,7 @@ export function DraftAgentControls({
   onRetryModelProvider,
   isRetryingModelProvider = false,
   disabled = false,
+  providerAccountControl = null,
   modelSelectorServerId = null,
   isCompactLayout,
 }: DraftAgentControlsProps) {
@@ -1919,6 +1945,7 @@ export function DraftAgentControls({
         isRetryingModelProvider={isRetryingModelProvider}
         disabled={disabled}
         modeControl={modeControl}
+        providerAccountControl={providerAccountControl}
         modelSelectorServerId={modelSelectorServerId}
         isCompactLayout={isCompactLayout}
       />

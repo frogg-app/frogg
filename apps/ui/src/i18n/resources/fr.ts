@@ -206,9 +206,18 @@ export const fr: TranslationResources = {
       searchPlaceholder: "Modes de recherche...",
       selectWithValue: "Sélectionnez le mode agent ({{value}})",
     },
+    // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+    account: {
+      title: "Compte",
+      default: "Par défaut",
+      defaultWithName: "Par défaut ({{name}})",
+      notSignedIn: "Non connecté",
+      selectWithValue: "Sélectionnez le compte du fournisseur ({{value}})",
+    },
     hints: {
       thinking: "Mode réflexion",
       model: "Changer de modèle",
+      account: "Changer de compte",
       mode: "Changer de mode",
     },
   },

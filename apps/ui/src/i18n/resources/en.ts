@@ -202,9 +202,18 @@ export const en = {
       searchPlaceholder: "Search modes...",
       selectWithValue: "Select agent mode ({{value}})",
     },
+    // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+    account: {
+      title: "Account",
+      default: "Default",
+      defaultWithName: "Default ({{name}})",
+      notSignedIn: "Not signed in",
+      selectWithValue: "Select provider account ({{value}})",
+    },
     hints: {
       thinking: "Thinking mode",
       model: "Change model",
+      account: "Change account",
       mode: "Change mode",
     },
   },

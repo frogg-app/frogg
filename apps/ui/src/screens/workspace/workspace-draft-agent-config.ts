@@ -7,6 +7,12 @@ export function buildWorkspaceDraftAgentConfig(input: {
   model?: string;
   thinkingOptionId?: string;
   featureValues?: Record<string, unknown>;
+  /**
+   * COMPAT(perAgentProviderAccounts): three-valued. Absent leaves the key off the
+   * wire so the daemon uses the provider's active account; `null` is the explicit
+   * "Default" pick. Never test it for truthiness.
+   */
+  providerAccountId?: string | null;
 }): AgentSessionConfig {
   return {
     provider: input.provider,
@@ -15,5 +21,8 @@ export function buildWorkspaceDraftAgentConfig(input: {
     ...(input.model ? { model: input.model } : {}),
     ...(input.thinkingOptionId ? { thinkingOptionId: input.thinkingOptionId } : {}),
     ...(input.featureValues ? { featureValues: input.featureValues } : {}),
+    ...("providerAccountId" in input && input.providerAccountId !== undefined
+      ? { providerAccountId: input.providerAccountId }
+      : {}),
   };
 }

@@ -204,9 +204,18 @@ export const ja: TranslationResources = {
       searchPlaceholder: "モードを検索...",
       selectWithValue: "エージェントモードを選択（{{value}}）",
     },
+    // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
+    account: {
+      title: "アカウント",
+      default: "デフォルト",
+      defaultWithName: "デフォルト（{{name}}）",
+      notSignedIn: "サインインしていません",
+      selectWithValue: "プロバイダーアカウントを選択（{{value}}）",
+    },
     hints: {
       thinking: "思考モード",
       model: "モデルを変更",
+      account: "アカウントを変更",
       mode: "権限モードを変更",
     },
   },
