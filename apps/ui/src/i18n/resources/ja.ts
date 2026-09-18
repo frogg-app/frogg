@@ -73,14 +73,14 @@ export const ja: TranslationResources = {
       close: "メニューを閉じる",
     },
     commandCenter: {
-      placeholder: "コマンド、ファイル、ワークスペース、エージェントを検索...",
+      placeholder: "コマンド、ファイル、セッション、エージェントを検索...",
       filePlaceholder: "ファイルを検索...",
       searchingFiles: "ファイルを検索中...",
       noMatches: "一致なし",
       actions: "アクション",
       keyboardShortcuts: "キーボードショートカット",
       files: "ファイル",
-      workspaces: "ワークスペース",
+      workspaces: "セッション",
       agents: "エージェント",
       newAgent: "新しいエージェント",
       open: "{{name}}を開く",
@@ -334,9 +334,9 @@ export const ja: TranslationResources = {
       copyMessage: "メッセージをコピー",
       forkMenu: "メッセージをフォーク",
       forkInNewTab: "新しいタブにフォーク",
-      forkInNewWorkspace: "新しいワークスペースにフォーク",
+      forkInNewWorkspace: "新しいセッションにフォーク",
       forkUnavailable: "これを使用するにはホストを更新してください。",
-      forkMissingWorkspace: "このエージェントはワークスペース内にありません。",
+      forkMissingWorkspace: "このエージェントはセッション内にありません。",
       forkFailed: "チャットのフォークに失敗しました",
       openFile: "ファイルを開く",
       copied: "コピーしました",
@@ -396,30 +396,30 @@ export const ja: TranslationResources = {
     },
   },
   importSession: {
-    title: "セッションをインポート",
+    title: "会話をインポート",
     filters: {
       all: "すべて",
     },
     status: {
-      connectHost: "セッションをインポートするにはホストに接続してください",
-      updateHost: "セッションをインポートするにはホストを更新してください。",
+      connectHost: "会話をインポートするにはホストに接続してください",
+      updateHost: "会話をインポートするにはホストを更新してください。",
       noProviders: "インポート可能なプロバイダーが有効になっていません。",
-      loading: "最近のセッションを読み込み中...",
-      failedAll: "最近のセッションを読み込めませんでした。",
-      failedProviders: "{{providers}}のセッションを読み込めませんでした。",
-      failedImport: "選択したセッションをインポートできませんでした。",
+      loading: "最近の会話を読み込み中...",
+      failedAll: "最近の会話を読み込めませんでした。",
+      failedProviders: "{{providers}}の会話を読み込めませんでした。",
+      failedImport: "選択した会話をインポートできませんでした。",
     },
     actions: {
-      refresh: "セッションを更新",
+      refresh: "会話を更新",
     },
     preview: {
-      untitledSession: "無題のセッション",
+      untitledSession: "無題の会話",
       noPrompt: "プロンプトのプレビューなし",
     },
     empty: {
-      noRecent: "インポートする最近のセッションがありません。",
-      alreadyImported: "最近のセッションはすでにすべてインポートされています。",
-      noProviderSessions: "{{provider}}のセッションが見つかりません。",
+      noRecent: "インポートする最近の会話がありません。",
+      alreadyImported: "最近の会話はすでにすべてインポートされています。",
+      noProviderSessions: "{{provider}}の会話が見つかりません。",
     },
     row: {
       importing: "インポート中...",
@@ -427,29 +427,29 @@ export const ja: TranslationResources = {
   },
   workspace: {
     route: {
-      loading: "ワークスペースを読み込み中",
+      loading: "セッションを読み込み中",
       connecting: "接続中",
       hostOffline: "{{hostName}}はオフラインです",
       cannotReachHost: "{{hostName}}に到達できません",
       hostStatus: "ホストの状態: {{status}}",
-      needsHostUpgrade: "このワークスペースを復元するにはホストを更新してください",
+      needsHostUpgrade: "このセッションを復元するにはホストを更新してください",
       manageHost: "ホストを管理",
       recovery: {
-        archivedTitle: "ワークスペースはアーカイブ済みです",
+        archivedTitle: "セッションはアーカイブ済みです",
         restoreDescription:
           "{{workspaceName}} はアーカイブされ、worktree が削除されました。ブランチ {{branch}} を復元して再度開きます。",
         unarchiveDescription:
           "{{workspaceName}} はアーカイブされています。再度開くにはアーカイブを解除してください。",
         restoreAction: "復元",
         unarchiveAction: "アーカイブを解除",
-        restoringTitle: "ワークスペースを復元中",
+        restoringTitle: "セッションを復元中",
         restoringAction: "復元中...",
-        unavailableTitle: "ワークスペースを利用できません",
-        checkFailedTitle: "ワークスペースを確認できませんでした",
+        unavailableTitle: "セッションを利用できません",
+        checkFailedTitle: "セッションを確認できませんでした",
       },
     },
     hoverCard: {
-      scriptsAccessibility: "ワークスペーススクリプト",
+      scriptsAccessibility: "セッションスクリプト",
       copyPath: "パスをコピー",
       copyBranchName: "ブランチ名をコピー",
       copied: "コピーしました",
@@ -509,7 +509,7 @@ export const ja: TranslationResources = {
         noVisibleFiles: "表示可能なファイルなし",
       },
       states: {
-        unavailable: "ワークスペースが利用できません",
+        unavailable: "セッションが利用できません",
         loading: "ファイルを読み込み中...",
       },
       errors: {
@@ -530,7 +530,7 @@ export const ja: TranslationResources = {
         label: "セットアップ",
         completed: "セットアップ完了",
         failed: "セットアップ失敗",
-        workspace: "ワークスペースセットアップ",
+        workspace: "セッションセットアップ",
       },
       status: {
         running: "実行中",
@@ -538,13 +538,13 @@ export const ja: TranslationResources = {
         failed: "失敗",
         waiting: "セットアップ出力を待機中",
       },
-      waiting: "ワークスペースをセットアップ中...",
+      waiting: "セッションをセットアップ中...",
       empty: {
-        noCommands: "このワークスペースでセットアップコマンドは実行されませんでした。",
+        noCommands: "このセッションでセットアップコマンドは実行されませんでした。",
       },
       accessibility: {
-        noCommands: "このワークスペースでセットアップコマンドは実行されませんでした",
-        log: "ワークスペースセットアップログ",
+        noCommands: "このセッションでセットアップコマンドは実行されませんでした",
+        log: "セッションセットアップログ",
       },
       log: {
         noOutput: "出力なし",
@@ -553,7 +553,7 @@ export const ja: TranslationResources = {
     browser: {
       unavailable: {
         title: "ブラウザはデスクトップ専用です",
-        subtitle: "組み込みブラウザを使用するには、このワークスペースをElectronで開いてください。",
+        subtitle: "組み込みブラウザを使用するには、このセッションをElectronで開いてください。",
       },
       session: "ブラウザセッション{{browserId}}",
       controls: {
@@ -601,11 +601,11 @@ export const ja: TranslationResources = {
       fallback: {
         newAgent: "新しいエージェント",
         setup: "セットアップ",
-        workspaceSetup: "ワークスペースセットアップ",
+        workspaceSetup: "セッションセットアップ",
         terminal: "ターミナル",
         browser: "ブラウザ",
         agent: "エージェント",
-        workspace: "ワークスペース",
+        workspace: "セッション",
       },
       switcher: {
         trigger: "タブを切り替え（{{count}}件開いています）",
@@ -704,21 +704,21 @@ export const ja: TranslationResources = {
     },
     header: {
       actions: {
-        workspaceActions: "ワークスペースアクション",
+        workspaceActions: "セッションアクション",
         newAgent: "新しいエージェント",
         newAgentHere: "このワークツリーに新しいエージェント",
         newTerminal: "新しいターミナル",
         newBrowser: "新しいブラウザタブ",
-        importSession: "セッションをインポート",
-        copyPath: "ワークスペースパスをコピー",
+        importSession: "会話をインポート",
+        copyPath: "セッションパスをコピー",
         copyBranchName: "ブランチ名をコピー",
         showSetup: "セットアップを表示",
       },
       toasts: {
-        workspacePathUnavailable: "ワークスペースパスはまだ利用できません",
+        workspacePathUnavailable: "セッションパスはまだ利用できません",
         branchNameUnavailable: "ブランチ名が利用できません",
-        terminalQueued: "ワークスペースを準備中、準備ができたらターミナルを開きます...",
-        workspacePathCopiedLabel: "ワークスペースパス",
+        terminalQueued: "セッションを準備中、準備ができたらターミナルを開きます...",
+        workspacePathCopiedLabel: "セッションパス",
         branchNameCopiedLabel: "ブランチ名",
       },
     },
@@ -734,7 +734,7 @@ export const ja: TranslationResources = {
         view: "ターミナルを表示",
       },
       accessibility: {
-        trigger: "ワークスペーススクリプト",
+        trigger: "セッションスクリプト",
         openService: "{{scriptName}}サービスを表示",
         viewTerminal: "{{scriptName}}ターミナルを表示",
         runScript: "{{scriptName}}スクリプトを実行",
@@ -809,7 +809,7 @@ export const ja: TranslationResources = {
           success: "更新しました",
         },
         archive: {
-          label: "ワークスペースをアーカイブ",
+          label: "セッションをアーカイブ",
           pending: "アーカイブ中...",
           success: "アーカイブしました",
         },
@@ -867,7 +867,7 @@ export const ja: TranslationResources = {
           updateCurrent: "このブランチはすでに{{baseRef}}と最新の状態のため、更新は利用できません",
           mergePrNoGithub: "GitHubが接続されていないため、PRのマージは現在利用できません",
           archiveNotWorktree:
-            "このワークスペースは{{brandName}}ワークツリーとして作成されていないため、アーカイブはここでは利用できません",
+            "このセッションは{{brandName}}ワークツリーとして作成されていないため、アーカイブはここでは利用できません",
           mergePrNoForge: "{{brand}}が接続されていないため、{{noun}}のマージは現在利用できません",
           mergePrMissing: "プルリクエストがまだないため、PRのマージは利用できません",
           mergePrDraft: "プルリクエストがまだドラフトのため、PRのマージは利用できません",
@@ -899,7 +899,7 @@ export const ja: TranslationResources = {
           confirm: "アーカイブ",
           cancel: "キャンセル",
           consequence:
-            "ワークスペースがサイドバーから削除されます。後で復元するには履歴を開いてください。",
+            "セッションがサイドバーから削除されます。後で復元するには履歴を開いてください。",
           uncommittedChanges: "未コミットの変更",
           uncommittedChangesWithDiff: "未コミットの変更（{{diffStat}}）",
           addedLine: "{{count}}行追加",
@@ -953,7 +953,7 @@ export const ja: TranslationResources = {
         modifiedFile: "変更済み",
         commits: {
           title: "コミット",
-          countLabel: "ワークスペースのコミット数: {{count}}",
+          countLabel: "セッションのコミット数: {{count}}",
           noneAhead: "{{baseRef}} より先のコミットはまだありません",
           fileDiffEmpty: "表示する変更はありません",
           fileDiffError: "ファイル差分の読み込みに失敗しました",
@@ -965,9 +965,9 @@ export const ja: TranslationResources = {
       openInEditor: {
         open: "開く",
         chooseEditor: "エディタを選択",
-        openIn: "{{target}}でワークスペースを開く",
+        openIn: "{{target}}でセッションを開く",
         openFileIn: "{{target}}で{{fileName}}を開く",
-        failedOpen: "ワークスペースを開けませんでした",
+        failedOpen: "セッションを開けませんでした",
       },
       pr: {
         actions: {
@@ -1077,14 +1077,14 @@ export const ja: TranslationResources = {
       save: "保存",
       delete: "削除",
       deleteTitle: "{{name}}を削除しますか？",
-      deleteMessage_one: "このホストの{{count}}個のワークスペースからラベルを削除します。",
-      deleteMessage_other: "このホストの{{count}}個のワークスペースからラベルを削除します。",
+      deleteMessage_one: "このホストの{{count}}個のセッションからラベルを削除します。",
+      deleteMessage_other: "このホストの{{count}}個のセッションからラベルを削除します。",
       offline: "このホストはオフラインです。",
       updateHost: "ラベルを管理するにはホストを更新してください。",
     },
   },
   sidebar: {
-    workspaceDraft: "新しいワークスペース（下書き）",
+    workspaceDraft: "新しいセッション（下書き）",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "アカウント: {{value}}",
     hostsMenu: {
@@ -1144,9 +1144,8 @@ export const ja: TranslationResources = {
       },
     },
     filterEmpty: {
-      title: "一致するワークスペースがありません",
-      description:
-        "ワークスペースを表示するにはサイドバーのフィルターを変更またはクリアしてください。",
+      title: "一致するセッションがありません",
+      description: "セッションを表示するにはサイドバーのフィルターを変更またはクリアしてください。",
       clear: "フィルターをクリア",
     },
     pinned: {
@@ -1159,7 +1158,7 @@ export const ja: TranslationResources = {
     },
     actions: {
       addProject: "プロジェクトを追加",
-      newWorkspace: "新しいワークスペース",
+      newWorkspace: "新しいセッション",
       hosts: "ホスト",
       home: "ホーム",
       settings: "設定",
@@ -1196,7 +1195,7 @@ export const ja: TranslationResources = {
       },
       toasts: {
         hostDisconnected: "ホストが接続されていません",
-        removeFailed: "一部のワークスペースの削除に失敗しました",
+        removeFailed: "一部のセッションの削除に失敗しました",
         updateHostToRemove: "プロジェクトを削除するにはホストを更新してください。",
       },
       empty: {
@@ -1219,46 +1218,46 @@ export const ja: TranslationResources = {
         pending: "保留中: {{count}}",
       },
       actions: {
-        menu: "ワークスペースアクション",
-        newWorkspace: "新しいワークスペース",
+        menu: "セッションアクション",
+        newWorkspace: "新しいセッション",
         showMore: "さらに表示",
         showLess: "表示を減らす",
-        createWorkspaceFor: "{{projectName}}の新しいワークスペースを作成",
+        createWorkspaceFor: "{{projectName}}の新しいセッションを作成",
         copyPath: "パスをコピー",
         copyBranchName: "ブランチ名をコピー",
-        rename: "ワークスペースの名前を変更",
+        rename: "セッションの名前を変更",
         pin: "上部に固定",
         unpin: "固定解除",
         archive: "アーカイブ",
-        archiveWorkspace: "ワークスペースをアーカイブ",
+        archiveWorkspace: "セッションをアーカイブ",
         hideFromSidebar: "サイドバーから非表示",
         archiving: "アーカイブ中...",
         hiding: "非表示にしています...",
       },
       confirmations: {
-        hideTitle: "ワークスペースを非表示にしますか？",
+        hideTitle: "セッションを非表示にしますか？",
         hideMessage:
           '"{{workspaceName}}"をサイドバーから非表示にしますか？\n\nディスク上のファイルは変更されません。',
         hideConfirm: "非表示",
         cancel: "キャンセル",
       },
       rename: {
-        title: "ワークスペースの名前を変更",
+        title: "セッションの名前を変更",
         submit: "名前を変更",
         invalidBranchName: "無効なブランチ名",
       },
       toasts: {
-        workspacePathUnavailable: "ワークスペースパスが利用できません",
+        workspacePathUnavailable: "セッションパスが利用できません",
         pathCopied: "パスをコピーしました",
         branchNameCopied: "ブランチ名をコピーしました",
         hostDisconnected: "ホストが接続されていません",
-        hideFailed: "ワークスペースの非表示に失敗しました",
-        archiveFailed: "ワークスペースのアーカイブに失敗しました",
+        hideFailed: "セッションの非表示に失敗しました",
+        archiveFailed: "セッションのアーカイブに失敗しました",
       },
     },
   },
   newWorkspace: {
-    title: "新しいワークスペース",
+    title: "新しいセッション",
     create: "作成",
     isolation: {
       local: "ローカル",
@@ -1530,8 +1529,8 @@ export const ja: TranslationResources = {
         description: "マシン上のフォルダを開く",
       },
       importSession: {
-        title: "セッションをインポート",
-        description: "最近の外部CLIセッションを取り込む",
+        title: "会話をインポート",
+        description: "最近の外部CLI会話を取り込む",
       },
       setupProviders: {
         title: "プロバイダーをセットアップ",
@@ -1556,7 +1555,7 @@ export const ja: TranslationResources = {
     openPath: "パスを開く",
   },
   branchSwitcher: {
-    triggerTooltip: "ワークスペースのブランチを切り替え",
+    triggerTooltip: "セッションのブランチを切り替え",
     currentBranch: "現在のブランチ: {{branchName}}。押してブランチを切り替えてください。",
     placeholder: "ブランチを切り替え...",
     searchPlaceholder: "ブランチをフィルタ...",
@@ -1575,7 +1574,7 @@ export const ja: TranslationResources = {
     stashRestored: "スタッシュした変更を復元しました",
   },
   agentAutocomplete: {
-    searchingWorkspace: "ワークスペースを検索中...",
+    searchingWorkspace: "セッションを検索中...",
     loadingCommands: "コマンドを読み込み中...",
     noFiles: "ファイルまたはディレクトリが見つかりません",
     noCommands: "コマンドが見つかりません",
@@ -1593,14 +1592,14 @@ export const ja: TranslationResources = {
     dialogFilterName: "画像",
   },
   workspaceSetup: {
-    title: "ワークスペースを作成",
+    title: "セッションを作成",
     errors: {
       failedCreateWorktree: "ワークツリーの作成に失敗しました",
       failedOpenProject: "プロジェクトを開けませんでした",
       selectModel: "モデルを選択してください",
       hostDisconnected: "ホストが接続されていません",
-      pendingRequired: "保留中のワークスペースセットアップがありません",
-      composerStateRequired: "ワークスペースセットアップのコンポーザー状態が必要です",
+      pendingRequired: "保留中のセッションセットアップがありません",
+      composerStateRequired: "セッションセットアップのコンポーザー状態が必要です",
     },
   },
   onboarding: {
@@ -1679,7 +1678,7 @@ export const ja: TranslationResources = {
       noProviders: "選択したホストで利用可能なプロバイダーがありません",
       modelDefaultsLoading: "モデルのデフォルトをまだ読み込んでいます",
       noModelAvailable: "選択したプロバイダーで利用可能なモデルがありません",
-      workspaceDirectoryNotFound: "ワークスペースディレクトリが見つかりません",
+      workspaceDirectoryNotFound: "セッションディレクトリが見つかりません",
       hostDisconnected: "ホストが接続されていません",
     },
   },
@@ -2043,8 +2042,8 @@ export const ja: TranslationResources = {
     },
     workspaceToggle: {
       label: "音声アラート",
-      enable: "このワークスペースの音声アラートをオンにする",
-      disable: "このワークスペースの音声アラートをオフにする",
+      enable: "このセッションの音声アラートをオンにする",
+      disable: "このセッションの音声アラートをオフにする",
     },
     banner: {
       play: "再生",
@@ -2150,7 +2149,7 @@ export const ja: TranslationResources = {
       creatingAgent: "エージェントを作成中",
     },
     file: {
-      directoryMissing: "ワークスペースディレクトリが見つかりません。",
+      directoryMissing: "セッションディレクトリが見つかりません。",
       loading: "ファイルを読み込み中...",
       noPreview: "プレビューが利用できません",
       binaryPreviewUnavailable: "バイナリプレビューが利用できません",
@@ -2181,8 +2180,8 @@ export const ja: TranslationResources = {
     },
     files: {
       label: "ファイル",
-      subtitle: "ワークスペースのファイル",
-      tooltip: "ワークスペースのファイルを参照",
+      subtitle: "セッションのファイル",
+      tooltip: "セッションのファイルを参照",
       chooseFile: "ファイルを選択",
     },
     pullRequest: {
@@ -2199,7 +2198,7 @@ export const ja: TranslationResources = {
       commitSubtitle: "コミット差分",
       uncommittedSubtitle: "未コミットの変更",
       baseSubtitle: "{{baseRef}} との比較",
-      directoryMissing: "ワークスペースディレクトリが見つかりません。",
+      directoryMissing: "セッションディレクトリが見つかりません。",
       empty: "変更はありません",
       loadError: "差分の読み込みに失敗しました",
       capabilityMissing: "コミット差分を表示するにはホストを更新してください。",
@@ -2324,7 +2323,7 @@ export const ja: TranslationResources = {
       connections: "接続",
       agents: "エージェント",
       metadata: "メタデータ",
-      workspaces: "ワークスペース",
+      workspaces: "セッション",
       providers: "プロバイダー",
       usage: "使用状況",
       terminals: "ターミナル",
@@ -2333,7 +2332,7 @@ export const ja: TranslationResources = {
     metadataGeneration: {
       title: "メタデータ生成",
       description:
-        "ワークスペースのタイトル、ブランチ名、コミットメッセージ、プルリクエストの下書きに使用するモデルを選択します",
+        "セッションのタイトル、ブランチ名、コミットメッセージ、プルリクエストの下書きに使用するモデルを選択します",
       selection: "モデル選択",
       automatic: "自動",
       preferred: "手動",
@@ -2582,22 +2581,22 @@ export const ja: TranslationResources = {
       },
       sections: {
         general: "一般",
-        workspaces: "プロジェクト＆ワークスペース",
+        workspaces: "プロジェクト＆セッション",
         tabsPanes: "タブ＆ペイン",
         layout: "レイアウト",
         agentInput: "エージェント入力",
       },
       help: {
         openProject: "プロジェクトを開く",
-        newWorkspace: "新しいワークスペース",
+        newWorkspace: "新しいセッション",
         newWorktree: "新しいワークツリー",
-        archiveWorkspace: "ワークスペースをアーカイブ",
+        archiveWorkspace: "セッションをアーカイブ",
         newTab: "新しいタブ",
         closeCurrentTab: "現在のタブを閉じる",
-        jumpToWorkspace: "ワークスペースにジャンプ",
+        jumpToWorkspace: "セッションにジャンプ",
         jumpToTab: "タブにジャンプ",
-        previousWorkspace: "前のワークスペース",
-        nextWorkspace: "次のワークスペース",
+        previousWorkspace: "前のセッション",
+        nextWorkspace: "次のセッション",
         previousTab: "前のタブ",
         nextTab: "次のタブ",
         splitPaneRight: "右にペインを分割",
@@ -2712,7 +2711,7 @@ export const ja: TranslationResources = {
       daemonConflict: {
         title: "このマシンで複数のデーモンが動作しています",
         message:
-          "{{machine}} で {{count}} 個のデーモンが動作しています。それぞれが独自のエージェントとワークスペースを持つため、表示内容は接続先によって変わります。使用するものを選び、もう一方が不要であれば停止してください。",
+          "{{machine}} で {{count}} 個のデーモンが動作しています。それぞれが独自のエージェントとセッションを持つため、表示内容は接続先によって変わります。使用するものを選び、もう一方が不要であれば停止してください。",
         activeLabel: "{{name}}（接続中）",
         version: "v{{version}}",
         versionUnknown: "バージョン不明",
@@ -2933,7 +2932,7 @@ export const ja: TranslationResources = {
         authenticateHint:
           "サインインするとプロバイダー自身のログインを実行するターミナルが開きます。完了後にこの一覧を更新してください。",
         authenticateNoWorkspace:
-          "サインインには、ターミナルを開くためのワークスペースがこのホストに必要です。",
+          "サインインには、ターミナルを開くためのセッションがこのホストに必要です。",
         authenticateTerminalName: "サインイン: {{name}}",
         unverified:
           "未検証: {{note}} この一覧を信頼する前に、プロバイダーの CLI でこれらの値を確認してください。",
@@ -2947,7 +2946,7 @@ export const ja: TranslationResources = {
         refresh: "更新",
       },
       workspaces: {
-        unavailable: "ワークスペースを管理するにはこのホストに接続してください",
+        unavailable: "セッションを管理するにはこのホストに接続してください",
       },
       terminalProfiles: {
         unavailable: "ターミナルプロファイルを管理するにはこのホストに接続してください",

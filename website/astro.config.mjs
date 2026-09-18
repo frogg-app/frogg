@@ -18,6 +18,10 @@ const sections = [
 
 export default defineConfig({
   site: "https://frogg.app",
+  // Workspaces were renamed to sessions; shipped clients still link to the old page.
+  redirects: {
+    "/docs/using-frogg/projects-and-workspaces": "/docs/using-frogg/projects-and-sessions",
+  },
   trailingSlash: "ignore",
   prefetch: { prefetchAll: true, defaultStrategy: "hover" },
   build: { inlineStylesheets: "always" },

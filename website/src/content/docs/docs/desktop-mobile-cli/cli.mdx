@@ -1,6 +1,6 @@
 ---
 title: CLI reference
-description: The frogg command-line interface — daemon lifecycle, pairing, agents, schedules, workspaces, terminals and providers.
+description: The frogg command-line interface — daemon lifecycle, pairing, agents, schedules, sessions, terminals and providers.
 sidebar:
   order: 4
 ---
@@ -108,7 +108,7 @@ See [pairing and access](/docs/getting-started/connect-and-pair/).
 | `--provider <p>` or `<p>/<model>`    | `claude`, `codex/gpt-5.5`, a custom provider id |
 | `--model`, `--mode`, `--thinking`    | Model, permission mode, thinking option |
 | `--cwd <path>` / `--workspace <id>`  | Where to run |
-| `--new-workspace <local\|worktree>`  | Create a workspace first |
+| `--new-workspace <local\|worktree>`  | Create a session first |
 | `--worktree-mode <branch-off\|checkout-branch\|checkout-pr>`, `--new-branch`, `--base`, `--branch`, `--pr-number`, `--forge`, `--worktree-slug` | Worktree options |
 | `-d, --background`                   | Return immediately |
 | `--title`, `--label k=v`, `--env k=v`, `--image <path>` | Metadata, env, attachments |
@@ -151,7 +151,7 @@ See [schedules](/docs/using-frogg/schedules/).
 | Command                                   | What it does |
 | ----------------------------------------- | ------------ |
 | `frogg project create [path]`               | Register a directory |
-| `frogg project ls`, `rename <id> [name]`, `delete <id>` | Manage. `delete` also removes its workspaces |
+| `frogg project ls`, `rename <id> [name]`, `delete <id>` | Manage. `delete` also removes its sessions |
 | `frogg workspace create --isolation <local\|worktree>` | `--path`, `--project`, `--title`, worktree flags as for `agent run` |
 | `frogg workspace ls`, `rename <id> [title]`, `archive <id>` | Manage |
 
@@ -159,7 +159,7 @@ See [schedules](/docs/using-frogg/schedules/).
 
 | Command                                     | What it does |
 | ------------------------------------------- | ------------ |
-| `frogg terminal ls`, `create`, `kill <id>`    | Manage workspace terminals |
+| `frogg terminal ls`, `create`, `kill <id>`    | Manage session terminals |
 | `frogg terminal capture <id>`                 | Print output (`-S` scrollback, `--start`, `--end`, `--ansi`) |
 | `frogg terminal send-keys <id> <keys...>`     | Type into a terminal (`-l` literal) |
 | `frogg script ls`, `start <name>`, `stop <name>` | Run [`frogg.json` scripts](/docs/reference/project-config/) (`--cwd`, `--workspace`) |

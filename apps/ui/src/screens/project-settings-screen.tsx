@@ -89,7 +89,7 @@ const METADATA_PROMPT_FIELDS: Record<MetadataPromptKey, MetadataPromptField> = {
   },
 };
 
-const WORKTREE_DOCS_URL = brandDocsUrl("using-frogg/projects-and-workspaces/");
+const WORKTREE_DOCS_URL = brandDocsUrl("using-frogg/projects-and-sessions/");
 
 type ReadProjectConfigData = Awaited<ReturnType<DaemonClient["readProjectConfig"]>>;
 

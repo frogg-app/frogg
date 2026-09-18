@@ -260,7 +260,7 @@ export const ptBR: TranslationResources = {
         "Não é possível abrir este agente porque {{serverLabel}} não está configurado neste dispositivo.",
       addHost:
         "Adicione o host nas Configurações ou abra um agente em um servidor configurado para continuar.",
-      preparingSession: "Preparando sessão de {{serverLabel}}...",
+      preparingSession: "Preparanda sessão de {{serverLabel}}...",
       connecting: "Conectando a {{serverLabel}}...",
       showSoon: "Mostraremos este agente em instantes.",
       showWhenOnline: "Mostraremos este agente quando o host estiver online.",
@@ -334,9 +334,9 @@ export const ptBR: TranslationResources = {
       copyMessage: "Copiar mensagem",
       forkMenu: "Bifurcar mensagem",
       forkInNewTab: "Bifurcar em uma nova aba",
-      forkInNewWorkspace: "Bifurcar em um novo workspace",
+      forkInNewWorkspace: "Bifurcar em um nova sessão",
       forkUnavailable: "Atualize o host para usar isto.",
-      forkMissingWorkspace: "Este agente não está em um workspace.",
+      forkMissingWorkspace: "Este agente não está em uma sessão.",
       forkFailed: "Falha ao bifurcar o chat",
       openFile: "Abrir arquivo",
       copied: "Copiado",
@@ -396,30 +396,30 @@ export const ptBR: TranslationResources = {
     },
   },
   importSession: {
-    title: "Importar sessão",
+    title: "Importar conversa",
     filters: {
       all: "Tudo",
     },
     status: {
-      connectHost: "Conecte-se a um host para importar sessões",
-      updateHost: "Atualize o host para importar sessões.",
+      connectHost: "Conecte-se a um host para importar conversas",
+      updateHost: "Atualize o host para importar conversas.",
       noProviders: "Nenhum provedor importável está ativado.",
-      loading: "Carregando sessões recentes...",
-      failedAll: "Não foi possível carregar sessões recentes.",
-      failedProviders: "Não foi possível carregar sessões de {{providers}}.",
-      failedImport: "Não foi possível importar a sessão selecionada.",
+      loading: "Carregando conversas recentes...",
+      failedAll: "Não foi possível carregar conversas recentes.",
+      failedProviders: "Não foi possível carregar conversas de {{providers}}.",
+      failedImport: "Não foi possível importar a conversa selecionada.",
     },
     actions: {
-      refresh: "Atualizar sessões",
+      refresh: "Atualizar conversas",
     },
     preview: {
-      untitledSession: "Sessão sem título",
+      untitledSession: "Conversa sem título",
       noPrompt: "Nenhuma prévia de prompt",
     },
     empty: {
-      noRecent: "Nenhuma sessão recente para importar.",
-      alreadyImported: "Todas as sessões recentes já foram importadas.",
-      noProviderSessions: "Nenhuma sessão de {{provider}} encontrada.",
+      noRecent: "Nenhuma conversa recente para importar.",
+      alreadyImported: "Todas as conversas recentes já foram importadas.",
+      noProviderSessions: "Nenhuma conversa de {{provider}} encontrada.",
     },
     row: {
       importing: "Importando...",
@@ -427,29 +427,29 @@ export const ptBR: TranslationResources = {
   },
   workspace: {
     route: {
-      loading: "Carregando workspace",
+      loading: "Carreganda sessão",
       connecting: "Conectando",
       hostOffline: "{{hostName}} está offline",
       cannotReachHost: "Não é possível acessar {{hostName}}",
       hostStatus: "Status do host: {{status}}",
-      needsHostUpgrade: "Atualize o host para restaurar este workspace",
+      needsHostUpgrade: "Atualize o host para restaurar esta sessão",
       manageHost: "Gerenciar host",
       recovery: {
-        archivedTitle: "Workspace arquivado",
+        archivedTitle: "Sessão arquivado",
         restoreDescription:
           "{{workspaceName}} foi arquivado e sua worktree foi removida. Restaure a branch {{branch}} para abri-lo novamente.",
         unarchiveDescription:
           "{{workspaceName}} está arquivado. Desarquive-o para abri-lo novamente.",
         restoreAction: "Restaurar",
         unarchiveAction: "Desarquivar",
-        restoringTitle: "Restaurando workspace",
+        restoringTitle: "Restauranda sessão",
         restoringAction: "Restaurando...",
-        unavailableTitle: "Workspace indisponível",
-        checkFailedTitle: "Não foi possível verificar o workspace",
+        unavailableTitle: "Sessão indisponível",
+        checkFailedTitle: "Não foi possível verificar a sessão",
       },
     },
     hoverCard: {
-      scriptsAccessibility: "Scripts do workspace",
+      scriptsAccessibility: "Scripts da sessão",
       copyPath: "Copiar caminho",
       copyBranchName: "Copiar nome da branch",
       copied: "Copiado",
@@ -509,7 +509,7 @@ export const ptBR: TranslationResources = {
         noVisibleFiles: "Nenhum arquivo visível",
       },
       states: {
-        unavailable: "Workspace indisponível",
+        unavailable: "Sessão indisponível",
         loading: "Carregando arquivos...",
       },
       errors: {
@@ -530,7 +530,7 @@ export const ptBR: TranslationResources = {
         label: "Configuração",
         completed: "Configuração concluída",
         failed: "Falha na configuração",
-        workspace: "Configuração do workspace",
+        workspace: "Configuração da sessão",
       },
       status: {
         running: "Em execução",
@@ -538,13 +538,13 @@ export const ptBR: TranslationResources = {
         failed: "Falhou",
         waiting: "Aguardando saída da configuração",
       },
-      waiting: "Configurando workspace...",
+      waiting: "Configuranda sessão...",
       empty: {
-        noCommands: "Nenhum comando de configuração foi executado para este workspace.",
+        noCommands: "Nenhum comando de configuração foi executado para esta sessão.",
       },
       accessibility: {
-        noCommands: "Nenhum comando de configuração foi executado para este workspace",
-        log: "Log de configuração do workspace",
+        noCommands: "Nenhum comando de configuração foi executado para esta sessão",
+        log: "Log de configuração da sessão",
       },
       log: {
         noOutput: "Nenhuma saída",
@@ -553,7 +553,7 @@ export const ptBR: TranslationResources = {
     browser: {
       unavailable: {
         title: "O navegador é exclusivo do desktop",
-        subtitle: "Abra este workspace no Electron para usar o navegador integrado.",
+        subtitle: "Abra esta sessão no Electron para usar o navegador integrado.",
       },
       session: "Sessão do navegador {{browserId}}",
       controls: {
@@ -601,11 +601,11 @@ export const ptBR: TranslationResources = {
       fallback: {
         newAgent: "Novo agente",
         setup: "Configuração",
-        workspaceSetup: "Configuração do workspace",
+        workspaceSetup: "Configuração da sessão",
         terminal: "Terminal",
         browser: "Navegador",
         agent: "Agente",
-        workspace: "Workspace",
+        workspace: "Sessão",
       },
       switcher: {
         trigger: "Alternar abas ({{count}} abertas)",
@@ -705,21 +705,21 @@ export const ptBR: TranslationResources = {
     },
     header: {
       actions: {
-        workspaceActions: "Ações do workspace",
+        workspaceActions: "Ações da sessão",
         newAgent: "Novo agente",
         newAgentHere: "Novo agente nesta worktree",
         newTerminal: "Novo terminal",
         newBrowser: "Nova aba de navegador",
-        importSession: "Importar sessão",
-        copyPath: "Copiar caminho do workspace",
+        importSession: "Importar conversa",
+        copyPath: "Copiar caminho da sessão",
         copyBranchName: "Copiar nome da branch",
         showSetup: "Mostrar configuração",
       },
       toasts: {
-        workspacePathUnavailable: "O caminho do workspace ainda não está disponível",
+        workspacePathUnavailable: "O caminho da sessão ainda não está disponível",
         branchNameUnavailable: "Nome da branch indisponível",
-        terminalQueued: "Preparando workspace, abrindo terminal quando estiver pronto...",
-        workspacePathCopiedLabel: "Caminho do workspace",
+        terminalQueued: "Preparanda sessão, abrindo terminal quando estiver pronto...",
+        workspacePathCopiedLabel: "Caminho da sessão",
         branchNameCopiedLabel: "Nome da branch",
       },
     },
@@ -735,7 +735,7 @@ export const ptBR: TranslationResources = {
         view: "Ver terminal",
       },
       accessibility: {
-        trigger: "Scripts do workspace",
+        trigger: "Scripts da sessão",
         openService: "Ver serviço {{scriptName}}",
         viewTerminal: "Ver terminal de {{scriptName}}",
         runScript: "Executar script {{scriptName}}",
@@ -798,11 +798,11 @@ export const ptBR: TranslationResources = {
           pending: "Fazendo merge...",
           success: "Mergeada",
 
-          moved: "Merged and moved to the target workspace",
-          reused: "Merged; opened the existing target workspace",
-          partial: "Merged, but the source workspace could not be archived",
-          conflict: "Merge conflict; the source workspace was kept",
-          failed: "Merge failed; the source workspace was kept",
+          moved: "Merged and moved to the target sessão",
+          reused: "Merged; opened the existing target sessão",
+          partial: "Merged, but the source sessão could not be archived",
+          conflict: "Merge conflict; the source sessão was kept",
+          failed: "Merge failed; the source sessão was kept",
         },
         mergeFromBase: {
           label: "Atualizar a partir de {{baseRef}}",
@@ -810,7 +810,7 @@ export const ptBR: TranslationResources = {
           success: "Atualizado",
         },
         archive: {
-          label: "Arquivar workspace",
+          label: "Arquivar sessão",
           pending: "Arquivando...",
           success: "Arquivado",
         },
@@ -877,7 +877,7 @@ export const ptBR: TranslationResources = {
           mergePrNoGithub:
             "Merge da PR não está disponível agora porque o GitHub não está conectado",
           archiveNotWorktree:
-            "Arquivar não está disponível aqui porque este workspace não foi criado como um worktree do {{brandName}}",
+            "Arquivar não está disponível aqui porque esta sessão não foi criado como um worktree do {{brandName}}",
           mergePrNoForge:
             "Merge da {{noun}} não está disponível agora porque o {{brand}} não está conectado",
           mergePrMissing: "Merge da PR não está disponível porque ainda não há uma pull request",
@@ -910,7 +910,7 @@ export const ptBR: TranslationResources = {
           confirm: "Arquivar",
           cancel: "Cancelar",
           consequence:
-            "Isso remove o workspace da barra lateral. Para restaurá-lo depois, abra o Histórico.",
+            "Isso remove a sessão da barra lateral. Para restaurá-lo depois, abra o Histórico.",
           uncommittedChanges: "Alterações sem commit",
           uncommittedChangesWithDiff: "Alterações sem commit ({{diffStat}})",
           addedLine: "{{count}} linha adicionada",
@@ -976,9 +976,9 @@ export const ptBR: TranslationResources = {
       openInEditor: {
         open: "Abrir",
         chooseEditor: "Escolher editor",
-        openIn: "Abrir workspace em {{target}}",
+        openIn: "Abrir sessão em {{target}}",
         openFileIn: "Abrir {{fileName}} em {{target}}",
-        failedOpen: "Falha ao abrir workspace",
+        failedOpen: "Falha ao abrir sessão",
       },
       pr: {
         actions: {
@@ -1088,8 +1088,8 @@ export const ptBR: TranslationResources = {
       save: "Salvar",
       delete: "Excluir",
       deleteTitle: "Excluir {{name}}?",
-      deleteMessage_one: "Isso remove a etiqueta de {{count}} workspace neste host.",
-      deleteMessage_other: "Isso remove a etiqueta de {{count}} workspaces neste host.",
+      deleteMessage_one: "Isso remove a etiqueta de {{count}} sessão neste host.",
+      deleteMessage_other: "Isso remove a etiqueta de {{count}} sessões neste host.",
       offline: "Este host está offline.",
       updateHost: "Atualize este host para gerenciar etiquetas.",
     },
@@ -1169,7 +1169,7 @@ export const ptBR: TranslationResources = {
     },
     actions: {
       addProject: "Adicionar projeto",
-      newWorkspace: "Novo workspace",
+      newWorkspace: "Nova sessão",
       hosts: "Hosts",
       home: "Início",
       settings: "Configurações",
@@ -1206,7 +1206,7 @@ export const ptBR: TranslationResources = {
       },
       toasts: {
         hostDisconnected: "Host não está conectado",
-        removeFailed: "Falha ao remover alguns workspaces",
+        removeFailed: "Falha ao remover alguns sessões",
         updateHostToRemove: "Atualize o host para remover projetos.",
       },
       empty: {
@@ -1229,46 +1229,46 @@ export const ptBR: TranslationResources = {
         pending: "Pendentes: {{count}}",
       },
       actions: {
-        menu: "Ações do workspace",
-        newWorkspace: "Novo workspace",
+        menu: "Ações da sessão",
+        newWorkspace: "Nova sessão",
         showMore: "Mostrar mais",
         showLess: "Mostrar menos",
-        createWorkspaceFor: "Criar um novo workspace para {{projectName}}",
+        createWorkspaceFor: "Criar um nova sessão para {{projectName}}",
         copyPath: "Copiar caminho",
         copyBranchName: "Copiar nome da branch",
-        rename: "Renomear workspace",
+        rename: "Renomear sessão",
         pin: "Fixar no topo",
         unpin: "Desafixar",
         archive: "Arquivar",
-        archiveWorkspace: "Arquivar workspace",
+        archiveWorkspace: "Arquivar sessão",
         hideFromSidebar: "Ocultar da barra lateral",
         archiving: "Arquivando...",
         hiding: "Ocultando...",
       },
       confirmations: {
-        hideTitle: "Ocultar workspace?",
+        hideTitle: "Ocultar sessão?",
         hideMessage:
           'Ocultar "{{workspaceName}}" da barra lateral?\n\nOs arquivos no disco não serão alterados.',
         hideConfirm: "Ocultar",
         cancel: "Cancelar",
       },
       rename: {
-        title: "Renomear workspace",
+        title: "Renomear sessão",
         submit: "Renomear",
         invalidBranchName: "Nome de branch inválido",
       },
       toasts: {
-        workspacePathUnavailable: "Caminho do workspace indisponível",
+        workspacePathUnavailable: "Caminho da sessão indisponível",
         pathCopied: "Caminho copiado",
         branchNameCopied: "Nome da branch copiado",
         hostDisconnected: "Host não está conectado",
-        hideFailed: "Falha ao ocultar workspace",
-        archiveFailed: "Falha ao arquivar workspace",
+        hideFailed: "Falha ao ocultar sessão",
+        archiveFailed: "Falha ao arquivar sessão",
       },
     },
   },
   newWorkspace: {
-    title: "Novo workspace",
+    title: "Nova sessão",
     create: "Criar",
     isolation: {
       local: "Local",
@@ -1542,8 +1542,8 @@ export const ptBR: TranslationResources = {
         description: "Abra uma pasta na sua máquina",
       },
       importSession: {
-        title: "Importar sessão",
-        description: "Importe sessões externas recentes da CLI",
+        title: "Importar conversa",
+        description: "Importe conversas externas recentes da CLI",
       },
       setupProviders: {
         title: "Configurar provedores",
@@ -1568,7 +1568,7 @@ export const ptBR: TranslationResources = {
     openPath: "Abrir caminho",
   },
   branchSwitcher: {
-    triggerTooltip: "Trocar branch do workspace",
+    triggerTooltip: "Trocar branch da sessão",
     currentBranch: "Branch atual: {{branchName}}. Pressione para trocar de branch.",
     placeholder: "Trocar branch...",
     searchPlaceholder: "Filtrar branches...",
@@ -1587,7 +1587,7 @@ export const ptBR: TranslationResources = {
     stashRestored: "Alterações em stash restauradas",
   },
   agentAutocomplete: {
-    searchingWorkspace: "Buscando workspace...",
+    searchingWorkspace: "Buscanda sessão...",
     loadingCommands: "Carregando comandos...",
     noFiles: "Nenhum arquivo ou diretório encontrado",
     noCommands: "Nenhum comando encontrado",
@@ -1605,14 +1605,14 @@ export const ptBR: TranslationResources = {
     dialogFilterName: "Imagens",
   },
   workspaceSetup: {
-    title: "Criar workspace",
+    title: "Criar sessão",
     errors: {
       failedCreateWorktree: "Falha ao criar worktree",
       failedOpenProject: "Falha ao abrir projeto",
       selectModel: "Selecione um modelo",
       hostDisconnected: "Host não está conectado",
-      pendingRequired: "Nenhuma configuração de workspace está pendente",
-      composerStateRequired: "O estado do composer da configuração do workspace é obrigatório",
+      pendingRequired: "Nenhuma configuração de sessão está pendente",
+      composerStateRequired: "O estado do composer da configuração da sessão é obrigatório",
     },
   },
   onboarding: {
@@ -1690,7 +1690,7 @@ export const ptBR: TranslationResources = {
       noProviders: "Nenhum provedor disponível no host selecionado",
       modelDefaultsLoading: "Os modelos padrão ainda estão carregando",
       noModelAvailable: "Nenhum modelo disponível para o provedor selecionado",
-      workspaceDirectoryNotFound: "Diretório do workspace não encontrado",
+      workspaceDirectoryNotFound: "Diretório da sessão não encontrado",
       hostDisconnected: "Host não está conectado",
     },
   },
@@ -2162,7 +2162,7 @@ export const ptBR: TranslationResources = {
       creatingAgent: "Criando agente",
     },
     file: {
-      directoryMissing: "Diretório do workspace não encontrado.",
+      directoryMissing: "Diretório da sessão não encontrado.",
       loading: "Carregando arquivo...",
       noPreview: "Nenhuma prévia disponível",
       binaryPreviewUnavailable: "Prévia binária indisponível",
@@ -2210,7 +2210,7 @@ export const ptBR: TranslationResources = {
       commitSubtitle: "Diff do commit",
       uncommittedSubtitle: "Alterações não commitadas",
       baseSubtitle: "Comparado com {{baseRef}}",
-      directoryMissing: "Diretório do workspace não encontrado.",
+      directoryMissing: "Diretório da sessão não encontrado.",
       empty: "Nenhuma alteração",
       loadError: "Falha ao carregar diff",
       capabilityMissing: "Atualize o host para ver diffs de commits.",
@@ -2335,7 +2335,7 @@ export const ptBR: TranslationResources = {
       connections: "Conexões",
       agents: "Agentes",
       metadata: "Metadados",
-      workspaces: "Workspaces",
+      workspaces: "Sessões",
       providers: "Provedores",
       usage: "Uso",
       terminals: "Terminais",
@@ -2596,22 +2596,22 @@ export const ptBR: TranslationResources = {
       },
       sections: {
         general: "Geral",
-        workspaces: "Projetos e workspaces",
+        workspaces: "Projetos e sessões",
         tabsPanes: "Abas e painéis",
         layout: "Layout",
         agentInput: "Entrada do agente",
       },
       help: {
         openProject: "Abrir projeto",
-        newWorkspace: "Novo workspace",
+        newWorkspace: "Nova sessão",
         newWorktree: "Novo worktree",
-        archiveWorkspace: "Arquivar workspace",
+        archiveWorkspace: "Arquivar sessão",
         newTab: "Nova aba",
         closeCurrentTab: "Fechar aba atual",
-        jumpToWorkspace: "Ir para workspace",
+        jumpToWorkspace: "Ir para sessão",
         jumpToTab: "Ir para aba",
-        previousWorkspace: "Workspace anterior",
-        nextWorkspace: "Próximo workspace",
+        previousWorkspace: "Sessão anterior",
+        nextWorkspace: "Próxima sessão",
         previousTab: "Aba anterior",
         nextTab: "Próxima aba",
         splitPaneRight: "Dividir painel à direita",
@@ -2714,7 +2714,7 @@ export const ptBR: TranslationResources = {
           },
         },
         preview: {
-          workspaceName: "my-workspace",
+          workspaceName: "my-sessão",
         },
       },
       notFound: "Host não encontrado",
@@ -2726,7 +2726,7 @@ export const ptBR: TranslationResources = {
       daemonConflict: {
         title: "Mais de um daemon nesta máquina",
         message:
-          "{{count}} daemons estão em execução em {{machine}}. Cada um tem seus próprios agentes e workspaces, então o que você vê depende de a qual está conectado. Escolha o que quiser usar e, se o outro não for necessário, desligue-o.",
+          "{{count}} daemons estão em execução em {{machine}}. Cada um tem seus próprios agentes e sessões, então o que você vê depende de a qual está conectado. Escolha o que quiser usar e, se o outro não for necessário, desligue-o.",
         activeLabel: "{{name}} (conectado)",
         version: "v{{version}}",
         versionUnknown: "versão desconhecida",
@@ -2946,7 +2946,7 @@ export const ptBR: TranslationResources = {
         authenticateHint:
           "Entrar abre um terminal com o login do próprio provedor. Atualize esta lista quando terminar.",
         authenticateNoWorkspace:
-          "Para entrar é preciso um workspace neste host onde abrir o terminal.",
+          "Para entrar é preciso uma sessão neste host onde abrir o terminal.",
         authenticateTerminalName: "Login: {{name}}",
         unverified:
           "Não verificado: {{note}} Confirme esses valores na CLI do provedor antes de confiar nesta lista.",
@@ -2961,7 +2961,7 @@ export const ptBR: TranslationResources = {
         refresh: "Atualizar",
       },
       workspaces: {
-        unavailable: "Conecte-se a este host para gerenciar workspaces",
+        unavailable: "Conecte-se a este host para gerenciar sessões",
       },
       terminalProfiles: {
         unavailable: "Conecte-se a este host para gerenciar perfis de terminal",

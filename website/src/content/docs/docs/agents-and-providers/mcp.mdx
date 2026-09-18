@@ -6,7 +6,7 @@ sidebar:
 ---
 
 The daemon serves a Model Context Protocol endpoint so agents can use Frogg itself: start
-other agents, watch them, run workspace scripts, schedule follow-ups. This is how an agent
+other agents, watch them, run session scripts, schedule follow-ups. This is how an agent
 orchestrates others.
 
 ## Endpoint
@@ -47,7 +47,7 @@ Without injection, agents can still use the `frogg` CLI from their shell; the bu
 | Area         | Tools |
 | ------------ | ----- |
 | Agents       | `create_agent`, `send_agent_prompt`, `get_agent_status`, `get_agent_activity`, `list_agents`, `update_agent`, `set_agent_mode`, `cancel_agent`, `archive_agent`, `kill_agent` |
-| Workspaces   | `create_workspace`, `list_workspaces`, `rename_workspace`, `archive_workspace` |
+| Sessions   | `create_workspace`, `list_workspaces`, `rename_workspace`, `archive_workspace` |
 | Scripts      | `list_workspace_scripts`, `start_workspace_script`, `stop_workspace_script` |
 | Terminals    | `list_terminals`, `create_terminal`, `capture_terminal`, `send_terminal_keys`, `kill_terminal` |
 | Schedules    | `create_schedule`, `list_schedules`, `inspect_schedule`, `update_schedule`, `pause_schedule`, `resume_schedule`, `run_schedule_once`, `schedule_logs`, `delete_schedule` |

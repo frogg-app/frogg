@@ -207,9 +207,9 @@ launch, start a new agent to use a different one.
 
 #### Seeing it in the sidebar
 
-A workspace row shows a small account glyph beside its title when its agent runs under a
+A session row shows a small account glyph beside its title when its agent runs under a
 provider that has accounts. It is icon only, so the row's trailing slot keeps showing the diff
-stat or timestamp; hover the glyph to read the account name. A workspace with several agents
+stat or timestamp; hover the glyph to read the account name. A session with several agents
 reports the newest one, which is the agent the row's title and status already describe.
 
 ### From the app
@@ -226,8 +226,8 @@ daemon that does not report the feature.
    slug and the config directory that will be created. Every shareable folder is checked by
    default; uncheck the ones this account should keep to itself.
 2. **Sign in** opens a Frogg terminal running that provider's own login with the account's
-   config directory applied — for Claude, run `/login` in it. Terminals belong to a workspace,
-   so the action needs at least one workspace on the host; it is disabled when there is none.
+   config directory applied — for Claude, run `/login` in it. Terminals belong to a session,
+   so the action needs at least one session on the host; it is disabled when there is none.
 3. **Refresh** re-reads the list once the CLI's login finishes, which is what flips the row to
    signed in.
 4. **Make active** makes that account the default for agents that do not pick one in the

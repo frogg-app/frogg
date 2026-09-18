@@ -71,7 +71,7 @@ describe("resolveProvidersToFetch", () => {
   });
 });
 
-describe("requiresImportSessionsHostUpgrade", () => {
+describe("requiresImportConversationsHostUpgrade", () => {
   it("allows home imports on hosts without workspace targeting", () => {
     expect(
       requiresImportSessionsHostUpgrade({
@@ -117,7 +117,7 @@ describe("buildProviderLabelMap", () => {
   });
 });
 
-describe("aggregateSessionEntries", () => {
+describe("aggregateConversationEntries", () => {
   it("returns an empty array when no queries have data", () => {
     expect(aggregateSessionEntries([settled(undefined)])).toEqual([]);
   });
@@ -191,7 +191,7 @@ describe("collectErroredProviderLabels", () => {
   });
 });
 
-describe("getSessionTitle", () => {
+describe("getConversationTitle", () => {
   it("prefers the trimmed title", () => {
     expect(getSessionTitle(entry({ title: "  Importable  " }))).toBe("Importable");
   });
@@ -200,9 +200,9 @@ describe("getSessionTitle", () => {
     expect(getSessionTitle(entry({ title: "   ", firstPromptPreview: "  Hello  " }))).toBe("Hello");
   });
 
-  it("falls back to Untitled session when both title and first prompt are blank", () => {
+  it("falls back to Untitled conversation when both title and first prompt are blank", () => {
     expect(getSessionTitle(entry({ title: null, firstPromptPreview: "   " }))).toBe(
-      "Untitled session",
+      "Untitled conversation",
     );
   });
 });
@@ -242,7 +242,7 @@ describe("computeEmptyState", () => {
     providerLabelById: new Map<string, string>(),
   };
 
-  it("hides the empty state while sessions are still loading", () => {
+  it("hides the empty state while conversations are still loading", () => {
     const result = computeEmptyState({ ...baseInputs, isLoadingSessions: true });
     expect(result.showEmptyState).toBe(false);
   });
@@ -266,11 +266,11 @@ describe("computeEmptyState", () => {
     expect(result.showEmptyState).toBe(false);
   });
 
-  it("shows the default no-sessions message when nothing is loaded and nothing is filtered", () => {
+  it("shows the default no-conversations message when nothing is loaded and nothing is filtered", () => {
     const result = computeEmptyState(baseInputs);
     expect(result).toEqual({
       showEmptyState: true,
-      emptyStateTitle: "No recent sessions to import.",
+      emptyStateTitle: "No recent conversations to import.",
     });
   });
 
@@ -279,7 +279,7 @@ describe("computeEmptyState", () => {
       ...baseInputs,
       totalAlreadyImportedCount: 4,
     });
-    expect(result.emptyStateTitle).toBe("All recent sessions are already imported.");
+    expect(result.emptyStateTitle).toBe("All recent conversations are already imported.");
   });
 
   it("shows a provider-scoped message when a filter hides aggregated entries", () => {
@@ -289,7 +289,7 @@ describe("computeEmptyState", () => {
       aggregatedCount: 3,
       providerLabelById: new Map([["claude", "Claude Code"]]),
     });
-    expect(result.emptyStateTitle).toBe("No Claude Code sessions found.");
+    expect(result.emptyStateTitle).toBe("No Claude Code conversations found.");
   });
 
   it("falls back to the provider id when the filtered provider lacks a label", () => {
@@ -298,6 +298,6 @@ describe("computeEmptyState", () => {
       selectedProvider: "z-ai",
       aggregatedCount: 1,
     });
-    expect(result.emptyStateTitle).toBe("No z-ai sessions found.");
+    expect(result.emptyStateTitle).toBe("No z-ai conversations found.");
   });
 });

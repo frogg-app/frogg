@@ -15,7 +15,7 @@ describe("workspace archive warning for worktree backing", () => {
         aheadOfOrigin: 0,
         diffStat: null,
       }),
-    ).toBe("This removes the workspace from the sidebar. To restore it later, open History.");
+    ).toBe("This removes the session from the sidebar. To restore it later, open History.");
   });
 
   it("explains uncommitted line changes", () => {
@@ -57,7 +57,7 @@ describe("workspace archive warning for worktree backing", () => {
         diffStat: { additions: 1, deletions: 3 },
       }),
     ).toBe(
-      "This removes the workspace from the sidebar. To restore it later, open History.\n\nUncommitted changes (1 added line, 3 deleted lines)\n\n1 unpushed commit",
+      "This removes the session from the sidebar. To restore it later, open History.\n\nUncommitted changes (1 added line, 3 deleted lines)\n\n1 unpushed commit",
     );
   });
 

@@ -73,14 +73,14 @@ export const ko: TranslationResources = {
       close: "메뉴 닫기",
     },
     commandCenter: {
-      placeholder: "명령, 파일, 워크스페이스 및 에이전트 검색...",
+      placeholder: "명령, 파일, 세션 및 에이전트 검색...",
       filePlaceholder: "파일 검색...",
       searchingFiles: "파일 검색 중...",
       noMatches: "일치 항목 없음",
       actions: "작업",
       keyboardShortcuts: "키보드 단축키",
       files: "파일",
-      workspaces: "워크스페이스",
+      workspaces: "세션",
       agents: "에이전트",
       newAgent: "새 에이전트",
       open: "{{name}} 열기",
@@ -332,9 +332,9 @@ export const ko: TranslationResources = {
       copyMessage: "메시지 복사",
       forkMenu: "여기에서 채팅 분기",
       forkInNewTab: "새 탭으로 분기",
-      forkInNewWorkspace: "새 워크스페이스로 분기",
+      forkInNewWorkspace: "새 세션으로 분기",
       forkUnavailable: "이를 사용하려면 호스트를 업데이트하세요.",
-      forkMissingWorkspace: "이 에이전트는 워크스페이스에 속해 있지 않습니다.",
+      forkMissingWorkspace: "이 에이전트는 세션에 속해 있지 않습니다.",
       forkFailed: "채팅을 분기하지 못했습니다.",
       openFile: "파일 열기",
       copied: "복사됨",
@@ -394,30 +394,30 @@ export const ko: TranslationResources = {
     },
   },
   importSession: {
-    title: "세션 가져오기",
+    title: "대화 가져오기",
     filters: {
       all: "전체",
     },
     status: {
-      connectHost: "세션을 가져오려면 호스트에 연결하세요",
-      updateHost: "세션을 가져오려면 호스트를 업데이트하세요.",
+      connectHost: "대화를 가져오려면 호스트에 연결하세요",
+      updateHost: "대화를 가져오려면 호스트를 업데이트하세요.",
       noProviders: "가져올 수 있는 프로바이더가 활성화되어 있지 않습니다.",
-      loading: "최근 세션을 불러오는 중...",
-      failedAll: "최근 세션을 불러올 수 없습니다.",
-      failedProviders: "{{providers}}의 세션을 불러올 수 없습니다.",
-      failedImport: "선택한 세션을 가져올 수 없습니다.",
+      loading: "최근 대화를 불러오는 중...",
+      failedAll: "최근 대화를 불러올 수 없습니다.",
+      failedProviders: "{{providers}}의 대화를 불러올 수 없습니다.",
+      failedImport: "선택한 대화를 가져올 수 없습니다.",
     },
     actions: {
-      refresh: "세션 새로고침",
+      refresh: "대화 새로고침",
     },
     preview: {
-      untitledSession: "제목 없는 세션",
+      untitledSession: "제목 없는 대화",
       noPrompt: "프롬프트 미리보기 없음",
     },
     empty: {
-      noRecent: "가져올 최근 세션이 없습니다.",
-      alreadyImported: "최근 세션이 모두 이미 가져와졌습니다.",
-      noProviderSessions: "{{provider}} 세션을 찾을 수 없습니다.",
+      noRecent: "가져올 최근 대화가 없습니다.",
+      alreadyImported: "최근 대화가 모두 이미 가져와졌습니다.",
+      noProviderSessions: "{{provider}} 대화를 찾을 수 없습니다.",
     },
     row: {
       importing: "가져오는 중...",
@@ -425,28 +425,28 @@ export const ko: TranslationResources = {
   },
   workspace: {
     route: {
-      loading: "워크스페이스 불러오는 중",
+      loading: "세션 불러오는 중",
       connecting: "연결 중",
       hostOffline: "{{hostName}}이(가) 오프라인입니다",
       cannotReachHost: "{{hostName}}에 연결할 수 없습니다",
       hostStatus: "호스트 상태: {{status}}",
-      needsHostUpgrade: "이 워크스페이스를 복원하려면 호스트를 업데이트하세요.",
+      needsHostUpgrade: "이 세션을 복원하려면 호스트를 업데이트하세요.",
       manageHost: "호스트 관리",
       recovery: {
-        archivedTitle: "워크스페이스가 보관되었습니다",
+        archivedTitle: "세션이 보관되었습니다",
         restoreDescription:
           "{{workspaceName}}가 보관되고 워크트리가 제거되었습니다. 다시 열려면 {{branch}} 브랜치를 복원하세요.",
         unarchiveDescription: "{{workspaceName}}가 보관되었습니다. 다시 열려면 보관을 취소하세요.",
         restoreAction: "복원",
         unarchiveAction: "보관 취소",
-        restoringTitle: "워크스페이스 복원 중",
+        restoringTitle: "세션 복원 중",
         restoringAction: "복원 중...",
-        unavailableTitle: "워크스페이스를 사용할 수 없습니다",
-        checkFailedTitle: "워크스페이스를 확인하지 못했습니다",
+        unavailableTitle: "세션을 사용할 수 없습니다",
+        checkFailedTitle: "세션을 확인하지 못했습니다",
       },
     },
     hoverCard: {
-      scriptsAccessibility: "워크스페이스 스크립트",
+      scriptsAccessibility: "세션 스크립트",
       copyPath: "경로 복사",
       copyBranchName: "브랜치 이름 복사",
       copied: "복사됨",
@@ -506,7 +506,7 @@ export const ko: TranslationResources = {
         noVisibleFiles: "표시되는 파일이 없습니다.",
       },
       states: {
-        unavailable: "워크스페이스를 사용할 수 없습니다",
+        unavailable: "세션을 사용할 수 없습니다",
         loading: "파일 불러오는 중...",
       },
       errors: {
@@ -527,7 +527,7 @@ export const ko: TranslationResources = {
         label: "설정",
         completed: "설정 완료",
         failed: "설정 실패",
-        workspace: "워크스페이스 설정",
+        workspace: "세션 설정",
       },
       status: {
         running: "실행 중",
@@ -535,13 +535,13 @@ export const ko: TranslationResources = {
         failed: "실패함",
         waiting: "설정 출력을 기다리는 중",
       },
-      waiting: "워크스페이스 설정 중...",
+      waiting: "세션 설정 중...",
       empty: {
-        noCommands: "이 워크스페이스에서 실행된 설정 명령이 없습니다.",
+        noCommands: "이 세션에서 실행된 설정 명령이 없습니다.",
       },
       accessibility: {
-        noCommands: "이 워크스페이스에서 실행된 설정 명령이 없습니다",
-        log: "워크스페이스 설정 로그",
+        noCommands: "이 세션에서 실행된 설정 명령이 없습니다",
+        log: "세션 설정 로그",
       },
       log: {
         noOutput: "출력 없음",
@@ -550,7 +550,7 @@ export const ko: TranslationResources = {
     browser: {
       unavailable: {
         title: "브라우저는 데스크톱 전용입니다",
-        subtitle: "내장 브라우저를 사용하려면 이 워크스페이스를 Electron에서 여세요.",
+        subtitle: "내장 브라우저를 사용하려면 이 세션을 Electron에서 여세요.",
       },
       session: "브라우저 세션 {{browserId}}",
       controls: {
@@ -598,11 +598,11 @@ export const ko: TranslationResources = {
       fallback: {
         newAgent: "새 에이전트",
         setup: "설정",
-        workspaceSetup: "워크스페이스 설정",
+        workspaceSetup: "세션 설정",
         terminal: "터미널",
         browser: "브라우저",
         agent: "에이전트",
-        workspace: "워크스페이스",
+        workspace: "세션",
       },
       switcher: {
         trigger: "탭 전환 ({{count}}개 열림)",
@@ -702,21 +702,21 @@ export const ko: TranslationResources = {
     },
     header: {
       actions: {
-        workspaceActions: "워크스페이스 작업",
+        workspaceActions: "세션 작업",
         newAgent: "새 에이전트",
         newAgentHere: "이 워크트리에 새 에이전트",
         newTerminal: "새 터미널",
         newBrowser: "새 브라우저 탭",
-        importSession: "세션 가져오기",
-        copyPath: "워크스페이스 경로 복사",
+        importSession: "대화 가져오기",
+        copyPath: "세션 경로 복사",
         copyBranchName: "브랜치 이름 복사",
         showSetup: "설정 표시",
       },
       toasts: {
-        workspacePathUnavailable: "워크스페이스 경로를 아직 사용할 수 없습니다",
+        workspacePathUnavailable: "세션 경로를 아직 사용할 수 없습니다",
         branchNameUnavailable: "브랜치 이름을 사용할 수 없습니다",
-        terminalQueued: "워크스페이스 준비 중, 준비되면 터미널을 엽니다...",
-        workspacePathCopiedLabel: "워크스페이스 경로",
+        terminalQueued: "세션 준비 중, 준비되면 터미널을 엽니다...",
+        workspacePathCopiedLabel: "세션 경로",
         branchNameCopiedLabel: "브랜치 이름",
       },
     },
@@ -732,7 +732,7 @@ export const ko: TranslationResources = {
         view: "터미널 보기",
       },
       accessibility: {
-        trigger: "워크스페이스 스크립트",
+        trigger: "세션 스크립트",
         openService: "{{scriptName}} 서비스 보기",
         viewTerminal: "{{scriptName}} 터미널 보기",
         runScript: "{{scriptName}} 스크립트 실행",
@@ -808,7 +808,7 @@ export const ko: TranslationResources = {
           success: "업데이트됨",
         },
         archive: {
-          label: "워크스페이스 보관",
+          label: "세션 보관",
           pending: "보관하는 중...",
           success: "보관됨",
         },
@@ -864,7 +864,7 @@ export const ko: TranslationResources = {
             "이 브랜치가 이미 {{baseRef}}와 최신 상태이므로 업데이트를 사용할 수 없습니다",
           mergePrNoGithub: "GitHub가 연결되어 있지 않아 지금은 PR 병합을 사용할 수 없습니다",
           archiveNotWorktree:
-            "이 워크스페이스가 {{brandName}} 워크트리로 생성되지 않아 여기서 보관을 사용할 수 없습니다",
+            "이 세션이 {{brandName}} 워크트리로 생성되지 않아 여기서 보관을 사용할 수 없습니다",
           mergePrNoForge:
             "{{brand}}가 연결되어 있지 않기 때문에 지금은 {{noun}} 병합을 사용할 수 없습니다.",
           mergePrMissing: "아직 풀 리퀘스트가 없어 PR 병합을 사용할 수 없습니다",
@@ -894,7 +894,7 @@ export const ko: TranslationResources = {
           title: '"{{workspaceName}}"를 보관하시겠습니까?',
           confirm: "보관",
           cancel: "취소",
-          consequence: "워크스페이스가 사이드바에서 제거됩니다. 나중에 복원하려면 기록을 여세요.",
+          consequence: "세션이 사이드바에서 제거됩니다. 나중에 복원하려면 기록을 여세요.",
           uncommittedChanges: "커밋되지 않은 변경 사항",
           uncommittedChangesWithDiff: "커밋되지 않은 변경 사항 ({{diffStat}})",
           addedLine: "추가된 줄 {{count}}개",
@@ -948,7 +948,7 @@ export const ko: TranslationResources = {
         modifiedFile: "수정됨",
         commits: {
           title: "커밋",
-          countLabel: "워크스페이스 커밋 {{count}}개",
+          countLabel: "세션 커밋 {{count}}개",
           noneAhead: "아직 {{baseRef}}보다 앞서 커밋이 없습니다.",
           fileDiffEmpty: "표시할 변경사항이 없습니다.",
           fileDiffError: "파일 diff를 불러오지 못했습니다.",
@@ -960,9 +960,9 @@ export const ko: TranslationResources = {
       openInEditor: {
         open: "열기",
         chooseEditor: "편집기 선택",
-        openIn: "{{target}}에서 워크스페이스 열기",
+        openIn: "{{target}}에서 세션 열기",
         openFileIn: "{{target}}에서 {{fileName}} 열기",
-        failedOpen: "워크스페이스를 열지 못했습니다",
+        failedOpen: "세션을 열지 못했습니다",
       },
       pr: {
         actions: {
@@ -1072,8 +1072,8 @@ export const ko: TranslationResources = {
       save: "저장",
       delete: "삭제",
       deleteTitle: "{{name}}을(를) 삭제할까요?",
-      deleteMessage_one: "이 호스트의 워크스페이스 {{count}}개에서 레이블을 제거합니다.",
-      deleteMessage_other: "이 호스트의 워크스페이스 {{count}}개에서 레이블을 제거합니다.",
+      deleteMessage_one: "이 호스트의 세션 {{count}}개에서 레이블을 제거합니다.",
+      deleteMessage_other: "이 호스트의 세션 {{count}}개에서 레이블을 제거합니다.",
       offline: "이 호스트는 오프라인입니다.",
       updateHost: "레이블을 관리하려면 호스트를 업데이트하세요.",
     },
@@ -1139,8 +1139,8 @@ export const ko: TranslationResources = {
       },
     },
     filterEmpty: {
-      title: "일치하는 워크스페이스가 없습니다",
-      description: "워크스페이스를 보려면 사이드바 필터를 변경하거나 지우세요.",
+      title: "일치하는 세션이 없습니다",
+      description: "세션을 보려면 사이드바 필터를 변경하거나 지우세요.",
       clear: "필터 지우기",
     },
     pinned: {
@@ -1153,7 +1153,7 @@ export const ko: TranslationResources = {
     },
     actions: {
       addProject: "프로젝트 추가",
-      newWorkspace: "새 워크스페이스",
+      newWorkspace: "새 세션",
       hosts: "호스트",
       home: "홈",
       settings: "설정",
@@ -1190,7 +1190,7 @@ export const ko: TranslationResources = {
       },
       toasts: {
         hostDisconnected: "호스트가 연결되어 있지 않습니다",
-        removeFailed: "일부 워크스페이스를 제거하지 못했습니다",
+        removeFailed: "일부 세션을 제거하지 못했습니다",
         updateHostToRemove: "프로젝트를 제거하려면 호스트를 업데이트하세요.",
       },
       empty: {
@@ -1213,46 +1213,46 @@ export const ko: TranslationResources = {
         pending: "대기 중: {{count}}개",
       },
       actions: {
-        menu: "워크스페이스 작업",
-        newWorkspace: "새 워크스페이스",
+        menu: "세션 작업",
+        newWorkspace: "새 세션",
         showMore: "더 보기",
         showLess: "간략히 보기",
-        createWorkspaceFor: "{{projectName}}을(를) 위한 새 워크스페이스 생성",
+        createWorkspaceFor: "{{projectName}}을(를) 위한 새 세션 생성",
         copyPath: "경로 복사",
         copyBranchName: "브랜치 이름 복사",
-        rename: "워크스페이스 이름 변경",
+        rename: "세션 이름 변경",
         pin: "상단에 고정",
         unpin: "고정 해제",
         archive: "보관",
-        archiveWorkspace: "워크스페이스 보관",
+        archiveWorkspace: "세션 보관",
         hideFromSidebar: "사이드바에서 숨기기",
         archiving: "보관하는 중...",
         hiding: "숨기는 중...",
       },
       confirmations: {
-        hideTitle: "워크스페이스를 숨길까요?",
+        hideTitle: "세션을 숨길까요?",
         hideMessage:
           '"{{workspaceName}}"을(를) 사이드바에서 숨길까요?\n\n디스크의 파일은 변경되지 않습니다.',
         hideConfirm: "숨기기",
         cancel: "취소",
       },
       rename: {
-        title: "워크스페이스 이름 변경",
+        title: "세션 이름 변경",
         submit: "이름 변경",
         invalidBranchName: "잘못된 브랜치 이름",
       },
       toasts: {
-        workspacePathUnavailable: "워크스페이스 경로를 사용할 수 없습니다",
+        workspacePathUnavailable: "세션 경로를 사용할 수 없습니다",
         pathCopied: "경로가 복사되었습니다",
         branchNameCopied: "브랜치 이름이 복사되었습니다",
         hostDisconnected: "호스트가 연결되어 있지 않습니다",
-        hideFailed: "워크스페이스를 숨기지 못했습니다",
-        archiveFailed: "워크스페이스를 보관하지 못했습니다.",
+        hideFailed: "세션을 숨기지 못했습니다",
+        archiveFailed: "세션을 보관하지 못했습니다.",
       },
     },
   },
   newWorkspace: {
-    title: "새 워크스페이스",
+    title: "새 세션",
     create: "생성",
     isolation: {
       local: "로컬",
@@ -1525,8 +1525,8 @@ export const ko: TranslationResources = {
         description: "내 컴퓨터의 폴더를 엽니다",
       },
       importSession: {
-        title: "세션 가져오기",
-        description: "최근 외부 CLI 세션을 가져옵니다",
+        title: "대화 가져오기",
+        description: "최근 외부 CLI 대화를 가져옵니다",
       },
       setupProviders: {
         title: "프로바이더 설정",
@@ -1551,7 +1551,7 @@ export const ko: TranslationResources = {
     openPath: "경로 열기",
   },
   branchSwitcher: {
-    triggerTooltip: "워크스페이스 브랜치 전환",
+    triggerTooltip: "세션 브랜치 전환",
     currentBranch: "현재 브랜치: {{branchName}}. 브랜치를 전환하려면 누르세요.",
     placeholder: "브랜치 전환...",
     searchPlaceholder: "브랜치 필터...",
@@ -1570,7 +1570,7 @@ export const ko: TranslationResources = {
     stashRestored: "스태시된 변경 사항이 복원되었습니다",
   },
   agentAutocomplete: {
-    searchingWorkspace: "워크스페이스 검색 중...",
+    searchingWorkspace: "세션 검색 중...",
     loadingCommands: "명령 불러오는 중...",
     noFiles: "파일 또는 디렉터리를 찾을 수 없습니다",
     noCommands: "명령을 찾을 수 없습니다",
@@ -1588,14 +1588,14 @@ export const ko: TranslationResources = {
     dialogFilterName: "이미지",
   },
   workspaceSetup: {
-    title: "워크스페이스 생성",
+    title: "세션 생성",
     errors: {
       failedCreateWorktree: "워크트리를 생성하지 못했습니다",
       failedOpenProject: "프로젝트를 열지 못했습니다",
       selectModel: "모델을 선택하세요",
       hostDisconnected: "호스트가 연결되어 있지 않습니다",
-      pendingRequired: "대기 중인 워크스페이스 설정이 없습니다",
-      composerStateRequired: "워크스페이스 설정 작성기 상태가 필요합니다",
+      pendingRequired: "대기 중인 세션 설정이 없습니다",
+      composerStateRequired: "세션 설정 작성기 상태가 필요합니다",
     },
   },
   onboarding: {
@@ -1673,7 +1673,7 @@ export const ko: TranslationResources = {
       noProviders: "선택한 호스트에 사용 가능한 프로바이더가 없습니다",
       modelDefaultsLoading: "모델 기본값을 아직 불러오는 중입니다",
       noModelAvailable: "선택한 프로바이더에 사용 가능한 모델이 없습니다",
-      workspaceDirectoryNotFound: "워크스페이스 디렉터리를 찾을 수 없습니다",
+      workspaceDirectoryNotFound: "세션 디렉터리를 찾을 수 없습니다",
       hostDisconnected: "호스트가 연결되어 있지 않습니다",
     },
   },
@@ -2031,8 +2031,8 @@ export const ko: TranslationResources = {
     },
     workspaceToggle: {
       label: "음성 알림",
-      enable: "이 워크스페이스의 음성 알림 켜기",
-      disable: "이 워크스페이스의 음성 알림 끄기",
+      enable: "이 세션의 음성 알림 켜기",
+      disable: "이 세션의 음성 알림 끄기",
     },
     banner: {
       play: "재생",
@@ -2138,7 +2138,7 @@ export const ko: TranslationResources = {
       creatingAgent: "에이전트 생성 중",
     },
     file: {
-      directoryMissing: "워크스페이스 디렉터리를 찾을 수 없습니다.",
+      directoryMissing: "세션 디렉터리를 찾을 수 없습니다.",
       loading: "파일 불러오는 중...",
       noPreview: "사용 가능한 미리보기가 없습니다",
       binaryPreviewUnavailable: "바이너리 미리보기를 사용할 수 없습니다",
@@ -2169,8 +2169,8 @@ export const ko: TranslationResources = {
     },
     files: {
       label: "파일",
-      subtitle: "워크스페이스 파일",
-      tooltip: "워크스페이스 파일 탐색",
+      subtitle: "세션 파일",
+      tooltip: "세션 파일 탐색",
       chooseFile: "파일 선택",
     },
     pullRequest: {
@@ -2186,7 +2186,7 @@ export const ko: TranslationResources = {
       commitSubtitle: "커밋 diff",
       uncommittedSubtitle: "커밋되지 않은 변경 사항",
       baseSubtitle: "{{baseRef}}와 비교",
-      directoryMissing: "워크스페이스 디렉터리를 찾을 수 없습니다.",
+      directoryMissing: "세션 디렉터리를 찾을 수 없습니다.",
       empty: "변경사항 없음",
       loadError: "Diff를 불러오지 못했습니다.",
       capabilityMissing: "커밋 diff를 보려면 호스트를 업데이트하세요.",
@@ -2311,7 +2311,7 @@ export const ko: TranslationResources = {
       connections: "연결",
       agents: "에이전트",
       metadata: "메타데이터",
-      workspaces: "워크스페이스",
+      workspaces: "세션",
       providers: "프로바이더",
       usage: "사용량",
       terminals: "터미널",
@@ -2320,7 +2320,7 @@ export const ko: TranslationResources = {
     metadataGeneration: {
       title: "메타데이터 생성",
       description:
-        "워크스페이스 제목, 브랜치 이름, 커밋 메시지 및 풀 리퀘스트 초안에 사용할 모델을 선택하세요",
+        "세션 제목, 브랜치 이름, 커밋 메시지 및 풀 리퀘스트 초안에 사용할 모델을 선택하세요",
       selection: "모델 선택",
       automatic: "자동",
       preferred: "수동",
@@ -2569,22 +2569,22 @@ export const ko: TranslationResources = {
       },
       sections: {
         general: "일반",
-        workspaces: "프로젝트 및 워크스페이스",
+        workspaces: "프로젝트 및 세션",
         tabsPanes: "탭 및 창",
         layout: "레이아웃",
         agentInput: "에이전트 입력",
       },
       help: {
         openProject: "프로젝트 열기",
-        newWorkspace: "새 워크스페이스",
+        newWorkspace: "새 세션",
         newWorktree: "새 워크트리",
-        archiveWorkspace: "워크스페이스 보관",
+        archiveWorkspace: "세션 보관",
         newTab: "새 탭",
         closeCurrentTab: "현재 탭 닫기",
-        jumpToWorkspace: "워크스페이스로 이동",
+        jumpToWorkspace: "세션으로 이동",
         jumpToTab: "탭으로 이동",
-        previousWorkspace: "이전 워크스페이스",
-        nextWorkspace: "다음 워크스페이스",
+        previousWorkspace: "이전 세션",
+        nextWorkspace: "다음 세션",
         previousTab: "이전 탭",
         nextTab: "다음 탭",
         splitPaneRight: "창을 오른쪽으로 분할",
@@ -2686,7 +2686,7 @@ export const ko: TranslationResources = {
           },
         },
         preview: {
-          workspaceName: "내-워크스페이스",
+          workspaceName: "내-세션",
         },
       },
       notFound: "호스트를 찾을 수 없습니다",
@@ -2698,7 +2698,7 @@ export const ko: TranslationResources = {
       daemonConflict: {
         title: "이 머신에서 데몬이 여러 개 실행 중입니다",
         message:
-          "{{machine}}에서 데몬 {{count}}개가 실행 중입니다. 각각 고유한 에이전트와 워크스페이스를 가지므로 보이는 내용은 연결된 데몬에 따라 달라집니다. 사용할 데몬을 선택하고 다른 하나가 필요 없다면 종료하세요.",
+          "{{machine}}에서 데몬 {{count}}개가 실행 중입니다. 각각 고유한 에이전트와 세션을 가지므로 보이는 내용은 연결된 데몬에 따라 달라집니다. 사용할 데몬을 선택하고 다른 하나가 필요 없다면 종료하세요.",
         activeLabel: "{{name}} (연결됨)",
         version: "v{{version}}",
         versionUnknown: "버전 알 수 없음",
@@ -2915,7 +2915,7 @@ export const ko: TranslationResources = {
         authenticateHint:
           "로그인하면 제공자 자체 로그인을 실행하는 터미널이 열립니다. 끝난 뒤 목록을 새로 고침하세요.",
         authenticateNoWorkspace:
-          "로그인하려면 터미널을 열 수 있는 워크스페이스가 이 호스트에 있어야 합니다.",
+          "로그인하려면 터미널을 열 수 있는 세션이 이 호스트에 있어야 합니다.",
         authenticateTerminalName: "로그인: {{name}}",
         unverified: "미검증: {{note}} 이 목록을 신뢰하기 전에 공급자 CLI에서 이 값들을 확인하세요.",
         unverifiedDefaultNote: "설정 디렉터리와 자격 증명 파일이 CLI에서 확인되지 않았습니다.",
@@ -2928,7 +2928,7 @@ export const ko: TranslationResources = {
         refresh: "새로 고침",
       },
       workspaces: {
-        unavailable: "워크스페이스를 관리하려면 이 호스트에 연결하세요",
+        unavailable: "세션을 관리하려면 이 호스트에 연결하세요",
       },
       terminalProfiles: {
         unavailable: "터미널 프로필을 관리하려면 이 호스트에 연결하세요",

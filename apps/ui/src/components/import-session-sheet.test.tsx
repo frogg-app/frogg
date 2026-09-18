@@ -295,7 +295,7 @@ describe("ImportSessionSheet", () => {
       "fetchRecentProviderSessions" | "importAgent"
     >);
 
-    await screen.findByText("Update the host to import sessions.");
+    await screen.findByText("Update the host to import conversations.");
     expect(fetchRecentProviderSessions).not.toHaveBeenCalled();
   });
 
@@ -315,7 +315,7 @@ describe("ImportSessionSheet", () => {
       },
     );
 
-    await screen.findByText("Loading recent sessions...");
+    await screen.findByText("Loading recent conversations...");
     expect(fetchRecentProviderSessions).not.toHaveBeenCalled();
   });
 
@@ -336,7 +336,7 @@ describe("ImportSessionSheet", () => {
       },
     );
 
-    await screen.findByText("No recent sessions to import.");
+    await screen.findByText("No recent conversations to import.");
   });
 
   it("shows the all-already-imported empty state when filteredAlreadyImportedCount is positive", async () => {
@@ -357,8 +357,8 @@ describe("ImportSessionSheet", () => {
       },
     );
 
-    await screen.findByText("All recent sessions are already imported.");
-    expect(screen.queryByText("No recent sessions to import.")).toBeNull();
+    await screen.findByText("All recent conversations are already imported.");
+    expect(screen.queryByText("No recent conversations to import.")).toBeNull();
   });
 
   it("shows a fetch error state when recent provider sessions cannot be loaded", async () => {
@@ -377,7 +377,7 @@ describe("ImportSessionSheet", () => {
       },
     );
 
-    await screen.findByText("Could not load recent sessions.");
+    await screen.findByText("Could not load recent conversations.");
   });
 
   it("loads recent provider sessions for the workspace and renders descriptor-owned labels", async () => {
@@ -542,7 +542,7 @@ describe("ImportSessionSheet", () => {
 
     fireEvent.click(await screen.findByTestId("import-session-session-claude-provider-thread-1"));
 
-    await screen.findByText("Could not import selected session.");
+    await screen.findByText("Could not import selected conversation.");
     expect(importAgent).toHaveBeenCalledWith({
       providerId: "claude",
       providerHandleId: "provider-thread-1",
@@ -649,7 +649,7 @@ describe("ImportSessionSheet", () => {
     );
 
     await screen.findByText("Session codex");
-    await screen.findByText("Could not load sessions for Claude Code.");
+    await screen.findByText("Could not load conversations for Claude Code.");
   });
 
   it("filters the merged list when a provider badge is selected and restores it on All", async () => {

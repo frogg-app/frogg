@@ -30,7 +30,7 @@ Docs change when the diff touches any of these. Otherwise tick "not needed" in t
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `deploy/install.sh`, `install-docker.sh`, release asset names                                                                                                                             | `getting-started/install.mdx`, `desktop-mobile-cli/desktop.mdx`                    |
 | Pairing, claim gate, LAN trust, passwords (`packages/server/src/server/{access-policy,auth,claim-*,setup-routes,pairing-*}.ts`, `apps/cli/src/commands/daemon/{pair,claim,trust-lan}.ts`) | `getting-started/connect-and-pair.mdx`, `self-hosting/security.mdx`                |
-| Projects, workspaces, worktrees, scripts, services                                                                                                                                        | `using-frogg/projects-and-workspaces.mdx`, `reference/project-config.mdx`          |
+| Projects, workspaces, worktrees, scripts, services                                                                                                                                        | `using-frogg/projects-and-sessions.mdx`, `reference/project-config.mdx`            |
 | Agent lifecycle, timeline, subagents                                                                                                                                                      | `using-frogg/agents.mdx`                                                           |
 | Permission modes (`packages/protocol/src/provider-manifest.ts`)                                                                                                                           | `using-frogg/permissions.mdx`                                                      |
 | Schedules, heartbeats (`packages/server/src/server/schedule/`)                                                                                                                            | `using-frogg/schedules.mdx`                                                        |
@@ -58,7 +58,7 @@ Docs change when the diff touches any of these. Otherwise tick "not needed" in t
 | Test tooling, CI jobs                                                                                                                                                                     | `contributing/testing.mdx`                                                         |
 
 Page paths are also a URL contract. The app and CLI link to `<brand links.docs>/` plus:
-`using-frogg/projects-and-workspaces/`, `reference/project-config/#metadatageneration`,
+`using-frogg/projects-and-sessions/`, `reference/project-config/#metadatageneration`,
 `agents-and-providers/skills/`, `desktop-mobile-cli/cli/`, `reference/configuration/`,
 `self-hosting/security/#relay`, `getting-started/connect-and-pair/#direct-connection`
 (`rg -n 'brandDocsUrl|DOCS_BASE' apps`), and the `frogg-help` skill fetches

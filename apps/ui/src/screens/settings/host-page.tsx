@@ -1026,7 +1026,7 @@ function AutoArchiveMergedWorkspacesCard({ serverId }: { serverId: string }) {
       void patchConfig({ autoArchiveAfterMerge: next }).catch((error) => {
         console.error("[HostPage] Failed to update auto-archive after merge", error);
         Alert.alert(
-          "Unable to update workspaces",
+          "Unable to update sessions",
           error instanceof Error ? error.message : String(error),
         );
       });
@@ -1040,7 +1040,7 @@ function AutoArchiveMergedWorkspacesCard({ serverId }: { serverId: string }) {
     <View style={settingsStyles.card} testID="host-page-auto-archive-merged-workspaces-card">
       <View style={settingsStyles.row}>
         <View style={settingsStyles.rowContent}>
-          <Text style={settingsStyles.rowTitle}>Archive merged PR workspaces</Text>
+          <Text style={settingsStyles.rowTitle}>Archive merged PR sessions</Text>
           <Text style={settingsStyles.rowHint}>
             Automatically archive clean {brand.name} workspaces after their pull request is merged
           </Text>

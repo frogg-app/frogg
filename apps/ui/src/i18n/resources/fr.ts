@@ -74,14 +74,14 @@ export const fr: TranslationResources = {
       close: "Fermer le menu",
     },
     commandCenter: {
-      placeholder: "Rechercher des commandes, fichiers, espaces de travail et agents...",
+      placeholder: "Rechercher des commandes, fichiers, sessions et agents...",
       filePlaceholder: "Rechercher des fichiers...",
       searchingFiles: "Recherche de fichiers...",
       noMatches: "Aucune correspondance",
       actions: "Actes",
       keyboardShortcuts: "Raccourcis clavier",
       files: "Fichiers",
-      workspaces: "Espaces de travail",
+      workspaces: "Sessions",
       agents: "Agents",
       newAgent: "Nouvel agent",
       open: "Ouvrir {{name}}",
@@ -335,9 +335,9 @@ export const fr: TranslationResources = {
       copyMessage: "Copier le message",
       forkMenu: "Dupliquer le message",
       forkInNewTab: "Dupliquer dans un nouvel onglet",
-      forkInNewWorkspace: "Dupliquer dans un nouvel espace de travail",
+      forkInNewWorkspace: "Dupliquer dans un nouvella session",
       forkUnavailable: "Mettez l'hôte à jour pour utiliser ceci.",
-      forkMissingWorkspace: "Cet agent n'est pas dans un espace de travail.",
+      forkMissingWorkspace: "Cet agent n'est pas dans une session.",
       forkFailed: "Impossible de dupliquer le chat",
       openFile: "Ouvrir le fichier",
       copied: "Copié",
@@ -397,30 +397,30 @@ export const fr: TranslationResources = {
     },
   },
   importSession: {
-    title: "Session d'importation",
+    title: "Conversation d'importation",
     filters: {
       all: "Tous",
     },
     status: {
-      connectHost: "Connectez-vous à un hôte pour importer des sessions",
-      updateHost: "Mettez à jour l'hôte pour importer des sessions.",
+      connectHost: "Connectez-vous à un hôte pour importer des conversations",
+      updateHost: "Mettez à jour l'hôte pour importer des conversations.",
       noProviders: "Aucun fournisseur importable n'est activé.",
-      loading: "Chargement des sessions récentes...",
-      failedAll: "Impossible de charger les sessions récentes.",
-      failedProviders: "Impossible de charger les sessions pour{{providers}}.",
-      failedImport: "Impossible d'importer la session sélectionnée.",
+      loading: "Chargement des conversations récentes...",
+      failedAll: "Impossible de charger les conversations récentes.",
+      failedProviders: "Impossible de charger les conversations pour{{providers}}.",
+      failedImport: "Impossible d'importer la conversation sélectionnéee.",
     },
     actions: {
-      refresh: "Sessions de rafraîchissement",
+      refresh: "Conversations de rafraîchissement",
     },
     preview: {
       untitledSession: "Séance sans titre",
       noPrompt: "Aucun aperçu rapide",
     },
     empty: {
-      noRecent: "Aucune session récente à importer.",
-      alreadyImported: "Toutes les sessions récentes sont déjà importées.",
-      noProviderSessions: "Aucune session{{provider}}trouvée.",
+      noRecent: "Aucune conversation récente à importer.",
+      alreadyImported: "Toutes les conversations récentes sont déjà importées.",
+      noProviderSessions: "Aucune conversation{{provider}}trouvée.",
     },
     row: {
       importing: "Importation...",
@@ -428,24 +428,24 @@ export const fr: TranslationResources = {
   },
   workspace: {
     route: {
-      loading: "Chargement de l'espace de travail",
+      loading: "Chargement de l'session",
       connecting: "De liaison",
       hostOffline: "{{hostName}}est hors ligne",
       cannotReachHost: "Impossible d'atteindre{{hostName}}",
       hostStatus: "StatutHost:{{status}}",
-      needsHostUpgrade: "Mettez à jour votre hôte pour restaurer cet espace de travail",
+      needsHostUpgrade: "Mettez à jour votre hôte pour restaurer cet session",
       manageHost: "Gérer l'hôte",
       recovery: {
-        archivedTitle: "Espace de travail archivé",
+        archivedTitle: "Session archivé",
         restoreDescription:
           "{{workspaceName}} a été archivé et son worktree supprimé. Restaurez la branche {{branch}} pour le rouvrir.",
         unarchiveDescription: "{{workspaceName}} est archivé. Désarchivez-le pour le rouvrir.",
         restoreAction: "Restaurer",
         unarchiveAction: "Désarchiver",
-        restoringTitle: "Restauration de l'espace de travail",
+        restoringTitle: "Restauration de l'session",
         restoringAction: "Restauration...",
-        unavailableTitle: "Espace de travail indisponible",
-        checkFailedTitle: "Impossible de vérifier l'espace de travail",
+        unavailableTitle: "Session indisponible",
+        checkFailedTitle: "Impossible de vérifier l'session",
       },
     },
     hoverCard: {
@@ -538,12 +538,12 @@ export const fr: TranslationResources = {
         failed: "Échoué",
         waiting: "En attente de la sortie de configuration",
       },
-      waiting: "Configuration de l'espace de travail...",
+      waiting: "Configuration de l'session...",
       empty: {
-        noCommands: "Aucune commande de configuration n'a été exécutée pour cet espace de travail.",
+        noCommands: "Aucune commande de configuration n'a été exécutée pour cet session.",
       },
       accessibility: {
-        noCommands: "Aucune commande de configuration n'a été exécutée pour cet espace de travail",
+        noCommands: "Aucune commande de configuration n'a été exécutée pour cet session",
         log: "Journal de configurationWorkspace",
       },
       log: {
@@ -553,7 +553,7 @@ export const fr: TranslationResources = {
     browser: {
       unavailable: {
         title: "Le navigateur est réservé au bureau",
-        subtitle: "Ouvrez cet espace de travail dans Electron pour utiliser le navigateur intégré.",
+        subtitle: "Ouvrez cet session dans Electron pour utiliser le navigateur intégré.",
       },
       session: "Session de navigateur{{browserId}}",
       controls: {
@@ -712,16 +712,15 @@ export const fr: TranslationResources = {
         newAgentHere: "Nouvel agent dans ce worktree",
         newTerminal: "Nouvelle borne",
         newBrowser: "Nouvel onglet du navigateur",
-        importSession: "Session d'importation",
-        copyPath: "Copier le chemin de l'espace de travail",
+        importSession: "Conversation d'importation",
+        copyPath: "Copier le chemin de l'session",
         copyBranchName: "Copier le nom de la branche",
         showSetup: "Afficher la configuration",
       },
       toasts: {
         workspacePathUnavailable: "Le cheminWorkspacen'est pas encore disponible",
         branchNameUnavailable: "Nom de la succursale non disponible",
-        terminalQueued:
-          "Préparation de l'espace de travail, ouverture du terminal lorsque vous êtes prêt...",
+        terminalQueued: "Préparation de l'session, ouverture du terminal lorsque vous êtes prêt...",
         workspacePathCopiedLabel: "CheminWorkspace",
         branchNameCopiedLabel: "Nom de la succursale",
       },
@@ -813,7 +812,7 @@ export const fr: TranslationResources = {
           success: "Mis à jour",
         },
         archive: {
-          label: "Archiver l’espace de travail",
+          label: "Archiver l’session",
           pending: "Archivage...",
           success: "Archivé",
         },
@@ -881,7 +880,7 @@ export const fr: TranslationResources = {
           mergePrNoGithub:
             "La fusionPRn'est pas disponible pour le moment carGitHubn'est pas connecté",
           archiveNotWorktree:
-            "L'archive n'est pas disponible ici car cet espace de travail n'a pas été créé en tant qu'arbre de travail {{brandName}}",
+            "L'archive n'est pas disponible ici car cet session n'a pas été créé en tant qu'arbre de travail {{brandName}}",
           mergePrNoForge:
             "La fusion {{noun}} n'est pas disponible pour le moment car {{brand}} n'est pas connecté",
           mergePrMissing:
@@ -918,7 +917,7 @@ export const fr: TranslationResources = {
           confirm: "Archive",
           cancel: "Annuler",
           consequence:
-            "Cela retire l’espace de travail de la barre latérale. Pour le restaurer plus tard, ouvrez l’historique.",
+            "Cela retire l’session de la barre latérale. Pour le restaurer plus tard, ouvrez l’historique.",
           uncommittedChanges: "Modifications non validées",
           uncommittedChangesWithDiff: "Modifications non validées ({{diffStat}})",
           addedLine: "Ligne ajoutée{{count}}",
@@ -972,7 +971,7 @@ export const fr: TranslationResources = {
         modifiedFile: "Modifié",
         commits: {
           title: "Commits",
-          countLabel: "{{count}} commits de l’espace de travail",
+          countLabel: "{{count}} commits de l’session",
           noneAhead: "Aucun commit en avance sur {{baseRef}} pour le moment",
           fileDiffEmpty: "Aucune modification à afficher",
           fileDiffError: "Échec du chargement du diff du fichier",
@@ -984,9 +983,9 @@ export const fr: TranslationResources = {
       openInEditor: {
         open: "Ouvrir",
         chooseEditor: "Choisir l'éditeur",
-        openIn: "Espace de travail ouvert dans{{target}}",
+        openIn: "Session ouvert dans{{target}}",
         openFileIn: "Open {{fileName}} in {{target}}",
-        failedOpen: "Échec de l'ouverture de l'espace de travail",
+        failedOpen: "Échec de l'ouverture de l'session",
       },
       pr: {
         actions: {
@@ -1096,14 +1095,14 @@ export const fr: TranslationResources = {
       save: "Enregistrer",
       delete: "Supprimer",
       deleteTitle: "Supprimer {{name}} ?",
-      deleteMessage_one: "Cela retire l’étiquette de {{count}} espace de travail sur cet hôte.",
-      deleteMessage_other: "Cela retire l’étiquette de {{count}} espaces de travail sur cet hôte.",
+      deleteMessage_one: "Cela retire l’étiquette de {{count}} session sur cet hôte.",
+      deleteMessage_other: "Cela retire l’étiquette de {{count}} sessions sur cet hôte.",
       offline: "Cet hôte est hors ligne.",
       updateHost: "Mettez à jour cet hôte pour gérer les étiquettes.",
     },
   },
   sidebar: {
-    workspaceDraft: "Nouvel espace de travail (brouillon)",
+    workspaceDraft: "Nouvella session (brouillon)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Compte : {{value}}",
     hostsMenu: {
@@ -1163,9 +1162,9 @@ export const fr: TranslationResources = {
       },
     },
     filterEmpty: {
-      title: "Aucun espace de travail ne correspond",
+      title: "Aucune session ne correspond",
       description:
-        "Modifiez ou effacez les filtres de la barre latérale pour afficher les espaces de travail.",
+        "Modifiez ou effacez les filtres de la barre latérale pour afficher les sessions.",
       clear: "Effacer les filtres",
     },
     pinned: {
@@ -1178,7 +1177,7 @@ export const fr: TranslationResources = {
     },
     actions: {
       addProject: "Ajouter un projet",
-      newWorkspace: "Nouvel espace de travail",
+      newWorkspace: "Nouvella session",
       hosts: "Hôtes",
       home: "Maison",
       settings: "Paramètres",
@@ -1215,7 +1214,7 @@ export const fr: TranslationResources = {
       },
       toasts: {
         hostDisconnected: "Hostn'est pas connecté",
-        removeFailed: "Échec de la suppression de certains espaces de travail",
+        removeFailed: "Échec de la suppression de certains sessions",
         updateHostToRemove: "Mettez à jour le host pour supprimer des projets.",
       },
       empty: {
@@ -1239,30 +1238,30 @@ export const fr: TranslationResources = {
       },
       actions: {
         menu: "ActionsWorkspace",
-        newWorkspace: "Nouvel espace de travail",
+        newWorkspace: "Nouvella session",
         showMore: "Afficher plus",
         showLess: "Afficher moins",
-        createWorkspaceFor: "Créer un nouvel espace de travail pour{{projectName}}",
+        createWorkspaceFor: "Créer un nouvella session pour{{projectName}}",
         copyPath: "Copier le chemin",
         copyBranchName: "Copier le nom de la branche",
-        rename: "Renommer l'espace de travail",
+        rename: "Renommer l'session",
         pin: "Épingler en haut",
         unpin: "Désépingler",
         archive: "Archive",
-        archiveWorkspace: "Archiver l’espace de travail",
+        archiveWorkspace: "Archiver l’session",
         hideFromSidebar: "Masquer de la barre latérale",
         archiving: "Archivage...",
         hiding: "Dissimulation...",
       },
       confirmations: {
-        hideTitle: "Masquer l'espace de travail?",
+        hideTitle: "Masquer l'session?",
         hideMessage:
           "Masquer «{{workspaceName}}» dans la barre latérale?\n\nLes fichiers sur le disque ne seront pas modifiés.",
         hideConfirm: "Cacher",
         cancel: "Annuler",
       },
       rename: {
-        title: "Renommer l'espace de travail",
+        title: "Renommer l'session",
         submit: "Rebaptiser",
         invalidBranchName: "Nom de succursale invalide",
       },
@@ -1271,13 +1270,13 @@ export const fr: TranslationResources = {
         pathCopied: "Chemin copié",
         branchNameCopied: "Nom de la succursale copié",
         hostDisconnected: "Hostn'est pas connecté",
-        hideFailed: "Échec du masquage de l'espace de travail",
-        archiveFailed: "Échec de l'archivage de l'espace de travail",
+        hideFailed: "Échec du masquage de l'session",
+        archiveFailed: "Échec de l'archivage de l'session",
       },
     },
   },
   newWorkspace: {
-    title: "Nouvel espace de travail",
+    title: "Nouvella session",
     create: "Créer",
     isolation: {
       local: "Local",
@@ -1558,8 +1557,8 @@ export const fr: TranslationResources = {
         description: "Ouvrez un dossier sur votre machine",
       },
       importSession: {
-        title: "Session d'importation",
-        description: "Apportez des sessionsCLIexternes récentes",
+        title: "Conversation d'importation",
+        description: "Apportez des conversationsCLIexternes récentes",
       },
       setupProviders: {
         title: "Fournisseurs d'installation",
@@ -1584,7 +1583,7 @@ export const fr: TranslationResources = {
     openPath: "Ouvrir le chemin",
   },
   branchSwitcher: {
-    triggerTooltip: "Changer la branche de l’espace de travail",
+    triggerTooltip: "Changer la branche de l’session",
     currentBranch: "Branche actuelle:{{branchName}}. Appuyez pour changer de branche.",
     placeholder: "Changer de branche...",
     searchPlaceholder: "Filtrer les branches...",
@@ -1604,7 +1603,7 @@ export const fr: TranslationResources = {
     stashRestored: "Modifications cachées restaurées",
   },
   agentAutocomplete: {
-    searchingWorkspace: "Recherche dans l'espace de travail...",
+    searchingWorkspace: "Recherche dans l'session...",
     loadingCommands: "Chargement des commandes...",
     noFiles: "Aucun fichier ou répertoire trouvé",
     noCommands: "Aucune commande trouvée",
@@ -1622,13 +1621,13 @@ export const fr: TranslationResources = {
     dialogFilterName: "Images",
   },
   workspaceSetup: {
-    title: "Créer un espace de travail",
+    title: "Créer une session",
     errors: {
       failedCreateWorktree: "Échec de la création de l'arbre de travail",
       failedOpenProject: "Échec de l'ouverture du projet",
       selectModel: "Sélectionnez un modèle",
       hostDisconnected: "Hostn'est pas connecté",
-      pendingRequired: "Aucune configuration d'espace de travail n'est en attente",
+      pendingRequired: "Aucune configuration d'session n'est en attente",
       composerStateRequired: "L'état du compositeur de configurationWorkspaceest requis",
     },
   },
@@ -2073,8 +2072,8 @@ export const fr: TranslationResources = {
     },
     workspaceToggle: {
       label: "Alertes vocales",
-      enable: "Activer les alertes vocales pour cet espace de travail",
-      disable: "Désactiver les alertes vocales pour cet espace de travail",
+      enable: "Activer les alertes vocales pour cet session",
+      disable: "Désactiver les alertes vocales pour cet session",
     },
     banner: {
       play: "Lire",
@@ -2211,8 +2210,8 @@ export const fr: TranslationResources = {
     },
     files: {
       label: "Fichiers",
-      subtitle: "Fichiers de l’espace de travail",
-      tooltip: "Parcourir les fichiers de l’espace de travail",
+      subtitle: "Fichiers de l’session",
+      tooltip: "Parcourir les fichiers de l’session",
       chooseFile: "Choisissez un fichier",
     },
     pullRequest: {
@@ -2363,7 +2362,7 @@ export const fr: TranslationResources = {
     metadataGeneration: {
       title: "Génération de métadonnées",
       description:
-        "Choisissez le modèle utilisé par {{brandName}} pour les titres d’espaces de travail, les noms de branches, les messages de commit et les brouillons de pull request",
+        "Choisissez le modèle utilisé par {{brandName}} pour les titres d’sessions, les noms de branches, les messages de commit et les brouillons de pull request",
       selection: "Sélection du modèle",
       automatic: "Automatique",
       preferred: "Manuel",
@@ -2618,22 +2617,22 @@ export const fr: TranslationResources = {
       },
       sections: {
         general: "Général",
-        workspaces: "Projets et espaces de travail",
+        workspaces: "Projets et sessions",
         tabsPanes: "Onglets et volets",
         layout: "Disposition",
         agentInput: "EntréeAgent",
       },
       help: {
         openProject: "Projet ouvert",
-        newWorkspace: "Nouvel espace de travail",
+        newWorkspace: "Nouvella session",
         newWorktree: "Nouvel arbre de travail",
-        archiveWorkspace: "Archiver l’espace de travail",
+        archiveWorkspace: "Archiver l’session",
         newTab: "Nouvel onglet",
         closeCurrentTab: "Fermer l'onglet actuel",
-        jumpToWorkspace: "Accéder à l'espace de travail",
+        jumpToWorkspace: "Accéder à l'session",
         jumpToTab: "Aller à l'onglet",
-        previousWorkspace: "Espace de travail précédent",
-        nextWorkspace: "Espace de travail suivant",
+        previousWorkspace: "Session précédent",
+        nextWorkspace: "Session suivant",
         previousTab: "Onglet précédent",
         nextTab: "Onglet suivant",
         splitPaneRight: "Volet divisé à droite",
@@ -2748,7 +2747,7 @@ export const fr: TranslationResources = {
       daemonConflict: {
         title: "Plusieurs daemons sur cette machine",
         message:
-          "{{count}} daemons sont en cours d'exécution sur {{machine}}. Chacun a ses propres agents et espaces de travail : ce que vous voyez dépend donc de celui auquel vous êtes connecté. Choisissez celui que vous voulez et, si l'autre est inutile, arrêtez-le.",
+          "{{count}} daemons sont en cours d'exécution sur {{machine}}. Chacun a ses propres agents et sessions : ce que vous voyez dépend donc de celui auquel vous êtes connecté. Choisissez celui que vous voulez et, si l'autre est inutile, arrêtez-le.",
         activeLabel: "{{name}} (connecté)",
         version: "v{{version}}",
         versionUnknown: "version inconnue",
@@ -2970,7 +2969,7 @@ export const fr: TranslationResources = {
         authenticateHint:
           "La connexion ouvre un terminal qui exécute la procédure du fournisseur. Actualisez cette liste une fois terminé.",
         authenticateNoWorkspace:
-          "La connexion nécessite un espace de travail sur cet hôte pour ouvrir le terminal.",
+          "La connexion nécessite une session sur cet hôte pour ouvrir le terminal.",
         authenticateTerminalName: "Connexion : {{name}}",
         unverified:
           "Non vérifié : {{note}} Vérifiez ces valeurs avec la CLI du fournisseur avant de vous fier à cette liste.",

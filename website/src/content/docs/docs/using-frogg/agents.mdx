@@ -9,10 +9,10 @@ import { Screenshot } from "@/components/docs";
 import appAgentTimelineImg from "@/assets/docs/app/agent-timeline.png";
 
 An agent is one conversation with a provider (Claude Code, Codex, OpenCode...) running
-on the daemon in a workspace. The daemon keeps its state and timeline, so every client
+on the daemon in a session. The daemon keeps its state and timeline, so every client
 sees the same agent and it keeps running when clients disconnect.
 
-<Screenshot src={appAgentTimelineImg} alt="Agent timeline in a workspace" />
+<Screenshot src={appAgentTimelineImg} alt="Agent timeline in a session" />
 
 ## States
 
@@ -26,7 +26,7 @@ sees the same agent and it keeps running when clients disconnect.
 
 ## Start an agent
 
-In a workspace, type in the composer and pick:
+In a session, type in the composer and pick:
 
 - **Model** and, where the provider offers one, a **thinking** level,
 - **Account**, but only when the provider has more than the one sign-in — see
@@ -72,7 +72,7 @@ frogg agent logs <id> --follow --filter tools
 | Reload  | `frogg agent reload <id>`  | Restarts the provider process, for example to pick up new skills, MCP servers or a login |
 
 Archiving a parent archives its subagents, except those open elsewhere or in another
-workspace, which are detached instead.
+session, which are detached instead.
 
 ## Subagents
 

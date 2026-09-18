@@ -73,14 +73,14 @@ export const ru: TranslationResources = {
       close: "Закрыть меню",
     },
     commandCenter: {
-      placeholder: "Поиск команд, файлов, рабочих пространств и агентов...",
+      placeholder: "Поиск команд, файлов, сессий и агентов...",
       filePlaceholder: "Поиск файлов...",
       searchingFiles: "Поиск файлов...",
       noMatches: "Нет совпадений",
       actions: "Действия",
       keyboardShortcuts: "Сочетания клавиш",
       files: "Файлы",
-      workspaces: "Рабочие пространства",
+      workspaces: "Сессии",
       agents: "Агенты",
       newAgent: "Новый агент",
       open: "Открыть {{name}}",
@@ -333,9 +333,9 @@ export const ru: TranslationResources = {
       copyMessage: "Копировать сообщение",
       forkMenu: "Форкнуть чат отсюда",
       forkInNewTab: "Создать форк в новой вкладке",
-      forkInNewWorkspace: "Создать форк в новом рабочем пространстве",
+      forkInNewWorkspace: "Создать форк в новом сессии",
       forkUnavailable: "Обновите хост, чтобы использовать эту функцию.",
-      forkMissingWorkspace: "Этот агент не связан с рабочим пространством.",
+      forkMissingWorkspace: "Этот агент не связан с сессией.",
       forkFailed: "Не удалось создать форк чата",
       openFile: "Открыть файл",
       copied: "Скопировано",
@@ -395,30 +395,30 @@ export const ru: TranslationResources = {
     },
   },
   importSession: {
-    title: "Импортировать сессию",
+    title: "Импортировать беседу",
     filters: {
       all: "Все",
     },
     status: {
-      connectHost: "Подключитесь к хосту, чтобы импортировать сессии",
-      updateHost: "Обновите хост, чтобы импортировать сессии.",
+      connectHost: "Подключитесь к хосту, чтобы импортировать беседы",
+      updateHost: "Обновите хост, чтобы импортировать беседы.",
       noProviders: "Нет включённых провайдеров с поддержкой импорта.",
-      loading: "Загрузка недавних сессий...",
-      failedAll: "Не удалось загрузить недавние сессии.",
-      failedProviders: "Не удалось загрузить сессии следующих провайдеров: {{providers}}.",
-      failedImport: "Не удалось импортировать выбранную сессию.",
+      loading: "Загрузка недавних бесед...",
+      failedAll: "Не удалось загрузить недавние беседы.",
+      failedProviders: "Не удалось загрузить беседы следующих провайдеров: {{providers}}.",
+      failedImport: "Не удалось импортировать выбранную беседу.",
     },
     actions: {
-      refresh: "Обновить список сессий",
+      refresh: "Обновить список бесед",
     },
     preview: {
-      untitledSession: "Сессия без названия",
+      untitledSession: "Беседа без названия",
       noPrompt: "Нет промпта для предварительного просмотра",
     },
     empty: {
-      noRecent: "Нет недавних сессий для импорта.",
-      alreadyImported: "Все недавние сессии уже импортированы.",
-      noProviderSessions: "Сессии провайдера {{provider}} не найдены.",
+      noRecent: "Нет недавних бесед для импорта.",
+      alreadyImported: "Все недавние беседы уже импортированы.",
+      noProviderSessions: "Беседы провайдера {{provider}} не найдены.",
     },
     row: {
       importing: "Импортируется...",
@@ -426,29 +426,29 @@ export const ru: TranslationResources = {
   },
   workspace: {
     route: {
-      loading: "Загрузка рабочего пространства",
+      loading: "Загрузка сессии",
       connecting: "Подключение",
       hostOffline: "{{hostName}} не в сети",
       cannotReachHost: "Не удаётся связаться с {{hostName}}",
       hostStatus: "Статус хоста: {{status}}",
-      needsHostUpgrade: "Обновите хост, чтобы восстановить это рабочее пространство",
+      needsHostUpgrade: "Обновите хост, чтобы восстановить эта сессия",
       manageHost: "Управление хостом",
       recovery: {
         archivedTitle: "Рабочая область в архиве",
         restoreDescription:
-          "Рабочее пространство «{{workspaceName}}» было архивировано, а его worktree удалён. Восстановите ветку {{branch}}, чтобы снова открыть рабочее пространство.",
+          "Сессия «{{workspaceName}}» было архивировано, а его worktree удалён. Восстановите ветку {{branch}}, чтобы снова открыть сессия.",
         unarchiveDescription:
-          "Рабочее пространство «{{workspaceName}}» находится в архиве. Разархивируйте его, чтобы снова открыть.",
+          "Сессия «{{workspaceName}}» находится в архиве. Разархивируйте его, чтобы снова открыть.",
         restoreAction: "Восстановить",
         unarchiveAction: "Разархивировать",
-        restoringTitle: "Восстановление рабочего пространства",
+        restoringTitle: "Восстановление сессии",
         restoringAction: "Восстановление...",
         unavailableTitle: "Рабочая область недоступна",
-        checkFailedTitle: "Не удалось проверить рабочее пространство",
+        checkFailedTitle: "Не удалось проверить сессия",
       },
     },
     hoverCard: {
-      scriptsAccessibility: "Скрипты рабочего пространства",
+      scriptsAccessibility: "Скрипты сессии",
       copyPath: "Копировать путь",
       copyBranchName: "Копировать имя ветки",
       copied: "Скопировано",
@@ -508,7 +508,7 @@ export const ru: TranslationResources = {
         noVisibleFiles: "Нет видимых файлов",
       },
       states: {
-        unavailable: "Рабочее пространство недоступно",
+        unavailable: "Сессия недоступно",
         loading: "Загрузка файлов...",
       },
       errors: {
@@ -529,7 +529,7 @@ export const ru: TranslationResources = {
         label: "Настройка",
         completed: "Настройка завершена",
         failed: "Настройка не удалась",
-        workspace: "Настройка рабочего пространства",
+        workspace: "Настройка сессии",
       },
       status: {
         running: "Выполняется",
@@ -537,13 +537,13 @@ export const ru: TranslationResources = {
         failed: "Завершено с ошибкой",
         waiting: "Ожидание вывода команд настройки",
       },
-      waiting: "Настройка рабочего пространства...",
+      waiting: "Настройка сессии...",
       empty: {
-        noCommands: "Для этого рабочего пространства не выполнялись команды настройки.",
+        noCommands: "Для этой сессии не выполнялись команды настройки.",
       },
       accessibility: {
-        noCommands: "Для этого рабочего пространства не выполнялись команды настройки.",
-        log: "Журнал настройки рабочего пространства",
+        noCommands: "Для этой сессии не выполнялись команды настройки.",
+        log: "Журнал настройки сессии",
       },
       log: {
         noOutput: "Нет вывода",
@@ -552,8 +552,7 @@ export const ru: TranslationResources = {
     browser: {
       unavailable: {
         title: "Встроенный браузер доступен только в настольном приложении",
-        subtitle:
-          "Откройте это рабочее пространство в Electron, чтобы использовать встроенный браузер.",
+        subtitle: "Откройте эта сессия в Electron, чтобы использовать встроенный браузер.",
       },
       session: "Сеанс браузера {{browserId}}",
       controls: {
@@ -602,11 +601,11 @@ export const ru: TranslationResources = {
       fallback: {
         newAgent: "Новый агент",
         setup: "Настройка",
-        workspaceSetup: "Настройка рабочего пространства",
+        workspaceSetup: "Настройка сессии",
         terminal: "Терминал",
         browser: "Браузер",
         agent: "Агент",
-        workspace: "Рабочее пространство",
+        workspace: "Сессия",
       },
       switcher: {
         trigger: "Переключить вкладки (открыто: {{count}})",
@@ -707,22 +706,21 @@ export const ru: TranslationResources = {
     },
     header: {
       actions: {
-        workspaceActions: "Действия с рабочим пространством",
+        workspaceActions: "Действия с сессией",
         newAgent: "Новый агент",
         newAgentHere: "Новый агент в этом worktree",
         newTerminal: "Новый терминал",
         newBrowser: "Новая вкладка браузера",
-        importSession: "Импортировать сессию",
-        copyPath: "Скопировать путь к рабочему пространству",
+        importSession: "Импортировать беседу",
+        copyPath: "Скопировать путь к сессии",
         copyBranchName: "Скопировать название ветки",
-        showSetup: "Показать настройку рабочего пространства",
+        showSetup: "Показать настройку сессии",
       },
       toasts: {
-        workspacePathUnavailable: "Путь к рабочему пространству пока недоступен.",
+        workspacePathUnavailable: "Путь к сессии пока недоступен.",
         branchNameUnavailable: "Имя ветки недоступно",
-        terminalQueued:
-          "Рабочее пространство подготавливается. Терминал откроется, когда оно будет готово...",
-        workspacePathCopiedLabel: "Путь к рабочему пространству",
+        terminalQueued: "Сессия подготавливается. Терминал откроется, когда оно будет готово...",
+        workspacePathCopiedLabel: "Путь к сессии",
         branchNameCopiedLabel: "Имя ветки",
       },
     },
@@ -738,7 +736,7 @@ export const ru: TranslationResources = {
         view: "Открыть терминал",
       },
       accessibility: {
-        trigger: "Скрипты рабочего пространства",
+        trigger: "Скрипты сессии",
         openService: "Открыть сервис {{scriptName}}",
         viewTerminal: "Открыть терминал скрипта {{scriptName}}",
         runScript: "Запустить скрипт {{scriptName}}",
@@ -813,7 +811,7 @@ export const ru: TranslationResources = {
           success: "Обновлено",
         },
         archive: {
-          label: "Архивировать рабочее пространство",
+          label: "Архивировать сессия",
           pending: "Архивирование...",
           success: "В архиве",
         },
@@ -872,7 +870,7 @@ export const ru: TranslationResources = {
           updateCurrent: "Обновление недоступно: эта ветка уже синхронизирована с {{baseRef}}.",
           mergePrNoGithub: "Слияние PR сейчас недоступно: GitHub не подключён.",
           archiveNotWorktree:
-            "Архивирование недоступно: это рабочее пространство не было создано как worktree {{brandName}}.",
+            "Архивирование недоступно: эта сессия не было создано как worktree {{brandName}}.",
           mergePrNoForge: "Слияние {{noun}} сейчас недоступно: {{brand}} не подключён.",
           mergePrMissing: "Слияние PR недоступно: PR ещё не создан.",
           mergePrDraft: "Слияние PR недоступно: PR всё ещё является черновиком.",
@@ -903,7 +901,7 @@ export const ru: TranslationResources = {
           confirm: "Архивировать",
           cancel: "Отмена",
           consequence:
-            "Рабочее пространство будет удалено с боковой панели. Чтобы восстановить его позже, откройте историю.",
+            "Сессия будет удалено с боковой панели. Чтобы восстановить его позже, откройте историю.",
           uncommittedChanges: "Незафиксированные изменения",
           uncommittedChangesWithDiff: "Незафиксированные изменения ({{diffStat}})",
           addedLine: "Добавлено строк: {{count}}",
@@ -957,7 +955,7 @@ export const ru: TranslationResources = {
         modifiedFile: "Файл изменён",
         commits: {
           title: "Коммиты",
-          countLabel: "Коммитов в рабочем пространстве: {{count}}",
+          countLabel: "Коммитов в сессии: {{count}}",
           noneAhead: "Пока нет коммитов, отсутствующих в {{baseRef}}",
           fileDiffEmpty: "Нет изменений для отображения",
           fileDiffError: "Не удалось загрузить дифф файла",
@@ -969,9 +967,9 @@ export const ru: TranslationResources = {
       openInEditor: {
         open: "Открыть",
         chooseEditor: "Выбрать редактор",
-        openIn: "Открыть рабочее пространство в {{target}}",
+        openIn: "Открыть сессия в {{target}}",
         openFileIn: "Открыть {{fileName}} в {{target}}",
-        failedOpen: "Не удалось открыть рабочее пространство",
+        failedOpen: "Не удалось открыть сессия",
       },
       pr: {
         actions: {
@@ -1081,14 +1079,14 @@ export const ru: TranslationResources = {
       save: "Сохранить",
       delete: "Удалить",
       deleteTitle: "Удалить метку «{{name}}»?",
-      deleteMessage_one: "Метка будет снята с {{count}} рабочего пространства на этом хосте.",
-      deleteMessage_other: "Метка будет снята с {{count}} рабочих пространств на этом хосте.",
+      deleteMessage_one: "Метка будет снята с {{count}} сессии на этом хосте.",
+      deleteMessage_other: "Метка будет снята с {{count}} сессий на этом хосте.",
       offline: "Этот хост не в сети.",
       updateHost: "Обновите этот хост для управления метками.",
     },
   },
   sidebar: {
-    workspaceDraft: "Новое рабочее пространство (черновик)",
+    workspaceDraft: "Новая сессия (черновик)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Аккаунт: {{value}}",
     hostsMenu: {
@@ -1148,9 +1146,8 @@ export const ru: TranslationResources = {
       },
     },
     filterEmpty: {
-      title: "Нет подходящих рабочих пространств",
-      description:
-        "Измените или очистите фильтры боковой панели, чтобы увидеть рабочие пространства.",
+      title: "Нет подходящих сессий",
+      description: "Измените или очистите фильтры боковой панели, чтобы увидеть сессии.",
       clear: "Очистить фильтры",
     },
     pinned: {
@@ -1163,7 +1160,7 @@ export const ru: TranslationResources = {
     },
     actions: {
       addProject: "Добавить проект",
-      newWorkspace: "Новое рабочее пространство",
+      newWorkspace: "Новая сессия",
       hosts: "Хосты",
       home: "Главная",
       settings: "Настройки",
@@ -1200,7 +1197,7 @@ export const ru: TranslationResources = {
       },
       toasts: {
         hostDisconnected: "Хост не подключён",
-        removeFailed: "Не удалось удалить некоторые рабочие пространства.",
+        removeFailed: "Не удалось удалить некоторые сессии.",
         updateHostToRemove: "Обновите хост, чтобы удалять проекты.",
       },
       empty: {
@@ -1223,46 +1220,46 @@ export const ru: TranslationResources = {
         pending: "Ожидают: {{count}}",
       },
       actions: {
-        menu: "Действия рабочего пространства",
-        newWorkspace: "Новое рабочее пространство",
+        menu: "Действия сессии",
+        newWorkspace: "Новая сессия",
         showMore: "Показать ещё",
         showLess: "Показать меньше",
-        createWorkspaceFor: "Создать новое рабочее пространство для {{projectName}}",
+        createWorkspaceFor: "Создать новая сессия для {{projectName}}",
         copyPath: "Копировать путь",
         copyBranchName: "Скопировать имя ветки",
-        rename: "Переименовать рабочее пространство",
+        rename: "Переименовать сессия",
         pin: "Закрепить вверху",
         unpin: "Открепить",
         archive: "Архивировать",
-        archiveWorkspace: "Архивировать рабочее пространство",
+        archiveWorkspace: "Архивировать сессия",
         hideFromSidebar: "Скрыть на боковой панели",
         archiving: "Архивирование...",
         hiding: "Скрытие...",
       },
       confirmations: {
-        hideTitle: "Скрыть рабочее пространство?",
+        hideTitle: "Скрыть сессия?",
         hideMessage:
           "Скрыть «{{workspaceName}}» на боковой панели?\n\nФайлы на диске не будут изменены.",
         hideConfirm: "Скрыть",
         cancel: "Отмена",
       },
       rename: {
-        title: "Переименовать рабочее пространство",
+        title: "Переименовать сессия",
         submit: "Переименовать",
         invalidBranchName: "Недопустимое имя ветки",
       },
       toasts: {
-        workspacePathUnavailable: "Путь к рабочему пространству недоступен",
+        workspacePathUnavailable: "Путь к сессии недоступен",
         pathCopied: "Путь скопирован",
         branchNameCopied: "Имя ветки скопировано",
         hostDisconnected: "Хост не подключён",
-        hideFailed: "Не удалось скрыть рабочее пространство",
-        archiveFailed: "Не удалось архивировать рабочее пространство",
+        hideFailed: "Не удалось скрыть сессия",
+        archiveFailed: "Не удалось архивировать сессия",
       },
     },
   },
   newWorkspace: {
-    title: "Новое рабочее пространство",
+    title: "Новая сессия",
     create: "Создать",
     isolation: {
       local: "Локально",
@@ -1541,8 +1538,8 @@ export const ru: TranslationResources = {
         description: "Откройте папку на своем компьютере",
       },
       importSession: {
-        title: "Импортировать сессию",
-        description: "Импортируйте недавние сессии из внешних CLI",
+        title: "Импортировать беседу",
+        description: "Импортируйте недавние беседы из внешних CLI",
       },
       setupProviders: {
         title: "Настроить провайдеров",
@@ -1567,7 +1564,7 @@ export const ru: TranslationResources = {
     openPath: "Открыть путь",
   },
   branchSwitcher: {
-    triggerTooltip: "Переключить ветку рабочего пространства",
+    triggerTooltip: "Переключить ветку сессии",
     currentBranch: "Текущая ветка: {{branchName}}. Нажмите, чтобы переключить ветку.",
     placeholder: "Сменить ветку...",
     searchPlaceholder: "Фильтровать ветки...",
@@ -1587,7 +1584,7 @@ export const ru: TranslationResources = {
     stashRestored: "Изменения из stash восстановлены.",
   },
   agentAutocomplete: {
-    searchingWorkspace: "Поиск в рабочем пространстве...",
+    searchingWorkspace: "Поиск в сессии...",
     loadingCommands: "Загрузка команд...",
     noFiles: "Файлы и каталоги не найдены",
     noCommands: "Команды не найдены",
@@ -1605,14 +1602,14 @@ export const ru: TranslationResources = {
     dialogFilterName: "Изображения",
   },
   workspaceSetup: {
-    title: "Создать рабочее пространство",
+    title: "Создать сессия",
     errors: {
       failedCreateWorktree: "Не удалось создать worktree.",
       failedOpenProject: "Не удалось открыть проект",
       selectModel: "Выберите модель",
       hostDisconnected: "Хост не подключён",
-      pendingRequired: "Нет ожидающей настройки рабочего пространства.",
-      composerStateRequired: "Редактор настройки рабочего пространства ещё не готов.",
+      pendingRequired: "Нет ожидающей настройки сессии.",
+      composerStateRequired: "Редактор настройки сессии ещё не готов.",
     },
   },
   onboarding: {
@@ -1690,7 +1687,7 @@ export const ru: TranslationResources = {
       noProviders: "На выбранном хосте нет доступных провайдеров",
       modelDefaultsLoading: "Настройки модели по умолчанию всё ещё загружаются",
       noModelAvailable: "Для выбранного провайдера нет доступных моделей.",
-      workspaceDirectoryNotFound: "Каталог рабочего пространства не найден",
+      workspaceDirectoryNotFound: "Каталог сессии не найден",
       hostDisconnected: "Хост не подключён",
     },
   },
@@ -2053,8 +2050,8 @@ export const ru: TranslationResources = {
     },
     workspaceToggle: {
       label: "Голосовые оповещения",
-      enable: "Включить голосовые оповещения для этого рабочего пространства",
-      disable: "Выключить голосовые оповещения для этого рабочего пространства",
+      enable: "Включить голосовые оповещения для этой сессии",
+      disable: "Выключить голосовые оповещения для этой сессии",
     },
     banner: {
       play: "Воспроизвести",
@@ -2160,7 +2157,7 @@ export const ru: TranslationResources = {
       creatingAgent: "Создание агента",
     },
     file: {
-      directoryMissing: "Каталог рабочего пространства не найден.",
+      directoryMissing: "Каталог сессии не найден.",
       loading: "Загрузка файла...",
       noPreview: "Предварительный просмотр недоступен",
       binaryPreviewUnavailable: "Предварительный просмотр двоичного файла недоступен.",
@@ -2192,8 +2189,8 @@ export const ru: TranslationResources = {
     },
     files: {
       label: "Файлы",
-      subtitle: "Файлы рабочего пространства",
-      tooltip: "Просмотр файлов рабочего пространства",
+      subtitle: "Файлы сессии",
+      tooltip: "Просмотр файлов сессии",
       chooseFile: "Выберите файл",
     },
     pullRequest: {
@@ -2209,7 +2206,7 @@ export const ru: TranslationResources = {
       commitSubtitle: "Изменения в коммите",
       uncommittedSubtitle: "Незафиксированные изменения",
       baseSubtitle: "Сравнение с {{baseRef}}",
-      directoryMissing: "Каталог рабочего пространства не найден.",
+      directoryMissing: "Каталог сессии не найден.",
       empty: "Нет изменений",
       loadError: "Не удалось загрузить список изменений",
       capabilityMissing: "Обновите хост, чтобы просматривать изменения в коммитах.",
@@ -2334,7 +2331,7 @@ export const ru: TranslationResources = {
       connections: "Подключения",
       agents: "Агенты",
       metadata: "Метаданные",
-      workspaces: "Рабочие пространства",
+      workspaces: "Сессии",
       providers: "Провайдеры",
       usage: "Использование",
       terminals: "Терминалы",
@@ -2343,7 +2340,7 @@ export const ru: TranslationResources = {
     metadataGeneration: {
       title: "Генерация метаданных",
       description:
-        "Выберите модель, которую {{brandName}} будет использовать для названий рабочих пространств и веток, сообщений коммитов и черновиков PR",
+        "Выберите модель, которую {{brandName}} будет использовать для названий сессий и веток, сообщений коммитов и черновиков PR",
       selection: "Выбор модели",
       automatic: "Автоматически",
       preferred: "Вручную",
@@ -2601,22 +2598,22 @@ export const ru: TranslationResources = {
       },
       sections: {
         general: "Общие",
-        workspaces: "Проекты и рабочие пространства",
+        workspaces: "Проекты и сессии",
         tabsPanes: "Вкладки и панели",
         layout: "Макет",
         agentInput: "Ввод для агента",
       },
       help: {
         openProject: "Открыть проект",
-        newWorkspace: "Новое рабочее пространство",
+        newWorkspace: "Новая сессия",
         newWorktree: "Новый worktree",
-        archiveWorkspace: "Архивировать рабочее пространство",
+        archiveWorkspace: "Архивировать сессия",
         newTab: "Новая вкладка",
         closeCurrentTab: "Закрыть текущую вкладку",
-        jumpToWorkspace: "Перейти к рабочему пространству",
+        jumpToWorkspace: "Перейти к сессии",
         jumpToTab: "Перейти на вкладку",
-        previousWorkspace: "Предыдущее рабочее пространство",
-        nextWorkspace: "Следующее рабочее пространство",
+        previousWorkspace: "Предыдущее сессия",
+        nextWorkspace: "Следующее сессия",
         previousTab: "Предыдущая вкладка",
         nextTab: "Следующая вкладка",
         splitPaneRight: "Разделить панель справа",
@@ -2730,7 +2727,7 @@ export const ru: TranslationResources = {
       daemonConflict: {
         title: "На этой машине запущено несколько демонов",
         message:
-          "На {{machine}} запущено демонов: {{count}}. У каждого свои агенты и рабочие пространства, поэтому увиденное зависит от того, к какому вы подключены. Выберите нужный, а если второй не нужен — остановите его.",
+          "На {{machine}} запущено демонов: {{count}}. У каждого свои агенты и сессии, поэтому увиденное зависит от того, к какому вы подключены. Выберите нужный, а если второй не нужен — остановите его.",
         activeLabel: "{{name}} (подключён)",
         version: "v{{version}}",
         versionUnknown: "версия неизвестна",
@@ -2951,8 +2948,7 @@ export const ru: TranslationResources = {
         authenticate: "Войти",
         authenticateHint:
           "Вход открывает терминал с собственной процедурой провайдера. Обновите список после завершения.",
-        authenticateNoWorkspace:
-          "Для входа нужно рабочее пространство на этом хосте, где откроется терминал.",
+        authenticateNoWorkspace: "Для входа нужно сессия на этом хосте, где откроется терминал.",
         authenticateTerminalName: "Вход: {{name}}",
         unverified:
           "Не проверено: {{note}} Сверьте эти значения с CLI провайдера, прежде чем полагаться на этот список.",
@@ -2967,7 +2963,7 @@ export const ru: TranslationResources = {
         refresh: "Обновить",
       },
       workspaces: {
-        unavailable: "Подключитесь к этому хосту, чтобы управлять рабочими пространствами",
+        unavailable: "Подключитесь к этому хосту, чтобы управлять сессиями",
       },
       terminalProfiles: {
         unavailable: "Подключитесь к этому хосту, чтобы управлять профилями терминала",

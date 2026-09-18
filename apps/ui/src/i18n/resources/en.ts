@@ -71,14 +71,14 @@ export const en = {
       close: "Close menu",
     },
     commandCenter: {
-      placeholder: "Search commands, files, workspaces, and agents...",
+      placeholder: "Search commands, files, sessions, and agents...",
       filePlaceholder: "Search files...",
       searchingFiles: "Searching files...",
       noMatches: "No matches",
       actions: "Actions",
       keyboardShortcuts: "Keyboard shortcuts",
       files: "Files",
-      workspaces: "Workspaces",
+      workspaces: "Sessions",
       agents: "Agents",
       newAgent: "New agent",
       open: "Open {{name}}",
@@ -330,9 +330,9 @@ export const en = {
       copyMessage: "Copy message",
       forkMenu: "Fork chat from here",
       forkInNewTab: "Fork in a new tab",
-      forkInNewWorkspace: "Fork in a new workspace",
+      forkInNewWorkspace: "Fork in a new session",
       forkUnavailable: "Update the host to use this.",
-      forkMissingWorkspace: "This agent is not in a workspace.",
+      forkMissingWorkspace: "This agent is not in a session.",
       forkFailed: "Failed to fork chat",
       openFile: "Open file",
       copied: "Copied",
@@ -392,30 +392,30 @@ export const en = {
     },
   },
   importSession: {
-    title: "Import session",
+    title: "Import conversation",
     filters: {
       all: "All",
     },
     status: {
-      connectHost: "Connect to a host to import sessions",
-      updateHost: "Update the host to import sessions.",
+      connectHost: "Connect to a host to import conversations",
+      updateHost: "Update the host to import conversations.",
       noProviders: "No importable providers are enabled.",
-      loading: "Loading recent sessions...",
-      failedAll: "Could not load recent sessions.",
-      failedProviders: "Could not load sessions for {{providers}}.",
-      failedImport: "Could not import selected session.",
+      loading: "Loading recent conversations...",
+      failedAll: "Could not load recent conversations.",
+      failedProviders: "Could not load conversations for {{providers}}.",
+      failedImport: "Could not import selected conversation.",
     },
     actions: {
-      refresh: "Refresh sessions",
+      refresh: "Refresh conversations",
     },
     preview: {
-      untitledSession: "Untitled session",
+      untitledSession: "Untitled conversation",
       noPrompt: "No prompt preview",
     },
     empty: {
-      noRecent: "No recent sessions to import.",
-      alreadyImported: "All recent sessions are already imported.",
-      noProviderSessions: "No {{provider}} sessions found.",
+      noRecent: "No recent conversations to import.",
+      alreadyImported: "All recent conversations are already imported.",
+      noProviderSessions: "No {{provider}} conversations found.",
     },
     row: {
       importing: "Importing...",
@@ -423,28 +423,28 @@ export const en = {
   },
   workspace: {
     route: {
-      loading: "Loading workspace",
+      loading: "Loading session",
       connecting: "Connecting",
       hostOffline: "{{hostName}} is offline",
       cannotReachHost: "Cannot reach {{hostName}}",
       hostStatus: "Host status: {{status}}",
-      needsHostUpgrade: "Update your host to restore this workspace",
+      needsHostUpgrade: "Update your host to restore this session",
       manageHost: "Manage host",
       recovery: {
-        archivedTitle: "Workspace archived",
+        archivedTitle: "Session archived",
         restoreDescription:
           "{{workspaceName}} was archived and its worktree was removed. Restore branch {{branch}} to open it again.",
         unarchiveDescription: "{{workspaceName}} is archived. Unarchive it to open it again.",
         restoreAction: "Restore",
         unarchiveAction: "Unarchive",
-        restoringTitle: "Restoring workspace",
+        restoringTitle: "Restoring session",
         restoringAction: "Restoring...",
-        unavailableTitle: "Workspace unavailable",
-        checkFailedTitle: "Couldn't check workspace",
+        unavailableTitle: "Session unavailable",
+        checkFailedTitle: "Couldn't check session",
       },
     },
     hoverCard: {
-      scriptsAccessibility: "Workspace scripts",
+      scriptsAccessibility: "Session scripts",
       copyPath: "Copy path",
       copyBranchName: "Copy branch name",
       copied: "Copied",
@@ -504,7 +504,7 @@ export const en = {
         noVisibleFiles: "No visible files",
       },
       states: {
-        unavailable: "Workspace is unavailable",
+        unavailable: "Session is unavailable",
         loading: "Loading files...",
       },
       errors: {
@@ -525,7 +525,7 @@ export const en = {
         label: "Setup",
         completed: "Setup completed",
         failed: "Setup failed",
-        workspace: "Workspace setup",
+        workspace: "Session setup",
       },
       status: {
         running: "Running",
@@ -533,13 +533,13 @@ export const en = {
         failed: "Failed",
         waiting: "Waiting for setup output",
       },
-      waiting: "Setting up workspace...",
+      waiting: "Setting up session...",
       empty: {
-        noCommands: "No setup commands ran for this workspace.",
+        noCommands: "No setup commands ran for this session.",
       },
       accessibility: {
-        noCommands: "No setup commands ran for this workspace",
-        log: "Workspace setup log",
+        noCommands: "No setup commands ran for this session",
+        log: "Session setup log",
       },
       log: {
         noOutput: "No output",
@@ -548,7 +548,7 @@ export const en = {
     browser: {
       unavailable: {
         title: "Browser is desktop-only",
-        subtitle: "Open this workspace in Electron to use the built-in browser.",
+        subtitle: "Open this session in Electron to use the built-in browser.",
       },
       session: "Browser session {{browserId}}",
       controls: {
@@ -596,11 +596,11 @@ export const en = {
       fallback: {
         newAgent: "New agent",
         setup: "Setup",
-        workspaceSetup: "Workspace setup",
+        workspaceSetup: "Session setup",
         terminal: "Terminal",
         browser: "Browser",
         agent: "Agent",
-        workspace: "Workspace",
+        workspace: "Session",
       },
       switcher: {
         trigger: "Switch tabs ({{count}} open)",
@@ -699,21 +699,21 @@ export const en = {
     },
     header: {
       actions: {
-        workspaceActions: "Workspace actions",
+        workspaceActions: "Session actions",
         newAgent: "New agent",
         newAgentHere: "New agent in this worktree",
         newTerminal: "New terminal",
         newBrowser: "New browser tab",
-        importSession: "Import session",
-        copyPath: "Copy workspace path",
+        importSession: "Import conversation",
+        copyPath: "Copy session path",
         copyBranchName: "Copy branch name",
         showSetup: "Show setup",
       },
       toasts: {
-        workspacePathUnavailable: "Workspace path is not available yet",
+        workspacePathUnavailable: "Session path is not available yet",
         branchNameUnavailable: "Branch name not available",
-        terminalQueued: "Preparing workspace, opening terminal when ready...",
-        workspacePathCopiedLabel: "Workspace path",
+        terminalQueued: "Preparing session, opening terminal when ready...",
+        workspacePathCopiedLabel: "Session path",
         branchNameCopiedLabel: "Branch name",
       },
     },
@@ -729,7 +729,7 @@ export const en = {
         view: "View terminal",
       },
       accessibility: {
-        trigger: "Workspace scripts",
+        trigger: "Session scripts",
         openService: "View {{scriptName}} service",
         viewTerminal: "View {{scriptName}} terminal",
         runScript: "Run {{scriptName}} script",
@@ -792,11 +792,11 @@ export const en = {
           label: "Merge locally",
           pending: "Merging...",
           success: "Merged",
-          moved: "Merged and moved to the target workspace",
-          reused: "Merged; opened the existing target workspace",
-          partial: "Merged, but the source workspace could not be archived",
-          conflict: "Merge conflict; the source workspace was kept",
-          failed: "Merge failed; the source workspace was kept",
+          moved: "Merged and moved to the target session",
+          reused: "Merged; opened the existing target session",
+          partial: "Merged, but the source session could not be archived",
+          conflict: "Merge conflict; the source session was kept",
+          failed: "Merge failed; the source session was kept",
         },
         mergeFromBase: {
           label: "Update from {{baseRef}}",
@@ -804,7 +804,7 @@ export const en = {
           success: "Updated",
         },
         archive: {
-          label: "Archive workspace",
+          label: "Archive session",
           pending: "Archiving...",
           success: "Archived",
         },
@@ -866,7 +866,7 @@ export const en = {
             "Update isn't available because this branch is already up to date with {{baseRef}}",
           mergePrNoGithub: "Merge PR isn't available right now because GitHub isn't connected",
           archiveNotWorktree:
-            "Archive isn't available here because this workspace was not created as an {{brandName}} worktree",
+            "Archive isn't available here because this session was not created as an {{brandName}} worktree",
           mergePrNoForge:
             "Merge {{noun}} isn't available right now because {{brand}} isn't connected",
           mergePrMissing: "Merge PR isn't available because there isn't a pull request yet",
@@ -897,7 +897,7 @@ export const en = {
           confirm: "Archive",
           cancel: "Cancel",
           consequence:
-            "This removes the workspace from the sidebar. To restore it later, open History.",
+            "This removes the session from the sidebar. To restore it later, open History.",
           uncommittedChanges: "Uncommitted changes",
           uncommittedChangesWithDiff: "Uncommitted changes ({{diffStat}})",
           addedLine: "{{count}} added line",
@@ -951,7 +951,7 @@ export const en = {
         modifiedFile: "Modified",
         commits: {
           title: "Commits",
-          countLabel: "{{count}} workspace commits",
+          countLabel: "{{count}} session commits",
           noneAhead: "No commits ahead of {{baseRef}} yet",
           fileDiffEmpty: "No changes to display",
           fileDiffError: "Failed to load file diff",
@@ -963,9 +963,9 @@ export const en = {
       openInEditor: {
         open: "Open",
         chooseEditor: "Choose editor",
-        openIn: "Open workspace in {{target}}",
+        openIn: "Open session in {{target}}",
         openFileIn: "Open {{fileName}} in {{target}}",
-        failedOpen: "Failed to open workspace",
+        failedOpen: "Failed to open session",
       },
       pr: {
         actions: {
@@ -1072,14 +1072,14 @@ export const en = {
       save: "Save",
       delete: "Delete",
       deleteTitle: "Delete {{name}}?",
-      deleteMessage_one: "This removes the label from {{count}} workspace on this host.",
-      deleteMessage_other: "This removes the label from {{count}} workspaces on this host.",
+      deleteMessage_one: "This removes the label from {{count}} session on this host.",
+      deleteMessage_other: "This removes the label from {{count}} sessions on this host.",
       offline: "This host is offline.",
       updateHost: "Update this host to manage labels.",
     },
   },
   sidebar: {
-    workspaceDraft: "New workspace (draft)",
+    workspaceDraft: "New session (draft)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Account: {{value}}",
     hostsMenu: {
@@ -1139,8 +1139,8 @@ export const en = {
       },
     },
     filterEmpty: {
-      title: "No workspaces match",
-      description: "Change or clear the sidebar filters to see workspaces.",
+      title: "No sessions match",
+      description: "Change or clear the sidebar filters to see sessions.",
       clear: "Clear filters",
     },
     pinned: {
@@ -1153,7 +1153,7 @@ export const en = {
     },
     actions: {
       addProject: "Add project",
-      newWorkspace: "New workspace",
+      newWorkspace: "New session",
       hosts: "Hosts",
       home: "Home",
       settings: "Settings",
@@ -1190,7 +1190,7 @@ export const en = {
       },
       toasts: {
         hostDisconnected: "Host is not connected",
-        removeFailed: "Failed to remove some workspaces",
+        removeFailed: "Failed to remove some sessions",
         updateHostToRemove: "Update the host to remove projects.",
       },
       empty: {
@@ -1213,46 +1213,46 @@ export const en = {
         pending: "Pending: {{count}}",
       },
       actions: {
-        menu: "Workspace actions",
-        newWorkspace: "New workspace",
+        menu: "Session actions",
+        newWorkspace: "New session",
         showMore: "Show more",
         showLess: "Show less",
-        createWorkspaceFor: "Create a new workspace for {{projectName}}",
+        createWorkspaceFor: "Create a new session for {{projectName}}",
         copyPath: "Copy path",
         copyBranchName: "Copy branch name",
-        rename: "Rename workspace",
+        rename: "Rename session",
         pin: "Pin to top",
         unpin: "Unpin",
         archive: "Archive",
-        archiveWorkspace: "Archive workspace",
+        archiveWorkspace: "Archive session",
         hideFromSidebar: "Hide from sidebar",
         archiving: "Archiving...",
         hiding: "Hiding...",
       },
       confirmations: {
-        hideTitle: "Hide workspace?",
+        hideTitle: "Hide session?",
         hideMessage:
           'Hide "{{workspaceName}}" from the sidebar?\n\nFiles on disk will not be changed.',
         hideConfirm: "Hide",
         cancel: "Cancel",
       },
       rename: {
-        title: "Rename workspace",
+        title: "Rename session",
         submit: "Rename",
         invalidBranchName: "Invalid branch name",
       },
       toasts: {
-        workspacePathUnavailable: "Workspace path not available",
+        workspacePathUnavailable: "Session path not available",
         pathCopied: "Path copied",
         branchNameCopied: "Branch name copied",
         hostDisconnected: "Host is not connected",
-        hideFailed: "Failed to hide workspace",
-        archiveFailed: "Failed to archive workspace",
+        hideFailed: "Failed to hide session",
+        archiveFailed: "Failed to archive session",
       },
     },
   },
   newWorkspace: {
-    title: "New workspace",
+    title: "New session",
     create: "Create",
     isolation: {
       local: "Local",
@@ -1522,8 +1522,8 @@ export const en = {
         description: "Open a folder on your machine",
       },
       importSession: {
-        title: "Import session",
-        description: "Bring in recent external CLI sessions",
+        title: "Import conversation",
+        description: "Bring in a recent conversation from your CLI tools",
       },
       setupProviders: {
         title: "Setup providers",
@@ -1548,7 +1548,7 @@ export const en = {
     openPath: "Open path",
   },
   branchSwitcher: {
-    triggerTooltip: "Switch workspace branch",
+    triggerTooltip: "Switch session branch",
     currentBranch: "Current branch: {{branchName}}. Press to switch branch.",
     placeholder: "Switch branch...",
     searchPlaceholder: "Filter branches...",
@@ -1567,7 +1567,7 @@ export const en = {
     stashRestored: "Stashed changes restored",
   },
   agentAutocomplete: {
-    searchingWorkspace: "Searching workspace...",
+    searchingWorkspace: "Searching session...",
     loadingCommands: "Loading commands...",
     noFiles: "No files or directories found",
     noCommands: "No commands found",
@@ -1585,14 +1585,14 @@ export const en = {
     dialogFilterName: "Images",
   },
   workspaceSetup: {
-    title: "Create workspace",
+    title: "Create session",
     errors: {
       failedCreateWorktree: "Failed to create worktree",
       failedOpenProject: "Failed to open project",
       selectModel: "Select a model",
       hostDisconnected: "Host is not connected",
-      pendingRequired: "No workspace setup is pending",
-      composerStateRequired: "Workspace setup composer state is required",
+      pendingRequired: "No session setup is pending",
+      composerStateRequired: "Session setup composer state is required",
     },
   },
   onboarding: {
@@ -1670,7 +1670,7 @@ export const en = {
       noProviders: "No available providers on the selected host",
       modelDefaultsLoading: "Model defaults are still loading",
       noModelAvailable: "No model is available for the selected provider",
-      workspaceDirectoryNotFound: "Workspace directory not found",
+      workspaceDirectoryNotFound: "Session directory not found",
       hostDisconnected: "Host is not connected",
     },
   },
@@ -2030,8 +2030,8 @@ export const en = {
     },
     workspaceToggle: {
       label: "Voice alerts",
-      enable: "Turn on voice alerts for this workspace",
-      disable: "Turn off voice alerts for this workspace",
+      enable: "Turn on voice alerts for this session",
+      disable: "Turn off voice alerts for this session",
     },
     banner: {
       play: "Play",
@@ -2137,7 +2137,7 @@ export const en = {
       creatingAgent: "Creating agent",
     },
     file: {
-      directoryMissing: "Workspace directory not found.",
+      directoryMissing: "Session directory not found.",
       loading: "Loading file...",
       noPreview: "No preview available",
       binaryPreviewUnavailable: "Binary preview unavailable",
@@ -2168,8 +2168,8 @@ export const en = {
     },
     files: {
       label: "Files",
-      subtitle: "Workspace files",
-      tooltip: "Browse workspace files",
+      subtitle: "Session files",
+      tooltip: "Browse session files",
       chooseFile: "Choose a file",
     },
     pullRequest: {
@@ -2185,7 +2185,7 @@ export const en = {
       commitSubtitle: "Commit diff",
       uncommittedSubtitle: "Uncommitted changes",
       baseSubtitle: "Compared with {{baseRef}}",
-      directoryMissing: "Workspace directory not found.",
+      directoryMissing: "Session directory not found.",
       empty: "No changes",
       loadError: "Failed to load diff",
       capabilityMissing: "Update the host to view commit diffs.",
@@ -2345,7 +2345,7 @@ export const en = {
       connections: "Connections",
       agents: "Agents",
       metadata: "Metadata",
-      workspaces: "Workspaces",
+      workspaces: "Sessions",
       providers: "Providers",
       usage: "Usage",
       terminals: "Terminals",
@@ -2354,7 +2354,7 @@ export const en = {
     metadataGeneration: {
       title: "Metadata generation",
       description:
-        "Choose the model {{brandName}} uses for workspace titles, branch names, commit messages, and pull request drafts",
+        "Choose the model {{brandName}} uses for session titles, branch names, commit messages, and pull request drafts",
       selection: "Model selection",
       automatic: "Automatic",
       preferred: "Manual",
@@ -2602,22 +2602,22 @@ export const en = {
       },
       sections: {
         general: "General",
-        workspaces: "Projects & Workspaces",
+        workspaces: "Projects & Sessions",
         tabsPanes: "Tabs & Panes",
         layout: "Layout",
         agentInput: "Agent Input",
       },
       help: {
         openProject: "Open project",
-        newWorkspace: "New workspace",
+        newWorkspace: "New session",
         newWorktree: "New worktree",
-        archiveWorkspace: "Archive workspace",
+        archiveWorkspace: "Archive session",
         newTab: "New tab",
         closeCurrentTab: "Close current tab",
-        jumpToWorkspace: "Jump to workspace",
+        jumpToWorkspace: "Jump to session",
         jumpToTab: "Jump to tab",
-        previousWorkspace: "Previous workspace",
-        nextWorkspace: "Next workspace",
+        previousWorkspace: "Previous session",
+        nextWorkspace: "Next session",
         previousTab: "Previous tab",
         nextTab: "Next tab",
         splitPaneRight: "Split pane right",
@@ -2719,7 +2719,7 @@ export const en = {
           },
         },
         preview: {
-          workspaceName: "my-workspace",
+          workspaceName: "my-session",
         },
       },
       notFound: "Host not found",
@@ -2731,7 +2731,7 @@ export const en = {
       daemonConflict: {
         title: "More than one daemon on this machine",
         message:
-          "{{count}} daemons are running on {{machine}}. Each has its own agents and workspaces, so what you see depends on which one you are connected to. Pick the one you want and, if the other is not needed, shut it down.",
+          "{{count}} daemons are running on {{machine}}. Each has its own agents and sessions, so what you see depends on which one you are connected to. Pick the one you want and, if the other is not needed, shut it down.",
         activeLabel: "{{name}} (connected)",
         version: "v{{version}}",
         versionUnknown: "version unknown",
@@ -2951,8 +2951,7 @@ export const en = {
         authenticate: "Sign in",
         authenticateHint:
           "Signing in opens a terminal running the provider's own login. Refresh this list once it finishes.",
-        authenticateNoWorkspace:
-          "Signing in needs a workspace on this host to open the terminal in.",
+        authenticateNoWorkspace: "Signing in needs a session on this host to open the terminal in.",
         authenticateTerminalName: "Sign in: {{name}}",
         unverified:
           "Unverified: {{note}} Verify these values against the provider’s CLI before relying on this list.",
@@ -2967,7 +2966,7 @@ export const en = {
         refresh: "Refresh",
       },
       workspaces: {
-        unavailable: "Connect to this host to manage workspaces",
+        unavailable: "Connect to this host to manage sessions",
       },
       terminalProfiles: {
         unavailable: "Connect to this host to manage terminal profiles",
