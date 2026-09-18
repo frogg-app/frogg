@@ -1,0 +1,13 @@
+diff --git a/node_modules/@expo/cli/build/src/export/embed/resolveOptions.js b/node_modules/@expo/cli/build/src/export/embed/resolveOptions.js
+index bc10578..c05e89b 100644
+--- a/node_modules/@expo/cli/build/src/export/embed/resolveOptions.js
++++ b/node_modules/@expo/cli/build/src/export/embed/resolveOptions.js
+@@ -75,7 +75,7 @@ function resolveOptions(projectRoot, args, parsed) {
+     }
+     const bundleOutput = args['--bundle-output'];
+     const commonOptions = {
+-        entryFile: args['--entry-file'] ?? (0, _paths().resolveEntryPoint)(projectRoot, {
++        entryFile: (args['--entry-file'] ? _path().default.resolve(projectRoot, args['--entry-file']) : undefined) ?? (0, _paths().resolveEntryPoint)(projectRoot, {
+             platform
+         }),
+         assetCatalogDest: args['--asset-catalog-dest'],
