@@ -2,6 +2,12 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
+  hostAdd: {
+    title: "Добавить хост",
+    connecting: "Добавление {{endpoint}}…",
+    alreadyAdded: "{{endpoint}} уже есть в списке хостов.",
+    noPendingLink: "Откройте ссылку хоста, чтобы добавить демон, или используйте «Добавить хост».",
+  },
   projectImport: projectImportCopies["ru"],
   directoryBrowser: {
     choose: "Использовать этот каталог",

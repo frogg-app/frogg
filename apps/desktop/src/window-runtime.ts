@@ -11,6 +11,7 @@ import {
 } from "./features/browser-webviews/index.js";
 import { resolveAppIconPath } from "./features/stamped-icon.js";
 import { registerTrustedRenderer } from "./ipc-security.js";
+import { hostAddInbox } from "./host-add-inbox.js";
 import { pairingInbox } from "./pairing-inbox.js";
 import { clampWindowStateToWorkAreas, createWindowStateStore } from "./settings/window-state.js";
 import { installWindowSecurity } from "./window-security.js";
@@ -171,6 +172,7 @@ export function createWindowRuntime({
         if (isMainFrame && !isSameDocument) {
           agentNavigationInbox.windowLoading(webContentsId);
           pairingInbox.remove(webContentsId);
+          hostAddInbox.remove(webContentsId);
         }
       },
     );

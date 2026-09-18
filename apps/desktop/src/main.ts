@@ -2,6 +2,7 @@ import { configureDesktopProcess } from "./process-configuration.js";
 import log from "electron-log/main";
 import { handleDesktopIpc } from "./ipc-security.js";
 import { registerNetworkHandlers } from "./network.js";
+import { hostAddInbox } from "./host-add-inbox.js";
 import { pairingInbox } from "./pairing-inbox.js";
 import { brand } from "@frogg/branding";
 
@@ -83,7 +84,9 @@ let pendingOpenProjectPath = parseOpenProjectPathFromArgv({
   isDefaultApp: process.defaultApp,
 });
 let pendingAgentNavigation = parseAgentDeepLinkFromArgv(process.argv);
-for (const arg of process.argv) pairingInbox.receive(arg);
+for (const arg of process.argv) {
+  if (!pairingInbox.receive(arg)) hostAddInbox.receive(arg);
+}
 
 // Each window pulls its own pending open-project path on mount, keyed by
 // webContents id, so deep-linked windows (second-instance launches, the
@@ -199,7 +202,8 @@ function receiveAgentDeepLink(input: string): void {
 
 app.on("open-url", (event, url) => {
   event.preventDefault();
-  if (!pairingInbox.receive(url)) receiveAgentDeepLink(url);
+  if (pairingInbox.receive(url) || hostAddInbox.receive(url)) return;
+  receiveAgentDeepLink(url);
 });
 
 function setupSingleInstanceLock(): boolean {
@@ -217,6 +221,11 @@ function setupSingleInstanceLock(): boolean {
   app.on("second-instance", (_event, commandLine) => {
     const pairingLink = commandLine.find((arg) => pairingInbox.receive(arg));
     if (pairingLink) {
+      void bootstrapComplete.then(() => desktopWindowOwner.restoreWhenActivated());
+      return;
+    }
+    const hostAddLink = commandLine.find((arg) => hostAddInbox.receive(arg));
+    if (hostAddLink) {
       void bootstrapComplete.then(() => desktopWindowOwner.restoreWhenActivated());
       return;
     }

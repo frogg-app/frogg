@@ -2,6 +2,12 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
+  hostAdd: {
+    title: "Ajouter un hôte",
+    connecting: "Ajout de {{endpoint}}…",
+    alreadyAdded: "{{endpoint}} figure déjà dans vos hôtes.",
+    noPendingLink: "Ouvrez un lien d'hôte pour ajouter un démon, ou utilisez Ajouter un hôte.",
+  },
   projectImport: projectImportCopies["fr"],
   directoryBrowser: {
     choose: "Utiliser ce dossier",

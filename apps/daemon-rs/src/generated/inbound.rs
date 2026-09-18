@@ -1590,6 +1590,8 @@ pub struct SetDaemonConfigRequestConfig {
     pub agent_profiles: Option<Vec<SetDaemonConfigRequestConfigAgentProfilesItem>>,
     #[serde(rename = "autoUpdate", skip_serializing_if = "Option::is_none")]
     pub auto_update: Option<SetDaemonConfigRequestConfigAutoUpdate>,
+    #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
+    pub host_settings: Option<SetDaemonConfigRequestConfigHostSettings>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1681,6 +1683,30 @@ pub enum SetDaemonConfigRequestConfigAutoUpdateChannel {
     Stable,
     #[serde(rename = "beta")]
     Beta,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDaemonConfigRequestConfigHostSettings {
+    #[serde(rename = "hiddenSections", skip_serializing_if = "Option::is_none")]
+    pub hidden_sections: Option<Vec<SetDaemonConfigRequestConfigHostSettingsHiddenSectionsItem>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum SetDaemonConfigRequestConfigHostSettingsHiddenSectionsItem {
+    #[serde(rename = "projects")]
+    Projects,
+    #[serde(rename = "pair-device")]
+    PairDevice,
+    #[serde(rename = "agents")]
+    Agents,
+    #[serde(rename = "providers")]
+    Providers,
+    #[serde(rename = "usage")]
+    Usage,
+    #[serde(rename = "terminals")]
+    Terminals,
+    #[serde(rename = "host")]
+    Host,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

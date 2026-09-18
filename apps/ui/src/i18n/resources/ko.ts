@@ -2,6 +2,12 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
+  hostAdd: {
+    title: "호스트 추가",
+    connecting: "{{endpoint}} 추가 중…",
+    alreadyAdded: "{{endpoint}}은(는) 이미 호스트에 있습니다.",
+    noPendingLink: "데몬을 추가하려면 호스트 링크를 열거나 호스트 추가를 사용하세요.",
+  },
   projectImport: projectImportCopies["ko"],
   directoryBrowser: {
     choose: "이 디렉터리 사용",

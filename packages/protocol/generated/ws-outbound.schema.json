@@ -33223,6 +33223,31 @@
                             "checkIntervalHours"
                           ],
                           "additionalProperties": false
+                        },
+                        "hostSettings": {
+                          "type": "object",
+                          "properties": {
+                            "hiddenSections": {
+                              "default": [],
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "projects",
+                                  "pair-device",
+                                  "agents",
+                                  "providers",
+                                  "usage",
+                                  "terminals",
+                                  "host"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "hiddenSections"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [
@@ -33660,6 +33685,31 @@
                             "enabled",
                             "channel",
                             "checkIntervalHours"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "hostSettings": {
+                          "type": "object",
+                          "properties": {
+                            "hiddenSections": {
+                              "default": [],
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "enum": [
+                                  "projects",
+                                  "pair-device",
+                                  "agents",
+                                  "providers",
+                                  "usage",
+                                  "terminals",
+                                  "host"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "hiddenSections"
                           ],
                           "additionalProperties": false
                         }

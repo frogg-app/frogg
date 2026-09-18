@@ -3506,6 +3506,28 @@
                           ]
                         }
                       }
+                    },
+                    "hostSettings": {
+                      "type": "object",
+                      "properties": {
+                        "hiddenSections": {
+                          "default": [],
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "enum": [
+                              "projects",
+                              "pair-device",
+                              "agents",
+                              "providers",
+                              "usage",
+                              "terminals",
+                              "host"
+                            ]
+                          }
+                        }
+                      },
+                      "additionalProperties": false
                     }
                   },
                   "additionalProperties": {}

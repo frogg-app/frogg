@@ -2,6 +2,12 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
+  hostAdd: {
+    title: "إضافة مضيف",
+    connecting: "جارٍ إضافة {{endpoint}}…",
+    alreadyAdded: "{{endpoint}} موجود بالفعل في المضيفين لديك.",
+    noPendingLink: "افتح رابط مضيف لإضافة خفي، أو استخدم إضافة مضيف.",
+  },
   projectImport: projectImportCopies["ar"],
   directoryBrowser: {
     choose: "استخدام هذا المجلد",

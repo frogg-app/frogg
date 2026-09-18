@@ -2,6 +2,12 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
+  hostAdd: {
+    title: "添加主机",
+    connecting: "正在添加 {{endpoint}}…",
+    alreadyAdded: "{{endpoint}} 已在主机列表中。",
+    noPendingLink: "打开主机链接以添加守护进程，或使用“添加主机”。",
+  },
   projectImport: projectImportCopies["zh-CN"],
   directoryBrowser: {
     choose: "使用此目录",

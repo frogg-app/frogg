@@ -2,6 +2,12 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
+  hostAdd: {
+    title: "ホストを追加",
+    connecting: "{{endpoint}} を追加しています…",
+    alreadyAdded: "{{endpoint}} はすでにホストに登録されています。",
+    noPendingLink: "デーモンを追加するにはホストリンクを開くか、ホストを追加を使用してください。",
+  },
   projectImport: projectImportCopies["ja"],
   directoryBrowser: {
     choose: "このディレクトリを使用",

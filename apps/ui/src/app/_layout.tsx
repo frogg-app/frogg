@@ -136,6 +136,7 @@ import { receiveSpokenAlertFromNotificationData } from "@/spoken-alerts/receive"
 import { VoiceReplySheet } from "@/components/voice-reply-sheet";
 import { SpokenAlertNotifications } from "@/components/spoken-alert-notifications";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
+import { HostAddLinkListener } from "@/host-add/host-add-link-listener";
 import { OfferLinkListener } from "@/pairing/offer-link-listener";
 import {
   ensureOsNotificationPermission,
@@ -669,6 +670,7 @@ function ProvidersWrapper({ children }: { children: ReactNode }) {
       <VoiceProvider>
         <DesktopWindowControlsSync />
         <OfferLinkListener />
+        <HostAddLinkListener />
         <HostSessionManager />
         <FaviconStatusSync />
         <AppearanceStyleBoundary>{children}</AppearanceStyleBoundary>
@@ -853,6 +855,7 @@ function RootStack() {
         <Stack.Screen name="sessions" />
         <Stack.Screen name="pair-scan" />
         <Stack.Screen name="pair-offer" />
+        <Stack.Screen name="host-add" />
       </Stack.Protected>
       <Stack.Screen name="h/[serverId]" />
       <Stack.Screen name="settings/hosts/[serverId]/index" />

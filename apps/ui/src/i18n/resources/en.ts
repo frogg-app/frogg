@@ -1,5 +1,11 @@
 import { projectImportCopies } from "./project-import";
 export const en = {
+  hostAdd: {
+    title: "Add a host",
+    connecting: "Adding {{endpoint}}…",
+    alreadyAdded: "{{endpoint}} is already in your hosts.",
+    noPendingLink: "Open a host link to add a daemon, or use Add a host.",
+  },
   projectImport: projectImportCopies["en"],
   directoryBrowser: {
     choose: "Use this directory",

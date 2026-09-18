@@ -7176,6 +7176,8 @@ pub struct GetDaemonConfigResponsePayloadConfig {
     pub skills: Option<GetDaemonConfigResponsePayloadConfigSkills>,
     #[serde(rename = "autoUpdate", skip_serializing_if = "Option::is_none")]
     pub auto_update: Option<GetDaemonConfigResponsePayloadConfigAutoUpdate>,
+    #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
+    pub host_settings: Option<GetDaemonConfigResponsePayloadConfigHostSettings>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7293,6 +7295,30 @@ pub enum GetDaemonConfigResponsePayloadConfigAutoUpdateChannel {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GetDaemonConfigResponsePayloadConfigHostSettings {
+    #[serde(rename = "hiddenSections")]
+    pub hidden_sections: Vec<GetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum GetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
+    #[serde(rename = "projects")]
+    Projects,
+    #[serde(rename = "pair-device")]
+    PairDevice,
+    #[serde(rename = "agents")]
+    Agents,
+    #[serde(rename = "providers")]
+    Providers,
+    #[serde(rename = "usage")]
+    Usage,
+    #[serde(rename = "terminals")]
+    Terminals,
+    #[serde(rename = "host")]
+    Host,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetDaemonConfigResponse {
     pub payload: SetDaemonConfigResponsePayload,
 }
@@ -7343,6 +7369,8 @@ pub struct SetDaemonConfigResponsePayloadConfig {
     pub skills: Option<SetDaemonConfigResponsePayloadConfigSkills>,
     #[serde(rename = "autoUpdate", skip_serializing_if = "Option::is_none")]
     pub auto_update: Option<SetDaemonConfigResponsePayloadConfigAutoUpdate>,
+    #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
+    pub host_settings: Option<SetDaemonConfigResponsePayloadConfigHostSettings>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7457,6 +7485,30 @@ pub enum SetDaemonConfigResponsePayloadConfigAutoUpdateChannel {
     Stable,
     #[serde(rename = "beta")]
     Beta,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDaemonConfigResponsePayloadConfigHostSettings {
+    #[serde(rename = "hiddenSections")]
+    pub hidden_sections: Vec<SetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum SetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
+    #[serde(rename = "projects")]
+    Projects,
+    #[serde(rename = "pair-device")]
+    PairDevice,
+    #[serde(rename = "agents")]
+    Agents,
+    #[serde(rename = "providers")]
+    Providers,
+    #[serde(rename = "usage")]
+    Usage,
+    #[serde(rename = "terminals")]
+    Terminals,
+    #[serde(rename = "host")]
+    Host,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

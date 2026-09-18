@@ -1,5 +1,6 @@
 import { isTrustedDesktopFrame } from "./ipc-policy.js";
 import { ipcMain, type IpcMainInvokeEvent, type WebContents } from "electron";
+import { hostAddInbox } from "./host-add-inbox.js";
 import { pairingInbox } from "./pairing-inbox.js";
 
 const trustedRenderers = new Map<number, { contents: WebContents; origin: string }>();
@@ -9,6 +10,7 @@ export function registerTrustedRenderer(contents: WebContents, origin: string): 
   contents.once("destroyed", () => {
     trustedRenderers.delete(contents.id);
     pairingInbox.remove(contents.id);
+    hostAddInbox.remove(contents.id);
   });
 }
 
@@ -31,6 +33,11 @@ export function handleDesktopIpc<Args extends unknown[], Result>(
     if (channel === "frogg:invoke" && args[0] === "pairing_offer_ready") {
       return pairingInbox.ready(event.sender.id, (url) => {
         event.sender.send("frogg:event:open-pairing-offer", { url });
+      });
+    }
+    if (channel === "frogg:invoke" && args[0] === "host_add_ready") {
+      return hostAddInbox.ready(event.sender.id, (url) => {
+        event.sender.send("frogg:event:add-host", { url });
       });
     }
     return handler(event, ...args);
