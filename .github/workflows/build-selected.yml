@@ -16,7 +16,7 @@ on:
       android_workers:
         description: Gradle workers for the Android build (self-hosted only; hosted stays at 1)
         type: string
-        default: "4"
+        default: "1"
   workflow_call:
     inputs:
       target:
