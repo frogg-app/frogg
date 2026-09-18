@@ -46,22 +46,24 @@ export function ComposerTrackBar({
 }): ReactElement {
   return (
     <View style={styles.bar} pointerEvents="box-none" testID={testID ? `${testID}-bar` : undefined}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.trackScroll}
-        contentContainerStyle={styles.track}
-        keyboardShouldPersistTaps="handled"
-        testID={testID}
-        // The ScrollView itself must receive touches to support drag-to-scroll, so it can't be
-        // box-none like the old plain View. Instead `trackScroll` below is sized to hug its
-        // content (alignSelf: "center" + flexShrink, not width: "100%"), so the viewport only
-        // covers the pixels the pills actually occupy. Empty space in the bar stays outside the
-        // ScrollView's bounds entirely and falls through to `styles.bar`'s box-none, reaching the
-        // transcript underneath, same as before this row could scroll.
-      >
-        {children}
-      </ScrollView>
+      <View style={styles.lane} pointerEvents="box-none">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.trackScroll}
+          contentContainerStyle={styles.track}
+          keyboardShouldPersistTaps="handled"
+          testID={testID}
+          // The ScrollView itself must receive touches to support drag-to-scroll, so it can't be
+          // box-none like the old plain View. Instead `trackScroll` below is sized to hug its
+          // content (alignItems: "flex-start" + flexShrink, not width: "100%"), so the viewport only
+          // covers the pixels the pills actually occupy. Empty space in the bar stays outside the
+          // ScrollView's bounds entirely and falls through to `styles.bar`'s box-none, reaching the
+          // transcript underneath, same as before this row could scroll.
+        >
+          {children}
+        </ScrollView>
+      </View>
     </View>
   );
 }
@@ -351,7 +353,14 @@ const styles = StyleSheet.create((theme) => {
         md: COMPOSER_PILL_CLEARANCE.wide,
       },
     },
-    // The scrollable viewport intentionally has no `width`. `bar`'s `alignItems: "center"` sizes
+    // Box-none column the width of the composer, so the pills start at its left edge rather
+    // than centring in the pane.
+    lane: {
+      width: "100%",
+      maxWidth: MAX_CONTENT_WIDTH,
+      alignItems: "flex-start",
+    },
+    // The scrollable viewport intentionally has no `width`. `lane`'s `alignItems: "flex-start"` sizes
     // an unstretched child to its content on the cross axis, so with few pills this ScrollView
     // hugs just the pills' width and the empty space on either side stays outside its bounds,
     // falling through to `bar`'s box-none. `maxWidth` caps that hugging at the row's old rendered
