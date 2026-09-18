@@ -61,6 +61,22 @@ The selection order inside a job is: an explicit `FROGG_BRAND_DIR` in the job
 environment (used by the branding matrix), then the external repository, then the
 `FROGG_BRAND_DIR` variable, then `brands/frogg`.
 
+## Report the build you published
+
+A downstream rebuild of an upstream version — `1.4.1-acme.2`, the second build of upstream
+1.4.1 — has nowhere to put that number: the workspace version stays at the upstream one so
+merges never conflict on manifests. Set `<PREFIX>_RELEASE_VERSION` (or `FROGG_RELEASE_VERSION`)
+before `brand:prepare` and the build stamps it, so **Settings → About** reports what was
+installed instead of the version it forked from:
+
+```sh
+export ACME_RELEASE_VERSION=1.4.1-acme.2
+npm run brand:prepare
+```
+
+Leave it unset and nothing changes: the app reports the workspace version, as every
+upstream build does.
+
 ## Secrets and variables
 
 Everything is optional. Missing secrets never fail a release; they turn the feature

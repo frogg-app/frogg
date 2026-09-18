@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import { release } from "@frogg/branding";
 import appPackage from "../../package.json";
 
 function toVersionOrNull(value: unknown): string | null {
@@ -15,6 +16,14 @@ function toVersionOrNull(value: unknown): string | null {
 }
 
 export function resolveAppVersion(): string | null {
+  // A downstream rebuild stamps what it published; the workspace version stays
+  // upstream's, so without this the app would report the version it forked from
+  // while the daemon it talks to reports the build that was actually installed.
+  const stamped = toVersionOrNull(release.version);
+  if (stamped) {
+    return stamped;
+  }
+
   const packageVersion = toVersionOrNull(appPackage?.version);
   if (packageVersion) {
     return packageVersion;
