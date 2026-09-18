@@ -1,0 +1,90 @@
+name: Warm dependency caches
+
+# Builds the node_modules cache that `.github/actions/setup-node-deps` restores,
+# on every runner image the Release workflow uses.
+#
+# A GitHub Actions cache entry is scoped to the ref that wrote it, with a
+# read-only fallback to the default branch. A `refs/tags/vX.Y.Z` release run can
+# therefore only ever *read* entries written on main. CI on main only ran on
+# ubuntu-latest, so the release desktop matrix (windows-latest, macos-15,
+# macos-15-intel, ubuntu-22.04) missed the cache on every single release and paid
+# a full `npm ci` -- 3m05s on Windows and 2m29s on the Intel mac in v1.5.0 -- and
+# then spent another 40-70s saving an entry nothing could read.
+#
+# Warming here on main makes those restores hit. Keep this matrix in step with
+# the `desktop` and `daemon-bundle` runners in .github/workflows/release.yml.
+#
+# The weekly run exists because an unused cache entry is evicted after 7 days;
+# a release that restores an entry also refreshes it.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - package-lock.json
+      - .github/actions/setup-node-deps/action.yml
+      - .github/workflows/cache-warm.yml
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  CI: "true"
+  LEFTHOOK: "0"
+
+concurrency:
+  group: cache-warm
+  cancel-in-progress: false
+
+jobs:
+  warm:
+    name: warm node_modules on ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-latest, macos-15, macos-15-intel, ubuntu-22.04, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/select-brand
+        with:
+          directory: ${{ vars.FROGG_BRAND_DIR }}
+          repository: ${{ vars.FROGG_BRAND_REPOSITORY }}
+          revision: ${{ vars.FROGG_BRAND_REVISION }}
+          subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
+          token: ${{ secrets.BRANDING_READ_TOKEN }}
+
+      # Installs on a miss and saves the entry; a no-op beyond the restore on a hit.
+      - uses: ./.github/actions/setup-node-deps
+
+      # Same story for the ~100 MB Electron binary zip the release desktop job
+      # restores. @electron/get writes it to the per-OS cache below; the
+      # `desktop` job in release.yml restores that entry and never saves one.
+      # ubuntu-latest has no desktop runner but does no harm here.
+      - name: Restore Electron download cache
+        id: electron-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/.cache/electron
+            ~\AppData\Local\electron
+          key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+
+      - if: steps.electron-cache.outputs.cache-hit != 'true'
+        run: npm run install:electron --workspace=@frogg/desktop
+
+      - if: steps.electron-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/.cache/electron
+            ~\AppData\Local\electron
+          key: ${{ steps.electron-cache.outputs.cache-primary-key }}

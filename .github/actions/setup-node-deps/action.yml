@@ -37,7 +37,7 @@ runs:
 
     - name: Restore node_modules
       id: cache
-      uses: actions/cache@v4
+      uses: actions/cache/restore@v4
       with:
         path: |
           node_modules
@@ -53,6 +53,24 @@ runs:
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       run: node scripts/ci/npm-retry.mjs ci
+
+    # Tag runs never write the cache. A GitHub Actions cache entry is scoped to
+    # the ref that created it, with a read-only fallback to the default branch,
+    # so an entry saved by a `refs/tags/vX.Y.Z` release run can never be read by
+    # the next tag - it was pure cost. On Windows and macOS that save step was
+    # 40-70s at the end of every desktop release job, on the run's critical path.
+    # Branch and pull request runs still save, and
+    # .github/workflows/cache-warm.yml populates, on main, the entries the
+    # release runners restore.
+    - name: Save node_modules
+      if: ${{ !startsWith(github.ref, 'refs/tags/') && steps.cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache/save@v4
+      with:
+        path: |
+          node_modules
+          apps/*/node_modules
+          packages/*/node_modules
+        key: ${{ steps.cache.outputs.cache-primary-key }}
 
     - name: Prepare selected branding
       shell: bash

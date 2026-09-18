@@ -52,6 +52,14 @@ test("all daemon workspace output is shared and bundle jobs never rebuild the we
   assert.doesNotMatch(bundle, /npm run build:server|npm run build:daemon-web-ui|npm run build:ui/);
 });
 
+// The Expo web export is minutes per runner; the release pays it once in `ui`.
+test("desktop runners reuse the shared web export instead of rebuilding it", () => {
+  const desktop = jobs.get("desktop");
+  assert.match(desktop, /name: ui-dist\n\s+path: apps\/ui\/dist/);
+  assert.match(desktop, /build:desktop -- --target \$\{\{ matrix.target \}\} --skip-export/);
+  assert.equal(ancestors("desktop").has("ui"), true);
+});
+
 const selectedWorkflow = readFileSync(
   new URL("../../.github/workflows/build-selected.yml", import.meta.url),
   "utf8",

@@ -45,25 +45,31 @@ export function apkAssetName({ version, abi, signed, variant = "release", appVar
 /** Pure: Gradle arguments for an ABI; `universal` keeps the default (all four). */
 export function gradleArgsFor({ abi, variant, serial, workers, lowMemory }) {
   const task = variant === "release" ? ":app:assembleRelease" : ":app:assembleDebug";
-  const args = [task, "--no-daemon"];
+  // The Gradle build cache is keyed by task inputs, not by path, so it survives
+  // `expo prebuild --clean` wiping and regenerating apps/ui/android. Reusing a
+  // cached output is by definition byte-identical to re-running the task, so
+  // this cannot change what a release APK contains.
+  const args = [task, "--no-daemon", "-Dorg.gradle.caching=true"];
   if (abi !== "universal") {
     if (!KNOWN_ABIS.includes(abi)) {
       throw new Error(`Unknown ABI "${abi}" (expected universal or ${KNOWN_ABIS.join(", ")})`);
     }
     args.push(`-PreactNativeArchitectures=${abi}`);
   }
-  if (serial || lowMemory) {
-    // Small-machine mode: one worker and heaps well below the 4 GB that
-    // expo-gradle-jvmargs writes into gradle.properties (-D on the command line
-    // wins), so an 8 GB host is not OOM-killed during the native build.
+  // Worker count and heap caps are independent. The caps matter on any host
+  // that is not comfortably above the 4 GB heap expo-gradle-jvmargs writes into
+  // gradle.properties (-D on the command line wins): the 0.1.20 release died
+  // with "AAPT2 Daemon #0: Idle daemon unexpectedly exit" because that uncapped
+  // heap was OOM-killed, and capping it -- not dropping to one worker -- is what
+  // fixed it. So every mode that pins a worker count also pins the heaps.
+  const maxWorkers = serial || lowMemory ? 1 : workers;
+  if (maxWorkers) {
+    args.push(`--max-workers=${maxWorkers}`);
+    if (maxWorkers === 1) args.push("-Dorg.gradle.parallel=false");
     args.push(
-      "--max-workers=1",
-      "-Dorg.gradle.parallel=false",
       "-Dorg.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m",
       "-Dkotlin.daemon.jvm.options=-Xmx1024m",
     );
-  } else if (workers) {
-    args.push(`--max-workers=${workers}`);
   }
   if (lowMemory) args.push("--init-script", path.join(here, "android-low-memory.gradle"));
   return args;
@@ -153,13 +159,26 @@ function main() {
     run(npm, ["run", "build:app-deps"], { cwd: REPO_ROOT, env });
   }
   if (!values["skip-prebuild"]) {
-    run("npx", ["expo", "prebuild", "--platform", "android", "--clean"], { cwd: UI_DIR, env });
+    run("npx", ["expo", "prebuild", "--platform", "android", "--clean"], {
+      cwd: UI_DIR,
+      env,
+    });
   }
   const gradlew = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
-  run(gradlew, gradleArgsFor({ abi, variant, serial, workers, lowMemory: values["low-memory"] }), {
-    cwd: ANDROID_DIR,
-    env,
-  });
+  run(
+    gradlew,
+    gradleArgsFor({
+      abi,
+      variant,
+      serial,
+      workers,
+      lowMemory: values["low-memory"],
+    }),
+    {
+      cwd: ANDROID_DIR,
+      env,
+    },
+  );
 
   const built = path.join(ANDROID_DIR, `app/build/outputs/apk/${variant}/app-${variant}.apk`);
   if (!existsSync(built)) throw new Error(`Gradle finished but ${built} is missing`);

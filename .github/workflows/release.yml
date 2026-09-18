@@ -275,6 +275,10 @@ jobs:
 
   desktop:
     name: desktop ${{ matrix.platform }} ${{ matrix.arch }}
+    # `needs: ui` earns its wait: this job downloads ui-dist and passes
+    # --skip-export, so the Expo web export runs once for the whole release
+    # instead of once per desktop runner. electron-builder still packs
+    # ../ui/dist as extraResources, it just no longer builds it four times.
     needs: [meta, ui]
     if: inputs.only != 'android'
     runs-on: ${{ matrix.runner }}
@@ -299,9 +303,43 @@ jobs:
           subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
           token: ${{ secrets.BRANDING_READ_TOKEN }}
       - uses: ./.github/actions/setup-node-deps
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: ui-dist
+          path: apps/ui/dist
+
+      # The Electron binary zip (~100 MB) is fetched by @electron/get into the
+      # per-OS cache below and then reused by electron-builder when it packs.
+      # Restore only on tags: a cache entry saved from `refs/tags/vX.Y.Z` is
+      # scoped to that ref and is unreadable by the next tag, so the save would
+      # be pure cost (see .github/actions/setup-node-deps for the same lesson).
+      # .github/workflows/cache-warm.yml writes the entry on main; the read-only
+      # fallback to the default branch is what makes this hit on a release.
+      - name: Restore Electron download cache
+        id: electron-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/.cache/electron
+            ~\AppData\Local\electron
+          key: electron-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package-lock.json') }}
+
       - run: npm run install:electron --workspace=@frogg/desktop
+
+      - name: Save Electron download cache
+        if: ${{ !startsWith(github.ref, 'refs/tags/') && steps.electron-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/.cache/electron
+            ~\AppData\Local\electron
+          key: ${{ steps.electron-cache.outputs.cache-primary-key }}
+
       - name: Build app-only Electron bundles
-        run: npm run build:desktop -- --target ${{ matrix.target }}
+        run: npm run build:desktop -- --target ${{ matrix.target }} --skip-export
       - name: Collect release assets
         run: |
           mkdir -p release-assets
@@ -529,7 +567,19 @@ jobs:
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
 
+      # Restores the Gradle user home, including the local build cache that
+      # `-Dorg.gradle.caching=true` (set by scripts/release/build-android-apk.mjs)
+      # writes into. Read-only here: a cache saved from `refs/tags/vX.Y.Z` is
+      # scoped to that ref and unreadable by the next tag. The entry this reads
+      # is the one CI on main writes, building the same `:app:assembleRelease`
+      # for arm64-v8a via .github/workflows/build-selected.yml, where
+      # setup-gradle's default (write on the default branch, read elsewhere)
+      # applies. Gradle keys cached task outputs by input hashes, not by
+      # location, so `expo prebuild --clean` wiping and regenerating
+      # apps/ui/android between runs does not by itself invalidate them.
       - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
 
       - name: Install dependencies
         run: node scripts/ci/npm-retry.mjs ci
@@ -544,10 +594,14 @@ jobs:
           echo "$FROGG_ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/frogg-release.keystore"
           echo "FROGG_ANDROID_KEYSTORE=$RUNNER_TEMP/frogg-release.keystore" >> "$GITHUB_ENV"
 
-      # `--serial` (one worker, Gradle heap capped well under the 4 GB
-      # expo-gradle-jvmargs writes into gradle.properties). With `--workers 2`
-      # the 0.1.20 run died with "AAPT2 Daemon #0: Idle daemon unexpectedly
-      # exit": the runner OOM-killed the native aapt2 process mid-build.
+      # The runner is 4 vCPU / 16 GB and this job is the release's critical
+      # path, so it runs three Gradle workers rather than one. The heap caps
+      # come with the worker count (see gradleArgsFor): what killed the 0.1.20
+      # run with "AAPT2 Daemon #0: Idle daemon unexpectedly exit" was the
+      # uncapped 4 GB heap expo-gradle-jvmargs writes into gradle.properties,
+      # not the second worker, and `--workers N` now pins the same
+      # -Xmx2048m/512m metaspace/1 GB Kotlin daemon ceiling that `--serial`
+      # does. If this OOMs again, drop to `--workers 2` before `--serial`.
       - name: Build release APK
         env:
           FROGG_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_ANDROID_KEYSTORE_PASSWORD }}
@@ -556,7 +610,7 @@ jobs:
         run: >-
           node scripts/release/build-android-apk.mjs
           --abi ${{ matrix.abi }}
-          --serial
+          --workers 3
           --out-dir release-assets
 
       - name: Upload to GitHub release

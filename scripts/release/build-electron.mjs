@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
-import { rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import { portableCommand } from "../dev/npm-command.mjs";
@@ -16,6 +16,11 @@ const { values } = parseArgs({
       default: `${process.platform === "win32" ? "win" : process.platform}-${process.arch}`,
     },
     dir: { type: "boolean", default: false },
+    // Reuse an apps/ui/dist produced elsewhere instead of exporting it here --
+    // the same contract as `build:daemon-web-ui -- --skip-export`. The release
+    // workflow exports the web UI once in the `ui` job and hands the artifact to
+    // every desktop runner, which is otherwise four identical Expo exports.
+    "skip-export": { type: "boolean", default: false },
   },
 });
 const [platform, arch] = values.target.split("-");
@@ -36,7 +41,29 @@ function run(script, args = []) {
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`${script} failed (${result.status})`);
 }
-run("build:ui");
+if (values["skip-export"]) {
+  // A missing or empty dist would silently pack a desktop app with no UI:
+  // electron-builder copies ../ui/dist as extraResources without complaining.
+  if (!existsSync(path.join(root, "apps/ui/dist/index.html"))) {
+    throw new Error(
+      "--skip-export needs an existing apps/ui/dist (index.html is missing). Run `npm run build:ui`, or download the ui-dist artifact, first.",
+    );
+  }
+  // And an export made for a different brand would ship a mis-branded app just
+  // as quietly. build-daemon-web-ui makes the same check on the same artifact.
+  const stamp = JSON.parse(readFileSync(path.join(root, "apps/ui/dist/brand-build.json"), "utf8"));
+  const provenance = JSON.parse(
+    readFileSync(path.join(root, ".generated/branding/provenance.json"), "utf8"),
+  );
+  if (stamp.configFingerprint !== provenance.configFingerprint) {
+    throw new Error(
+      "apps/ui/dist was exported for different branding than the selected brand; re-export it.",
+    );
+  }
+  console.log("Reusing apps/ui/dist (--skip-export).");
+} else {
+  run("build:ui");
+}
 run("build:main", ["--workspace=@frogg/desktop"]);
 const builder = path.join(root, "node_modules/electron-builder/cli.js");
 const platformFlag = platform === "darwin" ? "--mac" : `--${platform}`;
