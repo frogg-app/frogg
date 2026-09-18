@@ -1,31 +1,70 @@
 import { useCallback, useMemo, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
-import type { ProviderAccountState } from "@frogg/protocol/provider-accounts";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { Plus } from "lucide-react-native";
+import {
+  PROVIDER_ACCOUNT_DEFAULT_NAME,
+  providerAccountDefaultId,
+  type ProviderAccountState,
+} from "@frogg/protocol/provider-accounts";
 import type { AgentModelDefinition } from "@frogg/protocol/agent-types";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { settingsStyles } from "@/styles/settings";
+import { ICON_SIZE, type Theme } from "@/styles/theme";
 import { filterSelectableModels } from "@/provider-selection/model-catalog";
 import { useHostFeature } from "@/runtime/host-features";
 import { useProvidersSnapshot } from "@/hooks/use-providers-snapshot";
 import { selectProviderAccounts } from "@/provider-accounts/model";
 import { useProviderAccounts } from "@/provider-accounts/use-provider-accounts";
+import { useCreateAccountFlow } from "@/provider-accounts/use-create-account-flow";
+
+const ThemedPlus = withUnistyles(Plus);
+const mutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+const addIcon = <ThemedPlus size={ICON_SIZE.sm} uniProps={mutedColorMapping} />;
 
 const ACCESSIBILITY_STATE_SELECTED = { selected: true };
 const ACCESSIBILITY_STATE_UNSELECTED = { selected: false };
 
+/**
+ * The daemon only lists a provider's implicit default account once something
+ * has been stored about it (a rename or a restriction), but it accepts the
+ * default id for `setAllowedModels` either way. Synthesize it so the default can
+ * be restricted like any other account. It runs when no other account is active.
+ */
+export function withDefaultAccount(
+  accounts: readonly ProviderAccountState[],
+  providerId: string,
+): ProviderAccountState[] {
+  const defaultId = providerAccountDefaultId(providerId);
+  if (accounts.length === 0 || accounts.some((account) => account.id === defaultId)) {
+    return [...accounts];
+  }
+  const synthesized: ProviderAccountState = {
+    id: defaultId,
+    provider: accounts[0]!.provider,
+    name: PROVIDER_ACCOUNT_DEFAULT_NAME,
+    configDir: "~",
+    linkedFolders: [],
+    createdAt: "",
+    authenticated: false,
+    isActive: !accounts.some((account) => account.isActive),
+  };
+  return [synthesized, ...accounts];
+}
+
 interface AccountChipProps {
   account: ProviderAccountState;
+  label: string;
   isSelected: boolean;
   summary: { label: string; variant: StatusBadgeVariant };
   onSelect: (accountId: string) => void;
 }
 
-function AccountChip({ account, isSelected, summary, onSelect }: AccountChipProps) {
+function AccountChip({ account, label, isSelected, summary, onSelect }: AccountChipProps) {
   const handlePress = useCallback(() => onSelect(account.id), [account.id, onSelect]);
   return (
     <Pressable
@@ -38,7 +77,7 @@ function AccountChip({ account, isSelected, summary, onSelect }: AccountChipProp
       testID={`provider-settings-models-account-${account.id}`}
     >
       <Text style={styles.chipLabel} numberOfLines={1}>
-        {account.name}
+        {label}
       </Text>
       <View testID={`provider-settings-models-state-${account.id}`}>
         <StatusBadge label={summary.label} variant={summary.variant} />
@@ -137,8 +176,15 @@ export function ModelsSection({ serverId, providerId }: ModelsSectionProps): Rea
     return filterSelectableModels(entry?.models ?? null) ?? [];
   }, [entries, providerId]);
 
+  const createFlow = useCreateAccountFlow(serverId, providerId);
+  const defaultAccountId = providerAccountDefaultId(providerId);
+
   const providerAccounts = useMemo(
-    () => selectProviderAccounts(accounts.payload?.accounts ?? [], providerId),
+    () =>
+      withDefaultAccount(
+        selectProviderAccounts(accounts.payload?.accounts ?? [], providerId),
+        providerId,
+      ),
     [accounts.payload, providerId],
   );
 
@@ -227,12 +273,27 @@ export function ModelsSection({ serverId, providerId }: ModelsSectionProps): Rea
               <AccountChip
                 key={account.id}
                 account={account}
+                label={
+                  account.id === defaultAccountId && account.name === PROVIDER_ACCOUNT_DEFAULT_NAME
+                    ? t("agentControls.account.default")
+                    : account.name
+                }
                 isSelected={isSelected}
                 summary={summary}
                 onSelect={handleSelectAccount}
               />
             );
           })}
+          {createFlow.capability ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              leftIcon={addIcon}
+              onPress={createFlow.open}
+              accessibilityLabel={t("settings.host.providerAccounts.addAccount")}
+              testID="provider-settings-models-add-account"
+            />
+          ) : null}
         </View>
       ) : null}
 
@@ -293,6 +354,7 @@ export function ModelsSection({ serverId, providerId }: ModelsSectionProps): Rea
           {error}
         </Text>
       ) : null}
+      {createFlow.modal}
     </SettingsSection>
   );
 }
@@ -309,6 +371,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   accountPicker: {
     flexDirection: "row",
+    alignItems: "center",
     flexWrap: "wrap",
     gap: theme.spacing[2],
     marginBottom: theme.spacing[2],

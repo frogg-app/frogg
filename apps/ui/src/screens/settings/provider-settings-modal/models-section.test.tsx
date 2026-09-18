@@ -237,7 +237,11 @@ vi.mock("@/styles/settings", () => ({
 vi.mock("@/styles/theme", () => ({ ICON_SIZE: { sm: 14, md: 20 } }));
 
 const { accountsState, snapshotState, featureState, setAllowedModelsMock } = vi.hoisted(() => ({
-  accountsState: { accounts: [] as ProviderAccountState[], supported: true },
+  accountsState: {
+    accounts: [] as ProviderAccountState[],
+    capabilities: [] as { provider: string; enabled: boolean }[],
+    supported: true,
+  },
   snapshotState: {
     entries: [
       {
@@ -275,12 +279,18 @@ vi.mock("@/provider-accounts/use-provider-accounts", () => ({
   useProviderAccounts: () => ({
     supported: accountsState.supported,
     connected: true,
-    payload: { accounts: accountsState.accounts, capabilities: [] },
+    payload: { accounts: accountsState.accounts, capabilities: accountsState.capabilities },
     isLoading: false,
     loadError: null,
     refresh: vi.fn(),
     setAllowedModels: { mutateAsync: setAllowedModelsMock, isPending: false },
+    create: { mutateAsync: vi.fn(), isPending: false },
   }),
+}));
+
+vi.mock("@/provider-accounts/create-account-modal", () => ({
+  CreateProviderAccountModal: () =>
+    React.createElement("div", { "data-testid": "provider-account-create-sheet" }),
 }));
 
 function account(overrides: Partial<ProviderAccountState>): ProviderAccountState {
@@ -308,6 +318,7 @@ describe("ModelsSection", () => {
   beforeEach(() => {
     accountsState.accounts = [];
     accountsState.supported = true;
+    accountsState.capabilities = [];
     featureState.providerAccountAllowedModels = true;
     setAllowedModelsMock.mockClear();
     container = document.createElement("div");
@@ -371,6 +382,35 @@ describe("ModelsSection", () => {
       accountId: "claude:default",
       allowedModels: ["opus"],
     });
+  });
+
+  it("lists the implicit default account and restricts it by its default id", () => {
+    accountsState.accounts = [account({ id: "claude:steve", name: "steve", isActive: false })];
+    render();
+
+    const chip = byTestId(container, "provider-settings-models-account-default:claude");
+    expect(chip?.textContent).toContain("agentControls.account.default");
+    act(() => chip?.click());
+    act(() => {
+      byTestId(container, "provider-settings-models-allow-none")?.click();
+    });
+
+    expect(setAllowedModelsMock).toHaveBeenCalledWith({
+      accountId: "default:claude",
+      allowedModels: [],
+    });
+  });
+
+  it("opens the add-account sheet from the account picker", () => {
+    accountsState.accounts = [account({})];
+    accountsState.capabilities = [{ provider: "claude", enabled: true }];
+    render();
+
+    expect(byTestId(container, "provider-account-create-sheet")).toBeNull();
+    act(() => {
+      byTestId(container, "provider-settings-models-add-account")?.click();
+    });
+    expect(byTestId(container, "provider-account-create-sheet")).not.toBeNull();
   });
 
   it("hides the restriction affordances when the daemon does not advertise the feature", () => {

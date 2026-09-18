@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
+import { Plus } from "lucide-react-native";
 import { StyleSheet } from "react-native-unistyles";
 import {
   ProviderAccountExportBundleSchema,
@@ -18,8 +19,8 @@ import { confirmDialog } from "@/utils/confirm-dialog";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
 import { useHostFeature } from "@/runtime/host-features";
 import { ProviderAccountRow } from "@/provider-accounts/account-row";
-import { CreateProviderAccountModal } from "@/provider-accounts/create-account-modal";
-import { selectProviderAccounts, type ProviderAccountCreateInput } from "@/provider-accounts/model";
+import { selectProviderAccounts } from "@/provider-accounts/model";
+import { useCreateAccountFlow } from "@/provider-accounts/use-create-account-flow";
 import { useProviderAccounts } from "@/provider-accounts/use-provider-accounts";
 import { useAuthenticateProviderAccount } from "@/provider-accounts/use-authenticate-account";
 import { ProviderUsageCard } from "@/provider-usage/card";
@@ -59,19 +60,10 @@ export function AccountsSection({
   const [importError, setImportError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<readonly string[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [createWarnings, setCreateWarnings] = useState<readonly string[]>([]);
+  const createFlow = useCreateAccountFlow(serverId, providerId);
 
   const providerAccounts = useMemo(
     () => selectProviderAccounts(accounts.payload?.accounts ?? [], providerId),
-    [accounts.payload, providerId],
-  );
-  const capability = useMemo(
-    () =>
-      (accounts.payload?.capabilities ?? []).find(
-        (candidate) => candidate.provider === providerId,
-      ) ?? null,
     [accounts.payload, providerId],
   );
   const providerUsage = useMemo(
@@ -86,7 +78,6 @@ export function AccountsSection({
   const signOutMutate = accounts.signOut.mutateAsync;
   const removeMutate = accounts.remove.mutateAsync;
   const setActiveMutate = accounts.setActive.mutateAsync;
-  const createMutate = accounts.create.mutateAsync;
   const exportMutate = accounts.exportAccounts.mutateAsync;
   const importMutate = accounts.importAccounts.mutateAsync;
 
@@ -184,27 +175,6 @@ export function AccountsSection({
     [runMutation, setActiveMutate],
   );
 
-  const handleCreate = useCallback(
-    (input: ProviderAccountCreateInput) => {
-      setCreateError(null);
-      setCreateWarnings([]);
-      void (async () => {
-        try {
-          const payload = await createMutate(input);
-          setCreateWarnings(payload.warnings ?? []);
-          if (payload.error) {
-            setCreateError(payload.error);
-            return;
-          }
-          setShowCreate(false);
-        } catch (cause: unknown) {
-          setCreateError(cause instanceof Error ? cause.message : String(cause));
-        }
-      })();
-    },
-    [createMutate],
-  );
-
   // The bundle is secret material: it is held in component state only for the
   // user to copy, never written to disk and never logged.
   const handleExport = useCallback(() => {
@@ -248,16 +218,6 @@ export function AccountsSection({
     setCopied(false);
   }, []);
 
-  const handleOpenCreate = useCallback(() => {
-    setShowCreate(true);
-  }, []);
-
-  const handleCloseCreate = useCallback(() => {
-    setShowCreate(false);
-    setCreateError(null);
-    setCreateWarnings([]);
-  }, []);
-
   const handleRefreshAccounts = useCallback(() => {
     void accounts.refresh();
   }, [accounts]);
@@ -295,18 +255,19 @@ export function AccountsSection({
   }, [renameDraft, renamingId, t]);
 
   const addButton = useMemo(() => {
-    if (!capability?.enabled) return null;
+    if (!createFlow.capability) return null;
     return (
       <Button
         size="sm"
         variant="ghost"
-        onPress={handleOpenCreate}
+        leftIcon={Plus}
+        onPress={createFlow.open}
         testID="provider-settings-accounts-add"
       >
         {t("settings.host.providerAccounts.addAccount")}
       </Button>
     );
-  }, [capability?.enabled, handleOpenCreate, t]);
+  }, [createFlow.capability, createFlow.open, t]);
 
   if (!accounts.supported) {
     return null;
@@ -556,12 +517,12 @@ export function AccountsSection({
         ))}
 
         {providerUsage ? (
-          <View style={styles.panel} testID="provider-settings-accounts-usage">
-            <Text style={styles.usageTitle}>
+          <View style={styles.usage} testID="provider-settings-accounts-usage">
+            <Text style={settingsStyles.sectionHeaderTitle}>
               {t("settings.providers.settingsModal.accounts.usageTitle")}
             </Text>
             <View style={settingsStyles.card}>
-              <ProviderUsageCard usage={providerUsage} compact />
+              <ProviderUsageCard usage={providerUsage} />
             </View>
             <Text style={styles.message}>
               {t("settings.providers.settingsModal.accounts.usageInfo")}
@@ -570,18 +531,7 @@ export function AccountsSection({
         ) : null}
       </SettingsSection>
 
-      {showCreate && capability ? (
-        <CreateProviderAccountModal
-          visible
-          capability={capability}
-          existingNames={providerAccounts.map((account) => account.name)}
-          isSubmitting={accounts.create.isPending}
-          error={createError}
-          warnings={createWarnings}
-          onClose={handleCloseCreate}
-          onSubmit={handleCreate}
-        />
-      ) : null}
+      {createFlow.modal}
     </>
   );
 }
@@ -608,14 +558,13 @@ const styles = StyleSheet.create((theme) => ({
   panel: {
     gap: theme.spacing[2],
   },
+  usage: {
+    gap: theme.spacing[2],
+    marginTop: theme.spacing[4],
+  },
   bundle: {
     color: theme.colors.foregroundMuted,
     fontFamily: theme.fontFamily.mono,
     fontSize: theme.fontSize.sm,
-  },
-  usageTitle: {
-    color: theme.colors.foreground,
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.medium,
   },
 }));

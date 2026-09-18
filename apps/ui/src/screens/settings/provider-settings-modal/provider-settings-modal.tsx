@@ -183,7 +183,7 @@ export function ProviderSettingsModal({
 const styles = StyleSheet.create((theme) => ({
   body: {
     gap: theme.spacing[4],
-    paddingBottom: theme.spacing[2],
+    paddingBottom: theme.spacing[6],
   },
   headerRow: {
     flexDirection: "row",
