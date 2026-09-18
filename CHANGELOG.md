@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.3 — 2026-09-18
+
+- Carries everything listed under 1.5.1 and 1.5.2, neither of which was
+  published because desktop builds failed in the release workflow. The brand
+  fingerprint no longer depends on line endings or path separators, so a
+  Windows runner accepts the web UI export built once on Linux.
+
 ## 1.5.2 — 2026-09-18
 
 - Carries everything listed under 1.5.1, whose desktop builds failed in the
