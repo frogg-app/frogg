@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { apkAssetName, gradleArgsFor } from "./build-android-apk.mjs";
+import { apkAssetName, gradleArgsFor, quoteForCmd } from "./build-android-apk.mjs";
 
 test("asset name marks debug-signed release APKs", () => {
   assert.equal(
@@ -78,4 +78,13 @@ test("an explicit worker count keeps the heap caps", () => {
       workers: 3,
     }).includes("-Dorg.gradle.parallel=false"),
   );
+});
+
+test("quotes cmd.exe arguments that contain spaces or quotes", () => {
+  assert.equal(quoteForCmd("assembleRelease"), "assembleRelease");
+  assert.equal(
+    quoteForCmd("-Dorg.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m"),
+    '"-Dorg.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m"',
+  );
+  assert.equal(quoteForCmd('a "b"'), '"a ""b"""');
 });

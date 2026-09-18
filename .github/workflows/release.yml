@@ -504,7 +504,10 @@ jobs:
   android:
     name: android apk ${{ matrix.abi }}
     needs: meta
-    runs-on: ubuntu-latest
+    # The repo variable FROGG_ANDROID_RUNNER=self-hosted moves this onto a
+    # self-hosted Windows runner labelled android-win (warm builds there take
+    # about half as long as ubuntu-latest). Unset it to fall back to hosted.
+    runs-on: ${{ fromJSON(vars.FROGG_ANDROID_RUNNER == 'self-hosted' && '["self-hosted","windows","android-win"]' || '"ubuntu-latest"') }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
@@ -535,6 +538,7 @@ jobs:
           subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
           token: ${{ secrets.BRANDING_READ_TOKEN }}
       - name: Free disk space (Android SDK + NDK + node_modules need it)
+        if: vars.FROGG_ANDROID_RUNNER != 'self-hosted'
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: false
@@ -545,6 +549,7 @@ jobs:
           docker-images: true
           swap-storage: false
       - name: Trim the Android SDK to what the build needs
+        if: vars.FROGG_ANDROID_RUNNER != 'self-hosted'
         run: |
           sudo rm -rf /usr/local/lib/android/sdk/ndk /usr/local/lib/android/sdk/emulator /usr/local/lib/android/sdk/system-images || true
           df -h /
@@ -560,8 +565,10 @@ jobs:
           java-version: "21"
 
       # ubuntu-latest ships the Android SDK; this accepts the licenses so Gradle can
-      # fetch any platform/build-tools/NDK version React Native asks for.
+      # fetch any platform/build-tools/NDK version React Native asks for. A
+      # self-hosted runner has its SDK preinstalled at ANDROID_HOME (runner .env).
       - uses: android-actions/setup-android@v4
+        if: vars.FROGG_ANDROID_RUNNER != 'self-hosted'
         with:
           # sdkmanager no longer provides the obsolete tools package.
           packages: platform-tools
@@ -577,9 +584,11 @@ jobs:
       # applies. Gradle keys cached task outputs by input hashes, not by
       # location, so `expo prebuild --clean` wiping and regenerating
       # apps/ui/android between runs does not by itself invalidate them.
+      # A self-hosted runner keeps its Gradle home on disk, so skips this cache.
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: true
+          cache-disabled: ${{ vars.FROGG_ANDROID_RUNNER == 'self-hosted' }}
 
       - name: Install dependencies
         run: node scripts/ci/npm-retry.mjs ci
@@ -608,15 +617,19 @@ jobs:
       # fine at one worker is not at two. If parallelism is worth revisiting,
       # raise -XX:MaxMetaspaceSize (see gradleArgsFor) before raising the worker
       # count -- that is what the log actually complains about.
+      #
+      # The self-hosted Windows runner (64 GB) runs two workers: 7m16s of Gradle warm,
+      # against 8m13s at one (runs 35370051842, 35370040429).
       - name: Build release APK
         env:
+          GRADLE_WORKER_ARGS: ${{ vars.FROGG_ANDROID_RUNNER == 'self-hosted' && '--workers 2' || '--serial' }}
           FROGG_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_ANDROID_KEYSTORE_PASSWORD }}
           FROGG_ANDROID_KEY_ALIAS: ${{ secrets.FROGG_ANDROID_KEY_ALIAS || 'frogg' }}
           FROGG_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_ANDROID_KEY_PASSWORD }}
         run: >-
           node scripts/release/build-android-apk.mjs
           --abi ${{ matrix.abi }}
-          --serial
+          $GRADLE_WORKER_ARGS
           --out-dir release-assets
 
       - name: Upload to GitHub release

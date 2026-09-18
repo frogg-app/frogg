@@ -17,6 +17,12 @@ const patchedPackages = [
     patchPrefix: "react-native+",
   },
   {
+    // Windows: the RN Gradle plugin passes --entry-file relative to apps/ui,
+    // which export:embed would otherwise resolve against the monorepo root.
+    nodeModulesPath: "node_modules/@expo/cli",
+    patchPrefix: "@expo+cli+",
+  },
+  {
     nodeModulesPath: "node_modules/react-native-draggable-flatlist",
     patchPrefix: "react-native-draggable-flatlist+",
   },

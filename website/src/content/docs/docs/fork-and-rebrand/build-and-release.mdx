@@ -128,6 +128,27 @@ gh secret set FROGG_ANDROID_KEY_PASSWORD --repo acme-corp/frogg
 Back up the keystore outside GitHub. Losing it means you can never update the app
 again.
 
+#### Building on a self-hosted runner
+
+The Android jobs run on `ubuntu-latest` by default. To build on a machine of your own,
+register a self-hosted **Windows** runner with the label `android-win` and set the
+repository variable `FROGG_ANDROID_RUNNER` to `self-hosted`:
+
+```sh
+gh variable set FROGG_ANDROID_RUNNER --body self-hosted --repo acme-corp/frogg
+```
+
+The runner needs Git for Windows (its `bin` directory on the runner's `PATH`), the
+Android command-line tools with licenses accepted, and `ANDROID_HOME` pointing at that
+SDK, all set in the runner's `.env` file. Gradle and npm caches stay on the machine
+between runs, and the build uses two Gradle workers instead of one. Delete the variable
+to go back to hosted runners, for example while the machine is offline: jobs that
+target an offline runner wait in the queue rather than failing.
+
+Only use a self-hosted runner if everyone who can push to the repository is trusted.
+The Android jobs don't run for pull requests, but anyone who can push a branch or tag
+can run code on that machine.
+
 ### Docker Hub
 
 | Secret               | Plus in `brand.json`             |

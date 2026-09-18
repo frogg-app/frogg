@@ -75,12 +75,25 @@ export function gradleArgsFor({ abi, variant, serial, workers, lowMemory }) {
   return args;
 }
 
+export function quoteForCmd(arg) {
+  return /[\s"&|<>^]/.test(arg) ? `"${arg.replaceAll('"', '""')}"` : arg;
+}
+
 function run(cmd, args, options = {}) {
   const shown = [cmd, ...args].join(" ");
   console.log(
     `\n$ ${shown}${options.cwd ? `   (in ${path.relative(REPO_ROOT, options.cwd)})` : ""}`,
   );
-  const result = spawnSync(cmd, args, { stdio: "inherit", ...options });
+  // Node refuses to spawn .cmd/.bat files without a shell on Windows, and the
+  // shell joins arguments unquoted, so quote the ones that need it ourselves.
+  const result =
+    process.platform === "win32"
+      ? spawnSync([cmd, ...args].map(quoteForCmd).join(" "), {
+          stdio: "inherit",
+          shell: true,
+          ...options,
+        })
+      : spawnSync(cmd, args, { stdio: "inherit", ...options });
   if (result.status !== 0) {
     throw new Error(`${shown} exited with ${result.status ?? result.signal}`);
   }
@@ -159,10 +172,14 @@ function main() {
     run(npm, ["run", "build:app-deps"], { cwd: REPO_ROOT, env });
   }
   if (!values["skip-prebuild"]) {
-    run("npx", ["expo", "prebuild", "--platform", "android", "--clean"], {
-      cwd: UI_DIR,
-      env,
-    });
+    run(
+      process.platform === "win32" ? "npx.cmd" : "npx",
+      ["expo", "prebuild", "--platform", "android", "--clean"],
+      {
+        cwd: UI_DIR,
+        env,
+      },
+    );
   }
   const gradlew = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
   run(
