@@ -595,13 +595,20 @@ jobs:
           echo "FROGG_ANDROID_KEYSTORE=$RUNNER_TEMP/frogg-release.keystore" >> "$GITHUB_ENV"
 
       # The runner is 4 vCPU / 16 GB and this job is the release's critical
-      # path, so it runs three Gradle workers rather than one. The heap caps
-      # come with the worker count (see gradleArgsFor): what killed the 0.1.20
-      # run with "AAPT2 Daemon #0: Idle daemon unexpectedly exit" was the
-      # uncapped 4 GB heap expo-gradle-jvmargs writes into gradle.properties,
-      # not the second worker, and `--workers N` now pins the same
-      # -Xmx2048m/512m metaspace/1 GB Kotlin daemon ceiling that `--serial`
-      # does. If this OOMs again, drop to `--workers 2` before `--serial`.
+      # path, so it runs more than one Gradle worker. The heap caps come with
+      # the worker count (see gradleArgsFor): what killed the 0.1.20 run with
+      # "AAPT2 Daemon #0: Idle daemon unexpectedly exit" was the uncapped 4 GB
+      # heap expo-gradle-jvmargs writes into gradle.properties, not the second
+      # worker, and `--workers N` now pins the same -Xmx2048m/512m
+      # metaspace/1 GB Kotlin daemon ceiling that `--serial` does.
+      #
+      # Three workers was tried and the runner died: run 35323297692 finished
+      # the Metro bundle, went silent for two minutes during the native build
+      # and reported "The operation was canceled" with every post-step skipped
+      # -- no Gradle failure and no Java OutOfMemoryError, i.e. the runner
+      # agent itself was OOM-killed rather than the JVM. The Java heaps are
+      # capped but concurrent CMake compiles are native memory and are not.
+      # If two workers does the same, go back to `--serial`.
       - name: Build release APK
         env:
           FROGG_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_ANDROID_KEYSTORE_PASSWORD }}
@@ -610,7 +617,7 @@ jobs:
         run: >-
           node scripts/release/build-android-apk.mjs
           --abi ${{ matrix.abi }}
-          --workers 3
+          --workers 2
           --out-dir release-assets
 
       - name: Upload to GitHub release
