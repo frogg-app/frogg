@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.5.0-beta.1 — 2026-09-18
+
+- Each installed provider now has a settings cog in Settings > Providers that
+  opens a per-provider modal. The leading chevron is gone: it implied a
+  disclosure that never expanded. Uninstalling a provider moved out of the row's
+  overflow menu into the modal's danger zone.
+- Provider accounts can be managed from that modal. An account can be renamed,
+  signed out, removed, and its usage inspected. Renaming the default account is
+  a label change only and never moves its config directory.
+- Accounts can be exported and imported, so a set of accounts can be moved to
+  another daemon or server. An export bundle contains live credentials in plain
+  text (base64 is encoding, not encryption) — handle it like a password. The
+  daemon never writes a bundle to disk, and imported credential files are
+  written 0600.
+- Models can be restricted per account, so a plan that should not reach a
+  particular model cannot select it. An account is unrestricted by default. The
+  daemon enforces the list when an agent starts and when one resumes, so the
+  restriction holds regardless of what a client sends.
+- Codex now supports multiple accounts. CODEX_HOME redirects the config
+  directory, auth.json holds the credential and prompts/ stays shared.
+- Gemini CLI supports multiple accounts behind an opt-in switch. Gemini has no
+  environment variable that redirects its config directory — it reads $HOME and
+  a hardcoded .gemini — so an account is a synthetic HOME with .npm, .npmrc,
+  .cache, .gitconfig, .ssh and .config/gcloud symlinked back to the real home.
+  Anything else Gemini reads from home will not be there, so it ships disabled;
+  enable it per provider in config.json.
+- The pill row above the composer scrolls horizontally instead of squeezing its
+  pills, and a running agent's account appears there as its own pill rather than
+  greyed out in the controls, shown only when the provider has several accounts.
+
 ## 1.4.1 — 2026-09-17
 
 - Sidebar workspace rows now carry a small account glyph when the workspace's
