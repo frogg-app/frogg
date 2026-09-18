@@ -71,6 +71,7 @@ See [security and access](/docs/self-hosting/security/) for how these combine.
 | `daemon.browserTools.enabled`     | boolean | `false` | Expose browser automation tools over MCP |
 | `daemon.appendSystemPrompt`       | string  | `""`    | Text appended to every agent's system prompt |
 | `daemon.autoArchiveAfterMerge`    | boolean | `false` | Archive agents after their branch merges |
+| `daemon.hostSettings.hiddenSections` | string[] | brand default | Host settings sections the app does not offer for this daemon |
 | `daemon.enableTerminalAgentHooks` | boolean | `false` | Install activity hooks for agent CLIs started in terminals |
 | `daemon.terminalProfiles`         | array   | built-in profiles | `[{ id, name, command, args?, icon? }]`. `[]` means none |
 | `daemon.agentProfiles`            | array   | unset   | Saved agent presets: `[{ id, name, provider, model?, modeId?, thinkingOptionId?, featureValues?, notes?, icon?, color? }]` |
@@ -233,7 +234,7 @@ These are credentials for voice features, not agent providers.
 `daemon.relay.endpoint`, `daemon.relay.useTls`, `daemon.mcp.*`,
 `daemon.browserTools.enabled`, `daemon.hostnames`, `daemon.cors.allowedOrigins`,
 `daemon.trustedProxies`, `daemon.auth.trustLan`, `daemon.git.*`,
-`daemon.autoArchiveAfterMerge`, `daemon.autoUpdate`, `daemon.enableTerminalAgentHooks`,
+`daemon.autoArchiveAfterMerge`, `daemon.hostSettings.hiddenSections`, `daemon.autoUpdate`, `daemon.enableTerminalAgentHooks`,
 `daemon.appendSystemPrompt`, `daemon.terminalProfiles`, `daemon.agentProfiles`,
 `app.pairingBaseUrl` and `agents.*`.
 

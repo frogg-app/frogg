@@ -10,7 +10,8 @@ import { useKeyboardShortcutsAvailable } from "@/keyboard/availability";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 import { resolveSettingsScope, type SettingsView } from "@/navigation/settings-navigation";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
-import { HOST_SECTION_ITEMS, SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
+import { SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
+import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visibility";
 
 type SidebarIcon = ComponentType<{ size: number; color: string }>;
 
@@ -145,6 +146,11 @@ export function SettingsSidebar({
   const shortcutsAvailable = useKeyboardShortcutsAvailable();
   const scope = resolveSettingsScope(view);
   const isDesktop = layout === "desktop";
+  // A host decides which of its own sections this app offers, so the list is
+  // per-host rather than a constant.
+  const hostSectionItems = useVisibleHostSectionItems(
+    scope.kind === "host" ? scope.serverId : null,
+  );
 
   let sidebarBody: ReactNode;
   if (scope.kind === "host") {
@@ -153,7 +159,7 @@ export function SettingsSidebar({
     if (view.kind === "project") selectedHostSection = "projects";
     sidebarBody = (
       <View style={sidebarStyles.list}>
-        {HOST_SECTION_ITEMS.map((item) => (
+        {hostSectionItems.map((item) => (
           <SidebarHostSectionButton
             key={item.id}
             itemId={item.id}

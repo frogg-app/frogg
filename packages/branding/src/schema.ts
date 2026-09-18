@@ -53,6 +53,21 @@ const installer = z.strictObject({
     .optional(),
 });
 
+/**
+ * Host settings sections a brand may hide. Mirrors HOST_SECTION_SLUGS in the
+ * client (apps/ui/src/utils/host-routes.ts), which a test there keeps in step:
+ * branding is built before the app and cannot import it.
+ */
+export const HOST_SETTINGS_SECTIONS = [
+  "projects",
+  "pair-device",
+  "agents",
+  "providers",
+  "usage",
+  "terminals",
+  "host",
+] as const;
+
 export const BrandManifestSchema = z.strictObject({
   schemaVersion: z.literal(1),
   id: slug,
@@ -133,6 +148,11 @@ export const BrandManifestSchema = z.strictObject({
       defaultDirectory: z.string().min(1).optional(),
     })
     .optional(),
+  hostSettings: z
+    .strictObject({
+      hiddenSections: z.array(z.enum(HOST_SETTINGS_SECTIONS)).optional(),
+    })
+    .optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
 
@@ -170,6 +190,7 @@ export function resolveBrandManifest(input: unknown) {
     installer: resolveInstaller(manifest, dark),
     distribution,
     projects: resolveProjects(manifest),
+    hostSettings: resolveHostSettings(manifest),
   };
 }
 
@@ -237,6 +258,16 @@ export function contrast(a: string, b: string): number {
   const first = luminance(a);
   const second = luminance(b);
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+/**
+ * Sections of a host's settings this build ships hidden. A deployment that
+ * manages its own hosts has no use for the ones that ask the user to set a host
+ * up — but hiding is a default, not a lock: the daemon's own config decides for
+ * the host it runs on, and an admin can turn any of these back on there.
+ */
+function resolveHostSettings(manifest: BrandManifest) {
+  return { hiddenSections: manifest.hostSettings?.hiddenSections ?? [] };
 }
 
 /**

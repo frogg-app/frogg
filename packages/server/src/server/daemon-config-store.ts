@@ -8,7 +8,7 @@ import {
   MutableDaemonConfigSchema,
   MutableDaemonConfigPatchSchema,
 } from "@frogg/protocol/messages";
-import type { AgentSkillSelection } from "@frogg/protocol/messages";
+import type { AgentSkillSelection, HostSettingsSection } from "@frogg/protocol/messages";
 
 export type { MutableDaemonConfig, MutableDaemonConfigPatch } from "@frogg/protocol/messages";
 
@@ -24,6 +24,7 @@ interface SupportedMutableConfigPatch {
   removeProviders?: string[];
   metadataGeneration?: MutableDaemonConfig["metadataGeneration"];
   autoArchiveAfterMerge?: boolean;
+  hostSettings?: { hiddenSections?: HostSettingsSection[] };
   autoUpdate?: Partial<NonNullable<MutableDaemonConfig["autoUpdate"]>>;
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
@@ -181,6 +182,7 @@ const RELOADABLE_PATHS = [
   "daemon.git.maxProcessesPerSecond",
   "daemon.git.maxProcessConcurrency",
   "daemon.autoArchiveAfterMerge",
+  "daemon.hostSettings.hiddenSections",
   "daemon.autoUpdate",
   "daemon.enableTerminalAgentHooks",
   "daemon.appendSystemPrompt",
@@ -208,6 +210,7 @@ const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
   ["daemon.git.maxProcessesPerSecond", "git.maxProcessesPerSecond"],
   ["daemon.git.maxProcessConcurrency", "git.maxProcessConcurrency"],
   ["daemon.autoArchiveAfterMerge", "autoArchiveAfterMerge"],
+  ["daemon.hostSettings.hiddenSections", "hostSettings.hiddenSections"],
   ["daemon.autoUpdate", "autoUpdate"],
   ["daemon.enableTerminalAgentHooks", "enableTerminalAgentHooks"],
   ["daemon.appendSystemPrompt", "appendSystemPrompt"],
@@ -279,6 +282,9 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
     ...(patch.removeProviders !== undefined ? { removeProviders: patch.removeProviders } : {}),
     ...(patch.metadataGeneration?.providers !== undefined
       ? { metadataGeneration: { providers: patch.metadataGeneration.providers } }
+      : {}),
+    ...(patch.hostSettings?.hiddenSections !== undefined
+      ? { hostSettings: { hiddenSections: patch.hostSettings.hiddenSections } }
       : {}),
     ...(patch.autoArchiveAfterMerge !== undefined
       ? { autoArchiveAfterMerge: patch.autoArchiveAfterMerge }
@@ -682,6 +688,9 @@ function mergeMutableDaemonPatch(
   }
   if (patch.browserTools?.enabled !== undefined) {
     next.browserTools = { ...next.browserTools, enabled: patch.browserTools.enabled };
+  }
+  if (patch.hostSettings?.hiddenSections !== undefined) {
+    next.hostSettings = { hiddenSections: patch.hostSettings.hiddenSections };
   }
   if (patch.autoArchiveAfterMerge !== undefined) {
     next.autoArchiveAfterMerge = patch.autoArchiveAfterMerge;

@@ -112,9 +112,7 @@
           "minLength": 1
         }
       },
-      "required": [
-        "icon"
-      ],
+      "required": ["icon"],
       "additionalProperties": false
     },
     "colors": {
@@ -144,12 +142,7 @@
               "pattern": "^#[0-9a-fA-F]{6}$"
             }
           },
-          "required": [
-            "accent",
-            "accentForeground",
-            "background",
-            "foreground"
-          ],
+          "required": ["accent", "accentForeground", "background", "foreground"],
           "additionalProperties": false
         },
         "dark": {
@@ -176,12 +169,7 @@
               "pattern": "^#[0-9a-fA-F]{6}$"
             }
           },
-          "required": [
-            "accent",
-            "accentForeground",
-            "background",
-            "foreground"
-          ],
+          "required": ["accent", "accentForeground", "background", "foreground"],
           "additionalProperties": false
         }
       },
@@ -325,11 +313,7 @@
         },
         "updates": {
           "type": "string",
-          "enum": [
-            "disabled",
-            "github-release",
-            "tauri-signed"
-          ]
+          "enum": ["disabled", "github-release", "tauri-signed"]
         },
         "updaterPublicKey": {
           "type": "string",
@@ -364,15 +348,21 @@
         }
       },
       "additionalProperties": false
+    },
+    "hostSettings": {
+      "type": "object",
+      "properties": {
+        "hiddenSections": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["projects", "pair-device", "agents", "providers", "usage", "terminals", "host"]
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
-  "required": [
-    "schemaVersion",
-    "id",
-    "name",
-    "applicationId",
-    "daemonPort",
-    "assets"
-  ],
+  "required": ["schemaVersion", "id", "name", "applicationId", "daemonPort", "assets"],
   "additionalProperties": false
 }

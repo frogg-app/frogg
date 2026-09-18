@@ -161,6 +161,7 @@ import type {
   AgentProfile,
   AgentSkillSelection,
   FirstAgentContext,
+  HostSettingsSection,
   TerminalProfile,
 } from "@frogg/protocol/messages";
 import type {
@@ -404,6 +405,7 @@ export interface FroggDaemonConfig {
     maxProcessConcurrency: number;
   };
   autoArchiveAfterMerge?: boolean;
+  hostSettingsHiddenSections?: readonly HostSettingsSection[];
   autoUpdate?: DaemonAutoUpdateConfig;
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
@@ -622,6 +624,9 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
       providers: config.metadataGeneration?.providers ?? [],
     },
     autoArchiveAfterMerge: config.autoArchiveAfterMerge ?? false,
+    hostSettings: {
+      hiddenSections: [...(config.hostSettingsHiddenSections ?? brand.hostSettings.hiddenSections)],
+    },
     autoUpdate: resolveAutoUpdate(config),
     enableTerminalAgentHooks: config.enableTerminalAgentHooks ?? false,
     appendSystemPrompt: config.appendSystemPrompt ?? "",

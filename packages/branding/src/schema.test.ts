@@ -183,3 +183,22 @@ test("project browsing starts at the brand's directory when it names one", () =>
     /projects/,
   );
 });
+
+test("a brand can ship host settings sections hidden", () => {
+  assert.deepEqual(resolveBrandManifest(minimal).hostSettings.hiddenSections, []);
+  assert.deepEqual(
+    resolveBrandManifest({
+      ...minimal,
+      hostSettings: { hiddenSections: ["pair-device", "agents"] },
+    }).hostSettings.hiddenSections,
+    ["pair-device", "agents"],
+  );
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, hostSettings: { hiddenSections: ["nonsense"] } }),
+    /hiddenSections/,
+  );
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, hostSettings: { hidden: ["agents"] } }),
+    /hostSettings/,
+  );
+});

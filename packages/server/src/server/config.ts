@@ -608,6 +608,15 @@ function resolveProfileLists(persisted: ReturnType<typeof loadPersistedConfig>) 
   };
 }
 
+/**
+ * Host settings sections this daemon tells clients not to offer. The brand ships
+ * the default; once written to config.json the host's own value wins, which is
+ * how an admin re-enables a section without a new build.
+ */
+function resolveHostSettingsHiddenSections(persisted: ReturnType<typeof loadPersistedConfig>) {
+  return persisted.daemon?.hostSettings?.hiddenSections ?? brand.hostSettings.hiddenSections;
+}
+
 function resolveStaticLoadConfigSettings(
   env: NodeJS.ProcessEnv,
   cli: CliConfigOverrides | undefined,
@@ -619,6 +628,7 @@ function resolveStaticLoadConfigSettings(
       cli?.mcpInjectIntoAgents ?? persisted.daemon?.mcp?.injectIntoAgents ?? false,
     browserToolsEnabled: resolveBrowserToolsEnabled(persisted),
     autoArchiveAfterMerge: persisted.daemon?.autoArchiveAfterMerge ?? false,
+    hostSettingsHiddenSections: resolveHostSettingsHiddenSections(persisted),
     autoUpdate: resolveAutoUpdateConfig(env, persisted),
     appendSystemPrompt: resolveAppendSystemPrompt(persisted),
     ...resolveProfileLists(persisted),
@@ -659,6 +669,7 @@ export function resolveConfigFromPersisted(
     mcpInjectIntoAgents,
     browserToolsEnabled,
     autoArchiveAfterMerge,
+    hostSettingsHiddenSections,
     autoUpdate,
     appendSystemPrompt,
     terminalProfiles,
@@ -706,6 +717,7 @@ export function resolveConfigFromPersisted(
     browserToolsEnabled,
     git: resolveGitProcessConfig(env, persisted),
     autoArchiveAfterMerge,
+    hostSettingsHiddenSections,
     autoUpdate,
     enableTerminalAgentHooks: persisted.daemon?.enableTerminalAgentHooks ?? false,
     appendSystemPrompt,

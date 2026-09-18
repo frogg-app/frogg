@@ -78,6 +78,11 @@ import {
 } from "@/navigation/settings-navigation";
 import { SettingsSidebar } from "@/screens/settings/settings-sidebar";
 import { HOST_SECTION_ITEMS, SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
+import {
+  resolveHiddenSectionRedirect,
+  useHiddenHostSections,
+  useVisibleHostSectionItems,
+} from "@/screens/settings/host-section-visibility";
 import { isNative, isWeb } from "@/constants/platform";
 
 // ---------------------------------------------------------------------------
@@ -638,6 +643,24 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
   const handleSelectSection = useCallback((section: SettingsSectionSlug) => {
     navigateSettings({ kind: "section", section });
   }, []);
+
+  // Hidden means unreachable, not merely unlisted: a saved link or a section
+  // the admin just switched off lands on the host's settings instead of a page
+  // this deployment does not offer.
+  const hiddenHostSections = useHiddenHostSections(scopedHostServerId);
+  const visibleHostSections = useVisibleHostSectionItems(scopedHostServerId);
+  const redirectSection = resolveHiddenSectionRedirect({
+    section: view.kind === "host" ? view.section : null,
+    hidden: hiddenHostSections,
+    visible: visibleHostSections,
+  });
+  useEffect(() => {
+    if (!redirectSection || !scopedHostServerId) return;
+    navigateSettings(
+      { kind: "host", serverId: scopedHostServerId, section: redirectSection },
+      { replace: true },
+    );
+  }, [redirectSection, scopedHostServerId]);
 
   const handleSelectHostSection = useCallback(
     (section: HostSectionSlug) => {

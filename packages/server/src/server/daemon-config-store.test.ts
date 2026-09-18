@@ -108,6 +108,35 @@ describe("DaemonConfigStore", () => {
     }
   });
 
+  test("patch persists the hidden host settings sections an admin re-enables", () => {
+    const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
+    tempDirs.push(froggHome);
+    const store = new DaemonConfigStore(froggHome, {
+      relay: { enabled: false },
+      mcp: { injectIntoAgents: false },
+      browserTools: { enabled: false },
+      providers: {},
+      metadataGeneration: { providers: [] },
+      autoArchiveAfterMerge: false,
+      enableTerminalAgentHooks: false,
+      appendSystemPrompt: "",
+      hostSettings: { hiddenSections: ["pair-device", "agents"] },
+    });
+    const changes: unknown[] = [];
+    store.onFieldChange("hostSettings.hiddenSections", (value) => changes.push(value));
+
+    expect(store.get().hostSettings?.hiddenSections).toEqual(["pair-device", "agents"]);
+
+    // The admin turns "agents" back on for this host.
+    store.patch({ hostSettings: { hiddenSections: ["pair-device"] } });
+
+    expect(store.get().hostSettings?.hiddenSections).toEqual(["pair-device"]);
+    expect(changes).toEqual([["pair-device"]]);
+    expect(loadPersistedConfig(froggHome).daemon?.hostSettings?.hiddenSections).toEqual([
+      "pair-device",
+    ]);
+  });
+
   test("patch persists relay state and emits its field change", () => {
     const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
     tempDirs.push(froggHome);

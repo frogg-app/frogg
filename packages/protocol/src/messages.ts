@@ -238,6 +238,27 @@ export const DaemonAutoUpdateConfigSchema = z.object({
 });
 export type DaemonAutoUpdateConfig = z.infer<typeof DaemonAutoUpdateConfigSchema>;
 
+/**
+ * Sections of a host's settings the app should not offer for this daemon. The
+ * brand ships a default and the daemon's own config is what the app reads, so
+ * an admin can re-enable a section on the host they run without a new build.
+ */
+export const HostSettingsSectionSchema = z.enum([
+  "projects",
+  "pair-device",
+  "agents",
+  "providers",
+  "usage",
+  "terminals",
+  "host",
+]);
+export type HostSettingsSection = z.infer<typeof HostSettingsSectionSchema>;
+
+export const MutableHostSettingsConfigSchema = z
+  .object({ hiddenSections: z.array(HostSettingsSectionSchema).default([]) })
+  .strict();
+export type MutableHostSettingsConfig = z.infer<typeof MutableHostSettingsConfigSchema>;
+
 export const MutableDaemonConfigSchema = z
   .object({
     // COMPAT(relayConfig): added in v0.2.6, remove after 2027-01-31 when old daemons are unsupported.
@@ -277,6 +298,9 @@ export const MutableDaemonConfigSchema = z
     skills: z.object({ selection: AgentSkillSelectionSchema.optional() }).strict().optional(),
     // COMPAT(daemonAutoUpdate): added in v0.1.14, optional so older apps and daemons ignore it.
     autoUpdate: DaemonAutoUpdateConfigSchema.optional(),
+    // COMPAT(hostSettingsSections): optional so an older
+    // daemon simply says nothing and the app falls back to the brand default.
+    hostSettings: MutableHostSettingsConfigSchema.optional(),
   })
   .passthrough();
 
@@ -296,6 +320,7 @@ export const MutableDaemonConfigPatchSchema = z
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
     agentProfiles: z.array(AgentProfileSchema).optional(),
     autoUpdate: DaemonAutoUpdateConfigSchema.partial().optional(),
+    hostSettings: MutableHostSettingsConfigSchema.partial().optional(),
   })
   .partial()
   .passthrough();

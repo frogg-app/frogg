@@ -226,6 +226,29 @@ It is a starting point, not a restriction: the user can browse or type anywhere 
 there, and a host without that directory falls back to its home directory instead of
 showing an error.
 
+## Host settings
+
+Sections of a host's settings a build ships hidden.
+
+| Key              | Rule                              | Default | Meaning                         |
+| ---------------- | --------------------------------- | ------- | ------------------------------- |
+| `hiddenSections` | any of the host settings sections | `[]`    | Sections the app does not offer |
+
+```json
+{
+  "hostSettings": { "hiddenSections": ["pair-device", "agents"] }
+}
+```
+
+Valid sections are `projects`, `pair-device`, `agents`, `providers`, `usage`, `terminals`
+and `host`. Hidden means unreachable, not merely unlisted: the nav entry is gone and a
+link straight to the section lands on the host's settings instead.
+
+This is a default, not a lock. A daemon seeds `daemon.hostSettings.hiddenSections` in its
+own `config.json` from this list the first time it starts, and the app reads the daemon's
+value — so an admin can re-enable a section on the host they run without a new build. See
+[configuration](/docs/reference/configuration/).
+
 ## Resolved output
 
 `npm run --silent brand:check -- --brand <dir> --json` prints the resolved brand. It

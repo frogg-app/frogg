@@ -14,6 +14,7 @@ import { ensurePrivateFile, writePrivateFileAtomicSync } from "./private-files.j
 import {
   AgentProfileSchema,
   AgentSkillSelectionSchema,
+  HostSettingsSectionSchema,
   TerminalProfileSchema,
 } from "@frogg/protocol/messages";
 import { FroggServicePortAllocationSchema } from "@frogg/protocol/frogg-config-schema";
@@ -298,6 +299,10 @@ export const PersistedConfigSchema = z
           .strict()
           .optional(),
         autoArchiveAfterMerge: z.boolean().optional(),
+        hostSettings: z
+          .object({ hiddenSections: z.array(HostSettingsSectionSchema).optional() })
+          .strict()
+          .optional(),
         autoUpdate: z
           .object({
             enabled: z.boolean().optional(),
@@ -416,6 +421,9 @@ const DEFAULT_PERSISTED_CONFIG = PersistedConfigSchema.parse({
     browserTools: { enabled: false },
     git: DEFAULT_GIT_PROCESS_POLICY,
     autoArchiveAfterMerge: false,
+    // The brand decides which host settings sections a fresh install offers;
+    // the admin of this host owns the value from here on.
+    hostSettings: { hiddenSections: brand.hostSettings.hiddenSections },
     enableTerminalAgentHooks: false,
     appendSystemPrompt: "",
     autoUpdate: {
