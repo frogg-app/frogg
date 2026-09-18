@@ -140,7 +140,10 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      # The self-hosted PC has the SDK preinstalled at ANDROID_HOME (set in the
+      # runner's .env); this action can't unzip on that Windows install.
       - uses: android-actions/setup-android@v4
+        if: inputs.android_runner != 'self-hosted'
         with:
           # sdkmanager no longer provides the obsolete tools package.
           packages: platform-tools
