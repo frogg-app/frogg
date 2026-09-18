@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, type ReactElement, type ReactNode } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import {
   MenuRoot,
@@ -29,13 +29,39 @@ import { COMPOSER_PILL_CLEARANCE, composerPillStyles } from "./pill-styles";
  * The bar floats over the transcript with no background, so content remains visible underneath.
  * Its host gives the scroll viewport a small bottom inset only when the bar exists; that keeps
  * the final footer clear without turning the overlay into a layout band.
+ *
+ * The row does not wrap: a workspace with a long branch name, a failing-tests pill, a diff stat,
+ * and a provider account pill can outgrow the pane easily, and wrapping would push the composer
+ * down every time a pill appears. It scrolls horizontally instead, so every pill keeps its
+ * natural (untruncated) width and stays reachable. The gap and edge padding live on the
+ * `contentContainerStyle` rather than the `ScrollView` itself, so the first and last pill still
+ * get breathing room instead of clipping flush against the scroll edge.
  */
-export function ComposerTrackBar({ children }: { children: ReactNode }): ReactElement {
+export function ComposerTrackBar({
+  children,
+  testID,
+}: {
+  children: ReactNode;
+  testID?: string;
+}): ReactElement {
   return (
-    <View style={styles.bar} pointerEvents="box-none">
-      <View style={styles.track} pointerEvents="box-none">
+    <View style={styles.bar} pointerEvents="box-none" testID={testID ? `${testID}-bar` : undefined}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.trackScroll}
+        contentContainerStyle={styles.track}
+        keyboardShouldPersistTaps="handled"
+        testID={testID}
+        // The ScrollView itself must receive touches to support drag-to-scroll, so it can't be
+        // box-none like the old plain View. Instead `trackScroll` below is sized to hug its
+        // content (alignSelf: "center" + flexShrink, not width: "100%"), so the viewport only
+        // covers the pixels the pills actually occupy. Empty space in the bar stays outside the
+        // ScrollView's bounds entirely and falls through to `styles.bar`'s box-none, reaching the
+        // transcript underneath, same as before this row could scroll.
+      >
         {children}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -320,18 +346,33 @@ const styles = StyleSheet.create((theme) => {
       right: 0,
       bottom: 0,
       alignItems: "center",
-      paddingHorizontal: theme.spacing[4],
       paddingBottom: {
         xs: COMPOSER_PILL_CLEARANCE.compact,
         md: COMPOSER_PILL_CLEARANCE.wide,
       },
     },
-    track: {
-      width: "100%",
+    // The scrollable viewport intentionally has no `width`. `bar`'s `alignItems: "center"` sizes
+    // an unstretched child to its content on the cross axis, so with few pills this ScrollView
+    // hugs just the pills' width and the empty space on either side stays outside its bounds,
+    // falling through to `bar`'s box-none. `maxWidth` caps that hugging at the row's old rendered
+    // width: once pills overflow it, the ScrollView clips there and scrolls instead of growing
+    // past the pane. Giving it an explicit `width: "100%"` here (as a plain View safely could,
+    // since it was box-none) would make the ScrollView itself intercept every tap across the full
+    // row — including the empty space — because a ScrollView must own touches to support
+    // drag-to-scroll and can't be box-none like the old View.
+    trackScroll: {
       maxWidth: MAX_CONTENT_WIDTH,
+      flexShrink: 1,
+      minWidth: 0,
+      flexGrow: 0,
+    },
+    // Content container: carries the padding and gap that used to live on the row itself, so the
+    // first and last pill keep their inset instead of clipping at the scroll edge.
+    track: {
       flexDirection: "row",
       alignItems: "center",
       gap: theme.spacing[1],
+      paddingHorizontal: theme.spacing[4],
     },
     // The rail every panel row sits on: inset from the panel edge so the fill is a rounded block
     // inside it, and tall enough that revealing an action button cannot resize the row.

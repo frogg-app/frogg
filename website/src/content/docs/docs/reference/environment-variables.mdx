@@ -68,6 +68,12 @@ Provider CLIs read their own variables (`ANTHROPIC_API_KEY`, `CLAUDE_CONFIG_DIR`
 `CODEX_HOME`, `OPENAI_API_KEY`, `PI_COMMAND`, `OMP_COMMAND` and others). The daemon passes
 its environment to the agents it starts, so set them where the daemon runs.
 
+[Provider accounts](/docs/agents-and-providers/providers/#provider-accounts-multi-sign-in) add
+one such variable per launched agent, for that agent's process only: the provider's
+config-directory variable, pointed at the account's directory. Gemini is the exception —
+it has no config-directory variable, so a Gemini account sets `HOME` instead, again only for
+that agent's process. The daemon and every other provider keep the real `HOME`.
+
 ## Daemon: updates
 
 | Variable             | Default                                           | Meaning |

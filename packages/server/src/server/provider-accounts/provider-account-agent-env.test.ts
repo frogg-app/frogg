@@ -80,8 +80,15 @@ describe("resolveAgentProviderAccountEnv", () => {
   });
 
   it("ignores an account id that belongs to a different provider", () => {
-    const foreign: ProviderAccount = { ...PETER, id: "acct-codex", provider: "codex" };
-    const store = createStore({ accounts: [foreign], activeAccountId: "acct-work" });
+    const foreign: ProviderAccount = {
+      ...PETER,
+      id: "acct-codex",
+      provider: "codex",
+    };
+    const store = createStore({
+      accounts: [foreign],
+      activeAccountId: "acct-work",
+    });
     expect(resolveAgentProviderAccountEnv(store, "claude", "acct-codex")).toEqual({
       env: {},
       unknownAccountId: "acct-codex",
@@ -91,5 +98,72 @@ describe("resolveAgentProviderAccountEnv", () => {
   it("is empty for a provider whose accounts capability is disabled", () => {
     const store = createStore({ enabled: false, activeAccountId: "acct-work" });
     expect(resolveAgentProviderAccountEnv(store, "claude", "acct-peter")).toEqual({ env: {} });
+  });
+});
+
+describe("resolveAgentProviderAccountEnv in home mode", () => {
+  const GEM: ProviderAccount = {
+    id: "acct-gem",
+    provider: "gemini",
+    name: "second",
+    // In home mode the account dir is the synthetic home; gemini reads
+    // <configDir>/.gemini inside it.
+    configDir: "/home/u/.gemini-second",
+    linkedFolders: [],
+    createdAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  // The shipped gemini entry is opt-in; a store enables it from config.json.
+  const geminiCapability = {
+    ...findProviderAccountCapability("gemini")!,
+    enabled: true,
+  };
+  const claudeCapability = findProviderAccountCapability("claude");
+
+  const capabilities: Record<string, typeof geminiCapability | undefined> = {
+    gemini: geminiCapability,
+    ...(claudeCapability ? { claude: claudeCapability } : {}),
+  };
+
+  const store = {
+    getCapability: (provider: string) => capabilities[provider],
+    activeAccountIds: () => ({ gemini: GEM.id }),
+    findAccount: (id: string) => (id === GEM.id ? GEM : undefined),
+    primaryConfigDir: (provider: string) =>
+      provider === "gemini" ? "/home/u/.gemini" : "/home/u/.claude",
+  };
+
+  it("points HOME at the account directory for the named account", () => {
+    expect(resolveAgentProviderAccountEnv(store, "gemini", "acct-gem")).toEqual({
+      env: { HOME: "/home/u/.gemini-second" },
+    });
+  });
+
+  it("uses the daemon-wide active account when the agent names none", () => {
+    expect(resolveAgentProviderAccountEnv(store, "gemini", undefined)).toEqual({
+      env: { HOME: "/home/u/.gemini-second" },
+    });
+  });
+
+  it("never sets HOME to the primary config dir for the default pick", () => {
+    // ~/.gemini is a directory in the real home, not a home: the default
+    // account simply inherits the daemon's real HOME.
+    expect(resolveAgentProviderAccountEnv(store, "gemini", null)).toEqual({
+      env: {},
+    });
+  });
+
+  it("does not leak HOME into another provider's overlay", () => {
+    expect(resolveAgentProviderAccountEnv(store, "claude", undefined)).toEqual({
+      env: {},
+    });
+    expect(resolveAgentProviderAccountEnv(store, "claude", null)).toEqual({
+      env: { CLAUDE_CONFIG_DIR: "/home/u/.claude" },
+    });
+    // An account id from another provider never crosses over.
+    expect(resolveAgentProviderAccountEnv(store, "claude", "acct-gem")).toEqual({
+      env: {},
+      unknownAccountId: "acct-gem",
+    });
   });
 });

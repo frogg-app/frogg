@@ -3,6 +3,7 @@ import { WorkspaceDiffStatPill } from "@/composer/diff-stat-pill";
 import { WorkspaceContextPills } from "@/composer/workspace-context-pill";
 import { AgentTaskList } from "@/composer/task-list";
 import { ComposerTrackBar } from "@/composer/tracks";
+import { ProviderAccountPill } from "@/composer/agent-controls/provider-account-pill";
 import { supportsDesktopPaneSplits, useIsCompactFormFactor } from "@/constants/layout";
 import { usePaneContext } from "@/panels/pane-context";
 import { useSettings } from "@/hooks/use-settings";
@@ -21,8 +22,9 @@ import { openPreferredWorkspaceTarget } from "@/workspace-tabs/open-beside";
 import { openComposerChanges } from "@/workspace-tabs/open-supporting-view";
 
 /**
- * The pane's ambient context — workspace changes, subagents, and tasks — as a row of pills above
- * the composer.
+ * The pane's ambient context — workspace changes, subagents, tasks, and (while a provider has
+ * more than one account) the account the agent is bound to — as a row of pills above the
+ * composer.
  *
  * The row shares the composer's keyboard transform and owns the space between itself and the
  * transcript. Each pill owns its action while tab placement stays behind the workspace boundary.
@@ -30,6 +32,7 @@ import { openComposerChanges } from "@/workspace-tabs/open-supporting-view";
 export const AgentTracks = memo(function AgentTracks({
   serverId,
   workspaceId,
+  agentId,
   cwd,
   subagentRows,
   tasks,
@@ -38,6 +41,7 @@ export const AgentTracks = memo(function AgentTracks({
 }: {
   serverId: string;
   workspaceId: string;
+  agentId: string;
   cwd: string;
   subagentRows: SubagentRow[];
   tasks: TodoEntry[] | undefined;
@@ -109,6 +113,7 @@ export const AgentTracks = memo(function AgentTracks({
   return (
     <ComposerTrackBar>
       <WorkspaceContextPills serverId={serverId} workspaceId={workspaceId} cwd={cwd} />
+      <ProviderAccountPill serverId={serverId} agentId={agentId} />
       <AgentTaskList tasks={tasks} />
       <SubagentsTrack
         rows={subagentRows}

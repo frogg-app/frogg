@@ -1,12 +1,17 @@
 import { useCallback, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import type { ProviderAccountListResponseMessage } from "@frogg/protocol/messages";
+import type {
+  ProviderAccountExportResponseMessage,
+  ProviderAccountListResponseMessage,
+} from "@frogg/protocol/messages";
+import type { ProviderAccountExportBundle } from "@frogg/protocol/provider-accounts";
 import { useFetchQuery } from "@/data/query";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 
 export type ProviderAccountsPayload = ProviderAccountListResponseMessage["payload"];
+export type ProviderAccountExportPayload = ProviderAccountExportResponseMessage["payload"];
 
 export function providerAccountsQueryKey(serverId: string) {
   return ["host", serverId, "provider-accounts"] as const;
@@ -79,6 +84,46 @@ export function useProviderAccounts(serverId: string) {
     onSuccess: applyPayload,
   });
 
+  const rename = useMutation({
+    mutationFn: async (input: { accountId: string; name: string }) =>
+      requireClient().renameProviderAccount({
+        accountId: input.accountId,
+        name: input.name,
+      }),
+    onSuccess: applyPayload,
+  });
+
+  const signOut = useMutation({
+    mutationFn: async (accountId: string) => requireClient().signOutProviderAccount({ accountId }),
+    onSuccess: applyPayload,
+  });
+
+  const setAllowedModels = useMutation({
+    mutationFn: async (input: { accountId: string; allowedModels: string[] | null }) =>
+      requireClient().setProviderAccountAllowedModels({
+        accountId: input.accountId,
+        allowedModels: input.allowedModels,
+      }),
+    onSuccess: applyPayload,
+  });
+
+  // Export resolves with the bundle rather than a snapshot, so it never touches
+  // the cache. The bundle is secret material: it is handed straight back to the
+  // caller and is never logged or persisted here.
+  const exportAccounts = useMutation({
+    mutationFn: async (input: { provider: string; accountIds?: string[] }) =>
+      requireClient().exportProviderAccounts({
+        provider: input.provider,
+        ...(input.accountIds ? { accountIds: input.accountIds } : {}),
+      }),
+  });
+
+  const importAccounts = useMutation({
+    mutationFn: async (bundle: ProviderAccountExportBundle) =>
+      requireClient().importProviderAccounts({ bundle }),
+    onSuccess: applyPayload,
+  });
+
   const refetch = query.refetch;
   const refresh = useCallback(async () => {
     await refetch();
@@ -94,5 +139,10 @@ export function useProviderAccounts(serverId: string) {
     create,
     remove,
     setActive,
+    rename,
+    signOut,
+    setAllowedModels,
+    exportAccounts,
+    importAccounts,
   };
 }

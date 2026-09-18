@@ -74,6 +74,10 @@ export class HubExecutionController {
     try {
       issues = await this.validateAgentConfiguration({
         provider: message.provider,
+        // COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+        ...(message.providerAccountId !== undefined
+          ? { providerAccountId: message.providerAccountId }
+          : {}),
         model: message.model,
         modeId: message.modeId,
         thinkingOptionId: message.thinkingOptionId,

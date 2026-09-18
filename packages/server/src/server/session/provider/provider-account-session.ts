@@ -11,7 +11,11 @@ type ProviderAccountResponseType =
   | "provider.account.list.response"
   | "provider.account.create.response"
   | "provider.account.delete.response"
-  | "provider.account.set_active.response";
+  | "provider.account.set_active.response"
+  | "provider.account.rename.response"
+  | "provider.account.sign_out.response"
+  | "provider.account.import.response"
+  | "provider.account.set_allowed_models.response";
 
 export interface ProviderAccountSessionHost {
   emit(msg: SessionOutboundMessage): void;
@@ -76,6 +80,66 @@ export class ProviderAccountSession {
     this.run("provider.account.set_active.response", msg.requestId, () =>
       this.store.setActive(msg.provider, msg.accountId),
     );
+  }
+
+  async handleProviderAccountRenameRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.account.rename.request" }>,
+  ): Promise<void> {
+    this.run("provider.account.rename.response", msg.requestId, () =>
+      this.store.rename(msg.accountId, msg.name),
+    );
+  }
+
+  async handleProviderAccountSignOutRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.account.sign_out.request" }>,
+  ): Promise<void> {
+    this.run("provider.account.sign_out.response", msg.requestId, () =>
+      this.store.signOut(msg.accountId),
+    );
+  }
+
+  async handleProviderAccountImportRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.account.import.request" }>,
+  ): Promise<void> {
+    this.run("provider.account.import.response", msg.requestId, () =>
+      this.store.import(msg.bundle),
+    );
+  }
+
+  async handleProviderAccountSetAllowedModelsRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.account.set_allowed_models.request" }>,
+  ): Promise<void> {
+    this.run("provider.account.set_allowed_models.response", msg.requestId, () =>
+      this.store.setAllowedModels(msg.accountId, msg.allowedModels),
+    );
+  }
+
+  /**
+   * Export does not share the common response payload: it returns the bundle.
+   *
+   * The bundle is SECRET MATERIAL — live provider credentials. It is emitted on
+   * this authenticated session only, is never written to disk daemon-side, and
+   * must never be logged, so the error path here logs the message alone.
+   */
+  async handleProviderAccountExportRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.account.export.request" }>,
+  ): Promise<void> {
+    try {
+      const bundle = this.store.export(msg.provider, msg.accountIds);
+      this.host.emit({
+        type: "provider.account.export.response",
+        payload: { requestId: msg.requestId, bundle, error: null },
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!(error instanceof ProviderAccountError)) {
+        this.logger.error({ err: error }, "Provider account export failed");
+      }
+      this.host.emit({
+        type: "provider.account.export.response",
+        payload: { requestId: msg.requestId, bundle: null, error: message },
+      });
+    }
   }
 
   private run(

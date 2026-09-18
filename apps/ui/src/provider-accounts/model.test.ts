@@ -69,8 +69,15 @@ describe("config directory preview", () => {
 
 describe("disabled provider gating", () => {
   it("renders only providers the daemon enabled", () => {
+    // Which providers ship enabled is the daemon's manifest to decide; the
+    // selector must mirror it rather than a hardcoded id.
     const enabled = selectEnabledCapabilities(PROVIDER_ACCOUNT_CAPABILITIES);
-    expect(enabled.map((capability) => capability.provider)).toEqual(["claude"]);
+    expect(enabled.map((capability) => capability.provider)).toEqual(
+      PROVIDER_ACCOUNT_CAPABILITIES.filter((capability) => capability.enabled).map(
+        (capability) => capability.provider,
+      ),
+    );
+    expect(enabled.length).toBeGreaterThan(0);
   });
 
   it("drives the list off the payload, not a hardcoded provider id", () => {

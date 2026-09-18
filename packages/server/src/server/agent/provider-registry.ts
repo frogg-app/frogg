@@ -774,7 +774,10 @@ function buildResolvedBuiltinProviders(
 function addDerivedProviders(
   resolvedProviders: Map<string, ResolvedProvider>,
   providerOverrides: Record<string, ProviderOverride>,
-  options: Pick<BuildProviderRegistryOptions, "managedProcesses" | "openCodeBridge">,
+  options: Pick<
+    BuildProviderRegistryOptions,
+    "managedProcesses" | "openCodeBridge" | "providerAccountEnv"
+  >,
 ): void {
   for (const [providerId, override] of Object.entries(providerOverrides)) {
     if (resolvedProviders.has(providerId) || BUILTIN_PROVIDER_IDS.includes(providerId)) {
@@ -791,6 +794,16 @@ function addDerivedProviders(
       }
       // Capture command in const for closure - TypeScript can't track type refinement inside closures
       const command = override.command;
+      // Custom ACP providers (e.g. a config.json `extends: "acp"` entry for
+      // gemini) are keyed by their own provider id in provider-accounts, same
+      // as a builtin, so the daemon-wide account overlay (a "home"-mode
+      // provider's synthetic HOME, or an env-mode config dir) still applies to
+      // the base client used for catalog/model refresh. Per-agent launches are
+      // covered separately by AgentManager.resolveProviderAccountLaunchEnv.
+      const acpRuntimeSettings = applyProviderAccountEnv(
+        options.providerAccountEnv?.(providerId),
+        toRuntimeSettings(override),
+      );
 
       resolvedProviders.set(providerId, {
         definition: createDerivedDefinition(
@@ -804,7 +817,7 @@ function addDerivedProviders(
           },
           override,
         ),
-        runtimeSettings: toRuntimeSettings(override),
+        runtimeSettings: acpRuntimeSettings,
         profileModels: override.models ?? [],
         additionalModels: override.additionalModels ?? [],
         profileModelsAreAdditive: false,
@@ -815,7 +828,7 @@ function addDerivedProviders(
           const acpOptions = {
             logger,
             command,
-            env: override.env,
+            env: acpRuntimeSettings?.env,
             providerId,
             label: override.label ?? providerId,
             providerParams: override.params,
@@ -904,6 +917,7 @@ export function buildProviderRegistry(
   addDerivedProviders(resolvedProviders, providerOverrides, {
     managedProcesses: options?.managedProcesses,
     openCodeBridge: options?.openCodeBridge,
+    ...(options?.providerAccountEnv ? { providerAccountEnv: options.providerAccountEnv } : {}),
   });
 
   return Object.fromEntries(

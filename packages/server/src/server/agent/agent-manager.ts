@@ -287,6 +287,16 @@ export interface AgentManagerOptions {
     provider: string,
     accountId: string | null | undefined,
   ) => { env: Record<string, string>; unknownAccountId?: string };
+  /**
+   * COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+   * The models the agent's provider account permits, or undefined for no
+   * restriction. Enforced on every create and resume, so a model an account
+   * lost access to cannot be resumed into.
+   */
+  resolveProviderAccountAllowedModels?: (
+    provider: string,
+    accountId: string | null | undefined,
+  ) => string[] | undefined;
   providerDefinitions?: ProviderEnabledMap;
   idFactory?: () => string;
   registry?: AgentStorage;
@@ -687,6 +697,10 @@ function detachedAgentLabelPatch(labels: Record<string, string>): AgentLabelPatc
 
 export class AgentManager {
   private readonly clients = new Map<AgentProvider, AgentClient>();
+  private readonly resolveProviderAccountAllowedModels?: (
+    provider: string,
+    accountId: string | null | undefined,
+  ) => string[] | undefined;
   private readonly resolveAgentProviderAccountEnv?: (
     provider: string,
     accountId: string | null | undefined,
@@ -745,6 +759,7 @@ export class AgentManager {
     };
     this.beforeSteerUnavailableFallback = options.beforeSteerUnavailableFallback;
     this.resolveAgentProviderAccountEnv = options.resolveAgentProviderAccountEnv;
+    this.resolveProviderAccountAllowedModels = options.resolveProviderAccountAllowedModels;
     this.agentStreamCoalescer = new AgentStreamCoalescer({
       windowMs: options.agentStreamCoalesceWindowMs ?? AGENT_STREAM_COALESCE_DEFAULT_WINDOW_MS,
       timers: { setTimeout, clearTimeout },
@@ -4781,7 +4796,43 @@ export class AgentManager {
       }
     }
 
+    this.assertModelAllowedForProviderAccount(normalized);
+
     return this.applyProviderConfiguration(normalized);
+  }
+
+  /**
+   * COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+   * Rejects a model the agent's provider account is not permitted to run. This
+   * is the authoritative server-side gate: it sits on the shared normalize path
+   * so create and resume are both covered, whatever the client sent.
+   *
+   * An account with no restriction, or a provider with no accounts capability,
+   * resolves to undefined and permits everything.
+   */
+  private assertModelAllowedForProviderAccount(config: AgentSessionConfig): void {
+    if (!this.resolveProviderAccountAllowedModels) return;
+    let allowed: string[] | undefined;
+    try {
+      allowed = this.resolveProviderAccountAllowedModels(config.provider, config.providerAccountId);
+    } catch (error) {
+      // A failure to read the restriction must not block a launch.
+      this.logger.warn(
+        { err: error, provider: config.provider },
+        "Failed to resolve provider account model restrictions; allowing all models",
+      );
+      return;
+    }
+    if (!allowed) return;
+
+    if (allowed.length === 0) {
+      throw new Error(`The provider account selected for '${config.provider}' permits no models`);
+    }
+    if (config.model && !allowed.includes(config.model)) {
+      throw new Error(
+        `Model '${config.model}' is not permitted for the provider account selected for '${config.provider}'`,
+      );
+    }
   }
 
   private applyProviderConfiguration(config: AgentSessionConfig): AgentSessionConfig {

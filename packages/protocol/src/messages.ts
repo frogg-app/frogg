@@ -22,6 +22,7 @@ import { MAX_EXPLICIT_AGENT_TITLE_CHARS } from "./agent-title-limits.js";
 import { AgentProviderSchema } from "./provider-manifest.js";
 import {
   ProviderAccountCapabilitySchema,
+  ProviderAccountExportBundleSchema,
   ProviderAccountStateSchema,
 } from "./provider-accounts.js";
 import { TOOL_CALL_ICON_NAMES } from "./agent-types.js";
@@ -1830,6 +1831,73 @@ export const ProviderAccountSetActiveRequestMessageSchema = z.object({
   requestId: z.string(),
 });
 
+/**
+ * Renames an account's display name only. The account keeps its id and its
+ * on-disk config directory: nothing is moved or renamed on disk, so an active
+ * sign-in survives a rename. Also valid for a provider's implicit "Default"
+ * account (`providerAccountDefaultId(provider)`), which the daemon materialises
+ * as a stored record carrying just the name override.
+ */
+export const ProviderAccountRenameRequestMessageSchema = z.object({
+  type: z.literal("provider.account.rename.request"),
+  accountId: z.string(),
+  /** New display name. Any non-blank single-line text, up to 64 characters. */
+  name: z.string(),
+  requestId: z.string(),
+});
+
+/**
+ * Signs the account out by deleting the capability's `credentialFiles` inside
+ * the account's own config directory. The account, its directory, its linked
+ * folders and everything else in the directory are left intact. Rejected when
+ * the account is not currently signed in.
+ */
+export const ProviderAccountSignOutRequestMessageSchema = z.object({
+  type: z.literal("provider.account.sign_out.request"),
+  accountId: z.string(),
+  requestId: z.string(),
+});
+
+/**
+ * Exports one or more of a provider's accounts as a portable bundle so a
+ * sign-in can be moved to another daemon.
+ *
+ * The response carries LIVE CREDENTIALS. The daemon never writes the bundle to
+ * disk; it exists only in the authenticated session's response frame.
+ */
+export const ProviderAccountExportRequestMessageSchema = z.object({
+  type: z.literal("provider.account.export.request"),
+  provider: AgentProviderSchema,
+  /** Accounts to export. Omitted or empty exports every account of the provider. */
+  accountIds: z.array(z.string()).optional(),
+  requestId: z.string(),
+});
+
+/**
+ * Imports a bundle produced by `provider.account.export`. Each account is
+ * provisioned a fresh config directory on this daemon and its credential files
+ * are written with 0600 permissions.
+ *
+ * An id or name that already exists for the provider is rejected outright —
+ * import never overwrites an existing account or its credentials.
+ */
+export const ProviderAccountImportRequestMessageSchema = z.object({
+  type: z.literal("provider.account.import.request"),
+  bundle: ProviderAccountExportBundleSchema,
+  requestId: z.string(),
+});
+
+/**
+ * Restricts which models an account may run. `null` clears the restriction (all
+ * of the provider's models); an empty array permits none.
+ */
+export const ProviderAccountSetAllowedModelsRequestMessageSchema = z.object({
+  type: z.literal("provider.account.set_allowed_models.request"),
+  accountId: z.string(),
+  allowedModels: z.array(z.string()).nullable(),
+  requestId: z.string(),
+});
+
 export const ResumeAgentRequestMessageSchema = z.object({
   type: z.literal("resume_agent_request"),
   handle: AgentPersistenceHandleSchema,
@@ -3107,6 +3175,13 @@ export const HubExecutionAgentValidateRequestSchema = z.object({
   type: z.literal("hub.execution.agent.validate.request"),
   requestId: z.string(),
   provider: z.string(),
+  /**
+   * COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+   * Validate against this account's `allowedModels` as well as the provider's
+   * model list. `null` means the provider's implicit default account; omitted
+   * means the provider's daemon-wide active account.
+   */
+  providerAccountId: z.string().nullable().optional(),
   model: z.string().optional(),
   modeId: z.string().optional(),
   thinkingOptionId: z.string().optional(),
@@ -3237,6 +3312,11 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ProviderAccountCreateRequestMessageSchema,
   ProviderAccountDeleteRequestMessageSchema,
   ProviderAccountSetActiveRequestMessageSchema,
+  ProviderAccountRenameRequestMessageSchema,
+  ProviderAccountSignOutRequestMessageSchema,
+  ProviderAccountExportRequestMessageSchema,
+  ProviderAccountImportRequestMessageSchema,
+  ProviderAccountSetAllowedModelsRequestMessageSchema,
   ResumeAgentRequestMessageSchema,
   ImportAgentRequestMessageSchema,
   RefreshAgentRequestMessageSchema,
@@ -3674,6 +3754,13 @@ export const ServerInfoStatusPayloadSchema = z
         providerAgentDefinitions: z.boolean().optional(),
         // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.
         providerAccounts: z.boolean().optional(),
+        // COMPAT(providerAccountManagement): added in v1.4.2, remove after 2027-09-17.
+        // provider.account.rename / sign_out / export / import are available.
+        providerAccountManagement: z.boolean().optional(),
+        // COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+        // provider.account.set_allowed_models is available and the daemon enforces
+        // per-account model restrictions when an agent is created or resumed.
+        providerAccountAllowedModels: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the
@@ -6311,6 +6398,41 @@ export const ProviderAccountSetActiveResponseMessageSchema = z.object({
   payload: ProviderAccountResponsePayloadSchema,
 });
 
+export const ProviderAccountRenameResponseMessageSchema = z.object({
+  type: z.literal("provider.account.rename.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
+export const ProviderAccountSignOutResponseMessageSchema = z.object({
+  type: z.literal("provider.account.sign_out.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
+export const ProviderAccountImportResponseMessageSchema = z.object({
+  type: z.literal("provider.account.import.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
+export const ProviderAccountSetAllowedModelsResponseMessageSchema = z.object({
+  type: z.literal("provider.account.set_allowed_models.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
+/**
+ * SECRET MATERIAL. `bundle` carries live provider credentials in plaintext.
+ * Never log this frame, never persist it daemon-side, and treat a stored copy
+ * on the client exactly like the credential file it contains.
+ */
+export const ProviderAccountExportResponseMessageSchema = z.object({
+  type: z.literal("provider.account.export.response"),
+  payload: z.object({
+    requestId: z.string(),
+    /** Null when `error` is set. */
+    bundle: ProviderAccountExportBundleSchema.nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
 const AgentSlashCommandSchema = z.object({
   name: z.string(),
   description: z.string(),
@@ -6812,6 +6934,11 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProviderAccountCreateResponseMessageSchema,
   ProviderAccountDeleteResponseMessageSchema,
   ProviderAccountSetActiveResponseMessageSchema,
+  ProviderAccountRenameResponseMessageSchema,
+  ProviderAccountSignOutResponseMessageSchema,
+  ProviderAccountExportResponseMessageSchema,
+  ProviderAccountImportResponseMessageSchema,
+  ProviderAccountSetAllowedModelsResponseMessageSchema,
   ListCommandsResponseSchema,
   ListTerminalsResponseSchema,
   TerminalsChangedSchema,
@@ -7044,6 +7171,36 @@ export type ProviderAccountDeleteResponseMessage = z.infer<
 >;
 export type ProviderAccountSetActiveResponseMessage = z.infer<
   typeof ProviderAccountSetActiveResponseMessageSchema
+>;
+export type ProviderAccountRenameRequestMessage = z.infer<
+  typeof ProviderAccountRenameRequestMessageSchema
+>;
+export type ProviderAccountSignOutRequestMessage = z.infer<
+  typeof ProviderAccountSignOutRequestMessageSchema
+>;
+export type ProviderAccountExportRequestMessage = z.infer<
+  typeof ProviderAccountExportRequestMessageSchema
+>;
+export type ProviderAccountImportRequestMessage = z.infer<
+  typeof ProviderAccountImportRequestMessageSchema
+>;
+export type ProviderAccountSetAllowedModelsRequestMessage = z.infer<
+  typeof ProviderAccountSetAllowedModelsRequestMessageSchema
+>;
+export type ProviderAccountRenameResponseMessage = z.infer<
+  typeof ProviderAccountRenameResponseMessageSchema
+>;
+export type ProviderAccountSignOutResponseMessage = z.infer<
+  typeof ProviderAccountSignOutResponseMessageSchema
+>;
+export type ProviderAccountExportResponseMessage = z.infer<
+  typeof ProviderAccountExportResponseMessageSchema
+>;
+export type ProviderAccountImportResponseMessage = z.infer<
+  typeof ProviderAccountImportResponseMessageSchema
+>;
+export type ProviderAccountSetAllowedModelsResponseMessage = z.infer<
+  typeof ProviderAccountSetAllowedModelsResponseMessageSchema
 >;
 export type ProviderAccountResponsePayload = z.infer<typeof ProviderAccountResponsePayloadSchema>;
 export type ChatCreateResponse = z.infer<typeof ChatCreateResponseSchema>;

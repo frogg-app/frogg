@@ -211,6 +211,7 @@ export const ja: TranslationResources = {
       notSignedIn: "サインインしていません",
       selectWithValue: "プロバイダーアカウントを選択（{{value}}）",
       lockedWithValue: "プロバイダーアカウント（{{value}}）、このエージェントでは変更できません",
+      pillLabel: "プロバイダーのアカウント: {{value}}",
     },
     hints: {
       thinking: "思考モード",
@@ -3135,6 +3136,55 @@ export const ja: TranslationResources = {
         confirmMessage: "This deletes the provider entry from config.json. It cannot be undone.",
         confirm: "Remove",
         errorTitle: "Unable to remove provider",
+      },
+      settingsModal: {
+        dangerZoneTitle: "危険ゾーン",
+        uninstallTitle: "プロバイダーをアンインストール",
+        accounts: {
+          title: "アカウント",
+          info: "複数のアカウントでサインインし、このプロバイダーを実行するアカウントを選べます。",
+          empty: "アカウントがまだありません。",
+          usageTitle: "使用量",
+          usageInfo: "使用量はアカウント単位ではなくプロバイダー全体として報告されます。",
+          rename: "名前を変更",
+          renameTitle: "アカウント名を変更",
+          renamePlaceholder: "アカウント名",
+          renameHint:
+            "表示名だけを変更します。ディスク上のものは移動されず、サインインも維持されます。",
+          signOut: "サインアウト",
+          signOutConfirmTitle: "{{name}} をサインアウトしますか？",
+          signOutConfirmMessage:
+            "サーバーに保存されたこのアカウントの資格情報を削除します。アカウントとそのフォルダーは残ります。",
+          export: "エクスポート",
+          exportTitle: "アカウントをエクスポート",
+          exportWarning:
+            "このバンドルには有効なサインイン資格情報が平文で含まれます。入手した人は誰でもこれらのアカウントを使用できます。パスワードと同じように扱ってください。移行先のサーバーにのみ貼り付け、保存も共有もしないでください。",
+          exportCopy: "バンドルをコピー",
+          exportCopied: "コピーしました",
+          exportPending: "エクスポートを準備中…",
+          exportEmpty: "エクスポートするものがありません。",
+          importAction: "インポート",
+          importTitle: "アカウントをインポート",
+          importHint:
+            "別のサーバーからエクスポートしたバンドルを貼り付けます。有効な資格情報を含むため、パスワードと同じように扱ってください。",
+          importPlaceholder: "バンドルの JSON を貼り付け",
+          importSubmit: "インポート",
+          importInvalid: "有効なアカウントバンドルではありません。",
+        },
+        models: {
+          title: "モデル",
+          info: "アカウントが使用できるこのプロバイダーのモデルを制限します。",
+          empty: "このプロバイダーはモデルを報告しませんでした。",
+          accountLabel: "アカウント",
+          unrestricted: "すべてのモデル",
+          none: "モデルなし",
+          restrictedCount: "{{total}} 個中 {{allowed}} 個のモデル",
+          allowAll: "すべてのモデルを許可",
+          allowNone: "どのモデルも許可しない",
+          restrictionHint:
+            "制限のないアカウントは、このプロバイダーが提供するすべてのモデルを使用できます。",
+          selectAccount: "制限するアカウントを選んでください。",
+        },
       },
       statuses: {
         disabled: "無効",

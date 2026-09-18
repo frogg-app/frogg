@@ -52,6 +52,7 @@ vi.mock("react-native", () => ({
   Pressable: ({
     children,
     onPress,
+    onPressIn,
     onHoverIn,
     onHoverOut,
     accessibilityRole,
@@ -63,6 +64,7 @@ vi.mock("react-native", () => ({
       | React.ReactNode
       | ((state: { pressed: boolean; hovered: boolean }) => React.ReactNode);
     onPress?: (event: React.MouseEvent) => void;
+    onPressIn?: (event: { stopPropagation: () => void }) => void;
     onHoverIn?: () => void;
     onHoverOut?: () => void;
     accessibilityRole?: string;
@@ -77,7 +79,12 @@ vi.mock("react-native", () => ({
         "aria-label": accessibilityLabel,
         "aria-disabled": disabled ? "true" : undefined,
         "data-testid": testID,
-        onClick: disabled ? undefined : onPress,
+        onClick: disabled
+          ? undefined
+          : (event: React.MouseEvent) => {
+              onPressIn?.(event);
+              onPress?.(event);
+            },
         onMouseEnter: onHoverIn,
         onMouseLeave: onHoverOut,
       },
@@ -95,11 +102,13 @@ vi.mock("react-native-unistyles", () => ({
 }));
 
 vi.mock("lucide-react-native", () => {
-  const icon = (name: string) => () => React.createElement("span", { "data-icon": name });
+  const icon = (name: string) => {
+    const Component = () => React.createElement("span", { "data-icon": name });
+    Component.displayName = `Icon(${name})`;
+    return Component;
+  };
   return {
-    ChevronRight: icon("ChevronRight"),
-    MoreHorizontal: icon("MoreHorizontal"),
-    Trash2: icon("Trash2"),
+    Settings: icon("Settings"),
   };
 });
 
@@ -119,14 +128,7 @@ vi.mock("react-i18next", () => ({
           "settings.providers.models.many": "{{count}} models",
           "settings.providers.addErrorTitle": "Unable to add provider",
           "settings.providers.updateErrorTitle": "Unable to update provider",
-          "settings.providers.actions.menu": "{{name}} actions",
-          "settings.providers.actions.remove": "Remove provider",
-          "settings.providers.actions.removing": "Removing...",
-          "settings.providers.remove.confirmTitle": "Remove {{name}}?",
-          "settings.providers.remove.confirmMessage":
-            "This deletes the provider entry from config.json. It cannot be undone.",
-          "settings.providers.remove.confirm": "Remove",
-          "settings.providers.remove.errorTitle": "Unable to remove provider",
+          "settings.providers.actions.settings": "{{name}} settings",
         })[key] ?? key
       )
         .replaceAll("{{name}}", String(values?.name ?? ""))
@@ -170,66 +172,9 @@ vi.mock("@/screens/settings/settings-info-tip", () => ({
   SettingsInfoTip: () => null,
 }));
 
-vi.mock("@/components/ui/dropdown-menu", () => ({
-  DropdownMenu: ({ children }: { children?: React.ReactNode }) =>
-    React.createElement("div", null, children),
-  DropdownMenuTrigger: ({
-    children,
-    onPressIn,
-    accessibilityRole,
-    accessibilityLabel,
-    testID,
-  }: {
-    children?:
-      | React.ReactNode
-      | ((state: { pressed: boolean; hovered: boolean; open: boolean }) => React.ReactNode);
-    onPressIn?: (event: { stopPropagation: () => void }) => void;
-    accessibilityRole?: string;
-    accessibilityLabel?: string;
-    testID?: string;
-  }) =>
-    React.createElement(
-      "button",
-      {
-        type: "button",
-        role: accessibilityRole,
-        "aria-label": accessibilityLabel,
-        "data-testid": testID,
-        onMouseDown: (event: React.MouseEvent) => onPressIn?.(event),
-        onClick: (event: React.MouseEvent) => event.stopPropagation(),
-      },
-      typeof children === "function"
-        ? children({ pressed: false, hovered: false, open: false })
-        : children,
-    ),
-  DropdownMenuContent: ({ children }: { children?: React.ReactNode }) =>
-    React.createElement("div", null, children),
-  DropdownMenuItem: ({
-    children,
-    onSelect,
-    status,
-    pendingLabel,
-    testID,
-  }: {
-    children?: React.ReactNode;
-    onSelect?: () => void;
-    status?: "idle" | "pending" | "success";
-    pendingLabel?: string;
-    testID?: string;
-  }) =>
-    React.createElement(
-      "button",
-      {
-        type: "button",
-        "data-testid": testID,
-        disabled: status === "pending" || status === "success",
-        onClick: (event: React.MouseEvent) => {
-          event.stopPropagation();
-          onSelect?.();
-        },
-      },
-      status === "pending" ? pendingLabel : children,
-    ),
+vi.mock("@/screens/settings/provider-settings-modal/provider-settings-modal", () => ({
+  ProviderSettingsModal: ({ providerId }: { providerId: string; visible: boolean }) =>
+    React.createElement("div", { "data-testid": "provider-settings-modal" }, providerId),
 }));
 
 vi.mock("@/components/provider-icons", () => ({
@@ -269,14 +214,6 @@ vi.mock("@/hooks/use-daemon-config", () => ({
 
 vi.mock("@/runtime/host-runtime", () => ({
   useHostRuntimeIsConnected: () => true,
-}));
-
-vi.mock("@/runtime/host-features", () => ({
-  useHostFeature: () => false,
-}));
-
-vi.mock("@/utils/confirm-dialog", () => ({
-  confirmDialog: vi.fn(async () => true),
 }));
 
 import { ProvidersSection } from "./providers-section";
@@ -400,7 +337,7 @@ describe("ProvidersSection", () => {
     expect(indexOfText(codexNodes, "Disabled")).toBeGreaterThanOrEqual(0);
   });
 
-  it("composes the row as chevron, icon, label, status, model count, then switch", () => {
+  it("composes the row as icon, label, status, model count, switch, then settings cog", () => {
     snapshotState.entries = [claudeEntry];
     configState.config = makeConfig();
 
@@ -408,19 +345,52 @@ describe("ProvidersSection", () => {
 
     const row = findRow("Claude provider details");
     const nodes = descendants(row);
-    const chevron = indexOfMatches(nodes, '[data-icon="ChevronRight"]');
+    expect(indexOfMatches(nodes, '[data-icon="ChevronRight"]')).toBe(-1);
     const icon = indexOfMatches(nodes, '[data-icon="provider-claude"]');
     const label = indexOfText(nodes, "Claude");
     const status = indexOfText(nodes, "Available");
     const modelCount = indexOfText(nodes, "3 models");
     const switchEl = indexOfMatches(nodes, '[role="switch"]');
+    const cog = indexOfMatches(nodes, '[data-icon="Settings"]');
 
-    expect(chevron).toBeGreaterThanOrEqual(0);
-    expect(icon).toBeGreaterThan(chevron);
+    expect(icon).toBeGreaterThanOrEqual(0);
     expect(label).toBeGreaterThan(icon);
     expect(status).toBeGreaterThan(label);
     expect(modelCount).toBeGreaterThan(status);
     expect(switchEl).toBeGreaterThan(modelCount);
+    expect(cog).toBeGreaterThan(switchEl);
+  });
+
+  it("does not show the settings cog for a provider that is not installed", () => {
+    snapshotState.entries = [disabledCodexEntry];
+    configState.config = makeConfig({ codex: { enabled: false } });
+
+    render();
+
+    const row = findRow("Codex provider details");
+    const nodes = descendants(row);
+    expect(indexOfMatches(nodes, '[data-icon="Settings"]')).toBe(-1);
+  });
+
+  it("opens the settings modal when the cog is pressed without triggering the row press", () => {
+    snapshotState.entries = [claudeEntry];
+    configState.config = makeConfig();
+
+    render();
+
+    expect(container?.querySelector('[data-testid="provider-settings-modal"]')).toBeNull();
+
+    const cogButton = container?.querySelector<HTMLElement>('[aria-label="Claude settings"]');
+    expect(cogButton).not.toBeNull();
+
+    act(() => {
+      cogButton?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(openProviderSettingsMock).not.toHaveBeenCalled();
+    const modal = container?.querySelector('[data-testid="provider-settings-modal"]');
+    expect(modal).not.toBeNull();
+    expect(modal?.textContent).toBe("claude");
   });
 
   it("opens the diagnostic sheet when the outer row is pressed for a disabled provider", () => {

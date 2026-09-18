@@ -213,6 +213,7 @@ export const fr: TranslationResources = {
       notSignedIn: "Non connecté",
       selectWithValue: "Sélectionnez le compte du fournisseur ({{value}})",
       lockedWithValue: "Compte du fournisseur ({{value}}), fixe pour cet agent",
+      pillLabel: "Compte du fournisseur : {{value}}",
     },
     hints: {
       thinking: "Mode réflexion",
@@ -3174,6 +3175,55 @@ export const fr: TranslationResources = {
         confirmMessage: "This deletes the provider entry from config.json. It cannot be undone.",
         confirm: "Remove",
         errorTitle: "Unable to remove provider",
+      },
+      settingsModal: {
+        dangerZoneTitle: "Zone dangereuse",
+        uninstallTitle: "Désinstaller le fournisseur",
+        accounts: {
+          title: "Comptes",
+          info: "Connectez-vous plusieurs fois et choisissez le compte avec lequel ce fournisseur s'exécute.",
+          empty: "Aucun compte pour l'instant.",
+          usageTitle: "Utilisation",
+          usageInfo: "Le fournisseur signale l'utilisation globale, et non par compte.",
+          rename: "Renommer",
+          renameTitle: "Renommer le compte",
+          renamePlaceholder: "Nom du compte",
+          renameHint:
+            "Modifie uniquement le libellé. Rien n'est déplacé sur le disque et la connexion est conservée.",
+          signOut: "Se déconnecter",
+          signOutConfirmTitle: "Déconnecter {{name}} ?",
+          signOutConfirmMessage:
+            "Supprime les identifiants enregistrés de ce compte sur le serveur. Le compte et son dossier sont conservés.",
+          export: "Exporter",
+          exportTitle: "Exporter les comptes",
+          exportWarning:
+            "Ce paquet contient des identifiants de connexion actifs en clair. Quiconque l'obtient peut utiliser ces comptes. Traitez-le comme un mot de passe : ne le collez que dans le serveur de destination, et ne le stockez ni ne le partagez pas.",
+          exportCopy: "Copier le paquet",
+          exportCopied: "Copié",
+          exportPending: "Préparation de l'export…",
+          exportEmpty: "Il n'y a rien à exporter.",
+          importAction: "Importer",
+          importTitle: "Importer des comptes",
+          importHint:
+            "Collez un paquet exporté depuis un autre serveur. Il contient des identifiants actifs : traitez-le comme un mot de passe.",
+          importPlaceholder: "Collez le JSON du paquet",
+          importSubmit: "Importer",
+          importInvalid: "Ce n'est pas un paquet de comptes valide.",
+        },
+        models: {
+          title: "Modèles",
+          info: "Restreignez les modèles de ce fournisseur qu'un compte peut utiliser.",
+          empty: "Ce fournisseur n'a signalé aucun modèle.",
+          accountLabel: "Compte",
+          unrestricted: "Tous les modèles",
+          none: "Aucun modèle",
+          restrictedCount: "{{allowed}} modèles sur {{total}}",
+          allowAll: "Autoriser tous les modèles",
+          allowNone: "N'autoriser aucun modèle",
+          restrictionHint:
+            "Un compte sans restriction peut utiliser tous les modèles proposés par ce fournisseur.",
+          selectAccount: "Choisissez un compte à restreindre.",
+        },
       },
       statuses: {
         disabled: "Désactivé",

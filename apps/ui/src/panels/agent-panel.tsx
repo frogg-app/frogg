@@ -1366,6 +1366,7 @@ const ChatAgentReadyContent = memo(function ChatAgentReadyContent({
         <AgentTracks
           serverId={serverId}
           workspaceId={workspaceId}
+          agentId={agentId}
           cwd={cwd}
           subagentRows={subagentRows}
           tasks={tasks}

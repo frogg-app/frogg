@@ -11,7 +11,10 @@ import { resolveFroggHome } from "./frogg-home.js";
 import { createRootLogger } from "./logger.js";
 import type { DaemonLifecycleIntent } from "./bootstrap.js";
 import { getProcessDiagnostics } from "./process-diagnostics.js";
-import { findEnabledUnverifiedProviders } from "@frogg/protocol/provider-accounts";
+import {
+  findEnabledHomeModeProviders,
+  findEnabledUnverifiedProviders,
+} from "@frogg/protocol/provider-accounts";
 import { loadPersistedConfig } from "./persisted-config.js";
 
 process.title = `${brand.name} Daemon`;
@@ -114,6 +117,32 @@ function warnOnUnverifiedProviderAccounts(
   );
 }
 
+/**
+ * Home-mode providers are verified, but enabling one changes how its CLI is
+ * launched: it runs with the account directory as HOME. Worth saying out loud
+ * once at startup, because anything the CLI reads from the home directory and
+ * is not in the capability's `homeLinks` will be missing.
+ */
+function warnOnHomeModeProviderAccounts(
+  froggHome: string,
+  logger: BootstrapResult["logger"],
+): void {
+  let providerIds: string[] = [];
+  try {
+    providerIds = findEnabledHomeModeProviders(loadPersistedConfig(froggHome).providerAccounts);
+  } catch {
+    return;
+  }
+  if (providerIds.length === 0) return;
+  logger.warn(
+    { providerIds },
+    "Provider accounts are enabled for providers that have no config-directory environment " +
+      "variable, so each account runs its CLI with the account directory as HOME. Only the " +
+      "capability's homeLinks entries (npm cache, git and SSH config, gcloud config) are " +
+      "linked back to the real home; anything else the CLI reads from home will be absent.",
+  );
+}
+
 function bootstrapFromEnvironment(): BootstrapResult {
   try {
     normalizeBrandEnvironment(brand, process.env);
@@ -122,6 +151,7 @@ function bootstrapFromEnvironment(): BootstrapResult {
     const logger = createRootLogger({ log: config.log }, { froggHome, file: false });
     warnOnLegacyAccountProviders(config, logger);
     warnOnUnverifiedProviderAccounts(froggHome, logger);
+    warnOnHomeModeProviderAccounts(froggHome, logger);
     return { froggHome, logger, config };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

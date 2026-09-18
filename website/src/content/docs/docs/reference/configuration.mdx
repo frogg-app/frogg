@@ -133,15 +133,24 @@ is set, the app shows the endpoint read-only.
 
 ## `providerAccounts`
 
-Multi-sign-in state, keyed by provider id. Only `claude` supports accounts today; the other
-entries exist so enabling one is a config edit. See
+Multi-sign-in state, keyed by provider id. `claude` and `codex` support accounts today; the
+other entries exist so enabling one is a config edit. See
 [provider accounts](/docs/agents-and-providers/providers/#provider-accounts-multi-sign-in).
+
+`providerAccounts.gemini.enabled` is a special case. Gemini CLI has no config-directory
+environment variable, so each Gemini account runs the CLI with the account directory as its
+`HOME`; only a fixed set of entries (`.npm`, `.npmrc`, `.cache`, `.gitconfig`, `.ssh`,
+`.config/gcloud`) is symlinked back to your real home, and anything else Gemini reads from
+home will be missing. See
+[Gemini: accounts through a per-account HOME](/docs/agents-and-providers/providers/#gemini-accounts-through-a-per-account-home)
+before enabling it.
 
 | Key                                      | Type             | Default              | Meaning |
 | ---------------------------------------- | ---------------- | -------------------- | ------- |
-| `providerAccounts.<provider>.enabled`    | boolean          | `true` for `claude`, `false` otherwise | Whether the daemon accepts account management for the provider |
+| `providerAccounts.<provider>.enabled`    | boolean          | `true` for `claude` and `codex`, `false` otherwise | Whether the daemon accepts account management for the provider |
 | `providerAccounts.<provider>.activeAccountId` | string \| null | unset                | Account whose config directory the provider's agents use |
 | `providerAccounts.<provider>.accounts`   | array            | `[]`                 | Managed accounts; written by the daemon, not hand-edited |
+| `providerAccounts.<provider>.accounts[].allowedModels` | string[] | unset | Model ids this account may run. Unset means every model the provider offers; `[]` permits none |
 
 ```json
 {
@@ -156,7 +165,8 @@ entries exist so enabling one is a config edit. See
           "name": "peter",
           "configDir": "/home/frogg/.claude-peter",
           "linkedFolders": ["commands", "skills", "agents", "projects", "sessions", "shell-snapshots"],
-          "createdAt": "2026-09-17T09:00:00.000Z"
+          "createdAt": "2026-09-17T09:00:00.000Z",
+          "allowedModels": ["claude-opus-4-6", "claude-sonnet-4-5"]
         }
       ]
     }

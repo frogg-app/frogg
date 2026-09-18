@@ -110,6 +110,14 @@ export interface ProviderSnapshotManagerOptions {
     providerId: string,
     accountId: string | null | undefined,
   ) => { env: Record<string, string>; unknownAccountId?: string };
+  /**
+   * COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+   * The models one provider account permits, or undefined for unrestricted.
+   */
+  providerAccountAllowedModels?: (
+    providerId: string,
+    accountId: string | null | undefined,
+  ) => string[] | undefined;
 }
 
 interface ProviderSnapshotRefreshOptions {
@@ -222,6 +230,10 @@ export class ProviderSnapshotManager {
   private readonly managedProcesses?: ManagedProcessRegistry;
   private readonly openCodeBridge?: OpenCodeBridge;
   private readonly providerAccountEnv?: (providerId: string) => Record<string, string> | undefined;
+  private readonly providerAccountAllowedModels?: (
+    providerId: string,
+    accountId: string | null | undefined,
+  ) => string[] | undefined;
   private readonly providerAccountEnvForAgent?: (
     providerId: string,
     accountId: string | null | undefined,
@@ -242,6 +254,7 @@ export class ProviderSnapshotManager {
     this.openCodeBridge = options.openCodeBridge;
     this.providerAccountEnv = options.providerAccountEnv;
     this.providerAccountEnvForAgent = options.providerAccountEnvForAgent;
+    this.providerAccountAllowedModels = options.providerAccountAllowedModels;
     this.isDev = options.isDev === true;
     this.extraClients = options.extraClients ?? {};
     this.runtimeSettings = options.runtimeSettings;
@@ -402,10 +415,16 @@ export class ProviderSnapshotManager {
     }
 
     const definition = this.requireProvider(input.provider);
+    // COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+    const allowedModels = this.providerAccountAllowedModels?.(
+      input.provider,
+      input.providerAccountId,
+    );
     return validateAgentConfigurationAgainstProvider({
       input,
       provider,
       validateOptions: definition.validateOptions,
+      allowedModels,
     });
   }
 
@@ -617,6 +636,18 @@ export class ProviderSnapshotManager {
     for (const cwdKey of this.snapshots.keys()) {
       this.emitChange(cwdKey);
     }
+  }
+
+  /**
+   * COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+   * The model ids the agent's provider account permits, or undefined when the
+   * account places no restriction.
+   */
+  resolveProviderAccountAllowedModels(
+    provider: string,
+    accountId: string | null | undefined,
+  ): string[] | undefined {
+    return this.providerAccountAllowedModels?.(provider, accountId);
   }
 
   /**

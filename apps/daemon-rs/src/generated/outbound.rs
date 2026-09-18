@@ -392,6 +392,16 @@ pub enum SessionMessage {
     ProviderAccountDeleteResponse(ProviderAccountDeleteResponse),
     #[serde(rename = "provider.account.set_active.response")]
     ProviderAccountSetActiveResponse(ProviderAccountSetActiveResponse),
+    #[serde(rename = "provider.account.rename.response")]
+    ProviderAccountRenameResponse(ProviderAccountRenameResponse),
+    #[serde(rename = "provider.account.sign_out.response")]
+    ProviderAccountSignOutResponse(ProviderAccountSignOutResponse),
+    #[serde(rename = "provider.account.export.response")]
+    ProviderAccountExportResponse(ProviderAccountExportResponse),
+    #[serde(rename = "provider.account.import.response")]
+    ProviderAccountImportResponse(ProviderAccountImportResponse),
+    #[serde(rename = "provider.account.set_allowed_models.response")]
+    ProviderAccountSetAllowedModelsResponse(ProviderAccountSetAllowedModelsResponse),
     #[serde(rename = "list_commands_response")]
     ListCommandsResponse(ListCommandsResponse),
     #[serde(rename = "list_terminals_response")]
@@ -10023,13 +10033,19 @@ pub struct ProviderAccountListResponsePayloadAccountsItem {
     pub authenticated: bool,
     #[serde(rename = "isActive")]
     pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderAccountListResponsePayloadCapabilitiesItem {
     pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode: Option<ProviderAccountListResponsePayloadCapabilitiesItemConfigDirMode>,
     #[serde(rename = "configDirEnv")]
     pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
     #[serde(rename = "primaryDirName")]
     pub primary_dir_name: String,
     #[serde(rename = "linkableFolders")]
@@ -10043,6 +10059,14 @@ pub struct ProviderAccountListResponsePayloadCapabilitiesItem {
     pub verified: Option<bool>,
     #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
     pub verification_note: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountListResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10089,13 +10113,19 @@ pub struct ProviderAccountCreateResponsePayloadAccountsItem {
     pub authenticated: bool,
     #[serde(rename = "isActive")]
     pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderAccountCreateResponsePayloadCapabilitiesItem {
     pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode: Option<ProviderAccountCreateResponsePayloadCapabilitiesItemConfigDirMode>,
     #[serde(rename = "configDirEnv")]
     pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
     #[serde(rename = "primaryDirName")]
     pub primary_dir_name: String,
     #[serde(rename = "linkableFolders")]
@@ -10109,6 +10139,14 @@ pub struct ProviderAccountCreateResponsePayloadCapabilitiesItem {
     pub verified: Option<bool>,
     #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
     pub verification_note: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountCreateResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10155,13 +10193,19 @@ pub struct ProviderAccountDeleteResponsePayloadAccountsItem {
     pub authenticated: bool,
     #[serde(rename = "isActive")]
     pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderAccountDeleteResponsePayloadCapabilitiesItem {
     pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode: Option<ProviderAccountDeleteResponsePayloadCapabilitiesItemConfigDirMode>,
     #[serde(rename = "configDirEnv")]
     pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
     #[serde(rename = "primaryDirName")]
     pub primary_dir_name: String,
     #[serde(rename = "linkableFolders")]
@@ -10175,6 +10219,14 @@ pub struct ProviderAccountDeleteResponsePayloadCapabilitiesItem {
     pub verified: Option<bool>,
     #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
     pub verification_note: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountDeleteResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10221,13 +10273,20 @@ pub struct ProviderAccountSetActiveResponsePayloadAccountsItem {
     pub authenticated: bool,
     #[serde(rename = "isActive")]
     pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderAccountSetActiveResponsePayloadCapabilitiesItem {
     pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode:
+        Option<ProviderAccountSetActiveResponsePayloadCapabilitiesItemConfigDirMode>,
     #[serde(rename = "configDirEnv")]
     pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
     #[serde(rename = "primaryDirName")]
     pub primary_dir_name: String,
     #[serde(rename = "linkableFolders")]
@@ -10244,7 +10303,350 @@ pub struct ProviderAccountSetActiveResponsePayloadCapabilitiesItem {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountSetActiveResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderAccountSetActiveResponsePayloadCapabilitiesItemLoginCommand {
+    pub command: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountRenameResponse {
+    pub payload: ProviderAccountRenameResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountRenameResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub accounts: Vec<ProviderAccountRenameResponsePayloadAccountsItem>,
+    pub capabilities: Vec<ProviderAccountRenameResponsePayloadCapabilitiesItem>,
+    #[serde(rename = "activeAccountIds")]
+    pub active_account_ids: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warnings: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountRenameResponsePayloadAccountsItem {
+    pub id: String,
+    pub provider: String,
+    pub name: String,
+    #[serde(rename = "configDir")]
+    pub config_dir: String,
+    #[serde(rename = "linkedFolders")]
+    pub linked_folders: Vec<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(
+        rename = "lastAuthenticatedAt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub last_authenticated_at: Option<String>,
+    pub authenticated: bool,
+    #[serde(rename = "isActive")]
+    pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountRenameResponsePayloadCapabilitiesItem {
+    pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode: Option<ProviderAccountRenameResponsePayloadCapabilitiesItemConfigDirMode>,
+    #[serde(rename = "configDirEnv")]
+    pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
+    #[serde(rename = "primaryDirName")]
+    pub primary_dir_name: String,
+    #[serde(rename = "linkableFolders")]
+    pub linkable_folders: Vec<String>,
+    #[serde(rename = "loginCommand")]
+    pub login_command: ProviderAccountRenameResponsePayloadCapabilitiesItemLoginCommand,
+    #[serde(rename = "credentialFiles")]
+    pub credential_files: Vec<String>,
+    pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountRenameResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountRenameResponsePayloadCapabilitiesItemLoginCommand {
+    pub command: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSignOutResponse {
+    pub payload: ProviderAccountSignOutResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSignOutResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub accounts: Vec<ProviderAccountSignOutResponsePayloadAccountsItem>,
+    pub capabilities: Vec<ProviderAccountSignOutResponsePayloadCapabilitiesItem>,
+    #[serde(rename = "activeAccountIds")]
+    pub active_account_ids: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warnings: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSignOutResponsePayloadAccountsItem {
+    pub id: String,
+    pub provider: String,
+    pub name: String,
+    #[serde(rename = "configDir")]
+    pub config_dir: String,
+    #[serde(rename = "linkedFolders")]
+    pub linked_folders: Vec<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(
+        rename = "lastAuthenticatedAt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub last_authenticated_at: Option<String>,
+    pub authenticated: bool,
+    #[serde(rename = "isActive")]
+    pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSignOutResponsePayloadCapabilitiesItem {
+    pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode: Option<ProviderAccountSignOutResponsePayloadCapabilitiesItemConfigDirMode>,
+    #[serde(rename = "configDirEnv")]
+    pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
+    #[serde(rename = "primaryDirName")]
+    pub primary_dir_name: String,
+    #[serde(rename = "linkableFolders")]
+    pub linkable_folders: Vec<String>,
+    #[serde(rename = "loginCommand")]
+    pub login_command: ProviderAccountSignOutResponsePayloadCapabilitiesItemLoginCommand,
+    #[serde(rename = "credentialFiles")]
+    pub credential_files: Vec<String>,
+    pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountSignOutResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSignOutResponsePayloadCapabilitiesItemLoginCommand {
+    pub command: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountExportResponse {
+    pub payload: ProviderAccountExportResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountExportResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub bundle: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportResponse {
+    pub payload: ProviderAccountImportResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub accounts: Vec<ProviderAccountImportResponsePayloadAccountsItem>,
+    pub capabilities: Vec<ProviderAccountImportResponsePayloadCapabilitiesItem>,
+    #[serde(rename = "activeAccountIds")]
+    pub active_account_ids: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warnings: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportResponsePayloadAccountsItem {
+    pub id: String,
+    pub provider: String,
+    pub name: String,
+    #[serde(rename = "configDir")]
+    pub config_dir: String,
+    #[serde(rename = "linkedFolders")]
+    pub linked_folders: Vec<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(
+        rename = "lastAuthenticatedAt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub last_authenticated_at: Option<String>,
+    pub authenticated: bool,
+    #[serde(rename = "isActive")]
+    pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportResponsePayloadCapabilitiesItem {
+    pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode: Option<ProviderAccountImportResponsePayloadCapabilitiesItemConfigDirMode>,
+    #[serde(rename = "configDirEnv")]
+    pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
+    #[serde(rename = "primaryDirName")]
+    pub primary_dir_name: String,
+    #[serde(rename = "linkableFolders")]
+    pub linkable_folders: Vec<String>,
+    #[serde(rename = "loginCommand")]
+    pub login_command: ProviderAccountImportResponsePayloadCapabilitiesItemLoginCommand,
+    #[serde(rename = "credentialFiles")]
+    pub credential_files: Vec<String>,
+    pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountImportResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportResponsePayloadCapabilitiesItemLoginCommand {
+    pub command: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetAllowedModelsResponse {
+    pub payload: ProviderAccountSetAllowedModelsResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetAllowedModelsResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub accounts: Vec<ProviderAccountSetAllowedModelsResponsePayloadAccountsItem>,
+    pub capabilities: Vec<ProviderAccountSetAllowedModelsResponsePayloadCapabilitiesItem>,
+    #[serde(rename = "activeAccountIds")]
+    pub active_account_ids: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warnings: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetAllowedModelsResponsePayloadAccountsItem {
+    pub id: String,
+    pub provider: String,
+    pub name: String,
+    #[serde(rename = "configDir")]
+    pub config_dir: String,
+    #[serde(rename = "linkedFolders")]
+    pub linked_folders: Vec<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(
+        rename = "lastAuthenticatedAt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub last_authenticated_at: Option<String>,
+    pub authenticated: bool,
+    #[serde(rename = "isActive")]
+    pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetAllowedModelsResponsePayloadCapabilitiesItem {
+    pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode:
+        Option<ProviderAccountSetAllowedModelsResponsePayloadCapabilitiesItemConfigDirMode>,
+    #[serde(rename = "configDirEnv")]
+    pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
+    #[serde(rename = "primaryDirName")]
+    pub primary_dir_name: String,
+    #[serde(rename = "linkableFolders")]
+    pub linkable_folders: Vec<String>,
+    #[serde(rename = "loginCommand")]
+    pub login_command: ProviderAccountSetAllowedModelsResponsePayloadCapabilitiesItemLoginCommand,
+    #[serde(rename = "credentialFiles")]
+    pub credential_files: Vec<String>,
+    pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountSetAllowedModelsResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetAllowedModelsResponsePayloadCapabilitiesItemLoginCommand {
     pub command: String,
     pub args: Vec<String>,
 }

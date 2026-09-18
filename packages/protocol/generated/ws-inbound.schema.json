@@ -788,6 +788,12 @@
                 "provider": {
                   "type": "string"
                 },
+                "providerAccountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "model": {
                   "type": "string"
                 },
@@ -4463,6 +4469,231 @@
                 "type",
                 "provider",
                 "accountId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.rename.request"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "accountId",
+                "name",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.sign_out.request"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "accountId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.export.request"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "accountIds": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "provider",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.import.request"
+                },
+                "bundle": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "exportedAt": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "accounts": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "account": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "provider": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "configDir": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "linkedFolders": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              },
+                              "createdAt": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "lastAuthenticatedAt": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "allowedModels": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1
+                                }
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "provider",
+                              "name",
+                              "configDir",
+                              "linkedFolders",
+                              "createdAt"
+                            ]
+                          },
+                          "credentials": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "file": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "contentsBase64": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "file",
+                                "contentsBase64"
+                              ]
+                            }
+                          }
+                        },
+                        "required": [
+                          "account",
+                          "credentials"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "version",
+                    "provider",
+                    "exportedAt",
+                    "accounts"
+                  ]
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "bundle",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.set_allowed_models.request"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "allowedModels": {
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "accountId",
+                "allowedModels",
                 "requestId"
               ]
             },

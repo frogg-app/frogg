@@ -1665,6 +1665,12 @@ export class VoiceAssistantWebSocketServer {
         // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.
         // Advertised only when at least one provider has accounts enabled.
         ...(this.providerAccountsEnabled ? { providerAccounts: true } : {}),
+        // COMPAT(providerAccountManagement): added in v1.4.2, remove after 2027-09-17.
+        // Rename / sign-out / export / import ride on the same manifest gate as
+        // the account RPCs they operate on.
+        ...(this.providerAccountsEnabled ? { providerAccountManagement: true } : {}),
+        // COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+        ...(this.providerAccountsEnabled ? { providerAccountAllowedModels: true } : {}),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.

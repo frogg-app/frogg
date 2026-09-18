@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import type { ProviderAccountExportBundle } from "@frogg/protocol/provider-accounts";
 import { CLIENT_CAPS, type ClientCapability } from "@frogg/protocol/client-capabilities";
 import type { AgentAttentionNotificationPayload } from "@frogg/protocol/agent-attention-notification";
 import {
@@ -91,6 +92,11 @@ import type {
   ProviderAccountCreateResponseMessage,
   ProviderAccountDeleteResponseMessage,
   ProviderAccountSetActiveResponseMessage,
+  ProviderAccountRenameResponseMessage,
+  ProviderAccountSignOutResponseMessage,
+  ProviderAccountExportResponseMessage,
+  ProviderAccountImportResponseMessage,
+  ProviderAccountSetAllowedModelsResponseMessage,
   DaemonGetStatusResponse,
   DaemonGetPairingOfferResponse,
   DaemonConfigReloadResponse,
@@ -473,6 +479,12 @@ type ProviderAccountListPayload = ProviderAccountListResponseMessage["payload"];
 type ProviderAccountCreatePayload = ProviderAccountCreateResponseMessage["payload"];
 type ProviderAccountDeletePayload = ProviderAccountDeleteResponseMessage["payload"];
 type ProviderAccountSetActivePayload = ProviderAccountSetActiveResponseMessage["payload"];
+type ProviderAccountRenamePayload = ProviderAccountRenameResponseMessage["payload"];
+type ProviderAccountSignOutPayload = ProviderAccountSignOutResponseMessage["payload"];
+type ProviderAccountExportPayload = ProviderAccountExportResponseMessage["payload"];
+type ProviderAccountImportPayload = ProviderAccountImportResponseMessage["payload"];
+type ProviderAccountSetAllowedModelsPayload =
+  ProviderAccountSetAllowedModelsResponseMessage["payload"];
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DiagnosticsPayload = DiagnosticsResponse["payload"];
@@ -5252,6 +5264,86 @@ export class DaemonClient {
         type: "provider.account.set_active.request",
         provider: input.provider,
         accountId: input.accountId,
+      },
+    });
+  }
+
+  /** Display-name only: the account keeps its id and its on-disk config directory. */
+  async renameProviderAccount(input: {
+    accountId: string;
+    name: string;
+    requestId?: string;
+  }): Promise<ProviderAccountRenamePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.rename.request",
+        accountId: input.accountId,
+        name: input.name,
+      },
+    });
+  }
+
+  /** Deletes the account's credential files. The account and its directory stay. */
+  async signOutProviderAccount(input: {
+    accountId: string;
+    requestId?: string;
+  }): Promise<ProviderAccountSignOutPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.sign_out.request",
+        accountId: input.accountId,
+      },
+    });
+  }
+
+  /**
+   * SECRET MATERIAL. The resolved `bundle` carries live provider credentials in
+   * plaintext (base64 is encoding, not encryption). Never log it and never
+   * persist it. Omitting `accountIds` exports every account of the provider.
+   */
+  async exportProviderAccounts(input: {
+    provider: AgentProvider;
+    accountIds?: string[];
+    requestId?: string;
+  }): Promise<ProviderAccountExportPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.export.request",
+        provider: input.provider,
+        ...(input.accountIds ? { accountIds: input.accountIds } : {}),
+      },
+    });
+  }
+
+  /** Imports a bundle from `exportProviderAccounts`. Never overwrites an existing account. */
+  async importProviderAccounts(input: {
+    bundle: ProviderAccountExportBundle;
+    requestId?: string;
+  }): Promise<ProviderAccountImportPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.import.request",
+        bundle: input.bundle,
+      },
+    });
+  }
+
+  /** `allowedModels: null` clears the restriction; `[]` permits no model at all. */
+  async setProviderAccountAllowedModels(input: {
+    accountId: string;
+    allowedModels: string[] | null;
+    requestId?: string;
+  }): Promise<ProviderAccountSetAllowedModelsPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.set_allowed_models.request",
+        accountId: input.accountId,
+        allowedModels: input.allowedModels,
       },
     });
   }

@@ -115,3 +115,19 @@ export function resolveProviderAccountControlModel(input: {
     selectedIsUnauthenticated: !selected.authenticated,
   };
 }
+
+/**
+ * COMPAT(perAgentProviderAccounts): whether a launched agent's account is worth
+ * calling out on its own, as a pill in the row above the composer rather than as
+ * the greyed-out toolbar badge. A single account is not a choice — every launch
+ * of that provider already ran as it — so naming it anywhere would only repeat
+ * what the provider control already says. Pure so the visibility rule can be
+ * tested without standing up the pill or the store it reads from.
+ */
+export function shouldShowProviderAccountPill(input: {
+  /** A launched agent, bound to the config dir its provider process started with. */
+  isRunning: boolean;
+  accountsCount: number;
+}): boolean {
+  return input.isRunning && input.accountsCount > 1;
+}

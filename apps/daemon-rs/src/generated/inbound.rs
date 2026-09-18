@@ -258,6 +258,16 @@ pub enum SessionMessage {
     ProviderAccountDeleteRequest(ProviderAccountDeleteRequest),
     #[serde(rename = "provider.account.set_active.request")]
     ProviderAccountSetActiveRequest(ProviderAccountSetActiveRequest),
+    #[serde(rename = "provider.account.rename.request")]
+    ProviderAccountRenameRequest(ProviderAccountRenameRequest),
+    #[serde(rename = "provider.account.sign_out.request")]
+    ProviderAccountSignOutRequest(ProviderAccountSignOutRequest),
+    #[serde(rename = "provider.account.export.request")]
+    ProviderAccountExportRequest(ProviderAccountExportRequest),
+    #[serde(rename = "provider.account.import.request")]
+    ProviderAccountImportRequest(ProviderAccountImportRequest),
+    #[serde(rename = "provider.account.set_allowed_models.request")]
+    ProviderAccountSetAllowedModelsRequest(ProviderAccountSetAllowedModelsRequest),
     #[serde(rename = "resume_agent_request")]
     ResumeAgentRequest(ResumeAgentRequest),
     #[serde(rename = "import_agent_request")]
@@ -724,6 +734,8 @@ pub struct HubExecutionAgentValidateRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
     pub provider: String,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub model: Option<String>,
     #[serde(rename = "modeId", skip_serializing_if = "Option::is_none")]
@@ -2014,6 +2026,91 @@ pub struct ProviderAccountSetActiveRequest {
     pub provider: String,
     #[serde(rename = "accountId", skip_serializing_if = "Option::is_none")]
     pub account_id: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountRenameRequest {
+    #[serde(rename = "accountId")]
+    pub account_id: String,
+    pub name: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSignOutRequest {
+    #[serde(rename = "accountId")]
+    pub account_id: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountExportRequest {
+    pub provider: String,
+    #[serde(rename = "accountIds", skip_serializing_if = "Option::is_none")]
+    pub account_ids: Option<Vec<String>>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportRequest {
+    pub bundle: ProviderAccountImportRequestBundle,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportRequestBundle {
+    pub version: i64,
+    pub provider: String,
+    #[serde(rename = "exportedAt")]
+    pub exported_at: String,
+    pub accounts: Vec<ProviderAccountImportRequestBundleAccountsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportRequestBundleAccountsItem {
+    pub account: ProviderAccountImportRequestBundleAccountsItemAccount,
+    pub credentials: Vec<ProviderAccountImportRequestBundleAccountsItemCredentialsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportRequestBundleAccountsItemAccount {
+    pub id: String,
+    pub provider: String,
+    pub name: String,
+    #[serde(rename = "configDir")]
+    pub config_dir: String,
+    #[serde(rename = "linkedFolders")]
+    pub linked_folders: Vec<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(
+        rename = "lastAuthenticatedAt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub last_authenticated_at: Option<String>,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportRequestBundleAccountsItemCredentialsItem {
+    pub file: String,
+    #[serde(rename = "contentsBase64")]
+    pub contents_base64: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetAllowedModelsRequest {
+    #[serde(rename = "accountId")]
+    pub account_id: String,
+    #[serde(rename = "allowedModels")]
+    pub allowed_models: serde_json::Value,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

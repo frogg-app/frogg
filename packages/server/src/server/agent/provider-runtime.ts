@@ -57,6 +57,20 @@ export async function createAgentProviderRuntime(
           return { env: {} };
         }
       },
+      // COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
+      // A failure to read the restriction must not block a launch, so it degrades
+      // to "unrestricted" and is logged.
+      providerAccountAllowedModels: (providerId, accountId) => {
+        try {
+          return providerAccountStore.allowedModelsFor(providerId, accountId);
+        } catch (error) {
+          options.logger.warn(
+            { err: error, providerId, accountId },
+            "Failed to resolve provider account model restrictions",
+          );
+          return undefined;
+        }
+      },
     });
     let shutdownPromise: Promise<void> | null = null;
     return {

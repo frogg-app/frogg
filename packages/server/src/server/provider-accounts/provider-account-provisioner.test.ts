@@ -86,3 +86,112 @@ describe("provisionProviderAccount", () => {
     expect(second.warnings).toEqual([]);
   });
 });
+
+describe("provisionProviderAccount in home mode", () => {
+  let root: string;
+  let realHome: string;
+  let primaryDir: string;
+  let accountDir: string;
+
+  const home = (homeLinks: string[]) => ({
+    realHome,
+    configSubdir: ".gemini",
+    homeLinks,
+  });
+
+  beforeEach(() => {
+    root = mkdtempSync(path.join(os.tmpdir(), "frogg-provider-home-"));
+    realHome = path.join(root, "home");
+    primaryDir = path.join(realHome, ".gemini");
+    accountDir = path.join(realHome, ".gemini-peter");
+    mkdirSync(primaryDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it("nests the config dir inside the synthetic home and links shared home state", () => {
+    mkdirSync(path.join(primaryDir, "commands"));
+    mkdirSync(path.join(realHome, ".npm"));
+    mkdirSync(path.join(realHome, ".cache"));
+    writeFileSync(path.join(realHome, ".gitconfig"), "[user]\n");
+
+    const result = provisionProviderAccount({
+      primaryDir,
+      accountDir,
+      linkFolders: ["commands"],
+      home: home([".npm", ".cache", ".gitconfig"]),
+    });
+
+    expect(result.warnings).toEqual([]);
+    // The provider reads <accountDir>/.gemini, not <accountDir>.
+    expect(lstatSync(path.join(accountDir, ".gemini")).isDirectory()).toBe(true);
+    expect(result.linkedFolders).toEqual(["commands"]);
+    expect(readlinkSync(path.join(accountDir, ".gemini", "commands"))).toBe(
+      path.join(primaryDir, "commands"),
+    );
+
+    expect(result.homeLinks).toEqual([".npm", ".cache", ".gitconfig"]);
+    expect(readlinkSync(path.join(accountDir, ".npm"))).toBe(path.join(realHome, ".npm"));
+    expect(readlinkSync(path.join(accountDir, ".gitconfig"))).toBe(
+      path.join(realHome, ".gitconfig"),
+    );
+  });
+
+  it("creates parent directories for nested home links", () => {
+    mkdirSync(path.join(realHome, ".config", "gcloud"), { recursive: true });
+
+    const result = provisionProviderAccount({
+      primaryDir,
+      accountDir,
+      linkFolders: [],
+      home: home([".config/gcloud"]),
+    });
+
+    expect(result.warnings).toEqual([]);
+    expect(result.homeLinks).toEqual([".config/gcloud"]);
+    expect(readlinkSync(path.join(accountDir, ".config", "gcloud"))).toBe(
+      path.join(realHome, ".config", "gcloud"),
+    );
+  });
+
+  it("tolerates home link targets that do not exist", () => {
+    mkdirSync(path.join(realHome, ".npm"));
+
+    const result = provisionProviderAccount({
+      primaryDir,
+      accountDir,
+      linkFolders: [],
+      home: home([".npm", ".nonesuch", ".config/gcloud"]),
+    });
+
+    // Provisioning still succeeds; only the missing targets are reported.
+    expect(result.homeLinks).toEqual([".npm"]);
+    expect(result.warnings).toHaveLength(2);
+    expect(result.warnings.join("\n")).toContain("does not exist");
+    expect(lstatSync(accountDir).isDirectory()).toBe(true);
+  });
+
+  it("is idempotent and leaves env-mode results unchanged for env-mode accounts", () => {
+    mkdirSync(path.join(realHome, ".npm"));
+    const options = {
+      primaryDir,
+      accountDir,
+      linkFolders: [],
+      home: home([".npm"]),
+    };
+    provisionProviderAccount(options);
+    const second = provisionProviderAccount(options);
+    expect(second.homeLinks).toEqual([".npm"]);
+    expect(second.warnings).toEqual([]);
+
+    // No `home` option: nothing is nested and no home links are produced.
+    const envMode = provisionProviderAccount({
+      primaryDir,
+      accountDir: path.join(realHome, ".claude-peter"),
+      linkFolders: [],
+    });
+    expect(envMode.homeLinks).toEqual([]);
+  });
+});

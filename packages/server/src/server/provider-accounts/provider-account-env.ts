@@ -1,5 +1,17 @@
+import { providerAccountConfigDirMode } from "@frogg/protocol/provider-accounts";
+
 import type { ProviderAccountStore } from "./provider-account-store.js";
 
+/**
+ * Variables to add to ONE provider process's environment.
+ *
+ * Every overlay here is per-provider and per-account: callers spread it onto the
+ * environment of the child process they are about to launch for that provider
+ * (see `AgentManager.resolveProviderAccountLaunchEnv`) and nowhere else. That
+ * matters for `configDirMode: "home"` capabilities, whose overlay sets `HOME`:
+ * it must reach only that provider's process, never another provider's process
+ * and never the daemon itself, which keeps the real home.
+ */
 export type ProviderAccountEnvOverlay = Record<string, string>;
 
 /**
@@ -27,6 +39,8 @@ export function resolveProviderAccountEnv(
     return {};
   }
 
+  // `configDirEnv` is HOME for a home-mode capability, and the account dir is
+  // that provider's synthetic home, so one expression covers both modes.
   return { [capability.configDirEnv]: account.configDir };
 }
 
@@ -64,8 +78,9 @@ export function resolveProviderAccountEnvById(
  *   3. the provider's daemon-wide active account.
  *
  * `accountId === null` is the explicit "Default" pick: it pins the provider's
- * primary config dir so a daemon-wide active account does NOT leak into this
- * agent. `undefined` falls back to the daemon-wide active account.
+ * primary config dir (in home mode: the real home, i.e. no override) so a
+ * daemon-wide active account does NOT leak into this agent. `undefined` falls
+ * back to the daemon-wide active account.
  *
  * An account id that no longer exists (deleted while a picker was open, or an
  * agent rehydrated after its account was removed) must never fail a launch: it
@@ -89,6 +104,12 @@ export function resolveAgentProviderAccountEnv(
   }
 
   if (accountId === null) {
+    // In home mode the primary "config dir" (`~/.gemini`) is a directory inside
+    // the real home, not a home itself, so it must never be used as HOME. The
+    // default account simply inherits the daemon's real HOME: an empty overlay.
+    if (providerAccountConfigDirMode(capability) === "home") {
+      return { env: {} };
+    }
     const primaryDir = store.primaryConfigDir(provider);
     return primaryDir ? { env: { [capability.configDirEnv]: primaryDir } } : { env: {} };
   }

@@ -21,6 +21,12 @@ export interface ProviderAccountRowProps {
   isAuthenticating: boolean;
   isActivating: boolean;
   isRemoving: boolean;
+  /** Omitted when the daemon does not advertise `providerAccountManagement`. */
+  onRename?: (account: ProviderAccountState) => void;
+  /** Omitted when the daemon does not advertise `providerAccountManagement`. */
+  onSignOut?: (account: ProviderAccountState) => void;
+  isRenaming?: boolean;
+  isSigningOut?: boolean;
   onAuthenticate: (account: ProviderAccountState) => void;
   onMakeActive: (account: ProviderAccountState) => void;
   onRemove: (account: ProviderAccountState) => void;
@@ -33,6 +39,10 @@ export function ProviderAccountRow({
   isAuthenticating,
   isActivating,
   isRemoving,
+  onRename,
+  onSignOut,
+  isRenaming = false,
+  isSigningOut = false,
   onAuthenticate,
   onMakeActive,
   onRemove,
@@ -41,6 +51,8 @@ export function ProviderAccountRow({
   const handleAuthenticate = useCallback(() => onAuthenticate(account), [account, onAuthenticate]);
   const handleMakeActive = useCallback(() => onMakeActive(account), [account, onMakeActive]);
   const handleRemove = useCallback(() => onRemove(account), [account, onRemove]);
+  const handleRename = useCallback(() => onRename?.(account), [account, onRename]);
+  const handleSignOut = useCallback(() => onSignOut?.(account), [account, onSignOut]);
   const rowStyle = useMemo(
     () => [settingsStyles.row, isFirst ? null : settingsStyles.rowBorder],
     [isFirst],
@@ -80,6 +92,30 @@ export function ProviderAccountRow({
         >
           {t("settings.host.providerAccounts.authenticate")}
         </Button>
+        {onRename ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={isRenaming}
+            loading={isRenaming}
+            onPress={handleRename}
+            testID={`provider-account-rename-${account.id}`}
+          >
+            {t("settings.providers.settingsModal.accounts.rename")}
+          </Button>
+        ) : null}
+        {onSignOut && account.authenticated ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={isSigningOut}
+            loading={isSigningOut}
+            onPress={handleSignOut}
+            testID={`provider-account-sign-out-${account.id}`}
+          >
+            {t("settings.providers.settingsModal.accounts.signOut")}
+          </Button>
+        ) : null}
         {account.isActive ? null : (
           <Button
             size="sm"

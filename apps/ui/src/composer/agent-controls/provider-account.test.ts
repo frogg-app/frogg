@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PROVIDER_ACCOUNT_OPTION_ID,
   resolveProviderAccountControlModel,
+  shouldShowProviderAccountPill,
   toProviderAccountOptionId,
   toProviderAccountSelection,
 } from "./provider-account";
@@ -110,6 +111,24 @@ describe("resolveProviderAccountControlModel", () => {
     });
     expect(model?.selectedOptionId).toBe(DEFAULT_PROVIDER_ACCOUNT_OPTION_ID);
     expect(model?.displayLabel).toBe("Default");
+  });
+});
+
+describe("shouldShowProviderAccountPill", () => {
+  it("hides the pill when the provider has no accounts", () => {
+    expect(shouldShowProviderAccountPill({ isRunning: true, accountsCount: 0 })).toBe(false);
+  });
+
+  it("hides the pill for a single account — there is nothing to disambiguate", () => {
+    expect(shouldShowProviderAccountPill({ isRunning: true, accountsCount: 1 })).toBe(false);
+  });
+
+  it("shows the pill once a provider has more than one account", () => {
+    expect(shouldShowProviderAccountPill({ isRunning: true, accountsCount: 2 })).toBe(true);
+  });
+
+  it("hides the pill when the agent is not running, even with multiple accounts", () => {
+    expect(shouldShowProviderAccountPill({ isRunning: false, accountsCount: 3 })).toBe(false);
   });
 });
 

@@ -85,6 +85,7 @@ import {
   ProviderAccountControl,
   type ProviderAccountControlValue,
 } from "@/composer/agent-controls/provider-account-control";
+import { shouldShowProviderAccountPill } from "@/composer/agent-controls/provider-account";
 import {
   useAgentProfileEditor,
   useAgentProfilePicker,
@@ -477,6 +478,12 @@ function buildReadOnlyProviderAccountControl(
 ): ProviderAccountControlValue | null {
   const accounts = entry?.accounts;
   if (!accounts) return null;
+  // Providers with more than one account get their own pill in the row above
+  // the composer instead — see `ProviderAccountPill`. Showing both there and
+  // greyed out here would say the same thing twice.
+  if (shouldShowProviderAccountPill({ isRunning: true, accountsCount: accounts.length })) {
+    return null;
+  }
   return {
     accounts,
     defaultAccountId: entry?.defaultAccountId,

@@ -211,6 +211,7 @@ export const es: TranslationResources = {
       notSignedIn: "Sin iniciar sesión",
       selectWithValue: "Seleccione la cuenta del proveedor ({{value}})",
       lockedWithValue: "Cuenta del proveedor ({{value}}), fija para este agente",
+      pillLabel: "Cuenta del proveedor: {{value}}",
     },
     hints: {
       thinking: "Modo de pensamiento",
@@ -3165,6 +3166,55 @@ export const es: TranslationResources = {
         confirmMessage: "This deletes the provider entry from config.json. It cannot be undone.",
         confirm: "Remove",
         errorTitle: "Unable to remove provider",
+      },
+      settingsModal: {
+        dangerZoneTitle: "Zona de peligro",
+        uninstallTitle: "Desinstalar proveedor",
+        accounts: {
+          title: "Cuentas",
+          info: "Inicia sesión más de una vez y elige con qué cuenta se ejecuta este proveedor.",
+          empty: "Todavía no hay cuentas.",
+          usageTitle: "Uso",
+          usageInfo: "El proveedor informa el uso del proveedor completo, no de cada cuenta.",
+          rename: "Renombrar",
+          renameTitle: "Renombrar cuenta",
+          renamePlaceholder: "Nombre de la cuenta",
+          renameHint:
+            "Solo cambia la etiqueta. No se mueve nada en el disco y se conserva la sesión.",
+          signOut: "Cerrar sesión",
+          signOutConfirmTitle: "¿Cerrar la sesión de {{name}}?",
+          signOutConfirmMessage:
+            "Elimina las credenciales guardadas de esta cuenta en el servidor. La cuenta y su carpeta se conservan.",
+          export: "Exportar",
+          exportTitle: "Exportar cuentas",
+          exportWarning:
+            "Este paquete contiene credenciales de acceso activas en texto plano. Cualquiera que lo obtenga puede usar estas cuentas. Trátalo como una contraseña: pégalo solo en el servidor al que te trasladas y no lo guardes ni lo compartas.",
+          exportCopy: "Copiar paquete",
+          exportCopied: "Copiado",
+          exportPending: "Preparando la exportación…",
+          exportEmpty: "No hay nada que exportar.",
+          importAction: "Importar",
+          importTitle: "Importar cuentas",
+          importHint:
+            "Pega un paquete exportado desde otro servidor. Contiene credenciales activas, así que trátalo como una contraseña.",
+          importPlaceholder: "Pega el JSON del paquete",
+          importSubmit: "Importar",
+          importInvalid: "Ese no es un paquete de cuentas válido.",
+        },
+        models: {
+          title: "Modelos",
+          info: "Restringe qué modelos de este proveedor puede usar cada cuenta.",
+          empty: "Este proveedor no informó ningún modelo.",
+          accountLabel: "Cuenta",
+          unrestricted: "Todos los modelos",
+          none: "Ningún modelo",
+          restrictedCount: "{{allowed}} de {{total}} modelos",
+          allowAll: "Permitir todos los modelos",
+          allowNone: "No permitir ninguno",
+          restrictionHint:
+            "Una cuenta sin restricciones puede usar todos los modelos que ofrece este proveedor.",
+          selectAccount: "Elige una cuenta para restringirla.",
+        },
       },
       statuses: {
         disabled: "Desactivado",

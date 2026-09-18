@@ -2636,6 +2636,16 @@ export class Session {
         return this.providerAccountSession.handleProviderAccountDeleteRequest(msg);
       case "provider.account.set_active.request":
         return this.providerAccountSession.handleProviderAccountSetActiveRequest(msg);
+      case "provider.account.rename.request":
+        return this.providerAccountSession.handleProviderAccountRenameRequest(msg);
+      case "provider.account.sign_out.request":
+        return this.providerAccountSession.handleProviderAccountSignOutRequest(msg);
+      case "provider.account.export.request":
+        return this.providerAccountSession.handleProviderAccountExportRequest(msg);
+      case "provider.account.import.request":
+        return this.providerAccountSession.handleProviderAccountImportRequest(msg);
+      case "provider.account.set_allowed_models.request":
+        return this.providerAccountSession.handleProviderAccountSetAllowedModelsRequest(msg);
       default:
         return undefined;
     }

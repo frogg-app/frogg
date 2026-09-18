@@ -63,10 +63,9 @@ function normalizeBranch(value: string | null | undefined): string | null {
   return branch && branch !== "HEAD" ? branch : null;
 }
 
+// The row now scrolls horizontally (see `ComposerTrackBar`) instead of shrinking pills to fit, so
+// the directory pill no longer needs its own shrink/clamp — it renders at its natural width like
+// every other pill in the row.
 const styles = StyleSheet.create({
-  directoryPill: {
-    flexShrink: 1,
-    minWidth: 0,
-    maxWidth: "100%",
-  },
+  directoryPill: {},
 });

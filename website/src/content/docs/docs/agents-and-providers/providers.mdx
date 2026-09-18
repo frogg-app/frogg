@@ -110,6 +110,11 @@ A provider CLI keeps its sign-in in one config directory. Frogg can manage more 
 those directories so you can switch between logins — a personal and a work Claude
 subscription, for example — without signing out.
 
+`claude` and `codex` support accounts today. `codex` uses `CODEX_HOME`, `~/.codex` and
+`auth.json`, and shares its `prompts` folder. Other providers are declared in the manifest but
+disabled until their directory layout is confirmed against the CLI; enabling one is a
+`config.json` edit, and the daemon warns at startup when an unverified entry is switched on.
+
 Creating an account makes `<home>/.claude-<name>` and symlinks the shared folders
 (`commands`, `skills`, `agents`, `projects`, `sessions`, `shell-snapshots`) back to the
 primary `~/.claude`, so commands, skills and history stay shared while credentials do not.
@@ -117,12 +122,28 @@ You pick which folders to link; a folder that does not exist in the primary dire
 skipped with a warning. On Windows, creating symlinks needs Developer Mode or an elevated
 shell; links that fail are reported per folder and the account still works.
 
-Account names are lowercase slugs (`[a-z0-9-]`, no leading, trailing or doubled hyphens).
+Account names are lowercase slugs (`[a-z0-9-]`, no leading, trailing or doubled hyphens),
+because the name becomes the config directory's suffix. **Renaming** an account afterwards
+only changes its label, so a rename accepts any single-line text up to 64 characters — and it
+never moves or renames the directory, so the sign-in inside it survives. The provider's
+implicit **Default** account can be renamed too.
 
 Sign an account in by opening a terminal for it: the daemon launches the provider's
 interactive login command with `CLAUDE_CONFIG_DIR` pointed at that account's directory, and
 you run `/login` inside it. An account shows as authenticated once its credential file
 (`.credentials.json`) exists.
+
+**Sign out** deletes just the account's credential files inside its own config directory,
+leaving the directory, the linked folders and everything else in it alone. It is refused for
+an account that is not signed in.
+
+An account, or several at once, can be **exported** as a portable bundle and **imported** on
+another daemon, so a sign-in made on one machine does not have to be repeated. The bundle
+contains live credentials in plaintext: treat it exactly like the credential file itself. The
+daemon never writes it to disk — it is returned over the authenticated session only. Import
+provisions a fresh config directory, writes the credential files readable only by the daemon
+user, and refuses outright when an account id or name already exists rather than overwriting a
+sign-in.
 
 Deleting an account only removes it from Frogg's list — the config directory, and the
 credentials in it, are left on disk for you to remove. An agent that was launched with an
@@ -153,6 +174,16 @@ Claude), highest first:
 
 **Make active** therefore sets the default for agents that do not choose, and no longer
 silently retargets every agent on the provider.
+
+#### Restricting an account's models
+
+An account can be limited to a subset of its provider's models — useful for keeping a
+metered subscription off the most expensive model. The effective set an agent can select is
+the provider's models intersected with the account's allowed list. No list means no
+restriction; an empty list permits nothing and the account cannot start an agent.
+
+The daemon enforces this, not the client: a model an account is not permitted to run is
+rejected when the agent is created *and* when it is resumed, whatever a client sends.
 
 #### Picking it in the composer
 
@@ -208,10 +239,41 @@ Provisioning warnings from the daemon — a folder it could not link, for exampl
 verbatim next to the list, and a rejected name or duplicate keeps the form open with what you
 typed.
 
-Only Claude has accounts enabled. Other providers are declared but off; turn one on with
+Claude and Codex have accounts enabled. Other providers are declared but off; turn one on with
 `providerAccounts.<provider>.enabled` in
 [`config.json`](/docs/reference/configuration/#provideraccounts) once its layout is
 verified.
+
+### Gemini: accounts through a per-account HOME
+
+Gemini CLI is the exception. It has **no** environment variable for its config directory: it
+always reads `~/.gemini`, derived from the home directory. A second Gemini sign-in therefore
+works differently — each account directory becomes a synthetic **home** for Gemini's process
+only, with the real config directory nested inside it at `<home>/.gemini-<name>/.gemini`.
+
+Gemini accounts ship **off**. Enable them deliberately with
+`providerAccounts.gemini.enabled` in
+[`config.json`](/docs/reference/configuration/#provideraccounts), knowing the trade:
+
+- Gemini runs with `HOME=<home>/.gemini-<name>`. Nothing else on the host is affected — not
+  other providers' agents, not the daemon, not your shell.
+- Only these entries are symlinked back from your real home, so they stay shared: `.npm`,
+  `.npmrc` (Gemini is launched with `npx`, so without the npm cache every launch re-downloads
+  the CLI), `.cache`, `.gitconfig` (commit identity), `.ssh` (git over SSH) and
+  `.config/gcloud` (Vertex AI / application-default credentials).
+- **Anything else Gemini or a tool it runs reads from your home directory will not be there.**
+  A link target that does not exist on your host is skipped with a warning rather than
+  failing.
+- The **Default** account keeps your real home, so it behaves exactly as before.
+
+**Sign in** opens a terminal equivalent to:
+
+```sh
+HOME="$HOME/.gemini-<name>" npx -y @google/gemini-cli@0.52.0
+```
+
+then pick a sign-in method inside it. The daemon logs a warning at startup while Gemini
+accounts are enabled, naming this behaviour.
 
 ## Usage and limits
 

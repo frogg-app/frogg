@@ -2,9 +2,15 @@ import React, { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Pressable, Text } from "react-native";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ComposerTrackPill, ComposerTrackRow, type ComposerTrackPillSegment } from "./tracks";
+import {
+  ComposerTrackBar,
+  ComposerTrackPill,
+  ComposerTrackRow,
+  type ComposerTrackPillSegment,
+} from "./tracks";
 
 const SUBAGENT_SEGMENTS: ComposerTrackPillSegment[] = [{ bucket: null, text: "3 subagents" }];
+const TRACK_BAR_HOST_STYLE = { width: 800, position: "relative" } as const;
 
 // App sources compile against the classic JSX runtime, which expects React on the global.
 beforeEach(() => vi.stubGlobal("React", React));
@@ -215,5 +221,34 @@ describe("composer track pill status mark", () => {
     // The ring is the only mark that animates, so its presence proves the second state survived.
     const animated = segments[1]?.querySelectorAll("*") ?? [];
     expect([...animated].filter((element) => element.getAnimations().length > 0)).toHaveLength(1);
+  });
+});
+
+describe("composer track bar", () => {
+  it("hugs a single pill instead of covering the full row, so empty space stays clickable", () => {
+    const container = mount(
+      <div style={TRACK_BAR_HOST_STYLE}>
+        <ComposerTrackBar testID="bar">
+          <Text>only pill</Text>
+        </ComposerTrackBar>
+      </div>,
+    );
+
+    const wrapper = row("bar-bar");
+    const scroller = row("bar");
+    if (!(wrapper instanceof HTMLElement) || !(scroller instanceof HTMLElement)) {
+      throw new Error("track bar did not render");
+    }
+
+    const wrapperWidth = wrapper.getBoundingClientRect().width;
+    const scrollerWidth = scroller.getBoundingClientRect().width;
+
+    // The bar spans the full 800px row (it must, to stay positioned over the transcript), but the
+    // scrollable viewport inside it should hug the single pill's content rather than also
+    // stretching to 800px — otherwise the empty space around the pill would swallow taps meant
+    // for the transcript underneath.
+    expect(wrapperWidth).toBeCloseTo(800, 0);
+    expect(scrollerWidth).toBeLessThan(wrapperWidth / 2);
+    void container;
   });
 });
