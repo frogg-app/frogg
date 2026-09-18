@@ -105,7 +105,7 @@ test.describe("Worktree restore", () => {
     await openSessions(page);
     await expectSessionRowNotArchived(page, seeded.agent.title);
     await page.getByTestId(`agent-row-${getServerId()}-${seeded.agent.id}`).click();
-    await expect(page.getByText("Workspace archived", { exact: true })).toBeVisible({
+    await expect(page.getByText("Session archived", { exact: true })).toBeVisible({
       timeout: 30_000,
     });
     await expect(page.getByTestId("workspace-recovery-action")).toHaveText("Restore");
@@ -118,7 +118,7 @@ test.describe("Worktree restore", () => {
     const openAgent = encodeURIComponent(`agent:${seeded.agent.id}`);
 
     await page.goto(`${workspaceRoute}?open=${openAgent}`);
-    await expect(page.getByText("Workspace archived", { exact: true })).toBeVisible({
+    await expect(page.getByText("Session archived", { exact: true })).toBeVisible({
       timeout: 30_000,
     });
     await expect(page.getByTestId("workspace-recovery-action")).toHaveText("Restore");
@@ -227,7 +227,7 @@ test.describe("Worktree restore", () => {
     try {
       await page.getByTestId("workspace-recovery-action").click();
 
-      await expect(page.getByText("Restoring workspace", { exact: true })).toBeVisible();
+      await expect(page.getByText("Restoring session", { exact: true })).toBeVisible();
       await expect
         .poll(() => existsSync(worktree.workspaceDirectory), { timeout: 30_000 })
         .toBe(true);
@@ -282,7 +282,7 @@ test.describe("Worktree restore", () => {
     await openSessions(page);
     await page.getByTestId(`agent-row-${getServerId()}-${firstAgent.id}`).click();
 
-    await expect(page.getByText("Workspace archived", { exact: true })).toBeVisible({
+    await expect(page.getByText("Session archived", { exact: true })).toBeVisible({
       timeout: 30_000,
     });
     await page.getByTestId("workspace-recovery-action").click();
@@ -365,7 +365,7 @@ test.describe("Worktree restore", () => {
       await expectSessionRowNotArchived(page, agent.title);
       await page.getByTestId(`agent-row-${getServerId()}-${agent.id}`).click();
 
-      await expect(page.getByText("Workspace unavailable", { exact: true })).toBeVisible({
+      await expect(page.getByText("Session unavailable", { exact: true })).toBeVisible({
         timeout: 30_000,
       });
       await expect(

@@ -42,7 +42,7 @@ test("project and workspace kebabs open action sheets on compact layouts", async
     await expect(page.getByRole("button", { name: "Bottom sheet backdrop" }).first()).toBeVisible({
       timeout: 10_000,
     });
-    await expect(page.getByText("Workspace actions", { exact: true })).toBeVisible();
+    await expect(page.getByText("Session actions", { exact: true })).toBeVisible();
   } finally {
     await seeded.cleanup();
   }

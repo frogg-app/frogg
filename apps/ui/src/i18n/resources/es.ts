@@ -334,7 +334,7 @@ export const es: TranslationResources = {
       copyMessage: "Copiar mensaje",
       forkMenu: "Bifurcar mensaje",
       forkInNewTab: "Bifurcar en una pestaña nueva",
-      forkInNewWorkspace: "Bifurcar en una sesión nuevo",
+      forkInNewWorkspace: "Bifurcar en una sesión nueva",
       forkUnavailable: "Actualiza el host para usar esto.",
       forkMissingWorkspace: "Este agente no está en una sesión.",
       forkFailed: "No se pudo bifurcar el chat",
@@ -435,7 +435,7 @@ export const es: TranslationResources = {
       needsHostUpgrade: "Actualiza tu host para restaurar esta sesión",
       manageHost: "Administrar host",
       recovery: {
-        archivedTitle: "Sesión archivado",
+        archivedTitle: "Sesión archivada",
         restoreDescription:
           "{{workspaceName}} se archivó y se eliminó su worktree. Restaura la rama {{branch}} para volver a abrirlo.",
         unarchiveDescription:
@@ -713,7 +713,7 @@ export const es: TranslationResources = {
         newTerminal: "Nueva terminal",
         newBrowser: "Nueva pestaña del navegador",
         importSession: "Importar conversación",
-        copyPath: "Copiar ruta dla sesión",
+        copyPath: "Copiar ruta de la sesión",
         copyBranchName: "Copiar nombre de sucursal",
         showSetup: "Mostrar configuración",
       },
@@ -972,7 +972,7 @@ export const es: TranslationResources = {
         modifiedFile: "Modificado",
         commits: {
           title: "Commits",
-          countLabel: "{{count}} commits dla sesión",
+          countLabel: "{{count}} commits de la sesión",
           noneAhead: "Aún no hay commits por delante de {{baseRef}}",
           fileDiffEmpty: "No hay cambios para mostrar",
           fileDiffError: "Error al cargar el diff del archivo",
@@ -1163,7 +1163,7 @@ export const es: TranslationResources = {
       },
     },
     filterEmpty: {
-      title: "Ningún sesión coincide",
+      title: "Ninguna sesión coincide",
       description: "Cambia o borra los filtros de la barra lateral para ver sesiones.",
       clear: "Borrar filtros",
     },
@@ -1241,10 +1241,10 @@ export const es: TranslationResources = {
         newWorkspace: "Nueva sesión",
         showMore: "Mostrar más",
         showLess: "Mostrar menos",
-        createWorkspaceFor: "Crea un nueva sesión para{{projectName}}",
+        createWorkspaceFor: "Crea una nueva sesión para{{projectName}}",
         copyPath: "Copiar ruta",
         copyBranchName: "Copiar nombre de sucursal",
-        rename: "Cambiar nombre dla sesión",
+        rename: "Cambiar nombre de la sesión",
         pin: "Anclar arriba",
         unpin: "Desanclar",
         archive: "Archivo",
@@ -1261,7 +1261,7 @@ export const es: TranslationResources = {
         cancel: "Cancelar",
       },
       rename: {
-        title: "Cambiar nombre dla sesión",
+        title: "Cambiar nombre de la sesión",
         submit: "Rebautizar",
         invalidBranchName: "Nombre de sucursal no válido",
       },
@@ -1581,7 +1581,7 @@ export const es: TranslationResources = {
     openPath: "Abrir ruta",
   },
   branchSwitcher: {
-    triggerTooltip: "Cambiar rama dla sesión",
+    triggerTooltip: "Cambiar rama de la sesión",
     currentBranch: "Sucursal actual:{{branchName}}. Presione para cambiar de rama.",
     placeholder: "Cambiar de rama...",
     searchPlaceholder: "Filtrar ramas...",
@@ -2206,8 +2206,8 @@ export const es: TranslationResources = {
     },
     files: {
       label: "Archivos",
-      subtitle: "Archivos dla sesión",
-      tooltip: "Explorar archivos dla sesión",
+      subtitle: "Archivos de la sesión",
+      tooltip: "Explorar archivos de la sesión",
       chooseFile: "Elige un archivo",
     },
     pullRequest: {

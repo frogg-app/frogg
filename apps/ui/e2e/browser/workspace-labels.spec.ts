@@ -165,7 +165,7 @@ test.describe("Workspace labels", () => {
       await expect(page.getByTestId("sidebar-label-filter-clear")).toBeHidden();
       await page.getByTestId("sidebar-label-filter-option-Unused").click();
 
-      await expect(page.getByText("No workspaces match", { exact: true })).toBeVisible();
+      await expect(page.getByText("No sessions match", { exact: true })).toBeVisible();
       await expect(page.getByTestId("sidebar-project-empty-state")).toBeHidden();
       await expect(page.getByTestId("sidebar-display-preferences-menu")).toBeVisible();
 

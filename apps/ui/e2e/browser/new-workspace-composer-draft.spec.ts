@@ -45,7 +45,7 @@ test.describe("New workspace composer draft", () => {
       });
       const draftRow = page.getByTestId("sidebar-workspace-draft-new-workspace");
       await expect(draftRow).toBeVisible();
-      await expect(draftRow).toContainText("New workspace (draft)");
+      await expect(draftRow).toContainText("New session (draft)");
       await fillNewWorkspaceDraft(page, DRAFT);
       await attachImageFromMenu(page, {
         name: "draft.png",

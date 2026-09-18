@@ -35,7 +35,7 @@ export async function openWorkspaceFromCommandCenter(
 }
 
 export async function expectDefaultWorkspaceActions(panel: Locator): Promise<void> {
-  await expect(panel.getByText("Workspace actions", { exact: true })).toBeVisible({
+  await expect(panel.getByText("Session actions", { exact: true })).toBeVisible({
     timeout: 30_000,
   });
   await expect(action(panel, "New agent")).toBeVisible();

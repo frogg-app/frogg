@@ -333,7 +333,7 @@ export const ru: TranslationResources = {
       copyMessage: "Копировать сообщение",
       forkMenu: "Форкнуть чат отсюда",
       forkInNewTab: "Создать форк в новой вкладке",
-      forkInNewWorkspace: "Создать форк в новом сессии",
+      forkInNewWorkspace: "Создать форк в новой сессии",
       forkUnavailable: "Обновите хост, чтобы использовать эту функцию.",
       forkMissingWorkspace: "Этот агент не связан с сессией.",
       forkFailed: "Не удалось создать форк чата",
@@ -431,20 +431,20 @@ export const ru: TranslationResources = {
       hostOffline: "{{hostName}} не в сети",
       cannotReachHost: "Не удаётся связаться с {{hostName}}",
       hostStatus: "Статус хоста: {{status}}",
-      needsHostUpgrade: "Обновите хост, чтобы восстановить эта сессия",
+      needsHostUpgrade: "Обновите хост, чтобы восстановить эту сессию",
       manageHost: "Управление хостом",
       recovery: {
-        archivedTitle: "Рабочая область в архиве",
+        archivedTitle: "Сессия в архиве",
         restoreDescription:
-          "Сессия «{{workspaceName}}» было архивировано, а его worktree удалён. Восстановите ветку {{branch}}, чтобы снова открыть сессия.",
+          "Сессия «{{workspaceName}}» была архивирована, а её worktree удалён. Восстановите ветку {{branch}}, чтобы снова открыть сессию.",
         unarchiveDescription:
-          "Сессия «{{workspaceName}}» находится в архиве. Разархивируйте его, чтобы снова открыть.",
+          "Сессия «{{workspaceName}}» находится в архиве. Разархивируйте её, чтобы снова открыть.",
         restoreAction: "Восстановить",
         unarchiveAction: "Разархивировать",
         restoringTitle: "Восстановление сессии",
         restoringAction: "Восстановление...",
-        unavailableTitle: "Рабочая область недоступна",
-        checkFailedTitle: "Не удалось проверить сессия",
+        unavailableTitle: "Сессия недоступна",
+        checkFailedTitle: "Не удалось проверить сессию",
       },
     },
     hoverCard: {
@@ -508,7 +508,7 @@ export const ru: TranslationResources = {
         noVisibleFiles: "Нет видимых файлов",
       },
       states: {
-        unavailable: "Сессия недоступно",
+        unavailable: "Сессия недоступна",
         loading: "Загрузка файлов...",
       },
       errors: {
@@ -552,7 +552,7 @@ export const ru: TranslationResources = {
     browser: {
       unavailable: {
         title: "Встроенный браузер доступен только в настольном приложении",
-        subtitle: "Откройте эта сессия в Electron, чтобы использовать встроенный браузер.",
+        subtitle: "Откройте эту сессию в Electron, чтобы использовать встроенный браузер.",
       },
       session: "Сеанс браузера {{browserId}}",
       controls: {
@@ -719,7 +719,7 @@ export const ru: TranslationResources = {
       toasts: {
         workspacePathUnavailable: "Путь к сессии пока недоступен.",
         branchNameUnavailable: "Имя ветки недоступно",
-        terminalQueued: "Сессия подготавливается. Терминал откроется, когда оно будет готово...",
+        terminalQueued: "Сессия подготавливается. Терминал откроется, когда она будет готова...",
         workspacePathCopiedLabel: "Путь к сессии",
         branchNameCopiedLabel: "Имя ветки",
       },
@@ -811,7 +811,7 @@ export const ru: TranslationResources = {
           success: "Обновлено",
         },
         archive: {
-          label: "Архивировать сессия",
+          label: "Архивировать сессию",
           pending: "Архивирование...",
           success: "В архиве",
         },
@@ -870,7 +870,7 @@ export const ru: TranslationResources = {
           updateCurrent: "Обновление недоступно: эта ветка уже синхронизирована с {{baseRef}}.",
           mergePrNoGithub: "Слияние PR сейчас недоступно: GitHub не подключён.",
           archiveNotWorktree:
-            "Архивирование недоступно: эта сессия не было создано как worktree {{brandName}}.",
+            "Архивирование недоступно: эта сессия не была создана как worktree {{brandName}}.",
           mergePrNoForge: "Слияние {{noun}} сейчас недоступно: {{brand}} не подключён.",
           mergePrMissing: "Слияние PR недоступно: PR ещё не создан.",
           mergePrDraft: "Слияние PR недоступно: PR всё ещё является черновиком.",
@@ -901,7 +901,7 @@ export const ru: TranslationResources = {
           confirm: "Архивировать",
           cancel: "Отмена",
           consequence:
-            "Сессия будет удалено с боковой панели. Чтобы восстановить его позже, откройте историю.",
+            "Сессия будет удалена с боковой панели. Чтобы восстановить её позже, откройте историю.",
           uncommittedChanges: "Незафиксированные изменения",
           uncommittedChangesWithDiff: "Незафиксированные изменения ({{diffStat}})",
           addedLine: "Добавлено строк: {{count}}",
@@ -967,9 +967,9 @@ export const ru: TranslationResources = {
       openInEditor: {
         open: "Открыть",
         chooseEditor: "Выбрать редактор",
-        openIn: "Открыть сессия в {{target}}",
+        openIn: "Открыть сессию в {{target}}",
         openFileIn: "Открыть {{fileName}} в {{target}}",
-        failedOpen: "Не удалось открыть сессия",
+        failedOpen: "Не удалось открыть сессию",
       },
       pr: {
         actions: {
@@ -1224,27 +1224,27 @@ export const ru: TranslationResources = {
         newWorkspace: "Новая сессия",
         showMore: "Показать ещё",
         showLess: "Показать меньше",
-        createWorkspaceFor: "Создать новая сессия для {{projectName}}",
+        createWorkspaceFor: "Создать новую сессию для {{projectName}}",
         copyPath: "Копировать путь",
         copyBranchName: "Скопировать имя ветки",
-        rename: "Переименовать сессия",
+        rename: "Переименовать сессию",
         pin: "Закрепить вверху",
         unpin: "Открепить",
         archive: "Архивировать",
-        archiveWorkspace: "Архивировать сессия",
+        archiveWorkspace: "Архивировать сессию",
         hideFromSidebar: "Скрыть на боковой панели",
         archiving: "Архивирование...",
         hiding: "Скрытие...",
       },
       confirmations: {
-        hideTitle: "Скрыть сессия?",
+        hideTitle: "Скрыть сессию?",
         hideMessage:
           "Скрыть «{{workspaceName}}» на боковой панели?\n\nФайлы на диске не будут изменены.",
         hideConfirm: "Скрыть",
         cancel: "Отмена",
       },
       rename: {
-        title: "Переименовать сессия",
+        title: "Переименовать сессию",
         submit: "Переименовать",
         invalidBranchName: "Недопустимое имя ветки",
       },
@@ -1253,8 +1253,8 @@ export const ru: TranslationResources = {
         pathCopied: "Путь скопирован",
         branchNameCopied: "Имя ветки скопировано",
         hostDisconnected: "Хост не подключён",
-        hideFailed: "Не удалось скрыть сессия",
-        archiveFailed: "Не удалось архивировать сессия",
+        hideFailed: "Не удалось скрыть сессию",
+        archiveFailed: "Не удалось архивировать сессию",
       },
     },
   },
@@ -1602,7 +1602,7 @@ export const ru: TranslationResources = {
     dialogFilterName: "Изображения",
   },
   workspaceSetup: {
-    title: "Создать сессия",
+    title: "Создать сессию",
     errors: {
       failedCreateWorktree: "Не удалось создать worktree.",
       failedOpenProject: "Не удалось открыть проект",
@@ -2607,13 +2607,13 @@ export const ru: TranslationResources = {
         openProject: "Открыть проект",
         newWorkspace: "Новая сессия",
         newWorktree: "Новый worktree",
-        archiveWorkspace: "Архивировать сессия",
+        archiveWorkspace: "Архивировать сессию",
         newTab: "Новая вкладка",
         closeCurrentTab: "Закрыть текущую вкладку",
         jumpToWorkspace: "Перейти к сессии",
         jumpToTab: "Перейти на вкладку",
-        previousWorkspace: "Предыдущее сессия",
-        nextWorkspace: "Следующее сессия",
+        previousWorkspace: "Предыдущая сессия",
+        nextWorkspace: "Следующая сессия",
         previousTab: "Предыдущая вкладка",
         nextTab: "Следующая вкладка",
         splitPaneRight: "Разделить панель справа",
@@ -2948,7 +2948,7 @@ export const ru: TranslationResources = {
         authenticate: "Войти",
         authenticateHint:
           "Вход открывает терминал с собственной процедурой провайдера. Обновите список после завершения.",
-        authenticateNoWorkspace: "Для входа нужно сессия на этом хосте, где откроется терминал.",
+        authenticateNoWorkspace: "Для входа нужна сессия на этом хосте, где откроется терминал.",
         authenticateTerminalName: "Вход: {{name}}",
         unverified:
           "Не проверено: {{note}} Сверьте эти значения с CLI провайдера, прежде чем полагаться на этот список.",

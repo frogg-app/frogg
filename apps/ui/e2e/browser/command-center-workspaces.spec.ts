@@ -71,7 +71,7 @@ test.describe("Command center workspaces", () => {
       await expect(agentRow).not.toContainText(seeded.repoPath);
 
       const workspaceSectionTop = await panel
-        .getByText("Workspaces", { exact: true })
+        .getByText("Sessions", { exact: true })
         .evaluate((element) => element.getBoundingClientRect().top);
       const agentSectionTop = await panel
         .getByText("Agents", { exact: true })

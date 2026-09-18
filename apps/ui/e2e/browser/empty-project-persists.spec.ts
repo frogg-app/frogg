@@ -143,7 +143,7 @@ test.describe("Project with no workspaces persists", () => {
 
       const newWorkspaceRow = page.getByTestId(`sidebar-project-new-workspace-row-${projectId}`);
       await expect(newWorkspaceRow).toBeVisible({ timeout: 30_000 });
-      await expect(newWorkspaceRow).toContainText("New workspace");
+      await expect(newWorkspaceRow).toContainText("New session");
 
       const workspaces = await client.fetchWorkspaces({ filter: { projectId } });
       expect(workspaces.entries).toEqual([]);
@@ -189,7 +189,7 @@ test.describe("Project with no workspaces persists", () => {
       expect(existsSync(workspace.repoPath)).toBe(true);
       await expect(projectRow).toBeVisible({ timeout: 30_000 });
       await expect(newWorkspaceRow).toBeVisible({ timeout: 30_000 });
-      await expect(newWorkspaceRow).toContainText("New workspace");
+      await expect(newWorkspaceRow).toContainText("New session");
       await expect(homeButton).toBeVisible({ timeout: 30_000 });
 
       // The project survives a reload after its last workspace is archived.

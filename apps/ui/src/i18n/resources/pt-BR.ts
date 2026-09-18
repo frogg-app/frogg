@@ -260,7 +260,7 @@ export const ptBR: TranslationResources = {
         "Não é possível abrir este agente porque {{serverLabel}} não está configurado neste dispositivo.",
       addHost:
         "Adicione o host nas Configurações ou abra um agente em um servidor configurado para continuar.",
-      preparingSession: "Preparanda sessão de {{serverLabel}}...",
+      preparingSession: "Preparando sessão de {{serverLabel}}...",
       connecting: "Conectando a {{serverLabel}}...",
       showSoon: "Mostraremos este agente em instantes.",
       showWhenOnline: "Mostraremos este agente quando o host estiver online.",
@@ -334,7 +334,7 @@ export const ptBR: TranslationResources = {
       copyMessage: "Copiar mensagem",
       forkMenu: "Bifurcar mensagem",
       forkInNewTab: "Bifurcar em uma nova aba",
-      forkInNewWorkspace: "Bifurcar em um nova sessão",
+      forkInNewWorkspace: "Bifurcar em uma nova sessão",
       forkUnavailable: "Atualize o host para usar isto.",
       forkMissingWorkspace: "Este agente não está em uma sessão.",
       forkFailed: "Falha ao bifurcar o chat",
@@ -427,7 +427,7 @@ export const ptBR: TranslationResources = {
   },
   workspace: {
     route: {
-      loading: "Carreganda sessão",
+      loading: "Carregando sessão",
       connecting: "Conectando",
       hostOffline: "{{hostName}} está offline",
       cannotReachHost: "Não é possível acessar {{hostName}}",
@@ -435,14 +435,14 @@ export const ptBR: TranslationResources = {
       needsHostUpgrade: "Atualize o host para restaurar esta sessão",
       manageHost: "Gerenciar host",
       recovery: {
-        archivedTitle: "Sessão arquivado",
+        archivedTitle: "Sessão arquivada",
         restoreDescription:
           "{{workspaceName}} foi arquivado e sua worktree foi removida. Restaure a branch {{branch}} para abri-lo novamente.",
         unarchiveDescription:
           "{{workspaceName}} está arquivado. Desarquive-o para abri-lo novamente.",
         restoreAction: "Restaurar",
         unarchiveAction: "Desarquivar",
-        restoringTitle: "Restauranda sessão",
+        restoringTitle: "Restaurando sessão",
         restoringAction: "Restaurando...",
         unavailableTitle: "Sessão indisponível",
         checkFailedTitle: "Não foi possível verificar a sessão",
@@ -538,7 +538,7 @@ export const ptBR: TranslationResources = {
         failed: "Falhou",
         waiting: "Aguardando saída da configuração",
       },
-      waiting: "Configuranda sessão...",
+      waiting: "Configurando sessão...",
       empty: {
         noCommands: "Nenhum comando de configuração foi executado para esta sessão.",
       },
@@ -718,7 +718,7 @@ export const ptBR: TranslationResources = {
       toasts: {
         workspacePathUnavailable: "O caminho da sessão ainda não está disponível",
         branchNameUnavailable: "Nome da branch indisponível",
-        terminalQueued: "Preparanda sessão, abrindo terminal quando estiver pronto...",
+        terminalQueued: "Preparando sessão, abrindo terminal quando estiver pronto...",
         workspacePathCopiedLabel: "Caminho da sessão",
         branchNameCopiedLabel: "Nome da branch",
       },
@@ -798,11 +798,11 @@ export const ptBR: TranslationResources = {
           pending: "Fazendo merge...",
           success: "Mergeada",
 
-          moved: "Merged and moved to the target sessão",
-          reused: "Merged; opened the existing target sessão",
-          partial: "Merged, but the source sessão could not be archived",
-          conflict: "Merge conflict; the source sessão was kept",
-          failed: "Merge failed; the source sessão was kept",
+          moved: "Merged and moved to the target session",
+          reused: "Merged; opened the existing target session",
+          partial: "Merged, but the source session could not be archived",
+          conflict: "Merge conflict; the source session was kept",
+          failed: "Merge failed; the source session was kept",
         },
         mergeFromBase: {
           label: "Atualizar a partir de {{baseRef}}",
@@ -877,7 +877,7 @@ export const ptBR: TranslationResources = {
           mergePrNoGithub:
             "Merge da PR não está disponível agora porque o GitHub não está conectado",
           archiveNotWorktree:
-            "Arquivar não está disponível aqui porque esta sessão não foi criado como um worktree do {{brandName}}",
+            "Arquivar não está disponível aqui porque esta sessão não foi criada como um worktree do {{brandName}}",
           mergePrNoForge:
             "Merge da {{noun}} não está disponível agora porque o {{brand}} não está conectado",
           mergePrMissing: "Merge da PR não está disponível porque ainda não há uma pull request",
@@ -910,7 +910,7 @@ export const ptBR: TranslationResources = {
           confirm: "Arquivar",
           cancel: "Cancelar",
           consequence:
-            "Isso remove a sessão da barra lateral. Para restaurá-lo depois, abra o Histórico.",
+            "Isso remove a sessão da barra lateral. Para restaurá-la depois, abra o Histórico.",
           uncommittedChanges: "Alterações sem commit",
           uncommittedChangesWithDiff: "Alterações sem commit ({{diffStat}})",
           addedLine: "{{count}} linha adicionada",
@@ -1206,7 +1206,7 @@ export const ptBR: TranslationResources = {
       },
       toasts: {
         hostDisconnected: "Host não está conectado",
-        removeFailed: "Falha ao remover alguns sessões",
+        removeFailed: "Falha ao remover algumas sessões",
         updateHostToRemove: "Atualize o host para remover projetos.",
       },
       empty: {
@@ -1233,7 +1233,7 @@ export const ptBR: TranslationResources = {
         newWorkspace: "Nova sessão",
         showMore: "Mostrar mais",
         showLess: "Mostrar menos",
-        createWorkspaceFor: "Criar um nova sessão para {{projectName}}",
+        createWorkspaceFor: "Criar uma nova sessão para {{projectName}}",
         copyPath: "Copiar caminho",
         copyBranchName: "Copiar nome da branch",
         rename: "Renomear sessão",
@@ -1587,7 +1587,7 @@ export const ptBR: TranslationResources = {
     stashRestored: "Alterações em stash restauradas",
   },
   agentAutocomplete: {
-    searchingWorkspace: "Buscanda sessão...",
+    searchingWorkspace: "Buscando sessão...",
     loadingCommands: "Carregando comandos...",
     noFiles: "Nenhum arquivo ou diretório encontrado",
     noCommands: "Nenhum comando encontrado",
@@ -2714,7 +2714,7 @@ export const ptBR: TranslationResources = {
           },
         },
         preview: {
-          workspaceName: "my-sessão",
+          workspaceName: "minha-sessao",
         },
       },
       notFound: "Host não encontrado",

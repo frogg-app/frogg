@@ -82,7 +82,7 @@ export async function expectCommandCenterToRemainAtTheTop(page: Page): Promise<v
 
 export async function expectPrimaryCommandCenterActions(panel: Locator): Promise<void> {
   const expectedActions = [
-    { title: "New workspace", shortcut: "⌘N" },
+    { title: "New session", shortcut: "⌘N" },
     { title: "History" },
     { title: "Settings", shortcut: "⌘," },
     { title: "Keyboard shortcuts", shortcut: "?" },

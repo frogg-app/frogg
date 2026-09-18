@@ -81,7 +81,7 @@ export async function openHomeWithProject(page: Page, repoPath: string): Promise
 
 function createWorkspaceButton(page: Page, repoPath: string) {
   return page.getByRole("button", {
-    name: `Create a new workspace for ${projectNameFromPath(repoPath)}`,
+    name: `Create a new session for ${projectNameFromPath(repoPath)}`,
   });
 }
 
@@ -173,7 +173,7 @@ export async function expectSetupPanel(page: Page): Promise<void> {
   }
   // Otherwise open it manually via workspace header actions menu.
   // Use the specific testID to avoid matching the sidebar kebab which shares
-  // the same "Workspace actions" accessibility label.
+  // the same "Session actions" accessibility label.
   const actionsButton = page.getByTestId("workspace-header-menu-trigger");
   await expect(actionsButton).toBeVisible({ timeout: 10_000 });
   await actionsButton.click();
@@ -200,7 +200,7 @@ export async function expectSetupLogContains(page: Page, text: string): Promise<
 
 export async function expectNoSetupMessage(page: Page): Promise<void> {
   await expect(
-    page.getByText("No setup commands ran for this workspace.", { exact: true }),
+    page.getByText("No setup commands ran for this session.", { exact: true }),
   ).toBeVisible({
     timeout: 30_000,
   });

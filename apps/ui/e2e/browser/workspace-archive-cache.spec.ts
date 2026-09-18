@@ -26,7 +26,7 @@ test.describe("Workspace archive cache coherence", () => {
       await archiveWorkspaceOutsideTheApp(workspace);
 
       await expectWorkspaceAbsentFromSidebar(page, workspace.workspaceId);
-      await expect(page.getByText("Workspace unavailable", { exact: true })).toBeVisible({
+      await expect(page.getByText("Session unavailable", { exact: true })).toBeVisible({
         timeout: 30_000,
       });
     } finally {

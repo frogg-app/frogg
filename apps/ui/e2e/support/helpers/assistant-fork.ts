@@ -97,7 +97,7 @@ export async function forkInFlightTurnToNewTab(page: Page): Promise<void> {
 
 export async function forkMostRecentAssistantTurnToNewWorkspace(page: Page): Promise<void> {
   await openMostRecentAssistantForkMenu(page);
-  await page.getByRole("menuitem", { name: "Fork in a new workspace" }).click();
+  await page.getByRole("menuitem", { name: "Fork in a new session" }).click();
 }
 
 export async function expectChatHistoryAttachment(page: Page): Promise<void> {

@@ -116,7 +116,7 @@ test.describe("Command center workspace management", () => {
       await openWorkspace(page, workspace.workspaceId);
       await collapseProjectSection(page, workspace);
 
-      await runCommand(page, "rename", "Rename workspace");
+      await runCommand(page, "rename", "Rename session");
 
       // Focused, not merely visible. A modal that mounts behind the closing palette, or loses the
       // focus race with its focus-restore, still renders — you just cannot type into it.
@@ -149,7 +149,7 @@ test.describe("Command center workspace management", () => {
       await gotoAppShell(page);
       await openWorkspace(page, workspace.workspaceId);
 
-      await runCommand(page, "copy path", "Copy workspace path");
+      await runCommand(page, "copy path", "Copy session path");
 
       // toast.copied wraps its label: "Copied {{label}}" with label "Path copied".
       await expect(page.getByText("Copied Path copied", { exact: true })).toBeVisible({

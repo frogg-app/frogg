@@ -393,7 +393,7 @@ export const ar: TranslationResources = {
     },
   },
   importSession: {
-    title: "محادثة الاستيراد",
+    title: "استيراد محادثة",
     filters: {
       all: "الجميع",
     },
@@ -403,7 +403,7 @@ export const ar: TranslationResources = {
       noProviders: "لم يتم تمكين أي موفري خدمات قابلين للاستيراد.",
       loading: "جارٍ تحميل المحادثات الأخيرة...",
       failedAll: "تعذر تحميل المحادثات الأخيرة.",
-      failedProviders: "تعذر تحميل محادثات العمل لـ{{providers}}.",
+      failedProviders: "تعذر تحميل محادثات {{providers}}.",
       failedImport: "تعذر استيراد المحادثة المحددة.",
     },
     actions: {
@@ -429,7 +429,7 @@ export const ar: TranslationResources = {
       hostOffline: "{{hostName}}غير متواجد حالياً",
       cannotReachHost: "لا يمكن الوصول إلى{{hostName}}",
       hostStatus: "حالة Host:{{status}}",
-      needsHostUpgrade: "قم بتحديث مضيفك لاستعادة الجلسة هذه",
+      needsHostUpgrade: "قم بتحديث مضيفك لاستعادة هذه الجلسة",
       manageHost: "إدارة المضيف",
       recovery: {
         archivedTitle: "الجلسة مؤرشفة",
@@ -536,10 +536,10 @@ export const ar: TranslationResources = {
       },
       waiting: "جارٍ إعداد الجلسة...",
       empty: {
-        noCommands: "لم يتم تشغيل أي أوامر إعداد لالجلسة هذه.",
+        noCommands: "لم يتم تشغيل أي أوامر إعداد لهذه الجلسة.",
       },
       accessibility: {
-        noCommands: "لم يتم تشغيل أي أوامر إعداد لالجلسة هذه",
+        noCommands: "لم يتم تشغيل أي أوامر إعداد لهذه الجلسة",
         log: "سجل إعداد Workspace",
       },
       log: {
@@ -549,7 +549,7 @@ export const ar: TranslationResources = {
     browser: {
       unavailable: {
         title: "المتصفح مخصص لسطح المكتب فقط",
-        subtitle: "افتح الجلسة هذه في Electron لاستخدام المتصفح المدمج.",
+        subtitle: "افتح هذه الجلسة في Electron لاستخدام المتصفح المدمج.",
       },
       session: "جلسة المتصفح{{browserId}}",
       controls: {
@@ -707,7 +707,7 @@ export const ar: TranslationResources = {
         newAgentHere: "وكيل جديد في شجرة العمل هذه",
         newTerminal: "محطة جديدة",
         newBrowser: "علامة تبويب متصفح جديدة",
-        importSession: "محادثة الاستيراد",
+        importSession: "استيراد محادثة",
         copyPath: "نسخ مسار الجلسة",
         copyBranchName: "انسخ اسم الفرع",
         showSetup: "إظهار الإعداد",
@@ -859,7 +859,7 @@ export const ar: TranslationResources = {
           updateCurrent: "التحديث غير متاح لأن هذا الفرع محدث بالفعل باستخدام{{baseRef}}",
           mergePrNoGithub: "دمج PR غير متاح الآن لأن GitHub غير متصل",
           archiveNotWorktree:
-            "الأرشيف غير متاح هنا لأنه لم يتم إنشاء الجلسة هذه كشجرة عمل {{brandName}}",
+            "الأرشيف غير متاح هنا لأنه لم يتم إنشاء هذه الجلسة كشجرة عمل {{brandName}}",
           mergePrNoForge: "دمج {{noun}} غير متاح الآن لأن {{brand}} غير متصل",
           mergePrMissing: "دمج PR غير متاح لأنه لا يوجد طلب سحب حتى الآن",
           mergePrDraft: "دمج PR غير متاح لأن طلب السحب لا يزال مسودة",
@@ -1510,7 +1510,7 @@ export const ar: TranslationResources = {
         description: "افتح مجلدًا على جهازك",
       },
       importSession: {
-        title: "محادثة الاستيراد",
+        title: "استيراد محادثة",
         description: "أحضر محادثات CLI الخارجية الأخيرة",
       },
       setupProviders: {
@@ -1578,7 +1578,7 @@ export const ar: TranslationResources = {
       failedOpenProject: "فشل في فتح المشروع",
       selectModel: "اختر نموذجا",
       hostDisconnected: "Host غير متصل",
-      pendingRequired: "لا يوجد إعداد معلق لالجلسة",
+      pendingRequired: "لا يوجد إعداد معلق للجلسة",
       composerStateRequired: "مطلوب حالة مؤلف إعداد Workspace",
     },
   },
@@ -2013,8 +2013,8 @@ export const ar: TranslationResources = {
     },
     workspaceToggle: {
       label: "التنبيهات الصوتية",
-      enable: "تشغيل التنبيهات الصوتية لالجلسة هذه",
-      disable: "إيقاف التنبيهات الصوتية لالجلسة هذه",
+      enable: "تشغيل التنبيهات الصوتية لهذه الجلسة",
+      disable: "إيقاف التنبيهات الصوتية لهذه الجلسة",
     },
     banner: {
       play: "تشغيل",

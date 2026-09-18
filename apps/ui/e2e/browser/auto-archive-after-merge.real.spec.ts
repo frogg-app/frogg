@@ -172,7 +172,7 @@ async function openArchivedWorkspaceFromHistory(page: Page, agentTitle: string):
   await openSessions(page);
   await expectSessionRowArchived(page, agentTitle);
   await clickSessionRow(page, agentTitle);
-  await expect(page.getByText("Workspace archived", { exact: true })).toBeVisible({
+  await expect(page.getByText("Session archived", { exact: true })).toBeVisible({
     timeout: 30_000,
   });
 }
