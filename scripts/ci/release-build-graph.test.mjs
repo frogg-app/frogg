@@ -82,7 +82,9 @@ test("selected builds use one immutable source and only the requested independen
   assert.equal((selectedWorkflow.match(/persist-credentials: false/g) ?? []).length, 3);
   assert.match(selectedWorkflow, /npm run build:desktop -- --target win-x64/);
   assert.match(selectedWorkflow, /npm run build:daemon-bundle -- --target linux-x64/);
-  assert.match(selectedWorkflow, /build-android-apk.mjs --abi arm64-v8a --serial/);
+  assert.match(selectedWorkflow, /build-android-apk.mjs --abi arm64-v8a \$GRADLE_WORKER_ARGS/);
+  // Hosted runners stay at one worker; only the self-hosted runner gets more.
+  assert.match(selectedWorkflow, /GRADLE_WORKER_ARGS: .*\|\| '--serial' \}\}/);
   assert.doesNotMatch(selectedWorkflow, /darwin|macos|linux-arm64|win-arm64|needs:/);
 });
 
