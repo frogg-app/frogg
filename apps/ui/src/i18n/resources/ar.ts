@@ -10,6 +10,8 @@ export const ar: TranslationResources = {
   },
   projectImport: projectImportCopies["ar"],
   directoryBrowser: {
+    pathLabel: "المجلد الحالي",
+    pathPlaceholder: "اكتب مسارًا أو الصقه ثم اضغط Enter",
     choose: "استخدام هذا المجلد",
     parent: "الانتقال إلى المجلد الأب",
     navigatePath: "الانتقال إلى {{path}}",

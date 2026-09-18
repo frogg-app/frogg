@@ -8,6 +8,8 @@ export const en = {
   },
   projectImport: projectImportCopies["en"],
   directoryBrowser: {
+    pathLabel: "Current directory",
+    pathPlaceholder: "Type or paste a path, then press Enter",
     choose: "Use this directory",
     parent: "Go to parent",
     navigatePath: "Navigate to {{path}}",

@@ -166,3 +166,20 @@ test("artifact names carry the selected brand across daemon targets", () => {
     "acme-daemon-1.2.3-linux-x64.tar.gz",
   );
 });
+test("project browsing starts at the brand's directory when it names one", () => {
+  assert.equal(resolveBrandManifest(minimal).projects.defaultDirectory, "~");
+  assert.equal(resolveBrandManifest({ ...minimal, projects: {} }).projects.defaultDirectory, "~");
+  assert.equal(
+    resolveBrandManifest({ ...minimal, projects: { defaultDirectory: "/srv/projects" } }).projects
+      .defaultDirectory,
+    "/srv/projects",
+  );
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, projects: { defaultDirectory: "" } }),
+    /defaultDirectory/,
+  );
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, projects: { root: "/srv/projects" } }),
+    /projects/,
+  );
+});

@@ -203,6 +203,29 @@ With `repository` set:
 
 Custom products never fall back to Frogg's releases.
 
+## Projects
+
+Where "Add project" starts browsing on the daemon.
+
+| Key                | Rule           | Default | Meaning                               |
+| ------------------ | -------------- | ------- | ------------------------------------- |
+| `defaultDirectory` | non-empty path | `~`     | Directory the project picker opens at |
+
+```json
+{
+  "projects": { "defaultDirectory": "/srv/projects" }
+}
+```
+
+Use this when your hosts are provisioned rather than personal — a sandbox or build box
+where every checkout lives under one root. The path is resolved by the daemon, so `~`,
+`~/code` and absolute paths all work, and it is offered alongside the usual suggestions
+when choosing a parent directory.
+
+It is a starting point, not a restriction: the user can browse or type anywhere from
+there, and a host without that directory falls back to its home directory instead of
+showing an error.
+
 ## Resolved output
 
 `npm run --silent brand:check -- --brand <dir> --json` prints the resolved brand. It

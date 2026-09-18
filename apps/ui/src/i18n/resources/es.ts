@@ -10,6 +10,8 @@ export const es: TranslationResources = {
   },
   projectImport: projectImportCopies["es"],
   directoryBrowser: {
+    pathLabel: "Directorio actual",
+    pathPlaceholder: "Escribe o pega una ruta y pulsa Intro",
     choose: "Usar este directorio",
     parent: "Ir al directorio superior",
     navigatePath: "Navegar a {{path}}",

@@ -10,6 +10,8 @@ export const ja: TranslationResources = {
   },
   projectImport: projectImportCopies["ja"],
   directoryBrowser: {
+    pathLabel: "現在のディレクトリ",
+    pathPlaceholder: "パスを入力または貼り付けて Enter を押してください",
     choose: "このディレクトリを使用",
     parent: "親ディレクトリへ移動",
     navigatePath: "{{path}} に移動",

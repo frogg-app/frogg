@@ -10,6 +10,8 @@ export const fr: TranslationResources = {
   },
   projectImport: projectImportCopies["fr"],
   directoryBrowser: {
+    pathLabel: "Dossier actuel",
+    pathPlaceholder: "Saisissez ou collez un chemin, puis appuyez sur Entrée",
     choose: "Utiliser ce dossier",
     parent: "Aller au dossier parent",
     navigatePath: "Naviguer vers {{path}}",

@@ -43,6 +43,8 @@ import {
   currentAddProjectPage,
   moveAddProjectSelection,
   openAddProjectFlow,
+  brandProjectDirectory,
+  HOME_DIRECTORY,
   openDirectorySearchPage,
   openGithubLocationPage,
   openGithubSearchPage,
@@ -50,6 +52,7 @@ import {
   openNewDirectoryParentPage,
   setAddProjectActiveIndex,
   setAddProjectPageInput,
+  shouldFallBackToHomeDirectory,
   setNewDirectoryName,
   updateCurrentAddProjectPage,
   type AddProjectFlowState,
@@ -309,6 +312,72 @@ function setPageStatus(
   );
 }
 
+interface DirectoryPathBarProps {
+  path: string;
+  editable: boolean;
+  onNavigate: (path: string) => void;
+  onFocusChange: (focused: boolean) => void;
+}
+
+/**
+ * The address bar for the directory browser: it shows where browsing currently
+ * is — the resolved absolute path, not the `~` the flow started from — and
+ * takes a typed or pasted path directly. Editing it never filters the list;
+ * that is what the field below it does.
+ */
+function DirectoryPathBar({ path, editable, onNavigate, onFocusChange }: DirectoryPathBarProps) {
+  const inputRef = useRef<EditingTextInputHandle>(null);
+
+  // The listing resolves `~` and every parent/child hop server-side, so the
+  // field follows the browser rather than holding whatever was typed last.
+  useEffect(() => {
+    if (!inputRef.current?.isFocused()) inputRef.current?.replaceText(path);
+  }, [path]);
+
+  const submit = useCallback(() => {
+    const value = inputRef.current?.getText().trim() ?? "";
+    if (!value || value === path) return;
+    onNavigate(value);
+  }, [onNavigate, path]);
+
+  const handleFocus = useCallback(() => onFocusChange(true), [onFocusChange]);
+  const handleBlur = useCallback(() => {
+    onFocusChange(false);
+    inputRef.current?.replaceText(path);
+  }, [onFocusChange, path]);
+
+  const handleKeyPress = useCallback(
+    ({ nativeEvent: { key } }: { nativeEvent: { key: string } }) => {
+      if (key !== "Escape") return;
+      inputRef.current?.replaceText(path);
+      inputRef.current?.blur();
+    },
+    [path],
+  );
+
+  return (
+    <View style={styles.pathBar} testID="add-project-flow-path-bar">
+      <MutedFlowIcon icon={FolderOpen} size={14} />
+      <ThemedTextInput
+        ref={inputRef}
+        initialValue={path}
+        style={styles.pathBarInput}
+        placeholder={i18n.t("directoryBrowser.pathPlaceholder")}
+        accessibilityLabel={i18n.t("directoryBrowser.pathLabel")}
+        autoCapitalize="none"
+        autoCorrect={false}
+        editable={editable}
+        returnKeyType="go"
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onKeyPress={handleKeyPress}
+        onSubmitEditing={submit}
+        testID="add-project-flow-path-bar-input"
+      />
+    </View>
+  );
+}
+
 // The product flow is intentionally one cohesive page-stack state machine.
 // eslint-disable-next-line complexity
 export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
@@ -557,6 +626,22 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
       ),
     );
   }, []);
+  // A brand can point browsing at a provisioned root (brandProjectDirectory).
+  // Not every host has it — a sandbox that was never set up, a developer's own
+  // laptop — so a failed listing of the untouched default drops back to the
+  // daemon's home directory instead of stranding the user on an error row.
+  const pathBarFocusedRef = useRef(false);
+  const handlePathBarFocusChange = useCallback((focused: boolean) => {
+    pathBarFocusedRef.current = focused;
+  }, []);
+  const brandDirectory = brandProjectDirectory();
+  const listingFailed = directoryListing.isError;
+  const browsedDirectory = page.kind === "directory-search" ? page.directory : null;
+  useEffect(() => {
+    if (!shouldFallBackToHomeDirectory({ listingFailed, browsedDirectory, brandDirectory })) return;
+    browseDirectory(HOME_DIRECTORY);
+  }, [brandDirectory, browseDirectory, browsedDirectory, listingFailed]);
+
   const pathOptions = useMemo(
     () =>
       buildProjectPickerOptions({
@@ -825,6 +910,9 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const modalLayer = useGlobalWebOverlayLayer("modal", isWeb);
   const handleWebOverlayKeyDown = useCallback(
     (event: KeyboardEvent) => {
+      // The path bar owns Enter (navigate) and Escape (revert) while focused;
+      // the overlay would otherwise submit the highlighted row instead.
+      if (pathBarFocusedRef.current) return false;
       if (!handleKey(event.key)) return false;
       event.preventDefault();
       return true;
@@ -922,6 +1010,16 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
                 pointerEvents="none"
                 style={styles.keyboardCapture}
                 testID="add-project-flow-keyboard-capture"
+              />
+            ) : null}
+            {page.kind === "directory-search" ? (
+              <DirectoryPathBar
+                // COMPAT(directoryAbsolutePath): older 0.6 daemons omit the
+                // resolved path, so the browsed value stands in until they do.
+                path={directoryListing.data?.absolutePath ?? page.directory}
+                editable={!isSubmitting}
+                onNavigate={browseDirectory}
+                onFocusChange={handlePathBarFocusChange}
               />
             ) : null}
             {page.kind !== "method" ? (
@@ -1082,6 +1180,25 @@ const styles = StyleSheet.create((theme) => ({
   input: {
     color: theme.colors.foreground,
     fontSize: theme.fontSize.base,
+    paddingVertical: theme.spacing[1],
+    outlineStyle: "none",
+  } as object,
+  pathBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: theme.spacing[1],
+    borderRadius: theme.borderRadius.md,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface1,
+  },
+  pathBarInput: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.sm,
     paddingVertical: theme.spacing[1],
     outlineStyle: "none",
   } as object,

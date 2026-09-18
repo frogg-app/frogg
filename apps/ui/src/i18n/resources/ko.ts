@@ -10,6 +10,8 @@ export const ko: TranslationResources = {
   },
   projectImport: projectImportCopies["ko"],
   directoryBrowser: {
+    pathLabel: "현재 디렉터리",
+    pathPlaceholder: "경로를 입력하거나 붙여넣고 Enter를 누르세요",
     choose: "이 디렉터리 사용",
     parent: "상위 디렉터리로 이동",
     navigatePath: "{{path}}로 이동",

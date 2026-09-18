@@ -128,6 +128,11 @@ export const BrandManifestSchema = z.strictObject({
       expoProjectId: z.uuid().optional(),
     })
     .optional(),
+  projects: z
+    .strictObject({
+      defaultDirectory: z.string().min(1).optional(),
+    })
+    .optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
 
@@ -164,6 +169,7 @@ export function resolveBrandManifest(input: unknown) {
     ...resolveLinksAndServices(manifest, repository),
     installer: resolveInstaller(manifest, dark),
     distribution,
+    projects: resolveProjects(manifest),
   };
 }
 
@@ -231,6 +237,18 @@ export function contrast(a: string, b: string): number {
   const first = luminance(a);
   const second = luminance(b);
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+/**
+ * Where "Add project" starts browsing on the daemon. A deployment that keeps
+ * every checkout in one place (a provisioned sandbox, a build box) can name it
+ * here so the picker opens there instead of the user's home directory. The path
+ * is resolved on the daemon, so `~` and absolute paths both work, and it is only
+ * a starting point: the picker falls back to the home directory when the
+ * directory does not exist on that host.
+ */
+function resolveProjects(manifest: BrandManifest) {
+  return { defaultDirectory: manifest.projects?.defaultDirectory ?? "~" };
 }
 
 function resolveDistribution(manifest: BrandManifest) {

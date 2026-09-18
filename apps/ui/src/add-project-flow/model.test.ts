@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  brandProjectDirectory,
   backAddProjectPage,
   chooseAddProjectHost,
   currentAddProjectPage,
@@ -12,6 +13,7 @@ import {
   openNewDirectoryParentPage,
   setAddProjectActiveIndex,
   setAddProjectPageInput,
+  shouldFallBackToHomeDirectory,
   setNewDirectoryName,
   type AddProjectHost,
 } from "./model";
@@ -33,14 +35,50 @@ const HOST: AddProjectHost = {
 };
 
 describe("Add Project navigation", () => {
-  it("starts every directory browsing session at home", () => {
+  it("falls back to home only for an untouched brand directory that fails to list", () => {
+    const brandDirectory = "/srv/projects";
+    expect(
+      shouldFallBackToHomeDirectory({
+        listingFailed: true,
+        browsedDirectory: brandDirectory,
+        brandDirectory,
+      }),
+    ).toBe(true);
+    // The user navigated away: their failure, their retry.
+    expect(
+      shouldFallBackToHomeDirectory({
+        listingFailed: true,
+        browsedDirectory: "/srv/projects/web",
+        brandDirectory,
+      }),
+    ).toBe(false);
+    expect(
+      shouldFallBackToHomeDirectory({
+        listingFailed: false,
+        browsedDirectory: brandDirectory,
+        brandDirectory,
+      }),
+    ).toBe(false);
+    // A brand that names no directory already starts at home.
+    expect(
+      shouldFallBackToHomeDirectory({
+        listingFailed: true,
+        browsedDirectory: "~",
+        brandDirectory: "~",
+      }),
+    ).toBe(false);
+  });
+
+  it("starts every directory browsing session at the brand's directory", () => {
+    // "~" unless the brand names one; the daemon resolves either.
+    const directory = brandProjectDirectory();
     let state = openAddProjectFlow({ hosts: [HOST] });
     state = openDirectorySearchPage(state, HOST.serverId);
-    expect(currentAddProjectPage(state)).toMatchObject({ directory: "~", query: "" });
+    expect(currentAddProjectPage(state)).toMatchObject({ directory, query: "" });
     state = setAddProjectPageInput(state, "/tmp");
     state = backAddProjectPage(state)!;
     state = openDirectorySearchPage(state, HOST.serverId);
-    expect(currentAddProjectPage(state)).toMatchObject({ directory: "~", query: "" });
+    expect(currentAddProjectPage(state)).toMatchObject({ directory, query: "" });
   });
 
   it("skips a single connected host without adding it to history", () => {

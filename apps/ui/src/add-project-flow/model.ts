@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 export interface AddProjectHost {
   serverId: string;
   label: string;
@@ -152,13 +153,40 @@ export function chooseAddProjectHost(
   return pushAddProjectPage(state, methodPage(hostId));
 }
 
+/**
+ * Where browsing starts. Brands that provision their hosts (a WSL sandbox with
+ * every checkout under one root) name that directory; everything else gets the
+ * daemon's home directory, which it expands from `~`.
+ */
+export function brandProjectDirectory(): string {
+  return brand.projects.defaultDirectory;
+}
+
+export const HOME_DIRECTORY = "~";
+
+/**
+ * A brand directory is a starting point, not a requirement: a host that has no
+ * `/srv/projects` should land the user in their home directory rather than on
+ * an error row. Only the untouched default falls back — once the user has
+ * navigated somewhere, a failed listing is theirs to see and retry.
+ */
+export function shouldFallBackToHomeDirectory(input: {
+  listingFailed: boolean;
+  browsedDirectory: string | null;
+  brandDirectory: string;
+}): boolean {
+  if (!input.listingFailed) return false;
+  if (input.brandDirectory === HOME_DIRECTORY) return false;
+  return input.browsedDirectory === input.brandDirectory;
+}
+
 export function openDirectorySearchPage(
   state: AddProjectFlowState,
   hostId: string,
 ): AddProjectFlowState {
   return pushAddProjectPage(state, {
     ...searchPage("directory-search"),
-    directory: "~",
+    directory: brandProjectDirectory(),
     hostId,
     isSubmitting: false,
   });

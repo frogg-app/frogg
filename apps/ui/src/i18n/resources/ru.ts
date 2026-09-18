@@ -10,6 +10,8 @@ export const ru: TranslationResources = {
   },
   projectImport: projectImportCopies["ru"],
   directoryBrowser: {
+    pathLabel: "Текущий каталог",
+    pathPlaceholder: "Введите или вставьте путь и нажмите Enter",
     choose: "Использовать этот каталог",
     parent: "Перейти к родительскому каталогу",
     navigatePath: "Перейти в {{path}}",

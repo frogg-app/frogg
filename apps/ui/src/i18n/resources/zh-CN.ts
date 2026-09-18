@@ -10,6 +10,8 @@ export const zhCN: TranslationResources = {
   },
   projectImport: projectImportCopies["zh-CN"],
   directoryBrowser: {
+    pathLabel: "当前目录",
+    pathPlaceholder: "输入或粘贴路径，然后按 Enter",
     choose: "使用此目录",
     parent: "转到上级目录",
     navigatePath: "转到 {{path}}",

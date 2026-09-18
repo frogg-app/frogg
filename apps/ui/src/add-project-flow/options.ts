@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { i18n } from "@/i18n/i18next";
 import {
   isCompleteGitRemote,
@@ -155,6 +156,7 @@ export function buildSuggestedParentDirectories(projectPaths: string[]): string[
       const parent = parentDirectory(path);
       return parent ? [parent] : [];
     }),
+    brand.projects.defaultDirectory,
     "~/dev",
     "~/Developer",
     "~/src",
