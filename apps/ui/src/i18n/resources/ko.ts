@@ -1161,6 +1161,7 @@ export const ko: TranslationResources = {
     },
     sections: {
       sessions: "기록",
+      projects: "프로젝트",
       search: "검색",
     },
     worktreeSetup: {

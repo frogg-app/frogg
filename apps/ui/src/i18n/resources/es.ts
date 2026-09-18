@@ -1186,6 +1186,7 @@ export const es: TranslationResources = {
     },
     sections: {
       sessions: "Historial",
+      projects: "Proyectos",
       search: "Buscar",
     },
     worktreeSetup: {

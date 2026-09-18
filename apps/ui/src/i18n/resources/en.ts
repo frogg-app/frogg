@@ -1161,6 +1161,7 @@ export const en = {
     },
     sections: {
       sessions: "History",
+      projects: "Projects",
       search: "Search",
     },
     worktreeSetup: {
