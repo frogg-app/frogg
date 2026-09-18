@@ -98,6 +98,34 @@ Ports 6768 and 8081 are the defaults for the official brand. A custom brand sele
 `FROGG_BRAND_DIR` uses its `daemonPort` and `daemonPort + 1` instead. Port 9999 is the default
 port of a separately installed daemon; keep it free of dev work.
 
+## Preview UI changes
+
+To iterate on screens without a full build, run the preview. It starts an isolated daemon and the
+web app with hot reload, and seeds a demo project with uncommitted changes and two mock-provider
+chats:
+
+```bash
+npm run preview            # fresh demo state on every launch
+npm run preview -- --keep  # keep the previous run's daemon state
+```
+
+It prints a LAN URL (port 7800 by default, or `PREVIEW_PORT`; the daemon uses the next port).
+Edits under `apps/ui` reload in the open page. Server changes need a restart of the preview.
+
+With the preview running, `npm run shot` captures a screen with headless Chromium in a few
+seconds and writes it to `.dev/shots/`:
+
+```bash
+npm run shot                                    # the first seeded chat
+npm run shot -- chat --mobile                   # phone viewport
+npm run shot -- host/providers --click provider-settings-claude --wait provider-settings-modal
+npm run shot -- chat --crop message-input-root --width 1800
+npm run shot -- --help                          # every target and option
+```
+
+Targets are `chat`, `chat2`, `settings/<section>`, `host/<section>`, or any app route. `--click`
+takes test IDs and can repeat to walk through a flow before the capture.
+
 ## Dev state
 
 `FROGG_HOME` holds agents, projects, worktrees, `config.json` and `daemon.log`. The dev scripts
