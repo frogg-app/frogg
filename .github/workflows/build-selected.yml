@@ -9,12 +9,12 @@ on:
         default: all
         options: [all, windows, daemon, android]
       android_runner:
-        description: Android runner (hosted, or the self-hosted WSL2 box on the Windows PC)
+        description: Android runner (hosted, or the self-hosted Windows PC)
         type: choice
         default: hosted
         options: [hosted, self-hosted]
       android_workers:
-        description: Gradle workers for the Android build (self-hosted only; hosted stays at 1)
+        description: Gradle workers for the Android build (self-hosted Windows PC only; hosted stays at 1)
         type: string
         default: "1"
   workflow_call:
@@ -104,7 +104,7 @@ jobs:
   android:
     if: inputs.target == 'all' || inputs.target == 'android'
     name: Android arm64 client (debug-signed, ${{ inputs.android_runner || 'hosted' }})
-    runs-on: ${{ fromJSON(inputs.android_runner == 'self-hosted' && '["self-hosted","linux","android-win"]' || '"ubuntu-latest"') }}
+    runs-on: ${{ fromJSON(inputs.android_runner == 'self-hosted' && '["self-hosted","windows","android-win"]' || '"ubuntu-latest"') }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
@@ -145,13 +145,17 @@ jobs:
           # sdkmanager no longer provides the obsolete tools package.
           packages: platform-tools
           log-accepted-android-sdk-licenses: false
+      # The self-hosted PC keeps its Gradle cache on disk between runs, so skip
+      # the round trip through the Actions cache there.
       - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-disabled: ${{ inputs.android_runner == 'self-hosted' }}
       - name: Install dependencies
         run: node scripts/ci/npm-retry.mjs ci
       - name: Build test APK
         # One worker: see the release workflow's android job for the measured
         # reason. Two and three workers both exhausted the runner.
-        # The self-hosted box has the memory for more.
+        # Only the self-hosted Windows PC has the memory for more.
         env:
           GRADLE_WORKER_ARGS: ${{ inputs.android_runner == 'self-hosted' && format('--workers {0}', inputs.android_workers) || '--serial' }}
         run: node scripts/release/build-android-apk.mjs --abi arm64-v8a $GRADLE_WORKER_ARGS --out-dir release-assets
