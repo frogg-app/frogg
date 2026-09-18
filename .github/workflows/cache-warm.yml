@@ -69,7 +69,7 @@ jobs:
       # ubuntu-latest has no desktop runner but does no harm here.
       - name: Restore Electron download cache
         id: electron-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             ~/Library/Caches/electron
@@ -81,7 +81,7 @@ jobs:
         run: npm run install:electron --workspace=@frogg/desktop
 
       - if: steps.electron-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             ~/Library/Caches/electron
