@@ -8,6 +8,15 @@ on:
         type: choice
         default: all
         options: [all, windows, daemon, android]
+      android_runner:
+        description: Android runner (hosted, or the self-hosted WSL2 box on the Windows PC)
+        type: choice
+        default: hosted
+        options: [hosted, self-hosted]
+      android_workers:
+        description: Gradle workers for the Android build (self-hosted only; hosted stays at 1)
+        type: string
+        default: "4"
   workflow_call:
     inputs:
       target:
@@ -94,8 +103,8 @@ jobs:
 
   android:
     if: inputs.target == 'all' || inputs.target == 'android'
-    name: Android arm64 client (debug-signed)
-    runs-on: ubuntu-latest
+    name: Android arm64 client (debug-signed, ${{ inputs.android_runner || 'hosted' }})
+    runs-on: ${{ fromJSON(inputs.android_runner == 'self-hosted' && '["self-hosted","linux","android-win"]' || '"ubuntu-latest"') }}
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
@@ -108,7 +117,9 @@ jobs:
           repository: ${{ vars.FROGG_BRAND_REPOSITORY }}
           revision: ${{ vars.FROGG_BRAND_REVISION }}
           subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
+      # The disk cleanup and SDK trim only make sense on a throwaway hosted VM.
       - name: Free runner disk space for Android
+        if: inputs.android_runner != 'self-hosted'
         uses: jlumbroso/free-disk-space@v1.3.1
         with:
           tool-cache: false
@@ -119,6 +130,7 @@ jobs:
           docker-images: true
           swap-storage: false
       - name: Trim unused runner Android SDK components
+        if: inputs.android_runner != 'self-hosted'
         run: sudo rm -rf /usr/local/lib/android/sdk/ndk /usr/local/lib/android/sdk/emulator /usr/local/lib/android/sdk/system-images
       - uses: actions/setup-node@v7
         with:
@@ -139,7 +151,10 @@ jobs:
       - name: Build test APK
         # One worker: see the release workflow's android job for the measured
         # reason. Two and three workers both exhausted the runner.
-        run: node scripts/release/build-android-apk.mjs --abi arm64-v8a --serial --out-dir release-assets
+        # The self-hosted box has the memory for more.
+        env:
+          GRADLE_WORKER_ARGS: ${{ inputs.android_runner == 'self-hosted' && format('--workers {0}', inputs.android_workers) || '--serial' }}
+        run: node scripts/release/build-android-apk.mjs --abi arm64-v8a $GRADLE_WORKER_ARGS --out-dir release-assets
       - uses: actions/upload-artifact@v7
         with:
           name: android-arm64-debug-signed-${{ github.sha }}
