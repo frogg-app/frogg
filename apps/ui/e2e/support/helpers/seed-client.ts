@@ -233,6 +233,9 @@ export async function seedWorkspace(options: {
       : await createTempGitRepo(options.repoPrefix, options.repo);
   const client = await connectSeedClient({ port: options.port });
   try {
+    // The daemon only creates workspaces inside a registered project.
+    const added = await client.addProject(project.path);
+    if (added.error) throw new Error(added.error);
     const created = await client.createWorkspace({
       source: { kind: "directory", path: project.path },
       title: options.title,

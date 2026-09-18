@@ -119,11 +119,11 @@ describe("shouldShowProviderAccountPill", () => {
     expect(shouldShowProviderAccountPill({ isRunning: true, accountsCount: 0 })).toBe(false);
   });
 
-  it("hides the pill for a single account — there is nothing to disambiguate", () => {
-    expect(shouldShowProviderAccountPill({ isRunning: true, accountsCount: 1 })).toBe(false);
+  it("shows the pill for a single account — a launched agent's account is fixed", () => {
+    expect(shouldShowProviderAccountPill({ isRunning: true, accountsCount: 1 })).toBe(true);
   });
 
-  it("shows the pill once a provider has more than one account", () => {
+  it("shows the pill when a provider has several accounts", () => {
     expect(shouldShowProviderAccountPill({ isRunning: true, accountsCount: 2 })).toBe(true);
   });
 

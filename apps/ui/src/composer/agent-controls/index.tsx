@@ -478,9 +478,9 @@ function buildReadOnlyProviderAccountControl(
 ): ProviderAccountControlValue | null {
   const accounts = entry?.accounts;
   if (!accounts) return null;
-  // Providers with more than one account get their own pill in the row above
-  // the composer instead — see `ProviderAccountPill`. Showing both there and
-  // greyed out here would say the same thing twice.
+  // A launched agent's account is shown as a pill in the row above the composer
+  // instead — see `ProviderAccountPill`. Showing it greyed out here as well would
+  // say the same thing twice.
   if (shouldShowProviderAccountPill({ isRunning: true, accountsCount: accounts.length })) {
     return null;
   }

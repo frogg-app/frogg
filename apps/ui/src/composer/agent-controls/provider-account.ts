@@ -117,17 +117,17 @@ export function resolveProviderAccountControlModel(input: {
 }
 
 /**
- * COMPAT(perAgentProviderAccounts): whether a launched agent's account is worth
- * calling out on its own, as a pill in the row above the composer rather than as
- * the greyed-out toolbar badge. A single account is not a choice — every launch
- * of that provider already ran as it — so naming it anywhere would only repeat
- * what the provider control already says. Pure so the visibility rule can be
- * tested without standing up the pill or the store it reads from.
+ * COMPAT(perAgentProviderAccounts): whether a launched agent's account shows as a
+ * pill in the row above the composer. Once an agent is launched its account is
+ * fixed, so it leaves the toolbar (which holds only controls that still change
+ * something) and is shown here instead, whenever the provider has any account to
+ * name. Pure so the visibility rule can be tested without standing up the pill or
+ * the store it reads from.
  */
 export function shouldShowProviderAccountPill(input: {
   /** A launched agent, bound to the config dir its provider process started with. */
   isRunning: boolean;
   accountsCount: number;
 }): boolean {
-  return input.isRunning && input.accountsCount > 1;
+  return input.isRunning && input.accountsCount > 0;
 }

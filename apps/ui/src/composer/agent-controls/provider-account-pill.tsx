@@ -41,8 +41,8 @@ function selectAgentProviderAccountSlice(
 /**
  * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
  *
- * `null` when the pill must not render at all — a provider with one account or
- * none is nothing to disambiguate, and `useProviderAccountPill` in
+ * `null` when the pill must not render at all — a provider with no accounts has
+ * nothing to name, and `useProviderAccountPill` in
  * `agent-controls/index.tsx` relies on this same shape to decide whether the
  * toolbar's read-only badge should stand down.
  */

@@ -353,11 +353,13 @@ const styles = StyleSheet.create((theme) => {
         md: COMPOSER_PILL_CLEARANCE.wide,
       },
     },
-    // Box-none column the width of the composer, so the pills start at its left edge rather
-    // than centring in the pane.
+    // Box-none column laid out exactly like the composer's input area (full width, the same
+    // horizontal padding, content capped at MAX_CONTENT_WIDTH and centred), so the first pill
+    // sits flush with the composer's left edge at every pane width.
     lane: {
       width: "100%",
-      maxWidth: MAX_CONTENT_WIDTH,
+      maxWidth: MAX_CONTENT_WIDTH + theme.spacing[4] * 2,
+      paddingHorizontal: theme.spacing[4],
       alignItems: "flex-start",
     },
     // The scrollable viewport intentionally has no `width`. `lane`'s `alignItems: "flex-start"` sizes
@@ -375,13 +377,12 @@ const styles = StyleSheet.create((theme) => {
       minWidth: 0,
       flexGrow: 0,
     },
-    // Content container: carries the padding and gap that used to live on the row itself, so the
-    // first and last pill keep their inset instead of clipping at the scroll edge.
+    // Content container. No horizontal padding: `lane` already insets the row to the composer's
+    // edge, and padding here would push the first pill in past it.
     track: {
       flexDirection: "row",
       alignItems: "center",
       gap: theme.spacing[1],
-      paddingHorizontal: theme.spacing[4],
     },
     // The rail every panel row sits on: inset from the panel edge so the fill is a rounded block
     // inside it, and tall enough that revealing an action button cannot resize the row.
