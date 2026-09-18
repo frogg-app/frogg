@@ -61,6 +61,10 @@ if (values["skip-export"]) {
     );
   }
   console.log("Reusing apps/ui/dist (--skip-export).");
+  // build:ui builds the workspace packages as a side effect (build:app-deps);
+  // skipping it must not skip them, or build:main cannot resolve
+  // @frogg/protocol's dist.
+  run("build:protocol");
 } else {
   run("build:ui");
 }

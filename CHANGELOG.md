@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.2 — 2026-09-18
+
+- Carries everything listed under 1.5.1, whose desktop builds failed in the
+  release workflow so it was never published. Building the desktop app from a
+  prebuilt web UI export now builds the protocol package first.
+
 ## 1.5.1 — 2026-09-18
 
 - A `frogg://host/add?type=directTcp&host=…&port=…` link registers a direct
