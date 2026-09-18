@@ -137,7 +137,12 @@ jobs:
       - name: Install dependencies
         run: node scripts/ci/npm-retry.mjs ci
       - name: Build test APK
-        run: node scripts/release/build-android-apk.mjs --abi arm64-v8a --serial --out-dir release-assets
+        # Same ubuntu-latest runner class as the release android job, so this
+        # builds with the same worker count rather than a different one: it is
+        # the run that populates the Gradle build cache the release reads, and a
+        # cache written under a different configuration is worth less. The heap
+        # caps that fixed 0.1.20 ride along with any pinned worker count.
+        run: node scripts/release/build-android-apk.mjs --abi arm64-v8a --workers 3 --out-dir release-assets
       - uses: actions/upload-artifact@v7
         with:
           name: android-arm64-debug-signed-${{ github.sha }}
