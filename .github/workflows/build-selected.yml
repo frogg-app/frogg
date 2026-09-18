@@ -142,7 +142,7 @@ jobs:
         # the run that populates the Gradle build cache the release reads, and a
         # cache written under a different configuration is worth less. The heap
         # caps that fixed 0.1.20 ride along with any pinned worker count.
-        run: node scripts/release/build-android-apk.mjs --abi arm64-v8a --workers 3 --out-dir release-assets
+        run: node scripts/release/build-android-apk.mjs --abi arm64-v8a --workers 2 --out-dir release-assets
       - uses: actions/upload-artifact@v7
         with:
           name: android-arm64-debug-signed-${{ github.sha }}
