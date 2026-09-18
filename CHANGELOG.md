@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.5.0-beta.1 — 2026-09-18
+## 1.5.0 — 2026-09-18
 
 - Each installed provider now has a settings cog in Settings > Providers that
   opens a per-provider modal. The leading chevron is gone: it implied a
