@@ -594,21 +594,20 @@ jobs:
           echo "$FROGG_ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/frogg-release.keystore"
           echo "FROGG_ANDROID_KEYSTORE=$RUNNER_TEMP/frogg-release.keystore" >> "$GITHUB_ENV"
 
-      # The runner is 4 vCPU / 16 GB and this job is the release's critical
-      # path, so it runs more than one Gradle worker. The heap caps come with
-      # the worker count (see gradleArgsFor): what killed the 0.1.20 run with
-      # "AAPT2 Daemon #0: Idle daemon unexpectedly exit" was the uncapped 4 GB
-      # heap expo-gradle-jvmargs writes into gradle.properties, not the second
-      # worker, and `--workers N` now pins the same -Xmx2048m/512m
-      # metaspace/1 GB Kotlin daemon ceiling that `--serial` does.
+      # Gradle runs one worker here. Parallelism was measured and does not
+      # work at these heap caps: `--workers 3` (run 35323297692) and
+      # `--workers 2` (run 35325084445) both died the same way, roughly 15-17
+      # minutes into the Gradle invocation, each a few minutes after Gradle
+      # logged "The Daemon will expire after the build after running out of JVM
+      # Metaspace" against the 512 MiB cap. Neither produced a Gradle failure or
+      # a Java OutOfMemoryError; the runner agent itself went away. `--serial`
+      # is the configuration that has actually shipped releases (19m13s for
+      # v1.5.0, 22m11s for v1.4.1).
       #
-      # Three workers was tried and the runner died: run 35323297692 finished
-      # the Metro bundle, went silent for two minutes during the native build
-      # and reported "The operation was canceled" with every post-step skipped
-      # -- no Gradle failure and no Java OutOfMemoryError, i.e. the runner
-      # agent itself was OOM-killed rather than the JVM. The Java heaps are
-      # capped but concurrent CMake compiles are native memory and are not.
-      # If two workers does the same, go back to `--serial`.
+      # More workers load more classes at once, so the metaspace ceiling that is
+      # fine at one worker is not at two. If parallelism is worth revisiting,
+      # raise -XX:MaxMetaspaceSize (see gradleArgsFor) before raising the worker
+      # count -- that is what the log actually complains about.
       - name: Build release APK
         env:
           FROGG_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_ANDROID_KEYSTORE_PASSWORD }}
@@ -617,7 +616,7 @@ jobs:
         run: >-
           node scripts/release/build-android-apk.mjs
           --abi ${{ matrix.abi }}
-          --workers 2
+          --serial
           --out-dir release-assets
 
       - name: Upload to GitHub release
