@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.1 — 2026-09-18
+
+- A `frogg://host/add?type=directTcp&host=…&port=…` link registers a direct
+  host, so provisioning tooling can introduce a daemon that does not require
+  pairing without writing the app's private host registry.
+- Add project starts browsing where the brand says (`projects.defaultDirectory`,
+  `~` unless set) and shows an editable path bar. A host missing that directory
+  falls back to the home directory.
+- A brand can hide host settings sections (`hostSettings.hiddenSections`). The
+  daemon seeds its own config from the brand default, and an admin can turn a
+  section back on for the host they run without a new build.
+- A downstream build can report its own version in Settings > About by setting
+  `<PREFIX>_RELEASE_VERSION` at brand:prepare time. Unset, nothing changes.
+- The provider settings modal lists the default account among the Models
+  account tabs so it can be restricted like any other, and a + button beside
+  the tabs adds an account. Usage in the Accounts section is padded and spaced
+  like the other sections, and the modal has more room at the bottom.
+
 ## 1.5.0 — 2026-09-18
 
 - Each installed provider now has a settings cog in Settings > Providers that
