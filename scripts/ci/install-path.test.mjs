@@ -213,3 +213,62 @@ test("repeat service installation stops the service and detached owner before ac
     ].join("\n"),
   );
 });
+
+test("an installer running inside the daemon cgroup hands the restart to a transient unit", async (t) => {
+  // Reproduces the upgrade that left a host with no daemon: the installer ran
+  // in a terminal the daemon hosts, so `systemctl stop` killed the installer
+  // and the `systemctl start` that should have followed never ran.
+  const service = await daemonFixture(t);
+  const f = fixture(t, "bash", { FROGG_NO_SERVICE: "0", FROGG_LISTEN: `0.0.0.0:${service.port}` });
+  const shimDir = path.join(f.home, "shim");
+  mkdirSync(shimDir);
+  f.env.FROGG_TEST_COMMAND_LOG = path.join(f.home, "commands");
+  f.env.FROGG_CGROUP_FILE = path.join(f.home, "cgroup");
+  writeFileSync(
+    f.env.FROGG_CGROUP_FILE,
+    "0::/user.slice/user-1000.slice/user@1000.service/app.slice/frogg-daemon.service\n",
+  );
+  for (const name of ["systemctl", "systemd-run"]) {
+    writeFileSync(
+      path.join(shimDir, name),
+      `#!/bin/sh\nprintf "${name} %s\\n" "$*" >> "$FROGG_TEST_COMMAND_LOG"\n`,
+      { mode: 0o755 },
+    );
+  }
+  f.env.PATH = `${shimDir}:/usr/bin:/bin`;
+  const { stdout } = await promisify(execFile)("bash", [installer], { env: f.env });
+  const commands = readFileSync(f.env.FROGG_TEST_COMMAND_LOG, "utf8").split("\n");
+  const handoff = commands.find((line) => line.startsWith("systemd-run"));
+  assert.ok(handoff, `expected a systemd-run hand-off, got:\n${commands.join("\n")}`);
+  assert.match(handoff, /--unit=frogg-daemon-install-\d+/);
+  assert.match(handoff, /systemctl --user stop 'frogg-daemon'/);
+  assert.match(handoff, /systemctl --user start 'frogg-daemon'/);
+  // The stop happens in the transient unit, never in this process.
+  assert.ok(!commands.some((line) => line === "systemctl --user stop frogg-daemon"));
+  assert.match(stdout, /handing the restart to a transient unit/);
+  // Nothing to verify from a shell that is about to be killed.
+  assert.doesNotMatch(stdout, /verified running daemon/);
+});
+
+test("a refused systemd-run falls back to an inline restart", async (t) => {
+  const service = await daemonFixture(t);
+  const f = fixture(t, "bash", { FROGG_NO_SERVICE: "0", FROGG_LISTEN: `0.0.0.0:${service.port}` });
+  const shimDir = path.join(f.home, "shim");
+  mkdirSync(shimDir);
+  f.env.FROGG_TEST_COMMAND_LOG = path.join(f.home, "commands");
+  f.env.FROGG_CGROUP_FILE = path.join(f.home, "cgroup");
+  writeFileSync(f.env.FROGG_CGROUP_FILE, "0::/app.slice/frogg-daemon.service\n");
+  writeFileSync(
+    path.join(shimDir, "systemctl"),
+    '#!/bin/sh\nprintf "systemctl %s\\n" "$*" >> "$FROGG_TEST_COMMAND_LOG"\n',
+    { mode: 0o755 },
+  );
+  // Refused, as it is for a user session with no systemd (or no permission).
+  writeFileSync(path.join(shimDir, "systemd-run"), "#!/bin/sh\nexit 1\n", { mode: 0o755 });
+  f.env.PATH = `${shimDir}:/usr/bin:/bin`;
+  const { stdout } = await promisify(execFile)("bash", [installer], { env: f.env });
+  assert.match(stdout, /systemd-run was refused; restarting inline/);
+  assert.match(stdout, /started frogg-daemon/);
+  const commands = readFileSync(f.env.FROGG_TEST_COMMAND_LOG, "utf8");
+  assert.match(commands, /systemctl --user start frogg-daemon/);
+});
