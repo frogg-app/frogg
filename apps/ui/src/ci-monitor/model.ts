@@ -121,16 +121,24 @@ export interface RunnerUse {
   job: CiJob | null;
 }
 
-/** Each runner once: busy with the job it is running, otherwise idle. */
+/**
+ * Each runner once: busy with the job it is running, otherwise idle. Hosted runners are
+ * single-use machines with generated names, so an idle one is history rather than capacity —
+ * they appear only while busy, under their image label. Self-hosted runners always appear.
+ */
 export function collectRunners(runs: CiRun[]): RunnerUse[] {
   const byName = new Map<string, RunnerUse>();
   for (const run of runs) {
     for (const job of run.jobs) {
-      if (!job.runner) continue;
-      if (job.status === "running") byName.set(job.runner.name, { runner: job.runner, job });
-      else if (!byName.has(job.runner.name)) {
-        byName.set(job.runner.name, { runner: job.runner, job: null });
-      }
+      const runner = job.runner;
+      if (!runner) continue;
+      const busy = job.status === "running";
+      if (runner.hosted && !busy) continue;
+      const display = runner.hosted ? { ...runner, name: runner.labels[0] ?? runner.name } : runner;
+      // Two busy hosted jobs on the same image are two machines, so they keep separate rows.
+      const key = runner.hosted ? `${display.name}:${job.id}` : runner.name;
+      if (busy) byName.set(key, { runner: display, job });
+      else if (!byName.has(key)) byName.set(key, { runner: display, job: null });
     }
   }
   return [...byName.values()];

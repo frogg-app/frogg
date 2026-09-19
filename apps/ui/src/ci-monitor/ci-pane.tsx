@@ -112,6 +112,8 @@ function CiPaneBody({ state, now }: { state: CiRunsState; now: number }) {
   const [runnersOpen, setRunnersOpen] = useState(true);
   const toggleRunners = useCallback(() => setRunnersOpen((open) => !open), []);
   const runnerSummary = useMemo(() => <RunnerSummary runs={state.runs} />, [state.runs]);
+  // Idle hosted runners are not listed, so between runs there is often nothing to show.
+  const hasRunners = useMemo(() => collectRunners(state.runs).length > 0, [state.runs]);
 
   if (!state.supported) {
     return (
@@ -169,15 +171,17 @@ function CiPaneBody({ state, now }: { state: CiRunsState; now: number }) {
           {state.runs.map((run) => (
             <RunBlock key={run.id} run={run} now={now} />
           ))}
-          <View style={styles.divider} />
-          <Section
-            title={t("ciMonitor.runners")}
-            open={runnersOpen}
-            onToggle={toggleRunners}
-            summary={runnerSummary}
-          >
-            <RunnerList runs={state.runs} />
-          </Section>
+          {hasRunners ? <View style={styles.divider} /> : null}
+          {hasRunners ? (
+            <Section
+              title={t("ciMonitor.runners")}
+              open={runnersOpen}
+              onToggle={toggleRunners}
+              summary={runnerSummary}
+            >
+              <RunnerList runs={state.runs} />
+            </Section>
+          ) : null}
         </>
       )}
     </>
@@ -331,7 +335,7 @@ function RunnerList({ runs }: { runs: CiRun[] }) {
   return (
     <>
       {runners.map(({ runner, job }) => (
-        <View key={runner.name} style={styles.runnerRow} testID="ci-runner-row">
+        <View key={job ? job.id : runner.name} style={styles.runnerRow} testID="ci-runner-row">
           <View style={job ? styles.runnerDotBusy : styles.runnerDotIdle} />
           <View style={styles.runnerText}>
             <Text style={sectionKitStyles.checkName} numberOfLines={1}>
@@ -340,7 +344,7 @@ function RunnerList({ runs }: { runs: CiRun[] }) {
             <Text style={sectionKitStyles.checkWorkflow} numberOfLines={1}>
               {[
                 runner.hosted ? t("ciMonitor.hosted") : t("ciMonitor.selfHosted"),
-                runner.labels.join(", "),
+                runner.hosted ? null : runner.labels.join(", "),
               ]
                 .filter(Boolean)
                 .join(" · ")}
