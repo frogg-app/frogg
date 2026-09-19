@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
   "id": "frogg",
-  "name": "Frogg",
-  "fullName": "Frogg",
+  "name": "frogg",
+  "fullName": "frogg",
   "publisher": "Frogg App",
-  "description": "Frogg: desktop client for local and remote AI coding agents.",
+  "description": "frogg: desktop client for local and remote AI coding agents.",
   "applicationId": "app.frogg.frogg",
   "daemonPort": 9999,
   "scheme": "frogg",
-  "artifactPrefix": "Frogg",
+  "artifactPrefix": "frogg",
   "assets": {
     "icon": "../../apps/ui/assets/images/icon.png",
     "ios": "../../apps/ui/assets/images/icon-ios.png",

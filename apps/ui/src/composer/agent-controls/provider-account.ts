@@ -11,7 +11,10 @@ import {
  * The composer's provider account picker. `providerAccountId` is deliberately
  * three-valued and must never be read for truthiness:
  * - `undefined`: the field is absent from `create_agent_request.config`, so the
- *   daemon uses the provider's daemon-wide active account (today's behaviour).
+ *   daemon uses the provider's daemon-wide active account. Current daemons pin
+ *   that resolution onto the agent at launch, so a launched agent reporting
+ *   `undefined` comes from an older daemon; the active-account fallback below
+ *   is then the best available guess.
  * - `null`: the explicit "Default" pick; the daemon pins the provider's primary
  *   config dir (`~/.claude`) so an active account cannot leak into this agent.
  * - a string: that account's config dir.
@@ -172,18 +175,13 @@ export function shouldShowProviderAccountPill(input: {
  * list minus the account the agent already runs as, because "move it to where
  * it already is" is not a move. Reusing the picker's list keeps a transfer
  * naming accounts exactly as the composer does, Default row included.
+ *
+ * The current account is the model's resolved row, not the raw selection: an
+ * absent selection runs the agent as the daemon-wide active account, which is
+ * a named account row rather than the Default row.
  */
 export function resolveProviderAccountTransferOptions(
-  model: Pick<ProviderAccountControlModel, "options">,
-  selection: ProviderAccountSelection,
+  model: Pick<ProviderAccountControlModel, "options" | "selectedOptionId">,
 ): ProviderAccountOption[] {
-  // A `null` selection is the Default row, which the daemon may list under its
-  // own account id rather than the sentinel, so match it by row instead of by
-  // id — otherwise the account the agent already runs as is offered as a move.
-  const currentOptionId =
-    selection == null
-      ? (model.options.find((option) => option.isDefaultRow)?.id ??
-        DEFAULT_PROVIDER_ACCOUNT_OPTION_ID)
-      : selection;
-  return model.options.filter((option) => option.id !== currentOptionId);
+  return model.options.filter((option) => option.id !== model.selectedOptionId);
 }

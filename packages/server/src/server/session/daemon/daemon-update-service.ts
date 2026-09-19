@@ -12,7 +12,11 @@ import type {
   DaemonUpdateStartResponse,
 } from "@frogg/protocol/messages";
 import type { SessionOutboundMessage } from "../../messages.js";
-import { readLastUpdateResult, type DaemonInstallInfo } from "./daemon-update-install.js";
+import {
+  readLastUpdateResult,
+  reconcileLastUpdateResult,
+  type DaemonInstallInfo,
+} from "./daemon-update-install.js";
 
 /**
  * Runs `frogg daemon self-update` for clients. One instance per daemon: it
@@ -141,7 +145,10 @@ export class DaemonUpdateService {
       currentVersion: this.daemonVersion,
       installDir: this.install.installDir,
       run: this.run,
-      lastResult: readLastUpdateResult(this.install.installDir),
+      lastResult: reconcileLastUpdateResult(
+        readLastUpdateResult(this.install.installDir),
+        this.daemonVersion,
+      ),
     };
   }
 

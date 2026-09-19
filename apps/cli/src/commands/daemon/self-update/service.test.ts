@@ -5,6 +5,8 @@ import { afterEach, describe, expect, test } from "vitest";
 import {
   detectServiceManager,
   reconcileDaemonOwnership,
+  retireLegacyServices,
+  type LegacyServiceDeps,
   serviceFileTargetsInstall,
   type OwnershipDeps,
 } from "./service.js";
@@ -94,5 +96,61 @@ describe("daemon ownership reconciliation", () => {
     expect(await reconcileDaemonOwnership(harness.deps)).toBe("stopped_unowned_daemon");
     expect(harness.stops).toBe(1);
     expect(harness.logs.join("\n")).toContain("inactive");
+  });
+});
+
+describe("legacy FDE service retirement", () => {
+  const unitFile = "/cfg/systemd/user/fde-daemon.service";
+  function deps(files: Record<string, string>, active: boolean, listen: string | null) {
+    const commands: string[] = [];
+    const value: LegacyServiceDeps = {
+      platform: "linux",
+      listen,
+      readFile: (file) => files[file] ?? null,
+      run: (command, args) => {
+        commands.push([command, ...args].join(" "));
+        if (args.includes("is-active") || args.includes("is-enabled")) {
+          return { status: active ? 0 : 3, stderr: "" };
+        }
+        return { status: 0, stderr: "" };
+      },
+      homeDir: "/home/me",
+      configHome: "/cfg",
+      uid: 1000,
+      log: () => {},
+    };
+    return { value, commands };
+  }
+  const fdeUnit =
+    '[Service]\nExecStart="/home/me/.local/share/fde/current/bin/fde" daemon start --foreground\nEnvironment=FDE_LISTEN=0.0.0.0:9999\n';
+
+  test("disables an FDE unit registered on the same port", async () => {
+    const { value, commands } = deps({ [unitFile]: fdeUnit }, true, "0.0.0.0:9999");
+    await expect(retireLegacyServices(value)).resolves.toEqual(["fde-daemon.service"]);
+    expect(commands).toContain("systemctl --user disable --now fde-daemon.service");
+  });
+
+  test("leaves an FDE unit configured for another port alone, even when forced", async () => {
+    const { value, commands } = deps({ [unitFile]: fdeUnit }, true, "127.0.0.1:6767");
+    await expect(retireLegacyServices(value)).resolves.toEqual([]);
+    // It cannot be the daemon answering on our port.
+    await expect(retireLegacyServices(value, { force: true })).resolves.toEqual([]);
+    expect(commands.some((line) => line.includes("disable"))).toBe(false);
+  });
+
+  test("forced retirement covers an FDE unit whose port is not in the unit file", async () => {
+    const bare = '[Service]\nExecStart="/home/me/.local/share/fde/current/bin/fde" daemon start\n';
+    const { value } = deps({ [unitFile]: bare }, true, "0.0.0.0:9999");
+    await expect(retireLegacyServices(value)).resolves.toEqual([]);
+    await expect(retireLegacyServices(value, { force: true })).resolves.toEqual([
+      "fde-daemon.service",
+    ]);
+  });
+
+  test("does nothing when the legacy unit is absent or already inactive and disabled", async () => {
+    await expect(retireLegacyServices(deps({}, true, "0.0.0.0:9999").value)).resolves.toEqual([]);
+    const inactive = deps({ [unitFile]: fdeUnit }, false, "0.0.0.0:9999");
+    await expect(retireLegacyServices(inactive.value)).resolves.toEqual([]);
+    expect(inactive.commands.some((line) => line.includes("disable"))).toBe(false);
   });
 });

@@ -17,14 +17,14 @@ export function hasSidebarWorkspaceTrailing({
 }
 
 /**
- * What the trailing slot shows for a row. Derived in one place because three row renderers
+ * What the trailing cluster shows for a row. Derived in one place because three row renderers
  * share it: the two project-mode rows and the status-mode row. The rule used to be copied
  * into each of them and immediately drifted — one call site kept hiding the diff after the
  * others stopped.
  *
- * The trailing content survives the kebab on hover and fades under the scrim instead of
- * blinking out. Touch has no hover, so its permanent kebab still hides the content outright
- * rather than scrimming an unhovered row whose background doesn't match the gradient.
+ * Right to left the cluster is: the actions column (kebab, or the Alt rail), the account,
+ * then the diff stat or timestamp. The kebab has a column of its own, so it never sits on top
+ * of the metadata; only the wider rail does, over a scrim that fades what is under it.
  */
 function resolveShowQuickActions(input: {
   quickActionsModifierDown: boolean;
@@ -67,8 +67,8 @@ export function resolveTrailingActionVisibility({
   showKebab: boolean;
   showQuickActions: boolean;
   showScrim: boolean;
-  renderSlot: boolean;
-  reserveSlotWidth: boolean;
+  /** The row holds a fixed-width column at its right edge for the kebab and the rail. */
+  showActionsColumn: boolean;
 } {
   const hasTrailing = hasSidebarWorkspaceTrailing({ workspace, trailing });
   // The rail is the kebab expanded, so it needs the same actions the kebab would have opened,
@@ -89,23 +89,17 @@ export function resolveTrailingActionVisibility({
     Boolean(hasArchiveAction && (isHovered || isTouchPlatform)) &&
     !showShortcut &&
     !showQuickActions;
-  const showTrailing =
-    hasTrailing && !showShortcut && (isHovered || !(showKebab || showQuickActions));
   return {
-    showTrailing,
+    // Always drawn now that nothing shares its space; the rail's scrim fades it when it covers it.
+    showTrailing: hasTrailing,
     showKebab,
     showQuickActions,
-    // The scrim paints the row's own hover background, so it can only be drawn on a hovered
-    // row — over an unhovered one the gradient fades to the wrong color. That is also why
-    // touch, which shows the kebab without ever hovering, never gets one.
-    // The rail scrims on a selected row too: unlike hover-only kebab reveal, `selected`
-    // paints its own row background, so the gradient has a real colour to fade into.
-    showScrim: (showKebab && isHovered) || showQuickActions,
-    renderSlot: hasArchiveAction || hasTrailing,
-    // The slot only holds width for something that permanently sits in it. Trailing content
-    // does; the kebab only does on touch, where there is no hover for it to appear on and so
-    // no scrim to let it overlay the title. Everywhere else the width goes back to the title
-    // and the kebab fades in over its tail.
-    reserveSlotWidth: hasTrailing || (hasArchiveAction && isTouchPlatform),
+    // Only the rail is wider than its column, so only the rail needs the metadata faded out
+    // from under it. It scrims on a selected row too: `selected` paints its own background,
+    // so the gradient has a real colour to fade into.
+    showScrim: showQuickActions,
+    // Held on every row with actions, hovered or not, so the kebab appearing never reflows
+    // the title and the metadata; on touch it is where the permanent kebab lives.
+    showActionsColumn: hasArchiveAction,
   };
 }

@@ -30,6 +30,7 @@ shows the daemon's version and update state; **Settings → Diagnostics** collec
 | `Daemon failed to start in background` | Read the log lines printed after it. Common: port in use, invalid config |
 | `[Config] Invalid config in ~/.frogg/config.json` | A key is misspelt or has the wrong type. The message names the path. See [configuration](/docs/reference/configuration/) |
 | Log: `Relay is enabled but no relay endpoint is configured` | Relay is on with no endpoint, so the daemon runs without relay and pairing offers are direct only. Set the endpoint in host settings, **Pair devices**, or `daemon.relay.endpoint`, or turn relay off |
+| Log: `Worker crashed (code 1): Frogg cannot listen on 0.0.0.0:9999: port 9999 is already in use by a fde daemon 0.6.13 (server …), pid N (node). Restarting worker in 4s (attempt 3)` | Something else holds the port; the line names it (daemon identity, pid and process name where it can find them). The worker keeps retrying with backoff up to 30 s. Stop the holder. For a leftover FDE service, see [legacy FDE service](#legacy-fde-service-holds-the-port) |
 | Service stops when you log out (Linux) | `sudo loginctl enable-linger $USER` |
 | Changes to `config.json` ignored | `frogg reload`; check its output for paths that need `frogg restart` or are pinned by env vars |
 
@@ -45,6 +46,7 @@ shows the daemon's version and update state; **Settings → Diagnostics** collec
 | TLS error in Direct connection | Turn off **Use SSL** unless a TLS proxy fronts the daemon |
 | LAN scan finds nothing | Scans cover your local subnets only. Enter the address manually; check the daemon listens on `0.0.0.0` |
 | Pairing link fails on a phone | The phone cannot reach any address in the offer. Join the same network or VPN, or set `FROGG_PRIMARY_LAN_IP` |
+| Host shows "A different daemon (…) is answering at this host's address, not this host (…)" | The saved host's address now answers with another daemon: a different install, or another product such as a leftover FDE service. The app refuses it, so it never shows another daemon's agents as this host, and keeps retrying. Stop the other daemon or fix the address; the host reconnects on its own. The same condition is logged as `daemon_client_server_identity_mismatch` |
 | Remote SSH `refused your SSH keys` | Enter the SSH password, or fix key auth so `ssh host` works in a terminal |
 
 ## Providers and agents
@@ -74,7 +76,24 @@ shows the daemon's version and update state; **Settings → Diagnostics** collec
 | `release check failed: HTTP 403` | GitHub rate limit. Set `FROGG_GITHUB_TOKEN` or sign in with `gh auth login` |
 | `cannot self-update: ...` | Not an `install.sh` install (Docker, Nix, dev checkout). See [updates](/docs/self-hosting/updates/#not-self-updatable) |
 | `update to X failed and was rolled back to Y` | The new version did not become healthy. Read `~/.local/share/frogg/self-update.log` and the daemon log |
+| `update to X blocked: ... foreign ...`, or `restored X without verifying it (the port is held by another daemon)` | Another daemon holds the listen port, so the new version could not be verified. The updater retires a legacy `fde-daemon` service on the same port by itself; anything else you stop by hand, then run `frogg update` again. See below |
+| Automatic update keeps not applying | Each failed attempt at a version waits longer before the next, up to seven days. Fix the cause, then use **Update now** or `frogg update` |
 | Desktop: no update found | You may be on Stable while the release is a beta, or the release lacks updater files |
+
+### Legacy FDE service holds the port
+
+Frogg was called FDE before 1.0. An `fde-daemon` service left enabled from then can start on
+the same port and win the race after a restart, so updates fail and the app reports a
+different daemon. The self-updater disables it when it sees this; to do it yourself:
+
+```sh
+systemctl --user disable --now fde-daemon.service   # macOS: launchctl bootout gui/$(id -u)/app.frogg.fde-daemon
+systemctl --user restart frogg-daemon.service
+```
+
+The unit file is left in place; remove it once you no longer need it. Carry any
+`Environment=FDE_...` lines over as `FROGG_...` first, as described in
+[moving from FDE](/docs/self-hosting/updates/#moving-from-fde).
 
 ## Getting help
 

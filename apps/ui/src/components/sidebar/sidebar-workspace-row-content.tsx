@@ -11,7 +11,6 @@ import {
 import { WorkspaceHoverCard } from "@/components/workspace-hover-card";
 import type { HostBadgeModel } from "@/hosts/appearance";
 import type { SidebarWorkspaceEntry } from "@/hooks/use-sidebar-workspaces-list";
-export { resolveTrailingActionVisibility } from "@/components/sidebar/trailing-action-visibility";
 import { useAppSettings } from "@/hooks/use-settings";
 import type { Theme } from "@/styles/theme";
 import type { SidebarStateBucket } from "@/utils/sidebar-agent-state";
@@ -24,12 +23,10 @@ import {
 import { shouldRenderSyncedStatusLoader } from "@/utils/status-loader";
 import { StatusRing } from "@/components/status-ring";
 import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sidebar-workspace-title";
-import { TrailingActionScrim } from "@/components/ui/trailing-action-scrim";
 import { useWorkspaceLabelDefinitions } from "@/workspace-labels";
-import { SidebarWorkspaceAccountIndicator } from "@/components/sidebar/workspace-account";
 
 import { SidebarWorkspaceAgents } from "./agents/tree";
-import { WorkspaceAgentTreeScope, WorkspaceAgentDisclosure } from "./agents/workspace-tree";
+import { WorkspaceAgentTreeScope } from "./agents/workspace-tree";
 
 const foregroundMutedColorMapping = (theme: Theme) => ({
   color: theme.colors.foregroundMuted,
@@ -175,13 +172,9 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
             <Text style={workspaceBranchTextStyle} numberOfLines={1}>
               {workspaceLabel}
             </Text>
-            <View style={sidebarWorkspaceRowStyles.rowRight}>
-              {children}
-              {/* After the diff stat: the account is the row's right-most piece of
-                  information, with only the disclosure control beyond it. */}
-              <SidebarWorkspaceAccountIndicator serverId={workspace.serverId} />
-              <WorkspaceAgentDisclosure label={workspaceLabel} />
-            </View>
+            {/* The trailing cluster (SidebarWorkspaceTrailingActions) owns its own order:
+                metadata, account, disclosure, then the actions column at the right edge. */}
+            <View style={sidebarWorkspaceRowStyles.rowRight}>{children}</View>
           </View>
           <WorkspaceMetaRow
             currentBranch={workspace.currentBranch}
@@ -333,29 +326,6 @@ export const sidebarWorkspaceRowStyles = StyleSheet.create((theme) => ({
     fontWeight: theme.fontWeight.medium,
     lineHeight: 14,
   },
-  hidden: { opacity: 0 },
-  // Stays position:relative at zero width so the absolutely-positioned kebab keeps
-  // anchoring to the same right edge whether or not the slot holds anything.
-  trailingActionSlot: {
-    position: "relative",
-    minHeight: 20,
-    flexShrink: 0,
-    alignItems: "flex-end",
-    justifyContent: "flex-start",
-  },
-  trailingActionSlotReserved: {
-    position: "relative",
-    minWidth: 18,
-    minHeight: 20,
-    flexShrink: 0,
-    alignItems: "flex-end",
-    justifyContent: "flex-start",
-  },
-  trailingActionOverlay: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-  },
 }));
 
 export function SidebarWorkspaceShortcutBadge({ number }: { number: number }) {
@@ -363,58 +333,6 @@ export function SidebarWorkspaceShortcutBadge({ number }: { number: number }) {
     <View style={sidebarWorkspaceRowStyles.shortcutBadge}>
       <Text style={sidebarWorkspaceRowStyles.shortcutBadgeText}>{number}</Text>
     </View>
-  );
-}
-
-export function SidebarWorkspaceTrailingActionSlot({
-  reserveWidth,
-  children,
-}: {
-  reserveWidth: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <View
-      style={
-        reserveWidth
-          ? sidebarWorkspaceRowStyles.trailingActionSlotReserved
-          : sidebarWorkspaceRowStyles.trailingActionSlot
-      }
-    >
-      {children}
-    </View>
-  );
-}
-
-export function SidebarWorkspaceTrailingActionBase({
-  visible,
-  children,
-}: {
-  visible: boolean;
-  children: ReactNode;
-}) {
-  if (!children) return null;
-  return <View style={visible ? undefined : sidebarWorkspaceRowStyles.hidden}>{children}</View>;
-}
-
-export function SidebarWorkspaceTrailingActionOverlay({
-  visible,
-  scrimBackdrop,
-  children,
-}: {
-  visible: boolean;
-  /** Fade the row into the kebab when something (the diff stat) is still rendered behind it. */
-  scrimBackdrop?: SidebarSurfaceBackdrop;
-  children: ReactNode;
-}) {
-  if (!visible || !children) return null;
-  return (
-    <>
-      {scrimBackdrop ? (
-        <TrailingActionScrim backdrop={scrimBackdrop} testID="sidebar-workspace-trailing-scrim" />
-      ) : null}
-      <View style={sidebarWorkspaceRowStyles.trailingActionOverlay}>{children}</View>
-    </>
   );
 }
 

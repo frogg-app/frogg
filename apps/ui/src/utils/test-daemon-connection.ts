@@ -16,11 +16,18 @@ import {
 } from "@/desktop/daemon/desktop-daemon-transport";
 import type { DesktopDaemonTransportTarget } from "@/desktop/daemon/desktop-daemon";
 
+/** The `server_info` fields a probe reads; `brand` is absent on pre-brand daemons. */
+export interface ProbeServerInfo {
+  serverId: string;
+  hostname: string | null;
+  brand?: unknown;
+}
+
 export interface DaemonProbeClient {
   readonly lastError: string | null;
   connect(): Promise<void>;
   close(): Promise<void>;
-  getLastServerInfoMessage(): { serverId: string; hostname: string | null } | null;
+  getLastServerInfoMessage(): ProbeServerInfo | null;
 }
 
 export interface DaemonConnectionDependencies<TClient extends DaemonProbeClient> {
@@ -203,12 +210,12 @@ export async function buildClientConfig(
 export function connectAndProbe(
   config: DaemonClientConfig,
   timeoutMs: number,
-): Promise<{ client: DaemonClient; serverId: string; hostname: string | null }>;
+): Promise<{ client: DaemonClient } & ProbeServerInfo>;
 export function connectAndProbe<TClient extends DaemonProbeClient>(
   config: DaemonClientConfig,
   timeoutMs: number,
   deps: Pick<DaemonConnectionDependencies<TClient>, "createClient">,
-): Promise<{ client: TClient; serverId: string; hostname: string | null }>;
+): Promise<{ client: TClient } & ProbeServerInfo>;
 export function connectAndProbe(
   config: DaemonClientConfig,
   timeoutMs: number,
@@ -216,57 +223,56 @@ export function connectAndProbe(
     DaemonConnectionDependencies<DaemonProbeClient>,
     "createClient"
   > = defaultDaemonConnectionDependencies,
-): Promise<{ client: DaemonProbeClient; serverId: string; hostname: string | null }> {
+): Promise<{ client: DaemonProbeClient } & ProbeServerInfo> {
   const client = deps.createClient(config);
 
-  return new Promise<{ client: DaemonProbeClient; serverId: string; hostname: string | null }>(
-    (resolve, reject) => {
-      const timer = setTimeout(() => {
-        void client.close().catch(() => undefined);
-        reject(
-          new DaemonConnectionTestError("Connection timed out", {
-            reason: "Connection timed out",
-            lastError: client.lastError ?? null,
-          }),
-        );
-      }, timeoutMs);
+  return new Promise<{ client: DaemonProbeClient } & ProbeServerInfo>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      void client.close().catch(() => undefined);
+      reject(
+        new DaemonConnectionTestError("Connection timed out", {
+          reason: "Connection timed out",
+          lastError: client.lastError ?? null,
+        }),
+      );
+    }, timeoutMs);
 
-      void client
-        .connect()
-        .then(() => {
-          clearTimeout(timer);
-          const serverInfo = client.getLastServerInfoMessage();
-          if (!serverInfo) {
-            void client.close().catch(() => undefined);
-            reject(
-              new DaemonConnectionTestError("Missing server info message", {
-                reason: "Missing server info message",
-                lastError: client.lastError ?? null,
-              }),
-            );
-            return;
-          }
-          resolve({
-            client,
-            serverId: serverInfo.serverId,
-            hostname: serverInfo.hostname,
-          });
-          return;
-        })
-        .catch((error) => {
-          clearTimeout(timer);
-          const reason = normalizeNonEmptyString(
-            error instanceof Error ? error.message : String(error),
-          );
-          const lastError = normalizeNonEmptyString(client.lastError);
-          const message = isIncorrectPasswordFailure({ config, reason, lastError })
-            ? "Incorrect password"
-            : pickBestReason(reason, lastError);
+    void client
+      .connect()
+      .then(() => {
+        clearTimeout(timer);
+        const serverInfo = client.getLastServerInfoMessage();
+        if (!serverInfo) {
           void client.close().catch(() => undefined);
-          reject(new DaemonConnectionTestError(message, { reason, lastError }));
+          reject(
+            new DaemonConnectionTestError("Missing server info message", {
+              reason: "Missing server info message",
+              lastError: client.lastError ?? null,
+            }),
+          );
+          return;
+        }
+        resolve({
+          client,
+          serverId: serverInfo.serverId,
+          hostname: serverInfo.hostname,
+          brand: serverInfo.brand,
         });
-    },
-  );
+        return;
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        const reason = normalizeNonEmptyString(
+          error instanceof Error ? error.message : String(error),
+        );
+        const lastError = normalizeNonEmptyString(client.lastError);
+        const message = isIncorrectPasswordFailure({ config, reason, lastError })
+          ? "Incorrect password"
+          : pickBestReason(reason, lastError);
+        void client.close().catch(() => undefined);
+        reject(new DaemonConnectionTestError(message, { reason, lastError }));
+      });
+  });
 }
 
 interface ProbeOptions {
@@ -286,17 +292,17 @@ function resolveTimeout(connection: HostConnection, options?: ProbeOptions): num
 export function connectToDaemon(
   connection: HostConnection,
   options?: ProbeOptions,
-): Promise<{ client: DaemonClient; serverId: string; hostname: string | null }>;
+): Promise<{ client: DaemonClient } & ProbeServerInfo>;
 export function connectToDaemon<TClient extends DaemonProbeClient>(
   connection: HostConnection,
   options: ProbeOptions | undefined,
   deps: DaemonConnectionDependencies<TClient>,
-): Promise<{ client: TClient; serverId: string; hostname: string | null }>;
+): Promise<{ client: TClient } & ProbeServerInfo>;
 export async function connectToDaemon(
   connection: HostConnection,
   options?: ProbeOptions,
   deps: DaemonConnectionDependencies<DaemonProbeClient> = defaultDaemonConnectionDependencies,
-): Promise<{ client: DaemonProbeClient; serverId: string; hostname: string | null }> {
+): Promise<{ client: DaemonProbeClient } & ProbeServerInfo> {
   const config = await buildClientConfig(connection, options?.serverId, options, deps);
   try {
     return await connectAndProbe(config, resolveTimeout(connection, options), deps);

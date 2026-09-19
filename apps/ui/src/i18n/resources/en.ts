@@ -265,13 +265,12 @@ export const en = {
       pillTransferLabel: "Provider account: {{value}}. Move this conversation to another account.",
       transfer: {
         title: "Move this conversation",
-        subtitle: "Running as {{name}}. Pick the account to continue as.",
-        warningTitle: "{{name}} has not seen this conversation",
-        warningTitleUnselected: "The account you pick has not seen this conversation",
-        warningBody:
-          "Moving it re-sends the whole {{tokens}} token context as fresh input. None of it counts as a cache read, and you are charged for those input tokens as soon as the next message goes out.",
-        warningBodyUnknownTokens:
-          "Moving it re-sends the whole context as fresh input. None of it counts as a cache read, and you are charged for those input tokens as soon as the next message goes out.",
+        targetLabel: "Move to",
+        targetPlaceholder: "Choose an account",
+        noTargets: "No other accounts to move to",
+        cost: "This conversation has {{tokens}} tokens in context. Moving it to another account re-sends all of them as fresh input, billed at full (uncached) price.",
+        costUnknownTokens:
+          "Moving this conversation to another account re-sends its whole context as fresh input, billed at full (uncached) price.",
         confirm: "Move conversation",
         moving: "Moving...",
         failed: "Couldn't move the conversation",
@@ -1183,6 +1182,7 @@ export const en = {
         checks: "Checks",
         services: "Services",
         labels: "Labels",
+        account: "Account",
         diff: "Diff stats",
         timestamp: "Last activity",
       },
@@ -2751,6 +2751,10 @@ export const en = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "A different daemon ({{actualServerId}}) is answering at this host's address, not this host ({{expectedServerId}}). Stop the other daemon or check the address. Reconnecting keeps trying.",
+      },
       appearance: {
         title: "Appearance",
         name: {

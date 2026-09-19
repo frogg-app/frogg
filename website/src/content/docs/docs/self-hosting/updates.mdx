@@ -27,6 +27,14 @@ How it works:
    `/api/identity` to report the new version and `/api/health` to answer.
 4. If that fails, switches back to the previous version, restarts, and exits with code 2.
 
+If the address answers with a different daemon (another product, such as a leftover FDE
+service, or another install), the updater stops and disables a legacy `fde-daemon` service
+that uses the same port, logs `stopping and disabling legacy service fde-daemon.service`, and
+restarts once more. If the port is still held by another daemon, it does not roll back the
+bundle for a fault it did not cause: it restores the version that was running, without the
+90-second check, and records `failed` with `restored X without verifying it (the port is held
+by another daemon)`. See [troubleshooting](/docs/self-hosting/troubleshooting/#updates).
+
 The result is recorded in `~/.local/share/frogg/last-update.json`; details in
 `self-update.log` next to it. The three newest versions are kept.
 
@@ -45,6 +53,13 @@ The same update runs from the app: **host settings → Overview → Daemon updat
 The first check runs five minutes after start. An update waits while agents are running
 or during quiet hours (local time; `[9, 18]` means 09:00 to 18:00), retrying every 15
 minutes.
+
+A version whose automatic update did not apply is not retried on every check, because each
+attempt restarts the daemon and disconnects clients. The next attempt at that version waits
+one check interval, then twice as long after each further failure, up to seven days. The
+count is kept in `~/.frogg/daemon-update/auto-update-attempts.json`, so it survives the
+restarts. It resets when a newer release appears or the daemon is up to date. **Update now**
+in the app and `frogg update` are never held back.
 
 ### Rate limits and mirrors
 

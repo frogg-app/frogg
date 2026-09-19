@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
-import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { Check, TriangleAlert } from "lucide-react-native";
+import { Text, View } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import {
   parseProviderAccountDefaultId,
   PROVIDER_ACCOUNT_DEFAULT_NAME,
@@ -10,17 +9,16 @@ import {
 import type { ProviderSnapshotAccount } from "@frogg/protocol/agent-types";
 import { AdaptiveModalSheet, type SheetHeader } from "@/components/adaptive-modal-sheet";
 import { formatTokenCount } from "@/components/context-window-meter.utils";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { ICON_SIZE, type Theme } from "@/styles/theme";
-
-const ThemedTriangleAlert = withUnistyles(TriangleAlert);
-const ThemedCheck = withUnistyles(Check);
-const warningColor = (theme: Theme) => ({ color: theme.colors.palette.amber[500] });
-const selectedColor = (theme: Theme) => ({ color: theme.colors.foreground });
+import {
+  SelectField,
+  type SelectFieldDisplay,
+  type SelectFieldOption,
+} from "@/components/ui/select-field";
 
 /**
- * The account rows a transfer can target: every account of the agent's provider
+ * An account a transfer can target: every account of the agent's provider
  * except the one it already runs as. The Default row is included — moving back
  * onto the primary sign-in is as legitimate a move as any other.
  */
@@ -32,13 +30,12 @@ export interface ProviderAccountTransferOption {
 
 export interface ProviderAccountTransferModalProps {
   visible: boolean;
-  /** The account the agent runs as today, for the row that is not offered. */
-  currentLabel: string;
+  /** Never includes the account the agent runs as today. */
   options: readonly ProviderAccountTransferOption[];
   /**
-   * The agent's context size, which is exactly what the move costs to re-send.
-   * Null when the agent has not reported usage yet, and the warning then says
-   * the same thing without a figure rather than inventing one.
+   * The agent's context size (the same figure the context meter shows), which
+   * is exactly what the move re-sends. Null when unknown; the cost statement
+   * then omits the figure rather than inventing one.
    */
   contextTokens: number | null;
   isPending: boolean;
@@ -48,17 +45,12 @@ export interface ProviderAccountTransferModalProps {
 }
 
 /**
- * Moving a conversation to another sign-in, with the bill stated before it is
- * run up.
- *
- * The warning is not a formality. The target account has never sent these
- * tokens upstream, so nothing in the conversation can come back as a cache
- * read: the entire context is re-sent as fresh input and charged at once. That
- * is the whole reason this is a modal rather than a menu item.
+ * Moving a conversation to another sign-in, with the cost stated before it is
+ * run up: the target account has no cache for these tokens, so the whole
+ * context is re-sent as fresh input at full price.
  */
 export function ProviderAccountTransferModal({
   visible,
-  currentLabel,
   options,
   contextTokens,
   isPending,
@@ -67,30 +59,50 @@ export function ProviderAccountTransferModal({
   onConfirm,
 }: ProviderAccountTransferModalProps): ReactElement {
   const { t } = useTranslation();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const onlyOptionId = options.length === 1 ? options[0].id : null;
+  const [selectedId, setSelectedId] = useState<string | null>(onlyOptionId);
 
-  // A reopened sheet must not carry the previous pick, which would put the
-  // warning about one account above a button that moves to another.
+  // A reopened sheet starts fresh; a single destination is picked for the user.
   useEffect(() => {
-    if (!visible) setSelectedId(null);
-  }, [visible]);
+    if (visible) setSelectedId(onlyOptionId);
+  }, [visible, onlyOptionId]);
 
   const selected = useMemo(
     () => options.find((option) => option.id === selectedId) ?? null,
     [options, selectedId],
   );
+  const canConfirm = !isPending && selected !== null && selected.authenticated;
 
   const header = useMemo<SheetHeader>(
-    () => ({
-      title: t("agentControls.account.transfer.title"),
-      subtitle: t("agentControls.account.transfer.subtitle", { name: currentLabel }),
-    }),
-    [currentLabel, t],
+    () => ({ title: t("agentControls.account.transfer.title") }),
+    [t],
   );
 
+  const selectOptions = useMemo<SelectFieldOption<string>[]>(
+    () =>
+      options.map((option) => ({
+        id: option.id,
+        value: option.id,
+        label: option.label,
+        description: option.authenticated ? undefined : t("agentControls.account.notSignedIn"),
+        testID: `provider-account-transfer-option-${option.id}`,
+      })),
+    [options, t],
+  );
+  const selectedDisplay = useMemo<SelectFieldDisplay | null>(
+    () => (selected ? { label: selected.label } : null),
+    [selected],
+  );
+
+  const handleChange = useCallback((value: string) => setSelectedId(value), []);
   const handleConfirm = useCallback(() => {
-    if (selected) onConfirm(selected.id);
-  }, [onConfirm, selected]);
+    if (canConfirm && selected) onConfirm(selected.id);
+  }, [canConfirm, onConfirm, selected]);
+
+  const cost =
+    contextTokens === null
+      ? t("agentControls.account.transfer.costUnknownTokens")
+      : t("agentControls.account.transfer.cost", { tokens: formatTokenCount(contextTokens) });
 
   return (
     <AdaptiveModalSheet
@@ -100,35 +112,22 @@ export function ProviderAccountTransferModal({
       testID="provider-account-transfer-modal"
     >
       <View style={styles.body}>
-        <View style={styles.options}>
-          {options.map((option) => (
-            <TransferOptionRow
-              key={option.id}
-              option={option}
-              isSelected={option.id === selectedId}
-              disabled={isPending}
-              onSelect={setSelectedId}
-            />
-          ))}
-        </View>
+        <SelectField
+          label={t("agentControls.account.transfer.targetLabel")}
+          value={selectedId}
+          selectedDisplay={selectedDisplay}
+          options={selectOptions}
+          onChange={handleChange}
+          placeholder={t("agentControls.account.transfer.targetPlaceholder")}
+          emptyText={t("agentControls.account.transfer.noTargets")}
+          disabled={isPending}
+          error={
+            selected && !selected.authenticated ? t("agentControls.account.notSignedIn") : null
+          }
+          triggerTestID="provider-account-transfer-target"
+        />
 
-        <View style={styles.warning} testID="provider-account-transfer-warning">
-          <ThemedTriangleAlert size={ICON_SIZE.sm} uniProps={warningColor} />
-          <View style={styles.warningText}>
-            <Text style={styles.warningTitle}>
-              {selected
-                ? t("agentControls.account.transfer.warningTitle", { name: selected.label })
-                : t("agentControls.account.transfer.warningTitleUnselected")}
-            </Text>
-            <Text style={styles.warningBody}>
-              {contextTokens === null
-                ? t("agentControls.account.transfer.warningBodyUnknownTokens")
-                : t("agentControls.account.transfer.warningBody", {
-                    tokens: formatTokenCount(contextTokens),
-                  })}
-            </Text>
-          </View>
-        </View>
+        <Alert variant="warning" description={cost} testID="provider-account-transfer-warning" />
 
         {error ? (
           <Text style={styles.error} testID="provider-account-transfer-error">
@@ -152,7 +151,7 @@ export function ProviderAccountTransferModal({
             size="sm"
             style={styles.actionButton}
             onPress={handleConfirm}
-            disabled={isPending || selected === null}
+            disabled={!canConfirm}
             loading={isPending}
             testID="provider-account-transfer-confirm"
           >
@@ -163,44 +162,6 @@ export function ProviderAccountTransferModal({
         </View>
       </View>
     </AdaptiveModalSheet>
-  );
-}
-
-function TransferOptionRow({
-  option,
-  isSelected,
-  disabled,
-  onSelect,
-}: {
-  option: ProviderAccountTransferOption;
-  isSelected: boolean;
-  disabled: boolean;
-  onSelect: (optionId: string) => void;
-}): ReactElement {
-  const { t } = useTranslation();
-  const handlePress = useCallback(() => onSelect(option.id), [onSelect, option.id]);
-  const accessibilityState = useMemo(
-    () => ({ selected: isSelected, disabled }),
-    [disabled, isSelected],
-  );
-
-  return (
-    <Pressable
-      onPress={handlePress}
-      disabled={disabled}
-      accessibilityRole="radio"
-      accessibilityState={accessibilityState}
-      style={[styles.option, isSelected ? styles.optionSelected : null]}
-      testID={`provider-account-transfer-option-${option.id}`}
-    >
-      <Text style={styles.optionLabel} numberOfLines={1}>
-        {option.label}
-      </Text>
-      {option.authenticated ? null : (
-        <StatusBadge label={t("agentControls.account.notSignedIn")} variant="warning" />
-      )}
-      {isSelected ? <ThemedCheck size={ICON_SIZE.sm} uniProps={selectedColor} /> : null}
-    </Pressable>
   );
 }
 
@@ -219,52 +180,8 @@ export function providerAccountTransferLabel(
 
 const styles = StyleSheet.create((theme) => ({
   body: {
-    gap: theme.spacing[4],
+    gap: theme.spacing[3],
     paddingBottom: theme.spacing[2],
-  },
-  options: {
-    gap: theme.spacing[1],
-  },
-  option: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing[2],
-    paddingVertical: theme.spacing[3],
-    paddingHorizontal: theme.spacing[3],
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: theme.borderWidth[1],
-    borderColor: theme.colors.border,
-  },
-  optionSelected: {
-    borderColor: theme.colors.borderAccent,
-    backgroundColor: theme.colors.surface2,
-  },
-  optionLabel: {
-    flex: 1,
-    color: theme.colors.foreground,
-    fontSize: theme.fontSize.base,
-  },
-  warning: {
-    flexDirection: "row",
-    gap: theme.spacing[2],
-    padding: theme.spacing[3],
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: theme.borderWidth[1],
-    borderColor: theme.colors.palette.amber[500],
-    backgroundColor: theme.colors.surface0,
-  },
-  warningText: {
-    flex: 1,
-    gap: theme.spacing[1],
-  },
-  warningTitle: {
-    color: theme.colors.palette.amber[500],
-    fontSize: theme.fontSize.base,
-  },
-  warningBody: {
-    color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.sm,
-    lineHeight: theme.fontSize.sm * 1.4,
   },
   error: {
     color: theme.colors.palette.red[300],

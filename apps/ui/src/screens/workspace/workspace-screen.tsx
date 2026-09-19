@@ -1,3 +1,4 @@
+import { describeHostConnectionError } from "@/runtime/host-connection-error";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { JsonValue } from "@frogg/protocol/agent-types";
 import { getOpenAgentTabLabel } from "@frogg/protocol/agent-labels";
@@ -1254,12 +1255,13 @@ function useResolvedWorkspaceRouteState(input: {
   );
   const hostSnapshot = useHostRuntimeSnapshot(input.serverId);
   const hostName = useMemo(() => getHostDisplayName(host, input.serverId), [host, input.serverId]);
+  const lastError = describeHostConnectionError(hostSnapshot);
   return useMemo(
     () =>
       resolveWorkspaceRouteState({
         hostName,
         connectionStatus: hostSnapshot?.connectionStatus ?? "connecting",
-        lastError: hostSnapshot?.lastError ?? null,
+        lastError,
         workspace: input.workspace,
         hasHydratedWorkspaces: input.hasHydratedWorkspaces,
         recovery: input.recovery,
@@ -1267,7 +1269,7 @@ function useResolvedWorkspaceRouteState(input: {
     [
       hostName,
       hostSnapshot?.connectionStatus,
-      hostSnapshot?.lastError,
+      lastError,
       input.workspace,
       input.hasHydratedWorkspaces,
       input.recovery,

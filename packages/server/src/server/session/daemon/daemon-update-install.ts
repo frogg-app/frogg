@@ -137,3 +137,18 @@ export function readLastUpdateResult(installDir: string): DaemonUpdateLastResult
     return null;
   }
 }
+
+/**
+ * `last-update.json` is written once, by the supervisor, when an apply ends.
+ * If that run gave up (verify timeout, rollback) but the target version came up
+ * later anyway (the port freed, the host was restarted), the record would keep
+ * reporting a failure for the version that is running. The running version is
+ * the ground truth: a failed or rolled-back attempt at it has since applied.
+ */
+export function reconcileLastUpdateResult(
+  result: DaemonUpdateLastResult | null,
+  runningVersion: string,
+): DaemonUpdateLastResult | null {
+  if (!result || result.status === "applied" || result.to !== runningVersion) return result;
+  return { ...result, status: "applied", reason: null };
+}

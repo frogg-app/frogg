@@ -72,6 +72,27 @@ describe("loadAppSettingsFromStorage", () => {
     expect(result.sidebarRowItems.host).toBe(false);
     expect(JSON.parse(deps.storage.entries.get(APP_SETTINGS_KEY) ?? "null")).toEqual(stored);
   });
+  it("shows the account on rows saved before the Account item existed", async () => {
+    const deps = makeDeps({
+      storage: createInMemoryKeyValueStorage({
+        [APP_SETTINGS_KEY]: JSON.stringify({ sidebarRowItems: { host: false } }),
+      }),
+    });
+
+    const result = await loadAppSettingsFromStorage(deps);
+
+    expect(result.sidebarRowItems.account).toBe(true);
+    expect(result.sidebarRowItems.host).toBe(false);
+  });
+  it("keeps a stored Account item that was switched off", async () => {
+    const deps = makeDeps({
+      storage: createInMemoryKeyValueStorage({
+        [APP_SETTINGS_KEY]: JSON.stringify({ sidebarRowItems: { account: false } }),
+      }),
+    });
+
+    expect((await loadAppSettingsFromStorage(deps)).sidebarRowItems.account).toBe(false);
+  });
   it("migrates a stored interrupt to steer and persists it", async () => {
     const deps = makeDeps({
       storage: createInMemoryKeyValueStorage({

@@ -22,6 +22,8 @@ import {
 
 interface SidebarNavRowProps {
   onBeforeNavigate?: () => void;
+  /** Render icon-only buttons (labels in tooltips) instead of labelled rows. */
+  iconOnly?: boolean;
 }
 
 interface SidebarNavRowsProps extends SidebarNavRowProps {
@@ -34,7 +36,7 @@ interface SidebarNavRowsProps extends SidebarNavRowProps {
  * `sidebarNavItems` preference. Renders nothing — not even the bordered group
  * wrapper — when every item is hidden.
  */
-export function SidebarNavRows({ style, onBeforeNavigate }: SidebarNavRowsProps) {
+export function SidebarNavRows({ style, onBeforeNavigate, iconOnly }: SidebarNavRowsProps) {
   const { items } = useSidebarNavItems();
   const visibleItems = useMemo(() => items.filter((item) => item.visible), [items]);
 
@@ -44,13 +46,13 @@ export function SidebarNavRows({ style, onBeforeNavigate }: SidebarNavRowsProps)
     <View style={style}>
       {visibleItems.map((item) => {
         const Row = BUILTIN_ROWS[item.id];
-        return <Row key={item.key} onBeforeNavigate={onBeforeNavigate} />;
+        return <Row key={item.key} onBeforeNavigate={onBeforeNavigate} iconOnly={iconOnly} />;
       })}
     </View>
   );
 }
 
-function SidebarHomeRow({ onBeforeNavigate }: SidebarNavRowProps) {
+function SidebarHomeRow({ onBeforeNavigate, iconOnly }: SidebarNavRowProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const handlePress = useCallback(() => {
@@ -66,12 +68,12 @@ function SidebarHomeRow({ onBeforeNavigate }: SidebarNavRowProps) {
       isActive={pathname === buildOpenProjectRoute()}
       testID="sidebar-home"
       nativeID="sidebar-home"
-      variant="compact"
+      variant={iconOnly ? "icon" : "compact"}
     />
   );
 }
 
-function SidebarHistoryRow({ onBeforeNavigate }: SidebarNavRowProps) {
+function SidebarHistoryRow({ onBeforeNavigate, iconOnly }: SidebarNavRowProps) {
   const { t } = useTranslation();
   const pathname = usePathname();
   const handlePress = useCallback(() => {
@@ -86,12 +88,12 @@ function SidebarHistoryRow({ onBeforeNavigate }: SidebarNavRowProps) {
       onPress={handlePress}
       isActive={pathname.includes("/sessions")}
       testID="sidebar-sessions"
-      variant="compact"
+      variant={iconOnly ? "icon" : "compact"}
     />
   );
 }
 
-function SidebarCompanionRow({ onBeforeNavigate }: SidebarNavRowProps) {
+function SidebarCompanionRow({ onBeforeNavigate, iconOnly }: SidebarNavRowProps) {
   const { t } = useTranslation();
   const shortcutKeys = useShortcutKeys(builtinSidebarNavShortcutAction("companion"));
   const openCompanion = useCompanionStore((state) => state.open);
@@ -109,13 +111,13 @@ function SidebarCompanionRow({ onBeforeNavigate }: SidebarNavRowProps) {
       label={t(builtinSidebarNavLabelKey("companion"))}
       onPress={handlePress}
       testID="sidebar-companion"
-      variant="compact"
+      variant={iconOnly ? "icon" : "compact"}
       shortcutKeys={shortcutKeys}
     />
   );
 }
 
-function SidebarSearchRow({ onBeforeNavigate }: SidebarNavRowProps) {
+function SidebarSearchRow({ onBeforeNavigate, iconOnly }: SidebarNavRowProps) {
   const { t } = useTranslation();
   const shortcutKeys = useShortcutKeys(builtinSidebarNavShortcutAction("search"));
   const setCommandCenterOpen = useKeyboardShortcutsStore((state) => state.setCommandCenterOpen);
@@ -130,7 +132,7 @@ function SidebarSearchRow({ onBeforeNavigate }: SidebarNavRowProps) {
       label={t(builtinSidebarNavLabelKey("search"))}
       onPress={handlePress}
       testID="sidebar-search"
-      variant="compact"
+      variant={iconOnly ? "icon" : "compact"}
       shortcutKeys={shortcutKeys}
     />
   );

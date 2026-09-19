@@ -418,3 +418,40 @@ test("legacy update waits for handoff, shares the update lock, and reports stagi
   failing.finish(0);
   expect(await failed).toEqual({ success: false, error: "checksum mismatch", newVersion: null });
 });
+
+describe("last update result reconciliation", () => {
+  test.each(["failed", "rolled_back"])(
+    "reports a %s attempt at the running version as applied",
+    (status) => {
+      const installDir = makeDir();
+      const { service } = makeService(installDir, () => fakeChild().child);
+      writeFileSync(
+        path.join(installDir, "last-update.json"),
+        JSON.stringify({
+          from: "0.1.12",
+          to: "0.1.13",
+          status,
+          reason: "timed out after 90s: daemon reports version 0.6.13, expected 0.1.13",
+          at: "2026-09-19T12:41:17.488Z",
+        }),
+      );
+      expect(service.status().lastResult).toEqual({
+        from: "0.1.12",
+        to: "0.1.13",
+        status: "applied",
+        reason: null,
+        at: "2026-09-19T12:41:17.488Z",
+      });
+    },
+  );
+
+  test("keeps a failure for a version that is not running", () => {
+    const installDir = makeDir();
+    const { service } = makeService(installDir, () => fakeChild().child);
+    writeFileSync(
+      path.join(installDir, "last-update.json"),
+      JSON.stringify({ from: "0.1.13", to: "0.1.14", status: "failed", reason: "x", at: "t" }),
+    );
+    expect(service.status().lastResult).toMatchObject({ status: "failed", to: "0.1.14" });
+  });
+});

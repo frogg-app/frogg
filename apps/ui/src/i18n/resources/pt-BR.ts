@@ -265,13 +265,12 @@ export const ptBR: TranslationResources = {
       pillTransferLabel: "Conta do provedor: {{value}}. Mova esta conversa para outra conta.",
       transfer: {
         title: "Mover esta conversa",
-        subtitle: "Executando como {{name}}. Escolha a conta com a qual continuar.",
-        warningTitle: "{{name}} não viu esta conversa",
-        warningTitleUnselected: "A conta que você escolher não viu esta conversa",
-        warningBody:
-          "Movê-la reenvia todo o contexto de {{tokens}} tokens como entrada nova. Nada disso conta como leitura de cache, e esses tokens de entrada são cobrados assim que a próxima mensagem for enviada.",
-        warningBodyUnknownTokens:
-          "Movê-la reenvia todo o contexto como entrada nova. Nada disso conta como leitura de cache, e esses tokens de entrada são cobrados assim que a próxima mensagem for enviada.",
+        targetLabel: "Mover para",
+        targetPlaceholder: "Escolha uma conta",
+        noTargets: "Nenhuma outra conta para onde movê-la",
+        cost: "Esta conversa tem {{tokens}} tokens no contexto. Movê-la para outra conta reenvia todos eles como entrada nova, cobrada pelo preço cheio (sem cache).",
+        costUnknownTokens:
+          "Mover esta conversa para outra conta reenvia todo o contexto como entrada nova, cobrada pelo preço cheio (sem cache).",
         confirm: "Mover conversa",
         moving: "Movendo...",
         failed: "Não foi possível mover a conversa",
@@ -1197,6 +1196,7 @@ export const ptBR: TranslationResources = {
         checks: "Verificações",
         services: "Serviços",
         labels: "Etiquetas",
+        account: "Conta",
         diff: "Estatísticas de diff",
         timestamp: "Última atividade",
       },
@@ -2744,6 +2744,10 @@ export const ptBR: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "Outro daemon ({{actualServerId}}) está respondendo no endereço deste host, não este host ({{expectedServerId}}). Pare o outro daemon ou verifique o endereço. A reconexão continua tentando.",
+      },
       appearance: {
         title: "Aparência",
         name: {

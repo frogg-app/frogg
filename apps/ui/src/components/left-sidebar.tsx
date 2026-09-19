@@ -26,11 +26,15 @@ import {
 import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
 import { SidebarDisplayPreferencesMenu } from "@/components/sidebar/display-preferences/menu";
 import { SidebarWorkspaceDrafts } from "@/components/sidebar/sidebar-workspace-drafts";
-import { SidebarNavRows } from "@/components/sidebar/sidebar-nav-rows";
+import { SidebarBrandHeader } from "@/components/sidebar/sidebar-brand-header";
 import { SidebarResizeHandle } from "@/components/sidebar-resize-handle";
 import { Shortcut } from "@/components/ui/shortcut";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { HEADER_INNER_HEIGHT, useIsCompactFormFactor } from "@/constants/layout";
+import {
+  DESKTOP_TRAFFIC_LIGHT_WIDTH,
+  HEADER_INNER_HEIGHT,
+  useIsCompactFormFactor,
+} from "@/constants/layout";
 import { useOpenAddProject } from "@/hooks/use-open-add-project";
 import { useShortcutKeys } from "@/hooks/use-shortcut-keys";
 import {
@@ -327,7 +331,9 @@ function MobileSidebar({
     >
       <View style={styles.sidebarContent} pointerEvents="auto">
         <WindowChromeSafeArea placement="below" />
-        <SidebarNavRows style={styles.sidebarHeaderGroup} onBeforeNavigate={closeSidebar} />
+        <View style={styles.mobileBrandRow}>
+          <SidebarBrandHeader onBeforeNavigate={closeSidebar} />
+        </View>
         <WindowChromeSafeArea placement="inline" style={styles.mobileCloseButtonRow}>
           <Pressable
             style={styles.mobileCloseButton}
@@ -485,10 +491,6 @@ function DesktopSidebar({
     () => [styles.desktopSidebarBorder, { flex: 1, paddingTop: insetsTop }],
     [insetsTop],
   );
-  const sidebarHeaderGroupStyle = useMemo(
-    () => [styles.sidebarHeaderGroup, ownsTopLeft && styles.sidebarHeaderGroupBelowChrome],
-    [ownsTopLeft],
-  );
   return (
     <Animated.View
       accessibilityElementsHidden={!active}
@@ -498,27 +500,25 @@ function DesktopSidebar({
     >
       <View style={desktopSidebarBorderStyle}>
         <View style={styles.sidebarDragArea} dataSet={TITLEBAR_DRAG_SURFACE_DATASET}>
-          {ownsTopLeft || DEV_BUILD_LABEL ? (
-            <View style={styles.desktopChromeRow}>
-              <TitlebarDragRegion />
-              {DEV_BUILD_LABEL ? (
-                <View
-                  pointerEvents="none"
-                  style={styles.devBuildBadge}
-                  testID="dev-build-label"
-                  accessibilityLabel={`Development build: ${DEV_BUILD_LABEL}`}
-                >
-                  <GitBranch size={12} color={theme.colors.accentForeground} />
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.devBuildBadgeText}>
-                    {DEV_BUILD_LABEL}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          ) : (
+          <View
+            style={[styles.desktopChromeRow, ownsTopLeft && styles.desktopChromeRowBelowLights]}
+          >
             <TitlebarDragRegion />
-          )}
-          <SidebarNavRows style={sidebarHeaderGroupStyle} />
+            <SidebarBrandHeader />
+            {DEV_BUILD_LABEL ? (
+              <View
+                pointerEvents="none"
+                style={styles.devBuildBadge}
+                testID="dev-build-label"
+                accessibilityLabel={`Development build: ${DEV_BUILD_LABEL}`}
+              >
+                <GitBranch size={12} color={theme.colors.accentForeground} />
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.devBuildBadgeText}>
+                  {DEV_BUILD_LABEL}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         <SidebarWorkspaceDrafts />
@@ -602,15 +602,13 @@ const staticStyles = RNStyleSheet.create({
 });
 
 const styles = StyleSheet.create((theme) => ({
-  sidebarHeaderGroup: {
-    paddingTop: theme.spacing[2],
-    gap: 2,
-    paddingBottom: theme.spacing[1.5],
+  mobileBrandRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: theme.spacing[4],
+    paddingVertical: theme.spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-  },
-  sidebarHeaderGroupBelowChrome: {
-    paddingTop: 0,
   },
   workspacesSectionHeader: {
     flexDirection: "row",
@@ -667,15 +665,21 @@ const styles = StyleSheet.create((theme) => ({
   sidebarDragArea: {
     position: "relative",
   },
+  // Brand row: same rail and vertical rhythm as the footer (spacing[2] section
+  // padding + spacing[2] row inset puts content at x=16).
   desktopChromeRow: {
     position: "relative",
-    height: HEADER_INNER_HEIGHT,
+    minHeight: HEADER_INNER_HEIGHT,
+    paddingVertical: theme.spacing[2],
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
-    paddingHorizontal: theme.spacing[3],
+    gap: theme.spacing[2],
+    paddingHorizontal: theme.spacing[4],
     borderBottomWidth: theme.borderWidth[1],
-    borderBottomColor: "transparent",
+    borderBottomColor: theme.colors.border,
+  },
+  desktopChromeRowBelowLights: {
+    paddingLeft: DESKTOP_TRAFFIC_LIGHT_WIDTH,
   },
   devBuildBadge: {
     maxWidth: "60%",

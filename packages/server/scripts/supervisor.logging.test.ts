@@ -6,6 +6,7 @@ import { spawn } from "node:child_process";
 import { describe, expect, test } from "vitest";
 import { isPlatform } from "../src/test-utils/platform.js";
 import { resolveSupervisorLogFile } from "./supervisor-log-config.js";
+import { crashRestartDelayMs } from "./supervisor.js";
 
 const repoRoot = path.resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const supervisorPath = fileURLToPath(new URL("./supervisor.ts", import.meta.url));
@@ -22,6 +23,7 @@ function isProcessRunning(pid: number): boolean {
 async function runSupervisorFixture(options: {
   workerSource: string;
   restartOnCrash?: boolean;
+  crashBackoff?: { initialMs: number; maxMs: number };
   timeoutMs?: number;
 }): Promise<{
   code: number | null;
@@ -50,6 +52,7 @@ async function runSupervisorFixture(options: {
         workerEnv: process.env,
         workerExecArgv: [],
         restartOnCrash: ${JSON.stringify(options.restartOnCrash ?? false)},
+        ${options.crashBackoff ? `crashBackoff: ${JSON.stringify(options.crashBackoff)},` : ""}
         logFile: {
           path: ${JSON.stringify(logPath)},
           rotate: { maxSize: "1m", maxFiles: 2 },
@@ -345,4 +348,42 @@ describe("supervisor durable logging", () => {
       expect(result.log).toContain("Supervisor exiting");
     },
   );
+});
+
+describe("supervisor crash backoff", () => {
+  test("doubles the restart delay per consecutive crash up to the cap", () => {
+    const backoff = { initialMs: 1000, maxMs: 30_000 };
+    expect([1, 2, 3, 4, 5, 6, 7].map((n) => crashRestartDelayMs(n, backoff))).toEqual([
+      1000, 2000, 4000, 8000, 16000, 30000, 30000,
+    ]);
+  });
+
+  test("backs off a worker that cannot bind and logs who holds the port", async () => {
+    const counterDir = await mkdtemp(path.join(tmpdir(), "frogg-supervisor-crash-"));
+    const counter = path.join(counterDir, "count");
+    const result = await runSupervisorFixture({
+      restartOnCrash: true,
+      crashBackoff: { initialMs: 150, maxMs: 300 },
+      workerSource: `
+        import { readFileSync, writeFileSync } from "node:fs";
+        let n = 0;
+        try { n = Number(readFileSync(${JSON.stringify(counter)}, "utf8")); } catch {}
+        writeFileSync(${JSON.stringify(counter)}, String(n + 1));
+        if (n >= 3) process.exit(0);
+        process.send?.({
+          type: "frogg:listen-failed",
+          listen: "0.0.0.0:9999",
+          message: "Frogg cannot listen on 0.0.0.0:9999: port 9999 is already in use by pid 42 (node)",
+        });
+        setTimeout(() => process.exit(1), 20);
+      `,
+    });
+
+    expect(result.code).toBe(0);
+    // 150 + 300 + 300 ms of backoff across three crashes.
+    expect(result.elapsedMs).toBeGreaterThanOrEqual(700);
+    expect(result.stderr).toContain("port 9999 is already in use by pid 42 (node)");
+    expect(result.stderr).toContain("Restarting worker in 0.3s (attempt 3)");
+    expect(result.log).toContain('"msg":"Worker could not listen"');
+  });
 });
