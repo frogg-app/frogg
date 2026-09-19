@@ -195,3 +195,33 @@ use by a fde daemon 0.6.13 (server …), pid N (node). Restarting worker in 4s (
     worker's backoff covers the short race with the dying worker.
 30. A genuinely broken release is retried once per auto-update check interval, each time
     restarting the daemon and rolling back. Consider exponential backoff per version.
+
+## Third pass
+
+31. **Auto-update backoff (closes 30).** `daemon-auto-updater.ts`: each automatic attempt
+    is written to `~/.frogg/daemon-update/auto-update-attempts.json` (`version`, `attempts`,
+    `lastAttemptAt`) before the restart it causes. Wait before the next attempt at the same
+    version = check interval x 2^(attempts-1), capped at 7 days. Reset on up-to-date, on a
+    newer version, or an `applied` record for it. With no state file, a failed
+    `last-update.json` for the version counts as one attempt (upgrade path). Manual update
+    calls `DaemonUpdateService.start` directly and is never blocked. Wired in `bootstrap.ts`.
+32. **Different-daemon refusal, structured.** `DaemonClient.lastErrorInfo`
+    (`{ code: "server_identity_mismatch", expectedServerId, actualServerId }`), paired with
+    the exact `lastError` text and cleared on connect. `host-runtime.ts` carries it on the
+    snapshot (`lastErrorInfo`); `runtime/host-connection-error.ts` renders it via
+    `settings.host.connectionErrors.serverIdentityMismatch` (all 9 locales). Used by host
+    page (moved directly under the status badges, `accessibilityRole="alert"`), workspace
+    and agent routes, and `useHostRuntimeLastError`. Diagnostics keep the raw English.
+33. **`local:` placeholder adoption.** Probe results now carry `server_info.brand`; the
+    background probe reconciles a placeholder only when `matchesBrand(brandIdentity, brand)`
+    (same rule as the CLI). The FDE 0.6.13 daemon sends brand id `fde`, so it is rejected.
+    Pre-brand daemons (< 0.5.0, no `brand`) are still accepted for the default brand.
+    Explicit user adds (`probeAndUpsertConnection`) are unchanged: user intent.
+34. **Docs.** `self-hosting/updates.mdx` (foreign-listener handling, auto-update backoff),
+    `self-hosting/troubleshooting.mdx` (port-holder log line, different-daemon message,
+    update-blocked messages, "Legacy FDE service holds the port" recovery). Site build and
+    link check pass. CHANGELOG Unreleased entry covers the whole branch.
+35. **Verification.** Server daemon suites 58, client `daemon-client.test.ts` 116, apps/ui
+    runtime + i18n + diagnostics + probe 240. Typecheck clean: server, client, cli, apps/ui.
+    `apps/ui` `src/utils/app-version.release.test.ts` failed once when run with all of
+    `src/utils/` and passes alone (order-dependent, untouched by this pass).
