@@ -52,6 +52,7 @@ import {
 import {
   observeReplaySubagents,
   parseClaudeSubagentMeta,
+  type ClaudeReplayEntry,
   type ClaudeReplayParentFacts,
   type ClaudeSubagentMeta,
 } from "./subagents/replay-source.js";
@@ -60,6 +61,14 @@ import {
   observeReplayWorkflows,
   parseClaudeWorkflowRun,
 } from "./subagents/workflow-replay-source.js";
+import {
+  ClaudeWorkflowChildrenWatcher,
+  WORKFLOW_CHILDREN_POLL_INTERVAL_MS,
+} from "./subagents/workflow-children-watcher.js";
+import {
+  parseWorkflowChildMeta,
+  type ClaudeWorkflowChildMeta,
+} from "./subagents/workflow-children.js";
 import { readClaudeWorkflowResultFile } from "./subagents/workflow-output.js";
 import { buildClaudeFeatures, claudeModelSupportsFastMode } from "./feature-definitions.js";
 import {
@@ -2140,6 +2149,16 @@ class ClaudeAgentSession implements AgentSession {
     getToolInput: (toolUseId) => this.toolUseCache.get(toolUseId)?.input ?? null,
     readWorkflowResult: readClaudeWorkflowResultFile,
   });
+  /**
+   * Claude announces a workflow but never the agents it fans out, so those are read from the run
+   * directory instead. See `ClaudeWorkflowChildrenWatcher` for why this is a poll.
+   */
+  private readonly workflowChildrenWatcher = new ClaudeWorkflowChildrenWatcher({
+    resolveSessionDirectory: () => this.resolveClaudeSessionDirectory(),
+    parseEntries: (contents) => parseClaudeHistoryRecords(contents) as ClaudeReplayEntry[],
+    convertEntry: (entry) => this.convertHistoryEntry(entry as ClaudeHistoryEntry),
+  });
+  private workflowChildrenPollTimer: NodeJS.Timeout | null = null;
   private readonly sidechainTracker = new ClaudeSidechainTracker({
     getToolInput: (toolUseId) => this.toolUseCache.get(toolUseId)?.input ?? null,
     // Releases that predate the task protocol announce nothing, so the tracker keeps deriving
@@ -2754,6 +2773,8 @@ class ClaudeAgentSession implements AgentSession {
     this.turnState = "idle";
     this.sidechainTracker.clear();
     this.taskProtocolSource.reset();
+    this.workflowChildrenWatcher.reset();
+    this.updateWorkflowChildrenPolling();
     this.input?.end();
     this.query?.close?.();
     await this.awaitWithTimeout(this.query?.interrupt?.(), "close query interrupt");
@@ -4157,6 +4178,7 @@ class ClaudeAgentSession implements AgentSession {
       const card = this.buildSubagentToolCallCard(observation);
       if (card) events.push(card);
     }
+    this.syncWorkflowChildrenWatches(subagentObservations, events);
     if (message.type !== "system") {
       const sessionCapture = this.captureSessionIdFromMessage(message);
       if (sessionCapture.notice) {
@@ -4829,6 +4851,69 @@ class ClaudeAgentSession implements AgentSession {
   }
 
   /**
+   * Start watching a workflow's run directory when it is declared, and stop when it settles.
+   *
+   * Both edges come off the same announcements the descriptors are built from, so a workflow can
+   * never be watched without a row to hang its children on, nor keep being polled after the row it
+   * belongs to has finished.
+   */
+  private syncWorkflowChildrenWatches(
+    observations: readonly SubagentObservation[],
+    events: AgentStreamEvent[],
+  ): void {
+    for (const observation of observations) {
+      if (!this.taskProtocolSource.isWorkflowSubagent(observation.id)) continue;
+      if (observation.kind === "declared") {
+        this.workflowChildrenWatcher.track(observation.id);
+        continue;
+      }
+      if (observation.kind !== "status" || observation.status === "running") continue;
+      // One last read before letting go: the run's final journal lines land alongside the
+      // completion announcement, not before it.
+      for (const event of foldSubagentObservations(
+        this.workflowChildrenWatcher.release(observation.id),
+      )) {
+        events.push({ type: "provider_subagent", provider: "claude", event });
+      }
+    }
+    this.updateWorkflowChildrenPolling();
+  }
+
+  /** The timer exists only while a workflow is being watched, so an idle agent polls nothing. */
+  private updateWorkflowChildrenPolling(): void {
+    if (this.workflowChildrenWatcher.isWatching) {
+      if (this.workflowChildrenPollTimer) return;
+      this.workflowChildrenPollTimer = setInterval(() => {
+        this.pollWorkflowChildren();
+      }, WORKFLOW_CHILDREN_POLL_INTERVAL_MS);
+      // The daemon must be free to exit while a workflow is mid-flight; this timer is an
+      // observer of work happening in another process, not work of its own.
+      this.workflowChildrenPollTimer.unref?.();
+      return;
+    }
+    if (!this.workflowChildrenPollTimer) return;
+    clearInterval(this.workflowChildrenPollTimer);
+    this.workflowChildrenPollTimer = null;
+  }
+
+  private pollWorkflowChildren(): void {
+    for (const event of foldSubagentObservations(this.workflowChildrenWatcher.poll())) {
+      this.pushEvent({ type: "provider_subagent", provider: "claude", event });
+    }
+  }
+
+  /**
+   * The Claude session directory that holds `subagents/` and `workflows/`, or null before the
+   * session id has been assigned. Claude derives it from the transcript path by dropping `.jsonl`.
+   */
+  private resolveClaudeSessionDirectory(): string | null {
+    if (!this.claudeSessionId) return null;
+    const historyPath = this.resolveHistoryPath(this.claudeSessionId);
+    if (!historyPath) return null;
+    return path.join(path.dirname(historyPath), path.basename(historyPath, ".jsonl"));
+  }
+
+  /**
    * Effort is reachable only through hooks.
    *
    * It appears nowhere on the message stream — verified by scanning every message type at depth
@@ -4977,12 +5062,23 @@ class ClaudeAgentSession implements AgentSession {
           .map(parseClaudeWorkflowRun)
           .filter((workflow) => workflow !== null),
         parentEntries,
-        entriesByRunId: new Map(
-          [...sidechains.workflowSidechainContentsByRunId].map(([runId, contents]) => [
+        // A run's transcripts stay split per child so each one opens its own pane, rather than
+        // every agent's work landing on the Workflow row as one interleaved transcript.
+        runsByRunId: new Map(
+          [...sidechains.workflowRunsByRunId].map(([runId, run]) => [
             runId,
-            contents
-              .flatMap(parseClaudeHistoryRecords)
-              .filter((entry) => entry.type !== "user" || isToolResultUserEntry(entry)),
+            {
+              ...(run.journal === undefined ? {} : { journal: run.journal }),
+              metaByAgentId: run.metaByAgentId,
+              entriesByAgentId: new Map(
+                [...run.contentsByAgentId].map(([agentId, contents]) => [
+                  agentId,
+                  contents
+                    .flatMap(parseClaudeHistoryRecords)
+                    .filter((entry) => entry.type !== "user" || isToolResultUserEntry(entry)),
+                ]),
+              ),
+            },
           ]),
         ),
         convertEntry: (entry) => this.convertHistoryEntry(entry as ClaudeHistoryEntry),
@@ -5827,15 +5923,40 @@ function readClaudeReplayParentFacts(parentEntries: ClaudeHistoryEntry[]): Claud
   };
 }
 
+interface ClaudeWorkflowRunHistory {
+  /** agentId -> that child's own transcript contents. */
+  contentsByAgentId: Map<string, string[]>;
+  /** agentId -> the sidecar Claude Code wrote beside the child's transcript. */
+  metaByAgentId: Map<string, ClaudeWorkflowChildMeta>;
+  /** The run's journal, which is the only per-child record written as the run happens. */
+  journal?: string;
+}
+
 interface ClaudeSidechainHistory {
   contents: string[];
   workflowContents: string[];
-  workflowSidechainContentsByRunId: Map<string, string[]>;
+  workflowRunsByRunId: Map<string, ClaudeWorkflowRunHistory>;
   /** agentId -> sidecar metadata, when Claude Code wrote one next to the transcript. */
   metaByAgentId: Map<string, ClaudeSubagentMeta>;
 }
 
+function workflowRunHistory(
+  history: ClaudeSidechainHistory,
+  runId: string,
+): ClaudeWorkflowRunHistory {
+  const existing = history.workflowRunsByRunId.get(runId);
+  if (existing) return existing;
+  const created: ClaudeWorkflowRunHistory = {
+    contentsByAgentId: new Map(),
+    metaByAgentId: new Map(),
+  };
+  history.workflowRunsByRunId.set(runId, created);
+  return created;
+}
+
 const CLAUDE_SUBAGENT_META_FILE = /^agent-(.+)\.meta\.json$/;
+const CLAUDE_WORKFLOW_CHILD_TRANSCRIPT_FILE = /^agent-(.+)\.jsonl$/;
+const CLAUDE_WORKFLOW_JOURNAL_FILE = "journal.jsonl";
 
 function readClaudeSidechainHistory(historyPath: string): ClaudeSidechainHistory {
   const sessionDirectory = path.join(
@@ -5846,7 +5967,7 @@ function readClaudeSidechainHistory(historyPath: string): ClaudeSidechainHistory
   const history: ClaudeSidechainHistory = {
     contents: [],
     workflowContents: [],
-    workflowSidechainContentsByRunId: new Map(),
+    workflowRunsByRunId: new Map(),
     metaByAgentId: new Map(),
   };
   const workflowDirectory = path.join(sessionDirectory, "workflows");
@@ -5877,42 +5998,61 @@ function readClaudeSidechainHistory(historyPath: string): ClaudeSidechainHistory
         continue;
       }
       if (!entry.isFile()) continue;
-      if (entry.name.endsWith(".jsonl")) {
-        recordClaudeSidechainContents(history, sidechainDirectory, entryPath);
-        continue;
-      }
-      // The sidecar carries the Task tool_use id, which is the same id the live stream keys on.
-      // Reading it is what lets replay and live agree instead of each deriving its own link.
-      const metaMatch = CLAUDE_SUBAGENT_META_FILE.exec(entry.name);
-      if (!metaMatch?.[1]) continue;
+      // `subagents/workflows/<runId>/…` belongs to one workflow run, and its files have to stay
+      // attributed to it: merged into the session-wide pools they would hang a run's children off
+      // the parent session and put every run's transcripts on one row.
+      const relativeParts = path.relative(sidechainDirectory, entryPath).split(path.sep);
+      const workflowRunId =
+        relativeParts[0] === "workflows" && relativeParts.length >= 3
+          ? relativeParts[1]
+          : undefined;
       try {
+        if (workflowRunId) {
+          recordClaudeWorkflowRunFile(history, workflowRunId, entry.name, entryPath);
+          continue;
+        }
+        if (entry.name.endsWith(".jsonl")) {
+          history.contents.push(fs.readFileSync(entryPath, "utf8"));
+          continue;
+        }
+        // The sidecar carries the Task tool_use id, which is the same id the live stream keys on.
+        // Reading it is what lets replay and live agree instead of each deriving its own link.
+        const metaMatch = CLAUDE_SUBAGENT_META_FILE.exec(entry.name);
+        if (!metaMatch?.[1]) continue;
         const meta = parseClaudeSubagentMeta(fs.readFileSync(entryPath, "utf8"));
         if (meta) history.metaByAgentId.set(metaMatch[1], meta);
       } catch {
-        // Undocumented internals: a missing or unreadable sidecar must never fail ingestion.
+        // Undocumented internals: an unreadable file must never fail the rest of ingestion.
       }
     }
   }
   return history;
 }
 
-function recordClaudeSidechainContents(
+/** The child transcripts, sidecars and journal of a single workflow run directory. */
+function recordClaudeWorkflowRunFile(
   history: ClaudeSidechainHistory,
-  sidechainDirectory: string,
+  runId: string,
+  fileName: string,
   entryPath: string,
 ): void {
-  const contents = fs.readFileSync(entryPath, "utf8");
-  const relativeParts = path.relative(sidechainDirectory, entryPath).split(path.sep);
-  const workflowRunId =
-    relativeParts[0] === "workflows" && relativeParts.length >= 3 ? relativeParts[1] : undefined;
-  if (!workflowRunId) {
-    history.contents.push(contents);
+  const run = workflowRunHistory(history, runId);
+  if (fileName === CLAUDE_WORKFLOW_JOURNAL_FILE) {
+    run.journal = fs.readFileSync(entryPath, "utf8");
     return;
   }
-
-  const workflowContents = history.workflowSidechainContentsByRunId.get(workflowRunId) ?? [];
-  workflowContents.push(contents);
-  history.workflowSidechainContentsByRunId.set(workflowRunId, workflowContents);
+  const metaMatch = CLAUDE_SUBAGENT_META_FILE.exec(fileName);
+  if (metaMatch?.[1]) {
+    const meta = parseWorkflowChildMeta(fs.readFileSync(entryPath, "utf8"));
+    if (meta) run.metaByAgentId.set(metaMatch[1], meta);
+    return;
+  }
+  const transcriptMatch = CLAUDE_WORKFLOW_CHILD_TRANSCRIPT_FILE.exec(fileName);
+  if (!transcriptMatch?.[1]) return;
+  const agentId = transcriptMatch[1];
+  const contents = run.contentsByAgentId.get(agentId) ?? [];
+  contents.push(fs.readFileSync(entryPath, "utf8"));
+  run.contentsByAgentId.set(agentId, contents);
 }
 
 interface ClaudeHistoricalSubagentToolCall {

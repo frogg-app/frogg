@@ -24,6 +24,11 @@ export type SubagentObservation =
       /** The task this child was given. What actually distinguishes it from its siblings. */
       description?: string;
       toolCallId?: string;
+      /**
+       * The subagent id this one runs underneath. Set only by sources that observe a real nesting
+       * — today, the agents a Workflow run fans out below its own row. Omitted means top level.
+       */
+      parentId?: string;
       timestamp?: string;
     }
   | { kind: "status"; id: string; status: ProviderSubagentStatus; timestamp?: string }
@@ -84,6 +89,7 @@ export function foldSubagentObservations(
       ...(observation.title === undefined ? {} : { title: observation.title }),
       ...(observation.description === undefined ? {} : { description: observation.description }),
       ...(observation.toolCallId === undefined ? {} : { toolCallId: observation.toolCallId }),
+      ...(observation.parentId === undefined ? {} : { parentSubagentId: observation.parentId }),
       ...(observation.timestamp ? { timestamp: observation.timestamp } : {}),
     });
   }

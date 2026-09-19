@@ -167,6 +167,14 @@ export class ClaudeTaskProtocolSource {
   /** Workflow invocations already own a real Workflow card in the parent timeline. */
   private readonly idsWithExistingParentToolCard = new Set<string>();
   /**
+   * Subagent ids declared as workflow runs.
+   *
+   * A workflow is the one declared task whose own children Claude never announces, so callers
+   * need to tell it apart to go and find them on disk. Kept separate from the parent-tool-card
+   * set, which happens to hold the same ids today but answers an unrelated question.
+   */
+  private readonly workflowSubagentIds = new Set<string>();
+  /**
    * Declared subagents that were moved to the background. They outlive the turn that spawned
    * them, so a turn ending is not evidence that they stopped.
    */
@@ -233,6 +241,11 @@ export class ClaudeTaskProtocolSource {
     return !this.idsWithExistingParentToolCard.has(subagentId);
   }
 
+  /** Whether this subagent is a workflow run, and so owns children announced nowhere on the wire. */
+  isWorkflowSubagent(subagentId: string): boolean {
+    return this.workflowSubagentIds.has(subagentId);
+  }
+
   observe(message: SDKMessage): SubagentObservation[] {
     if (message.type !== "system") return [];
     switch (message.subtype) {
@@ -263,6 +276,7 @@ export class ClaudeTaskProtocolSource {
     this.workflowTaskIds.clear();
     this.lastWorkflowResultByTaskId.clear();
     this.idsWithExistingParentToolCard.clear();
+    this.workflowSubagentIds.clear();
     this.backgroundedIds.clear();
     this.lastStatusById.clear();
     this.presentationById.clear();
@@ -346,6 +360,7 @@ export class ClaudeTaskProtocolSource {
     const isWorkflow = message.task_type === CLAUDE_WORKFLOW_TASK_TYPE;
     if (isWorkflow) {
       this.idsWithExistingParentToolCard.add(id);
+      this.workflowSubagentIds.add(id);
       this.workflowTaskIds.add(message.task_id);
     }
     const title = isWorkflow

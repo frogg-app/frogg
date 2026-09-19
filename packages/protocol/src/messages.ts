@@ -4891,6 +4891,11 @@ export const ProviderSubagentDescriptorPayloadSchema = z.object({
   // Compact provider-owned context for the shared track. Providers choose what belongs here and
   // format it for display; clients must not parse provider-specific facts out of this string.
   subtitle: z.string().nullable().optional(),
+  // The subagent this one runs underneath, when a provider nests its children. Claude's Workflow
+  // tool owns a row of its own and fans out agents below it; those agents carry the Workflow row's
+  // id here. Null, absent, or an id with no matching descriptor all mean "top level", so a client
+  // never has to resolve a parent to draw a row.
+  parentSubagentId: z.string().nullable().optional(),
 });
 
 export type ProviderSubagentDescriptorPayload = z.infer<

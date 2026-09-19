@@ -61,6 +61,42 @@ export async function expectSingleWorkflowParentCard(page: Page): Promise<void> 
   await expect(parentToolCards.filter({ hasText: "Task Notification" })).toHaveCount(0);
 }
 
+/** The label the fixture workflow gives the single agent it fans out. */
+export const WORKFLOW_CHILD_LABEL = "workflow-row-child";
+
+export function workflowChildRow(page: Page) {
+  return page
+    .getByTestId(/^subagents-track-row-/)
+    .filter({ has: page.getByText(WORKFLOW_CHILD_LABEL, { exact: true }) });
+}
+
+/**
+ * The agent the workflow fanned out gets its own row while the run is still gated open, which is
+ * the whole point: a child that only appeared once the run finished would not be live status.
+ */
+export async function expectWorkflowChildRunning(page: Page): Promise<void> {
+  const row = workflowChildRow(page);
+  await expect(row).toBeVisible({ timeout: 120_000 });
+  await expect(row.getByRole("progressbar", { name: "Agent running" })).toBeVisible();
+}
+
+export async function expectWorkflowChildCompleted(page: Page): Promise<void> {
+  const row = workflowChildRow(page);
+  await expect(row.getByRole("progressbar", { name: "Agent running" })).toHaveCount(0, {
+    timeout: 120_000,
+  });
+}
+
+/** The child owns its own timeline; its work must not also be replayed onto the Workflow row. */
+export async function openWorkflowChildTimeline(page: Page): Promise<void> {
+  await workflowChildRow(page).click();
+  const panel = page.getByTestId("provider-subagent-panel");
+  await expect(panel).toBeVisible({ timeout: 30_000 });
+  await expect(panel.getByText("Start chatting with this agent...", { exact: true })).toHaveCount(
+    0,
+  );
+}
+
 export async function openWorkflowTimeline(page: Page): Promise<void> {
   await workflowRow(page).click();
   const panel = page.getByTestId("provider-subagent-panel");

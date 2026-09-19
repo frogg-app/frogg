@@ -22,6 +22,13 @@ export interface ProviderSubagentDescriptor {
   toolCallId: string | null;
   cwd: string | null;
   subtitle: string | null;
+  /**
+   * The subagent this one runs underneath, when a provider nests its children.
+   *
+   * The store does not validate that the id resolves: a child may be observed before its parent,
+   * and an unresolvable parent must degrade to a top-level row rather than hide the child.
+   */
+  parentSubagentId: string | null;
 }
 
 export type ProviderSubagentInputEvent =
@@ -38,6 +45,7 @@ export type ProviderSubagentInputEvent =
       toolCallId?: string | null;
       cwd?: string | null;
       subtitle?: string | null;
+      parentSubagentId?: string | null;
       timestamp?: string;
     }
   | {
@@ -123,6 +131,7 @@ export class ProviderSubagentStore {
       toolCallId: stickyField(event.toolCallId, previous?.toolCallId),
       cwd: stickyField(event.cwd, previous?.cwd),
       subtitle: stickyField(event.subtitle, previous?.subtitle),
+      parentSubagentId: stickyField(event.parentSubagentId, previous?.parentSubagentId),
     };
     this.descriptors.set(key, subagent);
     return { type: "upsert", subagent };

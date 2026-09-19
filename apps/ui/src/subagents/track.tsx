@@ -48,6 +48,15 @@ const IDLE_ARCHIVE_FINISHED_STATUS: ArchiveFinishedStatus = { kind: "idle" };
 /** Leading and action glyphs share one size so rows keep a single icon column. */
 const ROW_ICON_SIZE = 14;
 
+/**
+ * How far one level of nesting shifts a row's icon.
+ *
+ * Wide enough to read as "belongs to the row above" at a glance, narrow enough that a workflow's
+ * children keep most of the panel's width for their own labels. Nesting is bounded in practice —
+ * a workflow's agents are the only children Frogg receives — so this never compounds far.
+ */
+const ROW_NESTING_INDENT = 14;
+
 function buildRowPresentation(row: SubagentRow): WorkspaceTabPresentation {
   const data = buildSubagentRowPresentationData(row);
   return {
@@ -185,6 +194,12 @@ function SubagentsTrackRow({
   const { t } = useTranslation();
   const isCompact = useIsCompactFormFactor();
   const presentation = useMemo(() => buildRowPresentation(row), [row]);
+  // A spacer rather than row padding: the indent has to shift the icon too, and padding on the
+  // pressable would also move the trailing action cluster in from the panel edge.
+  const indentStyle = useMemo(() => {
+    const depth = row.depth ?? 0;
+    return depth > 0 ? { width: depth * ROW_NESTING_INDENT } : null;
+  }, [row.depth]);
   const displayLabel =
     presentation.titleState === "loading" ? t("common.states.loading") : presentation.label;
   const handlePress = useCallback(() => {
@@ -219,6 +234,7 @@ function SubagentsTrackRow({
   const renderRow = useCallback(
     ({ active }: { active: boolean }) => (
       <>
+        {indentStyle ? <View style={indentStyle} pointerEvents="none" /> : null}
         <WorkspaceTabIcon presentation={presentation} backdrop={active ? "surface2" : "surface1"} />
         <Text style={styles.rowLabel} numberOfLines={1}>
           {displayLabel}
@@ -244,6 +260,7 @@ function SubagentsTrackRow({
       handleArchivePress,
       handleCopySessionIdPress,
       handleDetachPress,
+      indentStyle,
       onDetachSubagent,
       presentation,
       row.kind,

@@ -47,6 +47,13 @@ namespace migration. Unchecked items are validation/backlog work, not active tas
   timed local desktop build command. See [building](website/src/content/docs/docs/contributing/release-process.mdx).
   Guarded Android native-output reuse remains a follow-up.
 
+- Claude Code Workflow runs list their fanned-out agents as nested rows under the
+  Workflow row, live from the run directory and rebuilt on replay. See
+  [agents](website/src/content/docs/docs/using-frogg/agents.mdx). Live binding of a run
+  directory to its Workflow row is by elimination — two workflows started inside one poll
+  interval stay unbound until one of them resolves — and real-provider acceptance of the
+  live path remains outstanding.
+
 - Expandable sidebar agent/subagent trees with direct live transcript access,
   runtime identity preservation, and reconnect/retry states. Single-agent workspaces
   avoid duplicate rows; disclosure contains only active subagents. See

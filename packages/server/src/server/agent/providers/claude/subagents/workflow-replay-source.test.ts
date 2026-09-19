@@ -59,6 +59,9 @@ describe("Claude workflow replay", () => {
       startTime: 1786003484150,
       defaultModel: "claude-sonnet-5",
       totalTokens: 20_417,
+      // Retained unparsed: the per-child facts inside it have their own parser, and the run
+      // schema's job is only to carry them through to it.
+      workflowProgress: [{ type: "workflow_phase", title: "Inspect" }],
     });
   });
 

@@ -5,8 +5,11 @@ import { test } from "../support/fixtures";
 import {
   askClaudeToRunWorkflow,
   expectSingleWorkflowParentCard,
+  expectWorkflowChildCompleted,
+  expectWorkflowChildRunning,
   expectWorkflowCompleted,
   expectWorkflowRunning,
+  openWorkflowChildTimeline,
   openWorkflowTimeline,
   releaseWorkflow,
 } from "../support/helpers/claude-workflow";
@@ -34,14 +37,21 @@ test.describe("real Claude workflow subagent row", () => {
       await test.step("ask Claude to run the workflow", async () => {
         await askClaudeToRunWorkflow(handle!, WORKFLOW_SCRIPT, gatePath);
         await expectWorkflowRunning(page);
+        await expectWorkflowChildRunning(page);
         await page.screenshot({ path: testInfo.outputPath("workflow-running.png") });
         releaseWorkflow(gatePath);
       });
 
       await test.step("see the workflow finish without leaving a running row", async () => {
         await expectWorkflowCompleted(page);
+        await expectWorkflowChildCompleted(page);
         await expectSingleWorkflowParentCard(page);
         await page.screenshot({ path: testInfo.outputPath("workflow-completed.png") });
+      });
+
+      await test.step("open the workflow's own child through its nested row", async () => {
+        await openWorkflowChildTimeline(page);
+        await page.screenshot({ path: testInfo.outputPath("workflow-child-timeline.png") });
       });
 
       await test.step("open the workflow through the existing provider-subagent pane", async () => {
