@@ -507,7 +507,19 @@ export class HubRelationshipHarness {
     const harness = new HubRelationshipHarness(mcpEnabled, agentClients);
     await harness.createHome();
     await harness.startDaemon();
+    // Hub-owned agent creation now requires its cwd's project to already be
+    // registered (workspaces are no longer auto-registered from a bare cwd).
+    await harness.registerRootProject();
     return harness;
+  }
+
+  private async registerRootProject(): Promise<void> {
+    const client = await this.trustedClient();
+    try {
+      await client.addProject(this.root);
+    } finally {
+      await client.close();
+    }
   }
 
   holdEnrollment(): void {

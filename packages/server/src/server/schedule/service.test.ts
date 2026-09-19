@@ -207,6 +207,15 @@ async function createRegistryBackedScheduleWorkspaceDeps(rootDir: string): Promi
   );
   await workspaceRegistry.initialize();
   await projectRegistry.initialize();
+  // Schedules target a directory the caller already manages; register it as a
+  // project up front so workspace creation does not hit `unregistered_project`.
+  await projectRegistry.getOrCreateActiveByRoot({
+    rootPath: rootDir,
+    kind: "non_git",
+    displayName: rootDir,
+    projectKey: `schedule-service-test:${rootDir}`,
+    timestamp: new Date().toISOString(),
+  });
   const workspaceGitService = createNoopWorkspaceGitService();
   const workspaceProvisioning = createWorkspaceProvisioningService({
     projectRegistry,
