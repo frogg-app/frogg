@@ -1927,6 +1927,7 @@ export async function createFroggDaemon(
               hasRunningAgents: () =>
                 !config.executionService &&
                 agentManager.listAgents().some((agent) => agent.lifecycle === "running"),
+              lastResult: () => updateService.status().lastResult,
               logger,
             });
 

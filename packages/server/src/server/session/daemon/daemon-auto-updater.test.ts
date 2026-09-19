@@ -1,6 +1,10 @@
 import pino from "pino";
 import { describe, expect, test } from "vitest";
-import type { DaemonAutoUpdateConfig, DaemonUpdateRun } from "@frogg/protocol/messages";
+import type {
+  DaemonAutoUpdateConfig,
+  DaemonUpdateLastResult,
+  DaemonUpdateRun,
+} from "@frogg/protocol/messages";
 import { DaemonAutoUpdater, isInQuietHours } from "./daemon-auto-updater.js";
 import type { CheckPayload, StartPayload } from "./daemon-update-service.js";
 
@@ -53,6 +57,7 @@ function makeUpdater(input: {
   service: ReturnType<typeof fakeService>["service"];
   agentsRunning?: boolean;
   now?: Date;
+  lastResult?: DaemonUpdateLastResult | null;
 }) {
   return new DaemonAutoUpdater({
     service: input.service,
@@ -64,6 +69,7 @@ function makeUpdater(input: {
       ...input.config,
     }),
     hasRunningAgents: () => input.agentsRunning ?? false,
+    lastResult: () => input.lastResult ?? null,
     logger: pino({ level: "silent" }),
     now: () => input.now ?? new Date(2026, 8, 3, 14, 0, 0),
   });
@@ -112,5 +118,49 @@ describe("DaemonAutoUpdater.tick", () => {
     expect(await updater.tick()).toBe("started");
     expect(idle.starts).toEqual([{ version: "0.1.14", channel: "beta" }]);
     expect(await updater.tick()).toBe("already_running");
+  });
+});
+
+describe("retry backoff", () => {
+  const now = new Date(2026, 8, 19, 12, 50, 0);
+  const failed = (to: string, at: Date): DaemonUpdateLastResult => ({
+    from: "1.5.6",
+    to,
+    status: "failed",
+    reason: "daemon reports version 0.6.13, expected 1.5.7",
+    at: at.toISOString(),
+  });
+
+  test("does not retry a version whose last attempt failed within the interval", async () => {
+    const fake = fakeService({ latest: "1.5.7" });
+    const updater = makeUpdater({
+      config: {},
+      service: fake.service,
+      now,
+      lastResult: failed("1.5.7", new Date(now.getTime() - 10 * 60_000)),
+    });
+    expect(await updater.tick()).toBe("backed_off");
+    expect(fake.starts).toEqual([]);
+  });
+
+  test("retries once the interval has passed, and never blocks a newer version", async () => {
+    const stale = fakeService({ latest: "1.5.7" });
+    expect(
+      await makeUpdater({
+        config: {},
+        service: stale.service,
+        now,
+        lastResult: failed("1.5.7", new Date(now.getTime() - 25 * 3_600_000)),
+      }).tick(),
+    ).toBe("started");
+    const newer = fakeService({ latest: "1.5.8" });
+    expect(
+      await makeUpdater({
+        config: {},
+        service: newer.service,
+        now,
+        lastResult: failed("1.5.7", now),
+      }).tick(),
+    ).toBe("started");
   });
 });

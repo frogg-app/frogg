@@ -1,5 +1,5 @@
 import type pino from "pino";
-import type { DaemonAutoUpdateConfig } from "@frogg/protocol/messages";
+import type { DaemonAutoUpdateConfig, DaemonUpdateLastResult } from "@frogg/protocol/messages";
 import type { DaemonUpdateService } from "./daemon-update-service.js";
 
 /**
@@ -24,6 +24,13 @@ export interface DaemonAutoUpdaterOptions {
   service: Pick<DaemonUpdateService, "check" | "start" | "currentRun" | "installInfo">;
   getConfig: () => DaemonAutoUpdateConfig | undefined;
   hasRunningAgents: () => boolean;
+  /**
+   * The last recorded apply outcome (`last-update.json`). A failed attempt at a
+   * version is not retried until a full check interval has passed: every
+   * attempt restarts the daemon, and without this the restart's initial-delay
+   * tick would retry the same broken version every few minutes.
+   */
+  lastResult?: () => DaemonUpdateLastResult | null;
   logger: pino.Logger;
   now?: () => Date;
   setTimer?: (fn: () => void, ms: number) => NodeJS.Timeout;
@@ -49,6 +56,7 @@ export type AutoUpdateTickOutcome =
   | "busy"
   | "already_running"
   | "started"
+  | "backed_off"
   | "check_failed";
 
 export class DaemonAutoUpdater {
@@ -113,6 +121,18 @@ export class DaemonAutoUpdater {
       return "check_failed";
     }
     if (!check.updateAvailable || !check.latestVersion) return "up_to_date";
+    const last = this.options.lastResult?.() ?? null;
+    if (last && last.to === check.latestVersion && last.status !== "applied") {
+      const now = (this.options.now ?? (() => new Date()))().getTime();
+      const retryAt = Date.parse(last.at) + Math.max(1, config.checkIntervalHours) * 3_600_000;
+      if (Number.isFinite(retryAt) && now < retryAt) {
+        log.info(
+          { version: check.latestVersion, lastStatus: last.status, reason: last.reason },
+          "auto-update backed off: the last attempt at this version did not apply",
+        );
+        return "backed_off";
+      }
+    }
     if (this.options.hasRunningAgents()) {
       log.info({ version: check.latestVersion }, "auto-update deferred: agents are running");
       return "busy";
