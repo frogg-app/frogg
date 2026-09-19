@@ -223,6 +223,7 @@ import {
 import { DaemonExecutions } from "./hub/daemon-executions.js";
 import {
   DaemonAutoUpdater,
+  createFileAutoUpdateAttemptStore,
   DEFAULT_AUTO_UPDATE_CONFIG,
 } from "./session/daemon/daemon-auto-updater.js";
 import { describeDaemonInstall } from "./session/daemon/daemon-update-install.js";
@@ -1928,6 +1929,7 @@ export async function createFroggDaemon(
                 !config.executionService &&
                 agentManager.listAgents().some((agent) => agent.lifecycle === "running"),
               lastResult: () => updateService.status().lastResult,
+              attempts: createFileAutoUpdateAttemptStore(config.froggHome, logger),
               logger,
             });
 
