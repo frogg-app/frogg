@@ -6284,6 +6284,10 @@ export class Session {
       for (const workspaceRecord of await this.workspaceRegistry.list()) {
         workspacesBefore.set(workspaceRecord.workspaceId, workspaceRecord);
       }
+      // open_project_request is the explicit registration action (unlike implicit
+      // workspace creation from an agent/terminal/script cwd), so ensure the
+      // directory's project is registered before resolving/creating the workspace.
+      await this.workspaceProvisioning.findOrCreateProjectForDirectory(cwd);
       const workspace = await this.workspaceProvisioning.findOrCreateWorkspaceForDirectory(cwd);
       const project = await this.projectRegistry.get(workspace.projectId);
       await this.syncWorkspaceGitObserverForWorkspace(workspace);

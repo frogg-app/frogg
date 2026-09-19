@@ -21,7 +21,7 @@ describe("formatPairingInstructions", () => {
 
     expect(output.split("\n")).toContain(URL);
     expect(output.split("\n")).toContain(deepLink);
-    expect(output).toContain("Frogg desktop app opens the link above directly");
+    expect(output).toContain("frogg desktop app opens the link above directly");
     expect(formatPairingInstructions({ qr: QR, url: URL, columns: 7 })).not.toContain("frogg://");
   });
 

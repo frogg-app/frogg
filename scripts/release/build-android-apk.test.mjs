@@ -10,15 +10,15 @@ test("asset name marks debug-signed release APKs", () => {
       signed: false,
       appVariant: "development",
     }),
-    "Frogg-0.2.14-android-arm64-v8a-development-unsigned.apk",
+    "frogg-0.2.14-android-arm64-v8a-development-unsigned.apk",
   );
   assert.equal(
     apkAssetName({ version: "0.1.9", abi: "arm64-v8a", signed: true }),
-    "Frogg-0.1.9-android-arm64-v8a.apk",
+    "frogg-0.1.9-android-arm64-v8a.apk",
   );
   assert.equal(
     apkAssetName({ version: "0.1.9", abi: "universal", signed: false }),
-    "Frogg-0.1.9-android-universal-unsigned.apk",
+    "frogg-0.1.9-android-universal-unsigned.apk",
   );
   assert.equal(
     apkAssetName({
@@ -27,7 +27,7 @@ test("asset name marks debug-signed release APKs", () => {
       signed: false,
       variant: "debug",
     }),
-    "Frogg-0.1.9-android-arm64-v8a-debug.apk",
+    "frogg-0.1.9-android-arm64-v8a-debug.apk",
   );
 });
 

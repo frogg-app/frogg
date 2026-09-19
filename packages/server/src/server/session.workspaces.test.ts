@@ -1034,9 +1034,13 @@ test("create_agent_request keeps requested child cwd when grouped under an exist
     expect(createdAgent?.cwd).toBe(child);
     const createdWorkspace = await workspaceRegistry.get(createdAgent!.workspaceId!);
     expect(createdWorkspace).not.toBeNull();
+    // Agent creation is an implicit cwd use, not an explicit project registration
+    // (commit 026096a2), so the already-registered parent project is reused
+    // rather than a new project being created at the exact child path.
+    expect(createdWorkspace!.projectId).toBe("proj-parent");
     await expect(projectRegistry.get(createdWorkspace!.projectId)).resolves.toMatchObject({
       projectKey: deriveProjectKey({
-        rootPath: child,
+        rootPath: parent,
         remoteUrl: null,
         worktreeRoot: null,
         mainRepoRoot: null,
@@ -4204,6 +4208,18 @@ test("import_agent_request registers a workspace for a never-seen cwd", async ()
   ) => {
     projects.set(record.projectId, record);
   };
+  session.projectRegistry.getOrCreateActiveByRoot = async (allocation) => {
+    const project = createPersistedProjectRecord({
+      projectId: "prj_imported",
+      rootPath: allocation.rootPath,
+      kind: allocation.kind,
+      displayName: allocation.displayName,
+      createdAt: allocation.timestamp,
+      updatedAt: allocation.timestamp,
+    });
+    projects.set(project.projectId, project);
+    return project;
+  };
   session.workspaceRegistry.get = async (lookupWorkspaceId: string) =>
     workspaces.get(lookupWorkspaceId) ?? null;
   session.workspaceRegistry.upsert = async (
@@ -4394,6 +4410,22 @@ test("open_project_response returns immediately even when the GitHub fetch is sl
     record: ReturnType<typeof createPersistedProjectRecord>,
   ) => {
     projects.set(record.projectId, record);
+  };
+  session.projectRegistry.getOrCreateActiveByRoot = async (allocation) => {
+    const existing = Array.from(projects.values()).find(
+      (project) => !project.archivedAt && project.rootPath === allocation.rootPath,
+    );
+    if (existing) return existing;
+    const project = createPersistedProjectRecord({
+      projectId: `prj_${projects.size.toString().padStart(16, "0")}`,
+      rootPath: allocation.rootPath,
+      kind: allocation.kind,
+      displayName: allocation.displayName,
+      createdAt: allocation.timestamp,
+      updatedAt: allocation.timestamp,
+    });
+    projects.set(project.projectId, project);
+    return project;
   };
   session.workspaceRegistry.get = async (lookupWorkspaceId: string) =>
     workspaces.get(lookupWorkspaceId) ?? null;
@@ -4655,6 +4687,22 @@ test("open_project_request does not unarchive an archived parent workspace for a
   ) => {
     projects.set(record.projectId, record);
   };
+  session.projectRegistry.getOrCreateActiveByRoot = async (allocation) => {
+    const existing = Array.from(projects.values()).find(
+      (project) => !project.archivedAt && project.rootPath === allocation.rootPath,
+    );
+    if (existing) return existing;
+    const project = createPersistedProjectRecord({
+      projectId: `prj_${projects.size.toString().padStart(16, "0")}`,
+      rootPath: allocation.rootPath,
+      kind: allocation.kind,
+      displayName: allocation.displayName,
+      createdAt: allocation.timestamp,
+      updatedAt: allocation.timestamp,
+    });
+    projects.set(project.projectId, project);
+    return project;
+  };
   session.workspaceRegistry.get = async (lookupWorkspaceId: string) =>
     workspaces.get(lookupWorkspaceId) ?? null;
   session.workspaceRegistry.upsert = async (
@@ -4729,6 +4777,22 @@ test("open_project_request reclassifies an archived directory workspace when git
     record: ReturnType<typeof createPersistedProjectRecord>,
   ) => {
     projects.set(record.projectId, record);
+  };
+  session.projectRegistry.getOrCreateActiveByRoot = async (allocation) => {
+    const existing = Array.from(projects.values()).find(
+      (project) => !project.archivedAt && project.rootPath === allocation.rootPath,
+    );
+    if (existing) return existing;
+    const project = createPersistedProjectRecord({
+      projectId: `prj_${projects.size.toString().padStart(16, "0")}`,
+      rootPath: allocation.rootPath,
+      kind: allocation.kind,
+      displayName: allocation.displayName,
+      createdAt: allocation.timestamp,
+      updatedAt: allocation.timestamp,
+    });
+    projects.set(project.projectId, project);
+    return project;
   };
   session.workspaceRegistry.get = async (lookupWorkspaceId: string) =>
     workspaces.get(lookupWorkspaceId) ?? null;
@@ -4889,7 +4953,7 @@ test("open_project_request reclassifies an active directory workspace when git m
   expect(workspaces.get(workspaceId)?.projectId).toBe(cwd);
 });
 
-test("open_project_request gives a plain git worktree its own exact-root project", async () => {
+test("open_project_request groups a plain git worktree under its main checkout's project", async () => {
   const emitted: SessionOutboundMessage[] = [];
   const session = createSessionForWorkspaceTests();
   const projects = new Map<string, ReturnType<typeof createPersistedProjectRecord>>();
@@ -4936,6 +5000,22 @@ test("open_project_request gives a plain git worktree its own exact-root project
   ) => {
     projects.set(record.projectId, record);
   };
+  session.projectRegistry.getOrCreateActiveByRoot = async (allocation) => {
+    const existing = Array.from(projects.values()).find(
+      (project) => !project.archivedAt && project.rootPath === allocation.rootPath,
+    );
+    if (existing) return existing;
+    const project = createPersistedProjectRecord({
+      projectId: `prj_${projects.size.toString().padStart(16, "0")}`,
+      rootPath: allocation.rootPath,
+      kind: allocation.kind,
+      displayName: allocation.displayName,
+      createdAt: allocation.timestamp,
+      updatedAt: allocation.timestamp,
+    });
+    projects.set(project.projectId, project);
+    return project;
+  };
   session.workspaceRegistry.get = async (lookupWorkspaceId: string) =>
     workspaces.get(lookupWorkspaceId) ?? null;
   session.workspaceRegistry.upsert = async (
@@ -4975,11 +5055,14 @@ test("open_project_request gives a plain git worktree its own exact-root project
   const response = findByType(emitted, "open_project_response");
 
   expect(response?.payload.error).toBeNull();
-  expect(response?.payload.workspace?.projectId).toMatch(/^prj_[0-9a-f]{16}$/);
+  // A worktree is a workspace, not a separate project (commit 026096a2): its
+  // main checkout's already-registered project is reused, even for a plain
+  // (non-Frogg-owned) git worktree.
+  expect(response?.payload.workspace?.projectId).toBe(repoRoot);
   const worktreeWorkspace = Array.from(workspaces.values()).find(
     (workspace) => workspace.cwd === cwd,
   );
-  expect(worktreeWorkspace?.projectId).toMatch(/^prj_[0-9a-f]{16}$/);
+  expect(worktreeWorkspace?.projectId).toBe(repoRoot);
 });
 
 test("open_project_request keeps archived records and allocates a fresh workspace", async () => {
@@ -5024,6 +5107,22 @@ test("open_project_request keeps archived records and allocates a fresh workspac
     record: ReturnType<typeof createPersistedProjectRecord>,
   ) => {
     projects.set(record.projectId, record);
+  };
+  session.projectRegistry.getOrCreateActiveByRoot = async (allocation) => {
+    const existing = Array.from(projects.values()).find(
+      (project) => !project.archivedAt && project.rootPath === allocation.rootPath,
+    );
+    if (existing) return existing;
+    const project = createPersistedProjectRecord({
+      projectId: `prj_${projects.size.toString().padStart(16, "0")}`,
+      rootPath: allocation.rootPath,
+      kind: allocation.kind,
+      displayName: allocation.displayName,
+      createdAt: allocation.timestamp,
+      updatedAt: allocation.timestamp,
+    });
+    projects.set(project.projectId, project);
+    return project;
   };
   session.workspaceRegistry.get = async (lookupWorkspaceId: string) =>
     workspaces.get(lookupWorkspaceId) ?? null;
@@ -5079,6 +5178,22 @@ test("open_project_request does not repurpose an orphaned archived workspace", a
     record: ReturnType<typeof createPersistedProjectRecord>,
   ) => {
     projects.set(record.projectId, record);
+  };
+  session.projectRegistry.getOrCreateActiveByRoot = async (allocation) => {
+    const existing = Array.from(projects.values()).find(
+      (project) => !project.archivedAt && project.rootPath === allocation.rootPath,
+    );
+    if (existing) return existing;
+    const project = createPersistedProjectRecord({
+      projectId: `prj_${projects.size.toString().padStart(16, "0")}`,
+      rootPath: allocation.rootPath,
+      kind: allocation.kind,
+      displayName: allocation.displayName,
+      createdAt: allocation.timestamp,
+      updatedAt: allocation.timestamp,
+    });
+    projects.set(project.projectId, project);
+    return project;
   };
   session.workspaceRegistry.get = async (lookupWorkspaceId: string) =>
     workspaces.get(lookupWorkspaceId) ?? null;
@@ -9123,8 +9238,28 @@ test("checkout.rename_branch.request renames the branch without a denormalized b
 test("workspace.create.response persists the first prompt as the initial title", async () => {
   const emitted: SessionOutboundMessage[] = [];
   const workspaces = new Map<string, ReturnType<typeof createPersistedWorkspaceRecord>>();
+  // Workspace creation is an implicit cwd use, not an explicit project
+  // registration (commit 026096a2), so REPO_CWD's project must already exist.
+  const repoProject = createPersistedProjectRecord({
+    projectId: "proj-repo-cwd",
+    rootPath: REPO_CWD,
+    kind: "non_git",
+    displayName: "repo",
+    createdAt: "2026-03-01T12:00:00.000Z",
+    updatedAt: "2026-03-01T12:00:00.000Z",
+  });
   const session = createSessionForWorkspaceTests({
     onMessage: (message) => emitted.push(message),
+    projectRegistry: {
+      initialize: async () => {},
+      existsOnDisk: async () => true,
+      list: async () => [repoProject],
+      get: async (projectId: string) => (projectId === repoProject.projectId ? repoProject : null),
+      getOrCreateActiveByRoot: async () => repoProject,
+      upsert: async () => {},
+      archive: async () => {},
+      remove: async () => {},
+    },
     workspaceRegistry: {
       initialize: async () => {},
       existsOnDisk: async () => true,
@@ -9164,8 +9299,28 @@ test("workspace create emits through a matching workspace subscription", async (
   const emitted: SessionOutboundMessage[] = [];
   const workspaces = new Map<string, ReturnType<typeof createPersistedWorkspaceRecord>>();
   let mutationListener: ((mutation: WorkspaceMutation) => void | Promise<void>) | null = null;
+  // Workspace creation is an implicit cwd use, not an explicit project
+  // registration (commit 026096a2), so REPO_CWD's project must already exist.
+  const repoProject = createPersistedProjectRecord({
+    projectId: "proj-repo-cwd",
+    rootPath: REPO_CWD,
+    kind: "non_git",
+    displayName: "repo",
+    createdAt: "2026-03-01T12:00:00.000Z",
+    updatedAt: "2026-03-01T12:00:00.000Z",
+  });
   const session = createSessionForWorkspaceTests({
     onMessage: (message) => emitted.push(message),
+    projectRegistry: {
+      initialize: async () => {},
+      existsOnDisk: async () => true,
+      list: async () => [repoProject],
+      get: async (projectId: string) => (projectId === repoProject.projectId ? repoProject : null),
+      getOrCreateActiveByRoot: async () => repoProject,
+      upsert: async () => {},
+      archive: async () => {},
+      remove: async () => {},
+    },
     workspaceRegistry: {
       initialize: async () => {},
       existsOnDisk: async () => true,

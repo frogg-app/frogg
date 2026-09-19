@@ -38,12 +38,12 @@ test("packagePortableWindows lays out the portable folder and README", () => {
     exePath,
     outputDir: path.join(dir, "out"),
   });
-  assert.equal(path.basename(result.zipPath), "Frogg-1.2.3-win-x64-portable.zip");
+  assert.equal(path.basename(result.zipPath), "frogg-1.2.3-win-x64-portable.zip");
   assert.equal(result.exeByteSize, 1024);
   const entries = listZip(readFileSync(result.zipPath));
   assert.deepEqual(
     entries.map((entry) => entry.name),
-    ["Frogg-1.2.3-portable/Frogg.exe", "Frogg-1.2.3-portable/README.txt"],
+    ["frogg-1.2.3-portable/Frogg.exe", "frogg-1.2.3-portable/README.txt"],
   );
   assert.equal(entries[1].size, Buffer.byteLength(buildReadme("1.2.3")));
   assert.match(buildReadme("1.2.3"), /WebView2/);
@@ -73,10 +73,10 @@ test("packageWindowsInstallerZip wraps the NSIS installer under its release name
     nsisDir,
     outputDir: path.join(dir, "out"),
   });
-  assert.equal(path.basename(result.zipPath), "Frogg-1.2.3-win-x64-setup.zip");
+  assert.equal(path.basename(result.zipPath), "frogg-1.2.3-win-x64-setup.zip");
   assert.equal(result.installerByteSize, 2048);
   assert.deepEqual(listZip(readFileSync(result.zipPath)), [
-    { name: "Frogg-1.2.3-win-x64-setup.exe", size: 2048 },
+    { name: "frogg-1.2.3-win-x64-setup.exe", size: 2048 },
   ]);
 });
 
@@ -98,7 +98,7 @@ test("packageWindowsInstallerZip picks this version, else demands exactly one", 
   });
   assert.equal(result.installerByteSize, 1);
   assert.deepEqual(listZip(readFileSync(result.zipPath)), [
-    { name: "Frogg-1.2.3-win-x64-setup.exe", size: 1 },
+    { name: "frogg-1.2.3-win-x64-setup.exe", size: 1 },
   ]);
   // Nothing matches the version being packaged and there is more than one left.
   assert.throws(
