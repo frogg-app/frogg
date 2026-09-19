@@ -1,3 +1,4 @@
+import { brandIdentity } from "@frogg/branding";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   DaemonClient,
@@ -890,6 +891,43 @@ describe("HostRuntimeController", () => {
     expect(snapshot.connectionStatus).toBe("online");
     expect(snapshot.client).toBe(initialClient);
     expect(activeClient.isDisposed()).toBe(false);
+  });
+
+  it.each([
+    {
+      name: "another product",
+      brand: { id: "fde", name: "FDE", applicationId: "app.fde" },
+      adopts: false,
+    },
+    { name: "this product", brand: brandIdentity, adopts: true },
+  ])("a local placeholder adopts a probed serverId only from $name", async ({ brand, adopts }) => {
+    const direct: HostConnection = {
+      id: "direct:127.0.0.1:9999",
+      type: "directTcp",
+      endpoint: "127.0.0.1:9999",
+    };
+    const reconciled: Array<[string, string]> = [];
+    const controller = new HostRuntimeController({
+      host: makeHost({
+        serverId: "local:127.0.0.1:9999",
+        connections: [direct],
+        preferredConnectionId: direct.id,
+      }),
+      deps: {
+        createClient: () => new FakeDaemonClient() as unknown as DaemonClient,
+        connectToDaemon: async () => ({
+          client: makeConnectedProbeClient(5) as unknown as DaemonClient,
+          serverId: "srv_first_answer",
+          hostname: "box",
+          brand,
+        }),
+        getClientId: async () => "cid_test_runtime",
+      },
+      onReconcileServerId: (oldId, newId) => reconciled.push([oldId, newId]),
+    });
+    await controller.runProbeCycleNow();
+    expect(reconciled).toEqual(adopts ? [["local:127.0.0.1:9999", "srv_first_answer"]] : []);
+    await controller.stop?.();
   });
 
   it("does not mark the live connection unavailable before its first heartbeat resolves", async () => {

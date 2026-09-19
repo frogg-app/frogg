@@ -1,6 +1,7 @@
 import { getSharedRuntime } from "./shared-runtime";
 import { describeHostConnectionError } from "./host-connection-error";
-import { brand } from "@frogg/branding";
+import { brand, brandIdentity } from "@frogg/branding";
+import { matchesBrand } from "@frogg/branding/identity";
 import { useSyncExternalStore, useMemo } from "react";
 import AsyncStorage from "@/storage/brand-storage";
 import equal from "fast-deep-equal/es6";
@@ -183,6 +184,8 @@ export interface HostRuntimeControllerDeps {
     client: DaemonClient;
     serverId: string;
     hostname: string | null;
+    /** `server_info.brand`; absent on daemons older than the brand split. */
+    brand?: unknown;
   }>;
   getClientId: () => Promise<string>;
   /** Redeems a v3 claim offer; defaults to the HTTP client in `@/pairing/claim-offer`. */
@@ -1020,15 +1023,25 @@ export class HostRuntimeController {
             if (activeClient) {
               connectedClient = activeClient;
             } else {
-              const { client, serverId } = await this.deps.connectToDaemon({
+              const {
+                client,
+                serverId,
+                brand: serverBrand,
+              } = await this.deps.connectToDaemon({
                 host: this.host,
                 connection,
               });
               if (serverId !== this.host.serverId) {
-                if (isPlaceholderServerId(this.host.serverId) && this.onReconcileServerId) {
+                if (
+                  isPlaceholderServerId(this.host.serverId) &&
+                  this.onReconcileServerId &&
+                  matchesBrand(brandIdentity, serverBrand)
+                ) {
                   this.onReconcileServerId(this.host.serverId, serverId);
                 } else {
                   await client.close().catch(() => undefined);
+                  // A placeholder only adopts a daemon of this app's own
+                  // product; another product answering first is never pinned.
                   throw new Error(
                     `Connection resolved to ${serverId}, expected ${this.host.serverId}.`,
                   );
