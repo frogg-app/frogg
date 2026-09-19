@@ -14,19 +14,26 @@ export { resolveWorkspaceAccountAgent } from "./model";
 /**
  * COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
  *
- * The account glyph on a workspace row, for providers the user has signed into more than
- * once. Icon only: the row's trailing slot already belongs to the diff stat or the
- * timestamp, so the name lives in the tooltip and this sits beside the title instead.
+ * The account a workspace row runs as, for providers the user has signed into more than
+ * once. It sits at the right end of the row, after the diff stat or timestamp.
+ *
+ * Only for a session that is one agent. Once the row owns sub-rows — subagents, or several
+ * tabs — the account belongs to each of those individually and is rendered there instead,
+ * because a single line cannot honestly name the account for several agents at once. What
+ * stays at session level is the diff stat, which really is a property of the whole session.
  *
  * Renders nothing — and runs no snapshot query — for a workspace with no agent, which is
  * why the fetching half is a separate component below.
  */
 export function SidebarWorkspaceAccountIndicator({ serverId }: { serverId: string }) {
-  const { roots } = useWorkspaceAgentTree();
+  const { roots, nodes } = useWorkspaceAgentTree();
   const accountAgent = useMemo(() => resolveWorkspaceAccountAgent(roots), [roots]);
+  // `nodes` is exactly what the disclosure chevron renders rows for, so this hides the
+  // session-level account precisely when per-agent ones appear below it.
+  if (nodes.length > 0) return null;
   if (!accountAgent) return null;
   return (
-    <ResolvedAccountIndicator
+    <SidebarAgentAccountIndicator
       serverId={serverId}
       provider={accountAgent.provider}
       providerAccountId={accountAgent.providerAccountId}
@@ -34,7 +41,11 @@ export function SidebarWorkspaceAccountIndicator({ serverId }: { serverId: strin
   );
 }
 
-function ResolvedAccountIndicator({
+/**
+ * The account glyph and name for one agent. Used at session level for a single-agent
+ * session, and on each sub-row once a session has more than one.
+ */
+export function SidebarAgentAccountIndicator({
   serverId,
   provider,
   providerAccountId,
@@ -77,6 +88,9 @@ function ResolvedAccountIndicator({
           testID="sidebar-workspace-account"
         >
           <Icon size={12} color={color} />
+          <Text style={styles.name} numberOfLines={1}>
+            {model.displayLabel}
+          </Text>
         </View>
       </TooltipTrigger>
       <TooltipContent side="top" align="center" offset={8}>
@@ -90,9 +104,21 @@ const styles = StyleSheet.create((theme) => ({
   // Matches the trailing slot's line box so the glyph sits on the title's baseline row.
   indicator: {
     height: 20,
-    flexShrink: 0,
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
+    gap: 3,
+    // Shrinkable, unlike the rest of the right-hand rail: the account name is the one
+    // element here that has no bound, so it gives way before the diff stat is squeezed.
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  name: {
+    color: theme.colors.foregroundExtraMuted,
+    fontSize: theme.fontSize.sm,
+    lineHeight: 20,
+    flexShrink: 1,
+    minWidth: 0,
   },
   // Icon tints are read off the stylesheet rather than `useUnistyles`, which the lint rule
   // bans, because lucide takes a `color` prop and not a style.

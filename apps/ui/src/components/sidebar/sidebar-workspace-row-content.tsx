@@ -176,8 +176,10 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
               {workspaceLabel}
             </Text>
             <View style={sidebarWorkspaceRowStyles.rowRight}>
-              <SidebarWorkspaceAccountIndicator serverId={workspace.serverId} />
               {children}
+              {/* After the diff stat: the account is the row's right-most piece of
+                  information, with only the disclosure control beyond it. */}
+              <SidebarWorkspaceAccountIndicator serverId={workspace.serverId} />
               <WorkspaceAgentDisclosure label={workspaceLabel} />
             </View>
           </View>
@@ -308,7 +310,10 @@ export const sidebarWorkspaceRowStyles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: theme.spacing[2],
-    flexShrink: 0,
+    // Shrinkable so the account name can give way on a narrow sidebar. Everything else in
+    // here sets `flexShrink: 0`, so the name is the only thing that actually compresses.
+    flexShrink: 1,
+    minWidth: 0,
   },
   shortcutBadge: {
     minWidth: 18,

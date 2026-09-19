@@ -7,6 +7,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { getProviderIcon } from "@/components/provider-icons";
+import { SidebarAgentAccountIndicator } from "@/components/sidebar/workspace-account";
 import { WorkspaceTabIcon } from "@/screens/workspace/workspace-tab-presentation";
 import { deriveSidebarStateBucket } from "@/utils/sidebar-agent-state";
 import { buildSubagentRowPresentationData } from "@/subagents/track-presentation";
@@ -183,6 +184,15 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
             ) : null}
           </View>
           {hasChildren ? <Text style={styles.detail}>{node.children.length}</Text> : null}
+          {/* Per-agent, because once a session has sub-rows the session line cannot name
+              one account for all of them. See SidebarWorkspaceAccountIndicator. */}
+          {node.row.kind === "frogg" ? (
+            <SidebarAgentAccountIndicator
+              serverId={node.serverId}
+              provider={node.row.provider}
+              providerAccountId={node.providerAccountId}
+            />
+          ) : null}
         </Pressable>
         {canExpand ? (
           <Button
