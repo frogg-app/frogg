@@ -34,7 +34,13 @@ vi.hoisted(() => {
 
 // This test mounts sidebar rows; full pane registration pulls native Markdown into jsdom.
 vi.mock("@/panels/register-panels", () => ({ ensurePanelsRegistered() {} }));
-vi.mock("@/components/sidebar/workspace-account", () => ({ SidebarAccountIndicator: () => null }));
+vi.mock("@/components/sidebar/workspace-account", async () => {
+  const { createElement } = await import("react");
+  return {
+    SidebarAccountIndicator: () =>
+      createElement("span", { "data-testid": "sidebar-workspace-account" }, "work"),
+  };
+});
 vi.mock("expo-router", () => ({
   useLocalSearchParams: () => ({}),
   usePathname: () => "/",
@@ -126,6 +132,28 @@ describe("sidebar subagent interaction", () => {
     const name = screen.getByText("Fix pr27");
     expect(name.style.flexShrink).toBe("1");
     expect(name.style.flexBasis).not.toBe("0px");
+  });
+
+  it("puts the account right-most on the row, with other metadata to its left", () => {
+    render(
+      <I18nextProvider i18n={i18n}>
+        <SidebarAgentBranch
+          node={parent}
+          discovery={new Map()}
+          connectionStatus="online"
+          selectedTarget={null}
+          onOpen={vi.fn()}
+        />
+      </I18nextProvider>,
+    );
+    const row = screen.getByTestId("sidebar-agent-frogg-parent");
+    const count = screen.getByTestId("sidebar-agent-child-count-parent");
+    const account = row.querySelector('[data-testid="sidebar-workspace-account"]');
+    expect(account).not.toBeNull();
+    expect(row.contains(count)).toBe(true);
+    // DOCUMENT_POSITION_FOLLOWING: the account comes after (to the right of) the count.
+    expect(count.compareDocumentPosition(account!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(row.lastElementChild).toBe(account);
   });
 
   it("opens the child's own runtime and preserves the tree when collapsing and reopening", () => {
