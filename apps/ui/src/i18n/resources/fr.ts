@@ -1195,7 +1195,6 @@ export const fr: TranslationResources = {
         checks: "Vérifications",
         services: "Services",
         labels: "Libellés",
-        ci: "CI progress",
         diff: "Statistiques de diff",
         timestamp: "Dernière activité",
       },

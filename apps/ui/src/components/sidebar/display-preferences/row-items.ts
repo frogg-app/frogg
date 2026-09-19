@@ -19,8 +19,6 @@ export const SIDEBAR_ROW_ITEMS = [
   "changeRequest",
   "services",
   "labels",
-  // DESIGN PROTOTYPE: CI run progress bars under the row.
-  "ci",
 ] as const;
 
 export type SidebarRowItem = (typeof SIDEBAR_ROW_ITEMS)[number];
@@ -35,7 +33,6 @@ export const DEFAULT_SIDEBAR_ROW_ITEMS: SidebarRowItems = {
   changeRequest: true,
   services: true,
   labels: true,
-  ci: true,
 };
 
 /**

@@ -1178,7 +1178,6 @@ export const ru: TranslationResources = {
         checks: "Проверки",
         services: "Сервисы",
         labels: "Метки",
-        ci: "CI progress",
         diff: "Статистика изменений",
         timestamp: "Последняя активность",
       },

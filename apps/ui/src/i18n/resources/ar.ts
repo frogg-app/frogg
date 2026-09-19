@@ -1160,7 +1160,6 @@ export const ar: TranslationResources = {
         checks: "الفحوصات",
         services: "الخدمات",
         labels: "التسميات",
-        ci: "CI progress",
         diff: "إحصائيات الفروق",
         timestamp: "آخر نشاط",
       },

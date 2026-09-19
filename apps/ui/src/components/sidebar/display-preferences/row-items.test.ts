@@ -14,7 +14,6 @@ describe("parseSidebarRowItems", () => {
       changeRequest: true,
       services: true,
       labels: true,
-      ci: true,
     });
   });
 
