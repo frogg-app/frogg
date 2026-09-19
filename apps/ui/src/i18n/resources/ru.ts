@@ -280,7 +280,9 @@ export const ru: TranslationResources = {
   },
   sessions: {
     title: "История",
+    projectTitle: "История проекта {{project}}",
     empty: "Сессий пока нет",
+    emptyForProject: "В этом проекте пока нет сессий",
     noMatches: "Подходящих сессий не найдено",
     tooManyMatches: "Слишком много совпадений — уточните запрос",
     hostLoadFailed: "{{host}}: не удалось загрузить историю",

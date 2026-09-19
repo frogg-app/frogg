@@ -281,7 +281,9 @@ export const ja: TranslationResources = {
   },
   sessions: {
     title: "履歴",
+    projectTitle: "{{project}} の履歴",
     empty: "セッションがまだありません",
+    emptyForProject: "このプロジェクトにはまだセッションがありません",
     noMatches: "一致するセッションはありません",
     tooManyMatches: "一致が多すぎます — 検索条件を絞ってください",
     hostLoadFailed: "{{host}}: 履歴を読み込めませんでした",

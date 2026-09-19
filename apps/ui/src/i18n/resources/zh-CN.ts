@@ -278,7 +278,9 @@ export const zhCN: TranslationResources = {
   },
   sessions: {
     title: "历史",
+    projectTitle: "{{project}} 历史",
     empty: "还没有会话",
+    emptyForProject: "该项目还没有会话",
     noMatches: "没有匹配的会话",
     tooManyMatches: "匹配过多 — 请缩小搜索范围",
     hostLoadFailed: "{{host}}：无法加载历史",

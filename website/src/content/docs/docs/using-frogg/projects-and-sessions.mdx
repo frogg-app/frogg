@@ -168,6 +168,11 @@ after updating from a version without sorting; your saved drag order is kept for
 - Sessions can be renamed (`frogg workspace rename`) and labelled in the app.
 - Archived agents and sessions disappear from the sidebar but keep their history.
   `frogg agent ls -a` includes archived agents.
+- **History** in the menu lists every session across all connected hosts, archived ones
+  included. A project's menu has **Show archived sessions**, which opens the same list
+  scoped to that one project on its own host: the header names the project, the host
+  filter is not shown because the view is already tied to one host, and search still
+  works within the scope.
 
 ## Merge handover
 

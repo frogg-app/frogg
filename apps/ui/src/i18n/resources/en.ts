@@ -277,7 +277,9 @@ export const en = {
   },
   sessions: {
     title: "History",
+    projectTitle: "{{project}} history",
     empty: "No sessions yet",
+    emptyForProject: "No sessions yet for this project",
     noMatches: "No sessions match",
     tooManyMatches: "Too many matches — narrow your search",
     hostLoadFailed: "{{host}}: Could not load history",

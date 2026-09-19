@@ -64,6 +64,14 @@ export function agentHistoryRowKey(agent: { serverId: string; id: string }): str
 export type AgentHistoryClient = Pick<DaemonClient, "fetchAgentHistory">;
 
 /**
+ * Structural narrowing the daemon applies to the request, as opposed to
+ * `search`, which it ranks. A project-scoped archive view is exactly this: that
+ * project's key plus `includeArchived`, so one history endpoint answers both
+ * the app-wide screen and a single project's archive.
+ */
+export type AgentHistoryFilter = NonNullable<FetchAgentHistoryOptions["filter"]>;
+
+/**
  * A host that could not be reached while at least one other could. Its sessions
  * are missing from the list, which under a query means "no matches" would be a
  * claim the app cannot make.
@@ -99,8 +107,10 @@ export async function fetchAgentHistoryPage(input: {
   serverId: string;
   cursor: string | null;
   search?: string;
+  filter?: AgentHistoryFilter;
 }): Promise<AgentHistoryPage> {
   const payload = await input.client.fetchAgentHistory({
+    ...(input.filter ? { filter: input.filter } : {}),
     ...(input.search ? { search: input.search } : {}),
     sort: AGENT_HISTORY_SORT,
     page: input.cursor
@@ -221,6 +231,7 @@ export async function fetchAgentHistoryBatch(input: {
   hosts: readonly AgentHistoryHost[];
   cursorByServerId: AgentHistoryCursorByServerId | null;
   search?: string;
+  filter?: AgentHistoryFilter;
 }): Promise<AgentHistoryBatchPage> {
   const cursorByServerId = input.cursorByServerId ?? {};
   const hasCursorFilter = Object.keys(cursorByServerId).length > 0;
@@ -235,6 +246,7 @@ export async function fetchAgentHistoryBatch(input: {
         serverId: host.serverId,
         cursor: cursorByServerId[host.serverId] ?? null,
         ...(input.search ? { search: input.search } : {}),
+        ...(input.filter ? { filter: input.filter } : {}),
       });
       return { host, page };
     }),
@@ -295,6 +307,8 @@ export function useAgentHistory(options: {
   serverId?: string | null;
   enabled?: boolean;
   search?: string;
+  /** Structural narrowing sent to every target host, e.g. one project's key. */
+  filter?: AgentHistoryFilter;
 }): AgentHistoryResult {
   const { t } = useTranslation();
   const daemons = useHosts();
@@ -351,12 +365,26 @@ export function useAgentHistory(options: {
     const trimmed = options.search?.trim() ?? "";
     return isSearchSupported ? trimmed : "";
   }, [isSearchSupported, options.search]);
+  // A caller rebuilding its filter object each render must not restart the
+  // query, so the serialized form is both the cache key and the identity the
+  // request is derived from.
+  const filterKey = useMemo(
+    () => (options.filter ? JSON.stringify(options.filter) : null),
+    [options.filter],
+  );
+  const filter = useMemo(
+    () => (filterKey === null ? undefined : (JSON.parse(filterKey) as AgentHistoryFilter)),
+    [filterKey],
+  );
   const queryKey = useMemo(
     () => [
       ...(serverId ? agentHistoryQueryKey(serverId) : allAgentHistoryQueryKey(targetServerIds)),
       search,
+      // The filter changes which sessions come back, so two filters are two
+      // result sets and must not share one cache entry.
+      filterKey,
     ],
-    [search, serverId, targetServerIds],
+    [filterKey, search, serverId, targetServerIds],
   );
   const serverLabelById = useMemo(
     () => new Map(daemons.map((daemon) => [daemon.serverId, daemon.label])),
@@ -383,6 +411,7 @@ export function useAgentHistory(options: {
         hosts: targetHosts,
         cursorByServerId: pageParam,
         ...(search ? { search } : {}),
+        ...(filter ? { filter } : {}),
       });
     },
   });

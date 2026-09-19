@@ -279,7 +279,9 @@ export const ko: TranslationResources = {
   },
   sessions: {
     title: "기록",
+    projectTitle: "{{project}} 기록",
     empty: "아직 세션이 없습니다",
+    emptyForProject: "이 프로젝트에는 아직 세션이 없습니다",
     noMatches: "일치하는 세션이 없습니다",
     tooManyMatches: "일치 항목이 너무 많습니다 — 검색 범위를 좁히세요",
     hostLoadFailed: "{{host}}: 기록을 불러오지 못했습니다",
