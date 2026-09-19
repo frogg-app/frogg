@@ -96,6 +96,9 @@ describe("sidebar subagent interaction", () => {
         ...child.row,
         title: "Fix pr27",
         description: longDescription,
+        // No provider subtitle, so the description is the whole second part of the row rather
+        // than being joined with it ("… · Codex worker").
+        subtitle: null,
       } as SidebarAgentNode["row"],
     };
     // eslint-disable-next-line eslint-plugin-react-perf/jsx-no-new-object-as-prop
@@ -112,7 +115,17 @@ describe("sidebar subagent interaction", () => {
       </I18nextProvider>,
     );
     expect(screen.getByRole("button", { name: "Fix pr27" })).toBeTruthy();
-    expect(screen.getByText(longDescription)).toHaveAttribute("numberOfLines", "1");
+    // Single-line and ellipsized (react-native-web renders `numberOfLines={1}` as nowrap +
+    // text-overflow classes, not as an attribute), and it takes only the width the name leaves.
+    const description = screen.getByText(longDescription);
+    expect(description.className).toContain("r-textOverflow");
+    expect(description.className).toContain("r-whiteSpace");
+    expect(description.style.flexBasis).toBe("0px");
+    expect(description.style.minWidth).toBe("0px");
+    // The name shrinks only after the description has given up its width.
+    const name = screen.getByText("Fix pr27");
+    expect(name.style.flexShrink).toBe("1");
+    expect(name.style.flexBasis).not.toBe("0px");
   });
 
   it("opens the child's own runtime and preserves the tree when collapsing and reopening", () => {
