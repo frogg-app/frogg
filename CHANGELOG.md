@@ -1,5 +1,25 @@
 # Changelog
 
+## 1.5.4 — 2026-09-19
+
+- The sidebar list is headed "Projects", translated in every bundled
+  language, since each row is a project with its sessions nested underneath.
+- Workspaces are called sessions everywhere they are shown: the sidebar's
+  "New session", menus, the command center, settings and the docs. The
+  projects-and-workspaces docs page is now projects-and-sessions, with a
+  redirect from the old address. Importing history from CLI tools now talks
+  about conversations. Routes, config keys, the daemon protocol and CLI flags
+  keep the old names, so links and stored state are unaffected.
+- The pill row above the composer lines up with the composer's left edge on
+  wide panes.
+- A running agent's account is shown as a pill above the composer instead of
+  a greyed-out control in the toolbar, including when the provider has only
+  one account.
+- The desktop top bar is draggable across its whole width, not only by the
+  title.
+- Contributors can run `npm run preview` for a hot-reloading UI with demo data
+  and `npm run shot` to screenshot any screen of it.
+
 ## 1.5.3 — 2026-09-18
 
 - Carries everything listed under 1.5.1 and 1.5.2, neither of which was
