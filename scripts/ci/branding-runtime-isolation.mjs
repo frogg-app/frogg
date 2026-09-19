@@ -67,9 +67,12 @@ try {
         CLAUDE_CONFIG_DIR: path.join(home, ".claude"),
         XDG_CONFIG_HOME: path.join(home, ".config"),
         XDG_DATA_HOME: path.join(home, ".local/share"),
-        FROGG_DICTATION_ENABLED: "false",
-        FROGG_VOICE_MODE_ENABLED: "false",
-        FROGG_COMPANION_ENABLED: "false",
+        // Branded builds only honor their own `${envPrefix}_...` namespace and
+        // strip the literal FROGG_ keys (see normalizeBrandEnvironment), so
+        // these must be set per-product rather than hardcoded to FROGG_.
+        [`${id.toUpperCase()}_DICTATION_ENABLED`]: "false",
+        [`${id.toUpperCase()}_VOICE_MODE_ENABLED`]: "false",
+        [`${id.toUpperCase()}_COMPANION_ENABLED`]: "false",
       },
     };
     product.log = createWriteStream(path.join(output, `${id}.log`));
