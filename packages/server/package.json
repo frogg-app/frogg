@@ -72,7 +72,7 @@
     "@agentclientprotocol/sdk": "^0.17.1",
     "@anthropic-ai/claude-agent-sdk": "0.3.263",
     "@anthropic-ai/sdk": "^0.124.0",
-    "@babel/parser": "^7.29.8",
+    "@babel/parser": "^8.0.5",
     "@frogg/branding": "1.5.8",
     "@frogg/client": "1.5.8",
     "@frogg/highlight": "1.5.8",
