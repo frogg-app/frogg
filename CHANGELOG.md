@@ -75,6 +75,11 @@
   keeps retrying until the host's own daemon is back. The host page shows why,
   in the app's language, right under the host's status. A local placeholder
   host now only adopts the server id of a daemon of this app's own product.
+- The pull request panel's checks list is no longer capped at eight rows with a
+  scroll area of its own. Checks and activity each take the height their content
+  needs and the panel scrolls as one, so on a phone the checks are readable
+  instead of clipped above an activity section holding the empty rest of the
+  screen. Collapsing either section gives its space back to the other.
 
 ## 1.5.7 — 2026-09-19
 
