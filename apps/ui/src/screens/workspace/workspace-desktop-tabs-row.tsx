@@ -561,6 +561,9 @@ function getFallbackTabLabel(
   if (tab.target.kind === "pull_request") {
     return labels.pullRequest;
   }
+  if (tab.target.kind === "ci_runs") {
+    return "CI";
+  }
   return labels.agent;
 }
 

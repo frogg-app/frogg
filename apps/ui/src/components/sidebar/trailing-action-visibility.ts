@@ -22,7 +22,7 @@ export function hasSidebarWorkspaceTrailing({
  * into each of them and immediately drifted — one call site kept hiding the diff after the
  * others stopped.
  *
- * Right to left the cluster is: the actions column (kebab, or the Alt rail), the account,
+ * Right to left the cluster is: the actions column (kebab, or the Control rail), the account,
  * then the diff stat or timestamp. The kebab has a column of its own, so it never sits on top
  * of the metadata; only the wider rail does, over a scrim that fades what is under it.
  */
@@ -30,14 +30,12 @@ function resolveShowQuickActions(input: {
   quickActionsModifierDown: boolean;
   targeted: boolean;
   hasArchiveAction: boolean;
-  showShortcut: boolean;
   isTouchPlatform: boolean;
 }): boolean {
   return (
     input.quickActionsModifierDown &&
     input.targeted &&
     input.hasArchiveAction &&
-    !input.showShortcut &&
     !input.isTouchPlatform
   );
 }
@@ -60,7 +58,7 @@ export function resolveTrailingActionVisibility({
   showShortcut: boolean;
   /** Whether this is the row the sidebar currently has open. */
   selected?: boolean;
-  /** Alt is held. Whether that reaches this particular row is decided below. */
+  /** Control is held. Whether that reaches this particular row is decided below. */
   quickActionsModifierDown?: boolean;
 }): {
   showTrailing: boolean;
@@ -71,8 +69,10 @@ export function resolveTrailingActionVisibility({
   showActionsColumn: boolean;
 } {
   const hasTrailing = hasSidebarWorkspaceTrailing({ workspace, trailing });
-  // The rail is the kebab expanded, so it needs the same actions the kebab would have opened,
-  // and it yields to the number badges outright — one modifier, one meaning.
+  // The rail is the kebab expanded, so it needs the same actions the kebab would have opened.
+  // It coexists with the workspace-jump number badge rather than replacing it: the badge keeps
+  // the row's right edge and the rail is offset to start left of it, so holding Control still
+  // advertises the quick-swap key.
   //
   // Only the selected row and the hovered row get it. Every row at once would be a wall of
   // icons with no answer to "which session does this act on", and the two rows a user can
@@ -82,7 +82,6 @@ export function resolveTrailingActionVisibility({
     quickActionsModifierDown,
     targeted: selected || isHovered,
     hasArchiveAction,
-    showShortcut,
     isTouchPlatform,
   });
   const showKebab =

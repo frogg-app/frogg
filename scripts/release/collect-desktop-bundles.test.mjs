@@ -15,14 +15,14 @@ test("linux: deb and AppImage get dashed names, signatures follow", () => {
     ],
   });
   assert.deepEqual(renames, [
-    { from: "bundle/deb/FROGG_1.1.5_amd64.deb", to: "Frogg-1.1.5-linux-x86_64.deb" },
+    { from: "bundle/deb/FROGG_1.1.5_amd64.deb", to: "frogg-1.1.5-linux-x86_64.deb" },
     {
       from: "bundle/appimage/FROGG_1.1.5_amd64.AppImage",
-      to: "Frogg-1.1.5-linux-x86_64.AppImage",
+      to: "frogg-1.1.5-linux-x86_64.AppImage",
     },
     {
       from: "bundle/appimage/FROGG_1.1.5_amd64.AppImage.sig",
-      to: "Frogg-1.1.5-linux-x86_64.AppImage.sig",
+      to: "frogg-1.1.5-linux-x86_64.AppImage.sig",
     },
   ]);
 });
@@ -43,9 +43,9 @@ test("windows: installer zip with its signature, and the portable zip", () => {
   assert.deepEqual(
     renames.map((entry) => entry.to),
     [
-      "Frogg-1.1.5-win-x64-setup.zip",
-      "Frogg-1.1.5-win-x64-setup.zip.sig",
-      "Frogg-1.1.5-win-x64-portable.zip",
+      "frogg-1.1.5-win-x64-setup.zip",
+      "frogg-1.1.5-win-x64-setup.zip.sig",
+      "frogg-1.1.5-win-x64-portable.zip",
     ],
   );
 });
@@ -58,7 +58,7 @@ test("macos: arch comes from the caller; missing kinds are skipped", () => {
     files: ["bundle/dmg/FROGG_1.1.5_aarch64.dmg", "bundle/macos/Frogg.app"],
   });
   assert.deepEqual(renames, [
-    { from: "bundle/dmg/FROGG_1.1.5_aarch64.dmg", to: "Frogg-1.1.5-mac-aarch64.dmg" },
+    { from: "bundle/dmg/FROGG_1.1.5_aarch64.dmg", to: "frogg-1.1.5-mac-aarch64.dmg" },
   ]);
 });
 
@@ -77,11 +77,11 @@ test("older builds in the target dir do not make the rename ambiguous", () => {
   assert.deepEqual(renames, [
     {
       from: "bundle/nsis-zip/Frogg-1.1.18-x64-setup.zip",
-      to: "Frogg-1.1.18-win-x64-setup.zip",
+      to: "frogg-1.1.18-win-x64-setup.zip",
     },
     {
       from: "bundle/portable/Frogg-1.1.18-x64-portable.zip",
-      to: "Frogg-1.1.18-win-x64-portable.zip",
+      to: "frogg-1.1.18-win-x64-portable.zip",
     },
   ]);
 });
@@ -121,8 +121,8 @@ test("legacy desktop aliases keep matching checksums and identity metadata", asy
       releaseDir,
       outDir,
     });
-    const canonical = "Frogg-1.2.3-linux-x86_64.deb";
-    const legacy = "Frogg-1.2.3-amd64.deb";
+    const canonical = "frogg-1.2.3-linux-x86_64.deb";
+    const legacy = "frogg-1.2.3-amd64.deb";
     assert.deepEqual(
       await readFile(path.join(outDir, canonical)),
       await readFile(path.join(outDir, legacy)),

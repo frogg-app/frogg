@@ -2,6 +2,44 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "이 브랜치의 GitHub Actions 및 Jenkins 실행",
+    runCount_one: "실행 {{count}}개",
+    runCount_other: "실행 {{count}}개",
+    runningCount: "{{count}}개 실행 중",
+    refresh: "CI 새로 고침",
+    openRun: "실행 열기",
+    openLogs: "로그 열기",
+    unsupportedTitle: "데몬을 업데이트하세요",
+    unsupportedDescription: "이 호스트의 데몬이 오래되어 CI 실행을 표시할 수 없습니다.",
+    errorTitle: "CI를 불러오지 못했습니다",
+    noBranchTitle: "브랜치가 아닙니다",
+    noBranchDescription: "브랜치를 체크아웃하면 CI 실행을 볼 수 있습니다.",
+    notConfiguredTitle: "CI가 구성되지 않음",
+    notConfiguredDescription:
+      "GitHub 원격 저장소에는 GitHub Actions가 표시됩니다. Jenkins를 쓰려면 frogg.json에 ci.jenkins 항목을 추가하세요.",
+    emptyTitle: "CI 실행 없음",
+    emptyDescription: "{{branch}}에서 아직 실행된 항목이 없습니다.",
+    runners: "러너",
+    runnerSummary: "{{total}}개 중 {{busy}}개 사용 중",
+    queuedCount_one: "{{count}}개 대기 중",
+    queuedCount_other: "{{count}}개 대기 중",
+    noRunners: "아직 할당된 러너가 없습니다",
+    waitingForRunner: "러너 대기 중",
+    hosted: "호스팅",
+    selfHosted: "자체 호스팅",
+    idle: "유휴",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "대기 중",
+    },
+  },
+
   hostAdd: {
     title: "호스트 추가",
     connecting: "{{endpoint}} 추가 중…",
@@ -674,6 +712,7 @@ export const ko: TranslationResources = {
         toggle: "사이드 패널 토글",
         changes: "변경 사항",
         files: "파일",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "복사 실패",
@@ -2153,6 +2192,7 @@ export const ko: TranslationResources = {
     archiveAction: "{{label}} 보관",
     archiveTooltip: "서브에이전트 보관",
     archiveFinishedAction: "완료된 하위 에이전트 보관",
+    actionsMenu: "{{label}} 작업",
     archiveFinishedRetry: "다시 시도 ({{failed}}/{{total}})",
   },
   panels: {
@@ -3138,10 +3178,12 @@ export const ko: TranslationResources = {
           providerSignIn: "프로바이더 로그인",
           signedIn: "로그인됨",
           notSignedIn: "로그인되지 않음",
-          inUse: "사용 중",
+          isDefault: "기본값",
           signIn: "로그인",
           reauthenticate: "다시 로그인",
-          makeActive: "이 계정 사용",
+          makeDefault: "기본 계정으로 설정",
+          defaultAccountHint:
+            "이 호스트의 새 에이전트는 기본 계정으로 시작합니다. 로그인된 모든 계정을 동시에 사용할 수 있습니다.",
           signInHint: "로그인하면 이 호스트의 터미널에서 {{provider}}의 로그인이 실행됩니다.",
           usageTitle: "사용량",
           defaultsTitle: "새 에이전트 기본값",

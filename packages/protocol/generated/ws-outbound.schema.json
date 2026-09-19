@@ -33886,6 +33886,34 @@
                                     }
                                   },
                                   "additionalProperties": {}
+                                },
+                                "ci": {
+                                  "type": "object",
+                                  "properties": {
+                                    "githubActions": {
+                                      "type": "boolean"
+                                    },
+                                    "jenkins": {
+                                      "type": "object",
+                                      "properties": {
+                                        "url": {
+                                          "type": "string"
+                                        },
+                                        "job": {
+                                          "type": "string"
+                                        },
+                                        "multibranch": {
+                                          "type": "boolean"
+                                        }
+                                      },
+                                      "required": [
+                                        "url",
+                                        "job"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "additionalProperties": {}
                                 }
                               },
                               "additionalProperties": {}
@@ -34178,6 +34206,34 @@
                                     }
                                   },
                                   "additionalProperties": {}
+                                }
+                              },
+                              "additionalProperties": {}
+                            },
+                            "ci": {
+                              "type": "object",
+                              "properties": {
+                                "githubActions": {
+                                  "type": "boolean"
+                                },
+                                "jenkins": {
+                                  "type": "object",
+                                  "properties": {
+                                    "url": {
+                                      "type": "string"
+                                    },
+                                    "job": {
+                                      "type": "string"
+                                    },
+                                    "multibranch": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "url",
+                                    "job"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               },
                               "additionalProperties": {}
@@ -40213,6 +40269,273 @@
                     "cwd",
                     "enabled",
                     "success",
+                    "error",
+                    "requestId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "checkout.ci.list_runs.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "cwd": {
+                      "type": "string"
+                    },
+                    "branch": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "runs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "pipeline": {
+                            "type": "string"
+                          },
+                          "number": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "trigger": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "progress": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "startedAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "completedAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "url": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "jobs": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "status": {
+                                  "type": "string"
+                                },
+                                "progress": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                },
+                                "startedAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "completedAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "url": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "runner": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "hosted": {
+                                          "type": "boolean"
+                                        },
+                                        "labels": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string"
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "name",
+                                        "hosted",
+                                        "labels"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "steps": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "name": {
+                                        "type": "string"
+                                      },
+                                      "status": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "name",
+                                      "status"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "name",
+                                "status",
+                                "progress",
+                                "startedAt",
+                                "completedAt",
+                                "url",
+                                "runner",
+                                "steps"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "provider",
+                          "pipeline",
+                          "number",
+                          "trigger",
+                          "status",
+                          "progress",
+                          "startedAt",
+                          "completedAt",
+                          "url",
+                          "jobs"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "providerErrors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "message"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "NOT_GIT_REPO",
+                                "NOT_ALLOWED",
+                                "MERGE_CONFLICT",
+                                "UNKNOWN"
+                              ]
+                            },
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cwd",
+                    "branch",
+                    "runs",
+                    "providers",
+                    "providerErrors",
                     "error",
                     "requestId"
                   ],

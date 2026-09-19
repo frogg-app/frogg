@@ -340,6 +340,8 @@ pub enum SessionMessage {
     CheckoutPrMergeRequest(CheckoutPrMergeRequest),
     #[serde(rename = "checkout.forge.set_auto_merge.request")]
     CheckoutForgeSetAutoMergeRequest(CheckoutForgeSetAutoMergeRequest),
+    #[serde(rename = "checkout.ci.list_runs.request")]
+    CheckoutCiListRunsRequest(CheckoutCiListRunsRequest),
     #[serde(rename = "checkout.github.set_auto_merge.request")]
     CheckoutGithubSetAutoMergeRequest(CheckoutGithubSetAutoMergeRequest),
     #[serde(rename = "checkout.commits.list.request")]
@@ -1740,6 +1742,8 @@ pub struct WriteProjectConfigRequestConfig {
     pub scripts: Option<serde_json::Value>,
     #[serde(rename = "metadataGeneration", skip_serializing_if = "Option::is_none")]
     pub metadata_generation: Option<WriteProjectConfigRequestConfigMetadataGeneration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ci: Option<WriteProjectConfigRequestConfigCi>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1796,6 +1800,22 @@ pub struct WriteProjectConfigRequestConfigMetadataGenerationCommitMessage {
 pub struct WriteProjectConfigRequestConfigMetadataGenerationPullRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub instructions: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WriteProjectConfigRequestConfigCi {
+    #[serde(rename = "githubActions", skip_serializing_if = "Option::is_none")]
+    pub github_actions: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jenkins: Option<WriteProjectConfigRequestConfigCiJenkins>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WriteProjectConfigRequestConfigCiJenkins {
+    pub url: String,
+    pub job: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub multibranch: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2668,6 +2688,13 @@ pub enum CheckoutForgeSetAutoMergeRequestMergeMethod {
     Squash,
     #[serde(rename = "rebase")]
     Rebase,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiListRunsRequest {
+    pub cwd: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

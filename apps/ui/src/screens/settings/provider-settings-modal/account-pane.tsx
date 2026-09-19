@@ -39,6 +39,10 @@ import { ProviderUsageCard } from "@/provider-usage/card";
 import type { ProviderUsage } from "@/provider-usage/types";
 import type { useProviderAccounts } from "@/provider-accounts/use-provider-accounts";
 import type { useAuthenticateProviderAccount } from "@/provider-accounts/use-authenticate-account";
+import {
+  useDefaultProviderAccountId,
+  useDefaultProviderAccountStore,
+} from "@/stores/default-provider-account-store";
 import { AccountTransfer } from "./account-transfer";
 import { providerAccountDisplayName } from "./account-tabs";
 
@@ -129,6 +133,7 @@ export function PaneSection({
 }
 
 export interface AccountPaneProps {
+  serverId: string;
   providerId: string;
   providerLabel: string;
   account: ProviderAccountState;
@@ -177,29 +182,43 @@ export function AccountPane(props: AccountPaneProps): ReactElement {
 // ---------------------------------------------------------------------------
 // Hero: identity, sign-in state and the primary actions.
 
-function AccountHero({ providerLabel, account, accounts, auth, synthesized }: AccountPaneProps) {
+function AccountHero({
+  serverId,
+  providerLabel,
+  account,
+  accounts: accountsState,
+  auth,
+  synthesized,
+}: AccountPaneProps) {
   const { t } = useTranslation();
-  const setActive = useSectionMutation();
   const label = providerAccountDisplayName(account, t);
   const color = resolveProviderAccountColor(account);
-  const isDefault = parseProviderAccountDefaultId(account.id) !== null;
-  const setActiveMutate = accounts.setActive.mutateAsync;
+  const isDefaultAccount = parseProviderAccountDefaultId(account.id) !== null;
 
-  const handleMakeActive = useCallback(() => {
-    void setActive.run(() =>
-      setActiveMutate({
-        provider: account.provider,
-        // The default account is "no active account": the provider's own folder.
-        accountId: isDefault ? null : account.id,
-      }),
+  // The default account is a client preference, not daemon state: it only says
+  // which account a new agent starts on, and every other account stays signed
+  // in and launchable at the same time.
+  const storedDefaultId = useDefaultProviderAccountId(serverId, account.provider);
+  const setDefaultAccountId = useDefaultProviderAccountStore((state) => state.setDefaultAccountId);
+  // Until this client has chosen, the badge follows whatever the daemon still
+  // reports as the provider's default, which is what the composer falls back to.
+  const daemonDefaultId = accountsState.payload?.activeAccountIds[account.provider] ?? null;
+  const effectiveDefaultId = storedDefaultId !== undefined ? storedDefaultId : daemonDefaultId;
+  const isSelectedDefault = isDefaultAccount
+    ? effectiveDefaultId === null || effectiveDefaultId === account.id
+    : effectiveDefaultId === account.id;
+
+  const handleMakeDefault = useCallback(() => {
+    setDefaultAccountId(
+      { serverId, provider: account.provider },
+      // The listed default account is the provider's own folder, which the
+      // picker records as the explicit "Default" pick.
+      isDefaultAccount ? null : account.id,
     );
-  }, [account.id, account.provider, isDefault, setActive, setActiveMutate]);
+  }, [account.id, account.provider, isDefaultAccount, serverId, setDefaultAccountId]);
 
   const handleAuthenticate = useCallback(() => auth.authenticate(account), [account, auth]);
   const isAuthenticating = auth.pendingAccountId === account.id;
-  const isActivating =
-    accounts.setActive.isPending &&
-    (accounts.setActive.variables?.accountId ?? null) === (isDefault ? null : account.id);
 
   let signInBadge: ReactElement;
   if (synthesized) {
@@ -232,8 +251,8 @@ function AccountHero({ providerLabel, account, accounts, auth, synthesized }: Ac
           </Text>
           <View style={styles.badgeRow}>
             {signInBadge}
-            {account.isActive ? (
-              <StatusBadge label={t("settings.providers.settingsModal.account.inUse")} />
+            {isSelectedDefault ? (
+              <StatusBadge label={t("settings.providers.settingsModal.account.isDefault")} />
             ) : null}
           </View>
           <Text style={styles.path} numberOfLines={1}>
@@ -255,22 +274,22 @@ function AccountHero({ providerLabel, account, accounts, auth, synthesized }: Ac
             ? t("settings.providers.settingsModal.account.reauthenticate")
             : t("settings.providers.settingsModal.account.signIn")}
         </Button>
-        {account.isActive ? null : (
+        {isSelectedDefault ? null : (
           <Button
             size="sm"
             variant="ghost"
-            onPress={handleMakeActive}
-            disabled={isActivating}
-            loading={isActivating}
-            testID="provider-account-make-active"
+            onPress={handleMakeDefault}
+            testID="provider-account-make-default"
           >
-            {t("settings.providers.settingsModal.account.makeActive")}
+            {t("settings.providers.settingsModal.account.makeDefault")}
           </Button>
         )}
       </View>
       <Text style={styles.hint}>
         {auth.canAuthenticate
-          ? t("settings.providers.settingsModal.account.signInHint", { provider: providerLabel })
+          ? t("settings.providers.settingsModal.account.signInHint", {
+              provider: providerLabel,
+            })
           : t("settings.host.providerAccounts.authenticateNoWorkspace")}
       </Text>
       {auth.error ? (
@@ -278,7 +297,9 @@ function AccountHero({ providerLabel, account, accounts, auth, synthesized }: Ac
           {auth.error}
         </Text>
       ) : null}
-      <SectionFeedback error={setActive.error} testID="provider-account-activate" />
+      <Text style={styles.hint}>
+        {t("settings.providers.settingsModal.account.defaultAccountHint")}
+      </Text>
     </View>
   );
 }
@@ -310,7 +331,10 @@ function usePreferencesWriter(accounts: Accounts, account: ProviderAccountState)
   const mutate = accounts.setPreferences.mutateAsync;
   const write = useCallback(
     (patch: Partial<ProviderAccountPreferences>) => {
-      const next: ProviderAccountPreferences = { ...account.preferences, ...patch };
+      const next: ProviderAccountPreferences = {
+        ...account.preferences,
+        ...patch,
+      };
       return mutation.run(() => mutate({ accountId: account.id, preferences: next }));
     },
     [account.id, account.preferences, mutate, mutation],
@@ -448,7 +472,10 @@ export function modelAccessSummary(
   t: (key: string, options?: Record<string, unknown>) => string,
 ): { label: string; variant: "success" | "warning" | "error" } {
   if (allowedModels === undefined) {
-    return { label: t("settings.providers.settingsModal.account.allModels"), variant: "success" };
+    return {
+      label: t("settings.providers.settingsModal.account.allModels"),
+      variant: "success",
+    };
   }
   if (allowedModels.length === 0) {
     return {
@@ -857,7 +884,9 @@ function AccountDanger({ account, accounts, canManage, synthesized, onDeleted }:
   const handleDelete = useCallback(() => {
     void (async () => {
       const confirmed = await confirmDialog({
-        title: t("settings.host.providerAccounts.removeConfirmTitle", { name: label }),
+        title: t("settings.host.providerAccounts.removeConfirmTitle", {
+          name: label,
+        }),
         message: t("settings.host.providerAccounts.removeConfirmMessage", {
           path: account.configDir,
         }),

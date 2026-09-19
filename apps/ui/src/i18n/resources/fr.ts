@@ -2,6 +2,44 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "Exécutions GitHub Actions et Jenkins pour cette branche",
+    runCount_one: "{{count}} exécution",
+    runCount_other: "{{count}} exécutions",
+    runningCount: "{{count}} en cours",
+    refresh: "Actualiser la CI",
+    openRun: "Ouvrir l'exécution",
+    openLogs: "Ouvrir les journaux",
+    unsupportedTitle: "Mettez à jour le démon",
+    unsupportedDescription: "Le démon de cet hôte est trop ancien pour afficher les exécutions CI.",
+    errorTitle: "Impossible de charger la CI",
+    noBranchTitle: "Aucune branche",
+    noBranchDescription: "Basculez sur une branche pour voir ses exécutions CI.",
+    notConfiguredTitle: "CI non configurée",
+    notConfiguredDescription:
+      "GitHub Actions s'affiche pour les dépôts GitHub. Ajoutez une entrée ci.jenkins à frogg.json pour Jenkins.",
+    emptyTitle: "Aucune exécution CI",
+    emptyDescription: "Rien n'a encore été exécuté pour {{branch}}.",
+    runners: "Runners",
+    runnerSummary: "{{busy}} sur {{total}} occupés",
+    queuedCount_one: "{{count}} en file d'attente",
+    queuedCount_other: "{{count}} en file d'attente",
+    noRunners: "Aucun runner attribué pour l'instant",
+    waitingForRunner: "En attente d'un runner",
+    hosted: "Hébergé",
+    selfHosted: "Auto-hébergé",
+    idle: "Inactif",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "En file d'attente",
+    },
+  },
+
   hostAdd: {
     title: "Ajouter un hôte",
     connecting: "Ajout de {{endpoint}}…",
@@ -678,6 +716,7 @@ export const fr: TranslationResources = {
         toggle: "Basculer le panneau latéral",
         changes: "Changements",
         files: "Fichiers",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "Échec de la copie",
@@ -2196,6 +2235,7 @@ export const fr: TranslationResources = {
     archiveAction: "Archiver{{label}}",
     archiveTooltip: "Sous-agent d'archivage",
     archiveFinishedAction: "Archiver les sous-agents terminés",
+    actionsMenu: "Actions pour {{label}}",
     archiveFinishedRetry: "Réessayer ({{failed}}/{{total}})",
   },
   panels: {
@@ -3195,10 +3235,12 @@ export const fr: TranslationResources = {
           providerSignIn: "Connexion du fournisseur",
           signedIn: "Connecté",
           notSignedIn: "Non connecté",
-          inUse: "Utilisé",
+          isDefault: "Par défaut",
           signIn: "Se connecter",
           reauthenticate: "Se reconnecter",
-          makeActive: "Utiliser ce compte",
+          makeDefault: "Définir par défaut",
+          defaultAccountHint:
+            "Les nouveaux agents sur cet hôte démarrent sur le compte par défaut. Tous les comptes connectés restent utilisables en même temps.",
           signInHint:
             "La connexion lance l'authentification propre à {{provider}} dans un terminal de cet hôte.",
           usageTitle: "Utilisation",

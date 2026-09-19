@@ -2,6 +2,44 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "此分支的 GitHub Actions 和 Jenkins 运行",
+    runCount_one: "{{count}} 次运行",
+    runCount_other: "{{count}} 次运行",
+    runningCount: "{{count}} 个运行中",
+    refresh: "刷新 CI",
+    openRun: "打开运行",
+    openLogs: "打开日志",
+    unsupportedTitle: "请更新守护进程",
+    unsupportedDescription: "此主机的守护进程版本过旧，无法显示 CI 运行。",
+    errorTitle: "无法加载 CI",
+    noBranchTitle: "不在分支上",
+    noBranchDescription: "检出一个分支即可查看其 CI 运行。",
+    notConfiguredTitle: "未配置 CI",
+    notConfiguredDescription:
+      "GitHub 远程仓库会显示 GitHub Actions。要使用 Jenkins，请在 frogg.json 中添加 ci.jenkins。",
+    emptyTitle: "没有 CI 运行",
+    emptyDescription: "{{branch}} 还没有任何运行。",
+    runners: "运行器",
+    runnerSummary: "{{total}} 个中有 {{busy}} 个忙碌",
+    queuedCount_one: "{{count}} 个排队中",
+    queuedCount_other: "{{count}} 个排队中",
+    noRunners: "尚未分配运行器",
+    waitingForRunner: "等待运行器",
+    hosted: "托管",
+    selfHosted: "自托管",
+    idle: "空闲",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "排队中",
+    },
+  },
+
   hostAdd: {
     title: "添加主机",
     connecting: "正在添加 {{endpoint}}…",
@@ -672,6 +710,7 @@ export const zhCN: TranslationResources = {
         toggle: "切换侧边面板",
         changes: "变更",
         files: "文件",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "复制失败",
@@ -2104,6 +2143,7 @@ export const zhCN: TranslationResources = {
     archiveAction: "归档 {{label}}",
     archiveTooltip: "归档 subagent",
     archiveFinishedAction: "归档已完成的 subagent",
+    actionsMenu: "{{label}} 的操作",
     archiveFinishedRetry: "重试 ({{failed}}/{{total}})",
   },
   panels: {
@@ -3071,10 +3111,11 @@ export const zhCN: TranslationResources = {
           providerSignIn: "提供方登录",
           signedIn: "已登录",
           notSignedIn: "未登录",
-          inUse: "使用中",
+          isDefault: "默认",
           signIn: "登录",
           reauthenticate: "重新登录",
-          makeActive: "使用此账号",
+          makeDefault: "设为默认",
+          defaultAccountHint: "此主机上的新代理将以默认账号启动。所有已登录的账号都可以同时使用。",
           signInHint: "登录会在此主机的终端中运行 {{provider}} 自带的登录流程。",
           usageTitle: "用量",
           defaultsTitle: "新代理默认值",

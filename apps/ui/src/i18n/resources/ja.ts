@@ -2,6 +2,44 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "このブランチの GitHub Actions と Jenkins の実行",
+    runCount_one: "{{count}} 件の実行",
+    runCount_other: "{{count}} 件の実行",
+    runningCount: "{{count}} 件実行中",
+    refresh: "CI を更新",
+    openRun: "実行を開く",
+    openLogs: "ログを開く",
+    unsupportedTitle: "デーモンを更新してください",
+    unsupportedDescription: "このホストのデーモンは古いため、CI の実行を表示できません。",
+    errorTitle: "CI を読み込めませんでした",
+    noBranchTitle: "ブランチ上にありません",
+    noBranchDescription: "ブランチをチェックアウトすると CI の実行が表示されます。",
+    notConfiguredTitle: "CI が未設定です",
+    notConfiguredDescription:
+      "GitHub のリモートでは GitHub Actions が表示されます。Jenkins を使うには frogg.json に ci.jenkins を追加してください。",
+    emptyTitle: "CI の実行はありません",
+    emptyDescription: "{{branch}} ではまだ何も実行されていません。",
+    runners: "ランナー",
+    runnerSummary: "{{total}} 台中 {{busy}} 台が稼働中",
+    queuedCount_one: "{{count}} 件待機中",
+    queuedCount_other: "{{count}} 件待機中",
+    noRunners: "まだランナーが割り当てられていません",
+    waitingForRunner: "ランナー待ち",
+    hosted: "ホスト型",
+    selfHosted: "セルフホスト",
+    idle: "待機中",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "キュー待ち",
+    },
+  },
+
   hostAdd: {
     title: "ホストを追加",
     connecting: "{{endpoint}} を追加しています…",
@@ -678,6 +716,7 @@ export const ja: TranslationResources = {
         toggle: "サイドパネルを切り替え",
         changes: "変更",
         files: "ファイル",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "コピーに失敗しました",
@@ -2165,6 +2204,7 @@ export const ja: TranslationResources = {
     archiveAction: "{{label}}をアーカイブ",
     archiveTooltip: "サブエージェントをアーカイブ",
     archiveFinishedAction: "完了したサブエージェントをアーカイブ",
+    actionsMenu: "{{label}} のアクション",
     archiveFinishedRetry: "再試行 ({{failed}}/{{total}})",
   },
   panels: {
@@ -3157,10 +3197,12 @@ export const ja: TranslationResources = {
           providerSignIn: "プロバイダーのサインイン",
           signedIn: "サインイン済み",
           notSignedIn: "サインインしていません",
-          inUse: "使用中",
+          isDefault: "デフォルト",
           signIn: "サインイン",
           reauthenticate: "サインインし直す",
-          makeActive: "このアカウントを使う",
+          makeDefault: "デフォルトに設定",
+          defaultAccountHint:
+            "このホストの新しいエージェントはデフォルトのアカウントで起動します。サインイン済みのアカウントはすべて同時に利用できます。",
           signInHint:
             "サインインすると、このホストのターミナルで {{provider}} のログインが実行されます。",
           usageTitle: "使用量",

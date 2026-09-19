@@ -14,12 +14,12 @@ interface KeyboardShortcutsState {
   cmdOrCtrlDown: boolean;
   showShortcutBadges: boolean;
   /**
-   * A bare Alt is being held, and it is not this runtime's workspace-jump modifier.
+   * A bare Control is being held.
    *
-   * Drives the sidebar row's quick action rail. Deliberately separate from the badge
-   * modifier: on web the jump binding is Alt+1-9, so the same physical key would mean two
-   * things at once. The badge hold wins there and this stays false, which leaves the rail
-   * effectively desktop-only rather than fighting the number badges for the same key.
+   * Drives the sidebar row's quick action rail. Tracked independently of the badge modifier
+   * because the two are allowed to be up at once: on desktop non-Mac Control is also the
+   * workspace-jump modifier, and holding it shows the number badges *and* the rail, with the
+   * badge sitting to the left of the rail rather than being replaced by it.
    */
   quickActionsModifierDown: boolean;
   /** Sidebar-visible workspace targets (up to 9), in top-to-bottom visual order. */
@@ -76,24 +76,21 @@ export const useKeyboardShortcutsStore = create<KeyboardShortcutsState>((set, ge
   setShortcutsDialogOpen: (open) => set({ shortcutsDialogOpen: open }),
   setCapturingShortcut: (capturing) => set({ capturingShortcut: capturing }),
   setAltDown: (down) => {
-    // The badge hold wins: a runtime where Alt jumps between workspaces must not also open
-    // the rail, or one key press would do two unrelated things.
-    set(down ? { altDown: true, quickActionsModifierDown: false } : { altDown: false });
+    set({ altDown: down });
     updateBadgeTimer(set, get);
   },
   setCmdOrCtrlDown: (down) => {
-    set(down ? { cmdOrCtrlDown: true, quickActionsModifierDown: false } : { cmdOrCtrlDown: false });
+    set({ cmdOrCtrlDown: down });
     updateBadgeTimer(set, get);
   },
   setQuickActionsModifierDown: (down) => {
-    const { altDown, cmdOrCtrlDown } = get();
-    set({ quickActionsModifierDown: down && !altDown && !cmdOrCtrlDown });
+    set({ quickActionsModifierDown: down });
   },
   setSidebarShortcutWorkspaceTargets: (targets) =>
     set({ sidebarShortcutWorkspaceTargets: targets }),
   resetModifiers: () => {
     // Blur and visibility loss take every held modifier with them. A key released while the
-    // window is not focused never reaches the keyup listener, so without this a held Alt
+    // window is not focused never reaches the keyup listener, so without this a held Control
     // would leave the rail open forever.
     set({ altDown: false, cmdOrCtrlDown: false, quickActionsModifierDown: false });
     updateBadgeTimer(set, get);

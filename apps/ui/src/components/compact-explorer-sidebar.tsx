@@ -5,7 +5,8 @@ import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-nativ
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { X } from "lucide-react-native";
+import { Workflow, X } from "lucide-react-native";
+import { CiPane } from "@/ci-monitor/ci-pane";
 import { useTranslation } from "react-i18next";
 import { formatPrTabLabel, PullRequestTabIcon } from "@/git/pull-request-panel";
 import {
@@ -333,6 +334,7 @@ function ExplorerSidebarContent({
   const availableTabs = useMemo<ExplorerTab[]>(() => {
     const tabs: ExplorerTab[] = isGit ? ["changes", "files"] : ["files"];
     if (isGit && showPrTab) tabs.push("pr");
+    tabs.push("ci");
     return tabs;
   }, [isGit, showPrTab]);
   const { mountedTabIds } = useMountedTabSet({
@@ -386,6 +388,18 @@ function ExplorerSidebarContent({
               />
             </ExplorerTabButton>
           )}
+          <ExplorerTabButton
+            tab="ci"
+            active={resolvedTab === "ci"}
+            label={t("workspace.tabs.explorerSidebar.ci")}
+            onTabPress={onTabPress}
+            testID="explorer-tab-ci"
+          >
+            <Workflow
+              size={13}
+              color={resolvedTab === "ci" ? theme.colors.foreground : theme.colors.foregroundMuted}
+            />
+          </ExplorerTabButton>
         </View>
         <View style={styles.headerRightSection}>
           <Pressable
@@ -439,6 +453,11 @@ function ExplorerSidebarContent({
               cwd={workspaceRoot}
               prPane={prPane}
             />
+          </RetainedPanel>
+        ) : null}
+        {mountedTabIds.has("ci") ? (
+          <RetainedPanel active={resolvedTab === "ci"}>
+            <CiPane serverId={serverId} cwd={workspaceRoot} isOpen={isOpen} />
           </RetainedPanel>
         ) : null}
       </View>

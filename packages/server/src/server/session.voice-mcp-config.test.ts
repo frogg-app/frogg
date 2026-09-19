@@ -38,7 +38,7 @@ describe("voice mode prompt instructions", () => {
 
     expect(prompt).toContain("Base system prompt");
     expect(prompt).toContain("<frogg_voice_mode>");
-    expect(prompt).toContain("Frogg voice mode is now on.");
+    expect(prompt).toContain("frogg voice mode is now on.");
     expect(prompt).toContain("Always use the speak tool for all user-facing communication.");
     expect(prompt).toContain("</frogg_voice_mode>");
   });
@@ -54,8 +54,8 @@ describe("voice mode prompt instructions", () => {
     const prompt = buildVoiceModeSystemPrompt(existing, false);
 
     expect(prompt).toContain("Base system prompt");
-    expect(prompt).toContain("Frogg voice mode is now off.");
-    expect(prompt).toContain("Ignore any earlier Frogg voice mode instructions in this thread.");
+    expect(prompt).toContain("frogg voice mode is now off.");
+    expect(prompt).toContain("Ignore any earlier frogg voice mode instructions in this thread.");
     expect(prompt.match(/<frogg_voice_mode>/g)?.length ?? 0).toBe(1);
     expect(prompt).not.toContain("legacy voice instruction");
   });

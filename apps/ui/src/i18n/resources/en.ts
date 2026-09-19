@@ -1,5 +1,43 @@
 import { projectImportCopies } from "./project-import";
 export const en = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "GitHub Actions and Jenkins runs for this branch",
+    runCount_one: "{{count}} run",
+    runCount_other: "{{count}} runs",
+    runningCount: "{{count}} running",
+    refresh: "Refresh CI",
+    openRun: "Open run",
+    openLogs: "Open logs",
+    unsupportedTitle: "Update the daemon",
+    unsupportedDescription: "This host's daemon is too old to report CI runs.",
+    errorTitle: "Couldn't load CI",
+    noBranchTitle: "Not on a branch",
+    noBranchDescription: "Check out a branch to see its CI runs.",
+    notConfiguredTitle: "No CI configured",
+    notConfiguredDescription:
+      "GitHub Actions show up for GitHub remotes. Add a ci.jenkins entry to frogg.json for Jenkins.",
+    emptyTitle: "No CI runs",
+    emptyDescription: "Nothing has run for {{branch}} yet.",
+    runners: "Runners",
+    runnerSummary: "{{busy}} of {{total}} busy",
+    queuedCount_one: "{{count}} queued",
+    queuedCount_other: "{{count}} queued",
+    noRunners: "No runners assigned yet",
+    waitingForRunner: "Waiting for runner",
+    hosted: "Hosted",
+    selfHosted: "Self-hosted",
+    idle: "Idle",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "Queued",
+    },
+  },
+
   hostAdd: {
     title: "Add a host",
     connecting: "Adding {{endpoint}}…",
@@ -673,6 +711,7 @@ export const en = {
         toggle: "Toggle Explorer sidebar",
         changes: "Changes",
         files: "Files",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "Copy failed",
@@ -2154,6 +2193,7 @@ export const en = {
     archiveAction: "Archive {{label}}",
     archiveTooltip: "Archive subagent",
     archiveFinishedAction: "Archive finished subagents",
+    actionsMenu: "Actions for {{label}}",
     archiveFinishedRetry: "Retry ({{failed}}/{{total}})",
   },
   panels: {
@@ -3176,10 +3216,12 @@ export const en = {
           providerSignIn: "Provider sign-in",
           signedIn: "Signed in",
           notSignedIn: "Not signed in",
-          inUse: "In use",
+          isDefault: "Default",
           signIn: "Sign in",
           reauthenticate: "Sign in again",
-          makeActive: "Use this account",
+          makeDefault: "Set as default",
+          defaultAccountHint:
+            "New agents on this host start on the default account. Every signed-in account stays usable at the same time.",
           signInHint: "Signing in runs {{provider}}'s own login in a terminal on this host.",
           usageTitle: "Usage",
           defaultsTitle: "New agent defaults",

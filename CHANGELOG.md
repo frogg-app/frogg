@@ -9,45 +9,18 @@
   was visible and every child's transcript was replayed onto that one row,
   interleaving agents that had run in parallel.
 
-## 1.5.7 — 2026-09-19
+## 1.5.8 — 2026-09-19
 
-- Holding Alt over the sidebar expands a session's menu into quick action
-  icons — rename, pin, labels, copy session ID, archive — so several sessions
-  can be archived or renamed without opening a menu each time. Only the
-  selected row and the row under the cursor expand; releasing Alt collapses
-  them back to the kebab.
-- Every session now has a short session ID, `s_` followed by eight characters,
-  shown in the session menus, the hover card and on subagents. Subagents get
-  their own even while attached to a parent. It identifies a session that has
-  no git branch, which a branch name cannot.
-- Archived sessions can be browsed per project from the project menu, instead
-  of only in the app-wide History list.
-- Confirmation dialogs are now drawn by Frogg itself rather than by Windows,
-  macOS or the browser, so they match the app on every platform.
-- Reversible actions no longer ask first. Archiving a session only prompts when
-  the worktree has uncommitted changes or unpushed commits; updating or
-  restarting a daemon, and updating skills, do not prompt at all — what they
-  do to running agents is written in the row instead. Restoring a branch's
-  stash is now an offer in a toast rather than a dialog.
-- The account a session runs as sits at the right end of its row with its name.
-  A session with subagents or several tabs shows the account on each of those
-  instead, and keeps the change count at session level.
-- "Copy path" is gone from the session menus.
-
-## 1.5.6 — 2026-09-19
-
-- Provider accounts are managed inside their provider's settings sheet, one
-  tab per sign-in. The selected tab scopes sign-in state and usage, new-agent
-  defaults, model access, a per-account system prompt, nickname and colour,
-  moving the account to another host, and deleting it. The separate
-  "Provider sign-ins" list on the host page is gone.
-- A new agent starts on its account's default model and thinking level, and
-  the account's system prompt is appended when the agent launches.
-- The New session composer always opens on Chat. Picking a terminal profile
-  no longer sticks to later sessions, which had hidden the provider and
-  account chips and disabled image paste.
-
-## Unreleased
+- A **CI** tab in the right-hand pane, after Files and Changes, shows the CI
+  runs for the session's branch: GitHub Actions for GitHub repositories, and
+  Jenkins when the project's `frogg.json` names a Jenkins job. Each run shows
+  its status, progress, when it started and how long it has taken, with a bar
+  per job; jobs list their steps and the runner they are on, and a Runners
+  section shows which machines are busy. Jenkins credentials come from
+  `FROGG_JENKINS_USER` and `FROGG_JENKINS_TOKEN` on the daemon host.
+- The sidebar opens with the brand mark, which links home, above icon-only
+  navigation.
+- The sidebar's Show menu can hide or show the account on session rows.
 
 - An agent started without choosing a provider account now stays on the
   account that was active when it started. Previously it followed the
@@ -102,6 +75,44 @@
   keeps retrying until the host's own daemon is back. The host page shows why,
   in the app's language, right under the host's status. A local placeholder
   host now only adopts the server id of a daemon of this app's own product.
+
+## 1.5.7 — 2026-09-19
+
+- Holding Alt over the sidebar expands a session's menu into quick action
+  icons — rename, pin, labels, copy session ID, archive — so several sessions
+  can be archived or renamed without opening a menu each time. Only the
+  selected row and the row under the cursor expand; releasing Alt collapses
+  them back to the kebab.
+- Every session now has a short session ID, `s_` followed by eight characters,
+  shown in the session menus, the hover card and on subagents. Subagents get
+  their own even while attached to a parent. It identifies a session that has
+  no git branch, which a branch name cannot.
+- Archived sessions can be browsed per project from the project menu, instead
+  of only in the app-wide History list.
+- Confirmation dialogs are now drawn by Frogg itself rather than by Windows,
+  macOS or the browser, so they match the app on every platform.
+- Reversible actions no longer ask first. Archiving a session only prompts when
+  the worktree has uncommitted changes or unpushed commits; updating or
+  restarting a daemon, and updating skills, do not prompt at all — what they
+  do to running agents is written in the row instead. Restoring a branch's
+  stash is now an offer in a toast rather than a dialog.
+- The account a session runs as sits at the right end of its row with its name.
+  A session with subagents or several tabs shows the account on each of those
+  instead, and keeps the change count at session level.
+- "Copy path" is gone from the session menus.
+
+## 1.5.6 — 2026-09-19
+
+- Provider accounts are managed inside their provider's settings sheet, one
+  tab per sign-in. The selected tab scopes sign-in state and usage, new-agent
+  defaults, model access, a per-account system prompt, nickname and colour,
+  moving the account to another host, and deleting it. The separate
+  "Provider sign-ins" list on the host page is gone.
+- A new agent starts on its account's default model and thinking level, and
+  the account's system prompt is appended when the agent launches.
+- The New session composer always opens on Chat. Picking a terminal profile
+  no longer sticks to later sessions, which had hidden the provider and
+  account chips and disabled image paste.
 
 ## 1.5.5 — 2026-09-19
 

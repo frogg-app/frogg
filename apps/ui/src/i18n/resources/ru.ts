@@ -2,6 +2,44 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "Запуски GitHub Actions и Jenkins для этой ветки",
+    runCount_one: "Запусков: {{count}}",
+    runCount_other: "Запусков: {{count}}",
+    runningCount: "Выполняется: {{count}}",
+    refresh: "Обновить CI",
+    openRun: "Открыть запуск",
+    openLogs: "Открыть логи",
+    unsupportedTitle: "Обновите демон",
+    unsupportedDescription: "Демон на этом хосте слишком старый, чтобы показывать запуски CI.",
+    errorTitle: "Не удалось загрузить CI",
+    noBranchTitle: "Нет активной ветки",
+    noBranchDescription: "Переключитесь на ветку, чтобы увидеть её запуски CI.",
+    notConfiguredTitle: "CI не настроен",
+    notConfiguredDescription:
+      "GitHub Actions показываются для удалённых репозиториев GitHub. Для Jenkins добавьте ci.jenkins в frogg.json.",
+    emptyTitle: "Нет запусков CI",
+    emptyDescription: "Для {{branch}} ещё ничего не запускалось.",
+    runners: "Раннеры",
+    runnerSummary: "Занято {{busy}} из {{total}}",
+    queuedCount_one: "В очереди: {{count}}",
+    queuedCount_other: "В очереди: {{count}}",
+    noRunners: "Раннеры ещё не назначены",
+    waitingForRunner: "Ожидание раннера",
+    hosted: "Облачный",
+    selfHosted: "Собственный",
+    idle: "Свободен",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "В очереди",
+    },
+  },
+
   hostAdd: {
     title: "Добавить хост",
     connecting: "Добавление {{endpoint}}…",
@@ -677,6 +715,7 @@ export const ru: TranslationResources = {
         toggle: "Переключить боковую панель",
         changes: "Изменения",
         files: "Файлы",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "Не удалось скопировать",
@@ -2173,6 +2212,7 @@ export const ru: TranslationResources = {
     archiveAction: "Архивировать {{label}}",
     archiveTooltip: "Архивировать субагента",
     archiveFinishedAction: "Архивировать завершенные субагенты",
+    actionsMenu: "Действия для {{label}}",
     archiveFinishedRetry: "Повторить ({{failed}}/{{total}})",
   },
   panels: {
@@ -3174,10 +3214,12 @@ export const ru: TranslationResources = {
           providerSignIn: "Вход провайдера",
           signedIn: "Выполнен вход",
           notSignedIn: "Вход не выполнен",
-          inUse: "Используется",
+          isDefault: "По умолчанию",
           signIn: "Войти",
           reauthenticate: "Войти заново",
-          makeActive: "Использовать эту учётную запись",
+          makeDefault: "Сделать по умолчанию",
+          defaultAccountHint:
+            "Новые агенты на этом хосте запускаются в учётной записи по умолчанию. Все выполнившие вход учётные записи остаются доступными одновременно.",
           signInHint:
             "Вход запускает собственную авторизацию {{provider}} в терминале на этом хосте.",
           usageTitle: "Использование",

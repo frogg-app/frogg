@@ -2,6 +2,44 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "تشغيلات GitHub Actions وJenkins لهذا الفرع",
+    runCount_one: "{{count}} تشغيل",
+    runCount_other: "{{count}} تشغيلات",
+    runningCount: "{{count}} قيد التشغيل",
+    refresh: "تحديث CI",
+    openRun: "فتح التشغيل",
+    openLogs: "فتح السجلات",
+    unsupportedTitle: "حدّث البرنامج الخفي",
+    unsupportedDescription: "البرنامج الخفي على هذا المضيف قديم جدًا لعرض تشغيلات CI.",
+    errorTitle: "تعذّر تحميل CI",
+    noBranchTitle: "لست على فرع",
+    noBranchDescription: "انتقل إلى فرع لعرض تشغيلات CI الخاصة به.",
+    notConfiguredTitle: "لم يتم إعداد CI",
+    notConfiguredDescription:
+      "تظهر GitHub Actions للمستودعات البعيدة على GitHub. أضف إدخال ci.jenkins إلى frogg.json لاستخدام Jenkins.",
+    emptyTitle: "لا توجد تشغيلات CI",
+    emptyDescription: "لم يُشغَّل أي شيء لـ {{branch}} بعد.",
+    runners: "المشغّلات",
+    runnerSummary: "{{busy}} من {{total}} مشغولة",
+    queuedCount_one: "{{count}} في الانتظار",
+    queuedCount_other: "{{count}} في الانتظار",
+    noRunners: "لم يتم تعيين مشغّلات بعد",
+    waitingForRunner: "بانتظار مشغّل",
+    hosted: "مستضاف",
+    selfHosted: "مستضاف ذاتيًا",
+    idle: "خامل",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "في الانتظار",
+    },
+  },
+
   hostAdd: {
     title: "إضافة مضيف",
     connecting: "جارٍ إضافة {{endpoint}}…",
@@ -672,6 +710,7 @@ export const ar: TranslationResources = {
         toggle: "تبديل اللوحة الجانبية",
         changes: "التغييرات",
         files: "ملفات",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "فشل النسخ",
@@ -2134,6 +2173,7 @@ export const ar: TranslationResources = {
     archiveAction: "أرشيف{{label}}",
     archiveTooltip: "أرشفة الوكيل الفرعي",
     archiveFinishedAction: "أرشفة الوكلاء الفرعيين المكتملين",
+    actionsMenu: "إجراءات {{label}}",
     archiveFinishedRetry: "إعادة المحاولة ({{failed}}/{{total}})",
   },
   panels: {
@@ -3114,10 +3154,12 @@ export const ar: TranslationResources = {
           providerSignIn: "تسجيل دخول المزود",
           signedIn: "مسجَّل الدخول",
           notSignedIn: "غير مسجَّل الدخول",
-          inUse: "قيد الاستخدام",
+          isDefault: "افتراضي",
           signIn: "تسجيل الدخول",
           reauthenticate: "تسجيل الدخول من جديد",
-          makeActive: "استخدام هذا الحساب",
+          makeDefault: "تعيين كافتراضي",
+          defaultAccountHint:
+            "تبدأ الوكلاء الجدد على هذا المضيف بالحساب الافتراضي. تظل كل الحسابات المسجّلة الدخول قابلة للاستخدام في الوقت نفسه.",
           signInHint:
             "يشغّل تسجيل الدخول أداة الدخول الخاصة بـ {{provider}} في طرفية على هذا المضيف.",
           usageTitle: "الاستخدام",

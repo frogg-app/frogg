@@ -57,7 +57,10 @@ import {
   type WorkspaceTabSnapshot,
   type WorkspaceLayout,
 } from "@/stores/workspace-layout-actions";
-import { normalizeWorkspaceTabTarget } from "@/workspace-tabs/identity";
+import {
+  buildDeterministicWorkspaceTabId,
+  normalizeWorkspaceTabTarget,
+} from "@/workspace-tabs/identity";
 import { createValidatedPersistStorage } from "@/storage/validated-persist-storage";
 import { panelSupportsHost } from "@/panels/panel-manifest";
 
@@ -202,6 +205,7 @@ const WorkspaceTabTargetStorageSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("changes_tree") }),
   z.strictObject({ kind: z.literal("files") }),
   z.strictObject({ kind: z.literal("pull_request") }),
+  z.strictObject({ kind: z.literal("ci_runs") }),
   z.strictObject({
     kind: z.literal("file"),
     path: z.string(),
@@ -283,7 +287,7 @@ const WorkspaceLayoutPersistedStateSchema = z.strictObject({
 });
 
 const LEGACY_EXPLORER_SIDEBAR_REFERENCE_WIDTH = 1440;
-const WORKSPACE_LAYOUT_PERSIST_VERSION = 2;
+const WORKSPACE_LAYOUT_PERSIST_VERSION = 3;
 
 function convertLegacyExplorerSidebarRatios(
   ratiosByWorkspace: Record<string, number>,
@@ -402,7 +406,8 @@ function migrateVersionOneWorkspaceLayout(input: {
     (tab) =>
       legacyExplorerPane.tabIds.includes(tab.tabId) &&
       tab.target.kind !== "files" &&
-      tab.target.kind !== "changes_tree",
+      tab.target.kind !== "changes_tree" &&
+      tab.target.kind !== "ci_runs",
   );
   const preservedSide = preserveVersionOneSideTabs({
     layout: strippedLayout,
@@ -444,6 +449,63 @@ function migrateWorkspaceLayoutPersistedState(
   if (!result.success || version >= WORKSPACE_LAYOUT_PERSIST_VERSION) {
     return result.success ? result.data : { layoutByWorkspace: {} };
   }
+  // Version 1 layouts rebuild Explorer from the current defaults, which already include CI.
+  if (version < 2) {
+    return migrateVersionOnePersistedState(result.data, ids);
+  }
+  return addCiTabToExplorerPanes(result.data);
+}
+
+/**
+ * Version 3 added the CI tab to Explorer's defaults. A layout saved before that gets the tab
+ * once, here; after that a closed CI tab stays closed like any other.
+ */
+function addCiTabToExplorerPanes(
+  data: z.infer<typeof WorkspaceLayoutPersistedStateSchema>,
+): z.infer<typeof WorkspaceLayoutPersistedStateSchema> {
+  const target: WorkspaceTabTarget = { kind: "ci_runs" };
+  const tabId = buildDeterministicWorkspaceTabId(target);
+  const layoutByWorkspace: Record<string, WorkspaceLayout> = {};
+  for (const [workspaceKey, layout] of Object.entries(data.layoutByWorkspace)) {
+    const explorerPaneId =
+      data.explorerPaneIdByWorkspace?.[workspaceKey] ?? EXPLORER_SIDEBAR_PANE_ID;
+    layoutByWorkspace[workspaceKey] = {
+      ...layout,
+      root: appendTabToPane(layout.root, explorerPaneId, {
+        tabId,
+        target,
+        createdAt: Date.now(),
+      }),
+    };
+  }
+  return { ...data, layoutByWorkspace };
+}
+
+function appendTabToPane(node: SplitNode, paneId: string, tab: WorkspaceTab): SplitNode {
+  if (node.kind === "group") {
+    return {
+      kind: "group",
+      group: {
+        ...node.group,
+        children: node.group.children.map((child) => appendTabToPane(child, paneId, tab)),
+      },
+    };
+  }
+  if (node.pane.id !== paneId) return node;
+  const pane = node.pane as SplitPane & { tabs?: WorkspaceTab[] };
+  const tabs = pane.tabs ?? [];
+  if (tabs.some((existing) => existing.target.kind === tab.target.kind)) return node;
+  return {
+    kind: "pane",
+    pane: { ...pane, tabs: [...tabs, tab], tabIds: [...pane.tabIds, tab.tabId] } as SplitPane,
+  };
+}
+
+function migrateVersionOnePersistedState(
+  data: z.infer<typeof WorkspaceLayoutPersistedStateSchema>,
+  ids: WorkspaceLayoutIdSource,
+): z.infer<typeof WorkspaceLayoutPersistedStateSchema> {
+  const result = { data };
 
   const layoutByWorkspace: Record<string, WorkspaceLayout> = {};
   const explorerPaneIdByWorkspace: Record<string, string | null> = {};

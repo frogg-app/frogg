@@ -22,11 +22,12 @@ import {
   resolveComposerAttachmentSubmitFormat,
   splitComposerAttachmentsForSubmit,
 } from "@/composer/attachments/submit";
-import type { CreateAgentRequestOptions, DaemonClient } from "@frogg/client/internal/daemon-client";
+import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { projectIconPlaceholderLabelFromDisplayName } from "@/utils/project-display-name";
 import { requireWorkspaceDirectory } from "@/utils/workspace-directory";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
+import { buildCreateAgentOptions } from "@/components/workspace-setup-create-agent-options";
 import type { MessagePayload } from "@/composer/types";
 
 function toProjectIconDataUri(icon: { mimeType: string; data: string } | null): string | null {
@@ -108,52 +109,6 @@ function failureMessageForCreationMethod(
   return method === "create_worktree"
     ? t("workspaceSetup.errors.failedCreateWorktree")
     : t("workspaceSetup.errors.failedOpenProject");
-}
-
-function buildCreateAgentOptions({
-  composerState,
-  text,
-  attachments,
-  encodedImages,
-  workspaceDirectory,
-  workspaceId,
-  provider,
-}: {
-  composerState: {
-    modeOptions: { id: string }[];
-    selectedMode: string;
-    effectiveModelId: string | null;
-    effectiveThinkingOptionId: string | null;
-  };
-  text: string;
-  attachments: NonNullable<CreateAgentRequestOptions["attachments"]>;
-  encodedImages: NonNullable<CreateAgentRequestOptions["images"]> | null;
-  workspaceDirectory: string;
-  workspaceId: string;
-  provider: CreateAgentRequestOptions["provider"];
-}): CreateAgentRequestOptions {
-  // Reconcile the selected mode against the discovered modes. The mode picker
-  // shows modeOptions[0] when the stored mode isn't in the list (e.g. a stale
-  // globally-remembered mode this workspace's provider config no longer
-  // defines), so the submitted mode must match that display rather than send a
-  // stale mode the provider would reject.
-  const modeOptionIds = composerState.modeOptions.map((mode) => mode.id);
-  const reconciledMode = modeOptionIds.includes(composerState.selectedMode)
-    ? composerState.selectedMode
-    : (modeOptionIds[0] ?? "");
-  return {
-    provider,
-    cwd: workspaceDirectory,
-    workspaceId,
-    ...(reconciledMode !== "" ? { modeId: reconciledMode } : {}),
-    ...(composerState.effectiveModelId ? { model: composerState.effectiveModelId } : {}),
-    ...(composerState.effectiveThinkingOptionId
-      ? { thinkingOptionId: composerState.effectiveThinkingOptionId }
-      : {}),
-    ...(text.trim() ? { initialPrompt: text.trim() } : {}),
-    ...(encodedImages && encodedImages.length > 0 ? { images: encodedImages } : {}),
-    ...(attachments.length > 0 ? { attachments } : {}),
-  };
 }
 
 export function WorkspaceSetupDialog() {

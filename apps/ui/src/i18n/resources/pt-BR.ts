@@ -2,6 +2,44 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ptBR: TranslationResources = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "Execuções do GitHub Actions e do Jenkins para este branch",
+    runCount_one: "{{count}} execução",
+    runCount_other: "{{count}} execuções",
+    runningCount: "{{count}} em andamento",
+    refresh: "Atualizar CI",
+    openRun: "Abrir execução",
+    openLogs: "Abrir logs",
+    unsupportedTitle: "Atualize o daemon",
+    unsupportedDescription: "O daemon deste host é antigo demais para mostrar execuções de CI.",
+    errorTitle: "Não foi possível carregar a CI",
+    noBranchTitle: "Fora de um branch",
+    noBranchDescription: "Faça checkout de um branch para ver as execuções de CI.",
+    notConfiguredTitle: "CI não configurada",
+    notConfiguredDescription:
+      "O GitHub Actions aparece para remotos do GitHub. Adicione uma entrada ci.jenkins ao frogg.json para o Jenkins.",
+    emptyTitle: "Nenhuma execução de CI",
+    emptyDescription: "Nada foi executado para {{branch}} ainda.",
+    runners: "Runners",
+    runnerSummary: "{{busy}} de {{total}} ocupados",
+    queuedCount_one: "{{count}} na fila",
+    queuedCount_other: "{{count}} na fila",
+    noRunners: "Nenhum runner atribuído ainda",
+    waitingForRunner: "Aguardando runner",
+    hosted: "Hospedado",
+    selfHosted: "Auto-hospedado",
+    idle: "Ocioso",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "Na fila",
+    },
+  },
+
   hostAdd: {
     title: "Adicionar um host",
     connecting: "Adicionando {{endpoint}}…",
@@ -676,6 +714,7 @@ export const ptBR: TranslationResources = {
         toggle: "Alternar painel lateral",
         changes: "Alterações",
         files: "Arquivos",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "Falha ao copiar",
@@ -2177,6 +2216,7 @@ export const ptBR: TranslationResources = {
     archiveAction: "Arquivar {{label}}",
     archiveTooltip: "Arquivar subagente",
     archiveFinishedAction: "Arquivar subagentes concluídos",
+    actionsMenu: "Ações para {{label}}",
     archiveFinishedRetry: "Tentar novamente ({{failed}}/{{total}})",
   },
   panels: {
@@ -3171,10 +3211,12 @@ export const ptBR: TranslationResources = {
           providerSignIn: "Login do provedor",
           signedIn: "Conectado",
           notSignedIn: "Não conectado",
-          inUse: "Em uso",
+          isDefault: "Padrão",
           signIn: "Entrar",
           reauthenticate: "Entrar novamente",
-          makeActive: "Usar esta conta",
+          makeDefault: "Definir como padrão",
+          defaultAccountHint:
+            "Novos agentes neste host começam na conta padrão. Todas as contas conectadas continuam utilizáveis ao mesmo tempo.",
           signInHint: "Entrar executa o login do próprio {{provider}} em um terminal neste host.",
           usageTitle: "Uso",
           defaultsTitle: "Padrões para novos agentes",

@@ -2435,6 +2435,13 @@ export const CheckoutForgeSetAutoMergeRequestSchema = z.object({
   requestId: z.string(),
 });
 
+/** CI runs (GitHub Actions, Jenkins) for the checkout's current branch. */
+export const CheckoutCiListRunsRequestSchema = z.object({
+  type: z.literal("checkout.ci.list_runs.request"),
+  cwd: z.string(),
+  requestId: z.string(),
+});
+
 // COMPAT(githubAutoMergeRpc): legacy RPC retained when
 // checkout.forge.set_auto_merge.* shipped in v0.2.0-beta.1. Stop serving and
 // consuming it after 2027-01-17 once client and daemon floors are >= v0.2.0.
@@ -3435,6 +3442,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   CheckoutPrCreateRequestSchema,
   CheckoutPrMergeRequestSchema,
   CheckoutForgeSetAutoMergeRequestSchema,
+  CheckoutCiListRunsRequestSchema,
   CheckoutGithubSetAutoMergeRequestSchema,
   CheckoutCommitsListRequestSchema,
   CheckoutCommitFileDiffRequestSchema,
@@ -3871,6 +3879,8 @@ export const ServerInfoStatusPayloadSchema = z
         // gate and githubCheckDetails fallback after 2027-01-17 once the
         // supported daemon floor is >= v0.2.0.
         forgeCheckDetails: z.boolean().optional(),
+        // COMPAT(ciRuns): added in v1.5.8, remove gate after 2027-09-19.
+        ciRuns: z.boolean().optional(),
         // COMPAT(forgeSearch): added in v0.2.0-beta.1. Remove the feature gate
         // and github_search fallback after 2027-01-17 once the supported daemon
         // floor is >= v0.2.0.
@@ -5700,6 +5710,68 @@ export const CheckoutForgeSetAutoMergeResponseSchema = z.object({
   }),
 });
 
+// Provider and status are open strings rather than enums so a newer daemon can report a provider
+// or state an older app does not know; the app maps unknown values to a neutral presentation.
+// Known providers: "githubActions", "jenkins". Known statuses: "queued", "running", "success",
+// "failure", "cancelled", "skipped".
+export const CiStepSchema = z.object({
+  name: z.string(),
+  status: z.string(),
+});
+
+export const CiRunnerSchema = z.object({
+  name: z.string(),
+  hosted: z.boolean(),
+  labels: z.array(z.string()),
+});
+
+export const CiJobSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  status: z.string(),
+  /** 0..1, or null when the provider gives no basis for an estimate. */
+  progress: z.number().nullable(),
+  startedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  url: z.string().nullable(),
+  runner: CiRunnerSchema.nullable(),
+  steps: z.array(CiStepSchema),
+});
+
+export const CiRunSchema = z.object({
+  id: z.string(),
+  provider: z.string(),
+  pipeline: z.string(),
+  number: z.number().nullable(),
+  trigger: z.string().nullable(),
+  status: z.string(),
+  progress: z.number().nullable(),
+  startedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  url: z.string().nullable(),
+  jobs: z.array(CiJobSchema),
+});
+
+export const CiProviderErrorSchema = z.object({
+  provider: z.string(),
+  message: z.string(),
+});
+
+export const CheckoutCiListRunsResponseSchema = z.object({
+  type: z.literal("checkout.ci.list_runs.response"),
+  payload: z.object({
+    cwd: z.string(),
+    branch: z.string().nullable(),
+    runs: z.array(CiRunSchema),
+    /** Providers that were queried for this checkout, whether or not they returned runs. */
+    providers: z.array(z.string()),
+    /** Per-provider failures; the other providers' runs are still returned. */
+    providerErrors: z.array(CiProviderErrorSchema),
+    error: CheckoutErrorSchema.nullable(),
+    requestId: z.string(),
+  }),
+});
+
 // COMPAT(githubAutoMergeRpc): legacy RPC retained when
 // checkout.forge.set_auto_merge.* shipped in v0.2.0-beta.1. Stop serving and
 // consuming it after 2027-01-17 once client and daemon floors are >= v0.2.0.
@@ -6996,6 +7068,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   CheckoutPrCreateResponseSchema,
   CheckoutPrMergeResponseSchema,
   CheckoutForgeSetAutoMergeResponseSchema,
+  CheckoutCiListRunsResponseSchema,
   CheckoutGithubSetAutoMergeResponseSchema,
   CheckoutCommitsListResponseSchema,
   CheckoutCommitFileDiffResponseSchema,
@@ -7465,6 +7538,12 @@ export type CheckoutPrCreateResponse = z.infer<typeof CheckoutPrCreateResponseSc
 export type CheckoutPrMergeRequest = z.infer<typeof CheckoutPrMergeRequestSchema>;
 export type CheckoutPrMergeResponse = z.infer<typeof CheckoutPrMergeResponseSchema>;
 export type CheckoutPrMergeMethod = z.infer<typeof CheckoutPrMergeRequestSchema>["mergeMethod"];
+export type CheckoutCiListRunsRequest = z.infer<typeof CheckoutCiListRunsRequestSchema>;
+export type CheckoutCiListRunsResponse = z.infer<typeof CheckoutCiListRunsResponseSchema>;
+export type CiRun = z.infer<typeof CiRunSchema>;
+export type CiJob = z.infer<typeof CiJobSchema>;
+export type CiRunner = z.infer<typeof CiRunnerSchema>;
+export type CiStep = z.infer<typeof CiStepSchema>;
 export type CheckoutForgeSetAutoMergeRequest = z.infer<
   typeof CheckoutForgeSetAutoMergeRequestSchema
 >;

@@ -150,7 +150,7 @@ describe("resolveWorkspaceRouteState", () => {
     ).toEqual({
       kind: "recoveryUnavailable",
       hostName: "Laptop",
-      message: "Update Frogg to recover this workspace.",
+      message: "Update frogg to recover this workspace.",
     });
   });
 

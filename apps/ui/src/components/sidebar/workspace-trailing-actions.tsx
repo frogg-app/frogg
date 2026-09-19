@@ -18,29 +18,33 @@ import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sideba
 import { SidebarWorkspaceAccountIndicator } from "@/components/sidebar/workspace-account";
 import { WorkspaceAgentDisclosure } from "@/components/sidebar/agents/workspace-tree";
 import { useFadePresence } from "@/components/sidebar/use-fade-presence";
+import { SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH } from "@/components/sidebar/row-metrics";
 import {
   SidebarWorkspaceTrailingContent,
   type SidebarWorkspaceTrailing,
 } from "@/components/sidebar/workspace-trailing";
 
-/**
- * The actions column's width: the kebab trigger's painted footprint (a 14px icon, 2px padding
- * each side, 2px lead-in) less the 7px it is pulled right onto the row's trailing edge.
- */
-export const SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH = 13;
 /** How much of the rail's scrim is gradient before it turns solid under the icons. */
 const RAIL_SCRIM_FADE_WIDTH = 24;
 const RAIL_SCRIM_WIDTH = QUICK_ACTIONS_EXPANDED_WIDTH + RAIL_SCRIM_FADE_WIDTH;
+/**
+ * How far left the rail starts when the row is also showing its workspace-jump number badge:
+ * the badge's own width plus a gap. The badge is an overlay pinned to the row's right edge,
+ * so the rail has to step aside for it rather than draw underneath it.
+ */
+const SHORTCUT_BADGE_CLEARANCE = 22;
 
 /**
  * The trailing cluster of a sidebar workspace row, right to left: the actions column, the
  * account, the agent disclosure, then the diff stat or timestamp.
  *
  * The actions column is a fixed width at the row's right edge on every row that has actions.
- * The 3-dot kebab fades into it on hover. Holding Alt cross-fades the kebab into the quick
+ * The 3-dot kebab fades into it on hover. Holding Control cross-fades the kebab into the quick
  * action rail, which is pinned to that same right edge — so it lands on the exact same pixels
  * on every row whatever the title and metadata are — and grows leftwards over a scrim that
- * fades out whatever it covers. Nothing it does changes the title's width.
+ * fades out whatever it covers. When the row is also showing its workspace-jump number badge,
+ * the rail steps left of the badge instead, which keeps the quick-swap key visible. Nothing it
+ * does changes the title's width.
  *
  * One component for all three row renderers (project mode's two and status mode's one). They
  * used to keep a copy each, which is exactly how the rule about what shows when drifted.
@@ -86,7 +90,7 @@ export function SidebarWorkspaceTrailingActions({
   archiveShortcutKeys?: ShortcutKey[][] | null;
   openInFileManagerPath?: string | null;
 }): ReactElement | null {
-  // A one-boolean selector so a held Alt re-renders this cluster and nothing above it. The
+  // A one-boolean selector so a held Control re-renders this cluster and nothing above it. The
   // rows themselves, their titles and their meta lines stay untouched.
   const quickActionsModifierDown = useKeyboardShortcutsStore(
     (state) => state.quickActionsModifierDown,
@@ -113,8 +117,11 @@ export function SidebarWorkspaceTrailingActions({
     [kebabPresence.progress],
   );
   const railLayerStyle = useMemo(
-    () => [styles.railLayer, { opacity: railPresence.progress }],
-    [railPresence.progress],
+    () => [
+      styles.railLayer,
+      { opacity: railPresence.progress, right: showShortcut ? SHORTCUT_BADGE_CLEARANCE : 0 },
+    ],
+    [railPresence.progress, showShortcut],
   );
   const {
     settings: { workspaceTitleSource },

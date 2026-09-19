@@ -2,6 +2,45 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const es: TranslationResources = {
+  ciMonitor: {
+    label: "CI",
+    subtitle: "Ejecuciones de GitHub Actions y Jenkins para esta rama",
+    runCount_one: "{{count}} ejecución",
+    runCount_other: "{{count}} ejecuciones",
+    runningCount: "{{count}} en curso",
+    refresh: "Actualizar CI",
+    openRun: "Abrir ejecución",
+    openLogs: "Abrir registros",
+    unsupportedTitle: "Actualiza el daemon",
+    unsupportedDescription:
+      "El daemon de este host es demasiado antiguo para mostrar ejecuciones de CI.",
+    errorTitle: "No se pudo cargar la CI",
+    noBranchTitle: "No estás en una rama",
+    noBranchDescription: "Cambia a una rama para ver sus ejecuciones de CI.",
+    notConfiguredTitle: "CI sin configurar",
+    notConfiguredDescription:
+      "GitHub Actions aparece con remotos de GitHub. Añade una entrada ci.jenkins a frogg.json para Jenkins.",
+    emptyTitle: "Sin ejecuciones de CI",
+    emptyDescription: "Aún no se ha ejecutado nada para {{branch}}.",
+    runners: "Runners",
+    runnerSummary: "{{busy}} de {{total}} ocupados",
+    queuedCount_one: "{{count}} en cola",
+    queuedCount_other: "{{count}} en cola",
+    noRunners: "Aún no hay runners asignados",
+    waitingForRunner: "Esperando un runner",
+    hosted: "Alojado",
+    selfHosted: "Autoalojado",
+    idle: "Inactivo",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+      other: "CI",
+    },
+    status: {
+      queued: "En cola",
+    },
+  },
+
   hostAdd: {
     title: "Añadir un host",
     connecting: "Añadiendo {{endpoint}}…",
@@ -677,6 +716,7 @@ export const es: TranslationResources = {
         toggle: "Alternar panel lateral",
         changes: "Cambios",
         files: "Archivos",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "Copia fallida",
@@ -2190,6 +2230,7 @@ export const es: TranslationResources = {
     archiveAction: "Archivo{{label}}",
     archiveTooltip: "Subagente de archivo",
     archiveFinishedAction: "Archivar subagentes finalizados",
+    actionsMenu: "Acciones para {{label}}",
     archiveFinishedRetry: "Reintentar ({{failed}}/{{total}})",
   },
   panels: {
@@ -3185,10 +3226,12 @@ export const es: TranslationResources = {
           providerSignIn: "Sesión del proveedor",
           signedIn: "Sesión iniciada",
           notSignedIn: "Sin iniciar sesión",
-          inUse: "En uso",
+          isDefault: "Predeterminada",
           signIn: "Iniciar sesión",
           reauthenticate: "Volver a iniciar sesión",
-          makeActive: "Usar esta cuenta",
+          makeDefault: "Establecer como predeterminada",
+          defaultAccountHint:
+            "Los nuevos agentes de este host se inician en la cuenta predeterminada. Todas las cuentas con sesión iniciada siguen disponibles a la vez.",
           signInHint:
             "Iniciar sesión ejecuta el inicio de sesión propio de {{provider}} en una terminal de este host.",
           usageTitle: "Uso",
