@@ -158,6 +158,8 @@ function appendProviderChildren({
         parentAgentId: descriptor.parentAgentId,
         subagentId: descriptor.id,
       },
+      // A provider subagent runs inside its parent's process, so it runs as the same account.
+      providerAccountId: parent.providerAccountId,
       children: [],
     });
   }

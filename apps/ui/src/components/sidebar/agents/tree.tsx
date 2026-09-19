@@ -25,6 +25,7 @@ import { openPreferredWorkspaceTarget } from "@/workspace-tabs/open-beside";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { usePanelStore } from "@/stores/panel-store";
 import { useSettings } from "@/hooks/use-settings";
+import { SidebarAccountIndicator } from "@/components/sidebar/workspace-account";
 import { useSidebarAgents, type ChildDiscovery } from "./provider";
 import type { Theme } from "@/styles/theme";
 import type { SidebarAgentNode } from "./model";
@@ -182,6 +183,11 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
               </Text>
             ) : null}
           </View>
+          <SidebarAccountIndicator
+            serverId={node.serverId}
+            provider={node.row.provider}
+            providerAccountId={node.providerAccountId}
+          />
           {hasChildren ? <Text style={styles.detail}>{node.children.length}</Text> : null}
         </Pressable>
         {canExpand ? (

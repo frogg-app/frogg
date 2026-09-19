@@ -14,9 +14,9 @@ export { resolveWorkspaceAccountAgent } from "./model";
 /**
  * COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
  *
- * The account glyph on a workspace row, for providers the user has signed into more than
- * once. Icon only: the row's trailing slot already belongs to the diff stat or the
- * timestamp, so the name lives in the tooltip and this sits beside the title instead.
+ * The account on a workspace row, for providers the user has signed into more than once:
+ * the account's name, then its glyph, beside the title. The full "Account: …" wording lives
+ * in the tooltip.
  *
  * Renders nothing — and runs no snapshot query — for a workspace with no agent, which is
  * why the fetching half is a separate component below.
@@ -26,7 +26,7 @@ export function SidebarWorkspaceAccountIndicator({ serverId }: { serverId: strin
   const accountAgent = useMemo(() => resolveWorkspaceAccountAgent(roots), [roots]);
   if (!accountAgent) return null;
   return (
-    <ResolvedAccountIndicator
+    <SidebarAccountIndicator
       serverId={serverId}
       provider={accountAgent.provider}
       providerAccountId={accountAgent.providerAccountId}
@@ -34,14 +34,21 @@ export function SidebarWorkspaceAccountIndicator({ serverId }: { serverId: strin
   );
 }
 
-function ResolvedAccountIndicator({
+/**
+ * The account one agent runs as. Shared by workspace rows and the agent tree under them, so
+ * every tab and subagent names its account the same way.
+ */
+export function SidebarAccountIndicator({
   serverId,
   provider,
   providerAccountId,
+  showLabel = true,
 }: {
   serverId: string;
   provider: string;
   providerAccountId: string | null | undefined;
+  /** The account name to the left of the glyph; off leaves the glyph alone. */
+  showLabel?: boolean;
 }) {
   const { t } = useTranslation();
   // Home scope rather than the agent's cwd: accounts are a property of the provider on the
@@ -76,6 +83,11 @@ function ResolvedAccountIndicator({
           accessibilityLabel={label}
           testID="sidebar-workspace-account"
         >
+          {showLabel ? (
+            <Text style={styles.name} numberOfLines={1}>
+              {model.displayLabel}
+            </Text>
+          ) : null}
           <Icon size={12} color={color} />
         </View>
       </TooltipTrigger>
@@ -90,9 +102,19 @@ const styles = StyleSheet.create((theme) => ({
   // Matches the trailing slot's line box so the glyph sits on the title's baseline row.
   indicator: {
     height: 20,
-    flexShrink: 0,
+    flexShrink: 1,
+    minWidth: 0,
+    maxWidth: 120,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: theme.spacing[1],
+  },
+  name: {
+    flexShrink: 1,
+    minWidth: 0,
+    color: theme.colors.foregroundExtraMuted,
+    fontSize: theme.fontSize.sm,
   },
   // Icon tints are read off the stylesheet rather than `useUnistyles`, which the lint rule
   // bans, because lucide takes a `color` prop and not a style.
