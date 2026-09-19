@@ -111,6 +111,9 @@ export const es: TranslationResources = {
       fallback: "Mensaje...",
       terminal: "Prompt",
     },
+    staleContext: {
+      warning: "Caché caducada: enviar vuelve a cobrar {{tokens}} tokens de entrada",
+    },
     input: {
       accessibilityLabel: "Agente de mensajes...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -220,6 +223,20 @@ export const es: TranslationResources = {
       selectWithValue: "Seleccione la cuenta del proveedor ({{value}})",
       lockedWithValue: "Cuenta del proveedor ({{value}}), fija para este agente",
       pillLabel: "Cuenta del proveedor: {{value}}",
+      pillTransferLabel: "Cuenta del proveedor: {{value}}. Mueva esta conversación a otra cuenta.",
+      transfer: {
+        title: "Mover esta conversación",
+        subtitle: "En ejecución como {{name}}. Elija la cuenta con la que continuar.",
+        warningTitle: "{{name}} no ha visto esta conversación",
+        warningTitleUnselected: "La cuenta que elija no ha visto esta conversación",
+        warningBody:
+          "Moverla reenvía todo el contexto de {{tokens}} tokens como entrada nueva. Nada de eso cuenta como lectura de caché, y se le cobrarán esos tokens de entrada en cuanto salga el siguiente mensaje.",
+        warningBodyUnknownTokens:
+          "Moverla reenvía todo el contexto como entrada nueva. Nada de eso cuenta como lectura de caché, y se le cobrarán esos tokens de entrada en cuanto salga el siguiente mensaje.",
+        confirm: "Mover conversación",
+        moving: "Moviendo...",
+        failed: "No se pudo mover la conversación",
+      },
     },
     hints: {
       thinking: "Modo de pensamiento",

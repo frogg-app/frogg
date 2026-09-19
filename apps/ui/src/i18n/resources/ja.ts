@@ -111,6 +111,9 @@ export const ja: TranslationResources = {
       fallback: "メッセージ...",
       terminal: "Prompt",
     },
+    staleContext: {
+      warning: "キャッシュ期限切れ: 送信すると入力 {{tokens}} トークンが再課金されます",
+    },
     input: {
       accessibilityLabel: "エージェントにメッセージ...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -220,6 +223,21 @@ export const ja: TranslationResources = {
       selectWithValue: "プロバイダーアカウントを選択（{{value}}）",
       lockedWithValue: "プロバイダーアカウント（{{value}}）、このエージェントでは変更できません",
       pillLabel: "プロバイダーのアカウント: {{value}}",
+      pillTransferLabel:
+        "プロバイダーのアカウント: {{value}}。この会話を別のアカウントへ移動します。",
+      transfer: {
+        title: "この会話を移動",
+        subtitle: "現在は {{name}} で実行中です。続行するアカウントを選択してください。",
+        warningTitle: "{{name}} はこの会話をまだ見ていません",
+        warningTitleUnselected: "選択したアカウントはこの会話をまだ見ていません",
+        warningBody:
+          "移動すると、{{tokens}} トークンのコンテキスト全体が新規の入力として再送信されます。キャッシュ読み取りにはならず、次のメッセージを送った時点でその入力トークンが課金されます。",
+        warningBodyUnknownTokens:
+          "移動すると、コンテキスト全体が新規の入力として再送信されます。キャッシュ読み取りにはならず、次のメッセージを送った時点でその入力トークンが課金されます。",
+        confirm: "会話を移動",
+        moving: "移動中...",
+        failed: "会話を移動できませんでした",
+      },
     },
     hints: {
       thinking: "思考モード",

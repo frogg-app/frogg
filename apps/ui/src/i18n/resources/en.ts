@@ -109,6 +109,10 @@ export const en = {
       fallback: "Message...",
       terminal: "Prompt",
     },
+    staleContext: {
+      // COMPAT(staleContextWarning): added in v1.5.7.
+      warning: "Cache expired: sending re-bills {{tokens}} input tokens",
+    },
     input: {
       accessibilityLabel: "Message agent...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -218,6 +222,21 @@ export const en = {
       selectWithValue: "Select provider account ({{value}})",
       lockedWithValue: "Provider account ({{value}}), fixed for this agent",
       pillLabel: "Provider account: {{value}}",
+      // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+      pillTransferLabel: "Provider account: {{value}}. Move this conversation to another account.",
+      transfer: {
+        title: "Move this conversation",
+        subtitle: "Running as {{name}}. Pick the account to continue as.",
+        warningTitle: "{{name}} has not seen this conversation",
+        warningTitleUnselected: "The account you pick has not seen this conversation",
+        warningBody:
+          "Moving it re-sends the whole {{tokens}} token context as fresh input. None of it counts as a cache read, and you are charged for those input tokens as soon as the next message goes out.",
+        warningBodyUnknownTokens:
+          "Moving it re-sends the whole context as fresh input. None of it counts as a cache read, and you are charged for those input tokens as soon as the next message goes out.",
+        confirm: "Move conversation",
+        moving: "Moving...",
+        failed: "Couldn't move the conversation",
+      },
     },
     hints: {
       thinking: "Thinking mode",

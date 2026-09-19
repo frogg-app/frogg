@@ -127,3 +127,20 @@ export function shouldShowProviderAccountPill(input: {
 }): boolean {
   return input.isRunning && input.accountsCount > 0;
 }
+
+/**
+ * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after
+ * 2027-09-19.
+ *
+ * The accounts a live conversation could be moved to: the picker's own option
+ * list minus the account the agent already runs as, because "move it to where
+ * it already is" is not a move. Reusing the picker's list keeps a transfer
+ * naming accounts exactly as the composer does, Default row included.
+ */
+export function resolveProviderAccountTransferOptions(
+  model: Pick<ProviderAccountControlModel, "options">,
+  selection: ProviderAccountSelection,
+): ProviderAccountOption[] {
+  const currentOptionId = toProviderAccountOptionId(selection);
+  return model.options.filter((option) => option.id !== currentOptionId);
+}

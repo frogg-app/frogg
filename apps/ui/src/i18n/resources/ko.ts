@@ -111,6 +111,9 @@ export const ko: TranslationResources = {
       fallback: "메시지...",
       terminal: "Prompt",
     },
+    staleContext: {
+      warning: "캐시 만료: 전송하면 입력 토큰 {{tokens}}개가 다시 청구됩니다",
+    },
     input: {
       accessibilityLabel: "에이전트에게 메시지...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -220,6 +223,20 @@ export const ko: TranslationResources = {
       selectWithValue: "프로바이더 계정 선택 ({{value}})",
       lockedWithValue: "프로바이더 계정 ({{value}}), 이 에이전트에서는 변경할 수 없음",
       pillLabel: "프로바이더 계정: {{value}}",
+      pillTransferLabel: "프로바이더 계정: {{value}}. 이 대화를 다른 계정으로 옮깁니다.",
+      transfer: {
+        title: "이 대화 옮기기",
+        subtitle: "현재 {{name}}(으)로 실행 중입니다. 이어서 사용할 계정을 선택하세요.",
+        warningTitle: "{{name}}은(는) 이 대화를 본 적이 없습니다",
+        warningTitleUnselected: "선택하는 계정은 이 대화를 본 적이 없습니다",
+        warningBody:
+          "옮기면 {{tokens}} 토큰 컨텍스트 전체가 새 입력으로 다시 전송됩니다. 캐시 읽기로 처리되지 않으며, 다음 메시지를 보내는 즉시 해당 입력 토큰에 요금이 부과됩니다.",
+        warningBodyUnknownTokens:
+          "옮기면 컨텍스트 전체가 새 입력으로 다시 전송됩니다. 캐시 읽기로 처리되지 않으며, 다음 메시지를 보내는 즉시 해당 입력 토큰에 요금이 부과됩니다.",
+        confirm: "대화 옮기기",
+        moving: "옮기는 중...",
+        failed: "대화를 옮기지 못했습니다",
+      },
     },
     hints: {
       thinking: "사고 모드",

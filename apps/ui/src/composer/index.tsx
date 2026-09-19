@@ -98,6 +98,8 @@ import {
   persistAttachmentFromDataUrl,
   persistAttachmentFromFileUri,
 } from "@/attachments/service";
+import type { AgentUsage } from "@frogg/protocol/agent-types";
+import { resolveStaleContextWarning } from "@/composer/stale-context";
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
 import { ComposerVoiceAlertsToggle } from "@/composer/voice-alerts-toggle";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
@@ -253,22 +255,61 @@ function buildRealtimeVoiceButtonStyle(
   );
 }
 
+/** The usage figures the composer reads, flattened out of the agent's last turn. */
+function selectAgentUsage(agent: { lastUsage?: AgentUsage } | null) {
+  const usage = agent?.lastUsage;
+  return {
+    contextWindowMaxTokens: usage?.contextWindowMaxTokens ?? null,
+    contextWindowUsedTokens: usage?.contextWindowUsedTokens ?? null,
+    totalCostUsd: usage?.totalCostUsd ?? null,
+  };
+}
+
 function buildAgentStateSelector(serverId: string, agentId: string) {
   return (state: ReturnType<typeof useSessionStore.getState>) => {
     const agent = state.sessions[serverId]?.agents?.get(agentId) ?? null;
     return {
       status: agent?.status ?? null,
-      contextWindowMaxTokens: agent?.lastUsage?.contextWindowMaxTokens ?? null,
-      contextWindowUsedTokens: agent?.lastUsage?.contextWindowUsedTokens ?? null,
-      totalCostUsd: agent?.lastUsage?.totalCostUsd ?? null,
+      ...selectAgentUsage(agent),
       model: agent?.model ?? null,
       provider: agent?.provider ?? null,
+      // COMPAT(staleContextWarning): added in v1.5.7. How long this conversation
+      // has been sitting decides whether its prompt cache is still worth
+      // anything. See `@/composer/stale-context`.
+      lastActivityAt: agent?.lastActivityAt ?? null,
       // COMPAT(providerUsageAccountScoped): three-valued, so it is passed along
       // as-is rather than coalesced — `null` (the Default pick) and absent name
       // different config directories to the daemon.
       providerAccountId: agent?.providerAccountId,
     };
   };
+}
+
+/**
+ * COMPAT(staleContextWarning): added in v1.5.7. Recomputed on every keystroke,
+ * which is exactly when it matters: the warning is for the message being typed
+ * into a conversation whose prompt cache has already lapsed.
+ */
+function useStaleContextTokens(
+  agentState: {
+    provider: string | null;
+    contextWindowUsedTokens: number | null;
+    lastActivityAt: Date | null;
+  },
+  userInput: string,
+): number | null {
+  const { provider, contextWindowUsedTokens, lastActivityAt } = agentState;
+  return useMemo(
+    () =>
+      resolveStaleContextWarning({
+        provider,
+        contextTokens: contextWindowUsedTokens,
+        lastActivityAt,
+        isComposing: userInput.trim().length > 0,
+        now: Date.now(),
+      })?.tokens ?? null,
+    [contextWindowUsedTokens, lastActivityAt, provider, userInput],
+  );
 }
 
 function renderContextWindowMeter(
@@ -1209,6 +1250,7 @@ function ComposerContentImpl({
     ? t("agentPanel.connectionNotice.composerOffline")
     : resolveMessagePlaceholder(inputMode, isDesktopLayout, t, placeholder);
   const userInput = value;
+  const staleContextTokens = useStaleContextTokens(agentState, userInput);
   const setUserInput = onChangeText;
   const workspaceAttachments = useWorkspaceAttachmentsForScopes(attachmentScopeKeys);
   const {
@@ -2322,6 +2364,7 @@ function ComposerContentImpl({
                   onHeightChange={onComposerHeightChange}
                   inputWrapperStyle={inputWrapperStyle}
                   offline={showOfflineComposer}
+                  staleContextTokens={staleContextTokens}
                   attachmentSlot={attachmentTray}
                   inputMode={inputMode}
                   readOnly={readOnly}
