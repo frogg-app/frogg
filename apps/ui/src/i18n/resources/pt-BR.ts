@@ -1157,6 +1157,7 @@ export const ptBR: TranslationResources = {
         checks: "Verificações",
         services: "Serviços",
         labels: "Etiquetas",
+        account: "Conta",
         diff: "Estatísticas de diff",
         timestamp: "Última atividade",
       },

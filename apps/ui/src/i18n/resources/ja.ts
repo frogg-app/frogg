@@ -1147,6 +1147,7 @@ export const ja: TranslationResources = {
         checks: "チェック",
         services: "サービス",
         labels: "ラベル",
+        account: "アカウント",
         diff: "差分統計",
         timestamp: "最終アクティビティ",
       },

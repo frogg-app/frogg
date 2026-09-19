@@ -1165,6 +1165,7 @@ export const es: TranslationResources = {
         checks: "Comprobaciones",
         services: "Servicios",
         labels: "Etiquetas",
+        account: "Cuenta",
         diff: "Estadísticas de cambios",
         timestamp: "Última actividad",
       },

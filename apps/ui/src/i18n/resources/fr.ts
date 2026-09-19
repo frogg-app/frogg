@@ -1166,6 +1166,7 @@ export const fr: TranslationResources = {
         checks: "Vérifications",
         services: "Services",
         labels: "Libellés",
+        account: "Compte",
         diff: "Statistiques de diff",
         timestamp: "Dernière activité",
       },

@@ -1123,6 +1123,7 @@ export const zhCN: TranslationResources = {
         checks: "检查",
         services: "服务",
         labels: "标签",
+        account: "账户",
         diff: "差异统计",
         timestamp: "最近活动",
       },

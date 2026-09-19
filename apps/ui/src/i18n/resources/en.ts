@@ -1143,6 +1143,7 @@ export const en = {
         checks: "Checks",
         services: "Services",
         labels: "Labels",
+        account: "Account",
         diff: "Diff stats",
         timestamp: "Last activity",
       },
