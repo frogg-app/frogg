@@ -15,6 +15,17 @@
 
 ## Unreleased
 
+- The account pill above the composer can now move a running conversation to
+  another of the provider's accounts. It says what the move costs first: the
+  account it moves to has never sent this conversation upstream, so the whole
+  context is re-sent as fresh input with no cache read, and charged as soon as
+  the next message goes out. The conversation itself, its timeline and its
+  place in the workspace all survive the move, and the account it came from
+  keeps its own copy so it can be moved back.
+- Typing into a Claude conversation that has been sitting for more than an
+  hour outlines the composer in amber and says, in its corner, how many input
+  tokens the next message re-bills. Past that hour the prompt cache is gone,
+  so the message is not the cheap continuation it looks like.
 - Provider accounts are managed only inside their provider's settings sheet,
   which is now one tab per sign-in. The tab you are on scopes the page: its
   sign-in state, usage, new-agent defaults, model access, system prompt,
