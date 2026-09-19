@@ -6,6 +6,9 @@ import { useSessionStore, type Agent } from "@/stores/session-store";
 import { refreshProviderSubagents, useProviderSubagentStore } from "./provider-store";
 import type { ProviderSubagentDescriptorPayload } from "@frogg/protocol/messages";
 
+/** How deep a row sits in the subagent tree. Top-level rows are 0; a workflow's children are 1. */
+export type SubagentRowDepth = number;
+
 export interface FroggSubagentRow {
   kind: "frogg";
   id: Agent["id"];
@@ -17,6 +20,9 @@ export interface FroggSubagentRow {
   status: Agent["status"];
   requiresAttention: Agent["requiresAttention"];
   createdAt: Agent["createdAt"];
+  /** Managed agents are never nested under another subagent. */
+  parentSubagentId?: null;
+  depth?: SubagentRowDepth;
 }
 
 export interface ProviderSubagentRow {
@@ -34,6 +40,13 @@ export interface ProviderSubagentRow {
   status: ProviderSubagentDescriptorPayload["status"];
   requiresAttention: boolean;
   createdAt: Date;
+  /**
+   * The subagent this row runs underneath, when the provider nests its children — Claude's
+   * Workflow rows own the agents their run fans out. Null, or an id with no row of its own, both
+   * read as top level, so an orphan is still shown rather than silently dropped.
+   */
+  parentSubagentId?: string | null;
+  depth?: SubagentRowDepth;
 }
 
 export type SubagentRow = FroggSubagentRow | ProviderSubagentRow;
@@ -114,10 +127,54 @@ export function selectProviderSubagentsForParent(
       status: subagent.status,
       requiresAttention: subagent.status === "failed",
       createdAt: new Date(subagent.createdAt),
+      parentSubagentId: subagent.parentSubagentId ?? null,
     });
   }
-  rows.sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
-  return rows;
+  return orderSubagentRowsByParent(rows);
+}
+
+/**
+ * Order rows so every child follows its own parent, and record how deep each one sits.
+ *
+ * A flat createdAt sort scatters a workflow's agents through the list by start time, which reads
+ * as a fan-out of unrelated rows; ordering by parent is what makes the run legible as one unit.
+ * Siblings keep the chronological order they would have had on their own.
+ *
+ * A row whose parent is not present — the parent was archived, or its descriptor has yet to
+ * arrive — is treated as top level rather than hidden, and a parent cycle cannot strand a row
+ * because every row is emitted exactly once, when its turn in the walk comes.
+ */
+export function orderSubagentRowsByParent<Row extends SubagentRow>(rows: readonly Row[]): Row[] {
+  const byCreatedAt = [...rows].sort(
+    (left, right) => left.createdAt.getTime() - right.createdAt.getTime(),
+  );
+  const present = new Set(byCreatedAt.map((row) => row.id));
+  const childrenByParentId = new Map<string, Row[]>();
+  const roots: Row[] = [];
+  for (const row of byCreatedAt) {
+    const parentId = row.parentSubagentId ?? null;
+    // Self-parenting would otherwise make a row its own ancestor and drop it from the walk.
+    if (!parentId || parentId === row.id || !present.has(parentId)) {
+      roots.push(row);
+      continue;
+    }
+    const siblings = childrenByParentId.get(parentId) ?? [];
+    siblings.push(row);
+    childrenByParentId.set(parentId, siblings);
+  }
+
+  const ordered: Row[] = [];
+  const emitted = new Set<string>();
+  const visit = (row: Row, depth: SubagentRowDepth): void => {
+    if (emitted.has(row.id)) return;
+    emitted.add(row.id);
+    ordered.push((row.depth ?? 0) === depth ? row : { ...row, depth });
+    for (const child of childrenByParentId.get(row.id) ?? []) visit(child, depth + 1);
+  };
+  for (const root of roots) visit(root, 0);
+  // Anything left is part of a parent cycle; it still belongs in the track, at the top level.
+  for (const row of byCreatedAt) visit(row, 0);
+  return ordered;
 }
 
 export function useSubagentsForParent(params: SelectSubagentsParams): SubagentRow[] {
@@ -155,8 +212,6 @@ export function useSubagentsForParent(params: SelectSubagentsParams): SubagentRo
 
   return useMemo(() => {
     if (providerRows.length === 0) return froggRows;
-    const rows = [...froggRows, ...providerRows];
-    rows.sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
-    return rows;
+    return orderSubagentRowsByParent([...froggRows, ...providerRows]);
   }, [froggRows, providerRows]);
 }

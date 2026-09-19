@@ -1,11 +1,16 @@
 import { z } from "zod";
 
 import type { AgentTimelineItem } from "../../../agent-sdk-types.js";
-import { normalizeProviderReplayTimestamp } from "../../../provider-history-timestamps.js";
 import type { ProviderSubagentStatus } from "../../../provider-subagents/store.js";
 import type { SubagentObservation } from "./observation.js";
 import { buildClaudeSubagentSubtitle } from "./presentation.js";
 import type { ClaudeReplayEntry } from "./replay-source.js";
+import {
+  collectWorkflowChildren,
+  observeWorkflowChildren,
+  parseWorkflowProgressAgents,
+  type ClaudeWorkflowChildMeta,
+} from "./workflow-children.js";
 import { formatClaudeWorkflowResult } from "./workflow-output.js";
 
 const ClaudeWorkflowRunSchema = z.object({
@@ -18,12 +23,21 @@ const ClaudeWorkflowRunSchema = z.object({
   defaultModel: z.string().optional().catch(undefined),
   totalTokens: z.number().optional().catch(undefined),
   result: z.unknown().optional(),
+  /** Per-child facts the run summary adds once the run finishes. Shape owned by its own parser. */
+  workflowProgress: z.unknown().optional(),
 });
 
 export type ClaudeWorkflowRun = z.infer<typeof ClaudeWorkflowRunSchema>;
 
 export interface ClaudeWorkflowParentEntry {
   message?: { content?: unknown };
+}
+
+/** What one workflow run directory contributed, already split per child agent. */
+export interface ClaudeWorkflowRunEntries {
+  journal?: string;
+  metaByAgentId?: ReadonlyMap<string, ClaudeWorkflowChildMeta>;
+  entriesByAgentId?: ReadonlyMap<string, readonly ClaudeReplayEntry[]>;
 }
 
 export function parseClaudeWorkflowRun(contents: string): ClaudeWorkflowRun | null {
@@ -48,7 +62,7 @@ export function parseClaudeWorkflowRun(contents: string): ClaudeWorkflowRun | nu
 export function observeReplayWorkflows(input: {
   workflows: readonly ClaudeWorkflowRun[];
   parentEntries: readonly ClaudeWorkflowParentEntry[];
-  entriesByRunId?: ReadonlyMap<string, readonly ClaudeReplayEntry[]>;
+  runsByRunId?: ReadonlyMap<string, ClaudeWorkflowRunEntries>;
   convertEntry?: (entry: ClaudeReplayEntry) => AgentTimelineItem[];
 }): SubagentObservation[] {
   const toolCallIdByRunId = readWorkflowLinks(input.parentEntries);
@@ -82,9 +96,17 @@ export function observeReplayWorkflows(input: {
       ...observeWorkflowTimeline({
         id,
         result: workflow.result,
-        entries: input.entriesByRunId?.get(workflow.runId) ?? [],
-        convertEntry: input.convertEntry,
         finishedAt,
+      }),
+    );
+    observations.push(
+      ...observeReplayWorkflowChildren({
+        workflowSubagentId: id,
+        workflow,
+        ...(input.runsByRunId?.get(workflow.runId)
+          ? { run: input.runsByRunId.get(workflow.runId) }
+          : {}),
+        ...(input.convertEntry ? { convertEntry: input.convertEntry } : {}),
       }),
     );
 
@@ -114,49 +136,54 @@ export function observeReplayWorkflows(input: {
   return observations;
 }
 
+/**
+ * The children the run fanned out, as their own rows beneath the Workflow row.
+ *
+ * Their transcripts stay on those rows: replaying them onto the Workflow row is what used to make
+ * one interleaved pane out of work that several agents did in parallel.
+ */
+function observeReplayWorkflowChildren(input: {
+  workflowSubagentId: string;
+  workflow: ClaudeWorkflowRun;
+  run?: ClaudeWorkflowRunEntries;
+  convertEntry?: (entry: ClaudeReplayEntry) => AgentTimelineItem[];
+}): SubagentObservation[] {
+  return observeWorkflowChildren({
+    workflowSubagentId: input.workflowSubagentId,
+    children: collectWorkflowChildren({
+      ...(input.run?.journal === undefined ? {} : { journal: input.run.journal }),
+      ...(input.run?.metaByAgentId ? { metaByAgentId: input.run.metaByAgentId } : {}),
+      progress: parseWorkflowProgressAgents(input.workflow),
+    }),
+    ...(input.run?.entriesByAgentId ? { entriesByAgentId: input.run.entriesByAgentId } : {}),
+    ...(input.convertEntry ? { convertEntry: input.convertEntry } : {}),
+    // A run cannot still be producing children after the runtime was recreated, so a child with
+    // no recorded outcome is one that never reported back rather than one still working.
+    terminalizeRunning: true,
+  });
+}
+
+/**
+ * The Workflow row's own timeline: the orchestration's result, and nothing its children said.
+ *
+ * The children each own a row now, so replaying their transcripts here as well would both
+ * duplicate every message and interleave agents that ran in parallel into one unreadable pane.
+ */
 function observeWorkflowTimeline(input: {
   id: string;
   result: unknown;
-  entries: readonly ClaudeReplayEntry[];
-  convertEntry?: (entry: ClaudeReplayEntry) => AgentTimelineItem[];
   finishedAt?: string;
 }): SubagentObservation[] {
-  const observations: SubagentObservation[] = [];
-  const replayedAssistantText = new Set<string>();
-  const entries = [...input.entries].sort(compareReplayTimestamps);
-
-  for (const entry of entries) {
-    const timestamp = normalizeProviderReplayTimestamp(entry.timestamp);
-    const items = input.convertEntry?.(entry) ?? [];
-    for (const item of items) {
-      if (item.type === "assistant_message") replayedAssistantText.add(item.text.trim());
-      observations.push({
-        kind: "timeline",
-        id: input.id,
-        item,
-        ...(timestamp ? { timestamp } : {}),
-      });
-    }
-  }
-
   const resultText = formatClaudeWorkflowResult(input.result);
-  if (!resultText || replayedAssistantText.has(resultText.trim())) return observations;
-  observations.push({
-    kind: "timeline",
-    id: input.id,
-    item: { type: "assistant_message", text: resultText },
-    ...(input.finishedAt ? { timestamp: input.finishedAt } : {}),
-  });
-  return observations;
-}
-
-function compareReplayTimestamps(a: ClaudeReplayEntry, b: ClaudeReplayEntry): number {
-  const aTimestamp = normalizeProviderReplayTimestamp(a.timestamp);
-  const bTimestamp = normalizeProviderReplayTimestamp(b.timestamp);
-  if (!aTimestamp && !bTimestamp) return 0;
-  if (!aTimestamp) return 1;
-  if (!bTimestamp) return -1;
-  return Date.parse(aTimestamp) - Date.parse(bTimestamp);
+  if (!resultText) return [];
+  return [
+    {
+      kind: "timeline",
+      id: input.id,
+      item: { type: "assistant_message", text: resultText },
+      ...(input.finishedAt ? { timestamp: input.finishedAt } : {}),
+    },
+  ];
 }
 
 function readWorkflowLinks(entries: readonly ClaudeWorkflowParentEntry[]): Map<string, string> {

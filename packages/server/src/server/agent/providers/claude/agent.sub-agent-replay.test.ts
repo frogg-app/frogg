@@ -122,7 +122,7 @@ describe("ClaudeAgentSession persisted subagent replay", () => {
   function writeWorkflowSession(
     status: string,
     options: {
-      children?: { agentId: string; output: string; timestamp: string }[];
+      children?: { agentId: string; label?: string; output: string; timestamp: string }[];
     } = {},
   ): void {
     const subagentDirectory = writeParentSession([
@@ -171,12 +171,42 @@ describe("ClaudeAgentSession persisted subagent replay", () => {
         totalTokens: 20_417,
       }),
     );
-    for (const child of options.children ?? []) {
+    const children = options.children ?? [];
+    if (children.length > 0) {
+      const workflowChildDirectory = path.join(subagentDirectory, "workflows", WORKFLOW_RUN_ID);
+      mkdirSync(workflowChildDirectory, { recursive: true });
+      // The journal is what declares a run's children and records their outcomes; without it the
+      // run directory is just transcripts nobody has claimed.
+      writeFileSync(
+        path.join(workflowChildDirectory, "journal.jsonl"),
+        [
+          JSON.stringify({ type: "launched" }),
+          ...children.map((child) =>
+            JSON.stringify({
+              type: "started",
+              agentId: child.agentId,
+              label: child.label ?? child.agentId,
+              phase: "Inspect",
+            }),
+          ),
+          ...children.map((child) =>
+            JSON.stringify({ type: "result", agentId: child.agentId, result: child.output }),
+          ),
+        ].join("\n"),
+      );
+    }
+    for (const child of children) {
       const workflowChildDirectory = path.join(subagentDirectory, "workflows", WORKFLOW_RUN_ID);
       writeSubagent({
         subagentDir: workflowChildDirectory,
         agentId: child.agentId,
-        meta: JSON.stringify({ agentType: "workflow-subagent", spawnDepth: 1 }),
+        meta: JSON.stringify({
+          agentType: "workflow-subagent",
+          spawnDepth: 1,
+          description: child.label ?? child.agentId,
+          workflowPhase: "Inspect",
+          model: "claude-sonnet-5",
+        }),
         sidechainLines: [
           JSON.stringify({
             type: "user",
@@ -374,16 +404,18 @@ describe("ClaudeAgentSession persisted subagent replay", () => {
     expect(upserts(await replayDescriptors())).toEqual([]);
   });
 
-  test("replays a completed workflow as one generic provider-subagent row", async () => {
+  test("replays a completed workflow with its children as rows beneath it", async () => {
     writeWorkflowSession("completed", {
       children: [
         {
           agentId: "a-later-child",
+          label: "later",
           output: "later workflow child result",
           timestamp: "2026-08-06T08:04:45.500Z",
         },
         {
           agentId: "z-earlier-child",
+          label: "earlier",
           output: "earlier workflow child result",
           timestamp: "2026-08-06T08:04:45.000Z",
         },
@@ -403,16 +435,40 @@ describe("ClaudeAgentSession persisted subagent replay", () => {
     expect(events).toContainEqual(
       expect.objectContaining({ subtitle: "Workflow · Sonnet 5 · 20.4k tokens" }),
     );
-    expect(events.at(-1)).toMatchObject({
-      id: WORKFLOW_TOOL_USE_ID,
-      status: "completed",
-    });
+
+    // Each agent the run fanned out is its own row, named by its journal label and pointing at
+    // the Workflow row as its parent.
+    const childId = (agentId: string) => `${WORKFLOW_TOOL_USE_ID}::${agentId}`;
+    for (const [agentId, label] of [
+      ["a-later-child", "later"],
+      ["z-earlier-child", "earlier"],
+    ]) {
+      expect(events).toContainEqual(
+        expect.objectContaining({
+          id: childId(agentId),
+          title: label,
+          parentSubagentId: WORKFLOW_TOOL_USE_ID,
+        }),
+      );
+      expect(events).toContainEqual(
+        expect.objectContaining({ id: childId(agentId), status: "completed" }),
+      );
+      expect(events).toContainEqual(
+        expect.objectContaining({ id: childId(agentId), subtitle: "Inspect · Sonnet 5" }),
+      );
+    }
+    expect(new Set(events.map((event) => event.id))).toEqual(
+      new Set([WORKFLOW_TOOL_USE_ID, childId("a-later-child"), childId("z-earlier-child")]),
+    );
+
+    // A child's transcript belongs to that child's pane. Replaying it onto the Workflow row as
+    // well is what used to interleave agents that ran in parallel into one unreadable timeline.
     expect(descriptors).toContainEqual({
       type: "provider_subagent",
       provider: "claude",
       event: {
         type: "timeline",
-        id: WORKFLOW_TOOL_USE_ID,
+        id: childId("z-earlier-child"),
         item: expect.objectContaining({
           type: "assistant_message",
           text: "earlier workflow child result",
@@ -420,19 +476,24 @@ describe("ClaudeAgentSession persisted subagent replay", () => {
         timestamp: "2026-08-06T08:04:45.000Z",
       },
     });
-    expect(new Set(events.map((event) => event.id))).toEqual(new Set([WORKFLOW_TOOL_USE_ID]));
-    const workflowOutputs = descriptors
+    const workflowRowOutputs = descriptors
       .map((event) => event.event)
-      .filter((event) => event.type === "timeline" && event.item.type === "assistant_message")
-      .map((event) => (event.item.type === "assistant_message" ? event.item.text : ""));
-    expect(workflowOutputs).toEqual([
-      "earlier workflow child result",
-      "later workflow child result",
-    ]);
+      .filter(
+        (event) =>
+          event.type === "timeline" &&
+          event.id === WORKFLOW_TOOL_USE_ID &&
+          event.item.type === "assistant_message",
+      );
+    expect(workflowRowOutputs).toEqual([]);
     expect(
       descriptors
         .map((event) => event.event)
-        .filter((event) => event.type === "timeline" && event.item.type === "user_message")
+        .filter(
+          (event) =>
+            event.type === "timeline" &&
+            event.id === WORKFLOW_TOOL_USE_ID &&
+            event.item.type === "user_message",
+        )
         .map((event) => (event.item.type === "user_message" ? event.item.text : "")),
     ).toEqual(["Verify the workflow row lifecycle"]);
     expect(

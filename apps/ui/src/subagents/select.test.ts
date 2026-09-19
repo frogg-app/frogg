@@ -1,6 +1,11 @@
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { afterEach, describe, expect, it } from "vitest";
-import { selectProviderSubagentsForParent, selectSubagentsForParent } from "./select";
+import {
+  orderSubagentRowsByParent,
+  selectProviderSubagentsForParent,
+  selectSubagentsForParent,
+  type ProviderSubagentRow,
+} from "./select";
 import { useProviderSubagentStore } from "./provider-store";
 import { useSessionStore, type Agent } from "@/stores/session-store";
 
@@ -383,5 +388,74 @@ describe("selectSubagentsForParent", () => {
         EMPTY_PENDING_ARCHIVE_IDS,
       ),
     );
+  });
+});
+
+describe("orderSubagentRowsByParent", () => {
+  function row(
+    id: string,
+    options: { parentSubagentId?: string | null; createdAt?: string } = {},
+  ): ProviderSubagentRow {
+    return {
+      kind: "provider",
+      id,
+      parentAgentId: "parent",
+      provider: "claude",
+      title: id,
+      description: null,
+      subtitle: null,
+      status: "running",
+      requiresAttention: false,
+      createdAt: new Date(options.createdAt ?? "2026-03-08T10:00:00.000Z"),
+      parentSubagentId: options.parentSubagentId ?? null,
+    };
+  }
+
+  it("puts a workflow's children directly beneath it, at depth one", () => {
+    const ordered = orderSubagentRowsByParent([
+      row("later-sibling", { createdAt: "2026-03-08T10:00:03.000Z" }),
+      row("child-b", { parentSubagentId: "workflow", createdAt: "2026-03-08T10:00:02.000Z" }),
+      row("workflow", { createdAt: "2026-03-08T10:00:00.000Z" }),
+      row("child-a", { parentSubagentId: "workflow", createdAt: "2026-03-08T10:00:01.000Z" }),
+    ]);
+
+    expect(ordered.map((entry) => [entry.id, entry.depth ?? 0])).toEqual([
+      ["workflow", 0],
+      ["child-a", 1],
+      ["child-b", 1],
+      ["later-sibling", 0],
+    ]);
+  });
+
+  it("shows a child whose parent is absent rather than hiding it", () => {
+    const ordered = orderSubagentRowsByParent([row("orphan", { parentSubagentId: "gone" })]);
+
+    expect(ordered.map((entry) => [entry.id, entry.depth ?? 0])).toEqual([["orphan", 0]]);
+  });
+
+  it("keeps rows that claim each other as parents", () => {
+    const ordered = orderSubagentRowsByParent([
+      row("a", { parentSubagentId: "b", createdAt: "2026-03-08T10:00:00.000Z" }),
+      row("b", { parentSubagentId: "a", createdAt: "2026-03-08T10:00:01.000Z" }),
+    ]);
+
+    expect(new Set(ordered.map((entry) => entry.id))).toEqual(new Set(["a", "b"]));
+    expect(ordered).toHaveLength(2);
+  });
+
+  it("keeps a row that names itself as its own parent", () => {
+    const ordered = orderSubagentRowsByParent([row("self", { parentSubagentId: "self" })]);
+
+    expect(ordered.map((entry) => [entry.id, entry.depth ?? 0])).toEqual([["self", 0]]);
+  });
+
+  it("nests a grandchild one level deeper again", () => {
+    const ordered = orderSubagentRowsByParent([
+      row("root", { createdAt: "2026-03-08T10:00:00.000Z" }),
+      row("child", { parentSubagentId: "root", createdAt: "2026-03-08T10:00:01.000Z" }),
+      row("grandchild", { parentSubagentId: "child", createdAt: "2026-03-08T10:00:02.000Z" }),
+    ]);
+
+    expect(ordered.map((entry) => entry.depth ?? 0)).toEqual([0, 1, 2]);
   });
 });

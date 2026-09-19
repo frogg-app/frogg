@@ -24770,6 +24770,12 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "parentSubagentId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "required": [
@@ -27240,6 +27246,12 @@
                               ]
                             },
                             "subtitle": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "parentSubagentId": {
                               "type": [
                                 "string",
                                 "null"

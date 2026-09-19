@@ -103,4 +103,32 @@ describe("ProviderSubagentStore", () => {
     expect(page.rows.at(-1)?.seq).toBe(101);
     expect(page.hasOlder).toBe(false);
   });
+
+  test("keeps a child's nesting across the partial upserts that follow it", () => {
+    const subagents = new ProviderSubagentStore();
+    subagents.apply("parent-a", "claude", {
+      type: "upsert",
+      id: "workflow::child-1",
+      title: "server-a",
+      parentSubagentId: "workflow",
+    });
+    // A later status or subtitle says nothing about nesting, and must not flatten the row.
+    const updated = subagents.apply("parent-a", "claude", {
+      type: "upsert",
+      id: "workflow::child-1",
+      status: "completed",
+    });
+
+    expect(updated).toMatchObject({
+      type: "upsert",
+      subagent: { parentSubagentId: "workflow", title: "server-a", status: "completed" },
+    });
+  });
+
+  test("leaves a subagent unnested when no source claimed a parent for it", () => {
+    const subagents = new ProviderSubagentStore();
+    const created = subagents.apply("parent-a", "claude", { type: "upsert", id: "child-1" });
+
+    expect(created).toMatchObject({ type: "upsert", subagent: { parentSubagentId: null } });
+  });
 });

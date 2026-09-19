@@ -5974,6 +5974,8 @@ pub struct AgentProviderSubagentsListResponsePayloadSubagentsItem {
     pub cwd: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subtitle: Option<String>,
+    #[serde(rename = "parentSubagentId", skip_serializing_if = "Option::is_none")]
+    pub parent_subagent_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

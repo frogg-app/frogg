@@ -86,6 +86,18 @@ Agents can create agents. With the Frogg MCP tools or the `frogg` CLI, an agent 
 created this way run in the background and notify the parent when they finish. Provider
 native subagents (for example Claude Code tasks) also appear under their parent.
 
+### Claude Code workflows
+
+When a Claude Code agent runs the Workflow tool, the run appears as a **Workflow** row in
+the subagents track, and each agent the workflow fans out is listed beneath it, indented
+one level. A child row shows the label the workflow gave it, its phase, model and token
+use, and its status as it changes from running to finished. Selecting one opens its own
+timeline, the same as any other subagent.
+
+Children appear while the run is still in progress and keep updating until it finishes.
+Frogg reads them from the run's own directory, so reopening the session later rebuilds
+the same rows from history.
+
 Make a subagent independent without stopping it. Detaching is not confirmed: nothing is lost,
 the agent keeps its history, and the app opens it and confirms with a toast.
 

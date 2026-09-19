@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- A Claude Code Workflow run now lists the agents it fans out beneath its own
+  row in the subagents track, indented one level. Each child shows its label,
+  phase, model and token use, updates from running to finished while the run is
+  still going, and opens its own timeline. Previously only the Workflow itself
+  was visible and every child's transcript was replayed onto that one row,
+  interleaving agents that had run in parallel.
+
 ## 1.5.7 — 2026-09-19
 
 - Holding Alt over the sidebar expands a session's menu into quick action
