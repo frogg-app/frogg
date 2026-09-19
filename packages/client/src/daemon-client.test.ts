@@ -6050,3 +6050,48 @@ test("resolves a timeline page from an older daemon that still holds plugin item
     entries: [{ item: { type: "assistant_message" } }, { item: { type: "plugin" } }],
   });
 });
+
+test("refuses a different daemon on the host's address and reconnects once the right one is back", async () => {
+  const answers = ["srv_foreign", "srv_expected"];
+  const mocks: Array<ReturnType<typeof createMockTransport>> = [];
+  const logger = createMockLogger();
+  const client = new DaemonClient({
+    url: "ws://test",
+    clientId: "identity_unit_test",
+    expectedServerId: "srv_expected",
+    logger,
+    transportFactory: () => {
+      const mock = createMockTransport();
+      mocks.push(mock);
+      return mock.transport;
+    },
+    reconnect: { enabled: true, baseDelayMs: 1, maxDelayMs: 1 },
+  });
+  clients.push(client);
+
+  const answer = (serverId: string) => {
+    const mock = mocks.at(-1)!;
+    mock.triggerMessage(
+      wrapSessionMessage({
+        type: "status",
+        payload: { status: "server_info", serverId, hostname: null, version: null },
+      }),
+    );
+  };
+
+  const connectPromise = client.connect();
+  answer(answers[0]!);
+  expect(client.getConnectionState().status).not.toBe("connected");
+  expect(client.lastError).toContain("different daemon (srv_foreign)");
+  expect(client.getLastServerInfoMessage()).toBeNull();
+  expect(logger.warn).toHaveBeenCalledWith(
+    { expectedServerId: "srv_expected", serverId: "srv_foreign" },
+    "daemon_client_server_identity_mismatch",
+  );
+
+  await vi.waitFor(() => expect(mocks.length).toBe(2));
+  answer(answers[1]!);
+  await connectPromise;
+  expect(client.getConnectionState().status).toBe("connected");
+  expect(client.getLastServerInfoMessage()?.serverId).toBe("srv_expected");
+});

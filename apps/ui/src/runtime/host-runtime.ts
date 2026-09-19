@@ -530,6 +530,10 @@ function createDefaultDeps(): HostRuntimeControllerDeps {
         runtimeGeneration,
         capabilities: appCapabilities,
         trace: nativePerformanceTrace,
+        // Placeholder ids are resolved from the first handshake instead.
+        ...(host.serverId && !isPlaceholderServerId(host.serverId)
+          ? { expectedServerId: host.serverId }
+          : {}),
       } satisfies Omit<DaemonClientConfig, "url">;
       if (connection.type === "directSocket" || connection.type === "directPipe") {
         return new DaemonClient({

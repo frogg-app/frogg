@@ -332,6 +332,12 @@ export interface DaemonClientConfig {
   runtimeGeneration?: number | null;
   password?: string;
   authHeader?: string;
+  /**
+   * The saved host's serverId. A handshake from any other daemon (a different
+   * install or product answering on the same address) is refused and retried
+   * instead of being adopted as this host.
+   */
+  expectedServerId?: string;
   suppressSendErrors?: boolean;
   transportFactory?: DaemonTransportFactory;
   webSocketFactory?: WebSocketFactory;
@@ -6501,6 +6507,25 @@ export class DaemonClient {
     probe.reject(error);
   }
 
+  private rejectUnexpectedServer(serverId: string): boolean {
+    const expected = this.config.expectedServerId;
+    if (!expected || serverId === expected) return false;
+    const reason = `This address is now answered by a different daemon (${serverId}), not this host (${expected}). Stop the other daemon or check the address; reconnecting keeps trying.`;
+    this.logger.warn(
+      { expectedServerId: expected, serverId },
+      "daemon_client_server_identity_mismatch",
+    );
+    this.resetConnectTimeout();
+    this.lastErrorValue = reason;
+    this.disposeTransport(1008, "Unexpected server identity");
+    this.scheduleReconnect({
+      reason,
+      event: "SERVER_IDENTITY_MISMATCH",
+      reasonCode: "server_identity_mismatch",
+    });
+    return true;
+  }
+
   private recordLivenessFailure(error: Error): void {
     this.consecutiveLivenessFailures += 1;
     if (this.consecutiveLivenessFailures < LIVENESS_FAILURE_RECONNECT_THRESHOLD) {
@@ -6521,6 +6546,9 @@ export class DaemonClient {
 
     if (consumerMessage.type === "status") {
       const serverInfo = parseServerInfoStatusPayload(consumerMessage.payload);
+      if (serverInfo && this.rejectUnexpectedServer(serverInfo.serverId)) {
+        return;
+      }
       if (serverInfo) {
         this.lastServerInfoMessage = serverInfo;
         if (this.connectionState.status === "connecting") {
