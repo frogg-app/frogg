@@ -25,10 +25,10 @@ afterEach(() => {
 describe("bundle naming", () => {
   test("matches the installer's asset names per platform", () => {
     expect(bundleAssetName("0.2.16", { platform: "linux", arch: "x64" })).toBe(
-      "Frogg-0.2.16-linux-x86_64-daemon.tar.gz",
+      "frogg-0.2.16-linux-x86_64-daemon.tar.gz",
     );
     expect(bundleAssetName("0.2.16", { platform: "win", arch: "arm64" })).toBe(
-      "Frogg-0.2.16-win-arm64-daemon.zip",
+      "frogg-0.2.16-win-arm64-daemon.zip",
     );
     expect(bundleAssetName("0.1.14", { platform: "linux", arch: "x64" })).toBe(
       "frogg-daemon-0.1.14-linux-x64.tar.gz",
