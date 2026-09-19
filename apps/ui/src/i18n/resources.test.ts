@@ -339,7 +339,6 @@ describe("translation resources", () => {
   });
 
   it("includes sidebar and workspace creation keys for the Batch 4C migration", () => {
-    expect(en.sidebar.workspace.actions.copyPath).toBe("Copy path");
     expect(en.sidebar.project.confirmations.removeTitle).toBe("Remove project?");
     expect(en.sidebar.project.toasts.updateHostToRemove).toBe(
       "Update the host to remove projects.",

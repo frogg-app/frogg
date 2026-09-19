@@ -454,6 +454,7 @@ export const ptBR: TranslationResources = {
     hoverCard: {
       scriptsAccessibility: "Scripts da sessão",
       copyPath: "Copiar caminho",
+      copySessionId: "Copiar ID da sessão",
       copyBranchName: "Copiar nome da branch",
       copied: "Copiado",
     },
@@ -1193,6 +1194,7 @@ export const ptBR: TranslationResources = {
       actions: {
         menu: "Ações do projeto",
         openSettings: "Abrir configurações do projeto",
+        showArchivedSessions: "Mostrar sessões arquivadas",
         openNewWindow: "Abrir em nova janela",
         openNewWindowFailed: "Não foi possível abrir uma nova janela",
         openFolder: "Open in file manager",
@@ -1237,7 +1239,7 @@ export const ptBR: TranslationResources = {
         showMore: "Mostrar mais",
         showLess: "Mostrar menos",
         createWorkspaceFor: "Criar uma nova sessão para {{projectName}}",
-        copyPath: "Copiar caminho",
+        copySessionId: "Copiar ID da sessão",
         copyBranchName: "Copiar nome da branch",
         rename: "Renomear sessão",
         pin: "Fixar no topo",
@@ -1261,8 +1263,7 @@ export const ptBR: TranslationResources = {
         invalidBranchName: "Nome de branch inválido",
       },
       toasts: {
-        workspacePathUnavailable: "Caminho da sessão indisponível",
-        pathCopied: "Caminho copiado",
+        sessionIdCopied: "ID da sessão copiado",
         branchNameCopied: "Nome da branch copiado",
         hostDisconnected: "Host não está conectado",
         hideFailed: "Falha ao ocultar sessão",
@@ -2156,6 +2157,8 @@ export const ptBR: TranslationResources = {
     detachTooltip: "Desanexar subagente",
     detachedToast: "{{name}} agora é um agente independente",
     detachedToastUnnamed: "O subagente agora é um agente independente",
+    copySessionIdAction: "Copiar o ID da sessão de {{label}}",
+    copySessionIdTooltip: "Copiar ID da sessão",
     archiveAction: "Arquivar {{label}}",
     archiveTooltip: "Arquivar subagente",
     archiveFinishedAction: "Arquivar subagentes concluídos",

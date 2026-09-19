@@ -23,14 +23,13 @@ function source(gitActions: GitActions): {
   value: WorkspaceCommandCenterSource;
   runGitActions: GitAction[];
   dispatched: KeyboardActionDefinition[];
-  copiedPaths: number;
   copiedBranchNames: number;
   toggledLabels: Array<{ name: string; assigned: boolean }>;
 } {
   const runGitActions: GitAction[] = [];
   const dispatched: KeyboardActionDefinition[] = [];
   const toggledLabels: Array<{ name: string; assigned: boolean }> = [];
-  const counters = { copiedPaths: 0, copiedBranchNames: 0 };
+  const counters = { copiedBranchNames: 0 };
   return {
     value: {
       gitActions,
@@ -69,7 +68,6 @@ function source(gitActions: GitActions): {
         toggleFocusMode: "Toggle focus mode",
         toggleExplorerSidebar: "Toggle Explorer sidebar",
         rename: "Rename workspace",
-        copyPath: "Copy workspace path",
         copyBranchName: "Copy branch name",
         pin: "Pin to top",
         unpin: "Unpin",
@@ -93,9 +91,6 @@ function source(gitActions: GitActions): {
       labelCatalog: null,
       dispatch: (action) => dispatched.push(action),
       runGitAction: (action) => runGitActions.push(action),
-      copyPath: () => {
-        counters.copiedPaths += 1;
-      },
       copyBranchName: () => {
         counters.copiedBranchNames += 1;
       },
@@ -106,9 +101,6 @@ function source(gitActions: GitActions): {
     runGitActions,
     dispatched,
     toggledLabels,
-    get copiedPaths() {
-      return counters.copiedPaths;
-    },
     get copiedBranchNames() {
       return counters.copiedBranchNames;
     },
@@ -195,7 +187,7 @@ describe("workspace command center contributions", () => {
     expect(contributions.some((item) => item.id === "tab:new-browser")).toBe(false);
     expect(contributions.some((item) => item.id.startsWith("pane:"))).toBe(false);
     expect(contributions.some((item) => item.id === "workspace:rename")).toBe(true);
-    expect(contributions.some((item) => item.id === "workspace:copy-path")).toBe(true);
+    expect(contributions.some((item) => item.id === "workspace:copy-path")).toBe(false);
   });
 
   it("dispatches every tab and pane command to the workspace scope", () => {
@@ -237,16 +229,6 @@ describe("workspace command center contributions", () => {
     rename?.run();
 
     expect(fixture.dispatched).toEqual([{ id: "workspace.rename", scope: "workspace" }]);
-  });
-
-  it("copies the workspace path without going through the dispatcher", () => {
-    const fixture = source({ primary: null, secondary: [], menu: [] });
-    const contributions = buildWorkspaceCommandCenterContributions(fixture.value);
-
-    contributions.find((item) => item.id === "workspace:copy-path")?.run();
-
-    expect(fixture.copiedPaths).toBe(1);
-    expect(fixture.dispatched).toEqual([]);
   });
 
   it("omits Copy branch name when the workspace has no branch, and copies when it does", () => {

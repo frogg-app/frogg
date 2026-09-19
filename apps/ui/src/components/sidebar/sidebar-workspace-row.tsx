@@ -4,7 +4,6 @@ import { View, Text, type GestureResponderEvent } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import type { HostBadgeModel } from "@/hosts/appearance";
 import type { SidebarWorkspaceEntry } from "@/hooks/use-sidebar-workspaces-list";
-import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
 import type { DraggableListDragHandleProps } from "@/components/draggable-list.types";
 import type { ShortcutKey } from "@/utils/format-shortcut";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
@@ -17,26 +16,15 @@ import { redirectIfArchivingActiveWorkspace } from "@/utils/sidebar-workspace-ar
 import { isNative as platformIsNative } from "@/constants/platform";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { useLongPressDragInteraction } from "@/components/sidebar/use-long-press-drag-interaction";
-import {
-  SidebarWorkspaceContextMenu,
-  SidebarWorkspaceMenu,
-} from "@/components/sidebar/sidebar-workspace-menu";
+import { SidebarWorkspaceContextMenu } from "@/components/sidebar/sidebar-workspace-menu";
 import {
   SidebarWorkspaceRowFrame,
   SidebarWorkspaceRowContent,
-  resolveTrailingActionVisibility,
-  SidebarWorkspaceTrailingActionBase,
-  SidebarWorkspaceTrailingActionOverlay,
-  SidebarWorkspaceTrailingActionSlot,
 } from "@/components/sidebar/sidebar-workspace-row-content";
-import { useOpenKebabMenuVisibility } from "@/components/sidebar/use-open-kebab-menu-visibility";
+import { SidebarWorkspaceTrailingActions } from "@/components/sidebar/workspace-trailing-actions";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
 import { selectWorkspaceServiceSummary } from "@/components/sidebar/workspace-meta-row";
-import {
-  SidebarWorkspaceTrailingContent,
-  useSidebarWorkspaceTrailing,
-  type SidebarWorkspaceTrailing,
-} from "@/components/sidebar/workspace-trailing";
+import { useSidebarWorkspaceTrailing } from "@/components/sidebar/workspace-trailing";
 
 function noop() {}
 
@@ -104,8 +92,8 @@ export function SidebarWorkspaceRow({
   }, [archiveController, isArchiving]);
 
   const clipboard = useWorkspaceClipboardActions();
-  const handleCopyPath = useCallback(() => {
-    clipboard.copyPath(workspace);
+  const handleCopySessionId = useCallback(() => {
+    clipboard.copySessionId(workspace);
   }, [clipboard, workspace]);
 
   const handleCopyBranchName = useCallback(() => {
@@ -148,8 +136,8 @@ export function SidebarWorkspaceRow({
         archiveStatus={isArchiving ? "pending" : "idle"}
         archivePendingLabel={t("sidebar.workspace.actions.archiving")}
         onArchive={handleArchive}
+        onCopySessionId={handleCopySessionId}
         onCopyBranchName={canCopyBranchName ? handleCopyBranchName : undefined}
-        onCopyPath={handleCopyPath}
         onRename={handleOpenRename}
         onMarkAsRead={hasClearableAttention ? handleMarkAsRead : undefined}
         archiveShortcutKeys={null}
@@ -180,8 +168,8 @@ interface WorkspaceRowBodyProps {
   archiveStatus?: "idle" | "pending" | "success";
   archivePendingLabel?: string;
   onArchive?: () => void;
+  onCopySessionId?: () => void;
   onCopyBranchName?: () => void;
-  onCopyPath?: () => void;
   onRename?: () => void;
   onMarkAsRead?: () => void;
   archiveShortcutKeys?: ShortcutKey[][] | null;
@@ -203,12 +191,13 @@ function WorkspaceRowBody({
   archiveStatus = "idle",
   archivePendingLabel,
   onArchive,
+  onCopySessionId,
   onCopyBranchName,
-  onCopyPath,
   onRename,
   onMarkAsRead,
   archiveShortcutKeys,
 }: WorkspaceRowBodyProps) {
+  const { t } = useTranslation();
   const isCompact = useIsCompactFormFactor();
   const isTouchPlatform = platformIsNative || isCompact;
   const [isPressed, setIsPressed] = useState(false);
@@ -275,7 +264,7 @@ function WorkspaceRowBody({
               hostBadgeLabel={hostBadge?.label}
               serviceSummary={serviceSummary}
               workspaceKey={workspace.workspaceKey}
-              onCopyPath={onCopyPath}
+              onCopySessionId={onCopySessionId}
               onCopyBranchName={onCopyBranchName}
               onRename={onRename}
               onMarkAsRead={onMarkAsRead}
@@ -308,125 +297,37 @@ function WorkspaceRowBody({
                 shortcutNumber={shortcutNumber}
                 showShortcutBadge={showShortcutBadge}
               >
-                <WorkspaceRowTrailingActions
-                  workspace={workspace}
-                  backdrop={backdrop}
-                  trailing={trailing}
-                  isHovered={isHovered}
-                  isTouchPlatform={isTouchPlatform}
-                  isCreating={isCreating}
-                  showShortcutBadge={showShortcutBadge}
-                  shortcutNumber={shortcutNumber}
-                  archiveLabel={archiveLabel}
-                  archiveStatus={archiveStatus}
-                  archivePendingLabel={archivePendingLabel}
-                  archiveShortcutKeys={archiveShortcutKeys}
-                  onArchive={onArchive}
-                  onCopyBranchName={onCopyBranchName}
-                  onCopyPath={onCopyPath}
-                  onRename={onRename}
-                  onMarkAsRead={onMarkAsRead}
-                />
+                <>
+                  {isCreating ? (
+                    <Text style={styles.workspaceCreatingText}>
+                      {t("sidebar.workspace.status.creating")}
+                    </Text>
+                  ) : null}
+                  <SidebarWorkspaceTrailingActions
+                    workspace={workspace}
+                    backdrop={backdrop}
+                    trailing={trailing}
+                    selected={selected}
+                    isHovered={isHovered}
+                    isTouchPlatform={isTouchPlatform}
+                    showShortcut={showShortcutBadge && shortcutNumber !== null}
+                    archiveLabel={archiveLabel}
+                    archiveStatus={archiveStatus}
+                    archivePendingLabel={archivePendingLabel}
+                    archiveShortcutKeys={archiveShortcutKeys}
+                    onArchive={onArchive}
+                    onCopySessionId={onCopySessionId}
+                    onCopyBranchName={onCopyBranchName}
+                    onRename={onRename}
+                    onMarkAsRead={onMarkAsRead}
+                  />
+                </>
               </SidebarWorkspaceRowContent>
             </SidebarWorkspaceContextMenu>
           </View>
         );
       }}
     </SidebarWorkspaceRowFrame>
-  );
-}
-
-function WorkspaceRowTrailingActions({
-  workspace,
-  backdrop,
-  trailing,
-  isHovered,
-  isTouchPlatform,
-  isCreating,
-  showShortcutBadge,
-  shortcutNumber,
-  archiveLabel,
-  archiveStatus,
-  archivePendingLabel,
-  archiveShortcutKeys,
-  onArchive,
-  onMarkAsRead,
-  onCopyBranchName,
-  onCopyPath,
-  onRename,
-}: {
-  workspace: SidebarWorkspaceEntry;
-  backdrop: SidebarSurfaceBackdrop;
-  trailing: SidebarWorkspaceTrailing;
-  isHovered: boolean;
-  isTouchPlatform: boolean;
-  isCreating: boolean;
-  showShortcutBadge: boolean;
-  shortcutNumber: number | null;
-  archiveLabel?: string;
-  archiveStatus?: "idle" | "pending" | "success";
-  archivePendingLabel?: string;
-  archiveShortcutKeys?: ShortcutKey[][] | null;
-  onArchive?: () => void;
-  onMarkAsRead?: () => void;
-  onCopyBranchName?: () => void;
-  onCopyPath?: () => void;
-  onRename?: () => void;
-}) {
-  const { t } = useTranslation();
-  const showShortcut = showShortcutBadge && shortcutNumber !== null;
-  const {
-    showTrailing,
-    showKebab: showKebabInSlot,
-    showScrim,
-    renderSlot,
-    reserveSlotWidth,
-  } = resolveTrailingActionVisibility({
-    workspace,
-    trailing,
-    hasArchiveAction: Boolean(onArchive),
-    isHovered,
-    isTouchPlatform,
-    showShortcut,
-  });
-  const kebab = useOpenKebabMenuVisibility(showKebabInSlot);
-
-  return (
-    <>
-      {isCreating ? (
-        <Text style={styles.workspaceCreatingText}>{t("sidebar.workspace.status.creating")}</Text>
-      ) : null}
-      {renderSlot ? (
-        <SidebarWorkspaceTrailingActionSlot reserveWidth={reserveSlotWidth}>
-          <SidebarWorkspaceTrailingActionBase visible={showTrailing}>
-            <SidebarWorkspaceTrailingContent workspace={workspace} trailing={trailing} />
-          </SidebarWorkspaceTrailingActionBase>
-          <SidebarWorkspaceTrailingActionOverlay
-            visible={kebab.showKebab}
-            scrimBackdrop={showScrim ? backdrop : undefined}
-          >
-            {onArchive ? (
-              <SidebarWorkspaceMenu
-                {...kebab.menuProps}
-                workspaceKey={workspace.workspaceKey}
-                serverId={workspace.serverId}
-                workspaceId={workspace.workspaceId}
-                workspaceLabels={workspace.labels}
-                onCopyPath={onCopyPath}
-                onCopyBranchName={onCopyBranchName}
-                onRename={onRename}
-                onMarkAsRead={onMarkAsRead}
-                onArchive={onArchive}
-                archiveLabel={archiveLabel}
-                archiveStatus={archiveStatus}
-                archivePendingLabel={archivePendingLabel}
-                archiveShortcutKeys={archiveShortcutKeys}
-              />
-            ) : null}
-          </SidebarWorkspaceTrailingActionOverlay>
-        </SidebarWorkspaceTrailingActionSlot>
-      ) : null}
-    </>
   );
 }
 

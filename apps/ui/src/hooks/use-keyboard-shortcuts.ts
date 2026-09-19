@@ -367,9 +367,15 @@ export function useKeyboardShortcuts({
       if (key === badgeModifierKey && !event.shiftKey) {
         setBadgeModifierDown(true);
       }
+      // The sidebar quick action rail rides a bare Alt, tracked independently of the badge
+      // modifier. The store drops it when the badge modifier is also down, so on web -- where
+      // Alt *is* the jump modifier -- the badges keep the key and the rail never opens.
+      if (key === "Alt" && !event.shiftKey) {
+        useKeyboardShortcutsStore.getState().setQuickActionsModifierDown(true);
+      }
       if (key === "Shift") {
         const state = useKeyboardShortcutsStore.getState();
-        if (state.altDown || state.cmdOrCtrlDown) {
+        if (state.altDown || state.cmdOrCtrlDown || state.quickActionsModifierDown) {
           state.resetModifiers();
         }
       }
@@ -389,6 +395,9 @@ export function useKeyboardShortcuts({
       const key = event.key ?? "";
       if (key === badgeModifierKey) {
         setBadgeModifierDown(false);
+      }
+      if (key === "Alt") {
+        useKeyboardShortcutsStore.getState().setQuickActionsModifierDown(false);
       }
     };
 

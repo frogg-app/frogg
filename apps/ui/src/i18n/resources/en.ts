@@ -449,6 +449,7 @@ export const en = {
     hoverCard: {
       scriptsAccessibility: "Session scripts",
       copyPath: "Copy path",
+      copySessionId: "Copy session ID",
       copyBranchName: "Copy branch name",
       copied: "Copied",
     },
@@ -1177,6 +1178,7 @@ export const en = {
       actions: {
         menu: "Project actions",
         openSettings: "Open project settings",
+        showArchivedSessions: "Show archived sessions",
         openNewWindow: "Open in new window",
         openNewWindowFailed: "Couldn't open a new window",
         openFolder: "Open in file manager",
@@ -1221,7 +1223,7 @@ export const en = {
         showMore: "Show more",
         showLess: "Show less",
         createWorkspaceFor: "Create a new session for {{projectName}}",
-        copyPath: "Copy path",
+        copySessionId: "Copy session ID",
         copyBranchName: "Copy branch name",
         rename: "Rename session",
         pin: "Pin to top",
@@ -1245,8 +1247,7 @@ export const en = {
         invalidBranchName: "Invalid branch name",
       },
       toasts: {
-        workspacePathUnavailable: "Session path not available",
-        pathCopied: "Path copied",
+        sessionIdCopied: "Session ID copied",
         branchNameCopied: "Branch name copied",
         hostDisconnected: "Host is not connected",
         hideFailed: "Failed to hide session",
@@ -2131,6 +2132,8 @@ export const en = {
     detachTooltip: "Detach subagent",
     detachedToast: "{{name}} is now a standalone agent",
     detachedToastUnnamed: "The subagent is now a standalone agent",
+    copySessionIdAction: "Copy session ID for {{label}}",
+    copySessionIdTooltip: "Copy session ID",
     archiveAction: "Archive {{label}}",
     archiveTooltip: "Archive subagent",
     archiveFinishedAction: "Archive finished subagents",

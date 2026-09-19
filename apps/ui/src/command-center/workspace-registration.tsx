@@ -82,7 +82,6 @@ const WORKSPACE_COMMAND_CENTER_ICONS = {
   focusMode: getCommandCenterIcon(ArrowDownToLine),
   explorerSidebar: getCommandCenterIcon(PanelRight),
   // Workspace management action icons
-  copyPath: getCommandCenterIcon(Copy),
   copyBranchName: getCommandCenterIcon(GitBranch),
   pin: getCommandCenterIcon(Pin),
   unpin: getCommandCenterIcon(PinOff),
@@ -211,22 +210,9 @@ export function useWorkspaceCommandCenterActions(): void {
   const runGitAction = useGitActionRunner();
   const clipboard = useWorkspaceClipboardActions();
 
-  const copyPath = useCallback(() => {
-    if (!fields) return;
-    clipboard.copyPath({
-      workspaceId: fields.id,
-      workspaceDirectory: fields.workspaceDirectory,
-      currentBranch: fields.currentBranch,
-    });
-  }, [clipboard, fields]);
-
   const copyBranchName = useCallback(() => {
     if (!fields) return;
-    clipboard.copyBranchName({
-      workspaceId: fields.id,
-      workspaceDirectory: fields.workspaceDirectory,
-      currentBranch: fields.currentBranch,
-    });
+    clipboard.copyBranchName({ workspaceId: fields.id, currentBranch: fields.currentBranch });
   }, [clipboard, fields]);
 
   const { labelCatalog, toggleLabel } = useWorkspaceLabelCatalog(serverId, fields);
@@ -271,7 +257,6 @@ export function useWorkspaceCommandCenterActions(): void {
           toggleExplorerSidebar: t("workspace.tabs.explorerSidebar.toggle"),
           // Workspace management labels
           rename: t("sidebar.workspace.actions.rename"),
-          copyPath: t("workspace.header.actions.copyPath"),
           copyBranchName: t("workspace.header.actions.copyBranchName"),
           pin: t("sidebar.workspace.actions.pin"),
           unpin: t("sidebar.workspace.actions.unpin"),
@@ -301,7 +286,6 @@ export function useWorkspaceCommandCenterActions(): void {
           keyboardActionDispatcher.dispatch(action);
         },
         runGitAction,
-        copyPath,
         copyBranchName,
         toggleLabel,
       }),
@@ -311,7 +295,6 @@ export function useWorkspaceCommandCenterActions(): void {
       canPin,
       canShowSetup,
       copyBranchName,
-      copyPath,
       currentBranch,
       focusedTabs.length,
       gitActions,

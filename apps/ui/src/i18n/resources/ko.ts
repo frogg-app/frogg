@@ -451,6 +451,7 @@ export const ko: TranslationResources = {
     hoverCard: {
       scriptsAccessibility: "세션 스크립트",
       copyPath: "경로 복사",
+      copySessionId: "세션 ID 복사",
       copyBranchName: "브랜치 이름 복사",
       copied: "복사됨",
     },
@@ -1177,6 +1178,7 @@ export const ko: TranslationResources = {
       actions: {
         menu: "프로젝트 작업",
         openSettings: "프로젝트 설정 열기",
+        showArchivedSessions: "보관된 세션 보기",
         openNewWindow: "새 창에서 열기",
         openNewWindowFailed: "새 창을 열 수 없습니다",
         openFolder: "파일 관리자에서 열기",
@@ -1221,7 +1223,7 @@ export const ko: TranslationResources = {
         showMore: "더 보기",
         showLess: "간략히 보기",
         createWorkspaceFor: "{{projectName}}을(를) 위한 새 세션 생성",
-        copyPath: "경로 복사",
+        copySessionId: "세션 ID 복사",
         copyBranchName: "브랜치 이름 복사",
         rename: "세션 이름 변경",
         pin: "상단에 고정",
@@ -1245,8 +1247,7 @@ export const ko: TranslationResources = {
         invalidBranchName: "잘못된 브랜치 이름",
       },
       toasts: {
-        workspacePathUnavailable: "세션 경로를 사용할 수 없습니다",
-        pathCopied: "경로가 복사되었습니다",
+        sessionIdCopied: "세션 ID가 복사되었습니다",
         branchNameCopied: "브랜치 이름이 복사되었습니다",
         hostDisconnected: "호스트가 연결되어 있지 않습니다",
         hideFailed: "세션을 숨기지 못했습니다",
@@ -2132,6 +2133,8 @@ export const ko: TranslationResources = {
     detachTooltip: "하위 에이전트 분리",
     detachedToast: "{{name}}이(가) 이제 독립 에이전트입니다",
     detachedToastUnnamed: "하위 에이전트가 이제 독립 에이전트입니다",
+    copySessionIdAction: "{{label}}의 세션 ID 복사",
+    copySessionIdTooltip: "세션 ID 복사",
     archiveAction: "{{label}} 보관",
     archiveTooltip: "서브에이전트 보관",
     archiveFinishedAction: "완료된 하위 에이전트 보관",

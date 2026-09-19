@@ -454,6 +454,7 @@ export const ja: TranslationResources = {
     hoverCard: {
       scriptsAccessibility: "セッションスクリプト",
       copyPath: "パスをコピー",
+      copySessionId: "セッションIDをコピー",
       copyBranchName: "ブランチ名をコピー",
       copied: "コピーしました",
     },
@@ -1182,6 +1183,7 @@ export const ja: TranslationResources = {
       actions: {
         menu: "プロジェクトアクション",
         openSettings: "プロジェクト設定を開く",
+        showArchivedSessions: "アーカイブ済みのセッションを表示",
         openNewWindow: "新しいウィンドウで開く",
         openNewWindowFailed: "新しいウィンドウを開けませんでした",
         openFolder: "Open in file manager",
@@ -1226,7 +1228,7 @@ export const ja: TranslationResources = {
         showMore: "さらに表示",
         showLess: "表示を減らす",
         createWorkspaceFor: "{{projectName}}の新しいセッションを作成",
-        copyPath: "パスをコピー",
+        copySessionId: "セッションIDをコピー",
         copyBranchName: "ブランチ名をコピー",
         rename: "セッションの名前を変更",
         pin: "上部に固定",
@@ -1250,8 +1252,7 @@ export const ja: TranslationResources = {
         invalidBranchName: "無効なブランチ名",
       },
       toasts: {
-        workspacePathUnavailable: "セッションパスが利用できません",
-        pathCopied: "パスをコピーしました",
+        sessionIdCopied: "セッションIDをコピーしました",
         branchNameCopied: "ブランチ名をコピーしました",
         hostDisconnected: "ホストが接続されていません",
         hideFailed: "セッションの非表示に失敗しました",
@@ -2143,6 +2144,8 @@ export const ja: TranslationResources = {
     detachTooltip: "サブエージェントを切り離す",
     detachedToast: "{{name}} は独立したエージェントになりました",
     detachedToastUnnamed: "サブエージェントは独立したエージェントになりました",
+    copySessionIdAction: "{{label}} のセッションIDをコピー",
+    copySessionIdTooltip: "セッションIDをコピー",
     archiveAction: "{{label}}をアーカイブ",
     archiveTooltip: "サブエージェントをアーカイブ",
     archiveFinishedAction: "完了したサブエージェントをアーカイブ",
