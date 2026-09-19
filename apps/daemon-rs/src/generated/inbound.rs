@@ -268,6 +268,8 @@ pub enum SessionMessage {
     ProviderAccountImportRequest(ProviderAccountImportRequest),
     #[serde(rename = "provider.account.set_allowed_models.request")]
     ProviderAccountSetAllowedModelsRequest(ProviderAccountSetAllowedModelsRequest),
+    #[serde(rename = "provider.account.set_preferences.request")]
+    ProviderAccountSetPreferencesRequest(ProviderAccountSetPreferencesRequest),
     #[serde(rename = "resume_agent_request")]
     ResumeAgentRequest(ResumeAgentRequest),
     #[serde(rename = "import_agent_request")]
@@ -2126,6 +2128,23 @@ pub struct ProviderAccountImportRequestBundleAccountsItemAccount {
     pub last_authenticated_at: Option<String>,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountImportRequestBundleAccountsItemAccountPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportRequestBundleAccountsItemAccountPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2141,6 +2160,15 @@ pub struct ProviderAccountSetAllowedModelsRequest {
     pub account_id: String,
     #[serde(rename = "allowedModels")]
     pub allowed_models: serde_json::Value,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetPreferencesRequest {
+    #[serde(rename = "accountId")]
+    pub account_id: String,
+    pub preferences: serde_json::Value,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

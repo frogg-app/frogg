@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- Provider accounts are managed only inside their provider's settings sheet,
+  which is now one tab per sign-in. The tab you are on scopes the page: its
+  sign-in state, usage, new-agent defaults, model access, system prompt,
+  nickname, colour, moving it to another host, and deleting it. The provider
+  row is its own tab and keeps the model catalogue and uninstalling the
+  provider. The separate "Provider sign-ins" list on the host page is gone.
+- An account can set a default model and thinking level for new agents, a
+  colour and nickname, and a system prompt the daemon appends to every agent
+  launched as that account.
+
 ## 1.5.5 — 2026-09-19
 
 - A new session now starts on the account its picker shows. With a second

@@ -2917,13 +2917,10 @@ export const ptBR: TranslationResources = {
         scopeProject: "Projeto",
       },
       providerAccounts: {
-        sectionTitle: "Logins de provedor",
         sectionInfo:
           "Mantenha mais de um login para a CLI de um provedor neste host. Cada conta ganha seu próprio diretório de configuração, e as pastas compartilhadas continuam ligadas ao principal.",
         unavailable: "Conecte-se a este host para gerenciar os logins de provedor.",
         loadFailed: "Não foi possível carregar os logins de provedor",
-        empty: "Ainda não há logins",
-        noEnabledProviders: "Nenhum provedor deste host aceita vários logins.",
         addAccount: "Adicionar conta",
         addAccountTitle: "Adicionar conta do {{provider}}",
         nameLabel: "Nome da conta",
@@ -2939,10 +2936,6 @@ export const ptBR: TranslationResources = {
           "As pastas marcadas são ligadas ao diretório de configuração principal, para continuarem compartilhadas entre os logins.",
         sharedFoldersEmpty: "Este provedor não compartilha pastas.",
         create: "Criar conta",
-        active: "Ativa",
-        authenticated: "Conectada",
-        notAuthenticated: "Desconectada",
-        authenticate: "Entrar",
         authenticateHint:
           "Entrar abre um terminal com o login do próprio provedor. Atualize esta lista quando terminar.",
         authenticateNoWorkspace:
@@ -2953,12 +2946,10 @@ export const ptBR: TranslationResources = {
         unverifiedDefaultNote:
           "o diretório de configuração e os arquivos de credenciais nunca foram confirmados na CLI.",
         authenticateFailed: "Não foi possível abrir o terminal de login",
-        makeActive: "Tornar ativa",
         remove: "Remover",
         removeConfirmTitle: "Remover {{name}}?",
         removeConfirmMessage:
           "O Frogg esquece esta conta. O diretório de configuração {{path}} e as credenciais nele permanecem no disco.",
-        refresh: "Atualizar",
       },
       workspaces: {
         unavailable: "Conecte-se a este host para gerenciar sessões",
@@ -3163,16 +3154,55 @@ export const ptBR: TranslationResources = {
       settingsModal: {
         dangerZoneTitle: "Zona de perigo",
         uninstallTitle: "Desinstalar provedor",
-        accounts: {
-          title: "Contas",
-          info: "Entre com mais de uma conta e escolha com qual delas este provedor é executado.",
-          empty: "Ainda não há contas.",
+        account: {
+          providerSignIn: "Login do provedor",
+          signedIn: "Conectado",
+          notSignedIn: "Não conectado",
+          inUse: "Em uso",
+          signIn: "Entrar",
+          reauthenticate: "Entrar novamente",
+          makeActive: "Usar esta conta",
+          signInHint: "Entrar executa o login do próprio {{provider}} em um terminal neste host.",
           usageTitle: "Uso",
-          usageInfo: "O provedor informa o uso do provedor inteiro, não de cada conta.",
-          rename: "Renomear",
-          renameTitle: "Renomear conta",
-          renamePlaceholder: "Nome da conta",
-          renameHint: "Altera apenas o rótulo. Nada é movido no disco e o login é mantido.",
+          usageInactive:
+            "O provedor informa o uso da conta em uso. Troque para esta conta para ver o dela.",
+          defaultsTitle: "Padrões para novos agentes",
+          defaultsDescription: "Com o que um agente começa quando é iniciado com esta conta.",
+          defaultModel: "Modelo padrão",
+          defaultThinking: "Nível de raciocínio padrão",
+          providerDefault: "Padrão do provedor",
+          noModels: "Este provedor não informou modelos.",
+          noThinking: "Este modelo não tem níveis de raciocínio.",
+          modelsTitle: "Acesso a modelos",
+          modelsDescription: "Quais modelos deste provedor esta conta pode executar.",
+          allModels: "Todos os modelos",
+          noModelsAllowed: "Nenhum modelo",
+          someModels: "{{allowed}} de {{total}} modelos",
+          allowAll: "Permitir todos os modelos",
+          systemPromptTitle: "Prompt de sistema",
+          systemPromptDescription:
+            "Acrescentado ao prompt de sistema de todo agente iniciado com esta conta.",
+          systemPromptPlaceholder: "Adicione instruções que todo agente desta conta segue",
+          systemPromptTooLong: "Use menos de {{max}} caracteres.",
+          saved: "Salvo",
+          revert: "Reverter",
+          save: "Salvar",
+          identityTitle: "Identidade",
+          nickname: "Apelido",
+          nicknameHint: "Altera apenas o rótulo. Nada é movido no disco e o login é mantido.",
+          nicknameInvalid: "Digite um nome.",
+          color: "Cor",
+          transferTitle: "Mover esta conta",
+          transferDescription: "Copie este login para outro host ou traga um de outro lugar.",
+          dangerTitle: "Zona de perigo",
+          signOutDescription:
+            "Exclui as credenciais salvas desta conta no host. A conta é mantida.",
+          deleteTitle: "Excluir conta",
+          deleteDescription:
+            "Remove a conta e seu diretório de configuração do host. Não é possível desfazer.",
+          delete: "Excluir",
+        },
+        accounts: {
           signOut: "Sair",
           signOutConfirmTitle: "Encerrar a sessão de {{name}}?",
           signOutConfirmMessage:
@@ -3195,17 +3225,7 @@ export const ptBR: TranslationResources = {
         },
         models: {
           title: "Modelos",
-          info: "Restrinja quais modelos deste provedor uma conta pode usar.",
           empty: "Este provedor não informou nenhum modelo.",
-          accountLabel: "Conta",
-          unrestricted: "Todos os modelos",
-          none: "Nenhum modelo",
-          restrictedCount: "{{allowed}} de {{total}} modelos",
-          allowAll: "Permitir todos os modelos",
-          allowNone: "Não permitir nenhum",
-          restrictionHint:
-            "Uma conta sem restrições pode usar todos os modelos oferecidos por este provedor.",
-          selectAccount: "Escolha uma conta para restringir.",
         },
       },
       statuses: {

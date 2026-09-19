@@ -71,6 +71,18 @@ export async function createAgentProviderRuntime(
           return undefined;
         }
       },
+      // COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
+      providerAccountSystemPrompt: (providerId, accountId) => {
+        try {
+          return providerAccountStore.systemPromptFor(providerId, accountId);
+        } catch (error) {
+          options.logger.warn(
+            { err: error, providerId, accountId },
+            "Failed to resolve provider account system prompt",
+          );
+          return undefined;
+        }
+      },
     });
     let shutdownPromise: Promise<void> | null = null;
     return {

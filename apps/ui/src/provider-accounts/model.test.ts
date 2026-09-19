@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  PROVIDER_ACCOUNT_CAPABILITIES,
   findProviderAccountCapability,
   type ProviderAccountCapability,
   type ProviderAccountState,
@@ -8,7 +7,6 @@ import {
 import {
   buildProviderAccountCreatePayload,
   previewProviderAccountConfigDir,
-  selectEnabledCapabilities,
   selectProviderAccounts,
   validateProviderAccountName,
 } from "./model";
@@ -68,28 +66,6 @@ describe("config directory preview", () => {
 });
 
 describe("disabled provider gating", () => {
-  it("renders only providers the daemon enabled", () => {
-    // Which providers ship enabled is the daemon's manifest to decide; the
-    // selector must mirror it rather than a hardcoded id.
-    const enabled = selectEnabledCapabilities(PROVIDER_ACCOUNT_CAPABILITIES);
-    expect(enabled.map((capability) => capability.provider)).toEqual(
-      PROVIDER_ACCOUNT_CAPABILITIES.filter((capability) => capability.enabled).map(
-        (capability) => capability.provider,
-      ),
-    );
-    expect(enabled.length).toBeGreaterThan(0);
-  });
-
-  it("drives the list off the payload, not a hardcoded provider id", () => {
-    const capabilities: ProviderAccountCapability[] = [
-      { ...claude, provider: "claude", enabled: false },
-      { ...claude, provider: "codex", enabled: true },
-    ];
-    expect(selectEnabledCapabilities(capabilities).map((entry) => entry.provider)).toEqual([
-      "codex",
-    ]);
-  });
-
   it("scopes accounts to their provider", () => {
     const accounts = [account({ id: "a" }), account({ id: "b", provider: "codex" })];
     expect(selectProviderAccounts(accounts, "claude").map((entry) => entry.id)).toEqual(["a"]);

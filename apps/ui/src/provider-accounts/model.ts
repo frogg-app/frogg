@@ -57,13 +57,6 @@ export function previewProviderAccountConfigDir(
   return `~/${capability.primaryDirName}-${slug}`;
 }
 
-/** Only providers the daemon accepts account management for are rendered. */
-export function selectEnabledCapabilities(
-  capabilities: readonly ProviderAccountCapability[],
-): ProviderAccountCapability[] {
-  return capabilities.filter((capability) => capability.enabled);
-}
-
 export function selectProviderAccounts(
   accounts: readonly ProviderAccountState[],
   provider: string,

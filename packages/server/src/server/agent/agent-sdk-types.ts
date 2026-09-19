@@ -1,3 +1,4 @@
+import type { ProviderAccountPreferences } from "@frogg/protocol/provider-accounts";
 import type {
   AgentProviderNotice,
   AgentTaskItem,
@@ -118,6 +119,8 @@ export interface ProviderSnapshotAccount {
   id: string;
   name: string;
   authenticated: boolean;
+  /** COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19. */
+  preferences?: ProviderAccountPreferences;
 }
 
 export interface ProviderSnapshotEntry {

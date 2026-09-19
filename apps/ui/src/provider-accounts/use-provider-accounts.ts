@@ -5,7 +5,10 @@ import type {
   ProviderAccountExportResponseMessage,
   ProviderAccountListResponseMessage,
 } from "@frogg/protocol/messages";
-import type { ProviderAccountExportBundle } from "@frogg/protocol/provider-accounts";
+import type {
+  ProviderAccountExportBundle,
+  ProviderAccountPreferences,
+} from "@frogg/protocol/provider-accounts";
 import { useFetchQuery } from "@/data/query";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
@@ -107,6 +110,18 @@ export function useProviderAccounts(serverId: string) {
     onSuccess: applyPayload,
   });
 
+  const setPreferences = useMutation({
+    mutationFn: async (input: {
+      accountId: string;
+      preferences: ProviderAccountPreferences | null;
+    }) =>
+      requireClient().setProviderAccountPreferences({
+        accountId: input.accountId,
+        preferences: input.preferences,
+      }),
+    onSuccess: applyPayload,
+  });
+
   // Export resolves with the bundle rather than a snapshot, so it never touches
   // the cache. The bundle is secret material: it is handed straight back to the
   // caller and is never logged or persisted here.
@@ -142,6 +157,7 @@ export function useProviderAccounts(serverId: string) {
     rename,
     signOut,
     setAllowedModels,
+    setPreferences,
     exportAccounts,
     importAccounts,
   };

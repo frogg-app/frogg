@@ -23,6 +23,7 @@ import { AgentProviderSchema } from "./provider-manifest.js";
 import {
   ProviderAccountCapabilitySchema,
   ProviderAccountExportBundleSchema,
+  ProviderAccountPreferencesSchema,
   ProviderAccountStateSchema,
 } from "./provider-accounts.js";
 import { TOOL_CALL_ICON_NAMES } from "./agent-types.js";
@@ -430,6 +431,8 @@ export const ProviderSnapshotAccountSchema = z.object({
   name: z.string(),
   /** True when the account's credential files exist in its config dir. */
   authenticated: z.boolean(),
+  /** COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19. */
+  preferences: ProviderAccountPreferencesSchema.optional(),
 });
 
 export const ProviderSnapshotEntrySchema = z.object({
@@ -1939,6 +1942,18 @@ export const ProviderAccountSetAllowedModelsRequestMessageSchema = z.object({
   requestId: z.string(),
 });
 
+/**
+ * COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
+ * Replaces an account's preferences wholesale; `null` clears them all. Valid
+ * for the implicit default account, which the daemon materialises as needed.
+ */
+export const ProviderAccountSetPreferencesRequestMessageSchema = z.object({
+  type: z.literal("provider.account.set_preferences.request"),
+  accountId: z.string(),
+  preferences: ProviderAccountPreferencesSchema.nullable(),
+  requestId: z.string(),
+});
+
 export const ResumeAgentRequestMessageSchema = z.object({
   type: z.literal("resume_agent_request"),
   handle: AgentPersistenceHandleSchema,
@@ -3358,6 +3373,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ProviderAccountExportRequestMessageSchema,
   ProviderAccountImportRequestMessageSchema,
   ProviderAccountSetAllowedModelsRequestMessageSchema,
+  ProviderAccountSetPreferencesRequestMessageSchema,
   ResumeAgentRequestMessageSchema,
   ImportAgentRequestMessageSchema,
   RefreshAgentRequestMessageSchema,
@@ -3802,6 +3818,10 @@ export const ServerInfoStatusPayloadSchema = z
         // provider.account.set_allowed_models is available and the daemon enforces
         // per-account model restrictions when an agent is created or resumed.
         providerAccountAllowedModels: z.boolean().optional(),
+        // COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
+        // provider.account.set_preferences is available and the daemon appends an
+        // account's system prompt when launching an agent as it.
+        providerAccountPreferences: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the
@@ -6465,6 +6485,11 @@ export const ProviderAccountSetAllowedModelsResponseMessageSchema = z.object({
   payload: ProviderAccountResponsePayloadSchema,
 });
 
+export const ProviderAccountSetPreferencesResponseMessageSchema = z.object({
+  type: z.literal("provider.account.set_preferences.response"),
+  payload: ProviderAccountResponsePayloadSchema,
+});
+
 /**
  * SECRET MATERIAL. `bundle` carries live provider credentials in plaintext.
  * Never log this frame, never persist it daemon-side, and treat a stored copy
@@ -6986,6 +7011,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ProviderAccountExportResponseMessageSchema,
   ProviderAccountImportResponseMessageSchema,
   ProviderAccountSetAllowedModelsResponseMessageSchema,
+  ProviderAccountSetPreferencesResponseMessageSchema,
   ListCommandsResponseSchema,
   ListTerminalsResponseSchema,
   TerminalsChangedSchema,
@@ -7248,6 +7274,12 @@ export type ProviderAccountImportResponseMessage = z.infer<
 >;
 export type ProviderAccountSetAllowedModelsResponseMessage = z.infer<
   typeof ProviderAccountSetAllowedModelsResponseMessageSchema
+>;
+export type ProviderAccountSetPreferencesRequestMessage = z.infer<
+  typeof ProviderAccountSetPreferencesRequestMessageSchema
+>;
+export type ProviderAccountSetPreferencesResponseMessage = z.infer<
+  typeof ProviderAccountSetPreferencesResponseMessageSchema
 >;
 export type ProviderAccountResponsePayload = z.infer<typeof ProviderAccountResponsePayloadSchema>;
 export type ChatCreateResponse = z.infer<typeof ChatCreateResponseSchema>;

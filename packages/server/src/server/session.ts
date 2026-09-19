@@ -1872,11 +1872,15 @@ export class Session {
     try {
       const capability = this.providerAccountStore.getCapability(provider);
       if (!capability?.enabled) return undefined;
-      const accounts = this.providerAccountStore.list(provider).map((account) => ({
-        id: account.id,
-        name: account.name,
-        authenticated: account.authenticated,
-      }));
+      const accounts = this.providerAccountStore.list(provider).map((account) => {
+        const snapshot: ProviderSnapshotAccount = {
+          id: account.id,
+          name: account.name,
+          authenticated: account.authenticated,
+        };
+        if (account.preferences) snapshot.preferences = account.preferences;
+        return snapshot;
+      });
       return {
         accounts,
         defaultAccountId: this.providerAccountStore.activeAccountIds()[provider] ?? null,
@@ -2672,6 +2676,8 @@ export class Session {
         return this.providerAccountSession.handleProviderAccountImportRequest(msg);
       case "provider.account.set_allowed_models.request":
         return this.providerAccountSession.handleProviderAccountSetAllowedModelsRequest(msg);
+      case "provider.account.set_preferences.request":
+        return this.providerAccountSession.handleProviderAccountSetPreferencesRequest(msg);
       default:
         return undefined;
     }

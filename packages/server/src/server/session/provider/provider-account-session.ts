@@ -15,7 +15,8 @@ type ProviderAccountResponseType =
   | "provider.account.rename.response"
   | "provider.account.sign_out.response"
   | "provider.account.import.response"
-  | "provider.account.set_allowed_models.response";
+  | "provider.account.set_allowed_models.response"
+  | "provider.account.set_preferences.response";
 
 export interface ProviderAccountSessionHost {
   emit(msg: SessionOutboundMessage): void;
@@ -103,6 +104,14 @@ export class ProviderAccountSession {
   ): Promise<void> {
     this.run("provider.account.import.response", msg.requestId, () =>
       this.store.import(msg.bundle),
+    );
+  }
+
+  async handleProviderAccountSetPreferencesRequest(
+    msg: Extract<SessionInboundMessage, { type: "provider.account.set_preferences.request" }>,
+  ): Promise<void> {
+    this.run("provider.account.set_preferences.response", msg.requestId, () =>
+      this.store.setPreferences(msg.accountId, msg.preferences),
     );
   }
 

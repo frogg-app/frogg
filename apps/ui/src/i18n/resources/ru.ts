@@ -2920,13 +2920,10 @@ export const ru: TranslationResources = {
         scopeProject: "Проект",
       },
       providerAccounts: {
-        sectionTitle: "Входы провайдеров",
         sectionInfo:
           "Храните несколько учётных записей для CLI провайдера на этом хосте. У каждой свой каталог конфигурации, а общие папки остаются связаны с основным.",
         unavailable: "Подключитесь к хосту, чтобы управлять входами провайдеров.",
         loadFailed: "Не удалось загрузить входы провайдеров",
-        empty: "Пока нет учётных записей",
-        noEnabledProviders: "Ни один провайдер на этом хосте не поддерживает несколько входов.",
         addAccount: "Добавить запись",
         addAccountTitle: "Добавить запись {{provider}}",
         nameLabel: "Имя записи",
@@ -2942,10 +2939,6 @@ export const ru: TranslationResources = {
           "Отмеченные папки связываются с основным каталогом конфигурации и остаются общими для всех входов.",
         sharedFoldersEmpty: "Этот провайдер не делится папками.",
         create: "Создать запись",
-        active: "Активна",
-        authenticated: "Выполнен вход",
-        notAuthenticated: "Вход не выполнен",
-        authenticate: "Войти",
         authenticateHint:
           "Вход открывает терминал с собственной процедурой провайдера. Обновите список после завершения.",
         authenticateNoWorkspace: "Для входа нужна сессия на этом хосте, где откроется терминал.",
@@ -2955,12 +2948,10 @@ export const ru: TranslationResources = {
         unverifiedDefaultNote:
           "каталог конфигурации и файлы учётных данных никогда не проверялись через CLI.",
         authenticateFailed: "Не удалось открыть терминал для входа",
-        makeActive: "Сделать активной",
         remove: "Удалить",
         removeConfirmTitle: "Удалить {{name}}?",
         removeConfirmMessage:
           "Frogg забудет эту запись. Её каталог конфигурации {{path}} и учётные данные в нём останутся на диске.",
-        refresh: "Обновить",
       },
       workspaces: {
         unavailable: "Подключитесь к этому хосту, чтобы управлять сессиями",
@@ -3165,18 +3156,58 @@ export const ru: TranslationResources = {
       settingsModal: {
         dangerZoneTitle: "Опасная зона",
         uninstallTitle: "Удалить провайдера",
-        accounts: {
-          title: "Учётные записи",
-          info: "Войдите под несколькими учётными записями и выберите, от какой из них работает этот провайдер.",
-          empty: "Учётных записей пока нет.",
+        account: {
+          providerSignIn: "Вход провайдера",
+          signedIn: "Выполнен вход",
+          notSignedIn: "Вход не выполнен",
+          inUse: "Используется",
+          signIn: "Войти",
+          reauthenticate: "Войти заново",
+          makeActive: "Использовать эту учётную запись",
+          signInHint:
+            "Вход запускает собственную авторизацию {{provider}} в терминале на этом хосте.",
           usageTitle: "Использование",
-          usageInfo:
-            "Провайдер сообщает данные об использовании целиком, а не по каждой учётной записи.",
-          rename: "Переименовать",
-          renameTitle: "Переименовать учётную запись",
-          renamePlaceholder: "Название учётной записи",
-          renameHint:
+          usageInactive:
+            "Провайдер сообщает данные по используемой учётной записи. Переключитесь на эту, чтобы увидеть её данные.",
+          defaultsTitle: "Значения по умолчанию для новых агентов",
+          defaultsDescription: "С чего начинает агент, запущенный от этой учётной записи.",
+          defaultModel: "Модель по умолчанию",
+          defaultThinking: "Уровень размышления по умолчанию",
+          providerDefault: "По умолчанию у провайдера",
+          noModels: "Провайдер не сообщил ни одной модели.",
+          noThinking: "У этой модели нет уровней размышления.",
+          modelsTitle: "Доступ к моделям",
+          modelsDescription: "Какие модели этого провайдера может запускать эта учётная запись.",
+          allModels: "Все модели",
+          noModelsAllowed: "Нет моделей",
+          someModels: "{{allowed}} из {{total}} моделей",
+          allowAll: "Разрешить все модели",
+          systemPromptTitle: "Системный промпт",
+          systemPromptDescription:
+            "Добавляется к системному промпту каждого агента, запущенного от этой учётной записи.",
+          systemPromptPlaceholder:
+            "Добавьте инструкции, которым следует каждый агент этой учётной записи",
+          systemPromptTooLong: "Не более {{max}} символов.",
+          saved: "Сохранено",
+          revert: "Вернуть",
+          save: "Сохранить",
+          identityTitle: "Оформление",
+          nickname: "Название",
+          nicknameHint:
             "Меняется только название. На диске ничего не перемещается, вход сохраняется.",
+          nicknameInvalid: "Введите название.",
+          color: "Цвет",
+          transferTitle: "Перенести учётную запись",
+          transferDescription: "Скопируйте этот вход на другой хост или перенесите его сюда.",
+          dangerTitle: "Опасная зона",
+          signOutDescription:
+            "Удаляет сохранённые учётные данные этой записи на хосте. Сама запись остаётся.",
+          deleteTitle: "Удалить учётную запись",
+          deleteDescription:
+            "Удаляет учётную запись и её каталог конфигурации с хоста. Отменить нельзя.",
+          delete: "Удалить",
+        },
+        accounts: {
           signOut: "Выйти",
           signOutConfirmTitle: "Выйти из {{name}}?",
           signOutConfirmMessage:
@@ -3199,17 +3230,7 @@ export const ru: TranslationResources = {
         },
         models: {
           title: "Модели",
-          info: "Ограничьте, какие модели этого провайдера может использовать учётная запись.",
           empty: "Этот провайдер не сообщил ни одной модели.",
-          accountLabel: "Учётная запись",
-          unrestricted: "Все модели",
-          none: "Без моделей",
-          restrictedCount: "{{allowed}} из {{total}} моделей",
-          allowAll: "Разрешить все модели",
-          allowNone: "Не разрешать ни одной",
-          restrictionHint:
-            "Запись без ограничений может использовать все модели, которые предлагает провайдер.",
-          selectAccount: "Выберите учётную запись для ограничения.",
         },
       },
       statuses: {

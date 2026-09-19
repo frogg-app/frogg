@@ -397,6 +397,52 @@ describe("ProviderAccountStore rename, sign-out and portability", () => {
   it("allowedModels: is unrestricted for an account that no longer exists", () => {
     expect(store.allowedModelsFor("claude", "deleted-account")).toBeUndefined();
   });
+
+  it("preferences: trims fields, drops blanks and resolves the system prompt", () => {
+    const account = createAccount("peter");
+
+    const result = store.setPreferences(account.id, {
+      color: " teal ",
+      systemPrompt: "  Be terse.  ",
+      defaultModelId: "",
+      defaultThinkingOptionId: "high",
+    });
+
+    expect(result.accounts.find((c) => c.id === account.id)?.preferences).toEqual({
+      color: "teal",
+      systemPrompt: "Be terse.",
+      defaultThinkingOptionId: "high",
+    });
+    expect(store.systemPromptFor("claude", account.id)).toBe("Be terse.");
+  });
+
+  it("preferences: null or all-blank clears them", () => {
+    const account = createAccount("peter");
+    store.setPreferences(account.id, { color: "teal" });
+
+    store.setPreferences(account.id, { systemPrompt: "   " });
+    expect(store.findAccount(account.id)?.preferences).toBeUndefined();
+
+    store.setPreferences(account.id, { color: "teal" });
+    store.setPreferences(account.id, null);
+    expect(store.findAccount(account.id)?.preferences).toBeUndefined();
+  });
+
+  it("preferences: applies to the implicit default account", () => {
+    const defaultId = providerAccountDefaultId("claude");
+
+    store.setPreferences(defaultId, { systemPrompt: "Hi" });
+
+    expect(store.systemPromptFor("claude", null)).toBe("Hi");
+    expect(store.findAccount(defaultId)?.configDir).toBe(path.join(homeDir, ".claude"));
+  });
+
+  it("preferences: rejects an oversized system prompt", () => {
+    const account = createAccount("peter");
+    expect(() => store.setPreferences(account.id, { systemPrompt: "x".repeat(20_001) })).toThrow(
+      /longer than/,
+    );
+  });
 });
 
 describe("ProviderAccountStore with a home-mode provider", () => {

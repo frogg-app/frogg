@@ -1,5 +1,8 @@
 import type { z } from "zod";
-import type { ProviderAccountExportBundle } from "@frogg/protocol/provider-accounts";
+import type {
+  ProviderAccountExportBundle,
+  ProviderAccountPreferences,
+} from "@frogg/protocol/provider-accounts";
 import { CLIENT_CAPS, type ClientCapability } from "@frogg/protocol/client-capabilities";
 import type { AgentAttentionNotificationPayload } from "@frogg/protocol/agent-attention-notification";
 import {
@@ -97,6 +100,7 @@ import type {
   ProviderAccountExportResponseMessage,
   ProviderAccountImportResponseMessage,
   ProviderAccountSetAllowedModelsResponseMessage,
+  ProviderAccountSetPreferencesResponseMessage,
   DaemonGetStatusResponse,
   DaemonGetPairingOfferResponse,
   DaemonConfigReloadResponse,
@@ -485,6 +489,7 @@ type ProviderAccountExportPayload = ProviderAccountExportResponseMessage["payloa
 type ProviderAccountImportPayload = ProviderAccountImportResponseMessage["payload"];
 type ProviderAccountSetAllowedModelsPayload =
   ProviderAccountSetAllowedModelsResponseMessage["payload"];
+type ProviderAccountSetPreferencesPayload = ProviderAccountSetPreferencesResponseMessage["payload"];
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DiagnosticsPayload = DiagnosticsResponse["payload"];
@@ -5361,6 +5366,22 @@ export class DaemonClient {
         type: "provider.account.set_allowed_models.request",
         accountId: input.accountId,
         allowedModels: input.allowedModels,
+      },
+    });
+  }
+
+  /** Replaces the account's preferences wholesale; `null` clears them. */
+  async setProviderAccountPreferences(input: {
+    accountId: string;
+    preferences: ProviderAccountPreferences | null;
+    requestId?: string;
+  }): Promise<ProviderAccountSetPreferencesPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: input.requestId,
+      message: {
+        type: "provider.account.set_preferences.request",
+        accountId: input.accountId,
+        preferences: input.preferences,
       },
     });
   }

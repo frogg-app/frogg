@@ -1,3 +1,4 @@
+import type { ProviderAccountPreferences } from "./provider-accounts.js";
 import type { AgentAttachment } from "./messages.js";
 
 export type AgentProvider = string;
@@ -107,6 +108,8 @@ export interface ProviderSnapshotAccount {
   id: string;
   name: string;
   authenticated: boolean;
+  /** COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19. */
+  preferences?: ProviderAccountPreferences;
 }
 
 export interface ProviderSnapshotEntry {

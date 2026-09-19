@@ -1099,6 +1099,9 @@ export async function createFroggDaemon(
     // COMPAT(providerAccountAllowedModels): per-account model restrictions.
     resolveProviderAccountAllowedModels: (provider, accountId) =>
       providerSnapshotManager.resolveProviderAccountAllowedModels(provider, accountId),
+    // COMPAT(providerAccountPreferences): per-account appended system prompt.
+    resolveProviderAccountSystemPrompt: (provider, accountId) =>
+      providerSnapshotManager.resolveProviderAccountSystemPrompt(provider, accountId),
     appendSystemPrompt: config.appendSystemPrompt,
     onWorkspaceFilesMayHaveChanged: ({ cwd }) => {
       workspaceGitService.onWorkspaceFilesMayHaveChanged(cwd);

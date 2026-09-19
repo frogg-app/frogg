@@ -216,30 +216,56 @@ reports the newest one, which is the agent the row's title and status already de
 
 ### From the app
 
-**Host settings → Providers → Provider sign-ins** lists every provider whose accounts the
-daemon has enabled, with that provider's accounts under it. Each row shows the account name,
-its config directory, whether it is signed in, and whether it is the active account, with
-actions to make it active, sign it in, and remove it. The section is hidden entirely on a
-daemon that does not report the feature.
+**Host settings → Providers → a provider** opens that provider's sheet, and everything about
+a sign-in lives inside it. The sheet has one **tab per account**, and the tab you are on
+scopes the whole page: its usage, its defaults, the models it may run, its system prompt, its
+nickname and colour, moving it to another host, and deleting it. Nothing about an account is
+editable anywhere else in the app. The provider row at the top of the sheet is its own tab and
+holds what is not about a single account: the model catalogue and uninstalling the provider.
+
+The provider's implicit **Default** sign-in always gets a tab, even before the daemon has
+stored anything about it. The tab strip is hidden on a daemon that does not report the
+accounts feature.
 
 <Steps>
 
-1. **Add account** opens a form. Type a name: the page validates it as you type and shows the
-   slug and the config directory that will be created. Every shareable folder is checked by
-   default; uncheck the ones this account should keep to itself.
+1. **＋** at the end of the tab strip opens the add-account form. Type a name: the form
+   validates it as you type and shows the slug and the config directory that will be created.
+   Every shareable folder is checked by default; uncheck the ones this account should keep to
+   itself.
 2. **Sign in** opens a Frogg terminal running that provider's own login with the account's
    config directory applied — for Claude, run `/login` in it. Terminals belong to a session,
    so the action needs at least one session on the host; it is disabled when there is none.
-3. **Refresh** re-reads the list once the CLI's login finishes, which is what flips the row to
-   signed in.
-4. **Make active** makes that account the default for agents that do not pick one in the
-   composer. **Remove** asks first and then tells you the config directory it left behind.
+   The tab flips to *Signed in* once the CLI's login finishes.
+3. **Use this account** makes that account the default for agents that do not pick one in the
+   composer.
+4. **Danger zone** at the foot of the tab holds **Sign out** and **Delete**. Both ask first,
+   and deleting tells you the config directory it left behind.
 
 </Steps>
 
 Provisioning warnings from the daemon — a folder it could not link, for example — are shown
-verbatim next to the list, and a rejected name or duplicate keeps the form open with what you
-typed.
+next to the control that caused them, and a rejected name or duplicate keeps the form open
+with what you typed.
+
+#### Per-account preferences
+
+Each account tab also carries preferences the daemon stores with the account and applies
+whenever an agent runs as it:
+
+- **Nickname** and **colour** — what the account is called and the colour of its monogram
+  wherever it appears. The **Default** account can be renamed too; the rename only changes the
+  label and never touches the directory.
+- **New agent defaults** — the model and thinking level an agent starts on when it is launched
+  as this account. Only models the account is allowed to run are offered, and picking a new
+  model resets the thinking level to that model's own default.
+- **Model access** — the same per-account restriction described above, edited on the account
+  it applies to.
+- **System prompt** — text appended to the system prompt of every agent launched as this
+  account. The daemon appends it at launch, so it applies whatever client started the agent.
+
+Preferences need a daemon that reports the `providerAccountPreferences` feature; the sections
+are not rendered on an older one.
 
 Claude and Codex have accounts enabled. Other providers are declared but off; turn one on with
 `providerAccounts.<provider>.enabled` in
@@ -300,8 +326,8 @@ config) or per run (`frogg agent run --env KEY=value`). Common variables:
 ## Claude
 
 Multiple Claude sign-ins are managed by
-[provider accounts](#provider-accounts-multi-sign-in): **Host settings → Providers →
-Provider sign-ins**. Each account gets its own `CLAUDE_CONFIG_DIR` under
+[provider accounts](#provider-accounts-multi-sign-in): **Host settings → Providers → Claude**,
+one tab per sign-in. Each account gets its own `CLAUDE_CONFIG_DIR` under
 `<home>/.claude-<name>`, keeping credentials, settings and history private while the folders
 you chose stay symlinked to the primary `~/.claude`.
 
@@ -319,6 +345,6 @@ Earlier releases let you declare an extra Claude account as a custom provider wi
 `params.claudeAccount` profile in `config.json`. That mechanism has been removed in favour of
 provider accounts. Such entries are now ignored — the daemon logs a warning naming them at
 startup, and the providers they declare launch against the default Claude config directory.
-Recreate the accounts under **Provider sign-ins** and delete the stale
+Recreate the accounts in the provider's settings sheet and delete the stale
 `agents.providers.<id>` entries from `config.json`.
 :::

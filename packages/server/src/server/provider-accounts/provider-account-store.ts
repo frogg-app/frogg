@@ -14,10 +14,12 @@ import {
   PROVIDER_ACCOUNT_CAPABILITIES,
   PROVIDER_ACCOUNT_DEFAULT_NAME,
   PROVIDER_ACCOUNT_EXPORT_BUNDLE_VERSION,
+  PROVIDER_ACCOUNT_SYSTEM_PROMPT_MAX_LENGTH,
   toProviderAccountSlug,
   type ProviderAccount,
   type ProviderAccountCapability,
   type ProviderAccountExportBundle,
+  type ProviderAccountPreferences,
   type ProviderAccountState,
 } from "@frogg/protocol/provider-accounts";
 
@@ -403,6 +405,77 @@ export class ProviderAccountStore {
   }
 
   /**
+   * Replaces the account's preferences. `null` (or an all-empty object) clears
+   * them. Accepts a provider's implicit default account, materialising a stored
+   * record for it the same way {@link rename} does.
+   */
+  setPreferences(
+    accountId: string,
+    preferences: ProviderAccountPreferences | null,
+  ): ProviderAccountMutationResult {
+    const config = this.readConfig();
+    const existing = this.locateAccount(config, accountId);
+    const providerId = existing?.providerId ?? parseProviderAccountDefaultId(accountId);
+    if (!providerId) {
+      throw new ProviderAccountError(`Unknown provider account "${accountId}".`);
+    }
+    this.requireEnabledCapability(providerId);
+
+    const normalized = normalizePreferences(preferences);
+    if (
+      normalized?.systemPrompt !== undefined &&
+      normalized.systemPrompt.length > PROVIDER_ACCOUNT_SYSTEM_PROMPT_MAX_LENGTH
+    ) {
+      throw new ProviderAccountError(
+        `System prompt is longer than ${PROVIDER_ACCOUNT_SYSTEM_PROMPT_MAX_LENGTH} characters.`,
+      );
+    }
+
+    const entry = config[providerId] ?? {};
+    const accounts = entry.accounts ?? [];
+    const apply = (account: ProviderAccount): ProviderAccount => {
+      const { preferences: _replaced, ...rest } = account;
+      return normalized ? { ...rest, preferences: normalized } : rest;
+    };
+
+    const nextAccounts = existing
+      ? accounts.map((account) => (account.id === accountId ? apply(account) : account))
+      : [
+          ...accounts,
+          apply(
+            this.materializeDefaultAccount(providerId, {
+              name: PROVIDER_ACCOUNT_DEFAULT_NAME,
+            }),
+          ),
+        ];
+
+    this.writeConfig({
+      ...config,
+      [providerId]: { ...entry, accounts: nextAccounts },
+    });
+    return this.buildResult([]);
+  }
+
+  /**
+   * The system prompt an agent on this account appends, or undefined. Resolves
+   * `accountId` exactly like {@link allowedModelsFor}.
+   */
+  systemPromptFor(provider: string, accountId: string | null | undefined): string | undefined {
+    const capability = this.getCapability(provider);
+    if (!capability || !capability.enabled) return undefined;
+
+    const resolvedId =
+      accountId === undefined
+        ? this.activeAccountIds()[provider]
+        : (accountId ?? providerAccountDefaultId(provider));
+    if (!resolvedId) return undefined;
+
+    const account = this.findAccount(resolvedId);
+    if (!account || account.provider !== provider) return undefined;
+    return account.preferences?.systemPrompt;
+  }
+
+  /**
    * The models an agent on this account may run, or undefined for "unrestricted".
    *
    * `accountId === null` resolves the provider's implicit default account and
@@ -525,6 +598,7 @@ export class ProviderAccountStore {
         configDir,
         linkedFolders: provisioned.linkedFolders,
         ...(account.allowedModels ? { allowedModels: [...account.allowedModels] } : {}),
+        ...(account.preferences ? { preferences: { ...account.preferences } } : {}),
       });
     }
 
@@ -728,4 +802,24 @@ export function isAccountAuthenticated(
   const resolved = capability ?? findProviderAccountCapability(account.provider);
   if (!resolved) return false;
   return resolved.credentialFiles.some((file) => existsSync(path.join(account.configDir, file)));
+}
+
+/**
+ * Trims every field and drops the blank ones, so "cleared" is always spelled as
+ * an absent field. Returns null when nothing is left.
+ */
+function normalizePreferences(
+  preferences: ProviderAccountPreferences | null,
+): ProviderAccountPreferences | null {
+  if (!preferences) return null;
+  const next: ProviderAccountPreferences = {};
+  const color = preferences.color?.trim();
+  if (color) next.color = color;
+  const systemPrompt = preferences.systemPrompt?.trim();
+  if (systemPrompt) next.systemPrompt = systemPrompt;
+  const defaultModelId = preferences.defaultModelId?.trim();
+  if (defaultModelId) next.defaultModelId = defaultModelId;
+  const defaultThinkingOptionId = preferences.defaultThinkingOptionId?.trim();
+  if (defaultThinkingOptionId) next.defaultThinkingOptionId = defaultThinkingOptionId;
+  return Object.keys(next).length > 0 ? next : null;
 }

@@ -321,6 +321,27 @@ export function findProviderAccountCapability(
   return PROVIDER_ACCOUNT_CAPABILITIES.find((entry) => entry.provider === provider);
 }
 
+/**
+ * COMPAT(providerAccountPreferences): added in v1.5.5, remove after 2027-09-19.
+ * Per-account launch and display preferences. Every field is optional; absent
+ * means "no preference" and the provider/host defaults apply.
+ */
+export const ProviderAccountPreferencesSchema = z.object({
+  /** An identity colour name shared with host badges. Unknown values draw unthemed. */
+  color: z.string().min(1).optional(),
+  /** Appended to the agent's system prompt when an agent is launched as this account. */
+  systemPrompt: z.string().optional(),
+  /** Model a new agent on this account starts with, when the client has not picked one. */
+  defaultModelId: z.string().min(1).optional(),
+  /** Thinking option a new agent on this account starts with. */
+  defaultThinkingOptionId: z.string().min(1).optional(),
+});
+
+export type ProviderAccountPreferences = z.infer<typeof ProviderAccountPreferencesSchema>;
+
+/** Max length of {@link ProviderAccountPreferences.systemPrompt}. */
+export const PROVIDER_ACCOUNT_SYSTEM_PROMPT_MAX_LENGTH = 20_000;
+
 /** A stored account. This is the shape persisted in `config.json`. */
 export const ProviderAccountSchema = z.object({
   id: z.string().min(1),
@@ -338,6 +359,8 @@ export const ProviderAccountSchema = z.object({
    * the provider's models intersected with this list.
    */
   allowedModels: z.array(z.string().min(1)).optional(),
+  /** COMPAT(providerAccountPreferences): added in v1.5.5, remove after 2027-09-19. */
+  preferences: ProviderAccountPreferencesSchema.optional(),
 });
 
 export type ProviderAccount = z.infer<typeof ProviderAccountSchema>;
@@ -360,6 +383,8 @@ export const ProviderAccountStateSchema = z.object({
    * See {@link ProviderAccountSchema.shape.allowedModels}. Absent means unrestricted.
    */
   allowedModels: z.array(z.string().min(1)).optional(),
+  /** COMPAT(providerAccountPreferences): added in v1.5.5, remove after 2027-09-19. */
+  preferences: ProviderAccountPreferencesSchema.optional(),
 });
 
 export type ProviderAccountState = z.infer<typeof ProviderAccountStateSchema>;

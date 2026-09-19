@@ -2934,13 +2934,10 @@ export const es: TranslationResources = {
         scopeProject: "Proyecto",
       },
       providerAccounts: {
-        sectionTitle: "Sesiones de proveedor",
         sectionInfo:
           "Manten más de una sesión para la CLI de un proveedor en este host. Cada cuenta tiene su propio directorio de configuración, y las carpetas que compartas siguen enlazadas a la principal.",
         unavailable: "Conéctate a este host para gestionar las sesiones de proveedor.",
         loadFailed: "No se pudieron cargar las sesiones de proveedor",
-        empty: "Aún no hay sesiones",
-        noEnabledProviders: "Ningún proveedor de este host admite varias sesiones.",
         addAccount: "Añadir cuenta",
         addAccountTitle: "Añadir cuenta de {{provider}}",
         nameLabel: "Nombre de la cuenta",
@@ -2956,10 +2953,6 @@ export const es: TranslationResources = {
           "Las carpetas marcadas se enlazan al directorio de configuración principal, para que sigan compartidas entre sesiones.",
         sharedFoldersEmpty: "Este proveedor no comparte carpetas.",
         create: "Crear cuenta",
-        active: "Activa",
-        authenticated: "Sesión iniciada",
-        notAuthenticated: "Sin sesión",
-        authenticate: "Iniciar sesión",
         authenticateHint:
           "Al iniciar sesión se abre un terminal con el inicio de sesión propio del proveedor. Actualiza esta lista cuando termine.",
         authenticateNoWorkspace:
@@ -2970,12 +2963,10 @@ export const es: TranslationResources = {
         unverifiedDefaultNote:
           "su directorio de configuración y sus archivos de credenciales nunca se confirmaron con la CLI.",
         authenticateFailed: "No se pudo abrir el terminal de inicio de sesión",
-        makeActive: "Activar",
         remove: "Eliminar",
         removeConfirmTitle: "¿Eliminar {{name}}?",
         removeConfirmMessage:
           "Frogg olvidará esta cuenta. Su directorio de configuración {{path}} y las credenciales que contiene permanecen en el disco.",
-        refresh: "Actualizar",
       },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",
@@ -3178,17 +3169,57 @@ export const es: TranslationResources = {
       settingsModal: {
         dangerZoneTitle: "Zona de peligro",
         uninstallTitle: "Desinstalar proveedor",
-        accounts: {
-          title: "Cuentas",
-          info: "Inicia sesión más de una vez y elige con qué cuenta se ejecuta este proveedor.",
-          empty: "Todavía no hay cuentas.",
+        account: {
+          providerSignIn: "Sesión del proveedor",
+          signedIn: "Sesión iniciada",
+          notSignedIn: "Sin iniciar sesión",
+          inUse: "En uso",
+          signIn: "Iniciar sesión",
+          reauthenticate: "Volver a iniciar sesión",
+          makeActive: "Usar esta cuenta",
+          signInHint:
+            "Iniciar sesión ejecuta el inicio de sesión propio de {{provider}} en una terminal de este host.",
           usageTitle: "Uso",
-          usageInfo: "El proveedor informa el uso del proveedor completo, no de cada cuenta.",
-          rename: "Renombrar",
-          renameTitle: "Renombrar cuenta",
-          renamePlaceholder: "Nombre de la cuenta",
-          renameHint:
+          usageInactive:
+            "El proveedor informa el uso de la cuenta en uso. Cambia a esta cuenta para ver el suyo.",
+          defaultsTitle: "Valores para nuevos agentes",
+          defaultsDescription: "Con qué empieza un agente cuando se lanza con esta cuenta.",
+          defaultModel: "Modelo predeterminado",
+          defaultThinking: "Nivel de razonamiento predeterminado",
+          providerDefault: "Predeterminado del proveedor",
+          noModels: "Este proveedor no informó modelos.",
+          noThinking: "Este modelo no tiene niveles de razonamiento.",
+          modelsTitle: "Acceso a modelos",
+          modelsDescription: "Qué modelos de este proveedor puede ejecutar esta cuenta.",
+          allModels: "Todos los modelos",
+          noModelsAllowed: "Ningún modelo",
+          someModels: "{{allowed}} de {{total}} modelos",
+          allowAll: "Permitir todos los modelos",
+          systemPromptTitle: "Prompt del sistema",
+          systemPromptDescription:
+            "Se añade al prompt del sistema de cada agente lanzado con esta cuenta.",
+          systemPromptPlaceholder: "Añade instrucciones que sigan todos los agentes de esta cuenta",
+          systemPromptTooLong: "Debe tener menos de {{max}} caracteres.",
+          saved: "Guardado",
+          revert: "Revertir",
+          save: "Guardar",
+          identityTitle: "Identidad",
+          nickname: "Apodo",
+          nicknameHint:
             "Solo cambia la etiqueta. No se mueve nada en el disco y se conserva la sesión.",
+          nicknameInvalid: "Escribe un nombre.",
+          color: "Color",
+          transferTitle: "Mover esta cuenta",
+          transferDescription: "Copia esta sesión a otro host o trae una desde otro sitio.",
+          dangerTitle: "Zona de peligro",
+          signOutDescription:
+            "Elimina las credenciales guardadas de esta cuenta en el host. La cuenta se conserva.",
+          deleteTitle: "Eliminar cuenta",
+          deleteDescription:
+            "Elimina la cuenta y su directorio de configuración del host. No se puede deshacer.",
+          delete: "Eliminar",
+        },
+        accounts: {
           signOut: "Cerrar sesión",
           signOutConfirmTitle: "¿Cerrar la sesión de {{name}}?",
           signOutConfirmMessage:
@@ -3211,17 +3242,7 @@ export const es: TranslationResources = {
         },
         models: {
           title: "Modelos",
-          info: "Restringe qué modelos de este proveedor puede usar cada cuenta.",
           empty: "Este proveedor no informó ningún modelo.",
-          accountLabel: "Cuenta",
-          unrestricted: "Todos los modelos",
-          none: "Ningún modelo",
-          restrictedCount: "{{allowed}} de {{total}} modelos",
-          allowAll: "Permitir todos los modelos",
-          allowNone: "No permitir ninguno",
-          restrictionHint:
-            "Una cuenta sin restricciones puede usar todos los modelos que ofrece este proveedor.",
-          selectAccount: "Elige una cuenta para restringirla.",
         },
       },
       statuses: {

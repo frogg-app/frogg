@@ -2903,13 +2903,10 @@ export const ja: TranslationResources = {
         scopeProject: "プロジェクト",
       },
       providerAccounts: {
-        sectionTitle: "プロバイダーのサインイン",
         sectionInfo:
           "このホストでプロバイダー CLI のサインインを複数保持します。アカウントごとに設定ディレクトリが作られ、共有するフォルダーは主ディレクトリにリンクされたままです。",
         unavailable: "プロバイダーのサインインを管理するにはこのホストに接続してください。",
         loadFailed: "プロバイダーのサインインを読み込めませんでした",
-        empty: "サインインはまだありません",
-        noEnabledProviders: "このホストに複数サインイン対応のプロバイダーはありません。",
         addAccount: "アカウントを追加",
         addAccountTitle: "{{provider}} のアカウントを追加",
         nameLabel: "アカウント名",
@@ -2925,10 +2922,6 @@ export const ja: TranslationResources = {
           "チェックしたフォルダーは主設定ディレクトリにリンクされ、サインイン間で共有されます。",
         sharedFoldersEmpty: "このプロバイダーに共有フォルダーはありません。",
         create: "アカウントを作成",
-        active: "使用中",
-        authenticated: "サインイン済み",
-        notAuthenticated: "未サインイン",
-        authenticate: "サインイン",
         authenticateHint:
           "サインインするとプロバイダー自身のログインを実行するターミナルが開きます。完了後にこの一覧を更新してください。",
         authenticateNoWorkspace:
@@ -2938,12 +2931,10 @@ export const ja: TranslationResources = {
           "未検証: {{note}} この一覧を信頼する前に、プロバイダーの CLI でこれらの値を確認してください。",
         unverifiedDefaultNote: "設定ディレクトリと認証情報ファイルは CLI で確認されていません。",
         authenticateFailed: "サインイン用ターミナルを開けませんでした",
-        makeActive: "有効にする",
         remove: "削除",
         removeConfirmTitle: "{{name}} を削除しますか？",
         removeConfirmMessage:
           "Frogg はこのアカウントを忘れます。設定ディレクトリ {{path}} とその中の資格情報はディスクに残ります。",
-        refresh: "更新",
       },
       workspaces: {
         unavailable: "セッションを管理するにはこのホストに接続してください",
@@ -3148,17 +3139,57 @@ export const ja: TranslationResources = {
       settingsModal: {
         dangerZoneTitle: "危険ゾーン",
         uninstallTitle: "プロバイダーをアンインストール",
-        accounts: {
-          title: "アカウント",
-          info: "複数のアカウントでサインインし、このプロバイダーを実行するアカウントを選べます。",
-          empty: "アカウントがまだありません。",
+        account: {
+          providerSignIn: "プロバイダーのサインイン",
+          signedIn: "サインイン済み",
+          notSignedIn: "サインインしていません",
+          inUse: "使用中",
+          signIn: "サインイン",
+          reauthenticate: "サインインし直す",
+          makeActive: "このアカウントを使う",
+          signInHint:
+            "サインインすると、このホストのターミナルで {{provider}} のログインが実行されます。",
           usageTitle: "使用量",
-          usageInfo: "使用量はアカウント単位ではなくプロバイダー全体として報告されます。",
-          rename: "名前を変更",
-          renameTitle: "アカウント名を変更",
-          renamePlaceholder: "アカウント名",
-          renameHint:
+          usageInactive:
+            "使用量は使用中のアカウントについて報告されます。このアカウントに切り替えると表示されます。",
+          defaultsTitle: "新しいエージェントの既定値",
+          defaultsDescription: "このアカウントで起動したエージェントが最初に使う設定です。",
+          defaultModel: "既定のモデル",
+          defaultThinking: "既定の思考レベル",
+          providerDefault: "プロバイダーの既定",
+          noModels: "このプロバイダーはモデルを報告しませんでした。",
+          noThinking: "このモデルに思考レベルはありません。",
+          modelsTitle: "モデルの利用",
+          modelsDescription: "このアカウントが実行できるプロバイダーのモデルです。",
+          allModels: "すべてのモデル",
+          noModelsAllowed: "モデルなし",
+          someModels: "{{total}} 件中 {{allowed}} 件のモデル",
+          allowAll: "すべてのモデルを許可",
+          systemPromptTitle: "システムプロンプト",
+          systemPromptDescription:
+            "このアカウントで起動したすべてのエージェントのシステムプロンプトに追加されます。",
+          systemPromptPlaceholder: "このアカウントのすべてのエージェントが従う指示を追加",
+          systemPromptTooLong: "{{max}} 文字以内にしてください。",
+          saved: "保存しました",
+          revert: "元に戻す",
+          save: "保存",
+          identityTitle: "表示",
+          nickname: "表示名",
+          nicknameHint:
             "表示名だけを変更します。ディスク上のものは移動されず、サインインも維持されます。",
+          nicknameInvalid: "名前を入力してください。",
+          color: "色",
+          transferTitle: "このアカウントを移動",
+          transferDescription:
+            "このサインインを別のホストへコピーしたり、他から取り込んだりできます。",
+          dangerTitle: "危険ゾーン",
+          signOutDescription:
+            "ホストに保存されたこのアカウントの資格情報を削除します。アカウントは残ります。",
+          deleteTitle: "アカウントを削除",
+          deleteDescription: "アカウントと設定ディレクトリをホストから削除します。元に戻せません。",
+          delete: "削除",
+        },
+        accounts: {
           signOut: "サインアウト",
           signOutConfirmTitle: "{{name}} をサインアウトしますか？",
           signOutConfirmMessage:
@@ -3181,17 +3212,7 @@ export const ja: TranslationResources = {
         },
         models: {
           title: "モデル",
-          info: "アカウントが使用できるこのプロバイダーのモデルを制限します。",
           empty: "このプロバイダーはモデルを報告しませんでした。",
-          accountLabel: "アカウント",
-          unrestricted: "すべてのモデル",
-          none: "モデルなし",
-          restrictedCount: "{{total}} 個中 {{allowed}} 個のモデル",
-          allowAll: "すべてのモデルを許可",
-          allowNone: "どのモデルも許可しない",
-          restrictionHint:
-            "制限のないアカウントは、このプロバイダーが提供するすべてのモデルを使用できます。",
-          selectAccount: "制限するアカウントを選んでください。",
         },
       },
       statuses: {

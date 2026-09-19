@@ -4639,6 +4639,26 @@
                                   "type": "string",
                                   "minLength": 1
                                 }
+                              },
+                              "preferences": {
+                                "type": "object",
+                                "properties": {
+                                  "color": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "systemPrompt": {
+                                    "type": "string"
+                                  },
+                                  "defaultModelId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  "defaultThinkingOptionId": {
+                                    "type": "string",
+                                    "minLength": 1
+                                  }
+                                }
                               }
                             },
                             "required": [
@@ -4725,6 +4745,54 @@
                 "type",
                 "accountId",
                 "allowedModels",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.account.set_preferences.request"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "preferences": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "color": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "systemPrompt": {
+                          "type": "string"
+                        },
+                        "defaultModelId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "defaultThinkingOptionId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "accountId",
+                "preferences",
                 "requestId"
               ]
             },

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import type { AgentProviderDefinition } from "@frogg/protocol/provider-manifest";
+import { providerAccountDefaultId } from "@frogg/protocol/provider-accounts";
 import type {
   AgentMode,
   AgentModelDefinition,
@@ -657,14 +658,37 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
       ? providerAccountSelections[selectedProvider]
       : undefined;
   }, [providerAccountSelections, selectedProvider]);
+  const providerAccounts = snapshotSelectedEntry?.accounts;
   const setProviderAccountFromUser = useCallback(
     (accountId: string | null) => {
       if (!selectedProvider) return;
       setProviderAccountSelections((current) => ({ ...current, [selectedProvider]: accountId }));
+      // COMPAT(providerAccountPreferences): picking an account starts the draft on
+      // that account's default model and thinking level. The pick is not written
+      // to the composer preferences: the defaults belong to the account.
+      const lookupId = accountId ?? providerAccountDefaultId(selectedProvider);
+      const accountPreferences = providerAccounts?.find(
+        (account) => account.id === lookupId,
+      )?.preferences;
+      const defaultModelId = accountPreferences?.defaultModelId;
+      if (defaultModelId && availableModels?.some((model) => model.id === defaultModelId)) {
+        dispatch({
+          type: "SET_MODEL_FROM_USER",
+          modelId: defaultModelId,
+          availableModels,
+          providerPrefs:
+            preferenceOverlayRef.current.current().providerPreferences?.[selectedProvider],
+        });
+      }
+      if (accountPreferences?.defaultThinkingOptionId) {
+        dispatch({
+          type: "SET_THINKING_OPTION_FROM_USER",
+          thinkingOptionId: accountPreferences.defaultThinkingOptionId,
+        });
+      }
     },
-    [selectedProvider],
+    [availableModels, providerAccounts, selectedProvider],
   );
-  const providerAccounts = snapshotSelectedEntry?.accounts;
   const providerDefaultAccountId = snapshotSelectedEntry?.defaultAccountId ?? null;
 
   return useMemo(

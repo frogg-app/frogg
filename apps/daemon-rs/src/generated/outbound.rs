@@ -402,6 +402,8 @@ pub enum SessionMessage {
     ProviderAccountImportResponse(ProviderAccountImportResponse),
     #[serde(rename = "provider.account.set_allowed_models.response")]
     ProviderAccountSetAllowedModelsResponse(ProviderAccountSetAllowedModelsResponse),
+    #[serde(rename = "provider.account.set_preferences.response")]
+    ProviderAccountSetPreferencesResponse(ProviderAccountSetPreferencesResponse),
     #[serde(rename = "list_commands_response")]
     ListCommandsResponse(ListCommandsResponse),
     #[serde(rename = "list_terminals_response")]
@@ -9512,6 +9514,23 @@ pub struct GetProvidersSnapshotResponsePayloadEntriesItemAccountsItem {
     pub id: String,
     pub name: String,
     pub authenticated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<GetProvidersSnapshotResponsePayloadEntriesItemAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GetProvidersSnapshotResponsePayloadEntriesItemAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9587,6 +9606,25 @@ pub struct GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItemAccounts
     pub id: String,
     pub name: String,
     pub authenticated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<
+        GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItemAccountsItemPreferences,
+    >,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GetProvidersSnapshotResponsePayloadCompactSnapshotEntriesItemAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9760,6 +9798,23 @@ pub struct ProvidersSnapshotUpdatePayloadEntriesItemAccountsItem {
     pub id: String,
     pub name: String,
     pub authenticated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProvidersSnapshotUpdatePayloadEntriesItemAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProvidersSnapshotUpdatePayloadEntriesItemAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -9833,6 +9888,24 @@ pub struct ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItemAccountsItem 
     pub id: String,
     pub name: String,
     pub authenticated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences:
+        Option<ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItemAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProvidersSnapshotUpdatePayloadCompactSnapshotEntriesItemAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10087,6 +10160,23 @@ pub struct ProviderAccountListResponsePayloadAccountsItem {
     pub is_active: bool,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountListResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountListResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10167,6 +10257,23 @@ pub struct ProviderAccountCreateResponsePayloadAccountsItem {
     pub is_active: bool,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountCreateResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountCreateResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10247,6 +10354,23 @@ pub struct ProviderAccountDeleteResponsePayloadAccountsItem {
     pub is_active: bool,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountDeleteResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountDeleteResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10327,6 +10451,23 @@ pub struct ProviderAccountSetActiveResponsePayloadAccountsItem {
     pub is_active: bool,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountSetActiveResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetActiveResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10408,6 +10549,23 @@ pub struct ProviderAccountRenameResponsePayloadAccountsItem {
     pub is_active: bool,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountRenameResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountRenameResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10488,6 +10646,23 @@ pub struct ProviderAccountSignOutResponsePayloadAccountsItem {
     pub is_active: bool,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountSignOutResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSignOutResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10582,6 +10757,23 @@ pub struct ProviderAccountImportResponsePayloadAccountsItem {
     pub is_active: bool,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountImportResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountImportResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10662,6 +10854,23 @@ pub struct ProviderAccountSetAllowedModelsResponsePayloadAccountsItem {
     pub is_active: bool,
     #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
     pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountSetAllowedModelsResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetAllowedModelsResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -10699,6 +10908,104 @@ pub enum ProviderAccountSetAllowedModelsResponsePayloadCapabilitiesItemConfigDir
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderAccountSetAllowedModelsResponsePayloadCapabilitiesItemLoginCommand {
+    pub command: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetPreferencesResponse {
+    pub payload: ProviderAccountSetPreferencesResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetPreferencesResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub accounts: Vec<ProviderAccountSetPreferencesResponsePayloadAccountsItem>,
+    pub capabilities: Vec<ProviderAccountSetPreferencesResponsePayloadCapabilitiesItem>,
+    #[serde(rename = "activeAccountIds")]
+    pub active_account_ids: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warnings: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetPreferencesResponsePayloadAccountsItem {
+    pub id: String,
+    pub provider: String,
+    pub name: String,
+    #[serde(rename = "configDir")]
+    pub config_dir: String,
+    #[serde(rename = "linkedFolders")]
+    pub linked_folders: Vec<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(
+        rename = "lastAuthenticatedAt",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub last_authenticated_at: Option<String>,
+    pub authenticated: bool,
+    #[serde(rename = "isActive")]
+    pub is_active: bool,
+    #[serde(rename = "allowedModels", skip_serializing_if = "Option::is_none")]
+    pub allowed_models: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preferences: Option<ProviderAccountSetPreferencesResponsePayloadAccountsItemPreferences>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetPreferencesResponsePayloadAccountsItemPreferences {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(rename = "systemPrompt", skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(rename = "defaultModelId", skip_serializing_if = "Option::is_none")]
+    pub default_model_id: Option<String>,
+    #[serde(
+        rename = "defaultThinkingOptionId",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub default_thinking_option_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetPreferencesResponsePayloadCapabilitiesItem {
+    pub provider: String,
+    #[serde(rename = "configDirMode", skip_serializing_if = "Option::is_none")]
+    pub config_dir_mode:
+        Option<ProviderAccountSetPreferencesResponsePayloadCapabilitiesItemConfigDirMode>,
+    #[serde(rename = "configDirEnv")]
+    pub config_dir_env: String,
+    #[serde(rename = "homeLinks", skip_serializing_if = "Option::is_none")]
+    pub home_links: Option<Vec<String>>,
+    #[serde(rename = "primaryDirName")]
+    pub primary_dir_name: String,
+    #[serde(rename = "linkableFolders")]
+    pub linkable_folders: Vec<String>,
+    #[serde(rename = "loginCommand")]
+    pub login_command: ProviderAccountSetPreferencesResponsePayloadCapabilitiesItemLoginCommand,
+    #[serde(rename = "credentialFiles")]
+    pub credential_files: Vec<String>,
+    pub enabled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verified: Option<bool>,
+    #[serde(rename = "verificationNote", skip_serializing_if = "Option::is_none")]
+    pub verification_note: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderAccountSetPreferencesResponsePayloadCapabilitiesItemConfigDirMode {
+    #[serde(rename = "env")]
+    Env,
+    #[serde(rename = "home")]
+    Home,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderAccountSetPreferencesResponsePayloadCapabilitiesItemLoginCommand {
     pub command: String,
     pub args: Vec<String>,
 }

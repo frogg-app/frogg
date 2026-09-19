@@ -118,6 +118,14 @@ export interface ProviderSnapshotManagerOptions {
     providerId: string,
     accountId: string | null | undefined,
   ) => string[] | undefined;
+  /**
+   * COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
+   * The system prompt one provider account appends, or undefined.
+   */
+  providerAccountSystemPrompt?: (
+    providerId: string,
+    accountId: string | null | undefined,
+  ) => string | undefined;
 }
 
 interface ProviderSnapshotRefreshOptions {
@@ -234,6 +242,10 @@ export class ProviderSnapshotManager {
     providerId: string,
     accountId: string | null | undefined,
   ) => string[] | undefined;
+  private readonly providerAccountSystemPrompt?: (
+    providerId: string,
+    accountId: string | null | undefined,
+  ) => string | undefined;
   private readonly providerAccountEnvForAgent?: (
     providerId: string,
     accountId: string | null | undefined,
@@ -255,6 +267,7 @@ export class ProviderSnapshotManager {
     this.providerAccountEnv = options.providerAccountEnv;
     this.providerAccountEnvForAgent = options.providerAccountEnvForAgent;
     this.providerAccountAllowedModels = options.providerAccountAllowedModels;
+    this.providerAccountSystemPrompt = options.providerAccountSystemPrompt;
     this.isDev = options.isDev === true;
     this.extraClients = options.extraClients ?? {};
     this.runtimeSettings = options.runtimeSettings;
@@ -648,6 +661,17 @@ export class ProviderSnapshotManager {
     accountId: string | null | undefined,
   ): string[] | undefined {
     return this.providerAccountAllowedModels?.(provider, accountId);
+  }
+
+  /**
+   * COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
+   * The system prompt the agent's provider account appends, or undefined.
+   */
+  resolveProviderAccountSystemPrompt(
+    provider: string,
+    accountId: string | null | undefined,
+  ): string | undefined {
+    return this.providerAccountSystemPrompt?.(provider, accountId);
   }
 
   /**

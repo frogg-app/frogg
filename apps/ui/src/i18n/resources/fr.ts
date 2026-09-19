@@ -720,7 +720,8 @@ export const fr: TranslationResources = {
       toasts: {
         workspacePathUnavailable: "Le cheminWorkspacen'est pas encore disponible",
         branchNameUnavailable: "Nom de la succursale non disponible",
-        terminalQueued: "Préparation de la session, ouverture du terminal lorsque vous êtes prêt...",
+        terminalQueued:
+          "Préparation de la session, ouverture du terminal lorsque vous êtes prêt...",
         workspacePathCopiedLabel: "CheminWorkspace",
         branchNameCopiedLabel: "Nom de la succursale",
       },
@@ -2939,14 +2940,10 @@ export const fr: TranslationResources = {
         scopeProject: "Projet",
       },
       providerAccounts: {
-        sectionTitle: "Connexions fournisseur",
         sectionInfo:
           "Conservez plusieurs connexions pour la CLI d'un fournisseur sur cet hôte. Chaque compte reçoit son propre répertoire de configuration, et les dossiers partagés restent liés au répertoire principal.",
         unavailable: "Connectez-vous à cet hôte pour gérer les connexions fournisseur.",
         loadFailed: "Impossible de charger les connexions fournisseur",
-        empty: "Aucune connexion pour l'instant",
-        noEnabledProviders:
-          "Aucun fournisseur de cet hôte ne prend en charge plusieurs connexions.",
         addAccount: "Ajouter un compte",
         addAccountTitle: "Ajouter un compte {{provider}}",
         nameLabel: "Nom du compte",
@@ -2962,10 +2959,6 @@ export const fr: TranslationResources = {
           "Les dossiers cochés sont liés au répertoire de configuration principal afin de rester partagés entre les connexions.",
         sharedFoldersEmpty: "Ce fournisseur ne partage aucun dossier.",
         create: "Créer le compte",
-        active: "Actif",
-        authenticated: "Connecté",
-        notAuthenticated: "Non connecté",
-        authenticate: "Se connecter",
         authenticateHint:
           "La connexion ouvre un terminal qui exécute la procédure du fournisseur. Actualisez cette liste une fois terminé.",
         authenticateNoWorkspace:
@@ -2976,12 +2969,10 @@ export const fr: TranslationResources = {
         unverifiedDefaultNote:
           "son répertoire de configuration et ses fichiers d’identifiants n’ont jamais été confirmés avec la CLI.",
         authenticateFailed: "Impossible d'ouvrir le terminal de connexion",
-        makeActive: "Rendre actif",
         remove: "Supprimer",
         removeConfirmTitle: "Supprimer {{name}} ?",
         removeConfirmMessage:
           "Frogg oublie ce compte. Son répertoire de configuration {{path}} et les identifiants qu'il contient restent sur le disque.",
-        refresh: "Actualiser",
       },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",
@@ -3187,17 +3178,58 @@ export const fr: TranslationResources = {
       settingsModal: {
         dangerZoneTitle: "Zone dangereuse",
         uninstallTitle: "Désinstaller le fournisseur",
-        accounts: {
-          title: "Comptes",
-          info: "Connectez-vous plusieurs fois et choisissez le compte avec lequel ce fournisseur s'exécute.",
-          empty: "Aucun compte pour l'instant.",
+        account: {
+          providerSignIn: "Connexion du fournisseur",
+          signedIn: "Connecté",
+          notSignedIn: "Non connecté",
+          inUse: "Utilisé",
+          signIn: "Se connecter",
+          reauthenticate: "Se reconnecter",
+          makeActive: "Utiliser ce compte",
+          signInHint:
+            "La connexion lance l'authentification propre à {{provider}} dans un terminal de cet hôte.",
           usageTitle: "Utilisation",
-          usageInfo: "Le fournisseur signale l'utilisation globale, et non par compte.",
-          rename: "Renommer",
-          renameTitle: "Renommer le compte",
-          renamePlaceholder: "Nom du compte",
-          renameHint:
+          usageInactive:
+            "Le fournisseur signale l'utilisation du compte utilisé. Basculez sur ce compte pour voir la sienne.",
+          defaultsTitle: "Valeurs par défaut des nouveaux agents",
+          defaultsDescription: "Ce avec quoi un agent démarre lorsqu'il est lancé avec ce compte.",
+          defaultModel: "Modèle par défaut",
+          defaultThinking: "Niveau de réflexion par défaut",
+          providerDefault: "Par défaut du fournisseur",
+          noModels: "Ce fournisseur n'a signalé aucun modèle.",
+          noThinking: "Ce modèle n'a pas de niveaux de réflexion.",
+          modelsTitle: "Accès aux modèles",
+          modelsDescription: "Les modèles de ce fournisseur que ce compte peut exécuter.",
+          allModels: "Tous les modèles",
+          noModelsAllowed: "Aucun modèle",
+          someModels: "{{allowed}} modèles sur {{total}}",
+          allowAll: "Autoriser tous les modèles",
+          systemPromptTitle: "Prompt système",
+          systemPromptDescription: "Ajouté au prompt système de chaque agent lancé avec ce compte.",
+          systemPromptPlaceholder:
+            "Ajoutez des instructions suivies par tous les agents de ce compte",
+          systemPromptTooLong: "Restez sous {{max}} caractères.",
+          saved: "Enregistré",
+          revert: "Rétablir",
+          save: "Enregistrer",
+          identityTitle: "Identité",
+          nickname: "Surnom",
+          nicknameHint:
             "Modifie uniquement le libellé. Rien n'est déplacé sur le disque et la connexion est conservée.",
+          nicknameInvalid: "Saisissez un nom.",
+          color: "Couleur",
+          transferTitle: "Déplacer ce compte",
+          transferDescription:
+            "Copiez cette connexion vers un autre hôte, ou importez-en une d'ailleurs.",
+          dangerTitle: "Zone dangereuse",
+          signOutDescription:
+            "Supprime les identifiants enregistrés de ce compte sur l'hôte. Le compte est conservé.",
+          deleteTitle: "Supprimer le compte",
+          deleteDescription:
+            "Supprime le compte et son dossier de configuration de l'hôte. Action irréversible.",
+          delete: "Supprimer",
+        },
+        accounts: {
           signOut: "Se déconnecter",
           signOutConfirmTitle: "Déconnecter {{name}} ?",
           signOutConfirmMessage:
@@ -3220,17 +3252,7 @@ export const fr: TranslationResources = {
         },
         models: {
           title: "Modèles",
-          info: "Restreignez les modèles de ce fournisseur qu'un compte peut utiliser.",
           empty: "Ce fournisseur n'a signalé aucun modèle.",
-          accountLabel: "Compte",
-          unrestricted: "Tous les modèles",
-          none: "Aucun modèle",
-          restrictedCount: "{{allowed}} modèles sur {{total}}",
-          allowAll: "Autoriser tous les modèles",
-          allowNone: "N'autoriser aucun modèle",
-          restrictionHint:
-            "Un compte sans restriction peut utiliser tous les modèles proposés par ce fournisseur.",
-          selectAccount: "Choisissez un compte à restreindre.",
         },
       },
       statuses: {

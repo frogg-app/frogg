@@ -297,6 +297,14 @@ export interface AgentManagerOptions {
     provider: string,
     accountId: string | null | undefined,
   ) => string[] | undefined;
+  /**
+   * COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
+   * The system prompt the agent's provider account appends after the daemon's.
+   */
+  resolveProviderAccountSystemPrompt?: (
+    provider: string,
+    accountId: string | null | undefined,
+  ) => string | undefined;
   providerDefinitions?: ProviderEnabledMap;
   idFactory?: () => string;
   registry?: AgentStorage;
@@ -730,6 +738,10 @@ export class AgentManager {
   private froggToolsEnabled = true;
   private froggToolCatalogFactory: FroggToolCatalogFactory | null = null;
   private appendSystemPrompt: string;
+  private readonly resolveProviderAccountSystemPrompt?: (
+    provider: string,
+    accountId: string | null | undefined,
+  ) => string | undefined;
   private onAgentAttention?: AgentAttentionCallback;
   private onAgentArchived?: AgentArchivedCallback;
   private onWorkspaceStateMayHaveChanged?: (params: { cwd: string }) => void;
@@ -750,6 +762,7 @@ export class AgentManager {
     this.mcpAuthToken = options?.mcpAuthToken ?? null;
     this.configureFroggTools(options);
     this.appendSystemPrompt = options.appendSystemPrompt ?? "";
+    this.resolveProviderAccountSystemPrompt = options.resolveProviderAccountSystemPrompt;
     this.logger = options.logger.child({ module: "agent", component: "agent-manager" });
     this.rescueTimeouts = {
       reloadSessionCloseMs:
@@ -4903,7 +4916,12 @@ export class AgentManager {
   }
 
   private applyDaemonAppendSystemPrompt(config: AgentSessionConfig): AgentSessionConfig {
-    const daemonAppendSystemPrompt = this.appendSystemPrompt.trim();
+    const daemonAppendSystemPrompt = [
+      this.appendSystemPrompt.trim(),
+      this.accountSystemPromptFor(config),
+    ]
+      .filter((part) => part.length > 0)
+      .join("\n\n");
     const next = { ...config };
     delete next.daemonAppendSystemPrompt;
 
@@ -4913,6 +4931,23 @@ export class AgentManager {
           daemonAppendSystemPrompt,
         }
       : next;
+  }
+
+  /** COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19. */
+  private accountSystemPromptFor(config: AgentSessionConfig): string {
+    if (!this.resolveProviderAccountSystemPrompt) return "";
+    try {
+      return (
+        this.resolveProviderAccountSystemPrompt(config.provider, config.providerAccountId) ?? ""
+      ).trim();
+    } catch (error) {
+      // A failure to read the prompt must not block a launch.
+      this.logger.warn(
+        { err: error, provider: config.provider },
+        "Failed to resolve provider account system prompt",
+      );
+      return "";
+    }
   }
 
   private async buildLaunchContext(

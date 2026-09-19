@@ -60,7 +60,6 @@ import {
   useHostRuntimeSnapshot,
   useHosts,
 } from "@/runtime/host-runtime";
-import { ProviderAccountsSection } from "@/provider-accounts";
 import { ProvidersSection } from "@/screens/settings/providers-section";
 import { ProviderUsageSettingsSection } from "@/provider-usage/settings-section";
 import { useProviderUsage } from "@/provider-usage/use-provider-usage";
@@ -304,7 +303,6 @@ export function HostProvidersPage({ serverId }: { serverId: string }) {
   return (
     <View>
       <ProvidersSection serverId={serverId} />
-      <ProviderAccountsSection serverId={serverId} />
     </View>
   );
 }
