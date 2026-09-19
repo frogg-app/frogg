@@ -126,6 +126,14 @@ export interface ProviderSnapshotManagerOptions {
     providerId: string,
     accountId: string | null | undefined,
   ) => string | undefined;
+  /**
+   * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+   * The config directory one provider account's process reads.
+   */
+  providerAccountConfigDir?: (
+    providerId: string,
+    accountId: string | null | undefined,
+  ) => string | undefined;
 }
 
 interface ProviderSnapshotRefreshOptions {
@@ -246,6 +254,10 @@ export class ProviderSnapshotManager {
     providerId: string,
     accountId: string | null | undefined,
   ) => string | undefined;
+  private readonly providerAccountConfigDir?: (
+    providerId: string,
+    accountId: string | null | undefined,
+  ) => string | undefined;
   private readonly providerAccountEnvForAgent?: (
     providerId: string,
     accountId: string | null | undefined,
@@ -268,6 +280,7 @@ export class ProviderSnapshotManager {
     this.providerAccountEnvForAgent = options.providerAccountEnvForAgent;
     this.providerAccountAllowedModels = options.providerAccountAllowedModels;
     this.providerAccountSystemPrompt = options.providerAccountSystemPrompt;
+    this.providerAccountConfigDir = options.providerAccountConfigDir;
     this.isDev = options.isDev === true;
     this.extraClients = options.extraClients ?? {};
     this.runtimeSettings = options.runtimeSettings;
@@ -672,6 +685,18 @@ export class ProviderSnapshotManager {
     accountId: string | null | undefined,
   ): string | undefined {
     return this.providerAccountSystemPrompt?.(provider, accountId);
+  }
+
+  /**
+   * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+   * The config directory an account's provider process reads, or undefined when
+   * the provider has no enabled accounts capability.
+   */
+  resolveProviderAccountConfigDir(
+    provider: string,
+    accountId: string | null | undefined,
+  ): string | undefined {
+    return this.providerAccountConfigDir?.(provider, accountId);
   }
 
   /**

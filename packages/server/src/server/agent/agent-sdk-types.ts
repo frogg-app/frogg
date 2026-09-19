@@ -213,6 +213,17 @@ export interface AgentPersistenceHandle {
   metadata?: AgentMetadata;
 }
 
+/** See {@link AgentClient.relocateNativeSession}. */
+export interface RelocateNativeSessionInput {
+  handle: AgentPersistenceHandle;
+  /** The agent's working directory: providers key their history by it. */
+  cwd: string;
+  /** The config directory the session lives in today. */
+  fromConfigDir: string;
+  /** The config directory it has to be readable from after the move. */
+  toConfigDir: string;
+}
+
 export type AgentPromptContentBlock =
   | { type: "text"; text: string }
   | { type: "image"; data: string; mimeType: string }
@@ -785,6 +796,17 @@ export interface AgentClient {
    * Called before Frogg clears its archived flag so provider resume can succeed.
    */
   unarchiveNativeSession?(handle: AgentPersistenceHandle): Promise<void>;
+  /**
+   * Copy a durable native session into another of the provider's config
+   * directories, so resuming it under a different sign-in finds its history.
+   *
+   * Optional: a provider that does not implement it cannot move a live agent
+   * between accounts, and the daemon reports the transfer as unsupported rather
+   * than silently resuming an empty conversation. Implementations copy rather
+   * than move — the account the conversation came from keeps its own copy, so a
+   * transfer can be made back again.
+   */
+  relocateNativeSession?(input: RelocateNativeSessionInput): Promise<void>;
   /**
    * Release any provider-owned resources held by this client (background
    * processes, sockets, cached subprocesses, etc.). Called when the daemon

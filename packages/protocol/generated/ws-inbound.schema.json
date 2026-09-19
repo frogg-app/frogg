@@ -5544,6 +5544,33 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "agent.provider_account.transfer.request"
+                },
+                "agentId": {
+                  "type": "string"
+                },
+                "providerAccountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "agentId",
+                "providerAccountId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "agent.detach.request"
                 },
                 "agentId": {

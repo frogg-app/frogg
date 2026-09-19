@@ -990,6 +990,14 @@ export class Session {
           agentManager.setAgentFeature(agentId, featureId, value),
         setThinking: (agentId, thinkingOptionId) =>
           agentManager.setAgentThinkingOption(agentId, thinkingOptionId),
+        // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after
+        // 2027-09-19. The account is checked here, where the store lives, so the
+        // manager is never asked to move a conversation onto a sign-in that does
+        // not exist or belongs to another provider.
+        transferProviderAccount: async (agentId, providerAccountId) => {
+          this.assertTransferableProviderAccount(agentId, providerAccountId);
+          await agentManager.transferAgentProviderAccount(agentId, providerAccountId);
+        },
       },
       logger: this.sessionLogger,
     });
@@ -1860,6 +1868,33 @@ export class Session {
   }
 
   /**
+   * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+   *
+   * Rejects a transfer the daemon cannot honour, before the manager starts
+   * moving transcripts: the agent has to exist, its provider has to have
+   * accounts enabled, and a named account has to be a real account of that same
+   * provider. `null` needs none of those checks beyond the capability — it is
+   * the provider's primary config directory, which always exists.
+   */
+  private assertTransferableProviderAccount(agentId: string, accountId: string | null): void {
+    const agent = this.agentManager.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Unknown agent "${agentId}".`);
+    }
+    const capability = this.providerAccountStore.getCapability(agent.provider);
+    if (!capability?.enabled) {
+      throw new Error(`Provider accounts are not enabled for "${agent.provider}".`);
+    }
+    if (accountId === null) {
+      return;
+    }
+    const account = this.providerAccountStore.findAccount(accountId);
+    if (!account || account.provider !== agent.provider) {
+      throw new Error(`Unknown provider account "${accountId}" for provider "${agent.provider}".`);
+    }
+  }
+
+  /**
    * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
    * The provider's sign-in accounts, ridden along on the provider snapshot so a
    * composer account picker needs no second fetch. Returns undefined — which
@@ -2409,6 +2444,8 @@ export class Session {
         return this.agentConfigSession.handleSetAgentThinkingRequest(msg);
       case "agent.config.apply.request":
         return this.agentConfigSession.handleAgentConfigApplyRequest(msg);
+      case "agent.provider_account.transfer.request":
+        return this.agentConfigSession.handleAgentProviderAccountTransferRequest(msg);
       case "get_daemon_config_request":
         this.emit({
           type: "get_daemon_config_response",

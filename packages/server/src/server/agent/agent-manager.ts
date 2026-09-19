@@ -305,6 +305,15 @@ export interface AgentManagerOptions {
     provider: string,
     accountId: string | null | undefined,
   ) => string | undefined;
+  /**
+   * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+   * The config directory an account's provider process reads, so a transfer can
+   * put the conversation where the account it moves to will look for it.
+   */
+  resolveProviderAccountConfigDir?: (
+    provider: string,
+    accountId: string | null | undefined,
+  ) => string | undefined;
   providerDefinitions?: ProviderEnabledMap;
   idFactory?: () => string;
   registry?: AgentStorage;
@@ -742,6 +751,10 @@ export class AgentManager {
     provider: string,
     accountId: string | null | undefined,
   ) => string | undefined;
+  private readonly resolveProviderAccountConfigDir?: (
+    provider: string,
+    accountId: string | null | undefined,
+  ) => string | undefined;
   private onAgentAttention?: AgentAttentionCallback;
   private onAgentArchived?: AgentArchivedCallback;
   private onWorkspaceStateMayHaveChanged?: (params: { cwd: string }) => void;
@@ -763,6 +776,7 @@ export class AgentManager {
     this.configureFroggTools(options);
     this.appendSystemPrompt = options.appendSystemPrompt ?? "";
     this.resolveProviderAccountSystemPrompt = options.resolveProviderAccountSystemPrompt;
+    this.resolveProviderAccountConfigDir = options.resolveProviderAccountConfigDir;
     this.logger = options.logger.child({ module: "agent", component: "agent-manager" });
     this.rescueTimeouts = {
       reloadSessionCloseMs:
@@ -1382,6 +1396,68 @@ export class AgentManager {
         await this.closeUnregisteredSession(imported.session);
       }
     }
+  }
+
+  /**
+   * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+   *
+   * Moves a live agent onto another of its provider's accounts, conversation and
+   * all: the provider's transcript is copied into the target account's config
+   * directory and the session is reloaded against it, so the agent keeps its
+   * timeline, its labels and its place in the workspace.
+   *
+   * `accountId` is two-valued, unlike the config field it writes: `null` is the
+   * provider's implicit default account and a string names a stored one. There
+   * is no "leave it alone" — that is not calling this.
+   *
+   * The reload is what rebinds the provider process to the new sign-in, because
+   * the account only enters the picture as a launch-time env overlay. The
+   * transcript has to be in place first: a resume that cannot find its history
+   * would quietly come back as an empty conversation.
+   */
+  async transferAgentProviderAccount(
+    agentId: string,
+    accountId: string | null,
+  ): Promise<ManagedAgent> {
+    const existing = this.requireSessionAgent(agentId);
+    const provider = existing.config.provider;
+    if (existing.config.providerAccountId === accountId) {
+      return existing;
+    }
+
+    const client = this.requireClient(provider);
+    if (!client.relocateNativeSession) {
+      throw new Error(
+        `Conversations cannot be moved between "${provider}" accounts: the provider has no way to carry its history across.`,
+      );
+    }
+    const handle = existing.persistence;
+    if (!handle) {
+      throw new Error("This agent has no provider session yet, so there is nothing to move.");
+    }
+    const cwd = existing.config.cwd;
+    if (!cwd) {
+      throw new Error("This agent has no working directory, so its history cannot be located.");
+    }
+
+    const fromConfigDir = this.resolveProviderAccountConfigDir?.(
+      provider,
+      existing.config.providerAccountId,
+    );
+    const toConfigDir = this.resolveProviderAccountConfigDir?.(provider, accountId);
+    if (!fromConfigDir || !toConfigDir) {
+      throw new Error(`Provider accounts are not enabled for "${provider}".`);
+    }
+
+    if (fromConfigDir !== toConfigDir) {
+      await client.relocateNativeSession({ handle, cwd, fromConfigDir, toConfigDir });
+    }
+
+    this.logger.info(
+      { agentId, provider, fromConfigDir, toConfigDir, accountId },
+      "Transferring agent to another provider account",
+    );
+    return this.reloadAgentSession(agentId, { providerAccountId: accountId });
   }
 
   // Hot-reload an active agent session with config overrides. By default the

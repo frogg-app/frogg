@@ -1102,6 +1102,9 @@ export async function createFroggDaemon(
     // COMPAT(providerAccountPreferences): per-account appended system prompt.
     resolveProviderAccountSystemPrompt: (provider, accountId) =>
       providerSnapshotManager.resolveProviderAccountSystemPrompt(provider, accountId),
+    // COMPAT(agentProviderAccountTransfer): where an account's history lives.
+    resolveProviderAccountConfigDir: (provider, accountId) =>
+      providerSnapshotManager.resolveProviderAccountConfigDir(provider, accountId),
     appendSystemPrompt: config.appendSystemPrompt,
     onWorkspaceFilesMayHaveChanged: ({ cwd }) => {
       workspaceGitService.onWorkspaceFilesMayHaveChanged(cwd);
