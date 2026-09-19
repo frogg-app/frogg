@@ -6,6 +6,7 @@ import path from "node:path";
 import { resolveLocalDaemonState, stopLocalDaemon } from "../local-daemon.js";
 import { bundleLauncherPath } from "./bundle.js";
 import { appendSelfUpdateLog, currentLinkPath } from "./layout.js";
+import { isInsideSystemdUnit } from "../service/state.js";
 
 /**
  * How the daemon gets restarted after `current` is flipped. The installer
@@ -211,15 +212,6 @@ export function systemdUnitPath(env: NodeJS.ProcessEnv = process.env): string {
 
 export function launchdPlistPath(): string {
   return path.join(os.homedir(), "Library", "LaunchAgents", `${LAUNCHD_LABEL}.plist`);
-}
-
-/** True when this process runs inside the daemon's systemd service cgroup. */
-export function isInsideSystemdUnit(unit: string = SYSTEMD_UNIT): boolean {
-  try {
-    return readFileSync("/proc/self/cgroup", "utf8").includes(`${unit}.service`);
-  } catch {
-    return false;
-  }
 }
 
 export function createSystemdServiceManager(

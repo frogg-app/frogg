@@ -1,10 +1,17 @@
 import type { Command } from "commander";
 import {
+  resolveLocalDaemonState,
   startLocalDaemonDetached,
   stopLocalDaemon,
   DEFAULT_STOP_TIMEOUT_MS,
   type DaemonStartOptions,
 } from "./local-daemon.js";
+import {
+  detectServiceRegistration,
+  resolveServiceOwnership,
+  restartService,
+  type ServiceRegistration,
+} from "./service/state.js";
 import type {
   CommandOptions,
   SingleResult,
@@ -17,6 +24,63 @@ interface RestartResult {
   home: string;
   pid: string;
   message: string;
+}
+
+/**
+ * Restarting by hand used to mean "stop the pid in the lock file, start a
+ * detached daemon" even on a host whose daemon belongs to a systemd unit or
+ * launch agent. That silently moved the daemon out from under its service:
+ * the unit went inactive, the next `systemctl start` (an upgrade, a reboot
+ * script) hit EADDRINUSE, and nothing said so. When a service owns this
+ * install, restart it instead.
+ *
+ * Explicit overrides are the exception: a unit cannot honour a different
+ * home, listen address or relay flag, so those keep the manual path.
+ */
+function serviceCanHandleRestart(options: DaemonStartOptions): boolean {
+  return (
+    options.home === undefined &&
+    options.listen === undefined &&
+    options.port === undefined &&
+    options.relay === undefined &&
+    options.mcp === undefined &&
+    options.injectMcp === undefined &&
+    options.webUi === undefined &&
+    options.hostnames === undefined
+  );
+}
+
+async function restartThroughService(
+  registration: ServiceRegistration,
+  timeoutMs: number,
+): Promise<RestartCommandResult> {
+  const ownership = resolveServiceOwnership({
+    registration,
+    daemonRunning: resolveLocalDaemonState({}).running,
+  });
+  let before = "not running";
+  if (ownership === "detached") {
+    // The unit is idle while a hand-started daemon holds the port; it has to
+    // go before the unit can bind.
+    const stopped = await stopLocalDaemon({ timeoutMs, force: true });
+    before = stopped.pid === null ? "not running" : `PID ${stopped.pid}`;
+  } else if (ownership === "service") {
+    before = "service";
+  }
+  const via = restartService(registration);
+  return {
+    type: "single",
+    data: {
+      action: "restarted",
+      home: resolveLocalDaemonState({}).home,
+      pid: "-",
+      message:
+        via === "systemd-run"
+          ? `Restarting ${registration.name} from a transient unit (this shell is inside the daemon cgroup and may be terminated)`
+          : `Restarted ${registration.name} (${before})`,
+    },
+    schema: restartResultSchema,
+  };
 }
 
 const restartResultSchema: OutputSchema<RestartResult> = {
@@ -83,6 +147,20 @@ export async function runRestartCommand(
   const timeoutMs = parseTimeoutMs(options.timeout);
   const force = options.force === true;
   const startOptions = toStartOptions(options);
+
+  const registration = serviceCanHandleRestart(startOptions) ? detectServiceRegistration() : null;
+  if (registration) {
+    try {
+      return await restartThroughService(registration, timeoutMs);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const error: CommandError = {
+        code: "RESTART_FAILED",
+        message: `Failed to restart ${registration.name}: ${message}`,
+      };
+      throw error;
+    }
+  }
 
   try {
     let stopResult: Awaited<ReturnType<typeof stopLocalDaemon>>;
