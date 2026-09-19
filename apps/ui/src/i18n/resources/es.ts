@@ -227,13 +227,12 @@ export const es: TranslationResources = {
       pillTransferLabel: "Cuenta del proveedor: {{value}}. Mueva esta conversación a otra cuenta.",
       transfer: {
         title: "Mover esta conversación",
-        subtitle: "En ejecución como {{name}}. Elija la cuenta con la que continuar.",
-        warningTitle: "{{name}} no ha visto esta conversación",
-        warningTitleUnselected: "La cuenta que elija no ha visto esta conversación",
-        warningBody:
-          "Moverla reenvía todo el contexto de {{tokens}} tokens como entrada nueva. Nada de eso cuenta como lectura de caché, y se le cobrarán esos tokens de entrada en cuanto salga el siguiente mensaje.",
-        warningBodyUnknownTokens:
-          "Moverla reenvía todo el contexto como entrada nueva. Nada de eso cuenta como lectura de caché, y se le cobrarán esos tokens de entrada en cuanto salga el siguiente mensaje.",
+        targetLabel: "Mover a",
+        targetPlaceholder: "Elija una cuenta",
+        noTargets: "No hay otras cuentas a las que moverla",
+        cost: "Esta conversación tiene {{tokens}} tokens en contexto. Moverla a otra cuenta los reenvía todos como entrada nueva, facturada a precio completo (sin caché).",
+        costUnknownTokens:
+          "Mover esta conversación a otra cuenta reenvía todo su contexto como entrada nueva, facturada a precio completo (sin caché).",
         confirm: "Mover conversación",
         moving: "Moviendo...",
         failed: "No se pudo mover la conversación",

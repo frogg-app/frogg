@@ -32,6 +32,11 @@ type AgentProviderAccountSlice = {
   contextTokens: number | null;
 } | null;
 
+/** The context meter's used-token figure, or null when it is not a real count. */
+function resolveContextTokens(value: number | null | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
+}
+
 function selectAgentProviderAccountSlice(
   state: ReturnType<typeof useSessionStore.getState>,
   serverId: string,
@@ -45,7 +50,7 @@ function selectAgentProviderAccountSlice(
     provider: agent.provider,
     cwd: agent.cwd,
     providerAccountId: agent.providerAccountId,
-    contextTokens: agent.lastUsage?.contextWindowUsedTokens ?? null,
+    contextTokens: resolveContextTokens(agent.lastUsage?.contextWindowUsedTokens),
   };
 }
 
@@ -102,10 +107,7 @@ export function useProviderAccountPillModel(
     if (!model) {
       return null;
     }
-    const transferOptions = resolveProviderAccountTransferOptions(
-      model,
-      agent.providerAccountId,
-    ).map((option) => ({
+    const transferOptions = resolveProviderAccountTransferOptions(model).map((option) => ({
       id: option.id,
       label: option.label,
       authenticated: option.authenticated,
@@ -218,7 +220,6 @@ export function ProviderAccountPill({
       </Pressable>
       <ProviderAccountTransferModal
         visible={isOpen}
-        currentLabel={model.label}
         options={model.transferOptions}
         contextTokens={model.contextTokens}
         isPending={isPending}
