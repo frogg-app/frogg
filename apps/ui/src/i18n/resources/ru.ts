@@ -2707,6 +2707,10 @@ export const ru: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "По адресу этого хоста отвечает другой демон ({{actualServerId}}), а не этот хост ({{expectedServerId}}). Остановите другой демон или проверьте адрес. Попытки переподключения продолжаются.",
+      },
       appearance: {
         title: "Оформление",
         name: {

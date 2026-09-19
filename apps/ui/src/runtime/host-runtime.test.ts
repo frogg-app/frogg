@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   DaemonClient,
   ConnectionState,
+  DaemonClientErrorInfo,
   FetchAgentsEntry,
   FetchAgentsOptions,
 } from "@frogg/client/internal/daemon-client";
@@ -124,6 +125,12 @@ class FakeDaemonClient {
     return () => {
       this.listeners.delete(listener);
     };
+  }
+
+  public errorInfo: DaemonClientErrorInfo | null = null;
+
+  get lastErrorInfo(): DaemonClientErrorInfo | null {
+    return this.errorInfo;
   }
 
   get lastError(): string | null {
@@ -1078,6 +1085,32 @@ describe("HostRuntimeController", () => {
     expect(latest?.connectionStatus).toBe("error");
     expect(latest?.lastError).toBe("transport closed");
     unsubscribe();
+  });
+
+  it("carries the structured serverId-mismatch detail onto the snapshot", async () => {
+    const clients: FakeDaemonClient[] = [];
+    const controller = new HostRuntimeController({
+      host: makeHost(),
+      deps: makeDeps({ "direct:lan:9999": 12, "relay:relay.example.com:443": 65 }, clients),
+    });
+    await controller.start({ autoProbe: false });
+    const reason = "This address is now answered by a different daemon (srv_b), not this host.";
+    const info = {
+      code: "server_identity_mismatch" as const,
+      expectedServerId: "srv_a",
+      actualServerId: "srv_b",
+    };
+    clients[0]!.errorInfo = info;
+    clients[0]!.setConnectionState({ status: "disconnected", reason });
+    expect(controller.getSnapshot()).toMatchObject({
+      connectionStatus: "error",
+      lastError: reason,
+      lastErrorInfo: info,
+    });
+
+    clients[0]!.errorInfo = null;
+    clients[0]!.setConnectionState({ status: "connected" });
+    expect(controller.getSnapshot().lastErrorInfo).toBeNull();
   });
 
   it("preserves transport disconnect reasons on the runtime snapshot", async () => {

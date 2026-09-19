@@ -2721,6 +2721,10 @@ export const es: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "Otro daemon ({{actualServerId}}) responde en la dirección de este host, no este host ({{expectedServerId}}). Detén el otro daemon o revisa la dirección. Se seguirá intentando reconectar.",
+      },
       appearance: {
         title: "Apariencia",
         name: {

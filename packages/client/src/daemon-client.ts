@@ -266,6 +266,19 @@ export type {
 
 export type { TerminalStreamEvent };
 
+/**
+ * Structured form of `DaemonClient.lastError` for failures a UI should
+ * render in its own words; the English `lastError` stays for logs and
+ * diagnostics.
+ */
+export interface DaemonClientErrorInfo {
+  code: "server_identity_mismatch";
+  /** The saved host's serverId. */
+  expectedServerId: string;
+  /** The serverId of the daemon that answered instead. */
+  actualServerId: string;
+}
+
 export type ConnectionState =
   | { status: "idle" }
   | { status: "connecting"; attempt: number }
@@ -1134,6 +1147,8 @@ export class DaemonClient {
   private connectResolve: (() => void) | null = null;
   private connectReject: ((error: Error) => void) | null = null;
   private lastErrorValue: string | null = null;
+  /** Paired with the exact `lastErrorValue` it describes; stale once that changes. */
+  private lastErrorInfoValue: { message: string; info: DaemonClientErrorInfo } | null = null;
   private connectionState: ConnectionState = { status: "idle" };
   private checkoutDiffSubscriptions = new Map<
     string,
@@ -1483,6 +1498,12 @@ export class DaemonClient {
 
   get lastError(): string | null {
     return this.lastErrorValue;
+  }
+
+  /** Structured detail for `lastError`, when the failure has one. */
+  get lastErrorInfo(): DaemonClientErrorInfo | null {
+    const entry = this.lastErrorInfoValue;
+    return entry && entry.message === this.lastErrorValue ? entry.info : null;
   }
 
   getLastLivenessRttMs(): number | null {
@@ -6375,6 +6396,7 @@ export class DaemonClient {
   ): void {
     const previous = this.connectionState;
     this.connectionState = next;
+    if (next.status === "connected") this.lastErrorInfoValue = null;
     const reasonFromNext =
       next.status === "disconnected" && typeof next.reason === "string" ? next.reason : null;
     const reason = metadata?.reason ?? reasonFromNext;
@@ -6517,6 +6539,14 @@ export class DaemonClient {
     );
     this.resetConnectTimeout();
     this.lastErrorValue = reason;
+    this.lastErrorInfoValue = {
+      message: reason,
+      info: {
+        code: "server_identity_mismatch",
+        expectedServerId: expected,
+        actualServerId: serverId,
+      },
+    };
     this.disposeTransport(1008, "Unexpected server identity");
     this.scheduleReconnect({
       reason,

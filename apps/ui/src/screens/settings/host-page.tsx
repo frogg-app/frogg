@@ -1,3 +1,4 @@
+import { describeHostConnectionError } from "@/runtime/host-connection-error";
 import { brand } from "@frogg/branding";
 import {
   ArrowDown,
@@ -130,11 +131,13 @@ function HostNotFound() {
 
 function HostConnectionError({ serverId }: { serverId: string }) {
   const snapshot = useHostRuntimeSnapshot(serverId);
-  const lastError = snapshot?.lastError ?? null;
-  const connectionError =
-    typeof lastError === "string" && lastError.trim().length > 0 ? lastError.trim() : null;
+  const connectionError = describeHostConnectionError(snapshot);
   if (!connectionError) return null;
-  return <Text style={styles.errorText}>{connectionError}</Text>;
+  return (
+    <Text style={styles.errorText} testID="host-connection-error" accessibilityRole="alert">
+      {connectionError}
+    </Text>
+  );
 }
 
 export function HostPairDevicePage({ serverId }: { serverId: string }) {
@@ -239,6 +242,8 @@ export function HostSettingsPage({
       </View>
 
       <HostStatusBadges host={host} />
+      {/* Right under the status, so the reason for an error badge is visible first. */}
+      <HostConnectionError serverId={serverId} />
 
       <HostAppearanceSection host={host} />
 
@@ -251,7 +256,6 @@ export function HostSettingsPage({
 
       {!isLocalDaemon ? <HostSshDeploySection key={`deploy-${host.serverId}`} host={host} /> : null}
 
-      <HostConnectionError serverId={serverId} />
       <DaemonConflictWarning serverId={serverId} />
       <ConnectionsSection host={host} />
 

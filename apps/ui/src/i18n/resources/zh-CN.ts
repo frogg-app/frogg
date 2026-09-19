@@ -2621,6 +2621,10 @@ export const zhCN: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "此主机地址上应答的是另一个守护进程 ({{actualServerId}})，而不是此主机 ({{expectedServerId}})。请停止另一个守护进程或检查地址。将继续尝试重新连接。",
+      },
       appearance: {
         title: "外观",
         name: {

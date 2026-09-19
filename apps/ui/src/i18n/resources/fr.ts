@@ -2728,6 +2728,10 @@ export const fr: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "Un autre daemon ({{actualServerId}}) répond à l'adresse de cet hôte, pas cet hôte ({{expectedServerId}}). Arrêtez l'autre daemon ou vérifiez l'adresse. La reconnexion continue d'essayer.",
+      },
       appearance: {
         title: "Apparence",
         name: {

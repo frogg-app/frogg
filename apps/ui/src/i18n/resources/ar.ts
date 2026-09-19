@@ -2658,6 +2658,10 @@ export const ar: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "يستجيب خادم مختلف ({{actualServerId}}) على عنوان هذا المضيف، وليس هذا المضيف ({{expectedServerId}}). أوقف الخادم الآخر أو تحقق من العنوان. تستمر محاولات إعادة الاتصال.",
+      },
       appearance: {
         title: "المظهر",
         name: {

@@ -6083,6 +6083,11 @@ test("refuses a different daemon on the host's address and reconnects once the r
   answer(answers[0]!);
   expect(client.getConnectionState().status).not.toBe("connected");
   expect(client.lastError).toContain("different daemon (srv_foreign)");
+  expect(client.lastErrorInfo).toEqual({
+    code: "server_identity_mismatch",
+    expectedServerId: "srv_expected",
+    actualServerId: "srv_foreign",
+  });
   expect(client.getLastServerInfoMessage()).toBeNull();
   expect(logger.warn).toHaveBeenCalledWith(
     { expectedServerId: "srv_expected", serverId: "srv_foreign" },
@@ -6094,4 +6099,5 @@ test("refuses a different daemon on the host's address and reconnects once the r
   await connectPromise;
   expect(client.getConnectionState().status).toBe("connected");
   expect(client.getLastServerInfoMessage()?.serverId).toBe("srv_expected");
+  expect(client.lastErrorInfo).toBeNull();
 });

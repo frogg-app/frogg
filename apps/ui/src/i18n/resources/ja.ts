@@ -2691,6 +2691,10 @@ export const ja: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "このホストのアドレスで別のデーモン ({{actualServerId}}) が応答しています。このホスト ({{expectedServerId}}) ではありません。もう一方のデーモンを停止するか、アドレスを確認してください。再接続は引き続き試行されます。",
+      },
       appearance: {
         title: "外観",
         name: {

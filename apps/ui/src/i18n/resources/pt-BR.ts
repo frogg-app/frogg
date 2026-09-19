@@ -2705,6 +2705,10 @@ export const ptBR: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "Outro daemon ({{actualServerId}}) está respondendo no endereço deste host, não este host ({{expectedServerId}}). Pare o outro daemon ou verifique o endereço. A reconexão continua tentando.",
+      },
       appearance: {
         title: "Aparência",
         name: {

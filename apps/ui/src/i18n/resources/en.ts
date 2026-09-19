@@ -2712,6 +2712,10 @@ export const en = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "A different daemon ({{actualServerId}}) is answering at this host's address, not this host ({{expectedServerId}}). Stop the other daemon or check the address. Reconnecting keeps trying.",
+      },
       appearance: {
         title: "Appearance",
         name: {
