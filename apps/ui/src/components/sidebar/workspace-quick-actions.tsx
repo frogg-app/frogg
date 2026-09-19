@@ -1,7 +1,6 @@
-import { useEffect, type ReactElement } from "react";
+import { useMemo, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View } from "react-native";
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
+import { Animated, Pressable, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Archive, Hash, Pencil, Pin, PinOff, Tag } from "lucide-react-native";
 import { isWeb } from "@/constants/platform";
@@ -52,13 +51,8 @@ const ACTION_COUNT = 5;
  * dots and shrinks back into them rather than appearing beside them.
  */
 const COLLAPSED_WIDTH = ACTION_WIDTH;
-const EXPANDED_WIDTH = ACTION_WIDTH * ACTION_COUNT + ACTION_GAP * (ACTION_COUNT - 1);
-
-/**
- * Fast on purpose. This is a modifier-hold affordance like the shortcut badges, and a hold
- * that takes a beat to answer reads as lag rather than as animation.
- */
-const EXPAND_DURATION_MS = 110;
+export const QUICK_ACTIONS_EXPANDED_WIDTH =
+  ACTION_WIDTH * ACTION_COUNT + ACTION_GAP * (ACTION_COUNT - 1);
 
 export interface SidebarWorkspaceQuickActionsProps {
   workspaceKey: string;
@@ -71,6 +65,11 @@ export interface SidebarWorkspaceQuickActionsProps {
   onCopySessionId: () => void;
   onArchive: () => void;
   archiveLabel?: string;
+  /**
+   * 0 → 1 as the rail appears, owned by the row so it can also fade the rail out. The rail
+   * widens out of the kebab's footprint as it fades in, and folds back into it on the way out.
+   */
+  progress: Animated.Value;
 }
 
 export function SidebarWorkspaceQuickActions({
@@ -84,24 +83,25 @@ export function SidebarWorkspaceQuickActions({
   onCopySessionId,
   onArchive,
   archiveLabel,
+  progress,
 }: SidebarWorkspaceQuickActionsProps): ReactElement {
   const { t } = useTranslation();
-  const progress = useSharedValue(0);
 
-  useEffect(() => {
-    progress.value = withTiming(1, { duration: EXPAND_DURATION_MS });
-  }, [progress]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    width: COLLAPSED_WIDTH + (EXPANDED_WIDTH - COLLAPSED_WIDTH) * progress.value,
-    opacity: progress.value,
-  }));
+  const railStyle = useMemo(
+    () => [
+      styles.rail,
+      {
+        width: progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [COLLAPSED_WIDTH, QUICK_ACTIONS_EXPANDED_WIDTH],
+        }),
+      },
+    ],
+    [progress],
+  );
 
   return (
-    <Animated.View
-      style={[styles.rail, animatedStyle]}
-      testID={`sidebar-workspace-quick-actions-${workspaceKey}`}
-    >
+    <Animated.View style={railStyle} testID={`sidebar-workspace-quick-actions-${workspaceKey}`}>
       <QuickAction
         label={t("sidebar.workspace.actions.rename")}
         testID={`sidebar-workspace-quick-action-rename-${workspaceKey}`}

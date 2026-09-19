@@ -20,13 +20,25 @@ function resolve(overrides: Partial<Parameters<typeof resolveTrailingActionVisib
 }
 
 describe("resolveTrailingActionVisibility", () => {
-  it("shows the kebab on hover and the trailing content otherwise", () => {
+  it("shows the kebab on hover in its own column, next to the trailing content", () => {
     expect(resolve()).toMatchObject({ showKebab: false, showTrailing: true });
     expect(resolve({ isHovered: true })).toMatchObject({
       showKebab: true,
       showQuickActions: false,
-      showScrim: true,
+      // The kebab no longer covers the diff, so there is nothing to fade out from under it.
+      showScrim: false,
+      showTrailing: true,
     });
+  });
+
+  it("holds the actions column on every row with actions, hovered or not", () => {
+    // A column that only appeared on hover would reflow the title every time it did.
+    expect(resolve().showActionsColumn).toBe(true);
+    expect(resolve({ isHovered: true }).showActionsColumn).toBe(true);
+    expect(resolve({ isHovered: true, quickActionsModifierDown: true }).showActionsColumn).toBe(
+      true,
+    );
+    expect(resolve({ hasArchiveAction: false, isHovered: true }).showActionsColumn).toBe(false);
   });
 
   it("expands the hovered row into the quick action rail while Alt is held", () => {
@@ -41,7 +53,8 @@ describe("resolveTrailingActionVisibility", () => {
     expect(resolve({ selected: true, quickActionsModifierDown: true })).toMatchObject({
       showQuickActions: true,
       showKebab: false,
-      showTrailing: false,
+      // Still drawn: the rail's scrim fades it out rather than it blinking away.
+      showTrailing: true,
       showScrim: true,
     });
   });
@@ -64,7 +77,7 @@ describe("resolveTrailingActionVisibility", () => {
   it("yields to the shortcut badges", () => {
     expect(
       resolve({ isHovered: true, quickActionsModifierDown: true, showShortcut: true }),
-    ).toMatchObject({ showQuickActions: false, showKebab: false, showTrailing: false });
+    ).toMatchObject({ showQuickActions: false, showKebab: false });
   });
 
   it("never shows the rail on touch or without row actions", () => {
