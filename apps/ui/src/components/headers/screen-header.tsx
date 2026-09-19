@@ -13,6 +13,7 @@ import { WindowChromeSafeArea, useIsWindowDragSurface } from "@/utils/desktop-wi
 import {
   TITLEBAR_DRAG_SURFACE_DATASET,
   TitlebarDragRegion,
+  titlebarDragSurfaceStyle,
 } from "@/components/desktop/titlebar-drag-region";
 
 interface ScreenHeaderProps {
@@ -47,7 +48,6 @@ export function ScreenHeader({
     () => [styles.inner, { paddingTop: insets.top + topPadding }],
     [insets.top, topPadding],
   );
-  const rowStyle = useMemo(() => [styles.row, borderless && styles.borderless], [borderless]);
   const leftCombinedStyle = useMemo(() => [styles.left, leftStyle], [leftStyle]);
   const rightCombinedStyle = useMemo(() => [styles.right, rightStyle], [rightStyle]);
   // A header that sits under the window's top edge stands in for the title bar,
@@ -56,6 +56,19 @@ export function ScreenHeader({
   // off corner ownership: with both sidebars open the header owns no corner but
   // is still the top bar.
   const isWindowChromeHeader = useIsWindowDragSurface();
+  // The row itself is also a drag surface, not only the absolute overlay behind
+  // `left`/`right`. Chromium (Windows especially) can drop the overlay's region
+  // after a partial repaint of the content painted over it, leaving only some
+  // pixels draggable until the next full relayout. Buttons stay no-drag via the
+  // global backstop in index.html.
+  const rowStyle = useMemo(
+    () => [
+      styles.row,
+      borderless && styles.borderless,
+      isWindowChromeHeader && (titlebarDragSurfaceStyle as ViewStyle),
+    ],
+    [borderless, isWindowChromeHeader],
+  );
 
   return (
     <View
