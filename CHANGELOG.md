@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.5.7 — 2026-09-19
+
+- Holding Alt over the sidebar expands a session's menu into quick action
+  icons — rename, pin, labels, copy session ID, archive — so several sessions
+  can be archived or renamed without opening a menu each time. Only the
+  selected row and the row under the cursor expand; releasing Alt collapses
+  them back to the kebab.
+- Every session now has a short session ID, `s_` followed by eight characters,
+  shown in the session menus, the hover card and on subagents. Subagents get
+  their own even while attached to a parent. It identifies a session that has
+  no git branch, which a branch name cannot.
+- Archived sessions can be browsed per project from the project menu, instead
+  of only in the app-wide History list.
+- Confirmation dialogs are now drawn by Frogg itself rather than by Windows,
+  macOS or the browser, so they match the app on every platform.
+- Reversible actions no longer ask first. Archiving a session only prompts when
+  the worktree has uncommitted changes or unpushed commits; updating or
+  restarting a daemon, and updating skills, do not prompt at all — what they
+  do to running agents is written in the row instead. Restoring a branch's
+  stash is now an offer in a toast rather than a dialog.
+- The account a session runs as sits at the right end of its row with its name.
+  A session with subagents or several tabs shows the account on each of those
+  instead, and keeps the change count at session level.
+- "Copy path" is gone from the session menus.
+
 ## 1.5.6 — 2026-09-19
 
 - Provider accounts are managed inside their provider's settings sheet, one
