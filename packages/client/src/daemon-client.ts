@@ -5195,11 +5195,28 @@ export class DaemonClient {
     });
   }
 
-  async listProviderUsage(options?: { requestId?: string }): Promise<ProviderUsageListPayload> {
+  /**
+   * COMPAT(providerUsageAccountScoped): pass `provider` with `providerAccountId`
+   * to have that provider's figures read from one sign-in's config directory
+   * rather than the daemon's default one. `providerAccountId` is three-valued
+   * and must never be read for truthiness: omit the key for "the provider's
+   * active account", send `null` for the primary config dir. Daemons without
+   * `features.providerUsageAccountScoped` ignore both and answer for their
+   * default directory.
+   */
+  async listProviderUsage(options?: {
+    requestId?: string;
+    provider?: AgentProvider;
+    providerAccountId?: string | null;
+  }): Promise<ProviderUsageListPayload> {
     return this.sendNamespacedCorrelatedSessionRequest({
       requestId: options?.requestId,
       message: {
         type: "provider.usage.list.request",
+        ...(options?.provider ? { provider: options.provider } : {}),
+        ...(options && "providerAccountId" in options && options.providerAccountId !== undefined
+          ? { providerAccountId: options.providerAccountId }
+          : {}),
       },
     });
   }

@@ -79,7 +79,6 @@ export function useProviderAccountPillModel(
       accounts,
       defaultAccountId: entry?.defaultAccountId,
       selection: agent.providerAccountId,
-      resolveAbsentToActiveAccount: true,
     });
     return model ? { label: model.displayLabel } : null;
   }, [agent, entry]);

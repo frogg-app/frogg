@@ -8,7 +8,11 @@ import type {
   ProviderUsageBalance,
   ProviderUsageWindow,
 } from "../../../server/messages.js";
-import type { ProviderApiFetch, ProviderUsageFetcher } from "../provider.js";
+import type {
+  ProviderApiFetch,
+  ProviderUsageFetchContext,
+  ProviderUsageFetcher,
+} from "../provider.js";
 import {
   ApiNumberSchema,
   balanceToneFromRemaining,
@@ -88,8 +92,8 @@ export class CodexQuotaProvider implements ProviderUsageFetcher {
     this.fetchApi = options.fetch ?? fetch;
   }
 
-  async fetchUsage(): Promise<ProviderUsage> {
-    const auth = await this.readCodexAuth();
+  async fetchUsage(context?: ProviderUsageFetchContext): Promise<ProviderUsage> {
+    const auth = await this.readCodexAuth(context?.configDir);
     const accessToken = auth?.tokens?.access_token;
     if (!auth || !accessToken) {
       return unavailableUsage(this);
@@ -169,12 +173,17 @@ export class CodexQuotaProvider implements ProviderUsageFetcher {
     };
   }
 
-  private async readCodexAuth(): Promise<CodexAuth | null> {
-    const candidates = [
-      ...(process.env["CODEX_HOME"] ? [join(process.env["CODEX_HOME"], "auth.json")] : []),
-      join(homedir(), ".config", "codex", "auth.json"),
-      join(this.codexHome, "auth.json"),
-    ];
+  private async readCodexAuth(configDir?: string): Promise<CodexAuth | null> {
+    // A scoped read names exactly one directory. The default search order is
+    // deliberately not consulted as a fallback: landing on ~/.codex would
+    // report another sign-in's quota as this account's.
+    const candidates = configDir
+      ? [join(configDir, "auth.json")]
+      : [
+          ...(process.env["CODEX_HOME"] ? [join(process.env["CODEX_HOME"], "auth.json")] : []),
+          join(homedir(), ".config", "codex", "auth.json"),
+          join(this.codexHome, "auth.json"),
+        ];
     for (const path of candidates) {
       if (!existsSync(path)) continue;
       try {

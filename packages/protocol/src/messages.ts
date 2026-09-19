@@ -1825,6 +1825,22 @@ export const ProviderDiagnosticRequestMessageSchema = z.object({
 
 export const ProviderUsageListRequestMessageSchema = z.object({
   type: z.literal("provider.usage.list.request"),
+  /**
+   * COMPAT(providerAccountUsage): added in v1.5.5, remove after 2027-09-17.
+   * Report `provider`'s usage for one sign-in rather than for whichever config
+   * directory the daemon happens to read by default. Both fields must be sent
+   * together; every other provider in the response is unaffected.
+   *
+   * `providerAccountId` is the same three-valued shape as an agent's:
+   * - absent: the provider's daemon-wide active account,
+   * - `null`: the provider's primary config dir (the "Default" pick),
+   * - a string: that account's config dir.
+   *
+   * A daemon that predates this field ignores both and answers for its default
+   * directory, which is exactly the pre-v1.5.5 behaviour.
+   */
+  provider: AgentProviderSchema.optional(),
+  providerAccountId: z.string().nullable().optional(),
   requestId: z.string(),
 });
 
@@ -3850,6 +3866,12 @@ export const ServerInfoStatusPayloadSchema = z
         workspaceFileEditing: z.boolean().optional(),
         // COMPAT(providerUsageList): added in v0.1.98, drop the gate when daemon floor >= v0.1.98.
         providerUsageList: z.boolean().optional(),
+        // COMPAT(providerUsageAccountScoped): added in v1.5.5, remove after 2027-09-17.
+        // The daemon honours `provider` + `providerAccountId` on
+        // `provider.usage.list.request`. Without it a client must not claim the
+        // figures belong to a particular sign-in: older daemons always answer
+        // for the provider's default config directory.
+        providerUsageAccountScoped: z.boolean().optional(),
         // COMPAT(agentDetach): added in v0.1.98, remove gate after 2026-12-19 once daemon floor >= v0.1.98.
         agentDetach: z.boolean().optional(),
         // COMPAT(agentThinkingUpdate): added in v0.2.4, remove gate after 2027-01-28.

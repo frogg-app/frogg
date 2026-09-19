@@ -179,7 +179,10 @@ import { ScheduleSession } from "./session/schedule/schedule-session.js";
 import { ProviderCatalogSession } from "./session/provider/provider-catalog-session.js";
 import { ProviderAccountSession } from "./session/provider/provider-account-session.js";
 import { ProviderAccountStore } from "./provider-accounts/provider-account-store.js";
-import { resolveProviderAccountEnvById } from "./provider-accounts/provider-account-env.js";
+import {
+  resolveProviderAccountConfigDir,
+  resolveProviderAccountEnvById,
+} from "./provider-accounts/provider-account-env.js";
 import { WorkspaceFilesSession } from "./session/files/workspace-files-session.js";
 import { listProviderAgentDefinitions } from "./agent/provider-agent-definitions.js";
 import { AgentConfigSession } from "./session/agent-config/agent-config-session.js";
@@ -952,6 +955,8 @@ export class Session {
         // COMPAT(perAgentProviderAccounts): gated on the same capability manifest
         // that drives `server_info.features.providerAccounts`.
         listProviderSnapshotAccounts: (provider) => this.listProviderSnapshotAccounts(provider),
+        resolveProviderUsageConfigDir: (provider, accountId) =>
+          this.resolveProviderUsageConfigDir(provider, accountId),
       },
       providerSnapshotManager,
       providerUsageService,
@@ -1880,6 +1885,27 @@ export class Session {
       this.sessionLogger.warn(
         { err: error, provider },
         "Failed to list provider accounts for the provider snapshot",
+      );
+      return undefined;
+    }
+  }
+
+  /**
+   * COMPAT(providerUsageAccountScoped): added in v1.5.5, remove after 2027-09-17.
+   * The config directory a usage read should take its credentials from, so the
+   * quota shown beside an agent belongs to the sign-in that agent runs as.
+   * Undefined leaves the fetcher reading its default location.
+   */
+  private resolveProviderUsageConfigDir(
+    provider: string,
+    accountId: string | null | undefined,
+  ): string | undefined {
+    try {
+      return resolveProviderAccountConfigDir(this.providerAccountStore, provider, accountId);
+    } catch (error) {
+      this.sessionLogger.warn(
+        { err: error, provider },
+        "Failed to resolve the provider account config dir for a usage request",
       );
       return undefined;
     }

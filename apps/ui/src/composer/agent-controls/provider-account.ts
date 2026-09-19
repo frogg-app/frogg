@@ -67,17 +67,7 @@ export function resolveProviderAccountControlModel(input: {
   accounts: readonly ProviderSnapshotAccount[] | undefined;
   defaultAccountId: string | null | undefined;
   selection: ProviderAccountSelection;
-  /**
-   * Read-only surfaces (a launched agent's pill) resolve an absent selection to
-   * the provider's daemon-wide active account, because that is what the agent
-   * actually runs as. The picker leaves this off: there, an absent selection is
-   * "no pick yet" and must highlight the Default row instead.
-   */
-  resolveAbsentToActiveAccount?: boolean;
 }): ProviderAccountControlModel | null {
-  // `defaultAccountId` is only read for `resolveAbsentToActiveAccount`: in the
-  // picker the Default row pins the primary config dir rather than following the
-  // daemon-wide active account.
   const { accounts, selection } = input;
   if (accounts === undefined || accounts.length === 0) {
     return null;
@@ -98,8 +88,14 @@ export function resolveProviderAccountControlModel(input: {
     })),
   ];
 
+  // An absent selection means the field is left off the launch config, and the
+  // daemon then runs the agent as the provider's daemon-wide active account —
+  // NOT as the Default row, which is the separate explicit `null` pick. So an
+  // absent selection resolves to that account here too: showing "Default" while
+  // the agent would launch as someone else is precisely the lie that made a
+  // session started on "Default" come up signed in as another account.
   const selectedOptionId =
-    selection === undefined && input.resolveAbsentToActiveAccount && input.defaultAccountId
+    selection === undefined && input.defaultAccountId
       ? input.defaultAccountId
       : toProviderAccountOptionId(selection);
   const selected =

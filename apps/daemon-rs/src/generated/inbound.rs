@@ -2017,6 +2017,10 @@ pub struct ProviderDiagnosticRequest {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ProviderUsageListRequest {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

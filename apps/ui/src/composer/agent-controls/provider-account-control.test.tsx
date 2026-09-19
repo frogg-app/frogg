@@ -204,10 +204,23 @@ describe("ProviderAccountControl", () => {
     });
   });
 
+  // Regression: with no pick yet the launch omits the account and the daemon
+  // runs the active one, so the pill must name it rather than claim "Default".
+  it("names the active account on the pill before anything is picked", () => {
+    renderControl({
+      accounts: [STEVE],
+      defaultAccountId: "acct-steve",
+      selectedAccountId: undefined,
+    });
+    const label = screen.getByTestId("provider-account-control").textContent ?? "";
+    expect(label).toContain("steve");
+    expect(label).not.toContain("Default");
+  });
+
   // Default pins the primary config dir rather than following the active
-  // account, so the pill must not advertise that account's name.
-  it("shows a plain Default on the pill even when an account is active", () => {
-    renderControl({ accounts: [STEVE], defaultAccountId: "acct-steve" });
+  // account, so an explicit Default pick must not advertise that account's name.
+  it("shows a plain Default on the pill for an explicit Default pick", () => {
+    renderControl({ accounts: [STEVE], defaultAccountId: "acct-steve", selectedAccountId: null });
     const label = screen.getByTestId("provider-account-control").textContent ?? "";
     expect(label).toContain("Default");
     expect(label).not.toContain("steve");

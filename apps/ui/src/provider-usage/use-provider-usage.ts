@@ -1,25 +1,42 @@
 import { useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
 import { providerUsageCopy } from "./copy";
-import type { ProviderUsageListPayload, ProviderUsageView } from "./types";
+import type { ProviderUsageView } from "./types";
 
 export const PROVIDER_USAGE_STALE_TIME_MS = 5 * 60 * 1000;
 
-type ProviderUsageClient = Pick<DaemonClient, "listProviderUsage">;
-
-export function providerUsageQueryKey(serverId: string | null | undefined) {
-  return ["providerUsage", serverId ?? ""] as const;
-}
-
-async function fetchProviderUsage(client: ProviderUsageClient): Promise<ProviderUsageListPayload> {
-  return client.listProviderUsage();
+/**
+ * COMPAT(providerUsageAccountScoped): the account scope is part of the key. Two
+ * sign-ins of the same provider report different numbers, so they must never
+ * share a cache entry.
+ */
+export function providerUsageQueryKey(
+  serverId: string | null | undefined,
+  scope?: { provider?: string; providerAccountId?: string | null },
+) {
+  return [
+    "providerUsage",
+    serverId ?? "",
+    scope?.provider ?? "",
+    // `null` (the Default pick) and an absent pick resolve to different config
+    // directories daemon-side, so they get different keys.
+    scope && "providerAccountId" in scope && scope.providerAccountId !== undefined
+      ? scope.providerAccountId
+      : "",
+  ] as const;
 }
 
 interface UseProviderUsageOptions {
   enabled?: boolean;
+  /**
+   * COMPAT(providerUsageAccountScoped): scope this provider's figures to one
+   * sign-in. Both are needed: a `providerAccountId` with no `provider` names
+   * nothing the daemon can resolve.
+   */
+  provider?: string;
+  providerAccountId?: string | null;
 }
 
 export function useProviderUsage(
@@ -36,7 +53,24 @@ export function useProviderUsage(
   const supportsProviderUsage = useSessionStore(
     (state) => state.sessions[serverId ?? ""]?.serverInfo?.features?.providerUsageList === true,
   );
-  const queryKey = useMemo(() => providerUsageQueryKey(serverId), [serverId]);
+  const accountScoped = useSessionStore(
+    (state) =>
+      state.sessions[serverId ?? ""]?.serverInfo?.features?.providerUsageAccountScoped === true,
+  );
+  // An older daemon ignores the scope and answers for its default config
+  // directory, so asking it for one is pointless — and keying the cache as if
+  // it had honoured the scope would file the default answer under an account.
+  // `providerAccountId: undefined` is safe to pass along: the client and the
+  // query key both drop it, which is what "the active account" means.
+  const { provider: scopeProvider, providerAccountId: scopeAccountId } = options;
+  const scope = useMemo(
+    () =>
+      accountScoped && scopeProvider
+        ? { provider: scopeProvider, providerAccountId: scopeAccountId }
+        : undefined,
+    [accountScoped, scopeAccountId, scopeProvider],
+  );
+  const queryKey = useMemo(() => providerUsageQueryKey(serverId, scope), [scope, serverId]);
   const canFetch = Boolean(serverId && client && isConnected && supportsProviderUsage);
   const enabled = Boolean((options.enabled ?? true) && canFetch);
 
@@ -44,8 +78,8 @@ export function useProviderUsage(
     if (!client) {
       throw new Error(providerUsageCopy.clientUnavailable);
     }
-    return fetchProviderUsage(client);
-  }, [client]);
+    return client.listProviderUsage(scope);
+  }, [client, scope]);
 
   const query = useQuery({
     queryKey,

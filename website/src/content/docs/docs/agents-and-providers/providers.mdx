@@ -193,7 +193,9 @@ accounts capability is off, shows the same row of controls as before.
 
 The list is **Default** followed by every account for that provider. **Default** always means
 the primary config directory, so it is never relabelled with the active account's name — that
-account has its own row. An account that is not signed in yet is shown greyed out with
+account has its own row. Until you pick something, the control names the provider's active
+account, because that is the account a new agent launches with when no choice is made; pick
+**Default** explicitly to use the primary config directory instead. An account that is not signed in yet is shown greyed out with
 *Not signed in* and cannot be chosen, rather than launching an agent that would fail to
 authenticate.
 
@@ -280,6 +282,13 @@ accounts are enabled, naming this behaviour.
 **Host settings → Usage** shows provider-reported quota where the provider exposes it
 (for example Claude, Codex and Kimi). Frogg reads those credentials read-only; the CLIs own
 token refresh.
+
+The usage section of a chat's context-window meter reports the quota of the account that
+agent runs as: for a provider with [accounts](#provider-accounts-multi-sign-in), Frogg reads
+the credentials from that account's config directory rather than the primary one. On macOS
+the Keychain fallback is used only for the primary directory, so an account whose credentials
+file is missing shows as unavailable instead of borrowing another sign-in's figures. The
+Host settings page still reports the primary directory.
 
 ## Provider environment
 

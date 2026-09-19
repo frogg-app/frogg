@@ -55,6 +55,7 @@ function makeSubsystem(options: MakeOptions = {}) {
     listProviderAvailability: async () => [],
     listDraftFeatures: async () => [],
     listProviderSnapshotAccounts: () => undefined,
+    resolveProviderUsageConfigDir: () => undefined,
     ...options.host,
   };
   const providerSnapshotManager = createStub<ProviderSnapshotManager>({
@@ -162,6 +163,49 @@ describe("ProviderCatalogSession", () => {
 
     const pull = findByType(emitted, "get_providers_snapshot_response");
     expect(pull?.payload.entries[0]?.modes?.[0]?.icon).toBe("Sparkles");
+  });
+
+  // COMPAT(providerUsageAccountScoped): the usage popover sits beside one agent,
+  // so its quota must be read from that agent's sign-in, not the default dir.
+  it("scopes the named provider's usage to the requested account", async () => {
+    const listUsage = vi.fn(async () => ({ fetchedAt: "2026-09-19T00:00:00.000Z", providers: [] }));
+    const resolved: [string, string | null | undefined][] = [];
+    const { subsystem } = makeSubsystem({
+      usage: { listUsage },
+      host: {
+        resolveProviderUsageConfigDir: (provider, accountId) => {
+          resolved.push([provider, accountId]);
+          return accountId === null ? "/home/u/.claude" : "/home/u/.claude-steve";
+        },
+      },
+    });
+
+    await subsystem.handleProviderUsageListRequest({
+      type: "provider.usage.list.request",
+      requestId: "u1",
+    });
+    await subsystem.handleProviderUsageListRequest({
+      type: "provider.usage.list.request",
+      requestId: "u2",
+      provider: "claude",
+    });
+    await subsystem.handleProviderUsageListRequest({
+      type: "provider.usage.list.request",
+      requestId: "u3",
+      provider: "claude",
+      providerAccountId: null,
+    });
+
+    expect(listUsage.mock.calls.map((call) => (call as unknown[])[0])).toEqual([
+      { configDirs: undefined },
+      { configDirs: { claude: "/home/u/.claude-steve" } },
+      { configDirs: { claude: "/home/u/.claude" } },
+    ]);
+    // Absent and explicit null must reach the resolver as different values.
+    expect(resolved).toEqual([
+      ["claude", undefined],
+      ["claude", null],
+    ]);
   });
 
   // COMPAT(perAgentProviderAccounts): the composer account picker is driven off

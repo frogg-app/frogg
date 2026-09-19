@@ -300,6 +300,51 @@ describe("ProviderUsageService", () => {
     expect(calls).toBe(1);
   });
 
+  // Regression: the usage popover read ~/.claude no matter which account the
+  // agent ran as, so a session on a 1x account showed the 20x account's quota.
+  it("caches each config-directory selection separately", async () => {
+    const seen: (string | undefined)[] = [];
+    const service = new ProviderUsageService({
+      logger: createLogger(),
+      now: () => Date.parse("2026-06-19T00:00:00.000Z"),
+      cacheTtlMs: 60_000,
+      fetchers: [
+        {
+          providerId: "claude",
+          displayName: "Claude",
+          fetchUsage: async (context) => {
+            seen.push(context?.configDir);
+            return {
+              providerId: "claude",
+              displayName: "Claude",
+              status: "available",
+              planLabel: context?.configDir ? "Pro 1x" : "Max 20x",
+              windows: [],
+            };
+          },
+        },
+        {
+          providerId: "codex",
+          displayName: "Codex",
+          fetchUsage: async (context) => {
+            // Only the provider the request named is scoped.
+            expect(context).toBeUndefined();
+            return { providerId: "codex", displayName: "Codex", status: "available", windows: [] };
+          },
+        },
+      ],
+    });
+
+    const unscoped = await service.listUsage();
+    const scoped = await service.listUsage({ configDirs: { claude: "/home/u/.claude-steve" } });
+    const unscopedAgain = await service.listUsage();
+
+    expect(seen).toEqual([undefined, "/home/u/.claude-steve"]);
+    expect(unscoped.providers[0]?.planLabel).toBe("Max 20x");
+    expect(scoped.providers[0]?.planLabel).toBe("Pro 1x");
+    expect(unscopedAgain).toBe(unscoped);
+  });
+
   it("isolates one provider error without dropping other providers", async () => {
     const service = new ProviderUsageService({
       logger: createLogger(),
@@ -572,6 +617,65 @@ describe("real provider usage fetchers", () => {
         headers: expect.objectContaining({ Authorization: "Bearer at_expired" }),
       }),
     );
+  });
+
+  it("reads Claude credentials from the account's config dir when scoped", async () => {
+    const accountDir = mkdtempSync(join(tmpdir(), "usage-test-claude-acct-"));
+    try {
+      writeClaudeCredentials(claudeHome, "at_default", "rt", "max", "default_claude_max_20x");
+      writeClaudeCredentials(accountDir, "at_steve", "rt", "pro", "default_1x");
+      const usageFetch = vi.fn(async () => jsonResponse(makeClaudeResponse({})));
+      fetchApi = usageFetch as never;
+
+      const result = await service().listUsage({ configDirs: { claude: accountDir } });
+
+      expect(findProvider(result, "claude").planLabel).toBe("Pro 1x");
+      expect(usageFetch).toHaveBeenCalledWith(
+        "https://api.anthropic.com/api/oauth/usage",
+        expect.objectContaining({
+          headers: expect.objectContaining({ Authorization: "Bearer at_steve" }),
+        }),
+      );
+    } finally {
+      rmSync(accountDir, { recursive: true, force: true });
+    }
+  });
+
+  // The keychain entry belongs to the primary sign-in, so falling back to it for
+  // another account would report the wrong account's quota under its name.
+  it("never falls back to the macOS Keychain for a non-default account", async () => {
+    const accountDir = mkdtempSync(join(tmpdir(), "usage-test-claude-acct-"));
+    try {
+      const keychain = vi.fn(async () => ({ claudeAiOauth: { accessToken: "at_keychain" } }));
+      const usageFetch = vi.fn(async () => jsonResponse(makeClaudeResponse({})));
+      fetchApi = usageFetch as never;
+
+      const result = await service({ platform: "darwin", keychain }).listUsage({
+        configDirs: { claude: accountDir },
+      });
+
+      expect(findProvider(result, "claude").status).toBe("unavailable");
+      expect(keychain).not.toHaveBeenCalled();
+      expect(usageFetch).not.toHaveBeenCalled();
+    } finally {
+      rmSync(accountDir, { recursive: true, force: true });
+    }
+  });
+
+  it("reads only the account's Codex auth when scoped, never the default search path", async () => {
+    const accountDir = mkdtempSync(join(tmpdir(), "usage-test-codex-acct-"));
+    try {
+      writeCodexAuth(codexHome, "at_codex_default");
+      const usageFetch = vi.fn(async () => jsonResponse(makeCodexResponse({})));
+      fetchApi = usageFetch as never;
+
+      const result = await service().listUsage({ configDirs: { codex: accountDir } });
+
+      expect(findProvider(result, "codex").status).toBe("unavailable");
+      expect(usageFetch).not.toHaveBeenCalled();
+    } finally {
+      rmSync(accountDir, { recursive: true, force: true });
+    }
   });
 
   it("fetches Codex windows and coerces string credit balances", async () => {

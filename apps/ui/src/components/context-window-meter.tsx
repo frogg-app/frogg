@@ -16,6 +16,13 @@ interface ContextWindowMeterProps {
   serverId?: string;
   /** The Frogg provider key, e.g. "claude", "gemini", "codex" */
   provider?: string | null;
+  /**
+   * COMPAT(providerUsageAccountScoped): the sign-in this agent runs as, so the
+   * quota section reports that account's limits rather than the daemon's
+   * default config directory. Three-valued — absent is the provider's active
+   * account, `null` the Default pick — so never read it for truthiness.
+   */
+  providerAccountId?: string | null;
   /** Reserve the meter footprint and show a loading ring while usage is pending. */
   pending?: boolean;
   /** Optional glyph envelope for icon-toolbar alignment. */
@@ -103,6 +110,7 @@ export function ContextWindowMeter({
   showPercentage = false,
   serverId,
   provider,
+  providerAccountId,
   pending = false,
   glyphSize,
 }: ContextWindowMeterProps) {
@@ -111,7 +119,11 @@ export function ContextWindowMeter({
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const { view: providerUsageView, refresh: refreshProviderUsage } = useProviderUsage(
     serverId ?? null,
-    { enabled: isTooltipOpen },
+    {
+      enabled: isTooltipOpen,
+      ...(provider ? { provider } : {}),
+      ...(providerAccountId !== undefined ? { providerAccountId } : {}),
+    },
   );
   const percentage =
     maxTokens !== null && usedTokens !== null ? getUsagePercentage(maxTokens, usedTokens) : null;

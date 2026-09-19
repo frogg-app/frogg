@@ -24,8 +24,17 @@ export class ProviderUsageService {
   private readonly fetchers: ProviderUsageFetcher[];
   private readonly cacheTtlMs: number;
   private readonly now: () => number;
-  private cached: { fetchedAtMs: number; result: ProviderUsageListResult } | null = null;
-  private inFlight: Promise<ProviderUsageListResult> | null = null;
+  /**
+   * Cache and in-flight de-duplication are keyed by the config-directory
+   * selection, not global: the same provider read against two sign-ins gives
+   * two different answers, and serving one for the other is exactly the bug
+   * this keying exists to prevent.
+   */
+  private readonly cached = new Map<
+    string,
+    { fetchedAtMs: number; result: ProviderUsageListResult }
+  >();
+  private readonly inFlight = new Map<string, Promise<ProviderUsageListResult>>();
 
   constructor(options: ProviderUsageServiceOptions) {
     this.logger = options.logger.child({ module: "provider-usage-service" });
@@ -39,33 +48,51 @@ export class ProviderUsageService {
     this.now = options.now ?? Date.now;
   }
 
-  async listUsage(options?: { forceRefresh?: boolean }): Promise<ProviderUsageListResult> {
+  /**
+   * @param options.configDirs config directory to read per provider id, for
+   * providers whose credentials live in a redirectable directory. A provider
+   * absent from the map is read the way it always was.
+   */
+  async listUsage(options?: {
+    forceRefresh?: boolean;
+    configDirs?: Readonly<Record<string, string>>;
+  }): Promise<ProviderUsageListResult> {
     const nowMs = this.now();
-    if (
-      !options?.forceRefresh &&
-      this.cached &&
-      nowMs - this.cached.fetchedAtMs < this.cacheTtlMs
-    ) {
-      return this.cached.result;
+    const configDirs = options?.configDirs ?? {};
+    const cacheKey = buildCacheKey(configDirs);
+
+    const cached = this.cached.get(cacheKey);
+    if (!options?.forceRefresh && cached && nowMs - cached.fetchedAtMs < this.cacheTtlMs) {
+      return cached.result;
     }
 
-    if (this.inFlight) {
-      return this.inFlight;
+    const pending = this.inFlight.get(cacheKey);
+    if (pending) {
+      return pending;
     }
 
-    const request = this.fetchFreshUsage(nowMs);
-    this.inFlight = request;
+    const request = this.fetchFreshUsage(nowMs, cacheKey, configDirs);
+    this.inFlight.set(cacheKey, request);
     try {
       return await request;
     } finally {
-      if (this.inFlight === request) {
-        this.inFlight = null;
+      if (this.inFlight.get(cacheKey) === request) {
+        this.inFlight.delete(cacheKey);
       }
     }
   }
 
-  private async fetchFreshUsage(nowMs: number): Promise<ProviderUsageListResult> {
-    const settled = await Promise.allSettled(this.fetchers.map((fetcher) => fetcher.fetchUsage()));
+  private async fetchFreshUsage(
+    nowMs: number,
+    cacheKey: string,
+    configDirs: Readonly<Record<string, string>>,
+  ): Promise<ProviderUsageListResult> {
+    const settled = await Promise.allSettled(
+      this.fetchers.map((fetcher) => {
+        const configDir = configDirs[fetcher.providerId];
+        return fetcher.fetchUsage(configDir ? { configDir } : undefined);
+      }),
+    );
     const providers = settled.map((result, index) => {
       const fetcher = this.fetchers[index];
       if (result.status === "fulfilled") {
@@ -83,7 +110,19 @@ export class ProviderUsageService {
     });
 
     const result = { fetchedAt: new Date(nowMs).toISOString(), providers };
-    this.cached = { fetchedAtMs: nowMs, result };
+    this.cached.set(cacheKey, { fetchedAtMs: nowMs, result });
     return result;
   }
+}
+
+/**
+ * A stable key for a config-directory selection. Sorted so two callers naming
+ * the same directories in a different order share one cache entry and one
+ * in-flight request.
+ */
+function buildCacheKey(configDirs: Readonly<Record<string, string>>): string {
+  const entries = Object.entries(configDirs).sort(([a], [b]) => a.localeCompare(b));
+  return entries.length === 0
+    ? ""
+    : entries.map(([provider, dir]) => `${provider}=${dir}`).join("\u0000");
 }

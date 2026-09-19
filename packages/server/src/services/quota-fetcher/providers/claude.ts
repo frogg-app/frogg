@@ -10,7 +10,11 @@ import type {
   ProviderUsageDetail,
   ProviderUsageWindow,
 } from "../../../server/messages.js";
-import type { ProviderApiFetch, ProviderUsageFetcher } from "../provider.js";
+import type {
+  ProviderApiFetch,
+  ProviderUsageFetchContext,
+  ProviderUsageFetcher,
+} from "../provider.js";
 import {
   ApiNumberSchema,
   fetchProviderApi,
@@ -356,8 +360,8 @@ export class ClaudeQuotaProvider implements ProviderUsageFetcher {
     this.fetchApi = options.fetch ?? fetch;
   }
 
-  async fetchUsage(): Promise<ProviderUsage> {
-    const credentials = await this.readCredentials();
+  async fetchUsage(context?: ProviderUsageFetchContext): Promise<ProviderUsage> {
+    const credentials = await this.readCredentials(context?.configDir);
     if (!credentials) {
       return unavailableUsage(this);
     }
@@ -434,12 +438,18 @@ export class ClaudeQuotaProvider implements ProviderUsageFetcher {
     return parsed;
   }
 
-  private async readCredentials(): Promise<ClaudeCredentialRecord | null> {
-    const credPath = join(this.claudeHome, ".credentials.json");
+  private async readCredentials(configDir?: string): Promise<ClaudeCredentialRecord | null> {
+    const home = configDir ?? this.claudeHome;
+    const credPath = join(home, ".credentials.json");
     const fileCredentials = await this.readCredentialFile(credPath);
-    return (
-      fileCredentials ?? (this.platform === "darwin" ? await this.readKeychainCredential() : null)
-    );
+    if (fileCredentials) return fileCredentials;
+
+    // The macOS keychain holds one entry, belonging to the sign-in in the
+    // primary config directory. Falling back to it for a *different* account
+    // would report the wrong account's quota as that account's, so a scoped
+    // read that finds no credential file reports unavailable instead.
+    if (home !== this.claudeHome) return null;
+    return this.platform === "darwin" ? await this.readKeychainCredential() : null;
   }
 
   private async readCredentialFile(path: string): Promise<ClaudeCredentialRecord | null> {
