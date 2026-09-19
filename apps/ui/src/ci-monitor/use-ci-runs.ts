@@ -71,12 +71,14 @@ function describeError(error: unknown): string | null {
   return error instanceof Error ? error.message : String(error);
 }
 
-/** A clock that ticks each second only while something is running, for live elapsed times. */
+/**
+ * The pane's clock: every second while something runs, for live durations; otherwise every
+ * half minute, which is all the "started 2h ago" labels need.
+ */
 export function useCiNow(active: boolean): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!active) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
+    const timer = setInterval(() => setNow(Date.now()), active ? 1000 : 30_000);
     return () => clearInterval(timer);
   }, [active]);
   return now;

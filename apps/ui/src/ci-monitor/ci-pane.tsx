@@ -27,6 +27,7 @@ import {
   collectRunners,
   elapsedMs,
   formatCiDuration,
+  formatRunStart,
   isCiActive,
   type CiJob,
   type CiRun,
@@ -204,9 +205,13 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
   const openUrl = useCallback(() => void openExternalUrl(run.url), [run.url]);
   const providerLabel = t(`ciMonitor.provider.${run.provider}`);
   const elapsed = elapsedMs(run, now);
-  const meta = [providerLabel, run.trigger, elapsed === null ? null : formatCiDuration(elapsed)]
+  // The provider is already the icon beside this line; its name only costs width the start time
+  // needs, so it stays in the accessibility label.
+  // Duration first: when the line runs out of room it is the trigger that truncates.
+  const meta = [elapsed === null ? null : formatCiDuration(elapsed), run.trigger]
     .filter(Boolean)
     .join(" · ");
+  const started = run.startedAt === null ? null : formatRunStart(run.startedAt, now);
   return (
     <View style={styles.run} testID="ci-run">
       <Pressable onPress={toggle} style={runHeaderStyle} accessibilityRole="button">
@@ -216,11 +221,21 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
             {run.pipeline}
             {run.number !== null ? <Text style={styles.runNumber}> #{run.number}</Text> : null}
           </Text>
-          <View style={styles.runMeta}>
-            <CiProviderIcon provider={run.provider} size={ICON_SIZE.xs} />
+          <View
+            style={styles.runMeta}
+            accessibilityLabel={[providerLabel, meta, started].filter(Boolean).join(", ")}
+          >
+            <View style={styles.runMetaIcon}>
+              <CiProviderIcon provider={run.provider} size={ICON_SIZE.xs} />
+            </View>
             <Text style={styles.runMetaText} numberOfLines={1}>
               {meta}
             </Text>
+            {started ? (
+              <Text style={styles.runStarted} numberOfLines={1} testID="ci-run-started">
+                {started}
+              </Text>
+            ) : null}
           </View>
         </View>
         <CiRunPercent run={run} />
@@ -451,6 +466,17 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[1],
+  },
+  runMetaIcon: {
+    flexShrink: 0,
+  },
+  runStarted: {
+    marginLeft: "auto",
+    paddingLeft: theme.spacing[2],
+    flexShrink: 0,
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foregroundMuted,
+    fontVariant: ["tabular-nums"],
   },
   runMetaText: {
     flexShrink: 1,

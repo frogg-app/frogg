@@ -1,3 +1,4 @@
+import { formatTimeAgo } from "@/utils/time";
 import type { CiJob as WireCiJob, CiRun as WireCiRun } from "@frogg/protocol/messages";
 
 export type CiProvider = "githubActions" | "jenkins" | "other";
@@ -114,6 +115,20 @@ export function formatCiDuration(ms: number): string {
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ${String(seconds % 60).padStart(2, "0")}s`;
   return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+}
+
+/**
+ * When a run kicked off, as a clock time and how long ago: "14:03 · 2h ago". Before today the
+ * clock time becomes the date, and past a week "ago" adds nothing the date does not say.
+ */
+export function formatRunStart(startedAt: number, now: number): string {
+  const start = new Date(startedAt);
+  const sameDay = start.toDateString() === new Date(now).toDateString();
+  const when = sameDay
+    ? start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    : start.toLocaleDateString([], { day: "numeric", month: "short" });
+  const ago = formatTimeAgo(start, new Date(now));
+  return ago.endsWith("ago") || ago === "just now" ? `${when} · ${ago}` : when;
 }
 
 export interface RunnerUse {
