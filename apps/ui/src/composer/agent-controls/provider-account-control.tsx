@@ -102,9 +102,8 @@ export function ProviderAccountControl({
         accounts,
         defaultAccountId,
         selection: selectedAccountId,
-        resolveAbsentToActiveAccount: readOnly,
       }),
-    [accounts, defaultAccountId, readOnly, selectedAccountId],
+    [accounts, defaultAccountId, selectedAccountId],
   );
 
   const optionsById = useMemo(() => {

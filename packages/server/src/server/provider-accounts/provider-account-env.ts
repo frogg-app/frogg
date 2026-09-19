@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { providerAccountConfigDirMode } from "@frogg/protocol/provider-accounts";
 
 import type { ProviderAccountStore } from "./provider-account-store.js";
@@ -121,4 +123,57 @@ export function resolveAgentProviderAccountEnv(
   }
 
   return { env: { [capability.configDirEnv]: account.configDir } };
+}
+
+/**
+ * The provider's config directory for one account, for daemon-side readers that
+ * open the credential files themselves rather than launching the CLI (today:
+ * the usage/quota fetchers).
+ *
+ * Resolution matches {@link resolveAgentProviderAccountEnv} exactly — absent
+ * means the daemon-wide active account, `null` the primary directory, a string
+ * that account — so the figures reported for an agent describe the very
+ * directory that agent's provider process runs against.
+ *
+ * Unlike the env overlay this always names a directory, including in home mode:
+ * there the account directory is a synthetic home and the config dir is
+ * `<accountDir>/<primaryDirName>` nested inside it.
+ *
+ * Returns undefined when the provider has no enabled accounts capability, or
+ * when nothing narrows it down to a directory other than the default one — in
+ * both cases the caller should read whatever it reads by default.
+ */
+export function resolveProviderAccountConfigDir(
+  store: Pick<
+    ProviderAccountStore,
+    "getCapability" | "activeAccountIds" | "findAccount" | "primaryConfigDir"
+  >,
+  provider: string,
+  accountId: string | null | undefined,
+): string | undefined {
+  const capability = store.getCapability(provider);
+  if (!capability || !capability.enabled) return undefined;
+
+  const homeMode = providerAccountConfigDirMode(capability) === "home";
+  const configDirOf = (accountDir: string): string =>
+    homeMode ? path.join(accountDir, capability.primaryDirName) : accountDir;
+
+  const resolvedId = accountId === undefined ? store.activeAccountIds()[provider] : accountId;
+  if (resolvedId == null) {
+    // `null` is the explicit primary-directory pick; an absent active account
+    // lands here too and means the same directory.
+    return store.primaryConfigDir(provider);
+  }
+
+  const account = store.findAccount(resolvedId);
+  if (!account || account.provider !== provider) {
+    // Deleted or foreign account: fall back the same way a launch would.
+    const activeId = store.activeAccountIds()[provider];
+    const active = activeId ? store.findAccount(activeId) : undefined;
+    return active && active.provider === provider
+      ? configDirOf(active.configDir)
+      : store.primaryConfigDir(provider);
+  }
+
+  return configDirOf(account.configDir);
 }

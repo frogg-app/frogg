@@ -4389,6 +4389,15 @@
                   "type": "string",
                   "const": "provider.usage.list.request"
                 },
+                "provider": {
+                  "type": "string"
+                },
+                "providerAccountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
                 "requestId": {
                   "type": "string"
                 }

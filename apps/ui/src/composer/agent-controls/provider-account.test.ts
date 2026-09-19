@@ -46,8 +46,8 @@ describe("resolveProviderAccountControlModel", () => {
   });
 
   // The Default row sends `null`, which pins the primary config dir and ignores
-  // the daemon-wide active account. Naming that account here would claim the row
-  // selects it, when it does the opposite — and the account has its own row.
+  // the daemon-wide active account. Naming that account on the row would claim
+  // the row selects it, when it does the opposite — and it has its own row.
   it("does not name the daemon-wide active account on the Default row", () => {
     const model = resolveProviderAccountControlModel({
       accounts: [STEVE],
@@ -55,42 +55,39 @@ describe("resolveProviderAccountControlModel", () => {
       selection: undefined,
     });
     expect(model?.options[0]?.label).toBe("Default");
-    expect(model?.displayLabel).toBe("Default");
   });
 
-  it("highlights Default for an absent selection and for an explicit null", () => {
-    const accounts = [STEVE];
-    for (const selection of [undefined, null] as const) {
-      const model = resolveProviderAccountControlModel({
-        accounts,
-        defaultAccountId: null,
-        selection,
-      });
-      expect(model?.selectedOptionId).toBe(DEFAULT_PROVIDER_ACCOUNT_OPTION_ID);
-    }
+  it("highlights Default for an absent selection when no account is active", () => {
+    const model = resolveProviderAccountControlModel({
+      accounts: [STEVE],
+      defaultAccountId: null,
+      selection: undefined,
+    });
+    expect(model?.selectedOptionId).toBe(DEFAULT_PROVIDER_ACCOUNT_OPTION_ID);
   });
 
-  // Read-only surfaces describe an agent that is already running, where an
-  // absent selection resolved to the provider's active account at launch.
-  it("resolves an absent selection to the active account only when asked to", () => {
+  // Regression: an untouched picker leaves `providerAccountId` off the launch
+  // config, and the daemon then runs the agent as the active account. The
+  // picker used to show "Default" here anyway, so a session started on
+  // "Default" came up as steve. What is shown must be what launches.
+  it("resolves an absent selection to the active account, in the picker too", () => {
     const model = resolveProviderAccountControlModel({
       accounts: [STEVE],
       defaultAccountId: "acct-steve",
       selection: undefined,
-      resolveAbsentToActiveAccount: true,
     });
     expect(model?.selectedOptionId).toBe("acct-steve");
     expect(model?.displayLabel).toBe("steve");
   });
 
-  it("leaves an explicit null on Default even when resolving absent selections", () => {
+  it("keeps an explicit null on Default even when another account is active", () => {
     const model = resolveProviderAccountControlModel({
       accounts: [STEVE],
       defaultAccountId: "acct-steve",
       selection: null,
-      resolveAbsentToActiveAccount: true,
     });
     expect(model?.selectedOptionId).toBe(DEFAULT_PROVIDER_ACCOUNT_OPTION_ID);
+    expect(model?.displayLabel).toBe("Default");
   });
 
   it("marks an account with no credentials as not ready", () => {

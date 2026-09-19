@@ -59,6 +59,18 @@ export interface ProviderCatalogSessionHost {
   listProviderSnapshotAccounts(
     provider: string,
   ): { accounts: ProviderSnapshotAccount[]; defaultAccountId: string | null } | undefined;
+  /**
+   * COMPAT(providerUsageAccountScoped): the config directory a usage read should
+   * take its credentials from, for a provider and one of its accounts. Resolves
+   * the same three-valued `providerAccountId` an agent launches with, so the
+   * quota reported next to an agent is the quota of the directory that agent's
+   * provider process actually uses. Undefined when nothing narrows it down and
+   * the fetcher should read its default location.
+   */
+  resolveProviderUsageConfigDir(
+    provider: string,
+    accountId: string | null | undefined,
+  ): string | undefined;
   listDraftFeatures(config: AgentSessionConfig): Promise<AgentFeature[]>;
 }
 
@@ -509,7 +521,9 @@ export class ProviderCatalogSession {
     msg: Extract<SessionInboundMessage, { type: "provider.usage.list.request" }>,
   ): Promise<void> {
     try {
-      const usage = await this.providerUsageService.listUsage();
+      const usage = await this.providerUsageService.listUsage({
+        configDirs: this.resolveUsageConfigDirs(msg),
+      });
       this.host.emit({
         type: "provider.usage.list.response",
         payload: {
@@ -531,6 +545,27 @@ export class ProviderCatalogSession {
         },
       });
     }
+  }
+
+  /**
+   * COMPAT(providerUsageAccountScoped): the per-provider config directories for
+   * one usage request. Only the provider the client named is scoped; the rest
+   * of the response is read exactly as before, because the client asked about
+   * one agent's sign-in and knows nothing about the others'.
+   *
+   * `provider` absent (every client before v1.5.5) means no scoping at all.
+   */
+  private resolveUsageConfigDirs(
+    msg: Extract<SessionInboundMessage, { type: "provider.usage.list.request" }>,
+  ): Record<string, string> | undefined {
+    if (!msg.provider) return undefined;
+    const configDir = this.host.resolveProviderUsageConfigDir(
+      msg.provider,
+      // Absent on the wire and explicit `null` mean different directories, and
+      // `msg` only distinguishes them by key presence.
+      "providerAccountId" in msg ? msg.providerAccountId : undefined,
+    );
+    return configDir ? { [msg.provider]: configDir } : undefined;
   }
 }
 

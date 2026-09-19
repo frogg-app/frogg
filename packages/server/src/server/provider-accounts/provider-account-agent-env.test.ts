@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveAgentProviderAccountEnv } from "./provider-account-env.js";
+import {
+  resolveAgentProviderAccountEnv,
+  resolveProviderAccountConfigDir,
+} from "./provider-account-env.js";
 import type { ProviderAccount } from "@frogg/protocol/provider-accounts";
 import { findProviderAccountCapability } from "@frogg/protocol/provider-accounts";
 
@@ -165,5 +168,46 @@ describe("resolveAgentProviderAccountEnv in home mode", () => {
       env: {},
       unknownAccountId: "acct-gem",
     });
+  });
+});
+
+// The usage popover reads credentials straight from a config dir, so it must
+// land on exactly the directory the agent's provider process was launched with.
+describe("resolveProviderAccountConfigDir", () => {
+  it("follows the daemon-wide active account when the agent names none", () => {
+    const store = createStore({ activeAccountId: "acct-work" });
+    expect(resolveProviderAccountConfigDir(store, "claude", undefined)).toBe(
+      "/home/u/.claude-work",
+    );
+  });
+
+  it("pins the primary config dir for the explicit Default pick, even with an active account", () => {
+    const store = createStore({ activeAccountId: "acct-work" });
+    expect(resolveProviderAccountConfigDir(store, "claude", null)).toBe("/home/u/.claude");
+  });
+
+  it("uses the agent's own account over the active one", () => {
+    const store = createStore({ activeAccountId: "acct-work" });
+    expect(resolveProviderAccountConfigDir(store, "claude", "acct-peter")).toBe(
+      "/home/u/.claude-peter",
+    );
+  });
+
+  it("uses the primary dir when nothing is active and the agent names none", () => {
+    expect(resolveProviderAccountConfigDir(createStore({}), "claude", undefined)).toBe(
+      "/home/u/.claude",
+    );
+  });
+
+  it("falls back like a launch would when the account was deleted", () => {
+    const store = createStore({ activeAccountId: "acct-work" });
+    expect(resolveProviderAccountConfigDir(store, "claude", "acct-gone")).toBe(
+      "/home/u/.claude-work",
+    );
+  });
+
+  it("leaves the fetcher on its default when accounts are disabled", () => {
+    const store = createStore({ activeAccountId: "acct-work", enabled: false });
+    expect(resolveProviderAccountConfigDir(store, "claude", "acct-peter")).toBeUndefined();
   });
 });

@@ -263,6 +263,10 @@ function buildAgentStateSelector(serverId: string, agentId: string) {
       totalCostUsd: agent?.lastUsage?.totalCostUsd ?? null,
       model: agent?.model ?? null,
       provider: agent?.provider ?? null,
+      // COMPAT(providerUsageAccountScoped): three-valued, so it is passed along
+      // as-is rather than coalesced — `null` (the Default pick) and absent name
+      // different config directories to the daemon.
+      providerAccountId: agent?.providerAccountId,
     };
   };
 }
@@ -274,6 +278,7 @@ function renderContextWindowMeter(
   showPercentage: boolean,
   serverId: string,
   provider: string | null,
+  providerAccountId: string | null | undefined,
   pending: boolean,
   glyphSize: number,
 ): ReactElement | null {
@@ -289,6 +294,7 @@ function renderContextWindowMeter(
       showPercentage={showPercentage}
       serverId={serverId}
       provider={provider}
+      providerAccountId={providerAccountId}
       pending={pending}
       glyphSize={glyphSize}
     />
@@ -1940,6 +1946,7 @@ function ComposerContentImpl({
         false,
         serverId,
         agentState.provider,
+        agentState.providerAccountId,
         contextWindowPending,
         contextWindowMeterGlyphSize,
       ),
@@ -1949,6 +1956,7 @@ function ComposerContentImpl({
       agentState.totalCostUsd,
       serverId,
       agentState.provider,
+      agentState.providerAccountId,
       contextWindowPending,
       contextWindowMeterGlyphSize,
     ],

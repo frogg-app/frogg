@@ -56,7 +56,6 @@ function ResolvedAccountIndicator({
       selection: providerAccountId,
       // A launched agent runs as whatever the daemon resolved, so an absent pick names the
       // provider's active account rather than the Default row.
-      resolveAbsentToActiveAccount: true,
     });
   }, [entries, provider, providerAccountId]);
 
