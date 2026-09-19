@@ -9,8 +9,22 @@ import { daemonHttpJson } from "../daemon-http.js";
  */
 export const DEFAULT_VERIFY_TIMEOUT_MS = 90_000;
 const POLL_INTERVAL_MS = 1000;
+/** Mirrors `IDENTITY_PRODUCT` in the server's identity route. */
+const IDENTITY_PRODUCT = "frogg";
 
-export type VerifyResult = { ok: true; elapsedMs: number } | { ok: false; reason: string };
+/**
+ * `foreign_listener`: the listen address is answered by a daemon of another
+ * product (for example the pre-rename FDE service still registered on the same
+ * port). The installed bundle is not at fault, so the caller must not roll back.
+ */
+export type VerifyFailureKind = "unhealthy" | "foreign_listener" | "not_running";
+
+export type VerifyResult =
+  | { ok: true; elapsedMs: number }
+  | { ok: false; reason: string; kind: VerifyFailureKind };
+
+/** Consecutive foreign answers before the wait gives up instead of timing out. */
+const FOREIGN_POLLS_BEFORE_FAIL = 15;
 
 export interface VerifyDaemonOptions {
   httpBase: string;
@@ -23,6 +37,7 @@ export interface VerifyDaemonOptions {
 }
 
 interface IdentityShape {
+  product?: unknown;
   version?: unknown;
   brand?: BrandIdentity;
 }
@@ -35,11 +50,32 @@ function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export type DaemonProbe = (httpBase: string) => Promise<{ version: string; healthy: boolean }>;
+export interface DaemonProbeResult {
+  version: string;
+  healthy: boolean;
+  /**
+   * Set when the answering daemon belongs to another product. `version` then
+   * describes that daemon, not this install.
+   */
+  foreign?: { product: string; brand: string };
+}
 
-export async function probeDaemon(
-  httpBase: string,
-): Promise<{ version: string; healthy: boolean }> {
+export type DaemonProbe = (httpBase: string) => Promise<DaemonProbeResult>;
+
+function describeForeign(identity: IdentityShape): DaemonProbeResult["foreign"] {
+  const product = typeof identity.product === "string" ? identity.product : "";
+  const brandId =
+    identity.brand && typeof identity.brand === "object" && typeof identity.brand.id === "string"
+      ? identity.brand.id
+      : "";
+  // `/api/identity` names the product ("frogg" in every brand build); the
+  // pre-rename daemon says "fde". A missing product predates the field.
+  const productMatches = product === "" || product === IDENTITY_PRODUCT;
+  if (productMatches && matchesBrand(brand, identity.brand)) return undefined;
+  return { product: product || "unknown", brand: brandId || product || "unknown" };
+}
+
+export async function probeDaemon(httpBase: string): Promise<DaemonProbeResult> {
   let gatewayVersion: string | null = null;
   const identity = await daemonHttpJson<IdentityShape>({
     base: httpBase,
@@ -52,9 +88,11 @@ export async function probeDaemon(
     base: httpBase,
     path: "/api/health",
   });
+  const foreign = describeForeign(identity);
   return {
     version: gatewayVersion ?? (typeof identity.version === "string" ? identity.version : ""),
-    healthy: health.status === "ok" && matchesBrand(brand, identity.brand),
+    healthy: health.status === "ok" && !foreign,
+    ...(foreign ? { foreign } : {}),
   };
 }
 
@@ -70,9 +108,24 @@ export async function waitForDaemonVersion(
   const gracePeriodEnd = started + Math.min(10_000, timeoutMs / 3);
   let lastReason = "daemon did not answer";
   let deadPolls = 0;
+  let foreignPolls = 0;
   while (now() < deadline) {
     try {
       const result = await probe(options.httpBase);
+      if (result.foreign) {
+        foreignPolls += 1;
+        lastReason = `${options.httpBase} is answered by another daemon (${
+          result.foreign.brand
+        } ${result.version || "unknown version"}), not this install; stop that service so ${
+          brand.name
+        } can bind the port`;
+        if (foreignPolls >= FOREIGN_POLLS_BEFORE_FAIL) {
+          return { ok: false, kind: "foreign_listener", reason: lastReason };
+        }
+        await sleep(POLL_INTERVAL_MS);
+        continue;
+      }
+      foreignPolls = 0;
       if (result.version === options.expectedVersion && result.healthy) {
         return { ok: true, elapsedMs: now() - started };
       }
@@ -90,6 +143,7 @@ export async function waitForDaemonVersion(
       if (deadPolls >= 3) {
         return {
           ok: false,
+          kind: "not_running",
           reason: `daemon process is not running (${lastReason})`,
         };
       }
@@ -98,6 +152,7 @@ export async function waitForDaemonVersion(
   }
   return {
     ok: false,
+    kind: foreignPolls > 0 ? "foreign_listener" : "unhealthy",
     reason: `timed out after ${Math.round(timeoutMs / 1000)}s: ${lastReason}`,
   };
 }

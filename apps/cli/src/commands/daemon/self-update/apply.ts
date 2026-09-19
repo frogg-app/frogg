@@ -44,6 +44,7 @@ async function restartAndVerify(
   } catch (error) {
     return {
       ok: false,
+      kind: "not_running",
       reason: `restart failed: ${error instanceof Error ? error.message : error}`,
     };
   }
@@ -61,6 +62,22 @@ async function restartAndVerify(
     },
     deps.probe,
   );
+}
+
+async function retireConflicts(
+  deps: ApplyDependencies,
+  log: (line: string) => void,
+  force: boolean,
+): Promise<number> {
+  if (!deps.service.retireConflictingServices) return 0;
+  try {
+    const retired = await deps.service.retireConflictingServices({ force });
+    if (retired.length > 0) log(`retired competing services: ${retired.join(", ")}`);
+    return retired.length;
+  } catch (error) {
+    log(`could not retire competing services: ${error instanceof Error ? error.message : error}`);
+    return 0;
+  }
 }
 
 export async function applyUpdate(plan: ApplyPlan, deps: ApplyDependencies): Promise<ApplyOutcome> {
@@ -99,8 +116,28 @@ export async function applyUpdate(plan: ApplyPlan, deps: ApplyDependencies): Pro
     });
   }
 
+  await retireConflicts(deps, log, false);
   log(`restarting daemon into ${plan.version}`);
-  const verified = await restartAndVerify(plan, deps, plan.version, log);
+  let verified = await restartAndVerify(plan, deps, plan.version, log);
+  if (!verified.ok && verified.kind === "foreign_listener") {
+    log(`update to ${plan.version} blocked: ${verified.reason}`);
+    if ((await retireConflicts(deps, log, true)) > 0) {
+      log(`restarting daemon into ${plan.version} after retiring the competing service`);
+      verified = await restartAndVerify(plan, deps, plan.version, log);
+    }
+  }
+  if (!verified.ok && verified.kind === "foreign_listener") {
+    // The new bundle never got the port, so it is not at fault and rolling back
+    // cannot help: the same foreign daemon answers for any version. Keep
+    // `current` on the new version; it binds as soon as the port is free.
+    return finish({
+      from,
+      to: plan.version,
+      status: "failed",
+      reason: `${verified.reason}; kept ${plan.version} installed (no rollback: the port is held by another daemon)`,
+      at: now().toISOString(),
+    });
+  }
   if (verified.ok) {
     // A retained execution service may still load code from any older release.
     log(
