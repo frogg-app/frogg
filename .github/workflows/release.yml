@@ -270,6 +270,10 @@ jobs:
         with:
           name: ui-dist
           path: apps/ui/dist
+          # Expo exports brand assets under assets/.generated/; upload-artifact
+          # drops dot-directories by default, which strips the logo from every
+          # desktop and daemon build that consumes this artifact.
+          include-hidden-files: true
           retention-days: 7
           if-no-files-found: error
 
