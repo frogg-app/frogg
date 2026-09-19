@@ -97,7 +97,7 @@ describe("first-run claim gate", () => {
     expect(gated.status).toBe(200);
     expect(gated.headers.get("cache-control")).toContain("no-store");
     const html = await gated.text();
-    expect(html).toContain("Claim this Frogg daemon");
+    expect(html).toContain("Claim this frogg daemon");
     expect(html).toContain("#25B5C8");
     expect(html).toContain("<svg");
 
@@ -167,7 +167,7 @@ describe("first-run claim gate", () => {
     // Reset (what `frogg daemon reset-claim` does) brings the gate back without a restart.
     daemon.claimStore.reset();
     expect(await (await fetch(`${base}/`, { headers: PUBLIC })).text()).toContain(
-      "Claim this Frogg daemon",
+      "Claim this frogg daemon",
     );
   });
 
@@ -187,7 +187,7 @@ describe("first-run claim gate", () => {
       (await (await fetch(`${base}/api/identity`, { headers: PUBLIC })).json()).pairingRequired,
     ).toBe(true);
     expect(await (await fetch(`${base}/`, { headers: PUBLIC })).text()).toContain(
-      "Claim this Frogg daemon",
+      "Claim this frogg daemon",
     );
     expect(await wsClose(port, PUBLIC)).toEqual({ code: 4401, reason: "Pairing required" });
 
@@ -214,7 +214,7 @@ describe("first-run claim gate", () => {
     const identity = await (await fetch(`${base}/api/identity`, { headers: LAN })).json();
     expect(identity).toMatchObject({ pairingRequired: true, lanTrusted: false });
     expect(await (await fetch(`${base}/`, { headers: LAN })).text()).toContain(
-      "Claim this Frogg daemon",
+      "Claim this frogg daemon",
     );
     expect((await fetch(`${base}/api/status`, { headers: LAN })).status).toBe(401);
     expect(await wsClose(port, LAN)).toEqual({ code: 4401, reason: "Pairing required" });

@@ -217,6 +217,7 @@ test("recursive observation updates tracked state and prunes ignored storms", as
     { timeout: 5_000 },
   );
 
+  const checkoutDiffCallsBeforeTrackedWrite = getCheckoutDiff.mock.calls.length;
   writeFileSync(trackedPath, "base\n");
   await vi.waitFor(
     () => {
@@ -227,6 +228,19 @@ test("recursive observation updates tracked state and prunes ignored storms", as
         workspaceRefreshInFlightCount: 0,
         workspaceRefreshQueuedCount: 0,
       });
+    },
+    { timeout: 5_000 },
+  );
+
+  // The checkout-diff subscription refreshes on its own debounce timer
+  // (CHECKOUT_DIFF_WATCH_DEBOUNCE_MS), independently of the workspace summary
+  // refresh awaited above. Drain it before clearing mocks, or its delayed
+  // getCheckoutDiff call lands inside the "no further calls" assertions below.
+  await vi.waitFor(
+    () => {
+      expect(getCheckoutDiff.mock.calls.length).toBeGreaterThan(
+        checkoutDiffCallsBeforeTrackedWrite,
+      );
     },
     { timeout: 5_000 },
   );
