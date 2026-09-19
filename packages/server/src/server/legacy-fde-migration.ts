@@ -249,12 +249,41 @@ export interface LegacyFdeSetting {
 }
 
 /**
+ * Whether a leftover FDE service is still registered to run. A unit file that
+ * is neither enabled nor active cannot start anything and cannot take our
+ * port, so naming its variables on every start is noise the user cannot act
+ * on -- and it kept appearing long after the service had been retired.
+ */
+export type LegacyServiceProbe = (file: string) => boolean;
+
+const defaultLegacyServiceProbe: LegacyServiceProbe = (file) => {
+  if (file.endsWith(".plist")) {
+    const label = path.basename(file, ".plist");
+    return runSilently("launchctl", ["print", `gui/${process.getuid?.() ?? 501}/${label}`]);
+  }
+  const unit = path.basename(file, ".service");
+  return (
+    runSilently("systemctl", ["--user", "is-enabled", "--quiet", unit]) ||
+    runSilently("systemctl", ["--user", "is-active", "--quiet", unit])
+  );
+};
+
+function runSilently(command: string, args: string[]): boolean {
+  try {
+    execFileSync(command, args, { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * FDE_ variables are no longer read. Reports them from the environment and from service
  * definitions left by an FDE install so the user can rename them.
  */
 export function findLegacyFdeSettings(
   env: NodeJS.ProcessEnv = process.env,
-  options: { userHome?: string } = {},
+  options: { userHome?: string; isServiceLive?: LegacyServiceProbe } = {},
 ): LegacyFdeSetting[] {
   const settings: LegacyFdeSetting[] = [];
   for (const name of Object.keys(env).sort()) {
@@ -267,6 +296,7 @@ export function findLegacyFdeSettings(
     path.join(userHome, ".config", "systemd", "user", "fde-daemon.service"),
     path.join(userHome, "Library", "LaunchAgents", "app.frogg.fde-daemon.plist"),
   ];
+  const isServiceLive = options.isServiceLive ?? defaultLegacyServiceProbe;
   for (const file of serviceFiles) {
     let contents: string;
     try {
@@ -274,6 +304,9 @@ export function findLegacyFdeSettings(
     } catch {
       continue;
     }
+    // A retired unit file is inert; only a service that can still start is
+    // worth a warning.
+    if (!isServiceLive(file)) continue;
     const names = new Set(contents.match(/\bFDE_[A-Z0-9_]+/g) ?? []);
     for (const name of [...names].sort()) {
       settings.push({ source: file, name, replacement: toFroggName(name) });
@@ -287,9 +320,17 @@ export function formatLegacyFdeSettings(settings: LegacyFdeSetting[]): string | 
   const lines = settings.map(
     (setting) => `  ${setting.name} -> ${setting.replacement} (${setting.source})`,
   );
+  const services = [...new Set(settings.map((setting) => setting.source))].filter((source) =>
+    source.endsWith(".service"),
+  );
+  const retire = services.map(
+    (file) =>
+      `  retire it with: systemctl --user disable --now ${path.basename(file)} && rm ${file}`,
+  );
   return [
     "FDE settings are no longer read. Rename them and remove the old FDE service:",
     ...lines,
+    ...retire,
   ].join("\n");
 }
 

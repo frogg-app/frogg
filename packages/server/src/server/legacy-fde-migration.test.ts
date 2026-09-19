@@ -162,13 +162,42 @@ describe("findLegacyFdeSettings", () => {
     mkdirSync(path.dirname(unit), { recursive: true });
     writeFileSync(unit, "[Service]\nEnvironment=FDE_LISTEN=0.0.0.0:9999\nEnvironment=PATH=/bin\n");
 
-    const settings = findLegacyFdeSettings({ FDE_HOME: "/x", FROGG_PORT: "1" }, { userHome });
+    const settings = findLegacyFdeSettings(
+      { FDE_HOME: "/x", FROGG_PORT: "1" },
+      { userHome, isServiceLive: () => true },
+    );
 
     expect(settings).toEqual([
       { source: "environment", name: "FDE_HOME", replacement: "FROGG_HOME" },
       { source: unit, name: "FDE_LISTEN", replacement: "FROGG_LISTEN" },
     ]);
     expect(formatLegacyFdeSettings(settings)).toContain("FDE_LISTEN -> FROGG_LISTEN");
+    expect(formatLegacyFdeSettings(settings)).toContain(
+      "systemctl --user disable --now fde-daemon.service",
+    );
     expect(formatLegacyFdeSettings([])).toBeNull();
+  });
+
+  test("a retired unit file is inert and says nothing", () => {
+    const userHome = scratch();
+    const unit = path.join(userHome, ".config", "systemd", "user", "fde-daemon.service");
+    mkdirSync(path.dirname(unit), { recursive: true });
+    writeFileSync(unit, "[Service]\nEnvironment=FDE_LISTEN=0.0.0.0:9999\n");
+
+    const settings = findLegacyFdeSettings({}, { userHome, isServiceLive: () => false });
+
+    expect(settings).toEqual([]);
+    expect(formatLegacyFdeSettings(settings)).toBeNull();
+  });
+
+  test("environment variables are reported whatever the service does", () => {
+    const settings = findLegacyFdeSettings(
+      { FDE_LISTEN: "0.0.0.0:9999" },
+      { userHome: scratch(), isServiceLive: () => false },
+    );
+
+    expect(settings).toEqual([
+      { source: "environment", name: "FDE_LISTEN", replacement: "FROGG_LISTEN" },
+    ]);
   });
 });

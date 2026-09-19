@@ -339,3 +339,72 @@ describe("persisted exponential backoff", () => {
     expect(createFileAutoUpdateAttemptStore(dir).read()).toBeNull();
   });
 });
+
+describe("check visibility", () => {
+  function scheduledUpdater(input: Parameters<typeof makeUpdater>[0]) {
+    const timers: { fn: () => void; ms: number }[] = [];
+    const logged: { outcome?: string; nextCheckAt?: string; msg?: string }[] = [];
+    const logger = pino(
+      { level: "info" },
+      {
+        write(line: string) {
+          logged.push(JSON.parse(line) as (typeof logged)[number]);
+        },
+      },
+    );
+    const updater = new DaemonAutoUpdater({
+      service: input.service,
+      getConfig: () => ({
+        enabled: true,
+        channel: "stable",
+        checkIntervalHours: 24,
+        quietHours: null,
+        ...input.config,
+      }),
+      hasRunningAgents: () => input.agentsRunning ?? false,
+      lastResult: () => input.lastResult ?? null,
+      logger,
+      now: () => input.now ?? new Date("2026-09-19T12:00:00.000Z"),
+      setTimer: (fn, ms) => {
+        timers.push({ fn, ms });
+        return { unref() {} } as unknown as NodeJS.Timeout;
+      },
+      clearTimer: () => undefined,
+    });
+    return { updater, timers, logged };
+  }
+
+  test("a check that finds nothing is still recorded and logged", async () => {
+    const { service } = fakeService({ latest: null });
+    const { updater, timers, logged } = scheduledUpdater({ config: {}, service });
+    updater.start();
+    expect(updater.lastCheck()).toBeNull();
+
+    await timers.at(-1)?.fn();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(updater.lastCheck()).toEqual({
+      at: "2026-09-19T12:00:00.000Z",
+      outcome: "up_to_date",
+      nextCheckAt: "2026-09-20T12:00:00.000Z",
+    });
+    const record = logged.find((entry) => entry.msg === "auto-update checked");
+    expect(record?.outcome).toBe("up_to_date");
+    expect(record?.nextCheckAt).toBe("2026-09-20T12:00:00.000Z");
+  });
+
+  test("a deferred check reports the shorter retry it scheduled", async () => {
+    const { service } = fakeService({ latest: "0.2.0" });
+    const { updater, timers } = scheduledUpdater({
+      config: {},
+      service,
+      agentsRunning: true,
+    });
+    updater.start();
+    await timers.at(-1)?.fn();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(updater.lastCheck()?.outcome).toBe("busy");
+    expect(updater.lastCheck()?.nextCheckAt).toBe("2026-09-19T12:15:00.000Z");
+  });
+});
