@@ -279,7 +279,9 @@ export const ar: TranslationResources = {
   },
   sessions: {
     title: "السجل",
+    projectTitle: "سجل {{project}}",
     empty: "لا توجد جلسات بعد",
+    emptyForProject: "لا توجد جلسات في هذا المشروع بعد",
     noMatches: "لا توجد جلسات مطابقة",
     tooManyMatches: "نتائج كثيرة جدًا — ضيّق نطاق البحث",
     hostLoadFailed: "{{host}}: تعذر تحميل السجل",

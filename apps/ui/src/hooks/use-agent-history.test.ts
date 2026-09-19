@@ -204,6 +204,52 @@ describe("fetchAgentHistoryPage", () => {
     } satisfies FetchAgentHistoryOptions);
   });
 
+  it("forwards a project filter to the daemon so the scope is applied server-side", async () => {
+    const client = createClient([historyPayload({ entries: [] })]);
+
+    await fetchAgentHistoryPage({
+      client,
+      serverId: "server-1",
+      cursor: null,
+      filter: { projectKeys: ["proj-alpha"], includeArchived: true },
+    });
+
+    expect(client.calls.at(-1)).toEqual({
+      filter: { projectKeys: ["proj-alpha"], includeArchived: true },
+      sort: [{ key: "updated_at", direction: "desc" }],
+      page: { limit: 200 },
+    } satisfies FetchAgentHistoryOptions);
+  });
+
+  it("sends the same filter to every host in a batch", async () => {
+    const serverAClient = createClient([historyPayload({ entries: [] })]);
+    const serverBClient = createClient([historyPayload({ entries: [] })]);
+
+    await fetchAgentHistoryBatch({
+      hosts: [
+        { serverId: "server-a", serverLabel: "MacBook", client: serverAClient },
+        { serverId: "server-b", serverLabel: "Linux box", client: serverBClient },
+      ] satisfies AgentHistoryHost[],
+      cursorByServerId: null,
+      filter: { projectKeys: ["proj-alpha"], includeArchived: true },
+    });
+
+    for (const client of [serverAClient, serverBClient]) {
+      expect(client.calls.at(-1)?.filter).toEqual({
+        projectKeys: ["proj-alpha"],
+        includeArchived: true,
+      });
+    }
+  });
+
+  it("omits the filter entirely when none is given", async () => {
+    const client = createClient([historyPayload({ entries: [] })]);
+
+    await fetchAgentHistoryPage({ client, serverId: "server-1", cursor: null });
+
+    expect(client.calls.at(-1)).not.toHaveProperty("filter");
+  });
+
   it("maps daemon history entries into aggregated agents tagged with the requested server", async () => {
     const client = createClient([
       historyPayload({

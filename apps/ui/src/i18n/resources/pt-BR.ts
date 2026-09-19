@@ -282,7 +282,9 @@ export const ptBR: TranslationResources = {
   },
   sessions: {
     title: "Histórico de agentes",
+    projectTitle: "Histórico de {{project}}",
     empty: "Nenhuma sessão ainda",
+    emptyForProject: "Nenhuma sessão neste projeto ainda",
     noMatches: "Nenhuma sessão corresponde",
     tooManyMatches: "Muitos resultados — refine a busca",
     hostLoadFailed: "{{host}}: Não foi possível carregar o histórico",

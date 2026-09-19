@@ -282,7 +282,9 @@ export const es: TranslationResources = {
   },
   sessions: {
     title: "Historial",
+    projectTitle: "Historial de {{project}}",
     empty: "Aún no hay sesiones",
+    emptyForProject: "Aún no hay sesiones en este proyecto",
     noMatches: "No hay sesiones que coincidan",
     tooManyMatches: "Demasiadas coincidencias: acota la búsqueda",
     hostLoadFailed: "{{host}}: No se pudo cargar el historial",

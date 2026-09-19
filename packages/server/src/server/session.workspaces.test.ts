@@ -9337,3 +9337,146 @@ test("workspace.create.request reports an archived explicit project", async () =
     errorCode: "archived_project",
   });
 });
+
+/**
+ * A project-scoped archive view asks history for one project's sessions. The
+ * listing path and the live subscription path share `matchesAgentUpdatesFilter`,
+ * so these cover the listing side of that contract: the scoped page, the ranked
+ * search page, and the blank-entry case that must not narrow anything.
+ */
+function createProjectScopedHistorySession() {
+  const alphaCwd = path.resolve("/tmp/scoped-alpha");
+  const betaCwd = path.resolve("/tmp/scoped-beta");
+  const timestamps = {
+    createdAt: "2026-03-01T12:00:00.000Z",
+    updatedAt: "2026-03-01T12:00:00.000Z",
+  };
+  const alphaProject = createPersistedProjectRecord({
+    projectId: "proj-scoped-alpha",
+    rootPath: alphaCwd,
+    kind: "non_git",
+    displayName: "alpha",
+    ...timestamps,
+  });
+  const betaProject = createPersistedProjectRecord({
+    projectId: "proj-scoped-beta",
+    rootPath: betaCwd,
+    kind: "non_git",
+    displayName: "beta",
+    ...timestamps,
+  });
+  const alphaWorkspace = createPersistedWorkspaceRecord({
+    workspaceId: "ws-scoped-alpha",
+    projectId: alphaProject.projectId,
+    cwd: alphaCwd,
+    kind: "directory",
+    displayName: "alpha",
+    ...timestamps,
+  });
+  const betaWorkspace = createPersistedWorkspaceRecord({
+    workspaceId: "ws-scoped-beta",
+    projectId: betaProject.projectId,
+    cwd: betaCwd,
+    kind: "directory",
+    displayName: "beta",
+    ...timestamps,
+  });
+
+  const emitted: SessionOutboundMessage[] = [];
+  const session = createSessionForWorkspaceTests();
+  session.emit = (message) => {
+    if (isSessionOutboundMessage(message)) emitted.push(message);
+  };
+  const projects = [alphaProject, betaProject];
+  const workspaces = [alphaWorkspace, betaWorkspace];
+  session.projectRegistry.get = async (projectId: string) =>
+    projects.find((project) => project.projectId === projectId) ?? null;
+  session.workspaceRegistry.get = async (workspaceId: string) =>
+    workspaces.find((workspace) => workspace.workspaceId === workspaceId) ?? null;
+  session.workspaceRegistry.list = async () => workspaces;
+  session.listAgentPayloads = async () => [
+    {
+      ...makeAgent({
+        id: "scoped-alpha-archived",
+        cwd: alphaCwd,
+        workspaceId: alphaWorkspace.workspaceId,
+        status: "idle",
+        updatedAt: "2026-03-01T12:02:00.000Z",
+      }),
+      archivedAt: "2026-03-02T12:00:00.000Z",
+    },
+    {
+      ...makeAgent({
+        id: "scoped-beta-archived",
+        cwd: betaCwd,
+        workspaceId: betaWorkspace.workspaceId,
+        status: "idle",
+        updatedAt: "2026-03-01T12:01:00.000Z",
+      }),
+      archivedAt: "2026-03-02T12:00:00.000Z",
+    },
+  ];
+
+  return { session, emitted, alphaProject, betaProject };
+}
+
+function historyEntryIds(emitted: SessionOutboundMessage[]): string[] {
+  const response = emitted.at(-1);
+  if (!response || response.type !== "fetch_agent_history_response") {
+    throw new Error(`Expected a history response, received ${response?.type ?? "nothing"}`);
+  }
+  return response.payload.entries.map((entry) => entry.agent.id);
+}
+
+test("fetch_agent_history_request scopes archived history to the requested projectKeys", async () => {
+  const { session, emitted, betaProject } = createProjectScopedHistorySession();
+
+  await session.handleMessage({
+    type: "fetch_agent_history_request",
+    requestId: "req-scoped-history",
+    filter: { projectKeys: [betaProject.projectId], includeArchived: true },
+    page: { limit: 25 },
+  });
+
+  expect(historyEntryIds(emitted)).toEqual(["scoped-beta-archived"]);
+});
+
+test("fetch_agent_history_request scopes a searched history page to the requested projectKeys", async () => {
+  const { session, emitted, betaProject } = createProjectScopedHistorySession();
+
+  await session.handleMessage({
+    type: "fetch_agent_history_request",
+    requestId: "req-scoped-history-search",
+    filter: { projectKeys: [betaProject.projectId], includeArchived: true },
+    search: "beta",
+    page: { limit: 25 },
+  });
+
+  expect(historyEntryIds(emitted)).toEqual(["scoped-beta-archived"]);
+});
+
+test("fetch_agent_history_request ignores a projectKeys filter of only blank entries", async () => {
+  const { session, emitted } = createProjectScopedHistorySession();
+
+  await session.handleMessage({
+    type: "fetch_agent_history_request",
+    requestId: "req-scoped-history-blank",
+    filter: { projectKeys: ["   "], includeArchived: true },
+    page: { limit: 25 },
+  });
+
+  expect(historyEntryIds(emitted)).toEqual(["scoped-alpha-archived", "scoped-beta-archived"]);
+});
+
+test("fetch_agent_history_request returns no rows for a project that has none", async () => {
+  const { session, emitted } = createProjectScopedHistorySession();
+
+  await session.handleMessage({
+    type: "fetch_agent_history_request",
+    requestId: "req-scoped-history-unknown",
+    filter: { projectKeys: ["proj-scoped-missing"], includeArchived: true },
+    page: { limit: 25 },
+  });
+
+  expect(historyEntryIds(emitted)).toEqual([]);
+});
