@@ -103,6 +103,36 @@ Instructions appended when Frogg generates text for this project.
 Which model generates the text is set per daemon in
 `agents.metadataGeneration.providers` ([configuration](/docs/reference/configuration/#agents)).
 
+## `ci`
+
+Where the **CI** tab in the right-hand pane reads runs from. It shows the latest run of each
+pipeline for the checkout's current branch, its jobs and steps, and the runners they are on.
+
+```json
+{
+  "ci": {
+    "jenkins": {
+      "url": "https://jenkins.example.com",
+      "job": "team/frogg-daemon"
+    }
+  }
+}
+```
+
+| Key                    | Type    | Default | Description |
+| ---------------------- | ------- | ------- | ----------- |
+| `githubActions`        | boolean | `true`  | Read GitHub Actions runs. Needs a GitHub remote and the `gh` CLI signed in on the daemon host, the same as pull requests |
+| `jenkins.url`          | string  |         | Jenkins base URL |
+| `jenkins.job`          | string  |         | Job path, with folders separated by `/` |
+| `jenkins.multibranch`  | boolean | `true`  | The job is a multibranch pipeline, so each branch's builds live under it. Set `false` for a single job that builds whatever it is pointed at |
+
+Jenkins credentials never go in `frogg.json`. Set `FROGG_JENKINS_USER` and
+`FROGG_JENKINS_TOKEN` (an API token) in the daemon's environment; without them Frogg calls
+Jenkins anonymously. A branch Jenkins has not built yet shows no runs rather than an error.
+
+Pipeline stages appear as jobs. Jenkins reports no per-stage estimate, so a running stage has no
+percentage; the build's overall progress comes from its estimated duration.
+
 ## A real example
 
 Frogg's own repository uses `frogg.json` to install dependencies in new worktrees and to
