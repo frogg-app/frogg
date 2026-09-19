@@ -80,6 +80,50 @@ async function retireConflicts(
   }
 }
 
+function restorePrevious(
+  plan: ApplyPlan,
+  previous: string,
+  log: (line: string) => void,
+): "restored" | "failed" {
+  try {
+    setCurrentVersion(plan.installDir, previous);
+    log(`restored current -> ${previous}`);
+    return "restored";
+  } catch (error) {
+    log(`could not restore ${previous}: ${error instanceof Error ? error.message : error}`);
+    return "failed";
+  }
+}
+
+/**
+ * Another daemon still owns the port, so the new bundle was never tested.
+ * Waiting on a rollback verify is pointless (the same foreign daemon answers
+ * for any version), but keeping an unverified bundle as `current` could strand
+ * the host on a broken release once the port frees up. Put the version that
+ * was demonstrably running back without waiting; it binds as soon as the other
+ * daemon stops, and auto-update retries later. Returns what was kept.
+ */
+async function restoreBehindForeignListener(
+  plan: ApplyPlan,
+  deps: ApplyDependencies,
+  previous: string | null,
+  log: (line: string) => void,
+): Promise<string> {
+  if (
+    !previous ||
+    previous === plan.version ||
+    restorePrevious(plan, previous, log) !== "restored"
+  ) {
+    return `kept ${plan.version} installed (the port is held by another daemon)`;
+  }
+  try {
+    await deps.service.restart();
+  } catch (error) {
+    log(`restart into ${previous} failed: ${error instanceof Error ? error.message : error}`);
+  }
+  return `restored ${previous} without verifying it (the port is held by another daemon)`;
+}
+
 export async function applyUpdate(plan: ApplyPlan, deps: ApplyDependencies): Promise<ApplyOutcome> {
   const log = deps.log ?? ((line: string) => appendSelfUpdateLog(plan.installDir, line));
   const now = deps.now ?? (() => new Date());
@@ -127,14 +171,12 @@ export async function applyUpdate(plan: ApplyPlan, deps: ApplyDependencies): Pro
     }
   }
   if (!verified.ok && verified.kind === "foreign_listener") {
-    // The new bundle never got the port, so it is not at fault and rolling back
-    // cannot help: the same foreign daemon answers for any version. Keep
-    // `current` on the new version; it binds as soon as the port is free.
+    const kept = await restoreBehindForeignListener(plan, deps, previous, log);
     return finish({
       from,
       to: plan.version,
       status: "failed",
-      reason: `${verified.reason}; kept ${plan.version} installed (no rollback: the port is held by another daemon)`,
+      reason: `${verified.reason}; ${kept}`,
       at: now().toISOString(),
     });
   }

@@ -56,11 +56,16 @@ function listenPort(listen: string | null | undefined): string | null {
   return match ? match[1]! : null;
 }
 
-function legacyServiceConflicts(contents: string, ourPort: string | null): boolean {
+/**
+ * `force` (a foreign daemon was seen on our port) still spares a legacy
+ * service whose configured port is known to differ: it cannot be the holder.
+ */
+function legacyServiceConflicts(contents: string, ourPort: string | null, force: boolean): boolean {
   const configured = /\b(?:FDE|FROGG)_LISTEN=("?)([^"\s<]+)\1/.exec(contents)?.[2] ?? null;
   const theirPort =
     listenPort(configured) ??
     listenPort(/<key>(?:FDE|FROGG)_LISTEN<\/key>\s*<string>([^<]+)<\/string>/.exec(contents)?.[1]);
+  if (force) return theirPort === null || ourPort === null || theirPort === ourPort;
   return ourPort !== null && theirPort === ourPort;
 }
 
@@ -75,7 +80,7 @@ export async function retireLegacyServices(
       const file = path.join(deps.configHome, "systemd", "user", `${unit}.service`);
       const contents = deps.readFile(file);
       if (contents === null) continue;
-      if (!options.force && !legacyServiceConflicts(contents, ourPort)) continue;
+      if (!legacyServiceConflicts(contents, ourPort, options.force === true)) continue;
       const active = deps.run("systemctl", ["--user", "is-active", "--quiet", unit]).status === 0;
       const enabled = deps.run("systemctl", ["--user", "is-enabled", "--quiet", unit]).status === 0;
       if (!active && !enabled) continue;
@@ -93,7 +98,7 @@ export async function retireLegacyServices(
       const file = path.join(deps.homeDir, "Library", "LaunchAgents", `${label}.plist`);
       const contents = deps.readFile(file);
       if (contents === null) continue;
-      if (!options.force && !legacyServiceConflicts(contents, ourPort)) continue;
+      if (!legacyServiceConflicts(contents, ourPort, options.force === true)) continue;
       const target = `gui/${deps.uid}/${label}`;
       deps.log(`stopping and disabling legacy launch agent ${label}: it competes for this port`);
       deps.run("launchctl", ["disable", target]);

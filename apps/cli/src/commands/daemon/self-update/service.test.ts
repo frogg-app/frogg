@@ -130,10 +130,18 @@ describe("legacy FDE service retirement", () => {
     expect(commands).toContain("systemctl --user disable --now fde-daemon.service");
   });
 
-  test("leaves an FDE unit on another port alone unless the port was seen taken", async () => {
+  test("leaves an FDE unit configured for another port alone, even when forced", async () => {
     const { value, commands } = deps({ [unitFile]: fdeUnit }, true, "127.0.0.1:6767");
     await expect(retireLegacyServices(value)).resolves.toEqual([]);
+    // It cannot be the daemon answering on our port.
+    await expect(retireLegacyServices(value, { force: true })).resolves.toEqual([]);
     expect(commands.some((line) => line.includes("disable"))).toBe(false);
+  });
+
+  test("forced retirement covers an FDE unit whose port is not in the unit file", async () => {
+    const bare = '[Service]\nExecStart="/home/me/.local/share/fde/current/bin/fde" daemon start\n';
+    const { value } = deps({ [unitFile]: bare }, true, "0.0.0.0:9999");
+    await expect(retireLegacyServices(value)).resolves.toEqual([]);
     await expect(retireLegacyServices(value, { force: true })).resolves.toEqual([
       "fde-daemon.service",
     ]);
