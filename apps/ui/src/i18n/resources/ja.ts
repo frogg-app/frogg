@@ -2,6 +2,33 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
+  // DESIGN PROTOTYPE: CI monitor copy. English everywhere until the design settles.
+  ciMonitor: {
+    label: "CI",
+    subtitle: "GitHub Actions and Jenkins runs for this branch",
+    runCount_one: "{{count}} run",
+    runCount_other: "{{count}} runs",
+    runningCount: "{{count}} running",
+    refresh: "Refresh CI",
+    emptyTitle: "No CI runs",
+    emptyDescription: "Nothing from GitHub Actions or Jenkins is running for this branch.",
+    runners: "Runners",
+    runnerSummary: "{{busy}} of {{total}} busy",
+    queuedCount_one: "{{count}} queued",
+    queuedCount_other: "{{count}} queued",
+    noRunners: "No runners assigned yet",
+    waitingForRunner: "Waiting for runner",
+    hosted: "Hosted",
+    selfHosted: "Self-hosted",
+    idle: "Idle",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+    },
+    status: {
+      queued: "Queued",
+    },
+  },
   hostAdd: {
     title: "ホストを追加",
     connecting: "{{endpoint}} を追加しています…",
@@ -679,6 +706,7 @@ export const ja: TranslationResources = {
         toggle: "サイドパネルを切り替え",
         changes: "変更",
         files: "ファイル",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "コピーに失敗しました",
@@ -1148,6 +1176,7 @@ export const ja: TranslationResources = {
         checks: "チェック",
         services: "サービス",
         labels: "ラベル",
+        ci: "CI progress",
         diff: "差分統計",
         timestamp: "最終アクティビティ",
       },

@@ -24,6 +24,7 @@ const PANEL_KINDS_WITH_TOOLBAR_ACCESSORY = new Set<WorkspaceTabDescriptor["targe
   "changes_tree",
   "working_diff",
   "pull_request",
+  "ci_runs",
 ]);
 
 interface ExplorerSidebarDockProps {

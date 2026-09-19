@@ -27,6 +27,8 @@ import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sideba
 import { TrailingActionScrim } from "@/components/ui/trailing-action-scrim";
 import { useWorkspaceLabelDefinitions } from "@/workspace-labels";
 import { SidebarWorkspaceAccountIndicator } from "@/components/sidebar/workspace-account";
+import { useSidebarRowItems } from "@/components/sidebar/display-preferences/model";
+import { SidebarCiBars } from "@/ci-monitor/sidebar-ci-bars";
 
 import { SidebarWorkspaceAgents } from "./agents/tree";
 import { WorkspaceAgentTreeScope, WorkspaceAgentDisclosure } from "./agents/workspace-tree";
@@ -140,6 +142,7 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
   // The workspace carries label names; their colors live in its host's catalog, so the row is
   // where the two meet — the meta line is handed finished definitions.
   const labels = useWorkspaceLabelDefinitions(workspace.serverId, workspace.labels);
+  const rowItems = useSidebarRowItems();
   const workspaceBranchTextStyle = useMemo(
     () => [
       styles.workspaceBranchText,
@@ -191,6 +194,7 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
             serviceSummary={serviceSummary}
             labels={labels}
           />
+          {rowItems.ci ? <SidebarCiBars workspaceId={workspace.workspaceId} /> : null}
         </View>
       </View>
       {showShortcutBadge && shortcutNumber !== null ? (

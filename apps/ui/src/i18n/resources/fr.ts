@@ -2,6 +2,33 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
+  // DESIGN PROTOTYPE: CI monitor copy. English everywhere until the design settles.
+  ciMonitor: {
+    label: "CI",
+    subtitle: "GitHub Actions and Jenkins runs for this branch",
+    runCount_one: "{{count}} run",
+    runCount_other: "{{count}} runs",
+    runningCount: "{{count}} running",
+    refresh: "Refresh CI",
+    emptyTitle: "No CI runs",
+    emptyDescription: "Nothing from GitHub Actions or Jenkins is running for this branch.",
+    runners: "Runners",
+    runnerSummary: "{{busy}} of {{total}} busy",
+    queuedCount_one: "{{count}} queued",
+    queuedCount_other: "{{count}} queued",
+    noRunners: "No runners assigned yet",
+    waitingForRunner: "Waiting for runner",
+    hosted: "Hosted",
+    selfHosted: "Self-hosted",
+    idle: "Idle",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+    },
+    status: {
+      queued: "Queued",
+    },
+  },
   hostAdd: {
     title: "Ajouter un hôte",
     connecting: "Ajout de {{endpoint}}…",
@@ -679,6 +706,7 @@ export const fr: TranslationResources = {
         toggle: "Basculer le panneau latéral",
         changes: "Changements",
         files: "Fichiers",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "Échec de la copie",
@@ -1167,6 +1195,7 @@ export const fr: TranslationResources = {
         checks: "Vérifications",
         services: "Services",
         labels: "Libellés",
+        ci: "CI progress",
         diff: "Statistiques de diff",
         timestamp: "Dernière activité",
       },

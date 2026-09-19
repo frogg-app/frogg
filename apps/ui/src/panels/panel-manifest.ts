@@ -58,6 +58,11 @@ const manifests = {
     supportedHosts: ["main", "explorer"],
     resourceKey: () => "pull_request",
   },
+  ci_runs: {
+    kind: "ci_runs",
+    supportedHosts: ["main", "explorer"],
+    resourceKey: () => "ci_runs",
+  },
   file: {
     kind: "file",
     supportedHosts: ["main", "explorer"],

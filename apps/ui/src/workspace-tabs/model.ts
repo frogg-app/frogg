@@ -27,6 +27,7 @@ export type WorkspaceTabTarget =
   | { kind: "changes_tree" }
   | { kind: "files" }
   | { kind: "pull_request" }
+  | { kind: "ci_runs" }
   | WorkspaceFileTabTarget
   | WorkspaceWorkingDiffTabTarget
   | { kind: "setup"; workspaceId: string }

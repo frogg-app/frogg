@@ -2,6 +2,33 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
+  // DESIGN PROTOTYPE: CI monitor copy. English everywhere until the design settles.
+  ciMonitor: {
+    label: "CI",
+    subtitle: "GitHub Actions and Jenkins runs for this branch",
+    runCount_one: "{{count}} run",
+    runCount_other: "{{count}} runs",
+    runningCount: "{{count}} running",
+    refresh: "Refresh CI",
+    emptyTitle: "No CI runs",
+    emptyDescription: "Nothing from GitHub Actions or Jenkins is running for this branch.",
+    runners: "Runners",
+    runnerSummary: "{{busy}} of {{total}} busy",
+    queuedCount_one: "{{count}} queued",
+    queuedCount_other: "{{count}} queued",
+    noRunners: "No runners assigned yet",
+    waitingForRunner: "Waiting for runner",
+    hosted: "Hosted",
+    selfHosted: "Self-hosted",
+    idle: "Idle",
+    provider: {
+      githubActions: "GitHub Actions",
+      jenkins: "Jenkins",
+    },
+    status: {
+      queued: "Queued",
+    },
+  },
   hostAdd: {
     title: "호스트 추가",
     connecting: "{{endpoint}} 추가 중…",
@@ -675,6 +702,7 @@ export const ko: TranslationResources = {
         toggle: "사이드 패널 토글",
         changes: "변경 사항",
         files: "파일",
+        ci: "CI",
       },
       toasts: {
         copyFailed: "복사 실패",
@@ -1142,6 +1170,7 @@ export const ko: TranslationResources = {
         checks: "검사",
         services: "서비스",
         labels: "레이블",
+        ci: "CI progress",
         diff: "Diff 통계",
         timestamp: "마지막 활동",
       },
