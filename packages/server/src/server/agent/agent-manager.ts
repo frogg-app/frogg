@@ -286,7 +286,11 @@ export interface AgentManagerOptions {
   resolveAgentProviderAccountEnv?: (
     provider: string,
     accountId: string | null | undefined,
-  ) => { env: Record<string, string>; unknownAccountId?: string };
+  ) => {
+    env: Record<string, string>;
+    unknownAccountId?: string;
+    resolvedAccountId?: string | null;
+  };
   /**
    * COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
    * The models the agent's provider account permits, or undefined for no
@@ -721,7 +725,11 @@ export class AgentManager {
   private readonly resolveAgentProviderAccountEnv?: (
     provider: string,
     accountId: string | null | undefined,
-  ) => { env: Record<string, string>; unknownAccountId?: string };
+  ) => {
+    env: Record<string, string>;
+    unknownAccountId?: string;
+    resolvedAccountId?: string | null;
+  };
   private readonly providerEnabled = new Map<AgentProvider, boolean>();
   private readonly providerDefinitions = new Map<AgentProvider, ProviderEnabledFlag>();
   private readonly agents = new Map<string, LiveManagedAgent>();
@@ -4885,6 +4893,7 @@ export class AgentManager {
       }
     }
 
+    this.pinProviderAccount(normalized);
     this.assertModelAllowedForProviderAccount(normalized);
 
     return this.applyProviderConfiguration(normalized);
@@ -5050,6 +5059,43 @@ export class AgentManager {
       context.froggTools = await this.froggToolCatalogFactory({ callerAgentId: agentId });
     }
     return context;
+  }
+
+  /**
+   * Pins an absent `providerAccountId` to the account it resolves to right now
+   * (the daemon-wide active account, or `null` for the primary config dir).
+   *
+   * Without this an agent created with no explicit account followed the
+   * daemon-wide active account at every launch: after the user switched
+   * accounts, resuming an old conversation silently ran it on the new account
+   * and re-sent its whole context uncached, and clients named the current
+   * active account rather than the one the agent actually ran on.
+   *
+   * Runs on every create, import and resume, so it is also the migration for
+   * agents persisted before pinning existed. The daemon keeps no record of the
+   * config dir such an agent last actually ran with, so the least surprising
+   * choice is the account it would have launched with anyway — the one active
+   * now — frozen from this launch on (and persisted with the agent's config).
+   * Older clients may keep sending `undefined`; the daemon pins it here, and the
+   * wire shape (`string | null | undefined`) is unchanged.
+   */
+  private pinProviderAccount(config: AgentSessionConfig): void {
+    if (config.providerAccountId !== undefined || !this.resolveAgentProviderAccountEnv) return;
+    try {
+      const { resolvedAccountId } = this.resolveAgentProviderAccountEnv(config.provider, undefined);
+      if (resolvedAccountId === undefined) return;
+      config.providerAccountId = resolvedAccountId;
+      this.logger.debug(
+        { provider: config.provider, providerAccountId: resolvedAccountId },
+        "Pinned agent to the provider account it resolves to",
+      );
+    } catch (error) {
+      // Leave it unpinned: the launch still falls back to the active account.
+      this.logger.warn(
+        { err: error, provider: config.provider },
+        "Failed to pin provider account for agent",
+      );
+    }
   }
 
   /**

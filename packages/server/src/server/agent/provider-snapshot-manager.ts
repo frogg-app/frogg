@@ -109,7 +109,11 @@ export interface ProviderSnapshotManagerOptions {
   providerAccountEnvForAgent?: (
     providerId: string,
     accountId: string | null | undefined,
-  ) => { env: Record<string, string>; unknownAccountId?: string };
+  ) => {
+    env: Record<string, string>;
+    unknownAccountId?: string;
+    resolvedAccountId?: string | null;
+  };
   /**
    * COMPAT(providerAccountAllowedModels): added in v1.4.2, remove after 2027-09-17.
    * The models one provider account permits, or undefined for unrestricted.
@@ -261,7 +265,11 @@ export class ProviderSnapshotManager {
   private readonly providerAccountEnvForAgent?: (
     providerId: string,
     accountId: string | null | undefined,
-  ) => { env: Record<string, string>; unknownAccountId?: string };
+  ) => {
+    env: Record<string, string>;
+    unknownAccountId?: string;
+    resolvedAccountId?: string | null;
+  };
   private readonly isDev: boolean;
   private readonly extraClients: Partial<Record<AgentProvider, AgentClient>>;
   private runtimeSettings: AgentProviderRuntimeSettingsMap | undefined;
@@ -709,7 +717,11 @@ export class ProviderSnapshotManager {
   resolveAgentProviderAccountEnv(
     provider: string,
     accountId: string | null | undefined,
-  ): { env: Record<string, string>; unknownAccountId?: string } {
+  ): {
+    env: Record<string, string>;
+    unknownAccountId?: string;
+    resolvedAccountId?: string | null;
+  } {
     const resolved = this.providerAccountEnvForAgent?.(provider, accountId);
     if (!resolved) return { env: {} };
     const explicitEnv = {
@@ -723,6 +735,9 @@ export class ProviderSnapshotManager {
     return {
       env,
       ...(resolved.unknownAccountId ? { unknownAccountId: resolved.unknownAccountId } : {}),
+      ...(resolved.resolvedAccountId !== undefined
+        ? { resolvedAccountId: resolved.resolvedAccountId }
+        : {}),
     };
   }
 

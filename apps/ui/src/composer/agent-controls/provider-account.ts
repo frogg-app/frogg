@@ -11,7 +11,10 @@ import {
  * The composer's provider account picker. `providerAccountId` is deliberately
  * three-valued and must never be read for truthiness:
  * - `undefined`: the field is absent from `create_agent_request.config`, so the
- *   daemon uses the provider's daemon-wide active account (today's behaviour).
+ *   daemon uses the provider's daemon-wide active account. Current daemons pin
+ *   that resolution onto the agent at launch, so a launched agent reporting
+ *   `undefined` comes from an older daemon; the active-account fallback below
+ *   is then the best available guess.
  * - `null`: the explicit "Default" pick; the daemon pins the provider's primary
  *   config dir (`~/.claude`) so an active account cannot leak into this agent.
  * - a string: that account's config dir.

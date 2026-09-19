@@ -40,6 +40,12 @@
 
 ## Unreleased
 
+- An agent started without choosing a provider account now stays on the
+  account that was active when it started. Previously it followed the
+  daemon-wide active account at every launch, so switching accounts and then
+  reopening an old conversation silently ran it on the new account and re-sent
+  its whole context uncached, while the account pill named the wrong account.
+  Existing agents are pinned to the active account the next time they launch.
 - A provider sheet's account tab shows that account's own usage, read from its
   own config directory, instead of showing the account in use's figures on
   every tab and nothing at all on the others.

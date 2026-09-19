@@ -175,8 +175,11 @@ An agent can be launched with:
 - **Default** — the provider's primary config directory (`~/.claude`), ignoring whichever
   account is marked active,
 - any account configured for that provider,
-- or no choice at all, which uses the provider's **active** account — the same daemon-wide
-  behaviour as before, and what every existing agent keeps doing.
+- or no choice at all, which uses the provider's **active** account at the moment the agent
+  is created. The daemon records that account on the agent (or the primary config directory,
+  if no account is active), so changing the active account later never moves an existing
+  conversation onto another sign-in. An agent created before this pinning existed is pinned
+  to the account that is active the next time it launches.
 
 Resolution order for the provider's config-directory variable (`CLAUDE_CONFIG_DIR` for
 Claude), highest first:
@@ -186,8 +189,8 @@ Claude), highest first:
 2. the account chosen for that agent,
 3. the provider's daemon-wide active account.
 
-**Make active** therefore sets the default for agents that do not choose, and no longer
-silently retargets every agent on the provider.
+**Make active** therefore sets the default for new agents that do not choose, and never
+retargets an existing agent. Use **Move this conversation** for that.
 
 #### Restricting an account's models
 

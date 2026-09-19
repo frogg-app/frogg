@@ -44,6 +44,7 @@ describe("resolveAgentProviderAccountEnv", () => {
     const store = createStore({ activeAccountId: "acct-work" });
     expect(resolveAgentProviderAccountEnv(store, "claude", "acct-peter")).toEqual({
       env: { CLAUDE_CONFIG_DIR: "/home/u/.claude-peter" },
+      resolvedAccountId: "acct-peter",
     });
   });
 
@@ -51,12 +52,14 @@ describe("resolveAgentProviderAccountEnv", () => {
     const store = createStore({ activeAccountId: "acct-work" });
     expect(resolveAgentProviderAccountEnv(store, "claude", undefined)).toEqual({
       env: { CLAUDE_CONFIG_DIR: "/home/u/.claude-work" },
+      resolvedAccountId: "acct-work",
     });
   });
 
   it("returns an empty overlay when nothing is active and the agent names none", () => {
     expect(resolveAgentProviderAccountEnv(createStore({}), "claude", undefined)).toEqual({
       env: {},
+      resolvedAccountId: null,
     });
   });
 
@@ -64,6 +67,7 @@ describe("resolveAgentProviderAccountEnv", () => {
     const store = createStore({ activeAccountId: "acct-work" });
     expect(resolveAgentProviderAccountEnv(store, "claude", null)).toEqual({
       env: { CLAUDE_CONFIG_DIR: "/home/u/.claude" },
+      resolvedAccountId: null,
     });
   });
 
@@ -139,12 +143,14 @@ describe("resolveAgentProviderAccountEnv in home mode", () => {
   it("points HOME at the account directory for the named account", () => {
     expect(resolveAgentProviderAccountEnv(store, "gemini", "acct-gem")).toEqual({
       env: { HOME: "/home/u/.gemini-second" },
+      resolvedAccountId: "acct-gem",
     });
   });
 
   it("uses the daemon-wide active account when the agent names none", () => {
     expect(resolveAgentProviderAccountEnv(store, "gemini", undefined)).toEqual({
       env: { HOME: "/home/u/.gemini-second" },
+      resolvedAccountId: "acct-gem",
     });
   });
 
@@ -153,15 +159,18 @@ describe("resolveAgentProviderAccountEnv in home mode", () => {
     // account simply inherits the daemon's real HOME.
     expect(resolveAgentProviderAccountEnv(store, "gemini", null)).toEqual({
       env: {},
+      resolvedAccountId: null,
     });
   });
 
   it("does not leak HOME into another provider's overlay", () => {
     expect(resolveAgentProviderAccountEnv(store, "claude", undefined)).toEqual({
       env: {},
+      resolvedAccountId: null,
     });
     expect(resolveAgentProviderAccountEnv(store, "claude", null)).toEqual({
       env: { CLAUDE_CONFIG_DIR: "/home/u/.claude" },
+      resolvedAccountId: null,
     });
     // An account id from another provider never crosses over.
     expect(resolveAgentProviderAccountEnv(store, "claude", "acct-gem")).toEqual({
