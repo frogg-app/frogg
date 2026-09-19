@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.9 — 2026-09-19
 
 - A Claude Code Workflow run now lists the agents it fans out beneath its own
   row in the subagents track, indented one level. Each child shows its label,
