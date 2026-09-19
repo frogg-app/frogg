@@ -3117,8 +3117,6 @@ export const ar: TranslationResources = {
           signInHint:
             "يشغّل تسجيل الدخول أداة الدخول الخاصة بـ {{provider}} في طرفية على هذا المضيف.",
           usageTitle: "الاستخدام",
-          usageInactive:
-            "يُبلّغ المزود عن استخدام الحساب قيد الاستخدام. بدّل إلى هذا الحساب لرؤية استخدامه.",
           defaultsTitle: "الإعدادات الافتراضية للوكلاء الجدد",
           defaultsDescription: "ما يبدأ به الوكيل عند تشغيله بهذا الحساب.",
           defaultModel: "النموذج الافتراضي",

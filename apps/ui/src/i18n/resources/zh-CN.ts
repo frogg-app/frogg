@@ -3073,7 +3073,6 @@ export const zhCN: TranslationResources = {
           makeActive: "使用此账号",
           signInHint: "登录会在此主机的终端中运行 {{provider}} 自带的登录流程。",
           usageTitle: "用量",
-          usageInactive: "提供方按使用中的账号上报用量。切换到此账号即可查看。",
           defaultsTitle: "新代理默认值",
           defaultsDescription: "以此账号启动的代理最初使用的设置。",
           defaultModel: "默认模型",

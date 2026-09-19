@@ -139,7 +139,7 @@ export interface AccountPaneProps {
   canManage: boolean;
   canRestrictModels: boolean;
   canSetPreferences: boolean;
-  /** Usage the provider reports; it always describes the account in use. */
+  /** Usage the provider reports for this account's own config directory. */
   usage: ProviderUsage | null;
   /** True for the synthesized default account the daemon has stored nothing about. */
   synthesized: boolean;
@@ -284,9 +284,9 @@ function AccountHero({ providerLabel, account, accounts, auth, synthesized }: Ac
 }
 
 // ---------------------------------------------------------------------------
-// Usage: providers report limits for whichever sign-in is in use.
+// Usage: the figures the provider reports for THIS sign-in.
 
-function AccountUsage({ account, usage }: AccountPaneProps) {
+function AccountUsage({ usage }: AccountPaneProps) {
   const { t } = useTranslation();
   if (!usage) return null;
   return (
@@ -294,17 +294,9 @@ function AccountUsage({ account, usage }: AccountPaneProps) {
       title={t("settings.providers.settingsModal.account.usageTitle")}
       testID="provider-account-usage"
     >
-      {account.isActive ? (
-        <View style={settingsStyles.card}>
-          <ProviderUsageCard usage={usage} />
-        </View>
-      ) : (
-        <View style={[settingsStyles.card, styles.quietCard]}>
-          <Text style={styles.hint}>
-            {t("settings.providers.settingsModal.account.usageInactive")}
-          </Text>
-        </View>
-      )}
+      <View style={settingsStyles.card}>
+        <ProviderUsageCard usage={usage} />
+      </View>
     </PaneSection>
   );
 }
@@ -1007,9 +999,6 @@ const styles = StyleSheet.create((theme) => ({
   warning: {
     color: theme.colors.statusWarning,
     fontSize: theme.fontSize.sm,
-  },
-  quietCard: {
-    padding: theme.spacing[4],
   },
   fieldStack: {
     gap: theme.spacing[3],

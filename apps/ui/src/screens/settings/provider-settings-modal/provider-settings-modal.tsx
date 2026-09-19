@@ -18,6 +18,7 @@ import {
   type ProviderStatus,
   type StatusTone,
 } from "@/screens/settings/providers-section";
+import { parseProviderAccountDefaultId } from "@frogg/protocol/provider-accounts";
 import { selectProviderAccounts } from "@/provider-accounts/model";
 import { useProviderAccounts } from "@/provider-accounts/use-provider-accounts";
 import { useAuthenticateProviderAccount } from "@/provider-accounts/use-authenticate-account";
@@ -229,7 +230,6 @@ export function ProviderSettingsModal({
   const accounts = useProviderAccounts(serverId);
   const auth = useAuthenticateProviderAccount(serverId);
   const createFlow = useCreateAccountFlow(serverId, providerId);
-  const usage = useProviderUsage(serverId);
   const [selectedTab, setSelectedTab] = useState<string | null>(null);
 
   const providerDefinitions = useMemo(() => buildProviderDefinitions(entries), [entries]);
@@ -286,6 +286,21 @@ export function ProviderSettingsModal({
     () => tabAccounts.find((account) => account.id === activeTab) ?? null,
     [activeTab, tabAccounts],
   );
+
+  // Usage is read for the account whose tab is open, not for whichever sign-in
+  // the daemon happens to have active: showing the active account's figures
+  // under another account's name is what made every tab report the same
+  // numbers. `null` names the provider's primary directory, which is what the
+  // implicit default account is, and is understood by every daemon.
+  const usageAccountId = useMemo(() => {
+    if (!selectedAccount) return undefined;
+    return parseProviderAccountDefaultId(selectedAccount.id) !== null ? null : selectedAccount.id;
+  }, [selectedAccount]);
+  const usage = useProviderUsage(serverId, {
+    enabled: selectedAccount !== null,
+    provider: providerId,
+    providerAccountId: usageAccountId,
+  });
 
   const providerUsage = useMemo(
     () =>

@@ -1,5 +1,9 @@
 import { i18n } from "@/i18n/i18next";
 import type { ProviderSnapshotAccount } from "@frogg/protocol/agent-types";
+import {
+  PROVIDER_ACCOUNT_DEFAULT_NAME,
+  parseProviderAccountDefaultId,
+} from "@frogg/protocol/provider-accounts";
 
 /**
  * COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
@@ -58,6 +62,15 @@ function buildDefaultLabel(): string {
 }
 
 /**
+ * The listed default account's label: its own name once it has been renamed,
+ * and the translated "Default" while it still carries the reserved protocol
+ * name, which is an id rather than something to show a person.
+ */
+function defaultAccountLabel(account: ProviderSnapshotAccount): string {
+  return account.name === PROVIDER_ACCOUNT_DEFAULT_NAME ? buildDefaultLabel() : account.name;
+}
+
+/**
  * The picker model for a provider, or `null` when the control must not render at
  * all. `accounts` is absent entirely unless the daemon advertises an enabled
  * accounts capability for the provider, and an empty array means the user has
@@ -73,20 +86,28 @@ export function resolveProviderAccountControlModel(input: {
     return null;
   }
 
-  const options: ProviderAccountOption[] = [
-    {
-      id: DEFAULT_PROVIDER_ACCOUNT_OPTION_ID,
-      label: buildDefaultLabel(),
-      authenticated: true,
-      isDefaultRow: true,
-    },
-    ...accounts.map((account) => ({
-      id: account.id,
-      label: account.name,
-      authenticated: account.authenticated,
-      isDefaultRow: false,
-    })),
-  ];
+  // The daemon lists the provider's implicit default account itself, under its
+  // own name once it has been renamed. Adding the synthetic Default row on top
+  // of it would list the same sign-in twice — once under the name the user gave
+  // it and once as "Default".
+  const listedDefault = accounts.find((account) => parseProviderAccountDefaultId(account.id));
+  const accountRows = accounts.map((account) => ({
+    id: account.id,
+    label: account.id === listedDefault?.id ? defaultAccountLabel(account) : account.name,
+    authenticated: account.authenticated,
+    isDefaultRow: account.id === listedDefault?.id,
+  }));
+  const options: ProviderAccountOption[] = listedDefault
+    ? accountRows
+    : [
+        {
+          id: DEFAULT_PROVIDER_ACCOUNT_OPTION_ID,
+          label: buildDefaultLabel(),
+          authenticated: true,
+          isDefaultRow: true,
+        },
+        ...accountRows,
+      ];
 
   // An absent selection means the field is left off the launch config, and the
   // daemon then runs the agent as the provider's daemon-wide active account —
@@ -94,10 +115,15 @@ export function resolveProviderAccountControlModel(input: {
   // absent selection resolves to that account here too: showing "Default" while
   // the agent would launch as someone else is precisely the lie that made a
   // session started on "Default" come up signed in as another account.
-  const selectedOptionId =
-    selection === undefined && input.defaultAccountId
-      ? input.defaultAccountId
-      : toProviderAccountOptionId(selection);
+  // The Default row's id is the listed default account's own id when the daemon
+  // lists one, so an explicit `null` pick has to land on that row rather than on
+  // the sentinel id that no longer appears in the list.
+  const defaultRowId = listedDefault?.id ?? DEFAULT_PROVIDER_ACCOUNT_OPTION_ID;
+  const selectedOptionId = resolveSelectedOptionId({
+    selection,
+    defaultAccountId: input.defaultAccountId,
+    defaultRowId,
+  });
   const selected =
     options.find((option) => option.id === selectedOptionId) ??
     // The selected account was deleted while the composer was open. The daemon
@@ -110,6 +136,16 @@ export function resolveProviderAccountControlModel(input: {
     displayLabel: selected.label,
     selectedIsUnauthenticated: !selected.authenticated,
   };
+}
+
+function resolveSelectedOptionId(input: {
+  selection: ProviderAccountSelection;
+  defaultAccountId: string | null | undefined;
+  defaultRowId: string;
+}): string {
+  if (input.selection === undefined && input.defaultAccountId) return input.defaultAccountId;
+  if (input.selection == null) return input.defaultRowId;
+  return input.selection;
 }
 
 /**
@@ -141,6 +177,13 @@ export function resolveProviderAccountTransferOptions(
   model: Pick<ProviderAccountControlModel, "options">,
   selection: ProviderAccountSelection,
 ): ProviderAccountOption[] {
-  const currentOptionId = toProviderAccountOptionId(selection);
+  // A `null` selection is the Default row, which the daemon may list under its
+  // own account id rather than the sentinel, so match it by row instead of by
+  // id — otherwise the account the agent already runs as is offered as a move.
+  const currentOptionId =
+    selection == null
+      ? (model.options.find((option) => option.isDefaultRow)?.id ??
+        DEFAULT_PROVIDER_ACCOUNT_OPTION_ID)
+      : selection;
   return model.options.filter((option) => option.id !== currentOptionId);
 }

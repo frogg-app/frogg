@@ -3178,8 +3178,6 @@ export const en = {
           makeActive: "Use this account",
           signInHint: "Signing in runs {{provider}}'s own login in a terminal on this host.",
           usageTitle: "Usage",
-          usageInactive:
-            "The provider reports usage for the account in use. Switch to this account to see its usage.",
           defaultsTitle: "New agent defaults",
           defaultsDescription: "What an agent starts on when it is launched as this account.",
           defaultModel: "Default model",

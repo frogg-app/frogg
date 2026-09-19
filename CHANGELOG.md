@@ -15,6 +15,11 @@
 
 ## Unreleased
 
+- A provider sheet's account tab shows that account's own usage, read from its
+  own config directory, instead of showing the account in use's figures on
+  every tab and nothing at all on the others.
+- A renamed default sign-in no longer appears twice in the composer's account
+  picker, once under its new name and once as "Default".
 - The account pill above the composer can now move a running conversation to
   another of the provider's accounts. It says what the move costs first: the
   account it moves to has never sent this conversation upstream, so the whole

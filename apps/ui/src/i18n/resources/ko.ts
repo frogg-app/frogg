@@ -3140,8 +3140,6 @@ export const ko: TranslationResources = {
           makeActive: "이 계정 사용",
           signInHint: "로그인하면 이 호스트의 터미널에서 {{provider}}의 로그인이 실행됩니다.",
           usageTitle: "사용량",
-          usageInactive:
-            "사용량은 사용 중인 계정 기준으로 보고됩니다. 이 계정으로 전환하면 볼 수 있습니다.",
           defaultsTitle: "새 에이전트 기본값",
           defaultsDescription: "이 계정으로 실행한 에이전트가 처음 사용하는 설정입니다.",
           defaultModel: "기본 모델",

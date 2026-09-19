@@ -3173,8 +3173,6 @@ export const ptBR: TranslationResources = {
           makeActive: "Usar esta conta",
           signInHint: "Entrar executa o login do próprio {{provider}} em um terminal neste host.",
           usageTitle: "Uso",
-          usageInactive:
-            "O provedor informa o uso da conta em uso. Troque para esta conta para ver o dela.",
           defaultsTitle: "Padrões para novos agentes",
           defaultsDescription: "Com o que um agente começa quando é iniciado com esta conta.",
           defaultModel: "Modelo padrão",

@@ -330,6 +330,9 @@ the Keychain fallback is used only for the primary directory, so an account whos
 file is missing shows as unavailable instead of borrowing another sign-in's figures. The
 Host settings page still reports the primary directory.
 
+A provider sheet's account tab reports the same per-account figures: the usage shown on a tab
+is read from that account's own config directory, whether or not it is the account in use.
+
 ## Provider environment
 
 Agents inherit the daemon's environment plus anything you set per provider (`env` in

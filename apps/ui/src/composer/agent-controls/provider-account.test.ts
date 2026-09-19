@@ -46,6 +46,33 @@ describe("resolveProviderAccountControlModel", () => {
     expect(model?.options[0]?.label).toBe("Default");
   });
 
+  // Once the daemon lists the provider's implicit default account, it IS the
+  // Default row: listing both left a renamed default showing twice, under its
+  // new name and again as "Default".
+  it("uses the listed default account as the Default row instead of adding one", () => {
+    const model = resolveProviderAccountControlModel({
+      accounts: [{ id: "default:claude", name: "Paz", authenticated: true }, STEVE],
+      defaultAccountId: "acct-steve",
+      selection: null,
+    });
+    expect(model?.options.map((option) => option.id)).toEqual(["default:claude", "acct-steve"]);
+    expect(model?.options[0]?.label).toBe("Paz");
+    expect(model?.options[0]?.isDefaultRow).toBe(true);
+    // An explicit Default pick highlights that row rather than a sentinel id
+    // no longer in the list.
+    expect(model?.selectedOptionId).toBe("default:claude");
+    expect(model?.displayLabel).toBe("Paz");
+  });
+
+  it("shows the listed default account as Default until it is renamed", () => {
+    const model = resolveProviderAccountControlModel({
+      accounts: [{ id: "default:claude", name: "default", authenticated: true }],
+      defaultAccountId: null,
+      selection: undefined,
+    });
+    expect(model?.options[0]?.label).toBe("Default");
+  });
+
   // The Default row sends `null`, which pins the primary config dir and ignores
   // the daemon-wide active account. Naming that account on the row would claim
   // the row selects it, when it does the opposite — and it has its own row.

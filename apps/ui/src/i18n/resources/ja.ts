@@ -3160,8 +3160,6 @@ export const ja: TranslationResources = {
           signInHint:
             "サインインすると、このホストのターミナルで {{provider}} のログインが実行されます。",
           usageTitle: "使用量",
-          usageInactive:
-            "使用量は使用中のアカウントについて報告されます。このアカウントに切り替えると表示されます。",
           defaultsTitle: "新しいエージェントの既定値",
           defaultsDescription: "このアカウントで起動したエージェントが最初に使う設定です。",
           defaultModel: "既定のモデル",

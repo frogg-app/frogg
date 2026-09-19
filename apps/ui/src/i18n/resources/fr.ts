@@ -3198,8 +3198,6 @@ export const fr: TranslationResources = {
           signInHint:
             "La connexion lance l'authentification propre à {{provider}} dans un terminal de cet hôte.",
           usageTitle: "Utilisation",
-          usageInactive:
-            "Le fournisseur signale l'utilisation du compte utilisé. Basculez sur ce compte pour voir la sienne.",
           defaultsTitle: "Valeurs par défaut des nouveaux agents",
           defaultsDescription: "Ce avec quoi un agent démarre lorsqu'il est lancé avec ce compte.",
           defaultModel: "Modèle par défaut",

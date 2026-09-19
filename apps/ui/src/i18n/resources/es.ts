@@ -3188,8 +3188,6 @@ export const es: TranslationResources = {
           signInHint:
             "Iniciar sesión ejecuta el inicio de sesión propio de {{provider}} en una terminal de este host.",
           usageTitle: "Uso",
-          usageInactive:
-            "El proveedor informa el uso de la cuenta en uso. Cambia a esta cuenta para ver el suyo.",
           defaultsTitle: "Valores para nuevos agentes",
           defaultsDescription: "Con qué empieza un agente cuando se lanza con esta cuenta.",
           defaultModel: "Modelo predeterminado",

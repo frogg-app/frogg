@@ -199,6 +199,16 @@ describe("resolveProviderAccountConfigDir", () => {
     );
   });
 
+  // The default account is named by id — not just by `null` — once the sheet
+  // asks per account. Treating it as "unknown" and falling back to the active
+  // account is what showed one sign-in's figures under another's name.
+  it("pins the primary config dir when the default account is named by id", () => {
+    const store = createStore({ activeAccountId: "acct-work" });
+    expect(resolveProviderAccountConfigDir(store, "claude", "default:claude")).toBe(
+      "/home/u/.claude",
+    );
+  });
+
   it("falls back like a launch would when the account was deleted", () => {
     const store = createStore({ activeAccountId: "acct-work" });
     expect(resolveProviderAccountConfigDir(store, "claude", "acct-gone")).toBe(

@@ -1,6 +1,9 @@
 import path from "node:path";
 
-import { providerAccountConfigDirMode } from "@frogg/protocol/provider-accounts";
+import {
+  parseProviderAccountDefaultId,
+  providerAccountConfigDirMode,
+} from "@frogg/protocol/provider-accounts";
 
 import type { ProviderAccountStore } from "./provider-account-store.js";
 
@@ -162,6 +165,13 @@ export function resolveProviderAccountConfigDir(
   if (resolvedId == null) {
     // `null` is the explicit primary-directory pick; an absent active account
     // lands here too and means the same directory.
+    return store.primaryConfigDir(provider);
+  }
+
+  // The provider's implicit default account names the primary directory even
+  // when nothing has been stored about it yet. Falling through to the active
+  // account below would hand back another sign-in's directory entirely.
+  if (parseProviderAccountDefaultId(resolvedId) === provider) {
     return store.primaryConfigDir(provider);
   }
 
