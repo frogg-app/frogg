@@ -67,17 +67,17 @@ describe("resolveTrailingActionVisibility", () => {
     });
   });
 
-  it("collapses back to the kebab when Alt is released", () => {
+  it("collapses back to the kebab when Control is released", () => {
     expect(resolve({ isHovered: true, selected: true })).toMatchObject({
       showQuickActions: false,
       showKebab: true,
     });
   });
 
-  it("yields to the shortcut badges", () => {
+  it("shows the rail alongside the shortcut badge", () => {
     expect(
       resolve({ isHovered: true, quickActionsModifierDown: true, showShortcut: true }),
-    ).toMatchObject({ showQuickActions: false, showKebab: false });
+    ).toMatchObject({ showQuickActions: true, showKebab: false });
   });
 
   it("never shows the rail on touch or without row actions", () => {

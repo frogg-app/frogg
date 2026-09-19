@@ -367,10 +367,10 @@ export function useKeyboardShortcuts({
       if (key === badgeModifierKey && !event.shiftKey) {
         setBadgeModifierDown(true);
       }
-      // The sidebar quick action rail rides a bare Alt, tracked independently of the badge
-      // modifier. The store drops it when the badge modifier is also down, so on web -- where
-      // Alt *is* the jump modifier -- the badges keep the key and the rail never opens.
-      if (key === "Alt" && !event.shiftKey) {
+      // The sidebar quick action rail rides a bare Control, tracked independently of the badge
+      // modifier. The two coexist: where Control is also the jump modifier (desktop non-Mac)
+      // one hold shows both, with the number badge sitting to the left of the rail.
+      if (key === "Control" && !event.shiftKey) {
         useKeyboardShortcutsStore.getState().setQuickActionsModifierDown(true);
       }
       if (key === "Shift") {
@@ -396,7 +396,7 @@ export function useKeyboardShortcuts({
       if (key === badgeModifierKey) {
         setBadgeModifierDown(false);
       }
-      if (key === "Alt") {
+      if (key === "Control") {
         useKeyboardShortcutsStore.getState().setQuickActionsModifierDown(false);
       }
     };
