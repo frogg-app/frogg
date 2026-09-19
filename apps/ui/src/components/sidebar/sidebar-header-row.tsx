@@ -7,12 +7,13 @@ import { ICON_SIZE } from "@/styles/theme";
 import type { Theme } from "@/styles/theme";
 import { Shortcut } from "@/components/ui/shortcut";
 import { MenuTrigger } from "@/components/ui/menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { ShortcutKey } from "@/utils/format-shortcut";
 
 const foregroundColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const foregroundMutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
-type SidebarHeaderRowVariant = "header" | "compact";
+type SidebarHeaderRowVariant = "header" | "compact" | "icon";
 
 interface SidebarHeaderRowProps {
   icon: LucideIcon;
@@ -27,6 +28,8 @@ interface SidebarHeaderRowProps {
    * the lone header at the top of a sidebar (settings "Back to workspace").
    * "compact": a workspace-row-height row with no separator, for entries that
    * sit in a header group whose wrapper owns the single divider.
+   * "icon": a square icon-only button; the label moves to a tooltip. The active
+   * entry is marked by icon colour only, not a background.
    */
   variant?: SidebarHeaderRowVariant;
   shortcutKeys?: ShortcutKey[][] | null;
@@ -54,11 +57,14 @@ export function SidebarHeaderRow({
   );
 
   const buttonStyle = useCallback(
-    ({ hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
-      styles.button,
-      variant === "compact" && styles.buttonCompact,
-      (Boolean(hovered) || isActive) && styles.buttonHovered,
-    ],
+    ({ hovered, pressed }: PressableStateCallbackType & { hovered?: boolean }) =>
+      variant === "icon"
+        ? [styles.iconButton, (Boolean(hovered) || pressed) && styles.buttonHovered]
+        : [
+            styles.button,
+            variant === "compact" && styles.buttonCompact,
+            (Boolean(hovered) || isActive) && styles.buttonHovered,
+          ],
     [isActive, variant],
   );
 
@@ -71,14 +77,16 @@ export function SidebarHeaderRow({
             size={ICON_SIZE.sm}
             uniProps={isHighlighted ? foregroundColorMapping : foregroundMutedColorMapping}
           />
-          <SidebarHeaderRowLabel label={label} isHighlighted={isHighlighted} />
-          {shortcutKeys && Boolean(state.hovered) ? (
+          {variant === "icon" ? null : (
+            <SidebarHeaderRowLabel label={label} isHighlighted={isHighlighted} />
+          )}
+          {variant !== "icon" && shortcutKeys && Boolean(state.hovered) ? (
             <Shortcut chord={shortcutKeys} style={styles.shortcut} />
           ) : null}
         </>
       );
     },
-    [ThemedIcon, isActive, label, shortcutKeys],
+    [ThemedIcon, isActive, label, shortcutKeys, variant],
   );
 
   if (menuTrigger) {
@@ -95,6 +103,32 @@ export function SidebarHeaderRow({
           {renderChildren}
         </MenuTrigger>
       </View>
+    );
+  }
+
+  if (variant === "icon") {
+    return (
+      <Tooltip delayDuration={300}>
+        <TooltipTrigger asChild>
+          <Pressable
+            onPress={onPress}
+            testID={testID}
+            nativeID={nativeID}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={accessibilityLabel ?? label}
+            style={buttonStyle}
+          >
+            {renderChildren}
+          </Pressable>
+        </TooltipTrigger>
+        <TooltipContent side="bottom" align="center" offset={8}>
+          <View style={styles.tooltipRow}>
+            <Text style={styles.tooltipText}>{label}</Text>
+            {shortcutKeys ? <Shortcut chord={shortcutKeys} /> : null}
+          </View>
+        </TooltipContent>
+      </Tooltip>
     );
   }
 
@@ -165,6 +199,22 @@ const styles = StyleSheet.create((theme) => ({
     // Match the project rows' inner padding so the icons align on one vertical
     // edge with the workspace list below (base button uses a wider spacing[3]).
     paddingHorizontal: theme.spacing[2],
+  },
+  iconButton: {
+    width: 32,
+    height: 32,
+    borderRadius: theme.borderRadius.lg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tooltipRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+  },
+  tooltipText: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.popoverForeground,
   },
   buttonHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
