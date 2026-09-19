@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.6 — 2026-09-19
+
+- Provider accounts are managed inside their provider's settings sheet, one
+  tab per sign-in. The selected tab scopes sign-in state and usage, new-agent
+  defaults, model access, a per-account system prompt, nickname and colour,
+  moving the account to another host, and deleting it. The separate
+  "Provider sign-ins" list on the host page is gone.
+- A new agent starts on its account's default model and thinking level, and
+  the account's system prompt is appended when the agent launches.
+- The New session composer always opens on Chat. Picking a terminal profile
+  no longer sticks to later sessions, which had hidden the provider and
+  account chips and disabled image paste.
+
 ## Unreleased
 
 - Provider accounts are managed only inside their provider's settings sheet,
