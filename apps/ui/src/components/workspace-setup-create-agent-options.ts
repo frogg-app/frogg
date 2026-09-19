@@ -14,10 +14,10 @@ export function buildCreateAgentOptions({
     selectedMode: string;
     effectiveModelId: string | null;
     effectiveThinkingOptionId: string | null;
-    // COMPAT(perAgentProviderAccounts): three-valued. `undefined` means the user
-    // never picked, so the key is left off and the daemon-wide active account
-    // applies; `null` is the explicit "Default" pick. Never test for truthiness.
-    selectedProviderAccountId: string | null | undefined;
+    // COMPAT(perAgentProviderAccounts): three-valued. `undefined` means the
+    // provider has no accounts at all, so the key is left off; `null` is the
+    // explicit "Default" pick. Never test for truthiness.
+    effectiveProviderAccountId: string | null | undefined;
   };
   text: string;
   attachments: NonNullable<CreateAgentRequestOptions["attachments"]>;
@@ -47,8 +47,8 @@ export function buildCreateAgentOptions({
     ...(text.trim() ? { initialPrompt: text.trim() } : {}),
     ...(encodedImages && encodedImages.length > 0 ? { images: encodedImages } : {}),
     ...(attachments.length > 0 ? { attachments } : {}),
-    ...(composerState.selectedProviderAccountId !== undefined
-      ? { providerAccountId: composerState.selectedProviderAccountId }
+    ...(composerState.effectiveProviderAccountId !== undefined
+      ? { providerAccountId: composerState.effectiveProviderAccountId }
       : {}),
   };
 }

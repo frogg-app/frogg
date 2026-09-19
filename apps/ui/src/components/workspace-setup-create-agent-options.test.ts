@@ -10,13 +10,13 @@ const base = {
   provider: "claude" as const,
 };
 
-function composerState(selectedProviderAccountId: string | null | undefined) {
+function composerState(effectiveProviderAccountId: string | null | undefined) {
   return {
     modeOptions: [{ id: "default" }],
     selectedMode: "default",
     effectiveModelId: "opus",
     effectiveThinkingOptionId: null,
-    selectedProviderAccountId,
+    effectiveProviderAccountId,
   };
 }
 

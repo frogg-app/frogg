@@ -3197,10 +3197,12 @@ export const ja: TranslationResources = {
           providerSignIn: "プロバイダーのサインイン",
           signedIn: "サインイン済み",
           notSignedIn: "サインインしていません",
-          inUse: "使用中",
+          isDefault: "デフォルト",
           signIn: "サインイン",
           reauthenticate: "サインインし直す",
-          makeActive: "このアカウントを使う",
+          makeDefault: "デフォルトに設定",
+          defaultAccountHint:
+            "このホストの新しいエージェントはデフォルトのアカウントで起動します。サインイン済みのアカウントはすべて同時に利用できます。",
           signInHint:
             "サインインすると、このホストのターミナルで {{provider}} のログインが実行されます。",
           usageTitle: "使用量",

@@ -3235,10 +3235,12 @@ export const fr: TranslationResources = {
           providerSignIn: "Connexion du fournisseur",
           signedIn: "Connecté",
           notSignedIn: "Non connecté",
-          inUse: "Utilisé",
+          isDefault: "Par défaut",
           signIn: "Se connecter",
           reauthenticate: "Se reconnecter",
-          makeActive: "Utiliser ce compte",
+          makeDefault: "Définir par défaut",
+          defaultAccountHint:
+            "Les nouveaux agents sur cet hôte démarrent sur le compte par défaut. Tous les comptes connectés restent utilisables en même temps.",
           signInHint:
             "La connexion lance l'authentification propre à {{provider}} dans un terminal de cet hôte.",
           usageTitle: "Utilisation",

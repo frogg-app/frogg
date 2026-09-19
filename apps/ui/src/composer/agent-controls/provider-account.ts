@@ -10,11 +10,10 @@ import {
  *
  * The composer's provider account picker. `providerAccountId` is deliberately
  * three-valued and must never be read for truthiness:
- * - `undefined`: the field is absent from `create_agent_request.config`, so the
- *   daemon uses the provider's daemon-wide active account. Current daemons pin
- *   that resolution onto the agent at launch, so a launched agent reporting
- *   `undefined` comes from an older daemon; the active-account fallback below
- *   is then the best available guess.
+ * - `undefined`: the user has not picked, so this client's default account for
+ *   the provider applies (see `default-provider-account-store`). A launched
+ *   agent reporting `undefined` comes from an older daemon that did not pin the
+ *   account onto the agent; the default fallback below is then the best guess.
  * - `null`: the explicit "Default" pick; the daemon pins the provider's primary
  *   config dir (`~/.claude`) so an active account cannot leak into this agent.
  * - a string: that account's config dir.
@@ -57,9 +56,9 @@ export function toProviderAccountSelection(optionId: string): string | null {
 }
 
 // The Default row sends `null`, which pins the provider's primary config dir
-// (`~/.claude`) and deliberately ignores whichever account is marked active
-// daemon-wide. Naming the active account here would therefore be a lie: that
-// account has its own row, and picking this one does not select it.
+// (`~/.claude`) rather than whichever account this client has set as its
+// default. Naming that account here would therefore be a lie: it has its own
+// row, and picking this one does not select it.
 function buildDefaultLabel(): string {
   return i18n.t("agentControls.account.default");
 }
@@ -112,12 +111,12 @@ export function resolveProviderAccountControlModel(input: {
         ...accountRows,
       ];
 
-  // An absent selection means the field is left off the launch config, and the
-  // daemon then runs the agent as the provider's daemon-wide active account —
-  // NOT as the Default row, which is the separate explicit `null` pick. So an
-  // absent selection resolves to that account here too: showing "Default" while
-  // the agent would launch as someone else is precisely the lie that made a
-  // session started on "Default" come up signed in as another account.
+  // An absent selection means the user has not picked, so the agent launches on
+  // this client's default account — NOT necessarily the Default row, which is
+  // the separate explicit `null` pick. So an absent selection resolves to that
+  // account here too: showing "Default" while the agent would launch as someone
+  // else is precisely the lie that made a session started on "Default" come up
+  // signed in as another account.
   // The Default row's id is the listed default account's own id when the daemon
   // lists one, so an explicit `null` pick has to land on that row rather than on
   // the sentinel id that no longer appears in the list.
@@ -177,8 +176,8 @@ export function shouldShowProviderAccountPill(input: {
  * naming accounts exactly as the composer does, Default row included.
  *
  * The current account is the model's resolved row, not the raw selection: an
- * absent selection runs the agent as the daemon-wide active account, which is
- * a named account row rather than the Default row.
+ * absent selection runs the agent as this client's default account, which may
+ * be a named account row rather than the Default row.
  */
 export function resolveProviderAccountTransferOptions(
   model: Pick<ProviderAccountControlModel, "options" | "selectedOptionId">,

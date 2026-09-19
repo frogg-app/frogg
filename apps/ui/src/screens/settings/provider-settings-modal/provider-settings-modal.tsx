@@ -325,6 +325,7 @@ export function ProviderSettingsModal({
   if (selectedAccount) {
     body = (
       <AccountPane
+        serverId={serverId}
         providerId={providerId}
         providerLabel={def.label}
         account={selectedAccount}

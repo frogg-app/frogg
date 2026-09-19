@@ -42,6 +42,7 @@ import {
 } from "@/provider-selection/resolve-agent-form";
 import type { MaterializedAgentProfile } from "@/agent-profiles";
 import type { ProviderAccountSelection } from "@/composer/agent-controls/provider-account";
+import { useDefaultProviderAccountId } from "@/stores/default-provider-account-store";
 
 export type { FormInitialValues } from "@/provider-selection/resolve-agent-form";
 
@@ -89,15 +90,26 @@ export interface UseAgentFormStateResult {
   // COMPAT(perAgentProviderAccounts): added in v1.3.6, remove after 2027-09-17.
   /** The selected provider's sign-in accounts, or undefined when it has none. */
   providerAccounts: ProviderSnapshotAccount[] | undefined;
-  /** The provider's daemon-wide active account id, or null. */
+  /**
+   * The account a new agent starts on when the user has not picked one: this
+   * client's stored default for the provider, falling back to whatever the
+   * daemon reports. `null` is the provider's primary config dir. It only seeds
+   * the picker — every other account stays launchable at the same time.
+   */
   providerDefaultAccountId: string | null;
   /**
    * Three-valued and never to be read for truthiness: `undefined` means the user
-   * has not picked, so `providerAccountId` is omitted from the launch config and
-   * the daemon-wide active account applies; `null` is the explicit "Default"
-   * pick; a string names an account.
+   * has not picked, so `providerDefaultAccountId` applies; `null` is the
+   * explicit "Default" pick; a string names an account.
    */
   selectedProviderAccountId: ProviderAccountSelection;
+  /**
+   * The account a launch from this form actually runs on: the pick when there
+   * is one, otherwise this client's default. Undefined only when the provider
+   * has no accounts at all, so the key is left off the launch config and the
+   * daemon resolves it as it always did.
+   */
+  effectiveProviderAccountId: ProviderAccountSelection;
   setProviderAccountFromUser: (accountId: string | null) => void;
   workingDirIsEmpty: boolean;
   persistFormPreferences: () => Promise<void>;
@@ -215,6 +227,22 @@ async function persistProviderPreferences(input: {
       },
     }),
   );
+}
+
+/**
+ * The account a launch from the form runs on. A provider with no accounts at
+ * all leaves the key off the launch config entirely, which is what daemons
+ * without the accounts capability expect.
+ */
+function resolveEffectiveProviderAccountId(input: {
+  providerAccounts: readonly ProviderSnapshotAccount[] | undefined;
+  selection: ProviderAccountSelection;
+  defaultAccountId: string | null;
+}): ProviderAccountSelection {
+  if (input.providerAccounts === undefined || input.providerAccounts.length === 0) {
+    return undefined;
+  }
+  return input.selection !== undefined ? input.selection : input.defaultAccountId;
 }
 
 export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAgentFormStateResult {
@@ -662,7 +690,10 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
   const setProviderAccountFromUser = useCallback(
     (accountId: string | null) => {
       if (!selectedProvider) return;
-      setProviderAccountSelections((current) => ({ ...current, [selectedProvider]: accountId }));
+      setProviderAccountSelections((current) => ({
+        ...current,
+        [selectedProvider]: accountId,
+      }));
       // COMPAT(providerAccountPreferences): picking an account starts the draft on
       // that account's default model and thinking level. The pick is not written
       // to the composer preferences: the defaults belong to the account.
@@ -689,7 +720,24 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
     },
     [availableModels, providerAccounts, selectedProvider],
   );
-  const providerDefaultAccountId = snapshotSelectedEntry?.defaultAccountId ?? null;
+  // The default is this client's own preference. The daemon's reported default
+  // is only a fallback for a provider this client has never chosen for, so an
+  // older daemon-wide setting keeps working without any account being treated
+  // as the one account in use.
+  const storedDefaultAccountId = useDefaultProviderAccountId(formState.serverId, selectedProvider);
+  const providerDefaultAccountId =
+    storedDefaultAccountId !== undefined
+      ? storedDefaultAccountId
+      : (snapshotSelectedEntry?.defaultAccountId ?? null);
+
+  // Launching sends the resolved account rather than omitting the key, so a
+  // new agent starts on the account the picker is showing instead of on
+  // whichever account the daemon happens to consider active.
+  const effectiveProviderAccountId: ProviderAccountSelection = resolveEffectiveProviderAccountId({
+    providerAccounts,
+    selection: selectedProviderAccountId,
+    defaultAccountId: providerDefaultAccountId,
+  });
 
   return useMemo(
     () => ({
@@ -727,6 +775,7 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
       providerAccounts,
       providerDefaultAccountId,
       selectedProviderAccountId,
+      effectiveProviderAccountId,
       setProviderAccountFromUser,
       workingDirIsEmpty,
       persistFormPreferences,
@@ -766,6 +815,7 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
       providerAccounts,
       providerDefaultAccountId,
       selectedProviderAccountId,
+      effectiveProviderAccountId,
       setProviderAccountFromUser,
       workingDirIsEmpty,
       persistFormPreferences,

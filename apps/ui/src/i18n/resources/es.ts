@@ -3226,10 +3226,12 @@ export const es: TranslationResources = {
           providerSignIn: "Sesión del proveedor",
           signedIn: "Sesión iniciada",
           notSignedIn: "Sin iniciar sesión",
-          inUse: "En uso",
+          isDefault: "Predeterminada",
           signIn: "Iniciar sesión",
           reauthenticate: "Volver a iniciar sesión",
-          makeActive: "Usar esta cuenta",
+          makeDefault: "Establecer como predeterminada",
+          defaultAccountHint:
+            "Los nuevos agentes de este host se inician en la cuenta predeterminada. Todas las cuentas con sesión iniciada siguen disponibles a la vez.",
           signInHint:
             "Iniciar sesión ejecuta el inicio de sesión propio de {{provider}} en una terminal de este host.",
           usageTitle: "Uso",

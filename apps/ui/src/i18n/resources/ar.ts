@@ -3154,10 +3154,12 @@ export const ar: TranslationResources = {
           providerSignIn: "تسجيل دخول المزود",
           signedIn: "مسجَّل الدخول",
           notSignedIn: "غير مسجَّل الدخول",
-          inUse: "قيد الاستخدام",
+          isDefault: "افتراضي",
           signIn: "تسجيل الدخول",
           reauthenticate: "تسجيل الدخول من جديد",
-          makeActive: "استخدام هذا الحساب",
+          makeDefault: "تعيين كافتراضي",
+          defaultAccountHint:
+            "تبدأ الوكلاء الجدد على هذا المضيف بالحساب الافتراضي. تظل كل الحسابات المسجّلة الدخول قابلة للاستخدام في الوقت نفسه.",
           signInHint:
             "يشغّل تسجيل الدخول أداة الدخول الخاصة بـ {{provider}} في طرفية على هذا المضيف.",
           usageTitle: "الاستخدام",

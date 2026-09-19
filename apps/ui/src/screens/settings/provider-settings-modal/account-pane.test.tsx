@@ -9,6 +9,10 @@ import {
   type ProviderAccountState,
 } from "@frogg/protocol/provider-accounts";
 import type { AgentModelDefinition } from "@frogg/protocol/agent-types";
+import {
+  defaultProviderAccountKey,
+  useDefaultProviderAccountStore,
+} from "@/stores/default-provider-account-store";
 import { AccountPane } from "./account-pane";
 import {
   isSynthesizedAccount,
@@ -380,6 +384,7 @@ describe("AccountPane", () => {
     act(() => {
       root.render(
         <AccountPane
+          serverId="host-1"
           providerId="claude"
           providerLabel="Claude Code"
           account={account()}
@@ -409,14 +414,37 @@ describe("AccountPane", () => {
     expect(byTestId(container, "provider-account-danger")).not.toBeNull();
   });
 
-  it("makes the default account active as 'no active account'", async () => {
-    render({ account: account({ id: DEFAULT_ID, name: "default", isActive: false }) });
+  it("records the default account as a client preference, not a daemon mutation", async () => {
+    useDefaultProviderAccountStore.setState({ defaults: {} });
+    render({ account: account({ id: "acct-2", name: "Steve 2" }) });
 
     await act(async () => {
-      byTestId(container, "provider-account-make-active")?.click();
+      byTestId(container, "provider-account-make-default")?.click();
     });
 
-    expect(setActiveMock).toHaveBeenCalledWith({ provider: "claude", accountId: null });
+    expect(
+      useDefaultProviderAccountStore.getState().defaults[
+        defaultProviderAccountKey("host-1", "claude")
+      ],
+    ).toBe("acct-2");
+    expect(setActiveMock).not.toHaveBeenCalled();
+  });
+
+  it("stores the listed default account as the explicit Default pick", async () => {
+    useDefaultProviderAccountStore.setState({
+      defaults: { [defaultProviderAccountKey("host-1", "claude")]: "acct-2" },
+    });
+    render({ account: account({ id: DEFAULT_ID, name: "default" }) });
+
+    await act(async () => {
+      byTestId(container, "provider-account-make-default")?.click();
+    });
+
+    expect(
+      useDefaultProviderAccountStore.getState().defaults[
+        defaultProviderAccountKey("host-1", "claude")
+      ],
+    ).toBeNull();
   });
 
   it("denies one model by sending the rest of the catalogue", async () => {
