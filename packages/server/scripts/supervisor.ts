@@ -7,6 +7,11 @@ import { resolveFroggHome } from "../src/server/frogg-home.js";
 
 const WORKER_HEARTBEAT_INTERVAL_MS = 1_000;
 const WORKER_TERMINATION_GRACE_MS = 10_000;
+/** First crash-restart delay; doubles per consecutive crash up to the max. */
+const DEFAULT_CRASH_BACKOFF_INITIAL_MS = 1_000;
+const DEFAULT_CRASH_BACKOFF_MAX_MS = 30_000;
+/** A worker that stayed up this long counts as healthy; the next crash starts over. */
+const CRASH_BACKOFF_RESET_AFTER_MS = 60_000;
 
 interface SupervisorLogFileOptions {
   path: string;
@@ -28,6 +33,11 @@ type WorkerLifecycleMessage =
   | {
       type: "frogg:restart";
       reason?: string;
+    }
+  | {
+      type: "frogg:listen-failed";
+      listen: string;
+      message: string;
     };
 
 interface SupervisorHeartbeatMessage {
@@ -55,6 +65,19 @@ interface SupervisorOptions {
   restartOnCrash?: boolean;
   onSupervisorExit?: () => Promise<void> | void;
   logFile?: SupervisorLogFileOptions;
+  /**
+   * Delay between crash restarts. A worker that cannot bind its port (held by
+   * a leftover or foreign daemon) otherwise restarts every second forever.
+   */
+  crashBackoff?: { initialMs: number; maxMs: number };
+}
+
+export function crashRestartDelayMs(
+  consecutiveCrashes: number,
+  backoff: { initialMs: number; maxMs: number },
+): number {
+  if (consecutiveCrashes <= 0) return 0;
+  return Math.min(backoff.maxMs, backoff.initialMs * 2 ** (consecutiveCrashes - 1));
 }
 
 export interface SupervisorController {
@@ -83,6 +106,12 @@ function parseLifecycleMessage(msg: unknown): WorkerLifecycleMessage | null {
       return null;
     }
     return { type: "frogg:ready", listen };
+  }
+  if (type === "frogg:listen-failed") {
+    const listen = (msg as { listen?: unknown }).listen;
+    const message = (msg as { message?: unknown }).message;
+    if (typeof listen !== "string" || typeof message !== "string") return null;
+    return { type: "frogg:listen-failed", listen, message };
   }
   if (type === "frogg:restart") {
     const reason = (msg as { reason?: unknown }).reason;
@@ -131,6 +160,14 @@ export function runSupervisor(options: SupervisorOptions): SupervisorController 
   let shuttingDown = false;
   let exiting = false;
   let forceKillTimer: NodeJS.Timeout | null = null;
+  let restartTimer: NodeJS.Timeout | null = null;
+  let consecutiveCrashes = 0;
+  let workerStartedAt = 0;
+  let lastListenFailure: string | null = null;
+  const crashBackoff = options.crashBackoff ?? {
+    initialMs: DEFAULT_CRASH_BACKOFF_INITIAL_MS,
+    maxMs: DEFAULT_CRASH_BACKOFF_MAX_MS,
+  };
   const logStream = createSupervisorLogStream(options.logFile);
 
   const writeDurableChunk = (chunk: string | Buffer): void => {
@@ -239,6 +276,8 @@ export function runSupervisor(options: SupervisorOptions): SupervisorController 
     }
 
     const spawnSpec = resolveWorkerSpawnSpec?.(workerEntry) ?? null;
+    workerStartedAt = Date.now();
+    lastListenFailure = null;
     writeLifecycleLog("Spawning worker", { workerEntry });
     if (spawnSpec) {
       child = spawn(spawnSpec.command, spawnSpec.args, {
@@ -290,7 +329,17 @@ export function runSupervisor(options: SupervisorOptions): SupervisorController 
         return;
       }
 
+      if (lifecycleMessage.type === "frogg:listen-failed") {
+        lastListenFailure = lifecycleMessage.message;
+        writeLifecycleLog("Worker could not listen", {
+          listen: lifecycleMessage.listen,
+          detail: lifecycleMessage.message,
+        });
+        return;
+      }
+
       if (lifecycleMessage.type === "frogg:ready") {
+        consecutiveCrashes = 0;
         writeLifecycleLog("Worker ready", { listen: lifecycleMessage.listen });
         Promise.resolve(options.onWorkerReady?.({ listen: lifecycleMessage.listen })).catch(
           (error) => {
@@ -330,13 +379,27 @@ export function runSupervisor(options: SupervisorOptions): SupervisorController 
         ((code !== 0 && code !== null) || (signal !== null && signal !== "SIGTERM"));
 
       if (restarting || crashed) {
+        const requested = restarting;
         restarting = false;
+        child = null;
+        if (requested) {
+          log(`Worker exited (${exitDescriptor}). Restarting worker...`);
+          spawnWorker();
+          return;
+        }
+        if (Date.now() - workerStartedAt >= CRASH_BACKOFF_RESET_AFTER_MS) consecutiveCrashes = 0;
+        consecutiveCrashes += 1;
+        const delayMs = crashRestartDelayMs(consecutiveCrashes, crashBackoff);
+        const cause = lastListenFailure ? `: ${lastListenFailure}` : "";
         log(
-          crashed
-            ? `Worker crashed (${exitDescriptor}). Restarting worker...`
-            : `Worker exited (${exitDescriptor}). Restarting worker...`,
+          `Worker crashed (${exitDescriptor})${cause}. Restarting worker in ${
+            Math.round(delayMs / 100) / 10
+          }s (attempt ${consecutiveCrashes})...`,
         );
-        spawnWorker();
+        restartTimer = setTimeout(() => {
+          restartTimer = null;
+          if (!shuttingDown) spawnWorker();
+        }, delayMs);
         return;
       }
 
@@ -398,6 +461,10 @@ export function runSupervisor(options: SupervisorOptions): SupervisorController 
     restarting = false;
     writeLifecycleLog("Supervisor shutdown requested", { reason });
     log(`${reason}. Stopping worker...`);
+    if (restartTimer) {
+      clearTimeout(restartTimer);
+      restartTimer = null;
+    }
     if (!child) {
       exitSupervisor(0);
       return;

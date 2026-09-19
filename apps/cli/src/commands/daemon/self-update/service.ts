@@ -22,6 +22,112 @@ export interface ServiceManager {
   kind: ServiceKind;
   restart(): Promise<void>;
   isRunning(): Promise<boolean>;
+  /**
+   * Stops and disables leftover services of the pre-rename product that
+   * compete for this daemon's listen address. `force` retires them even when
+   * their configured port cannot be matched (the verifier already saw a
+   * foreign daemon on the port). Returns what was retired.
+   */
+  retireConflictingServices?(options?: { force?: boolean }): Promise<string[]>;
+}
+
+// COMPAT(fdeRename): before 0.8 the product was FDE and installed its own
+// service. When both are registered on one port, every restart hands the port
+// to whichever supervisor retries first, and each product's updater then sees
+// the other's version. Remove with legacy-fde-migration.ts.
+export const LEGACY_SYSTEMD_UNITS = ["fde-daemon"];
+export const LEGACY_LAUNCHD_LABELS = ["app.frogg.fde-daemon"];
+
+export interface LegacyServiceDeps {
+  platform: NodeJS.Platform;
+  /** Our listen address (`host:port`), or null when unknown. */
+  listen: string | null;
+  readFile(filePath: string): string | null;
+  run(command: string, args: string[]): { status: number | null; stderr: string };
+  homeDir: string;
+  configHome: string;
+  uid: number;
+  log(line: string): void;
+}
+
+function listenPort(listen: string | null | undefined): string | null {
+  if (!listen) return null;
+  const match = /:(\d+)\s*$/.exec(listen.trim());
+  return match ? match[1]! : null;
+}
+
+/**
+ * `force` (a foreign daemon was seen on our port) still spares a legacy
+ * service whose configured port is known to differ: it cannot be the holder.
+ */
+function legacyServiceConflicts(contents: string, ourPort: string | null, force: boolean): boolean {
+  const configured = /\b(?:FDE|FROGG)_LISTEN=("?)([^"\s<]+)\1/.exec(contents)?.[2] ?? null;
+  const theirPort =
+    listenPort(configured) ??
+    listenPort(/<key>(?:FDE|FROGG)_LISTEN<\/key>\s*<string>([^<]+)<\/string>/.exec(contents)?.[1]);
+  if (force) return theirPort === null || ourPort === null || theirPort === ourPort;
+  return ourPort !== null && theirPort === ourPort;
+}
+
+export async function retireLegacyServices(
+  deps: LegacyServiceDeps,
+  options: { force?: boolean } = {},
+): Promise<string[]> {
+  const ourPort = listenPort(deps.listen);
+  const retired: string[] = [];
+  if (deps.platform === "linux") {
+    for (const unit of LEGACY_SYSTEMD_UNITS) {
+      const file = path.join(deps.configHome, "systemd", "user", `${unit}.service`);
+      const contents = deps.readFile(file);
+      if (contents === null) continue;
+      if (!legacyServiceConflicts(contents, ourPort, options.force === true)) continue;
+      const active = deps.run("systemctl", ["--user", "is-active", "--quiet", unit]).status === 0;
+      const enabled = deps.run("systemctl", ["--user", "is-enabled", "--quiet", unit]).status === 0;
+      if (!active && !enabled) continue;
+      deps.log(
+        `stopping and disabling legacy service ${unit}.service: it competes for ${
+          deps.listen ?? "this daemon's port"
+        } (unit file left at ${file})`,
+      );
+      const result = deps.run("systemctl", ["--user", "disable", "--now", `${unit}.service`]);
+      if (result.status === 0) retired.push(`${unit}.service`);
+      else deps.log(`could not disable ${unit}.service: ${result.stderr.trim()}`);
+    }
+  } else if (deps.platform === "darwin") {
+    for (const label of LEGACY_LAUNCHD_LABELS) {
+      const file = path.join(deps.homeDir, "Library", "LaunchAgents", `${label}.plist`);
+      const contents = deps.readFile(file);
+      if (contents === null) continue;
+      if (!legacyServiceConflicts(contents, ourPort, options.force === true)) continue;
+      const target = `gui/${deps.uid}/${label}`;
+      deps.log(`stopping and disabling legacy launch agent ${label}: it competes for this port`);
+      deps.run("launchctl", ["disable", target]);
+      deps.run("launchctl", ["bootout", target]);
+      retired.push(label);
+    }
+  }
+  return retired;
+}
+
+function defaultLegacyServiceDeps(options: ServiceOptions | undefined): LegacyServiceDeps {
+  return {
+    platform: options?.platform ?? process.platform,
+    listen: options?.listen ?? null,
+    readFile: (filePath) => {
+      try {
+        return readFileSync(filePath, "utf8");
+      } catch {
+        return null;
+      }
+    },
+    run,
+    homeDir: os.homedir(),
+    configHome: process.env.XDG_CONFIG_HOME?.trim() || path.join(os.homedir(), ".config"),
+    uid: process.getuid?.() ?? 501,
+    log: (line) => {
+      if (options) appendSelfUpdateLog(options.installDir, line);
+    },
+  };
 }
 
 export interface ServiceOptions {
@@ -133,6 +239,8 @@ export function createSystemdServiceManager(
       }
     },
     isRunning,
+    retireConflictingServices: (retire) =>
+      retireLegacyServices(defaultLegacyServiceDeps(options), retire),
   };
 }
 
@@ -153,6 +261,8 @@ export function createLaunchdServiceManager(
       }
     },
     isRunning,
+    retireConflictingServices: (retire) =>
+      retireLegacyServices(defaultLegacyServiceDeps(options), retire),
   };
 }
 
@@ -204,6 +314,8 @@ export function createUnmanagedServiceManager(options: UnmanagedServiceOptions):
       const state = resolveLocalDaemonState({ home: options.home });
       return state.running;
     },
+    retireConflictingServices: (retire) =>
+      retireLegacyServices(defaultLegacyServiceDeps(options), retire),
   };
 }
 

@@ -85,7 +85,9 @@ function ProviderSettingsAction({
   const overlayParentLayer = useCurrentOverlayLayer();
   const handlePress = useCallback(() => {
     if (!serverId) return;
-    useProviderSettingsStore.getState().open({ serverId, provider, overlayParentLayer });
+    useProviderSettingsStore
+      .getState()
+      .open({ serverId, provider, overlayParentLayer, surface: "settings" });
   }, [overlayParentLayer, provider, serverId]);
 
   return (

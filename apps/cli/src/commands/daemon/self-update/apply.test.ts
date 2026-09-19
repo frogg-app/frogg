@@ -177,6 +177,147 @@ describe("applyUpdate", () => {
     expect(noPrevious.reason).toMatch(/no previous version/);
   });
 
+  test("a legacy daemon holding the port is retired, not blamed on the bundle (1.5.6 -> 1.5.7 incident)", async () => {
+    const installDir = makeInstallDir();
+    installFakeVersion(installDir, "1.5.6");
+    installFakeVersion(installDir, "1.5.7");
+    setCurrentVersion(installDir, "1.5.6");
+    // The pre-rename FDE service grabs 0.0.0.0:9999 on every restart until it is retired.
+    let legacyActive = true;
+    const retireCalls: Array<{ force?: boolean }> = [];
+    const restarts: string[] = [];
+    const service: ServiceManager = {
+      kind: "systemd",
+      async restart() {
+        restarts.push(readCurrentVersion(installDir) ?? "none");
+      },
+      async isRunning() {
+        return true;
+      },
+      async retireConflictingServices(options) {
+        retireCalls.push(options ?? {});
+        if (!options?.force || !legacyActive) return [];
+        legacyActive = false;
+        return ["fde-daemon.service"];
+      },
+    };
+    const probe = async () =>
+      legacyActive
+        ? { version: "0.6.13", healthy: false, foreign: { product: "fde", brand: "fde" } }
+        : { version: readCurrentVersion(installDir) ?? "", healthy: true };
+
+    const outcome = await applyUpdate(
+      {
+        installDir,
+        version: "1.5.7",
+        previous: "1.5.6",
+        httpBase: "http://127.0.0.1:9999",
+        verifyTimeoutMs: 90_000,
+      },
+      { service, probe, log: () => {}, sleep: immediate },
+    );
+
+    expect(outcome.status).toBe("applied");
+    expect(readCurrentVersion(installDir)).toBe("1.5.7");
+    expect(restarts).toEqual(["1.5.7", "1.5.7"]);
+    expect(retireCalls).toEqual([{ force: false }, { force: true }]);
+  });
+
+  test("restores the known-good version without a verify wait when a foreign daemon keeps the port", async () => {
+    const installDir = makeInstallDir();
+    installFakeVersion(installDir, "1.5.6");
+    installFakeVersion(installDir, "1.5.7");
+    setCurrentVersion(installDir, "1.5.6");
+    const restarts: string[] = [];
+    const service: ServiceManager = {
+      kind: "unmanaged",
+      async restart() {
+        restarts.push(readCurrentVersion(installDir) ?? "none");
+      },
+      async isRunning() {
+        return true;
+      },
+    };
+    let clock = 0;
+    const outcome = await applyUpdate(
+      {
+        installDir,
+        version: "1.5.7",
+        previous: "1.5.6",
+        httpBase: "http://127.0.0.1:9999",
+        verifyTimeoutMs: 90_000,
+      },
+      {
+        service,
+        probe: async () => ({
+          version: "0.6.13",
+          healthy: false,
+          foreign: { product: "fde", brand: "fde" },
+        }),
+        log: () => {},
+        sleep: async () => {
+          clock += 1000;
+        },
+      },
+    );
+    expect(outcome.status).toBe("failed");
+    expect(outcome.reason).toMatch(/another daemon \(fde 0\.6\.13\)/);
+    expect(outcome.reason).toMatch(/restored 1\.5\.6 without verifying it/);
+    expect(outcome.reason).not.toMatch(/rollback to 1\.5\.6 also failed/);
+    // The unverified bundle must not stay `current`: if it were broken, the
+    // host would be stranded on it once the other daemon lets the port go.
+    expect(readCurrentVersion(installDir)).toBe("1.5.6");
+    // One restart into the new version, one back into the known-good one, and
+    // no 90s rollback verify against a port neither can win.
+    expect(restarts).toEqual(["1.5.7", "1.5.6"]);
+  });
+
+  test("a broken bundle behind a retired legacy daemon still rolls back", async () => {
+    const installDir = makeInstallDir();
+    installFakeVersion(installDir, "1.5.6");
+    installFakeVersion(installDir, "1.5.7");
+    setCurrentVersion(installDir, "1.5.6");
+    let legacyActive = true;
+    const restarts: string[] = [];
+    const service: ServiceManager = {
+      kind: "systemd",
+      async restart() {
+        restarts.push(readCurrentVersion(installDir) ?? "none");
+      },
+      async isRunning() {
+        return readCurrentVersion(installDir) !== "1.5.7";
+      },
+      async retireConflictingServices(options) {
+        if (!options?.force || !legacyActive) return [];
+        legacyActive = false;
+        return ["fde-daemon.service"];
+      },
+    };
+    const probe = async () => {
+      if (legacyActive) {
+        return { version: "0.6.13", healthy: false, foreign: { product: "fde", brand: "fde" } };
+      }
+      const version = readCurrentVersion(installDir) ?? "";
+      if (version === "1.5.7") throw new Error("connection refused");
+      return { version, healthy: true };
+    };
+
+    const outcome = await applyUpdate(
+      {
+        installDir,
+        version: "1.5.7",
+        previous: "1.5.6",
+        httpBase: "http://127.0.0.1:9999",
+        verifyTimeoutMs: 3000,
+      },
+      { service, probe, log: () => {}, sleep: immediate },
+    );
+
+    expect(outcome.status).toBe("rolled_back");
+    expect(readCurrentVersion(installDir)).toBe("1.5.6");
+    expect(restarts).toEqual(["1.5.7", "1.5.7", "1.5.6"]);
+  });
+
   test("is safe to re-run once the version is already current", async () => {
     const installDir = makeInstallDir();
     installFakeVersion(installDir, "0.1.13");

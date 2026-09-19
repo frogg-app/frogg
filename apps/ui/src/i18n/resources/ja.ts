@@ -228,13 +228,12 @@ export const ja: TranslationResources = {
         "プロバイダーのアカウント: {{value}}。この会話を別のアカウントへ移動します。",
       transfer: {
         title: "この会話を移動",
-        subtitle: "現在は {{name}} で実行中です。続行するアカウントを選択してください。",
-        warningTitle: "{{name}} はこの会話をまだ見ていません",
-        warningTitleUnselected: "選択したアカウントはこの会話をまだ見ていません",
-        warningBody:
-          "移動すると、{{tokens}} トークンのコンテキスト全体が新規の入力として再送信されます。キャッシュ読み取りにはならず、次のメッセージを送った時点でその入力トークンが課金されます。",
-        warningBodyUnknownTokens:
-          "移動すると、コンテキスト全体が新規の入力として再送信されます。キャッシュ読み取りにはならず、次のメッセージを送った時点でその入力トークンが課金されます。",
+        targetLabel: "移動先",
+        targetPlaceholder: "アカウントを選択",
+        noTargets: "移動できる他のアカウントはありません",
+        cost: "この会話のコンテキストには {{tokens}} トークンあります。別のアカウントに移動すると、そのすべてが新しい入力として再送信され、フル価格（キャッシュなし）で課金されます。",
+        costUnknownTokens:
+          "この会話を別のアカウントに移動すると、コンテキスト全体が新しい入力として再送信され、フル価格（キャッシュなし）で課金されます。",
         confirm: "会話を移動",
         moving: "移動中...",
         failed: "会話を移動できませんでした",
@@ -1148,6 +1147,7 @@ export const ja: TranslationResources = {
         checks: "チェック",
         services: "サービス",
         labels: "ラベル",
+        account: "アカウント",
         diff: "差分統計",
         timestamp: "最終アクティビティ",
       },
@@ -2691,6 +2691,10 @@ export const ja: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "このホストのアドレスで別のデーモン ({{actualServerId}}) が応答しています。このホスト ({{expectedServerId}}) ではありません。もう一方のデーモンを停止するか、アドレスを確認してください。再接続は引き続き試行されます。",
+      },
       appearance: {
         title: "外観",
         name: {

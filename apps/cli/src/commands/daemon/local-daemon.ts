@@ -1,6 +1,6 @@
 import { matchesBrand } from "@frogg/branding/identity";
 import { brand } from "@frogg/branding";
-import { spawnSync, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import { existsSync, readFileSync, unlinkSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -111,8 +111,60 @@ export interface DaemonLaunchRuntime {
   spawnForeground(
     command: string,
     args: string[],
-    options: Parameters<typeof spawnSync>[2],
-  ): ForegroundDaemonProcessResult;
+    options: SpawnOptions,
+  ): ForegroundDaemonProcessResult | Promise<ForegroundDaemonProcessResult>;
+}
+
+const FORWARDED_SIGNALS: NodeJS.Signals[] = ["SIGTERM", "SIGINT", "SIGHUP"];
+const SIGNAL_EXIT_STATUS: Record<string, number> = { SIGINT: 130, SIGTERM: 143 };
+
+/**
+ * Runs the supervisor in the foreground and stays alive until it exits.
+ *
+ * Service managers stop us by signalling this process only (systemd
+ * `KillMode=mixed`, launchd). A blocking `spawnSync` let the default signal
+ * handler kill us at once, so systemd immediately SIGKILLed the supervisor,
+ * worker and agents with no graceful shutdown, and the next start raced the
+ * dying worker for the port. Forward the stop signal and wait instead.
+ */
+export function spawnForegroundForwardingSignals(
+  command: string,
+  args: string[],
+  options: SpawnOptions,
+  target: Pick<NodeJS.Process, "on" | "off" | "platform"> = process,
+): Promise<ForegroundDaemonProcessResult> {
+  return new Promise((resolve) => {
+    let child: ChildProcess;
+    try {
+      child = spawn(command, args, options);
+    } catch (error) {
+      resolve({ status: null, error: error instanceof Error ? error : new Error(String(error)) });
+      return;
+    }
+    const handlers = new Map<NodeJS.Signals, () => void>();
+    for (const signal of FORWARDED_SIGNALS) {
+      if (target.platform === "win32" && signal !== "SIGINT") continue;
+      const handler = () => {
+        // On Windows `kill` is TerminateProcess; the console already delivers
+        // Ctrl+C to the child, so only keep this process alive until it exits.
+        if (target.platform === "win32") return;
+        if (child.exitCode === null && child.signalCode === null) child.kill(signal);
+      };
+      handlers.set(signal, handler);
+      target.on(signal, handler);
+    }
+    const cleanup = () => {
+      for (const [signal, handler] of handlers) target.off(signal, handler);
+    };
+    child.once("error", (error) => {
+      cleanup();
+      resolve({ status: null, error });
+    });
+    child.once("exit", (code, signal) => {
+      cleanup();
+      resolve({ status: code ?? SIGNAL_EXIT_STATUS[signal ?? ""] ?? 1 });
+    });
+  });
 }
 
 const DETACHED_STARTUP_GRACE_MS = 1200;
@@ -129,7 +181,7 @@ const defaultDaemonLaunchRuntime: DaemonLaunchRuntime = {
   resolveRunnerEntry: resolveDaemonRunnerEntry,
   resolveHome: resolveFroggHome,
   spawnDetached: spawnProcess,
-  spawnForeground: spawnSync,
+  spawnForeground: spawnForegroundForwardingSignals,
 };
 
 const startupReady = (): DetachedStartupResult => ({ exitedEarly: false });
@@ -688,17 +740,17 @@ export async function startLocalDaemonDetached(
   };
 }
 
-export function startLocalDaemonForeground(
+export async function startLocalDaemonForeground(
   options: DaemonStartOptions,
   runtime: DaemonLaunchRuntime = defaultDaemonLaunchRuntime,
-): number {
+): Promise<number> {
   if (options.listen && options.port) {
     throw new Error("Cannot use --listen and --port together");
   }
 
   const daemonRunnerEntry = runtime.resolveRunnerEntry();
   const childEnv = buildChildEnv(options);
-  const result = runtime.spawnForeground(
+  const result = await runtime.spawnForeground(
     process.execPath,
     [...process.execArgv, daemonRunnerEntry, ...buildRunnerArgs(options)],
     {

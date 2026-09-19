@@ -7,6 +7,7 @@ import { applyUpdate } from "./apply.js";
 import { resolveInstallDir } from "./layout.js";
 import type { UpdateChannel } from "./releases.js";
 import { runSelfUpdate, type SelfUpdateProgress, type SelfUpdateResult } from "./run.js";
+import { resolveLocalDaemonState } from "../local-daemon.js";
 import { detectServiceManager } from "./service.js";
 
 interface SelfUpdateCommandOptions {
@@ -90,7 +91,8 @@ async function runApply(options: SelfUpdateCommandOptions): Promise<number> {
   const service = detectServiceManager({
     installDir,
     home: options.home,
-    listen: process.env.FROGG_LISTEN?.trim() || null,
+    listen:
+      process.env.FROGG_LISTEN?.trim() || resolveLocalDaemonState({ home: options.home }).listen,
     platform: process.platform,
   });
   const outcome = await applyUpdate(

@@ -90,6 +90,12 @@ export function resolveProviderAccountEnvById(
  * An account id that no longer exists (deleted while a picker was open, or an
  * agent rehydrated after its account was removed) must never fail a launch: it
  * falls back to default resolution and reports the fallback to the caller.
+ *
+ * `resolvedAccountId` is present whenever the provider has an enabled accounts
+ * capability and names the account the overlay actually points at for an
+ * absent `accountId` (the active account id, or `null` for the primary dir).
+ * The agent manager pins it onto the agent so a later change of the daemon-wide
+ * active account cannot silently move an existing conversation.
  */
 export function resolveAgentProviderAccountEnv(
   store: Pick<
@@ -98,14 +104,21 @@ export function resolveAgentProviderAccountEnv(
   >,
   provider: string,
   accountId: string | null | undefined,
-): { env: ProviderAccountEnvOverlay; unknownAccountId?: string } {
+): {
+  env: ProviderAccountEnvOverlay;
+  unknownAccountId?: string;
+  resolvedAccountId?: string | null;
+} {
   const capability = store.getCapability(provider);
   if (!capability || !capability.enabled) {
     return { env: {} };
   }
 
   if (accountId === undefined) {
-    return { env: resolveProviderAccountEnv(store, provider) };
+    return {
+      env: resolveProviderAccountEnv(store, provider),
+      resolvedAccountId: resolveActiveProviderAccountId(store, provider),
+    };
   }
 
   if (accountId === null) {
@@ -113,10 +126,15 @@ export function resolveAgentProviderAccountEnv(
     // the real home, not a home itself, so it must never be used as HOME. The
     // default account simply inherits the daemon's real HOME: an empty overlay.
     if (providerAccountConfigDirMode(capability) === "home") {
-      return { env: {} };
+      return { env: {}, resolvedAccountId: null };
     }
     const primaryDir = store.primaryConfigDir(provider);
-    return primaryDir ? { env: { [capability.configDirEnv]: primaryDir } } : { env: {} };
+    return primaryDir
+      ? {
+          env: { [capability.configDirEnv]: primaryDir },
+          resolvedAccountId: null,
+        }
+      : { env: {}, resolvedAccountId: null };
   }
 
   const account = store.findAccount(accountId);
@@ -125,7 +143,25 @@ export function resolveAgentProviderAccountEnv(
     return { env: resolveProviderAccountEnv(store, provider), unknownAccountId: accountId };
   }
 
-  return { env: { [capability.configDirEnv]: account.configDir } };
+  return {
+    env: { [capability.configDirEnv]: account.configDir },
+    resolvedAccountId: accountId,
+  };
+}
+
+/**
+ * The account an absent `providerAccountId` resolves to right now: the
+ * daemon-wide active account when it still exists for this provider, otherwise
+ * `null` (the primary config dir) — mirroring {@link resolveProviderAccountEnv}.
+ */
+function resolveActiveProviderAccountId(
+  store: Pick<ProviderAccountStore, "activeAccountIds" | "findAccount">,
+  provider: string,
+): string | null {
+  const activeId = store.activeAccountIds()[provider];
+  if (!activeId) return null;
+  const account = store.findAccount(activeId);
+  return account && account.provider === provider ? activeId : null;
 }
 
 /**

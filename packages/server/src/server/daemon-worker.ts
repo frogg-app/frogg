@@ -16,6 +16,7 @@ import {
   findEnabledUnverifiedProviders,
 } from "@frogg/protocol/provider-accounts";
 import { loadPersistedConfig } from "./persisted-config.js";
+import { describePortHolder, findPortHolder, isAddressInUse } from "./port-holder.js";
 
 process.title = `${brand.name} Daemon`;
 
@@ -31,6 +32,11 @@ type SupervisorLifecycleMessage =
   | {
       type: "frogg:restart";
       reason?: string;
+    }
+  | {
+      type: "frogg:listen-failed";
+      listen: string;
+      message: string;
     };
 
 interface BootstrapResult {
@@ -372,6 +378,24 @@ async function main() {
     }
     sendSupervisorLifecycleMessage({ type: "frogg:ready", listen });
   } catch (err) {
+    if (isAddressInUse(err)) {
+      // Name the holder: a leftover worker, the pre-rename FDE service or an
+      // unrelated program. The supervisor backs off and repeats this line.
+      const failure = err as { address?: unknown; port?: unknown };
+      const host = typeof failure.address === "string" ? failure.address : "127.0.0.1";
+      const port = typeof failure.port === "number" ? failure.port : NaN;
+      if (Number.isFinite(port)) {
+        const holder = await findPortHolder(host, port);
+        const message = `${brand.name} cannot listen on ${host}:${port}: ${describePortHolder(holder)}`;
+        logger.fatal({ err, holder }, message);
+        sendSupervisorLifecycleMessage({
+          type: "frogg:listen-failed",
+          listen: `${host}:${port}`,
+          message,
+        });
+        throw err;
+      }
+    }
     logger.fatal({ err }, "Daemon failed to start listening");
     throw err;
   }

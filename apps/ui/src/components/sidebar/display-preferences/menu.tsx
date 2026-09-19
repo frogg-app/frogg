@@ -31,6 +31,7 @@ import {
   Settings2,
   Tag,
   Type,
+  UserRound,
 } from "lucide-react-native";
 import {
   MenuItem,
@@ -125,6 +126,7 @@ const ROW_ITEM_ICONS: Record<SidebarRowItem, OptionIcon> = {
   changeRequest: withUnistyles(GitPullRequest),
   services: withUnistyles(Globe),
   labels: withUnistyles(Tag),
+  account: withUnistyles(UserRound),
 };
 
 // These mark how much of the row an option spends, not what CI is, so they are the shapes each
@@ -169,6 +171,7 @@ const ROW_ITEM_LABEL_KEYS: Record<SidebarRowItem, string> = {
   changeRequest: "sidebar.display.show.changeRequest",
   services: "sidebar.display.show.services",
   labels: "sidebar.display.show.labels",
+  account: "sidebar.display.show.account",
 };
 
 const CHECKS_DISPLAY_LABEL_KEYS: Record<SidebarChecksDisplay, string> = {

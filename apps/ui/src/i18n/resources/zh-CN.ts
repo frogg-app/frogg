@@ -227,13 +227,12 @@ export const zhCN: TranslationResources = {
       pillTransferLabel: "提供方账号：{{value}}。将此对话转移到其他账号。",
       transfer: {
         title: "转移此对话",
-        subtitle: "当前以 {{name}} 运行。请选择要继续使用的账号。",
-        warningTitle: "{{name}} 没有见过这段对话",
-        warningTitleUnselected: "你选择的账号没有见过这段对话",
-        warningBody:
-          "转移会将 {{tokens}} 个 token 的完整上下文作为全新输入重新发送。这些都不算缓存读取，下一条消息发出时就会按输入 token 计费。",
-        warningBodyUnknownTokens:
-          "转移会将完整上下文作为全新输入重新发送。这些都不算缓存读取，下一条消息发出时就会按输入 token 计费。",
+        targetLabel: "移动到",
+        targetPlaceholder: "选择账号",
+        noTargets: "没有可移动到的其他账号",
+        cost: "此对话的上下文中有 {{tokens}} 个 token。将其移动到其他账号会把它们全部作为新输入重新发送，并按全价（无缓存）计费。",
+        costUnknownTokens:
+          "将此对话移动到其他账号会把整个上下文作为新输入重新发送，并按全价（无缓存）计费。",
         confirm: "转移对话",
         moving: "正在转移...",
         failed: "无法转移该对话",
@@ -1124,6 +1123,7 @@ export const zhCN: TranslationResources = {
         checks: "检查",
         services: "服务",
         labels: "标签",
+        account: "账户",
         diff: "差异统计",
         timestamp: "最近活动",
       },
@@ -2621,6 +2621,10 @@ export const zhCN: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "此主机地址上应答的是另一个守护进程 ({{actualServerId}})，而不是此主机 ({{expectedServerId}})。请停止另一个守护进程或检查地址。将继续尝试重新连接。",
+      },
       appearance: {
         title: "外观",
         name: {

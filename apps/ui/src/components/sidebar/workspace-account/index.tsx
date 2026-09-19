@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useProvidersSnapshot } from "@/hooks/use-providers-snapshot";
 import { resolveProviderAccountControlModel } from "@/composer/agent-controls/provider-account";
 import { useWorkspaceAgentTree } from "@/components/sidebar/agents/workspace-tree";
+import { useSidebarRowItems } from "@/components/sidebar/display-preferences/model";
 import { resolveWorkspaceAccountAgent } from "./model";
 
 export { resolveWorkspaceAccountAgent } from "./model";
@@ -46,18 +47,27 @@ export function SidebarWorkspaceAccountIndicator({ serverId }: { serverId: strin
  * The account one agent runs as. Shared by workspace rows and the agent tree under them, so
  * every tab and subagent names its account the same way.
  */
-export function SidebarAccountIndicator({
-  serverId,
-  provider,
-  providerAccountId,
-  showLabel = true,
-}: {
+export function SidebarAccountIndicator(props: SidebarAccountIndicatorProps) {
+  // The "Account" item in the sidebar's Show menu; off skips the snapshot query entirely.
+  const { account } = useSidebarRowItems();
+  if (!account) return null;
+  return <SidebarAccountIndicatorContent {...props} />;
+}
+
+interface SidebarAccountIndicatorProps {
   serverId: string;
   provider: string;
   providerAccountId: string | null | undefined;
   /** The account name to the left of the glyph; off leaves the glyph alone. */
   showLabel?: boolean;
-}) {
+}
+
+function SidebarAccountIndicatorContent({
+  serverId,
+  provider,
+  providerAccountId,
+  showLabel = true,
+}: SidebarAccountIndicatorProps) {
   const { t } = useTranslation();
   // Home scope rather than the agent's cwd: accounts are a property of the provider on the
   // daemon, not of the directory, and one shared query key keeps every row in the sidebar on
@@ -97,9 +107,6 @@ export function SidebarAccountIndicator({
             </Text>
           ) : null}
           <Icon size={12} color={color} />
-          <Text style={styles.name} numberOfLines={1}>
-            {model.displayLabel}
-          </Text>
         </View>
       </TooltipTrigger>
       <TooltipContent side="top" align="center" offset={8}>

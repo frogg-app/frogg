@@ -103,7 +103,10 @@ describe("local daemon launch supervision", () => {
   test("foreground start spawns supervisor-entrypoint instead of server/index", async () => {
     const runtime = new FakeDaemonRuntime();
 
-    const status = startLocalDaemonForeground({ home: "/tmp/frogg-test", relay: false }, runtime);
+    const status = await startLocalDaemonForeground(
+      { home: "/tmp/frogg-test", relay: false },
+      runtime,
+    );
 
     expect(status).toBe(0);
     expect(runtime.recordedLaunches.map((launch) => launch.mode)).toEqual(["foreground"]);
@@ -138,7 +141,7 @@ describe("local daemon launch supervision", () => {
   test("relay TLS flag is passed to the supervised daemon", async () => {
     const runtime = new FakeDaemonRuntime();
 
-    const status = startLocalDaemonForeground(
+    const status = await startLocalDaemonForeground(
       {
         home: "/tmp/frogg-test",
         relayUseTls: true,
@@ -157,7 +160,7 @@ describe("local daemon launch supervision", () => {
   test("web UI flag is passed to the supervised daemon", async () => {
     const runtime = new FakeDaemonRuntime();
 
-    const status = startLocalDaemonForeground(
+    const status = await startLocalDaemonForeground(
       {
         home: "/tmp/frogg-test",
         webUi: true,
@@ -176,7 +179,7 @@ describe("local daemon launch supervision", () => {
   test("no-web UI flag is passed to the supervised daemon", async () => {
     const runtime = new FakeDaemonRuntime();
 
-    const status = startLocalDaemonForeground(
+    const status = await startLocalDaemonForeground(
       {
         home: "/tmp/frogg-test",
         webUi: false,
@@ -211,4 +214,33 @@ describe("local daemon launch supervision", () => {
     expect(state.relayUseTls).toBe(false);
     expect(state.relayPublicUseTls).toBe(true);
   });
+});
+
+describe("foreground start under a service manager", () => {
+  test.skipIf(process.platform === "win32")(
+    "forwards the stop signal and waits for the supervisor to finish shutting down",
+    async () => {
+      const { spawnForegroundForwardingSignals } = await import("./local-daemon.js");
+      const target = Object.assign(new EventEmitter(), { platform: process.platform });
+      const script = `
+        process.on("SIGTERM", () => setTimeout(() => process.exit(7), 300));
+        setInterval(() => {}, 1000);
+      `;
+      const pending = spawnForegroundForwardingSignals(
+        process.execPath,
+        ["-e", script],
+        { stdio: ["ignore", "ignore", "inherit"] },
+        target as never,
+      );
+      expect(target.listenerCount("SIGTERM")).toBe(1);
+      // Let the child install its SIGTERM handler.
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const startedAt = Date.now();
+      target.emit("SIGTERM");
+      const result = await pending;
+      expect(result.status).toBe(7);
+      expect(Date.now() - startedAt).toBeGreaterThanOrEqual(250);
+      expect(target.listenerCount("SIGTERM")).toBe(0);
+    },
+  );
 });

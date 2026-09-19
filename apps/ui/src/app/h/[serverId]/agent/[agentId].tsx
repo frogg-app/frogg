@@ -1,3 +1,4 @@
+import { describeHostConnectionError } from "@/runtime/host-connection-error";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { HostRouteBootstrapBoundary } from "@/components/host-route-bootstrap-boundary";
@@ -145,7 +146,7 @@ function HostAgentReadyRouteContent() {
       <AgentRouteResolutionView
         resolution={resolution}
         hostName={hostName}
-        lastHostError={runtimeSnapshot?.lastError ?? null}
+        lastHostError={describeHostConnectionError(runtimeSnapshot)}
         onRetry={handleRetry}
         onManageHost={handleManageHost}
         onBack={handleBack}

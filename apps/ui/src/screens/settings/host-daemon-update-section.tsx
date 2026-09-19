@@ -22,6 +22,7 @@ import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
 import type { HostProfile } from "@/types/host-connection";
 import { hasDaemonReconnectedAfter, type DaemonConnectionMarker } from "./daemon-reconnect";
+import { effectiveLastUpdateResult } from "./daemon-update-outcome";
 import { useDaemonUpdateCheck, type CheckState, type RunState } from "./host-daemon-update-state";
 
 /**
@@ -96,7 +97,7 @@ function RunAlerts({
   status: StatusPayload | null;
 }) {
   const { t } = useTranslation();
-  const lastResult = status?.lastResult ?? null;
+  const lastResult = effectiveLastUpdateResult(status);
   return (
     <>
       {run.kind === "error" ? (

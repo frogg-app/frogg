@@ -183,12 +183,18 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
               </Text>
             ) : null}
           </View>
+          {/* Right to left: the account, then any other metadata. The disclosure beside
+              the row is a control, not metadata, and stays outermost. */}
+          {hasChildren ? (
+            <Text style={styles.detail} testID={`sidebar-agent-child-count-${node.row.id}`}>
+              {node.children.length}
+            </Text>
+          ) : null}
           <SidebarAccountIndicator
             serverId={node.serverId}
             provider={node.row.provider}
             providerAccountId={node.providerAccountId}
           />
-          {hasChildren ? <Text style={styles.detail}>{node.children.length}</Text> : null}
         </Pressable>
         {canExpand ? (
           <Button

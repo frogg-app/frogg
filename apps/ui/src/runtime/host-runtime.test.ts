@@ -1,7 +1,9 @@
+import { brandIdentity } from "@frogg/branding";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   DaemonClient,
   ConnectionState,
+  DaemonClientErrorInfo,
   FetchAgentsEntry,
   FetchAgentsOptions,
 } from "@frogg/client/internal/daemon-client";
@@ -124,6 +126,12 @@ class FakeDaemonClient {
     return () => {
       this.listeners.delete(listener);
     };
+  }
+
+  public errorInfo: DaemonClientErrorInfo | null = null;
+
+  get lastErrorInfo(): DaemonClientErrorInfo | null {
+    return this.errorInfo;
   }
 
   get lastError(): string | null {
@@ -885,6 +893,43 @@ describe("HostRuntimeController", () => {
     expect(activeClient.isDisposed()).toBe(false);
   });
 
+  it.each([
+    {
+      name: "another product",
+      brand: { id: "fde", name: "FDE", applicationId: "app.fde" },
+      adopts: false,
+    },
+    { name: "this product", brand: brandIdentity, adopts: true },
+  ])("a local placeholder adopts a probed serverId only from $name", async ({ brand, adopts }) => {
+    const direct: HostConnection = {
+      id: "direct:127.0.0.1:9999",
+      type: "directTcp",
+      endpoint: "127.0.0.1:9999",
+    };
+    const reconciled: Array<[string, string]> = [];
+    const controller = new HostRuntimeController({
+      host: makeHost({
+        serverId: "local:127.0.0.1:9999",
+        connections: [direct],
+        preferredConnectionId: direct.id,
+      }),
+      deps: {
+        createClient: () => new FakeDaemonClient() as unknown as DaemonClient,
+        connectToDaemon: async () => ({
+          client: makeConnectedProbeClient(5) as unknown as DaemonClient,
+          serverId: "srv_first_answer",
+          hostname: "box",
+          brand,
+        }),
+        getClientId: async () => "cid_test_runtime",
+      },
+      onReconcileServerId: (oldId, newId) => reconciled.push([oldId, newId]),
+    });
+    await controller.runProbeCycleNow();
+    expect(reconciled).toEqual(adopts ? [["local:127.0.0.1:9999", "srv_first_answer"]] : []);
+    await controller.stop?.();
+  });
+
   it("does not mark the live connection unavailable before its first heartbeat resolves", async () => {
     useHostRuntimeClock();
     const direct: HostConnection = {
@@ -1078,6 +1123,32 @@ describe("HostRuntimeController", () => {
     expect(latest?.connectionStatus).toBe("error");
     expect(latest?.lastError).toBe("transport closed");
     unsubscribe();
+  });
+
+  it("carries the structured serverId-mismatch detail onto the snapshot", async () => {
+    const clients: FakeDaemonClient[] = [];
+    const controller = new HostRuntimeController({
+      host: makeHost(),
+      deps: makeDeps({ "direct:lan:9999": 12, "relay:relay.example.com:443": 65 }, clients),
+    });
+    await controller.start({ autoProbe: false });
+    const reason = "This address is now answered by a different daemon (srv_b), not this host.";
+    const info = {
+      code: "server_identity_mismatch" as const,
+      expectedServerId: "srv_a",
+      actualServerId: "srv_b",
+    };
+    clients[0]!.errorInfo = info;
+    clients[0]!.setConnectionState({ status: "disconnected", reason });
+    expect(controller.getSnapshot()).toMatchObject({
+      connectionStatus: "error",
+      lastError: reason,
+      lastErrorInfo: info,
+    });
+
+    clients[0]!.errorInfo = null;
+    clients[0]!.setConnectionState({ status: "connected" });
+    expect(controller.getSnapshot().lastErrorInfo).toBeNull();
   });
 
   it("preserves transport disconnect reasons on the runtime snapshot", async () => {

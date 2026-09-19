@@ -44,6 +44,7 @@ async function restartAndVerify(
   } catch (error) {
     return {
       ok: false,
+      kind: "not_running",
       reason: `restart failed: ${error instanceof Error ? error.message : error}`,
     };
   }
@@ -61,6 +62,66 @@ async function restartAndVerify(
     },
     deps.probe,
   );
+}
+
+async function retireConflicts(
+  deps: ApplyDependencies,
+  log: (line: string) => void,
+  force: boolean,
+): Promise<number> {
+  if (!deps.service.retireConflictingServices) return 0;
+  try {
+    const retired = await deps.service.retireConflictingServices({ force });
+    if (retired.length > 0) log(`retired competing services: ${retired.join(", ")}`);
+    return retired.length;
+  } catch (error) {
+    log(`could not retire competing services: ${error instanceof Error ? error.message : error}`);
+    return 0;
+  }
+}
+
+function restorePrevious(
+  plan: ApplyPlan,
+  previous: string,
+  log: (line: string) => void,
+): "restored" | "failed" {
+  try {
+    setCurrentVersion(plan.installDir, previous);
+    log(`restored current -> ${previous}`);
+    return "restored";
+  } catch (error) {
+    log(`could not restore ${previous}: ${error instanceof Error ? error.message : error}`);
+    return "failed";
+  }
+}
+
+/**
+ * Another daemon still owns the port, so the new bundle was never tested.
+ * Waiting on a rollback verify is pointless (the same foreign daemon answers
+ * for any version), but keeping an unverified bundle as `current` could strand
+ * the host on a broken release once the port frees up. Put the version that
+ * was demonstrably running back without waiting; it binds as soon as the other
+ * daemon stops, and auto-update retries later. Returns what was kept.
+ */
+async function restoreBehindForeignListener(
+  plan: ApplyPlan,
+  deps: ApplyDependencies,
+  previous: string | null,
+  log: (line: string) => void,
+): Promise<string> {
+  if (
+    !previous ||
+    previous === plan.version ||
+    restorePrevious(plan, previous, log) !== "restored"
+  ) {
+    return `kept ${plan.version} installed (the port is held by another daemon)`;
+  }
+  try {
+    await deps.service.restart();
+  } catch (error) {
+    log(`restart into ${previous} failed: ${error instanceof Error ? error.message : error}`);
+  }
+  return `restored ${previous} without verifying it (the port is held by another daemon)`;
 }
 
 export async function applyUpdate(plan: ApplyPlan, deps: ApplyDependencies): Promise<ApplyOutcome> {
@@ -99,8 +160,26 @@ export async function applyUpdate(plan: ApplyPlan, deps: ApplyDependencies): Pro
     });
   }
 
+  await retireConflicts(deps, log, false);
   log(`restarting daemon into ${plan.version}`);
-  const verified = await restartAndVerify(plan, deps, plan.version, log);
+  let verified = await restartAndVerify(plan, deps, plan.version, log);
+  if (!verified.ok && verified.kind === "foreign_listener") {
+    log(`update to ${plan.version} blocked: ${verified.reason}`);
+    if ((await retireConflicts(deps, log, true)) > 0) {
+      log(`restarting daemon into ${plan.version} after retiring the competing service`);
+      verified = await restartAndVerify(plan, deps, plan.version, log);
+    }
+  }
+  if (!verified.ok && verified.kind === "foreign_listener") {
+    const kept = await restoreBehindForeignListener(plan, deps, previous, log);
+    return finish({
+      from,
+      to: plan.version,
+      status: "failed",
+      reason: `${verified.reason}; ${kept}`,
+      at: now().toISOString(),
+    });
+  }
   if (verified.ok) {
     // A retained execution service may still load code from any older release.
     log(

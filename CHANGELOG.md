@@ -40,6 +40,12 @@
 
 ## Unreleased
 
+- An agent started without choosing a provider account now stays on the
+  account that was active when it started. Previously it followed the
+  daemon-wide active account at every launch, so switching accounts and then
+  reopening an old conversation silently ran it on the new account and re-sent
+  its whole context uncached, while the account pill named the wrong account.
+  Existing agents are pinned to the active account the next time they launch.
 - A provider sheet's account tab shows that account's own usage, read from its
   own config directory, instead of showing the account in use's figures on
   every tab and nothing at all on the others.
@@ -65,6 +71,28 @@
 - An account can set a default model and thinking level for new agents, a
   colour and nickname, and a system prompt the daemon appends to every agent
   launched as that account.
+- Daemon self-update no longer fails, or rolls back a healthy release, when a
+  leftover pre-rename `fde-daemon` service on the same port wins the restart
+  race. The updater now recognises another daemon answering on its address,
+  stops and disables a legacy FDE service on that port, and retries; if the
+  port stays foreign it restores the version that was running instead of
+  blaming the new bundle. A failed or rolled-back record for the version that
+  is now running reports as applied.
+- The daemon's foreground start forwards the service manager's stop signal and
+  waits for its supervisor, so stopping or restarting the service shuts the
+  worker down gracefully instead of killing everything at once.
+- When the daemon cannot bind its port, the log names who holds it (daemon
+  product, version and server id, and pid and process name where available),
+  and worker crash restarts back off from 1 s to 30 s.
+- Automatic updates back off per version: after a failed attempt the next try
+  waits one check interval, doubling after each further failure up to seven
+  days, and the count survives the restarts each attempt causes. It resets
+  when a newer release appears or the update succeeds. **Update now** is never
+  held back.
+- The app refuses a different daemon answering on a saved host's address and
+  keeps retrying until the host's own daemon is back. The host page shows why,
+  in the app's language, right under the host's status. A local placeholder
+  host now only adopts the server id of a daemon of this app's own product.
 
 ## 1.5.5 — 2026-09-19
 

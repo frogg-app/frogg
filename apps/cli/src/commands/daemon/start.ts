@@ -92,7 +92,7 @@ export async function runStart(
     return;
   }
   try {
-    const status = runtime.startForeground(options);
+    const status = await runtime.startForeground(options);
     if (status !== 0 && reportAlreadyRunning(options, runtime)) return;
     runtime.exit(status);
   } catch (err) {

@@ -230,13 +230,12 @@ export const fr: TranslationResources = {
         "Compte du fournisseur : {{value}}. Déplacez cette conversation vers un autre compte.",
       transfer: {
         title: "Déplacer cette conversation",
-        subtitle: "Exécutée en tant que {{name}}. Choisissez le compte avec lequel continuer.",
-        warningTitle: "{{name}} n'a jamais vu cette conversation",
-        warningTitleUnselected: "Le compte que vous choisirez n'a jamais vu cette conversation",
-        warningBody:
-          "La déplacer renvoie tout le contexte de {{tokens}} jetons en entrée neuve. Rien n'est compté comme lecture de cache, et ces jetons d'entrée vous sont facturés dès l'envoi du message suivant.",
-        warningBodyUnknownTokens:
-          "La déplacer renvoie tout le contexte en entrée neuve. Rien n'est compté comme lecture de cache, et ces jetons d'entrée vous sont facturés dès l'envoi du message suivant.",
+        targetLabel: "Déplacer vers",
+        targetPlaceholder: "Choisissez un compte",
+        noTargets: "Aucun autre compte vers lequel la déplacer",
+        cost: "Cette conversation contient {{tokens}} tokens de contexte. La déplacer vers un autre compte les renvoie tous comme nouvelle entrée, facturée au prix plein (sans cache).",
+        costUnknownTokens:
+          "Déplacer cette conversation vers un autre compte renvoie tout son contexte comme nouvelle entrée, facturée au prix plein (sans cache).",
         confirm: "Déplacer la conversation",
         moving: "Déplacement...",
         failed: "Impossible de déplacer la conversation",
@@ -1167,6 +1166,7 @@ export const fr: TranslationResources = {
         checks: "Vérifications",
         services: "Services",
         labels: "Libellés",
+        account: "Compte",
         diff: "Statistiques de diff",
         timestamp: "Dernière activité",
       },
@@ -2728,6 +2728,10 @@ export const fr: TranslationResources = {
       },
     },
     host: {
+      connectionErrors: {
+        serverIdentityMismatch:
+          "Un autre daemon ({{actualServerId}}) répond à l'adresse de cet hôte, pas cet hôte ({{expectedServerId}}). Arrêtez l'autre daemon ou vérifiez l'adresse. La reconnexion continue d'essayer.",
+      },
       appearance: {
         title: "Apparence",
         name: {
