@@ -712,7 +712,6 @@ describe("translation resources", () => {
     expect(en.message.attachments.textAttachment).toBe("Text attachment");
     expect(en.composer.attachments.element).toBe("Element");
     expect(en.workspace.hoverCard.scriptsAccessibility).toBe("Session scripts");
-    expect(en.branchSwitcher.restoreStashTitle).toBe("Restore stashed changes?");
     expect(en.branchSwitcher.stashRestored).toBe("Stashed changes restored");
     expect(en.agentAutocomplete.searchingWorkspace).toBe("Searching session...");
     expect(en.agentAutocomplete.noCommands).toBe("No commands found");

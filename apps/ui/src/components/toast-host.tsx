@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { Animated, Easing, Platform, Text, ToastAndroid, View } from "react-native";
+import { Animated, Easing, Platform, Pressable, Text, ToastAndroid, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -8,6 +8,7 @@ import { useIsCompactFormFactor } from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react-native";
 import { getOverlayRoot, OVERLAY_Z } from "@/lib/overlay-root";
+import type { Theme } from "@/styles/theme";
 import {
   HEADER_INNER_HEIGHT,
   HEADER_INNER_HEIGHT_MOBILE,
@@ -16,8 +17,15 @@ import {
 
 export type ToastVariant = "default" | "info" | "success" | "warning" | "error";
 
+export interface ToastAction {
+  label: string;
+  onPress: () => void;
+}
+
 export interface ToastShowOptions {
   icon?: ReactNode;
+  /** An optional affordance rendered in the toast. Pressing it dismisses the toast. */
+  action?: ToastAction;
   variant?: ToastVariant;
   durationMs?: number | null;
   nativeAndroid?: boolean;
@@ -32,6 +40,7 @@ export interface ToastState {
   variant: ToastVariant;
   durationMs: number | null;
   testID?: string;
+  action?: ToastAction;
 }
 
 export interface ToastApi {
@@ -80,6 +89,7 @@ export function useToastHost(): {
       variant,
       durationMs,
       testID: options?.testID,
+      ...(options?.action ? { action: options.action } : {}),
     });
   }, []);
 
@@ -101,6 +111,40 @@ export function useToastHost(): {
   }, []);
 
   return { api, toast, dismiss };
+}
+
+/** The icon a variant carries when the caller did not supply one of its own. */
+function defaultIconFor(variant: ToastVariant, theme: Theme): ReactNode {
+  if (variant === "info") return <Info size={18} color={theme.colors.palette.blue[300]} />;
+  if (variant === "success") return <CheckCircle2 size={18} color={theme.colors.primary} />;
+  if (variant === "warning") {
+    return <AlertTriangle size={18} color={theme.colors.palette.amber[500]} />;
+  }
+  if (variant === "error") return <AlertTriangle size={18} color={theme.colors.destructive} />;
+  return null;
+}
+
+/**
+ * Pressing the action dismisses the toast before running the handler: the handler may
+ * open a dialog or navigate, and a toast still counting down over the top of that reads
+ * as a stray artifact.
+ */
+function ToastActionButton({ action, onDone }: { action: ToastAction; onDone: () => void }) {
+  const handlePress = useCallback(() => {
+    onDone();
+    action.onPress();
+  }, [action, onDone]);
+
+  return (
+    <Pressable
+      testID="app-toast-action"
+      accessibilityRole="button"
+      style={styles.actionSlot}
+      onPress={handlePress}
+    >
+      <Text style={styles.actionLabel}>{action.label}</Text>
+    </Pressable>
+  );
 }
 
 export function ToastViewport({
@@ -251,17 +295,7 @@ export function ToastViewport({
     return null;
   }
 
-  let defaultIcon: ReactNode = null;
-  if (toast.variant === "info") {
-    defaultIcon = <Info size={18} color={theme.colors.palette.blue[300]} />;
-  } else if (toast.variant === "success") {
-    defaultIcon = <CheckCircle2 size={18} color={theme.colors.primary} />;
-  } else if (toast.variant === "warning") {
-    defaultIcon = <AlertTriangle size={18} color={theme.colors.palette.amber[500]} />;
-  } else if (toast.variant === "error") {
-    defaultIcon = <AlertTriangle size={18} color={theme.colors.destructive} />;
-  }
-  const icon = toast.icon ?? defaultIcon;
+  const icon = toast.icon ?? defaultIconFor(toast.variant, theme);
 
   const content = (
     <View style={styles.container} pointerEvents="box-none">
@@ -282,6 +316,7 @@ export function ToastViewport({
             {toast.content}
           </View>
         )}
+        {toast.action ? <ToastActionButton action={toast.action} onDone={animateOut} /> : null}
       </Animated.View>
     </View>
   );
@@ -335,6 +370,17 @@ const styles = StyleSheet.create((theme) => ({
   contentSlot: {
     flexShrink: 1,
     minWidth: 0,
+  },
+  actionSlot: {
+    flexShrink: 0,
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: theme.spacing[1],
+    borderRadius: theme.borderRadius.md,
+  },
+  actionLabel: {
+    color: theme.colors.primary,
+    fontSize: theme.fontSize.sm,
+    fontWeight: "600",
   },
   message: {
     flexShrink: 1,

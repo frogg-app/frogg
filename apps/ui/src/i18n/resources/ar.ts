@@ -1551,10 +1551,8 @@ export const ar: TranslationResources = {
     stashAndSwitch: "خبأ والتبديل",
     failedToStash: "فشل في تخزين التغييرات",
     failedToSwitch: "فشل في تبديل الفرع",
-    restoreStashTitle: "هل تريد استعادة التغييرات المخبأة؟",
     restoreStashMessage: "قام هذا الفرع بتخزين التغييرات من جلسة سابقة. هل ترغب في استعادتها؟",
     restore: "يعيد",
-    later: "لاحقاً",
     stashRestored: "تمت استعادة التغييرات المخفية",
   },
   agentAutocomplete: {
@@ -2801,8 +2799,6 @@ export const ar: TranslationResources = {
         title: "مهارات التنسيق",
         description: "قم بتعليم عملائك كيفية التنسيق من خلال CLI",
         updateAvailable: "التحديث متاح",
-        updateTitle: "تحديث مهارات {{brandName}} ؟",
-        updateFallback: "مزامنة المهارات المجمعة لجهازك.",
         uninstallTitle: "إلغاء تثبيت مهارات {{brandName}} ؟",
         uninstallMessage:
           "يزيل جميع مهارات تنسيق {{brandName}} من ~/.agents ، ~/.claude ، ~/.codex.",
@@ -2980,10 +2976,6 @@ export const ar: TranslationResources = {
         restart: {
           title: "إعادة تشغيل البرنامج الخفي",
           hint: "إعادة تشغيل عملية البرنامج الخفي. سيتم إعادة الاتصال بالتطبيق تلقائيًا",
-          confirm: "إعادة التشغيل",
-          confirmTitle: "أعد تشغيل{{name}}",
-          confirmMessage:
-            "سيؤدي هذا إلى إعادة تشغيل البرنامج الخفي. سيستمر العملاء الذين يعملون عليه؛ سيتم إعادة الاتصال بالتطبيق تلقائيًا.",
           restarting: "جارٍ إعادة التشغيل...",
           unableToReconnectTitle: "غير قادر على إعادة الاتصال",
           unableToReconnectMessage: "لم يعد{{name}}متصلاً بالإنترنت. يرجى التحقق من إعادة تشغيله.",
@@ -2996,7 +2988,6 @@ export const ar: TranslationResources = {
           requestFailedTitle: "خطأ",
           requestFailedMessage:
             "فشل في إرسال طلب إعادة التشغيل.  يقوم {{brandName}} بإعادة الاتصال تلقائيًا - حاول مرة أخرى بمجرد ظهور المضيف على أنه متصل بالإنترنت.",
-          dialogFailedMessage: "غير قادر على فتح مربع حوار تأكيد إعادة التشغيل.",
         },
         selfUpdate: {
           title: "تحديثات البرنامج الخفي",
@@ -3011,10 +3002,8 @@ export const ar: TranslationResources = {
           checkFailed: "تعذر التحقق من التحديثات: {{error}}",
           notUpdatable: "لا يمكن لهذا البرنامج الخفي تحديث نفسه",
           update: "تحديث البرنامج الخفي إلى {{version}}",
-          confirmTitle: "تحديث {{name}} إلى {{version}}",
-          confirmMessage:
+          updateNote:
             "يعيد البرنامج الخفي التشغيل بالإصدار الجديد؛ وتتوقف الوكلاء العاملة لفترة وجيزة. إذا فشل الإصدار الجديد في البدء، يُستعاد الإصدار السابق تلقائيًا.",
-          confirm: "تحديث",
           reconnecting: "جارٍ إعادة تشغيل البرنامج الخفي وانتظار عودته...",
           unableToReconnect: "لم يعد {{name}} إلى الاتصال. راجع self-update.log على المضيف.",
           startFailedTitle: "فشل التحديث",
@@ -3045,10 +3034,6 @@ export const ar: TranslationResources = {
             "يدير {{brandName}} Desktop هذا البرنامج الخفي. حدّث {{brandName}} Desktop على المضيف.",
           title: "Update daemon",
           hint: "Update the daemon to the latest version and restart it",
-          confirm: "Update",
-          confirmTitle: "Update {{name}}",
-          confirmMessage:
-            "This will update the daemon to the latest version and restart it. Running agents will be briefly interrupted.",
           updating: "Updating...",
           phaseStarting: "Preparing update...",
           phaseDownloading: "Downloading packages...",
@@ -3064,7 +3049,6 @@ export const ar: TranslationResources = {
           offlineMessage: "This host is offline. Wait until it is back online before updating.",
           requestFailedTitle: "Update failed",
           requestFailedMessage: "Failed to update the daemon: {{error}}",
-          dialogFailedMessage: "Unable to open the update confirmation dialog.",
         },
         dangerZone: "منطقة الخطر",
         remove: {

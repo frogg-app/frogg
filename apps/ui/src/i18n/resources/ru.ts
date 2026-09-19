@@ -1580,11 +1580,9 @@ export const ru: TranslationResources = {
     stashAndSwitch: "Убрать в stash и переключиться",
     failedToStash: "Не удалось убрать изменения в stash",
     failedToSwitch: "Не удалось переключить ветку",
-    restoreStashTitle: "Восстановить изменения из stash?",
     restoreStashMessage:
       "В этой ветке есть изменения из предыдущей сессии, сохранённые в stash. Восстановить их?",
     restore: "Восстановить",
-    later: "Позже",
     stashRestored: "Изменения из stash восстановлены.",
   },
   agentAutocomplete: {
@@ -2854,8 +2852,6 @@ export const ru: TranslationResources = {
         unavailable: "Подключитесь к этому хосту, чтобы управлять навыками оркестрации",
         unsupported: "Обновите этот хост, чтобы управлять навыками оркестрации",
         updateAvailable: "Доступно обновление",
-        updateTitle: "Обновить навыки {{brandName}}?",
-        updateFallback: "Встроенные навыки будут синхронизированы с этим хостом.",
         uninstallTitle: "Удалить навыки {{brandName}}?",
         uninstallMessage:
           "Удаляет все навыки оркестрации {{brandName}} из ~/.agents, ~/.claude и ~/.codex на этом хосте.",
@@ -3036,10 +3032,6 @@ export const ru: TranslationResources = {
         restart: {
           title: "Перезапустить демон",
           hint: "Перезапускает процесс демона. Приложение автоматически переподключится",
-          confirm: "Перезапустить",
-          confirmTitle: "Перезапустить {{name}}",
-          confirmMessage:
-            "Это перезапустит демон. Агенты, работающие на нём, продолжат работу, а приложение автоматически переподключится.",
           restarting: "Перезапуск...",
           unableToReconnectTitle: "Не удалось переподключиться",
           unableToReconnectMessage:
@@ -3053,7 +3045,6 @@ export const ru: TranslationResources = {
           requestFailedTitle: "Ошибка",
           requestFailedMessage:
             "Не удалось отправить запрос на перезапуск. {{brandName}} переподключается автоматически. Повторите попытку, когда хост появится в сети.",
-          dialogFailedMessage: "Не удалось открыть диалог подтверждения перезапуска.",
         },
         selfUpdate: {
           title: "Обновления демона",
@@ -3068,10 +3059,8 @@ export const ru: TranslationResources = {
           checkFailed: "Не удалось проверить обновления: {{error}}",
           notUpdatable: "Этот демон не может обновить себя сам",
           update: "Обновить демон до {{version}}",
-          confirmTitle: "Обновить {{name}} до {{version}}",
-          confirmMessage:
+          updateNote:
             "Демон перезапустится на новую версию; работающие агенты ненадолго прервутся. Если новая версия не запустится, предыдущая будет восстановлена автоматически.",
-          confirm: "Обновить",
           reconnecting: "Перезапуск демона, ожидание его возвращения...",
           unableToReconnect: "{{name}} не вернулся в сеть. Проверьте self-update.log на хосте.",
           startFailedTitle: "Обновление не удалось",
@@ -3102,10 +3091,6 @@ export const ru: TranslationResources = {
             "Этот демон управляется {{brandName}} Desktop. Обновите {{brandName}} Desktop на хосте.",
           title: "Обновить демон",
           hint: "Обновить демон до последней версии и перезапустить его",
-          confirm: "Обновить",
-          confirmTitle: "Обновить {{name}}",
-          confirmMessage:
-            "Демон будет обновлён до последней версии и перезапущен. Работа агентов будет ненадолго прервана.",
           updating: "Обновление...",
           phaseStarting: "Подготовка обновления...",
           phaseDownloading: "Загрузка пакетов...",
@@ -3121,7 +3106,6 @@ export const ru: TranslationResources = {
           offlineMessage: "Этот хост не в сети. Дождитесь его появления в сети перед обновлением.",
           requestFailedTitle: "Не удалось обновить",
           requestFailedMessage: "Не удалось обновить демон: {{error}}",
-          dialogFailedMessage: "Не удалось открыть диалог подтверждения обновления.",
         },
         dangerZone: "Опасная зона",
         remove: {

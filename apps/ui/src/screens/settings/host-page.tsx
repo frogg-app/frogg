@@ -658,40 +658,22 @@ function RestartDaemonCard({ host }: { host: HostProfile }) {
       return;
     }
 
-    void confirmDialog({
-      title: t("settings.host.daemon.restart.confirmTitle", {
-        name: host.label,
-      }),
-      message: t("settings.host.daemon.restart.confirmMessage"),
-      confirmLabel: t("settings.host.daemon.restart.confirm"),
-      cancelLabel: t("common.actions.cancel"),
-      destructive: true,
-    })
-      .then((confirmed) => {
-        if (!confirmed) return;
-        setIsRestarting(true);
-        const restartRequest = restartDaemonFromSettings(
-          host.serverId,
-          `settings_daemon_restart_${host.serverId}`,
-          {
-            getIsElectron: shouldUseDesktopDaemon,
-            getDesktopDaemonStatus,
-            getDesktopSettings: loadDesktopSettings,
-            restartDesktopDaemon,
-            restartServer: (reason) => daemonClient.restartServer(reason),
-          },
-        );
-        void waitForDaemonRestart(restartRequest);
-        return;
-      })
-      .catch((error) => {
-        console.error(`[HostPage] Failed to open restart confirmation for ${host.label}`, error);
-        Alert.alert(
-          t("settings.host.daemon.restart.requestFailedTitle"),
-          t("settings.host.daemon.restart.dialogFailedMessage"),
-        );
-      });
-  }, [daemonClient, host.label, host.serverId, isHostConnected, t, waitForDaemonRestart]);
+    // No confirmation: a restart loses nothing. Agents on the daemon keep running and the
+    // app reconnects by itself, which is exactly what the row's hint already says.
+    setIsRestarting(true);
+    const restartRequest = restartDaemonFromSettings(
+      host.serverId,
+      `settings_daemon_restart_${host.serverId}`,
+      {
+        getIsElectron: shouldUseDesktopDaemon,
+        getDesktopDaemonStatus,
+        getDesktopSettings: loadDesktopSettings,
+        restartDesktopDaemon,
+        restartServer: (reason) => daemonClient.restartServer(reason),
+      },
+    );
+    void waitForDaemonRestart(restartRequest);
+  }, [daemonClient, host.serverId, isHostConnected, t, waitForDaemonRestart]);
 
   const restartIcon = useMemo(
     () => <RotateCw size={theme.iconSize.sm} color={theme.colors.foreground} />,
@@ -830,101 +812,83 @@ function UpdateDaemonCard({ host }: { host: HostProfile }) {
       return;
     }
 
-    void confirmDialog({
-      title: t("settings.host.daemon.update.confirmTitle", {
-        name: host.label,
-      }),
-      message: t("settings.host.daemon.update.confirmMessage"),
-      confirmLabel: t("settings.host.daemon.update.confirm"),
-      cancelLabel: t("common.actions.cancel"),
-      destructive: false,
-    })
-      .then((confirmed) => {
-        if (!confirmed || !isMountedRef.current) return;
-        const startSnapshot = runtime.getSnapshot(host.serverId);
-        const startMarker = startSnapshot
-          ? {
-              clientGeneration: startSnapshot.clientGeneration,
-              lastOnlineAt: startSnapshot.lastOnlineAt,
-            }
-          : null;
+    // No confirmation: nothing is lost, and the hint says running agents are briefly
+    // interrupted. The button already names the action.
+    if (!isMountedRef.current) return;
+    const startSnapshot = runtime.getSnapshot(host.serverId);
+    const startMarker = startSnapshot
+      ? {
+          clientGeneration: startSnapshot.clientGeneration,
+          lastOnlineAt: startSnapshot.lastOnlineAt,
+        }
+      : null;
+    setUpdateState({
+      status: "updating",
+      phase: t("settings.host.daemon.update.phaseStarting"),
+    });
+    const requestId = `settings_daemon_update_${host.serverId}`;
+
+    const unsubscribe = daemonClient.on("daemon.update.progress", (message) => {
+      if (message.payload.requestId !== requestId) return;
+      if (!isMountedRef.current) return;
+      const { phase } = message.payload;
+      if (phase === "starting")
         setUpdateState({
           status: "updating",
           phase: t("settings.host.daemon.update.phaseStarting"),
         });
-        const requestId = `settings_daemon_update_${host.serverId}`;
-
-        const unsubscribe = daemonClient.on("daemon.update.progress", (message) => {
-          if (message.payload.requestId !== requestId) return;
-          if (!isMountedRef.current) return;
-          const { phase } = message.payload;
-          if (phase === "starting")
-            setUpdateState({
-              status: "updating",
-              phase: t("settings.host.daemon.update.phaseStarting"),
-            });
-          else if (phase === "downloading")
-            setUpdateState({
-              status: "updating",
-              phase: t("settings.host.daemon.update.phaseDownloading"),
-            });
-          else if (phase === "installing")
-            setUpdateState({
-              status: "updating",
-              phase: t("settings.host.daemon.update.phaseInstalling"),
-            });
-          else if (phase === "complete")
-            setUpdateState({
-              status: "updating",
-              phase: t("settings.host.daemon.update.phaseComplete"),
-            });
+      else if (phase === "downloading")
+        setUpdateState({
+          status: "updating",
+          phase: t("settings.host.daemon.update.phaseDownloading"),
         });
-        unsubscribeRef.current = unsubscribe;
+      else if (phase === "installing")
+        setUpdateState({
+          status: "updating",
+          phase: t("settings.host.daemon.update.phaseInstalling"),
+        });
+      else if (phase === "complete")
+        setUpdateState({
+          status: "updating",
+          phase: t("settings.host.daemon.update.phaseComplete"),
+        });
+    });
+    unsubscribeRef.current = unsubscribe;
 
-        void daemonClient
-          .updateDaemon(requestId)
-          .then((response) => {
-            unsubscribeRef.current = null;
-            unsubscribe();
-            if (!response.success) {
-              if (!isMountedRef.current) return undefined;
-              setUpdateState({
-                status: "failed",
-                title: t("settings.host.daemon.update.requestFailedTitle"),
-                message: t("settings.host.daemon.update.requestFailedMessage", {
-                  error: response.error ?? "Unknown error",
-                }),
-              });
-              return undefined;
-            }
-            // Update succeeded — wait for daemon to restart and reconnect
-            void waitForDaemonRestart(startMarker);
-            return undefined;
-          })
-          .catch((error) => {
-            unsubscribeRef.current = null;
-            unsubscribe();
-            console.error(`[HostPage] Failed to update daemon ${host.label}`, error);
-            if (!isMountedRef.current) return;
-            setUpdateState({
-              status: "failed",
-              title: t("settings.host.daemon.update.requestFailedTitle"),
-              message: t("settings.host.daemon.update.requestFailedMessage", {
-                error: error instanceof Error ? error.message : "Unknown error",
-              }),
-            });
+    void daemonClient
+      .updateDaemon(requestId)
+      .then((response) => {
+        unsubscribeRef.current = null;
+        unsubscribe();
+        if (!response.success) {
+          if (!isMountedRef.current) return undefined;
+          setUpdateState({
+            status: "failed",
+            title: t("settings.host.daemon.update.requestFailedTitle"),
+            message: t("settings.host.daemon.update.requestFailedMessage", {
+              error: response.error ?? "Unknown error",
+            }),
           });
-        return;
+          return undefined;
+        }
+        // Update succeeded — wait for daemon to restart and reconnect
+        void waitForDaemonRestart(startMarker);
+        return undefined;
       })
       .catch((error) => {
-        console.error(`[HostPage] Failed to open update confirmation for ${host.label}`, error);
+        unsubscribeRef.current = null;
+        unsubscribe();
+        console.error(`[HostPage] Failed to update daemon ${host.label}`, error);
         if (!isMountedRef.current) return;
         setUpdateState({
           status: "failed",
           title: t("settings.host.daemon.update.requestFailedTitle"),
-          message: t("settings.host.daemon.update.dialogFailedMessage"),
+          message: t("settings.host.daemon.update.requestFailedMessage", {
+            error: error instanceof Error ? error.message : "Unknown error",
+          }),
         });
       });
+    return;
   }, [daemonClient, host.label, host.serverId, isHostConnected, runtime, t, waitForDaemonRestart]);
 
   const updateIcon = useMemo(

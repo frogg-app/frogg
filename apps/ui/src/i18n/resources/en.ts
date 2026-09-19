@@ -1563,11 +1563,9 @@ export const en = {
     stashAndSwitch: "Stash & Switch",
     failedToStash: "Failed to stash changes",
     failedToSwitch: "Failed to switch branch",
-    restoreStashTitle: "Restore stashed changes?",
     restoreStashMessage:
       "This branch has stashed changes from a previous session. Would you like to restore them?",
     restore: "Restore",
-    later: "Later",
     stashRestored: "Stashed changes restored",
   },
   agentAutocomplete: {
@@ -2861,8 +2859,6 @@ export const en = {
         uninstallFailed: "Unable to uninstall orchestration skills.",
         saveSelectionFailed: "Unable to save the orchestration skills selection.",
         updateAvailable: "Update available",
-        updateTitle: "Update {{brandName}} skills?",
-        updateFallback: "Sync bundled skills to this host.",
         uninstallTitle: "Uninstall {{brandName}} skills?",
         uninstallMessage:
           "Removes all {{brandName}} orchestration skills from ~/.agents, ~/.claude, ~/.codex on this host.",
@@ -3037,10 +3033,6 @@ export const en = {
         restart: {
           title: "Restart daemon",
           hint: "Restarts the daemon process. The app will reconnect automatically",
-          confirm: "Restart",
-          confirmTitle: "Restart {{name}}",
-          confirmMessage:
-            "This will restart the daemon. Agents running on it will keep going; the app will reconnect automatically.",
           restarting: "Restarting...",
           unableToReconnectTitle: "Unable to reconnect",
           unableToReconnectMessage:
@@ -3054,7 +3046,6 @@ export const en = {
           requestFailedTitle: "Error",
           requestFailedMessage:
             "Failed to send the restart request. {{brandName}} reconnects automatically-try again once the host shows as online.",
-          dialogFailedMessage: "Unable to open the restart confirmation dialog.",
         },
         selfUpdate: {
           title: "Daemon updates",
@@ -3069,10 +3060,8 @@ export const en = {
           checkFailed: "Could not check for updates: {{error}}",
           notUpdatable: "This daemon cannot update itself",
           update: "Update daemon to {{version}}",
-          confirmTitle: "Update {{name}} to {{version}}",
-          confirmMessage:
+          updateNote:
             "The daemon restarts into the new version; running agents are interrupted briefly. If the new version fails to start, the previous one is restored automatically.",
-          confirm: "Update",
           reconnecting: "Restarting the daemon and waiting for it to come back...",
           unableToReconnect:
             "{{name}} did not come back online. Check self-update.log on the host.",
@@ -3104,10 +3093,6 @@ export const en = {
             "This daemon is managed by {{brandName}} Desktop. Update {{brandName}} Desktop on the host.",
           title: "Update daemon",
           hint: "Update the daemon to the latest version and restart it",
-          confirm: "Update",
-          confirmTitle: "Update {{name}}",
-          confirmMessage:
-            "This will update the daemon to the latest version and restart it. Running agents will be briefly interrupted.",
           updating: "Updating...",
           phaseStarting: "Preparing update...",
           phaseDownloading: "Downloading packages...",
@@ -3123,7 +3108,6 @@ export const en = {
           offlineMessage: "This host is offline. Wait until it is back online before updating.",
           requestFailedTitle: "Update failed",
           requestFailedMessage: "Failed to update the daemon: {{error}}",
-          dialogFailedMessage: "Unable to open the update confirmation dialog.",
         },
         dangerZone: "Danger zone",
         remove: {

@@ -36,6 +36,22 @@ function formatUpdateMessage(ops: readonly AgentSkillOperation[], t: TFunction):
     .join("\n");
 }
 
+/**
+ * What pressing Update will actually do. Reconciling is unconfirmed, so the operations
+ * have to be readable in the row beforehand rather than in a dialog afterwards.
+ */
+function PendingOperations({ ops }: { ops: readonly AgentSkillOperation[] }) {
+  const { t } = useTranslation();
+  if (ops.length === 0) {
+    return null;
+  }
+  return (
+    <Text style={styles.operationsList} testID="host-agent-skills-operations">
+      {formatUpdateMessage(ops, t)}
+    </Text>
+  );
+}
+
 export function AgentSkillsSection({ serverId }: { serverId: string }) {
   const { t } = useTranslation();
   const skills = useAgentSkills(serverId);
@@ -62,18 +78,13 @@ export function AgentSkillsSection({ serverId }: { serverId: string }) {
     (skills.status?.selection.mode === "custom" &&
       skills.status.selection.skills.some((name) => skills.status?.available.includes(name)));
 
+  // No confirmation: `maintenanceOps` excludes deletes, so reconciling only adds and
+  // updates skills and removes nothing. The operations it will perform are listed in the
+  // row instead, where they can be read before the button is pressed.
   const handleReconcile = useCallback(async () => {
     if (skills.isWorking) return;
-    const confirmed = await confirmDialog({
-      title: t("settings.host.skills.updateTitle"),
-      message:
-        maintenanceOps.length > 0
-          ? formatUpdateMessage(maintenanceOps, t)
-          : t("settings.host.skills.updateFallback"),
-      confirmLabel: t("settings.host.skills.actions.update"),
-    });
-    if (confirmed) await skills.reconcile();
-  }, [maintenanceOps, skills, t]);
+    await skills.reconcile();
+  }, [skills]);
   const handleUninstall = useCallback(async () => {
     if (skills.isWorking) return;
     const confirmed = await confirmDialog({
@@ -145,6 +156,7 @@ export function AgentSkillsSection({ serverId }: { serverId: string }) {
                 ? t("settings.host.skills.updateAvailable")
                 : t("settings.host.skills.description")}
             </Text>
+            <PendingOperations ops={state === "drift" ? maintenanceOps : []} />
           </View>
           <View style={styles.actionsRow}>
             <Button
@@ -237,4 +249,9 @@ const styles = StyleSheet.create((theme) => ({
   mutedText: { color: theme.colors.foregroundMuted, fontSize: theme.fontSize.sm },
   actionsRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
   emptyCard: { padding: theme.spacing[4] },
+  operationsList: {
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
+    marginTop: theme.spacing[1],
+  },
 }));

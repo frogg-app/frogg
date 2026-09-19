@@ -1583,11 +1583,9 @@ export const ptBR: TranslationResources = {
     stashAndSwitch: "Fazer stash e trocar",
     failedToStash: "Falha ao fazer stash das alterações",
     failedToSwitch: "Falha ao trocar de branch",
-    restoreStashTitle: "Restaurar alterações em stash?",
     restoreStashMessage:
       "Esta branch tem alterações em stash de uma sessão anterior. Deseja restaurá-las?",
     restore: "Restaurar",
-    later: "Depois",
     stashRestored: "Alterações em stash restauradas",
   },
   agentAutocomplete: {
@@ -2850,8 +2848,6 @@ export const ptBR: TranslationResources = {
         title: "Skills de orquestração",
         description: "Ensine seus agentes a orquestrar pela CLI",
         updateAvailable: "Atualização disponível",
-        updateTitle: "Atualizar {{brandName}} skills?",
-        updateFallback: "Sincronize as skills incluídas com sua máquina.",
         uninstallTitle: "Desinstalar {{brandName}} skills?",
         uninstallMessage:
           "Remove todas as skills de orquestração do {{brandName}} de ~/.agents, ~/.claude e ~/.codex.",
@@ -3034,10 +3030,6 @@ export const ptBR: TranslationResources = {
         restart: {
           title: "Reiniciar daemon",
           hint: "Reinicia o processo do daemon. O app reconectará automaticamente",
-          confirm: "Reiniciar",
-          confirmTitle: "Reiniciar {{name}}",
-          confirmMessage:
-            "Isso vai reiniciar o daemon. Agentes em execução nele continuarão rodando; o app reconectará automaticamente.",
           restarting: "Reiniciando...",
           unableToReconnectTitle: "Não foi possível reconectar",
           unableToReconnectMessage:
@@ -3051,7 +3043,6 @@ export const ptBR: TranslationResources = {
           requestFailedTitle: "Erro",
           requestFailedMessage:
             "Falha ao enviar a solicitação de reinício. O {{brandName}} reconecta automaticamente. Tente novamente quando o host aparecer como online.",
-          dialogFailedMessage: "Não foi possível abrir o diálogo de confirmação de reinício.",
         },
         selfUpdate: {
           title: "Atualizações do daemon",
@@ -3066,10 +3057,8 @@ export const ptBR: TranslationResources = {
           checkFailed: "Não foi possível verificar atualizações: {{error}}",
           notUpdatable: "Este daemon não consegue se atualizar sozinho",
           update: "Atualizar o daemon para {{version}}",
-          confirmTitle: "Atualizar {{name}} para {{version}}",
-          confirmMessage:
+          updateNote:
             "O daemon reinicia com a nova versão; agentes em execução são interrompidos brevemente. Se a nova versão não iniciar, a anterior é restaurada automaticamente.",
-          confirm: "Atualizar",
           reconnecting: "Reiniciando o daemon e aguardando ele voltar...",
           unableToReconnect:
             "{{name}} não voltou a ficar online. Verifique o self-update.log no host.",
@@ -3101,10 +3090,6 @@ export const ptBR: TranslationResources = {
             "Este daemon é gerenciado pelo {{brandName}} Desktop. Atualize o {{brandName}} Desktop no host.",
           title: "Atualizar daemon",
           hint: "Atualiza o daemon para a versão mais recente e o reinicia",
-          confirm: "Atualizar",
-          confirmTitle: "Atualizar {{name}}",
-          confirmMessage:
-            "Isso vai atualizar o daemon para a versão mais recente e reiniciá-lo. Agentes em execução serão interrompidos brevemente.",
           updating: "Atualizando...",
           phaseStarting: "Preparando atualização...",
           phaseDownloading: "Baixando pacotes...",
@@ -3121,7 +3106,6 @@ export const ptBR: TranslationResources = {
             "Este host está offline. Aguarde até ele voltar a ficar online antes de atualizar.",
           requestFailedTitle: "Falha na atualização",
           requestFailedMessage: "Falha ao atualizar o daemon: {{error}}",
-          dialogFailedMessage: "Não foi possível abrir o diálogo de confirmação da atualização.",
         },
         dangerZone: "Zona de perigo",
         remove: {

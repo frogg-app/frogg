@@ -1570,11 +1570,9 @@ export const ja: TranslationResources = {
     stashAndSwitch: "スタッシュして切り替え",
     failedToStash: "変更のスタッシュに失敗しました",
     failedToSwitch: "ブランチの切り替えに失敗しました",
-    restoreStashTitle: "スタッシュした変更を復元しますか？",
     restoreStashMessage:
       "このブランチには前のセッションからスタッシュした変更があります。復元しますか？",
     restore: "復元",
-    later: "後で",
     stashRestored: "スタッシュした変更を復元しました",
   },
   agentAutocomplete: {
@@ -2835,8 +2833,6 @@ export const ja: TranslationResources = {
         title: "オーケストレーションスキル",
         description: "エージェントがCLI経由でオーケストレーションできるようにします。",
         updateAvailable: "更新が利用可能",
-        updateTitle: "{{brandName}}スキルを更新しますか？",
-        updateFallback: "バンドルされたスキルをマシンに同期します。",
         uninstallTitle: "{{brandName}}スキルをアンインストールしますか？",
         uninstallMessage:
           "~/.agents、~/.claude、~/.codexからすべての{{brandName}}オーケストレーションスキルを削除します。",
@@ -3019,10 +3015,6 @@ export const ja: TranslationResources = {
         restart: {
           title: "デーモンを再起動",
           hint: "デーモンプロセスを再起動します。アプリは自動的に再接続します",
-          confirm: "再起動",
-          confirmTitle: "{{name}}を再起動",
-          confirmMessage:
-            "これによりデーモンが再起動されます。実行中のエージェントは継続し、アプリは自動的に再接続します。",
           restarting: "再起動中...",
           unableToReconnectTitle: "再接続できません",
           unableToReconnectMessage:
@@ -3036,7 +3028,6 @@ export const ja: TranslationResources = {
           requestFailedTitle: "エラー",
           requestFailedMessage:
             "再起動リクエストの送信に失敗しました。{{brandName}}は自動的に再接続します。ホストがオンラインになったら再試行してください。",
-          dialogFailedMessage: "再起動確認ダイアログを開けませんでした。",
         },
         selfUpdate: {
           title: "デーモンの更新",
@@ -3051,10 +3042,8 @@ export const ja: TranslationResources = {
           checkFailed: "更新を確認できませんでした: {{error}}",
           notUpdatable: "このデーモンは自己更新できません",
           update: "デーモンを {{version}} に更新",
-          confirmTitle: "{{name}} を {{version}} に更新",
-          confirmMessage:
+          updateNote:
             "デーモンは新しいバージョンで再起動し、実行中のエージェントは一時的に中断されます。新しいバージョンが起動しない場合は、前のバージョンが自動的に復元されます。",
-          confirm: "更新",
           reconnecting: "デーモンを再起動して復帰を待っています...",
           unableToReconnect:
             "{{name}} がオンラインに戻りませんでした。ホストの self-update.log を確認してください。",
@@ -3086,10 +3075,6 @@ export const ja: TranslationResources = {
             "このデーモンは{{brandName}} Desktopによって管理されています。ホスト上の{{brandName}} Desktopを更新してください。",
           title: "デーモンを更新",
           hint: "デーモンを最新バージョンに更新して再起動します",
-          confirm: "更新",
-          confirmTitle: "{{name}}を更新",
-          confirmMessage:
-            "これによりデーモンが最新バージョンに更新され、再起動されます。実行中のエージェントは一時的に中断されます。",
           updating: "更新中...",
           phaseStarting: "更新を準備中...",
           phaseDownloading: "パッケージをダウンロード中...",
@@ -3106,7 +3091,6 @@ export const ja: TranslationResources = {
             "このホストはオフラインです。オンラインに戻るまで待ってから更新してください。",
           requestFailedTitle: "更新に失敗しました",
           requestFailedMessage: "デーモンの更新に失敗しました: {{error}}",
-          dialogFailedMessage: "更新確認ダイアログを開けませんでした。",
         },
         dangerZone: "危険ゾーン",
         remove: {

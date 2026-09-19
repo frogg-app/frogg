@@ -1566,11 +1566,9 @@ export const ko: TranslationResources = {
     stashAndSwitch: "스태시 후 전환",
     failedToStash: "변경 사항을 스태시하지 못했습니다",
     failedToSwitch: "브랜치를 전환하지 못했습니다",
-    restoreStashTitle: "스태시된 변경 사항을 복원할까요?",
     restoreStashMessage:
       "이 브랜치에는 이전 세션에서 스태시된 변경 사항이 있습니다. 복원하시겠습니까?",
     restore: "복원",
-    later: "나중에",
     stashRestored: "스태시된 변경 사항이 복원되었습니다",
   },
   agentAutocomplete: {
@@ -2821,8 +2819,6 @@ export const ko: TranslationResources = {
         title: "오케스트레이션 스킬",
         description: "CLI를 통해 에이전트가 오케스트레이션하도록 가르칩니다",
         updateAvailable: "업데이트 사용 가능",
-        updateTitle: "{{brandName}} 스킬을 업데이트할까요?",
-        updateFallback: "번들된 스킬을 내 컴퓨터에 동기화합니다.",
         uninstallTitle: "{{brandName}} 스킬을 제거할까요?",
         uninstallMessage:
           "~/.agents, ~/.claude, ~/.codex에서 모든 {{brandName}} 오케스트레이션 스킬을 제거합니다.",
@@ -3000,10 +2996,6 @@ export const ko: TranslationResources = {
         restart: {
           title: "데몬 재시작",
           hint: "데몬 프로세스를 재시작합니다. 앱이 자동으로 다시 연결됩니다",
-          confirm: "재시작",
-          confirmTitle: "{{name}} 재시작",
-          confirmMessage:
-            "데몬을 재시작합니다. 데몬에서 실행 중인 에이전트는 계속 동작하며 앱이 자동으로 다시 연결됩니다.",
           restarting: "재시작 중...",
           unableToReconnectTitle: "다시 연결할 수 없습니다",
           unableToReconnectMessage:
@@ -3017,7 +3009,6 @@ export const ko: TranslationResources = {
           requestFailedTitle: "오류",
           requestFailedMessage:
             "재시작 요청을 보내지 못했습니다. {{brandName}}가 자동으로 다시 연결하므로 호스트가 온라인으로 표시되면 다시 시도하세요.",
-          dialogFailedMessage: "재시작 확인 대화 상자를 열 수 없습니다.",
         },
         selfUpdate: {
           title: "데몬 업데이트",
@@ -3032,10 +3023,8 @@ export const ko: TranslationResources = {
           checkFailed: "업데이트를 확인할 수 없습니다: {{error}}",
           notUpdatable: "이 데몬은 자체 업데이트할 수 없습니다",
           update: "데몬을 {{version}}(으)로 업데이트",
-          confirmTitle: "{{name}}을(를) {{version}}(으)로 업데이트",
-          confirmMessage:
+          updateNote:
             "데몬이 새 버전으로 재시작되며 실행 중인 에이전트가 잠시 중단됩니다. 새 버전이 시작되지 않으면 이전 버전이 자동으로 복원됩니다.",
-          confirm: "업데이트",
           reconnecting: "데몬을 재시작하고 복귀를 기다리는 중...",
           unableToReconnect:
             "{{name}}이(가) 다시 온라인 상태가 되지 않았습니다. 호스트의 self-update.log를 확인하세요.",
@@ -3067,10 +3056,6 @@ export const ko: TranslationResources = {
             "이 데몬은 {{brandName}} Desktop에서 관리됩니다. 호스트에서 {{brandName}} 데스크톱을 업데이트합니다.",
           title: "데몬 업데이트",
           hint: "데몬을 최신 버전으로 업데이트하고 다시 시작하세요.",
-          confirm: "업데이트",
-          confirmTitle: "{{name}} 업데이트",
-          confirmMessage:
-            "그러면 데몬이 최신 버전으로 업데이트되고 다시 시작됩니다. 실행 중인 에이전트가 잠시 중단됩니다.",
           updating: "업데이트 중...",
           phaseStarting: "업데이트 준비 중...",
           phaseDownloading: "패키지 다운로드 중...",
@@ -3087,7 +3072,6 @@ export const ko: TranslationResources = {
             "이 호스트는 오프라인 상태입니다. 업데이트하기 전에 다시 온라인 상태가 될 때까지 기다리십시오.",
           requestFailedTitle: "업데이트 실패",
           requestFailedMessage: "데몬 업데이트 실패: {{error}}",
-          dialogFailedMessage: "업데이트 확인 대화 상자를 열 수 없습니다.",
         },
         dangerZone: "위험 구역",
         remove: {

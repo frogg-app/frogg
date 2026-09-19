@@ -1596,11 +1596,9 @@ export const es: TranslationResources = {
     stashAndSwitch: "Guardar y cambiar",
     failedToStash: "No se pudieron ocultar los cambios",
     failedToSwitch: "No se pudo cambiar de sucursal",
-    restoreStashTitle: "¿Restaurar cambios ocultos?",
     restoreStashMessage:
       "Esta rama ha ocultado cambios de una sesión anterior. ¿Quieres restaurarlos?",
     restore: "Restaurar",
-    later: "Más tarde",
     stashRestored: "Se restauraron los cambios ocultos",
   },
   agentAutocomplete: {
@@ -2866,8 +2864,6 @@ export const es: TranslationResources = {
         title: "Habilidades de orquestación",
         description: "Enseñe a sus agentes a orquestar a través delCLI",
         updateAvailable: "Actualización disponible",
-        updateTitle: "¿Actualizar las habilidades de {{brandName}}?",
-        updateFallback: "Sincronice las habilidades incluidas con su máquina.",
         uninstallTitle: "¿Desinstalar las habilidades {{brandName}}?",
         uninstallMessage:
           "Elimina todas las habilidades de orquestación {{brandName}} de ~/.agents, ~/.claude, ~/.codex.",
@@ -3050,10 +3046,6 @@ export const es: TranslationResources = {
         restart: {
           title: "Reiniciar demonio",
           hint: "Reinicia el proceso del demonio. La aplicación se volverá a conectar automáticamente",
-          confirm: "Reiniciar",
-          confirmTitle: "Reiniciar{{name}}",
-          confirmMessage:
-            "Esto reiniciará el demonio. Los agentes que se ejecutan en él seguirán funcionando; la aplicación se volverá a conectar automáticamente.",
           restarting: "Reiniciando...",
           unableToReconnectTitle: "No se puede volver a conectar",
           unableToReconnectMessage:
@@ -3067,8 +3059,6 @@ export const es: TranslationResources = {
           requestFailedTitle: "Error",
           requestFailedMessage:
             "No se pudo enviar la solicitud de reinicio.{{brandName}} se vuelve a conectar automáticamente; inténtelo nuevamente una vez que el host se muestre en línea.",
-          dialogFailedMessage:
-            "No se puede abrir el cuadro de diálogo de confirmación de reinicio.",
         },
         selfUpdate: {
           title: "Actualizaciones del daemon",
@@ -3083,10 +3073,8 @@ export const es: TranslationResources = {
           checkFailed: "No se pudieron buscar actualizaciones: {{error}}",
           notUpdatable: "Este daemon no puede actualizarse a sí mismo",
           update: "Actualizar el daemon a {{version}}",
-          confirmTitle: "Actualizar {{name}} a {{version}}",
-          confirmMessage:
+          updateNote:
             "El daemon se reinicia con la nueva versión; los agentes en ejecución se interrumpen brevemente. Si la nueva versión no arranca, se restaura la anterior automáticamente.",
-          confirm: "Actualizar",
           reconnecting: "Reiniciando el daemon y esperando a que vuelva...",
           unableToReconnect: "{{name}} no volvió a conectarse. Revisa self-update.log en el host.",
           startFailedTitle: "La actualización falló",
@@ -3117,10 +3105,6 @@ export const es: TranslationResources = {
             "Este daemon está administrado por {{brandName}} Desktop. Actualiza {{brandName}} Desktop en el host.",
           title: "Update daemon",
           hint: "Update the daemon to the latest version and restart it",
-          confirm: "Update",
-          confirmTitle: "Update {{name}}",
-          confirmMessage:
-            "This will update the daemon to the latest version and restart it. Running agents will be briefly interrupted.",
           updating: "Updating...",
           phaseStarting: "Preparing update...",
           phaseDownloading: "Downloading packages...",
@@ -3136,7 +3120,6 @@ export const es: TranslationResources = {
           offlineMessage: "This host is offline. Wait until it is back online before updating.",
           requestFailedTitle: "Update failed",
           requestFailedMessage: "Failed to update the daemon: {{error}}",
-          dialogFailedMessage: "Unable to open the update confirmation dialog.",
         },
         dangerZone: "Zona de peligro",
         remove: {

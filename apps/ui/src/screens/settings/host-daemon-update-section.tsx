@@ -21,7 +21,6 @@ import { SettingsSection } from "@/screens/settings/settings-section";
 import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
 import type { HostProfile } from "@/types/host-connection";
-import { confirmDialog } from "@/utils/confirm-dialog";
 import { hasDaemonReconnectedAfter, type DaemonConnectionMarker } from "./daemon-reconnect";
 import { useDaemonUpdateCheck, type CheckState, type RunState } from "./host-daemon-update-state";
 
@@ -65,8 +64,13 @@ function versionHint(status: StatusPayload | null, check: CheckState, t: TFuncti
       return t("settings.host.daemon.selfUpdate.checkFailed", { error: check.result.error });
     }
     const available = availableVersion(check);
+    // Updating no longer asks for confirmation, so what the update does to running
+    // agents has to be readable before the button is pressed, not after.
     return available
-      ? t("settings.host.daemon.selfUpdate.available", { version: available })
+      ? [
+          t("settings.host.daemon.selfUpdate.available", { version: available }),
+          t("settings.host.daemon.selfUpdate.updateNote"),
+        ].join("\n")
       : t("settings.host.daemon.selfUpdate.upToDate");
   }
   return t("settings.host.daemon.selfUpdate.hint");
@@ -359,14 +363,10 @@ export function HostDaemonUpdateSection({ host }: { host: HostProfile }) {
   const handleUpdate = useCallback(
     async (version: string) => {
       if (!daemonClient) return;
-      const confirmed = await confirmDialog({
-        title: t("settings.host.daemon.selfUpdate.confirmTitle", { name: host.label, version }),
-        message: t("settings.host.daemon.selfUpdate.confirmMessage"),
-        confirmLabel: t("settings.host.daemon.selfUpdate.confirm"),
-        cancelLabel: t("common.actions.cancel"),
-        destructive: false,
-      }).catch(() => false);
-      if (!confirmed || !mounted.current) return;
+      // No confirmation: the button already names the version, nothing is lost, and a
+      // version that fails to start is rolled back automatically. The interruption
+      // warning lives on the row instead.
+      if (!mounted.current) return;
       setRun({ kind: "starting" });
       try {
         const started = await daemonClient.startDaemonUpdate({ version, channel });
@@ -380,7 +380,7 @@ export function HostDaemonUpdateSection({ host }: { host: HostProfile }) {
         setRun({ kind: "error", message: error instanceof Error ? error.message : String(error) });
       }
     },
-    [channel, daemonClient, host.label, t],
+    [channel, daemonClient, t],
   );
 
   const handleAutoUpdatePatch = useCallback(

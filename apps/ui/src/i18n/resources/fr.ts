@@ -1600,11 +1600,9 @@ export const fr: TranslationResources = {
     stashAndSwitch: "Cachette et changement",
     failedToStash: "Échec de la sauvegarde des modifications",
     failedToSwitch: "Échec du changement de branche",
-    restoreStashTitle: "Restaurer les modifications cachées?",
     restoreStashMessage:
       "Cette branche a caché les modifications d'une session précédente. Souhaitez-vous les restaurer?",
     restore: "Restaurer",
-    later: "Plus tard",
     stashRestored: "Modifications cachées restaurées",
   },
   agentAutocomplete: {
@@ -2872,8 +2870,6 @@ export const fr: TranslationResources = {
         title: "Compétences en orchestration",
         description: "Apprenez à vos agents à orchestrer via leCLI",
         updateAvailable: "Mise à jour disponible",
-        updateTitle: "Mettre à jour les compétences {{brandName}}?",
-        updateFallback: "Synchronisez les compétences regroupées sur votre machine.",
         uninstallTitle: "Désinstaller les compétences {{brandName}}?",
         uninstallMessage:
           "Supprime toutes les compétences d'orchestration {{brandName}} de ~/.agents, ~/.claude, ~/.codex.",
@@ -3058,10 +3054,6 @@ export const fr: TranslationResources = {
         restart: {
           title: "Redémarrer le démon",
           hint: "Redémarre le processus démon. L'application se reconnectera automatiquement",
-          confirm: "Redémarrer",
-          confirmTitle: "Redémarrer{{name}}",
-          confirmMessage:
-            "Cela redémarrera le démon. Les agents qui s'y exécutent continueront à fonctionner; l'application se reconnectera automatiquement.",
           restarting: "Redémarrage...",
           unableToReconnectTitle: "Impossible de se reconnecter",
           unableToReconnectMessage:
@@ -3075,8 +3067,6 @@ export const fr: TranslationResources = {
           requestFailedTitle: "Erreur",
           requestFailedMessage:
             "Échec de l'envoi de la demande de redémarrage.{{brandName}} se reconnecte automatiquement - réessayez une fois que l'hôte apparaît comme en ligne.",
-          dialogFailedMessage:
-            "Impossible d'ouvrir la boîte de dialogue de confirmation de redémarrage.",
         },
         selfUpdate: {
           title: "Mises à jour du daemon",
@@ -3091,10 +3081,8 @@ export const fr: TranslationResources = {
           checkFailed: "Impossible de rechercher des mises à jour : {{error}}",
           notUpdatable: "Ce daemon ne peut pas se mettre à jour lui-même",
           update: "Mettre à jour le daemon vers {{version}}",
-          confirmTitle: "Mettre à jour {{name}} vers {{version}}",
-          confirmMessage:
+          updateNote:
             "Le daemon redémarre avec la nouvelle version ; les agents en cours sont brièvement interrompus. Si la nouvelle version ne démarre pas, la précédente est restaurée automatiquement.",
-          confirm: "Mettre à jour",
           reconnecting: "Redémarrage du daemon, en attente de son retour...",
           unableToReconnect:
             "{{name}} n'est pas revenu en ligne. Consultez self-update.log sur l'hôte.",
@@ -3126,10 +3114,6 @@ export const fr: TranslationResources = {
             "Ce daemon est géré par {{brandName}} Desktop. Mettez à jour {{brandName}} Desktop sur l’hôte.",
           title: "Update daemon",
           hint: "Update the daemon to the latest version and restart it",
-          confirm: "Update",
-          confirmTitle: "Update {{name}}",
-          confirmMessage:
-            "This will update the daemon to the latest version and restart it. Running agents will be briefly interrupted.",
           updating: "Updating...",
           phaseStarting: "Preparing update...",
           phaseDownloading: "Downloading packages...",
@@ -3145,7 +3129,6 @@ export const fr: TranslationResources = {
           offlineMessage: "This host is offline. Wait until it is back online before updating.",
           requestFailedTitle: "Update failed",
           requestFailedMessage: "Failed to update the daemon: {{error}}",
-          dialogFailedMessage: "Unable to open the update confirmation dialog.",
         },
         dangerZone: "Zone dangereuse",
         remove: {

@@ -1533,10 +1533,8 @@ export const zhCN: TranslationResources = {
     stashAndSwitch: "Stash 并切换",
     failedToStash: "Stash 变更失败",
     failedToSwitch: "切换分支失败",
-    restoreStashTitle: "恢复 stashed 变更？",
     restoreStashMessage: "此分支有上一会话 stashed 的变更。要恢复它们吗？",
     restore: "恢复",
-    later: "稍后",
     stashRestored: "Stashed 变更已恢复",
   },
   agentAutocomplete: {
@@ -2764,8 +2762,6 @@ export const zhCN: TranslationResources = {
         title: "编排 skills",
         description: "教会 Agent 通过 CLI 编排任务",
         updateAvailable: "有更新可用",
-        updateTitle: "更新 {{brandName}} skills？",
-        updateFallback: "将内置 skills 同步到你的机器。",
         uninstallTitle: "卸载 {{brandName}} skills？",
         uninstallMessage:
           "会从 ~/.agents、~/.claude、~/.codex 移除所有 {{brandName}} 编排 skills。",
@@ -2939,9 +2935,6 @@ export const zhCN: TranslationResources = {
         restart: {
           title: "重启 Daemon",
           hint: "重启 Daemon 进程。应用会自动重新连接",
-          confirm: "重启",
-          confirmTitle: "重启 {{name}}",
-          confirmMessage: "这会重启 Daemon。其上运行的 Agent 会继续运行；应用会自动重新连接。",
           restarting: "正在重启...",
           unableToReconnectTitle: "无法重新连接",
           unableToReconnectMessage: "{{name}} 没有重新上线。请确认它已重启。",
@@ -2952,7 +2945,6 @@ export const zhCN: TranslationResources = {
           requestFailedTitle: "错误",
           requestFailedMessage:
             "发送重启请求失败。{{brandName}} 会自动重连，请在 Host 显示在线后重试。",
-          dialogFailedMessage: "无法打开重启确认对话框。",
         },
         selfUpdate: {
           title: "守护进程更新",
@@ -2967,10 +2959,8 @@ export const zhCN: TranslationResources = {
           checkFailed: "无法检查更新：{{error}}",
           notUpdatable: "此守护进程无法自我更新",
           update: "将守护进程更新到 {{version}}",
-          confirmTitle: "将 {{name}} 更新到 {{version}}",
-          confirmMessage:
+          updateNote:
             "守护进程将重启到新版本，正在运行的代理会短暂中断。如果新版本无法启动，将自动恢复上一个版本。",
-          confirm: "更新",
           reconnecting: "正在重启守护进程并等待其恢复...",
           unableToReconnect: "{{name}} 没有重新上线。请查看主机上的 self-update.log。",
           startFailedTitle: "更新失败",
@@ -3001,10 +2991,6 @@ export const zhCN: TranslationResources = {
             "此 Daemon 由 {{brandName}} Desktop 管理。请在 Host 上更新 {{brandName}} Desktop。",
           title: "Update daemon",
           hint: "Update the daemon to the latest version and restart it",
-          confirm: "Update",
-          confirmTitle: "Update {{name}}",
-          confirmMessage:
-            "This will update the daemon to the latest version and restart it. Running agents will be briefly interrupted.",
           updating: "Updating...",
           phaseStarting: "Preparing update...",
           phaseDownloading: "Downloading packages...",
@@ -3020,7 +3006,6 @@ export const zhCN: TranslationResources = {
           offlineMessage: "This host is offline. Wait until it is back online before updating.",
           requestFailedTitle: "Update failed",
           requestFailedMessage: "Failed to update the daemon: {{error}}",
-          dialogFailedMessage: "Unable to open the update confirmation dialog.",
         },
         dangerZone: "危险区域",
         remove: {

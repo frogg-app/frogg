@@ -97,20 +97,25 @@ export function useBranchSwitcher({
         const stashPayload = await operations.listFroggStashes();
         const targetStash = stashPayload.entries.find((e) => e.branch === branchId);
         if (!targetStash) return;
-        const shouldRestore = await confirmDialog({
-          title: t("branchSwitcher.restoreStashTitle"),
-          message: t("branchSwitcher.restoreStashMessage"),
-          confirmLabel: t("branchSwitcher.restore"),
-          cancelLabel: t("branchSwitcher.later"),
+        // An offer, not a confirmation: this fires unprompted right after a branch switch,
+        // so it must not block. Ignoring it is a valid answer and leaves the stash alone.
+        const restore = async () => {
+          try {
+            const popPayload = await operations.popStash(targetStash.index);
+            if (popPayload.error) {
+              toast.error(popPayload.error.message);
+            } else {
+              toast.show(t("branchSwitcher.stashRestored"));
+            }
+            await invalidateStashAndCheckout();
+          } catch {
+            // Non-critical — user can still restore on next branch switch
+          }
+        };
+        toast.show(t("branchSwitcher.restoreStashMessage"), {
+          durationMs: 6000,
+          action: { label: t("branchSwitcher.restore"), onPress: () => void restore() },
         });
-        if (!shouldRestore) return;
-        const popPayload = await operations.popStash(targetStash.index);
-        if (popPayload.error) {
-          toast.error(popPayload.error.message);
-        } else {
-          toast.show(t("branchSwitcher.stashRestored"));
-        }
-        await invalidateStashAndCheckout();
       } catch {
         // Non-critical — user can still restore on next branch switch
       }
