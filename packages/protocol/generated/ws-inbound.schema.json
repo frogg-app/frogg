@@ -3683,6 +3683,33 @@
                         }
                       },
                       "additionalProperties": {}
+                    },
+                    "ci": {
+                      "type": "object",
+                      "properties": {
+                        "githubActions": {
+                          "type": "boolean"
+                        },
+                        "jenkins": {
+                          "type": "object",
+                          "properties": {
+                            "url": {
+                              "type": "string"
+                            },
+                            "job": {
+                              "type": "string"
+                            },
+                            "multibranch": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "url",
+                            "job"
+                          ]
+                        }
+                      },
+                      "additionalProperties": {}
                     }
                   },
                   "additionalProperties": {}
@@ -6039,6 +6066,26 @@
                 "type",
                 "cwd",
                 "enabled",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "checkout.ci.list_runs.request"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "cwd",
                 "requestId"
               ]
             },

@@ -60,7 +60,7 @@ const manifests = {
   },
   ci_runs: {
     kind: "ci_runs",
-    supportedHosts: ["main", "explorer"],
+    supportedHosts: ["explorer"],
     resourceKey: () => "ci_runs",
   },
   file: {

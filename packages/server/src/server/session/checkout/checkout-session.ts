@@ -55,6 +55,8 @@ import {
 import { runGitCommand } from "../../../utils/run-git-command.js";
 import { expandTilde } from "../../../utils/path.js";
 import type { GitMetadataGenerator } from "./git-metadata-generator.js";
+import { listCiRuns } from "../../../services/ci/ci-service.js";
+import type { GitHubApiGet } from "../../../services/ci/github-actions.js";
 
 /**
  * The collaborators a checkout command reaches that are NOT part of the checkout
@@ -1297,6 +1299,73 @@ export class CheckoutSession {
           cwd,
           success: false,
           details: null,
+          error: {
+            code: "UNKNOWN",
+            message: error instanceof Error ? error.message : String(error),
+          },
+          requestId,
+        },
+      });
+    }
+  }
+
+  /**
+   * CI runs for the checkout's current branch. Providers are best-effort: GitHub Actions when the
+   * remote is on GitHub, Jenkins when frogg.json configures it. A provider that fails is reported
+   * in providerErrors alongside the runs the others returned.
+   */
+  async handleCheckoutCiListRunsRequest(
+    msg: Extract<SessionInboundMessage, { type: "checkout.ci.list_runs.request" }>,
+  ): Promise<void> {
+    const { cwd, requestId } = msg;
+    const responseType = "checkout.ci.list_runs.response" as const;
+    try {
+      const resolvedCwd = expandTilde(cwd);
+      const snapshot = await this.workspaceGitService.getSnapshot(resolvedCwd);
+      const branch = snapshot.git.currentBranch;
+      if (!branch) {
+        this.host.emit({
+          type: responseType,
+          payload: {
+            cwd,
+            branch: null,
+            runs: [],
+            providers: [],
+            providerErrors: [],
+            error: null,
+            requestId,
+          },
+        });
+        return;
+      }
+      const forge = await this.resolveForgeService(resolvedCwd);
+      const githubService = forge?.forge === "github" ? forge.service : null;
+      const githubApi: GitHubApiGet | null =
+        githubService && "apiGet" in githubService && typeof githubService.apiGet === "function"
+          ? (path) =>
+              (githubService.apiGet as (input: { cwd: string; path: string }) => Promise<unknown>)({
+                cwd: resolvedCwd,
+                path,
+              })
+          : null;
+      const result = await listCiRuns({
+        branch,
+        repoRoot: snapshot.git.repoRoot,
+        githubApi,
+      });
+      this.host.emit({
+        type: responseType,
+        payload: { cwd, branch, ...result, error: null, requestId },
+      });
+    } catch (error) {
+      this.host.emit({
+        type: responseType,
+        payload: {
+          cwd,
+          branch: null,
+          runs: [],
+          providers: [],
+          providerErrors: [],
           error: {
             code: "UNKNOWN",
             message: error instanceof Error ? error.message : String(error),

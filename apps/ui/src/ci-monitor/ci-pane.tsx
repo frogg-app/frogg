@@ -1,19 +1,21 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { ChevronDown, ChevronRight, RotateCw } from "lucide-react-native";
+import { ChevronDown, ChevronRight, ExternalLink, RotateCw } from "lucide-react-native";
+import { useTranslation } from "react-i18next";
 import {
   PaneContentToolbar,
   PaneToolbarAccessory,
   paneContentToolbarIconSize,
 } from "@/components/ui/pane-content-toolbar";
-import { useTranslation } from "react-i18next";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   Section,
   foregroundMutedColorMapping,
   sectionKitStyles,
 } from "@/git/pull-request-panel/section-kit";
 import { ICON_SIZE } from "@/styles/theme";
+import { openExternalUrl } from "@/utils/open-external-url";
 import {
   CiProgressBar,
   CiProviderIcon,
@@ -22,135 +24,254 @@ import {
   CiStatusGlyph,
 } from "./ci-progress";
 import {
+  collectRunners,
+  elapsedMs,
   formatCiDuration,
-  useMockCiRuns,
+  isCiActive,
   type CiJob,
   type CiRun,
-  type CiRunner,
-} from "./mock-runs";
+} from "./model";
+import { useCiNow, useCiRuns, type CiRunsState } from "./use-ci-runs";
 
 const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedChevronRight = withUnistyles(ChevronRight);
 const ThemedRotateCw = withUnistyles(RotateCw);
+const ThemedExternalLink = withUnistyles(ExternalLink);
+const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 
 /**
- * DESIGN PROTOTYPE. The explorer's CI tab: every run for this workspace's branch, its jobs and
+ * The CI tab: every run for this checkout's branch from GitHub Actions and Jenkins, its jobs and
  * the machines they landed on. Built from the PR pane's section kit so it reads as the same
- * product as the checks list one tab over.
+ * product as the checks list.
  */
-export function CiPane({ workspaceId }: { workspaceId: string | null | undefined }) {
-  const { t } = useTranslation();
-  const runs = useMockCiRuns(workspaceId);
-  const [runnersOpen, setRunnersOpen] = useState(true);
-  const toggleRunners = useCallback(() => setRunnersOpen((open) => !open), []);
-  const runnerSummary = useMemo(() => <RunnerSummary runs={runs} />, [runs]);
-
-  const running = runs.filter((run) => run.status === "running").length;
-  const toolbar = (
-    <PaneContentToolbar style={styles.toolbar} testID="ci-pane-toolbar">
-      <Text style={styles.toolbarText} numberOfLines={1}>
-        {t("ciMonitor.runCount", { count: runs.length })}
-        {running > 0 ? ` · ${t("ciMonitor.runningCount", { count: running })}` : ""}
-      </Text>
-      <View style={styles.toolbarActions}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("ciMonitor.refresh")}
-          style={refreshButtonStyle}
-          hitSlop={8}
-        >
-          <ThemedRotateCw
-            size={paneContentToolbarIconSize(false)}
-            uniProps={foregroundMutedColorMapping}
-          />
-        </Pressable>
-        <PaneToolbarAccessory />
-      </View>
-    </PaneContentToolbar>
-  );
-
-  if (runs.length === 0) {
-    return (
-      <View style={styles.root}>
-        {toolbar}
-        <View style={styles.empty} testID="ci-pane-empty">
-          <Text style={styles.emptyTitle}>{t("ciMonitor.emptyTitle")}</Text>
-          <Text style={styles.emptyDescription}>{t("ciMonitor.emptyDescription")}</Text>
-        </View>
-      </View>
-    );
-  }
-
+export function CiPane({
+  serverId,
+  cwd,
+  isOpen = true,
+}: {
+  serverId: string;
+  cwd: string;
+  isOpen?: boolean;
+}) {
+  const state = useCiRuns({ serverId, cwd, enabled: isOpen });
+  const now = useCiNow(state.runs.some((run) => isCiActive(run.status)));
+  const body = <CiPaneBody state={state} now={now} />;
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} testID="ci-pane">
-      {toolbar}
-      {runs.map((run) => (
-        <RunBlock key={run.id} run={run} />
-      ))}
-      <View style={styles.divider} />
-      <Section
-        title={t("ciMonitor.runners")}
-        open={runnersOpen}
-        onToggle={toggleRunners}
-        summary={runnerSummary}
-      >
-        <RunnerList runs={runs} />
-      </Section>
+      <CiToolbar state={state} />
+      {body}
     </ScrollView>
   );
 }
 
-function RunBlock({ run }: { run: CiRun }) {
+function CiToolbar({ state }: { state: CiRunsState }) {
+  const { t } = useTranslation();
+  const running = state.runs.filter((run) => isCiActive(run.status)).length;
+  let summary = state.branch ?? "";
+  if (state.runs.length > 0) {
+    summary = t("ciMonitor.runCount", { count: state.runs.length });
+    if (running > 0) summary += ` · ${t("ciMonitor.runningCount", { count: running })}`;
+  }
+  return (
+    <PaneContentToolbar style={styles.toolbar} testID="ci-pane-toolbar">
+      <Text style={styles.toolbarText} numberOfLines={1}>
+        {summary}
+      </Text>
+      <View style={styles.toolbarActions}>
+        {state.supported ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("ciMonitor.refresh")}
+            style={refreshButtonStyle}
+            hitSlop={8}
+            onPress={state.refetch}
+            disabled={state.isFetching}
+            testID="ci-pane-refresh"
+          >
+            {state.isFetching ? (
+              <ThemedLoadingSpinner
+                size={paneContentToolbarIconSize(false)}
+                uniProps={foregroundMutedColorMapping}
+              />
+            ) : (
+              <ThemedRotateCw
+                size={paneContentToolbarIconSize(false)}
+                uniProps={foregroundMutedColorMapping}
+              />
+            )}
+          </Pressable>
+        ) : null}
+        <PaneToolbarAccessory />
+      </View>
+    </PaneContentToolbar>
+  );
+}
+
+function CiPaneBody({ state, now }: { state: CiRunsState; now: number }) {
+  const { t } = useTranslation();
+  const [runnersOpen, setRunnersOpen] = useState(true);
+  const toggleRunners = useCallback(() => setRunnersOpen((open) => !open), []);
+  const runnerSummary = useMemo(() => <RunnerSummary runs={state.runs} />, [state.runs]);
+
+  if (!state.supported) {
+    return (
+      <EmptyState
+        title={t("ciMonitor.unsupportedTitle")}
+        description={t("ciMonitor.unsupportedDescription")}
+      />
+    );
+  }
+  if (state.isLoading) {
+    return (
+      <View style={styles.loading}>
+        <ThemedLoadingSpinner size={ICON_SIZE.md} uniProps={foregroundMutedColorMapping} />
+      </View>
+    );
+  }
+  if (state.error) {
+    return <EmptyState title={t("ciMonitor.errorTitle")} description={state.error} />;
+  }
+  if (state.branch === null) {
+    return (
+      <EmptyState
+        title={t("ciMonitor.noBranchTitle")}
+        description={t("ciMonitor.noBranchDescription")}
+      />
+    );
+  }
+  if (state.providers.length === 0) {
+    return (
+      <EmptyState
+        title={t("ciMonitor.notConfiguredTitle")}
+        description={t("ciMonitor.notConfiguredDescription")}
+      />
+    );
+  }
+
+  return (
+    <>
+      {state.providerErrors.map((entry) => (
+        <View key={entry.provider} style={styles.providerError} testID="ci-provider-error">
+          <CiStatusGlyph status="failure" progress={null} size={ICON_SIZE.sm} />
+          <Text style={styles.providerErrorText}>
+            {t(`ciMonitor.provider.${entry.provider}`, { defaultValue: entry.provider })}:{" "}
+            {entry.message}
+          </Text>
+        </View>
+      ))}
+      {state.runs.length === 0 ? (
+        <EmptyState
+          title={t("ciMonitor.emptyTitle")}
+          description={t("ciMonitor.emptyDescription", { branch: state.branch })}
+        />
+      ) : (
+        <>
+          {state.runs.map((run) => (
+            <RunBlock key={run.id} run={run} now={now} />
+          ))}
+          <View style={styles.divider} />
+          <Section
+            title={t("ciMonitor.runners")}
+            open={runnersOpen}
+            onToggle={toggleRunners}
+            summary={runnerSummary}
+          >
+            <RunnerList runs={state.runs} />
+          </Section>
+        </>
+      )}
+    </>
+  );
+}
+
+function EmptyState({ title, description }: { title: string; description: string }) {
+  return (
+    <View style={styles.empty} testID="ci-pane-empty">
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyDescription}>{description}</Text>
+    </View>
+  );
+}
+
+function RunBlock({ run, now }: { run: CiRun; now: number }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(run.status !== "success");
   const toggle = useCallback(() => setOpen((value) => !value), []);
+  const openUrl = useCallback(() => void openExternalUrl(run.url), [run.url]);
   const providerLabel = t(`ciMonitor.provider.${run.provider}`);
+  const elapsed = elapsedMs(run, now);
+  const meta = [providerLabel, run.trigger, elapsed === null ? null : formatCiDuration(elapsed)]
+    .filter(Boolean)
+    .join(" · ");
   return (
-    <View style={styles.run} testID={`ci-run-${run.id}`}>
-      <Pressable onPress={toggle} style={hoverable(styles.runHeader)} accessibilityRole="button">
+    <View style={styles.run} testID="ci-run">
+      <Pressable onPress={toggle} style={runHeaderStyle} accessibilityRole="button">
         <CiStatusGlyph status={run.status} progress={run.progress} size={ICON_SIZE.lg} />
         <View style={styles.runText}>
           <Text style={styles.runTitle} numberOfLines={1}>
-            {run.pipeline} <Text style={styles.runNumber}>#{run.number}</Text>
+            {run.pipeline}
+            {run.number !== null ? <Text style={styles.runNumber}> #{run.number}</Text> : null}
           </Text>
           <View style={styles.runMeta}>
             <CiProviderIcon provider={run.provider} size={ICON_SIZE.xs} />
             <Text style={styles.runMetaText} numberOfLines={1}>
-              {providerLabel} · {run.trigger} · {formatCiDuration(run.elapsedMs)}
+              {meta}
             </Text>
           </View>
         </View>
         <CiRunPercent run={run} />
+        {run.url ? (
+          <Pressable
+            onPress={openUrl}
+            hitSlop={6}
+            accessibilityRole="link"
+            accessibilityLabel={t("ciMonitor.openRun")}
+            style={iconButtonStyle}
+          >
+            <ThemedExternalLink size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
+          </Pressable>
+        ) : null}
         {open ? (
           <ThemedChevronDown size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
         ) : (
           <ThemedChevronRight size={ICON_SIZE.sm} uniProps={foregroundMutedColorMapping} />
         )}
       </Pressable>
-      <View style={styles.runBar}>
-        <CiSegmentedBar jobs={run.jobs} />
-      </View>
-      {open ? run.jobs.map((job) => <JobRow key={job.id} job={job} />) : null}
+      {run.jobs.length > 0 ? (
+        <View style={styles.runBar}>
+          <CiSegmentedBar jobs={run.jobs} />
+        </View>
+      ) : null}
+      {open ? run.jobs.map((job) => <JobRow key={job.id} job={job} now={now} />) : null}
     </View>
   );
 }
 
-function JobRow({ job }: { job: CiJob }) {
+function JobRow({ job, now }: { job: CiJob; now: number }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const toggle = useCallback(() => setOpen((value) => !value), []);
-  let trailing = formatCiDuration(job.elapsedMs);
+  const hasSteps = job.steps.length > 0;
+  const handlePress = useCallback(() => {
+    // Nothing to expand into means the only useful thing to do is go to the job itself.
+    if (hasSteps) setOpen((value) => !value);
+    else void openExternalUrl(job.url);
+  }, [hasSteps, job.url]);
+  const openJobUrl = useCallback(() => void openExternalUrl(job.url), [job.url]);
+  const elapsed = elapsedMs(job, now);
+  let trailing = elapsed === null ? "" : formatCiDuration(elapsed);
   if (job.status === "queued") trailing = t("ciMonitor.status.queued");
-  else if (job.status === "running") trailing = `${Math.round(job.progress * 100)}%`;
+  else if (job.status === "running" && job.progress !== null) {
+    trailing = `${Math.round(job.progress * 100)}%`;
+  }
   return (
     <View>
-      <Pressable onPress={toggle} style={hoverable(sectionKitStyles.checkRow)} testID="ci-job-row">
+      <Pressable onPress={handlePress} style={jobRowStyle} testID="ci-job-row">
         <CiStatusGlyph status={job.status} progress={job.progress} size={ICON_SIZE.sm} />
         <Text style={sectionKitStyles.checkName} numberOfLines={1}>
           {job.name}
         </Text>
         <Text style={sectionKitStyles.checkWorkflow} numberOfLines={1}>
-          {job.runner?.name ?? t("ciMonitor.waitingForRunner")}
+          {job.runner?.name ?? (job.status === "queued" ? t("ciMonitor.waitingForRunner") : "")}
         </Text>
         <View style={sectionKitStyles.checkTrailing}>
           <Text style={sectionKitStyles.checkDuration}>{trailing}</Text>
@@ -163,39 +284,29 @@ function JobRow({ job }: { job: CiJob }) {
       ) : null}
       {open ? (
         <View style={styles.steps}>
-          {job.steps.map((step) => (
-            <View key={step.name} style={styles.step}>
+          {job.steps.map((step, index) => (
+            // Step names repeat across a job (two "Run" steps), so position is part of identity.
+            // oxlint-disable-next-line react/no-array-index-key
+            <View key={`${index}:${step.name}`} style={styles.step}>
               <CiStatusGlyph status={step.status} progress={0} size={ICON_SIZE.xs} />
               <Text
-                style={[styles.stepText, step.status === "queued" && styles.stepTextPending]}
+                style={step.status === "queued" ? styles.stepTextPending : styles.stepText}
                 numberOfLines={1}
               >
                 {step.name}
               </Text>
             </View>
           ))}
+          {job.url ? (
+            <Pressable onPress={openJobUrl} style={styles.step}>
+              <ThemedExternalLink size={ICON_SIZE.xs} uniProps={foregroundMutedColorMapping} />
+              <Text style={styles.stepLink}>{t("ciMonitor.openLogs")}</Text>
+            </Pressable>
+          ) : null}
         </View>
       ) : null}
     </View>
   );
-}
-
-interface RunnerUse {
-  runner: CiRunner;
-  job: CiJob | null;
-}
-
-function collectRunners(runs: CiRun[]): RunnerUse[] {
-  const byName = new Map<string, RunnerUse>();
-  for (const run of runs) {
-    for (const job of run.jobs) {
-      if (!job.runner) continue;
-      const existing = byName.get(job.runner.name);
-      if (job.status === "running") byName.set(job.runner.name, { runner: job.runner, job });
-      else if (!existing) byName.set(job.runner.name, { runner: job.runner, job: null });
-    }
-  }
-  return [...byName.values()];
 }
 
 function RunnerSummary({ runs }: { runs: CiRun[] }) {
@@ -221,14 +332,18 @@ function RunnerList({ runs }: { runs: CiRun[] }) {
     <>
       {runners.map(({ runner, job }) => (
         <View key={runner.name} style={styles.runnerRow} testID="ci-runner-row">
-          <View style={[styles.runnerDot, job ? styles.runnerDotBusy : styles.runnerDotIdle]} />
+          <View style={job ? styles.runnerDotBusy : styles.runnerDotIdle} />
           <View style={styles.runnerText}>
             <Text style={sectionKitStyles.checkName} numberOfLines={1}>
               {runner.name}
             </Text>
             <Text style={sectionKitStyles.checkWorkflow} numberOfLines={1}>
-              {runner.hosted ? t("ciMonitor.hosted") : t("ciMonitor.selfHosted")} ·{" "}
-              {runner.labels.join(", ")}
+              {[
+                runner.hosted ? t("ciMonitor.hosted") : t("ciMonitor.selfHosted"),
+                runner.labels.join(", "),
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             </Text>
           </View>
           <Text style={sectionKitStyles.checkDuration} numberOfLines={1}>
@@ -241,17 +356,21 @@ function RunnerList({ runs }: { runs: CiRun[] }) {
 }
 
 function refreshButtonStyle({ hovered }: { hovered?: boolean }) {
-  return [styles.refreshButton, Boolean(hovered) && styles.hover];
+  return [styles.iconButton, Boolean(hovered) && styles.hover];
+}
+const iconButtonStyle = refreshButtonStyle;
+
+function runHeaderStyle({ hovered }: { hovered?: boolean }) {
+  return [styles.runHeader, Boolean(hovered) && styles.hover];
 }
 
-function hoverable(base: object) {
-  return ({ hovered }: { hovered?: boolean }) => [base, Boolean(hovered) && styles.hover];
+function jobRowStyle({ hovered }: { hovered?: boolean }) {
+  return [sectionKitStyles.checkRow, Boolean(hovered) && styles.hover];
 }
+
+const RUNNER_DOT = { width: 6, height: 6, borderRadius: 3 } as const;
 
 const styles = StyleSheet.create((theme) => ({
-  root: {
-    flex: 1,
-  },
   toolbar: {
     flexDirection: "row",
     alignItems: "center",
@@ -268,7 +387,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: theme.spacing[1],
   },
-  refreshButton: {
+  iconButton: {
     padding: theme.spacing[1],
     borderRadius: theme.borderRadius.base,
   },
@@ -276,7 +395,26 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
   },
   content: {
+    flexGrow: 1,
     paddingBottom: theme.spacing[4],
+  },
+  loading: {
+    padding: theme.spacing[6],
+    alignItems: "center",
+  },
+  providerError: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: theme.spacing[2],
+    paddingHorizontal: theme.spacing[3],
+    paddingVertical: theme.spacing[2],
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+  },
+  providerErrorText: {
+    flex: 1,
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.statusDanger,
   },
   run: {
     borderBottomWidth: 1,
@@ -343,6 +481,12 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foreground,
   },
   stepTextPending: {
+    fontSize: theme.fontSize.sm,
+    fontFamily: theme.fontFamily.mono,
+    color: theme.colors.foregroundMuted,
+  },
+  stepLink: {
+    fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
   },
   divider: {
@@ -359,15 +503,12 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     minWidth: 0,
   },
-  runnerDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
   runnerDotBusy: {
+    ...RUNNER_DOT,
     backgroundColor: theme.colors.statusDotWarning,
   },
   runnerDotIdle: {
+    ...RUNNER_DOT,
     backgroundColor: theme.colors.statusDotSuccess,
   },
   hover: {

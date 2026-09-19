@@ -53,6 +53,7 @@ import type {
   CheckoutPrMergeResponse,
   CheckoutPrMergeMethod,
   CheckoutForgeSetAutoMergeResponse,
+  CheckoutCiListRunsResponse,
   CheckoutGithubSetAutoMergeResponse,
   CheckoutForgeGetCheckDetailsResponse,
   CheckoutGithubGetCheckDetailsResponse,
@@ -424,6 +425,7 @@ type CheckoutRefreshPayload = CheckoutRefreshResponse["payload"];
 type CheckoutPrCreatePayload = CheckoutPrCreateResponse["payload"];
 type CheckoutPrMergePayload = CheckoutPrMergeResponse["payload"];
 type CheckoutForgeSetAutoMergePayload = CheckoutForgeSetAutoMergeResponse["payload"];
+export type CheckoutCiListRunsPayload = CheckoutCiListRunsResponse["payload"];
 type CheckoutGithubSetAutoMergePayload = CheckoutGithubSetAutoMergeResponse["payload"];
 type CheckoutForgeGetCheckDetailsPayload = CheckoutForgeGetCheckDetailsResponse["payload"];
 type CheckoutGithubGetCheckDetailsPayload = CheckoutGithubGetCheckDetailsResponse["payload"];
@@ -4264,6 +4266,18 @@ export class DaemonClient {
         mergeMethod: input.method,
       },
       responseType: "checkout_pr_merge_response",
+    });
+  }
+
+  /** CI runs for the checkout's branch. Providers call out to GitHub and Jenkins, hence the timeout. */
+  async checkoutCiListRuns(cwd: string, requestId?: string): Promise<CheckoutCiListRunsPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"checkout.ci.list_runs.response">({
+      requestId,
+      message: {
+        type: "checkout.ci.list_runs.request",
+        cwd,
+      },
+      timeout: 45000,
     });
   }
 

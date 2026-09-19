@@ -1,35 +1,18 @@
 import { useMemo } from "react";
 import { Text, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { Hammer, Workflow } from "lucide-react-native";
 import { CheckIndicator } from "@/components/sidebar/workspace-meta-row/check-indicator";
 import type { CheckSummary } from "@/components/sidebar/workspace-meta-row/check-summary";
 import { GitHubIcon } from "@/components/icons/github-icon";
-import { withUnistyles } from "react-native-unistyles";
-import { Hammer } from "lucide-react-native";
+import { CheckPresentationIcon } from "@/git/check-presentation.view";
 import type { Theme } from "@/styles/theme";
-import type { CiJob, CiProvider, CiRun, CiStatus } from "./mock-runs";
+import type { CiJob, CiProvider, CiRun, CiStatus } from "./model";
 
 const ThemedGitHubIcon = withUnistyles(GitHubIcon);
 const ThemedHammer = withUnistyles(Hammer);
+const ThemedWorkflow = withUnistyles(Workflow);
 const mutedColor = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
-
-/**
- * The same circle the sidebar and PR pane already use for CI: check, cross, or a pie that
- * fills while the work runs. Queued is an empty pie — the circle is there, nothing has moved.
- */
-export function CiStatusGlyph({
-  status,
-  progress,
-  size,
-}: {
-  status: CiStatus;
-  progress: number;
-  size: number;
-}) {
-  const completed = Math.round(progress * 100);
-  const summary = useMemo(() => toCheckSummary(status, completed), [status, completed]);
-  return <CheckIndicator summary={summary} size={size} />;
-}
 
 function toCheckSummary(status: CiStatus, completedPercent: number): CheckSummary {
   if (status === "success") return { state: "passed", completed: 1, total: 1 };
@@ -37,33 +20,59 @@ function toCheckSummary(status: CiStatus, completedPercent: number): CheckSummar
   return { state: "running", completed: completedPercent, total: 100 };
 }
 
+/**
+ * The same circle the sidebar and PR pane already use for CI: check, cross, or a pie that
+ * fills while the work runs. Cancelled and skipped borrow the PR pane's "ignored" mark.
+ */
+export function CiStatusGlyph({
+  status,
+  progress,
+  size,
+}: {
+  status: CiStatus;
+  progress: number | null;
+  size: number;
+}) {
+  const completed = Math.round((progress ?? 0) * 100);
+  const summary = useMemo(() => toCheckSummary(status, completed), [status, completed]);
+  if (status === "cancelled" || status === "skipped") {
+    return <CheckPresentationIcon presentation="ignored" size={size} />;
+  }
+  return <CheckIndicator summary={summary} size={size} />;
+}
+
 export function CiProviderIcon({ provider, size }: { provider: CiProvider; size: number }) {
-  return provider === "githubActions" ? (
-    <ThemedGitHubIcon size={size} uniProps={mutedColor} />
-  ) : (
-    <ThemedHammer size={size} uniProps={mutedColor} />
-  );
+  if (provider === "githubActions") return <ThemedGitHubIcon size={size} uniProps={mutedColor} />;
+  if (provider === "jenkins") return <ThemedHammer size={size} uniProps={mutedColor} />;
+  return <ThemedWorkflow size={size} uniProps={mutedColor} />;
 }
 
 /**
  * A hairline track with the status color filling it. Colour is the status token and nothing
- * else, so a bar under a row reads exactly as the check glyph beside the PR number does.
+ * else, so a bar reads exactly as the check glyph beside the PR number does.
  */
 export function CiProgressBar({
   status,
   progress,
   height = 2,
-  testID,
 }: {
   status: CiStatus;
-  progress: number;
+  progress: number | null;
   height?: number;
-  testID?: string;
 }) {
-  const width = `${Math.round((status === "queued" ? 0 : progress) * 100)}%` as const;
+  const fraction = status === "queued" ? 0 : (progress ?? (status === "running" ? 0 : 1));
+  const fillStyle = useMemo(
+    () => [
+      styles.fill,
+      fillStyles[status],
+      { width: `${Math.round(fraction * 100)}%` as const, borderRadius: height },
+    ],
+    [fraction, height, status],
+  );
+  const trackStyle = useMemo(() => [styles.track, { height, borderRadius: height }], [height]);
   return (
-    <View style={[styles.track, { height, borderRadius: height }]} testID={testID}>
-      <View style={[styles.fill, fillStyles[status], { width, borderRadius: height }]} />
+    <View style={trackStyle}>
+      <View style={fillStyle} />
     </View>
   );
 }
@@ -82,7 +91,7 @@ export function CiSegmentedBar({ jobs, height = 3 }: { jobs: CiJob[]; height?: n
 }
 
 export function CiRunPercent({ run }: { run: CiRun }) {
-  if (run.status !== "running") return null;
+  if (run.status !== "running" || run.progress === null) return null;
   return <Text style={styles.percent}>{Math.round(run.progress * 100)}%</Text>;
 }
 
@@ -114,4 +123,6 @@ const fillStyles = StyleSheet.create((theme) => ({
   running: { backgroundColor: theme.colors.statusWarning },
   success: { backgroundColor: theme.colors.statusSuccess },
   failure: { backgroundColor: theme.colors.statusDanger },
+  cancelled: { backgroundColor: theme.colors.foregroundMuted },
+  skipped: { backgroundColor: theme.colors.foregroundMuted },
 }));

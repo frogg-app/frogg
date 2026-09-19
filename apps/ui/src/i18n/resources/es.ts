@@ -2,33 +2,45 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const es: TranslationResources = {
-  // DESIGN PROTOTYPE: CI monitor copy. English everywhere until the design settles.
   ciMonitor: {
     label: "CI",
-    subtitle: "GitHub Actions and Jenkins runs for this branch",
-    runCount_one: "{{count}} run",
-    runCount_other: "{{count}} runs",
-    runningCount: "{{count}} running",
-    refresh: "Refresh CI",
-    emptyTitle: "No CI runs",
-    emptyDescription: "Nothing from GitHub Actions or Jenkins is running for this branch.",
+    subtitle: "Ejecuciones de GitHub Actions y Jenkins para esta rama",
+    runCount_one: "{{count}} ejecución",
+    runCount_other: "{{count}} ejecuciones",
+    runningCount: "{{count}} en curso",
+    refresh: "Actualizar CI",
+    openRun: "Abrir ejecución",
+    openLogs: "Abrir registros",
+    unsupportedTitle: "Actualiza el daemon",
+    unsupportedDescription:
+      "El daemon de este host es demasiado antiguo para mostrar ejecuciones de CI.",
+    errorTitle: "No se pudo cargar la CI",
+    noBranchTitle: "No estás en una rama",
+    noBranchDescription: "Cambia a una rama para ver sus ejecuciones de CI.",
+    notConfiguredTitle: "CI sin configurar",
+    notConfiguredDescription:
+      "GitHub Actions aparece con remotos de GitHub. Añade una entrada ci.jenkins a frogg.json para Jenkins.",
+    emptyTitle: "Sin ejecuciones de CI",
+    emptyDescription: "Aún no se ha ejecutado nada para {{branch}}.",
     runners: "Runners",
-    runnerSummary: "{{busy}} of {{total}} busy",
-    queuedCount_one: "{{count}} queued",
-    queuedCount_other: "{{count}} queued",
-    noRunners: "No runners assigned yet",
-    waitingForRunner: "Waiting for runner",
-    hosted: "Hosted",
-    selfHosted: "Self-hosted",
-    idle: "Idle",
+    runnerSummary: "{{busy}} de {{total}} ocupados",
+    queuedCount_one: "{{count}} en cola",
+    queuedCount_other: "{{count}} en cola",
+    noRunners: "Aún no hay runners asignados",
+    waitingForRunner: "Esperando un runner",
+    hosted: "Alojado",
+    selfHosted: "Autoalojado",
+    idle: "Inactivo",
     provider: {
       githubActions: "GitHub Actions",
       jenkins: "Jenkins",
+      other: "CI",
     },
     status: {
-      queued: "Queued",
+      queued: "En cola",
     },
   },
+
   hostAdd: {
     title: "Añadir un host",
     connecting: "Añadiendo {{endpoint}}…",

@@ -71,11 +71,32 @@ export const FroggMetadataGenerationSchema = z
   .passthrough()
   .catch({});
 
+/**
+ * CI providers for the explorer's CI tab. GitHub Actions needs no entry: it is read through the
+ * `gh` CLI whenever the checkout's remote is on GitHub. Jenkins credentials never live here —
+ * the daemon reads them from FROGG_JENKINS_USER / FROGG_JENKINS_TOKEN.
+ */
+export const FroggCiConfigSchema = z
+  .object({
+    githubActions: z.boolean().optional(),
+    jenkins: z
+      .object({
+        url: z.string(),
+        /** Job path, folders separated by "/", e.g. "team/frogg-daemon". */
+        job: z.string(),
+        /** A multibranch pipeline: builds live under job/<branch>. Defaults to true. */
+        multibranch: z.boolean().optional(),
+      })
+      .optional(),
+  })
+  .passthrough();
+
 export const FroggConfigRawSchema = z
   .object({
     worktree: FroggWorktreeConfigRawSchema.optional(),
     scripts: z.record(z.string(), FroggScriptEntryRawSchema).optional(),
     metadataGeneration: FroggMetadataGenerationSchema.optional(),
+    ci: FroggCiConfigSchema.optional(),
   })
   .passthrough();
 
@@ -92,6 +113,8 @@ export const FroggConfigSchema = FroggConfigRawSchema.extend({
   worktree: WorktreeConfigSchema.optional(),
   scripts: z.record(z.string(), ScriptEntrySchema).optional().catch({}),
   metadataGeneration: FroggMetadataGenerationSchema.optional(),
+  // A malformed ci block must not take the rest of the config down with it.
+  ci: FroggCiConfigSchema.optional().catch(undefined),
 })
   .passthrough()
   .catch({});
@@ -123,5 +146,6 @@ export type FroggMetadataGeneration = z.infer<typeof FroggMetadataGenerationSche
 export type FroggServicePortAllocation = z.infer<typeof FroggServicePortAllocationSchema>;
 export type FroggConfigRaw = z.infer<typeof FroggConfigRawSchema>;
 export type FroggConfig = z.infer<typeof FroggConfigSchema>;
+export type FroggCiConfig = z.infer<typeof FroggCiConfigSchema>;
 export type FroggConfigRevision = z.infer<typeof FroggConfigRevisionSchema>;
 export type ProjectConfigRpcError = z.infer<typeof ProjectConfigRpcErrorSchema>;

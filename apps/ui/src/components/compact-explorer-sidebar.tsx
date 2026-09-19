@@ -457,7 +457,7 @@ function ExplorerSidebarContent({
         ) : null}
         {mountedTabIds.has("ci") ? (
           <RetainedPanel active={resolvedTab === "ci"}>
-            <CiPane workspaceId={workspaceId} />
+            <CiPane serverId={serverId} cwd={workspaceRoot} isOpen={isOpen} />
           </RetainedPanel>
         ) : null}
       </View>

@@ -678,19 +678,6 @@ function normalizePaneNode(rawPane: SplitPaneInternal | undefined): SplitNodeInt
           target: { kind: "draft", draftId: tabId } as WorkspaceTabTarget,
           createdAt: Date.now(),
         }));
-  // DESIGN PROTOTYPE: layouts saved before the CI tab existed get it appended, so the tab shows
-  // up without resetting anyone's right pane.
-  if (
-    paneId === EXPLORER_SIDEBAR_PANE_ID &&
-    !mergedTabs.some((tab) => tab.target.kind === "ci_runs")
-  ) {
-    const target: WorkspaceTabTarget = { kind: "ci_runs" };
-    mergedTabs.push({
-      tabId: buildDeterministicWorkspaceTabId(target),
-      target,
-      createdAt: Date.now(),
-    });
-  }
   return createPaneNode({
     id: paneId,
     tabs: mergedTabs,
@@ -1228,6 +1215,8 @@ export function createWorkspaceLayoutWithExplorerSidebar(): WorkspaceLayout {
         createPaneNode({
           id: EXPLORER_SIDEBAR_PANE_ID,
           tabs: createDefaultExplorerSidebarTabs(),
+          // Changes stays the tab Explorer opens on; CI sits after it without taking focus.
+          focusedTabId: buildDeterministicWorkspaceTabId({ kind: "changes_tree" }),
           hidden: true,
         }),
       ],
