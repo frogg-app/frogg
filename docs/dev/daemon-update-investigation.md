@@ -121,3 +121,77 @@ Recovery needed: remove host, reinstall daemon, re-add host.
 22. The daemon supervisor restarts a worker indefinitely on `EADDRINUSE` (~1.5s). A bounded
     backoff or a clear "port held by <identity>" error at startup would make the conflict
     visible without the updater.
+
+## Second pass
+
+23. **Review of steps 10–14.** Gaps found:
+    - "Never roll back" on a persistent foreign listener kept an _unverified_ bundle as
+      `current`. If that bundle were broken, the host would be stranded on it once the port
+      freed. The verify timeout also labels a failure `foreign_listener` if only the last
+      poll was foreign, so a broken bundle could take that path.
+    - Forced retirement disabled an FDE unit even when its unit file named a different port
+      (the test asserted that), so it could stop a legitimately separate FDE install.
+    - The stale banner (21), leftover processes (20) and the restart loop (22) were left open;
+      the client-side claim in step 18 missed that the live client's reconnect adopts any
+      `server_info` (below).
+    - Auto-update backoff is sound; a genuinely broken release is still retried once per
+      check interval (each attempt restarts and rolls back). Not changed.
+24. **Leftover processes, root cause.** Journal at 12:39:46: `Stopping` then SIGKILL to the
+    supervisor, worker and agents 15 ms later. The unit's main process is the CLI
+    (`frogg daemon start --foreground`), which ran the supervisor with `spawnSync`. SIGTERM
+    killed the CLI immediately (default handler; `spawnSync` blocks the loop), so
+    `KillMode=mixed` went straight to SIGKILL for everything else: no graceful worker
+    shutdown, and the new start raced the dying worker for the port ("Found left-over
+    process … while starting unit"). `cgroup.kill` EINVAL is only the fast path failing;
+    systemd still SIGKILLs per process. launchd signals the job's main process the same way.
+    Intended agent behaviour: default mode stops agents with the daemon (mixed; supervisor
+    tree-kills on force); independent execution mode keeps them (`KillMode=process`). Fix
+    keeps both and only makes the stop graceful.
+25. **Fixes (this pass)** - `local-daemon.ts`: foreground start spawns asynchronously, forwards SIGTERM/SIGINT/SIGHUP
+    to the supervisor and exits with its status after it finishes (Windows: waits, does not
+    forward, since `kill` is TerminateProcess and the console already delivers Ctrl+C).
+    Takes effect for the restart _out of_ a version that has it; the restart out of 1.5.7
+    still has the old CLI, which the next item covers. - `supervisor.ts` + `daemon-worker.ts` + `port-holder.ts`: on `EADDRINUSE` the worker
+    names the holder (`/api/identity` product/version/serverId, and pid/process via `ss`
+    on Linux or `lsof` on macOS) and reports it over IPC; the supervisor restarts crashes
+    with 1s→30s exponential backoff (reset on ready or after 60s up) and logs
+    `Worker crashed (code 1): Frogg cannot listen on 0.0.0.0:9999: port 9999 is already in
+use by a fde daemon 0.6.13 (server …), pid N (node). Restarting worker in 4s (attempt 3)`.
+    No daemon is up in that state, so there is no status channel to the client; the
+    self-update verifier's `foreign_listener` reason is what the client sees for updates. - `daemon-update-service.ts` + `apps/ui/.../daemon-update-outcome.ts`: a `failed` or
+    `rolled_back` record whose `to` equals the running version reports as `applied`
+    (server-side, and client-side for daemons without the fix). Fixes the stale
+    "Update from 1.5.6 to 1.5.7 failed" on this host without touching the file. - `apply.ts`: on a persistent foreign listener, relink `current` to `previous` (the
+    version that was demonstrably running) and restart without the 90s verify; record
+    `failed` with "restored X without verifying it". A broken bundle behind a retired
+    legacy daemon still takes the normal verified rollback (new test). - `service.ts`: forced retirement spares a legacy unit whose configured port differs. - `daemon-client.ts` + `host-runtime.ts`: new `expectedServerId` (the saved host's id,
+    not for `local:` placeholders). A handshake from any other serverId is refused with
+    "This address is now answered by a different daemon (X), not this host (Y)…",
+    logged as `daemon_client_server_identity_mismatch`, and retried with the normal
+    capped backoff, so the host reconnects by itself once its own daemon is back.
+26. **Client reconnect audit (delegated read, no change needed beyond 25).** Probe loop runs
+    for the runtime's life with 2s→30s per-connection backoff; the `error` state never stops
+    probing; serverId mismatch in probes marks the connection unavailable without persisting
+    anything; relay E2EE failure is an ordinary close; passwords and pinned keys are never
+    cleared on failure; nothing is persisted on any failure path. Only `local:` placeholder
+    hosts can have their serverId rewritten from a handshake (theoretical: a foreign daemon
+    answering first would be pinned). Same-serverId restarts on a new version reconnect on
+    their own.
+27. **Tests (this pass)**: `apps/cli/src/commands/daemon/self-update` (65),
+    `local-daemon.supervision.test.ts` + `start.test.ts` (16),
+    `packages/server/scripts/supervisor*.test.ts` + `supervision-parity` + `port-holder` (21),
+    `packages/server/src/server/session/daemon/` (53), `packages/client` (all),
+    `apps/ui` runtime + settings outcome (72, run from `apps/ui`). Typecheck clean for
+    `packages/server`, `apps/cli`, `packages/client`; `apps/ui` errors are only in another
+    agent's uncommitted sidebar files.
+
+## Open (second pass)
+
+28. Host commands for this machine (not run):
+    `systemctl --user disable --now fde-daemon.service` (retire the legacy unit now), then
+    optionally `systemctl --user restart frogg-daemon.service`. The stale banner clears with
+    the next daemon or client build containing step 25.
+29. The first restart out of 1.5.7 still uses 1.5.7's CLI (instant-kill stop); the new
+    worker's backoff covers the short race with the dying worker.
+30. A genuinely broken release is retried once per auto-update check interval, each time
+    restarting the daemon and rolling back. Consider exponential backoff per version.
