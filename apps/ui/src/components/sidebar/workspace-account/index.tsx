@@ -97,9 +97,6 @@ export function SidebarAccountIndicator({
             </Text>
           ) : null}
           <Icon size={12} color={color} />
-          <Text style={styles.name} numberOfLines={1}>
-            {model.displayLabel}
-          </Text>
         </View>
       </TooltipTrigger>
       <TooltipContent side="top" align="center" offset={8}>
