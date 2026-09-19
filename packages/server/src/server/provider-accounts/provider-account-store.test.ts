@@ -12,6 +12,8 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
+  PROVIDER_ACCOUNT_DEFAULT_NAME,
+  parseProviderAccountDefaultId,
   providerAccountDefaultId,
   type ProviderAccountState,
 } from "@frogg/protocol/provider-accounts";
@@ -46,8 +48,9 @@ describe("ProviderAccountStore", () => {
       linkedFolders: ["skills"],
     });
 
-    expect(result.accounts).toHaveLength(1);
-    const account = result.accounts[0]!;
+    // Every enabled provider's implicit default account rides along in a listing,
+    // so the created account is found by name rather than by position.
+    const account = result.accounts.find((candidate) => candidate.name === "peter")!;
     expect(account.name).toBe("peter");
     expect(account.configDir).toBe(path.join(homeDir, ".claude-peter"));
     expect(account.linkedFolders).toEqual(["skills"]);
@@ -66,10 +69,10 @@ describe("ProviderAccountStore", () => {
       name: "peter",
       linkedFolders: [],
     });
-    const account = created.accounts[0]!;
+    const account = created.accounts.find((candidate) => candidate.name === "peter")!;
     writeFileSync(path.join(account.configDir, ".credentials.json"), "{}");
 
-    expect(store.list()[0]?.authenticated).toBe(true);
+    expect(store.list().find((candidate) => candidate.id === account.id)?.authenticated).toBe(true);
   });
 
   it("rejects invalid and duplicate names", () => {
@@ -110,11 +113,9 @@ describe("ProviderAccountStore", () => {
   });
 
   it("switches and clears the active account", () => {
-    const first = store.create({
-      provider: "claude",
-      name: "peter",
-      linkedFolders: [],
-    }).accounts[0]!;
+    const first = store
+      .create({ provider: "claude", name: "peter", linkedFolders: [] })
+      .accounts.find((account) => account.name === "peter")!;
     const second = store
       .create({ provider: "claude", name: "jason", linkedFolders: [] })
       .accounts.find((account) => account.name === "jason")!;
@@ -133,20 +134,88 @@ describe("ProviderAccountStore", () => {
   });
 
   it("deletes an account and promotes a remaining one", () => {
-    const first = store.create({
-      provider: "claude",
-      name: "peter",
-      linkedFolders: [],
-    }).accounts[0]!;
+    const first = store
+      .create({ provider: "claude", name: "peter", linkedFolders: [] })
+      .accounts.find((account) => account.name === "peter")!;
     store.create({ provider: "claude", name: "jason", linkedFolders: [] });
 
     const result = store.delete(first.id);
 
-    expect(result.accounts.map((account) => account.name)).toEqual(["jason"]);
-    expect(result.accounts[0]?.isActive).toBe(true);
+    const remaining = result.accounts.filter(
+      (account) => account.provider === "claude" && !parseProviderAccountDefaultId(account.id),
+    );
+    expect(remaining.map((account) => account.name)).toEqual(["jason"]);
+    expect(remaining[0]?.isActive).toBe(true);
     // The config dir holds credentials, so it is deliberately left behind.
     expect(existsSync(first.configDir)).toBe(true);
     expect(() => store.delete(first.id)).toThrow(/Unknown provider account/);
+  });
+
+  it("lists each enabled provider's implicit default account, and only on request", () => {
+    const defaultId = providerAccountDefaultId("claude");
+
+    // The composer's picker renders its own Default row, so the plain listing
+    // stays empty until an account is created.
+    expect(store.list()).toEqual([]);
+
+    const listed = store.list(undefined, { includeImplicitDefault: true });
+    expect(listed.map((account) => account.id)).toEqual([
+      defaultId,
+      providerAccountDefaultId("codex"),
+    ]);
+    const claudeDefault = listed[0]!;
+    expect(claudeDefault.name).toBe(PROVIDER_ACCOUNT_DEFAULT_NAME);
+    expect(claudeDefault.configDir).toBe(path.join(homeDir, ".claude"));
+    // Nothing else is active, so the primary config directory is what the
+    // provider runs as.
+    expect(claudeDefault.isActive).toBe(true);
+    // Listing it persists nothing.
+    expect(loadPersistedConfig(froggHome).providerAccounts).toBeUndefined();
+
+    // Disabled providers are not offered a default row.
+    expect(listed.some((account) => account.provider === "gemini")).toBe(false);
+  });
+
+  it("reports the implicit default account's sign-in from the primary config dir", () => {
+    writeFileSync(path.join(homeDir, ".claude", ".credentials.json"), "{}");
+
+    const listed = store
+      .list("claude", { includeImplicitDefault: true })
+      .find((account) => account.id === providerAccountDefaultId("claude"))!;
+
+    expect(listed.authenticated).toBe(true);
+  });
+
+  it("heads a provider's list with its default account and never duplicates it", () => {
+    store.create({ provider: "claude", name: "peter", linkedFolders: [] });
+    store.rename(providerAccountDefaultId("claude"), "Personal");
+
+    const claude = store
+      .list("claude", { includeImplicitDefault: true })
+      .filter((account) => account.provider === "claude");
+
+    expect(claude.map((account) => account.name)).toEqual(["Personal", "peter"]);
+    // Creating an account made it active, so the default no longer is.
+    expect(claude[0]!.isActive).toBe(false);
+    expect(claude[1]!.isActive).toBe(true);
+  });
+
+  it("refuses to remove a provider's default account", () => {
+    expect(() => store.delete(providerAccountDefaultId("claude"))).toThrow(/cannot be removed/);
+    // Even once a stored record exists to hold its label.
+    store.rename(providerAccountDefaultId("claude"), "Personal");
+    expect(() => store.delete(providerAccountDefaultId("claude"))).toThrow(/cannot be removed/);
+  });
+
+  it("signs the default account out of the primary config dir with nothing stored", () => {
+    const credentials = path.join(homeDir, ".claude", ".credentials.json");
+    writeFileSync(credentials, "{}");
+
+    store.signOut(providerAccountDefaultId("claude"));
+
+    expect(existsSync(credentials)).toBe(false);
+    expect(existsSync(path.join(homeDir, ".claude"))).toBe(true);
+    expect(() => store.signOut(providerAccountDefaultId("claude"))).toThrow(/not signed in/);
   });
 
   it("returns an empty env overlay for a provider without accounts", () => {
@@ -476,7 +545,7 @@ describe("ProviderAccountStore with a home-mode provider", () => {
       name: "second",
       linkedFolders: ["commands"],
     });
-    const account = result.accounts[0]!;
+    const account = result.accounts.find((candidate) => candidate.name === "second")!;
 
     expect(account.configDir).toBe(path.join(homeDir, ".gemini-second"));
     // The provider's real config dir is one level down, and the shared folder
@@ -497,11 +566,11 @@ describe("ProviderAccountStore with a home-mode provider", () => {
       name: "second",
       linkedFolders: [],
     });
-    const account = created.accounts[0]!;
+    const account = created.accounts.find((candidate) => candidate.name === "second")!;
     expect(account.authenticated).toBe(false);
 
     writeFileSync(path.join(account.configDir, ".gemini", "oauth_creds.json"), "{}");
-    const listed = store.list("gemini")[0]!;
+    const listed = store.list("gemini").find((candidate) => candidate.id === account.id)!;
     expect(listed.authenticated).toBe(true);
   });
 
@@ -512,7 +581,7 @@ describe("ProviderAccountStore with a home-mode provider", () => {
       linkedFolders: [],
     });
     expect(resolveProviderAccountEnv(store, "gemini")).toEqual({
-      HOME: created.accounts[0]!.configDir,
+      HOME: created.accounts.find((account) => account.name === "second")!.configDir,
     });
     // An env-mode provider is unaffected.
     expect(resolveProviderAccountEnv(store, "claude")).toEqual({});
