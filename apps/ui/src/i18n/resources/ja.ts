@@ -2204,6 +2204,7 @@ export const ja: TranslationResources = {
     archiveAction: "{{label}}をアーカイブ",
     archiveTooltip: "サブエージェントをアーカイブ",
     archiveFinishedAction: "完了したサブエージェントをアーカイブ",
+    actionsMenu: "{{label}} のアクション",
     archiveFinishedRetry: "再試行 ({{failed}}/{{total}})",
   },
   panels: {

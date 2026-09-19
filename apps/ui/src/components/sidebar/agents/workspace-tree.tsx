@@ -1,9 +1,10 @@
 import { createContext, useContext, useMemo, useState, useCallback, type ReactNode } from "react";
-import type { GestureResponderEvent } from "react-native";
+import { View, type GestureResponderEvent } from "react-native";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { SIDEBAR_ROW_DISCLOSURE_WIDTH } from "@/components/sidebar/row-metrics";
 import type { Theme } from "@/styles/theme";
 import { buildWorkspaceTabPersistenceKey } from "@/workspace-tabs/model";
 import { useSidebarAgents } from "./provider";
@@ -94,7 +95,10 @@ export function WorkspaceAgentDisclosure({ label }: { label: string }) {
     },
     [toggle],
   );
-  if (nodes.length === 0) return null;
+  // Held open rather than dropped when there is nothing to disclose: a row that grows a
+  // subagent must not shunt its account glyph and kebab left of where every other row draws
+  // them.
+  if (nodes.length === 0) return <View style={styles.disclosure} />;
   const Chevron = expanded ? ThemedChevronDown : ThemedChevronRight;
   return (
     <Button
@@ -114,6 +118,6 @@ export function WorkspaceAgentDisclosure({ label }: { label: string }) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
-  disclosure: { width: theme.spacing[4], paddingHorizontal: 0, flexShrink: 0 },
-}));
+const styles = StyleSheet.create({
+  disclosure: { width: SIDEBAR_ROW_DISCLOSURE_WIDTH, paddingHorizontal: 0, flexShrink: 0 },
+});

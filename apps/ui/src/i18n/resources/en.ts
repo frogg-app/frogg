@@ -2193,6 +2193,7 @@ export const en = {
     archiveAction: "Archive {{label}}",
     archiveTooltip: "Archive subagent",
     archiveFinishedAction: "Archive finished subagents",
+    actionsMenu: "Actions for {{label}}",
     archiveFinishedRetry: "Retry ({{failed}}/{{total}})",
   },
   panels: {

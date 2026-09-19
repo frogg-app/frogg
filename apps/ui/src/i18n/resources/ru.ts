@@ -2212,6 +2212,7 @@ export const ru: TranslationResources = {
     archiveAction: "Архивировать {{label}}",
     archiveTooltip: "Архивировать субагента",
     archiveFinishedAction: "Архивировать завершенные субагенты",
+    actionsMenu: "Действия для {{label}}",
     archiveFinishedRetry: "Повторить ({{failed}}/{{total}})",
   },
   panels: {

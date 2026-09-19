@@ -23,6 +23,13 @@ import { workspaceTabTargetsEqual } from "@/workspace-tabs/identity";
 import { buildWorkspaceTabPersistenceKey, type WorkspaceTabTarget } from "@/workspace-tabs/model";
 import { openPreferredWorkspaceTarget } from "@/workspace-tabs/open-beside";
 import { useIsCompactFormFactor } from "@/constants/layout";
+import { isNative } from "@/constants/platform";
+import {
+  SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,
+  SIDEBAR_ROW_DISCLOSURE_WIDTH,
+} from "@/components/sidebar/row-metrics";
+import { useOpenKebabMenuVisibility } from "@/components/sidebar/use-open-kebab-menu-visibility";
+import { SidebarAgentMenu } from "./menu";
 import { usePanelStore } from "@/stores/panel-store";
 import { useSettings } from "@/hooks/use-settings";
 import { SidebarAccountIndicator } from "@/components/sidebar/workspace-account";
@@ -148,6 +155,13 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
     setExpanded(!expanded);
   }, [expanded, load]);
   const open = useCallback(() => onOpen(node), [node, onOpen]);
+  // The kebab is revealed by hover on desktop and is permanent where there is no hover.
+  const isCompact = useIsCompactFormFactor();
+  const isTouchPlatform = isNative || isCompact;
+  const [rowHovered, setRowHovered] = useState(false);
+  const onPointerEnter = useCallback(() => setRowHovered(true), []);
+  const onPointerLeave = useCallback(() => setRowHovered(false), []);
+  const kebab = useOpenKebabMenuVisibility(rowHovered || isTouchPlatform);
   const rowStyle = useCallback(
     ({ hovered, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.link,
@@ -159,7 +173,7 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
   );
   return (
     <View>
-      <View style={styles.row}>
+      <View style={styles.row} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={label}
@@ -196,6 +210,9 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
             providerAccountId={node.providerAccountId}
           />
         </Pressable>
+        {/* Both columns are held open whether or not they have anything in them, so an agent
+            row's account glyph and kebab land on the same rail as the session row above it
+            and nothing shifts when a row grows children or is hovered. */}
         {canExpand ? (
           <Button
             variant="ghost"
@@ -208,7 +225,19 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
           >
             <Chevron uniProps={chevronProps} />
           </Button>
-        ) : null}
+        ) : (
+          <View style={styles.disclosure} />
+        )}
+        <View style={styles.actionsColumn} testID={`sidebar-agent-actions-${node.row.id}`}>
+          {kebab.showKebab ? (
+            <SidebarAgentMenu
+              {...kebab.menuProps}
+              serverId={node.serverId}
+              row={node.row}
+              label={label}
+            />
+          ) : null}
+        </View>
       </View>
       {expanded && canExpand ? (
         <View style={styles.children}>
@@ -250,9 +279,23 @@ function ChildDiscoveryStatus({
 }
 
 const styles = StyleSheet.create((theme) => ({
-  tree: { paddingLeft: theme.spacing[8], marginBottom: theme.spacing[2] },
+  // The tree hangs below the workspace row rather than inside it, so it has to repeat the
+  // row's own trailing padding; without it every agent row's right edge sat 12px proud of the
+  // session row it belongs to.
+  tree: {
+    paddingLeft: theme.spacing[8],
+    paddingRight: theme.spacing[3],
+    marginBottom: theme.spacing[2],
+  },
   row: { flexDirection: "row", alignItems: "center" },
-  disclosure: { width: 28, paddingHorizontal: 0, flexShrink: 0 },
+  disclosure: { width: SIDEBAR_ROW_DISCLOSURE_WIDTH, paddingHorizontal: 0, flexShrink: 0 },
+  actionsColumn: {
+    width: SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,
+    height: 20,
+    flexShrink: 0,
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
   link: {
     flex: 1,
     minWidth: 0,

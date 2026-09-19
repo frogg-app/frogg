@@ -2235,6 +2235,7 @@ export const fr: TranslationResources = {
     archiveAction: "Archiver{{label}}",
     archiveTooltip: "Sous-agent d'archivage",
     archiveFinishedAction: "Archiver les sous-agents terminés",
+    actionsMenu: "Actions pour {{label}}",
     archiveFinishedRetry: "Réessayer ({{failed}}/{{total}})",
   },
   panels: {

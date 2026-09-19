@@ -2173,6 +2173,7 @@ export const ar: TranslationResources = {
     archiveAction: "أرشيف{{label}}",
     archiveTooltip: "أرشفة الوكيل الفرعي",
     archiveFinishedAction: "أرشفة الوكلاء الفرعيين المكتملين",
+    actionsMenu: "إجراءات {{label}}",
     archiveFinishedRetry: "إعادة المحاولة ({{failed}}/{{total}})",
   },
   panels: {

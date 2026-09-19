@@ -2230,6 +2230,7 @@ export const es: TranslationResources = {
     archiveAction: "Archivo{{label}}",
     archiveTooltip: "Subagente de archivo",
     archiveFinishedAction: "Archivar subagentes finalizados",
+    actionsMenu: "Acciones para {{label}}",
     archiveFinishedRetry: "Reintentar ({{failed}}/{{total}})",
   },
   panels: {

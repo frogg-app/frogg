@@ -2192,6 +2192,7 @@ export const ko: TranslationResources = {
     archiveAction: "{{label}} 보관",
     archiveTooltip: "서브에이전트 보관",
     archiveFinishedAction: "완료된 하위 에이전트 보관",
+    actionsMenu: "{{label}} 작업",
     archiveFinishedRetry: "다시 시도 ({{failed}}/{{total}})",
   },
   panels: {

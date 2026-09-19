@@ -2216,6 +2216,7 @@ export const ptBR: TranslationResources = {
     archiveAction: "Arquivar {{label}}",
     archiveTooltip: "Arquivar subagente",
     archiveFinishedAction: "Arquivar subagentes concluídos",
+    actionsMenu: "Ações para {{label}}",
     archiveFinishedRetry: "Tentar novamente ({{failed}}/{{total}})",
   },
   panels: {

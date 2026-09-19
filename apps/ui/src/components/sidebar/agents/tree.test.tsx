@@ -156,6 +156,34 @@ describe("sidebar subagent interaction", () => {
     expect(row.lastElementChild).toBe(account);
   });
 
+  it("gives an agent row the same kebab and the same reserved columns as a session row", () => {
+    render(
+      <ToastApiProvider api={toastApi}>
+        <QueryClientProvider client={new QueryClient()}>
+          <I18nextProvider i18n={i18n}>
+            <SidebarAgentBranch
+              node={leafParent}
+              discovery={new Map()}
+              connectionStatus="online"
+              selectedTarget={null}
+              onOpen={vi.fn()}
+            />
+          </I18nextProvider>
+        </QueryClientProvider>
+      </ToastApiProvider>,
+    );
+    const actions = screen.getByTestId("sidebar-agent-actions-parent");
+    // A row with nothing to disclose still holds the chevron's column, so the account glyph
+    // and the kebab do not shift when the row grows a child.
+    const row = actions.parentElement!;
+    expect(row.children).toHaveLength(3);
+    expect(screen.queryByTestId("sidebar-agent-kebab-parent")).toBeNull();
+    fireEvent.pointerEnter(row);
+    expect(screen.getByTestId("sidebar-agent-kebab-parent")).toBeTruthy();
+    fireEvent.pointerLeave(row);
+    expect(screen.queryByTestId("sidebar-agent-kebab-parent")).toBeNull();
+  });
+
   it("opens the child's own runtime and preserves the tree when collapsing and reopening", () => {
     const onOpen = vi.fn();
     render(

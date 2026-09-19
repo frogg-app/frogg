@@ -18,16 +18,12 @@ import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sideba
 import { SidebarWorkspaceAccountIndicator } from "@/components/sidebar/workspace-account";
 import { WorkspaceAgentDisclosure } from "@/components/sidebar/agents/workspace-tree";
 import { useFadePresence } from "@/components/sidebar/use-fade-presence";
+import { SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH } from "@/components/sidebar/row-metrics";
 import {
   SidebarWorkspaceTrailingContent,
   type SidebarWorkspaceTrailing,
 } from "@/components/sidebar/workspace-trailing";
 
-/**
- * The actions column's width: the kebab trigger's painted footprint (a 14px icon, 2px padding
- * each side, 2px lead-in) less the 7px it is pulled right onto the row's trailing edge.
- */
-export const SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH = 13;
 /** How much of the rail's scrim is gradient before it turns solid under the icons. */
 const RAIL_SCRIM_FADE_WIDTH = 24;
 const RAIL_SCRIM_WIDTH = QUICK_ACTIONS_EXPANDED_WIDTH + RAIL_SCRIM_FADE_WIDTH;
