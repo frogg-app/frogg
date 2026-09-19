@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { Pressable, ScrollView, Text, View, type GestureResponderEvent } from "react-native";
+import { Pressable, Text, View, type GestureResponderEvent } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { ChevronDown, ChevronRight, MessageSquarePlus } from "lucide-react-native";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,6 @@ import { useCheckGroupState } from "./check-group-state";
 
 const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedChevronRight = withUnistyles(ChevronRight);
-
-/**
- * Roughly eight rows. A repo with thirty checks would otherwise push the activity
- * timeline off the pane entirely, so past this height the list scrolls in place.
- */
-const LIST_MAX_HEIGHT = 268;
 
 /**
  * The three statuses the pane has always labelled for tests. Skipped has no id because
@@ -108,12 +102,14 @@ export function ChecksSection({
         )}
       </Pressable>
 
+      {/*
+        The list grows to its content and scrolls with the rest of the pane. It used to
+        be a nested ScrollView capped at eight rows, which clipped the checks on a
+        narrow viewport while leaving the activity section below it holding the empty
+        remainder of the screen.
+      */}
       {open && summary.groups.length > 0 ? (
-        <ScrollView
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
-          nestedScrollEnabled
-        >
+        <View style={styles.list}>
           {summary.groups.map((group) => (
             <CheckGroup
               key={group.status}
@@ -125,7 +121,7 @@ export function ChecksSection({
               onAddLogsToChat={onAddLogsToChat}
             />
           ))}
-        </ScrollView>
+        </View>
       ) : null}
     </View>
   );
@@ -257,9 +253,6 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
   },
   list: {
-    maxHeight: LIST_MAX_HEIGHT,
-  },
-  listContent: {
     paddingBottom: theme.spacing[2],
   },
   groupHeader: {
