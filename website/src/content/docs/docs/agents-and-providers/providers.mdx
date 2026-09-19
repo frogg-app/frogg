@@ -153,8 +153,22 @@ default account and the daemon logs a warning.
 ### Which account an agent uses
 
 The account is picked **per agent, when the agent is created**, and it sticks: the agent keeps
-that account when it is resumed or rehydrated after a daemon restart. Changing an agent's
-account means starting a new agent.
+that account when it is resumed or rehydrated after a daemon restart.
+
+An agent can also be **moved** to another of its provider's accounts afterwards, from the
+account pill above its composer. Frogg copies the provider's own transcript into the target
+account's config directory and resumes the session there, so the conversation, its timeline
+and its place in the workspace all survive the move. The account it came from keeps its own
+copy of the transcript, so the agent can be moved back.
+
+The move is only offered where the provider can carry its history across: Claude Code keeps a
+conversation as a single file under its config directory, so it can. A provider that cannot
+refuses the move rather than silently resuming an empty conversation.
+
+It is not free. The account being moved to has never sent this conversation upstream, so
+nothing in it can come back as a prompt-cache read: the whole context is re-sent as fresh
+input and charged the moment the next message goes out. Frogg says so, with the token count,
+before the move is made.
 
 An agent can be launched with:
 
