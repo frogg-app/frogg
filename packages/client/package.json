@@ -41,7 +41,7 @@
   "dependencies": {
     "@frogg/protocol": "1.5.8",
     "@frogg/relay": "1.5.8",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^20.9.0",
