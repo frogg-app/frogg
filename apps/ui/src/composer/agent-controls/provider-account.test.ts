@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PROVIDER_ACCOUNT_OPTION_ID,
   resolveProviderAccountControlModel,
+  resolveProviderAccountTransferOptions,
   shouldShowProviderAccountPill,
   toProviderAccountOptionId,
   toProviderAccountSelection,
@@ -141,5 +142,45 @@ describe("provider account option ids", () => {
     expect(picked).toBeNull();
     expect(picked).not.toBeUndefined();
     expect(toProviderAccountSelection("acct-steve")).toBe("acct-steve");
+  });
+});
+
+describe("resolveProviderAccountTransferOptions", () => {
+  const model = resolveProviderAccountControlModel({
+    accounts: [STEVE, NEW],
+    defaultAccountId: null,
+    selection: "acct-steve",
+  })!;
+
+  it("offers every other account, and never the one the agent already runs as", () => {
+    const options = resolveProviderAccountTransferOptions(model, "acct-steve");
+
+    expect(options.map((option) => option.id)).toEqual([
+      DEFAULT_PROVIDER_ACCOUNT_OPTION_ID,
+      "acct-new",
+    ]);
+  });
+
+  it("offers the Default row as a destination like any other account", () => {
+    const options = resolveProviderAccountTransferOptions(model, "acct-new");
+
+    expect(options.map((option) => option.label)).toEqual(["Default", "steve"]);
+  });
+
+  it("drops the Default row when the agent is the one already running on it", () => {
+    // Absent and null both mean the Default row, so neither may be offered.
+    expect(resolveProviderAccountTransferOptions(model, null).map((option) => option.id)).toEqual([
+      "acct-steve",
+      "acct-new",
+    ]);
+    expect(
+      resolveProviderAccountTransferOptions(model, undefined).map((option) => option.id),
+    ).toEqual(["acct-steve", "acct-new"]);
+  });
+
+  it("carries the sign-in state through, so an unusable destination can be flagged", () => {
+    const options = resolveProviderAccountTransferOptions(model, "acct-steve");
+
+    expect(options.find((option) => option.id === "acct-new")?.authenticated).toBe(false);
   });
 });

@@ -33,6 +33,12 @@ export interface AgentConfigOperations {
     agentId: string,
     thinkingOptionId: string | null,
   ): Promise<AgentProviderNotice | null>;
+  /**
+   * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+   * Moves the agent onto another of its provider's accounts, conversation and
+   * all. `null` is the provider's implicit default account.
+   */
+  transferProviderAccount(agentId: string, providerAccountId: string | null): Promise<void>;
 }
 
 export interface AgentConfigSessionOptions {
@@ -132,6 +138,33 @@ export class AgentConfigSession {
       failureText: "Failed to set agent thinking option",
       run: () => this.operations.setThinking(agentId, thinkingOptionId),
       emitResponse: (payload) => this.host.emit({ type: "set_agent_thinking_response", payload }),
+    });
+  }
+
+  /**
+   * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+   *
+   * Unlike its siblings this reloads the provider session rather than nudging a
+   * setting on the live one, because an account is only ever bound at launch. It
+   * still shares the envelope: one response, and an error frame beside it when
+   * the move fails.
+   */
+  handleAgentProviderAccountTransferRequest(
+    msg: Extract<SessionInboundMessage, { type: "agent.provider_account.transfer.request" }>,
+  ): Promise<void> {
+    const { agentId, providerAccountId, requestId } = msg;
+    return this.applyConfigChange({
+      agentId,
+      requestId,
+      logLabel: "agent.provider_account.transfer.request",
+      logFields: { agentId, providerAccountId, requestId },
+      failureText: "Failed to move the agent to another account",
+      run: async () => {
+        await this.operations.transferProviderAccount(agentId, providerAccountId);
+        return undefined;
+      },
+      emitResponse: (payload) =>
+        this.host.emit({ type: "agent.provider_account.transfer.response", payload }),
     });
   }
 

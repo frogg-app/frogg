@@ -14,6 +14,7 @@ class FakeAgentConfigOperations implements AgentConfigOperations {
   readonly modelCalls: Array<{ agentId: string; modelId: string | null }> = [];
   readonly featureCalls: Array<{ agentId: string; featureId: string; value: unknown }> = [];
   readonly thinkingCalls: Array<{ agentId: string; thinkingOptionId: string | null }> = [];
+  readonly transferCalls: Array<{ agentId: string; providerAccountId: string | null }> = [];
   /** Cross-operation ordering, which the per-operation arrays above cannot show. */
   readonly callLog: string[] = [];
   modeNotice: AgentProviderNotice | null = null;
@@ -53,6 +54,12 @@ class FakeAgentConfigOperations implements AgentConfigOperations {
     this.callLog.push("thinking");
     if (this.failWith) throw this.failWith;
     return this.thinkingNotice;
+  }
+
+  async transferProviderAccount(agentId: string, providerAccountId: string | null): Promise<void> {
+    this.transferCalls.push({ agentId, providerAccountId });
+    this.callLog.push("transfer");
+    if (this.failWith) throw this.failWith;
   }
 }
 
@@ -426,5 +433,67 @@ describe("AgentConfigSession", () => {
       type: "agent.config.apply.response",
       payload: { requestId: "req-1", agentId: "agent-1", accepted: false, error: "apply boom" },
     });
+  });
+
+  test("transfer account: forwards the account and emits an accepted response", async () => {
+    const { subsystem, emitted, operations } = makeSubsystem();
+
+    await subsystem.handleAgentProviderAccountTransferRequest({
+      type: "agent.provider_account.transfer.request",
+      agentId: "agent-1",
+      providerAccountId: "acct-work",
+      requestId: "req-transfer",
+    });
+
+    expect(operations.loadedAgentIds).toEqual(["agent-1"]);
+    expect(operations.transferCalls).toEqual([
+      { agentId: "agent-1", providerAccountId: "acct-work" },
+    ]);
+    expect(emitted).toEqual([
+      {
+        type: "agent.provider_account.transfer.response",
+        payload: {
+          requestId: "req-transfer",
+          agentId: "agent-1",
+          accepted: true,
+          error: null,
+          notice: undefined,
+        },
+      },
+    ]);
+  });
+
+  test("transfer account: carries the default-account pick through as null", async () => {
+    const { subsystem, operations } = makeSubsystem();
+
+    await subsystem.handleAgentProviderAccountTransferRequest({
+      type: "agent.provider_account.transfer.request",
+      agentId: "agent-1",
+      providerAccountId: null,
+      requestId: "req-transfer",
+    });
+
+    expect(operations.transferCalls).toEqual([{ agentId: "agent-1", providerAccountId: null }]);
+  });
+
+  test("transfer account: a refused move is reported, not swallowed", async () => {
+    const { subsystem, emitted, operations } = makeSubsystem();
+    operations.failWith = new Error("No Claude transcript for session s-1");
+
+    await subsystem.handleAgentProviderAccountTransferRequest({
+      type: "agent.provider_account.transfer.request",
+      agentId: "agent-1",
+      providerAccountId: "acct-work",
+      requestId: "req-transfer",
+    });
+
+    const response = emitted.find((msg) => msg.type === "agent.provider_account.transfer.response");
+    expect(response?.payload).toMatchObject({
+      accepted: false,
+      error: "No Claude transcript for session s-1",
+    });
+    // The error also reaches the activity log, so the failure is visible even if
+    // the client drops the response.
+    expect(emitted.some((msg) => msg.type === "activity_log")).toBe(true);
   });
 });

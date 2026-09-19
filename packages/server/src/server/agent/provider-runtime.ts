@@ -9,6 +9,7 @@ import type { FroggToolCatalog } from "./tools/types.js";
 import { ProviderAccountStore } from "../provider-accounts/provider-account-store.js";
 import {
   resolveAgentProviderAccountEnv,
+  resolveProviderAccountConfigDir,
   resolveProviderAccountEnv,
 } from "../provider-accounts/provider-account-env.js";
 
@@ -67,6 +68,20 @@ export async function createAgentProviderRuntime(
           options.logger.warn(
             { err: error, providerId, accountId },
             "Failed to resolve provider account model restrictions",
+          );
+          return undefined;
+        }
+      },
+      // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+      // Only a transfer reads this, and it reports its own failure, so an error
+      // here degrades to "unknown directory" and the transfer is refused.
+      providerAccountConfigDir: (providerId, accountId) => {
+        try {
+          return resolveProviderAccountConfigDir(providerAccountStore, providerId, accountId);
+        } catch (error) {
+          options.logger.warn(
+            { err: error, providerId, accountId },
+            "Failed to resolve provider account config directory",
           );
           return undefined;
         }

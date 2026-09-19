@@ -306,6 +306,8 @@ pub enum SessionMessage {
     SetAgentFeatureRequest(SetAgentFeatureRequest),
     #[serde(rename = "agent.config.apply.request")]
     AgentConfigApplyRequest(AgentConfigApplyRequest),
+    #[serde(rename = "agent.provider_account.transfer.request")]
+    AgentProviderAccountTransferRequest(AgentProviderAccountTransferRequest),
     #[serde(rename = "agent.detach.request")]
     AgentDetachRequest(AgentDetachRequest),
     #[serde(rename = "agent.rewind.request")]
@@ -2454,6 +2456,16 @@ pub struct AgentConfigApplyRequestConfig {
     pub thinking_option_id: Option<String>,
     #[serde(rename = "featureValues", skip_serializing_if = "Option::is_none")]
     pub feature_values: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentProviderAccountTransferRequest {
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

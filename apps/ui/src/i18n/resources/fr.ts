@@ -114,6 +114,9 @@ export const fr: TranslationResources = {
       fallback: "Message...",
       terminal: "Prompt",
     },
+    staleContext: {
+      warning: "Cache expiré : l'envoi refacture {{tokens}} jetons d'entrée",
+    },
     input: {
       accessibilityLabel: "Agent de messagerie...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -223,6 +226,21 @@ export const fr: TranslationResources = {
       selectWithValue: "Sélectionnez le compte du fournisseur ({{value}})",
       lockedWithValue: "Compte du fournisseur ({{value}}), fixe pour cet agent",
       pillLabel: "Compte du fournisseur : {{value}}",
+      pillTransferLabel:
+        "Compte du fournisseur : {{value}}. Déplacez cette conversation vers un autre compte.",
+      transfer: {
+        title: "Déplacer cette conversation",
+        subtitle: "Exécutée en tant que {{name}}. Choisissez le compte avec lequel continuer.",
+        warningTitle: "{{name}} n'a jamais vu cette conversation",
+        warningTitleUnselected: "Le compte que vous choisirez n'a jamais vu cette conversation",
+        warningBody:
+          "La déplacer renvoie tout le contexte de {{tokens}} jetons en entrée neuve. Rien n'est compté comme lecture de cache, et ces jetons d'entrée vous sont facturés dès l'envoi du message suivant.",
+        warningBodyUnknownTokens:
+          "La déplacer renvoie tout le contexte en entrée neuve. Rien n'est compté comme lecture de cache, et ces jetons d'entrée vous sont facturés dès l'envoi du message suivant.",
+        confirm: "Déplacer la conversation",
+        moving: "Déplacement...",
+        failed: "Impossible de déplacer la conversation",
+      },
     },
     hints: {
       thinking: "Mode réflexion",

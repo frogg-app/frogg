@@ -36,11 +36,15 @@ export function providerAccountDisplayName(
 }
 
 /**
- * The daemon only lists a provider's implicit default account once something
- * has been stored about it (a rename, a restriction, a preference), but it
- * accepts the default id for every per-account request either way. Synthesize
- * it so the default sign-in always has a tab of its own. It is the account in
- * use when no other one is active.
+ * A fallback for daemons that do not list a provider's implicit default account
+ * themselves — before v1.5.7 it appeared only once something had been stored
+ * about it (a rename, a restriction, a preference), though the default id was
+ * always accepted for every per-account request. Synthesize it so the default
+ * sign-in always has a tab of its own. It is the account in use when no other
+ * one is active.
+ *
+ * Against a current daemon this is a no-op: the listed account is the real one,
+ * carrying its config directory and sign-in state.
  */
 export function withDefaultAccount(
   accounts: readonly ProviderAccountState[],

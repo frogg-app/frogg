@@ -2145,6 +2145,32 @@ export const AgentConfigApplyResponseMessageSchema = z.object({
   payload: AgentActionResponsePayloadSchema,
 });
 
+/**
+ * Moves a live agent onto another of its provider's accounts.
+ *
+ * `providerAccountId` is two-valued here, unlike the three-valued field on
+ * `create_agent_request.config`: a transfer is always an explicit pick, so
+ * `null` means the provider's implicit default account and a string names a
+ * stored one. There is no "leave it alone" value — that is simply not sending
+ * the request.
+ *
+ * The daemon relocates the provider's own transcript into the target account's
+ * config directory and resumes the session there, so the conversation survives
+ * the move. The next turn re-sends the whole context to the new account with no
+ * prompt cache to hit, which is why clients warn before asking for this.
+ */
+export const AgentProviderAccountTransferRequestMessageSchema = z.object({
+  type: z.literal("agent.provider_account.transfer.request"),
+  agentId: z.string(),
+  providerAccountId: z.string().nullable(),
+  requestId: z.string(),
+});
+
+export const AgentProviderAccountTransferResponseMessageSchema = z.object({
+  type: z.literal("agent.provider_account.transfer.response"),
+  payload: AgentActionResponsePayloadSchema,
+});
+
 export const AgentDetachRequestMessageSchema = z.object({
   type: z.literal("agent.detach.request"),
   agentId: z.string(),
@@ -3392,6 +3418,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   SetAgentThinkingRequestMessageSchema,
   SetAgentFeatureRequestMessageSchema,
   AgentConfigApplyRequestMessageSchema,
+  AgentProviderAccountTransferRequestMessageSchema,
   AgentDetachRequestMessageSchema,
   AgentRewindRequestMessageSchema,
   AgentPermissionResponseMessageSchema,
@@ -3822,6 +3849,10 @@ export const ServerInfoStatusPayloadSchema = z
         // provider.account.set_preferences is available and the daemon appends an
         // account's system prompt when launching an agent as it.
         providerAccountPreferences: z.boolean().optional(),
+        // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+        // agent.provider_account.transfer is available and this daemon's build of
+        // the agent's provider can relocate a session between config directories.
+        agentProviderAccountTransfer: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the
@@ -6929,6 +6960,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   SetAgentThinkingResponseMessageSchema,
   SetAgentFeatureResponseMessageSchema,
   AgentConfigApplyResponseMessageSchema,
+  AgentProviderAccountTransferResponseMessageSchema,
   AgentDetachResponseMessageSchema,
   AgentRewindResponseMessageSchema,
   UpdateAgentResponseMessageSchema,
@@ -7160,6 +7192,9 @@ export type SetAgentModelResponseMessage = z.infer<typeof SetAgentModelResponseM
 export type SetAgentThinkingResponseMessage = z.infer<typeof SetAgentThinkingResponseMessageSchema>;
 export type SetAgentFeatureResponseMessage = z.infer<typeof SetAgentFeatureResponseMessageSchema>;
 export type AgentConfigApplyResponseMessage = z.infer<typeof AgentConfigApplyResponseMessageSchema>;
+export type AgentProviderAccountTransferResponseMessage = z.infer<
+  typeof AgentProviderAccountTransferResponseMessageSchema
+>;
 export type AgentDetachResponseMessage = z.infer<typeof AgentDetachResponseMessageSchema>;
 export type AgentRewindResponseMessage = z.infer<typeof AgentRewindResponseMessageSchema>;
 export type UpdateAgentResponseMessage = z.infer<typeof UpdateAgentResponseMessageSchema>;
@@ -7387,6 +7422,9 @@ export type SetAgentModelRequestMessage = z.infer<typeof SetAgentModelRequestMes
 export type SetAgentThinkingRequestMessage = z.infer<typeof SetAgentThinkingRequestMessageSchema>;
 export type SetAgentFeatureRequestMessage = z.infer<typeof SetAgentFeatureRequestMessageSchema>;
 export type AgentConfigApplyRequestMessage = z.infer<typeof AgentConfigApplyRequestMessageSchema>;
+export type AgentProviderAccountTransferRequestMessage = z.infer<
+  typeof AgentProviderAccountTransferRequestMessageSchema
+>;
 export type AgentDetachRequestMessage = z.infer<typeof AgentDetachRequestMessageSchema>;
 export type AgentPermissionResponseMessage = z.infer<typeof AgentPermissionResponseMessageSchema>;
 export type CheckoutStatusRequest = z.infer<typeof CheckoutStatusRequestSchema>;

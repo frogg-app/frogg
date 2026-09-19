@@ -1673,6 +1673,11 @@ export class VoiceAssistantWebSocketServer {
         ...(this.providerAccountsEnabled ? { providerAccountAllowedModels: true } : {}),
         // COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
         ...(this.providerAccountsEnabled ? { providerAccountPreferences: true } : {}),
+        // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+        // Rides the same manifest gate as the accounts themselves. Whether the
+        // agent's own provider can carry its history across is a per-provider
+        // question the transfer answers when it is asked.
+        ...(this.providerAccountsEnabled ? { agentProviderAccountTransfer: true } : {}),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.

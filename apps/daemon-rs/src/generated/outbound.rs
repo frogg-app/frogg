@@ -238,6 +238,8 @@ pub enum SessionMessage {
     SetAgentFeatureResponse(SetAgentFeatureResponse),
     #[serde(rename = "agent.config.apply.response")]
     AgentConfigApplyResponse(AgentConfigApplyResponse),
+    #[serde(rename = "agent.provider_account.transfer.response")]
+    AgentProviderAccountTransferResponse(AgentProviderAccountTransferResponse),
     #[serde(rename = "agent.detach.response")]
     AgentDetachResponse(AgentDetachResponse),
     #[serde(rename = "agent.rewind.response")]
@@ -7602,6 +7604,24 @@ pub struct AgentConfigApplyResponse {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AgentConfigApplyResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    pub accepted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notice: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentProviderAccountTransferResponse {
+    pub payload: AgentProviderAccountTransferResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentProviderAccountTransferResponsePayload {
     #[serde(rename = "requestId")]
     pub request_id: String,
     #[serde(rename = "agentId")]

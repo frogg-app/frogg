@@ -7,7 +7,6 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { getProviderIcon } from "@/components/provider-icons";
-import { SidebarAgentAccountIndicator } from "@/components/sidebar/workspace-account";
 import { WorkspaceTabIcon } from "@/screens/workspace/workspace-tab-presentation";
 import { deriveSidebarStateBucket } from "@/utils/sidebar-agent-state";
 import { buildSubagentRowPresentationData } from "@/subagents/track-presentation";
@@ -26,6 +25,7 @@ import { openPreferredWorkspaceTarget } from "@/workspace-tabs/open-beside";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { usePanelStore } from "@/stores/panel-store";
 import { useSettings } from "@/hooks/use-settings";
+import { SidebarAccountIndicator } from "@/components/sidebar/workspace-account";
 import { useSidebarAgents, type ChildDiscovery } from "./provider";
 import type { Theme } from "@/styles/theme";
 import type { SidebarAgentNode } from "./model";
@@ -183,16 +183,12 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
               </Text>
             ) : null}
           </View>
+          <SidebarAccountIndicator
+            serverId={node.serverId}
+            provider={node.row.provider}
+            providerAccountId={node.providerAccountId}
+          />
           {hasChildren ? <Text style={styles.detail}>{node.children.length}</Text> : null}
-          {/* Per-agent, because once a session has sub-rows the session line cannot name
-              one account for all of them. See SidebarWorkspaceAccountIndicator. */}
-          {node.row.kind === "frogg" ? (
-            <SidebarAgentAccountIndicator
-              serverId={node.serverId}
-              provider={node.row.provider}
-              providerAccountId={node.providerAccountId}
-            />
-          ) : null}
         </Pressable>
         {canExpand ? (
           <Button

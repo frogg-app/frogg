@@ -3459,6 +3459,48 @@ export class DaemonClient {
     return payload.notice ?? null;
   }
 
+  /**
+   * COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
+   *
+   * Moves a live agent onto another of its provider's accounts, carrying the
+   * conversation with it. `providerAccountId` is two-valued: `null` is the
+   * provider's implicit default account, a string names a stored one.
+   *
+   * The agent resumes on the new sign-in with its whole context re-sent and no
+   * prompt cache to hit, so callers are expected to have said as much before
+   * calling. Gated on `server_info.features.agentProviderAccountTransfer`.
+   */
+  async transferAgentProviderAccount(
+    agentId: string,
+    providerAccountId: string | null,
+  ): Promise<AgentProviderNotice | null> {
+    const requestId = this.createRequestId();
+    const message = SessionInboundMessageSchema.parse({
+      type: "agent.provider_account.transfer.request",
+      agentId,
+      providerAccountId,
+      requestId,
+    });
+    const payload = await this.sendRequest({
+      requestId,
+      message,
+      options: { skipQueue: true },
+      select: (msg) => {
+        if (msg.type !== "agent.provider_account.transfer.response") {
+          return null;
+        }
+        if (msg.payload.requestId !== requestId) {
+          return null;
+        }
+        return msg.payload;
+      },
+    });
+    if (!payload.accepted) {
+      throw new Error(payload.error ?? "transferAgentProviderAccount rejected");
+    }
+    return payload.notice ?? null;
+  }
+
   async restartServer(reason?: string, requestId?: string): Promise<RestartRequestedStatusPayload> {
     const resolvedRequestId = this.createRequestId(requestId);
     const message = SessionInboundMessageSchema.parse({

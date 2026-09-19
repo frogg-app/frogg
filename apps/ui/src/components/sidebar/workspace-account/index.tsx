@@ -14,8 +14,9 @@ export { resolveWorkspaceAccountAgent } from "./model";
 /**
  * COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
  *
- * The account a workspace row runs as, for providers the user has signed into more than
- * once. It sits at the right end of the row, after the diff stat or timestamp.
+ * The account on a workspace row, for providers the user has signed into more than once:
+ * the account's name, then its glyph, at the right end of the row after the diff stat. The
+ * full "Account: …" wording lives in the tooltip.
  *
  * Only for a session that is one agent. Once the row owns sub-rows — subagents, or several
  * tabs — the account belongs to each of those individually and is rendered there instead,
@@ -33,7 +34,7 @@ export function SidebarWorkspaceAccountIndicator({ serverId }: { serverId: strin
   if (nodes.length > 0) return null;
   if (!accountAgent) return null;
   return (
-    <SidebarAgentAccountIndicator
+    <SidebarAccountIndicator
       serverId={serverId}
       provider={accountAgent.provider}
       providerAccountId={accountAgent.providerAccountId}
@@ -42,17 +43,20 @@ export function SidebarWorkspaceAccountIndicator({ serverId }: { serverId: strin
 }
 
 /**
- * The account glyph and name for one agent. Used at session level for a single-agent
- * session, and on each sub-row once a session has more than one.
+ * The account one agent runs as. Shared by workspace rows and the agent tree under them, so
+ * every tab and subagent names its account the same way.
  */
-export function SidebarAgentAccountIndicator({
+export function SidebarAccountIndicator({
   serverId,
   provider,
   providerAccountId,
+  showLabel = true,
 }: {
   serverId: string;
   provider: string;
   providerAccountId: string | null | undefined;
+  /** The account name to the left of the glyph; off leaves the glyph alone. */
+  showLabel?: boolean;
 }) {
   const { t } = useTranslation();
   // Home scope rather than the agent's cwd: accounts are a property of the provider on the
@@ -87,6 +91,11 @@ export function SidebarAgentAccountIndicator({
           accessibilityLabel={label}
           testID="sidebar-workspace-account"
         >
+          {showLabel ? (
+            <Text style={styles.name} numberOfLines={1}>
+              {model.displayLabel}
+            </Text>
+          ) : null}
           <Icon size={12} color={color} />
           <Text style={styles.name} numberOfLines={1}>
             {model.displayLabel}
@@ -104,21 +113,19 @@ const styles = StyleSheet.create((theme) => ({
   // Matches the trailing slot's line box so the glyph sits on the title's baseline row.
   indicator: {
     height: 20,
+    flexShrink: 1,
+    minWidth: 0,
+    maxWidth: 120,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
-    gap: 3,
-    // Shrinkable, unlike the rest of the right-hand rail: the account name is the one
-    // element here that has no bound, so it gives way before the diff stat is squeezed.
-    flexShrink: 1,
-    minWidth: 0,
+    justifyContent: "center",
+    gap: theme.spacing[1],
   },
   name: {
-    color: theme.colors.foregroundExtraMuted,
-    fontSize: theme.fontSize.sm,
-    lineHeight: 20,
     flexShrink: 1,
     minWidth: 0,
+    color: theme.colors.foregroundExtraMuted,
+    fontSize: theme.fontSize.sm,
   },
   // Icon tints are read off the stylesheet rather than `useUnistyles`, which the lint rule
   // bans, because lucide takes a `color` prop and not a style.

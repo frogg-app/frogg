@@ -103,6 +103,7 @@ import {
   type AgentPermissionResponse,
   type AgentPermissionUpdate,
   type AgentPersistenceHandle,
+  type RelocateNativeSessionInput,
   type AgentProviderNotice,
   type AgentPromptInput,
   type AgentRunOptions,
@@ -1645,6 +1646,67 @@ export class ClaudeAgentClient implements AgentClient {
       context,
       resumeSession: this.resumeSession.bind(this),
     });
+  }
+
+  /**
+   * Copies the session's transcript into another account's config directory.
+   *
+   * Claude Code keeps a conversation as one JSONL file under
+   * `<configDir>/projects/<encoded cwd>/<sessionId>.jsonl`, and resumes it by
+   * reading that file, so pointing the CLI at a different config directory is
+   * all it takes to continue the conversation as another sign-in — provided the
+   * transcript is there to read. The source is left untouched, so the account
+   * the conversation came from can be transferred back to.
+   *
+   * Note what does NOT come along: the new account has never sent these tokens
+   * upstream, so its first turn re-sends the whole conversation with no prompt
+   * cache to hit. That cost is the client's to warn about; nothing here can
+   * soften it.
+   */
+  async relocateNativeSession(input: RelocateNativeSessionInput): Promise<void> {
+    const sessionId = input.handle.nativeHandle ?? input.handle.sessionId;
+    if (!sessionId) {
+      throw new Error("This conversation has no Claude session id to move.");
+    }
+    const source = this.findTranscript(input.cwd, sessionId, input.fromConfigDir);
+    if (!source) {
+      throw new Error(
+        `No Claude transcript for session ${sessionId} under ${input.fromConfigDir}. ` +
+          "The conversation has to have been saved before it can be moved to another account.",
+      );
+    }
+    const destination = path.join(
+      claudeProjectDirSync(input.cwd, { configDir: input.toConfigDir }),
+      `${sessionId}.jsonl`,
+    );
+    if (path.resolve(source) === path.resolve(destination)) {
+      return;
+    }
+    await promises.mkdir(path.dirname(destination), { recursive: true });
+    await promises.copyFile(source, destination);
+  }
+
+  /**
+   * The transcript's path inside one config directory, or null when it is not
+   * there. A worktree reached through a symlink encodes under its real path, so
+   * both spellings are tried — the same pair `resolveHistoryPath` uses.
+   */
+  private findTranscript(cwd: string, sessionId: string, configDir: string): string | null {
+    const candidates = [cwd];
+    try {
+      const realCwd = fs.realpathSync(cwd);
+      if (realCwd !== cwd) candidates.push(realCwd);
+    } catch {
+      // The path is gone; the configured spelling is the only one left to try.
+    }
+    for (const candidate of candidates) {
+      const transcript = path.join(
+        claudeProjectDirSync(candidate, { configDir }),
+        `${sessionId}.jsonl`,
+      );
+      if (fs.existsSync(transcript)) return transcript;
+    }
+    return null;
   }
 
   async isAvailable(): Promise<boolean> {

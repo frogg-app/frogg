@@ -112,6 +112,9 @@ export const ar: TranslationResources = {
       fallback: "رسالة...",
       terminal: "Prompt",
     },
+    staleContext: {
+      warning: "انتهت صلاحية التخزين المؤقت: الإرسال يعيد احتساب {{tokens}} من رموز الإدخال",
+    },
     input: {
       accessibilityLabel: "وكيل الرسائل...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -221,6 +224,20 @@ export const ar: TranslationResources = {
       selectWithValue: "حدد حساب المزود ({{value}})",
       lockedWithValue: "حساب المزود ({{value}})، ثابت لهذا الوكيل",
       pillLabel: "حساب المزود: {{value}}",
+      pillTransferLabel: "حساب المزود: {{value}}. انقل هذه المحادثة إلى حساب آخر.",
+      transfer: {
+        title: "نقل هذه المحادثة",
+        subtitle: "تعمل باسم {{name}}. اختر الحساب الذي ستتابع به.",
+        warningTitle: "لم يطّلع {{name}} على هذه المحادثة",
+        warningTitleUnselected: "الحساب الذي ستختاره لم يطّلع على هذه المحادثة",
+        warningBody:
+          "نقلها يعيد إرسال السياق كاملاً البالغ {{tokens}} رمزاً كمدخلات جديدة. لا يُحتسب أي منها كقراءة من ذاكرة التخزين المؤقت، وتُحاسب على رموز الإدخال هذه فور إرسال الرسالة التالية.",
+        warningBodyUnknownTokens:
+          "نقلها يعيد إرسال السياق كاملاً كمدخلات جديدة. لا يُحتسب أي منه كقراءة من ذاكرة التخزين المؤقت، وتُحاسب على رموز الإدخال هذه فور إرسال الرسالة التالية.",
+        confirm: "نقل المحادثة",
+        moving: "جارٍ النقل...",
+        failed: "تعذّر نقل المحادثة",
+      },
     },
     hints: {
       thinking: "وضع التفكير",

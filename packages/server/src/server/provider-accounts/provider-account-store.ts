@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -88,9 +88,24 @@ export class ProviderAccountStore {
     return this.listCapabilities().find((capability) => capability.provider === provider);
   }
 
-  list(provider?: string): ProviderAccountState[] {
+  /**
+   * The stored accounts, plus — when `includeImplicitDefault` is set — each
+   * enabled provider's implicit default account, the one backed by the primary
+   * config directory (`~/.claude`). That account exists whether or not anything
+   * has been persisted about it, so a management surface has to list it or the
+   * sign-in the user actually has is missing from the list it belongs in.
+   *
+   * It is opt-in because the composer's account picker renders its own Default
+   * row and reads an empty list as "no extra accounts"; synthesizing the row for
+   * that caller would both duplicate it and make the picker appear everywhere.
+   */
+  list(
+    provider?: string,
+    options: { includeImplicitDefault?: boolean } = {},
+  ): ProviderAccountState[] {
     const configured = this.readConfig();
     const capabilities = this.listCapabilities();
+    const active = this.activeAccountIds();
     const states: ProviderAccountState[] = [];
 
     for (const [providerId, entry] of Object.entries(configured)) {
@@ -100,13 +115,40 @@ export class ProviderAccountStore {
         states.push({
           ...account,
           authenticated: isAccountAuthenticated(account, capability),
-          isActive: entry.activeAccountId === account.id,
+          isActive: isDefaultAccountActive(account.id, active)
+            ? true
+            : entry.activeAccountId === account.id,
+        });
+      }
+    }
+
+    if (options.includeImplicitDefault) {
+      for (const capability of capabilities) {
+        if (!capability.enabled) continue;
+        if (provider !== undefined && capability.provider !== provider) continue;
+        const defaultId = providerAccountDefaultId(capability.provider);
+        // A materialised default already came out of the loop above.
+        if (states.some((state) => state.id === defaultId)) continue;
+        const primaryDir = path.join(this.homeDir, capability.primaryDirName);
+        const account = this.defaultAccountRecord(capability, {
+          name: PROVIDER_ACCOUNT_DEFAULT_NAME,
+          createdAt: primaryDirCreatedAt(primaryDir),
+        });
+        states.push({
+          ...account,
+          authenticated: isAccountAuthenticated(account, capability),
+          isActive: isDefaultAccountActive(defaultId, active),
         });
       }
     }
 
     return states.sort(
-      (a, b) => a.provider.localeCompare(b.provider) || a.name.localeCompare(b.name),
+      (a, b) =>
+        a.provider.localeCompare(b.provider) ||
+        // The default account heads its provider's list: it is the account a
+        // user has before creating any other.
+        rankProviderAccount(a) - rankProviderAccount(b) ||
+        a.name.localeCompare(b.name),
     );
   }
 
@@ -216,6 +258,15 @@ export class ProviderAccountStore {
    * sign-in that a plain "remove from the list" action should not touch.
    */
   delete(accountId: string): ProviderAccountMutationResult {
+    // The default account is the provider's own primary config directory, not a
+    // directory Frogg created. Taking it off the list would drop only the label
+    // and overrides stored against it while the account itself stayed, so the
+    // action is refused rather than quietly doing something else.
+    if (parseProviderAccountDefaultId(accountId)) {
+      throw new ProviderAccountError(
+        `The default account cannot be removed: it is the provider's primary config directory.`,
+      );
+    }
     const config = this.readConfig();
     const providerId = Object.keys(config).find((key) =>
       (config[key]?.accounts ?? []).some((account) => account.id === accountId),
@@ -311,7 +362,7 @@ export class ProviderAccountStore {
    * checked to still be inside it, so a manifest entry can never reach outside.
    */
   signOut(accountId: string): ProviderAccountMutationResult {
-    const { providerId, account, capability } = this.requireAccountForMutation(accountId);
+    const { providerId, account, capability } = this.resolveAccountForSignOut(accountId);
 
     const present = this.credentialFilePaths(account, capability).filter(({ absolute }) =>
       existsSync(absolute),
@@ -661,7 +712,7 @@ export class ProviderAccountStore {
 
   buildResult(warnings: string[]): ProviderAccountMutationResult {
     return {
-      accounts: this.list(),
+      accounts: this.list(undefined, { includeImplicitDefault: true }),
       capabilities: this.listCapabilities(),
       activeAccountIds: this.activeAccountIds(),
       warnings,
@@ -698,21 +749,6 @@ export class ProviderAccountStore {
     return undefined;
   }
 
-  private requireAccountForMutation(accountId: string): {
-    providerId: string;
-    account: ProviderAccount;
-    capability: ProviderAccountCapability;
-  } {
-    const located = this.locateAccount(this.readConfig(), accountId);
-    if (!located) {
-      throw new ProviderAccountError(`Unknown provider account "${accountId}".`);
-    }
-    return {
-      ...located,
-      capability: this.requireEnabledCapability(located.providerId),
-    };
-  }
-
   /**
    * The stored record standing in for a provider's implicit default account. Its
    * `configDir` is the provider's primary directory and stays that way: the
@@ -722,14 +758,54 @@ export class ProviderAccountStore {
     providerId: string,
     overrides: { name: string },
   ): ProviderAccount {
-    const capability = this.requireEnabledCapability(providerId);
+    return this.defaultAccountRecord(this.requireEnabledCapability(providerId), {
+      name: overrides.name,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  /** The default account's shape, whether it is stored or only synthesized. */
+  private defaultAccountRecord(
+    capability: ProviderAccountCapability,
+    overrides: { name: string; createdAt: string },
+  ): ProviderAccount {
     return {
-      id: providerAccountDefaultId(providerId),
-      provider: providerId,
+      id: providerAccountDefaultId(capability.provider),
+      provider: capability.provider,
       name: overrides.name,
       configDir: path.join(this.homeDir, capability.primaryDirName),
       linkedFolders: [],
-      createdAt: new Date().toISOString(),
+      createdAt: overrides.createdAt,
+    };
+  }
+
+  /**
+   * The account a sign-out targets, resolving a provider's implicit default as
+   * well as a stored account. Sign-out only deletes credential files inside the
+   * account's own config directory, so the default needs no stored record:
+   * nothing is persisted about it by signing it out.
+   */
+  private resolveAccountForSignOut(accountId: string): {
+    providerId: string;
+    account: ProviderAccount;
+    capability: ProviderAccountCapability;
+  } {
+    const located = this.locateAccount(this.readConfig(), accountId);
+    if (located) {
+      return { ...located, capability: this.requireEnabledCapability(located.providerId) };
+    }
+    const providerId = parseProviderAccountDefaultId(accountId);
+    if (!providerId) {
+      throw new ProviderAccountError(`Unknown provider account "${accountId}".`);
+    }
+    const capability = this.requireEnabledCapability(providerId);
+    return {
+      providerId,
+      capability,
+      account: this.defaultAccountRecord(capability, {
+        name: PROVIDER_ACCOUNT_DEFAULT_NAME,
+        createdAt: new Date().toISOString(),
+      }),
     };
   }
 
@@ -822,4 +898,33 @@ function normalizePreferences(
   const defaultThinkingOptionId = preferences.defaultThinkingOptionId?.trim();
   if (defaultThinkingOptionId) next.defaultThinkingOptionId = defaultThinkingOptionId;
   return Object.keys(next).length > 0 ? next : null;
+}
+
+/** Sort key putting a provider's default account ahead of its other accounts. */
+function rankProviderAccount(account: Pick<ProviderAccountState, "id">): number {
+  return parseProviderAccountDefaultId(account.id) ? 0 : 1;
+}
+
+/**
+ * Whether a default-account id is the account its provider currently runs as.
+ * It is, unless the provider has some other account marked active: the primary
+ * config directory is what the provider falls back to.
+ */
+function isDefaultAccountActive(accountId: string, active: Record<string, string>): boolean {
+  const providerId = parseProviderAccountDefaultId(accountId);
+  if (!providerId) return false;
+  return active[providerId] === undefined || active[providerId] === accountId;
+}
+
+/**
+ * A synthesized default account's `createdAt`. Frogg never created it, so the
+ * closest honest answer is when its config directory appeared; an absent or
+ * unreadable directory falls back to the epoch.
+ */
+function primaryDirCreatedAt(dir: string): string {
+  try {
+    return statSync(dir).birthtime.toISOString();
+  } catch {
+    return new Date(0).toISOString();
+  }
 }

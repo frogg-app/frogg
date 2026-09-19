@@ -1,3 +1,4 @@
+import { formatTokenCount } from "@/components/context-window-meter.utils";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   View,
@@ -172,6 +173,13 @@ export interface MessageInputProps {
   readOnly?: boolean;
   /** Paint the connection-lost outline. */
   offline?: boolean;
+  /**
+   * COMPAT(staleContextWarning): added in v1.5.7. The context this message will
+   * re-send at full input price because the conversation outlived its prompt
+   * cache, or null when there is nothing to warn about. See
+   * `@/composer/stale-context`.
+   */
+  staleContextTokens?: number | null;
   /** Command issued when application state must replace native-owned text. */
   textReplacement: TextReplacement;
   /** Replaces the submit icon with this label, still inside the composer's own toolbar row. */
@@ -1044,6 +1052,7 @@ interface ResolvedMessageInputProps {
   inputMode: ComposerInputMode;
   readOnly: boolean;
   offline: boolean;
+  staleContextTokens: number | null;
   textReplacement: TextReplacement;
   submitLabel: string | undefined;
 }
@@ -1092,6 +1101,10 @@ function resolveMessageInputProps(props: MessageInputProps): ResolvedMessageInpu
     inputMode: props.inputMode ?? "chat",
     readOnly: props.readOnly ?? false,
     offline: props.offline ?? false,
+    // Offline wins: a composer that cannot send has no cost to warn about, so
+    // the notice and its outline are resolved away before any of the render
+    // paths have to think about the two states together.
+    staleContextTokens: props.offline ? null : (props.staleContextTokens ?? null),
     textReplacement: props.textReplacement,
     submitLabel: props.submitLabel,
   };
@@ -1101,6 +1114,25 @@ function extractErrorMessage(error: unknown): string | null {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   return null;
+}
+
+/**
+ * COMPAT(staleContextWarning): added in v1.5.7. The amber note in the corner of
+ * the composer saying what the next message re-sends. Renders nothing when
+ * `tokens` is null, which is the ordinary case.
+ */
+function StaleContextNotice({ tokens }: { tokens: number | null }): React.ReactElement | null {
+  const { t } = useTranslation();
+  if (tokens === null) {
+    return null;
+  }
+  return (
+    <View style={styles.staleContextNotice} pointerEvents="none">
+      <Text style={styles.staleContextText} testID="composer-stale-context-warning">
+        {t("composer.staleContext.warning", { tokens: formatTokenCount(tokens) })}
+      </Text>
+    </View>
+  );
 }
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
@@ -1148,6 +1180,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       inputMode,
       readOnly,
       offline,
+      staleContextTokens,
       textReplacement,
       submitLabel,
     } = resolveMessageInputProps(props);
@@ -1662,10 +1695,11 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
         styles.inputWrapper,
         readOnly && styles.inputWrapperReadOnly,
         inputWrapperStyle,
+        staleContextTokens !== null && styles.inputWrapperStaleContext,
         offline && styles.inputWrapperOffline,
         { opacity: surfacePresentation.input.opacity },
       ],
-      [inputWrapperStyle, offline, readOnly, surfacePresentation.input.opacity],
+      [inputWrapperStyle, offline, readOnly, staleContextTokens, surfacePresentation.input.opacity],
     );
     // `withUnistyles` maps this component's `style` into a `.hash > *` child
     // rule, which ties on specificity with react-native-web's own
@@ -1736,6 +1770,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           style={inputWrapperCombinedStyle}
           pointerEvents={surfacePresentation.input.pointerEvents}
         >
+          <StaleContextNotice tokens={staleContextTokens} />
           {attachmentSlot}
           {/* Text input */}
           <RenderProfile id="ComposerTextSurface">
@@ -1853,6 +1888,23 @@ const styles = StyleSheet.create((theme: Theme) => ({
   },
   inputWrapperOffline: {
     borderColor: theme.colors.destructive,
+  },
+  // COMPAT(staleContextWarning): added in v1.5.7. The same shape the offline
+  // outline uses, in amber rather than red: this is a cost to know about, not a
+  // composer that cannot send.
+  inputWrapperStaleContext: {
+    borderColor: theme.colors.palette.amber[500],
+    ...(isWeb ? { boxShadow: `0 0 8px 0 ${theme.colors.palette.amber[500]}66` } : {}),
+  },
+  staleContextNotice: {
+    position: "absolute",
+    top: theme.spacing[2],
+    right: theme.spacing[3],
+    zIndex: 1,
+  },
+  staleContextText: {
+    color: theme.colors.palette.amber[500],
+    fontSize: theme.fontSize.sm,
   },
   inputWrapper: {
     flexShrink: 1,

@@ -112,6 +112,9 @@ export const zhCN: TranslationResources = {
       fallback: "输入消息...",
       terminal: "Prompt",
     },
+    staleContext: {
+      warning: "缓存已过期：发送将重新计费 {{tokens}} 个输入 token",
+    },
     input: {
       accessibilityLabel: "给 Agent 发消息...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -221,6 +224,20 @@ export const zhCN: TranslationResources = {
       selectWithValue: "选择 Provider 账号（{{value}}）",
       lockedWithValue: "Provider 账号（{{value}}），此 Agent 不可更改",
       pillLabel: "提供方账号：{{value}}",
+      pillTransferLabel: "提供方账号：{{value}}。将此对话转移到其他账号。",
+      transfer: {
+        title: "转移此对话",
+        subtitle: "当前以 {{name}} 运行。请选择要继续使用的账号。",
+        warningTitle: "{{name}} 没有见过这段对话",
+        warningTitleUnselected: "你选择的账号没有见过这段对话",
+        warningBody:
+          "转移会将 {{tokens}} 个 token 的完整上下文作为全新输入重新发送。这些都不算缓存读取，下一条消息发出时就会按输入 token 计费。",
+        warningBodyUnknownTokens:
+          "转移会将完整上下文作为全新输入重新发送。这些都不算缓存读取，下一条消息发出时就会按输入 token 计费。",
+        confirm: "转移对话",
+        moving: "正在转移...",
+        failed: "无法转移该对话",
+      },
     },
     hints: {
       thinking: "Thinking mode",

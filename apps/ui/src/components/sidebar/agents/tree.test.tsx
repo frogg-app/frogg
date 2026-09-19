@@ -34,6 +34,7 @@ vi.hoisted(() => {
 
 // This test mounts sidebar rows; full pane registration pulls native Markdown into jsdom.
 vi.mock("@/panels/register-panels", () => ({ ensurePanelsRegistered() {} }));
+vi.mock("@/components/sidebar/workspace-account", () => ({ SidebarAccountIndicator: () => null }));
 vi.mock("expo-router", () => ({
   useLocalSearchParams: () => ({}),
   usePathname: () => "/",

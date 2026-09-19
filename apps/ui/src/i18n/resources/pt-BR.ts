@@ -112,6 +112,9 @@ export const ptBR: TranslationResources = {
       fallback: "Mensagem...",
       terminal: "Prompt",
     },
+    staleContext: {
+      warning: "Cache expirado: enviar recobra {{tokens}} tokens de entrada",
+    },
     input: {
       accessibilityLabel: "Enviar mensagem ao agente...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -221,6 +224,20 @@ export const ptBR: TranslationResources = {
       selectWithValue: "Selecionar conta do provedor ({{value}})",
       lockedWithValue: "Conta do provedor ({{value}}), fixa para este agente",
       pillLabel: "Conta do provedor: {{value}}",
+      pillTransferLabel: "Conta do provedor: {{value}}. Mova esta conversa para outra conta.",
+      transfer: {
+        title: "Mover esta conversa",
+        subtitle: "Executando como {{name}}. Escolha a conta com a qual continuar.",
+        warningTitle: "{{name}} não viu esta conversa",
+        warningTitleUnselected: "A conta que você escolher não viu esta conversa",
+        warningBody:
+          "Movê-la reenvia todo o contexto de {{tokens}} tokens como entrada nova. Nada disso conta como leitura de cache, e esses tokens de entrada são cobrados assim que a próxima mensagem for enviada.",
+        warningBodyUnknownTokens:
+          "Movê-la reenvia todo o contexto como entrada nova. Nada disso conta como leitura de cache, e esses tokens de entrada são cobrados assim que a próxima mensagem for enviada.",
+        confirm: "Mover conversa",
+        moving: "Movendo...",
+        failed: "Não foi possível mover a conversa",
+      },
     },
     hints: {
       thinking: "Modo de raciocínio",
