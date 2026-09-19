@@ -37,7 +37,7 @@ import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop
 import { type GestureType } from "react-native-gesture-handler";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
 import { useWorkspaceClipboardActions } from "@/hooks/use-workspace-clipboard-actions";
-import { ExternalLink, Settings, MoreVertical, Plus, Trash2 } from "lucide-react-native";
+import { Archive, ExternalLink, Settings, MoreVertical, Plus, Trash2 } from "lucide-react-native";
 import { NestableScrollContainer } from "react-native-draggable-flatlist";
 import { DraggableList, type DraggableRenderItemInfo } from "./draggable-list";
 import type { DraggableListDragHandleProps } from "./draggable-list.types";
@@ -91,10 +91,7 @@ import { hasVisibleOrderChanged, mergeWithRemainder } from "@/utils/sidebar-reor
 import type { SidebarStateBucket } from "@/utils/sidebar-agent-state";
 import { SidebarStatusWorkspaceList } from "@/components/sidebar/sidebar-status-list";
 import type { SidebarWorkspaceGroup } from "@/components/sidebar/sidebar-labels";
-import {
-  SidebarWorkspaceContextMenu,
-  SidebarWorkspaceMenu,
-} from "@/components/sidebar/sidebar-workspace-menu";
+import { SidebarWorkspaceContextMenu } from "@/components/sidebar/sidebar-workspace-menu";
 import { useLongPressDragInteraction } from "@/components/sidebar/use-long-press-drag-interaction";
 import { PinnedSectionHeader } from "@/components/sidebar/pinned-section-header";
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
@@ -103,21 +100,14 @@ import {
   SidebarWorkspaceRowFrame,
   SidebarWorkspaceRowContent,
   SidebarWorkspaceShortcutBadge,
-  resolveTrailingActionVisibility,
-  SidebarWorkspaceTrailingActionBase,
-  SidebarWorkspaceTrailingActionOverlay,
-  SidebarWorkspaceTrailingActionSlot,
 } from "@/components/sidebar/sidebar-workspace-row-content";
-import { useOpenKebabMenuVisibility } from "@/components/sidebar/use-open-kebab-menu-visibility";
+import { SidebarWorkspaceTrailingActions } from "@/components/sidebar/workspace-trailing-actions";
 import {
   SidebarFilterEmptyState,
   SidebarProjectEmptyState,
 } from "@/components/sidebar/empty-states";
 import { selectWorkspaceServiceSummary } from "@/components/sidebar/workspace-meta-row";
-import {
-  SidebarWorkspaceTrailingContent,
-  useSidebarWorkspaceTrailing,
-} from "@/components/sidebar/workspace-trailing";
+import { useSidebarWorkspaceTrailing } from "@/components/sidebar/workspace-trailing";
 import { PressHighlight } from "@/components/ui/press-highlight";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Shortcut } from "@/components/ui/shortcut";
@@ -162,6 +152,7 @@ const ThemedPlus = withUnistyles(Plus);
 const ThemedMoreVertical = withUnistyles(MoreVertical);
 const ThemedTrash2 = withUnistyles(Trash2);
 const ThemedSettings = withUnistyles(Settings);
+const ThemedArchive = withUnistyles(Archive);
 
 const foregroundColorMapping = (theme: Theme) => ({
   color: theme.colors.foreground,
@@ -278,8 +269,8 @@ interface WorkspaceRowInnerProps {
   archiveStatus?: "idle" | "pending" | "success";
   archivePendingLabel?: string;
   onArchive?: () => void;
+  onCopySessionId?: () => void;
   onCopyBranchName?: () => void;
-  onCopyPath?: () => void;
   onRename?: () => void;
   onMarkAsRead?: () => void;
   archiveShortcutKeys?: ShortcutKey[][] | null;
@@ -403,6 +394,7 @@ function ProjectRowTrailingActions({
   displayName,
   worktreeTarget,
   settingsTarget,
+  archivedSessionsTarget,
   projectPath,
   isHovered,
   isMobileBreakpoint,
@@ -415,6 +407,7 @@ function ProjectRowTrailingActions({
   displayName: string;
   worktreeTarget: SidebarProjectHostTarget | null;
   settingsTarget: { serverId: string; projectId: string } | null;
+  archivedSessionsTarget: { serverId: string; projectKey: string } | null;
   projectPath: string;
   isHovered: boolean;
   isMobileBreakpoint: boolean;
@@ -443,6 +436,7 @@ function ProjectRowTrailingActions({
           <ProjectKebabMenu
             projectViewKey={projectViewKey}
             settingsTarget={settingsTarget}
+            archivedSessionsTarget={archivedSessionsTarget}
             projectPath={projectPath}
             onRemoveProject={onRemoveProject}
             removeProjectStatus={removeProjectStatus}
@@ -454,6 +448,7 @@ function ProjectRowTrailingActions({
 }
 
 const trash2LeadingIcon = <ThemedTrash2 size={14} uniProps={foregroundMutedColorMapping} />;
+const archiveLeadingIcon = <ThemedArchive size={14} uniProps={foregroundMutedColorMapping} />;
 const settingsLeadingIcon = <ThemedSettings size={14} uniProps={foregroundMutedColorMapping} />;
 const openInNewWindowLeadingIcon = (
   <ThemedExternalLink size={14} uniProps={foregroundMutedColorMapping} />
@@ -471,12 +466,14 @@ function renderKebabTriggerIcon({ hovered }: { hovered?: boolean }) {
 function ProjectKebabMenu({
   projectViewKey,
   settingsTarget,
+  archivedSessionsTarget,
   projectPath,
   onRemoveProject,
   removeProjectStatus,
 }: {
   projectViewKey: string;
   settingsTarget: { serverId: string; projectId: string } | null;
+  archivedSessionsTarget: { serverId: string; projectKey: string } | null;
   projectPath: string;
   onRemoveProject: () => void;
   removeProjectStatus: "idle" | "pending" | "success";
@@ -498,6 +495,7 @@ function ProjectKebabMenu({
           surface="dropdown"
           projectViewKey={projectViewKey}
           settingsTarget={settingsTarget}
+          archivedSessionsTarget={archivedSessionsTarget}
           projectPath={projectPath}
           onRemoveProject={onRemoveProject}
           removeProjectStatus={removeProjectStatus}
@@ -526,6 +524,7 @@ function ProjectMenuItems({
   surface,
   projectViewKey,
   settingsTarget,
+  archivedSessionsTarget,
   projectPath,
   onRemoveProject,
   removeProjectStatus,
@@ -533,6 +532,7 @@ function ProjectMenuItems({
   surface: ProjectMenuSurface;
   projectViewKey: string;
   settingsTarget: { serverId: string; projectId: string } | null;
+  archivedSessionsTarget: { serverId: string; projectKey: string } | null;
   projectPath: string;
   onRemoveProject: () => void;
   removeProjectStatus: "idle" | "pending" | "success";
@@ -543,6 +543,16 @@ function ProjectMenuItems({
     if (!settingsTarget) return;
     router.navigate(buildProjectSettingsRoute(settingsTarget.serverId, settingsTarget.projectId));
   }, [settingsTarget]);
+  const handleShowArchivedSessions = useCallback(() => {
+    if (!archivedSessionsTarget) return;
+    router.navigate({
+      pathname: "/sessions",
+      params: {
+        projectKey: archivedSessionsTarget.projectKey,
+        serverId: archivedSessionsTarget.serverId,
+      },
+    });
+  }, [archivedSessionsTarget]);
   const canOpenInNewWindow = getIsElectron() && projectPath.trim().length > 0;
   const handleOpenInNewWindow = useCallback(() => {
     const trimmedPath = projectPath.trim();
@@ -565,6 +575,16 @@ function ProjectMenuItems({
           onSelect={handleOpenProjectSettings}
         >
           {t("sidebar.project.actions.openSettings")}
+        </ProjectMenuItem>
+      ) : null}
+      {archivedSessionsTarget ? (
+        <ProjectMenuItem
+          surface={surface}
+          testID={`sidebar-project-menu-show-archived-${projectViewKey}`}
+          leading={archiveLeadingIcon}
+          onSelect={handleShowArchivedSessions}
+        >
+          {t("sidebar.project.actions.showArchivedSessions")}
         </ProjectMenuItem>
       ) : null}
       {canOpenInNewWindow ? (
@@ -599,6 +619,7 @@ function ProjectMenuItems({
 function WorkspaceRowRightGroup({
   workspace,
   backdrop,
+  selected,
   isHovered,
   isTouchPlatform,
   isCreating,
@@ -610,14 +631,15 @@ function WorkspaceRowRightGroup({
   archiveShortcutKeys,
   onArchive,
   onMarkAsRead,
+  onCopySessionId,
   onCopyBranchName,
-  onCopyPath,
   onRename,
   isPinned,
   onTogglePin,
 }: {
   workspace: SidebarWorkspaceEntry;
   backdrop: SidebarSurfaceBackdrop;
+  selected: boolean;
   isHovered: boolean;
   isTouchPlatform: boolean;
   isCreating: boolean;
@@ -629,8 +651,8 @@ function WorkspaceRowRightGroup({
   archiveShortcutKeys?: ShortcutKey[][] | null;
   onArchive?: () => void;
   onMarkAsRead?: () => void;
+  onCopySessionId?: () => void;
   onCopyBranchName?: () => void;
-  onCopyPath?: () => void;
   onRename?: () => void;
   isPinned?: boolean;
   onTogglePin?: () => void;
@@ -638,61 +660,33 @@ function WorkspaceRowRightGroup({
   const workspacePath = workspace.workspaceDirectory ?? workspace.projectRootPath;
   const { t } = useTranslation();
   const trailing = useSidebarWorkspaceTrailing();
-  const showShortcut = showShortcutBadge && shortcutNumber !== null;
-  const {
-    showTrailing,
-    showKebab: showKebabInSlot,
-    showScrim,
-    renderSlot,
-    reserveSlotWidth,
-  } = resolveTrailingActionVisibility({
-    workspace,
-    trailing,
-    hasArchiveAction: Boolean(onArchive),
-    isHovered,
-    isTouchPlatform,
-    showShortcut,
-  });
-  const kebab = useOpenKebabMenuVisibility(showKebabInSlot);
 
   return (
     <>
       {isCreating ? (
         <Text style={styles.workspaceCreatingText}>{t("sidebar.workspace.status.creating")}</Text>
       ) : null}
-      {renderSlot ? (
-        <SidebarWorkspaceTrailingActionSlot reserveWidth={reserveSlotWidth}>
-          <SidebarWorkspaceTrailingActionBase visible={showTrailing}>
-            <SidebarWorkspaceTrailingContent workspace={workspace} trailing={trailing} />
-          </SidebarWorkspaceTrailingActionBase>
-          <SidebarWorkspaceTrailingActionOverlay
-            visible={kebab.showKebab}
-            scrimBackdrop={showScrim ? backdrop : undefined}
-          >
-            {onArchive ? (
-              <SidebarWorkspaceMenu
-                {...kebab.menuProps}
-                workspaceKey={workspace.workspaceKey}
-                serverId={workspace.serverId}
-                workspaceId={workspace.workspaceId}
-                workspaceLabels={workspace.labels}
-                onCopyPath={onCopyPath}
-                onCopyBranchName={onCopyBranchName}
-                onRename={onRename}
-                onMarkAsRead={onMarkAsRead}
-                onArchive={onArchive}
-                archiveLabel={archiveLabel}
-                archiveStatus={archiveStatus}
-                archivePendingLabel={archivePendingLabel}
-                archiveShortcutKeys={archiveShortcutKeys}
-                isPinned={isPinned}
-                onTogglePin={onTogglePin}
-                openInFileManagerPath={workspacePath}
-              />
-            ) : null}
-          </SidebarWorkspaceTrailingActionOverlay>
-        </SidebarWorkspaceTrailingActionSlot>
-      ) : null}
+      <SidebarWorkspaceTrailingActions
+        workspace={workspace}
+        backdrop={backdrop}
+        trailing={trailing}
+        selected={selected}
+        isHovered={isHovered}
+        isTouchPlatform={isTouchPlatform}
+        showShortcut={showShortcutBadge && shortcutNumber !== null}
+        isPinned={isPinned}
+        onTogglePin={onTogglePin}
+        onCopySessionId={onCopySessionId}
+        onCopyBranchName={onCopyBranchName}
+        onRename={onRename}
+        onMarkAsRead={onMarkAsRead}
+        onArchive={onArchive}
+        archiveLabel={archiveLabel}
+        archiveStatus={archiveStatus}
+        archivePendingLabel={archivePendingLabel}
+        archiveShortcutKeys={archiveShortcutKeys}
+        openInFileManagerPath={workspacePath}
+      />
     </>
   );
 }
@@ -870,6 +864,13 @@ function ProjectHeaderRow({
   const localDaemonServerId = useLocalDaemonServerId();
   const projectPath = resolveSidebarProjectLocalPath(project, localDaemonServerId);
   const settingsTarget = project.hosts[0] ?? null;
+  const archivedSessionsTarget = useMemo(
+    () =>
+      settingsTarget && project.projectKey
+        ? { serverId: settingsTarget.serverId, projectKey: project.projectKey }
+        : null,
+    [project.projectKey, settingsTarget],
+  );
   const handleBeginWorkspaceSetup = useCallback(() => {
     if (!worktreeTarget) {
       return;
@@ -959,6 +960,7 @@ function ProjectHeaderRow({
         displayName={displayName}
         worktreeTarget={worktreeTarget}
         settingsTarget={settingsTarget}
+        archivedSessionsTarget={archivedSessionsTarget}
         projectPath={projectPath}
         isHovered={isHovered}
         isMobileBreakpoint={isMobileBreakpoint}
@@ -1032,6 +1034,7 @@ function ProjectHeaderRow({
           surface="context"
           projectViewKey={project.viewKey}
           settingsTarget={settingsTarget}
+          archivedSessionsTarget={archivedSessionsTarget}
           projectPath={projectPath}
           onRemoveProject={onRemoveProject}
           removeProjectStatus={removeProjectStatus}
@@ -1060,9 +1063,10 @@ function WorkspaceRowInner({
   archiveStatus = "idle",
   archivePendingLabel,
   onArchive,
+  onCopySessionId,
   onCopyBranchName,
-  onCopyPath,
   onRename,
+  onMarkAsRead,
   archiveShortcutKeys,
   isPinned,
   onTogglePin,
@@ -1130,7 +1134,7 @@ function WorkspaceRowInner({
               leadingProjectName={leadingProjectName}
               hostBadgeLabel={hostBadge?.label}
               workspaceKey={workspace.workspaceKey}
-              onCopyPath={onCopyPath}
+              onCopySessionId={onCopySessionId}
               onCopyBranchName={onCopyBranchName}
               onRename={onRename}
               onArchive={onArchive}
@@ -1170,6 +1174,7 @@ function WorkspaceRowInner({
                 <WorkspaceRowRightGroup
                   workspace={workspace}
                   backdrop={backdrop}
+                  selected={selected}
                   isHovered={isHovered}
                   isTouchPlatform={isTouchPlatform}
                   isCreating={isCreating}
@@ -1180,9 +1185,10 @@ function WorkspaceRowInner({
                   archivePendingLabel={archivePendingLabel}
                   archiveShortcutKeys={archiveShortcutKeys}
                   onArchive={onArchive}
+                  onCopySessionId={onCopySessionId}
                   onCopyBranchName={onCopyBranchName}
-                  onCopyPath={onCopyPath}
                   onRename={onRename}
+                  onMarkAsRead={onMarkAsRead}
                   isPinned={isPinned}
                   onTogglePin={onTogglePin}
                 />
@@ -1261,8 +1267,8 @@ function WorkspaceRowWithMenu({
   }, [archiveController, isArchiving]);
 
   const clipboard = useWorkspaceClipboardActions();
-  const handleCopyPath = useCallback(() => {
-    clipboard.copyPath(workspace);
+  const handleCopySessionId = useCallback(() => {
+    clipboard.copySessionId(workspace);
   }, [clipboard, workspace]);
 
   const handleCopyBranchName = useCallback(() => {
@@ -1314,8 +1320,8 @@ function WorkspaceRowWithMenu({
         archiveStatus={isArchiving ? "pending" : "idle"}
         archivePendingLabel={t("sidebar.workspace.actions.archiving")}
         onArchive={handleArchive}
+        onCopySessionId={handleCopySessionId}
         onCopyBranchName={canCopyBranchName ? handleCopyBranchName : undefined}
-        onCopyPath={handleCopyPath}
         onRename={handleOpenRename}
         onMarkAsRead={hasClearableAttention ? handleMarkAsRead : undefined}
         archiveShortcutKeys={null}

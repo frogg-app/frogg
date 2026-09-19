@@ -51,7 +51,6 @@ export interface WorkspaceCommandCenterLabels {
   toggleExplorerSidebar: string;
   // Workspace management actions
   rename: string;
-  copyPath: string;
   copyBranchName: string;
   pin: string;
   unpin: string;
@@ -79,7 +78,6 @@ export interface WorkspaceCommandCenterIcons {
   focusMode?: CommandCenterIcon;
   explorerSidebar?: CommandCenterIcon;
   // Workspace management action icons
-  copyPath?: CommandCenterIcon;
   copyBranchName?: CommandCenterIcon;
   pin?: CommandCenterIcon;
   unpin?: CommandCenterIcon;
@@ -130,7 +128,6 @@ export interface WorkspaceCommandCenterSource {
   labelCatalog: readonly WorkspaceCommandCenterLabelChoice[] | null;
   dispatch(action: KeyboardActionDefinition): void;
   runGitAction(action: GitAction): void;
-  copyPath(): void;
   copyBranchName(): void;
   toggleLabel(name: string, assigned: boolean): void | Promise<void>;
 }
@@ -609,16 +606,6 @@ export function buildWorkspaceCommandCenterContributions(
       keywords: ["rename", "title", "name", "label"],
       icon: source.icons.rename,
       action: { id: "workspace.rename", scope: "workspace" },
-      visibility: "query",
-    }),
-    buildWorkspaceCallback({
-      source,
-      id: "workspace:copy-path",
-      rank: 22,
-      title: source.labels.copyPath,
-      keywords: ["copy", "path", "directory", "folder", "cwd"],
-      icon: source.icons.copyPath,
-      run: source.copyPath,
       visibility: "query",
     }),
   );

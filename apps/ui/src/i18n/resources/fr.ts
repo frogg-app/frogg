@@ -451,6 +451,7 @@ export const fr: TranslationResources = {
     hoverCard: {
       scriptsAccessibility: "ScriptsWorkspace",
       copyPath: "Copier le chemin",
+      copySessionId: "Copier l'ID de session",
       copyBranchName: "Copier le nom de la branche",
       copied: "Copié",
     },
@@ -1199,6 +1200,7 @@ export const fr: TranslationResources = {
       actions: {
         menu: "Actions du projet",
         openSettings: "Ouvrir les paramètres du projet",
+        showArchivedSessions: "Afficher les sessions archivées",
         openNewWindow: "Open in new window",
         openNewWindowFailed: "Couldn't open a new window",
         openFolder: "Open in file manager",
@@ -1243,7 +1245,7 @@ export const fr: TranslationResources = {
         showMore: "Afficher plus",
         showLess: "Afficher moins",
         createWorkspaceFor: "Créer une nouvelle session pour{{projectName}}",
-        copyPath: "Copier le chemin",
+        copySessionId: "Copier l'ID de session",
         copyBranchName: "Copier le nom de la branche",
         rename: "Renommer la session",
         pin: "Épingler en haut",
@@ -1267,8 +1269,7 @@ export const fr: TranslationResources = {
         invalidBranchName: "Nom de succursale invalide",
       },
       toasts: {
-        workspacePathUnavailable: "CheminWorkspacenon disponible",
-        pathCopied: "Chemin copié",
+        sessionIdCopied: "ID de session copié",
         branchNameCopied: "Nom de la succursale copié",
         hostDisconnected: "Hostn'est pas connecté",
         hideFailed: "Échec du masquage de la session",
@@ -2169,6 +2170,8 @@ export const fr: TranslationResources = {
     pillLabelReadyToReview: "{{count}} à relire",
     detachAction: "Detacher {{label}}",
     detachTooltip: "Detacher le sous-agent",
+    copySessionIdAction: "Copier l'ID de session de {{label}}",
+    copySessionIdTooltip: "Copier l'ID de session",
     archiveAction: "Archiver{{label}}",
     archiveTooltip: "Sous-agent d'archivage",
     archiveFinishedAction: "Archiver les sous-agents terminés",

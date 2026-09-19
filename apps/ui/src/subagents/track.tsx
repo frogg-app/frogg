@@ -1,7 +1,10 @@
 import { useCallback, useMemo, type ReactElement } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
-import { Archive, Unlink } from "lucide-react-native";
+import { Archive, Hash, Unlink } from "lucide-react-native";
+import * as Clipboard from "expo-clipboard";
+import { toSessionId, toSubagentSessionId } from "@frogg/protocol/session-id";
+import { useToast } from "@/contexts/toast-context";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { getProviderIcon } from "@/components/provider-icons";
 import { ComposerTrackActions, ComposerTrackPill, ComposerTrackRow } from "@/composer/tracks";
@@ -23,6 +26,7 @@ import {
 
 const ThemedArchive = withUnistyles(Archive);
 const ThemedUnlink = withUnistyles(Unlink);
+const ThemedHash = withUnistyles(Hash);
 
 const foregroundColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const foregroundMutedColorMapping = (theme: Theme) => ({
@@ -196,6 +200,20 @@ function SubagentsTrackRow({
   const handleDetachPress = useCallback(() => {
     onDetachSubagent?.(row.id);
   }, [onDetachSubagent, row.id]);
+  const toast = useToast();
+  // A frogg subagent is a full agent with its own UUID; a provider subagent is only unique
+  // under its parent, so it takes the composite-key form.
+  const sessionId = useMemo(
+    () =>
+      row.kind === "provider"
+        ? toSubagentSessionId(row.parentAgentId, row.id)
+        : toSessionId(row.id),
+    [row],
+  );
+  const handleCopySessionIdPress = useCallback(() => {
+    void Clipboard.setStringAsync(sessionId);
+    toast.copied(t("sidebar.workspace.toasts.sessionIdCopied"));
+  }, [sessionId, t, toast]);
   const actionsAlwaysVisible = isNative || isCompact;
 
   const renderRow = useCallback(
@@ -210,21 +228,21 @@ function SubagentsTrackRow({
             {presentation.subtitle}
           </Text>
         ) : null}
-        {row.kind === "frogg" ? (
-          <SubagentRowActions
-            rowId={row.id}
-            displayLabel={displayLabel}
-            visible={actionsAlwaysVisible || active}
-            onDetachPress={onDetachSubagent ? handleDetachPress : undefined}
-            onArchivePress={handleArchivePress}
-          />
-        ) : null}
+        <SubagentRowActions
+          rowId={row.id}
+          displayLabel={displayLabel}
+          visible={actionsAlwaysVisible || active}
+          onCopySessionIdPress={handleCopySessionIdPress}
+          onDetachPress={row.kind === "frogg" && onDetachSubagent ? handleDetachPress : undefined}
+          onArchivePress={row.kind === "frogg" ? handleArchivePress : undefined}
+        />
       </>
     ),
     [
       actionsAlwaysVisible,
       displayLabel,
       handleArchivePress,
+      handleCopySessionIdPress,
       handleDetachPress,
       onDetachSubagent,
       presentation,
@@ -248,14 +266,16 @@ function SubagentRowActions({
   rowId,
   displayLabel,
   visible,
+  onCopySessionIdPress,
   onDetachPress,
   onArchivePress,
 }: {
   rowId: string;
   displayLabel: string;
   visible: boolean;
+  onCopySessionIdPress: () => void;
   onDetachPress?: () => void;
-  onArchivePress: () => void;
+  onArchivePress?: () => void;
 }): ReactElement {
   const { t } = useTranslation();
   return (
@@ -263,6 +283,14 @@ function SubagentRowActions({
       style={visible ? styles.actionClusterVisible : styles.actionClusterHidden}
       pointerEvents={visible ? "auto" : "none"}
     >
+      <SubagentActionButton
+        accessibilityLabel={t("subagents.copySessionIdAction", { label: displayLabel })}
+        testID={`subagents-track-copy-session-id-${rowId}`}
+        tooltipLabel={t("subagents.copySessionIdTooltip")}
+        icon="copy-session-id"
+        visible={visible}
+        onPress={onCopySessionIdPress}
+      />
       {onDetachPress ? (
         <SubagentActionButton
           accessibilityLabel={t("subagents.detachAction", { label: displayLabel })}
@@ -273,22 +301,27 @@ function SubagentRowActions({
           onPress={onDetachPress}
         />
       ) : null}
-      <SubagentActionButton
-        accessibilityLabel={t("subagents.archiveAction", { label: displayLabel })}
-        testID={`subagents-track-archive-${rowId}`}
-        tooltipLabel={t("subagents.archiveTooltip")}
-        icon="archive"
-        visible={visible}
-        onPress={onArchivePress}
-      />
+      {onArchivePress ? (
+        <SubagentActionButton
+          accessibilityLabel={t("subagents.archiveAction", { label: displayLabel })}
+          testID={`subagents-track-archive-${rowId}`}
+          tooltipLabel={t("subagents.archiveTooltip")}
+          icon="archive"
+          visible={visible}
+          onPress={onArchivePress}
+        />
+      ) : null}
     </View>
   );
 }
 
-type SubagentActionIcon = "archive" | "detach";
+type SubagentActionIcon = "archive" | "detach" | "copy-session-id";
 
 function renderSubagentActionIcon(icon: SubagentActionIcon, isActive: boolean): ReactElement {
   const uniProps = isActive ? foregroundColorMapping : foregroundMutedColorMapping;
+  if (icon === "copy-session-id") {
+    return <ThemedHash size={ROW_ICON_SIZE} uniProps={uniProps} />;
+  }
   if (icon === "detach") {
     return <ThemedUnlink size={ROW_ICON_SIZE} uniProps={uniProps} />;
   }

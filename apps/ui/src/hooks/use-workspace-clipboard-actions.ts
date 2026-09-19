@@ -1,19 +1,22 @@
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as Clipboard from "expo-clipboard";
+import { toSessionId } from "@frogg/protocol/session-id";
 import { useToast } from "@/contexts/toast-context";
-import { requireWorkspaceDirectory } from "@/utils/workspace-directory";
 
 // Everything the copy actions actually need. Kept narrower than SidebarWorkspaceEntry so the
 // command center can build one from the active route selection without a sidebar row.
 export interface CopyableWorkspace {
   workspaceId: string;
-  workspaceDirectory: string | null | undefined;
   currentBranch: string | null | undefined;
 }
 
 export interface WorkspaceClipboardActions {
-  copyPath: (workspace: CopyableWorkspace) => void;
+  /**
+   * The session's short ID. This is the primary way to name a session: every session has one,
+   * whereas a branch name only exists when the session happens to be a git worktree.
+   */
+  copySessionId: (workspace: CopyableWorkspace) => void;
   copyBranchName: (workspace: CopyableWorkspace) => void;
 }
 
@@ -21,24 +24,12 @@ export function useWorkspaceClipboardActions(): WorkspaceClipboardActions {
   const { t } = useTranslation();
   const toast = useToast();
 
-  const copyPath = useCallback(
+  const copySessionId = useCallback(
     (workspace: CopyableWorkspace) => {
-      let copyTargetDirectory: string;
-      try {
-        copyTargetDirectory = requireWorkspaceDirectory({
-          workspaceId: workspace.workspaceId,
-          workspaceDirectory: workspace.workspaceDirectory,
-        });
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : t("sidebar.workspace.toasts.workspacePathUnavailable"),
-        );
-        return;
-      }
-      void Clipboard.setStringAsync(copyTargetDirectory);
-      toast.copied(t("sidebar.workspace.toasts.pathCopied"));
+      // Derived, never stored. Going through the one helper is what makes the ID copied here
+      // the same ID every other surface shows for the same session.
+      void Clipboard.setStringAsync(toSessionId(workspace.workspaceId));
+      toast.copied(t("sidebar.workspace.toasts.sessionIdCopied"));
     },
     [t, toast],
   );
@@ -54,5 +45,5 @@ export function useWorkspaceClipboardActions(): WorkspaceClipboardActions {
     [t, toast],
   );
 
-  return useMemo(() => ({ copyPath, copyBranchName }), [copyBranchName, copyPath]);
+  return useMemo(() => ({ copySessionId, copyBranchName }), [copyBranchName, copySessionId]);
 }

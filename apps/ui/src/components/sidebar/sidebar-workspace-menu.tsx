@@ -6,6 +6,7 @@ import {
   Archive,
   CircleCheck,
   Copy,
+  Hash,
   MoreVertical,
   Pencil,
   Pin,
@@ -57,8 +58,10 @@ const ThemedCircleCheck = withUnistyles(CircleCheck);
 const ThemedPin = withUnistyles(Pin);
 const ThemedPinOff = withUnistyles(PinOff);
 const ThemedTag = withUnistyles(Tag);
+const ThemedHash = withUnistyles(Hash);
 
 const copyLeadingIcon = <ThemedCopy size={14} uniProps={foregroundMutedColorMapping} />;
+const sessionIdLeadingIcon = <ThemedHash size={14} uniProps={foregroundMutedColorMapping} />;
 const renameLeadingIcon = <ThemedPencil size={14} uniProps={foregroundMutedColorMapping} />;
 const markAsReadLeadingIcon = (
   <ThemedCircleCheck size={14} uniProps={foregroundMutedColorMapping} />
@@ -81,7 +84,7 @@ export interface SidebarWorkspaceMenuProps {
   serverId?: string;
   workspaceId?: string;
   workspaceLabels?: readonly string[];
-  onCopyPath?: () => void;
+  onCopySessionId?: () => void;
   onCopyBranchName?: () => void;
   onRename?: () => void;
   onMarkAsRead?: () => void;
@@ -128,7 +131,7 @@ function SidebarWorkspaceMenuItems({
   workspaceKey,
   serverId,
   workspaceId,
-  onCopyPath,
+  onCopySessionId,
   onCopyBranchName,
   onRename,
   onMarkAsRead,
@@ -153,14 +156,14 @@ function SidebarWorkspaceMenuItems({
 
   return (
     <>
-      {onCopyPath ? (
+      {onCopySessionId ? (
         <WorkspaceMenuItem
           surface={surface}
-          testID={`sidebar-workspace-menu-copy-path-${workspaceKey}`}
-          leading={copyLeadingIcon}
-          onSelect={onCopyPath}
+          testID={`sidebar-workspace-menu-copy-session-id-${workspaceKey}`}
+          leading={sessionIdLeadingIcon}
+          onSelect={onCopySessionId}
         >
-          {t("sidebar.workspace.actions.copyPath")}
+          {t("sidebar.workspace.actions.copySessionId")}
         </WorkspaceMenuItem>
       ) : null}
       {onCopyBranchName ? (
@@ -239,7 +242,7 @@ export function SidebarWorkspaceMenu({
   serverId,
   workspaceId,
   workspaceLabels,
-  onCopyPath,
+  onCopySessionId,
   onCopyBranchName,
   onRename,
   onMarkAsRead,
@@ -284,7 +287,7 @@ export function SidebarWorkspaceMenu({
           serverId={serverId}
           workspaceId={workspaceId}
           workspaceLabels={workspaceLabels}
-          onCopyPath={onCopyPath}
+          onCopySessionId={onCopySessionId}
           onCopyBranchName={onCopyBranchName}
           onRename={onRename}
           onMarkAsRead={onMarkAsRead}
@@ -316,7 +319,7 @@ export function SidebarWorkspaceContextMenu({
   hostBadgeLabel,
   serviceSummary,
   workspaceKey,
-  onCopyPath,
+  onCopySessionId,
   onCopyBranchName,
   onRename,
   onMarkAsRead,
@@ -395,7 +398,7 @@ export function SidebarWorkspaceContextMenu({
           serverId={workspaceTarget.serverId}
           workspaceId={workspaceTarget.workspaceId}
           workspaceLabels={workspaceTarget.labels}
-          onCopyPath={onCopyPath}
+          onCopySessionId={onCopySessionId}
           onCopyBranchName={onCopyBranchName}
           onRename={onRename}
           onMarkAsRead={onMarkAsRead}

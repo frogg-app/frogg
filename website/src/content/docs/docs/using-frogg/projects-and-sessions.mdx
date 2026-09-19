@@ -169,6 +169,19 @@ after updating from a version without sorting; your saved drag order is kept for
 - Archived agents and sessions disappear from the sidebar but keep their history.
   `frogg agent ls -a` includes archived agents.
 
+## Session IDs and quick actions
+
+- Every session has a short session ID such as `s_1YD3RBMB`. It is derived from the session
+  itself, so every surface shows the same value. Session IDs are case-insensitive and avoid
+  look-alike letters. Use **Copy session ID** in a session's menu, or copy it from the hover
+  card. Subagents have their own session IDs, which you can copy from their rows.
+- **Copy branch name** appears only for sessions that are on a git branch.
+- In the desktop app, hold <kbd>Alt</kbd> to turn the menu button on the selected and hovered
+  sessions into icon buttons: rename, pin to top, labels, copy session ID and archive. Release
+  <kbd>Alt</kbd> to hide them again. In a browser, <kbd>Alt</kbd> shows the numbered jump badges
+  instead.
+- A project's menu includes **Show archived sessions**.
+
 ## Merge handover
 
 When you use **Merge locally** from a worktree, Frogg resolves the target branch on the same host and project. After a successful merge it opens an existing target session when one is already present; otherwise the source session remains available and Frogg reports that the target could not be resolved. The conversation, timeline, drafts and attachments stay with the active session context.

@@ -30,7 +30,6 @@ import { isWeb as platformIsWeb, isNative as platformIsNative } from "@/constant
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { StyleSheet } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
-import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
 import { withUnistyles } from "react-native-unistyles";
 import {
   ChevronDown,
@@ -51,26 +50,15 @@ import { useClearWorkspaceAttention } from "@/hooks/use-clear-workspace-attentio
 import {
   SidebarWorkspaceRowFrame,
   SidebarWorkspaceRowContent,
-  resolveTrailingActionVisibility,
-  SidebarWorkspaceTrailingActionBase,
-  SidebarWorkspaceTrailingActionOverlay,
-  SidebarWorkspaceTrailingActionSlot,
   sidebarWorkspaceRowStyles,
 } from "@/components/sidebar/sidebar-workspace-row-content";
-import { useOpenKebabMenuVisibility } from "@/components/sidebar/use-open-kebab-menu-visibility";
+import { SidebarWorkspaceTrailingActions } from "@/components/sidebar/workspace-trailing-actions";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
 import { getStatusDotColor } from "@/utils/status-dot-color";
 import { selectWorkspaceServiceSummary } from "@/components/sidebar/workspace-meta-row";
-import {
-  SidebarWorkspaceTrailingContent,
-  useSidebarWorkspaceTrailing,
-  type SidebarWorkspaceTrailing,
-} from "@/components/sidebar/workspace-trailing";
+import { useSidebarWorkspaceTrailing } from "@/components/sidebar/workspace-trailing";
 import { useSidebarCollapsedSectionsStore } from "@/stores/sidebar-collapsed-sections-store";
-import {
-  SidebarWorkspaceContextMenu,
-  SidebarWorkspaceMenu,
-} from "@/components/sidebar/sidebar-workspace-menu";
+import { SidebarWorkspaceContextMenu } from "@/components/sidebar/sidebar-workspace-menu";
 import { PinnedSectionHeader } from "@/components/sidebar/pinned-section-header";
 import { SidebarGroupToggleRow } from "@/components/sidebar/sidebar-group-toggle-row";
 import { useLimitedSidebarGroup } from "@/components/sidebar/use-limited-sidebar-group";
@@ -628,8 +616,8 @@ function StatusWorkspaceRowWithMenu({
   }, [archiveController, isArchiving]);
 
   const clipboard = useWorkspaceClipboardActions();
-  const handleCopyPath = useCallback(() => {
-    clipboard.copyPath(workspace);
+  const handleCopySessionId = useCallback(() => {
+    clipboard.copySessionId(workspace);
   }, [clipboard, workspace]);
 
   const handleCopyBranchName = useCallback(() => {
@@ -670,8 +658,8 @@ function StatusWorkspaceRowWithMenu({
         archiveStatus={isArchiving ? "pending" : "idle"}
         archivePendingLabel={t("sidebar.workspace.actions.archiving")}
         onArchive={handleArchive}
+        onCopySessionId={handleCopySessionId}
         onCopyBranchName={workspace.projectKind === "git" ? handleCopyBranchName : undefined}
-        onCopyPath={handleCopyPath}
         onRename={handleOpenRename}
         onMarkAsRead={hasClearableAttention ? handleMarkAsRead : undefined}
         archiveShortcutKeys={null}
@@ -707,8 +695,8 @@ interface StatusWorkspaceRowInnerProps {
   archiveStatus?: "idle" | "pending" | "success";
   archivePendingLabel?: string;
   onArchive?: () => void;
+  onCopySessionId?: () => void;
   onCopyBranchName?: () => void;
-  onCopyPath?: () => void;
   onRename?: () => void;
   onMarkAsRead?: () => void;
   archiveShortcutKeys?: ShortcutKey[][] | null;
@@ -753,8 +741,8 @@ function StatusWorkspaceRowInnerContent({
   archiveStatus = "idle",
   archivePendingLabel,
   onArchive,
+  onCopySessionId,
   onCopyBranchName,
-  onCopyPath,
   onRename,
   onMarkAsRead,
   archiveShortcutKeys,
@@ -810,20 +798,6 @@ function StatusWorkspaceRowInnerContent({
     <SidebarWorkspaceRowFrame workspace={workspace} isDragging={isDragging}>
       {({ isHovered, contextMenuOpen, onContextMenuOpenChange, hoverHandlers }) => {
         const showShortcut = showShortcutBadge && shortcutNumber !== null;
-        const {
-          showTrailing,
-          showKebab: showKebabInSlot,
-          showScrim,
-          renderSlot,
-          reserveSlotWidth,
-        } = resolveTrailingActionVisibility({
-          workspace,
-          trailing,
-          hasArchiveAction: Boolean(onArchive),
-          isHovered,
-          isTouchPlatform,
-          showShortcut,
-        });
         const workspaceRowStyle = getStatusWorkspaceRowStyle({
           isPressed,
           selected,
@@ -848,7 +822,7 @@ function StatusWorkspaceRowInnerContent({
               hostBadgeLabel={hostBadge?.label}
               serviceSummary={serviceSummary}
               workspaceKey={workspace.workspaceKey}
-              onCopyPath={onCopyPath}
+              onCopySessionId={onCopySessionId}
               onCopyBranchName={onCopyBranchName}
               onRename={onRename}
               onMarkAsRead={onMarkAsRead}
@@ -884,108 +858,33 @@ function StatusWorkspaceRowInnerContent({
                 showShortcutBadge={showShortcutBadge}
                 reserveIdleStatusIndicatorSpace={reserveIdleStatusIndicatorSpace}
               >
-                {renderSlot ? (
-                  <StatusWorkspaceActionSlot
-                    workspace={workspace}
-                    backdrop={backdrop}
-                    trailing={trailing}
-                    showBase={showTrailing}
-                    showKebab={showKebabInSlot}
-                    showScrim={showScrim}
-                    reserveSlotWidth={reserveSlotWidth}
-                    isPinned={isPinned}
-                    onTogglePin={onTogglePin}
-                    onCopyPath={onCopyPath}
-                    onCopyBranchName={onCopyBranchName}
-                    onRename={onRename}
-                    onMarkAsRead={onMarkAsRead}
-                    onArchive={onArchive}
-                    archiveLabel={archiveLabel}
-                    archiveStatus={archiveStatus}
-                    archivePendingLabel={archivePendingLabel}
-                    archiveShortcutKeys={archiveShortcutKeys}
-                  />
-                ) : null}
+                <SidebarWorkspaceTrailingActions
+                  workspace={workspace}
+                  backdrop={backdrop}
+                  trailing={trailing}
+                  selected={selected}
+                  isHovered={isHovered}
+                  isTouchPlatform={isTouchPlatform}
+                  showShortcut={showShortcut}
+                  isPinned={isPinned}
+                  onTogglePin={onTogglePin}
+                  onCopySessionId={onCopySessionId}
+                  onCopyBranchName={onCopyBranchName}
+                  onRename={onRename}
+                  onMarkAsRead={onMarkAsRead}
+                  onArchive={onArchive}
+                  archiveLabel={archiveLabel}
+                  archiveStatus={archiveStatus}
+                  archivePendingLabel={archivePendingLabel}
+                  archiveShortcutKeys={archiveShortcutKeys}
+                  openInFileManagerPath={workspace.workspaceDirectory}
+                />
               </SidebarWorkspaceRowContent>
             </SidebarWorkspaceContextMenu>
           </View>
         );
       }}
     </SidebarWorkspaceRowFrame>
-  );
-}
-
-function StatusWorkspaceActionSlot({
-  workspace,
-  backdrop,
-  trailing,
-  showBase,
-  showKebab,
-  showScrim,
-  reserveSlotWidth,
-  isPinned,
-  onTogglePin,
-  onCopyPath,
-  onCopyBranchName,
-  onRename,
-  onMarkAsRead,
-  onArchive,
-  archiveLabel,
-  archiveStatus,
-  archivePendingLabel,
-  archiveShortcutKeys,
-}: {
-  workspace: SidebarWorkspaceEntry;
-  backdrop: SidebarSurfaceBackdrop;
-  trailing: SidebarWorkspaceTrailing;
-  showBase: boolean;
-  showKebab: boolean;
-  showScrim: boolean;
-  reserveSlotWidth: boolean;
-  isPinned?: boolean;
-  onTogglePin?: () => void;
-  onCopyPath?: () => void;
-  onCopyBranchName?: () => void;
-  onRename?: () => void;
-  onMarkAsRead?: () => void;
-  onArchive?: () => void;
-  archiveLabel?: string;
-  archiveStatus?: "idle" | "pending" | "success";
-  archivePendingLabel?: string;
-  archiveShortcutKeys?: ShortcutKey[][] | null;
-}) {
-  const kebab = useOpenKebabMenuVisibility(showKebab);
-  return (
-    <SidebarWorkspaceTrailingActionSlot reserveWidth={reserveSlotWidth}>
-      <SidebarWorkspaceTrailingActionBase visible={showBase}>
-        <SidebarWorkspaceTrailingContent workspace={workspace} trailing={trailing} />
-      </SidebarWorkspaceTrailingActionBase>
-      <SidebarWorkspaceTrailingActionOverlay
-        visible={kebab.showKebab}
-        scrimBackdrop={showScrim ? backdrop : undefined}
-      >
-        {kebab.showKebab && onArchive ? (
-          <SidebarWorkspaceMenu
-            {...kebab.menuProps}
-            workspaceKey={workspace.workspaceKey}
-            serverId={workspace.serverId}
-            workspaceId={workspace.workspaceId}
-            workspaceLabels={workspace.labels}
-            onCopyPath={onCopyPath}
-            onCopyBranchName={onCopyBranchName}
-            onRename={onRename}
-            onMarkAsRead={onMarkAsRead}
-            onArchive={onArchive}
-            archiveLabel={archiveLabel}
-            archiveStatus={archiveStatus}
-            archivePendingLabel={archivePendingLabel}
-            archiveShortcutKeys={archiveShortcutKeys}
-            isPinned={isPinned}
-            onTogglePin={onTogglePin}
-          />
-        ) : null}
-      </SidebarWorkspaceTrailingActionOverlay>
-    </SidebarWorkspaceTrailingActionSlot>
   );
 }
 

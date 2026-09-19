@@ -19,6 +19,7 @@ import {
   FileDiff,
   Folder,
   GitBranch,
+  Hash,
   Server,
 } from "lucide-react-native";
 import { getForgePresentation, normalizeForge } from "@/git/forge";
@@ -39,6 +40,7 @@ import { useIsCompactFormFactor } from "@/constants/layout";
 import { FloatingSurface } from "@/components/ui/floating";
 import { isWeb } from "@/constants/platform";
 import { useHosts } from "@/runtime/host-runtime";
+import { toSessionId } from "@frogg/protocol/session-id";
 import {
   COUNTED_CHECK_PRESENTATIONS,
   countCheckPresentations,
@@ -227,6 +229,7 @@ function WorkspaceHoverCardContent({
   contentRef: React.RefObject<View | null>;
 }): ReactElement | null {
   const { t } = useTranslation();
+  const sessionId = useMemo(() => toSessionId(workspace.workspaceId), [workspace.workspaceId]);
   const bottomSheetInternal = useBottomSheetModalInternal(true);
   const [triggerRect, setTriggerRect] = useState<Rect | null>(null);
   const [contentSize, setContentSize] = useState<{ width: number; height: number } | null>(null);
@@ -310,6 +313,13 @@ function WorkspaceHoverCardContent({
             </View>
           ) : null}
           <HostRow serverId={workspace.serverId} />
+          <CopyableInfoRow
+            icon={ThemedHash}
+            value={sessionId}
+            copyValue={sessionId}
+            copyLabel={t("workspace.hoverCard.copySessionId")}
+            testID="hover-card-workspace-session-id"
+          />
           {workspace.currentBranch ? (
             <CopyableInfoRow
               icon={ThemedGitBranch}
@@ -346,6 +356,7 @@ function WorkspaceHoverCardContent({
 
 const ThemedGitBranch = withUnistyles(GitBranch);
 const ThemedFolder = withUnistyles(Folder);
+const ThemedHash = withUnistyles(Hash);
 const ThemedServer = withUnistyles(Server);
 const ThemedFileDiff = withUnistyles(FileDiff);
 

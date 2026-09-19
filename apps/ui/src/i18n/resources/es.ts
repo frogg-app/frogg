@@ -451,6 +451,7 @@ export const es: TranslationResources = {
     hoverCard: {
       scriptsAccessibility: "GuionesWorkspace",
       copyPath: "Copiar ruta",
+      copySessionId: "Copiar ID de sesión",
       copyBranchName: "Copiar nombre de rama",
       copied: "Copiado",
     },
@@ -1198,6 +1199,7 @@ export const es: TranslationResources = {
       actions: {
         menu: "Acciones del proyecto",
         openSettings: "Abrir la configuración del proyecto",
+        showArchivedSessions: "Mostrar sesiones archivadas",
         openNewWindow: "Open in new window",
         openNewWindowFailed: "Couldn't open a new window",
         openFolder: "Open in file manager",
@@ -1242,7 +1244,7 @@ export const es: TranslationResources = {
         showMore: "Mostrar más",
         showLess: "Mostrar menos",
         createWorkspaceFor: "Crea una nueva sesión para{{projectName}}",
-        copyPath: "Copiar ruta",
+        copySessionId: "Copiar ID de sesión",
         copyBranchName: "Copiar nombre de sucursal",
         rename: "Cambiar nombre de la sesión",
         pin: "Anclar arriba",
@@ -1266,8 +1268,7 @@ export const es: TranslationResources = {
         invalidBranchName: "Nombre de sucursal no válido",
       },
       toasts: {
-        workspacePathUnavailable: "RutaWorkspaceno disponible",
-        pathCopied: "Ruta copiada",
+        sessionIdCopied: "ID de sesión copiado",
         branchNameCopied: "Nombre de la sucursal copiado",
         hostDisconnected: "Hostno está conectado",
         hideFailed: "No se pudo ocultar la sesión",
@@ -2164,6 +2165,8 @@ export const es: TranslationResources = {
     pillLabelReadyToReview: "{{count}} para revisar",
     detachAction: "Separar {{label}}",
     detachTooltip: "Separar subagente",
+    copySessionIdAction: "Copiar el ID de sesión de {{label}}",
+    copySessionIdTooltip: "Copiar ID de sesión",
     archiveAction: "Archivo{{label}}",
     archiveTooltip: "Subagente de archivo",
     archiveFinishedAction: "Archivar subagentes finalizados",

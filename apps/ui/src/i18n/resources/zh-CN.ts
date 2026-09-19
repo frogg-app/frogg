@@ -447,6 +447,7 @@ export const zhCN: TranslationResources = {
     hoverCard: {
       scriptsAccessibility: "会话 scripts",
       copyPath: "复制路径",
+      copySessionId: "复制会话 ID",
       copyBranchName: "复制分支名称",
       copied: "已复制",
     },
@@ -1155,6 +1156,7 @@ export const zhCN: TranslationResources = {
       actions: {
         menu: "Project 操作",
         openSettings: "打开 project 设置",
+        showArchivedSessions: "显示已归档的会话",
         openNewWindow: "在新窗口中打开",
         openNewWindowFailed: "无法打开新窗口",
         openFolder: "Open in file manager",
@@ -1198,7 +1200,7 @@ export const zhCN: TranslationResources = {
         showMore: "显示更多",
         showLess: "收起",
         createWorkspaceFor: "为 {{projectName}} 新建会话",
-        copyPath: "复制路径",
+        copySessionId: "复制会话 ID",
         copyBranchName: "复制分支名称",
         rename: "重命名会话",
         pin: "置顶",
@@ -1221,8 +1223,7 @@ export const zhCN: TranslationResources = {
         invalidBranchName: "无效的分支名称",
       },
       toasts: {
-        workspacePathUnavailable: "会话路径不可用",
-        pathCopied: "路径已复制",
+        sessionIdCopied: "会话 ID 已复制",
         branchNameCopied: "分支名称已复制",
         hostDisconnected: "Host 未连接",
         hideFailed: "隐藏会话失败",
@@ -2078,6 +2079,8 @@ export const zhCN: TranslationResources = {
     pillLabelReadyToReview: "{{count}} 个待查看",
     detachAction: "分离 {{label}}",
     detachTooltip: "分离 subagent",
+    copySessionIdAction: "复制 {{label}} 的会话 ID",
+    copySessionIdTooltip: "复制会话 ID",
     archiveAction: "归档 {{label}}",
     archiveTooltip: "归档 subagent",
     archiveFinishedAction: "归档已完成的 subagent",

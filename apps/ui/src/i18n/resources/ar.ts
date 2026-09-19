@@ -447,6 +447,7 @@ export const ar: TranslationResources = {
     hoverCard: {
       scriptsAccessibility: "البرامج النصية Workspace",
       copyPath: "نسخ المسار",
+      copySessionId: "نسخ معرّف الجلسة",
       copyBranchName: "نسخ اسم الفرع",
       copied: "تم النسخ",
     },
@@ -1164,6 +1165,7 @@ export const ar: TranslationResources = {
       actions: {
         menu: "إجراءات المشروع",
         openSettings: "افتح إعدادات المشروع",
+        showArchivedSessions: "عرض الجلسات المؤرشفة",
         openNewWindow: "Open in new window",
         openNewWindowFailed: "Couldn't open a new window",
         openFolder: "Open in file manager",
@@ -1208,7 +1210,7 @@ export const ar: TranslationResources = {
         showMore: "عرض المزيد",
         showLess: "عرض أقل",
         createWorkspaceFor: "قم بإنشاء جلسة جديدة لـ{{projectName}}",
-        copyPath: "نسخ المسار",
+        copySessionId: "نسخ معرّف الجلسة",
         copyBranchName: "انسخ اسم الفرع",
         rename: "إعادة تسمية الجلسة",
         pin: "تثبيت في الأعلى",
@@ -1232,8 +1234,7 @@ export const ar: TranslationResources = {
         invalidBranchName: "اسم الفرع غير صالح",
       },
       toasts: {
-        workspacePathUnavailable: "مسار Workspace غير متوفر",
-        pathCopied: "تم نسخ المسار",
+        sessionIdCopied: "تم نسخ معرّف الجلسة",
         branchNameCopied: "تم نسخ اسم الفرع",
         hostDisconnected: "Host غير متصل",
         hideFailed: "فشل في إخفاء الجلسة",
@@ -2108,6 +2109,8 @@ export const ar: TranslationResources = {
     pillLabelReadyToReview: "{{count}} جاهزة للمراجعة",
     detachAction: "فصل {{label}}",
     detachTooltip: "فصل الوكيل الفرعي",
+    copySessionIdAction: "نسخ معرّف الجلسة لـ {{label}}",
+    copySessionIdTooltip: "نسخ معرّف الجلسة",
     archiveAction: "أرشيف{{label}}",
     archiveTooltip: "أرشفة الوكيل الفرعي",
     archiveFinishedAction: "أرشفة الوكلاء الفرعيين المكتملين",

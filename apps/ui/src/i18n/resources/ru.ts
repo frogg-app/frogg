@@ -450,6 +450,7 @@ export const ru: TranslationResources = {
     hoverCard: {
       scriptsAccessibility: "Скрипты сессии",
       copyPath: "Копировать путь",
+      copySessionId: "Копировать ID сессии",
       copyBranchName: "Копировать имя ветки",
       copied: "Скопировано",
     },
@@ -1181,6 +1182,7 @@ export const ru: TranslationResources = {
       actions: {
         menu: "Действия проекта",
         openSettings: "Открыть настройки проекта",
+        showArchivedSessions: "Показать архивные сессии",
         openNewWindow: "Открыть в новом окне",
         openNewWindowFailed: "Не удалось открыть новое окно",
         openFolder: "Открыть в файловом менеджере",
@@ -1225,7 +1227,7 @@ export const ru: TranslationResources = {
         showMore: "Показать ещё",
         showLess: "Показать меньше",
         createWorkspaceFor: "Создать новую сессию для {{projectName}}",
-        copyPath: "Копировать путь",
+        copySessionId: "Копировать ID сессии",
         copyBranchName: "Скопировать имя ветки",
         rename: "Переименовать сессию",
         pin: "Закрепить вверху",
@@ -1249,8 +1251,7 @@ export const ru: TranslationResources = {
         invalidBranchName: "Недопустимое имя ветки",
       },
       toasts: {
-        workspacePathUnavailable: "Путь к сессии недоступен",
-        pathCopied: "Путь скопирован",
+        sessionIdCopied: "ID сессии скопирован",
         branchNameCopied: "Имя ветки скопировано",
         hostDisconnected: "Хост не подключён",
         hideFailed: "Не удалось скрыть сессию",
@@ -2146,6 +2147,8 @@ export const ru: TranslationResources = {
     pillLabelReadyToReview: "{{count}} на проверку",
     detachAction: "Отсоединить {{label}}",
     detachTooltip: "Отсоединить субагента",
+    copySessionIdAction: "Копировать ID сессии {{label}}",
+    copySessionIdTooltip: "Копировать ID сессии",
     archiveAction: "Архивировать {{label}}",
     archiveTooltip: "Архивировать субагента",
     archiveFinishedAction: "Архивировать завершенные субагенты",
