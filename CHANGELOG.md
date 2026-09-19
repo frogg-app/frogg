@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.5 — 2026-09-19
+
+- A new session now starts on the account its picker shows. With a second
+  provider account signed in, an untouched picker resolved to the
+  daemon-wide active account while still reading "Default"; it now shows the
+  account the agent will really launch as. Picking Default explicitly still
+  pins the default config directory.
+- The context-window usage popover reports the quota of the account the
+  session is running on, instead of always reading the default account's.
+
 ## 1.5.4 — 2026-09-19
 
 - The sidebar list is headed "Projects", translated in every bundled
