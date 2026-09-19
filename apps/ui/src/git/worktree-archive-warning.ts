@@ -111,10 +111,27 @@ export function buildWorktreeArchiveConfirmationMessage(
   return [labels.consequence, ...reasons].join("\n\n");
 }
 
+/**
+ * Whether archiving this worktree would lose work the user cannot get back.
+ *
+ * Archiving a clean worktree is reversible, so it must not be confirmed; only uncommitted
+ * changes or unpushed commits justify a prompt.
+ */
+export function isWorktreeArchiveRisky(
+  input: WorktreeArchiveRisk,
+  labels: WorktreeArchiveWarningLabels = DEFAULT_WORKTREE_ARCHIVE_WARNING_LABELS,
+): boolean {
+  return buildWorktreeArchiveRiskReasons(input, labels).length > 0;
+}
+
 export async function confirmRiskyWorktreeArchive(
   input: WorktreeArchiveConfirmationInput,
   labels: WorktreeArchiveWarningLabels = DEFAULT_WORKTREE_ARCHIVE_WARNING_LABELS,
 ): Promise<boolean> {
+  // Nothing at risk means nothing to ask about: the archive is reversible, so it just happens.
+  if (!isWorktreeArchiveRisky(input, labels)) {
+    return true;
+  }
   const message = buildWorktreeArchiveConfirmationMessage(input, labels);
   return await confirmDialog({
     title: labels.title(input.workspaceName),

@@ -2,12 +2,11 @@ import { useCallback } from "react";
 import { useToast } from "@/contexts/toast-context";
 import { i18n } from "@/i18n/i18next";
 import { useSessionStore } from "@/stores/session-store";
-import { confirmDialog } from "@/utils/confirm-dialog";
 import { toErrorMessage } from "@/utils/error-messages";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
 import { requestDetachSubagent, type ResolveDetachSubagentDialogInput } from "./detach-subagent";
 
-export { resolveDetachSubagentDialog, requestDetachSubagent } from "./detach-subagent";
+export { resolveDetachedSubagentLabel, requestDetachSubagent } from "./detach-subagent";
 export type {
   DetachSubagentDeps,
   RequestDetachSubagentInput,
@@ -29,7 +28,6 @@ export function useDetachSubagent(input: UseDetachSubagentInput): (subagentId: s
         {
           getSubagent: (id): ResolveDetachSubagentDialogInput | undefined =>
             useSessionStore.getState().sessions[serverId]?.agents?.get(id),
-          confirm: confirmDialog,
           detachAgent: async ({ serverId: targetServerId, agentId }) => {
             const client = useSessionStore.getState().sessions[targetServerId]?.client;
             if (!client) {
@@ -39,6 +37,13 @@ export function useDetachSubagent(input: UseDetachSubagentInput): (subagentId: s
           },
           openDetachedAgent: ({ serverId: targetServerId, agentId }) => {
             navigateToAgent({ serverId: targetServerId, agentId });
+          },
+          reportDetached: (label) => {
+            toast.show(
+              label
+                ? i18n.t("subagents.detachedToast", { name: label })
+                : i18n.t("subagents.detachedToastUnnamed"),
+            );
           },
           reportError: (error) => {
             toast.error(toErrorMessage(error));

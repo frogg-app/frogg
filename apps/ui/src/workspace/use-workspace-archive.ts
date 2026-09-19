@@ -5,6 +5,7 @@ import { useToast } from "@/contexts/toast-context";
 import {
   confirmRiskyWorktreeArchive,
   DEFAULT_WORKTREE_ARCHIVE_WARNING_LABELS,
+  isWorktreeArchiveRisky,
   type WorktreeArchiveWarningLabels,
 } from "@/git/worktree-archive-warning";
 import type { WorkspaceDescriptor } from "@/stores/session-store";
@@ -80,7 +81,12 @@ export function useWorkspaceArchive(input: ArchiveWorkspaceInput): WorkspaceArch
 
   const archive = useCallback(() => {
     void (async () => {
-      if (workspaceKind === "worktree") {
+      // Only a worktree that would lose work is worth a question. A clean one archives straight
+      // away: the archive is reversible, so a prompt would be noise.
+      const risky =
+        workspaceKind === "worktree" &&
+        isWorktreeArchiveRisky({ isDirty, aheadOfOrigin, diffStat }, warningLabels);
+      if (risky) {
         const confirmed = await confirmRiskyWorktreeArchive(
           {
             workspaceName: name,

@@ -34,6 +34,7 @@ import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog"
 import { CompanionHost } from "@/companion/host";
 import { SettingsModalHost } from "@/settings-modal/host";
 import { AppDiagnosticHost } from "@/components/app-diagnostic-host";
+import { ConfirmDialogHost } from "@/components/confirm-dialog-host";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { DesktopWindowControls } from "@/components/desktop/window-controls";
@@ -612,6 +613,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
       <CompanionHost />
       <KeyboardShortcutsDialog />
       <AppDiagnosticHost />
+      <ConfirmDialogHost />
       <QuittingOverlay />
     </View>
   );

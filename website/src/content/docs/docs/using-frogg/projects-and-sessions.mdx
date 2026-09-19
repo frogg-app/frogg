@@ -25,8 +25,10 @@ untracked text files; it does not include committed changes merely because the b
 from its base. Branch divergence remains available in the Git views.
 
 Removing a project from the sidebar and archiving an ordinary session happen immediately and
-do not change files on disk. Archiving a Frogg-managed worktree is different: it can remove the
-managed worktree directory, so Frogg keeps its confirmation before that destructive operation.
+do not change files on disk. Archiving a Frogg-managed worktree can remove the managed worktree
+directory. Frogg asks first only when that would lose work — uncommitted changes or unpushed
+commits — and lists what is at stake; a clean, pushed worktree archives immediately like any
+other session.
 
 ## Add a project
 

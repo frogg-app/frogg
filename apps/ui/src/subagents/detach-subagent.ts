@@ -1,11 +1,19 @@
 import type { Agent } from "@/stores/session-store";
-import type { ConfirmDialogInput } from "@/utils/confirm-dialog";
 
 export interface ResolveDetachSubagentDialogInput {
   title: Agent["title"] | null | undefined;
 }
 
-function resolveSubagentLabel(title: Agent["title"] | null | undefined): string | null {
+/**
+ * The subagent's display name, or `null` when it has none worth showing.
+ *
+ * Detaching loses nothing: the agent keeps its history and simply continues on its own, so it is
+ * no longer confirmed. It happens, and this label is what the toast names afterwards.
+ */
+export function resolveDetachedSubagentLabel(
+  input: ResolveDetachSubagentDialogInput,
+): string | null {
+  const title = input.title;
   if (typeof title !== "string") {
     return null;
   }
@@ -19,25 +27,11 @@ function resolveSubagentLabel(title: Agent["title"] | null | undefined): string 
   return normalized;
 }
 
-export function resolveDetachSubagentDialog(
-  input: ResolveDetachSubagentDialogInput,
-): ConfirmDialogInput {
-  const subagentLabel = resolveSubagentLabel(input.title) ?? "This subagent";
-
-  return {
-    title: "Detach subagent?",
-    message: `${subagentLabel} will leave this track and continue as a standalone agent.`,
-    confirmLabel: "Detach",
-    cancelLabel: "Cancel",
-    destructive: false,
-  };
-}
-
 export interface DetachSubagentDeps {
   getSubagent: (subagentId: string) => ResolveDetachSubagentDialogInput | undefined;
-  confirm: (input: ConfirmDialogInput) => Promise<boolean>;
   detachAgent: (input: { serverId: string; agentId: string }) => Promise<void>;
   openDetachedAgent: (input: { serverId: string; agentId: string }) => void;
+  reportDetached: (label: string | null) => void;
   reportError: (error: unknown) => void;
 }
 
@@ -51,17 +45,10 @@ export async function requestDetachSubagent(
   deps: DetachSubagentDeps,
 ): Promise<void> {
   const subagent = deps.getSubagent(input.subagentId);
-  const confirmed = await deps.confirm(
-    resolveDetachSubagentDialog({
-      title: subagent?.title,
-    }),
-  );
-  if (!confirmed) {
-    return;
-  }
   try {
     await deps.detachAgent({ serverId: input.serverId, agentId: input.subagentId });
     deps.openDetachedAgent({ serverId: input.serverId, agentId: input.subagentId });
+    deps.reportDetached(resolveDetachedSubagentLabel({ title: subagent?.title }));
   } catch (error) {
     deps.reportError(error);
   }

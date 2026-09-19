@@ -107,14 +107,18 @@ export function WorkspaceLabelManagerModal({
   }, [model]);
   const remove = useCallback((): void => {
     if (!editing) return;
-    void model.delete((affected) =>
-      confirmDialog({
+    void model.delete(async (affected) => {
+      // A label no session wears is a name and a colour: deleting it takes nothing away that
+      // recreating it would not give back, so it just goes. Only a label in use is worth asking
+      // about, because that deletion strips it from sessions the user cannot restore in a click.
+      if (affected === 0) return true;
+      return await confirmDialog({
         title: t("workspaceLabels.manage.deleteTitle", { name: editing.name }),
         message: t("workspaceLabels.manage.deleteMessage", { count: affected }),
         confirmLabel: t("workspaceLabels.manage.delete"),
         destructive: true,
-      }),
-    );
+      });
+    });
   }, [editing, model, t]);
 
   const isEditing = draft !== null;

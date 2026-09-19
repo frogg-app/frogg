@@ -81,7 +81,8 @@ Agents can create agents. With the Frogg MCP tools or the `frogg` CLI, an agent 
 created this way run in the background and notify the parent when they finish. Provider
 native subagents (for example Claude Code tasks) also appear under their parent.
 
-Make a subagent independent without stopping it:
+Make a subagent independent without stopping it. Detaching is not confirmed: nothing is lost,
+the agent keeps its history, and the app opens it and confirms with a toast.
 
 ```sh
 frogg agent detach <child-id>

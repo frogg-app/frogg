@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { ConfirmDialogInput } from "@/utils/confirm-dialog";
 import {
   requestDetachSubagent,
-  resolveDetachSubagentDialog,
+  resolveDetachedSubagentLabel,
   type DetachSubagentDeps,
   type ResolveDetachSubagentDialogInput,
 } from "./detach-subagent";
@@ -12,22 +11,16 @@ interface RecordedDetach {
   agentId: string;
 }
 
-interface RecordedOpen {
-  serverId: string;
-  agentId: string;
-}
-
 interface FakeDetachSubagentEnv {
   deps: DetachSubagentDeps;
   recordedDetaches: RecordedDetach[];
-  recordedOpens: RecordedOpen[];
-  recordedConfirmInputs: ConfirmDialogInput[];
+  recordedOpens: RecordedDetach[];
+  recordedDetachedLabels: Array<string | null>;
   recordedErrors: unknown[];
 }
 
 function createFakeEnv(
   options: {
-    confirmResult?: boolean;
     initialSubagents?: Array<{ id: string; snapshot: ResolveDetachSubagentDialogInput }>;
   } = {},
 ): FakeDetachSubagentEnv {
@@ -36,26 +29,25 @@ function createFakeEnv(
     subagents.set(entry.id, entry.snapshot);
   }
   const recordedDetaches: RecordedDetach[] = [];
-  const recordedOpens: RecordedOpen[] = [];
-  const recordedConfirmInputs: ConfirmDialogInput[] = [];
+  const recordedOpens: RecordedDetach[] = [];
+  const recordedDetachedLabels: Array<string | null> = [];
   const recordedErrors: unknown[] = [];
 
   return {
     recordedDetaches,
     recordedOpens,
-    recordedConfirmInputs,
+    recordedDetachedLabels,
     recordedErrors,
     deps: {
       getSubagent: (id) => subagents.get(id),
-      confirm: async (dialog) => {
-        recordedConfirmInputs.push(dialog);
-        return options.confirmResult ?? false;
-      },
       detachAgent: async (input) => {
         recordedDetaches.push(input);
       },
       openDetachedAgent: (input) => {
         recordedOpens.push(input);
+      },
+      reportDetached: (label) => {
+        recordedDetachedLabels.push(label);
       },
       reportError: (error) => {
         recordedErrors.push(error);
@@ -64,32 +56,21 @@ function createFakeEnv(
   };
 }
 
-describe("resolveDetachSubagentDialog", () => {
-  it("uses non-destructive copy for named subagents", () => {
-    expect(resolveDetachSubagentDialog({ title: "Review branch" })).toEqual({
-      title: "Detach subagent?",
-      message: "Review branch will leave this track and continue as a standalone agent.",
-      confirmLabel: "Detach",
-      cancelLabel: "Cancel",
-      destructive: false,
-    });
+describe("resolveDetachedSubagentLabel", () => {
+  it("uses the subagent title when it is worth showing", () => {
+    expect(resolveDetachedSubagentLabel({ title: "Review branch" })).toBe("Review branch");
   });
 
-  it("falls back to this subagent when the title is not displayable", () => {
-    expect(resolveDetachSubagentDialog({ title: "New Agent" })).toEqual({
-      title: "Detach subagent?",
-      message: "This subagent will leave this track and continue as a standalone agent.",
-      confirmLabel: "Detach",
-      cancelLabel: "Cancel",
-      destructive: false,
-    });
+  it("returns null when the title is a placeholder or empty", () => {
+    expect(resolveDetachedSubagentLabel({ title: "New Agent" })).toBeNull();
+    expect(resolveDetachedSubagentLabel({ title: "   " })).toBeNull();
+    expect(resolveDetachedSubagentLabel({ title: null })).toBeNull();
   });
 });
 
 describe("requestDetachSubagent", () => {
-  it("detaches the subagent with the server id when the user confirms", async () => {
+  it("detaches immediately, without asking for confirmation", async () => {
     const env = createFakeEnv({
-      confirmResult: true,
       initialSubagents: [{ id: "child-agent", snapshot: { title: "Review branch" } }],
     });
 
@@ -100,7 +81,6 @@ describe("requestDetachSubagent", () => {
 
   it("opens the detached subagent after detach succeeds", async () => {
     const env = createFakeEnv({
-      confirmResult: true,
       initialSubagents: [{ id: "child-agent", snapshot: { title: "Review branch" } }],
     });
 
@@ -109,34 +89,28 @@ describe("requestDetachSubagent", () => {
     expect(env.recordedOpens).toEqual([{ serverId: "server-1", agentId: "child-agent" }]);
   });
 
-  it("does not detach the subagent when the user cancels", async () => {
+  it("reports what was detached so the toast can name it", async () => {
     const env = createFakeEnv({
-      confirmResult: false,
       initialSubagents: [{ id: "child-agent", snapshot: { title: "Review branch" } }],
     });
 
     await requestDetachSubagent({ serverId: "server-1", subagentId: "child-agent" }, env.deps);
 
-    expect(env.recordedDetaches).toEqual([]);
-    expect(env.recordedOpens).toEqual([]);
+    expect(env.recordedDetachedLabels).toEqual(["Review branch"]);
   });
 
-  it("asks for confirmation using the resolved dialog for the subagent", async () => {
+  it("reports an unnamed detach when the subagent has no displayable title", async () => {
     const env = createFakeEnv({
-      confirmResult: false,
-      initialSubagents: [{ id: "child-agent", snapshot: { title: "Review branch" } }],
+      initialSubagents: [{ id: "child-agent", snapshot: { title: "New Agent" } }],
     });
 
     await requestDetachSubagent({ serverId: "server-1", subagentId: "child-agent" }, env.deps);
 
-    expect(env.recordedConfirmInputs).toEqual([
-      resolveDetachSubagentDialog({ title: "Review branch" }),
-    ]);
+    expect(env.recordedDetachedLabels).toEqual([null]);
   });
 
-  it("reports detach errors after the user confirms", async () => {
+  it("reports detach errors and opens nothing", async () => {
     const env = createFakeEnv({
-      confirmResult: true,
       initialSubagents: [{ id: "child-agent", snapshot: { title: "Review branch" } }],
     });
     const error = new Error("daemon offline");
@@ -149,5 +123,6 @@ describe("requestDetachSubagent", () => {
     ).resolves.toBeUndefined();
     expect(env.recordedErrors).toEqual([error]);
     expect(env.recordedOpens).toEqual([]);
+    expect(env.recordedDetachedLabels).toEqual([]);
   });
 });
