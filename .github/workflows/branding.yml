@@ -102,7 +102,11 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
+        with:
+          # sdkmanager no longer provides the obsolete tools package.
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
       - run: node scripts/release/build-android-apk.mjs --variant debug --abi arm64-v8a
       - uses: actions/upload-artifact@v7
         if: always()
