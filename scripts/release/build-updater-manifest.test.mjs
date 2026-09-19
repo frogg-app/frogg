@@ -11,9 +11,9 @@ test("manifest lists only platforms with a signature", () => {
     pubDate: "2026-09-02T00:00:00.000Z",
     notes: "notes",
     signatures: {
-      "Frogg-1.1.5-linux-x86_64.AppImage": "sig-linux\n",
-      "Frogg-1.1.5-mac-aarch64.app.tar.gz": "sig-mac",
-      "Frogg-1.1.5-amd64.deb": "not an updater asset",
+      "frogg-1.1.5-linux-x86_64.AppImage": "sig-linux\n",
+      "frogg-1.1.5-mac-aarch64.app.tar.gz": "sig-mac",
+      "frogg-1.1.5-amd64.deb": "not an updater asset",
     },
   });
   assert.deepEqual(manifest, {
@@ -24,11 +24,11 @@ test("manifest lists only platforms with a signature", () => {
     platforms: {
       "linux-x86_64": {
         signature: "sig-linux",
-        url: "https://github.com/frogg-app/frogg/releases/download/v1.1.5/Frogg-1.1.5-linux-x86_64.AppImage",
+        url: "https://github.com/frogg-app/frogg/releases/download/v1.1.5/frogg-1.1.5-linux-x86_64.AppImage",
       },
       "darwin-aarch64": {
         signature: "sig-mac",
-        url: "https://github.com/frogg-app/frogg/releases/download/v1.1.5/Frogg-1.1.5-mac-aarch64.app.tar.gz",
+        url: "https://github.com/frogg-app/frogg/releases/download/v1.1.5/frogg-1.1.5-mac-aarch64.app.tar.gz",
       },
     },
   });

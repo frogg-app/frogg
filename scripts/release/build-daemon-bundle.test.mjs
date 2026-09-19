@@ -38,9 +38,9 @@ test("node runtime names follow nodejs.org", () => {
 });
 
 test("daemon assets use platform-first public names", () => {
-  assert.equal(daemonAssetName("1.2.3", "linux", "arm64"), "Frogg-1.2.3-linux-arm64-daemon.tar.gz");
-  assert.equal(daemonAssetName("1.2.3", "darwin", "x64"), "Frogg-1.2.3-mac-x86_64-daemon.tar.gz");
-  assert.equal(daemonAssetName("1.2.3", "win", "x64"), "Frogg-1.2.3-win-x64-daemon.zip");
+  assert.equal(daemonAssetName("1.2.3", "linux", "arm64"), "frogg-1.2.3-linux-arm64-daemon.tar.gz");
+  assert.equal(daemonAssetName("1.2.3", "darwin", "x64"), "frogg-1.2.3-mac-x86_64-daemon.tar.gz");
+  assert.equal(daemonAssetName("1.2.3", "win", "x64"), "frogg-1.2.3-win-x64-daemon.zip");
 });
 
 test("Windows launcher keeps the CLI launch contract", () => {
