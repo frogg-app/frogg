@@ -1623,27 +1623,22 @@ function NewWorkspaceForm({
   const isDraftHandoffActive = useIsNewWorkspaceDraftHandoffActive({ draftId, selectedServerId });
 
   // Launch target: what the composer submits to (chat agent, or a terminal
-  // profile). Mirrors useWorkspaceIsolation's pattern below: the derived
-  // value reads live from preferences until the user manually picks
-  // something in this screen, so the async preferences load doesn't race a
-  // frozen useState initializer.
-  const { preferences: formPreferences, updatePreferences: updateFormPreferences } =
-    useFormPreferences();
+  // profile).
   const { config: daemonConfig } = useDaemonConfig(selectedServerId);
   const terminalProfiles: readonly TerminalProfile[] = useMemo(
     () => resolveTerminalProfiles(daemonConfig?.terminalProfiles),
     [daemonConfig?.terminalProfiles],
   );
-  // Manual selection wins once the user picks something; until then the target
-  // reads live from preferences so the async load can't race a frozen
-  // initializer. Both go through `resolveLaunchTarget`, so a profile deleted
-  // daemon-side falls back to chat rather than leaving a dead selection.
+  // Deliberately not persisted: every new session starts on Chat, and a
+  // terminal pick only lasts for the draft the user made it in. `initialDraft`
+  // restores an in-flight draft's pick; `resolveLaunchTarget` falls back to
+  // chat when it names a profile the daemon no longer has.
   const [manualLaunchTarget, setManualLaunchTarget] = useState<LaunchTarget | null>(
     initialDraft.launchTarget,
   );
   const launchTarget = useMemo(
-    () => resolveLaunchTarget(manualLaunchTarget ?? formPreferences.launchTarget, terminalProfiles),
-    [manualLaunchTarget, formPreferences.launchTarget, terminalProfiles],
+    () => resolveLaunchTarget(manualLaunchTarget ?? undefined, terminalProfiles),
+    [manualLaunchTarget, terminalProfiles],
   );
   const [terminalPromptText, setTerminalPromptText] = useState(initialDraft.terminalPromptText);
   const {
@@ -2103,7 +2098,6 @@ function NewWorkspaceForm({
       if (!beginSubmission(action)) return;
       try {
         await composerState?.persistFormPreferences();
-        await updateFormPreferences({ launchTarget });
         if (isEmptyWorkspaceSubmission(payload)) {
           await runCreateEmptyWorkspace({
             payload,
@@ -2146,19 +2140,16 @@ function NewWorkspaceForm({
       chatDraft.clear,
       ensureWorkspace,
       forkDraftSetup,
-      launchTarget,
       selectedServerId,
       supportsForgeSearch,
       t,
       toast,
-      updateFormPreferences,
     ],
   );
 
   const handleSubmitTerminalLaunch = useCallback(async () => {
     if (!beginSubmission("terminal")) return;
     try {
-      await updateFormPreferences({ launchTarget });
       await runCreateTerminalWorkspace({
         cwd: selectedSourceDirectory ?? "",
         prompt: terminalPromptText,
@@ -2197,14 +2188,12 @@ function NewWorkspaceForm({
     failSubmission,
     completeDraft,
     ensureWorkspace,
-    launchTarget,
     selectedServerId,
     selectedSourceDirectory,
     selectedTerminalProfile,
     t,
     terminalPromptText,
     toast,
-    updateFormPreferences,
     withConnectedClient,
   ]);
 

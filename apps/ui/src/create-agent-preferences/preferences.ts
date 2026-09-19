@@ -47,8 +47,10 @@ export const FormPreferencesSchema = z.strictObject({
     )
     .optional(),
   isolation: z.enum(["local", "worktree"]).optional(),
-  // What the New workspace composer submits to: the chat agent (default) or a
-  // terminal profile. See `@/new-workspace-launch` for resolution/fallback.
+  // COMPAT(launchTargetMemory): the New workspace composer used to remember
+  // its launch target; it now always opens on Chat. The field is still parsed
+  // so hosts that stored one keep the rest of their preferences (the schema is
+  // strict), but nothing reads or writes it.
   launchTarget: launchTargetSchema.optional(),
 }) satisfies z.ZodType<FormPreferences>;
 

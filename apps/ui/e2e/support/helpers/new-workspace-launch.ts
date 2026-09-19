@@ -34,16 +34,6 @@ export async function seedTerminalProfiles(
   };
 }
 
-/** Mid-test profile changes (e.g. simulating a profile being removed). Does not manage restoration — pair with `seedTerminalProfiles` for that. */
-export async function patchTerminalProfiles(profiles: TerminalProfile[]): Promise<void> {
-  const client = await connectNewWorkspaceDaemonClient();
-  try {
-    await client.patchDaemonConfig({ terminalProfiles: profiles });
-  } finally {
-    await client.close();
-  }
-}
-
 // ─── Locators ──────────────────────────────────────────────────────────────
 
 /** The single meta-row chip that chooses chat or a terminal. */
