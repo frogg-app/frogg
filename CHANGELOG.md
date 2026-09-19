@@ -1,5 +1,31 @@
 # Changelog
 
+## Unreleased
+
+- Upgrading from a terminal the daemon hosts no longer leaves the host with no
+  daemon. `systemctl --user stop` kills the whole service cgroup, which held
+  the installer, its shell and the `systemctl` that issued the stop, so the
+  `start` that should have followed never ran. The restart now goes to a
+  transient `systemd-run --user` unit that outlives the stop. The terminal it
+  was typed in still ends with the daemon, and the installer says so before
+  handing over.
+- `frogg start` and `frogg restart` keep the daemon under the service that
+  owns it. Both used to start a loose detached daemon even where a systemd
+  unit or launch agent was installed, leaving the unit inactive while the
+  daemon held the port, so the next upgrade or reboot failed with
+  `EADDRINUSE` and nothing reported it. Explicit overrides (`--home`,
+  `--listen`, `--foreground`, and the rest) still start a daemon by hand,
+  since a unit cannot honour them.
+- `frogg status` reports the registered service and who is running the daemon
+  (`Service`, `Managed By`), and names the command that repairs a daemon that
+  has drifted out from under its service.
+- Automatic update checks are logged even when they find nothing, with the
+  time of the next check, so a host sitting on an old version can be told
+  apart from one whose auto-updater has stopped running.
+- The FDE compatibility warning no longer fires for an `fde-daemon` service
+  that has already been disabled, and tells you how to retire one that has
+  not.
+
 ## 1.5.9 — 2026-09-19
 
 - A Claude Code Workflow run now lists the agents it fans out beneath its own

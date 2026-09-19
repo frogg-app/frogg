@@ -23,7 +23,9 @@ How it works:
    prereleases (`-beta.N`); **beta** includes them.
 2. Downloads the daemon bundle, verifies its `.sha256`, and unpacks it to
    `~/.local/share/frogg/versions/<version>`.
-3. Switches the `current` link, restarts the service, and waits up to 90 seconds for
+3. Switches the `current` link, restarts the service (from a transient `systemd-run` unit
+   when the updater itself runs inside the daemon's cgroup, so the stop cannot kill the
+   restart), and waits up to 90 seconds for
    `/api/identity` to report the new version and `/api/health` to answer.
 4. If that fails, switches back to the previous version, restarts, and exits with code 2.
 
@@ -50,7 +52,18 @@ The same update runs from the app: **host settings → Overview → Daemon updat
 }
 ```
 
-The first check runs five minutes after start. An update waits while agents are running
+The first check runs five minutes after start. Every check logs its result and the time of
+the next one, whether or not it found anything:
+
+```
+auto-update checked  outcome=up_to_date  nextCheckAt=2026-09-20T12:00:00.000Z
+```
+
+Check `~/.frogg/daemon.log` for that line before concluding that automatic updates have
+stopped: with the default `checkIntervalHours` of 24, a release published just after a check
+waits until the next one. Lower the interval if you track releases closely.
+
+An update waits while agents are running
 or during quiet hours (local time; `[9, 18]` means 09:00 to 18:00), retrying every 15
 minutes.
 
