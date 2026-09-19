@@ -4,15 +4,12 @@ import {
   ArrowUp,
   ArrowUpToLine,
   ChevronRight,
-  Globe,
-  Monitor,
   Pencil,
   Plus,
   RotateCw,
   SquareTerminal,
   Trash2,
 } from "lucide-react-native";
-import type { TFunction } from "i18next";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Pressable, Text, View } from "react-native";
@@ -31,7 +28,6 @@ import { SettingsTextAreaCard } from "@/components/settings-textarea";
 import { Alert as InlineAlert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FormTextInput } from "@/components/ui/form-field";
-import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import {
   ProfileDraft,
@@ -73,7 +69,6 @@ import type { HostConnection, HostProfile } from "@/types/host-connection";
 import { confirmDialog } from "@/utils/confirm-dialog";
 import { isVersionMismatch } from "@/desktop/updates/desktop-updates";
 import { resolveAppVersion } from "@/utils/app-version";
-import { formatConnectionStatus, getConnectionStatusTone } from "@/utils/daemons";
 import { formatLatency } from "@/utils/latency";
 import { ICON_SIZE } from "@/styles/theme";
 import type { Theme } from "@/styles/theme";
@@ -81,6 +76,8 @@ import { getProviderIcon } from "@/components/provider-icons";
 import { BrowserToolsOptInCard } from "./browser-tools-card";
 import { hasDaemonReconnectedAfter, type DaemonConnectionMarker } from "./daemon-reconnect";
 import { restartDaemonFromSettings } from "./daemon-restart";
+import { formatHostConnectionLabel } from "./host-connection-display";
+import { HostStatusBadges } from "./host-status-badges";
 
 const ThemedArrowUp = withUnistyles(ArrowUp);
 const ThemedArrowDown = withUnistyles(ArrowDown);
@@ -115,55 +112,6 @@ const editProfileIcon = <ThemedProfilePencil size={ICON_SIZE.sm} uniProps={muted
 const removeProfileIcon = <ThemedTrash2 size={ICON_SIZE.sm} uniProps={destructiveColorMapping} />;
 const addProfileIcon = <ThemedPlus size={ICON_SIZE.sm} uniProps={mutedColorMapping} />;
 
-function formatHostConnectionLabel(connection: HostConnection, t: TFunction): string {
-  if (connection.type === "relay") {
-    return `${t("settings.host.badges.relay")} (${connection.relayEndpoint})`;
-  }
-  if (connection.type === "directSocket" || connection.type === "directPipe") {
-    return `${t("settings.host.badges.local")} (${connection.path})`;
-  }
-  if (connection.type === "remoteSsh") {
-    return `${t("settings.host.badges.remoteSsh")} (${connection.host})`;
-  }
-  return `TCP (${connection.endpoint})`;
-}
-
-function formatActiveConnectionBadge(
-  activeConnection: { type: HostConnection["type"]; display: string } | null,
-  theme: ReturnType<typeof useUnistyles>["theme"],
-  t: TFunction,
-): { icon: React.ReactNode; text: string } | null {
-  if (!activeConnection) return null;
-  if (activeConnection.type === "relay") {
-    return {
-      icon: <Globe size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />,
-      text: t("settings.host.badges.relay"),
-    };
-  }
-  if (activeConnection.type === "directSocket" || activeConnection.type === "directPipe") {
-    return {
-      icon: <Monitor size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />,
-      text: t("settings.host.badges.local"),
-    };
-  }
-  if (activeConnection.type === "remoteSsh") {
-    return {
-      icon: <Globe size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />,
-      text: t("settings.host.badges.remoteSsh"),
-    };
-  }
-  return {
-    icon: <Monitor size={theme.iconSize.sm} color={theme.colors.foregroundMuted} />,
-    text: activeConnection.display,
-  };
-}
-
-function formatDaemonVersionBadge(version: string | null): string | null {
-  const trimmed = version?.trim();
-  if (!trimmed) return null;
-  return trimmed.startsWith("v") ? trimmed : `v${trimmed}`;
-}
-
 function useHostProfile(serverId: string): HostProfile | null {
   const daemons = useHosts();
   return daemons.find((entry) => entry.serverId === serverId) ?? null;
@@ -176,65 +124,6 @@ function HostNotFound() {
       <View style={[settingsStyles.card, styles.emptyCard]}>
         <Text style={styles.emptyText}>{t("settings.host.notFound")}</Text>
       </View>
-    </View>
-  );
-}
-
-function HostStatusBadges({ serverId }: { serverId: string }) {
-  const { t } = useTranslation();
-  const { theme } = useUnistyles();
-  const snapshot = useHostRuntimeSnapshot(serverId);
-  const daemonVersion = useSessionStore(
-    (state) => state.sessions[serverId]?.serverInfo?.version ?? null,
-  );
-
-  const remoteBrand = useSessionStore(
-    (state) => state.sessions[serverId]?.serverInfo?.brand?.name ?? null,
-  );
-
-  const connectionStatus = snapshot?.connectionStatus ?? "connecting";
-  const activeConnection = snapshot?.activeConnection ?? null;
-  const statusLabel = formatConnectionStatus(connectionStatus);
-  const statusTone = getConnectionStatusTone(connectionStatus);
-  let statusVariant: StatusBadgeVariant = "muted";
-  let statusDotColor = theme.colors.foregroundMuted;
-  if (statusTone === "success") {
-    statusVariant = "success";
-    statusDotColor = theme.colors.statusDotSuccess;
-  } else if (statusTone === "warning") {
-    statusVariant = "warning";
-    statusDotColor = theme.colors.statusDotWarning;
-  } else if (statusTone === "error") {
-    statusVariant = "error";
-    statusDotColor = theme.colors.statusDotDanger;
-  }
-  const connectionBadge = formatActiveConnectionBadge(activeConnection, theme, t);
-  const versionBadgeText = formatDaemonVersionBadge(daemonVersion);
-  const statusDotStyle = useMemo(
-    () => [styles.statusDot, { backgroundColor: statusDotColor }],
-    [statusDotColor],
-  );
-  const statusLeading = useMemo(() => <View style={statusDotStyle} />, [statusDotStyle]);
-
-  return (
-    <View style={styles.identityBadges} testID="host-page-identity">
-      {remoteBrand ? <StatusBadge label={remoteBrand} variant="muted" /> : null}
-      <StatusBadge label={statusLabel} variant={statusVariant} leading={statusLeading} />
-      {connectionBadge ? (
-        <View style={styles.badgePill}>
-          {connectionBadge.icon}
-          <Text style={styles.badgeText} numberOfLines={1}>
-            {connectionBadge.text}
-          </Text>
-        </View>
-      ) : null}
-      {versionBadgeText ? (
-        <View style={styles.badgePill}>
-          <Text style={styles.badgeText} numberOfLines={1}>
-            {versionBadgeText}
-          </Text>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -349,7 +238,7 @@ export function HostSettingsPage({
         </Text>
       </View>
 
-      <HostStatusBadges serverId={serverId} />
+      <HostStatusBadges host={host} />
 
       <HostAppearanceSection host={host} />
 
@@ -1889,36 +1778,6 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.medium,
     color: theme.colors.foreground,
-  },
-  identityBadges: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing[1],
-    flexWrap: "wrap",
-    marginBottom: theme.spacing[6],
-  },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: theme.borderRadius.full,
-  },
-  badgePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: theme.spacing[2],
-    paddingVertical: 4,
-    borderRadius: theme.borderRadius.full,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface3,
-    maxWidth: 200,
-  },
-  badgeText: {
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.normal,
-    color: theme.colors.foregroundMuted,
-    flexShrink: 1,
   },
   errorText: {
     color: theme.colors.palette.red[300],
