@@ -17,5 +17,9 @@ export const COMPOSER_METER_RING_SIZE = 20;
 /** Width of one ring's slot, which sets the pitch the rings sit on. */
 export const COMPOSER_METER_SLOT_WIDTH = 26;
 
-/** The centre character's size, sized to the ring's inner well rather than the toolbar's text. */
-export const COMPOSER_METER_GLYPH_SIZE = 10;
+/**
+ * The centre character's size, sized to the ring's inner well rather than the toolbar's text.
+ * The well is the ring's diameter less its 2pt stroke on each side, so 12 is about as large as
+ * a digit goes before it crowds the arc.
+ */
+export const COMPOSER_METER_GLYPH_SIZE = 12;

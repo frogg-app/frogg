@@ -119,7 +119,9 @@ export function QuotaRing({ column, glyph, size, testID }: QuotaRingProps) {
             size={size}
             uniProps={ringPaletteMapping(column.pct)}
           />
-          <Text style={styles.glyph}>{glyph}</Text>
+          <View pointerEvents="none" style={styles.glyphLayer}>
+            <Text style={styles.glyph}>{glyph}</Text>
+          </View>
         </Pressable>
       </TooltipTrigger>
       <TooltipContent side="top" align="center" offset={8}>
@@ -147,18 +149,26 @@ const styles = StyleSheet.create((theme) => ({
     transform: [{ rotate: "-90deg" }],
   },
   // The glyph sits over the ring rather than inside the SVG, where text metrics differ between
-  // web and native. It stretches across the whole slot and centres itself with `textAlign` and a
-  // line height equal to the slot: an auto-width absolute Text centres its own box, not the ring.
-  glyph: {
+  // web and native. Centring is done by a layer that fills the slot and centres its child both
+  // ways: `textAlign` alone only solves the horizontal axis, and a line height stretched to the
+  // slot leaves the glyph riding high, because a line box centres the font's whole em — ascender
+  // and descender — rather than the digit.
+  glyphLayer: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    textAlign: "center",
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  glyph: {
     color: theme.colors.foregroundMuted,
     fontSize: COMPOSER_METER_GLYPH_SIZE,
-    lineHeight: METER_SLOT_HEIGHT,
+    lineHeight: COMPOSER_METER_GLYPH_SIZE,
     fontWeight: theme.fontWeight.normal,
+    includeFontPadding: false,
+    textAlignVertical: "center",
   },
   tooltipContent: {
     gap: theme.spacing[1],

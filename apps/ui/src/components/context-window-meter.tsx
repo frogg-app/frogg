@@ -129,7 +129,13 @@ function MeterCenterGlyph({
   hidden: boolean;
 }) {
   if (hidden || !glyph) return null;
-  return <Text style={[styles.centerGlyph, size ? { fontSize: size } : null]}>{glyph}</Text>;
+  return (
+    <View pointerEvents="none" style={styles.centerGlyphLayer}>
+      <Text style={[styles.centerGlyph, size ? { fontSize: size, lineHeight: size } : null]}>
+        {glyph}
+      </Text>
+    </View>
+  );
 }
 
 export function ContextWindowMeter({
@@ -306,18 +312,24 @@ const styles = StyleSheet.create((theme) => ({
     transform: [{ rotate: "-90deg" }],
   },
   // Drawn over the ring rather than as SVG text, which does not centre consistently on native.
-  // Stretched across the container and centred by `textAlign`: an auto-width absolute Text
-  // centres its own box instead of the ring.
-  centerGlyph: {
+  // The layer fills the meter and centres the glyph on both axes; a line box stretched to the
+  // container would centre the font's em rather than the character, leaving it riding high.
+  centerGlyphLayer: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    textAlign: "center",
+    bottom: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  centerGlyph: {
     color: theme.colors.foregroundMuted,
     fontSize: 8,
-    lineHeight: 28,
+    lineHeight: 8,
     fontWeight: theme.fontWeight.normal,
+    includeFontPadding: false,
+    textAlignVertical: "center",
   },
   percentageLabel: {
     color: theme.colors.foregroundMuted,
