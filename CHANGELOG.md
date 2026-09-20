@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.5.11 — 2026-09-20
+
+- A session now starts on the account you picked. Typing into the new session
+  screen does not create the agent there: it hands the draft to a tab in the new
+  workspace, and that tab launched with an account it resolved for itself, so a
+  session started as one sign-in came up signed in as another. The pick now
+  travels with the draft and wins over the tab's own resolution.
+- Plan usage is read per account. Every sign-in has its own plan and its own
+  limits, so one card per provider could only describe whichever account the
+  daemon happened to have active, with nothing on screen saying which. A
+  provider with more than one account now carries the same account tabs the
+  provider settings sheet uses, and the figures follow the open tab. Refreshing
+  reaches each account's figures rather than only the unscoped list.
+- A daemon self-update reports what it is doing. The run sends download byte
+  counts, so the settings section shows a determinate progress bar, the phase it
+  is in, an explicit note when it moves to installing and disconnects, and a
+  countdown of how long the app will wait for the daemon to check back in.
+  Failing to reconnect now says what the timeout was. Older daemons keep the
+  text-only phases.
+- The account picker's usage figures line up. Each account's window usage was a
+  ragged inline string; the figures are now fixed-width cells anchored to the
+  right of the row, reading as a grid down the list.
+- Session rows use the full width of the sidebar. Two reserved columns held a
+  band of dead space open on the right of every row, truncating titles early.
+  The kebab's actions are an overlay pinned to the row's edge, and the agent
+  disclosure no longer holds an empty column open on rows with no subagents.
+- The Explorer dock keeps clear of the window controls. It sat underneath them
+  without knowing it, running its tabs beneath the controls and putting its
+  close button off the window; while it is open it owns that corner. The
+  header's remote button also opens the repo's home page rather than the
+  checked-out branch, which 404s whenever that branch has never been pushed.
+- Copying a path from the Changes surface says so, with the same toast the rest
+  of the app uses, naming which of the two was copied.
+
 ## 1.5.10 — 2026-09-20
 
 - Holding the workspace-jump modifier no longer makes the sidebar jump. The
