@@ -6,6 +6,9 @@ import { COMPOSER_METER_GLYPH_SIZE, COMPOSER_METER_SLOT_WIDTH } from "@/composer
 import type { ProviderUsageColumn } from "@/provider-usage/account-summary";
 import type { Theme } from "@/styles/theme";
 
+/** Toolbar-button height: the glyph's line height, so one line centres in the slot. */
+const METER_SLOT_HEIGHT = 28;
+
 interface QuotaRingProps {
   column: ProviderUsageColumn;
   /** The single character drawn in the ring's middle, naming the window it measures. */
@@ -135,7 +138,7 @@ export function QuotaRing({ column, glyph, size, testID }: QuotaRingProps) {
 const styles = StyleSheet.create((theme) => ({
   container: {
     width: COMPOSER_METER_SLOT_WIDTH,
-    height: 28,
+    height: METER_SLOT_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -143,13 +146,18 @@ const styles = StyleSheet.create((theme) => ({
     // SVG strokes start at three o'clock; the ring reads clockwise from twelve.
     transform: [{ rotate: "-90deg" }],
   },
-  // The glyph sits over the ring rather than inside the SVG: an absolutely positioned Text
-  // centres identically on web and native, where SVG text metrics do not.
+  // The glyph sits over the ring rather than inside the SVG, where text metrics differ between
+  // web and native. It stretches across the whole slot and centres itself with `textAlign` and a
+  // line height equal to the slot: an auto-width absolute Text centres its own box, not the ring.
   glyph: {
     position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    textAlign: "center",
     color: theme.colors.foregroundMuted,
     fontSize: COMPOSER_METER_GLYPH_SIZE,
-    lineHeight: COMPOSER_METER_GLYPH_SIZE + 2,
+    lineHeight: METER_SLOT_HEIGHT,
     fontWeight: theme.fontWeight.normal,
   },
   tooltipContent: {

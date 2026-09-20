@@ -15,7 +15,7 @@
 export const COMPOSER_METER_RING_SIZE = 20;
 
 /** Width of one ring's slot, which sets the pitch the rings sit on. */
-export const COMPOSER_METER_SLOT_WIDTH = 24;
+export const COMPOSER_METER_SLOT_WIDTH = 26;
 
 /** The centre character's size, sized to the ring's inner well rather than the toolbar's text. */
 export const COMPOSER_METER_GLYPH_SIZE = 10;

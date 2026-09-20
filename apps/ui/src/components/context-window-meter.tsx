@@ -306,11 +306,17 @@ const styles = StyleSheet.create((theme) => ({
     transform: [{ rotate: "-90deg" }],
   },
   // Drawn over the ring rather than as SVG text, which does not centre consistently on native.
+  // Stretched across the container and centred by `textAlign`: an auto-width absolute Text
+  // centres its own box instead of the ring.
   centerGlyph: {
     position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    textAlign: "center",
     color: theme.colors.foregroundMuted,
     fontSize: 8,
-    lineHeight: 10,
+    lineHeight: 28,
     fontWeight: theme.fontWeight.normal,
   },
   percentageLabel: {
