@@ -46,7 +46,9 @@ notes only say that no changelog entry exists.
      workspaces, then `npm pack --dry-run` for each publishable package.
    - `version:all:<mode>`: runs `npm version <next> --include-workspace-root` with the message
      `chore(release): cut <version>`. npm's `version` hook syncs workspace versions, reinstalls,
-     and stages the result.
+     refreshes the Nix dependency hash (`nix:hash`, since the reinstall rewrites
+     `package-lock.json`), and stages the result. This step needs either Nix or Docker on the
+     machine cutting the release; without one the cut stops before it commits.
    - `release:push`: creates the annotated tag `v<version>` if it is missing, pushes `HEAD` to
      the current branch (or `--branch <name>`), then pushes the tag.
 

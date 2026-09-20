@@ -85,8 +85,13 @@ The package installs `frogg` and `frogg-server`.
 
 ## Dependency hash
 
-`npmDepsHash` is read from `deploy/nix/npm-deps.hash`. If your nixpkgs produces a different
-hash for the same lockfile, override it:
+`npmDepsHash` is read from `deploy/nix/npm-deps.hash`. Anything that rewrites
+`package-lock.json` -- a dependency change, or a release cut, which bumps every workspace
+version -- invalidates it. `npm run nix:hash` recomputes it (through Nix, or the `nixos/nix`
+container when Nix is not installed) and `npm run nix:hash:check` verifies it, which is what
+CI does.
+
+If your nixpkgs produces a different hash for the same lockfile, override it:
 
 ```nix
 frogg.packages.x86_64-linux.default.override { npmDepsHash = "sha256-..."; }

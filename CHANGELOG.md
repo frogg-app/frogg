@@ -31,6 +31,12 @@
 - The FDE compatibility warning no longer fires for an `fde-daemon` service
   that has already been disabled, and tells you how to retire one that has
   not.
+- Cutting a release refreshes `deploy/nix/npm-deps.hash`. `npm version` reinstalls
+  and so rewrites `package-lock.json`, which invalidated the hash and left the
+  `nix` CI job failing on every pull request until someone regenerated it by
+  hand. The hash is now part of npm's `version` hook (`npm run nix:hash`), and
+  `update-nix.sh` computes it through the `nixos/nix` container when Nix is not
+  installed, so the machine cutting the release does not need Nix.
 
 ## 1.5.8 — 2026-09-19
 
