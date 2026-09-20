@@ -10,8 +10,7 @@
  */
 
 /**
- * The actions column's painted width. It is an overlay pinned to the row's right edge rather
- * than a reserved column, so it costs the title nothing: the kebab trigger's painted footprint (a 14px icon, 2px padding each
+ * The actions column: the kebab trigger's painted footprint (a 14px icon, 2px padding each
  * side, 2px lead-in) less the 7px it is pulled right onto the row's trailing edge.
  */
 export const SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH = 13;

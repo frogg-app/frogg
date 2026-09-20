@@ -126,6 +126,31 @@ async function seed(): Promise<Record<string, unknown>> {
       await client.waitForAgentUpsert(agent.id, (snapshot) => snapshot.status === "idle", 30_000);
       agents.push({ id: agent.id, title });
     }
+    // A second workspace running a single agent. A session row with one agent has no disclosure
+    // chevron and shows its account instead, so this is the sidebar's other row shape — without
+    // it the preview can only ever show the multi-agent one.
+    const solo = await client.createWorkspace({
+      // `refName` is the base to branch off; the new branch is named for the worktree slug.
+      source: {
+        kind: "worktree",
+        cwd: repo,
+        action: "branch-off",
+        refName: "main",
+        worktreeSlug: "solo",
+      },
+    });
+    if (solo.workspace) {
+      const agent = await client.createAgent({
+        provider: "mock",
+        model: "ten-second-stream",
+        modeId: "load-test",
+        cwd: solo.workspace.path ?? repo,
+        workspaceId: solo.workspace.id,
+        title: "Solo chat",
+      });
+      await client.waitForAgentUpsert(agent.id, (snapshot) => snapshot.status === "idle", 30_000);
+      agents.push({ id: agent.id, title: "Solo chat" });
+    }
     return { workspaceId, agents };
   } finally {
     await client.close().catch(() => undefined);

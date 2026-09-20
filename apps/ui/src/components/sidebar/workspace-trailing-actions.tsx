@@ -16,23 +16,13 @@ import { useOpenKebabMenuVisibility } from "@/components/sidebar/use-open-kebab-
 import { resolveTrailingActionVisibility } from "@/components/sidebar/trailing-action-visibility";
 import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sidebar-workspace-title";
 import { SidebarWorkspaceAccountIndicator } from "@/components/sidebar/workspace-account";
-import {
-  WorkspaceAgentDisclosure,
-  useWorkspaceAgentTree,
-} from "@/components/sidebar/agents/workspace-tree";
+import { WorkspaceAgentDisclosure } from "@/components/sidebar/agents/workspace-tree";
 import { useFadePresence } from "@/components/sidebar/use-fade-presence";
 import { SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH } from "@/components/sidebar/row-metrics";
 import {
   SidebarWorkspaceTrailingContent,
   type SidebarWorkspaceTrailing,
 } from "@/components/sidebar/workspace-trailing";
-
-/**
- * The kebab's own scrim: its painted footprint plus a short gradient. Deliberately much narrower
- * than the rail's — it only has to fade out the metadata directly beneath the 3 dots.
- */
-const KEBAB_SCRIM_FADE_WIDTH = 14;
-const KEBAB_SCRIM_WIDTH = SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH + 8 + KEBAB_SCRIM_FADE_WIDTH;
 
 /** How much of the rail's scrim is gradient before it turns solid under the icons. */
 const RAIL_SCRIM_FADE_WIDTH = 24;
@@ -106,7 +96,7 @@ export function SidebarWorkspaceTrailingActions({
   const quickActionsModifierDown = useKeyboardShortcutsStore(
     (state) => state.quickActionsModifierDown,
   );
-  const { showTrailing, showKebab, showQuickActions, showActionsColumn, reserveActionsColumn } =
+  const { showTrailing, showKebab, showQuickActions, showActionsColumn } =
     resolveTrailingActionVisibility({
       workspace,
       trailing,
@@ -117,11 +107,6 @@ export function SidebarWorkspaceTrailingActions({
       selected,
       quickActionsModifierDown,
     });
-  // A row with subagents draws a disclosure chevron immediately left of the actions column. The
-  // chevron is a control, so the kebab must not overlay and scrim it: those rows hold the column
-  // open instead, exactly as touch does.
-  const { nodes } = useWorkspaceAgentTree();
-  const reserveColumn = reserveActionsColumn || nodes.length > 0;
   const kebab = useOpenKebabMenuVisibility(showKebab);
   // An open kebab menu keeps its trigger mounted, and swapping the rail in underneath it would
   // pull the menu's anchor out from under it mid-interaction.
@@ -155,23 +140,11 @@ export function SidebarWorkspaceTrailingActions({
       <WorkspaceAgentDisclosure label={workspaceLabel} />
       {showActionsColumn && onArchive ? (
         <View
-          style={reserveColumn ? styles.actionsColumnReserved : styles.actionsColumn}
+          style={styles.actionsColumn}
           testID={`sidebar-workspace-actions-${workspace.workspaceKey}`}
         >
           {kebabPresence.mounted ? (
             <Animated.View style={kebabStyle} pointerEvents={kebab.showKebab ? "auto" : "none"}>
-              {/* An overlaid column draws over whatever the row's metadata put under it, so it
-                  scrims that out the way the rail does — only as wide as the 3 dots need, so it
-                  never reaches further left than it covers. A reserved column has its own width
-                  and nothing to fade. */}
-              {reserveColumn ? null : (
-                <TrailingActionScrim
-                  backdrop={backdrop}
-                  width={KEBAB_SCRIM_WIDTH}
-                  fadeWidth={KEBAB_SCRIM_FADE_WIDTH}
-                  testID="sidebar-workspace-kebab-scrim"
-                />
-              )}
               <SidebarWorkspaceMenu
                 {...kebab.menuProps}
                 workspaceKey={workspace.workspaceKey}
@@ -232,21 +205,11 @@ const styles = StyleSheet.create({
   trailingContent: {
     flexShrink: 0,
   },
-  // Pinned to the row's right edge and out of the flow entirely: the kebab and the rail both
-  // anchor to the same pixels on every row, and the title and metadata keep the full width of
-  // the row instead of holding a column open for an action that is only there on hover.
+  // Fixed width in the flow, held open whether or not anything is drawn in it. It was briefly an
+  // overlay so the title could have those pixels, but the trailing cluster ends in something the
+  // user reads on almost every row — the account, or the disclosure chevron — and the kebab landed
+  // on top of it. Only the rail, which is wider than any column could be, overlays and scrims.
   actionsColumn: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    width: SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,
-    height: 20,
-    alignItems: "flex-end",
-    justifyContent: "center",
-  },
-  // A permanent kebab (touch) or one that would otherwise cover the disclosure chevron, in the
-  // flow: it has to push what is beside it left rather than land on top of it.
-  actionsColumnReserved: {
     position: "relative",
     width: SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,
     height: 20,

@@ -25,6 +25,7 @@ Options
   --mobile                  390x844 touch viewport
   --theme <dark|light>      colour scheme (default dark)
   --click <testID>          click an element first; repeat for a sequence
+  --hover <testID>          leave the pointer over an element, for hover-only UI
   --wait <testID>           wait for an element before capturing
   --crop <testID>           capture only this element
   --full                    capture the full scrollable page
@@ -45,6 +46,7 @@ const { values, positionals } = parseArgs({
     mobile: { type: "boolean", default: false },
     theme: { type: "string", default: "dark" },
     click: { type: "string", multiple: true, default: [] },
+    hover: { type: "string" },
     wait: { type: "string" },
     crop: { type: "string" },
     full: { type: "boolean", default: false },
@@ -158,6 +160,8 @@ async function main(): Promise<void> {
       await page.waitForTimeout(300);
     }
     if (values.wait) await byTestId(page, values.wait).waitFor({ timeout: 30_000 });
+    // Last, so a click sequence cannot move the pointer off again.
+    if (values.hover) await byTestId(page, values.hover).hover({ timeout: 30_000 });
 
     // Let entering animations and late layout settle.
     await page.waitForTimeout(600);
