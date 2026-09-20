@@ -1,7 +1,8 @@
 import { ToastApiProvider } from "@/contexts/toast-api-context";
 /** @vitest-environment jsdom */
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render as rtlRender, screen } from "@testing-library/react";
+import type { PropsWithChildren, ReactElement } from "react";
 import { I18nextProvider } from "react-i18next";
 import { createInstance } from "i18next";
 import { ProviderSubagentHistoryStatus } from "@/subagents/provider-history";
@@ -90,6 +91,22 @@ const parent: SidebarAgentNode = {
 };
 const leafParent = { ...parent, children: [] };
 const toastApi = { show: vi.fn(), copied: vi.fn(), error: vi.fn() };
+
+// Every agent row carries a context menu now, so every row needs the toast and query context
+// its actions are built from — not just the tests that open a menu.
+function Providers({ children }: PropsWithChildren) {
+  return (
+    <ToastApiProvider api={toastApi}>
+      <QueryClientProvider client={new QueryClient()}>
+        <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
+      </QueryClientProvider>
+    </ToastApiProvider>
+  );
+}
+
+function render(ui: ReactElement) {
+  return rtlRender(ui, { wrapper: Providers });
+}
 afterEach(cleanup);
 
 describe("sidebar subagent interaction", () => {
@@ -173,15 +190,31 @@ describe("sidebar subagent interaction", () => {
       </ToastApiProvider>,
     );
     const actions = screen.getByTestId("sidebar-agent-actions-parent");
-    // A row with nothing to disclose still holds the chevron's column, so the account glyph
-    // and the kebab do not shift when the row grows a child.
+    // The actions column is always held open so the kebab does not shift on hover; the
+    // disclosure column is not reserved, so a row with nothing to disclose is label + actions.
     const row = actions.parentElement!;
-    expect(row.children).toHaveLength(3);
+    expect(row.children).toHaveLength(2);
     expect(screen.queryByTestId("sidebar-agent-kebab-parent")).toBeNull();
     fireEvent.pointerEnter(row);
     expect(screen.getByTestId("sidebar-agent-kebab-parent")).toBeTruthy();
     fireEvent.pointerLeave(row);
     expect(screen.queryByTestId("sidebar-agent-kebab-parent")).toBeNull();
+  });
+
+  it("opens the agent's own menu on right click rather than the platform edit menu", () => {
+    render(
+      <SidebarAgentBranch
+        node={leafParent}
+        discovery={new Map()}
+        connectionStatus="online"
+        selectedTarget={null}
+        onOpen={vi.fn()}
+      />,
+    );
+    const row = screen.getByTestId("sidebar-agent-frogg-parent");
+    fireEvent.contextMenu(row, { clientX: 10, clientY: 10 });
+    expect(screen.getByTestId("sidebar-agent-context-menu-copy-session-id-parent")).toBeTruthy();
+    expect(screen.getByTestId("sidebar-agent-context-menu-archive-parent")).toBeTruthy();
   });
 
   it("opens the child's own runtime and preserves the tree when collapsing and reopening", () => {

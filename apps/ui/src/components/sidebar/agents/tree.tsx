@@ -1,7 +1,7 @@
 import type { HostRuntimeConnectionStatus } from "@/runtime/host-runtime";
 import { sidebarConnectionMessage } from "./connection";
 import { memo, useState, useMemo, useCallback } from "react";
-import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
+import { Text, View, type PressableStateCallbackType } from "react-native";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -29,7 +29,7 @@ import {
   SIDEBAR_ROW_DISCLOSURE_WIDTH,
 } from "@/components/sidebar/row-metrics";
 import { useOpenKebabMenuVisibility } from "@/components/sidebar/use-open-kebab-menu-visibility";
-import { SidebarAgentMenu } from "./menu";
+import { SidebarAgentContextMenu, SidebarAgentMenu } from "./menu";
 import { usePanelStore } from "@/stores/panel-store";
 import { useSettings } from "@/hooks/use-settings";
 import { SidebarAccountIndicator } from "@/components/sidebar/workspace-account";
@@ -159,9 +159,11 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
   const isCompact = useIsCompactFormFactor();
   const isTouchPlatform = isNative || isCompact;
   const [rowHovered, setRowHovered] = useState(false);
+  // A right-click menu takes the pointer off the row, so the kebab stays put while it is open.
+  const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const onPointerEnter = useCallback(() => setRowHovered(true), []);
   const onPointerLeave = useCallback(() => setRowHovered(false), []);
-  const kebab = useOpenKebabMenuVisibility(rowHovered || isTouchPlatform);
+  const kebab = useOpenKebabMenuVisibility(rowHovered || isTouchPlatform || contextMenuOpen);
   const rowStyle = useCallback(
     ({ hovered, pressed }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.link,
@@ -174,7 +176,11 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
   return (
     <View>
       <View style={styles.row} onPointerEnter={onPointerEnter} onPointerLeave={onPointerLeave}>
-        <Pressable
+        <SidebarAgentContextMenu
+          serverId={node.serverId}
+          row={node.row}
+          open={contextMenuOpen}
+          onOpenChange={setContextMenuOpen}
           accessibilityRole="button"
           accessibilityLabel={label}
           accessibilityState={selectionState}
@@ -209,10 +215,11 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
             provider={node.row.provider}
             providerAccountId={node.providerAccountId}
           />
-        </Pressable>
-        {/* Both columns are held open whether or not they have anything in them, so an agent
-            row's account glyph and kebab land on the same rail as the session row above it
-            and nothing shifts when a row grows children or is hovered. */}
+        </SidebarAgentContextMenu>
+        {/* The actions column is held open whether or not it has a kebab in it, so nothing
+            shifts on hover. The disclosure is not: workspace rows stopped reserving it, and an
+            agent row that reserved one would end its metadata 16px short of the session row
+            above it. */}
         {canExpand ? (
           <Button
             variant="ghost"
@@ -225,9 +232,7 @@ export const SidebarAgentBranch = memo(function SidebarAgentBranch({
           >
             <Chevron uniProps={chevronProps} />
           </Button>
-        ) : (
-          <View style={styles.disclosure} />
-        )}
+        ) : null}
         <View style={styles.actionsColumn} testID={`sidebar-agent-actions-${node.row.id}`}>
           {kebab.showKebab ? (
             <SidebarAgentMenu
@@ -284,10 +289,12 @@ const styles = StyleSheet.create((theme) => ({
   // session row it belongs to.
   tree: {
     paddingLeft: theme.spacing[8],
-    paddingRight: theme.spacing[3],
+    paddingRight: theme.spacing[2],
     marginBottom: theme.spacing[2],
   },
-  row: { flexDirection: "row", alignItems: "center" },
+  // The same gap a workspace row keeps between its account, its chevron and its kebab, so the
+  // two row shapes end on one rail.
+  row: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
   disclosure: { width: SIDEBAR_ROW_DISCLOSURE_WIDTH, paddingHorizontal: 0, flexShrink: 0 },
   actionsColumn: {
     width: SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,
@@ -303,7 +310,11 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],
-    padding: theme.spacing[1],
+    paddingVertical: theme.spacing[1],
+    paddingLeft: theme.spacing[1],
+    // No trailing padding: the row's gap already separates the account from what follows, and
+    // padding here would push the account in past the workspace row's account above it.
+    paddingRight: 0,
     borderRadius: theme.borderRadius.md,
   },
   labels: {

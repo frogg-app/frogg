@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ComponentProps, type PropsWithChildren } from "react";
 import { useTranslation } from "react-i18next";
 import { type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -13,9 +13,10 @@ import type { Theme } from "@/styles/theme";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { MenuItem } from "@/components/ui/menu";
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
 
 const foregroundColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const foregroundMutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
@@ -46,19 +47,7 @@ function renderTriggerIcon({ hovered }: { hovered?: boolean }) {
  * A provider-reported subagent is not an agent the daemon owns, so it can be identified but
  * not detached or archived; its menu is the copy action alone rather than no menu at all.
  */
-export function SidebarAgentMenu({
-  serverId,
-  row,
-  label,
-  open,
-  onOpenChange,
-}: {
-  serverId: string;
-  row: SubagentRow;
-  label: string;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-}) {
+function useSidebarAgentActions({ serverId, row }: { serverId: string; row: SubagentRow }) {
   const { t } = useTranslation();
   const toast = useToast();
   const archiveSubagent = useArchiveSubagent({ serverId });
@@ -75,17 +64,94 @@ export function SidebarAgentMenu({
         : toSessionId(row.id),
     [row],
   );
-  const handleCopySessionId = useCallback(() => {
+  const onCopySessionId = useCallback(() => {
     void Clipboard.setStringAsync(sessionId);
     toast.copied(t("sidebar.workspace.toasts.sessionIdCopied"));
   }, [sessionId, t, toast]);
-  const handleDetach = useCallback(() => {
+  const onDetach = useCallback(() => {
     detachSubagent(row.id);
   }, [detachSubagent, row.id]);
-  const handleArchive = useCallback(() => {
+  const onArchive = useCallback(() => {
     archiveSubagent(row.id);
   }, [archiveSubagent, row.id]);
-  const isOwnAgent = row.kind === "frogg";
+  return {
+    onCopySessionId,
+    onDetach,
+    onArchive,
+    canDetach,
+    isOwnAgent: row.kind === "frogg",
+  };
+}
+
+/**
+ * The actions themselves, shared by the kebab's dropdown and the row's context menu so a right
+ * click and a kebab click offer exactly the same menu.
+ */
+function SidebarAgentMenuItems({
+  row,
+  surface,
+  onCopySessionId,
+  onDetach,
+  onArchive,
+  canDetach,
+  isOwnAgent,
+}: {
+  row: SubagentRow;
+  surface: "kebab" | "context";
+  onCopySessionId: () => void;
+  onDetach: () => void;
+  onArchive: () => void;
+  canDetach: boolean;
+  isOwnAgent: boolean;
+}) {
+  const { t } = useTranslation();
+  const prefix = surface === "context" ? "sidebar-agent-context-menu" : "sidebar-agent-menu";
+  return (
+    <>
+      <MenuItem
+        testID={`${prefix}-copy-session-id-${row.id}`}
+        leading={sessionIdLeadingIcon}
+        onSelect={onCopySessionId}
+      >
+        {t("sidebar.workspace.actions.copySessionId")}
+      </MenuItem>
+      {isOwnAgent && canDetach ? (
+        <MenuItem
+          testID={`${prefix}-detach-${row.id}`}
+          leading={detachLeadingIcon}
+          onSelect={onDetach}
+        >
+          {t("subagents.detachTooltip")}
+        </MenuItem>
+      ) : null}
+      {isOwnAgent ? (
+        <MenuItem
+          testID={`${prefix}-archive-${row.id}`}
+          leading={archiveLeadingIcon}
+          onSelect={onArchive}
+        >
+          {t("subagents.archiveTooltip")}
+        </MenuItem>
+      ) : null}
+    </>
+  );
+}
+
+export function SidebarAgentMenu({
+  serverId,
+  row,
+  label,
+  open,
+  onOpenChange,
+}: {
+  serverId: string;
+  row: SubagentRow;
+  label: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const { t } = useTranslation();
+  const actions = useSidebarAgentActions({ serverId, row });
   return (
     <DropdownMenu compactMode="sheet" open={open} onOpenChange={onOpenChange}>
       <DropdownMenuTrigger
@@ -98,33 +164,42 @@ export function SidebarAgentMenu({
         {renderTriggerIcon}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" width={260} sheetTitle={label}>
-        <DropdownMenuItem
-          testID={`sidebar-agent-menu-copy-session-id-${row.id}`}
-          leading={sessionIdLeadingIcon}
-          onSelect={handleCopySessionId}
-        >
-          {t("sidebar.workspace.actions.copySessionId")}
-        </DropdownMenuItem>
-        {isOwnAgent && canDetach ? (
-          <DropdownMenuItem
-            testID={`sidebar-agent-menu-detach-${row.id}`}
-            leading={detachLeadingIcon}
-            onSelect={handleDetach}
-          >
-            {t("subagents.detachTooltip")}
-          </DropdownMenuItem>
-        ) : null}
-        {isOwnAgent ? (
-          <DropdownMenuItem
-            testID={`sidebar-agent-menu-archive-${row.id}`}
-            leading={archiveLeadingIcon}
-            onSelect={handleArchive}
-          >
-            {t("subagents.archiveTooltip")}
-          </DropdownMenuItem>
-        ) : null}
+        <SidebarAgentMenuItems row={row} surface="kebab" {...actions} />
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * Right clicking an agent row gives the same actions as its kebab. Without this the row falls
+ * through to the platform's own edit menu — copy, paste, select all — which has nothing to do
+ * with the agent under the cursor.
+ */
+export function SidebarAgentContextMenu({
+  children,
+  serverId,
+  row,
+  open,
+  onOpenChange,
+  ...triggerProps
+}: PropsWithChildren<
+  Omit<ComponentProps<typeof ContextMenuTrigger>, "children" | "enabledOnMobile"> & {
+    serverId: string;
+    row: SubagentRow;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+  }
+>) {
+  const actions = useSidebarAgentActions({ serverId, row });
+  return (
+    <ContextMenu open={open} onOpenChange={onOpenChange}>
+      <ContextMenuTrigger {...triggerProps} enabledOnMobile={false}>
+        {children}
+      </ContextMenuTrigger>
+      <ContextMenuContent align="start" width={260} testID={`sidebar-agent-context-menu-${row.id}`}>
+        <SidebarAgentMenuItems row={row} surface="context" {...actions} />
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 
