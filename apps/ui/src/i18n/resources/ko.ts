@@ -3095,15 +3095,24 @@ export const ko: TranslationResources = {
             "데몬이 새 버전으로 재시작되며 실행 중인 에이전트가 잠시 중단됩니다. 새 버전이 시작되지 않으면 이전 버전이 자동으로 복원됩니다.",
           reconnecting: "데몬을 재시작하고 복귀를 기다리는 중...",
           unableToReconnect:
-            "{{name}}이(가) 다시 온라인 상태가 되지 않았습니다. 호스트의 self-update.log를 확인하세요.",
+            "{{name}}이(가) {{timeout}} 안에 다시 온라인 상태가 되지 않았습니다. 호스트의 self-update.log를 확인하세요.",
+          buttonDownloading: "다운로드 중 {{percent}}%",
+          buttonReconnecting: "데몬을 기다리는 중...",
+          installingNote: "새 버전을 설치하는 중입니다. 데몬이 재시작하는 동안 앱 연결이 끊깁니다.",
+          reconnectCountdown: "데몬이 다시 연결될 때까지 최대 {{remaining}} 기다립니다.",
           startFailedTitle: "업데이트 실패",
           logHint: "자세한 내용: {{installDir}}/self-update.log",
+          progress: {
+            downloaded: "{{total}} 중 {{received}} 다운로드 중({{percent}}%)",
+            downloadedUnknownTotal: "{{received}} 다운로드 중",
+          },
           phases: {
             check: "릴리스 확인 중...",
             download: "다운로드 중...",
             verify: "체크섬 검증 중...",
             install: "설치 중...",
             restart: "재시작 중...",
+            health_check: "새 버전 확인 중...",
             failed: "업데이트에 실패했습니다",
           },
           outcome: {

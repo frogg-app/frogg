@@ -3131,15 +3131,26 @@ export const ru: TranslationResources = {
           updateNote:
             "Демон перезапустится на новую версию; работающие агенты ненадолго прервутся. Если новая версия не запустится, предыдущая будет восстановлена автоматически.",
           reconnecting: "Перезапуск демона, ожидание его возвращения...",
-          unableToReconnect: "{{name}} не вернулся в сеть. Проверьте self-update.log на хосте.",
+          unableToReconnect:
+            "{{name}} не вернулся в сеть за {{timeout}}. Проверьте self-update.log на хосте.",
+          buttonDownloading: "Загрузка {{percent}}%",
+          buttonReconnecting: "Ожидание демона...",
+          installingNote:
+            "Установка новой версии. Приложение отключится, пока демон перезапускается.",
+          reconnectCountdown: "Ожидание возвращения демона: не более {{remaining}}.",
           startFailedTitle: "Обновление не удалось",
           logHint: "Подробности: {{installDir}}/self-update.log",
+          progress: {
+            downloaded: "Загружено {{received}} из {{total}} ({{percent}}%)",
+            downloadedUnknownTotal: "Загружено {{received}}",
+          },
           phases: {
             check: "Поиск релиза...",
             download: "Загрузка...",
             verify: "Проверка контрольной суммы...",
             install: "Установка...",
             restart: "Перезапуск...",
+            health_check: "Проверка новой версии...",
             failed: "Обновление не удалось",
           },
           outcome: {

@@ -11965,4 +11965,8 @@ pub struct DaemonUpdateRunProgressPayload {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
     pub at: String,
+    #[serde(rename = "receivedBytes", skip_serializing_if = "Option::is_none")]
+    pub received_bytes: Option<f64>,
+    #[serde(rename = "totalBytes", skip_serializing_if = "Option::is_none")]
+    pub total_bytes: Option<f64>,
 }

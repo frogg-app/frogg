@@ -17,7 +17,9 @@ export type RunState =
   | { kind: "idle" }
   | { kind: "starting" }
   | { kind: "running"; run: DaemonUpdateRun }
-  | { kind: "reconnecting"; run: DaemonUpdateRun }
+  // `deadline` is the epoch ms after which the app stops waiting for the daemon,
+  // so the countdown shown to the user is the same number the wait loop uses.
+  | { kind: "reconnecting"; run: DaemonUpdateRun; deadline: number }
   | { kind: "error"; message: string };
 
 type DaemonClient = ReturnType<typeof useHostRuntimeClient>;

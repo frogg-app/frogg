@@ -84,7 +84,7 @@ export const es: TranslationResources = {
       loading: "Cargando...",
       starting: "A partir de...",
       copied: "Copiado",
-      copiedLabel: "Copiado{{label}}",
+      copiedLabel: "Copiado {{label}}",
       downloadComplete: "Descarga completa",
       downloadFailed: "Descarga fallida",
     },
@@ -3145,15 +3145,26 @@ export const es: TranslationResources = {
           updateNote:
             "El daemon se reinicia con la nueva versión; los agentes en ejecución se interrumpen brevemente. Si la nueva versión no arranca, se restaura la anterior automáticamente.",
           reconnecting: "Reiniciando el daemon y esperando a que vuelva...",
-          unableToReconnect: "{{name}} no volvió a conectarse. Revisa self-update.log en el host.",
+          unableToReconnect:
+            "{{name}} no volvió a conectarse en {{timeout}}. Revisa self-update.log en el host.",
+          buttonDownloading: "Descargando {{percent}} %",
+          buttonReconnecting: "Esperando al daemon...",
+          installingNote:
+            "Instalando la nueva versión. La app se desconecta mientras el daemon se reinicia.",
+          reconnectCountdown: "Esperando hasta {{remaining}} a que el daemon vuelva a reportarse.",
           startFailedTitle: "La actualización falló",
           logHint: "Detalles: {{installDir}}/self-update.log",
+          progress: {
+            downloaded: "Descargando {{received}} de {{total}} ({{percent}} %)",
+            downloadedUnknownTotal: "Descargando {{received}}",
+          },
           phases: {
             check: "Resolviendo la release...",
             download: "Descargando...",
             verify: "Verificando la suma de comprobación...",
             install: "Instalando...",
             restart: "Reiniciando...",
+            health_check: "Comprobando la nueva versión...",
             failed: "La actualización falló",
           },
           outcome: {

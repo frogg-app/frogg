@@ -52,6 +52,8 @@ interface CliProgressEvent {
   event: "progress";
   phase: string;
   message: string;
+  receivedBytes?: number;
+  totalBytes?: number | null;
 }
 
 interface CliResultEvent {
@@ -75,7 +77,18 @@ function parseCliEvent(line: string): CliEvent | null {
   try {
     const parsed = JSON.parse(trimmed) as Partial<CliEvent>;
     if (parsed.event === "progress" && typeof parsed.phase === "string") {
-      return { event: "progress", phase: parsed.phase, message: String(parsed.message ?? "") };
+      const progress = parsed as Partial<CliProgressEvent>;
+      return {
+        event: "progress",
+        phase: parsed.phase,
+        message: String(progress.message ?? ""),
+        ...(typeof progress.receivedBytes === "number"
+          ? { receivedBytes: progress.receivedBytes }
+          : {}),
+        ...(progress.totalBytes === null || typeof progress.totalBytes === "number"
+          ? { totalBytes: progress.totalBytes }
+          : {}),
+      };
     }
     if (parsed.event === "result" && typeof parsed.status === "string") {
       return parsed as CliResultEvent;
@@ -283,9 +296,22 @@ export class DaemonUpdateService {
     this.run = null;
   }
 
-  private update(phase: string, message: string | null): void {
+  private update(
+    phase: string,
+    message: string | null,
+    bytes?: { receivedBytes?: number; totalBytes?: number | null },
+  ): void {
     if (!this.run) return;
-    this.run = { ...this.run, phase, message, at: new Date().toISOString() };
+    this.run = {
+      ...this.run,
+      phase,
+      message,
+      at: new Date().toISOString(),
+      // Byte counts belong to the download phase only; drop stale ones as soon as
+      // the run moves on, so the app never shows a frozen bar next to "installing".
+      receivedBytes: bytes?.receivedBytes,
+      totalBytes: bytes?.totalBytes,
+    };
     this.broadcast();
   }
 
@@ -341,7 +367,12 @@ export class DaemonUpdateService {
             }
             return;
           }
-          if (runId) this.update(event.phase, event.message);
+          if (runId) {
+            this.update(event.phase, event.message, {
+              receivedBytes: event.receivedBytes,
+              totalBytes: event.totalBytes,
+            });
+          }
         });
       }
       child.stderr?.on("data", (chunk: Buffer) => {

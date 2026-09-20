@@ -3134,15 +3134,25 @@ export const en = {
             "The daemon restarts into the new version; running agents are interrupted briefly. If the new version fails to start, the previous one is restored automatically.",
           reconnecting: "Restarting the daemon and waiting for it to come back...",
           unableToReconnect:
-            "{{name}} did not come back online. Check self-update.log on the host.",
+            "{{name}} did not come back online within {{timeout}}. Check self-update.log on the host.",
+          buttonDownloading: "Downloading {{percent}}%",
+          buttonReconnecting: "Waiting for the daemon...",
+          installingNote:
+            "Installing the new version. The app disconnects while the daemon restarts.",
+          reconnectCountdown: "Waiting up to {{remaining}} for the daemon to check back in.",
           startFailedTitle: "Update failed",
           logHint: "Details: {{installDir}}/self-update.log",
+          progress: {
+            downloaded: "Downloading {{received}} of {{total}} ({{percent}}%)",
+            downloadedUnknownTotal: "Downloading {{received}}",
+          },
           phases: {
             check: "Resolving release...",
             download: "Downloading...",
             verify: "Verifying checksum...",
             install: "Installing...",
             restart: "Restarting...",
+            health_check: "Checking the new version...",
             failed: "The update failed",
           },
           outcome: {

@@ -3115,15 +3115,25 @@ export const ja: TranslationResources = {
             "デーモンは新しいバージョンで再起動し、実行中のエージェントは一時的に中断されます。新しいバージョンが起動しない場合は、前のバージョンが自動的に復元されます。",
           reconnecting: "デーモンを再起動して復帰を待っています...",
           unableToReconnect:
-            "{{name}} がオンラインに戻りませんでした。ホストの self-update.log を確認してください。",
+            "{{name}} は {{timeout}} 以内にオンラインに戻りませんでした。ホストの self-update.log を確認してください。",
+          buttonDownloading: "ダウンロード中 {{percent}}%",
+          buttonReconnecting: "デーモンを待機中...",
+          installingNote:
+            "新しいバージョンをインストール中です。デーモンの再起動中はアプリの接続が切れます。",
+          reconnectCountdown: "デーモンの復帰を最大 {{remaining}} 待っています。",
           startFailedTitle: "更新に失敗しました",
           logHint: "詳細: {{installDir}}/self-update.log",
+          progress: {
+            downloaded: "{{total}} 中 {{received}} をダウンロード中（{{percent}}%）",
+            downloadedUnknownTotal: "{{received}} をダウンロード中",
+          },
           phases: {
             check: "リリースを解決中...",
             download: "ダウンロード中...",
             verify: "チェックサムを検証中...",
             install: "インストール中...",
             restart: "再起動中...",
+            health_check: "新しいバージョンを確認中...",
             failed: "更新に失敗しました",
           },
           outcome: {

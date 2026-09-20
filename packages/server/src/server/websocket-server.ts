@@ -1767,6 +1767,9 @@ export class VoiceAssistantWebSocketServer {
           !this.daemonRuntimeConfig?.update?.installInfo.runningRoot,
         // COMPAT(daemonUpdateRuns): added in v0.1.14 (Frogg), remove gate after 2027-03-03.
         daemonUpdateRuns: this.daemonRuntimeConfig?.update !== undefined,
+        // COMPAT(daemonUpdateProgressBytes): added in v1.5.11 (Frogg), remove gate after
+        // 2027-09-20.
+        daemonUpdateProgressBytes: this.daemonRuntimeConfig?.update !== undefined,
         // COMPAT(agentForkContext): added in v0.1.102, remove gate after 2026-12-28.
         agentForkContext: true,
         // COMPAT(agentForkContextCursor): added in v0.1.108, remove gate after 2027-01-14.

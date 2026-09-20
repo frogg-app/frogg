@@ -53904,6 +53904,15 @@
                             },
                             "at": {
                               "type": "string"
+                            },
+                            "receivedBytes": {
+                              "type": "number"
+                            },
+                            "totalBytes": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
                             }
                           },
                           "required": [
@@ -54019,6 +54028,15 @@
                     },
                     "at": {
                       "type": "string"
+                    },
+                    "receivedBytes": {
+                      "type": "number"
+                    },
+                    "totalBytes": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
                     }
                   },
                   "required": [

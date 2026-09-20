@@ -83,7 +83,7 @@ export const fr: TranslationResources = {
       loading: "Chargement...",
       starting: "Départ...",
       copied: "Copié",
-      copiedLabel: "{{label}}copié",
+      copiedLabel: "{{label}} copié",
       downloadComplete: "Téléchargement terminé",
       downloadFailed: "Le téléchargement a échoué",
     },
@@ -3154,15 +3154,25 @@ export const fr: TranslationResources = {
             "Le daemon redémarre avec la nouvelle version ; les agents en cours sont brièvement interrompus. Si la nouvelle version ne démarre pas, la précédente est restaurée automatiquement.",
           reconnecting: "Redémarrage du daemon, en attente de son retour...",
           unableToReconnect:
-            "{{name}} n'est pas revenu en ligne. Consultez self-update.log sur l'hôte.",
+            "{{name}} n'est pas revenu en ligne en {{timeout}}. Consultez self-update.log sur l'hôte.",
+          buttonDownloading: "Téléchargement {{percent}} %",
+          buttonReconnecting: "En attente du daemon...",
+          installingNote:
+            "Installation de la nouvelle version. L'app se déconnecte pendant le redémarrage du daemon.",
+          reconnectCountdown: "Attente du daemon pendant {{remaining}} au maximum.",
           startFailedTitle: "Échec de la mise à jour",
           logHint: "Détails : {{installDir}}/self-update.log",
+          progress: {
+            downloaded: "Téléchargement de {{received}} sur {{total}} ({{percent}} %)",
+            downloadedUnknownTotal: "Téléchargement de {{received}}",
+          },
           phases: {
             check: "Résolution de la release...",
             download: "Téléchargement...",
             verify: "Vérification de la somme de contrôle...",
             install: "Installation...",
             restart: "Redémarrage...",
+            health_check: "Vérification de la nouvelle version...",
             failed: "La mise à jour a échoué",
           },
           outcome: {

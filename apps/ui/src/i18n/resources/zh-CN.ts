@@ -3030,15 +3030,25 @@ export const zhCN: TranslationResources = {
           updateNote:
             "守护进程将重启到新版本，正在运行的代理会短暂中断。如果新版本无法启动，将自动恢复上一个版本。",
           reconnecting: "正在重启守护进程并等待其恢复...",
-          unableToReconnect: "{{name}} 没有重新上线。请查看主机上的 self-update.log。",
+          unableToReconnect:
+            "{{name}} 未在 {{timeout}} 内重新上线。请查看主机上的 self-update.log。",
+          buttonDownloading: "正在下载 {{percent}}%",
+          buttonReconnecting: "正在等待守护进程...",
+          installingNote: "正在安装新版本。守护进程重启期间应用会断开连接。",
+          reconnectCountdown: "最多等待守护进程重新上线 {{remaining}}。",
           startFailedTitle: "更新失败",
           logHint: "详情：{{installDir}}/self-update.log",
+          progress: {
+            downloaded: "正在下载 {{received}} / {{total}}（{{percent}}%）",
+            downloadedUnknownTotal: "正在下载 {{received}}",
+          },
           phases: {
             check: "正在解析发布版...",
             download: "正在下载...",
             verify: "正在校验校验和...",
             install: "正在安装...",
             restart: "正在重启...",
+            health_check: "正在检查新版本...",
             failed: "更新失败",
           },
           outcome: {

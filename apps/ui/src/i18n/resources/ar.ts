@@ -83,7 +83,7 @@ export const ar: TranslationResources = {
       loading: "تحميل...",
       starting: "جارٍ البدء...",
       copied: "منقول",
-      copiedLabel: "منسوخ{{label}}",
+      copiedLabel: "تم نسخ {{label}}",
       downloadComplete: "اكتمل التنزيل",
       downloadFailed: "فشل التنزيل",
     },
@@ -3073,15 +3073,26 @@ export const ar: TranslationResources = {
           updateNote:
             "يعيد البرنامج الخفي التشغيل بالإصدار الجديد؛ وتتوقف الوكلاء العاملة لفترة وجيزة. إذا فشل الإصدار الجديد في البدء، يُستعاد الإصدار السابق تلقائيًا.",
           reconnecting: "جارٍ إعادة تشغيل البرنامج الخفي وانتظار عودته...",
-          unableToReconnect: "لم يعد {{name}} إلى الاتصال. راجع self-update.log على المضيف.",
+          unableToReconnect:
+            "لم يعد {{name}} إلى الاتصال خلال {{timeout}}. راجع self-update.log على المضيف.",
+          buttonDownloading: "جارٍ التنزيل {{percent}}%",
+          buttonReconnecting: "في انتظار البرنامج الخفي...",
+          installingNote:
+            "جارٍ تثبيت الإصدار الجديد. سينقطع اتصال التطبيق أثناء إعادة تشغيل البرنامج الخفي.",
+          reconnectCountdown: "في انتظار عودة البرنامج الخفي لمدة {{remaining}} كحد أقصى.",
           startFailedTitle: "فشل التحديث",
           logHint: "التفاصيل: {{installDir}}/self-update.log",
+          progress: {
+            downloaded: "جارٍ تنزيل {{received}} من {{total}} ({{percent}}%)",
+            downloadedUnknownTotal: "جارٍ تنزيل {{received}}",
+          },
           phases: {
             check: "جارٍ تحديد الإصدار...",
             download: "جارٍ التنزيل...",
             verify: "جارٍ التحقق من المجموع الاختباري...",
             install: "جارٍ التثبيت...",
             restart: "جارٍ إعادة التشغيل...",
+            health_check: "جارٍ فحص الإصدار الجديد...",
             failed: "فشل التحديث",
           },
           outcome: {

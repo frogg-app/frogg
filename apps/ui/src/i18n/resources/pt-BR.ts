@@ -3129,15 +3129,24 @@ export const ptBR: TranslationResources = {
             "O daemon reinicia com a nova versão; agentes em execução são interrompidos brevemente. Se a nova versão não iniciar, a anterior é restaurada automaticamente.",
           reconnecting: "Reiniciando o daemon e aguardando ele voltar...",
           unableToReconnect:
-            "{{name}} não voltou a ficar online. Verifique o self-update.log no host.",
+            "{{name}} não voltou a ficar online em {{timeout}}. Verifique o self-update.log no host.",
+          buttonDownloading: "Baixando {{percent}}%",
+          buttonReconnecting: "Aguardando o daemon...",
+          installingNote: "Instalando a nova versão. O app desconecta enquanto o daemon reinicia.",
+          reconnectCountdown: "Aguardando até {{remaining}} para o daemon voltar a se reportar.",
           startFailedTitle: "Falha na atualização",
           logHint: "Detalhes: {{installDir}}/self-update.log",
+          progress: {
+            downloaded: "Baixando {{received}} de {{total}} ({{percent}}%)",
+            downloadedUnknownTotal: "Baixando {{received}}",
+          },
           phases: {
             check: "Resolvendo a release...",
             download: "Baixando...",
             verify: "Verificando o checksum...",
             install: "Instalando...",
             restart: "Reiniciando...",
+            health_check: "Verificando a nova versão...",
             failed: "A atualização falhou",
           },
           outcome: {

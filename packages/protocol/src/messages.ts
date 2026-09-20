@@ -3943,6 +3943,9 @@ export const ServerInfoStatusPayloadSchema = z
         daemonSelfUpdate: z.boolean().optional(),
         // COMPAT(daemonUpdateRuns): added in v0.1.14 (Frogg), remove gate after 2027-03-03.
         daemonUpdateRuns: z.boolean().optional(),
+        // COMPAT(daemonUpdateProgressBytes): added in v1.5.11 (Frogg), remove gate after
+        // 2027-09-20. Daemon reports download byte counts on daemon.update.run.progress.
+        daemonUpdateProgressBytes: z.boolean().optional(),
         // COMPAT(agentForkContext): added in v0.1.102, remove gate after 2026-12-28.
         agentForkContext: z.boolean().optional(),
         // COMPAT(agentForkContextCursor): added in v0.1.108, remove gate after 2027-01-14.
@@ -5205,6 +5208,11 @@ export const DaemonUpdateRunSchema = z.object({
   phase: z.string(),
   message: z.string().nullable(),
   at: z.string(),
+  // Byte counts for the download phase. Optional: daemons before the
+  // daemonUpdateProgressBytes feature never send them, and phases other than
+  // "download" have nothing to count.
+  receivedBytes: z.number().optional(),
+  totalBytes: z.number().nullable().optional(),
 });
 export type DaemonUpdateRun = z.infer<typeof DaemonUpdateRunSchema>;
 

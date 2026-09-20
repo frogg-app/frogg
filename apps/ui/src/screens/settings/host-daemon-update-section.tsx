@@ -1,8 +1,8 @@
 import type { TFunction } from "i18next";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type {
   DaemonUpdateChannel,
   DaemonUpdateGetStatusResponse,
@@ -10,6 +10,7 @@ import type {
 } from "@frogg/protocol/messages";
 import { Alert as InlineAlert, type AlertVariant } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Switch } from "@/components/ui/switch";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import {
@@ -20,8 +21,15 @@ import {
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
+import type { Theme } from "@/styles/theme";
 import type { HostProfile } from "@/types/host-connection";
 import { hasDaemonReconnectedAfter, type DaemonConnectionMarker } from "./daemon-reconnect";
+import {
+  describeRunButton,
+  describeRunState,
+  downloadFraction,
+  formatDuration,
+} from "./daemon-update-progress";
 import { effectiveLastUpdateResult } from "./daemon-update-outcome";
 import { useDaemonUpdateCheck, type CheckState, type RunState } from "./host-daemon-update-state";
 
@@ -35,7 +43,6 @@ type StatusPayload = DaemonUpdateGetStatusResponse["payload"];
 
 const RECONNECT_TIMEOUT_MS = 4 * 60_000;
 const RECONNECT_POLL_MS = 1000;
-const KNOWN_PHASES = new Set(["check", "download", "verify", "install", "restart"]);
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -77,25 +84,75 @@ function versionHint(status: StatusPayload | null, check: CheckState, t: TFuncti
   return t("settings.host.daemon.selfUpdate.hint");
 }
 
-function runLabelFor(run: RunState, t: TFunction): string | null {
-  if (run.kind === "starting") return t("settings.host.daemon.selfUpdate.phases.check");
-  if (run.kind === "reconnecting") return t("settings.host.daemon.selfUpdate.reconnecting");
-  if (run.kind !== "running") return null;
-  if (KNOWN_PHASES.has(run.run.phase)) {
-    return t(`settings.host.daemon.selfUpdate.phases.${run.run.phase}`);
-  }
-  return run.run.message ?? run.run.phase;
+const ThemedSpinner = withUnistyles(LoadingSpinner);
+const spinnerMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+
+/** Determinate while the download reports bytes, indeterminate otherwise. */
+function ProgressBar({ fraction }: { fraction: number | null }) {
+  const width = `${Math.round((fraction ?? 0.35) * 100)}%` as const;
+  const accessibilityValue = useMemo(
+    () => (fraction === null ? undefined : { now: Math.round(fraction * 100), min: 0, max: 100 }),
+    [fraction],
+  );
+  return (
+    <View
+      style={styles.progressTrack}
+      accessibilityRole="progressbar"
+      accessibilityValue={accessibilityValue}
+      testID="host-page-daemon-update-progress-bar"
+    >
+      <View style={[styles.progressFill, { width }]} />
+    </View>
+  );
 }
 
-function RunAlerts({
+/**
+ * The live row for a run in flight: what phase it is in, how much has
+ * downloaded, and — once the daemon is restarting — a spinner with how long
+ * the app will keep waiting for it to check back in.
+ */
+function RunProgress({
   run,
-  runLabel,
-  status,
+  remainingMs,
+  showProgressBar,
 }: {
   run: RunState;
-  runLabel: string | null;
-  status: StatusPayload | null;
+  remainingMs: number | null;
+  /** Only daemons that report byte counts get a bar; older ones keep the text-only phase line. */
+  showProgressBar: boolean;
 }) {
+  const { t } = useTranslation();
+  if (run.kind === "idle" || run.kind === "error") return null;
+  const label = describeRunState(run, t);
+  const running = run.kind === "running" ? run.run : null;
+  const fraction = downloadFraction(running);
+  const waiting = run.kind === "reconnecting";
+  const installing =
+    running !== null && (running.phase === "install" || running.phase === "restart");
+  return (
+    <View style={styles.runBlock} testID="host-page-daemon-update-progress">
+      <View style={styles.runHeader}>
+        {waiting ? <ThemedSpinner size="small" uniProps={spinnerMapping} /> : null}
+        <Text style={styles.runLabel} testID="host-page-daemon-update-phase">
+          {label}
+        </Text>
+      </View>
+      {waiting || !showProgressBar ? null : <ProgressBar fraction={fraction} />}
+      {installing ? (
+        <Text style={styles.runHint}>{t("settings.host.daemon.selfUpdate.installingNote")}</Text>
+      ) : null}
+      {waiting && remainingMs !== null ? (
+        <Text style={styles.runHint} testID="host-page-daemon-update-countdown">
+          {t("settings.host.daemon.selfUpdate.reconnectCountdown", {
+            remaining: formatDuration(remainingMs),
+          })}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function RunAlerts({ run, status }: { run: RunState; status: StatusPayload | null }) {
   const { t } = useTranslation();
   const lastResult = effectiveLastUpdateResult(status);
   return (
@@ -108,11 +165,6 @@ function RunAlerts({
             description={run.message}
             testID="host-page-daemon-update-error"
           />
-        </View>
-      ) : null}
-      {runLabel && run.kind === "reconnecting" ? (
-        <View style={styles.alert}>
-          <InlineAlert variant="info" description={runLabel} />
         </View>
       ) : null}
       {lastResult ? (
@@ -273,11 +325,33 @@ export function HostDaemonUpdateSection({ host }: { host: HostProfile }) {
   const supported = useSessionStore(
     (state) => state.sessions[host.serverId]?.serverInfo?.features?.daemonUpdateRuns === true,
   );
+  // COMPAT(daemonUpdateProgressBytes): older daemons send no byte counts, so they
+  // degrade to the phase label alone.
+  const supportsProgressBytes = useSessionStore(
+    (state) =>
+      state.sessions[host.serverId]?.serverInfo?.features?.daemonUpdateProgressBytes === true,
+  );
   const desktopManaged = useSessionStore(
     (state) => state.sessions[host.serverId]?.serverInfo?.desktopManaged === true,
   );
   const [status, setStatus] = useState<StatusPayload | null>(null);
   const [run, setRun] = useState<RunState>({ kind: "idle" });
+
+  // One ticker for the whole wait, so the countdown the user reads matches the
+  // deadline the wait loop enforces.
+  const [remainingMs, setRemainingMs] = useState<number | null>(null);
+  useEffect(() => {
+    if (run.kind !== "reconnecting") {
+      setRemainingMs(null);
+      return;
+    }
+    const { deadline } = run;
+    const tick = () => setRemainingMs(Math.max(0, deadline - Date.now()));
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [run]);
+
   const mounted = useRef(true);
   const channel: DaemonUpdateChannel = config?.autoUpdate?.channel ?? "stable";
 
@@ -328,9 +402,9 @@ export function HostDaemonUpdateSection({ host }: { host: HostProfile }) {
 
   const waitForOutcome = useCallback(
     async (marker: DaemonConnectionMarker | null, activeRun: DaemonUpdateRun) => {
-      setRun({ kind: "reconnecting", run: activeRun });
-      const runtime = getHostRuntimeStore();
       const deadline = Date.now() + RECONNECT_TIMEOUT_MS;
+      setRun({ kind: "reconnecting", run: activeRun, deadline });
+      const runtime = getHostRuntimeStore();
       while (Date.now() < deadline && mounted.current) {
         if (hasDaemonReconnectedAfter(runtime.getSnapshot(host.serverId), marker)) {
           const next = await refreshStatus();
@@ -345,7 +419,10 @@ export function HostDaemonUpdateSection({ host }: { host: HostProfile }) {
       if (mounted.current) {
         setRun({
           kind: "error",
-          message: t("settings.host.daemon.selfUpdate.unableToReconnect", { name: host.label }),
+          message: t("settings.host.daemon.selfUpdate.unableToReconnect", {
+            name: host.label,
+            timeout: formatDuration(RECONNECT_TIMEOUT_MS),
+          }),
         });
       }
     },
@@ -396,7 +473,7 @@ export function HostDaemonUpdateSection({ host }: { host: HostProfile }) {
   if (!supported || desktopManaged) return null;
 
   const busy = run.kind !== "idle" && run.kind !== "error";
-  const runLabel = runLabelFor(run, t);
+  const runLabel = describeRunButton(run, t);
 
   return (
     <SettingsSection
@@ -414,7 +491,8 @@ export function HostDaemonUpdateSection({ host }: { host: HostProfile }) {
           onCheck={runCheck}
           onUpdate={handleUpdate}
         />
-        <RunAlerts run={run} runLabel={runLabel} status={status} />
+        <RunProgress run={run} remainingMs={remainingMs} showProgressBar={supportsProgressBytes} />
+        <RunAlerts run={run} status={status} />
         <AutoUpdateRows
           enabled={config?.autoUpdate?.enabled === true}
           channel={channel}
@@ -430,6 +508,36 @@ const styles = StyleSheet.create((theme) => ({
   alert: {
     marginHorizontal: theme.spacing[4],
     marginBottom: theme.spacing[4],
+  },
+  runBlock: {
+    marginHorizontal: theme.spacing[4],
+    marginBottom: theme.spacing[4],
+    gap: theme.spacing[2],
+  },
+  runHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+  },
+  runLabel: {
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.sm,
+    flexShrink: 1,
+  },
+  runHint: {
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
+  },
+  progressTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.surface2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 3,
+    backgroundColor: theme.colors.accent,
   },
   channelRow: {
     flexDirection: "row",

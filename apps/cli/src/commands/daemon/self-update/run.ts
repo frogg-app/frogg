@@ -58,6 +58,9 @@ export interface SelfUpdateProgress {
   event: "progress";
   phase: SelfUpdatePhase;
   message: string;
+  /** Download phase only: bytes received so far, and the content length if known. */
+  receivedBytes?: number;
+  totalBytes?: number | null;
 }
 
 export interface SelfUpdateResult {
@@ -179,6 +182,9 @@ async function resolveCandidate(
   };
 }
 
+/** How much has to arrive before the next progress line goes out. */
+const DOWNLOAD_REPORT_INTERVAL_BYTES = 512 * 1024;
+
 function formatMiB(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
 }
@@ -212,12 +218,17 @@ async function installCandidate(
     headers: candidate.headers,
     fetchImpl: runtime.fetchImpl,
     onProgress: (received, total) => {
-      if (received - lastReported < 16 * 1024 * 1024) return;
+      // Reported often enough for a progress bar to move; the app throttles rendering,
+      // and each event is one short JSON line on the CLI's stdout.
+      const done = total !== null && total !== undefined && received >= total;
+      if (!done && received - lastReported < DOWNLOAD_REPORT_INTERVAL_BYTES) return;
       lastReported = received;
       runtime.emit({
         event: "progress",
         phase: "download",
         message: total ? `${formatMiB(received)} of ${formatMiB(total)}` : formatMiB(received),
+        receivedBytes: received,
+        totalBytes: total ?? null,
       });
     },
   });
