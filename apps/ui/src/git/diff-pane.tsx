@@ -1742,13 +1742,18 @@ export function ChangesSurface({
     (path: string) => {
       void Clipboard.setStringAsync(
         buildAbsoluteExplorerPath({ workspaceRoot: cwd, entryPath: path }),
+      ).then(() => toast.copied(t("workspace.fileActions.pathCopiedLabel")));
+    },
+    [cwd, t, toast],
+  );
+  const handleCopyRelativePath = useCallback(
+    (path: string) => {
+      void Clipboard.setStringAsync(path).then(() =>
+        toast.copied(t("workspace.fileActions.relativePathCopiedLabel")),
       );
     },
-    [cwd],
+    [t, toast],
   );
-  const handleCopyRelativePath = useCallback((path: string) => {
-    void Clipboard.setStringAsync(path);
-  }, []);
   const handleRevealPath = useCallback(
     async (path: string) => {
       if (!fileManagerTarget) {

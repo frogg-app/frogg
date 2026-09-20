@@ -520,6 +520,8 @@ export const ja: TranslationResources = {
       openToSide: "横に開く",
       copyPath: "パスをコピー",
       copyRelativePath: "相対パスをコピー",
+      pathCopiedLabel: "パス",
+      relativePathCopiedLabel: "相対パス",
       revealIn: "{{target}}で表示",
       download: "ダウンロード",
       addToChat: "チャットに追加",

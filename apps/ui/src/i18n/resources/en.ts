@@ -516,6 +516,8 @@ export const en = {
       openToSide: "Open to the side",
       copyPath: "Copy path",
       copyRelativePath: "Copy relative path",
+      pathCopiedLabel: "Path",
+      relativePathCopiedLabel: "Relative path",
       revealIn: "Reveal in {{target}}",
       download: "Download",
       addToChat: "Add to chat",

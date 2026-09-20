@@ -519,6 +519,8 @@ export const ptBR: TranslationResources = {
       openToSide: "Abrir ao lado",
       copyPath: "Copiar caminho",
       copyRelativePath: "Copiar caminho relativo",
+      pathCopiedLabel: "Caminho",
+      relativePathCopiedLabel: "Caminho relativo",
       revealIn: "Mostrar no {{target}}",
       download: "Baixar",
       addToChat: "Adicionar ao chat",

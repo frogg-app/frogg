@@ -516,6 +516,8 @@ export const ko: TranslationResources = {
       openToSide: "옆에 열기",
       copyPath: "경로 복사",
       copyRelativePath: "상대 경로 복사",
+      pathCopiedLabel: "경로",
+      relativePathCopiedLabel: "상대 경로",
       revealIn: "{{target}}에서 보기",
       download: "다운로드",
       addToChat: "채팅에 추가",
