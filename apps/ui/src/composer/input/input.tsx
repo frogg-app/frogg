@@ -58,6 +58,7 @@ import { useIsCompactFormFactor } from "@/constants/layout";
 import { useComposerKeyboardScope } from "@/composer/keyboard-scope";
 import { RenderProfile } from "@/utils/render-profiler";
 import { useComposerHeight } from "./height";
+import { isComposerBackgroundPress } from "./background-press";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
 import type { StaleContextWarning } from "@/composer/stale-context";
 import type { NativePastedFile } from "@/composer/native-pasted-image";
@@ -534,6 +535,48 @@ function useAutoFocusOnWebEffect(
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoFocus, autoFocusKey]);
+}
+
+/**
+ * Focus the message input when the user clicks the chat box itself rather than
+ * one of its controls: the whole rounded surface reads as "the text field", so
+ * a click into its padding, the toolbar gap or the attachment tray should land
+ * the caret in the input.
+ */
+interface BackgroundPressFocusState {
+  readOnly: boolean;
+  disabled: boolean;
+  isDictating: boolean;
+  isRealtimeVoiceForCurrentAgent: boolean;
+}
+
+function useFocusInputOnBackgroundPressEffect(
+  wrapperRef: React.MutableRefObject<View | null>,
+  textInputRef: React.MutableRefObject<ComposerTextInputHandle | null>,
+  state: BackgroundPressFocusState,
+): void {
+  const enabled =
+    !state.readOnly &&
+    !state.disabled &&
+    !state.isDictating &&
+    !state.isRealtimeVoiceForCurrentAgent;
+  useEffect(() => {
+    if (!isWeb || !enabled) return;
+    const wrapper = wrapperRef.current as unknown as HTMLElement | null;
+    if (!wrapper?.addEventListener) return;
+    const handleMouseDown = (event: MouseEvent) => {
+      if (event.button !== 0) return;
+      if (!isComposerBackgroundPress(event.target)) return;
+      // The press would otherwise blur the input and start a selection in the
+      // surrounding chrome; keep focus where the click implies it belongs.
+      event.preventDefault();
+      textInputRef.current?.focus();
+    };
+    wrapper.addEventListener("mousedown", handleMouseDown);
+    return () => {
+      wrapper.removeEventListener("mousedown", handleMouseDown);
+    };
+  }, [enabled, textInputRef, wrapperRef]);
 }
 
 function MessageInputAutoFocus({
@@ -1406,6 +1449,13 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
     const showRealtimeOverlay = isRealtimeVoiceForCurrentAgent;
     const showOverlay = showDictationOverlay || showRealtimeOverlay;
     const surfacePresentation = resolveComposerSurfacePresentation(showOverlay);
+
+    useFocusInputOnBackgroundPressEffect(inputWrapperRef, textInputRef, {
+      readOnly,
+      disabled,
+      isDictating,
+      isRealtimeVoiceForCurrentAgent,
+    });
 
     useEffect(() => {
       if (isDictating || isDictationProcessing) {
