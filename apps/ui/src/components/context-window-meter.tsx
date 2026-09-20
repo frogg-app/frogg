@@ -33,6 +33,14 @@ interface ContextWindowMeterProps {
    * toolbar-button envelope.
    */
   containerWidth?: number;
+  /**
+   * A single character drawn in the ring's middle, naming what the ring measures. Used inside the
+   * composer's meter cluster, where three rings sit together and need telling apart; ignored when
+   * the meter renders its percentage as a label instead.
+   */
+  centerGlyph?: string;
+  /** Size of `centerGlyph`, so the cluster's rings all letter at one size. */
+  centerGlyphSize?: number;
 }
 
 const SVG_SIZE = 14;
@@ -110,6 +118,20 @@ function getMeterGeometry(showPercentage: boolean, glyphSize?: number, container
   };
 }
 
+/** The ring's centre character, or nothing when the meter labels itself with a percentage. */
+function MeterCenterGlyph({
+  glyph,
+  size,
+  hidden,
+}: {
+  glyph: string | undefined;
+  size: number | undefined;
+  hidden: boolean;
+}) {
+  if (hidden || !glyph) return null;
+  return <Text style={[styles.centerGlyph, size ? { fontSize: size } : null]}>{glyph}</Text>;
+}
+
 export function ContextWindowMeter({
   maxTokens,
   usedTokens,
@@ -121,6 +143,8 @@ export function ContextWindowMeter({
   pending = false,
   glyphSize,
   containerWidth,
+  centerGlyph,
+  centerGlyphSize,
 }: ContextWindowMeterProps) {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
@@ -174,6 +198,7 @@ export function ContextWindowMeter({
           />
         </Svg>
         {showPercentage ? <View style={styles.skeletonLabel} /> : null}
+        <MeterCenterGlyph glyph={centerGlyph} size={centerGlyphSize} hidden={showPercentage} />
       </View>
     );
   }
@@ -234,6 +259,7 @@ export function ContextWindowMeter({
           {showPercentage ? (
             <Text style={styles.percentageLabel}>{`${roundedPercentage}%`}</Text>
           ) : null}
+          <MeterCenterGlyph glyph={centerGlyph} size={centerGlyphSize} hidden={showPercentage} />
         </Pressable>
       </TooltipTrigger>
       <TooltipContent side="top" align="center" offset={8}>
@@ -278,6 +304,14 @@ const styles = StyleSheet.create((theme) => ({
   },
   svg: {
     transform: [{ rotate: "-90deg" }],
+  },
+  // Drawn over the ring rather than as SVG text, which does not centre consistently on native.
+  centerGlyph: {
+    position: "absolute",
+    color: theme.colors.foregroundMuted,
+    fontSize: 8,
+    lineHeight: 10,
+    fontWeight: theme.fontWeight.normal,
   },
   percentageLabel: {
     color: theme.colors.foregroundMuted,

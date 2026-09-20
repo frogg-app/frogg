@@ -102,7 +102,9 @@ import type { AgentUsage } from "@frogg/protocol/agent-types";
 import { resolveStaleContextWarning, type StaleContextWarning } from "@/composer/stale-context";
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
 import { ComposerVoiceAlertsToggle } from "@/composer/voice-alerts-toggle";
+import { CONTEXT_METER_GLYPH } from "@/composer/meter-glyph";
 import {
+  COMPOSER_METER_GLYPH_SIZE,
   COMPOSER_METER_RING_SIZE,
   COMPOSER_METER_SLOT_WIDTH,
   ComposerUsageCluster,
@@ -357,6 +359,8 @@ function renderContextWindowMeter(
       pending={pending}
       glyphSize={glyphSize}
       containerWidth={containerWidth}
+      centerGlyph={CONTEXT_METER_GLYPH}
+      centerGlyphSize={COMPOSER_METER_GLYPH_SIZE}
     />
   );
 }

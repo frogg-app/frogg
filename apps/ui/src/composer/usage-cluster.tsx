@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { QuotaRing } from "@/components/quota-ring";
+import { resolveWindowGlyph } from "@/composer/meter-glyph";
 import { buildProviderUsageColumns } from "@/provider-usage/account-summary";
 import { useProviderUsage } from "@/provider-usage/use-provider-usage";
 
@@ -11,8 +12,10 @@ import { useProviderUsage } from "@/provider-usage/use-provider-usage";
  * diameter in one slot width. They measure different things but they are the same kind of
  * thing, and a size difference between them would read as a hierarchy that does not exist.
  */
-export const COMPOSER_METER_RING_SIZE = 14;
-export const COMPOSER_METER_SLOT_WIDTH = 22;
+export const COMPOSER_METER_RING_SIZE = 16;
+export const COMPOSER_METER_SLOT_WIDTH = 24;
+/** The centre character's size. One point smaller and it stops resolving at 1x. */
+export const COMPOSER_METER_GLYPH_SIZE = 8;
 
 interface ComposerUsageClusterProps {
   serverId: string;
@@ -60,6 +63,7 @@ export function ComposerUsageCluster({
           key={column.id}
           column={column}
           size={COMPOSER_METER_RING_SIZE}
+          glyph={resolveWindowGlyph(column)}
           testID={`composer-quota-ring-${column.id}`}
         />
       ))}

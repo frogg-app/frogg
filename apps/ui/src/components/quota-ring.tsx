@@ -3,7 +3,7 @@ import Svg, { Circle } from "react-native-svg";
 import { useCallback } from "react";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { COMPOSER_METER_SLOT_WIDTH } from "@/composer/usage-cluster";
+import { COMPOSER_METER_GLYPH_SIZE, COMPOSER_METER_SLOT_WIDTH } from "@/composer/usage-cluster";
 import type { ProviderUsageColumn } from "@/provider-usage/account-summary";
 import type { Theme } from "@/styles/theme";
 
@@ -11,6 +11,8 @@ const ThemedCircle = withUnistyles(Circle);
 
 interface QuotaRingProps {
   column: ProviderUsageColumn;
+  /** The single character drawn in the ring's middle, naming the window it measures. */
+  glyph: string;
   /** Outer diameter of the ring glyph, matching the context meter's envelope. */
   size: number;
   testID?: string;
@@ -29,7 +31,7 @@ function progressColor(pct: number, theme: Theme): string {
  * reported percentage still renders its track, because the tooltip's reset countdown is
  * worth hovering for and a missing ring would shift its siblings.
  */
-export function QuotaRing({ column, size, testID }: QuotaRingProps) {
+export function QuotaRing({ column, glyph, size, testID }: QuotaRingProps) {
   const strokeWidth = 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = Math.PI * (size - strokeWidth);
@@ -84,6 +86,7 @@ export function QuotaRing({ column, size, testID }: QuotaRingProps) {
               />
             ) : null}
           </Svg>
+          <Text style={styles.glyph}>{glyph}</Text>
         </Pressable>
       </TooltipTrigger>
       <TooltipContent side="top" align="center" offset={8}>
@@ -108,6 +111,15 @@ const styles = StyleSheet.create((theme) => ({
   },
   svg: {
     transform: [{ rotate: "-90deg" }],
+  },
+  // The glyph sits over the ring rather than inside the SVG: an absolutely positioned Text
+  // centres identically on web and native, where SVG text metrics do not.
+  glyph: {
+    position: "absolute",
+    color: theme.colors.foregroundMuted,
+    fontSize: COMPOSER_METER_GLYPH_SIZE,
+    lineHeight: COMPOSER_METER_GLYPH_SIZE + 2,
+    fontWeight: theme.fontWeight.normal,
   },
   tooltipContent: {
     gap: theme.spacing[1],
