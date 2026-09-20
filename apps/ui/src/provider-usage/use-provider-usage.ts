@@ -135,3 +135,18 @@ export function useProviderUsage(
 
   return { view, refresh, canFetch };
 }
+
+/**
+ * Refreshes every provider-usage query for one host, whichever account each was
+ * read for. The page's Refresh button has to reach the account-scoped queries
+ * the cards make for themselves, not just the unscoped list it holds itself.
+ */
+export function useRefreshHostProviderUsage(serverId: string | null | undefined): () => void {
+  const queryClient = useQueryClient();
+  return useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: ["providerUsage", serverId ?? ""],
+      exact: false,
+    });
+  }, [queryClient, serverId]);
+}

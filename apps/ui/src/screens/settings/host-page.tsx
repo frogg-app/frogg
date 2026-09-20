@@ -59,7 +59,10 @@ import {
 } from "@/runtime/host-runtime";
 import { ProvidersSection } from "@/screens/settings/providers-section";
 import { ProviderUsageSettingsSection } from "@/provider-usage/settings-section";
-import { useProviderUsage } from "@/provider-usage/use-provider-usage";
+import { useProviderUsage, useRefreshHostProviderUsage } from "@/provider-usage/use-provider-usage";
+import { buildUsageAccountsByProvider } from "@/provider-usage/accounts";
+import { useProviderAccounts } from "@/provider-accounts/use-provider-accounts";
+import { withDefaultAccount } from "@/screens/settings/provider-settings-modal/account-tabs";
 import { HostAppearanceSection } from "@/screens/settings/host-appearance-section";
 import { HostDaemonUpdateSection } from "@/screens/settings/host-daemon-update-section";
 import { HostSshDeploySection } from "@/screens/settings/host-ssh-deploy-section";
@@ -201,10 +204,15 @@ export function HostProvidersPage({ serverId }: { serverId: string }) {
 
 export function HostUsagePage({ serverId }: { serverId: string }) {
   const host = useHostProfile(serverId);
-  const { view: providerUsageView, refresh: refreshProviderUsage } = useProviderUsage(serverId);
-  const handleRefresh = useCallback(() => {
-    void refreshProviderUsage();
-  }, [refreshProviderUsage]);
+  const { view: providerUsageView } = useProviderUsage(serverId);
+  const accounts = useProviderAccounts(serverId);
+  // Refreshing has to reach the per-account queries each card makes for itself,
+  // not only the unscoped list this page holds.
+  const handleRefresh = useRefreshHostProviderUsage(serverId);
+  const accountsByProvider = useMemo(
+    () => buildUsageAccountsByProvider(accounts.payload?.accounts ?? [], withDefaultAccount),
+    [accounts.payload],
+  );
 
   if (!host) {
     return <HostNotFound />;
@@ -212,7 +220,12 @@ export function HostUsagePage({ serverId }: { serverId: string }) {
 
   return (
     <View>
-      <ProviderUsageSettingsSection view={providerUsageView} onRefresh={handleRefresh} />
+      <ProviderUsageSettingsSection
+        view={providerUsageView}
+        onRefresh={handleRefresh}
+        serverId={serverId}
+        accountsByProvider={accountsByProvider}
+      />
     </View>
   );
 }

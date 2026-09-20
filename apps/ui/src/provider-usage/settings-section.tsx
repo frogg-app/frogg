@@ -6,6 +6,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { settingsStyles } from "@/styles/settings";
 import { SettingsSection } from "@/screens/settings/settings-section";
+import type { ProviderAccountState } from "@frogg/protocol/provider-accounts";
 import { providerUsageCopy } from "./copy";
 import { ProviderUsageList } from "./list";
 import type { ProviderUsageView } from "./types";
@@ -13,9 +14,14 @@ import type { ProviderUsageView } from "./types";
 export function ProviderUsageSettingsSection({
   view,
   onRefresh,
+  serverId,
+  accountsByProvider,
 }: {
   view: ProviderUsageView;
   onRefresh: () => void;
+  /** Omitted by surfaces with no account context; the cards then look as before. */
+  serverId?: string;
+  accountsByProvider?: ReadonlyMap<string, readonly ProviderAccountState[]>;
 }) {
   const busy = view.kind === "loading" || (view.kind === "ready" && view.isRefreshing);
 
@@ -41,7 +47,12 @@ export function ProviderUsageSettingsSection({
       testID="provider-usage-card"
       trailing={refreshButton}
     >
-      <ProviderUsageBody view={view} onRefresh={onRefresh} />
+      <ProviderUsageBody
+        view={view}
+        onRefresh={onRefresh}
+        serverId={serverId}
+        accountsByProvider={accountsByProvider}
+      />
     </SettingsSection>
   );
 }
@@ -49,9 +60,13 @@ export function ProviderUsageSettingsSection({
 function ProviderUsageBody({
   view,
   onRefresh,
+  serverId,
+  accountsByProvider,
 }: {
   view: ProviderUsageView;
   onRefresh: () => void;
+  serverId?: string;
+  accountsByProvider?: ReadonlyMap<string, readonly ProviderAccountState[]>;
 }) {
   if (view.kind === "loading") {
     return (
@@ -79,7 +94,13 @@ function ProviderUsageBody({
     );
   }
 
-  return <ProviderUsageList providers={view.payload.providers} />;
+  return (
+    <ProviderUsageList
+      providers={view.payload.providers}
+      serverId={serverId}
+      accountsByProvider={accountsByProvider}
+    />
+  );
 }
 
 const styles = StyleSheet.create((theme) => ({
