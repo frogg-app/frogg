@@ -14,6 +14,9 @@ import {
   type ProviderAccountOption,
   type ProviderAccountSelection,
 } from "@/composer/agent-controls/provider-account";
+import { summarizeProviderUsage } from "@/provider-usage/account-summary";
+import { useProviderUsage } from "@/provider-usage/use-provider-usage";
+import { useHostFeature } from "@/runtime/host-features";
 import type { ProviderSnapshotAccount } from "@frogg/protocol/agent-types";
 
 /**
@@ -33,6 +36,43 @@ export interface ProviderAccountControlValue {
    * account is still visible, but it is greyed out and never opens a dropdown.
    */
   readOnly?: boolean;
+  /**
+   * The host and provider the accounts belong to. Both are needed to ask the
+   * daemon for a single account's usage; without them the rows carry no usage
+   * line and look exactly as they did before.
+   */
+  serverId?: string | null;
+  provider?: string | null;
+}
+
+/**
+ * One account's rolling-window usage, as the single line shown under its name
+ * in the picker. Each row owns its own query because the figures are per
+ * sign-in: the daemon answers for one config directory at a time.
+ */
+function useProviderAccountUsageLine(input: {
+  serverId: string | null | undefined;
+  provider: string | null | undefined;
+  accountId: string | null;
+  enabled: boolean;
+}): string | null {
+  const { serverId, provider, accountId, enabled } = input;
+  // An older daemon ignores the account scope and answers for its default
+  // config dir, which would show every row the same numbers. Better to show
+  // none than to attribute one account's usage to all of them.
+  const accountScoped = useHostFeature(serverId, "providerUsageAccountScoped");
+  const { view } = useProviderUsage(serverId, {
+    enabled: enabled && accountScoped && Boolean(provider),
+    provider: provider ?? undefined,
+    providerAccountId: accountId,
+  });
+  return useMemo(
+    () =>
+      view.kind === "ready"
+        ? summarizeProviderUsage(view.payload.providers, provider ?? undefined)
+        : null,
+    [provider, view],
+  );
 }
 
 function ProviderAccountComboboxOption({
@@ -44,6 +84,8 @@ function ProviderAccountComboboxOption({
   iconColor,
   warningColor,
   unauthenticatedLabel,
+  serverId,
+  provider,
 }: {
   option: ComboboxOption;
   account: ProviderAccountOption | undefined;
@@ -53,8 +95,18 @@ function ProviderAccountComboboxOption({
   iconColor: string;
   warningColor: string;
   unauthenticatedLabel: string;
+  serverId: string | null | undefined;
+  provider: string | null | undefined;
 }) {
   const unauthenticated = account !== undefined && !account.authenticated;
+  const usageLine = useProviderAccountUsageLine({
+    serverId,
+    provider,
+    accountId: toProviderAccountSelection(option.id),
+    // An account with no credentials on disk has nothing to report, and asking
+    // would make the daemon shell out to a provider that cannot authenticate.
+    enabled: !unauthenticated,
+  });
   const leadingSlot = useMemo(
     () =>
       unauthenticated ? (
@@ -67,7 +119,7 @@ function ProviderAccountComboboxOption({
   return (
     <ComboboxItem
       label={option.label}
-      description={unauthenticated ? unauthenticatedLabel : undefined}
+      description={unauthenticated ? unauthenticatedLabel : (usageLine ?? undefined)}
       selected={selected}
       active={active}
       disabled={unauthenticated}
@@ -88,9 +140,14 @@ export function ProviderAccountControl({
   onSelectAccount,
   disabled = false,
   readOnly = false,
+  serverId,
+  provider,
   surface = "toolbar",
   onClose,
-}: ProviderAccountControlValue & { surface?: "toolbar" | "sheet"; onClose?: () => void }) {
+}: ProviderAccountControlValue & {
+  surface?: "toolbar" | "sheet";
+  onClose?: () => void;
+}) {
   const { presentation } = useComposerControlLayout();
   const { t } = useTranslation();
   const anchorRef = useRef<View>(null);
@@ -113,7 +170,11 @@ export function ProviderAccountControl({
   }, [model]);
 
   const comboboxOptions = useMemo<ComboboxOption[]>(
-    () => (model?.options ?? []).map((option) => ({ id: option.id, label: option.label })),
+    () =>
+      (model?.options ?? []).map((option) => ({
+        id: option.id,
+        label: option.label,
+      })),
     [model],
   );
 
@@ -159,9 +220,11 @@ export function ProviderAccountControl({
         iconColor={styles.optionIconColor.color}
         warningColor={warningColor}
         unauthenticatedLabel={unauthenticatedLabel}
+        serverId={serverId}
+        provider={provider}
       />
     ),
-    [optionsById, unauthenticatedLabel, warningColor],
+    [optionsById, provider, serverId, unauthenticatedLabel, warningColor],
   );
 
   const sheetHeader = useMemo<SheetHeader>(
@@ -190,8 +253,12 @@ export function ProviderAccountControl({
             onPress={handlePress}
             accessibilityLabel={
               readOnly
-                ? t("agentControls.account.lockedWithValue", { value: model.displayLabel })
-                : t("agentControls.account.selectWithValue", { value: model.displayLabel })
+                ? t("agentControls.account.lockedWithValue", {
+                    value: model.displayLabel,
+                  })
+                : t("agentControls.account.selectWithValue", {
+                    value: model.displayLabel,
+                  })
             }
             testID="provider-account-control"
           />

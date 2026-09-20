@@ -58,6 +58,9 @@ export function buildDraftAgentControls(input: {
           defaultAccountId: formState.providerDefaultAccountId,
           selectedAccountId: formState.selectedProviderAccountId,
           onSelectAccount: formState.setProviderAccountFromUser,
+          // Lets each row show that account's own rolling-window usage.
+          serverId: formState.selectedServerId,
+          provider: formState.selectedProvider,
         }
       : null,
   };

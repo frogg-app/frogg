@@ -3,6 +3,7 @@
  */
 import React from "react";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The real popover surfaces pull in Reanimated and Gorhom, which need a browser.
@@ -75,6 +76,33 @@ vi.mock("@/components/ui/combobox", () => ({
     ),
 }));
 
+// The usage line's data comes off the wire; these two stand in for the host so
+// the control's own rendering of it is what the suite tests.
+const usageState = {
+  accountScoped: true,
+  byAccount: new Map<string | null, unknown>(),
+};
+
+vi.mock("@/runtime/host-features", () => ({
+  useHostFeature: () => usageState.accountScoped,
+}));
+
+vi.mock("@/provider-usage/use-provider-usage", () => ({
+  useProviderUsage: (
+    _serverId: string | null | undefined,
+    options: { enabled?: boolean; providerAccountId?: string | null },
+  ) => {
+    const payload = options.enabled
+      ? usageState.byAccount.get(options.providerAccountId ?? null)
+      : undefined;
+    return {
+      view: payload ? { kind: "ready", payload, isRefreshing: false } : { kind: "loading" },
+      refresh: async () => {},
+      canFetch: true,
+    };
+  },
+}));
+
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => children,
   TooltipTrigger: ({ children }: { children: React.ReactNode }) => children,
@@ -88,7 +116,11 @@ import {
 } from "./provider-account-control";
 import { DEFAULT_PROVIDER_ACCOUNT_OPTION_ID } from "./provider-account";
 
-beforeEach(() => vi.stubGlobal("React", React));
+beforeEach(() => {
+  vi.stubGlobal("React", React);
+  usageState.accountScoped = true;
+  usageState.byAccount = new Map();
+});
 afterEach(() => cleanup());
 
 const LAYOUT = {
@@ -106,16 +138,21 @@ const NEW = { id: "acct-new", name: "new-hire", authenticated: false };
 
 function renderControl(props: Partial<ProviderAccountControlValue> = {}) {
   const onSelectAccount = vi.fn();
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   render(
-    <ComposerControlLayoutProvider value={LAYOUT}>
-      <ProviderAccountControl
-        accounts={[STEVE]}
-        defaultAccountId={null}
-        selectedAccountId={undefined}
-        {...props}
-        onSelectAccount={onSelectAccount}
-      />
-    </ComposerControlLayoutProvider>,
+    <QueryClientProvider client={queryClient}>
+      <ComposerControlLayoutProvider value={LAYOUT}>
+        <ProviderAccountControl
+          accounts={[STEVE]}
+          defaultAccountId={null}
+          selectedAccountId={undefined}
+          {...props}
+          onSelectAccount={onSelectAccount}
+        />
+      </ComposerControlLayoutProvider>
+    </QueryClientProvider>,
   );
   return { onSelectAccount };
 }
@@ -141,7 +178,9 @@ describe("ProviderAccountControl", () => {
   });
 
   it("sends an explicit null for the Default row rather than omitting the value", () => {
-    const { onSelectAccount } = renderControl({ selectedAccountId: "acct-steve" });
+    const { onSelectAccount } = renderControl({
+      selectedAccountId: "acct-steve",
+    });
     openPicker();
     fireEvent.click(
       screen.getByTestId(`provider-account-option-${DEFAULT_PROVIDER_ACCOUNT_OPTION_ID}`),
@@ -166,6 +205,76 @@ describe("ProviderAccountControl", () => {
     expect((row as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(row);
     expect(onSelectAccount).not.toHaveBeenCalled();
+  });
+
+  describe("inline usage", () => {
+    function usagePayload(windows: Array<Record<string, unknown>>) {
+      return {
+        requestId: "req",
+        fetchedAt: "2026-01-01T00:00:00.000Z",
+        providers: [
+          {
+            providerId: "claude",
+            displayName: "Claude",
+            status: "available",
+            planLabel: null,
+            windows,
+          },
+        ],
+      };
+    }
+
+    it("shows each account's own window usage and time to reset", () => {
+      // A whole number of hours plus a slack minute, so the clock ticking
+      // during the render cannot round the countdown down.
+      const resetsAt = new Date(Date.now() + 3 * 3_600_000 + 30_000).toISOString();
+      usageState.byAccount.set(
+        "acct-steve",
+        usagePayload([{ id: "five_hour", label: "Session", usedPct: 42, resetsAt }]),
+      );
+      usageState.byAccount.set(null, usagePayload([{ id: "weekly", label: "Weekly", usedPct: 7 }]));
+      renderControl({
+        serverId: "host",
+        provider: "claude",
+        selectedAccountId: "acct-steve",
+      });
+      openPicker();
+      expect(
+        screen.getByTestId("provider-account-option-acct-steve").getAttribute("data-description"),
+      ).toBe("Session 42% · 3h");
+      expect(
+        screen
+          .getByTestId(`provider-account-option-${DEFAULT_PROVIDER_ACCOUNT_OPTION_ID}`)
+          .getAttribute("data-description"),
+      ).toBe("Weekly 7%");
+    });
+
+    // An older daemon answers for its default config dir whatever account is
+    // asked about, so every row would claim the same figures.
+    it("shows no usage when the host cannot scope figures to an account", () => {
+      usageState.accountScoped = false;
+      usageState.byAccount.set(
+        "acct-steve",
+        usagePayload([{ id: "weekly", label: "Weekly", usedPct: 7 }]),
+      );
+      renderControl({ serverId: "host", provider: "claude" });
+      openPicker();
+      expect(
+        screen.getByTestId("provider-account-option-acct-steve").getAttribute("data-description"),
+      ).toBeNull();
+    });
+
+    it("keeps the not-signed-in note instead of a usage line", () => {
+      renderControl({
+        accounts: [STEVE, NEW],
+        serverId: "host",
+        provider: "claude",
+      });
+      openPicker();
+      expect(
+        screen.getByTestId("provider-account-option-acct-new").getAttribute("data-description"),
+      ).toContain("Not signed in");
+    });
   });
 
   describe("read-only (a launched agent)", () => {
@@ -220,7 +329,11 @@ describe("ProviderAccountControl", () => {
   // Default pins the primary config dir rather than following the active
   // account, so an explicit Default pick must not advertise that account's name.
   it("shows a plain Default on the pill for an explicit Default pick", () => {
-    renderControl({ accounts: [STEVE], defaultAccountId: "acct-steve", selectedAccountId: null });
+    renderControl({
+      accounts: [STEVE],
+      defaultAccountId: "acct-steve",
+      selectedAccountId: null,
+    });
     const label = screen.getByTestId("provider-account-control").textContent ?? "";
     expect(label).toContain("Default");
     expect(label).not.toContain("steve");
