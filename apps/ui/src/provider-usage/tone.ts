@@ -1,8 +1,11 @@
+import { DEFAULT_USAGE_METER_PREFERENCES, deriveUsageTone } from "./meter-preferences";
 import type { ProviderUsageTone } from "./types";
 
+/**
+ * The tone for a spent share under the default thresholds. Call sites that can
+ * reach the user's own thresholds should use `deriveUsageTone` with them
+ * instead; this is for the ones that only ever format a static summary.
+ */
 export function deriveTone(usedPct: number | null | undefined): ProviderUsageTone {
-  if (usedPct == null) return "default";
-  if (usedPct > 90) return "danger";
-  if (usedPct >= 70) return "warning";
-  return "default";
+  return deriveUsageTone(usedPct, DEFAULT_USAGE_METER_PREFERENCES);
 }

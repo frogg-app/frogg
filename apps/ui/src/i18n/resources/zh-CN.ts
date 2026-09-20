@@ -2488,6 +2488,7 @@ export const zhCN: TranslationResources = {
       appVersion: "应用版本",
       thisDevice: "此设备",
       connectedHosts: "已连接的 Host",
+      updateHost: "更新",
       offline: "离线",
       versionDiffers: "版本与此设备不同",
       releaseChannel: {
@@ -2532,6 +2533,41 @@ export const zhCN: TranslationResources = {
       chatOutline: {
         title: "聊天大纲",
         description: "显示用于在提示词之间跳转的大纲",
+      },
+      usage: {
+        title: "用量仪表",
+        heading: "刷新与阈值",
+        summary: "应用处于焦点时每 {{seconds}} 秒刷新一次",
+        summaryManual: "仅在查看或智能体回复时刷新",
+        refreshWhileFocused: {
+          label: "按计时器刷新",
+          description: "应用处于焦点时保持仪表为最新",
+        },
+        interval: {
+          label: "刷新间隔",
+          description: "计时器刷新仪表的频率。填 0 可关闭计时器",
+          unit: "秒",
+        },
+        refreshOnHover: {
+          label: "悬停时刷新",
+          description: "打开仪表的提示时刷新",
+        },
+        refreshOnAgentResponse: {
+          label: "回复后刷新",
+          description: "智能体完成一轮后刷新",
+        },
+        warningThreshold: {
+          label: "警告阈值",
+          description: "用量超过该比例时仪表变为琥珀色",
+        },
+        criticalThreshold: {
+          label: "严重阈值",
+          description: "用量超过该比例时仪表变为红色",
+        },
+        animate: {
+          label: "动画过渡",
+          description: "让圆环与颜色平滑过渡，而不是突变",
+        },
       },
       sidebar: {
         title: "侧边栏",

@@ -1,9 +1,18 @@
+import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { COMPOSER_METER_GLYPH_SIZE, COMPOSER_METER_SLOT_WIDTH } from "@/composer/meter-geometry";
+import { useEasedColor } from "@/hooks/use-eased-color";
+import { useEasedValue } from "@/hooks/use-eased-value";
 import type { ProviderUsageColumn } from "@/provider-usage/account-summary";
+import {
+  USAGE_METER_TRANSITION_MS,
+  deriveUsageTone,
+  type UsageMeterPreferences,
+} from "@/provider-usage/meter-preferences";
+import { useUsageMeterPreferences } from "@/provider-usage/use-meter-preferences";
 import type { Theme } from "@/styles/theme";
 
 /** Toolbar-button height: the glyph's line height, so one line centres in the slot. */
@@ -11,6 +20,8 @@ const METER_SLOT_HEIGHT = 28;
 
 interface QuotaRingProps {
   column: ProviderUsageColumn;
+  /** Called when the ring's tooltip opens, so a deliberate look can refetch first. */
+  onOpen?: () => Promise<void> | void;
   /** The single character drawn in the ring's middle, naming the window it measures. */
   glyph: string;
   /** Outer diameter of the ring glyph, matching the context meter's envelope. */
@@ -24,10 +35,11 @@ interface RingPalette {
 }
 
 /** The context meter's own ramp, so a spent quota reads the same as a full context window. */
-function arcColor(pct: number | null, theme: Theme): string {
+function arcColor(pct: number | null, thresholds: UsageMeterPreferences, theme: Theme): string {
   if (pct == null) return theme.colors.surface3;
-  if (pct > 90) return theme.colors.destructive;
-  if (pct >= 70) return theme.colors.palette.amber[500];
+  const tone = deriveUsageTone(pct, thresholds);
+  if (tone === "danger") return theme.colors.destructive;
+  if (tone === "warning") return theme.colors.palette.amber[500];
   return theme.colors.foregroundMuted;
 }
 
@@ -38,9 +50,9 @@ function arcColor(pct: number | null, theme: Theme): string {
  * `Circle` renders with no stroke at all — an invisible ring. Wrapping a component of our own
  * is the pattern the rest of the app's rings use.
  */
-function ringPaletteMapping(pct: number | null) {
+function ringPaletteMapping(pct: number | null, thresholds: UsageMeterPreferences) {
   return (theme: Theme): { palette: RingPalette } => ({
-    palette: { track: theme.colors.surface3, arc: arcColor(pct, theme) },
+    palette: { track: theme.colors.surface3, arc: arcColor(pct, thresholds, theme) },
   });
 }
 
@@ -48,16 +60,26 @@ function QuotaRingSvg({
   pct,
   size,
   palette,
+  animate,
 }: {
   pct: number | null;
   size: number;
   palette: RingPalette;
+  animate: boolean;
 }) {
   const strokeWidth = 2;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const center = size / 2;
-  const dash = circumference * Math.min(Math.max((pct ?? 0) / 100, 0), 1);
+  // Arc and colour travel together: a quota that has just crossed a threshold should
+  // sweep to its new length while it warms, rather than jumping twice.
+  const easedPct = useEasedValue(
+    Math.min(Math.max(pct ?? 0, 0), 100),
+    USAGE_METER_TRANSITION_MS,
+    animate,
+  );
+  const easedArc = useEasedColor(palette.arc, USAGE_METER_TRANSITION_MS, animate);
+  const dash = circumference * (easedPct / 100);
 
   return (
     <Svg
@@ -85,7 +107,7 @@ function QuotaRingSvg({
             cy={center}
             r={radius}
             fill="none"
-            stroke={palette.arc}
+            stroke={easedArc}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${circumference - dash}`}
@@ -104,13 +126,22 @@ const ThemedQuotaRingSvg = withUnistyles(QuotaRingSvg);
  * percentage still renders its track, because the tooltip's reset countdown is worth hovering
  * for and a missing ring would shift its siblings.
  */
-export function QuotaRing({ column, glyph, size, testID }: QuotaRingProps) {
+export function QuotaRing({ column, glyph, size, onOpen, testID }: QuotaRingProps) {
+  const preferences = useUsageMeterPreferences();
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      if (nextOpen && onOpen) {
+        void Promise.resolve(onOpen()).catch(() => {});
+      }
+    },
+    [onOpen],
+  );
   const label = column.resetIn
     ? `${column.label} ${column.pctLabel} used · resets in ${column.resetIn}`
     : `${column.label} ${column.pctLabel} used`;
 
   return (
-    <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile>
+    <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile onOpenChange={handleOpenChange}>
       <TooltipTrigger asChild triggerRefProp="ref">
         <Pressable
           style={styles.container}
@@ -121,7 +152,8 @@ export function QuotaRing({ column, glyph, size, testID }: QuotaRingProps) {
           <ThemedQuotaRingSvg
             pct={column.pct}
             size={size}
-            uniProps={ringPaletteMapping(column.pct)}
+            animate={preferences.animate}
+            uniProps={ringPaletteMapping(column.pct, preferences)}
           />
           <View pointerEvents="none" style={styles.glyphLayer}>
             <Text style={styles.glyph}>{glyph}</Text>

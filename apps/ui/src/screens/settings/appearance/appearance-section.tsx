@@ -39,6 +39,7 @@ import { isNative } from "@/constants/platform";
 import { settingsStyles } from "@/styles/settings";
 import { AppearancePreview } from "./appearance-preview";
 import { SidebarNavSection } from "./sidebar-nav-section";
+import { UsageMetersSection } from "./usage-meters-section";
 
 // ---------------------------------------------------------------------------
 // Theme-reactive leaf icons (withUnistyles + uniProps color mapping — no
@@ -641,6 +642,7 @@ export function AppearanceSection() {
         </View>
       </SettingsSection>
       <SidebarNavSection />
+      <UsageMetersSection />
       <SettingsSection title={t("settings.appearance.fonts.title")}>
         <View style={settingsStyles.card}>
           {showInterfaceFontFamilyRow ? (

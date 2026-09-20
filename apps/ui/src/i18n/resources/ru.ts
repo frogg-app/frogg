@@ -2568,6 +2568,7 @@ export const ru: TranslationResources = {
       appVersion: "Версия приложения",
       thisDevice: "Это устройство",
       connectedHosts: "Подключенные хосты",
+      updateHost: "Обновить",
       offline: "Оффлайн",
       versionDiffers: "Версия отличается от версии на этом устройстве",
       releaseChannel: {
@@ -2613,6 +2614,41 @@ export const ru: TranslationResources = {
       chatOutline: {
         title: "Оглавление чата",
         description: "Показывать оглавление для перехода между запросами",
+      },
+      usage: {
+        title: "Индикаторы расхода",
+        heading: "Обновление и пороги",
+        summary: "Обновление каждые {{seconds}} с, пока приложение в фокусе",
+        summaryManual: "Обновление только при просмотре или ответе агента",
+        refreshWhileFocused: {
+          label: "Обновлять по таймеру",
+          description: "Держать индикаторы актуальными, пока приложение в фокусе",
+        },
+        interval: {
+          label: "Интервал обновления",
+          description: "Как часто таймер обновляет индикаторы. 0 отключает таймер",
+          unit: "с",
+        },
+        refreshOnHover: {
+          label: "Обновлять при наведении",
+          description: "Обновлять при открытии подсказки индикатора",
+        },
+        refreshOnAgentResponse: {
+          label: "Обновлять после ответа",
+          description: "Обновлять, когда агент завершает ход",
+        },
+        warningThreshold: {
+          label: "Уровень предупреждения",
+          description: "Доля расхода, выше которой индикатор становится янтарным",
+        },
+        criticalThreshold: {
+          label: "Критический уровень",
+          description: "Доля расхода, выше которой индикатор становится красным",
+        },
+        animate: {
+          label: "Анимировать изменения",
+          description: "Плавно менять кольцо и его цвет вместо резкого скачка",
+        },
       },
       sidebar: {
         title: "Боковая панель",

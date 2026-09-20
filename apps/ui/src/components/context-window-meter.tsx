@@ -4,7 +4,15 @@ import Svg, { Circle, G } from "react-native-svg";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useEasedColor } from "@/hooks/use-eased-color";
+import { useEasedValue } from "@/hooks/use-eased-value";
+import {
+  USAGE_METER_TRANSITION_MS,
+  deriveUsageTone,
+  type UsageMeterPreferences,
+} from "@/provider-usage/meter-preferences";
 import { ProviderUsageTooltipSection } from "@/provider-usage/tooltip-section";
+import { useUsageMeterPreferences } from "@/provider-usage/use-meter-preferences";
 import { useProviderUsage } from "@/provider-usage/use-provider-usage";
 import { formatTokenCount } from "./context-window-meter.utils";
 
@@ -82,13 +90,15 @@ function formatSessionCost(value: number): string | null {
 
 function getMeterColors(
   percentage: number,
+  thresholds: UsageMeterPreferences,
   theme: ReturnType<typeof useUnistyles>["theme"],
 ): { progress: string; track: string } {
   const track = theme.colors.surface3;
-  if (percentage > 90) {
+  const tone = deriveUsageTone(percentage, thresholds);
+  if (tone === "danger") {
     return { progress: theme.colors.destructive, track };
   }
-  if (percentage >= 70) {
+  if (tone === "warning") {
     return { progress: theme.colors.palette.amber[500], track };
   }
   return { progress: theme.colors.foregroundMuted, track };
@@ -138,6 +148,70 @@ function MeterCenterGlyph({
   );
 }
 
+/**
+ * The ring itself, as its own component so the eased arc and colour can be hooks: the meter
+ * above returns early for a session with no usage yet, which a hook in that body could not
+ * survive.
+ */
+function MeterArc({
+  svgSize,
+  center,
+  radius,
+  strokeWidth,
+  circumference,
+  percentage,
+  colors,
+  animate,
+}: {
+  svgSize: number;
+  center: number;
+  radius: number;
+  strokeWidth: number;
+  circumference: number;
+  percentage: number;
+  colors: { progress: string; track: string };
+  animate: boolean;
+}) {
+  const easedPercentage = useEasedValue(percentage, USAGE_METER_TRANSITION_MS, animate);
+  const easedProgress = useEasedColor(colors.progress, USAGE_METER_TRANSITION_MS, animate);
+  const dashOffset = circumference - (easedPercentage / 100) * circumference;
+
+  return (
+    <Svg
+      width={svgSize}
+      height={svgSize}
+      viewBox={`0 0 ${svgSize} ${svgSize}`}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      {/* Strokes start at three o'clock; the ring has to read clockwise from twelve.
+          Rotating a group inside the SVG keeps web and native in agreement, where a CSS
+          transform on the element does not. */}
+      <G transform={`rotate(-90 ${center} ${center})`}>
+        <Circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={colors.track}
+          strokeWidth={strokeWidth}
+        />
+        <Circle
+          cx={center}
+          cy={center}
+          r={radius}
+          fill="none"
+          stroke={easedProgress}
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={dashOffset}
+        />
+      </G>
+    </Svg>
+  );
+}
+
 export function ContextWindowMeter({
   maxTokens,
   usedTokens,
@@ -154,6 +228,7 @@ export function ContextWindowMeter({
 }: ContextWindowMeterProps) {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
+  const preferences = useUsageMeterPreferences();
   const [isTooltipOpen, setIsTooltipOpen] = useState(false);
   const { view: providerUsageView, refresh: refreshProviderUsage } = useProviderUsage(
     serverId ?? null,
@@ -168,11 +243,11 @@ export function ContextWindowMeter({
   const handleTooltipOpenChange = useCallback(
     (nextOpen: boolean) => {
       setIsTooltipOpen(nextOpen);
-      if (nextOpen) {
+      if (nextOpen && preferences.refreshOnHover) {
         void refreshProviderUsage().catch(() => {});
       }
     },
-    [refreshProviderUsage],
+    [preferences.refreshOnHover, refreshProviderUsage],
   );
 
   const geometry = getMeterGeometry(showPercentage, glyphSize, containerWidth);
@@ -211,8 +286,7 @@ export function ContextWindowMeter({
   const clampedPercentage = clampPercentage(percentage);
   const roundedPercentage = Math.round(percentage);
   const { svgSize, center, radius, strokeWidth, circumference, containerStyle } = geometry;
-  const dashOffset = circumference - (clampedPercentage / 100) * circumference;
-  const colors = getMeterColors(clampedPercentage, theme);
+  const colors = getMeterColors(clampedPercentage, preferences, theme);
   const formattedSessionCost =
     typeof totalCostUsd === "number" ? formatSessionCost(totalCostUsd) : null;
 
@@ -233,38 +307,16 @@ export function ContextWindowMeter({
             percentage: roundedPercentage,
           })}
         >
-          <Svg
-            width={svgSize}
-            height={svgSize}
-            viewBox={`0 0 ${svgSize} ${svgSize}`}
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          >
-            {/* Strokes start at three o'clock; the ring has to read clockwise from twelve.
-                Rotating a group inside the SVG keeps web and native in agreement, where a CSS
-                transform on the element does not. */}
-            <G transform={`rotate(-90 ${center} ${center})`}>
-              <Circle
-                cx={center}
-                cy={center}
-                r={radius}
-                fill="none"
-                stroke={colors.track}
-                strokeWidth={strokeWidth}
-              />
-              <Circle
-                cx={center}
-                cy={center}
-                r={radius}
-                fill="none"
-                stroke={colors.progress}
-                strokeWidth={strokeWidth}
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={dashOffset}
-              />
-            </G>
-          </Svg>
+          <MeterArc
+            svgSize={svgSize}
+            center={center}
+            radius={radius}
+            strokeWidth={strokeWidth}
+            circumference={circumference}
+            percentage={clampedPercentage}
+            colors={colors}
+            animate={preferences.animate}
+          />
           {showPercentage ? (
             <Text style={styles.percentageLabel}>{`${roundedPercentage}%`}</Text>
           ) : null}

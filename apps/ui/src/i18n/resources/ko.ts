@@ -2542,6 +2542,7 @@ export const ko: TranslationResources = {
       appVersion: "앱 버전",
       thisDevice: "이 기기",
       connectedHosts: "연결된 호스트",
+      updateHost: "업데이트",
       offline: "오프라인",
       versionDiffers: "이 기기와 버전이 다릅니다",
       releaseChannel: {
@@ -2586,6 +2587,41 @@ export const ko: TranslationResources = {
       chatOutline: {
         title: "채팅 개요",
         description: "프롬프트 사이를 이동하기 위한 개요 표시",
+      },
+      usage: {
+        title: "사용량 미터",
+        heading: "새로 고침 및 임계값",
+        summary: "앱이 활성화된 동안 {{seconds}}초마다 새로 고침",
+        summaryManual: "확인할 때와 에이전트가 응답할 때만 새로 고침",
+        refreshWhileFocused: {
+          label: "타이머로 새로 고침",
+          description: "앱이 활성화된 동안 미터를 최신 상태로 유지합니다",
+        },
+        interval: {
+          label: "새로 고침 간격",
+          description: "타이머가 미터를 갱신하는 주기입니다. 0이면 타이머를 끕니다",
+          unit: "초",
+        },
+        refreshOnHover: {
+          label: "가리킬 때 새로 고침",
+          description: "미터의 툴팁을 열 때 갱신합니다",
+        },
+        refreshOnAgentResponse: {
+          label: "응답 후 새로 고침",
+          description: "에이전트가 턴을 마치면 갱신합니다",
+        },
+        warningThreshold: {
+          label: "경고 수준",
+          description: "이 사용률을 넘으면 미터가 주황색으로 바뀝니다",
+        },
+        criticalThreshold: {
+          label: "위험 수준",
+          description: "이 사용률을 넘으면 미터가 빨간색으로 바뀝니다",
+        },
+        animate: {
+          label: "변화 애니메이션",
+          description: "링과 색이 튀지 않고 부드럽게 변하도록 합니다",
+        },
       },
       sidebar: {
         title: "사이드바",

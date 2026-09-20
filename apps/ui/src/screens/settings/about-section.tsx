@@ -3,6 +3,8 @@ import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { Trans, useTranslation } from "react-i18next";
 import { brand } from "@frogg/branding";
+import { Button } from "@/components/ui/button";
+import { openHostOverview } from "@/navigation/settings-navigation";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { useHostRuntimeIsConnected, useHosts } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
@@ -137,6 +139,13 @@ function HostVersionRow({
     [isMismatch],
   );
 
+  const handleUpdate = useCallback(() => openHostOverview(host.serverId), [host.serverId]);
+
+  // A host on another version is the one place someone notices the daemon is behind, so the
+  // row offers the way out. The update itself stays on the host page: it has the channel,
+  // the progress and the reconnect wait, none of which belong in a one-line About row.
+  const showUpdate = isConnected && isMismatch;
+
   return (
     <View style={rowStyle}>
       <View style={settingsStyles.rowContent}>
@@ -147,7 +156,19 @@ function HostVersionRow({
           <Text style={settingsStyles.rowHint}>{t("settings.about.versionDiffers")}</Text>
         ) : null}
       </View>
-      <Text style={valueStyle}>{valueText}</Text>
+      <View style={styles.hostTrailing}>
+        <Text style={valueStyle}>{valueText}</Text>
+        {showUpdate ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={handleUpdate}
+            testID={`settings-about-host-update-${host.serverId}`}
+          >
+            {t("settings.about.updateHost")}
+          </Button>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -156,6 +177,11 @@ const styles = StyleSheet.create((theme) => ({
   aboutValue: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
+  },
+  hostTrailing: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[3],
   },
   aboutVersionMismatch: {
     color: theme.colors.palette.amber[500],

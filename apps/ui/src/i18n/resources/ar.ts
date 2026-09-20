@@ -2522,6 +2522,7 @@ export const ar: TranslationResources = {
       appVersion: "نسخة التطبيق",
       thisDevice: "هذا الجهاز",
       connectedHosts: "المضيفين المتصلين",
+      updateHost: "تحديث",
       offline: "غير متصل",
       versionDiffers: "الإصدار يختلف عن هذا الجهاز",
       releaseChannel: {
@@ -2566,6 +2567,41 @@ export const ar: TranslationResources = {
       chatOutline: {
         title: "مخطط المحادثة",
         description: "عرض مخطط للتنقل بين المطالبات",
+      },
+      usage: {
+        title: "مقاييس الاستخدام",
+        heading: "التحديث والعتبات",
+        summary: "يتم التحديث كل {{seconds}} ثانية أثناء تركيز التطبيق",
+        summaryManual: "يتم التحديث فقط عند النظر أو عند رد الوكيل",
+        refreshWhileFocused: {
+          label: "التحديث بمؤقت",
+          description: "إبقاء المقاييس محدثة أثناء تركيز التطبيق",
+        },
+        interval: {
+          label: "فترة التحديث",
+          description: "عدد مرات تحديث المؤقت للمقاييس. القيمة 0 توقف المؤقت",
+          unit: "ث",
+        },
+        refreshOnHover: {
+          label: "التحديث عند التمرير",
+          description: "التحديث عند فتح تلميح المقياس",
+        },
+        refreshOnAgentResponse: {
+          label: "التحديث بعد الرد",
+          description: "التحديث عند انتهاء الوكيل من دوره",
+        },
+        warningThreshold: {
+          label: "مستوى التحذير",
+          description: "النسبة المستهلكة التي يتحول فوقها المقياس إلى الكهرماني",
+        },
+        criticalThreshold: {
+          label: "المستوى الحرج",
+          description: "النسبة المستهلكة التي يتحول فوقها المقياس إلى الأحمر",
+        },
+        animate: {
+          label: "تحريك التغييرات",
+          description: "انتقال سلس للحلقة ولونها بدلاً من القفز",
+        },
       },
       sidebar: {
         title: "الشريط الجانبي",
