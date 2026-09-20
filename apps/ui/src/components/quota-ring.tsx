@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, G } from "react-native-svg";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { COMPOSER_METER_GLYPH_SIZE, COMPOSER_METER_SLOT_WIDTH } from "@/composer/meter-geometry";
@@ -64,30 +64,34 @@ function QuotaRingSvg({
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      style={styles.svg}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      <Circle
-        cx={center}
-        cy={center}
-        r={radius}
-        fill="none"
-        stroke={palette.track}
-        strokeWidth={strokeWidth}
-      />
-      {dash > 0 ? (
+      {/* Strokes start at three o'clock; the arc has to read clockwise from twelve. Rotating the
+          group inside the SVG rather than the element with a CSS transform keeps the two agreeing
+          across web and native. */}
+      <G transform={`rotate(-90 ${center} ${center})`}>
         <Circle
           cx={center}
           cy={center}
           r={radius}
           fill="none"
-          stroke={palette.arc}
+          stroke={palette.track}
           strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${circumference - dash}`}
         />
-      ) : null}
+        {dash > 0 ? (
+          <Circle
+            cx={center}
+            cy={center}
+            r={radius}
+            fill="none"
+            stroke={palette.arc}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circumference - dash}`}
+          />
+        ) : null}
+      </G>
     </Svg>
   );
 }
@@ -143,10 +147,6 @@ const styles = StyleSheet.create((theme) => ({
     height: METER_SLOT_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
-  },
-  svg: {
-    // SVG strokes start at three o'clock; the ring reads clockwise from twelve.
-    transform: [{ rotate: "-90deg" }],
   },
   // The glyph sits over the ring rather than inside the SVG, where text metrics differ between
   // web and native. Centring is done by a layer that fills the slot and centres its child both

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import Svg, { Circle } from "react-native-svg";
+import Svg, { Circle, G } from "react-native-svg";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -190,7 +190,6 @@ export function ContextWindowMeter({
           width={geometry.svgSize}
           height={geometry.svgSize}
           viewBox={`0 0 ${geometry.svgSize} ${geometry.svgSize}`}
-          style={styles.svg}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         >
@@ -238,29 +237,33 @@ export function ContextWindowMeter({
             width={svgSize}
             height={svgSize}
             viewBox={`0 0 ${svgSize} ${svgSize}`}
-            style={styles.svg}
             accessibilityElementsHidden
             importantForAccessibility="no-hide-descendants"
           >
-            <Circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={colors.track}
-              strokeWidth={strokeWidth}
-            />
-            <Circle
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={colors.progress}
-              strokeWidth={strokeWidth}
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              strokeDashoffset={dashOffset}
-            />
+            {/* Strokes start at three o'clock; the ring has to read clockwise from twelve.
+                Rotating a group inside the SVG keeps web and native in agreement, where a CSS
+                transform on the element does not. */}
+            <G transform={`rotate(-90 ${center} ${center})`}>
+              <Circle
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke={colors.track}
+                strokeWidth={strokeWidth}
+              />
+              <Circle
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke={colors.progress}
+                strokeWidth={strokeWidth}
+                strokeLinecap="round"
+                strokeDasharray={circumference}
+                strokeDashoffset={dashOffset}
+              />
+            </G>
           </Svg>
           {showPercentage ? (
             <Text style={styles.percentageLabel}>{`${roundedPercentage}%`}</Text>
@@ -307,9 +310,6 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     gap: theme.spacing[1],
     borderRadius: theme.borderRadius.full,
-  },
-  svg: {
-    transform: [{ rotate: "-90deg" }],
   },
   // Drawn over the ring rather than as SVG text, which does not centre consistently on native.
   // The layer fills the meter and centres the glyph on both axes; a line box stretched to the
