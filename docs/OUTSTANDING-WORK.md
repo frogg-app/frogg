@@ -90,10 +90,13 @@ The existing monitor owns post-merge follow-through:
       to untrusted while preserving explicit choices, and reads live trust state for
       claim status. Separate the useful reporting correction from the pairing-policy
       decision. This is distinct from Q1's listener address.
-- [ ] **P2/P4 — Android in-app update prompt and signing migration.** Old prompt
-      polls releases and links an APK, but hardcodes arm64 and rejects unsigned assets.
-      Current distribution intentionally preserves debug-signed upgrades pending a signing
-      migration. Decide prompt scope and migration together; do not copy unchanged.
+- [ ] **P4 — Android signing migration.** The in-app updater now ships (Settings >
+      Updates: checks releases, picks the asset for the device ABI and signing flavour,
+      downloads it and installs it through Android's package installer), so the old
+      prompt's arm64 hardcoding and refusal of unsigned assets are moot. What remains is
+      the signing decision: distribution intentionally preserves debug-signed upgrades, and
+      moving to a release key still breaks in-place updates for every existing install.
+      Not yet exercised on a physical device.
 
 ## Verified complete — removed from outstanding tasks
 

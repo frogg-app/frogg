@@ -267,6 +267,10 @@ The docs rewrite (2026-09-13) replaced `docs/` with the Astro/Starlight site in
 - [ ] **Per-device revoke** for paired devices does not exist.
 - [ ] **Schedules have no UI**; CLI/daemon only.
 - [ ] **Push notifications in the published APK** are unverified.
+- [ ] **Android in-app updating on hardware** is unverified. Settings > Updates checks
+      releases, downloads the matching APK and commits a package-installer session, but
+      that path has only been exercised by unit tests; the permission prompt, the system
+      confirmation and the replace-in-place install still need a device run.
 - [ ] **`FROGG_DEV_RESET_HOME`** does nothing on its own.
 - [ ] **Dangling design-doc references.** Comments in `apps/ui` and
       `.oxlintrc.json` messages still cite deleted docs (unistyles, hover, menus,

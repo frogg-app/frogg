@@ -4,6 +4,9 @@ const { withAppBuildGradle, withDangerousMod, withSettingsGradle } = require("ex
 const { FDROID_ABI_VERSION_CODE_SUFFIXES } = require("../native-release-version");
 
 const EXCLUDED_ANDROID_MODULES = [
+  // F-Droid builds are updated by the F-Droid client, and its inclusion policy
+  // rules out an in-app updater, so the APK installer module is left out.
+  "frogg-app-installer",
   "expo-camera",
   "expo-notifications",
   "expo-dev-client",

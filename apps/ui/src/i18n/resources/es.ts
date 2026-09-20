@@ -1602,6 +1602,61 @@ export const es: TranslationResources = {
       },
     },
   },
+  mobile: {
+    updates: {
+      status: {
+        idle: "El estado de las actualizaciones aún no se ha comprobado.",
+        checking: "Buscando actualizaciones de la aplicación...",
+        downloading: "Descargando la actualización...",
+        installing: "Esperando al instalador de Android...",
+        installed: "Actualización instalada.",
+        upToDate: "La aplicación está actualizada.",
+        available: "Actualización disponible: {{version}}",
+        failed: "No se pudo actualizar la aplicación.",
+      },
+      checkFailed: "No se pudo buscar actualizaciones: {{message}}",
+      downloadFailed: "Error en la descarga: {{message}}",
+      downloadCancelled: "Se canceló la descarga.",
+      installFailed: "Error en la instalación: {{message}}",
+      installCancelled: "Instalación cancelada.",
+      permissionRequired:
+        "Permite instalar aplicaciones desconocidas para {{brandName}} en los ajustes del sistema y vuelve a iniciar la actualización.",
+      unsupported:
+        "Las actualizaciones dentro de la aplicación no están disponibles en esta versión.",
+      section: {
+        title: "Actualizaciones",
+        currentVersion: "Versión actual",
+        source:
+          "Las actualizaciones se descargan de las publicaciones de GitHub y las instala Android.",
+        autoCheck: {
+          title: "Comprobar automáticamente",
+          hint: "Buscar una versión más reciente cada vez que se inicia la aplicación.",
+        },
+        check: "Buscar actualizaciones",
+        checking: "Comprobando...",
+        neverChecked: "Todavía sin comprobar.",
+        lastChecked: "Última comprobación {{time}}.",
+        available: "Actualización disponible: {{version}}",
+        releaseNotes: "Novedades",
+        viewOnGithub: "Ver en GitHub",
+        downloadAndInstall: "Descargar e instalar",
+        downloading: "Descargando {{progress}}",
+        installing: "Instalando...",
+        installHint: "Descarga el paquete {{abi}} de {{size}} y abre el instalador de Android.",
+        noAsset: "Todavía no hay ningún paquete publicado para este dispositivo.",
+        signatureMismatch:
+          "El paquete publicado está firmado con otra clave, así que Android no puede instalarlo sobre esta versión. Instálalo a mano desde la página de publicación.",
+        installedHint: "Vuelve a abrir {{brandName}} si no se reinició solo.",
+      },
+      callout: {
+        title: "Actualización disponible",
+        description: "{{version}} está lista para descargar e instalar.",
+        whatsNew: "Novedades",
+        install: "Descargar e instalar",
+        installing: "Instalando...",
+      },
+    },
+  },
   rootError: {
     title: "{{brandName}} tuvo un problema.",
     body: "Vuelve a intentarlo para recargar la app. Si sigue ocurriendo, incluye los detalles de abajo al reportarlo.",

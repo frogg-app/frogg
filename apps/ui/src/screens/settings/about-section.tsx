@@ -8,6 +8,7 @@ import { useHostRuntimeIsConnected, useHosts } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
 import type { HostProfile } from "@/types/host-connection";
 import { DesktopUpdatesSection } from "@/desktop/updates/desktop-updates-section";
+import { MobileUpdatesSection } from "@/mobile/updates/mobile-updates-section";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { settingsStyles } from "@/styles/settings";
 import { openExternalUrl } from "@/utils/open-external-url";
@@ -36,7 +37,11 @@ export function AboutSection({ appVersion, appVersionText, isDesktopApp }: About
           </View>
         </View>
       </SettingsSection>
-      {isDesktopApp ? <DesktopUpdatesSection appVersion={appVersion} /> : null}
+      {isDesktopApp ? (
+        <DesktopUpdatesSection appVersion={appVersion} />
+      ) : (
+        <MobileUpdatesSection appVersion={appVersion} />
+      )}
       <ConnectedHostsSection clientVersion={appVersion} />
       <Attribution />
     </>

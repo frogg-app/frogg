@@ -27,6 +27,22 @@ installs will not update in place: you will need to uninstall (losing app data) 
 reinstall.
 :::
 
+### Updates
+
+Frogg updates itself on Android: **Settings → Updates** shows the installed version, checks
+GitHub releases, downloads the APK for your device and hands it to the Android installer.
+
+- **Check automatically** looks for a newer version each time the app starts, and a callout
+  offers the update when one is published. Turn it off to check only by hand.
+- **Release channel** picks Stable or Beta, the same choice the desktop app offers.
+- The first install asks for Android's *install unknown apps* permission for Frogg. The
+  system opens that settings screen; grant it and start the update again.
+- Android replaces an app only with a package carrying the same signing key. An update built
+  with a different key is reported as such instead of being offered, and must be installed by
+  hand after uninstalling.
+- The F-Droid build has no in-app updater; the F-Droid client updates it. There is no
+  equivalent on iOS.
+
 ### Connect
 
 - **Scan QR code**: run `frogg auth pair` on the daemon host and scan the code.

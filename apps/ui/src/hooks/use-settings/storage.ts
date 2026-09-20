@@ -92,6 +92,10 @@ export interface AppSettings {
   spokenAlertsAutoPlay: boolean;
   /** Show the voice-reply transcript for a moment before sending it. */
   voiceReplyConfirm: boolean;
+  /** Android only: look for a newer published APK when the app starts. */
+  mobileUpdateAutoCheck: boolean;
+  /** Android only: which published releases the in-app updater offers. */
+  mobileUpdateChannel: ReleaseChannel;
   /** Device-level opt-in. Enabling exposes Start without starting a conversation. */
   companionEnabled: boolean;
   companionNativeVoice: boolean;
@@ -159,6 +163,8 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   pullRequestOpenLocation: "explorer",
   spokenAlertsAutoPlay: DEFAULT_SPOKEN_ALERTS_AUTO_PLAY,
   voiceReplyConfirm: true,
+  mobileUpdateAutoCheck: true,
+  mobileUpdateChannel: "stable",
   companionEnabled: false,
   companionNativeVoice: false,
   companionAnimated: true,
@@ -289,6 +295,8 @@ const StoredAppSettingsSchema = z
     pullRequestOpenLocation: z.enum(["main", "side", "explorer"]).optional(),
     spokenAlertsAutoPlay: z.boolean().catch(DEFAULT_SPOKEN_ALERTS_AUTO_PLAY),
     voiceReplyConfirm: z.boolean().catch(true),
+    mobileUpdateAutoCheck: z.boolean().catch(true),
+    mobileUpdateChannel: z.enum(["stable", "beta"]).catch("stable"),
     companionEnabled: z.boolean().catch(false),
     companionNativeVoice: z.boolean().catch(false),
     companionAnimated: z.boolean().catch(true),

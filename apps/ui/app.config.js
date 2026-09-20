@@ -35,6 +35,10 @@ const buildProfile = isFdroidBuild
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "CAMERA",
         "android.permission.CAMERA",
+        // Declared by the frogg-app-installer module too; listed here so the
+        // in-app APK update is visible next to the other build-profile grants.
+        // The F-Droid build has neither, because the F-Droid client updates it.
+        "android.permission.REQUEST_INSTALL_PACKAGES",
       ],
       cameraPlugins: [
         [

@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Only the builds that link this module (i.e. not the F-Droid build, which
+       is updated by the F-Droid client) ask for the right to install an APK. -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+</manifest>

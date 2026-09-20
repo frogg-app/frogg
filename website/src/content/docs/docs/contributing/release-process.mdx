@@ -163,6 +163,12 @@ users would have to uninstall and lose app data. Until that migration is planned
 warns and keeps shipping debug-signed APKs. Do not treat them as a distributable,
 trusted build.
 
+The in-app Android updater reads the installed app's own signing certificate and only offers an
+asset with the same signing flavour, so a debug-signed install is offered the `-unsigned` APK
+and a release-signed one is offered the plain APK. When both exist on a release, each install
+follows its own path; when only the mismatched one exists, the app says so rather than starting
+an install Android would reject. Keep publishing the flavour that matches what is installed.
+
 ### Docker tags
 
 The image name comes from `distribution.dockerImage` in the brand (`froggapp/frogg`). The job

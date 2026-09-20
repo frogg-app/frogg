@@ -1605,6 +1605,61 @@ export const fr: TranslationResources = {
       },
     },
   },
+  mobile: {
+    updates: {
+      status: {
+        idle: "L'état des mises à jour n'a pas encore été vérifié.",
+        checking: "Recherche de mises à jour de l'application...",
+        downloading: "Téléchargement de la mise à jour...",
+        installing: "En attente du programme d'installation d'Android...",
+        installed: "Mise à jour installée.",
+        upToDate: "L'application est à jour.",
+        available: "Mise à jour disponible : {{version}}",
+        failed: "Échec de la mise à jour de l'application.",
+      },
+      checkFailed: "Impossible de rechercher des mises à jour : {{message}}",
+      downloadFailed: "Échec du téléchargement : {{message}}",
+      downloadCancelled: "Le téléchargement a été annulé.",
+      installFailed: "Échec de l'installation : {{message}}",
+      installCancelled: "Installation annulée.",
+      permissionRequired:
+        "Autorisez l'installation d'applications inconnues pour {{brandName}} dans les réglages du système, puis relancez la mise à jour.",
+      unsupported: "Les mises à jour intégrées ne sont pas disponibles dans cette version.",
+      section: {
+        title: "Mises à jour",
+        currentVersion: "Version actuelle",
+        source:
+          "Les mises à jour sont téléchargées depuis les publications GitHub et installées par Android.",
+        autoCheck: {
+          title: "Vérifier automatiquement",
+          hint: "Rechercher une version plus récente à chaque démarrage de l'application.",
+        },
+        check: "Rechercher des mises à jour",
+        checking: "Vérification...",
+        neverChecked: "Pas encore vérifié.",
+        lastChecked: "Dernière vérification {{time}}.",
+        available: "Mise à jour disponible : {{version}}",
+        releaseNotes: "Nouveautés",
+        viewOnGithub: "Voir sur GitHub",
+        downloadAndInstall: "Télécharger et installer",
+        downloading: "Téléchargement {{progress}}",
+        installing: "Installation...",
+        installHint:
+          "Télécharge le paquet {{abi}} de {{size}} et ouvre le programme d'installation d'Android.",
+        noAsset: "Aucun paquet n'est encore publié pour cet appareil.",
+        signatureMismatch:
+          "Le paquet publié est signé avec une autre clé : Android ne peut pas l'installer par-dessus cette version. Installez-le manuellement depuis la page de publication.",
+        installedHint: "Rouvrez {{brandName}} s'il n'a pas redémarré tout seul.",
+      },
+      callout: {
+        title: "Mise à jour disponible",
+        description: "{{version}} est prête à être téléchargée et installée.",
+        whatsNew: "Nouveautés",
+        install: "Télécharger et installer",
+        installing: "Installation...",
+      },
+    },
+  },
   rootError: {
     title: "{{brandName}} a rencontré un problème.",
     body: "Réessayez pour recharger l'application. Si cela continue, joignez les détails ci-dessous au signalement.",
