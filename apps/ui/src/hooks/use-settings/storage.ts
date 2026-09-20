@@ -14,6 +14,14 @@ import {
   type SidebarRowItems,
 } from "@/components/sidebar/display-preferences/row-items";
 import { isNative } from "@/constants/platform";
+import {
+  DEFAULT_USAGE_METER_PREFERENCES,
+  MAX_USAGE_REFRESH_INTERVAL_SECONDS,
+  MAX_USAGE_THRESHOLD_PCT,
+  MIN_USAGE_THRESHOLD_PCT,
+  normalizeUsageMeterPreferences,
+  type UsageMeterPreferences,
+} from "@/provider-usage/meter-preferences";
 import { FONT_SIZE, THEME_OPTIONS, type ThemePreference } from "@/styles/theme";
 import { z } from "zod";
 import { APP_SETTINGS_KEY, LEGACY_SETTINGS_KEY } from "./keys";
@@ -109,6 +117,8 @@ export interface AppSettings {
   companionInterruptible: boolean;
   /** Show the Companion's reply text while it speaks. */
   companionShowReplyText: boolean;
+  /** How the composer's usage meters refresh themselves, and where they change colour. */
+  usageMeters: UsageMeterPreferences;
 }
 
 export type AppSettingsUpdate =
@@ -176,6 +186,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   companionPauseMs: 1400,
   companionInterruptible: true,
   companionShowReplyText: true,
+  usageMeters: DEFAULT_USAGE_METER_PREFERENCES,
 };
 
 export const DEFAULT_APP_SETTINGS: Settings = {
@@ -308,6 +319,35 @@ const StoredAppSettingsSchema = z
     companionPauseMs: z.number().int().min(600).max(3000).catch(1400),
     companionInterruptible: z.boolean().catch(true),
     companionShowReplyText: z.boolean().catch(true),
+    usageMeters: z
+      .looseObject({
+        refreshIntervalSeconds: z
+          .number()
+          .int()
+          .min(0)
+          .max(MAX_USAGE_REFRESH_INTERVAL_SECONDS)
+          .catch(DEFAULT_USAGE_METER_PREFERENCES.refreshIntervalSeconds),
+        refreshWhileFocused: z.boolean().catch(DEFAULT_USAGE_METER_PREFERENCES.refreshWhileFocused),
+        refreshOnHover: z.boolean().catch(DEFAULT_USAGE_METER_PREFERENCES.refreshOnHover),
+        refreshOnAgentResponse: z
+          .boolean()
+          .catch(DEFAULT_USAGE_METER_PREFERENCES.refreshOnAgentResponse),
+        warningThresholdPct: z
+          .number()
+          .min(MIN_USAGE_THRESHOLD_PCT)
+          .max(MAX_USAGE_THRESHOLD_PCT)
+          .catch(DEFAULT_USAGE_METER_PREFERENCES.warningThresholdPct),
+        criticalThresholdPct: z
+          .number()
+          .min(MIN_USAGE_THRESHOLD_PCT)
+          .max(MAX_USAGE_THRESHOLD_PCT)
+          .catch(DEFAULT_USAGE_METER_PREFERENCES.criticalThresholdPct),
+        animate: z.boolean().catch(DEFAULT_USAGE_METER_PREFERENCES.animate),
+      })
+      // A crossed or out-of-range pair is repaired rather than discarded, so hand-edited
+      // storage lands on working thresholds instead of silently reverting every field.
+      .transform(normalizeUsageMeterPreferences)
+      .catch(DEFAULT_USAGE_METER_PREFERENCES),
     // COMPAT(explorerSidebarRouting): replaced by source-specific side-pane preferences in v0.6.
     openSupportingTabsInSidePanel: z.boolean().optional().catch(undefined),
     // COMPAT(rendererDesktopSettings): these fields used to share this renderer-owned key.

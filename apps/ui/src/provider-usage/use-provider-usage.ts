@@ -1,8 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAppActivelyVisible } from "@/hooks/use-app-visible";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
 import { providerUsageCopy } from "./copy";
+import { useUsageMeterPreferences } from "./use-meter-preferences";
 import type { ProviderUsageView } from "./types";
 
 export const PROVIDER_USAGE_STALE_TIME_MS = 5 * 60 * 1000;
@@ -30,6 +32,12 @@ export function providerUsageQueryKey(
 
 interface UseProviderUsageOptions {
   enabled?: boolean;
+  /**
+   * Run the user's refresh timer for this consumer. Only the meters that stay
+   * on screen ask for it: a tooltip's own query refreshes when it opens, and
+   * two consumers polling one cache entry would double the request rate.
+   */
+  autoRefresh?: boolean;
   /**
    * COMPAT(providerUsageAccountScoped): scope this provider's figures to one
    * sign-in. Both are needed: a `providerAccountId` with no `provider` names
@@ -71,6 +79,17 @@ export function useProviderUsage(
     [accountScoped, scopeAccountId, scopeProvider],
   );
   const queryKey = useMemo(() => providerUsageQueryKey(serverId, scope), [scope, serverId]);
+  const preferences = useUsageMeterPreferences();
+  const isAppFocused = useAppActivelyVisible();
+  // Polling a provider API for a window nobody is looking at spends someone
+  // else's rate limit, so the timer only runs while the app has focus.
+  const refetchInterval =
+    options.autoRefresh === true &&
+    preferences.refreshWhileFocused &&
+    preferences.refreshIntervalSeconds > 0 &&
+    isAppFocused
+      ? preferences.refreshIntervalSeconds * 1000
+      : (false as const);
   const canFetch = Boolean(serverId && client && isConnected && supportsProviderUsage);
   const enabled = Boolean((options.enabled ?? true) && canFetch);
 
@@ -85,7 +104,11 @@ export function useProviderUsage(
     queryKey,
     queryFn,
     enabled,
-    staleTime: PROVIDER_USAGE_STALE_TIME_MS,
+    // The timer is the freshness contract while it runs, so it must not be
+    // held off by the long idle stale time the tooltips rely on.
+    staleTime: refetchInterval === false ? PROVIDER_USAGE_STALE_TIME_MS : 0,
+    refetchInterval,
+    refetchIntervalInBackground: false,
     refetchOnMount: true,
     refetchOnReconnect: false,
     refetchOnWindowFocus: false,
@@ -97,7 +120,7 @@ export function useProviderUsage(
     await queryClient.fetchQuery({
       queryKey,
       queryFn,
-      staleTime: PROVIDER_USAGE_STALE_TIME_MS,
+      staleTime: 0,
     });
   }, [canFetch, queryClient, queryFn, queryKey]);
 

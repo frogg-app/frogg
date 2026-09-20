@@ -2630,6 +2630,7 @@ export const en = {
       appVersion: "App version",
       thisDevice: "This device",
       connectedHosts: "Connected hosts",
+      updateHost: "Update",
       offline: "Offline",
       versionDiffers: "Version differs from this device",
       releaseChannel: {
@@ -2674,6 +2675,41 @@ export const en = {
       chatOutline: {
         title: "Chat outline",
         description: "Show an outline for jumping between prompts",
+      },
+      usage: {
+        title: "Usage meters",
+        heading: "Refresh and thresholds",
+        summary: "Refreshing every {{seconds}}s while the app is focused",
+        summaryManual: "Refreshing only on a look or an agent reply",
+        refreshWhileFocused: {
+          label: "Refresh on a timer",
+          description: "Keep the meters current while the app has focus",
+        },
+        interval: {
+          label: "Refresh interval",
+          description: "How often the timer updates the meters. 0 turns the timer off",
+          unit: "s",
+        },
+        refreshOnHover: {
+          label: "Refresh on hover",
+          description: "Update when you open a meter's tooltip",
+        },
+        refreshOnAgentResponse: {
+          label: "Refresh after a reply",
+          description: "Update when an agent finishes a turn",
+        },
+        warningThreshold: {
+          label: "Warning level",
+          description: "Spent share above which a meter turns amber",
+        },
+        criticalThreshold: {
+          label: "Critical level",
+          description: "Spent share above which a meter turns red",
+        },
+        animate: {
+          label: "Animate changes",
+          description: "Ease the ring and its colour instead of snapping",
+        },
       },
       sidebar: {
         title: "Sidebar",

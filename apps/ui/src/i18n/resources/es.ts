@@ -2639,6 +2639,7 @@ export const es: TranslationResources = {
       appVersion: "Versión de la aplicación",
       thisDevice: "este dispositivo",
       connectedHosts: "Anfitriones conectados",
+      updateHost: "Actualizar",
       offline: "Desconectado",
       versionDiffers: "La versión difiere de este dispositivo.",
       releaseChannel: {
@@ -2683,6 +2684,41 @@ export const es: TranslationResources = {
       chatOutline: {
         title: "Esquema del chat",
         description: "Muestra un esquema para saltar entre instrucciones",
+      },
+      usage: {
+        title: "Medidores de uso",
+        heading: "Actualización y umbrales",
+        summary: "Se actualiza cada {{seconds}} s mientras la app tiene el foco",
+        summaryManual: "Solo se actualiza al mirarlos o al responder un agente",
+        refreshWhileFocused: {
+          label: "Actualizar con temporizador",
+          description: "Mantener los medidores al día mientras la app tiene el foco",
+        },
+        interval: {
+          label: "Intervalo de actualización",
+          description: "Cada cuánto actualiza el temporizador. 0 lo desactiva",
+          unit: "s",
+        },
+        refreshOnHover: {
+          label: "Actualizar al pasar el cursor",
+          description: "Actualizar al abrir la descripción de un medidor",
+        },
+        refreshOnAgentResponse: {
+          label: "Actualizar tras una respuesta",
+          description: "Actualizar cuando un agente termina su turno",
+        },
+        warningThreshold: {
+          label: "Nivel de aviso",
+          description: "Porcentaje consumido a partir del cual el medidor se vuelve ámbar",
+        },
+        criticalThreshold: {
+          label: "Nivel crítico",
+          description: "Porcentaje consumido a partir del cual el medidor se vuelve rojo",
+        },
+        animate: {
+          label: "Animar los cambios",
+          description: "Suavizar el anillo y su color en lugar de saltar",
+        },
       },
       sidebar: {
         title: "Barra lateral",

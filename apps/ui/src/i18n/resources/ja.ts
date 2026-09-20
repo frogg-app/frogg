@@ -2607,6 +2607,7 @@ export const ja: TranslationResources = {
       appVersion: "アプリバージョン",
       thisDevice: "このデバイス",
       connectedHosts: "接続されているホスト",
+      updateHost: "更新",
       offline: "オフライン",
       versionDiffers: "このデバイスとバージョンが異なります",
       releaseChannel: {
@@ -2651,6 +2652,41 @@ export const ja: TranslationResources = {
       chatOutline: {
         title: "チャットのアウトライン",
         description: "プロンプト間を移動するためのアウトラインを表示します",
+      },
+      usage: {
+        title: "使用量メーター",
+        heading: "更新としきい値",
+        summary: "アプリがフォーカス中は{{seconds}}秒ごとに更新",
+        summaryManual: "表示したときとエージェントの応答時のみ更新",
+        refreshWhileFocused: {
+          label: "タイマーで更新",
+          description: "アプリがフォーカスされている間、メーターを最新に保ちます",
+        },
+        interval: {
+          label: "更新間隔",
+          description: "タイマーがメーターを更新する頻度。0 でタイマーを停止します",
+          unit: "秒",
+        },
+        refreshOnHover: {
+          label: "ホバー時に更新",
+          description: "メーターのツールチップを開いたときに更新します",
+        },
+        refreshOnAgentResponse: {
+          label: "応答後に更新",
+          description: "エージェントがターンを終えたときに更新します",
+        },
+        warningThreshold: {
+          label: "警告レベル",
+          description: "この使用率を超えるとメーターが橙色になります",
+        },
+        criticalThreshold: {
+          label: "危険レベル",
+          description: "この使用率を超えるとメーターが赤色になります",
+        },
+        animate: {
+          label: "変化をアニメーション",
+          description: "リングと色を瞬時に切り替えず滑らかに変化させます",
+        },
       },
       sidebar: {
         title: "サイドバー",

@@ -2644,6 +2644,7 @@ export const fr: TranslationResources = {
       appVersion: "Version de l'application",
       thisDevice: "Cet appareil",
       connectedHosts: "Hôtes connectés",
+      updateHost: "Mettre à jour",
       offline: "Hors ligne",
       versionDiffers: "La version diffère de cet appareil",
       releaseChannel: {
@@ -2689,6 +2690,41 @@ export const fr: TranslationResources = {
       chatOutline: {
         title: "Plan de la discussion",
         description: "Afficher un plan pour passer d’une requête à l’autre",
+      },
+      usage: {
+        title: "Jauges d’utilisation",
+        heading: "Actualisation et seuils",
+        summary: "Actualisation toutes les {{seconds}} s quand l’app a le focus",
+        summaryManual: "Actualisation seulement au survol ou à la réponse d’un agent",
+        refreshWhileFocused: {
+          label: "Actualiser par minuteur",
+          description: "Garder les jauges à jour quand l’app a le focus",
+        },
+        interval: {
+          label: "Intervalle d’actualisation",
+          description: "Fréquence d’actualisation du minuteur. 0 le désactive",
+          unit: "s",
+        },
+        refreshOnHover: {
+          label: "Actualiser au survol",
+          description: "Actualiser à l’ouverture de l’infobulle d’une jauge",
+        },
+        refreshOnAgentResponse: {
+          label: "Actualiser après une réponse",
+          description: "Actualiser quand un agent termine son tour",
+        },
+        warningThreshold: {
+          label: "Seuil d’avertissement",
+          description: "Part consommée au-delà de laquelle la jauge passe à l’ambre",
+        },
+        criticalThreshold: {
+          label: "Seuil critique",
+          description: "Part consommée au-delà de laquelle la jauge passe au rouge",
+        },
+        animate: {
+          label: "Animer les changements",
+          description: "Faire glisser l’anneau et sa couleur au lieu de sauter",
+        },
       },
       sidebar: {
         title: "Barre latérale",

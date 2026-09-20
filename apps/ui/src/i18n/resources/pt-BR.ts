@@ -2622,6 +2622,7 @@ export const ptBR: TranslationResources = {
       appVersion: "Versão do app",
       thisDevice: "Este dispositivo",
       connectedHosts: "Hosts conectados",
+      updateHost: "Atualizar",
       offline: "Offline",
       versionDiffers: "A versão é diferente da deste dispositivo",
       releaseChannel: {
@@ -2666,6 +2667,41 @@ export const ptBR: TranslationResources = {
       chatOutline: {
         title: "Estrutura do chat",
         description: "Mostrar uma estrutura para navegar entre prompts",
+      },
+      usage: {
+        title: "Medidores de uso",
+        heading: "Atualização e limites",
+        summary: "Atualizando a cada {{seconds}} s enquanto o app está em foco",
+        summaryManual: "Atualizando só ao consultar ou quando um agente responde",
+        refreshWhileFocused: {
+          label: "Atualizar por temporizador",
+          description: "Manter os medidores em dia enquanto o app está em foco",
+        },
+        interval: {
+          label: "Intervalo de atualização",
+          description: "De quanto em quanto tempo o temporizador atualiza. 0 desliga",
+          unit: "s",
+        },
+        refreshOnHover: {
+          label: "Atualizar ao passar o cursor",
+          description: "Atualizar ao abrir a dica de um medidor",
+        },
+        refreshOnAgentResponse: {
+          label: "Atualizar após uma resposta",
+          description: "Atualizar quando um agente termina o turno",
+        },
+        warningThreshold: {
+          label: "Nível de aviso",
+          description: "Percentual gasto acima do qual o medidor fica âmbar",
+        },
+        criticalThreshold: {
+          label: "Nível crítico",
+          description: "Percentual gasto acima do qual o medidor fica vermelho",
+        },
+        animate: {
+          label: "Animar as mudanças",
+          description: "Suavizar o anel e a cor em vez de saltar",
+        },
       },
       sidebar: {
         title: "Barra lateral",

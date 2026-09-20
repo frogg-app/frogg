@@ -372,6 +372,7 @@ function resolveContextWindowPlacement(
     serverId: string;
     provider: string | null;
     providerAccountId: string | null | undefined;
+    agentId: string | null;
   },
 ): ReactNode {
   if (!reserveSlot) return null;
@@ -380,6 +381,7 @@ function resolveContextWindowPlacement(
       serverId={cluster.serverId}
       provider={cluster.provider}
       providerAccountId={cluster.providerAccountId}
+      agentId={cluster.agentId}
     >
       {meter}
     </ComposerUsageCluster>
@@ -2040,6 +2042,7 @@ function ComposerContentImpl({
           serverId,
           provider: agentState.provider,
           providerAccountId: agentState.providerAccountId,
+          agentId,
         })}
         {mode.showAgentControls ? (
           <ComposerVoiceAlertsToggle serverId={serverId} workspaceId={workspaceId} />
@@ -2047,6 +2050,7 @@ function ComposerContentImpl({
       </>
     ),
     [
+      agentId,
       agentState.provider,
       agentState.providerAccountId,
       contextWindowMeter,

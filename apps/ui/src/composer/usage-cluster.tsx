@@ -6,12 +6,16 @@ import { QuotaRing } from "@/components/quota-ring";
 import { COMPOSER_METER_RING_SIZE } from "@/composer/meter-geometry";
 import { resolveWindowGlyph } from "@/composer/meter-glyph";
 import { buildProviderUsageColumns } from "@/provider-usage/account-summary";
+import { useUsageMeterPreferences } from "@/provider-usage/use-meter-preferences";
 import { useProviderUsage } from "@/provider-usage/use-provider-usage";
+import { useRefreshUsageOnAgentResponse } from "@/provider-usage/use-refresh-on-agent-response";
 
 interface ComposerUsageClusterProps {
   serverId: string;
   provider: string | null;
   providerAccountId?: string | null;
+  /** The agent whose turns should refresh these figures, when that trigger is on. */
+  agentId?: string | null;
   /** The context-window meter, rendered as the cluster's rightmost ring. */
   children: ReactNode;
 }
@@ -29,11 +33,20 @@ export function ComposerUsageCluster({
   serverId,
   provider,
   providerAccountId,
+  agentId,
   children,
 }: ComposerUsageClusterProps) {
-  const { view } = useProviderUsage(serverId, {
+  const preferences = useUsageMeterPreferences();
+  const { view, refresh } = useProviderUsage(serverId, {
+    autoRefresh: true,
     ...(provider ? { provider } : {}),
     ...(providerAccountId !== undefined ? { providerAccountId } : {}),
+  });
+  useRefreshUsageOnAgentResponse({
+    serverId,
+    agentId,
+    enabled: preferences.refreshOnAgentResponse,
+    refresh,
   });
   const columns = useMemo(
     () =>
@@ -55,6 +68,7 @@ export function ComposerUsageCluster({
           column={column}
           size={COMPOSER_METER_RING_SIZE}
           glyph={resolveWindowGlyph(column)}
+          onOpen={preferences.refreshOnHover ? refresh : undefined}
           testID={`composer-quota-ring-${column.id}`}
         />
       ))}

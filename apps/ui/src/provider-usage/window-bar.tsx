@@ -1,8 +1,10 @@
 import { useMemo } from "react";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { useEasedValue } from "@/hooks/use-eased-value";
 import { clampPct, formatPct, formatResetLabel } from "./format";
-import { deriveTone } from "./tone";
+import { USAGE_METER_TRANSITION_MS, deriveUsageTone } from "./meter-preferences";
+import { useUsageMeterPreferences } from "./use-meter-preferences";
 import type { ProviderUsageTone, ProviderUsageWindow } from "./types";
 
 function resolveUsedPct(window: ProviderUsageWindow): number | null {
@@ -25,10 +27,17 @@ function fillToneStyle(tone: ProviderUsageTone) {
 }
 
 export function ProviderUsageWindowBar({ window }: { window: ProviderUsageWindow }) {
+  const preferences = useUsageMeterPreferences();
   const usedPct = resolveUsedPct(window);
-  const tone = window.tone ?? deriveTone(usedPct);
+  // A tone the daemon states outranks the thresholds: the provider knows things about its
+  // own plan that a percentage does not say.
+  const tone = window.tone ?? deriveUsageTone(usedPct, preferences);
 
-  const fillWidth = clampPct(usedPct ?? 0);
+  const fillWidth = useEasedValue(
+    clampPct(usedPct ?? 0),
+    USAGE_METER_TRANSITION_MS,
+    preferences.animate,
+  );
   const fillStyle = useMemo<StyleProp<ViewStyle>>(
     () => [styles.fill, fillToneStyle(tone), { width: `${fillWidth}%` }],
     [fillWidth, tone],
