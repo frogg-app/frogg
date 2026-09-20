@@ -16,13 +16,23 @@ import { useOpenKebabMenuVisibility } from "@/components/sidebar/use-open-kebab-
 import { resolveTrailingActionVisibility } from "@/components/sidebar/trailing-action-visibility";
 import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sidebar-workspace-title";
 import { SidebarWorkspaceAccountIndicator } from "@/components/sidebar/workspace-account";
-import { WorkspaceAgentDisclosure } from "@/components/sidebar/agents/workspace-tree";
+import {
+  WorkspaceAgentDisclosure,
+  useWorkspaceAgentTree,
+} from "@/components/sidebar/agents/workspace-tree";
 import { useFadePresence } from "@/components/sidebar/use-fade-presence";
 import { SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH } from "@/components/sidebar/row-metrics";
 import {
   SidebarWorkspaceTrailingContent,
   type SidebarWorkspaceTrailing,
 } from "@/components/sidebar/workspace-trailing";
+
+/**
+ * The kebab's own scrim: its painted footprint plus a short gradient. Deliberately much narrower
+ * than the rail's — it only has to fade out the metadata directly beneath the 3 dots.
+ */
+const KEBAB_SCRIM_FADE_WIDTH = 14;
+const KEBAB_SCRIM_WIDTH = SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH + 8 + KEBAB_SCRIM_FADE_WIDTH;
 
 /** How much of the rail's scrim is gradient before it turns solid under the icons. */
 const RAIL_SCRIM_FADE_WIDTH = 24;
@@ -107,6 +117,11 @@ export function SidebarWorkspaceTrailingActions({
       selected,
       quickActionsModifierDown,
     });
+  // A row with subagents draws a disclosure chevron immediately left of the actions column. The
+  // chevron is a control, so the kebab must not overlay and scrim it: those rows hold the column
+  // open instead, exactly as touch does.
+  const { nodes } = useWorkspaceAgentTree();
+  const reserveColumn = reserveActionsColumn || nodes.length > 0;
   const kebab = useOpenKebabMenuVisibility(showKebab);
   // An open kebab menu keeps its trigger mounted, and swapping the rail in underneath it would
   // pull the menu's anchor out from under it mid-interaction.
@@ -140,14 +155,23 @@ export function SidebarWorkspaceTrailingActions({
       <WorkspaceAgentDisclosure label={workspaceLabel} />
       {showActionsColumn && onArchive ? (
         <View
-          style={reserveActionsColumn ? styles.actionsColumnReserved : styles.actionsColumn}
+          style={reserveColumn ? styles.actionsColumnReserved : styles.actionsColumn}
           testID={`sidebar-workspace-actions-${workspace.workspaceKey}`}
         >
           {kebabPresence.mounted ? (
             <Animated.View style={kebabStyle} pointerEvents={kebab.showKebab ? "auto" : "none"}>
-              {/* The column takes no layout width, so the kebab draws over whatever the row's
-                  metadata put under it — the scrim fades that out the same way the rail's does. */}
-              <TrailingActionScrim backdrop={backdrop} testID="sidebar-workspace-kebab-scrim" />
+              {/* An overlaid column draws over whatever the row's metadata put under it, so it
+                  scrims that out the way the rail does — only as wide as the 3 dots need, so it
+                  never reaches further left than it covers. A reserved column has its own width
+                  and nothing to fade. */}
+              {reserveColumn ? null : (
+                <TrailingActionScrim
+                  backdrop={backdrop}
+                  width={KEBAB_SCRIM_WIDTH}
+                  fadeWidth={KEBAB_SCRIM_FADE_WIDTH}
+                  testID="sidebar-workspace-kebab-scrim"
+                />
+              )}
               <SidebarWorkspaceMenu
                 {...kebab.menuProps}
                 workspaceKey={workspace.workspaceKey}
@@ -220,8 +244,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     justifyContent: "center",
   },
-  // Touch's permanent kebab, in the flow: it has to push the account and the diff stat left
-  // rather than land on top of them.
+  // A permanent kebab (touch) or one that would otherwise cover the disclosure chevron, in the
+  // flow: it has to push what is beside it left rather than land on top of it.
   actionsColumnReserved: {
     position: "relative",
     width: SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,

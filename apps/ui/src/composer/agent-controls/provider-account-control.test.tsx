@@ -242,10 +242,10 @@ describe("ProviderAccountControl", () => {
         selectedAccountId: "acct-steve",
       });
       openPicker();
-      // The figures render as their own right-anchored cells, so the row's
-      // text holds them split rather than joined by a separator.
+      // Each window renders as a meter — caption, figure, then countdown — so
+      // the row's text holds those parts split rather than joined.
       expect(screen.getByTestId("provider-account-option-acct-steve").textContent).toBe(
-        "steveSession 42%3h",
+        "steveSession42%3h",
       );
       expect(
         screen.getByTestId("provider-account-option-acct-steve").getAttribute("aria-label"),
@@ -253,7 +253,7 @@ describe("ProviderAccountControl", () => {
       expect(
         screen.getByTestId(`provider-account-option-${DEFAULT_PROVIDER_ACCOUNT_OPTION_ID}`)
           .textContent,
-      ).toBe("DefaultWeekly 7%");
+      ).toBe("DefaultWeekly7%");
     });
 
     // An older daemon answers for its default config dir whatever account is

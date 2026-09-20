@@ -38,26 +38,32 @@ function usedPct(window: ProviderUsageWindow): number | null {
 }
 
 /**
- * One window's figures as the two cells it occupies in the picker's usage
- * grid: `Session 42%` and `3h 10m`. Split rather than pre-joined so every row
- * can right-anchor the same columns and have them line up top to bottom.
+ * One window as the small meter it occupies in the picker: a caption, a bar
+ * and a countdown. Kept as parts rather than one formatted string so the view
+ * can tint the figure and size the bar; the spoken line joins them back up.
  */
 export interface ProviderUsageColumn {
   id: string;
-  /** The window's name and how much of it is spent, as `Session 42%`. */
-  used: string;
+  /** The window's name, as `Session` or `Weekly`. */
+  label: string;
+  /** How much of the window is spent, 0–100, or null when unreported. */
+  pct: number | null;
+  /** The spent share as text, `42%` or an em dash when unreported. */
+  pctLabel: string;
   /** How long until the window resets, or null when the provider omits it. */
   resetIn: string | null;
 }
 
-/** One window's cells, or null when the window says nothing worth a row. */
+/** One window's meter, or null when the window says nothing worth a row. */
 export function formatWindowColumn(window: ProviderUsageWindow): ProviderUsageColumn | null {
   const pct = usedPct(window);
   const resetIn = formatCountdown(window.resetsAt);
   if (pct == null && !resetIn) return null;
   return {
     id: window.id,
-    used: `${window.label} ${pct != null ? formatPct(pct) : "—"}`,
+    label: window.label,
+    pct,
+    pctLabel: pct != null ? formatPct(pct) : "—",
     resetIn,
   };
 }
@@ -66,7 +72,8 @@ export function formatWindowColumn(window: ProviderUsageWindow): ProviderUsageCo
 export function formatWindowSummary(window: ProviderUsageWindow): string | null {
   const column = formatWindowColumn(window);
   if (!column) return null;
-  return column.resetIn ? `${column.used} · ${column.resetIn}` : column.used;
+  const used = `${column.label} ${column.pctLabel}`;
+  return column.resetIn ? `${used} · ${column.resetIn}` : used;
 }
 
 function providerWindows(

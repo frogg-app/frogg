@@ -231,6 +231,11 @@ export interface ComboboxItemProps {
   kind?: "directory" | "file";
   leadingSlot?: ReactNode;
   trailingSlot?: ReactNode;
+  /**
+   * Rendered under the label, inside the label's column. For detail too wide
+   * to sit beside the label on a narrow sheet.
+   */
+  belowSlot?: ReactNode;
   selected?: boolean;
   active?: boolean;
   disabled?: boolean;
@@ -247,6 +252,7 @@ export function ComboboxItem({
   kind,
   leadingSlot,
   trailingSlot,
+  belowSlot,
   selected,
   active,
   disabled,
@@ -277,17 +283,23 @@ export function ComboboxItem({
   const itemPressableStyle = useCallback(
     ({ pressed, hovered = false }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.comboboxItem,
+      // A row with detail under its label is tall enough that centring leaves
+      // the icon and the check floating beside the detail, not the name.
+      Boolean(belowSlot) && styles.comboboxItemTopAligned,
       hovered && (elevated ? styles.comboboxItemHoveredElevated : styles.comboboxItemHovered),
       pressed && (elevated ? styles.comboboxItemPressedElevated : styles.comboboxItemPressed),
       active && styles.comboboxItemActive,
       disabled && styles.comboboxItemDisabled,
     ],
-    [elevated, active, disabled],
+    [belowSlot, elevated, active, disabled],
   );
 
   const itemContentStyle = useMemo(
-    () => [styles.comboboxItemContent, description && styles.comboboxItemContentInline],
-    [description],
+    () => [
+      styles.comboboxItemContent,
+      description && !belowSlot ? styles.comboboxItemContentInline : null,
+    ],
+    [belowSlot, description],
   );
 
   return (
@@ -309,6 +321,7 @@ export function ComboboxItem({
             {description}
           </Text>
         ) : null}
+        {belowSlot}
       </View>
       {selected || trailingSlot ? (
         <View style={styles.comboboxItemTrailingContainer}>
@@ -725,7 +738,12 @@ function useAnchorMeasure(
     const measure = () => {
       referenceEl.measureInWindow((x, y, width) => {
         applyMeasuredAnchor(
-          { setReferenceLeft, setReferenceTop, setReferenceWidth, setReferenceAtOrigin },
+          {
+            setReferenceLeft,
+            setReferenceTop,
+            setReferenceWidth,
+            setReferenceAtOrigin,
+          },
           x,
           y,
           width,
@@ -1318,9 +1336,10 @@ export function Combobox({
   const isDesktopAboveSearch = resolveIsDesktopAboveSearch(isMobile, effectiveOptionsPosition);
   const { height: windowHeight, width: windowWidth } = useWindowDimensions();
   const snapPoints = useMemo(() => ["60%", "90%"], []);
-  const [availableSize, setAvailableSize] = useState<{ width?: number; height?: number } | null>(
-    null,
-  );
+  const [availableSize, setAvailableSize] = useState<{
+    width?: number;
+    height?: number;
+  } | null>(null);
   const [referenceWidth, setReferenceWidth] = useState<number | null>(null);
   const [referenceLeft, setReferenceLeft] = useState<number | null>(null);
   const [referenceTop, setReferenceTop] = useState<number | null>(null);
@@ -1703,6 +1722,9 @@ const styles = StyleSheet.create((theme) => ({
   },
   comboboxItemDisabled: {
     opacity: 0.55,
+  },
+  comboboxItemTopAligned: {
+    alignItems: "flex-start",
   },
   comboboxItemTrailingSlot: {
     width: 16,

@@ -115,10 +115,10 @@ describe("summarizeProviderUsage", () => {
     );
   });
 
-  it("splits the same windows into right-anchored columns", () => {
+  it("splits the same windows into per-window meters", () => {
     expect(buildProviderUsageColumns(providers, "claude")).toEqual([
-      { id: "five_hour", used: "Session 42%", resetIn: "3h" },
-      { id: "weekly", used: "Weekly 18%", resetIn: "4d" },
+      { id: "five_hour", label: "Session", pct: 42, pctLabel: "42%", resetIn: "3h" },
+      { id: "weekly", label: "Weekly", pct: 18, pctLabel: "18%", resetIn: "4d" },
     ]);
     expect(buildProviderUsageColumns(providers, "codex")).toEqual([]);
   });

@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import { Text, View, type DimensionValue } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { TriangleAlert, UserRound } from "lucide-react-native";
 import { type SheetHeader } from "@/components/adaptive-modal-sheet";
@@ -8,6 +8,7 @@ import { Combobox, ComboboxItem, type ComboboxOption } from "@/components/ui/com
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useComposerControlLayout } from "@/composer/agent-controls/layout-context";
 import { AgentControlTrigger } from "@/composer/agent-controls/control";
+import { useIsCompactFormFactor } from "@/constants/layout";
 import {
   resolveProviderAccountControlModel,
   toProviderAccountSelection,
@@ -81,23 +82,78 @@ function useProviderAccountUsage(input: {
   }, [provider, view]);
 }
 
+/** Where a window stops being background information and starts being news. */
+const USAGE_WARN_PCT = 70;
+const USAGE_DANGER_PCT = 90;
+
 /**
- * The usage cells for one row. Every cell is a fixed-width, right-aligned
- * column so the figures form a grid that reads down the picker rather than a
- * ragged line that has to be re-parsed per row.
+ * The figure's tint: plain until a window is nearly spent, so a picker of
+ * healthy accounts reads as one calm colour and the account that is about to
+ * run out is the only thing coloured.
  */
-function ProviderAccountUsageColumns({ columns }: { columns: readonly ProviderUsageColumn[] }) {
+function usageTint(pct: number | null): string | undefined {
+  if (pct == null) return undefined;
+  if (pct >= USAGE_DANGER_PCT) return styles.usageDangerColor.color;
+  if (pct >= USAGE_WARN_PCT) return styles.usageWarnColor.color;
+  return undefined;
+}
+
+/**
+ * One window as a small meter: caption and figure over a bar, with the reset
+ * countdown beneath. The bar carries the comparison — how full each account is
+ * reads down the picker at a glance — while the digits stay available for the
+ * exact number.
+ */
+function ProviderAccountUsageMeter({
+  column,
+  stacked,
+}: {
+  column: ProviderUsageColumn;
+  stacked: boolean;
+}) {
+  const tint = usageTint(column.pct);
+  // A zero-width fill is invisible, so a barely-used window would look
+  // identical to one with no bar at all. Keep a sliver.
+  const fillWidth: DimensionValue =
+    column.pct == null ? 0 : `${Math.max(2, Math.min(100, column.pct))}%`;
   return (
-    <View style={styles.usageColumns}>
+    <View style={[styles.usageMeter, stacked && styles.usageMeterStacked]}>
+      <View style={styles.usageMeterHead}>
+        <Text numberOfLines={1} style={styles.usageLabel}>
+          {column.label}
+        </Text>
+        <Text numberOfLines={1} style={[styles.usagePct, tint ? { color: tint } : null]}>
+          {column.pctLabel}
+        </Text>
+      </View>
+      <View style={styles.usageTrack}>
+        <View
+          style={[styles.usageFill, { width: fillWidth }, tint ? { backgroundColor: tint } : null]}
+        />
+      </View>
+      <Text numberOfLines={1} style={styles.usageReset}>
+        {column.resetIn ?? ""}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * Every reported window's meter, in the fixed order all rows share. On a
+ * narrow sheet the meters sit under the account name and share the row's
+ * width; there is no room to put them beside a name without eating it.
+ */
+function ProviderAccountUsageColumns({
+  columns,
+  stacked = false,
+}: {
+  columns: readonly ProviderUsageColumn[];
+  stacked?: boolean;
+}) {
+  return (
+    <View style={[styles.usageColumns, stacked && styles.usageColumnsStacked]}>
       {columns.map((column) => (
-        <View key={column.id} style={styles.usageColumn}>
-          <Text numberOfLines={1} style={styles.usageUsed}>
-            {column.used}
-          </Text>
-          <Text numberOfLines={1} style={styles.usageReset}>
-            {column.resetIn ?? ""}
-          </Text>
-        </View>
+        <ProviderAccountUsageMeter key={column.id} column={column} stacked={stacked} />
       ))}
     </View>
   );
@@ -126,6 +182,9 @@ function ProviderAccountComboboxOption({
   serverId: string | null | undefined;
   provider: string | null | undefined;
 }) {
+  // The sheet is the narrow surface: its rows have no room for a name and a
+  // grid of meters side by side, so there the meters go under the name.
+  const compact = useIsCompactFormFactor();
   const unauthenticated = account !== undefined && !account.authenticated;
   const usage = useProviderAccountUsage({
     serverId,
@@ -147,9 +206,9 @@ function ProviderAccountComboboxOption({
   const usageSlot = useMemo(
     () =>
       unauthenticated || usage.columns.length === 0 ? undefined : (
-        <ProviderAccountUsageColumns columns={usage.columns} />
+        <ProviderAccountUsageColumns columns={usage.columns} stacked={compact} />
       ),
-    [unauthenticated, usage.columns],
+    [compact, unauthenticated, usage.columns],
   );
   const accessibilityLabel = useMemo(() => {
     if (unauthenticated) return `${option.label} — ${unauthenticatedLabel}`;
@@ -164,7 +223,8 @@ function ProviderAccountComboboxOption({
       disabled={unauthenticated}
       onPress={onPress}
       leadingSlot={leadingSlot}
-      trailingSlot={usageSlot}
+      trailingSlot={compact ? undefined : usageSlot}
+      belowSlot={compact ? usageSlot : undefined}
       accessibilityLabel={accessibilityLabel}
       testID={`provider-account-option-${option.id}`}
     />
@@ -317,7 +377,7 @@ export function ProviderAccountControl({
           onOpenChange={handleOpenChange}
           anchorRef={anchorRef}
           desktopPlacement="top-start"
-          desktopMinWidth={240}
+          desktopMinWidth={380}
           header={sheetHeader}
           renderOption={renderOption}
         />
@@ -341,29 +401,62 @@ const styles = StyleSheet.create((theme) => ({
   usageColumns: {
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing[3],
+    gap: theme.spacing[4],
   },
-  // Fixed widths, not content widths: the point of the grid is that "Weekly
-  // 32%" in one row sits directly above "Weekly 55%" in the next.
-  usageColumn: {
+  usageColumnsStacked: {
+    alignSelf: "stretch",
+    marginTop: theme.spacing[1],
+  },
+  usageMeterStacked: {
+    width: undefined,
+    flex: 1,
+  },
+  // A fixed width, not a content width: the point of the grid is that one
+  // row's weekly meter sits directly above the next row's.
+  usageMeter: {
+    width: 104,
+    gap: 3,
+  },
+  usageMeterHead: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "baseline",
-    justifyContent: "flex-end",
-    gap: theme.spacing[2],
+    gap: theme.spacing[1],
   },
-  usageUsed: {
-    width: 86,
-    textAlign: "right",
+  // The figure is the point of the meter, so the caption is what gives way
+  // when a three-digit percentage needs the room.
+  usageLabel: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
+    flexShrink: 1,
+  },
+  usagePct: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foreground,
     fontVariant: ["tabular-nums"],
+    flexShrink: 0,
+  },
+  usageTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.surface3,
+    overflow: "hidden",
+  },
+  usageFill: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.accent,
   },
   usageReset: {
-    width: 52,
-    textAlign: "right",
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
     fontVariant: ["tabular-nums"],
+  },
+  usageWarnColor: {
+    color: theme.colors.statusWarning,
+  },
+  usageDangerColor: {
+    color: theme.colors.destructive,
   },
   tooltipText: {
     color: theme.colors.foreground,
