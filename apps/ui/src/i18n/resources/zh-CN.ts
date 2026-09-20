@@ -152,6 +152,7 @@ export const zhCN: TranslationResources = {
     },
     staleContext: {
       warning: "缓存已过期：发送将重新计费 {{tokens}} 个输入 token",
+      warningUnknown: "缓存已过期：发送将重新发送整个对话",
     },
     input: {
       accessibilityLabel: "给 Agent 发消息...",

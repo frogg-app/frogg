@@ -152,6 +152,7 @@ export const ar: TranslationResources = {
     },
     staleContext: {
       warning: "انتهت صلاحية التخزين المؤقت: الإرسال يعيد احتساب {{tokens}} من رموز الإدخال",
+      warningUnknown: "انتهت صلاحية التخزين المؤقت: الإرسال يعيد إرسال المحادثة كاملة",
     },
     input: {
       accessibilityLabel: "وكيل الرسائل...",

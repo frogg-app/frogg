@@ -17,6 +17,7 @@ import {
   useLayoutEffect,
   useImperativeHandle,
   useMemo,
+  memo,
   forwardRef,
 } from "react";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -58,6 +59,7 @@ import { useComposerKeyboardScope } from "@/composer/keyboard-scope";
 import { RenderProfile } from "@/utils/render-profiler";
 import { useComposerHeight } from "./height";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
+import type { StaleContextWarning } from "@/composer/stale-context";
 import type { NativePastedFile } from "@/composer/native-pasted-image";
 import {
   EditingTextInput,
@@ -174,12 +176,12 @@ export interface MessageInputProps {
   /** Paint the connection-lost outline. */
   offline?: boolean;
   /**
-   * COMPAT(staleContextWarning): added in v1.5.7. The context this message will
-   * re-send at full input price because the conversation outlived its prompt
-   * cache, or null when there is nothing to warn about. See
-   * `@/composer/stale-context`.
+   * COMPAT(staleContextWarning): added in v1.5.7. Set when this message will
+   * re-send the conversation at full input price because it outlived its prompt
+   * cache, with the size of that context when it is known, or null when there
+   * is nothing to warn about. See `@/composer/stale-context`.
    */
-  staleContextTokens?: number | null;
+  staleContextWarning?: StaleContextWarning | null;
   /** Command issued when application state must replace native-owned text. */
   textReplacement: TextReplacement;
   /** Replaces the submit icon with this label, still inside the composer's own toolbar row. */
@@ -1052,7 +1054,7 @@ interface ResolvedMessageInputProps {
   inputMode: ComposerInputMode;
   readOnly: boolean;
   offline: boolean;
-  staleContextTokens: number | null;
+  staleContextWarning: StaleContextWarning | null;
   textReplacement: TextReplacement;
   submitLabel: string | undefined;
 }
@@ -1104,7 +1106,7 @@ function resolveMessageInputProps(props: MessageInputProps): ResolvedMessageInpu
     // Offline wins: a composer that cannot send has no cost to warn about, so
     // the notice and its outline are resolved away before any of the render
     // paths have to think about the two states together.
-    staleContextTokens: props.offline ? null : (props.staleContextTokens ?? null),
+    staleContextWarning: props.offline ? null : (props.staleContextWarning ?? null),
     textReplacement: props.textReplacement,
     submitLabel: props.submitLabel,
   };
@@ -1117,23 +1119,38 @@ function extractErrorMessage(error: unknown): string | null {
 }
 
 /**
- * COMPAT(staleContextWarning): added in v1.5.7. The amber note in the corner of
- * the composer saying what the next message re-sends. Renders nothing when
- * `tokens` is null, which is the ordinary case.
+ * COMPAT(staleContextWarning): added in v1.5.7. The amber note above the text
+ * saying what the next message re-sends. It sits in the composer's own layout
+ * rather than floating over it, so it cannot land on top of what is being
+ * typed, and it is memoised so a keystroke does not re-render (and re-measure)
+ * the composer through it. Renders nothing when there is no warning, which is
+ * the ordinary case.
  */
-function StaleContextNotice({ tokens }: { tokens: number | null }): React.ReactElement | null {
+const StaleContextNotice = memo(function StaleContextNotice({
+  warning,
+}: {
+  warning: StaleContextWarning | null;
+}): React.ReactElement | null {
   const { t } = useTranslation();
-  if (tokens === null) {
+  if (warning === null) {
     return null;
   }
   return (
     <View style={styles.staleContextNotice} pointerEvents="none">
-      <Text style={styles.staleContextText} testID="composer-stale-context-warning">
-        {t("composer.staleContext.warning", { tokens: formatTokenCount(tokens) })}
+      <Text
+        style={styles.staleContextText}
+        numberOfLines={1}
+        testID="composer-stale-context-warning"
+      >
+        {warning.tokens === null
+          ? t("composer.staleContext.warningUnknown")
+          : t("composer.staleContext.warning", {
+              tokens: formatTokenCount(warning.tokens),
+            })}
       </Text>
     </View>
   );
-}
+});
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
   function MessageInput(props, ref) {
@@ -1180,7 +1197,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       inputMode,
       readOnly,
       offline,
-      staleContextTokens,
+      staleContextWarning,
       textReplacement,
       submitLabel,
     } = resolveMessageInputProps(props);
@@ -1237,7 +1254,10 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
         updateComposerHeightForText?.(valueRef.current, nextText);
         valueRef.current = nextText;
         updateLiveTextPresence(nextText);
-        selectionRef.current = selection ?? { start: nextText.length, end: nextText.length };
+        selectionRef.current = selection ?? {
+          start: nextText.length,
+          end: nextText.length,
+        };
         textInputRef.current?.replaceText(nextText, selection);
         onChangeText(nextText);
       },
@@ -1695,11 +1715,17 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
         styles.inputWrapper,
         readOnly && styles.inputWrapperReadOnly,
         inputWrapperStyle,
-        staleContextTokens !== null && styles.inputWrapperStaleContext,
+        staleContextWarning !== null && styles.inputWrapperStaleContext,
         offline && styles.inputWrapperOffline,
         { opacity: surfacePresentation.input.opacity },
       ],
-      [inputWrapperStyle, offline, readOnly, staleContextTokens, surfacePresentation.input.opacity],
+      [
+        inputWrapperStyle,
+        offline,
+        readOnly,
+        staleContextWarning,
+        surfacePresentation.input.opacity,
+      ],
     );
     // `withUnistyles` maps this component's `style` into a `.hash > *` child
     // rule, which ties on specificity with react-native-web's own
@@ -1770,7 +1796,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           style={inputWrapperCombinedStyle}
           pointerEvents={surfacePresentation.input.pointerEvents}
         >
-          <StaleContextNotice tokens={staleContextTokens} />
+          <StaleContextNotice warning={staleContextWarning} />
           {attachmentSlot}
           {/* Text input */}
           <RenderProfile id="ComposerTextSurface">
@@ -1897,14 +1923,15 @@ const styles = StyleSheet.create((theme: Theme) => ({
     ...(isWeb ? { boxShadow: `0 0 8px 0 ${theme.colors.palette.amber[500]}66` } : {}),
   },
   staleContextNotice: {
-    position: "absolute",
-    top: theme.spacing[2],
-    right: theme.spacing[3],
-    zIndex: 1,
+    // In flow, not floating: the composer grows by exactly one line for it, so
+    // the warning never overlaps the message and the composer's measured height
+    // stays put while the user types.
+    alignSelf: "stretch",
   },
   staleContextText: {
     color: theme.colors.palette.amber[500],
     fontSize: theme.fontSize.sm,
+    lineHeight: theme.fontSize.sm * 1.4,
   },
   inputWrapper: {
     flexShrink: 1,
@@ -2070,6 +2097,12 @@ const ThemedArrowUp = withUnistyles(ArrowUp);
 const ThemedCornerDownLeft = withUnistyles(CornerDownLeft);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 
-const iconForegroundMapping = (theme: Theme) => ({ color: theme.colors.foreground });
-const iconForegroundMutedMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
-const iconAccentForegroundMapping = (theme: Theme) => ({ color: theme.colors.accentForeground });
+const iconForegroundMapping = (theme: Theme) => ({
+  color: theme.colors.foreground,
+});
+const iconForegroundMutedMapping = (theme: Theme) => ({
+  color: theme.colors.foregroundMuted,
+});
+const iconAccentForegroundMapping = (theme: Theme) => ({
+  color: theme.colors.accentForeground,
+});

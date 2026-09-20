@@ -152,6 +152,7 @@ export const ja: TranslationResources = {
     },
     staleContext: {
       warning: "キャッシュ期限切れ: 送信すると入力 {{tokens}} トークンが再課金されます",
+      warningUnknown: "キャッシュ期限切れ: 送信すると会話全体が再送されます",
     },
     input: {
       accessibilityLabel: "エージェントにメッセージ...",

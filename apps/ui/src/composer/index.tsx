@@ -99,7 +99,7 @@ import {
   persistAttachmentFromFileUri,
 } from "@/attachments/service";
 import type { AgentUsage } from "@frogg/protocol/agent-types";
-import { resolveStaleContextWarning } from "@/composer/stale-context";
+import { resolveStaleContextWarning, type StaleContextWarning } from "@/composer/stale-context";
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
 import { ComposerVoiceAlertsToggle } from "@/composer/voice-alerts-toggle";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
@@ -172,7 +172,10 @@ const EMPTY_ATTACHMENT_SCOPE_KEYS: readonly string[] = [];
 
 function fileUploadErrorMessage(error: unknown, t: ReturnType<typeof useTranslation>["t"]): string {
   if (error instanceof AttachmentSizeError) {
-    return t("composer.errors.fileTooLarge", { size: "50MB", fileName: error.fileName });
+    return t("composer.errors.fileTooLarge", {
+      size: "50MB",
+      fileName: error.fileName,
+    });
   }
   return error instanceof Error ? error.message : t("composer.errors.uploadFailed");
 }
@@ -277,6 +280,10 @@ function buildAgentStateSelector(serverId: string, agentId: string) {
       // has been sitting decides whether its prompt cache is still worth
       // anything. See `@/composer/stale-context`.
       lastActivityAt: agent?.lastActivityAt ?? null,
+      // COMPAT(staleContextWarning): added in v1.5.7. Usage figures only exist
+      // once a turn has reported them, so this is what says "there is a
+      // conversation here" for an agent whose numbers were never sent.
+      hasConversation: (agent?.lastUserMessageAt ?? null) !== null,
       // COMPAT(providerUsageAccountScoped): three-valued, so it is passed along
       // as-is rather than coalesced — `null` (the Default pick) and absent name
       // different config directories to the daemon.
@@ -286,29 +293,34 @@ function buildAgentStateSelector(serverId: string, agentId: string) {
 }
 
 /**
- * COMPAT(staleContextWarning): added in v1.5.7. Recomputed on every keystroke,
- * which is exactly when it matters: the warning is for the message being typed
- * into a conversation whose prompt cache has already lapsed.
+ * COMPAT(staleContextWarning): added in v1.5.7. The warning for the message
+ * being typed into a conversation whose prompt cache has already lapsed.
  */
-function useStaleContextTokens(
+function useStaleContextWarning(
   agentState: {
     provider: string | null;
     contextWindowUsedTokens: number | null;
     lastActivityAt: Date | null;
+    hasConversation: boolean;
   },
   userInput: string,
-): number | null {
-  const { provider, contextWindowUsedTokens, lastActivityAt } = agentState;
+): StaleContextWarning | null {
+  const { provider, contextWindowUsedTokens, lastActivityAt, hasConversation } = agentState;
+  // Only whether the user is composing matters, not what they typed: memoising
+  // on the boolean keeps the result — and so the composer's styles — identical
+  // across keystrokes instead of handing the input a new object every character.
+  const isComposing = userInput.trim().length > 0;
   return useMemo(
     () =>
       resolveStaleContextWarning({
         provider,
         contextTokens: contextWindowUsedTokens,
         lastActivityAt,
-        isComposing: userInput.trim().length > 0,
+        hasConversation,
+        isComposing,
         now: Date.now(),
-      })?.tokens ?? null,
-    [contextWindowUsedTokens, lastActivityAt, provider, userInput],
+      }),
+    [contextWindowUsedTokens, hasConversation, isComposing, lastActivityAt, provider],
   );
 }
 
@@ -1250,7 +1262,7 @@ function ComposerContentImpl({
     ? t("agentPanel.connectionNotice.composerOffline")
     : resolveMessagePlaceholder(inputMode, isDesktopLayout, t, placeholder);
   const userInput = value;
-  const staleContextTokens = useStaleContextTokens(agentState, userInput);
+  const staleContextWarning = useStaleContextWarning(agentState, userInput);
   const setUserInput = onChangeText;
   const workspaceAttachments = useWorkspaceAttachmentsForScopes(attachmentScopeKeys);
   const {
@@ -2364,7 +2376,7 @@ function ComposerContentImpl({
                   onHeightChange={onComposerHeightChange}
                   inputWrapperStyle={inputWrapperStyle}
                   offline={showOfflineComposer}
-                  staleContextTokens={staleContextTokens}
+                  staleContextWarning={staleContextWarning}
                   attachmentSlot={attachmentTray}
                   inputMode={inputMode}
                   readOnly={readOnly}

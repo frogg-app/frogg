@@ -152,6 +152,7 @@ export const ko: TranslationResources = {
     },
     staleContext: {
       warning: "캐시 만료: 전송하면 입력 토큰 {{tokens}}개가 다시 청구됩니다",
+      warningUnknown: "캐시 만료: 전송하면 대화 전체가 다시 전송됩니다",
     },
     input: {
       accessibilityLabel: "에이전트에게 메시지...",

@@ -151,6 +151,7 @@ export const en = {
     staleContext: {
       // COMPAT(staleContextWarning): added in v1.5.7.
       warning: "Cache expired: sending re-bills {{tokens}} input tokens",
+      warningUnknown: "Cache expired: sending re-sends the whole conversation",
     },
     input: {
       accessibilityLabel: "Message agent...",

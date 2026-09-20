@@ -152,6 +152,7 @@ export const ptBR: TranslationResources = {
     },
     staleContext: {
       warning: "Cache expirado: enviar recobra {{tokens}} tokens de entrada",
+      warningUnknown: "Cache expirado: enviar reenvia toda a conversa",
     },
     input: {
       accessibilityLabel: "Enviar mensagem ao agente...",

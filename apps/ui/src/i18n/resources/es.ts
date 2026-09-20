@@ -153,6 +153,7 @@ export const es: TranslationResources = {
     },
     staleContext: {
       warning: "Caché caducada: enviar vuelve a cobrar {{tokens}} tokens de entrada",
+      warningUnknown: "Caché caducada: enviar reenvía toda la conversación",
     },
     input: {
       accessibilityLabel: "Agente de mensajes...",

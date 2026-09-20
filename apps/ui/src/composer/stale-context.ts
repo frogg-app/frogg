@@ -27,6 +27,13 @@ export interface StaleContextInput {
   provider: string | null;
   /** The agent's current context size, or null before any usage is reported. */
   contextTokens: number | null;
+  /**
+   * True when this agent has a conversation behind it. Usage figures only exist
+   * once a turn has reported them to this daemon, so a resumed agent — or one
+   * whose daemon has restarted since it last ran — has a full context to re-send
+   * and no number for it. That is still worth warning about.
+   */
+  hasConversation: boolean;
   /** When this conversation last saw activity. */
   lastActivityAt: Date | null;
   /** True once the user has actually started typing something to send. */
@@ -35,8 +42,11 @@ export interface StaleContextInput {
 }
 
 export interface StaleContextWarning {
-  /** The context that will be re-sent, for the figure in the warning. */
-  tokens: number;
+  /**
+   * The context that will be re-sent, or null when the size is not known — the
+   * warning then says what happens without putting a figure on it.
+   */
+  tokens: number | null;
 }
 
 /**
@@ -44,14 +54,16 @@ export interface StaleContextWarning {
  *
  * Every condition has to hold: it is a Claude conversation, it has a context
  * worth re-sending, it has been idle past the cache window, and the user is
- * mid-sentence rather than merely looking at the screen. An agent with no
- * context yet is the ordinary first-message case, which costs what it costs and
- * has nothing to warn about.
+ * mid-sentence rather than merely looking at the screen. A brand-new agent with
+ * nothing behind it is the ordinary first-message case, which costs what it
+ * costs and has nothing to warn about; an agent whose usage figures are simply
+ * unreported still warns, without a number.
  */
 export function resolveStaleContextWarning(input: StaleContextInput): StaleContextWarning | null {
   if (input.provider !== STALE_CONTEXT_PROVIDER) return null;
   if (!input.isComposing) return null;
-  if (input.contextTokens === null || input.contextTokens <= 0) return null;
+  if (input.contextTokens !== null && input.contextTokens <= 0) return null;
+  if (input.contextTokens === null && !input.hasConversation) return null;
   if (!input.lastActivityAt) return null;
 
   const idleMs = input.now - input.lastActivityAt.getTime();

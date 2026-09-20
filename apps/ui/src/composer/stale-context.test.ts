@@ -12,6 +12,7 @@ function input(overrides: Partial<StaleContextInput> = {}): StaleContextInput {
   return {
     provider: "claude",
     contextTokens: 42_000,
+    hasConversation: true,
     lastActivityAt: new Date(NOW - STALE_CONTEXT_IDLE_MS - 1),
     isComposing: true,
     now: NOW,
@@ -44,8 +45,18 @@ describe("resolveStaleContextWarning", () => {
 
   it("stays quiet when there is no context to re-send", () => {
     // The ordinary first message: it costs what it costs, and no cache was lost.
-    expect(resolveStaleContextWarning(input({ contextTokens: null }))).toBeNull();
+    expect(
+      resolveStaleContextWarning(input({ contextTokens: null, hasConversation: false })),
+    ).toBeNull();
     expect(resolveStaleContextWarning(input({ contextTokens: 0 }))).toBeNull();
+  });
+
+  it("warns without a figure when the conversation's size was never reported", () => {
+    // A resumed agent, or one whose daemon restarted: the context is there to be
+    // re-sent, only its size is unknown.
+    expect(resolveStaleContextWarning(input({ contextTokens: null }))).toEqual({
+      tokens: null,
+    });
   });
 
   it("stays quiet when the conversation has no activity stamp at all", () => {

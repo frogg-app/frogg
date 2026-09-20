@@ -152,6 +152,7 @@ export const ru: TranslationResources = {
     },
     staleContext: {
       warning: "Кэш истёк: отправка снова оплатит {{tokens}} входных токенов",
+      warningUnknown: "Кэш истёк: отправка заново отправит весь разговор",
     },
     input: {
       accessibilityLabel: "Написать агенту...",

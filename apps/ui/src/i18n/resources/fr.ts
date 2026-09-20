@@ -154,6 +154,7 @@ export const fr: TranslationResources = {
     },
     staleContext: {
       warning: "Cache expiré : l'envoi refacture {{tokens}} jetons d'entrée",
+      warningUnknown: "Cache expiré : l'envoi renvoie toute la conversation",
     },
     input: {
       accessibilityLabel: "Agent de messagerie...",
