@@ -4,7 +4,7 @@ import { en, type TranslationResources } from "./en";
 export const ar: TranslationResources = {
   ciMonitor: {
     label: "CI",
-    subtitle: "تشغيلات GitHub Actions وJenkins لهذا الفرع",
+    subtitle: "تشغيلات GitHub Actions وJenkins لهذا المشروع",
     runCount_one: "{{count}} تشغيل",
     runCount_other: "{{count}} تشغيلات",
     runningCount: "{{count}} قيد التشغيل",
@@ -14,13 +14,14 @@ export const ar: TranslationResources = {
     unsupportedTitle: "حدّث البرنامج الخفي",
     unsupportedDescription: "البرنامج الخفي على هذا المضيف قديم جدًا لعرض تشغيلات CI.",
     errorTitle: "تعذّر تحميل CI",
-    noBranchTitle: "لست على فرع",
-    noBranchDescription: "انتقل إلى فرع لعرض تشغيلات CI الخاصة به.",
     notConfiguredTitle: "لم يتم إعداد CI",
     notConfiguredDescription:
       "تظهر GitHub Actions للمستودعات البعيدة على GitHub. أضف إدخال ci.jenkins إلى frogg.json لاستخدام Jenkins.",
     emptyTitle: "لا توجد تشغيلات CI",
-    emptyDescription: "لم يُشغَّل أي شيء لـ {{branch}} بعد.",
+    emptyDescription: "لم يُشغَّل أي شيء في هذا المشروع بعد.",
+    emptyBranchDescription: "لم يُشغَّل أي شيء لـ {{branch}} بعد.",
+    showThisBranchOnly: "عرض {{branch}} فقط",
+    showAllBranches: "عرض جميع الفروع",
     runners: "المشغّلات",
     runnerSummary: "{{busy}} من {{total}} مشغولة",
     queuedCount_one: "{{count}} في الانتظار",

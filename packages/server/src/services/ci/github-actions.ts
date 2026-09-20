@@ -33,6 +33,7 @@ const RunSchema = z.object({
   status: z.string().nullable().optional(),
   conclusion: z.string().nullable().optional(),
   html_url: z.string().nullable().optional(),
+  head_branch: z.string().nullable().optional(),
   run_started_at: z.string().nullable().optional(),
   updated_at: z.string().nullable().optional(),
 });
@@ -40,8 +41,12 @@ const RunSchema = z.object({
 const RunsResponseSchema = z.object({ workflow_runs: z.array(RunSchema) });
 const JobsResponseSchema = z.object({ jobs: z.array(JobSchema) });
 
-/** One run per workflow is what the pane shows: the newest, since older ones are superseded. */
-const MAX_WORKFLOWS = 6;
+/**
+ * One run per workflow *per branch*: the newest, since older ones on the same branch are
+ * superseded. The pane lists the whole project rather than only the checkout's branch, so the
+ * cap is on runs rather than workflows.
+ */
+const MAX_RUNS = 20;
 
 /**
  * GitHub reports `status` and, once completed, `conclusion`. The pane speaks one vocabulary for
@@ -103,19 +108,17 @@ export function summarizeRunProgress(status: string, jobs: CiJob[]): number | nu
   return known.reduce((sum, value) => sum + value, 0) / jobs.length;
 }
 
-export async function listGitHubActionsRuns(input: {
-  api: GitHubApiGet;
-  branch: string;
-}): Promise<CiRun[]> {
-  const branch = encodeURIComponent(input.branch);
+/** Every workflow run in the project, newest per workflow and branch. */
+export async function listGitHubActionsRuns(input: { api: GitHubApiGet }): Promise<CiRun[]> {
   const runsResponse = RunsResponseSchema.parse(
-    await input.api(`repos/{owner}/{repo}/actions/runs?branch=${branch}&per_page=30`),
+    await input.api(`repos/{owner}/{repo}/actions/runs?per_page=100`),
   );
-  const latestPerWorkflow = new Map<number, z.infer<typeof RunSchema>>();
+  const latestPerWorkflow = new Map<string, z.infer<typeof RunSchema>>();
   for (const run of runsResponse.workflow_runs) {
-    if (!latestPerWorkflow.has(run.workflow_id)) latestPerWorkflow.set(run.workflow_id, run);
+    const key = `${run.workflow_id}:${run.head_branch ?? ""}`;
+    if (!latestPerWorkflow.has(key)) latestPerWorkflow.set(key, run);
   }
-  const runs = [...latestPerWorkflow.values()].slice(0, MAX_WORKFLOWS);
+  const runs = [...latestPerWorkflow.values()].slice(0, MAX_RUNS);
   return Promise.all(
     runs.map(async (run) => {
       const jobsResponse = JobsResponseSchema.parse(
@@ -129,6 +132,7 @@ export async function listGitHubActionsRuns(input: {
         id: `githubActions:run:${run.id}`,
         provider: "githubActions",
         pipeline: run.name ?? "Workflow",
+        branch: run.head_branch ?? null,
         number: run.run_number,
         trigger: run.event ?? null,
         status,

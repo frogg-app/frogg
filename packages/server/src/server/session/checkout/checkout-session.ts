@@ -1310,9 +1310,10 @@ export class CheckoutSession {
   }
 
   /**
-   * CI runs for the checkout's current branch. Providers are best-effort: GitHub Actions when the
-   * remote is on GitHub, Jenkins when frogg.json configures it. A provider that fails is reported
-   * in providerErrors alongside the runs the others returned.
+   * Every CI run in the checkout's project, whatever branch it is for; `branch` reports the
+   * checkout's own branch so the pane can offer to filter down to it. Providers are best-effort:
+   * GitHub Actions when the remote is on GitHub, Jenkins when frogg.json configures it. A
+   * provider that fails is reported in providerErrors alongside the runs the others returned.
    */
   async handleCheckoutCiListRunsRequest(
     msg: Extract<SessionInboundMessage, { type: "checkout.ci.list_runs.request" }>,
@@ -1322,22 +1323,9 @@ export class CheckoutSession {
     try {
       const resolvedCwd = expandTilde(cwd);
       const snapshot = await this.workspaceGitService.getSnapshot(resolvedCwd);
-      const branch = snapshot.git.currentBranch;
-      if (!branch) {
-        this.host.emit({
-          type: responseType,
-          payload: {
-            cwd,
-            branch: null,
-            runs: [],
-            providers: [],
-            providerErrors: [],
-            error: null,
-            requestId,
-          },
-        });
-        return;
-      }
+      // A detached HEAD has no branch to filter by, but the project's runs are still worth
+      // showing, so this is no longer an early return.
+      const branch = snapshot.git.currentBranch ?? null;
       const forge = await this.resolveForgeService(resolvedCwd);
       const githubService = forge?.forge === "github" ? forge.service : null;
       const githubApi: GitHubApiGet | null =

@@ -8581,6 +8581,8 @@ pub struct CheckoutCiListRunsResponsePayloadRunsItem {
     pub provider: String,
     pub pipeline: String,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub number: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger: Option<String>,

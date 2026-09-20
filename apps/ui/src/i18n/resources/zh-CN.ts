@@ -4,7 +4,7 @@ import { en, type TranslationResources } from "./en";
 export const zhCN: TranslationResources = {
   ciMonitor: {
     label: "CI",
-    subtitle: "此分支的 GitHub Actions 和 Jenkins 运行",
+    subtitle: "此项目的 GitHub Actions 和 Jenkins 运行",
     runCount_one: "{{count}} 次运行",
     runCount_other: "{{count}} 次运行",
     runningCount: "{{count}} 个运行中",
@@ -14,13 +14,14 @@ export const zhCN: TranslationResources = {
     unsupportedTitle: "请更新守护进程",
     unsupportedDescription: "此主机的守护进程版本过旧，无法显示 CI 运行。",
     errorTitle: "无法加载 CI",
-    noBranchTitle: "不在分支上",
-    noBranchDescription: "检出一个分支即可查看其 CI 运行。",
     notConfiguredTitle: "未配置 CI",
     notConfiguredDescription:
       "GitHub 远程仓库会显示 GitHub Actions。要使用 Jenkins，请在 frogg.json 中添加 ci.jenkins。",
     emptyTitle: "没有 CI 运行",
-    emptyDescription: "{{branch}} 还没有任何运行。",
+    emptyDescription: "此项目还没有任何运行。",
+    emptyBranchDescription: "{{branch}} 还没有任何运行。",
+    showThisBranchOnly: "仅显示 {{branch}}",
+    showAllBranches: "显示所有分支",
     runners: "运行器",
     runnerSummary: "{{total}} 个中有 {{busy}} 个忙碌",
     queuedCount_one: "{{count}} 个排队中",

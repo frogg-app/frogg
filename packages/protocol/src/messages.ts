@@ -5750,6 +5750,12 @@ export const CiRunSchema = z.object({
   id: z.string(),
   provider: z.string(),
   pipeline: z.string(),
+  /**
+   * The branch the run is for. The pane lists every branch's runs and filters client-side, so a
+   * daemon that omits this (pre-repo-wide listing) leaves its runs unfilterable rather than
+   * hidden.
+   */
+  branch: z.string().nullable().optional(),
   number: z.number().nullable(),
   trigger: z.string().nullable(),
   status: z.string(),

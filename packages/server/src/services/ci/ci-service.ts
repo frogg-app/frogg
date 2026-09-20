@@ -31,9 +31,17 @@ export function readJenkinsCredentials(env: NodeJS.ProcessEnv): JenkinsCredentia
 /**
  * Every configured provider is asked in parallel and one failing does not hide the others: the
  * pane shows what it has plus a line per provider that could not be reached.
+ *
+ * Providers list the whole project where they can — the pane shows every branch's runs by default
+ * and filters to `branch` only when the user asks for it. Jenkins is the exception: a multibranch
+ * job is addressed per branch, so it still reports the checkout's branch alone.
  */
 export async function listCiRuns(input: {
-  branch: string;
+  /**
+   * The checkout's branch: what Jenkins is asked for, and what the pane offers to filter to.
+   * Null on a detached HEAD, where GitHub Actions still lists the project and Jenkins is skipped.
+   */
+  branch: string | null;
   repoRoot: string | null;
   /** Null when the checkout's remote is not on GitHub or `gh` is unavailable. */
   githubApi: GitHubApiGet | null;
@@ -46,17 +54,18 @@ export async function listCiRuns(input: {
   if (githubApi && config.githubActions !== false) {
     tasks.push({
       provider: "githubActions",
-      load: () => listGitHubActionsRuns({ api: githubApi, branch: input.branch }),
+      load: () => listGitHubActionsRuns({ api: githubApi }),
     });
   }
   const jenkins = config.jenkins;
-  if (jenkins) {
+  const jenkinsBranch = input.branch;
+  if (jenkins && jenkinsBranch !== null) {
     tasks.push({
       provider: "jenkins",
       load: () =>
         listJenkinsRuns({
           config: jenkins,
-          branch: input.branch,
+          branch: jenkinsBranch,
           credentials: readJenkinsCredentials(input.env ?? process.env),
           fetch: input.fetch,
         }),

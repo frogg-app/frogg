@@ -4,7 +4,7 @@ import { en, type TranslationResources } from "./en";
 export const ja: TranslationResources = {
   ciMonitor: {
     label: "CI",
-    subtitle: "このブランチの GitHub Actions と Jenkins の実行",
+    subtitle: "このプロジェクトの GitHub Actions と Jenkins の実行",
     runCount_one: "{{count}} 件の実行",
     runCount_other: "{{count}} 件の実行",
     runningCount: "{{count}} 件実行中",
@@ -14,13 +14,14 @@ export const ja: TranslationResources = {
     unsupportedTitle: "デーモンを更新してください",
     unsupportedDescription: "このホストのデーモンは古いため、CI の実行を表示できません。",
     errorTitle: "CI を読み込めませんでした",
-    noBranchTitle: "ブランチ上にありません",
-    noBranchDescription: "ブランチをチェックアウトすると CI の実行が表示されます。",
     notConfiguredTitle: "CI が未設定です",
     notConfiguredDescription:
       "GitHub のリモートでは GitHub Actions が表示されます。Jenkins を使うには frogg.json に ci.jenkins を追加してください。",
     emptyTitle: "CI の実行はありません",
-    emptyDescription: "{{branch}} ではまだ何も実行されていません。",
+    emptyDescription: "このプロジェクトではまだ何も実行されていません。",
+    emptyBranchDescription: "{{branch}} ではまだ何も実行されていません。",
+    showThisBranchOnly: "{{branch}} のみ表示",
+    showAllBranches: "すべてのブランチを表示",
     runners: "ランナー",
     runnerSummary: "{{total}} 台中 {{busy}} 台が稼働中",
     queuedCount_one: "{{count}} 件待機中",

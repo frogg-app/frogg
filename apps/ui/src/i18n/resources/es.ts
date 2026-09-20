@@ -4,7 +4,7 @@ import { en, type TranslationResources } from "./en";
 export const es: TranslationResources = {
   ciMonitor: {
     label: "CI",
-    subtitle: "Ejecuciones de GitHub Actions y Jenkins para esta rama",
+    subtitle: "Ejecuciones de GitHub Actions y Jenkins para este proyecto",
     runCount_one: "{{count}} ejecución",
     runCount_other: "{{count}} ejecuciones",
     runningCount: "{{count}} en curso",
@@ -15,13 +15,14 @@ export const es: TranslationResources = {
     unsupportedDescription:
       "El daemon de este host es demasiado antiguo para mostrar ejecuciones de CI.",
     errorTitle: "No se pudo cargar la CI",
-    noBranchTitle: "No estás en una rama",
-    noBranchDescription: "Cambia a una rama para ver sus ejecuciones de CI.",
     notConfiguredTitle: "CI sin configurar",
     notConfiguredDescription:
       "GitHub Actions aparece con remotos de GitHub. Añade una entrada ci.jenkins a frogg.json para Jenkins.",
     emptyTitle: "Sin ejecuciones de CI",
-    emptyDescription: "Aún no se ha ejecutado nada para {{branch}}.",
+    emptyDescription: "Aún no se ha ejecutado nada en este proyecto.",
+    emptyBranchDescription: "Aún no se ha ejecutado nada para {{branch}}.",
+    showThisBranchOnly: "Mostrar solo {{branch}}",
+    showAllBranches: "Mostrar todas las ramas",
     runners: "Runners",
     runnerSummary: "{{busy}} de {{total}} ocupados",
     queuedCount_one: "{{count}} en cola",

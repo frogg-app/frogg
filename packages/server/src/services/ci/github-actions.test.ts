@@ -26,7 +26,7 @@ describe("mapGitHubStatus", () => {
 });
 
 describe("listGitHubActionsRuns", () => {
-  it("keeps the newest run per workflow and derives progress from finished steps", async () => {
+  it("keeps the newest run per workflow and branch and derives progress from finished steps", async () => {
     const { api, calls } = fakeApi({
       "repos/{owner}/{repo}/actions/runs?": {
         workflow_runs: [
@@ -37,6 +37,7 @@ describe("listGitHubActionsRuns", () => {
             run_number: 42,
             event: "push",
             status: "in_progress",
+            head_branch: "feature/x",
             html_url: "https://gh/run/2",
             run_started_at: "2026-09-19T10:00:00Z",
           },
@@ -48,6 +49,7 @@ describe("listGitHubActionsRuns", () => {
             event: "push",
             status: "completed",
             conclusion: "failure",
+            head_branch: "feature/x",
           },
         ],
       },
@@ -81,9 +83,10 @@ describe("listGitHubActionsRuns", () => {
       },
     });
 
-    const runs = await listGitHubActionsRuns({ api, branch: "feature/x" });
+    const runs = await listGitHubActionsRuns({ api });
 
-    expect(calls[0]).toContain("branch=feature%2Fx");
+    // Project-wide: the pane filters to a branch itself, so the query must not do it first.
+    expect(calls[0]).not.toContain("branch=");
     expect(runs).toHaveLength(1);
     const [run] = runs;
     expect(run).toMatchObject({
@@ -91,6 +94,7 @@ describe("listGitHubActionsRuns", () => {
       number: 42,
       status: "running",
       trigger: "push",
+      branch: "feature/x",
       url: "https://gh/run/2",
     });
     expect(run?.jobs[0]).toMatchObject({
@@ -104,5 +108,52 @@ describe("listGitHubActionsRuns", () => {
       runner: { hosted: false },
     });
     expect(run?.progress).toBeCloseTo(0.625);
+  });
+});
+
+describe("listGitHubActionsRuns across branches", () => {
+  it("keeps the newest run of a workflow on each branch", async () => {
+    const { api } = fakeApi({
+      "repos/{owner}/{repo}/actions/runs?": {
+        workflow_runs: [
+          {
+            id: 3,
+            name: "CI",
+            workflow_id: 10,
+            run_number: 9,
+            status: "completed",
+            conclusion: "success",
+            head_branch: "main",
+          },
+          {
+            id: 2,
+            name: "CI",
+            workflow_id: 10,
+            run_number: 8,
+            status: "completed",
+            conclusion: "success",
+            head_branch: "feature/x",
+          },
+          {
+            id: 1,
+            name: "CI",
+            workflow_id: 10,
+            run_number: 7,
+            status: "completed",
+            conclusion: "failure",
+            head_branch: "main",
+          },
+        ],
+      },
+      "repos/{owner}/{repo}/actions/runs/3/jobs": { jobs: [] },
+      "repos/{owner}/{repo}/actions/runs/2/jobs": { jobs: [] },
+    });
+
+    const runs = await listGitHubActionsRuns({ api });
+
+    expect(runs.map((entry) => [entry.branch, entry.number])).toEqual([
+      ["main", 9],
+      ["feature/x", 8],
+    ]);
   });
 });

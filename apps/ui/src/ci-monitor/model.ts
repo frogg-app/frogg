@@ -32,6 +32,8 @@ export interface CiRun {
   id: string;
   provider: CiProvider;
   pipeline: string;
+  /** Null when the provider does not say, or the daemon predates repo-wide listing. */
+  branch: string | null;
   number: number | null;
   trigger: string | null;
   status: CiStatus;
@@ -85,6 +87,7 @@ export function normalizeCiRun(run: WireCiRun): CiRun {
     id: run.id,
     provider: normalizeProvider(run.provider),
     pipeline: run.pipeline,
+    branch: run.branch ?? null,
     number: run.number,
     trigger: run.trigger,
     status: normalizeCiStatus(run.status),
@@ -94,6 +97,16 @@ export function normalizeCiRun(run: WireCiRun): CiRun {
     url: run.url,
     jobs: run.jobs.map(normalizeJob),
   };
+}
+
+/**
+ * The pane's branch filter. A null branch means no filter, which is the default: the pane shows
+ * the whole project. Runs from a daemon too old to report a branch are kept — hiding a run
+ * because its origin is unknown is worse than showing one from another branch.
+ */
+export function filterCiRunsByBranch(runs: CiRun[], branch: string | null): CiRun[] {
+  if (branch === null) return runs;
+  return runs.filter((run) => run.branch === null || run.branch === branch);
 }
 
 export function isCiActive(status: CiStatus): boolean {

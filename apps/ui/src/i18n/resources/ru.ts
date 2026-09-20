@@ -4,7 +4,7 @@ import { en, type TranslationResources } from "./en";
 export const ru: TranslationResources = {
   ciMonitor: {
     label: "CI",
-    subtitle: "Запуски GitHub Actions и Jenkins для этой ветки",
+    subtitle: "Запуски GitHub Actions и Jenkins для этого проекта",
     runCount_one: "Запусков: {{count}}",
     runCount_other: "Запусков: {{count}}",
     runningCount: "Выполняется: {{count}}",
@@ -14,13 +14,14 @@ export const ru: TranslationResources = {
     unsupportedTitle: "Обновите демон",
     unsupportedDescription: "Демон на этом хосте слишком старый, чтобы показывать запуски CI.",
     errorTitle: "Не удалось загрузить CI",
-    noBranchTitle: "Нет активной ветки",
-    noBranchDescription: "Переключитесь на ветку, чтобы увидеть её запуски CI.",
     notConfiguredTitle: "CI не настроен",
     notConfiguredDescription:
       "GitHub Actions показываются для удалённых репозиториев GitHub. Для Jenkins добавьте ci.jenkins в frogg.json.",
     emptyTitle: "Нет запусков CI",
-    emptyDescription: "Для {{branch}} ещё ничего не запускалось.",
+    emptyDescription: "В этом проекте ещё ничего не запускалось.",
+    emptyBranchDescription: "Для {{branch}} ещё ничего не запускалось.",
+    showThisBranchOnly: "Показать только {{branch}}",
+    showAllBranches: "Показать все ветки",
     runners: "Раннеры",
     runnerSummary: "Занято {{busy}} из {{total}}",
     queuedCount_one: "В очереди: {{count}}",

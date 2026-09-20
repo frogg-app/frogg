@@ -2,7 +2,7 @@ import { projectImportCopies } from "./project-import";
 export const en = {
   ciMonitor: {
     label: "CI",
-    subtitle: "GitHub Actions and Jenkins runs for this branch",
+    subtitle: "GitHub Actions and Jenkins runs for this project",
     runCount_one: "{{count}} run",
     runCount_other: "{{count}} runs",
     runningCount: "{{count}} running",
@@ -12,13 +12,14 @@ export const en = {
     unsupportedTitle: "Update the daemon",
     unsupportedDescription: "This host's daemon is too old to report CI runs.",
     errorTitle: "Couldn't load CI",
-    noBranchTitle: "Not on a branch",
-    noBranchDescription: "Check out a branch to see its CI runs.",
     notConfiguredTitle: "No CI configured",
     notConfiguredDescription:
       "GitHub Actions show up for GitHub remotes. Add a ci.jenkins entry to frogg.json for Jenkins.",
     emptyTitle: "No CI runs",
-    emptyDescription: "Nothing has run for {{branch}} yet.",
+    emptyDescription: "Nothing has run in this project yet.",
+    emptyBranchDescription: "Nothing has run for {{branch}} yet.",
+    showThisBranchOnly: "Show only {{branch}}",
+    showAllBranches: "Show every branch",
     runners: "Runners",
     runnerSummary: "{{busy}} of {{total}} busy",
     queuedCount_one: "{{count}} queued",

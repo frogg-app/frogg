@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { ChevronDown, ChevronRight, ExternalLink, RotateCw } from "lucide-react-native";
+import { ChevronDown, ChevronRight, ExternalLink, GitBranch, RotateCw } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import {
   PaneContentToolbar,
@@ -14,7 +14,7 @@ import {
   foregroundMutedColorMapping,
   sectionKitStyles,
 } from "@/git/pull-request-panel/section-kit";
-import { ICON_SIZE } from "@/styles/theme";
+import { ICON_SIZE, type Theme } from "@/styles/theme";
 import { openExternalUrl } from "@/utils/open-external-url";
 import {
   CiProgressBar,
@@ -25,6 +25,7 @@ import {
 } from "./ci-progress";
 import {
   collectRunners,
+  filterCiRunsByBranch,
   elapsedMs,
   formatCiDuration,
   formatRunStart,
@@ -37,13 +38,21 @@ import { useCiNow, useCiRuns, type CiRunsState } from "./use-ci-runs";
 const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedChevronRight = withUnistyles(ChevronRight);
 const ThemedRotateCw = withUnistyles(RotateCw);
+const ThemedGitBranch = withUnistyles(GitBranch);
+
+/** The branch filter's icon when the filter is on; muted is "available", full is "applied". */
+const foregroundColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const ThemedExternalLink = withUnistyles(ExternalLink);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 
 /**
- * The CI tab: every run for this checkout's branch from GitHub Actions and Jenkins, its jobs and
- * the machines they landed on. Built from the PR pane's section kit so it reads as the same
- * product as the checks list.
+ * The CI tab: every run in the project from GitHub Actions and Jenkins, its jobs and the machines
+ * they landed on. Built from the PR pane's section kit so it reads as the same product as the
+ * checks list.
+ *
+ * The project, not the branch, is the default view: a run worth looking at is usually one
+ * somebody else pushed, and a pane scoped to the checkout's own branch is empty exactly when CI
+ * is busiest. The toolbar's branch toggle narrows it to the current branch on demand.
  */
 export function CiPane({
   serverId,
@@ -55,22 +64,44 @@ export function CiPane({
   isOpen?: boolean;
 }) {
   const state = useCiRuns({ serverId, cwd, enabled: isOpen });
-  const now = useCiNow(state.runs.some((run) => isCiActive(run.status)));
-  const body = <CiPaneBody state={state} now={now} />;
+  // Off by default: the pane opens on the whole project.
+  const [branchOnly, setBranchOnly] = useState(false);
+  const toggleBranchOnly = useCallback(() => setBranchOnly((value) => !value), []);
+  const runs = useMemo(
+    () => filterCiRunsByBranch(state.runs, branchOnly ? state.branch : null),
+    [state.runs, branchOnly, state.branch],
+  );
+  const now = useCiNow(runs.some((run) => isCiActive(run.status)));
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.content} testID="ci-pane">
-      <CiToolbar state={state} />
-      {body}
+      <CiToolbar
+        state={state}
+        runs={runs}
+        branchOnly={branchOnly}
+        onToggleBranchOnly={toggleBranchOnly}
+      />
+      <CiPaneBody state={state} runs={runs} branchOnly={branchOnly} now={now} />
     </ScrollView>
   );
 }
 
-function CiToolbar({ state }: { state: CiRunsState }) {
+function CiToolbar({
+  state,
+  runs,
+  branchOnly,
+  onToggleBranchOnly,
+}: {
+  state: CiRunsState;
+  runs: CiRun[];
+  branchOnly: boolean;
+  onToggleBranchOnly: () => void;
+}) {
   const { t } = useTranslation();
-  const running = state.runs.filter((run) => isCiActive(run.status)).length;
+  const branchFilterState = useMemo(() => ({ selected: branchOnly }), [branchOnly]);
+  const running = runs.filter((run) => isCiActive(run.status)).length;
   let summary = state.branch ?? "";
-  if (state.runs.length > 0) {
-    summary = t("ciMonitor.runCount", { count: state.runs.length });
+  if (runs.length > 0) {
+    summary = t("ciMonitor.runCount", { count: runs.length });
     if (running > 0) summary += ` · ${t("ciMonitor.runningCount", { count: running })}`;
   }
   return (
@@ -79,6 +110,25 @@ function CiToolbar({ state }: { state: CiRunsState }) {
         {summary}
       </Text>
       <View style={styles.toolbarActions}>
+        {state.supported && state.branch !== null ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={branchFilterState}
+            accessibilityLabel={t(
+              branchOnly ? "ciMonitor.showAllBranches" : "ciMonitor.showThisBranchOnly",
+              { branch: state.branch },
+            )}
+            style={branchOnly ? activeIconButtonStyle : refreshButtonStyle}
+            hitSlop={8}
+            onPress={onToggleBranchOnly}
+            testID="ci-pane-branch-filter"
+          >
+            <ThemedGitBranch
+              size={paneContentToolbarIconSize(false)}
+              uniProps={branchOnly ? foregroundColorMapping : foregroundMutedColorMapping}
+            />
+          </Pressable>
+        ) : null}
         {state.supported ? (
           <Pressable
             accessibilityRole="button"
@@ -108,13 +158,23 @@ function CiToolbar({ state }: { state: CiRunsState }) {
   );
 }
 
-function CiPaneBody({ state, now }: { state: CiRunsState; now: number }) {
+function CiPaneBody({
+  state,
+  runs,
+  branchOnly,
+  now,
+}: {
+  state: CiRunsState;
+  runs: CiRun[];
+  branchOnly: boolean;
+  now: number;
+}) {
   const { t } = useTranslation();
   const [runnersOpen, setRunnersOpen] = useState(true);
   const toggleRunners = useCallback(() => setRunnersOpen((open) => !open), []);
-  const runnerSummary = useMemo(() => <RunnerSummary runs={state.runs} />, [state.runs]);
+  const runnerSummary = useMemo(() => <RunnerSummary runs={runs} />, [runs]);
   // Idle hosted runners are not listed, so between runs there is often nothing to show.
-  const hasRunners = useMemo(() => collectRunners(state.runs).length > 0, [state.runs]);
+  const hasRunners = useMemo(() => collectRunners(runs).length > 0, [runs]);
 
   if (!state.supported) {
     return (
@@ -133,14 +193,6 @@ function CiPaneBody({ state, now }: { state: CiRunsState; now: number }) {
   }
   if (state.error) {
     return <EmptyState title={t("ciMonitor.errorTitle")} description={state.error} />;
-  }
-  if (state.branch === null) {
-    return (
-      <EmptyState
-        title={t("ciMonitor.noBranchTitle")}
-        description={t("ciMonitor.noBranchDescription")}
-      />
-    );
   }
   if (state.providers.length === 0) {
     return (
@@ -162,14 +214,18 @@ function CiPaneBody({ state, now }: { state: CiRunsState; now: number }) {
           </Text>
         </View>
       ))}
-      {state.runs.length === 0 ? (
+      {runs.length === 0 ? (
         <EmptyState
           title={t("ciMonitor.emptyTitle")}
-          description={t("ciMonitor.emptyDescription", { branch: state.branch })}
+          description={
+            branchOnly && state.branch !== null
+              ? t("ciMonitor.emptyBranchDescription", { branch: state.branch })
+              : t("ciMonitor.emptyDescription")
+          }
         />
       ) : (
         <>
-          {state.runs.map((run) => (
+          {runs.map((run) => (
             <RunBlock key={run.id} run={run} now={now} />
           ))}
           {hasRunners ? <View style={styles.divider} /> : null}
@@ -180,7 +236,7 @@ function CiPaneBody({ state, now }: { state: CiRunsState; now: number }) {
               onToggle={toggleRunners}
               summary={runnerSummary}
             >
-              <RunnerList runs={state.runs} />
+              <RunnerList runs={runs} />
             </Section>
           ) : null}
         </>
@@ -208,7 +264,7 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
   // The provider is already the icon beside this line; its name only costs width the start time
   // needs, so it stays in the accessibility label.
   // Duration first: when the line runs out of room it is the trigger that truncates.
-  const meta = [elapsed === null ? null : formatCiDuration(elapsed), run.trigger]
+  const meta = [elapsed === null ? null : formatCiDuration(elapsed), run.branch, run.trigger]
     .filter(Boolean)
     .join(" · ");
   const started = run.startedAt === null ? null : formatRunStart(run.startedAt, now);
@@ -377,6 +433,10 @@ function RunnerList({ runs }: { runs: CiRun[] }) {
 function refreshButtonStyle({ hovered }: { hovered?: boolean }) {
   return [styles.iconButton, Boolean(hovered) && styles.hover];
 }
+
+function activeIconButtonStyle({ hovered }: { hovered?: boolean }) {
+  return [styles.iconButton, styles.iconButtonActive, Boolean(hovered) && styles.hover];
+}
 const iconButtonStyle = refreshButtonStyle;
 
 function runHeaderStyle({ hovered }: { hovered?: boolean }) {
@@ -409,6 +469,9 @@ const styles = StyleSheet.create((theme) => ({
   iconButton: {
     padding: theme.spacing[1],
     borderRadius: theme.borderRadius.base,
+  },
+  iconButtonActive: {
+    backgroundColor: theme.colors.surface2,
   },
   scroll: {
     flex: 1,

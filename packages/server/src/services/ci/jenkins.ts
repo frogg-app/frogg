@@ -242,6 +242,7 @@ export async function listJenkinsRuns(input: {
       id: `jenkins:build:${build.url}`,
       provider: "jenkins",
       pipeline: job.displayName ?? input.config.job,
+      branch: input.branch,
       number: build.number,
       trigger: cause ?? null,
       status,

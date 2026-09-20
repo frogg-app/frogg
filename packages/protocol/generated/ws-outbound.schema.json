@@ -40314,6 +40314,12 @@
                           "pipeline": {
                             "type": "string"
                           },
+                          "branch": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "number": {
                             "type": [
                               "number",

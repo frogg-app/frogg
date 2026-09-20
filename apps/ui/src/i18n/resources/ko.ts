@@ -4,7 +4,7 @@ import { en, type TranslationResources } from "./en";
 export const ko: TranslationResources = {
   ciMonitor: {
     label: "CI",
-    subtitle: "이 브랜치의 GitHub Actions 및 Jenkins 실행",
+    subtitle: "이 프로젝트의 GitHub Actions 및 Jenkins 실행",
     runCount_one: "실행 {{count}}개",
     runCount_other: "실행 {{count}}개",
     runningCount: "{{count}}개 실행 중",
@@ -14,13 +14,14 @@ export const ko: TranslationResources = {
     unsupportedTitle: "데몬을 업데이트하세요",
     unsupportedDescription: "이 호스트의 데몬이 오래되어 CI 실행을 표시할 수 없습니다.",
     errorTitle: "CI를 불러오지 못했습니다",
-    noBranchTitle: "브랜치가 아닙니다",
-    noBranchDescription: "브랜치를 체크아웃하면 CI 실행을 볼 수 있습니다.",
     notConfiguredTitle: "CI가 구성되지 않음",
     notConfiguredDescription:
       "GitHub 원격 저장소에는 GitHub Actions가 표시됩니다. Jenkins를 쓰려면 frogg.json에 ci.jenkins 항목을 추가하세요.",
     emptyTitle: "CI 실행 없음",
-    emptyDescription: "{{branch}}에서 아직 실행된 항목이 없습니다.",
+    emptyDescription: "이 프로젝트에서 아직 실행된 항목이 없습니다.",
+    emptyBranchDescription: "{{branch}}에서 아직 실행된 항목이 없습니다.",
+    showThisBranchOnly: "{{branch}}만 표시",
+    showAllBranches: "모든 브랜치 표시",
     runners: "러너",
     runnerSummary: "{{total}}개 중 {{busy}}개 사용 중",
     queuedCount_one: "{{count}}개 대기 중",
