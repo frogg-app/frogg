@@ -1049,6 +1049,10 @@ export const es: TranslationResources = {
         openFileIn: "Open {{fileName}} in {{target}}",
         failedOpen: "No se pudo abrir la sesión",
       },
+      ci: {
+        open: "Abrir comprobaciones de CI",
+        running: "CI: {{completed}} de {{total}} comprobaciones completadas",
+      },
       pr: {
         actions: {
           viewPullRequest: "Ver",

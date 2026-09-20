@@ -84,6 +84,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { ProjectLeadingVisual } from "@/components/sidebar/project-leading-visual";
+import { selectProjectChecksProgress } from "@/utils/sidebar-project-ci-progress";
+import type { ChecksProgress } from "@/git/checks-progress";
 import { useToast } from "@/contexts/toast-context";
 import { getForgePresentation, normalizeForge } from "@/git/forge";
 import { toWorktreeArchiveRisk } from "@/git/worktree-archive-warning";
@@ -232,6 +234,8 @@ interface ProjectHeaderRowProps {
   displayName: string;
   iconDataUri: string | null;
   statusBucket: SidebarStateBucket | null;
+  /** CI across the project's open change requests, for the ring around its icon. */
+  ciProgress: ChecksProgress;
   selected?: boolean;
   chevron: "expand" | "collapse" | null;
   onPress: () => void;
@@ -840,6 +844,7 @@ function ProjectHeaderRow({
   displayName,
   iconDataUri,
   statusBucket,
+  ciProgress,
   selected = false,
   chevron,
   onPress,
@@ -942,6 +947,7 @@ function ProjectHeaderRow({
           displayName={displayName}
           iconDataUri={iconDataUri}
           statusBucket={statusBucket}
+          ciProgress={ciProgress}
           projectViewKey={project.viewKey}
           backdrop={getSidebarRowBackdrop({ isDragging, isPressed, selected, isHovered })}
           chevron={chevron}
@@ -1594,6 +1600,17 @@ function ProjectBlock({
     enabled: collapsed,
   });
 
+  // The CI ring, unlike the status badge above, shows whether the project row is collapsed
+  // or not: a build running under an expanded project is still something the user wants to
+  // spot without reading every child row.
+  const ciProgress = useMemo(
+    () =>
+      selectProjectChecksProgress(
+        project.workspaces.map((placement) => workspaceEntriesByKey.get(placement.workspaceKey)),
+      ),
+    [project.workspaces, workspaceEntriesByKey],
+  );
+
   const active = isProjectSelectedByRoute({
     selection: activeWorkspaceSelection,
     project,
@@ -1765,6 +1782,7 @@ function ProjectBlock({
         displayName={displayName}
         iconDataUri={iconDataUri}
         statusBucket={aggregateStatusBucket}
+        ciProgress={ciProgress}
         selected={false}
         chevron={rowModel.chevron}
         onPress={handleToggleCollapsed}

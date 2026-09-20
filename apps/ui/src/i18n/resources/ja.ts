@@ -1030,6 +1030,10 @@ export const ja: TranslationResources = {
         openFileIn: "{{target}}で{{fileName}}を開く",
         failedOpen: "セッションを開けませんでした",
       },
+      ci: {
+        open: "CI チェックを開く",
+        running: "CI: {{total}} 件中 {{completed}} 件のチェックが完了",
+      },
       pr: {
         actions: {
           viewPullRequest: "表示",

@@ -3,7 +3,7 @@ import { type ReactElement, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { useMutation } from "@tanstack/react-query";
-import { Check, ChevronDown } from "lucide-react-native";
+import { Check, ChevronDown, GitBranch } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { EditorTargetIcon } from "@/components/icons/editor-target-icon";
 import {
@@ -41,6 +41,14 @@ interface OpenTarget {
   id: string;
   label: string;
   icon: ReactElement;
+  /**
+   * Icon for the split button's primary face, when it should differ from the one the
+   * menu item carries. The forge target uses this: in the menu, alongside the other
+   * targets, the brand mark is what tells GitHub from GitLab; on the button it is a
+   * lone glyph in the window header, where a neutral git mark says "the remote"
+   * without implying the app only speaks to one forge.
+   */
+  primaryIcon?: ReactElement;
   onOpen: () => Promise<void> | void;
 }
 
@@ -48,12 +56,17 @@ const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 const ThemedEditorTargetIcon = withUnistyles(EditorTargetIcon);
 const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedCheckIcon = withUnistyles(Check);
+const ThemedGitBranch = withUnistyles(GitBranch);
 
 const foregroundColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const mutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
 function renderForgeOpenTargetIcon(icon: string): ReactElement {
   return <ForgeBrandIcon iconKind={icon} size={16} uniProps={mutedColorMapping} />;
+}
+
+function renderRemoteOpenTargetPrimaryIcon(): ReactElement {
+  return <ThemedGitBranch size={16} strokeWidth={1.5} uniProps={mutedColorMapping} />;
 }
 
 interface OpenTargetMenuItemProps {
@@ -136,6 +149,7 @@ export function WorkspaceOpenInEditorButton({
             id: target.id,
             label: target.label,
             icon: renderForgeOpenTargetIcon(presentation.icon),
+            primaryIcon: renderRemoteOpenTargetPrimaryIcon(),
             onOpen: () => openExternalUrl(target.url),
           };
         }
@@ -245,7 +259,7 @@ export function WorkspaceOpenInEditorButton({
             />
           ) : (
             <View style={styles.splitButtonContent}>
-              {primaryOption.icon}
+              {primaryOption.primaryIcon ?? primaryOption.icon}
               {!hideLabels && (
                 <Text style={styles.splitButtonText}>{t("workspace.git.openInEditor.open")}</Text>
               )}

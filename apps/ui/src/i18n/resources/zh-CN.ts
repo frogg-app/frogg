@@ -1009,6 +1009,10 @@ export const zhCN: TranslationResources = {
         openFileIn: "在 {{target}} 中打开 {{fileName}}",
         failedOpen: "打开会话失败",
       },
+      ci: {
+        open: "打开 CI 检查",
+        running: "CI：{{total}} 项检查已完成 {{completed}} 项",
+      },
       pr: {
         actions: {
           viewPullRequest: "查看",

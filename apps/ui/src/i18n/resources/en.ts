@@ -1029,6 +1029,10 @@ export const en = {
         openFileIn: "Open {{fileName}} in {{target}}",
         failedOpen: "Failed to open session",
       },
+      ci: {
+        open: "Open CI checks",
+        running: "CI: {{completed}} of {{total}} checks complete",
+      },
       pr: {
         actions: {
           viewPullRequest: "View",

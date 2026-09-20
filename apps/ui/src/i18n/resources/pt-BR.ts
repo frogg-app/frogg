@@ -1040,6 +1040,10 @@ export const ptBR: TranslationResources = {
         openFileIn: "Abrir {{fileName}} em {{target}}",
         failedOpen: "Falha ao abrir sessão",
       },
+      ci: {
+        open: "Abrir verificações de CI",
+        running: "CI: {{completed}} de {{total}} verificações concluídas",
+      },
       pr: {
         actions: {
           viewPullRequest: "Ver",

@@ -17,6 +17,8 @@ import {
   STATUS_INDICATOR_FILLED_DOT_SIZE,
 } from "@/utils/status-indicator-geometry";
 import { StatusRing } from "@/components/status-ring";
+import { ChecksProgressRing } from "@/git/checks-progress-ring";
+import type { ChecksProgress } from "@/git/checks-progress";
 import { getStatusRingOffset } from "@/components/status-ring/geometry";
 import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
 
@@ -37,6 +39,13 @@ const STATUS_BADGE_OFFSET = -4;
 // Matches the workspace title's lineHeight (sidebar-workspace-row-content's
 // workspaceBranchText) so the icon centers on the title rather than floating above it.
 const LEADING_SLOT_HEIGHT = 20;
+
+// The CI ring encircles the whole project icon rather than sitting in the corner badge: it
+// answers "is this project building?", which is about the project, not about one workspace's
+// status. The gap keeps its stroke clear of the icon art underneath, and the ring is drawn
+// before the status badge so the badge's knockout still wins where the two meet.
+const CI_RING_GAP = 3;
+const CI_RING_SIZE = ICON_SIZE.md + CI_RING_GAP * 2;
 
 const ThemedActivityIndicator = withUnistyles(ActivityIndicator);
 const ThemedCircleAlert = withUnistyles(CircleAlert);
@@ -59,6 +68,7 @@ export function ProjectLeadingVisual({
   statusBucket,
   projectViewKey,
   backdrop,
+  ciProgress = null,
   chevron = null,
   showChevron = false,
   isArchiving = false,
@@ -70,6 +80,8 @@ export function ProjectLeadingVisual({
   projectViewKey: string;
   /** The row's current background, so the status badge can knock out of it. */
   backdrop: SidebarSurfaceBackdrop;
+  /** CI across the project's open change requests; null or idle draws no ring. */
+  ciProgress?: ChecksProgress | null;
   chevron?: "expand" | "collapse" | null;
   showChevron?: boolean;
   isArchiving?: boolean;
@@ -97,6 +109,7 @@ export function ProjectLeadingVisual({
       projectViewKey={projectViewKey}
       statusBucket={statusBucket}
       backdrop={backdrop}
+      ciProgress={ciProgress}
     />
   );
 }
@@ -112,6 +125,7 @@ export function ProjectStatusIndicator({
   projectViewKey,
   statusBucket,
   backdrop,
+  ciProgress = null,
   loading = false,
   testID,
 }: {
@@ -121,6 +135,8 @@ export function ProjectStatusIndicator({
   statusBucket: SidebarStateBucket | null;
   /** The row's current background, so the status badge can knock out of it. */
   backdrop: SidebarSurfaceBackdrop;
+  /** CI across the project's open change requests; null or idle draws no ring. */
+  ciProgress?: ChecksProgress | null;
   loading?: boolean;
   testID?: string;
 }) {
@@ -144,6 +160,11 @@ export function ProjectStatusIndicator({
       }
     >
       <View style={styles.projectIconBox}>
+        {ciProgress?.running ? (
+          <View style={styles.ciRingOverlay} pointerEvents="none" testID="project-ci-ring">
+            <ChecksProgressRing progress={ciProgress} size={CI_RING_SIZE} />
+          </View>
+        ) : null}
         <ProjectIcon
           iconDataUri={iconDataUri}
           placeholderInitial={placeholderInitial}
@@ -278,6 +299,15 @@ const styles = StyleSheet.create((theme) => {
       flexShrink: 0,
       alignItems: "center",
       justifyContent: "center",
+    },
+    // Grows around the icon's centre without taking layout, so a project that starts
+    // building does not shift its own row.
+    ciRingOverlay: {
+      position: "absolute",
+      top: -CI_RING_GAP,
+      left: -CI_RING_GAP,
+      width: CI_RING_SIZE,
+      height: CI_RING_SIZE,
     },
     // Anchors the corner badge to the icon rather than to the taller slot.
     projectIconBox: {

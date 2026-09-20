@@ -1017,6 +1017,10 @@ export const ar: TranslationResources = {
         openFileIn: "Open {{fileName}} in {{target}}",
         failedOpen: "فشل في فتح الجلسة",
       },
+      ci: {
+        open: "فتح فحوصات CI",
+        running: "CI: اكتمل {{completed}} من {{total}} فحوصات",
+      },
       pr: {
         actions: {
           viewPullRequest: "عرض",

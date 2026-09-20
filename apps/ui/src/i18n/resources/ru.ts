@@ -1032,6 +1032,10 @@ export const ru: TranslationResources = {
         openFileIn: "Открыть {{fileName}} в {{target}}",
         failedOpen: "Не удалось открыть сессию",
       },
+      ci: {
+        open: "Открыть проверки CI",
+        running: "CI: завершено проверок: {{completed}} из {{total}}",
+      },
       pr: {
         actions: {
           viewPullRequest: "Просмотреть",

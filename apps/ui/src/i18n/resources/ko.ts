@@ -1024,6 +1024,10 @@ export const ko: TranslationResources = {
         openFileIn: "{{target}}에서 {{fileName}} 열기",
         failedOpen: "세션을 열지 못했습니다",
       },
+      ci: {
+        open: "CI 검사 열기",
+        running: "CI: {{total}}개 중 {{completed}}개 검사 완료",
+      },
       pr: {
         actions: {
           viewPullRequest: "보기",
