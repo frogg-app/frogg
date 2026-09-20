@@ -11,6 +11,8 @@ import { useOpenFileExplorerGesture } from "@/mobile-panels/gestures";
 import { useIsMobilePanelActive } from "@/mobile-panels/provider";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { usePanelStore } from "@/stores/panel-store";
+import { selectIsCompactFileExplorerOpen } from "@/stores/panel-store/state";
+import { WindowChromeRegion } from "@/utils/desktop-window";
 import { useWorkspaceLayoutStore } from "@/stores/workspace-layout-store";
 import type { WorkspaceTabTarget } from "@/workspace-tabs/model";
 import { useWorkspaceCheckoutStatus } from "@/screens/workspace/use-workspace-checkout-status";
@@ -108,6 +110,7 @@ export function CompactExplorerSidebarHost({
   presentation,
 }: CompactExplorerSidebarHostProps) {
   const model = useActiveCompactExplorerSidebarModel(enabled);
+  const isExplorerOpen = usePanelStore(selectIsCompactFileExplorerOpen);
   const [containerWidth, setContainerWidth] = useState(0);
   const openCompactFileExplorer = usePanelStore((state) => state.openCompactFileExplorer);
   const showMobileAgent = usePanelStore((state) => state.showMobileAgent);
@@ -177,10 +180,20 @@ export function CompactExplorerSidebarHost({
     ) : null;
 
   if (presentation === "dock") {
+    // While the dock is on screen it, not the workspace, sits under the window controls, so
+    // it owns the top-right corner: its header then pads itself clear of them instead of
+    // running its tabs and close button underneath.
+    const dockOwnsTopRight = explorer !== null && isExplorerOpen;
     return (
       <View style={styles.row} onLayout={handleContainerLayout}>
-        <View style={styles.fill}>{children}</View>
-        {explorer}
+        <WindowChromeRegion corners={dockOwnsTopRight ? "top-left" : "both"}>
+          <View style={styles.fill}>{children}</View>
+        </WindowChromeRegion>
+        {dockOwnsTopRight ? (
+          <WindowChromeRegion corners="top-right">{explorer}</WindowChromeRegion>
+        ) : (
+          explorer
+        )}
       </View>
     );
   }

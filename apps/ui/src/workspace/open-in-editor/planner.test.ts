@@ -147,7 +147,7 @@ describe("planWorkspaceOpenTargets", () => {
     ]);
   });
 
-  it("keeps GitHub target independent and uses blob and tree URLs", () => {
+  it("opens the repo home regardless of the active file or branch", () => {
     const blobTargets = planWorkspaceOpenTargets({
       workspaceDirectory: "/repo",
       activeFile: { path: "src/app.ts", lineStart: 3, lineEnd: 5 },
@@ -164,24 +164,17 @@ describe("planWorkspaceOpenTargets", () => {
       checkoutStatus,
     });
 
-    expect(blobTargets).toEqual([
+    const expected = [
       {
         source: "forge",
         forge: "github",
         id: "github",
         label: "GitHub",
-        url: "https://github.com/frogg-app/frogg/blob/main/src/app.ts#L3-L5",
+        url: "https://github.com/frogg-app/frogg",
       },
-    ]);
-    expect(treeTargets).toEqual([
-      {
-        source: "forge",
-        forge: "github",
-        id: "github",
-        label: "GitHub",
-        url: "https://github.com/frogg-app/frogg/tree/main",
-      },
-    ]);
+    ];
+    expect(blobTargets).toEqual(expected);
+    expect(treeTargets).toEqual(expected);
   });
 
   it("infers the forge from the remote URL when the forge input is null", () => {
@@ -205,7 +198,7 @@ describe("planWorkspaceOpenTargets", () => {
         forge: "gitlab",
         id: "gitlab",
         label: "GitLab",
-        url: "https://gitlab.com/group/project/-/blob/main/src/app.ts#L3-5",
+        url: "https://gitlab.com/group/project",
       },
     ]);
   });

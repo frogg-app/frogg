@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildForgeBlobUrl,
+  buildForgeRepoUrl,
   buildForgeBranchTreeUrl,
   buildForgeChecksUrl,
   hasForgeWebUrls,
@@ -23,6 +24,24 @@ describe("buildForgeChecksUrl", () => {
     ["gitlab", "not a url", null],
   ] as const)("maps the %s checks URL", (forge, url, expected) => {
     expect(buildForgeChecksUrl(forge, url)).toBe(expected);
+  });
+});
+
+describe("buildForgeRepoUrl", () => {
+  it("builds the repo home for a cloud remote", () => {
+    expect(buildForgeRepoUrl("github", "git@github.com:frogg-app/frogg.git")).toBe(
+      "https://github.com/frogg-app/frogg",
+    );
+  });
+
+  it("keeps a self-hosted host and nested groups", () => {
+    expect(buildForgeRepoUrl("gitlab", "https://git.example.com/group/sub/project.git")).toBe(
+      "https://git.example.com/group/sub/project",
+    );
+  });
+
+  it("returns null without a remote", () => {
+    expect(buildForgeRepoUrl("github", null)).toBeNull();
   });
 });
 

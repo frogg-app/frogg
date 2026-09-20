@@ -14,13 +14,7 @@
 import { FORGE_DEFINITIONS, getForgeDefinitionOrNeutral } from "@frogg/protocol/forge-manifest";
 import { normalizeHost, parseGitRemoteLocation } from "@frogg/protocol/git-remote";
 import type { ForgeAuthState } from "@frogg/protocol/messages";
-import {
-  buildForgeBlobUrl,
-  buildForgeBranchTreeUrl,
-  hasForgeWebUrls,
-  type ForgeBlobUrlInput,
-  type ForgeBranchTreeUrlInput,
-} from "@/git/forge-url";
+import { buildForgeRepoUrl, hasForgeWebUrls } from "@/git/forge-url";
 
 /**
  * A forge id. Open by design: any id the daemon reports is valid, and the
@@ -86,8 +80,8 @@ export interface ForgePresentation {
    * (pull-request) string for undefined or unknown families.
    */
   changeRequestContext: "mr" | undefined;
-  buildBlobUrl: ((input: ForgeBlobUrlInput) => string | null) | null;
-  buildBranchTreeUrl: ((input: ForgeBranchTreeUrlInput) => string | null) | null;
+  /** The repo's home page on the forge, or null when the forge has no known URL grammar. */
+  buildRepoUrl: ((remoteUrl: string | null | undefined) => string | null) | null;
 }
 
 export function getForgePresentation(forge: string): ForgePresentation {
@@ -104,10 +98,7 @@ export function getForgePresentation(forge: string): ForgePresentation {
     issueNumberPrefix: definition.issueNumberPrefix,
     signInCli: definition.signIn?.cli ?? null,
     changeRequestContext: isMergeRequest ? "mr" : undefined,
-    buildBlobUrl: hasWebUrls ? (input) => buildForgeBlobUrl(definition.id, input) : null,
-    buildBranchTreeUrl: hasWebUrls
-      ? (input) => buildForgeBranchTreeUrl(definition.id, input)
-      : null,
+    buildRepoUrl: hasWebUrls ? (remoteUrl) => buildForgeRepoUrl(definition.id, remoteUrl) : null,
   };
 }
 

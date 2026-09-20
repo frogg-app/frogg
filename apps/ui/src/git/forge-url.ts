@@ -121,6 +121,23 @@ function normalizeBlobPath(path: string | null | undefined): string | null {
   return segments.join("/") || null;
 }
 
+/**
+ * The repo's home page on its forge. This is what the header's open-remote button uses:
+ * a branch or blob URL is only valid once that branch exists on the remote, and a local
+ * branch that has never been pushed would 404. The repo root always resolves.
+ */
+export function buildForgeRepoUrl(
+  forge: string,
+  remoteUrl: string | null | undefined,
+): string | null {
+  const grammar = getClientForgeLogicModule(forge)?.urlGrammar;
+  const location = resolveForgeWebLocation(forge, remoteUrl);
+  if (!grammar || !location) {
+    return null;
+  }
+  return `https://${forgeAuthority(location)}/${location.repo}`;
+}
+
 export function buildForgeBranchTreeUrl(
   forge: string,
   input: ForgeBranchTreeUrlInput,
@@ -131,7 +148,9 @@ export function buildForgeBranchTreeUrl(
   if (!grammar || !location || !branch || branch === "HEAD") {
     return null;
   }
-  return `https://${forgeAuthority(location)}/${location.repo}${grammar.treeInfix}${encodeBranch(branch)}`;
+  return `https://${forgeAuthority(location)}/${location.repo}${
+    grammar.treeInfix
+  }${encodeBranch(branch)}`;
 }
 
 export function buildForgeBlobUrl(forge: string, input: ForgeBlobUrlInput): string | null {
@@ -143,7 +162,9 @@ export function buildForgeBlobUrl(forge: string, input: ForgeBlobUrlInput): stri
     return null;
   }
   const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
-  let url = `https://${forgeAuthority(location)}/${location.repo}${grammar.blobInfix}${encodeBranch(branch)}/${encodedPath}`;
+  let url = `https://${forgeAuthority(location)}/${location.repo}${
+    grammar.blobInfix
+  }${encodeBranch(branch)}/${encodedPath}`;
   if (input.lineStart && input.lineStart > 0) {
     url += grammar.lineAnchor(input.lineStart, input.lineEnd);
   }

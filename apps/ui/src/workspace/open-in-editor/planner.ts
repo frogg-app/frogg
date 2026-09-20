@@ -114,39 +114,11 @@ function planDesktopOpenTargets(input: {
   });
 }
 
-function buildForgeWebUrl(
-  forge: Forge,
-  input: {
-    remoteUrl: string | null | undefined;
-    branch: string | null | undefined;
-    path: string | null;
-    lineStart?: number;
-    lineEnd?: number;
-  },
-): string | null {
-  const presentation = getForgePresentation(forge);
-  if (input.path) {
-    return (
-      presentation.buildBlobUrl?.({
-        remoteUrl: input.remoteUrl,
-        branch: input.branch,
-        path: input.path,
-        lineStart: input.lineStart,
-        lineEnd: input.lineEnd,
-      }) ?? null
-    );
-  }
-  return (
-    presentation.buildBranchTreeUrl?.({
-      remoteUrl: input.remoteUrl,
-      branch: input.branch,
-    }) ?? null
-  );
-}
-
+/**
+ * The remote target opens the repo's home page rather than the checked-out branch: a
+ * local branch may never have been pushed, and a 404 is worse than landing on the repo.
+ */
 function planForgeOpenTarget(input: {
-  activeFile?: WorkspaceFileLocation | null;
-  resolvedFile: ResolvedWorkspaceFilePaths | null;
   checkoutStatus?: CheckoutStatusForOpenTarget | null;
   forge?: Forge | null;
 }): PlannedForgeOpenTarget | null {
@@ -157,13 +129,7 @@ function planForgeOpenTarget(input: {
   if (!forge) {
     return null;
   }
-  const url = buildForgeWebUrl(forge, {
-    remoteUrl: input.checkoutStatus.remoteUrl,
-    branch: input.checkoutStatus.currentBranch,
-    path: input.resolvedFile?.relativePath ?? null,
-    lineStart: input.activeFile?.lineStart,
-    lineEnd: input.activeFile?.lineEnd,
-  });
+  const url = getForgePresentation(forge).buildRepoUrl?.(input.checkoutStatus.remoteUrl) ?? null;
   if (!url) {
     return null;
   }
@@ -181,6 +147,6 @@ export function planWorkspaceOpenTargets(
 ): PlannedWorkspaceOpenTarget[] {
   const resolvedFile = resolveActiveFileForOpenTargets(input);
   const desktopTargets = planDesktopOpenTargets({ ...input, resolvedFile });
-  const forgeTarget = planForgeOpenTarget({ ...input, resolvedFile });
+  const forgeTarget = planForgeOpenTarget(input);
   return forgeTarget ? [...desktopTargets, forgeTarget] : desktopTargets;
 }
