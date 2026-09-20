@@ -1,5 +1,10 @@
 import { describe, expect, it, vi, afterEach, beforeEach } from "vitest";
-import { formatCountdown, formatWindowSummary, summarizeProviderUsage } from "./account-summary";
+import {
+  buildProviderUsageColumns,
+  formatCountdown,
+  formatWindowSummary,
+  summarizeProviderUsage,
+} from "./account-summary";
 import type { ProviderUsage } from "./types";
 
 const NOW = new Date("2026-01-01T00:00:00.000Z");
@@ -108,6 +113,14 @@ describe("summarizeProviderUsage", () => {
     expect(summarizeProviderUsage(providers, "claude")).toBe(
       "Session 42% · 3h  ·  Weekly 18% · 4d",
     );
+  });
+
+  it("splits the same windows into right-anchored columns", () => {
+    expect(buildProviderUsageColumns(providers, "claude")).toEqual([
+      { id: "five_hour", used: "Session 42%", resetIn: "3h" },
+      { id: "weekly", used: "Weekly 18%", resetIn: "4d" },
+    ]);
+    expect(buildProviderUsageColumns(providers, "codex")).toEqual([]);
   });
 
   it("returns null for an unknown provider, absent data, or no usable window", () => {

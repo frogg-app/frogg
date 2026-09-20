@@ -312,10 +312,10 @@ export function ComboboxItem({
       </View>
       {selected || trailingSlot ? (
         <View style={styles.comboboxItemTrailingContainer}>
+          {trailingSlot}
           <View style={styles.comboboxItemTrailingSlot}>
             {selected ? <Check size={16} color={theme.colors.foregroundMuted} /> : null}
           </View>
-          {trailingSlot}
         </View>
       ) : null}
     </Pressable>

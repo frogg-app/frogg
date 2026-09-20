@@ -14,7 +14,11 @@ import {
   type ProviderAccountOption,
   type ProviderAccountSelection,
 } from "@/composer/agent-controls/provider-account";
-import { summarizeProviderUsage } from "@/provider-usage/account-summary";
+import {
+  buildProviderUsageColumns,
+  summarizeProviderUsage,
+  type ProviderUsageColumn,
+} from "@/provider-usage/account-summary";
 import { useProviderUsage } from "@/provider-usage/use-provider-usage";
 import { useHostFeature } from "@/runtime/host-features";
 import type { ProviderSnapshotAccount } from "@frogg/protocol/agent-types";
@@ -46,16 +50,17 @@ export interface ProviderAccountControlValue {
 }
 
 /**
- * One account's rolling-window usage, as the single line shown under its name
- * in the picker. Each row owns its own query because the figures are per
- * sign-in: the daemon answers for one config directory at a time.
+ * One account's rolling-window usage, as the right-anchored cells shown beside
+ * its name in the picker plus the same figures as a spoken line. Each row owns
+ * its own query because the figures are per sign-in: the daemon answers for one
+ * config directory at a time.
  */
-function useProviderAccountUsageLine(input: {
+function useProviderAccountUsage(input: {
   serverId: string | null | undefined;
   provider: string | null | undefined;
   accountId: string | null;
   enabled: boolean;
-}): string | null {
+}): { columns: ProviderUsageColumn[]; spoken: string | null } {
   const { serverId, provider, accountId, enabled } = input;
   // An older daemon ignores the account scope and answers for its default
   // config dir, which would show every row the same numbers. Better to show
@@ -66,12 +71,35 @@ function useProviderAccountUsageLine(input: {
     provider: provider ?? undefined,
     providerAccountId: accountId,
   });
-  return useMemo(
-    () =>
-      view.kind === "ready"
-        ? summarizeProviderUsage(view.payload.providers, provider ?? undefined)
-        : null,
-    [provider, view],
+  return useMemo(() => {
+    if (view.kind !== "ready") return { columns: [], spoken: null };
+    const providers = view.payload.providers;
+    return {
+      columns: buildProviderUsageColumns(providers, provider ?? undefined),
+      spoken: summarizeProviderUsage(providers, provider ?? undefined),
+    };
+  }, [provider, view]);
+}
+
+/**
+ * The usage cells for one row. Every cell is a fixed-width, right-aligned
+ * column so the figures form a grid that reads down the picker rather than a
+ * ragged line that has to be re-parsed per row.
+ */
+function ProviderAccountUsageColumns({ columns }: { columns: readonly ProviderUsageColumn[] }) {
+  return (
+    <View style={styles.usageColumns}>
+      {columns.map((column) => (
+        <View key={column.id} style={styles.usageColumn}>
+          <Text numberOfLines={1} style={styles.usageUsed}>
+            {column.used}
+          </Text>
+          <Text numberOfLines={1} style={styles.usageReset}>
+            {column.resetIn ?? ""}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -99,7 +127,7 @@ function ProviderAccountComboboxOption({
   provider: string | null | undefined;
 }) {
   const unauthenticated = account !== undefined && !account.authenticated;
-  const usageLine = useProviderAccountUsageLine({
+  const usage = useProviderAccountUsage({
     serverId,
     provider,
     accountId: toProviderAccountSelection(option.id),
@@ -116,18 +144,28 @@ function ProviderAccountComboboxOption({
       ),
     [iconColor, unauthenticated, warningColor],
   );
+  const usageSlot = useMemo(
+    () =>
+      unauthenticated || usage.columns.length === 0 ? undefined : (
+        <ProviderAccountUsageColumns columns={usage.columns} />
+      ),
+    [unauthenticated, usage.columns],
+  );
+  const accessibilityLabel = useMemo(() => {
+    if (unauthenticated) return `${option.label} — ${unauthenticatedLabel}`;
+    return usage.spoken ? `${option.label} — ${usage.spoken}` : option.label;
+  }, [option.label, unauthenticated, unauthenticatedLabel, usage.spoken]);
   return (
     <ComboboxItem
       label={option.label}
-      description={unauthenticated ? unauthenticatedLabel : (usageLine ?? undefined)}
+      description={unauthenticated ? unauthenticatedLabel : undefined}
       selected={selected}
       active={active}
       disabled={unauthenticated}
       onPress={onPress}
       leadingSlot={leadingSlot}
-      accessibilityLabel={
-        unauthenticated ? `${option.label} — ${unauthenticatedLabel}` : option.label
-      }
+      trailingSlot={usageSlot}
+      accessibilityLabel={accessibilityLabel}
       testID={`provider-account-option-${option.id}`}
     />
   );
@@ -299,6 +337,33 @@ const styles = StyleSheet.create((theme) => ({
   },
   warningIconColor: {
     color: theme.colors.statusWarning,
+  },
+  usageColumns: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[3],
+  },
+  // Fixed widths, not content widths: the point of the grid is that "Weekly
+  // 32%" in one row sits directly above "Weekly 55%" in the next.
+  usageColumn: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "flex-end",
+    gap: theme.spacing[2],
+  },
+  usageUsed: {
+    width: 86,
+    textAlign: "right",
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foregroundMuted,
+    fontVariant: ["tabular-nums"],
+  },
+  usageReset: {
+    width: 52,
+    textAlign: "right",
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foregroundMuted,
+    fontVariant: ["tabular-nums"],
   },
   tooltipText: {
     color: theme.colors.foreground,

@@ -52,6 +52,7 @@ vi.mock("@/components/ui/combobox", () => ({
     description,
     disabled,
     accessibilityLabel,
+    trailingSlot,
     onPress,
     testID,
   }: {
@@ -59,6 +60,7 @@ vi.mock("@/components/ui/combobox", () => ({
     description?: string;
     disabled?: boolean;
     accessibilityLabel?: string;
+    trailingSlot?: React.ReactNode;
     onPress: () => void;
     testID?: string;
   }) =>
@@ -73,6 +75,7 @@ vi.mock("@/components/ui/combobox", () => ({
         onClick: onPress,
       },
       label,
+      trailingSlot,
     ),
 }));
 
@@ -239,14 +242,18 @@ describe("ProviderAccountControl", () => {
         selectedAccountId: "acct-steve",
       });
       openPicker();
+      // The figures render as their own right-anchored cells, so the row's
+      // text holds them split rather than joined by a separator.
+      expect(screen.getByTestId("provider-account-option-acct-steve").textContent).toBe(
+        "steveSession 42%3h",
+      );
       expect(
-        screen.getByTestId("provider-account-option-acct-steve").getAttribute("data-description"),
-      ).toBe("Session 42% · 3h");
+        screen.getByTestId("provider-account-option-acct-steve").getAttribute("aria-label"),
+      ).toBe("steve — Session 42% · 3h");
       expect(
-        screen
-          .getByTestId(`provider-account-option-${DEFAULT_PROVIDER_ACCOUNT_OPTION_ID}`)
-          .getAttribute("data-description"),
-      ).toBe("Weekly 7%");
+        screen.getByTestId(`provider-account-option-${DEFAULT_PROVIDER_ACCOUNT_OPTION_ID}`)
+          .textContent,
+      ).toBe("DefaultWeekly 7%");
     });
 
     // An older daemon answers for its default config dir whatever account is
@@ -259,9 +266,7 @@ describe("ProviderAccountControl", () => {
       );
       renderControl({ serverId: "host", provider: "claude" });
       openPicker();
-      expect(
-        screen.getByTestId("provider-account-option-acct-steve").getAttribute("data-description"),
-      ).toBeNull();
+      expect(screen.getByTestId("provider-account-option-acct-steve").textContent).toBe("steve");
     });
 
     it("keeps the not-signed-in note instead of a usage line", () => {
