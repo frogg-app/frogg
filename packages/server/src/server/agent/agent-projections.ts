@@ -87,6 +87,9 @@ export function toStoredAgentRecord(
     features: normalizeFeatures(agent.features),
     persistence,
     lastError: agent.lastError ?? undefined,
+    // COMPAT(persistedAgentUsage): added in v1.5.10. Kept on disk so the
+    // context meter still has figures after the daemon restarts.
+    lastUsage: sanitizeUsage(agent.lastUsage),
     requiresAttention: agent.attention.requiresAttention,
     attentionReason: agent.attention.requiresAttention ? agent.attention.attentionReason : null,
     attentionTimestamp: agent.attention.requiresAttention
@@ -196,6 +199,16 @@ function buildStoredPersistenceHandle(
   return toAgentPersistenceHandle(validProviders, record.persistence);
 }
 
+/**
+ * COMPAT(persistedAgentUsage): added in v1.5.10. What the agent's last turn
+ * reported, so a stored agent opens with its context meter intact instead of
+ * blank until it next runs.
+ */
+function buildStoredUsagePatch(record: StoredAgentRecord): { lastUsage?: AgentUsage } {
+  const usage = sanitizeUsage(record.lastUsage);
+  return usage ? { lastUsage: usage } : {};
+}
+
 export function buildStoredAgentPayload(
   record: StoredAgentRecord,
   validProviders: Iterable<AgentProvider>,
@@ -246,6 +259,7 @@ export function buildStoredAgentPayload(
     title: record.title ?? null,
     requiresAttention: record.requiresAttention ?? false,
     attentionReason: record.attentionReason ?? null,
+    ...buildStoredUsagePatch(record),
     attentionTimestamp: record.attentionTimestamp ?? null,
     archivedAt: record.archivedAt ?? null,
     labels: normalizeLabels(record.labels),

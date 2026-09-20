@@ -1830,7 +1830,10 @@ export class AgentManager {
         persistence: record.persistence ?? null,
         historyPrimed: true,
         lastUserMessageAt: record.lastUserMessageAt ? new Date(record.lastUserMessageAt) : null,
-        lastUsage: undefined,
+        // COMPAT(persistedAgentUsage): added in v1.5.10. A stored agent keeps
+        // the usage its last turn reported, so opening it after a daemon
+        // restart still shows what the conversation costs.
+        lastUsage: record.lastUsage,
         lastError: record.lastError ?? undefined,
         attention: { requiresAttention: false },
         internal: record.internal,

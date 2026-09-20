@@ -44,6 +44,24 @@ const PERSISTENCE_HANDLE_SCHEMA = z
   .nullable()
   .optional();
 
+/**
+ * COMPAT(persistedAgentUsage): added in v1.5.10. Usage used to live only in the
+ * running agent, so a daemon restart — or a session the daemon had not loaded —
+ * left the context meter and the stale-context warning with nothing to show for
+ * a conversation that plainly had a context. The last figures are persisted so
+ * they survive both.
+ */
+const STORED_AGENT_USAGE_SCHEMA = z
+  .object({
+    inputTokens: z.number().optional(),
+    cachedInputTokens: z.number().optional(),
+    outputTokens: z.number().optional(),
+    totalCostUsd: z.number().optional(),
+    contextWindowMaxTokens: z.number().optional(),
+    contextWindowUsedTokens: z.number().optional(),
+  })
+  .optional();
+
 const STORED_AGENT_SCHEMA = z.object({
   id: z.string(),
   provider: z.string(),
@@ -71,6 +89,7 @@ const STORED_AGENT_SCHEMA = z.object({
   features: z.array(AgentFeatureSchema).optional(),
   persistence: PERSISTENCE_HANDLE_SCHEMA,
   lastError: z.string().nullable().optional(),
+  lastUsage: STORED_AGENT_USAGE_SCHEMA,
   requiresAttention: z.boolean().optional(),
   attentionReason: z.enum(["finished", "error", "permission"]).nullable().optional(),
   attentionTimestamp: z.string().nullable().optional(),

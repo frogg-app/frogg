@@ -8,6 +8,7 @@ import {
   toStoredAgentRecord,
   type ManagedAgent,
 } from "./agent-projections.js";
+import { parseStoredAgentRecord } from "./agent-storage.js";
 import type { AgentSession } from "./agent-sdk-types.js";
 import type {
   AgentFeature,
@@ -187,6 +188,27 @@ describe("toStoredAgentRecord", () => {
     expect(agent.config.providerOptions!.allowedTools).toEqual(["Read"]);
     record.persistence!.sessionId = "mutated";
     expect(agent.persistence!.sessionId).toBe("persist-2");
+  });
+
+  // COMPAT(persistedAgentUsage): added in v1.5.10.
+  it("keeps the last usage on disk, and reads it back into a stored agent's payload", () => {
+    const agent = createManagedAgent({
+      lastUsage: { contextWindowUsedTokens: 175_000, contextWindowMaxTokens: 200_000 },
+    });
+
+    const record = toStoredAgentRecord(agent);
+    expect(record.lastUsage).toEqual({
+      contextWindowUsedTokens: 175_000,
+      contextWindowMaxTokens: 200_000,
+    });
+
+    // What a restarted daemon serves for an agent it has not loaded: the figures
+    // survive, so the context meter still has something to show.
+    const payload = buildStoredAgentPayload(parseStoredAgentRecord(record), ["claude"]);
+    expect(payload.lastUsage).toEqual({
+      contextWindowUsedTokens: 175_000,
+      contextWindowMaxTokens: 200_000,
+    });
   });
 
   it("falls back to config mode when current mode is null and handles null title", () => {
