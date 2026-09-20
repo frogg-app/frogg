@@ -41,6 +41,16 @@ describe("resolveTrailingActionVisibility", () => {
     expect(resolve({ hasArchiveAction: false, isHovered: true }).showActionsColumn).toBe(false);
   });
 
+  it("reserves the column's width only on touch, where the kebab is always drawn", () => {
+    // On a pointer platform the column overlays the row, so the title keeps the full width; on
+    // touch the permanent kebab would otherwise sit on top of the account and the diff stat.
+    expect(resolve({ isTouchPlatform: true }).reserveActionsColumn).toBe(true);
+    expect(resolve({ isHovered: true }).reserveActionsColumn).toBe(false);
+    expect(resolve({ hasArchiveAction: false, isTouchPlatform: true }).reserveActionsColumn).toBe(
+      false,
+    );
+  });
+
   it("expands the hovered row into the quick action rail while Alt is held", () => {
     expect(resolve({ isHovered: true, quickActionsModifierDown: true })).toMatchObject({
       showQuickActions: true,

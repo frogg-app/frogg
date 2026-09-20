@@ -96,7 +96,7 @@ export function SidebarWorkspaceTrailingActions({
   const quickActionsModifierDown = useKeyboardShortcutsStore(
     (state) => state.quickActionsModifierDown,
   );
-  const { showTrailing, showKebab, showQuickActions, showActionsColumn } =
+  const { showTrailing, showKebab, showQuickActions, showActionsColumn, reserveActionsColumn } =
     resolveTrailingActionVisibility({
       workspace,
       trailing,
@@ -140,7 +140,7 @@ export function SidebarWorkspaceTrailingActions({
       <WorkspaceAgentDisclosure label={workspaceLabel} />
       {showActionsColumn && onArchive ? (
         <View
-          style={styles.actionsColumn}
+          style={reserveActionsColumn ? styles.actionsColumnReserved : styles.actionsColumn}
           testID={`sidebar-workspace-actions-${workspace.workspaceKey}`}
         >
           {kebabPresence.mounted ? (
@@ -217,6 +217,16 @@ const styles = StyleSheet.create({
     right: 0,
     width: SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,
     height: 20,
+    alignItems: "flex-end",
+    justifyContent: "center",
+  },
+  // Touch's permanent kebab, in the flow: it has to push the account and the diff stat left
+  // rather than land on top of them.
+  actionsColumnReserved: {
+    position: "relative",
+    width: SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,
+    height: 20,
+    flexShrink: 0,
     alignItems: "flex-end",
     justifyContent: "center",
   },

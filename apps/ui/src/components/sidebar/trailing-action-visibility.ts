@@ -67,6 +67,8 @@ export function resolveTrailingActionVisibility({
   showScrim: boolean;
   /** The row holds a fixed-width column at its right edge for the kebab and the rail. */
   showActionsColumn: boolean;
+  /** Whether that column takes layout width instead of overlaying the row's metadata. */
+  reserveActionsColumn: boolean;
 } {
   const hasTrailing = hasSidebarWorkspaceTrailing({ workspace, trailing });
   // The rail is the kebab expanded, so it needs the same actions the kebab would have opened.
@@ -100,5 +102,9 @@ export function resolveTrailingActionVisibility({
     // Held on every row with actions, hovered or not, so the kebab appearing never reflows
     // the title and the metadata; on touch it is where the permanent kebab lives.
     showActionsColumn: hasArchiveAction,
+    // A pointer platform reveals the kebab on hover, so its column overlays the row and the
+    // title keeps the full width. Touch has no hover: the kebab is always drawn, so it must
+    // take real width or it sits on top of the account and the diff stat.
+    reserveActionsColumn: hasArchiveAction && isTouchPlatform,
   };
 }
