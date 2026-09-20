@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, useCallback, type ReactNode } from "react";
-import { View, type GestureResponderEvent } from "react-native";
+import { type GestureResponderEvent } from "react-native";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -95,10 +95,10 @@ export function WorkspaceAgentDisclosure({ label }: { label: string }) {
     },
     [toggle],
   );
-  // Held open rather than dropped when there is nothing to disclose: a row that grows a
-  // subagent must not shunt its account glyph and kebab left of where every other row draws
-  // them.
-  if (nodes.length === 0) return <View style={styles.disclosure} />;
+  // Dropped rather than held open when there is nothing to disclose: a column reserved on
+  // every row for a chevron only rows with subagents ever draw is dead width, and the title is
+  // what wants it. A row that grows a subagent gains the chevron and gives that width back.
+  if (nodes.length === 0) return null;
   const Chevron = expanded ? ThemedChevronDown : ThemedChevronRight;
   return (
     <Button

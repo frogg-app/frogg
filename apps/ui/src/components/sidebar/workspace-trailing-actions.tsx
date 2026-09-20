@@ -38,8 +38,9 @@ const SHORTCUT_BADGE_CLEARANCE = 22;
  * The trailing cluster of a sidebar workspace row, right to left: the actions column, the
  * account, the agent disclosure, then the diff stat or timestamp.
  *
- * The actions column is a fixed width at the row's right edge on every row that has actions.
- * The 3-dot kebab fades into it on hover. Holding Control cross-fades the kebab into the quick
+ * The actions column is pinned to the row's right edge and takes no layout width, so the title
+ * and metadata get the row's full width and nothing shifts when an action appears. The 3-dot
+ * kebab fades into it on hover over a scrim. Holding Control cross-fades the kebab into the quick
  * action rail, which is pinned to that same right edge — so it lands on the exact same pixels
  * on every row whatever the title and metadata are — and grows leftwards over a scrim that
  * fades out whatever it covers. When the row is also showing its workspace-jump number badge,
@@ -144,6 +145,9 @@ export function SidebarWorkspaceTrailingActions({
         >
           {kebabPresence.mounted ? (
             <Animated.View style={kebabStyle} pointerEvents={kebab.showKebab ? "auto" : "none"}>
+              {/* The column takes no layout width, so the kebab draws over whatever the row's
+                  metadata put under it — the scrim fades that out the same way the rail's does. */}
+              <TrailingActionScrim backdrop={backdrop} testID="sidebar-workspace-kebab-scrim" />
               <SidebarWorkspaceMenu
                 {...kebab.menuProps}
                 workspaceKey={workspace.workspaceKey}
@@ -204,18 +208,21 @@ const styles = StyleSheet.create({
   trailingContent: {
     flexShrink: 0,
   },
-  // Fixed, not content-sized, and present whether or not anything is showing in it: the kebab
-  // and the rail both anchor to its right edge, which is the row's right edge.
+  // Pinned to the row's right edge and out of the flow entirely: the kebab and the rail both
+  // anchor to the same pixels on every row, and the title and metadata keep the full width of
+  // the row instead of holding a column open for an action that is only there on hover.
   actionsColumn: {
-    position: "relative",
+    position: "absolute",
+    top: 0,
+    right: 0,
     width: SIDEBAR_ROW_ACTIONS_COLUMN_WIDTH,
     height: 20,
-    flexShrink: 0,
     alignItems: "flex-end",
     justifyContent: "center",
   },
   kebab: {
     flexDirection: "row",
+    alignItems: "center",
   },
   // Pinned to the column's right edge and sized to the rail, so it grows leftwards over the
   // metadata and title without taking layout space from either.
