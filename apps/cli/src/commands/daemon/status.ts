@@ -9,6 +9,13 @@ import { resolveLocalDaemonDiagnosticState } from "./local-daemon.js";
 import { normalizeListenTargetForConnect } from "./listen-target.js";
 import { resolveNodePathFromPid } from "./runtime-toolchain.js";
 import { resolveLanTrusted } from "./trust-lan.js";
+import {
+  describeOwnershipRemedy,
+  describeServiceRegistration,
+  detectServiceRegistration,
+  resolveServiceOwnership,
+  type ServiceOwnership,
+} from "./service/state.js";
 
 const DAEMON_STATUS_PROBE_TIMEOUT_MS = 1500;
 
@@ -22,6 +29,9 @@ interface ProviderBinaryStatus {
 interface DaemonStatus {
   serverId: string | null;
   localDaemon: "running" | "stopped" | "stale_pid" | "unresponsive";
+  /** The registered service unit / launch agent, and whether it is the one running the daemon. */
+  service: string;
+  serviceOwnership: ServiceOwnership;
   connectedDaemon: "reachable" | "unreachable" | "auth_required" | "auth_failed" | "not_probed";
   home: string;
   listen: string;
@@ -100,6 +110,11 @@ function createStatusSchema(status: DaemonStatus): OutputSchema<StatusRow> {
             if (item.value === "unresponsive") return "yellow";
             return "red";
           }
+          if (item.key === "Managed By") {
+            if (item.value === "service" || item.value === "manual") return "green";
+            if (item.value === "none") return undefined;
+            return "yellow";
+          }
           if (item.key === "Connected Daemon") {
             if (item.value === "reachable") return "green";
             if (item.value === "not_probed" || item.value === "auth_required") return "yellow";
@@ -122,6 +137,8 @@ function toStatusRows(status: DaemonStatus): StatusRow[] {
   const rows: StatusRow[] = [
     { key: "Server ID", value: status.serverId ?? "-" },
     { key: "Local Daemon", value: status.localDaemon },
+    { key: "Service", value: status.service },
+    { key: "Managed By", value: status.serviceOwnership },
     { key: "Connected Daemon", value: status.connectedDaemon },
     { key: `${brand.name} Home`, value: status.home },
     { key: "Listen", value: status.listen },
@@ -152,14 +169,23 @@ function toStatusRows(status: DaemonStatus): StatusRow[] {
       if (!provider.path) {
         rows.push({ key: `  ${provider.label}`, value: "not found (daemon)" });
       } else {
-        rows.push({ key: `  ${provider.label}`, value: `${provider.path} (daemon)` });
+        rows.push({
+          key: `  ${provider.label}`,
+          value: `${provider.path} (daemon)`,
+        });
       }
     } else if (!provider.path) {
       rows.push({ key: `  ${provider.label}`, value: "not found" });
     } else if (!provider.version) {
-      rows.push({ key: `  ${provider.label}`, value: `${provider.path} (--version failed)` });
+      rows.push({
+        key: `  ${provider.label}`,
+        value: `${provider.path} (--version failed)`,
+      });
     } else {
-      rows.push({ key: `  ${provider.label}`, value: `${provider.path} (${provider.version})` });
+      rows.push({
+        key: `  ${provider.label}`,
+        value: `${provider.path} (${provider.version})`,
+      });
     }
   }
 
@@ -346,7 +372,10 @@ function applyProbeToStatus(input: ProbeMergeState): Omit<ProbeMergeState, "prob
   };
 }
 
-function resolveServerIdSafely(home: string): { serverId: string | null; error: string | null } {
+function resolveServerIdSafely(home: string): {
+  serverId: string | null;
+  error: string | null;
+} {
   try {
     return { serverId: getOrCreateServerId(home), error: null };
   } catch (error) {
@@ -409,6 +438,25 @@ function resolveStatusProbeTarget(listen: string): string {
   return normalizeListenTargetForConnect(listen) ?? "";
 }
 
+/**
+ * Whether the daemon on this host is the one its registered service manages.
+ * A split between the two is invisible until the next upgrade or reboot fails,
+ * so it belongs in `status` with the command that repairs it.
+ */
+function resolveServiceStatus(daemonRunning: boolean): {
+  description: string;
+  ownership: ServiceOwnership;
+  remedy: string | undefined;
+} {
+  const registration = detectServiceRegistration();
+  const ownership = resolveServiceOwnership({ registration, daemonRunning });
+  return {
+    description: describeServiceRegistration(registration),
+    ownership,
+    remedy: describeOwnershipRemedy({ ownership, registration }) ?? undefined,
+  };
+}
+
 export async function runStatusCommand(
   options: CommandOptions,
   _command: Command,
@@ -424,7 +472,9 @@ export async function runStatusCommand(
   let connectedDaemon: DaemonStatus["connectedDaemon"] = "not_probed";
   let daemonVersion: string | null = null;
   let daemonProviders: ProviderBinaryStatus[] | undefined;
-  let relayStatus = selectRelayStatus({ persisted: relayConfigFromLocalState(state) });
+  let relayStatus = selectRelayStatus({
+    persisted: relayConfigFromLocalState(state),
+  });
   let note = state.configError === null ? undefined : `Configuration error: ${state.configError}`;
 
   if (!state.running && state.stalePidFile && state.pidInfo) {
@@ -454,6 +504,9 @@ export async function runStatusCommand(
     }));
   }
 
+  const service = resolveServiceStatus(state.running);
+  note = appendNote(note, service.remedy);
+
   const cliVersion = resolveCliVersion();
 
   const serverIdResult = resolveServerIdSafely(state.home);
@@ -477,6 +530,8 @@ export async function runStatusCommand(
   const daemonStatus: DaemonStatus = {
     serverId,
     localDaemon,
+    service: service.description,
+    serviceOwnership: service.ownership,
     connectedDaemon,
     home: state.home,
     listen: state.listen,

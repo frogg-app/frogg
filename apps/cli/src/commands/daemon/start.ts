@@ -9,6 +9,11 @@ import {
   type DaemonStartOptions as StartOptions,
 } from "./local-daemon.js";
 import { getErrorMessage } from "../../utils/errors.js";
+import {
+  detectServiceRegistration,
+  startService,
+  type ServiceRegistration,
+} from "./service/state.js";
 
 export type { DaemonStartOptions as StartOptions } from "./local-daemon.js";
 
@@ -43,6 +48,31 @@ export function startCommand(): Command {
     });
 }
 
+/**
+ * On a host where a service unit owns the daemon, a bare `daemon start` used
+ * to start a *detached* daemon instead: the unit stayed inactive, and the next
+ * time anything started it (an upgrade, a reboot) the port was already taken.
+ * Start the service itself, so the daemon comes back under the manager that is
+ * supposed to keep it alive.
+ *
+ * Any explicit override (a different home, listen address or relay flag) is
+ * something the unit's baked-in environment cannot honour, so those still get
+ * a hand-started daemon.
+ */
+function serviceCanHandleStart(options: StartOptions): boolean {
+  return (
+    options.foreground !== true &&
+    options.home === undefined &&
+    options.listen === undefined &&
+    options.port === undefined &&
+    options.relay === undefined &&
+    options.mcp === undefined &&
+    options.injectMcp === undefined &&
+    options.webUi === undefined &&
+    options.hostnames === undefined
+  );
+}
+
 export interface StartRuntime {
   resolveState(options: {
     home?: string;
@@ -50,6 +80,8 @@ export interface StartRuntime {
   startDetached: typeof startLocalDaemonDetached;
   startForeground: typeof startLocalDaemonForeground;
   prepareHome?(options: { home?: string }): void;
+  detectService?(): ServiceRegistration | null;
+  startService?(registration: ServiceRegistration): void;
   log(message: string): void;
   error(message: string): void;
   exit(code: number): never;
@@ -62,6 +94,8 @@ const defaultRuntime: StartRuntime = {
   prepareHome: (options) => {
     if (!options.home) prepareFroggHome();
   },
+  detectService: detectServiceRegistration,
+  startService,
   log: console.log,
   error: console.error,
   exit: process.exit,
@@ -78,6 +112,8 @@ export async function runStart(
 
   runtime.prepareHome?.({ home: options.home });
   if (reportAlreadyRunning(options, runtime)) return;
+
+  if (startThroughService(options, runtime)) return;
 
   if (!options.foreground) {
     try {
@@ -99,6 +135,26 @@ export async function runStart(
     const message = getErrorMessage(err);
     exitWithError(`Failed to start daemon: ${message}`, runtime);
   }
+}
+
+/** Returns true when the registered service was started and nothing else should run. */
+function startThroughService(options: StartOptions, runtime: StartRuntime): boolean {
+  if (!serviceCanHandleStart(options)) return false;
+  const registration = runtime.detectService?.() ?? null;
+  if (!registration || registration.active) return false;
+  try {
+    runtime.startService?.(registration);
+  } catch (err) {
+    runtime.error(chalk.red(`Failed to start ${registration.name}: ${getErrorMessage(err)}`));
+    runtime.error(
+      chalk.dim(
+        `Start a daemon outside the service with: ${brand.cliName} daemon start --foreground`,
+      ),
+    );
+    runtime.exit(1);
+  }
+  runtime.log(chalk.green(`Started ${registration.name}.`));
+  return true;
 }
 
 function reportAlreadyRunning(options: StartOptions, runtime: StartRuntime): boolean {

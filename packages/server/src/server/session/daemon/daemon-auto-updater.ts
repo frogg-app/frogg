@@ -138,10 +138,18 @@ export type AutoUpdateTickOutcome =
   | "backed_off"
   | "check_failed";
 
+/** What the last scheduled check did, and when the next one is due. */
+export interface AutoUpdateCheckRecord {
+  at: string;
+  outcome: AutoUpdateTickOutcome;
+  nextCheckAt: string;
+}
+
 export class DaemonAutoUpdater {
   private readonly options: DaemonAutoUpdaterOptions;
   private timer: NodeJS.Timeout | null = null;
   private stopped = false;
+  private lastCheckRecord: AutoUpdateCheckRecord | null = null;
 
   constructor(options: DaemonAutoUpdaterOptions) {
     this.options = options;
@@ -171,6 +179,16 @@ export class DaemonAutoUpdater {
     this.timer.unref?.();
   }
 
+  /**
+   * The last scheduled check. A check that finds nothing used to be silent,
+   * so a host sitting on an old version looked identical to one whose
+   * auto-update had stopped running: the only way to tell was an "auto-update
+   * starting" line that never came. Every tick now leaves a record.
+   */
+  lastCheck(): AutoUpdateCheckRecord | null {
+    return this.lastCheckRecord;
+  }
+
   private async runScheduledTick(): Promise<void> {
     let outcome: AutoUpdateTickOutcome = "check_failed";
     try {
@@ -180,9 +198,24 @@ export class DaemonAutoUpdater {
     }
     const config = this.options.getConfig() ?? DEFAULT_AUTO_UPDATE_CONFIG;
     const deferred = outcome === "busy" || outcome === "quiet_hours";
-    this.schedule(
-      deferred ? DEFER_WHILE_BUSY_MS : Math.max(1, config.checkIntervalHours) * 3_600_000,
+    const nextInMs = deferred
+      ? DEFER_WHILE_BUSY_MS
+      : Math.max(1, config.checkIntervalHours) * 3_600_000;
+    const now = this.currentTime();
+    this.lastCheckRecord = {
+      at: now.toISOString(),
+      outcome,
+      nextCheckAt: new Date(now.getTime() + nextInMs).toISOString(),
+    };
+    this.options.logger.info(
+      {
+        outcome,
+        channel: config.channel,
+        nextCheckAt: this.lastCheckRecord.nextCheckAt,
+      },
+      "auto-update checked",
     );
+    this.schedule(nextInMs);
   }
 
   private currentTime(): Date {

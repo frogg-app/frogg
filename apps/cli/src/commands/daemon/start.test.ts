@@ -5,6 +5,15 @@ import { describe, expect, test } from "vitest";
 import { loadConfig } from "@frogg/server";
 import { resolveLocalDaemonDiagnosticState } from "./local-daemon.js";
 import { runStart, type StartOptions, type StartRuntime } from "./start.js";
+import type { ServiceRegistration } from "./service/state.js";
+
+const UNIT: ServiceRegistration = {
+  kind: "systemd",
+  name: "frogg-daemon.service",
+  path: "/config/systemd/user/frogg-daemon.service",
+  enabled: true,
+  active: false,
+};
 
 class FakeStartRuntime implements StartRuntime {
   states: ReturnType<StartRuntime["resolveState"]>[] = [{ running: false, pidInfo: null }];
@@ -36,7 +45,60 @@ class FakeStartRuntime implements StartRuntime {
   exit(code: number): never {
     throw new Error(`exit:${code}`);
   }
+  registration: ServiceRegistration | null = null;
+  started: ServiceRegistration[] = [];
+  serviceFailure: Error | null = null;
+  detectService = () => this.registration;
+  startService = (registration: ServiceRegistration) => {
+    if (this.serviceFailure) throw this.serviceFailure;
+    this.started.push(registration);
+  };
 }
+
+describe("daemon start with a registered service", () => {
+  test("an inactive unit is started instead of a detached daemon", async () => {
+    const runtime = new FakeStartRuntime();
+    runtime.registration = UNIT;
+    await runStart({}, runtime);
+    expect(runtime.started).toEqual([UNIT]);
+    expect(runtime.launches).toEqual([]);
+    expect(runtime.logs[0]).toContain("frogg-daemon.service");
+  });
+
+  test("an active unit is left alone", async () => {
+    const runtime = new FakeStartRuntime();
+    runtime.registration = { ...UNIT, active: true };
+    await runStart({}, runtime);
+    expect(runtime.started).toEqual([]);
+    expect(runtime.launches).toEqual([{}]);
+  });
+
+  test("explicit overrides the unit cannot honour keep the manual path", async () => {
+    const runtime = new FakeStartRuntime();
+    runtime.registration = UNIT;
+    await runStart({ listen: "127.0.0.1:9100" }, runtime);
+    expect(runtime.started).toEqual([]);
+    expect(runtime.launches).toEqual([{ listen: "127.0.0.1:9100" }]);
+  });
+
+  test("--foreground still runs the daemon in this process", async () => {
+    const runtime = new FakeStartRuntime();
+    runtime.registration = UNIT;
+    // The fake exits by throwing, as it does for every foreground case here.
+    await expect(runStart({ foreground: true }, runtime)).rejects.toThrow(/^exit:/);
+    expect(runtime.started).toEqual([]);
+    expect(runtime.launches).toEqual([{ foreground: true }]);
+  });
+
+  test("a service that will not start reports how to start a daemon anyway", async () => {
+    const runtime = new FakeStartRuntime();
+    runtime.registration = UNIT;
+    runtime.serviceFailure = new Error("unit masked");
+    await expect(runStart({}, runtime)).rejects.toThrow("exit:1");
+    expect(runtime.errors[0]).toContain("unit masked");
+    expect(runtime.errors[1]).toContain("--foreground");
+  });
+});
 
 describe("daemon start feedback", () => {
   test.each([false, true])(

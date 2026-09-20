@@ -31,8 +31,30 @@ shows the daemon's version and update state; **Settings → Diagnostics** collec
 | `[Config] Invalid config in ~/.frogg/config.json` | A key is misspelt or has the wrong type. The message names the path. See [configuration](/docs/reference/configuration/) |
 | Log: `Relay is enabled but no relay endpoint is configured` | Relay is on with no endpoint, so the daemon runs without relay and pairing offers are direct only. Set the endpoint in host settings, **Pair devices**, or `daemon.relay.endpoint`, or turn relay off |
 | Log: `Worker crashed (code 1): Frogg cannot listen on 0.0.0.0:9999: port 9999 is already in use by a fde daemon 0.6.13 (server …), pid N (node). Restarting worker in 4s (attempt 3)` | Something else holds the port; the line names it (daemon identity, pid and process name where it can find them). The worker keeps retrying with backoff up to 30 s. Stop the holder. For a leftover FDE service, see [legacy FDE service](#legacy-fde-service-holds-the-port) |
+| `frogg status` shows `Managed By: detached` | A daemon is running outside the service that is meant to own it, so the next `systemctl start` (an upgrade, a reboot) hits `EADDRINUSE`. `frogg restart` hands it back. See [the service and the daemon disagree](#the-service-and-the-daemon-disagree) |
+| `frogg status` shows `Managed By: service_stopped` | The unit is installed but not running and nothing holds the port. `frogg start` starts the unit |
 | Service stops when you log out (Linux) | `sudo loginctl enable-linger $USER` |
 | Changes to `config.json` ignored | `frogg reload`; check its output for paths that need `frogg restart` or are pinned by env vars |
+
+### The service and the daemon disagree
+
+`frogg status` reports both the registered service and who is actually running the daemon:
+
+```
+Service      systemd frogg-daemon.service (enabled, inactive)
+Managed By   detached
+```
+
+`detached` means a daemon holds the port while its unit sits inactive: the unit cannot start
+while the port is taken, so the next upgrade or reboot fails. It happens when a daemon was
+started by hand, or when a restart was interrupted. `frogg restart` stops the stray daemon and
+restarts the service; `frogg start` starts an inactive unit rather than another loose daemon.
+
+A restart issued from a terminal the daemon hosts is a special case: stopping the unit kills
+every process in its cgroup, including that terminal and the command issuing the stop. Frogg
+hands those restarts to a transient `systemd-run --user` unit that outlives the stop, so the
+daemon does come back — but the terminal it was typed in ends with the daemon. Reconnect and
+run `frogg status` to confirm.
 
 ## Connections
 

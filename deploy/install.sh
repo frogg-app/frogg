@@ -331,15 +331,47 @@ install_systemd_service() {
     return
   fi
   systemctl --user enable "${SERVICE_NAME}" >/dev/null 2>&1 || true
+  if [ "$(id -u)" != "0" ]; then
+    log "to keep the daemon running after logout: sudo loginctl enable-linger $(id -un)"
+  fi
+  restart_systemd_service
+}
+
+# True when this installer runs inside the daemon's own service cgroup, which
+# is the normal case for an upgrade started from a terminal the daemon hosts.
+# Stopping the unit from there kills this script, the systemctl that issued the
+# stop, and everything else in the cgroup, so the start that should follow
+# never runs and the host is left with no daemon at all.
+# FROGG_CGROUP_FILE exists so the tests can stand in for /proc/self/cgroup.
+inside_service_cgroup() {
+  local cgroup_file="${FROGG_CGROUP_FILE:-/proc/self/cgroup}"
+  [ -r "${cgroup_file}" ] || return 1
+  grep -Fq "/${SERVICE_NAME}.service" "${cgroup_file}" 2>/dev/null
+}
+
+restart_systemd_service() {
+  if inside_service_cgroup && command -v systemd-run >/dev/null 2>&1; then
+    # A transient unit lives outside the daemon's cgroup, so it survives the
+    # stop and can complete the start. This shell probably will not: say so
+    # before handing over, because nothing after this line is guaranteed to
+    # print.
+    log "this shell runs inside ${SERVICE_NAME}; handing the restart to a transient unit"
+    log "restarting ${SERVICE_NAME} (systemd user service); this terminal ends with the daemon that hosts it"
+    log "the restart continues without this shell; check it with: ${BRAND_CLI} daemon status"
+    if systemd-run --user --collect --quiet \
+      --unit="${SERVICE_NAME}-install-$$" \
+      -- /bin/sh -c "systemctl --user stop '${SERVICE_NAME}'; '${FROGG_INSTALL_DIR}/current/bin/${BRAND_CLI}' daemon stop --force >/dev/null 2>&1; systemctl --user start '${SERVICE_NAME}'"; then
+      SERVICE_RESTART_HANDED_OFF=1
+      return 0
+    fi
+    log "systemd-run was refused; restarting inline (this shell may be terminated)"
+  fi
   if systemctl --user is-active --quiet "${SERVICE_NAME}"; then
     systemctl --user stop "${SERVICE_NAME}"
   fi
   stop_existing_daemon
   systemctl --user start "${SERVICE_NAME}"
   log "started ${SERVICE_NAME} (systemd user service)"
-  if [ "$(id -u)" != "0" ]; then
-    log "to keep the daemon running after logout: sudo loginctl enable-linger $(id -un)"
-  fi
 }
 
 start_detached_daemon() {
@@ -579,6 +611,7 @@ main() {
   WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/frogg-install.XXXXXX")"
   trap 'rm -rf "${WORK_DIR}"' EXIT
 
+  SERVICE_RESTART_HANDED_OFF=0
   PREVIOUS_VERSION=""
   if [ -L "${FROGG_INSTALL_DIR}/current" ]; then
     PREVIOUS_VERSION="$(basename "$(readlink "${FROGG_INSTALL_DIR}/current")")"
@@ -595,7 +628,11 @@ main() {
       linux) install_systemd_service ;;
       darwin) install_launchd_agent ;;
     esac
-    verify_running_daemon
+    # A hand-off runs the restart outside this process precisely because this
+    # process is about to be killed; there is nothing here left to verify with.
+    if [ "${SERVICE_RESTART_HANDED_OFF}" != "1" ]; then
+      verify_running_daemon
+    fi
   fi
   print_next_steps
 }
