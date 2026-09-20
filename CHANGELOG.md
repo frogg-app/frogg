@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.19 — 2026-09-20
+
+- Frogg updates itself on Android. A new version used to mean finding the APK and
+  installing it by hand; Settings > About > Updates now checks the published releases,
+  picks the package built for this device, downloads it and hands it to Android's own
+  installer, and a callout offers the update at startup rather than waiting to be found.
+  Stable and Beta channels, and the automatic check can be turned off. The choice of
+  package follows the installed app's own signing key, so an install is only ever offered
+  a build that can actually replace it, and says so plainly when the published one is
+  signed differently. The F-Droid build keeps neither the permission nor the updater: its
+  client owns those updates.
+
 ## 1.5.11 — 2026-09-20
 
 - A session now starts on the account you picked. Typing into the new session
