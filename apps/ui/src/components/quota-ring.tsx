@@ -3,6 +3,7 @@ import Svg, { Circle } from "react-native-svg";
 import { useCallback } from "react";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { COMPOSER_METER_SLOT_WIDTH } from "@/composer/usage-cluster";
 import type { ProviderUsageColumn } from "@/provider-usage/account-summary";
 import type { Theme } from "@/styles/theme";
 
@@ -100,7 +101,7 @@ export function QuotaRing({ column, size, testID }: QuotaRingProps) {
 
 const styles = StyleSheet.create((theme) => ({
   container: {
-    width: 22,
+    width: COMPOSER_METER_SLOT_WIDTH,
     height: 28,
     alignItems: "center",
     justifyContent: "center",

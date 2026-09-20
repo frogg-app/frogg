@@ -6,6 +6,14 @@ import { QuotaRing } from "@/components/quota-ring";
 import { buildProviderUsageColumns } from "@/provider-usage/account-summary";
 import { useProviderUsage } from "@/provider-usage/use-provider-usage";
 
+/**
+ * Every ring in the cluster — the quota windows and the context window — is drawn at one
+ * diameter in one slot width. They measure different things but they are the same kind of
+ * thing, and a size difference between them would read as a hierarchy that does not exist.
+ */
+export const COMPOSER_METER_RING_SIZE = 14;
+export const COMPOSER_METER_SLOT_WIDTH = 22;
+
 interface ComposerUsageClusterProps {
   serverId: string;
   provider: string | null;
@@ -51,7 +59,7 @@ export function ComposerUsageCluster({
         <QuotaRing
           key={column.id}
           column={column}
-          size={13}
+          size={COMPOSER_METER_RING_SIZE}
           testID={`composer-quota-ring-${column.id}`}
         />
       ))}
@@ -66,7 +74,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     flexShrink: 0,
     height: 28,
-    paddingHorizontal: theme.spacing[1],
+    paddingHorizontal: theme.spacing[0.5],
     borderRadius: theme.borderRadius.full,
     backgroundColor: theme.colors.surface2,
   },

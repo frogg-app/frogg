@@ -102,7 +102,11 @@ import type { AgentUsage } from "@frogg/protocol/agent-types";
 import { resolveStaleContextWarning, type StaleContextWarning } from "@/composer/stale-context";
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
 import { ComposerVoiceAlertsToggle } from "@/composer/voice-alerts-toggle";
-import { ComposerUsageCluster } from "@/composer/usage-cluster";
+import {
+  COMPOSER_METER_RING_SIZE,
+  COMPOSER_METER_SLOT_WIDTH,
+  ComposerUsageCluster,
+} from "@/composer/usage-cluster";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
 import { resolveActiveSendBehavior } from "./input/state";
 import { useKeyboardShiftStyle } from "@/hooks/use-keyboard-shift-style";
@@ -335,6 +339,7 @@ function renderContextWindowMeter(
   providerAccountId: string | null | undefined,
   pending: boolean,
   glyphSize: number,
+  containerWidth: number,
 ): ReactElement | null {
   const hasData = contextWindowMaxTokens !== null && contextWindowUsedTokens !== null;
   if (!hasData && !pending) {
@@ -351,6 +356,7 @@ function renderContextWindowMeter(
       providerAccountId={providerAccountId}
       pending={pending}
       glyphSize={glyphSize}
+      containerWidth={containerWidth}
     />
   );
 }
@@ -371,7 +377,7 @@ function resolveContextWindowPlacement(
       provider={cluster.provider}
       providerAccountId={cluster.providerAccountId}
     >
-      <View style={styles.contextWindowMeterSlot}>{meter}</View>
+      {meter}
     </ComposerUsageCluster>
   );
 }
@@ -1991,7 +1997,9 @@ function ComposerContentImpl({
   );
 
   const contextWindowPending = agentState.status === "initializing" || isAgentRunning;
-  const contextWindowMeterGlyphSize = isCompactLayout ? ICON_SIZE.md : buttonIconSize;
+  // The context ring sits inside the meter cluster, so it takes the cluster's ring size rather
+  // than the toolbar's icon size — the three rings have to match.
+  const contextWindowMeterGlyphSize = COMPOSER_METER_RING_SIZE;
 
   const contextWindowMeter = useMemo(
     () =>
@@ -2005,6 +2013,7 @@ function ComposerContentImpl({
         agentState.providerAccountId,
         contextWindowPending,
         contextWindowMeterGlyphSize,
+        COMPOSER_METER_SLOT_WIDTH,
       ),
     [
       contextWindowMaxTokens,
@@ -2492,13 +2501,6 @@ const styles = StyleSheet.create((theme: Theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[1],
-  },
-  contextWindowMeterSlot: {
-    width: 28,
-    height: 28,
-    flexShrink: 0,
-    alignItems: "center",
-    justifyContent: "center",
   },
   realtimeVoiceButton: {
     width: 28,

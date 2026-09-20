@@ -27,6 +27,12 @@ interface ContextWindowMeterProps {
   pending?: boolean;
   /** Optional glyph envelope for icon-toolbar alignment. */
   glyphSize?: number;
+  /**
+   * Width of the meter's touch target. The composer's meter cluster narrows it so the context
+   * ring sits on the same pitch as the quota rings beside it; on its own it keeps the 28px
+   * toolbar-button envelope.
+   */
+  containerWidth?: number;
 }
 
 const SVG_SIZE = 14;
@@ -80,7 +86,8 @@ function getMeterColors(
   return { progress: theme.colors.foregroundMuted, track };
 }
 
-function getMeterGeometry(showPercentage: boolean, glyphSize?: number) {
+function getMeterGeometry(showPercentage: boolean, glyphSize?: number, containerWidth?: number) {
+  const widthStyle = containerWidth != null ? { width: containerWidth } : undefined;
   if (showPercentage) {
     return {
       svgSize: COMPACT_SVG_SIZE,
@@ -88,7 +95,7 @@ function getMeterGeometry(showPercentage: boolean, glyphSize?: number) {
       radius: COMPACT_RADIUS,
       strokeWidth: COMPACT_STROKE_WIDTH,
       circumference: COMPACT_CIRCUMFERENCE,
-      containerStyle: styles.containerWithLabel,
+      containerStyle: [styles.containerWithLabel, widthStyle],
     };
   }
   const resolvedSize = glyphSize ?? SVG_SIZE;
@@ -99,7 +106,7 @@ function getMeterGeometry(showPercentage: boolean, glyphSize?: number) {
     radius: (resolvedSize - resolvedStrokeWidth) / 2,
     strokeWidth: resolvedStrokeWidth,
     circumference: Math.PI * (resolvedSize - resolvedStrokeWidth),
-    containerStyle: styles.container,
+    containerStyle: [styles.container, widthStyle],
   };
 }
 
@@ -113,6 +120,7 @@ export function ContextWindowMeter({
   providerAccountId,
   pending = false,
   glyphSize,
+  containerWidth,
 }: ContextWindowMeterProps) {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
@@ -137,7 +145,7 @@ export function ContextWindowMeter({
     [refreshProviderUsage],
   );
 
-  const geometry = getMeterGeometry(showPercentage, glyphSize);
+  const geometry = getMeterGeometry(showPercentage, glyphSize, containerWidth);
 
   // No usage yet: reserve the footprint with a track-only ring while a session is
   // active so the real ring fades in without shifting siblings. Render nothing when
