@@ -5002,6 +5002,10 @@ class ClaudeAgentSession implements AgentSession {
       this.taskState.reset();
       const historyPath = this.resolveHistoryPath(sessionId);
       if (!historyPath || !fs.existsSync(historyPath)) {
+        this.logger.warn(
+          { sessionId, historyPath, cwd: this.config.cwd },
+          "No Claude transcript found for session; timeline will hydrate empty",
+        );
         return;
       }
       const content = fs.readFileSync(historyPath, "utf8");
@@ -5010,8 +5014,8 @@ class ClaudeAgentSession implements AgentSession {
         readClaudeSidechainHistory(historyPath),
       );
       this.ingestPersistedHistory(content, restoredProviderSubagentIds);
-    } catch {
-      // ignore history load failures
+    } catch (error) {
+      this.logger.warn({ err: error, sessionId }, "Failed to load persisted Claude history");
     }
   }
 
@@ -5163,7 +5167,14 @@ class ClaudeAgentSession implements AgentSession {
   private resolveHistoryPath(sessionId: string): string | null {
     const cwd = this.config.cwd;
     if (!cwd) return null;
-    const configDir = process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), ".claude");
+    // The account's config dir lives in the SDK env, not the daemon's own env: reading
+    // only process.env here sent every non-default-account session looking under
+    // ~/.claude and silently rehydrated an empty timeline after a daemon restart.
+    const fallbackConfigDir = process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), ".claude");
+    const configDirs = [
+      this.buildSdkEnv().CLAUDE_CONFIG_DIR ?? fallbackConfigDir,
+      fallbackConfigDir,
+    ];
     const candidates = [cwd];
     try {
       const realCwd = fs.realpathSync(cwd);
@@ -5173,16 +5184,18 @@ class ClaudeAgentSession implements AgentSession {
     } catch {
       // Fall back to the configured cwd when the path has already disappeared.
     }
-    for (const candidate of candidates) {
-      const historyPath = path.join(
-        claudeProjectDirSync(candidate, { configDir }),
-        `${sessionId}.jsonl`,
-      );
-      if (fs.existsSync(historyPath)) {
-        return historyPath;
+    for (const configDir of configDirs) {
+      for (const candidate of candidates) {
+        const historyPath = path.join(
+          claudeProjectDirSync(candidate, { configDir }),
+          `${sessionId}.jsonl`,
+        );
+        if (fs.existsSync(historyPath)) {
+          return historyPath;
+        }
       }
     }
-    return path.join(claudeProjectDirSync(cwd, { configDir }), `${sessionId}.jsonl`);
+    return path.join(claudeProjectDirSync(cwd, { configDir: configDirs[0] }), `${sessionId}.jsonl`);
   }
 
   private convertHistoryEntry(entry: ClaudeHistoryEntry): AgentTimelineItem[] {
