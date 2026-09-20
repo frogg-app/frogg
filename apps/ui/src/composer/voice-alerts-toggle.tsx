@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 import { Volume2, VolumeOff } from "lucide-react-native";
 import { AgentControlTrigger } from "@/composer/agent-controls/control";
-import { useIsCompactFormFactor } from "@/constants/layout";
 import {
   buildWorkspaceVoiceAlertsKey,
   useWorkspaceVoiceAlertsEnabled,
@@ -13,7 +12,6 @@ import {
 interface ComposerVoiceAlertsToggleProps {
   serverId: string;
   workspaceId?: string | null;
-  isCompactLayout?: boolean;
 }
 
 /**
@@ -23,11 +21,8 @@ interface ComposerVoiceAlertsToggleProps {
 export function ComposerVoiceAlertsToggle({
   serverId,
   workspaceId,
-  isCompactLayout,
 }: ComposerVoiceAlertsToggleProps) {
   const { t } = useTranslation();
-  const isCompactFormFactor = useIsCompactFormFactor();
-  const isCompact = isCompactLayout ?? isCompactFormFactor;
   const key = buildWorkspaceVoiceAlertsKey(serverId, workspaceId);
   const enabled = useWorkspaceVoiceAlertsEnabled(serverId, workspaceId);
   const setEnabled = useWorkspaceVoiceAlertsStore((state) => state.setEnabled);
@@ -45,7 +40,10 @@ export function ComposerVoiceAlertsToggle({
       iconColor={enabled ? styles.iconOn.color : styles.iconOff.color}
       surface="toolbar"
       label={t("spokenAlerts.workspaceToggle.label")}
-      showToolbarLabel={!isCompact}
+      // Icon only, at every width: the toggle sits between the meter cluster and the
+      // microphone now, and a word of text there pushes the two speech controls apart. The
+      // label survives as the tooltip and the accessibility name.
+      showToolbarLabel={false}
       onPress={handlePress}
       accessibilityLabel={
         enabled

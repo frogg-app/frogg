@@ -2000,7 +2000,10 @@ function ComposerContentImpl({
     agentState.contextWindowUsedTokens,
   );
 
-  const contextWindowPending = agentState.status === "initializing" || isAgentRunning;
+  // The ring holds its place for the whole life of an agent, not just while one is starting or
+  // running: it sits in a row with the quota rings now, and a ring that comes and goes with the
+  // agent's token counts makes the cluster change width under the cursor.
+  const contextWindowPending = hasAgent || agentState.status === "initializing" || isAgentRunning;
   // The context ring sits inside the meter cluster, so it takes the cluster's ring size rather
   // than the toolbar's icon size — the three rings have to match.
   const contextWindowMeterGlyphSize = COMPOSER_METER_RING_SIZE;
@@ -2039,11 +2042,7 @@ function ComposerContentImpl({
           providerAccountId: agentState.providerAccountId,
         })}
         {mode.showAgentControls ? (
-          <ComposerVoiceAlertsToggle
-            serverId={serverId}
-            workspaceId={workspaceId}
-            isCompactLayout={isCompactLayout}
-          />
+          <ComposerVoiceAlertsToggle serverId={serverId} workspaceId={workspaceId} />
         ) : null}
       </>
     ),
@@ -2052,7 +2051,6 @@ function ComposerContentImpl({
       agentState.providerAccountId,
       contextWindowMeter,
       hasAgent,
-      isCompactLayout,
       mode.showAgentControls,
       serverId,
       workspaceId,

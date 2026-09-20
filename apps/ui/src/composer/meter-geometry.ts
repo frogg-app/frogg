@@ -7,11 +7,15 @@
  * module-scope styles ran while the cluster module was still initialising.
  */
 
-/** Diameter of a meter ring. Large enough for `COMPOSER_METER_GLYPH_SIZE` text inside it. */
-export const COMPOSER_METER_RING_SIZE = 16;
+/**
+ * Diameter of a meter ring. The capsule is 28pt tall with 2pt of padding, so 20 is as large as
+ * a ring goes before it touches the capsule's edge — and the larger the ring, the more room its
+ * centre character has.
+ */
+export const COMPOSER_METER_RING_SIZE = 20;
 
 /** Width of one ring's slot, which sets the pitch the rings sit on. */
 export const COMPOSER_METER_SLOT_WIDTH = 24;
 
-/** The centre character's size. One point smaller and it stops resolving at 1x. */
-export const COMPOSER_METER_GLYPH_SIZE = 8;
+/** The centre character's size, sized to the ring's inner well rather than the toolbar's text. */
+export const COMPOSER_METER_GLYPH_SIZE = 10;
