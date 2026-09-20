@@ -102,6 +102,7 @@ import type { AgentUsage } from "@frogg/protocol/agent-types";
 import { resolveStaleContextWarning, type StaleContextWarning } from "@/composer/stale-context";
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
 import { ComposerVoiceAlertsToggle } from "@/composer/voice-alerts-toggle";
+import { ComposerUsageCluster } from "@/composer/usage-cluster";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
 import { resolveActiveSendBehavior } from "./input/state";
 import { useKeyboardShiftStyle } from "@/hooks/use-keyboard-shift-style";
@@ -357,8 +358,22 @@ function renderContextWindowMeter(
 function resolveContextWindowPlacement(
   meter: ReactElement | null,
   reserveSlot: boolean,
+  cluster: {
+    serverId: string;
+    provider: string | null;
+    providerAccountId: string | null | undefined;
+  },
 ): ReactNode {
-  return reserveSlot ? <View style={styles.contextWindowMeterSlot}>{meter}</View> : null;
+  if (!reserveSlot) return null;
+  return (
+    <ComposerUsageCluster
+      serverId={cluster.serverId}
+      provider={cluster.provider}
+      providerAccountId={cluster.providerAccountId}
+    >
+      <View style={styles.contextWindowMeterSlot}>{meter}</View>
+    </ComposerUsageCluster>
+  );
 }
 
 interface RenderLeftContentArgs {
@@ -372,33 +387,20 @@ interface RenderLeftContentArgs {
 }
 
 function renderLeftContent(args: RenderLeftContentArgs): ReactElement | null {
-  const { agentControls, agentId, serverId, workspaceId, focusInput, isCompactLayout } = args;
+  const { agentControls, agentId, serverId, focusInput, isCompactLayout } = args;
   if (!args.showAgentControls) return null;
-  const voiceAlertsToggle = (
-    <ComposerVoiceAlertsToggle
-      serverId={serverId}
-      workspaceId={workspaceId}
-      isCompactLayout={isCompactLayout}
-    />
-  );
+  // The voice-alerts toggle now lives beside the microphone (see `beforeVoiceContent`), so the
+  // two speech controls sit together at the right end of the toolbar.
   if (resolveAgentControlsMode(agentControls) === "draft" && agentControls) {
-    return (
-      <>
-        <DraftAgentControls {...agentControls} isCompactLayout={isCompactLayout} />
-        {voiceAlertsToggle}
-      </>
-    );
+    return <DraftAgentControls {...agentControls} isCompactLayout={isCompactLayout} />;
   }
   return (
-    <>
-      <AgentControls
-        agentId={agentId}
-        serverId={serverId}
-        onDropdownClose={focusInput}
-        isCompactLayout={isCompactLayout}
-      />
-      {voiceAlertsToggle}
-    </>
+    <AgentControls
+      agentId={agentId}
+      serverId={serverId}
+      onDropdownClose={focusInput}
+      isCompactLayout={isCompactLayout}
+    />
   );
 }
 
@@ -2016,8 +2018,32 @@ function ComposerContentImpl({
     ],
   );
   const beforeVoiceContent = useMemo(
-    () => resolveContextWindowPlacement(contextWindowMeter, hasAgent),
-    [contextWindowMeter, hasAgent],
+    () => (
+      <>
+        {resolveContextWindowPlacement(contextWindowMeter, hasAgent, {
+          serverId,
+          provider: agentState.provider,
+          providerAccountId: agentState.providerAccountId,
+        })}
+        {mode.showAgentControls ? (
+          <ComposerVoiceAlertsToggle
+            serverId={serverId}
+            workspaceId={workspaceId}
+            isCompactLayout={isCompactLayout}
+          />
+        ) : null}
+      </>
+    ),
+    [
+      agentState.provider,
+      agentState.providerAccountId,
+      contextWindowMeter,
+      hasAgent,
+      isCompactLayout,
+      mode.showAgentControls,
+      serverId,
+      workspaceId,
+    ],
   );
 
   const hasGithubAttachment = useMemo(
