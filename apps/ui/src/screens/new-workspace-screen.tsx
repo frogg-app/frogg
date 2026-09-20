@@ -775,6 +775,12 @@ interface WorkspaceDraftSubmissionConfig {
   model: string | null;
   thinkingOptionId: string | null;
   featureValues: Record<string, unknown> | undefined;
+  /**
+   * COMPAT(perAgentProviderAccounts): three-valued. The draft tab that performs
+   * the launch resolves an account of its own, so the pick made here has to
+   * travel with the submission or it is replaced by this client's default.
+   */
+  providerAccountId: string | null | undefined;
   target: WorkspaceTabTarget;
 }
 
@@ -884,6 +890,9 @@ function buildWorkspaceDraftSetupFromComposer(input: {
     model: input.composerState.effectiveModelId || null,
     thinkingOptionId: input.composerState.effectiveThinkingOptionId || null,
     featureValues: input.composerState.featureValues ?? {},
+    ...(input.composerState.effectiveProviderAccountId !== undefined
+      ? { providerAccountId: input.composerState.effectiveProviderAccountId }
+      : {}),
   };
 }
 
@@ -1019,6 +1028,8 @@ function resolveWorkspaceDraftSubmissionConfig(input: {
       model: initialSetup.model,
       thinkingOptionId: initialSetup.thinkingOptionId,
       featureValues: initialSetup.featureValues,
+      providerAccountId:
+        "providerAccountId" in initialSetup ? initialSetup.providerAccountId : undefined,
       target: { kind: "draft", draftId, setup: initialSetup },
     };
   }
@@ -1029,6 +1040,7 @@ function resolveWorkspaceDraftSubmissionConfig(input: {
     model: composerState.effectiveModelId || null,
     thinkingOptionId: composerState.effectiveThinkingOptionId || null,
     featureValues: composerState.featureValues,
+    providerAccountId: composerState.effectiveProviderAccountId,
     target: { kind: "draft", draftId },
   };
 }
@@ -1086,6 +1098,9 @@ function submitWorkspaceDraft(input: SubmitDraftInput): void {
     ...(submission.model ? { model: submission.model } : {}),
     ...(submission.thinkingOptionId ? { thinkingOptionId: submission.thinkingOptionId } : {}),
     ...(submission.featureValues ? { featureValues: submission.featureValues } : {}),
+    ...(submission.providerAccountId !== undefined
+      ? { providerAccountId: submission.providerAccountId }
+      : {}),
     allowEmptyText: true,
   });
   clearDraft("sent");

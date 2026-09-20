@@ -29,6 +29,7 @@ import { encodeImages } from "@/utils/encode-images";
 import type { WorkspaceFileOpenRequest } from "@/workspace/file-open";
 import { shouldAutoFocusWorkspaceDraftComposer } from "@/screens/workspace/workspace-draft-pane-focus";
 import {
+  resolveDraftProviderAccountOverride,
   shouldAllowEmptyDraftText,
   validateDraftSubmission,
 } from "@/composer/draft/workspace-tab-core";
@@ -72,6 +73,12 @@ interface AutoSubmitConfig {
   model: string | null;
   thinkingOptionId: string | null;
   featureValues: Record<string, unknown>;
+  /**
+   * COMPAT(perAgentProviderAccounts): three-valued, and `undefined` here means
+   * the launching surface carried no account rather than "Default". The draft
+   * tab's own composer only falls back to its default resolution in that case.
+   */
+  providerAccountId?: string | null;
 }
 
 function resolveAutoSubmitConfig(
@@ -81,6 +88,7 @@ function resolveAutoSubmitConfig(
     model?: string | null;
     thinkingOptionId?: string | null;
     featureValues?: Record<string, unknown>;
+    providerAccountId?: string | null;
   } | null,
 ): AutoSubmitConfig | null {
   if (!pending) return null;
@@ -90,6 +98,9 @@ function resolveAutoSubmitConfig(
     model: pending.model ?? null,
     thinkingOptionId: pending.thinkingOptionId ?? null,
     featureValues: pending.featureValues ?? {},
+    ...("providerAccountId" in pending && pending.providerAccountId !== undefined
+      ? { providerAccountId: pending.providerAccountId }
+      : {}),
   };
 }
 
@@ -197,9 +208,14 @@ async function submitDraftCreateRequest(input: {
     thinkingOptionId:
       autoSubmitConfig?.thinkingOptionId ?? (composerState.effectiveThinkingOptionId || undefined),
     featureValues: autoSubmitConfig?.featureValues ?? composerState.featureValues,
-    ...(composerState.effectiveProviderAccountId !== undefined
-      ? { providerAccountId: composerState.effectiveProviderAccountId }
-      : {}),
+    // The account the launching surface picked wins: this tab's composer
+    // resolves an account of its own, and for an auto-submitted draft that
+    // resolution runs in a tab the user never picked in, so it would quietly
+    // replace their pick with this client's default.
+    ...resolveDraftProviderAccountOverride({
+      autoSubmitConfig,
+      composerAccountId: composerState.effectiveProviderAccountId,
+    }),
   });
 
   const imagesData = await encodeImages(images);

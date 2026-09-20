@@ -1,6 +1,10 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, it, test } from "vitest";
 
-import { shouldAllowEmptyDraftText, validateDraftSubmission } from "./workspace-tab-core";
+import {
+  resolveDraftProviderAccountOverride,
+  shouldAllowEmptyDraftText,
+  validateDraftSubmission,
+} from "./workspace-tab-core";
 
 const baseComposerState = {
   providerDefinitions: [{ id: "codewhale" }],
@@ -67,5 +71,47 @@ describe("workspace draft empty text readiness", () => {
         attachments: [],
       }),
     ).toBe(false);
+  });
+});
+
+describe("resolveDraftProviderAccountOverride", () => {
+  it("launches on the account the new session screen picked, not the tab's default", () => {
+    // The draft tab that performs the launch resolves an account of its own,
+    // in a composer the user never picked in. Letting that win replaced the
+    // pick with this client's default: a session started as "Steve" came up
+    // signed in as "Steve 2".
+    expect(
+      resolveDraftProviderAccountOverride({
+        autoSubmitConfig: { providerAccountId: "acct-steve" },
+        composerAccountId: "acct-other",
+      }),
+    ).toEqual({ providerAccountId: "acct-steve" });
+  });
+
+  it("carries an explicit Default pick, which is not the same as no pick", () => {
+    expect(
+      resolveDraftProviderAccountOverride({
+        autoSubmitConfig: { providerAccountId: null },
+        composerAccountId: "acct-other",
+      }),
+    ).toEqual({ providerAccountId: null });
+  });
+
+  it("falls back to this composer when the launch carried no account", () => {
+    expect(
+      resolveDraftProviderAccountOverride({
+        autoSubmitConfig: { provider: "claude" } as { providerAccountId?: string | null },
+        composerAccountId: "acct-other",
+      }),
+    ).toEqual({ providerAccountId: "acct-other" });
+  });
+
+  it("leaves the key off when neither side named an account", () => {
+    expect(
+      resolveDraftProviderAccountOverride({
+        autoSubmitConfig: null,
+        composerAccountId: undefined,
+      }),
+    ).toEqual({});
   });
 });

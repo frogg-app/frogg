@@ -50,3 +50,20 @@ export function validateDraftSubmission(input: {
   });
   return readiness.ok ? null : (readiness.reason ?? null);
 }
+
+/**
+ * The launch config's `providerAccountId` key, or nothing at all when neither
+ * the launching surface nor this composer named an account — a provider with no
+ * accounts must leave the key off entirely, which is how daemons without the
+ * accounts capability are addressed.
+ */
+export function resolveDraftProviderAccountOverride(input: {
+  autoSubmitConfig: { providerAccountId?: string | null } | null;
+  composerAccountId: string | null | undefined;
+}): { providerAccountId?: string | null } {
+  const fromLaunch = input.autoSubmitConfig?.providerAccountId;
+  if (fromLaunch !== undefined) return { providerAccountId: fromLaunch };
+  return input.composerAccountId !== undefined
+    ? { providerAccountId: input.composerAccountId }
+    : {};
+}

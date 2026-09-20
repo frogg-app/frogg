@@ -9,6 +9,12 @@ export interface WorkspaceDraftTabSetup {
   model: string | null;
   thinkingOptionId: string | null;
   featureValues: Record<string, unknown>;
+  /**
+   * COMPAT(perAgentProviderAccounts): three-valued, so read it with `in` and
+   * never for truthiness. Absent means the surface that seeded this draft named
+   * no account; `null` is the explicit "Default" pick.
+   */
+  providerAccountId?: string | null;
 }
 
 export interface WorkspaceWorkingDiffTabTarget {

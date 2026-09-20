@@ -17,6 +17,14 @@ export interface PendingWorkspaceDraftSubmission {
   model?: string;
   thinkingOptionId?: string;
   featureValues?: Record<string, unknown>;
+  /**
+   * COMPAT(perAgentProviderAccounts): three-valued, so read it with `in` and
+   * never for truthiness. Absent means the launching surface had no account to
+   * carry; `null` is the explicit "Default" pick. The draft tab resolves its
+   * own account when this is absent, which is how a pick made on the new
+   * session screen used to be lost on the way to the launch.
+   */
+  providerAccountId?: string | null;
   allowEmptyText?: boolean;
 }
 
