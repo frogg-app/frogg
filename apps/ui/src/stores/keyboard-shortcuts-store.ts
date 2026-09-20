@@ -1,8 +1,6 @@
 import { create } from "zustand";
 import type { SidebarShortcutWorkspaceTarget } from "@/utils/sidebar-shortcuts";
 
-const SHORTCUT_BADGE_DELAY_MS = 150;
-
 export type CommandCenterScope = "files" | null;
 
 interface KeyboardShortcutsState {
@@ -36,27 +34,18 @@ interface KeyboardShortcutsState {
   resetModifiers: () => void;
 }
 
-let badgeTimer: ReturnType<typeof setTimeout> | null = null;
-
-function updateBadgeTimer(
+/**
+ * The badges follow the modifier with no delay. They used to wait 150ms, which meant the
+ * quick action rail — which appears at once — had already drawn against the row's right edge
+ * before the badge arrived and shoved it left. The badge fades in on mount instead, so the
+ * reveal is soft without anything moving after the fact.
+ */
+function updateBadgeVisibility(
   set: (partial: Partial<KeyboardShortcutsState>) => void,
   get: () => KeyboardShortcutsState,
 ) {
   const { altDown, cmdOrCtrlDown } = get();
-  const modifierDown = altDown || cmdOrCtrlDown;
-
-  if (badgeTimer) {
-    clearTimeout(badgeTimer);
-    badgeTimer = null;
-  }
-
-  if (modifierDown) {
-    badgeTimer = setTimeout(() => {
-      set({ showShortcutBadges: true });
-    }, SHORTCUT_BADGE_DELAY_MS);
-  } else {
-    set({ showShortcutBadges: false });
-  }
+  set({ showShortcutBadges: altDown || cmdOrCtrlDown });
 }
 
 export const useKeyboardShortcutsStore = create<KeyboardShortcutsState>((set, get) => ({
@@ -77,11 +66,11 @@ export const useKeyboardShortcutsStore = create<KeyboardShortcutsState>((set, ge
   setCapturingShortcut: (capturing) => set({ capturingShortcut: capturing }),
   setAltDown: (down) => {
     set({ altDown: down });
-    updateBadgeTimer(set, get);
+    updateBadgeVisibility(set, get);
   },
   setCmdOrCtrlDown: (down) => {
     set({ cmdOrCtrlDown: down });
-    updateBadgeTimer(set, get);
+    updateBadgeVisibility(set, get);
   },
   setQuickActionsModifierDown: (down) => {
     set({ quickActionsModifierDown: down });
@@ -93,6 +82,6 @@ export const useKeyboardShortcutsStore = create<KeyboardShortcutsState>((set, ge
     // window is not focused never reaches the keyup listener, so without this a held Control
     // would leave the rail open forever.
     set({ altDown: false, cmdOrCtrlDown: false, quickActionsModifierDown: false });
-    updateBadgeTimer(set, get);
+    updateBadgeVisibility(set, get);
   },
 }));

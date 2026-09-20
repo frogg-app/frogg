@@ -370,6 +370,7 @@ export function SplitContainer({
   );
 
   const panesById = useMemo(() => collectPanesById(layout.root), [layout.root]);
+  const explorerSidebarOpen = useWorkspaceLayoutStore((state) => state.explorerSidebarOpen);
   const explorerSidebarPane = useMemo(
     () => findPaneById(layout.root, explorerSidebarPaneId),
     [layout.root, explorerSidebarPaneId],
@@ -422,7 +423,7 @@ export function SplitContainer({
     [focusModeEnabled, layout.focusedPaneId, mainRoot],
   );
   const storedExplorerSidebarWidth = useWorkspaceLayoutStore(
-    (state) => state.explorerSidebarWidthByWorkspace[workspaceKey],
+    (state) => state.explorerSidebarWidth ?? undefined,
   );
   const resizeExplorerSidebar = useWorkspaceLayoutStore((state) => state.resizeExplorerSidebar);
   const [workspaceShellWidth, setWorkspaceShellWidth] = useState(0);
@@ -442,8 +443,10 @@ export function SplitContainer({
       }),
     [requestedExplorerSidebarWidth, workspaceShellWidth],
   );
+  // The app-wide flag decides, not this workspace's pane: the panel stays open across a jump
+  // to another session even though each session keeps its own tree.
   const renderExplorerSidebarDock = Boolean(
-    !focusModeEnabled && explorerSidebarPane && explorerSidebarPane.hidden !== true,
+    !focusModeEnabled && explorerSidebarPane && explorerSidebarOpen,
   );
   const mainColumnWindowChromeCorners = renderExplorerSidebarDock
     ? removeWindowChromeCorner(inheritedWindowChromeCorners, "top-right")
@@ -477,7 +480,6 @@ export function SplitContainer({
       const nextRatio = sizes[1];
       if (nextRatio !== undefined) {
         resizeExplorerSidebar(
-          workspaceKey,
           resolveExplorerSidebarWidth({
             requestedWidth: nextRatio * workspaceShellWidth,
             containerWidth: workspaceShellWidth,
@@ -485,7 +487,7 @@ export function SplitContainer({
         );
       }
     },
-    [resizeExplorerSidebar, workspaceKey, workspaceShellWidth],
+    [resizeExplorerSidebar, workspaceShellWidth],
   );
   const renderRoot = useMemo(() => wrapRootPaneForStableMount(splitRoot.root), [splitRoot.root]);
   const handleDragStart = useCallback((event: DragStartEvent) => {

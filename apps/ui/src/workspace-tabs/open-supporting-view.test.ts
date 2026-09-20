@@ -32,6 +32,8 @@ beforeEach(() => {
   });
   useWorkspaceLayoutStore.setState({
     layoutByWorkspace: {},
+    // App-wide now, so it outlives a layout reset and has to be cleared with it.
+    explorerSidebarOpen: false,
     explorerSidebarPaneIdByWorkspace: {},
     sidePaneIdByWorkspace: {},
     splitSizesByWorkspace: {},

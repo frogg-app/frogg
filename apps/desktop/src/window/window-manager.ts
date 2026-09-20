@@ -80,6 +80,17 @@ export const DEFAULT_WINDOW_WIDTH = 1200;
 export const DEFAULT_WINDOW_HEIGHT = 800;
 
 /**
+ * The floor the window may be dragged to.
+ *
+ * Set by the narrowest surface the app still has to be usable at: the Explorer sidebar's
+ * header, which at this width holds its tab strip in its icon-only form, the close button and
+ * the window controls without clipping any of them. Below this the tabs started disappearing
+ * off the right-hand edge, which is unrecoverable in a way that a dropped label is not.
+ */
+export const MIN_WINDOW_WIDTH = 420;
+export const MIN_WINDOW_HEIGHT = 400;
+
+/**
  * Window size/position options for the BrowserWindow constructor, derived from
  * a restored state when available. Falls back to the default size, and only
  * sets x/y when a full position was persisted (a partial state lets the OS
@@ -88,8 +99,8 @@ export const DEFAULT_WINDOW_HEIGHT = 800;
 export function resolveWindowBounds(
   state: WindowState | null,
 ): Pick<Electron.BrowserWindowConstructorOptions, "width" | "height" | "x" | "y"> {
-  const width = state?.width ?? DEFAULT_WINDOW_WIDTH;
-  const height = state?.height ?? DEFAULT_WINDOW_HEIGHT;
+  const width = Math.max(MIN_WINDOW_WIDTH, state?.width ?? DEFAULT_WINDOW_WIDTH);
+  const height = Math.max(MIN_WINDOW_HEIGHT, state?.height ?? DEFAULT_WINDOW_HEIGHT);
   if (state?.x !== undefined && state?.y !== undefined) {
     return { width, height, x: state.x, y: state.y };
   }

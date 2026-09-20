@@ -508,7 +508,7 @@ describe("workspace-layout-store version 2 migration", () => {
       expect(persisted.version).toBe(3);
       expect(Object.keys(persisted.state).sort()).toEqual([
         "explorerPaneIdByWorkspace",
-        "explorerSidebarWidthByWorkspace",
+        "explorerSidebarOpen",
         "layoutByWorkspace",
         "sidePaneIdByWorkspace",
         "splitSizesByWorkspace",
@@ -2995,7 +2995,8 @@ describe("workspace-layout-store actions", () => {
     expect(persisted).toEqual({
       layoutByWorkspace: { [workspaceKey]: layout },
       splitSizesByWorkspace: currentState.splitSizesByWorkspace,
-      explorerSidebarWidthByWorkspace: currentState.explorerSidebarWidthByWorkspace,
+      explorerSidebarWidth: currentState.explorerSidebarWidth ?? undefined,
+      explorerSidebarOpen: currentState.explorerSidebarOpen,
       explorerPaneIdByWorkspace: {},
       sidePaneIdByWorkspace: currentState.sidePaneIdByWorkspace,
     });
@@ -3219,7 +3220,8 @@ describe("workspace-layout-store actions", () => {
     expect(partialize?.(state)).toEqual({
       layoutByWorkspace: {},
       splitSizesByWorkspace: {},
-      explorerSidebarWidthByWorkspace: {},
+      explorerSidebarWidth: undefined,
+      explorerSidebarOpen: state.explorerSidebarOpen,
       explorerPaneIdByWorkspace: {},
       sidePaneIdByWorkspace: {},
     });

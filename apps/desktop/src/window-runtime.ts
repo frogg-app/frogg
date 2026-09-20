@@ -21,6 +21,8 @@ import {
   applyDesktopWindowChromeMode,
   getMainWindowChromeOptions,
   getWindowBackgroundColor,
+  MIN_WINDOW_HEIGHT,
+  MIN_WINDOW_WIDTH,
   resolveSystemWindowTheme,
   resolveWindowBounds,
   setupDefaultContextMenu,
@@ -212,6 +214,8 @@ export function createWindowRuntime({
     const mainWindow = new BrowserWindow({
       title,
       ...resolveWindowBounds(restoredWindowState),
+      minWidth: MIN_WINDOW_WIDTH,
+      minHeight: MIN_WINDOW_HEIGHT,
       show: false,
       backgroundColor: getWindowBackgroundColor(systemTheme),
       ...(iconPath ? { icon: iconPath } : {}),

@@ -1,6 +1,7 @@
-import { memo, useMemo, useCallback, useState, type ReactNode } from "react";
-import { Text, View, type ViewStyle } from "react-native";
+import { memo, useMemo, useCallback, useEffect, useState, type ReactNode } from "react";
+import { Animated, Text, View, type ViewStyle } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { MOTION_SWAP_DURATION_MS, MOTION_SWAP_EASING } from "@/styles/motion";
 import { CircleAlert, Folder, FolderGit2, Monitor } from "lucide-react-native";
 import { ProjectStatusIndicator } from "@/components/sidebar/project-leading-visual";
 import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
@@ -328,11 +329,31 @@ export const sidebarWorkspaceRowStyles = StyleSheet.create((theme) => ({
   },
 }));
 
+/**
+ * The workspace-jump number, revealed while the modifier is held.
+ *
+ * It fades in on the same curve and duration as the quick action rail so the two arrive
+ * together. The badge is mounted by its row the instant the modifier goes down, so the rail
+ * already knows to sit left of it on its own first frame and nothing shifts mid-animation.
+ */
 export function SidebarWorkspaceShortcutBadge({ number }: { number: number }) {
+  const [opacity] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    const animation = Animated.timing(opacity, {
+      toValue: 1,
+      duration: MOTION_SWAP_DURATION_MS,
+      easing: MOTION_SWAP_EASING,
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+
   return (
-    <View style={sidebarWorkspaceRowStyles.shortcutBadge}>
+    <Animated.View style={[sidebarWorkspaceRowStyles.shortcutBadge, { opacity }]}>
       <Text style={sidebarWorkspaceRowStyles.shortcutBadgeText}>{number}</Text>
-    </View>
+    </Animated.View>
   );
 }
 

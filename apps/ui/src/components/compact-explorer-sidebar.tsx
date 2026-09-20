@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, type LayoutChangeEvent } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { Workflow, X } from "lucide-react-native";
+import { FileDiff, Files, Workflow, X } from "lucide-react-native";
 import { CiPane } from "@/ci-monitor/ci-pane";
 import { useTranslation } from "react-i18next";
 import { formatPrTabLabel, PullRequestTabIcon } from "@/git/pull-request-panel";
@@ -44,6 +44,8 @@ import {
 } from "@/components/sidebar-resize-handle-layout";
 import { resolveExplorerSidebarWidth } from "@/components/explorer-sidebar-layout";
 import { useWorkspaceLayoutStore } from "@/stores/workspace-layout-store";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { shouldCollapseExplorerTabLabels } from "@/components/explorer-tab-strip-layout";
 
 function logExplorerSidebar(_event: string, _details: Record<string, unknown>): void {}
 
@@ -155,7 +157,6 @@ export function CompactExplorerSidebar({
 }
 
 interface NativeExplorerSidebarDockProps extends ExplorerSidebarProps {
-  persistenceKey: string;
   containerWidth: number;
 }
 
@@ -165,16 +166,13 @@ export function NativeExplorerSidebarDock({
   workspaceRoot,
   isGit,
   onOpenFile,
-  persistenceKey,
   containerWidth,
 }: NativeExplorerSidebarDockProps) {
   const { theme } = useUnistyles();
   const insets = useSafeAreaInsets();
   const isOpen = usePanelStore(selectIsCompactFileExplorerOpen);
   const showMobileAgent = usePanelStore((state) => state.showMobileAgent);
-  const storedWidth = useWorkspaceLayoutStore(
-    (state) => state.explorerSidebarWidthByWorkspace[persistenceKey],
-  );
+  const storedWidth = useWorkspaceLayoutStore((state) => state.explorerSidebarWidth ?? undefined);
   const resizeExplorerSidebar = useWorkspaceLayoutStore((state) => state.resizeExplorerSidebar);
   const visibleWidth = resolveExplorerSidebarWidth({
     requestedWidth: storedWidth,
@@ -196,8 +194,8 @@ export function NativeExplorerSidebarDock({
   const showResizeGrip = useCallback(() => setResizePressed(true), []);
   const hideResizeGrip = useCallback(() => setResizePressed(false), []);
   const commitWidth = useCallback(
-    (width: number) => resizeExplorerSidebar(persistenceKey, width),
-    [persistenceKey, resizeExplorerSidebar],
+    (width: number) => resizeExplorerSidebar(width),
+    [resizeExplorerSidebar],
   );
   const resizeGesture = useMemo(
     () =>
@@ -269,7 +267,9 @@ export function NativeExplorerSidebarDock({
 interface ExplorerTabButtonProps {
   tab: ExplorerTab;
   active: boolean;
-  label?: string;
+  label: string;
+  /** Drop the label and keep the icon, because the strip no longer fits the labelled form. */
+  iconOnly: boolean;
   onTabPress: (tab: ExplorerTab) => void;
   testID: string;
   children?: React.ReactNode;
@@ -279,18 +279,41 @@ function ExplorerTabButton({
   tab,
   active,
   label,
+  iconOnly,
   onTabPress,
   testID,
   children,
 }: ExplorerTabButtonProps) {
   const handlePress = useCallback(() => onTabPress(tab), [onTabPress, tab]);
-  const tabStyle = useMemo(() => [styles.tab, active && styles.tabActive], [active]);
+  const tabStyle = useMemo(
+    () => [styles.tab, iconOnly && styles.tabIconOnly, active && styles.tabActive],
+    [active, iconOnly],
+  );
   const tabTextStyle = useMemo(() => [styles.tabText, active && styles.tabTextActive], [active]);
-  return (
-    <Pressable testID={testID} style={tabStyle} onPress={handlePress}>
+  const button = (
+    <Pressable
+      testID={testID}
+      style={tabStyle}
+      onPress={handlePress}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
       {children}
-      {label !== undefined ? <Text style={tabTextStyle}>{label}</Text> : null}
+      {iconOnly ? null : <Text style={tabTextStyle}>{label}</Text>}
     </Pressable>
+  );
+
+  // The tooltip is the label's stand-in, so it only exists while the label does not.
+  if (!iconOnly) return button;
+
+  return (
+    <Tooltip delayDuration={0} enabledOnDesktop enabledOnMobile={false}>
+      <TooltipTrigger asChild>{button}</TooltipTrigger>
+      <TooltipContent side="bottom" align="center" offset={6}>
+        <Text style={styles.tabTooltipText}>{label}</Text>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
@@ -342,6 +365,28 @@ function ExplorerSidebarContent({
     allTabIds: availableTabs,
     cap: availableTabs.length,
   });
+  const tabLabels = useMemo(
+    () =>
+      availableTabs.map((tab) => {
+        if (tab === "changes") return t("workspace.tabs.explorerSidebar.changes");
+        if (tab === "files") return t("workspace.tabs.explorerSidebar.files");
+        if (tab === "pr") return prTabLabel;
+        return t("workspace.tabs.explorerSidebar.ci");
+      }),
+    [availableTabs, prTabLabel, t],
+  );
+  // Measured on the strip's own flex container, whose width is set by the header rather than
+  // by the tabs inside it. Measuring the tabs themselves would feed their width back into the
+  // decision that sets it and flip-flop between the two forms.
+  const [tabStripWidth, setTabStripWidth] = useState(0);
+  const handleTabStripLayout = useCallback(
+    (event: LayoutChangeEvent) => setTabStripWidth(event.nativeEvent.layout.width),
+    [],
+  );
+  const iconOnlyTabs = shouldCollapseExplorerTabLabels({
+    labels: tabLabels,
+    availableWidth: tabStripWidth,
+  });
 
   return (
     <View style={styles.sidebarContent} pointerEvents="auto">
@@ -354,28 +399,45 @@ function ExplorerSidebarContent({
         testID="explorer-header"
       >
         <TitlebarDragRegion />
-        <View style={styles.tabsContainer}>
+        <View style={styles.tabsContainer} onLayout={handleTabStripLayout}>
           {isGit && (
             <ExplorerTabButton
               tab="changes"
               active={resolvedTab === "changes"}
               label={t("workspace.tabs.explorerSidebar.changes")}
+              iconOnly={iconOnlyTabs}
               onTabPress={onTabPress}
               testID="explorer-tab-changes"
-            />
+            >
+              <FileDiff
+                size={13}
+                color={
+                  resolvedTab === "changes" ? theme.colors.foreground : theme.colors.foregroundMuted
+                }
+              />
+            </ExplorerTabButton>
           )}
           <ExplorerTabButton
             tab="files"
             active={resolvedTab === "files"}
             label={t("workspace.tabs.explorerSidebar.files")}
+            iconOnly={iconOnlyTabs}
             onTabPress={onTabPress}
             testID="explorer-tab-files"
-          />
+          >
+            <Files
+              size={13}
+              color={
+                resolvedTab === "files" ? theme.colors.foreground : theme.colors.foregroundMuted
+              }
+            />
+          </ExplorerTabButton>
           {isGit && showPrTab && (
             <ExplorerTabButton
               tab="pr"
               active={resolvedTab === "pr"}
               label={prTabLabel}
+              iconOnly={iconOnlyTabs}
               onTabPress={onTabPress}
               testID="explorer-tab-pr"
             >
@@ -392,6 +454,7 @@ function ExplorerSidebarContent({
             tab="ci"
             active={resolvedTab === "ci"}
             label={t("workspace.tabs.explorerSidebar.ci")}
+            iconOnly={iconOnlyTabs}
             onTabPress={onTabPress}
             testID="explorer-tab-ci"
           >
@@ -543,9 +606,16 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+  // Takes the header's spare width rather than its own content's, so the strip can be
+  // measured against the room it actually has. `minWidth: 0` lets it shrink below the tabs'
+  // natural width instead of pushing the close button off the header.
   tabsContainer: {
     flexDirection: "row",
+    alignItems: "center",
     gap: theme.spacing[1],
+    flexShrink: 1,
+    flexGrow: 1,
+    minWidth: 0,
   },
   tab: {
     flexDirection: "row",
@@ -554,6 +624,11 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[3],
     borderRadius: theme.borderRadius.md,
+  },
+  // No label to sit beside, so the icon keeps only its own padding and the tab stays square.
+  tabIconOnly: {
+    paddingHorizontal: theme.spacing[3],
+    gap: 0,
   },
   tabActive: {
     backgroundColor: theme.colors.surfaceSidebarHover,
@@ -569,10 +644,15 @@ const styles = StyleSheet.create((theme) => ({
   tabTextMuted: {
     opacity: 0.8,
   },
+  tabTooltipText: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foreground,
+  },
   headerRightSection: {
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],
+    flexShrink: 0,
   },
   closeButton: {
     padding: theme.spacing[2],

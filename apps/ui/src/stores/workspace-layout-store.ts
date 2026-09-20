@@ -108,7 +108,14 @@ export interface OpenWorkspaceTabInput {
 interface WorkspaceLayoutStore {
   layoutByWorkspace: Record<string, WorkspaceLayout>;
   splitSizesByWorkspace: Record<string, Record<string, number[]>>;
-  explorerSidebarWidthByWorkspace: Record<string, number>;
+  /**
+   * The Explorer sidebar is a property of the application window, not of the session showing
+   * in it: its width and its open state are one value each, shared by every workspace. It used
+   * to be keyed by workspace, which meant jumping between sessions opened and closed the panel
+   * underneath the user and resized it as they went.
+   */
+  explorerSidebarWidth: number | null;
+  explorerSidebarOpen: boolean;
   pinnedAgentIdsByWorkspace: Record<string, Set<string>>;
   pendingAgentIdsByWorkspace: Record<string, Set<string>>;
   hiddenAgentIdsByWorkspace: Record<string, Set<string>>;
@@ -162,7 +169,7 @@ interface WorkspaceLayoutStore {
   unfocusPane: (workspaceKey: string) => string | null;
   restorePaneFocus: (workspaceKey: string, token: string) => void;
   resizeSplit: (workspaceKey: string, groupId: string, sizes: number[]) => void;
-  resizeExplorerSidebar: (workspaceKey: string, width: number) => void;
+  resizeExplorerSidebar: (width: number) => void;
   reorderTabsInPane: (workspaceKey: string, paneId: string, tabIds: string[]) => void;
   unpinAgent: (workspaceKey: string, agentId: string) => void;
   hideAgent: (workspaceKey: string, agentId: string) => void;
@@ -271,7 +278,11 @@ const WorkspaceLayoutStorageSchema: z.ZodType<WorkspaceLayout> = z.strictObject(
 const WorkspaceLayoutPersistedStateSchema = z.strictObject({
   layoutByWorkspace: z.record(z.string(), WorkspaceLayoutStorageSchema),
   splitSizesByWorkspace: z.record(z.string(), z.record(z.string(), z.array(z.number()))).optional(),
+  // COMPAT(explorerSidebarPerWorkspace): width and open state became app-wide; the old
+  // per-workspace map is read once to seed them. Remove after 2027-08-25.
   explorerSidebarWidthByWorkspace: z.record(z.string(), z.number()).optional(),
+  explorerSidebarWidth: z.number().optional(),
+  explorerSidebarOpen: z.boolean().optional(),
   // COMPAT(explorerSidebarWidth): added in v0.6, remove after 2027-08-25.
   explorerSidebarRatioByWorkspace: z.record(z.string(), z.number()).optional(),
   // COMPAT(explorerSidebarNaming): accepted from builds that called this dock the Side panel.
@@ -285,6 +296,17 @@ const WorkspaceLayoutPersistedStateSchema = z.strictObject({
   // and ignored so upgrading does not discard the layout. Remove after 2027-08-20.
   acknowledgedPullRequestByWorkspace: z.record(z.string(), z.string()).optional(),
 });
+
+/**
+ * Seeds the app-wide width from a blob that still keys it by workspace. Any of the remembered
+ * widths is a better starting point than the default, and the user resizes once to settle it.
+ */
+function firstPersistedWidth(widthByWorkspace: Record<string, number>): number | null {
+  for (const width of Object.values(widthByWorkspace)) {
+    if (Number.isFinite(width) && width > 0) return width;
+  }
+  return null;
+}
 
 const LEGACY_EXPLORER_SIDEBAR_REFERENCE_WIDTH = 1440;
 const WORKSPACE_LAYOUT_PERSIST_VERSION = 3;
@@ -616,7 +638,7 @@ function keepWorkspaceFocusOutOfExplorerSidebar(
 
 type ExplorerSidebarState = Pick<
   WorkspaceLayoutStore,
-  "layoutByWorkspace" | "explorerSidebarPaneIdByWorkspace"
+  "layoutByWorkspace" | "explorerSidebarPaneIdByWorkspace" | "explorerSidebarOpen"
 >;
 
 /**
@@ -632,15 +654,16 @@ export function selectExplorerSidebarPaneId(
   return resolveExplorerSidebarPaneId(layout, state.explorerSidebarPaneIdByWorkspace[workspaceKey]);
 }
 
-/** Whether the Explorer sidebar pane is currently on screen. */
-export function selectIsExplorerSidebarVisible(
-  state: ExplorerSidebarState,
-  workspaceKey: string,
-): boolean {
-  const layout = state.layoutByWorkspace[workspaceKey];
-  const paneId = layout ? selectExplorerSidebarPaneId(state, workspaceKey) : null;
-  const pane = paneId && layout ? findPaneById(layout.root, paneId) : null;
-  return Boolean(pane && pane.hidden !== true);
+/**
+ * Whether the Explorer sidebar is currently on screen.
+ *
+ * App-wide, so it does not depend on which workspace is in front: the panel stays as the user
+ * left it while they move between sessions. The per-workspace pane keeps a `hidden` flag too,
+ * kept in step by `showExplorerSidebar` and `hideExplorerSidebar` for the layout tree's own
+ * bookkeeping, but this flag is what decides whether it is drawn.
+ */
+export function selectIsExplorerSidebarVisible(state: ExplorerSidebarState): boolean {
+  return state.explorerSidebarOpen;
 }
 
 export function resolveExplorerSidebarPaneId(
@@ -807,6 +830,28 @@ function createExplorerSidebarPane(
   return targetPaneId ? splitPaneEmpty(workspaceKey, { targetPaneId, position: "right" }) : null;
 }
 
+/**
+ * Mirrors the app-wide open state into every workspace's own tree, so a session the user has
+ * not visited since toggling the panel does not come back with a stale `hidden` flag that the
+ * tree's own rules (last-visible-pane, focus) would then act on.
+ */
+function setExplorerSidebarHiddenEverywhere(input: {
+  layoutByWorkspace: Record<string, WorkspaceLayout>;
+  explorerSidebarPaneIdByWorkspace: Record<string, string | null>;
+  hidden: boolean;
+}): Record<string, WorkspaceLayout> {
+  const next: Record<string, WorkspaceLayout> = {};
+  for (const [workspaceKey, layout] of Object.entries(input.layoutByWorkspace)) {
+    const paneId = resolveExplorerSidebarPaneId(
+      layout,
+      input.explorerSidebarPaneIdByWorkspace[workspaceKey],
+    );
+    const updated = paneId ? setPaneHiddenInLayout({ layout, paneId, hidden: input.hidden }) : null;
+    next[workspaceKey] = updated ?? layout;
+  }
+  return next;
+}
+
 export function createWorkspaceLayoutStore(
   ids: WorkspaceLayoutIdSource = defaultWorkspaceLayoutIds,
 ) {
@@ -815,7 +860,8 @@ export function createWorkspaceLayoutStore(
       (set, get) => ({
         layoutByWorkspace: {},
         splitSizesByWorkspace: {},
-        explorerSidebarWidthByWorkspace: {},
+        explorerSidebarWidth: null,
+        explorerSidebarOpen: false,
         pinnedAgentIdsByWorkspace: {},
         pendingAgentIdsByWorkspace: {},
         hiddenAgentIdsByWorkspace: {},
@@ -928,14 +974,19 @@ export function createWorkspaceLayoutStore(
               setPaneHiddenInLayout({ layout: currentLayout, paneId, hidden: false }) ??
               currentLayout;
             return {
-              layoutByWorkspace: {
-                ...state.layoutByWorkspace,
-                [normalizedWorkspaceKey]: keepWorkspaceFocusOutOfExplorerSidebar(
-                  revealedLayout,
-                  paneId,
-                  currentLayout.focusedPaneId,
-                ),
-              },
+              explorerSidebarOpen: true,
+              layoutByWorkspace: setExplorerSidebarHiddenEverywhere({
+                layoutByWorkspace: {
+                  ...state.layoutByWorkspace,
+                  [normalizedWorkspaceKey]: keepWorkspaceFocusOutOfExplorerSidebar(
+                    revealedLayout,
+                    paneId,
+                    currentLayout.focusedPaneId,
+                  ),
+                },
+                explorerSidebarPaneIdByWorkspace: state.explorerSidebarPaneIdByWorkspace,
+                hidden: false,
+              }),
               explorerSidebarPaneIdByWorkspace: {
                 ...state.explorerSidebarPaneIdByWorkspace,
                 [normalizedWorkspaceKey]: paneId,
@@ -959,15 +1010,18 @@ export function createWorkspaceLayoutStore(
             const nextLayout = paneId
               ? setPaneHiddenInLayout({ layout, paneId, hidden: true })
               : null;
-            if (!nextLayout) {
-              return state;
-            }
 
             return {
-              layoutByWorkspace: {
-                ...state.layoutByWorkspace,
-                [normalizedWorkspaceKey]: nextLayout,
-              },
+              // Set whether or not this workspace's tree could take the flag: the panel is
+              // closed app-wide, and a layout that cannot express that must not veto it.
+              explorerSidebarOpen: false,
+              layoutByWorkspace: setExplorerSidebarHiddenEverywhere({
+                layoutByWorkspace: nextLayout
+                  ? { ...state.layoutByWorkspace, [normalizedWorkspaceKey]: nextLayout }
+                  : state.layoutByWorkspace,
+                explorerSidebarPaneIdByWorkspace: state.explorerSidebarPaneIdByWorkspace,
+                hidden: true,
+              }),
             };
           });
         },
@@ -1655,18 +1709,11 @@ export function createWorkspaceLayoutStore(
             },
           }));
         },
-        resizeExplorerSidebar: (workspaceKey, width) => {
-          const normalizedWorkspaceKey = trimNonEmpty(workspaceKey);
-          if (!normalizedWorkspaceKey || !Number.isFinite(width) || width <= 0) {
+        resizeExplorerSidebar: (width) => {
+          if (!Number.isFinite(width) || width <= 0) {
             return;
           }
-
-          set((state) => ({
-            explorerSidebarWidthByWorkspace: {
-              ...state.explorerSidebarWidthByWorkspace,
-              [normalizedWorkspaceKey]: width,
-            },
-          }));
+          set({ explorerSidebarWidth: width });
         },
         reorderTabsInPane: (workspaceKey, paneId, tabIds) => {
           const normalizedWorkspaceKey = trimNonEmpty(workspaceKey);
@@ -1793,7 +1840,6 @@ export function createWorkspaceLayoutStore(
             const hasAny =
               normalizedWorkspaceKey in state.layoutByWorkspace ||
               normalizedWorkspaceKey in state.splitSizesByWorkspace ||
-              normalizedWorkspaceKey in state.explorerSidebarWidthByWorkspace ||
               normalizedWorkspaceKey in state.pinnedAgentIdsByWorkspace ||
               normalizedWorkspaceKey in state.pendingAgentIdsByWorkspace ||
               normalizedWorkspaceKey in state.hiddenAgentIdsByWorkspace ||
@@ -1807,10 +1853,6 @@ export function createWorkspaceLayoutStore(
               state.layoutByWorkspace;
             const { [normalizedWorkspaceKey]: _splits, ...splitSizesByWorkspace } =
               state.splitSizesByWorkspace;
-            const {
-              [normalizedWorkspaceKey]: _explorerSidebarWidth,
-              ...explorerSidebarWidthByWorkspace
-            } = state.explorerSidebarWidthByWorkspace;
             const { [normalizedWorkspaceKey]: _pinned, ...pinnedAgentIdsByWorkspace } =
               state.pinnedAgentIdsByWorkspace;
             const { [normalizedWorkspaceKey]: _pending, ...pendingAgentIdsByWorkspace } =
@@ -1828,7 +1870,6 @@ export function createWorkspaceLayoutStore(
             return {
               layoutByWorkspace,
               splitSizesByWorkspace,
-              explorerSidebarWidthByWorkspace,
               pinnedAgentIdsByWorkspace,
               pendingAgentIdsByWorkspace,
               hiddenAgentIdsByWorkspace,
@@ -1857,7 +1898,8 @@ export function createWorkspaceLayoutStore(
           return {
             layoutByWorkspace,
             splitSizesByWorkspace: state.splitSizesByWorkspace,
-            explorerSidebarWidthByWorkspace: state.explorerSidebarWidthByWorkspace,
+            explorerSidebarWidth: state.explorerSidebarWidth ?? undefined,
+            explorerSidebarOpen: state.explorerSidebarOpen,
             explorerPaneIdByWorkspace: state.explorerSidebarPaneIdByWorkspace,
             sidePaneIdByWorkspace: state.sidePaneIdByWorkspace,
           };
@@ -1895,13 +1937,18 @@ export function createWorkspaceLayoutStore(
             ...currentState,
             layoutByWorkspace,
             splitSizesByWorkspace: result.data.splitSizesByWorkspace ?? {},
-            explorerSidebarWidthByWorkspace:
-              result.data.explorerSidebarWidthByWorkspace ??
-              convertLegacyExplorerSidebarRatios(
-                result.data.explorerSidebarRatioByWorkspace ??
-                  result.data.sidePanelRatioByWorkspace ??
-                  {},
+            explorerSidebarWidth:
+              result.data.explorerSidebarWidth ??
+              firstPersistedWidth(
+                result.data.explorerSidebarWidthByWorkspace ??
+                  convertLegacyExplorerSidebarRatios(
+                    result.data.explorerSidebarRatioByWorkspace ??
+                      result.data.sidePanelRatioByWorkspace ??
+                      {},
+                  ),
               ),
+            explorerSidebarOpen:
+              result.data.explorerSidebarOpen ?? currentState.explorerSidebarOpen,
             explorerSidebarPaneIdByWorkspace,
             sidePaneIdByWorkspace: result.data.sidePaneIdByWorkspace ?? {},
           };

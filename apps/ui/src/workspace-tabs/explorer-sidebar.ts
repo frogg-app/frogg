@@ -106,7 +106,7 @@ export function useIsExplorerSidebarOpen(input: ExplorerSidebarQuery): boolean {
   const compactOpen = usePanelStore(selectIsCompactFileExplorerOpen);
   const paneOpen = useWorkspaceLayoutStore((state) =>
     input.workspaceKey && canUseExplorerSidebar(input)
-      ? selectIsExplorerSidebarVisible(state, input.workspaceKey)
+      ? selectIsExplorerSidebarVisible(state)
       : false,
   );
   return usesCompactExplorerSidebar(input) ? compactOpen : paneOpen;
@@ -119,6 +119,6 @@ export function isExplorerSidebarOpen(input: ExplorerSidebarQuery): boolean {
   return Boolean(
     input.workspaceKey &&
     canUseExplorerSidebar(input) &&
-    selectIsExplorerSidebarVisible(useWorkspaceLayoutStore.getState(), input.workspaceKey),
+    selectIsExplorerSidebarVisible(useWorkspaceLayoutStore.getState()),
   );
 }
