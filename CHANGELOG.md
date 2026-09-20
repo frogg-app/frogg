@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.10 — 2026-09-20
+
+- Holding the workspace-jump modifier no longer makes the sidebar jump. The
+  number badges waited 150ms before appearing while the quick action rail
+  appeared at once, so the rail drew against the row's right edge and was then
+  shoved left the moment the badge arrived. The badges now follow the modifier
+  with no delay and fade in on the rail's own curve. Sidebar rows also lost the
+  extra right-hand padding that left a band of dead space down the panel's edge.
+- The Explorer sidebar's tabs stay reachable at any width. Changes, Files, the
+  pull request and CI drop their labels for icons with tooltips once the strip
+  no longer fits, instead of the last tabs running off the header and out of
+  reach. The desktop window now also has a minimum size, below which even the
+  icon-only strip would be clipped.
+- The Explorer sidebar is an application panel rather than session state: its
+  width and its open state are shared by every workspace, so jumping between
+  sessions no longer opens, closes and resizes it underneath you. Which tab is
+  selected still follows the checkout.
+
 ## 1.5.9 — 2026-09-20
 
 - A Claude Code Workflow run now lists the agents it fans out beneath its own
