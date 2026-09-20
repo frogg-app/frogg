@@ -107,8 +107,8 @@ import {
   COMPOSER_METER_GLYPH_SIZE,
   COMPOSER_METER_RING_SIZE,
   COMPOSER_METER_SLOT_WIDTH,
-  ComposerUsageCluster,
-} from "@/composer/usage-cluster";
+} from "@/composer/meter-geometry";
+import { ComposerUsageCluster } from "@/composer/usage-cluster";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
 import { resolveActiveSendBehavior } from "./input/state";
 import { useKeyboardShiftStyle } from "@/hooks/use-keyboard-shift-style";

@@ -3,7 +3,7 @@ import Svg, { Circle } from "react-native-svg";
 import { useCallback } from "react";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { COMPOSER_METER_GLYPH_SIZE, COMPOSER_METER_SLOT_WIDTH } from "@/composer/usage-cluster";
+import { COMPOSER_METER_GLYPH_SIZE, COMPOSER_METER_SLOT_WIDTH } from "@/composer/meter-geometry";
 import type { ProviderUsageColumn } from "@/provider-usage/account-summary";
 import type { Theme } from "@/styles/theme";
 
