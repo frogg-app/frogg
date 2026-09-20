@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fix workspace-local lockfile entries and update the Nix dependency hash.
-# Requires: node, npm, nix
+# Requires: node, npm, and either nix or docker
 #
 # Usage:
 #   ./scripts/release/update-nix.sh          # fix lockfile + update hash
@@ -35,7 +35,33 @@ NIXPKGS_URL="$(node -p "
 STDERR_LOG="$(mktemp)"
 trap "rm -f '$STDERR_LOG'" EXIT
 
-if ! NEW_HASH="$(nix shell "${NIXPKGS_URL}#prefetch-npm-deps" -c prefetch-npm-deps "$LOCK_FILE" 2>"$STDERR_LOG")"; then
+# The release host does not necessarily have Nix, but it does build containers.
+# Fall back to the same image CI uses (scripts/ci/branding-nix.sh) so cutting a
+# release refreshes this hash wherever the cut happens.
+prefetch_with_nix() {
+  nix shell "${NIXPKGS_URL}#prefetch-npm-deps" -c prefetch-npm-deps "$LOCK_FILE"
+}
+
+prefetch_with_docker() {
+  docker run --rm -v "$ROOT_DIR:/work:ro" -w /work \
+    -e NIX_CONFIG='experimental-features = nix-command flakes' \
+    nixos/nix:latest \
+    sh -c "nix shell '${NIXPKGS_URL}#prefetch-npm-deps' -c prefetch-npm-deps package-lock.json" |
+    tail -1
+}
+
+if command -v nix > /dev/null 2>&1; then
+  PREFETCH=prefetch_with_nix
+elif command -v docker > /dev/null 2>&1; then
+  echo "No nix on PATH; prefetching through the nixos/nix container."
+  PREFETCH=prefetch_with_docker
+else
+  echo "ERROR: this needs either nix or docker to compute the dependency hash." >&2
+  echo "Install Nix, or run: docker run --rm -v \"\$PWD:/work:ro\" -w /work nixos/nix:latest ..." >&2
+  exit 1
+fi
+
+if ! NEW_HASH="$($PREFETCH 2>"$STDERR_LOG")"; then
   echo "ERROR: prefetch-npm-deps failed:" >&2
   tail -20 "$STDERR_LOG" >&2
   exit 1
