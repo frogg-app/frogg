@@ -184,3 +184,35 @@ export function resolveProviderAccountTransferOptions(
 ): ProviderAccountOption[] {
   return model.options.filter((option) => option.id !== model.selectedOptionId);
 }
+
+/**
+ * The account a launch from the composer actually runs on, as sent on the
+ * create-agent request.
+ *
+ * Resolution, highest first:
+ *  1. an explicit pick (a string, or `null` for the Default row). A pick is
+ *     never discarded for want of a loaded account list: the picker cannot be
+ *     used before the list arrives, so a pick in hand outranks anything the
+ *     list could still say. Dropping it made the launch fall through to the
+ *     daemon's own active account — the exact bug where a session started on
+ *     "Steve" came up signed in as "Steve 2".
+ *  2. this client's stored default for the host and provider, which is client
+ *     state and likewise needs no list to be trustworthy.
+ *  3. the daemon's reported default — but only once the list has arrived and
+ *     is non-empty, because a provider with no accounts at all must leave the
+ *     key off the launch config entirely, as daemons without the accounts
+ *     capability expect.
+ */
+export function resolveEffectiveProviderAccountId(input: {
+  accounts: readonly ProviderSnapshotAccount[] | undefined;
+  selection: ProviderAccountSelection;
+  /** `undefined` when this client has never chosen a default for the provider. */
+  storedDefaultAccountId: string | null | undefined;
+  /** The provider snapshot's default, used only as the last resort. */
+  snapshotDefaultAccountId: string | null | undefined;
+}): ProviderAccountSelection {
+  if (input.selection !== undefined) return input.selection;
+  if (input.storedDefaultAccountId !== undefined) return input.storedDefaultAccountId;
+  if (input.accounts === undefined || input.accounts.length === 0) return undefined;
+  return input.snapshotDefaultAccountId ?? null;
+}

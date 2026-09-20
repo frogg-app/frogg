@@ -41,7 +41,10 @@ import {
   type ProviderModelsByProvider,
 } from "@/provider-selection/resolve-agent-form";
 import type { MaterializedAgentProfile } from "@/agent-profiles";
-import type { ProviderAccountSelection } from "@/composer/agent-controls/provider-account";
+import {
+  resolveEffectiveProviderAccountId,
+  type ProviderAccountSelection,
+} from "@/composer/agent-controls/provider-account";
 import { useDefaultProviderAccountId } from "@/stores/default-provider-account-store";
 
 export type { FormInitialValues } from "@/provider-selection/resolve-agent-form";
@@ -227,22 +230,6 @@ async function persistProviderPreferences(input: {
       },
     }),
   );
-}
-
-/**
- * The account a launch from the form runs on. A provider with no accounts at
- * all leaves the key off the launch config entirely, which is what daemons
- * without the accounts capability expect.
- */
-function resolveEffectiveProviderAccountId(input: {
-  providerAccounts: readonly ProviderSnapshotAccount[] | undefined;
-  selection: ProviderAccountSelection;
-  defaultAccountId: string | null;
-}): ProviderAccountSelection {
-  if (input.providerAccounts === undefined || input.providerAccounts.length === 0) {
-    return undefined;
-  }
-  return input.selection !== undefined ? input.selection : input.defaultAccountId;
 }
 
 export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAgentFormStateResult {
@@ -734,9 +721,10 @@ export function useAgentFormState(options: UseAgentFormStateOptions = {}): UseAg
   // new agent starts on the account the picker is showing instead of on
   // whichever account the daemon happens to consider active.
   const effectiveProviderAccountId: ProviderAccountSelection = resolveEffectiveProviderAccountId({
-    providerAccounts,
+    accounts: providerAccounts,
     selection: selectedProviderAccountId,
-    defaultAccountId: providerDefaultAccountId,
+    storedDefaultAccountId,
+    snapshotDefaultAccountId: snapshotSelectedEntry?.defaultAccountId,
   });
 
   return useMemo(

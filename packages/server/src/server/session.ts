@@ -3627,7 +3627,16 @@ export class Session {
       env,
     } = msg;
     this.sessionLogger.info(
-      { cwd: config.cwd, provider: config.provider, worktreeName },
+      // `providerAccountId` is logged because it is three-valued and the
+      // absent case silently pins the daemon-wide active account: without it
+      // an agent landing on the wrong sign-in cannot be told apart from a
+      // client that never sent a pick.
+      {
+        cwd: config.cwd,
+        provider: config.provider,
+        worktreeName,
+        providerAccountId: "providerAccountId" in config ? config.providerAccountId : "<absent>",
+      },
       `Creating agent in ${config.cwd} (${config.provider})${
         worktreeName ? ` with worktree ${worktreeName}` : ""
       }`,

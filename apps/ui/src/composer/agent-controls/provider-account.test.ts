@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PROVIDER_ACCOUNT_OPTION_ID,
+  resolveEffectiveProviderAccountId,
   resolveProviderAccountControlModel,
   resolveProviderAccountTransferOptions,
   shouldShowProviderAccountPill,
@@ -216,5 +217,66 @@ describe("resolveProviderAccountTransferOptions", () => {
     const options = resolveProviderAccountTransferOptions(modelFor("acct-steve"));
 
     expect(options.find((option) => option.id === "acct-new")?.authenticated).toBe(false);
+  });
+});
+
+describe("resolveEffectiveProviderAccountId", () => {
+  it("sends an explicit pick even before the account list has arrived", () => {
+    // The composer's snapshot is scoped per cwd, so creating a worktree moves
+    // the scope and the list reloads under a pick the user already made.
+    // Dropping the pick here left the key off the launch entirely and the
+    // daemon fell back to its own active account.
+    expect(
+      resolveEffectiveProviderAccountId({
+        accounts: undefined,
+        selection: "acct-steve",
+        storedDefaultAccountId: undefined,
+        snapshotDefaultAccountId: "acct-new",
+      }),
+    ).toBe("acct-steve");
+  });
+
+  it("keeps an explicit Default pick distinct from having made no pick", () => {
+    expect(
+      resolveEffectiveProviderAccountId({
+        accounts: [STEVE],
+        selection: null,
+        storedDefaultAccountId: "acct-steve",
+        snapshotDefaultAccountId: "acct-steve",
+      }),
+    ).toBeNull();
+  });
+
+  it("falls back to this client's own default, which needs no account list", () => {
+    expect(
+      resolveEffectiveProviderAccountId({
+        accounts: undefined,
+        selection: undefined,
+        storedDefaultAccountId: "acct-steve",
+        snapshotDefaultAccountId: "acct-new",
+      }),
+    ).toBe("acct-steve");
+  });
+
+  it("uses the daemon's default once the list is known", () => {
+    expect(
+      resolveEffectiveProviderAccountId({
+        accounts: [STEVE, NEW],
+        selection: undefined,
+        storedDefaultAccountId: undefined,
+        snapshotDefaultAccountId: "acct-new",
+      }),
+    ).toBe("acct-new");
+  });
+
+  it("leaves the key off for a provider with no accounts at all", () => {
+    expect(
+      resolveEffectiveProviderAccountId({
+        accounts: [],
+        selection: undefined,
+        storedDefaultAccountId: undefined,
+        snapshotDefaultAccountId: null,
+      }),
+    ).toBeUndefined();
   });
 });
