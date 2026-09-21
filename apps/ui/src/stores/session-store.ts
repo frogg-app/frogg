@@ -292,7 +292,6 @@ interface ExplorerRequestState {
 
 export interface AgentFileExplorerState {
   directories: Map<string, ExplorerDirectory>;
-  files: Map<string, ExplorerFile>;
   isLoading: boolean;
   lastError: string | null;
   pendingRequest: ExplorerRequestState | null;
