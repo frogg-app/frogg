@@ -337,10 +337,15 @@ export class DaemonUpdateService {
       ...extraArgs,
     ];
     const listen = this.getListen ? this.getListen() : this.listen;
+    // `resolveInstallDir` reads this through `brandEnv`, which on a branded
+    // build looks only at `<PREFIX>_INSTALL_DIR` — a `FROGG_INSTALL_DIR` here
+    // is never seen and self-update silently installs to the default
+    // directory. `FROGG_LISTEN` below is different: the CLI reads that one
+    // straight off `env`, so it has to stay under the internal name.
     const env: NodeJS.ProcessEnv = {
       ...this.env,
       [`${brand.envPrefix}_HOME`]: this.froggHome,
-      FROGG_INSTALL_DIR: this.install.installDir,
+      [`${brand.envPrefix}_INSTALL_DIR`]: this.install.installDir,
       ...(listen ? { FROGG_LISTEN: listen } : {}),
     };
     if (this.getListen && !listen) delete env.FROGG_LISTEN;

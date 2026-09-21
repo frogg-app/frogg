@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { spawn, type ChildProcess } from "node:child_process";
 import { open } from "node:fs/promises";
 import path from "node:path";
@@ -90,8 +91,15 @@ async function launchExecutionService(
         detached: true,
         stdio: ["ignore", log.fd, log.fd],
         windowsHide: true,
+        // The worker resolves its home through `brandEnv`, which on a branded
+        // build reads only `<PREFIX>_HOME`. Written as `FROGG_HOME` this
+        // override is invisible and the worker quietly keeps whatever home it
+        // inherited — the same value in the usual case, so the mismatch only
+        // shows up once the two differ. The rest are read straight off `env`
+        // and stay under the internal name.
         env: {
           ...(options.env ?? process.env),
+          [`${brand.envPrefix}_HOME`]: options.home,
           FROGG_HOME: options.home,
           FROGG_EXECUTION_SERVICE: "0",
           FROGG_EXECUTION_VERSION: options.version,
