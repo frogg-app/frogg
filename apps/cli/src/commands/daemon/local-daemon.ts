@@ -228,27 +228,38 @@ function buildRunnerArgs(options: DaemonStartOptions): string[] {
   return args;
 }
 
+/**
+ * The daemon we are about to spawn runs `normalizeBrandEnvironment` before it
+ * reads any config: that maps `<PREFIX>_*` onto the internal `FROGG_*` names
+ * and then *deletes every `FROGG_*` key*, because a branded build deliberately
+ * stops accepting the upstream namespace. So an override written here as
+ * `FROGG_LISTEN` is discarded before `resolveListenAddress` ever sees it, and
+ * the flag that set it is silently ignored — `<brand> daemon start --port 6798`
+ * comes up on 9999. Every override has to go out under the brand's own prefix,
+ * which is why `_HOME` was always correct and the rest were not.
+ */
 function buildChildEnv(options: DaemonStartOptions): NodeJS.ProcessEnv {
   const childEnv: NodeJS.ProcessEnv = { ...process.env };
+  const brandEnvKey = (suffix: string) => `${brand.envPrefix}_${suffix}`;
   if (options.home) {
-    childEnv[`${brand.envPrefix}_HOME`] = options.home;
+    childEnv[brandEnvKey("HOME")] = options.home;
   }
   if (options.listen) {
-    childEnv.FROGG_LISTEN = options.listen;
+    childEnv[brandEnvKey("LISTEN")] = options.listen;
   } else if (options.port) {
-    childEnv.FROGG_LISTEN = `0.0.0.0:${options.port}`;
+    childEnv[brandEnvKey("LISTEN")] = `0.0.0.0:${options.port}`;
   }
   if (options.hostnames) {
-    childEnv.FROGG_HOSTNAMES = options.hostnames;
+    childEnv[brandEnvKey("HOSTNAMES")] = options.hostnames;
   }
   if (options.relayUseTls === true) {
-    childEnv.FROGG_RELAY_USE_TLS = "true";
+    childEnv[brandEnvKey("RELAY_USE_TLS")] = "true";
   }
   if (options.webUi === true) {
-    childEnv.FROGG_WEB_UI_ENABLED = "true";
+    childEnv[brandEnvKey("WEB_UI_ENABLED")] = "true";
   }
   if (options.webUi === false) {
-    childEnv.FROGG_WEB_UI_ENABLED = "false";
+    childEnv[brandEnvKey("WEB_UI_ENABLED")] = "false";
   }
   return childEnv;
 }
