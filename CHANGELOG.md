@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.20 — 2026-09-21
+
+- Daemon and self-update overrides reach the process they were meant for on a
+  branded build. Env overrides live in two namespaces — the external
+  `<PREFIX>_FOO` a brand reads and the internal `FROGG_FOO` it maps onto — and
+  three spawn sites wrote the internal name where the child only ever reads the
+  external one. `daemon start --port`, `--listen`, `--hostnames`,
+  `--relay-use-tls` and `--web-ui` were discarded before the daemon read its
+  config, so the daemon came up on the default port with nothing saying the flag
+  had been ignored; self-update installed to the default directory rather than
+  the one the daemon runs from; and the execution worker kept whatever home it
+  inherited. None of it is visible under the stock brand, where the two names are
+  the same string, so a contract test now states the pairing rule against a brand
+  whose prefix differs.
+- The daemon bundle smoke test runs against any brand. It invoked the launcher as
+  `bin/frogg`, which a branded bundle does not ship, so it failed before starting
+  anything; it now discovers the launcher from the bundle's `bin/`.
+
 ## 1.5.19 — 2026-09-20
 
 - Frogg updates itself on Android. A new version used to mean finding the APK and
