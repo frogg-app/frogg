@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  armMobileSidebarRestore,
+  clearMobileSidebarOrigin,
   registerMobileBackOverlayHandler,
+  rememberMobileSidebarOrigin,
+  takeMobileSidebarRestore,
   resolveMobileBackAction,
   runMobileBackOverlayHandlers,
   type MobileBackInput,
@@ -85,5 +89,40 @@ describe("mobile back overlay handlers", () => {
     const unregisterDeclining = registerMobileBackOverlayHandler(() => false);
     expect(runMobileBackOverlayHandlers()).toBe(false);
     unregisterDeclining();
+  });
+});
+
+describe("mobile sidebar restore", () => {
+  it("restores the sidebar when Back lands back on the route it navigated from", () => {
+    clearMobileSidebarOrigin();
+    rememberMobileSidebarOrigin("/h/one/workspace/abc");
+    armMobileSidebarRestore();
+
+    expect(takeMobileSidebarRestore("/h/one/workspace/abc")).toBe(true);
+    expect(takeMobileSidebarRestore("/h/one/workspace/abc")).toBe(false);
+  });
+
+  it("ignores a route that is not where the sidebar navigated from", () => {
+    clearMobileSidebarOrigin();
+    rememberMobileSidebarOrigin("/h/one/workspace/abc");
+    armMobileSidebarRestore();
+
+    expect(takeMobileSidebarRestore("/h/one/workspace/other")).toBe(false);
+  });
+
+  it("does not restore for forward navigation, only for an armed Back", () => {
+    clearMobileSidebarOrigin();
+    rememberMobileSidebarOrigin("/h/one/workspace/abc");
+
+    expect(takeMobileSidebarRestore("/h/one/workspace/abc")).toBe(false);
+  });
+
+  it("drops a pending restore when the sidebar starts a new navigation", () => {
+    clearMobileSidebarOrigin();
+    rememberMobileSidebarOrigin("/h/one/workspace/abc");
+    armMobileSidebarRestore();
+    rememberMobileSidebarOrigin("/settings");
+
+    expect(takeMobileSidebarRestore("/h/one/workspace/abc")).toBe(false);
   });
 });

@@ -525,7 +525,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
 
   // Compact layouts walk Back right-to-left across the columns; anywhere else it
   // is the plain route stack, which is what the handler falls back to.
-  useMobileBackNavigation({ isWorkspaceRoute: isCompactLayout && isWorkspaceRoute });
+  useMobileBackNavigation({ isWorkspaceRoute: isCompactLayout && isWorkspaceRoute, pathname });
 
   useActiveWorktreeNewAction();
   useGlobalNewWorkspaceAction();

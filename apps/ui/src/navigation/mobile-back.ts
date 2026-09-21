@@ -76,3 +76,39 @@ export function runMobileBackOverlayHandlers(): boolean {
   }
   return false;
 }
+
+/**
+ * Where the sidebar was when it sent the app somewhere else.
+ *
+ * Sidebar rows close the sidebar before they navigate, so by the time Back pops
+ * the pushed route the columns have forgotten the press came from the sidebar and
+ * the conversation is what surfaces. Recording the route the sidebar launched
+ * from lets Back put the sidebar back instead.
+ */
+let sidebarOriginRoute: string | null = null;
+/** Armed only by an actual Back press, so forward navigation never restores. */
+let pendingSidebarRestoreRoute: string | null = null;
+
+export function rememberMobileSidebarOrigin(pathname: string): void {
+  sidebarOriginRoute = pathname;
+  pendingSidebarRestoreRoute = null;
+}
+
+export function armMobileSidebarRestore(): void {
+  pendingSidebarRestoreRoute = sidebarOriginRoute;
+}
+
+/** True once, when Back has landed back on the route the sidebar navigated from. */
+export function takeMobileSidebarRestore(pathname: string): boolean {
+  if (pendingSidebarRestoreRoute === null || pendingSidebarRestoreRoute !== pathname) {
+    return false;
+  }
+  pendingSidebarRestoreRoute = null;
+  sidebarOriginRoute = null;
+  return true;
+}
+
+export function clearMobileSidebarOrigin(): void {
+  sidebarOriginRoute = null;
+  pendingSidebarRestoreRoute = null;
+}

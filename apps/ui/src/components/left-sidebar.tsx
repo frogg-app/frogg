@@ -49,6 +49,7 @@ import type { SidebarWorkspaceGroup } from "@/components/sidebar/sidebar-labels"
 import type { SidebarProjectIconTarget } from "@/utils/sidebar-project-row-model";
 import { type SidebarGroupMode, useSidebarViewStore } from "@/stores/sidebar-view-store";
 import { usePanelStore } from "@/stores/panel-store";
+import { useCloseMobileSidebarForNavigation } from "@/navigation/use-mobile-back";
 import { useOwnsWindowChromeCorner, WindowChromeSafeArea } from "@/utils/desktop-window";
 import { useCloseAgentListGesture } from "@/mobile-panels/gestures";
 import { MobilePanelOverlay } from "@/mobile-panels/presentation";
@@ -109,7 +110,9 @@ export const LeftSidebar = memo(function LeftSidebar({ active }: { active: boole
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const isCompactLayout = useIsCompactFormFactor();
-  const showMobileAgent = usePanelStore((state) => state.showMobileAgent);
+  // Every compact sidebar action closes the sidebar before it navigates, so it
+  // goes through the helper that records where Back should restore it.
+  const showMobileAgent = useCloseMobileSidebarForNavigation();
 
   const {
     projects,
