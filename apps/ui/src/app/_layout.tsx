@@ -74,6 +74,7 @@ import {
   type StartupBlocker,
 } from "@/navigation/host-runtime-bootstrap";
 import { registerWorkspaceRouteNavigationRef } from "@/navigation/workspace-route-navigation";
+import { useMobileBackNavigation } from "@/navigation/use-mobile-back";
 import { ThemedStack } from "@/navigation/themed-stack";
 import {
   isLocalDaemonBundleInstalled,
@@ -521,6 +522,10 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     exitFocusMode,
     cycleTheme,
   });
+
+  // Compact layouts walk Back right-to-left across the columns; anywhere else it
+  // is the plain route stack, which is what the handler falls back to.
+  useMobileBackNavigation({ isWorkspaceRoute: isCompactLayout && isWorkspaceRoute });
 
   useActiveWorktreeNewAction();
   useGlobalNewWorkspaceAction();

@@ -3,13 +3,14 @@ import {
   type BottomSheetModalProps,
 } from "@gorhom/bottom-sheet";
 import React from "react";
-import { forwardRef, useCallback, useEffect, useMemo, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ElementRef, ReactNode } from "react";
 import {
   type BottomSheetController,
   createBottomSheetVisibilityTracker,
 } from "./visibility-tracker";
 import { BottomSheetTextInputScope } from "@/components/ui/text-input/bottom-sheet-scope";
+import { useMobileBackOverlay } from "@/navigation/use-mobile-back";
 
 type GorhomBottomSheetModalMethods = ElementRef<typeof GorhomBottomSheetModal>;
 
@@ -58,10 +59,49 @@ export const IsolatedBottomSheetModal = forwardRef<
   IsolatedBottomSheetModalProps
 >(function IsolatedBottomSheetModal(props, ref) {
   const { children, presentation = "push", contextBridge, ...bottomSheetProps } = props;
+  const { onChange, onDismiss } = bottomSheetProps;
+  // Gorhom does not listen for Android's Back, so without this a presented sheet
+  // lets the press fall through to the app and quit it. Track presentation here,
+  // once, rather than at each of the dozens of call sites.
+  const instanceRef = useRef<GorhomBottomSheetModalMethods | null>(null);
+  const [isPresented, setIsPresented] = useState(false);
+
+  const setRefs = useCallback(
+    (instance: GorhomBottomSheetModalMethods | null) => {
+      instanceRef.current = instance;
+      if (typeof ref === "function") {
+        ref(instance);
+      } else if (ref) {
+        ref.current = instance;
+      }
+    },
+    [ref],
+  );
+
+  const handleChange = useCallback<NonNullable<BottomSheetModalProps["onChange"]>>(
+    (index, position, type) => {
+      setIsPresented(index >= 0);
+      onChange?.(index, position, type);
+    },
+    [onChange],
+  );
+
+  const handleDismiss = useCallback(() => {
+    setIsPresented(false);
+    onDismiss?.();
+  }, [onDismiss]);
+
+  useMobileBackOverlay(isPresented, () => {
+    instanceRef.current?.dismiss();
+    return true;
+  });
+
   const modal = (
     <GorhomBottomSheetModal
       {...bottomSheetProps}
-      ref={ref}
+      ref={setRefs}
+      onChange={handleChange}
+      onDismiss={handleDismiss}
       enableDismissOnClose
       stackBehavior={presentation}
     >
