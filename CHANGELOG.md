@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.21 — 2026-09-21
+
+- The composer's window rings are lettered S and W. They read "5" and "7" — the
+  windows' lengths rather than their names, and a digit in a 16px ring reads as a
+  count of something. Each ring now carries the first letter of what it measures,
+  matching the M and D the monthly and daily windows already used and the C on the
+  context ring.
+
 ## 1.5.20 — 2026-09-21
 
 - Daemon and self-update overrides reach the process they were meant for on a
