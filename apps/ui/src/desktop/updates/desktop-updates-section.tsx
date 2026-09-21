@@ -359,6 +359,8 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     flexWrap: "wrap",
     justifyContent: "flex-end",
+    // Holds the buttons against the right edge once the row has wrapped them onto their own line.
+    marginLeft: "auto",
   },
   availableCard: {
     marginTop: theme.spacing[3],
