@@ -1,6 +1,6 @@
 {
   "name": "@frogg/expo-two-way-audio",
-  "version": "1.5.19",
+  "version": "1.5.20",
   "description": "Native module for two way audio streaming",
   "keywords": [
     "ExpoTwoWayAudio",
