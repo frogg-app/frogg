@@ -9,8 +9,10 @@ export const CONTEXT_METER_GLYPH = "C";
 
 const KNOWN_WINDOW_GLYPHS: ReadonlyArray<{ match: RegExp; glyph: string }> = [
   // Claude reports `five_hour`, Codex `session`, and both mean the same rolling few hours.
-  { match: /five[_-]?hour|5h|session/i, glyph: "5" },
-  { match: /week/i, glyph: "7" },
+  // The glyph names the window rather than its length: a digit read as a count of something
+  // rather than as "the five-hour one", and the length is the provider's to change anyway.
+  { match: /five[_-]?hour|5h|session/i, glyph: "S" },
+  { match: /week/i, glyph: "W" },
   { match: /month/i, glyph: "M" },
   { match: /day|daily/i, glyph: "D" },
 ];
