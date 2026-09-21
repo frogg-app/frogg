@@ -91,6 +91,7 @@ export const ja: TranslationResources = {
     errors: {
       error: "エラー",
       unableToSave: "保存できません",
+      markWorkspaceReadFailed: "ワークスペースを既読にできませんでした",
       nameRequired: "名前は必須です",
       daemonUnavailable: "デーモンが利用できません",
       daemonClientUnavailable: "デーモンクライアントが利用できません",
@@ -3027,6 +3028,16 @@ export const ja: TranslationResources = {
           update: "スキルを更新",
           delete: "スキルを削除",
         },
+      },
+      autoArchiveMerged: {
+        title: "マージ済み PR のセッションをアーカイブ",
+        hint: "プルリクエストがマージされたクリーンな {{brand}} ワークスペースを自動的にアーカイブします",
+        accessibilityLabel: "マージ済み PR のワークスペースをアーカイブ",
+      },
+      terminalAgentHooks: {
+        title: "ターミナルエージェントのフックを有効化",
+        hint: "ターミナルエージェントから通知とステータスを受け取ります。エージェントの設定ファイルにフックをインストールします。",
+        accessibilityLabel: "ターミナルエージェントのフックを有効化",
       },
       orchestration: {
         title: "オーケストレーション",

@@ -91,6 +91,7 @@ export const ko: TranslationResources = {
     errors: {
       error: "오류",
       unableToSave: "저장할 수 없습니다",
+      markWorkspaceReadFailed: "작업 공간을 읽음으로 표시할 수 없습니다",
       nameRequired: "이름을 입력하세요",
       daemonUnavailable: "데몬을 사용할 수 없습니다",
       daemonClientUnavailable: "데몬 클라이언트를 사용할 수 없습니다",
@@ -3010,6 +3011,16 @@ export const ko: TranslationResources = {
           update: "스킬 업데이트",
           delete: "스킬 삭제",
         },
+      },
+      autoArchiveMerged: {
+        title: "병합된 PR 세션 보관",
+        hint: "풀 리퀘스트가 병합되면 깨끗한 {{brand}} 작업 공간을 자동으로 보관합니다",
+        accessibilityLabel: "병합된 PR 작업 공간 보관",
+      },
+      terminalAgentHooks: {
+        title: "터미널 에이전트 훅 사용",
+        hint: "터미널 에이전트의 알림과 상태를 받습니다. 에이전트 설정 파일에 훅을 설치합니다.",
+        accessibilityLabel: "터미널 에이전트 훅 사용",
       },
       orchestration: {
         title: "오케스트레이션",

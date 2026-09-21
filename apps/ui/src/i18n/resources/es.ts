@@ -92,6 +92,7 @@ export const es: TranslationResources = {
     errors: {
       error: "Error",
       unableToSave: "No se puede guardar",
+      markWorkspaceReadFailed: "No se pudo marcar el espacio de trabajo como leído",
       nameRequired: "El nombre es obligatorio",
       daemonUnavailable: "Daemonno disponible",
       daemonClientUnavailable: "ClienteDaemonno disponible",
@@ -3059,6 +3060,16 @@ export const es: TranslationResources = {
           update: "Actualizar habilidad",
           delete: "Eliminar habilidad",
         },
+      },
+      autoArchiveMerged: {
+        title: "Archivar sesiones de PR fusionadas",
+        hint: "Archiva automáticamente los espacios de trabajo limpios de {{brand}} cuando se fusiona su pull request",
+        accessibilityLabel: "Archivar espacios de trabajo de PR fusionadas",
+      },
+      terminalAgentHooks: {
+        title: "Activar hooks de agentes de terminal",
+        hint: "Recibe notificaciones y estado de los agentes de terminal. Esto instala hooks en los archivos de configuración de tus agentes.",
+        accessibilityLabel: "Activar hooks de agentes de terminal",
       },
       orchestration: {
         title: "Orquestación",

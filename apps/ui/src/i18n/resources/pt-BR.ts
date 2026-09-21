@@ -91,6 +91,7 @@ export const ptBR: TranslationResources = {
     errors: {
       error: "Erro",
       unableToSave: "Não foi possível salvar",
+      markWorkspaceReadFailed: "Não foi possível marcar o workspace como lido",
       nameRequired: "O nome é obrigatório",
       daemonUnavailable: "Daemon indisponível",
       daemonClientUnavailable: "Cliente do daemon indisponível",
@@ -3041,6 +3042,16 @@ export const ptBR: TranslationResources = {
           update: "Atualizar skill",
           delete: "Excluir skill",
         },
+      },
+      autoArchiveMerged: {
+        title: "Arquivar sessões de PR mescladas",
+        hint: "Arquiva automaticamente workspaces limpos do {{brand}} depois que o pull request é mesclado",
+        accessibilityLabel: "Arquivar workspaces de PR mescladas",
+      },
+      terminalAgentHooks: {
+        title: "Ativar hooks de agentes de terminal",
+        hint: "Receba notificações e status dos agentes de terminal. Isso instala hooks nos arquivos de configuração dos seus agentes.",
+        accessibilityLabel: "Ativar hooks de agentes de terminal",
       },
       orchestration: {
         title: "Orquestração",

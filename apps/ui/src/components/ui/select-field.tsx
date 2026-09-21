@@ -16,6 +16,7 @@ import {
   type FieldControlSize,
 } from "@/components/ui/control-geometry";
 import { Field } from "@/components/ui/form-field";
+import { i18n } from "@/i18n/i18next";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
 
@@ -320,7 +321,9 @@ export function SelectField<TValue>({
         onSelect={handleSelect}
         searchable={searchable}
         searchPlaceholder={searchPlaceholder}
-        emptyText={loading && visibleOptions.length === 0 ? "Loading..." : emptyText}
+        emptyText={
+          loading && visibleOptions.length === 0 ? i18n.t("common.states.loading") : emptyText
+        }
         title={title ?? label}
         open={open}
         onOpenChange={setOpen}

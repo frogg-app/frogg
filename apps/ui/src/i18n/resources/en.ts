@@ -89,6 +89,7 @@ export const en = {
     errors: {
       error: "Error",
       unableToSave: "Unable to save",
+      markWorkspaceReadFailed: "Unable to mark workspace as read",
       nameRequired: "Name is required",
       daemonUnavailable: "Daemon unavailable",
       daemonClientUnavailable: "Daemon client unavailable",
@@ -3048,6 +3049,16 @@ export const en = {
           update: "Update skill",
           delete: "Delete skill",
         },
+      },
+      autoArchiveMerged: {
+        title: "Archive merged PR sessions",
+        hint: "Automatically archive clean {{brand}} workspaces after their pull request is merged",
+        accessibilityLabel: "Archive merged PR workspaces",
+      },
+      terminalAgentHooks: {
+        title: "Enable terminal agent hooks",
+        hint: "Get notifications and status from terminal agents. This installs hooks in your agent config files.",
+        accessibilityLabel: "Enable terminal agent hooks",
       },
       orchestration: {
         title: "Orchestration",

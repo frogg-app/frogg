@@ -91,6 +91,7 @@ export const zhCN: TranslationResources = {
     errors: {
       error: "错误",
       unableToSave: "无法保存",
+      markWorkspaceReadFailed: "无法将工作区标记为已读",
       nameRequired: "名称必填",
       daemonUnavailable: "Daemon 不可用",
       daemonClientUnavailable: "Daemon client 不可用",
@@ -2952,6 +2953,16 @@ export const zhCN: TranslationResources = {
           update: "更新 skill",
           delete: "删除 skill",
         },
+      },
+      autoArchiveMerged: {
+        title: "归档已合并 PR 的会话",
+        hint: "拉取请求合并后自动归档干净的 {{brand}} 工作区",
+        accessibilityLabel: "归档已合并 PR 的工作区",
+      },
+      terminalAgentHooks: {
+        title: "启用终端代理钩子",
+        hint: "接收终端代理的通知和状态。这会在代理配置文件中安装钩子。",
+        accessibilityLabel: "启用终端代理钩子",
       },
       orchestration: {
         title: "编排",

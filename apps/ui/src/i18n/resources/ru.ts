@@ -91,6 +91,7 @@ export const ru: TranslationResources = {
     errors: {
       error: "Ошибка",
       unableToSave: "Не удалось сохранить",
+      markWorkspaceReadFailed: "Не удалось отметить рабочее пространство как прочитанное",
       nameRequired: "Требуется имя",
       daemonUnavailable: "Daemon недоступен",
       daemonClientUnavailable: "Daemon клиента недоступен",
@@ -3044,6 +3045,16 @@ export const ru: TranslationResources = {
           update: "Обновить навык",
           delete: "Удалить навык",
         },
+      },
+      autoArchiveMerged: {
+        title: "Архивировать сессии слитых PR",
+        hint: "Автоматически архивировать чистые рабочие пространства {{brand}} после слияния их pull request",
+        accessibilityLabel: "Архивировать рабочие пространства слитых PR",
+      },
+      terminalAgentHooks: {
+        title: "Включить хуки терминальных агентов",
+        hint: "Получайте уведомления и статус от терминальных агентов. Это устанавливает хуки в файлы конфигурации агентов.",
+        accessibilityLabel: "Включить хуки терминальных агентов",
       },
       orchestration: {
         title: "Оркестрация",

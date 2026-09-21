@@ -91,6 +91,7 @@ export const fr: TranslationResources = {
     errors: {
       error: "Erreur",
       unableToSave: "Impossible d'enregistrer",
+      markWorkspaceReadFailed: "Impossible de marquer l'espace de travail comme lu",
       nameRequired: "Le nom est requis",
       daemonUnavailable: "Daemonindisponible",
       daemonClientUnavailable: "ClientDaemonindisponible",
@@ -3066,6 +3067,16 @@ export const fr: TranslationResources = {
           update: "Mettre à jour la compétence",
           delete: "Supprimer la compétence",
         },
+      },
+      autoArchiveMerged: {
+        title: "Archiver les sessions de PR fusionnées",
+        hint: "Archiver automatiquement les espaces de travail {{brand}} propres une fois leur pull request fusionnée",
+        accessibilityLabel: "Archiver les espaces de travail de PR fusionnées",
+      },
+      terminalAgentHooks: {
+        title: "Activer les hooks des agents de terminal",
+        hint: "Recevez les notifications et l'état des agents de terminal. Cela installe des hooks dans les fichiers de configuration de vos agents.",
+        accessibilityLabel: "Activer les hooks des agents de terminal",
       },
       orchestration: {
         title: "Orchestration",

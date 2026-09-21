@@ -91,6 +91,7 @@ export const ar: TranslationResources = {
     errors: {
       error: "خطأ",
       unableToSave: "غير قادر على الحفظ",
+      markWorkspaceReadFailed: "تعذّر وضع علامة مقروء على مساحة العمل",
       nameRequired: "الاسم مطلوب",
       daemonUnavailable: "Daemon غير متوفر",
       daemonClientUnavailable: "عميل Daemon غير متوفر",
@@ -2990,6 +2991,16 @@ export const ar: TranslationResources = {
           update: "تحديث المهارة",
           delete: "حذف المهارة",
         },
+      },
+      autoArchiveMerged: {
+        title: "أرشفة جلسات طلبات الدمج المدمجة",
+        hint: "أرشفة مساحات عمل {{brand}} النظيفة تلقائيًا بعد دمج طلب السحب الخاص بها",
+        accessibilityLabel: "أرشفة مساحات عمل طلبات الدمج المدمجة",
+      },
+      terminalAgentHooks: {
+        title: "تفعيل خطافات وكلاء الطرفية",
+        hint: "احصل على الإشعارات والحالة من وكلاء الطرفية. يثبّت هذا خطافات في ملفات إعداد الوكيل.",
+        accessibilityLabel: "تفعيل خطافات وكلاء الطرفية",
       },
       orchestration: {
         title: "التنسيق",

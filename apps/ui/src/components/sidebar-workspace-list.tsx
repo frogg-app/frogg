@@ -1301,9 +1301,11 @@ function WorkspaceRowWithMenu({
   });
   const handleMarkAsRead = useCallback(() => {
     void clearAttention().catch((error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to mark workspace as read");
+      toast.error(
+        error instanceof Error ? error.message : t("common.errors.markWorkspaceReadFailed"),
+      );
     });
-  }, [clearAttention, toast]);
+  }, [clearAttention, toast, t]);
 
   return (
     <>
