@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.22 — 2026-09-21
+
+- Each meter ring's letter is centred on the ring it labels. Centring a text box
+  does not centre the character inside it, so every glyph sat about half a pixel
+  off — visible because the three rings sit side by side, where the error reads as
+  a wobble along the row. The nudge is now measured from whichever font the app is
+  actually drawing in, rather than assumed, which matters because the UI font is a
+  system stack the user can override. The context ring and the quota rings also
+  share one glyph component now, so they cannot drift apart.
+
 ## 1.5.21 — 2026-09-21
 
 - The composer's window rings are lettered S and W. They read "5" and "7" — the
