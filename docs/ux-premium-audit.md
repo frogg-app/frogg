@@ -5,11 +5,11 @@ Already shipped and excluded: copy-path toast in Changes, daemon self-update pro
 
 ## P1 — feedback and house-rule breaks
 
-- [ ] P1 S — Daemon status copy confirms with a platform `Alert` instead of the in-app toast — `apps/ui/src/desktop/components/desktop-updates-section.tsx:74`
-- [ ] P1 S — Log path copy confirms and fails with platform `Alert`; copy-status failure is silent (console only) — `apps/ui/src/desktop/components/desktop-updates-section.tsx:106`
-- [ ] P1 S — Hardcoded English error titles bypass i18n ("Unable to update sessions" / "terminal agent hooks") — `apps/ui/src/screens/settings/host-page.tsx:896`, `:937`
-- [ ] P1 S — Hardcoded "Failed to mark workspace as read" fallback in three places — `apps/ui/src/components/sidebar-workspace-list.tsx:1304`, `components/sidebar/sidebar-workspace-row.tsx:117`, `components/sidebar/sidebar-status-list.tsx:641`
-- [ ] P1 S — Hardcoded "Loading..." empty text in the shared select — `apps/ui/src/components/ui/select-field.tsx:323`
+- [x] P1 S — Daemon status copy confirms with a platform `Alert` instead of the in-app toast — `apps/ui/src/desktop/components/desktop-updates-section.tsx:74`
+- [x] P1 S — Log path copy confirms and fails with platform `Alert`; copy-status failure is silent (console only) — `apps/ui/src/desktop/components/desktop-updates-section.tsx:106`
+- [x] P1 S — Hardcoded English error titles bypass i18n ("Unable to update sessions" / "terminal agent hooks"); both cards' titles, hints and labels were also untranslated — `apps/ui/src/screens/settings/host-page.tsx:896`, `:937`
+- [x] P1 S — Hardcoded "Failed to mark workspace as read" fallback in three places — `apps/ui/src/components/sidebar-workspace-list.tsx:1304`, `components/sidebar/sidebar-workspace-row.tsx:117`, `components/sidebar/sidebar-status-list.tsx:641`
+- [x] P1 S — Hardcoded "Loading..." empty text in the shared select — `apps/ui/src/components/ui/select-field.tsx:323`
 - [ ] P1 M — Hardcoded English errors in add-project flow — `apps/ui/src/components/add-project-flow.tsx:198`, `:564`, `:590`
 - [ ] P1 M — Non-destructive save/update failures across settings use platform `Alert` rather than toast/inline error (agent profiles, metadata generation, provider removal, host connection/restart/remove, image picker, add host) — `apps/ui/src/agent-profiles/settings/agent-profiles-section.tsx:81`, `screens/settings/host-page.tsx:330`, `screens/settings/metadata-generation-page.tsx:54`, `screens/settings/provider-settings-modal/provider-settings-modal.tsx:144`, `hooks/use-image-attachment-picker.ts:84`, `components/add-host-modal.tsx:281`
 - [ ] P1 M — Daemon conflict warning uses a platform `Alert` for a destructive choice; should be frogg's confirm dialog — `apps/ui/src/hosts/daemon-conflict-warning.tsx:97`
