@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.23 — 2026-09-21
+
+- Android's Back button walks back through the app instead of quitting it. The
+  whole app had one Back listener, on the workspace explorer overlay; everywhere
+  else the press fell through to the activity. Because the conversation sits at
+  the bottom of the route stack, Back from a conversation closed the app rather
+  than revealing the session list, and bottom sheets — the model picker, the
+  action sheets, every adaptive modal — closed it from underneath an open menu,
+  since the sheet library ships no Back handling at all. Back is now decided in
+  one place: an open sheet or menu closes first, the right sidebar returns to the
+  conversation, the conversation returns to the session list, and only the
+  session list leaves the app. Anywhere off a workspace route — settings, an
+  agent's detail, an opened attachment — it returns to whatever opened it.
+
 ## 1.5.22 — 2026-09-21
 
 - Each meter ring's letter is centred on the ring it labels. Centring a text box
