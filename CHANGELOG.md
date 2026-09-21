@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.24 — 2026-09-21
+
+- Back from a screen the sidebar opened returns to the sidebar. Every sidebar row
+  closes the sidebar before it navigates, so by the time Back popped the pushed
+  route the columns had forgotten where the press came from: Settings and New
+  session both came back to the previous conversation rather than to the list
+  they were opened from. The compact sidebar now records the route it left, and a
+  Back press that pops a route reopens the sidebar on arriving there. Only a Back
+  press arms this, so navigating forward to that conversation later does not pop
+  the sidebar open behind you.
+
 ## 1.5.23 — 2026-09-21
 
 - Android's Back button walks back through the app instead of quitting it. The
