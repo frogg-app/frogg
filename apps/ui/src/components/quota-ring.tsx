@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { MeterCenterGlyph } from "@/components/meter-center-glyph";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { COMPOSER_METER_GLYPH_SIZE, COMPOSER_METER_SLOT_WIDTH } from "@/composer/meter-geometry";
 import { useEasedColor } from "@/hooks/use-eased-color";
@@ -155,9 +156,7 @@ export function QuotaRing({ column, glyph, size, onOpen, testID }: QuotaRingProp
             animate={preferences.animate}
             uniProps={ringPaletteMapping(column.pct, preferences)}
           />
-          <View pointerEvents="none" style={styles.glyphLayer}>
-            <Text style={styles.glyph}>{glyph}</Text>
-          </View>
+          <MeterCenterGlyph glyph={glyph} size={COMPOSER_METER_GLYPH_SIZE} />
         </Pressable>
       </TooltipTrigger>
       <TooltipContent side="top" align="center" offset={8}>
@@ -179,28 +178,6 @@ const styles = StyleSheet.create((theme) => ({
     height: METER_SLOT_HEIGHT,
     alignItems: "center",
     justifyContent: "center",
-  },
-  // The glyph sits over the ring rather than inside the SVG, where text metrics differ between
-  // web and native. Centring is done by a layer that fills the slot and centres its child both
-  // ways: `textAlign` alone only solves the horizontal axis, and a line height stretched to the
-  // slot leaves the glyph riding high, because a line box centres the font's whole em — ascender
-  // and descender — rather than the digit.
-  glyphLayer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  glyph: {
-    color: theme.colors.foregroundMuted,
-    fontSize: COMPOSER_METER_GLYPH_SIZE,
-    lineHeight: COMPOSER_METER_GLYPH_SIZE,
-    fontWeight: theme.fontWeight.normal,
-    includeFontPadding: false,
-    textAlignVertical: "center",
   },
   tooltipContent: {
     gap: theme.spacing[1],

@@ -3,6 +3,7 @@ import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, G } from "react-native-svg";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
+import { MeterCenterGlyph } from "@/components/meter-center-glyph";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useEasedColor } from "@/hooks/use-eased-color";
 import { useEasedValue } from "@/hooks/use-eased-value";
@@ -128,8 +129,15 @@ function getMeterGeometry(showPercentage: boolean, glyphSize?: number, container
   };
 }
 
-/** The ring's centre character, or nothing when the meter labels itself with a percentage. */
-function MeterCenterGlyph({
+/** The glyph size a context meter uses on its own, outside the composer's cluster. */
+const STANDALONE_CONTEXT_GLYPH_SIZE = 8;
+
+/**
+ * The ring's centre character, or nothing when the meter labels itself with a percentage.
+ * The glyph itself comes from the shared component the composer's quota rings use, so the
+ * three rings in one cluster are lettered identically.
+ */
+function ContextMeterGlyph({
   glyph,
   size,
   hidden,
@@ -139,13 +147,7 @@ function MeterCenterGlyph({
   hidden: boolean;
 }) {
   if (hidden || !glyph) return null;
-  return (
-    <View pointerEvents="none" style={styles.centerGlyphLayer}>
-      <Text style={[styles.centerGlyph, size ? { fontSize: size, lineHeight: size } : null]}>
-        {glyph}
-      </Text>
-    </View>
-  );
+  return <MeterCenterGlyph glyph={glyph} size={size ?? STANDALONE_CONTEXT_GLYPH_SIZE} />;
 }
 
 /**
@@ -278,7 +280,7 @@ export function ContextWindowMeter({
           />
         </Svg>
         {showPercentage ? <View style={styles.skeletonLabel} /> : null}
-        <MeterCenterGlyph glyph={centerGlyph} size={centerGlyphSize} hidden={showPercentage} />
+        <ContextMeterGlyph glyph={centerGlyph} size={centerGlyphSize} hidden={showPercentage} />
       </View>
     );
   }
@@ -320,7 +322,7 @@ export function ContextWindowMeter({
           {showPercentage ? (
             <Text style={styles.percentageLabel}>{`${roundedPercentage}%`}</Text>
           ) : null}
-          <MeterCenterGlyph glyph={centerGlyph} size={centerGlyphSize} hidden={showPercentage} />
+          <ContextMeterGlyph glyph={centerGlyph} size={centerGlyphSize} hidden={showPercentage} />
         </Pressable>
       </TooltipTrigger>
       <TooltipContent side="top" align="center" offset={8}>
@@ -362,26 +364,6 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     gap: theme.spacing[1],
     borderRadius: theme.borderRadius.full,
-  },
-  // Drawn over the ring rather than as SVG text, which does not centre consistently on native.
-  // The layer fills the meter and centres the glyph on both axes; a line box stretched to the
-  // container would centre the font's em rather than the character, leaving it riding high.
-  centerGlyphLayer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  centerGlyph: {
-    color: theme.colors.foregroundMuted,
-    fontSize: 8,
-    lineHeight: 8,
-    fontWeight: theme.fontWeight.normal,
-    includeFontPadding: false,
-    textAlignVertical: "center",
   },
   percentageLabel: {
     color: theme.colors.foregroundMuted,
