@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.25 — 2026-09-22
+
+- On phones, the account is picked from the composer toolbar rather than from
+  inside the model sheet. When a provider has more than one sign-in registered,
+  choosing which account a new conversation starts as is a decision made about
+  as often as the model, so it now sits beside the model pill instead of two
+  taps deep behind Select model. Providers with a single account keep the row in
+  the sheet, and a launched agent's account is still named by its own pill above
+  the composer.
+
 ## 1.5.24 — 2026-09-21
 
 - Back from a screen the sidebar opened returns to the sidebar. Every sidebar row
