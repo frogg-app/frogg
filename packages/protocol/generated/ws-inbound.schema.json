@@ -3181,7 +3181,7 @@
               "properties": {
                 "type": {
                   "type": "string",
-                  "const": "daemon.device.set_role.request"
+                  "const": "auth.device.set_role.request"
                 },
                 "requestId": {
                   "type": "string"

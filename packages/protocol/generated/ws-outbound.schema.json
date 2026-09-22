@@ -33473,7 +33473,7 @@
               "properties": {
                 "type": {
                   "type": "string",
-                  "const": "daemon.device.set_role.response"
+                  "const": "auth.device.set_role.response"
                 },
                 "payload": {
                   "type": "object",

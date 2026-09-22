@@ -234,8 +234,8 @@ pub enum SessionMessage {
     DaemonGetStatusResponse(DaemonGetStatusResponse),
     #[serde(rename = "daemon.get_pairing_offer.response")]
     DaemonGetPairingOfferResponse(DaemonGetPairingOfferResponse),
-    #[serde(rename = "daemon.device.set_role.response")]
-    DaemonDeviceSetRoleResponse(DaemonDeviceSetRoleResponse),
+    #[serde(rename = "auth.device.set_role.response")]
+    AuthDeviceSetRoleResponse(AuthDeviceSetRoleResponse),
     #[serde(rename = "daemon.config.reload.response")]
     DaemonConfigReloadResponse(DaemonConfigReloadResponse),
     #[serde(rename = "hub.management.daemon.connect.response")]
@@ -7206,12 +7206,12 @@ pub struct DaemonGetPairingOfferResponsePayload {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonDeviceSetRoleResponse {
-    pub payload: DaemonDeviceSetRoleResponsePayload,
+pub struct AuthDeviceSetRoleResponse {
+    pub payload: AuthDeviceSetRoleResponsePayload,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonDeviceSetRoleResponsePayload {
+pub struct AuthDeviceSetRoleResponsePayload {
     #[serde(rename = "requestId")]
     pub request_id: String,
     #[serde(rename = "credentialId")]
