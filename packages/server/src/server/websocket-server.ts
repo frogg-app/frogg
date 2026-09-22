@@ -118,7 +118,9 @@ import {
   OWNER_PERMISSIONS,
   type DaemonPermission,
   type DeviceRole,
+  type SessionTransport,
 } from "./authorization/index.js";
+import { admissionForPrincipal, resolveAdmissionRole } from "./authorization/admission.js";
 import type { DeviceRoleStore } from "./authorization/device-role-store.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import {
@@ -140,24 +142,19 @@ export interface ExternalSocketMetadata {
   hubDaemonId?: string;
 }
 
+// Roles are decided in the authorization layer; re-exported for transports.
+export { admissionForPrincipal, resolveAdmissionRole };
+
 export interface SessionAdmission {
   principalId: string;
   permissions: readonly DaemonPermission[];
   hubExecutionAgents?: HubExecutionAgents;
   /** Paired-device credential the connection authenticated with, if any. */
   device?: { credentialId: string; name: string; role: DeviceRole };
-  /** Explicit role override; otherwise the device's role, otherwise owner. */
+  /** Explicit role override; otherwise the device's role, otherwise the transport default. */
   role?: DeviceRole;
-}
-
-/**
- * The one place a connection's device role is decided. Every transport (direct,
- * relay, Hub) reaches a Session through createSessionConnection, which calls this.
- * Connections without a device credential (loopback, trusted LAN, password,
- * Hub) and legacy pairings are owner; Hub is still narrowed by its permissions.
- */
-export function resolveAdmissionRole(admission: SessionAdmission): DeviceRole {
-  return admission.role ?? admission.device?.role ?? "owner";
+  /** How the connection reached the daemon; decides the role when no device is known. */
+  transport?: SessionTransport;
 }
 
 /** Sessions are never shared across device credentials, whatever the principal. */
@@ -981,7 +978,13 @@ export class VoiceAssistantWebSocketServer {
       return;
     }
 
-    await this.attachSocket(ws, request);
+    await this.attachSocket(
+      ws,
+      request,
+      undefined,
+      false,
+      admissionForPrincipal(decision.principal, "direct"),
+    );
   }
 
   public broadcast(message: WSOutboundMessage): void {
@@ -1055,7 +1058,16 @@ export class VoiceAssistantWebSocketServer {
     if (metadata?.transport === "relay") {
       this.incrementRuntimeCounter("relayExternalSocketAttached");
     }
-    await this.attachSocket(ws, undefined, metadata, false, admission, initialHello);
+    // The transport decides the role when the caller brought no device credential.
+    const transport: SessionTransport = metadata?.transport === "hub" ? "hub" : "relay";
+    await this.attachSocket(
+      ws,
+      undefined,
+      metadata,
+      false,
+      { transport, ...admission },
+      initialHello,
+    );
   }
 
   public updatePrincipalPermissions(
@@ -1721,6 +1733,19 @@ export class VoiceAssistantWebSocketServer {
     }
   }
 
+  /** Role features for server_info; owner-only management is advertised to owners. */
+  private deviceRoleFeatures(session: Session): Record<string, boolean> {
+    return {
+      // COMPAT(deviceRoles): added in v1.6.0, remove after 2027-09-22.
+      deviceRoles: true,
+      // COMPAT(deviceRoleManagement): added in v1.6.0, remove after 2027-09-22.
+      // Only the owner can set roles, so only an owner is told it can.
+      ...(this.deviceRoleStore && session.getRole() === "owner"
+        ? { deviceRoleManagement: true }
+        : {}),
+    };
+  }
+
   private buildServerInfoStatusPayload(session: Session): ServerInfoStatusPayload {
     return {
       status: "server_info",
@@ -1735,13 +1760,7 @@ export class VoiceAssistantWebSocketServer {
       desktopManaged: this.daemonRuntimeConfig?.desktopManaged === true,
       ...(this.serverCapabilities ? { capabilities: this.serverCapabilities } : {}),
       features: {
-        // COMPAT(deviceRoles): added in v1.6.0, remove after 2027-09-22.
-        deviceRoles: true,
-        // COMPAT(deviceRoleManagement): added in v1.6.0, remove after 2027-09-22.
-        // Only the owner can set roles, so only an owner is told it can.
-        ...(this.deviceRoleStore && session.getRole() === "owner"
-          ? { deviceRoleManagement: true }
-          : {}),
+        ...this.deviceRoleFeatures(session),
         // COMPAT(directorySync): added in v0.3.x, remove gate after 2027-02-12.
         directorySync: true,
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.

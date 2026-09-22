@@ -282,6 +282,31 @@ const OUTBOUND_ROLE_OVERRIDES: Partial<Record<OutboundOperation, DeviceRole>> = 
   "auth.settings.get.response": "operator",
 };
 
+/**
+ * Every way a connection can reach a Session. A transport without a paired
+ * device credential falls back to the role declared here, so adding a transport
+ * does not typecheck until it says what authority it carries.
+ *
+ * - direct: a local or LAN socket; owner unless it presents a device credential.
+ * - relay: the same client over the relay, narrowed by its credential when it
+ *   presents one (see relay client authentication).
+ * - hub: an enrolled Hub, narrowed further by its granted permissions.
+ * - mcp: an agent driving the daemon over /mcp/agents; never device management.
+ */
+const TRANSPORT_DEFAULT_ROLE = {
+  direct: "owner",
+  relay: "owner",
+  hub: "owner",
+  mcp: "operator",
+} as const satisfies Record<SessionTransport, DeviceRole>;
+
+export const SESSION_TRANSPORTS = ["direct", "relay", "hub", "mcp"] as const;
+export type SessionTransport = (typeof SESSION_TRANSPORTS)[number];
+
+export function defaultRoleForTransport(transport: SessionTransport): DeviceRole {
+  return TRANSPORT_DEFAULT_ROLE[transport];
+}
+
 export function requiredRoleForInbound(operation: InboundOperation): DeviceRole {
   return INBOUND_ROLE[operation];
 }

@@ -14,7 +14,11 @@ import {
 
 export {
   DEVICE_ROLES,
+  SESSION_TRANSPORTS,
+  defaultRoleForTransport,
   isDeviceRole,
+  minimumRoleForPermission,
+  type SessionTransport,
   requiredRoleForInbound,
   roleSatisfies,
   type DeviceRole,

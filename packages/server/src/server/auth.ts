@@ -4,7 +4,7 @@ import type { IncomingMessage } from "node:http";
 import type { RequestHandler } from "express";
 
 import { DEFAULT_TRUST_LAN, isAuthRequired, type DaemonAccessPolicy } from "./access-policy.js";
-import { hashCredential } from "./claim-store.js";
+import { hashCredential, type DeviceRecord } from "./claim-store.js";
 
 export const DAEMON_PASSWORD_BCRYPT_COST = 12;
 
@@ -116,8 +116,18 @@ export function extractWsBearerToken(protocol: string | null): string | null {
   return segments.slice(2).join(".");
 }
 
+/**
+ * Who the daemon decided is talking to it. A paired device carries its own
+ * credential, permissions and role; the daemon password and bearer-free trusted
+ * clients (loopback, trusted LAN) have no device record and act as the owner.
+ */
+export type BearerPrincipal =
+  | { kind: "device"; device: DeviceRecord }
+  | { kind: "password" }
+  | { kind: "trusted" };
+
 export type BearerDecision =
-  | { ok: true }
+  | { ok: true; principal: BearerPrincipal }
   | { ok: false; reason: "unclaimed" | "missing_token" | "invalid_token" };
 
 type RequestLike = Pick<IncomingMessage, "headers" | "socket">;
@@ -132,6 +142,18 @@ export function requestNeedsBearer(auth: DaemonAuthConfig | undefined, req: Requ
   });
 }
 
+/**
+ * The device a valid bearer belongs to. A token that matches no credential came
+ * from the daemon password, which is owner authority by construction.
+ */
+function principalForToken(
+  auth: DaemonAuthConfig | undefined,
+  token: string | null,
+): BearerPrincipal {
+  const device = token === null ? null : (auth?.access?.findDeviceByToken(token) ?? null);
+  return device ? { kind: "device", device } : { kind: "password" };
+}
+
 function decideWithSecrets(
   auth: DaemonAuthConfig | undefined,
   token: string | null,
@@ -140,7 +162,21 @@ function decideWithSecrets(
   const hasSecrets = Boolean(auth?.password) || (auth?.access?.credentialHashes().length ?? 0) > 0;
   if (!hasSecrets) return { ok: false, reason: "unclaimed" };
   if (token === null) return { ok: false, reason: "missing_token" };
-  return valid ? { ok: true } : { ok: false, reason: "invalid_token" };
+  return valid
+    ? { ok: true, principal: principalForToken(auth, token) }
+    : { ok: false, reason: "invalid_token" };
+}
+
+/**
+ * A client that needs no bearer is still held to its device role when it sends
+ * a credential anyway: a viewer phone on the LAN stays a viewer.
+ */
+function trustedPrincipal(
+  auth: DaemonAuthConfig | undefined,
+  token: string | null,
+): BearerPrincipal {
+  const device = token === null ? null : (auth?.access?.findDeviceByToken(token) ?? null);
+  return device ? { kind: "device", device } : { kind: "trusted" };
 }
 
 export function authorizeBearerSync(
@@ -148,7 +184,7 @@ export function authorizeBearerSync(
   req: RequestLike,
   token: string | null,
 ): BearerDecision {
-  if (!requestNeedsBearer(auth, req)) return { ok: true };
+  if (!requestNeedsBearer(auth, req)) return { ok: true, principal: trustedPrincipal(auth, token) };
   const credentialHashes = auth?.access?.credentialHashes() ?? [];
   const valid =
     token !== null && isBearerTokenValidSync({ password: auth?.password, credentialHashes, token });
@@ -160,7 +196,7 @@ export async function authorizeBearerAsync(
   req: RequestLike,
   token: string | null,
 ): Promise<BearerDecision> {
-  if (!requestNeedsBearer(auth, req)) return { ok: true };
+  if (!requestNeedsBearer(auth, req)) return { ok: true, principal: trustedPrincipal(auth, token) };
   const credentialHashes = auth?.access?.credentialHashes() ?? [];
   const valid =
     token !== null &&

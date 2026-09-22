@@ -1,7 +1,7 @@
 import type { IncomingMessage } from "node:http";
 import net from "node:net";
 
-import type { ClaimStore } from "./claim-store.js";
+import type { ClaimStore, DeviceRecord } from "./claim-store.js";
 
 /**
  * Who may talk to the daemon without a bearer token.
@@ -32,6 +32,8 @@ type RequestLike = Pick<IncomingMessage, "headers" | "socket">;
 export interface DaemonAccessPolicy {
   isClaimed(): boolean;
   credentialHashes(): readonly string[];
+  /** The paired device a bearer token belongs to, compared in constant time. */
+  findDeviceByToken(token: string): DeviceRecord | null;
   /** Whether private-network clients are currently treated like loopback. */
   trustLan(): boolean;
   clientLocality(req: RequestLike): ClientLocality;
@@ -173,6 +175,7 @@ export function createAccessPolicy(input: {
   return {
     isClaimed: () => input.claimStore.isClaimed(),
     credentialHashes: () => input.claimStore.credentialHashes(),
+    findDeviceByToken: (token) => input.claimStore.findDeviceByToken(token),
     trustLan,
     clientLocality,
     isLoopbackClient: (req) => clientLocality(req) === "loopback",

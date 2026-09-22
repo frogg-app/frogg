@@ -193,7 +193,7 @@ describe("bearer requirement by client locality", () => {
       const withoutToken = await authorizeBearerAsync(auth, req, null);
       expect(withoutToken.ok).toBe(!needsBearer);
       if (password) {
-        expect(await authorizeBearerAsync(auth, req, "correct-password")).toEqual({ ok: true });
+        expect((await authorizeBearerAsync(auth, req, "correct-password")).ok).toBe(true);
         expect(await authorizeBearerAsync(auth, req, "wrong")).toEqual({
           ok: false,
           reason: "invalid_token",
