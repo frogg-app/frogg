@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   classifyClientAddress,
+  classifyRequestLocality,
   isAuthRequired,
   isLoopbackIp,
   isPrivateLanIp,
@@ -123,5 +124,59 @@ describe("access policy", () => {
         true,
       );
     }
+  });
+});
+
+describe("request locality behind proxies", () => {
+  test("X-Forwarded-For can never make a caller loopback, even with trustedProxies: true", () => {
+    // `trustedProxies: true` trusts every hop, so without this guard any caller
+    // could claim 127.0.0.1 and take the one locality that stays trusted when
+    // the LAN is not.
+    for (const trustedProxies of [true, ["loopback"]] as const) {
+      expect(
+        classifyRequestLocality({
+          remoteAddress: "203.0.113.5",
+          forwardedFor: "127.0.0.1",
+          trustedProxies,
+        }),
+      ).toBe("public");
+    }
+    expect(
+      classifyRequestLocality({
+        remoteAddress: "127.0.0.1",
+        forwardedFor: "127.0.0.1",
+        trustedProxies: ["loopback"],
+      }),
+    ).toBe("public");
+  });
+
+  test("a trusted reverse proxy still places a client on the LAN", () => {
+    expect(
+      classifyRequestLocality({
+        remoteAddress: "127.0.0.1",
+        forwardedFor: "192.168.1.10",
+        trustedProxies: ["loopback"],
+      }),
+    ).toBe("lan");
+  });
+
+  test("an untrusted proxy's header is ignored entirely", () => {
+    expect(
+      classifyRequestLocality({
+        remoteAddress: "203.0.113.5",
+        forwardedFor: "192.168.1.10",
+        trustedProxies: ["loopback"],
+      }),
+    ).toBe("public");
+  });
+
+  test("an address-less socket is not classified as loopback here", () => {
+    expect(
+      classifyRequestLocality({
+        remoteAddress: undefined,
+        forwardedFor: undefined,
+        trustedProxies: ["loopback"],
+      }),
+    ).toBe("public");
   });
 });

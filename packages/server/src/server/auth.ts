@@ -1,14 +1,26 @@
-import { compare, compareSync, hashSync } from "bcryptjs";
-import { timingSafeEqual } from "node:crypto";
+import { compare, compareSync } from "bcryptjs";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  scrypt,
+  scryptSync,
+  timingSafeEqual,
+} from "node:crypto";
 import type { IncomingMessage } from "node:http";
 import type { RequestHandler } from "express";
 
+import type { DeviceRole } from "@frogg/protocol/device-access";
 import { DEFAULT_TRUST_LAN, isAuthRequired, type DaemonAccessPolicy } from "./access-policy.js";
-import { hashCredential } from "./claim-store.js";
+import { hashCredential, type DeviceRecord } from "./claim-store.js";
+import type { AuthFailureLimiter } from "./auth-rate-limit.js";
 
+/** Kept for bcrypt hashes written by older daemons; new hashes use scrypt. */
 export const DAEMON_PASSWORD_BCRYPT_COST = 12;
+export const DAEMON_PASSWORD_MIN_LENGTH = 8;
 
 export interface DaemonAuthConfig {
+  /** bcrypt (legacy) or `scrypt$…` hash. */
   password?: string;
   /**
    * Paired-device credentials and client locality (loopback / trusted LAN /
@@ -16,6 +28,8 @@ export interface DaemonAuthConfig {
    * (the pre-pairing behavior).
    */
   access?: DaemonAccessPolicy;
+  /** Failed-attempt throttling, keyed by client address. */
+  limiter?: AuthFailureLimiter;
 }
 
 export interface BearerAuthRejectContext {
@@ -29,6 +43,116 @@ interface BearerValidationInput {
   credentialHashes?: readonly string[];
   token: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Password hashing: scrypt (N=2^15, r=8, p=1), `scrypt$<N>$<r>$<p>$<salt>$<hash>`.
+
+const SCRYPT_N = 1 << 15;
+const SCRYPT_R = 8;
+const SCRYPT_P = 1;
+const SCRYPT_KEYLEN = 32;
+const SCRYPT_MAXMEM = 64 * 1024 * 1024;
+const SCRYPT_HASH_PATTERN = /^scrypt\$(\d+)\$(\d+)\$(\d+)\$([A-Za-z0-9_-]+)\$([A-Za-z0-9_-]+)$/;
+export const DAEMON_PASSWORD_HASH_PATTERN =
+  /^(\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}|scrypt\$\d+\$\d+\$\d+\$[A-Za-z0-9_-]+\$[A-Za-z0-9_-]+)$/;
+
+export function hashDaemonPassword(password: string): string {
+  const salt = randomBytes(16);
+  const hash = scryptSync(password, salt, SCRYPT_KEYLEN, {
+    N: SCRYPT_N,
+    r: SCRYPT_R,
+    p: SCRYPT_P,
+    maxmem: SCRYPT_MAXMEM,
+  });
+  return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt.toString("base64url")}$${hash.toString("base64url")}`;
+}
+
+export function isLegacyPasswordHash(hash: string): boolean {
+  return hash.startsWith("$2");
+}
+
+function parseScrypt(hash: string) {
+  const match = SCRYPT_HASH_PATTERN.exec(hash);
+  if (!match) return null;
+  return {
+    N: Number(match[1]),
+    r: Number(match[2]),
+    p: Number(match[3]),
+    salt: Buffer.from(match[4]!, "base64url"),
+    expected: Buffer.from(match[5]!, "base64url"),
+  };
+}
+
+// Successful verifications are memoized per (hash, token digest) so the
+// synchronous WebSocket upgrade path does not pay a KDF on every reconnect.
+const verifiedPasswords = new Map<string, true>();
+const VERIFIED_CACHE_LIMIT = 64;
+
+function verifiedKey(hash: string, token: string): string {
+  return `${hash}\u0000${createHash("sha256").update(token).digest("hex")}`;
+}
+
+function rememberVerified(key: string): void {
+  verifiedPasswords.set(key, true);
+  while (verifiedPasswords.size > VERIFIED_CACHE_LIMIT) {
+    const first = verifiedPasswords.keys().next().value;
+    if (first === undefined) break;
+    verifiedPasswords.delete(first);
+  }
+}
+
+export function verifyDaemonPasswordSync(token: string, hash: string): boolean {
+  const key = verifiedKey(hash, token);
+  if (verifiedPasswords.has(key)) return true;
+  let ok = false;
+  if (isLegacyPasswordHash(hash)) {
+    ok = compareSync(token, hash);
+  } else {
+    const parsed = parseScrypt(hash);
+    if (parsed) {
+      const actual = scryptSync(token, parsed.salt, parsed.expected.length, {
+        N: parsed.N,
+        r: parsed.r,
+        p: parsed.p,
+        maxmem: SCRYPT_MAXMEM,
+      });
+      ok = actual.length === parsed.expected.length && timingSafeEqual(actual, parsed.expected);
+    }
+  }
+  if (ok) rememberVerified(key);
+  return ok;
+}
+
+export async function verifyDaemonPassword(token: string, hash: string): Promise<boolean> {
+  const key = verifiedKey(hash, token);
+  if (verifiedPasswords.has(key)) return true;
+  let ok = false;
+  if (isLegacyPasswordHash(hash)) {
+    ok = await compare(token, hash);
+  } else {
+    const parsed = parseScrypt(hash);
+    if (parsed) {
+      const actual = await new Promise<Buffer>((resolve, reject) => {
+        scrypt(
+          token,
+          parsed.salt,
+          parsed.expected.length,
+          { N: parsed.N, r: parsed.r, p: parsed.p, maxmem: SCRYPT_MAXMEM },
+          (error, derived) => {
+            if (error) reject(error);
+            else resolve(derived);
+          },
+        );
+      });
+      ok = actual.length === parsed.expected.length && timingSafeEqual(actual, parsed.expected);
+    }
+  }
+  if (ok) rememberVerified(key);
+  return ok;
+}
+
+// ---------------------------------------------------------------------------
+// Bearer validation
 
 function matchesCredential(token: string, credentialHashes: readonly string[]): boolean {
   const provided = Buffer.from(hashCredential(token), "hex");
@@ -48,52 +172,29 @@ export function isBearerTokenValid(input: BearerValidationInput): boolean {
 
 export async function isBearerTokenValidAsync(input: BearerValidationInput): Promise<boolean> {
   const hashes = input.credentialHashes ?? [];
-  if (!input.password && hashes.length === 0) {
-    return true;
-  }
-  if (input.token === null) {
-    return false;
-  }
-  if (hashes.length > 0 && matchesCredential(input.token, hashes)) {
-    return true;
-  }
-  return input.password ? compare(input.token, input.password) : false;
+  if (!input.password && hashes.length === 0) return true;
+  if (input.token === null) return false;
+  if (hashes.length > 0 && matchesCredential(input.token, hashes)) return true;
+  return input.password ? verifyDaemonPassword(input.token, input.password) : false;
 }
 
 export function isBearerTokenValidSync(input: BearerValidationInput): boolean {
   const hashes = input.credentialHashes ?? [];
-  if (!input.password && hashes.length === 0) {
-    return true;
-  }
-  if (input.token === null) {
-    return false;
-  }
-  if (hashes.length > 0 && matchesCredential(input.token, hashes)) {
-    return true;
-  }
-  return input.password ? compareSync(input.token, input.password) : false;
-}
-
-export function hashDaemonPassword(password: string): string {
-  return hashSync(password, DAEMON_PASSWORD_BCRYPT_COST);
+  if (!input.password && hashes.length === 0) return true;
+  if (input.token === null) return false;
+  if (hashes.length > 0 && matchesCredential(input.token, hashes)) return true;
+  return input.password ? verifyDaemonPasswordSync(input.token, input.password) : false;
 }
 
 export function extractHttpBearerToken(value: string | undefined): string | null {
-  if (!value) {
-    return null;
-  }
+  if (!value) return null;
   const [scheme, ...tokenParts] = value.trim().split(/\s+/);
-  if (scheme !== "Bearer" || tokenParts.length !== 1) {
-    return null;
-  }
+  if (scheme !== "Bearer" || tokenParts.length !== 1) return null;
   return tokenParts[0] ?? null;
 }
 
 export function extractWsBearerProtocol(value: string | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-
+  if (!value) return null;
   for (const protocol of value.split(",")) {
     const trimmed = protocol.trim();
     const segments = trimmed.split(".");
@@ -101,24 +202,20 @@ export function extractWsBearerProtocol(value: string | undefined): string | nul
       return trimmed;
     }
   }
-
   return null;
 }
 
 export function extractWsBearerToken(protocol: string | null): string | null {
-  if (!protocol) {
-    return null;
-  }
+  if (!protocol) return null;
   const segments = protocol.split(".");
-  if (segments[0] !== "frogg" || segments[1] !== "bearer" || segments.length < 3) {
-    return null;
-  }
+  if (segments[0] !== "frogg" || segments[1] !== "bearer" || segments.length < 3) return null;
   return segments.slice(2).join(".");
 }
 
+/** How a connection authenticated. `device` is set for paired-device credentials only. */
 export type BearerDecision =
-  | { ok: true }
-  | { ok: false; reason: "unclaimed" | "missing_token" | "invalid_token" };
+  | { ok: true; via: "trusted" | "device" | "password"; device?: DeviceRecord }
+  | { ok: false; reason: "unclaimed" | "missing_token" | "invalid_token" | "rate_limited" };
 
 type RequestLike = Pick<IncomingMessage, "headers" | "socket">;
 
@@ -132,15 +229,55 @@ export function requestNeedsBearer(auth: DaemonAuthConfig | undefined, req: Requ
   });
 }
 
-function decideWithSecrets(
+export function clientKey(req: RequestLike): string {
+  return req.socket?.remoteAddress ?? "local";
+}
+
+function resolveDevice(auth: DaemonAuthConfig | undefined, token: string): DeviceRecord | null {
+  const device = auth?.access?.findDevice(token) ?? null;
+  if (device) auth?.access?.touchDevice(device.id);
+  return device;
+}
+
+/**
+ * Everything but the password check. Returns a final decision, or the key to
+ * throttle under when the token must still be checked against the password.
+ */
+function preDecide(
   auth: DaemonAuthConfig | undefined,
+  req: RequestLike,
   token: string | null,
-  valid: boolean,
-): BearerDecision {
-  const hasSecrets = Boolean(auth?.password) || (auth?.access?.credentialHashes().length ?? 0) > 0;
+): BearerDecision | { key: string; token: string; password: string } {
+  // A presented device credential always identifies the device, even where no
+  // bearer is required, so presence and revocation see who it is.
+  if (token !== null) {
+    const device = resolveDevice(auth, token);
+    if (device) return { ok: true, via: "device", device };
+  }
+  if (!requestNeedsBearer(auth, req)) return { ok: true, via: "trusted" };
+  const key = clientKey(req);
+  if (auth?.limiter?.isBlocked(key)) return { ok: false, reason: "rate_limited" };
+  const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
   if (!hasSecrets) return { ok: false, reason: "unclaimed" };
   if (token === null) return { ok: false, reason: "missing_token" };
-  return valid ? { ok: true } : { ok: false, reason: "invalid_token" };
+  if (!auth?.password) {
+    auth?.limiter?.recordFailure(key);
+    return { ok: false, reason: "invalid_token" };
+  }
+  return { key, token, password: auth.password };
+}
+
+function finishPassword(
+  auth: DaemonAuthConfig | undefined,
+  key: string,
+  ok: boolean,
+): BearerDecision {
+  if (ok) {
+    auth?.limiter?.recordSuccess(key);
+    return { ok: true, via: "password" };
+  }
+  auth?.limiter?.recordFailure(key);
+  return { ok: false, reason: "invalid_token" };
 }
 
 export function authorizeBearerSync(
@@ -148,11 +285,9 @@ export function authorizeBearerSync(
   req: RequestLike,
   token: string | null,
 ): BearerDecision {
-  if (!requestNeedsBearer(auth, req)) return { ok: true };
-  const credentialHashes = auth?.access?.credentialHashes() ?? [];
-  const valid =
-    token !== null && isBearerTokenValidSync({ password: auth?.password, credentialHashes, token });
-  return decideWithSecrets(auth, token, valid);
+  const pre = preDecide(auth, req, token);
+  if ("ok" in pre) return pre;
+  return finishPassword(auth, pre.key, verifyDaemonPasswordSync(pre.token, pre.password));
 }
 
 export async function authorizeBearerAsync(
@@ -160,12 +295,25 @@ export async function authorizeBearerAsync(
   req: RequestLike,
   token: string | null,
 ): Promise<BearerDecision> {
-  if (!requestNeedsBearer(auth, req)) return { ok: true };
-  const credentialHashes = auth?.access?.credentialHashes() ?? [];
-  const valid =
-    token !== null &&
-    (await isBearerTokenValidAsync({ password: auth?.password, credentialHashes, token }));
-  return decideWithSecrets(auth, token, valid);
+  const pre = preDecide(auth, req, token);
+  if ("ok" in pre) return pre;
+  return finishPassword(auth, pre.key, await verifyDaemonPassword(pre.token, pre.password));
+}
+
+/** True for a request that carries a real credential (device or password), not locality trust. */
+export async function hasRealCredential(
+  auth: DaemonAuthConfig | undefined,
+  req: RequestLike,
+  token: string | null,
+): Promise<boolean> {
+  if (token === null) return false;
+  if (resolveDevice(auth, token)) return true;
+  const key = clientKey(req);
+  if (!auth?.password || auth.limiter?.isBlocked(key)) return false;
+  const ok = await verifyDaemonPassword(token, auth.password);
+  if (ok) auth.limiter?.recordSuccess(key);
+  else auth.limiter?.recordFailure(key);
+  return ok;
 }
 
 export function createRequireBearerMiddleware(
@@ -183,18 +331,17 @@ export function createRequireBearerMiddleware(
         const token = extractHttpBearerToken(req.header("authorization"));
         const decision = await authorizeBearerAsync(auth, req, token);
         if (!decision.ok) {
-          onReject?.({
-            path: req.path,
-            method: req.method,
-            hasToken: token !== null,
-          });
+          onReject?.({ path: req.path, method: req.method, hasToken: token !== null });
+          if (decision.reason === "rate_limited") {
+            res.status(429).json({ error: "Too many failed attempts" });
+            return;
+          }
           res.status(401).json({
             error: "Unauthorized",
             ...(decision.reason === "unclaimed" ? { setup: "unclaimed" } : {}),
           });
           return;
         }
-
         next();
       } catch (error) {
         next(error);
@@ -207,46 +354,106 @@ const SELF_AUTHENTICATING_ROUTES = new Set(["/api/files/download", "/mcp/agents"
 const PUBLIC_ROUTES = new Set([
   "/api/health",
   "/api/identity",
+  "/api/identity/proof",
   "/api/setup/status",
   "/api/setup/claim",
+  "/api/setup/request",
+  "/api/auth/login",
 ]);
 
 function isBearerFreeRoute(path: string): boolean {
+  if (path.startsWith("/api/setup/request/")) return true;
   return PUBLIC_ROUTES.has(path) || SELF_AUTHENTICATING_ROUTES.has(path);
 }
 
 export function shouldBypassBearerAuth(method: string, path: string): boolean {
-  if (method === "OPTIONS") {
-    return true;
-  }
+  if (method === "OPTIONS") return true;
   return isBearerFreeRoute(path);
 }
 
+// ---------------------------------------------------------------------------
+// Agent MCP endpoint
+
+const AGENT_MCP_TOKEN_PREFIX = "fam1";
+
 /**
- * Authorizes a request to the Agent MCP endpoint (/mcp/agents), which is exempt
- * from the global daemon-password middleware. Accepts either the per-daemon-run
- * capability token the daemon injects into its own agents' configs and MCP
- * client, or a valid daemon-password bearer (so existing password-authenticated
- * callers keep working). When no daemon password is configured the endpoint is
- * open, matching the global middleware's behavior.
+ * Per-agent MCP bearer: `fam1.<agentId base64url>.<HMAC-SHA256(secret, agentId)>`.
+ * The endpoint takes the caller identity from the token, never from the URL.
  */
+export function deriveAgentMcpToken(secret: string, agentId: string): string {
+  const id = Buffer.from(agentId, "utf8").toString("base64url");
+  const mac = createHmac("sha256", secret).update(agentId, "utf8").digest("base64url");
+  return `${AGENT_MCP_TOKEN_PREFIX}.${id}.${mac}`;
+}
+
+export function verifyAgentMcpToken(secret: string, token: string): string | null {
+  const [prefix, id, mac, ...rest] = token.split(".");
+  if (prefix !== AGENT_MCP_TOKEN_PREFIX || !id || !mac || rest.length > 0) return null;
+  const agentId = Buffer.from(id, "base64url").toString("utf8");
+  const expected = Buffer.from(deriveAgentMcpToken(secret, agentId).split(".")[2]!);
+  const provided = Buffer.from(mac);
+  return expected.length === provided.length && timingSafeEqual(expected, provided)
+    ? agentId
+    : null;
+}
+
+export type AgentMcpAuthorization =
+  | { ok: true; callerAgentId: string | null }
+  | { ok: false; status: 401 | 403 | 429 };
+
+const OPERATOR_ROLES: ReadonlySet<DeviceRole> = new Set(["owner", "operator"]);
+
+/**
+ * Authorizes a request to /mcp/agents (exempt from the global bearer
+ * middleware). Accepted: a per-agent token (caller = that agent), the
+ * per-run capability token (no caller agent), a paired-device credential with
+ * role operator or owner, or the daemon password. Nothing else, whatever the
+ * client's locality: the endpoint drives agents and terminals.
+ */
+export async function authorizeAgentMcpRequest(input: {
+  auth: DaemonAuthConfig | undefined;
+  req: RequestLike;
+  capabilityToken: string | null;
+  authorizationHeader: string | undefined;
+}): Promise<AgentMcpAuthorization> {
+  const token = extractHttpBearerToken(input.authorizationHeader);
+  if (token === null) return { ok: false, status: 401 };
+  if (input.capabilityToken) {
+    const agentId = verifyAgentMcpToken(input.capabilityToken, token);
+    if (agentId) return { ok: true, callerAgentId: agentId };
+    const provided = Buffer.from(token);
+    const expected = Buffer.from(input.capabilityToken);
+    if (provided.length === expected.length && timingSafeEqual(provided, expected)) {
+      return { ok: true, callerAgentId: null };
+    }
+  }
+  const device = resolveDevice(input.auth, token);
+  if (device) {
+    return OPERATOR_ROLES.has(device.role)
+      ? { ok: true, callerAgentId: null }
+      : { ok: false, status: 403 };
+  }
+  const key = clientKey(input.req);
+  if (input.auth?.limiter?.isBlocked(key)) return { ok: false, status: 429 };
+  if (input.auth?.password && (await verifyDaemonPassword(token, input.auth.password))) {
+    input.auth.limiter?.recordSuccess(key);
+    return { ok: true, callerAgentId: null };
+  }
+  input.auth?.limiter?.recordFailure(key);
+  return { ok: false, status: 401 };
+}
+
+/** @deprecated kept for callers outside bootstrap; see authorizeAgentMcpRequest. */
 export async function isAgentMcpRequestAuthorized(input: {
   password: string | undefined;
   capabilityToken: string | null;
   authorizationHeader: string | undefined;
 }): Promise<boolean> {
-  if (!input.password) {
-    return true;
-  }
-  const token = extractHttpBearerToken(input.authorizationHeader);
-  if (input.capabilityToken !== null && token !== null) {
-    // Constant-time compare; length-guard first because timingSafeEqual throws
-    // on differing buffer lengths.
-    const provided = Buffer.from(token);
-    const expected = Buffer.from(input.capabilityToken);
-    if (provided.length === expected.length && timingSafeEqual(provided, expected)) {
-      return true;
-    }
-  }
-  return isBearerTokenValidAsync({ password: input.password, token });
+  const result = await authorizeAgentMcpRequest({
+    auth: input.password ? { password: input.password } : undefined,
+    req: { headers: {}, socket: {} as IncomingMessage["socket"] },
+    capabilityToken: input.capabilityToken,
+    authorizationHeader: input.authorizationHeader,
+  });
+  return result.ok;
 }

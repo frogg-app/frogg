@@ -185,9 +185,10 @@ import { terminateWithTreeKill } from "../utils/tree-kill.js";
 import { isHostnameAllowed, type HostnamesConfig } from "./hostnames.js";
 import {
   createRequireBearerMiddleware,
-  isAgentMcpRequestAuthorized,
+  authorizeAgentMcpRequest,
   type DaemonAuthConfig,
 } from "./auth.js";
+import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
 import { createAccessPolicy, DEFAULT_TRUST_LAN } from "./access-policy.js";
 import { createClaimStore, type ClaimStore } from "./claim-store.js";
@@ -398,6 +399,8 @@ export interface FroggDaemonConfig {
   trustedProxies?: true | string[];
   /** Treat private-network clients like loopback (self-hosting/security.mdx, "Access policy"). */
   trustLan?: boolean;
+  /** LAN untrusted; the first client claims the unclaimed daemon. Overrides trustLan. */
+  claimMode?: boolean;
   mcpEnabled?: boolean;
   mcpInjectIntoAgents?: boolean;
   browserToolsEnabled?: boolean;
@@ -576,6 +579,15 @@ function readMutableTrustLan(config: MutableDaemonConfig): boolean {
   return typeof value === "boolean" ? value : DEFAULT_TRUST_LAN;
 }
 
+/**
+ * `claimMode` rides along in the mutable config the same way, so flipping it
+ * with `frogg daemon claim-mode` or the settings RPC applies without a restart.
+ */
+function readMutableClaimMode(config: MutableDaemonConfig): boolean {
+  const value = (config as Record<string, unknown>).claimMode;
+  return typeof value === "boolean" ? value : false;
+}
+
 function configuredTrustLan(config: Pick<FroggDaemonConfig, "trustLan">): boolean {
   return config.trustLan ?? DEFAULT_TRUST_LAN;
 }
@@ -693,12 +705,15 @@ export async function createFroggDaemon(
   // Paired principals/credentials and the first-run claim gate (getting-started/connect-and-pair.mdx).
   const claimStore = createClaimStore(config.froggHome);
   const claimOffers = createClaimOfferStore();
+  const authFailureLimiter = createAuthFailureLimiter();
   const authConfig: DaemonAuthConfig = {
     ...config.auth,
+    limiter: authFailureLimiter,
     access: createAccessPolicy({
       claimStore,
       getTrustedProxies: () => daemonConfigStore.get().trustedProxies ?? ["loopback"],
       getTrustLan: () => readMutableTrustLan(daemonConfigStore.get()),
+      getClaimMode: () => readMutableClaimMode(daemonConfigStore.get()),
     }),
   };
   const managedProcesses = createBootstrapManagedProcessRegistry(config, logger);
@@ -1637,18 +1652,20 @@ export async function createFroggDaemon(
         res.status(404).json({ error: "Agent MCP endpoint disabled" });
         return;
       }
-      // This route is exempt from the global daemon-password middleware, so it
-      // authenticates here using the injected capability token (or a valid
-      // daemon password). Without this, a password-protected daemon would be
-      // wide open on its agent control plane.
-      if (
-        !(await isAgentMcpRequestAuthorized({
-          password: config.auth?.password,
-          capabilityToken: agentMcpAuthToken,
-          authorizationHeader: req.header("authorization"),
-        }))
-      ) {
-        res.status(401).json({ error: "Unauthorized" });
+      // This route is exempt from the global bearer middleware, so it
+      // authenticates here: a per-agent token derived from the run secret, the
+      // run secret itself, a paired device with an operator role, or the daemon
+      // password. Never locality alone — this endpoint drives agents.
+      const mcpAuth = await authorizeAgentMcpRequest({
+        auth: authConfig,
+        req,
+        capabilityToken: agentMcpAuthToken,
+        authorizationHeader: req.header("authorization"),
+      });
+      if (!mcpAuth.ok) {
+        res
+          .status(mcpAuth.status)
+          .json({ error: mcpAuth.status === 429 ? "Too many failed attempts" : "Unauthorized" });
         return;
       }
       if (config.mcpDebug) {
@@ -1678,14 +1695,11 @@ export async function createFroggDaemon(
           });
           return;
         }
-        const callerAgentIdRaw = req.query.callerAgentId;
-        let callerAgentId: string | undefined;
-        if (typeof callerAgentIdRaw === "string") {
-          callerAgentId = callerAgentIdRaw;
-        } else if (Array.isArray(callerAgentIdRaw) && typeof callerAgentIdRaw[0] === "string") {
-          callerAgentId = callerAgentIdRaw[0];
-        }
-        const { server, transport } = await createAgentMcpSession(callerAgentId);
+        // The caller identity comes from the presented credential, never from
+        // the query string: `?callerAgentId=` was spoofable by any caller.
+        const { server, transport } = await createAgentMcpSession(
+          mcpAuth.callerAgentId ?? undefined,
+        );
         res.on("close", () => {
           void transport.close();
           void server.close();

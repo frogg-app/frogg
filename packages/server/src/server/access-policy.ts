@@ -1,7 +1,7 @@
 import type { IncomingMessage } from "node:http";
 import net from "node:net";
 
-import type { ClaimStore } from "./claim-store.js";
+import type { ClaimStore, DeviceRecord } from "./claim-store.js";
 
 /**
  * Who may talk to the daemon without a bearer token.
@@ -32,8 +32,17 @@ type RequestLike = Pick<IncomingMessage, "headers" | "socket">;
 export interface DaemonAccessPolicy {
   isClaimed(): boolean;
   credentialHashes(): readonly string[];
-  /** Whether private-network clients are currently treated like loopback. */
+  /** The paired device a bearer token belongs to. */
+  findDevice(token: string): DeviceRecord | null;
+  /** Record that the device just authenticated (last-seen). */
+  touchDevice(credentialId: string): void;
+  /**
+   * Whether private-network clients are currently treated like loopback:
+   * `daemon.auth.trustLan`, and never while claim mode is on.
+   */
   trustLan(): boolean;
+  /** `daemon.auth.claimMode`: LAN untrusted, first client claims the unclaimed daemon. */
+  claimMode(): boolean;
   clientLocality(req: RequestLike): ClientLocality;
   isLoopbackClient(req: RequestLike): boolean;
   /** Loopback, or LAN while `trustLan` is on: no bearer unless a password is set. */
@@ -112,13 +121,13 @@ function isTrustedProxy(address: string, trustedProxies: TrustedProxiesSetting):
  * "linklocal"/"uniquelocal" keywords are treated as untrusted (the safe
  * direction: more gating, never less).
  */
-export function resolveClientAddress(input: {
+function resolveForwardedClient(input: {
   remoteAddress: string | undefined;
   forwardedFor: string | string[] | undefined;
   trustedProxies: TrustedProxiesSetting;
-}): string | undefined {
+}): { address: string | undefined; forwarded: boolean } {
   const { remoteAddress } = input;
-  if (!remoteAddress) return undefined;
+  if (!remoteAddress) return { address: undefined, forwarded: false };
   const forwarded = (
     Array.isArray(input.forwardedFor) ? input.forwardedFor.join(",") : (input.forwardedFor ?? "")
   )
@@ -127,13 +136,41 @@ export function resolveClientAddress(input: {
     .filter((hop) => hop.length > 0);
 
   let client = remoteAddress;
+  let hops = 0;
   for (let index = forwarded.length - 1; index >= 0; index -= 1) {
     if (!isTrustedProxy(client, input.trustedProxies)) break;
     const hop = forwarded[index]!;
     if (net.isIP(normalizeIp(hop)) === 0) break;
     client = hop;
+    hops += 1;
   }
-  return client;
+  return { address: client, forwarded: hops > 0 };
+}
+
+export function resolveClientAddress(input: {
+  remoteAddress: string | undefined;
+  forwardedFor: string | string[] | undefined;
+  trustedProxies: TrustedProxiesSetting;
+}): string | undefined {
+  return resolveForwardedClient(input).address;
+}
+
+/**
+ * Locality of a request after trusted proxies. A forwarded client is never
+ * loopback: `X-Forwarded-For` is a header the caller controls, so honouring
+ * `127.0.0.1` in it would hand the caller the daemon's most trusted locality
+ * (and with `trustedProxies: true`, every caller is behind a "trusted" proxy).
+ * A reverse proxy can still place a client on the LAN, which is trust the
+ * operator opted into with `trustLan`.
+ */
+export function classifyRequestLocality(input: {
+  remoteAddress: string | undefined;
+  forwardedFor: string | string[] | undefined;
+  trustedProxies: TrustedProxiesSetting;
+}): ClientLocality {
+  const { address, forwarded } = resolveForwardedClient(input);
+  const locality = classifyClientAddress(address);
+  return forwarded && locality === "loopback" ? "public" : locality;
 }
 
 export interface AuthRequirementInput {
@@ -156,24 +193,27 @@ export function createAccessPolicy(input: {
   claimStore: ClaimStore;
   getTrustedProxies: () => TrustedProxiesSetting;
   getTrustLan?: () => boolean;
+  getClaimMode?: () => boolean;
 }): DaemonAccessPolicy {
-  const trustLan = (): boolean => input.getTrustLan?.() ?? DEFAULT_TRUST_LAN;
+  const claimMode = (): boolean => input.getClaimMode?.() ?? false;
+  const trustLan = (): boolean => !claimMode() && (input.getTrustLan?.() ?? DEFAULT_TRUST_LAN);
   const clientLocality = (req: RequestLike): ClientLocality => {
     const remoteAddress = req.socket?.remoteAddress;
     // Unix sockets and named pipes have no remote address and are local by construction.
     if (!remoteAddress) return "loopback";
-    return classifyClientAddress(
-      resolveClientAddress({
-        remoteAddress,
-        forwardedFor: req.headers["x-forwarded-for"],
-        trustedProxies: input.getTrustedProxies(),
-      }),
-    );
+    return classifyRequestLocality({
+      remoteAddress,
+      forwardedFor: req.headers["x-forwarded-for"],
+      trustedProxies: input.getTrustedProxies(),
+    });
   };
   return {
     isClaimed: () => input.claimStore.isClaimed(),
     credentialHashes: () => input.claimStore.credentialHashes(),
+    findDevice: (token) => input.claimStore.findDeviceByToken(token),
+    touchDevice: (credentialId) => input.claimStore.touchLastSeen(credentialId),
     trustLan,
+    claimMode,
     clientLocality,
     isLoopbackClient: (req) => clientLocality(req) === "loopback",
     isTrustedClient: (req) => isClientTrusted(clientLocality(req), trustLan()),
