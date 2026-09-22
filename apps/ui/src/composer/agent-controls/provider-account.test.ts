@@ -4,6 +4,7 @@ import {
   resolveEffectiveProviderAccountId,
   resolveProviderAccountControlModel,
   resolveProviderAccountTransferOptions,
+  shouldShowCompactAccountToolbarControl,
   shouldShowProviderAccountPill,
   toProviderAccountOptionId,
   toProviderAccountSelection,
@@ -278,5 +279,25 @@ describe("resolveEffectiveProviderAccountId", () => {
         snapshotDefaultAccountId: null,
       }),
     ).toBeUndefined();
+  });
+});
+
+describe("shouldShowCompactAccountToolbarControl", () => {
+  it("promotes the picker to the toolbar once there is a choice to make", () => {
+    expect(shouldShowCompactAccountToolbarControl({ accountsCount: 2, readOnly: false })).toBe(
+      true,
+    );
+  });
+
+  it("leaves a single sign-in inside the sheet", () => {
+    expect(shouldShowCompactAccountToolbarControl({ accountsCount: 1, readOnly: false })).toBe(
+      false,
+    );
+  });
+
+  it("never promotes a launched agent's locked account", () => {
+    expect(shouldShowCompactAccountToolbarControl({ accountsCount: 3, readOnly: true })).toBe(
+      false,
+    );
   });
 });

@@ -216,3 +216,21 @@ export function resolveEffectiveProviderAccountId(input: {
   if (input.accounts === undefined || input.accounts.length === 0) return undefined;
   return input.snapshotDefaultAccountId ?? null;
 }
+
+/**
+ * Whether the compact composer shows the account picker as its own toolbar pill
+ * beside the model pill, instead of as a row inside the model sheet.
+ *
+ * Only a provider with more than one sign-in registered has a choice worth a
+ * pill; with a single account the picker is a one-option list that would cost
+ * toolbar width for nothing, so it stays in the sheet. A read-only control
+ * (a launched agent, whose provider process is already bound to a config dir)
+ * is never promoted either — the running agent's account is named by the
+ * composer's account pill instead.
+ */
+export function shouldShowCompactAccountToolbarControl(input: {
+  accountsCount: number;
+  readOnly: boolean;
+}): boolean {
+  return !input.readOnly && input.accountsCount > 1;
+}

@@ -85,7 +85,10 @@ import {
   ProviderAccountControl,
   type ProviderAccountControlValue,
 } from "@/composer/agent-controls/provider-account-control";
-import { shouldShowProviderAccountPill } from "@/composer/agent-controls/provider-account";
+import {
+  shouldShowCompactAccountToolbarControl,
+  shouldShowProviderAccountPill,
+} from "@/composer/agent-controls/provider-account";
 import {
   useAgentProfileEditor,
   useAgentProfilePicker,
@@ -1261,9 +1264,19 @@ function SheetAgentControlsContent(props: SheetAgentControlsContentProps) {
     [handleCloseSheet, handleOpenSheet],
   );
 
+  // With more than one sign-in registered, the account is a choice the user
+  // makes as often as the model, so it earns a pill of its own beside the model
+  // pill rather than a row two taps deep inside the sheet.
+  const accountOnToolbar =
+    providerAccountControl != null &&
+    shouldShowCompactAccountToolbarControl({
+      accountsCount: providerAccountControl.accounts?.length ?? 0,
+      readOnly: Boolean(providerAccountControl.readOnly),
+    });
+
   const sheetControls = (
     <View style={styles.combinedSheetControls} testID="agent-controls-combined-sheet-controls">
-      {providerAccountControl ? (
+      {providerAccountControl && !accountOnToolbar ? (
         <ProviderAccountControl {...providerAccountControl} surface="sheet" />
       ) : null}
 
@@ -1313,31 +1326,41 @@ function SheetAgentControlsContent(props: SheetAgentControlsContentProps) {
     </View>
   );
 
+  const accountToolbarControl =
+    providerAccountControl && accountOnToolbar ? (
+      <ProviderAccountControl {...providerAccountControl} surface="toolbar" />
+    ) : null;
+
   return canSelectModel ? (
-    <CompactModelSheet
-      providers={modelSelectorProviders}
-      selectedProvider={provider}
-      selectedModel={selectedModelId ?? ""}
-      thinkingLabel={hasThinking ? displayThinking : null}
-      onSelect={handleSheetModelSelect}
-      profiles={agentProfiles}
-      onApplyProfile={onApplyAgentProfile}
-      onEditProfiles={onEditAgentProfiles}
-      onCreateProfile={onCreateAgentProfile}
-      onEditProfile={onEditAgentProfile}
-      isLoading={isModelLoading}
-      disabled={modelDisabled}
-      onOpen={onModelSelectorOpen}
-      onClose={onDropdownClose}
-      onRetryProvider={onRetryModelProvider}
-      isRetryingProvider={isRetryingModelProvider}
-      serverId={modelSelectorServerId}
-      glyphSize={glyphSize}
-      canSwitchProvider={canSwitchProvider}
-    >
-      {sheetControls}
-    </CompactModelSheet>
-  ) : null;
+    <>
+      {accountToolbarControl}
+      <CompactModelSheet
+        providers={modelSelectorProviders}
+        selectedProvider={provider}
+        selectedModel={selectedModelId ?? ""}
+        thinkingLabel={hasThinking ? displayThinking : null}
+        onSelect={handleSheetModelSelect}
+        profiles={agentProfiles}
+        onApplyProfile={onApplyAgentProfile}
+        onEditProfiles={onEditAgentProfiles}
+        onCreateProfile={onCreateAgentProfile}
+        onEditProfile={onEditAgentProfile}
+        isLoading={isModelLoading}
+        disabled={modelDisabled}
+        onOpen={onModelSelectorOpen}
+        onClose={onDropdownClose}
+        onRetryProvider={onRetryModelProvider}
+        isRetryingProvider={isRetryingModelProvider}
+        serverId={modelSelectorServerId}
+        glyphSize={glyphSize}
+        canSwitchProvider={canSwitchProvider}
+      >
+        {sheetControls}
+      </CompactModelSheet>
+    </>
+  ) : (
+    accountToolbarControl
+  );
 }
 
 function DesktopFeatureItem({
