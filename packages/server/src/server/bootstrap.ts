@@ -186,6 +186,8 @@ import { isHostnameAllowed, type HostnamesConfig } from "./hostnames.js";
 import {
   createRequireBearerMiddleware,
   authorizeAgentMcpRequest,
+  extractHttpBearerToken,
+  hasRealCredential,
   type DaemonAuthConfig,
 } from "./auth.js";
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
@@ -200,6 +202,14 @@ import { mountPairingCodeRoutes } from "./pairing-code-route.js";
 
 import { createIdentityPreflightHandler, createIdentityRouteHandler } from "./identity-route.js";
 import { mountSetupRoutes } from "./setup-routes.js";
+import {
+  createDeviceClaimHandler,
+  mountDeviceAccessRoutes,
+  type DeviceAccessDependencies,
+} from "./device-access-routes.js";
+import { createPairingCodeStore, type PairingCodeStore } from "./pairing-code-store.js";
+import { createPairingRequestStore, type PairingRequestStore } from "./pairing-request-store.js";
+import { createLocalTokenFile, type LocalTokenFile } from "./local-token.js";
 import { WorkspaceAutoName } from "./workspace-auto-name.js";
 import { createGitMutationService } from "./session/git-mutation/git-mutation-service.js";
 import { workspaceIdsOnCheckout } from "./workspace-directory.js";
@@ -477,6 +487,9 @@ export interface FroggDaemon {
   scriptRuntimeStore: WorkspaceScriptRuntimeStore;
   browserToolsBroker: BrowserToolsBroker;
   claimStore: ClaimStore;
+  pairingCodes: PairingCodeStore;
+  pairingRequests: PairingRequestStore;
+  localToken: LocalTokenFile;
   start(): Promise<void>;
   stop(): Promise<void>;
   getListenTarget(): ListenTarget | null;
@@ -626,6 +639,7 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
     cors: { allowedOrigins: config.corsAllowedOrigins },
     trustedProxies: config.trustedProxies ?? ["loopback"],
     trustLan: configuredTrustLan(config),
+    claimMode: config.claimMode ?? false,
     git: config.git ?? resolveGitProcessPolicy({ env: process.env }),
     app: { baseUrl: config.appBaseUrl ?? BRAND_PAIRING_URL },
     ...(config.providerCatalogRefreshTimeoutMs !== undefined
@@ -705,6 +719,13 @@ export async function createFroggDaemon(
   // Paired principals/credentials and the first-run claim gate (getting-started/connect-and-pair.mdx).
   const claimStore = createClaimStore(config.froggHome);
   const claimOffers = createClaimOfferStore();
+  const pairingCodes = createPairingCodeStore();
+  const pairingRequests = createPairingRequestStore();
+  // The local CLI and desktop shell read this 0600 file and send it as a
+  // bearer, so privileged local routes need a credential rather than trusting
+  // "the socket looked local".
+  const localToken = createLocalTokenFile(config.froggHome);
+  localToken.ensure();
   const authFailureLimiter = createAuthFailureLimiter();
   const authConfig: DaemonAuthConfig = {
     ...config.auth,
@@ -965,10 +986,32 @@ export async function createFroggDaemon(
       isTrustedClient: (req) => authConfig.access?.isTrustedClient(req) ?? false,
     }),
   );
+  const deviceAccessDeps: DeviceAccessDependencies = {
+    serverId,
+    daemonKeyPair: daemonKeyPair.keyPair,
+    daemonPublicKeyB64: daemonKeyPair.publicKeyB64,
+    claimStore,
+    offers: claimOffers,
+    pairingCodes,
+    pairingRequests,
+    auth: authConfig,
+    claimMode: () => authConfig.access?.claimMode() ?? false,
+    onPaired: ({ minted }) => {
+      logger.info({ principalId: minted.principalId }, "Daemon claimed by a paired device");
+    },
+    logger,
+  };
+  mountDeviceAccessRoutes(app, deviceAccessDeps);
   mountSetupRoutes(app, {
     claimStore,
     offerSource: claimOfferSource,
     hasPassword: () => Boolean(config.auth?.password),
+    hasLocalCredential: async (req) => {
+      const token = extractHttpBearerToken(req.header("authorization"));
+      if (localToken.matches(token)) return true;
+      return hasRealCredential(authConfig, req, token);
+    },
+    claimHandler: createDeviceClaimHandler(deviceAccessDeps),
     logger,
   });
 
@@ -2151,6 +2194,9 @@ export async function createFroggDaemon(
     scriptRuntimeStore,
     browserToolsBroker,
     claimStore,
+    pairingCodes,
+    pairingRequests,
+    localToken,
     start,
     stop,
     getListenTarget: () => boundListenTarget,

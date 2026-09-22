@@ -47,6 +47,7 @@ interface TestFroggDaemonOptions {
   webUi?: FroggDaemonConfig["webUi"];
   trustedProxies?: FroggDaemonConfig["trustedProxies"];
   trustLan?: FroggDaemonConfig["trustLan"];
+  claimMode?: FroggDaemonConfig["claimMode"];
   agentProfiles?: AgentProfile[];
   autoArchiveAfterMerge?: boolean;
 }
@@ -173,6 +174,7 @@ async function prepareTestDaemonConfig(
     daemonVersion: options.daemonVersion,
     desktopManaged: options.desktopManaged,
     corsAllowedOrigins: options.corsAllowedOrigins ?? [],
+    claimMode: options.claimMode,
     hostnames: true,
     mcpEnabled: options.mcpEnabled ?? true,
     staticDir,
