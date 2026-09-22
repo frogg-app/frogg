@@ -153,6 +153,13 @@ export const BrandManifestSchema = z.strictObject({
       hiddenSections: z.array(z.enum(HOST_SETTINGS_SECTIONS)).optional(),
     })
     .optional(),
+  daemon: z
+    .strictObject({
+      bind: z.enum(["all", "loopback"]).optional(),
+      claimMode: z.boolean().optional(),
+    })
+    .optional(),
+  mobile: z.strictObject({ enabled: z.boolean().optional() }).optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
 
@@ -191,6 +198,24 @@ export function resolveBrandManifest(input: unknown) {
     distribution,
     projects: resolveProjects(manifest),
     hostSettings: resolveHostSettings(manifest),
+    daemon: resolveDaemonDefaults(manifest),
+    mobile: { enabled: manifest.mobile?.enabled ?? true },
+  };
+}
+
+/**
+ * Fresh-install access defaults. The upstream `frogg` brand binds every
+ * interface with claim mode off; any other brand defaults locked down
+ * (loopback bind, claim mode on) unless its manifest says otherwise. Both are
+ * defaults only: `daemon.listen` / `daemon.auth.claimMode` in config.json win.
+ */
+function resolveDaemonDefaults(manifest: BrandManifest) {
+  const upstream = manifest.id === "frogg";
+  const bind = manifest.daemon?.bind ?? (upstream ? "all" : "loopback");
+  return {
+    bind,
+    bindHost: bind === "all" ? "0.0.0.0" : "127.0.0.1",
+    claimMode: manifest.daemon?.claimMode ?? !upstream,
   };
 }
 

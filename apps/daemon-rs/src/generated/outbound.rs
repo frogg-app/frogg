@@ -22,6 +22,32 @@ pub struct Session {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum SessionMessage {
+    #[serde(rename = "auth.device.list.response")]
+    AuthDeviceListResponse(AuthDeviceListResponse),
+    #[serde(rename = "auth.device.rename.response")]
+    AuthDeviceRenameResponse(AuthDeviceRenameResponse),
+    #[serde(rename = "auth.device.revoke.response")]
+    AuthDeviceRevokeResponse(AuthDeviceRevokeResponse),
+    #[serde(rename = "auth.pairing_code.create.response")]
+    AuthPairingCodeCreateResponse(AuthPairingCodeCreateResponse),
+    #[serde(rename = "auth.pairing_request.list.response")]
+    AuthPairingRequestListResponse(AuthPairingRequestListResponse),
+    #[serde(rename = "auth.pairing_request.decide.response")]
+    AuthPairingRequestDecideResponse(AuthPairingRequestDecideResponse),
+    #[serde(rename = "auth.settings.get.response")]
+    AuthSettingsGetResponse(AuthSettingsGetResponse),
+    #[serde(rename = "auth.settings.update.response")]
+    AuthSettingsUpdateResponse(AuthSettingsUpdateResponse),
+    #[serde(rename = "auth.password.set.response")]
+    AuthPasswordSetResponse(AuthPasswordSetResponse),
+    #[serde(rename = "presence.report.response")]
+    PresenceReportResponse(PresenceReportResponse),
+    #[serde(rename = "presence.get.response")]
+    PresenceGetResponse(PresenceGetResponse),
+    #[serde(rename = "auth.pairing_request.update")]
+    AuthPairingRequestUpdate(AuthPairingRequestUpdate),
+    #[serde(rename = "presence.update")]
+    PresenceUpdate(PresenceUpdate),
     #[serde(rename = "project.import.prepare.response")]
     ProjectImportPrepareResponse(ProjectImportPrepareResponse),
     #[serde(rename = "project.import.upload.response")]
@@ -482,6 +508,337 @@ pub enum SessionMessage {
     DaemonUpdateGetStatusResponse(DaemonUpdateGetStatusResponse),
     #[serde(rename = "daemon.update.run.progress")]
     DaemonUpdateRunProgress(DaemonUpdateRunProgress),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceListResponse {
+    pub payload: AuthDeviceListResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceListResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub devices: Vec<AuthDeviceListResponsePayloadDevicesItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceListResponsePayloadDevicesItem {
+    pub id: String,
+    pub name: String,
+    pub role: AuthDeviceListResponsePayloadDevicesItemRole,
+    #[serde(rename = "principalId")]
+    pub principal_id: String,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "lastSeenAt", skip_serializing_if = "Option::is_none")]
+    pub last_seen_at: Option<String>,
+    #[serde(rename = "pairedVia", skip_serializing_if = "Option::is_none")]
+    pub paired_via: Option<AuthDeviceListResponsePayloadDevicesItemPairedVia>,
+    pub current: bool,
+    pub connected: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AuthDeviceListResponsePayloadDevicesItemRole {
+    #[serde(rename = "owner")]
+    Owner,
+    #[serde(rename = "operator")]
+    Operator,
+    #[serde(rename = "viewer")]
+    Viewer,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AuthDeviceListResponsePayloadDevicesItemPairedVia {
+    #[serde(rename = "claim")]
+    Claim,
+    #[serde(rename = "offer")]
+    Offer,
+    #[serde(rename = "code")]
+    Code,
+    #[serde(rename = "approval")]
+    Approval,
+    #[serde(rename = "password")]
+    Password,
+    #[serde(rename = "legacy")]
+    Legacy,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceRenameResponse {
+    pub payload: AuthDeviceRenameResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceRenameResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub device: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceRevokeResponse {
+    pub payload: AuthDeviceRevokeResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceRevokeResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub revoked: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingCodeCreateResponse {
+    pub payload: AuthPairingCodeCreateResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingCodeCreateResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub code: Option<String>,
+    #[serde(rename = "expiresAt", skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<String>,
+    pub role: serde_json::Value,
+    #[serde(rename = "serverId")]
+    pub server_id: String,
+    pub fingerprint: String,
+    pub endpoints: Vec<AuthPairingCodeCreateResponsePayloadEndpointsItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingCodeCreateResponsePayloadEndpointsItem {
+    pub host: String,
+    pub port: i64,
+    #[serde(rename = "deepLink")]
+    pub deep_link: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestListResponse {
+    pub payload: AuthPairingRequestListResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestListResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub requests: Vec<AuthPairingRequestListResponsePayloadRequestsItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestListResponsePayloadRequestsItem {
+    pub id: String,
+    #[serde(rename = "deviceName")]
+    pub device_name: String,
+    #[serde(rename = "matchCode")]
+    pub match_code: String,
+    #[serde(rename = "remoteAddress", skip_serializing_if = "Option::is_none")]
+    pub remote_address: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "expiresAt")]
+    pub expires_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestDecideResponse {
+    pub payload: AuthPairingRequestDecideResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestDecideResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub device: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthSettingsGetResponse {
+    pub payload: AuthSettingsGetResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthSettingsGetResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub settings: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthSettingsUpdateResponse {
+    pub payload: AuthSettingsUpdateResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthSettingsUpdateResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub settings: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPasswordSetResponse {
+    pub payload: AuthPasswordSetResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPasswordSetResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub settings: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceReportResponse {
+    pub payload: PresenceReportResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceReportResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceGetResponse {
+    pub payload: PresenceGetResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceGetResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub snapshot: PresenceGetResponsePayloadSnapshot,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceGetResponsePayloadSnapshot {
+    pub target: serde_json::Value,
+    pub participants: Vec<PresenceGetResponsePayloadSnapshotParticipantsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceGetResponsePayloadSnapshotParticipantsItem {
+    #[serde(rename = "participantId")]
+    pub participant_id: String,
+    #[serde(rename = "deviceId", skip_serializing_if = "Option::is_none")]
+    pub device_id: Option<String>,
+    #[serde(rename = "deviceName")]
+    pub device_name: String,
+    #[serde(rename = "clientType", skip_serializing_if = "Option::is_none")]
+    pub client_type: Option<String>,
+    pub activity: PresenceGetResponsePayloadSnapshotParticipantsItemActivity,
+    #[serde(rename = "activityAt")]
+    pub activity_at: String,
+    #[serde(rename = "isSelf")]
+    pub is_self: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum PresenceGetResponsePayloadSnapshotParticipantsItemActivity {
+    #[serde(rename = "viewing")]
+    Viewing,
+    #[serde(rename = "typing")]
+    Typing,
+    #[serde(rename = "idle")]
+    Idle,
+    #[serde(rename = "sending")]
+    Sending,
+    #[serde(rename = "input")]
+    Input,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestUpdate {
+    pub payload: AuthPairingRequestUpdatePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestUpdatePayload {
+    pub requests: Vec<AuthPairingRequestUpdatePayloadRequestsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestUpdatePayloadRequestsItem {
+    pub id: String,
+    #[serde(rename = "deviceName")]
+    pub device_name: String,
+    #[serde(rename = "matchCode")]
+    pub match_code: String,
+    #[serde(rename = "remoteAddress", skip_serializing_if = "Option::is_none")]
+    pub remote_address: Option<String>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "expiresAt")]
+    pub expires_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceUpdate {
+    pub payload: PresenceUpdatePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceUpdatePayload {
+    pub target: serde_json::Value,
+    pub participants: Vec<PresenceUpdatePayloadParticipantsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceUpdatePayloadParticipantsItem {
+    #[serde(rename = "participantId")]
+    pub participant_id: String,
+    #[serde(rename = "deviceId", skip_serializing_if = "Option::is_none")]
+    pub device_id: Option<String>,
+    #[serde(rename = "deviceName")]
+    pub device_name: String,
+    #[serde(rename = "clientType", skip_serializing_if = "Option::is_none")]
+    pub client_type: Option<String>,
+    pub activity: PresenceUpdatePayloadParticipantsItemActivity,
+    #[serde(rename = "activityAt")]
+    pub activity_at: String,
+    #[serde(rename = "isSelf")]
+    pub is_self: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum PresenceUpdatePayloadParticipantsItemActivity {
+    #[serde(rename = "viewing")]
+    Viewing,
+    #[serde(rename = "typing")]
+    Typing,
+    #[serde(rename = "idle")]
+    Idle,
+    #[serde(rename = "sending")]
+    Sending,
+    #[serde(rename = "input")]
+    Input,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

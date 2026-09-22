@@ -202,3 +202,29 @@ test("a brand can ship host settings sections hidden", () => {
     /hostSettings/,
   );
 });
+
+test("branded distributions default the daemon locked down; upstream stays open", () => {
+  assert.deepEqual(resolveBrandManifest(minimal).daemon, {
+    bind: "loopback",
+    bindHost: "127.0.0.1",
+    claimMode: true,
+  });
+  assert.deepEqual(resolveBrandManifest({ ...minimal, id: "frogg" }).daemon, {
+    bind: "all",
+    bindHost: "0.0.0.0",
+    claimMode: false,
+  });
+  assert.deepEqual(
+    resolveBrandManifest({ ...minimal, daemon: { bind: "all", claimMode: false } }).daemon,
+    { bind: "all", bindHost: "0.0.0.0", claimMode: false },
+  );
+  assert.throws(() => resolveBrandManifest({ ...minimal, daemon: { bind: "lan" } }), /bind/);
+});
+
+test("mobile defaults on and can be turned off", () => {
+  assert.equal(resolveBrandManifest(minimal).mobile.enabled, true);
+  assert.equal(
+    resolveBrandManifest({ ...minimal, mobile: { enabled: false } }).mobile.enabled,
+    false,
+  );
+});
