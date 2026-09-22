@@ -37,10 +37,28 @@ Paired devices hold a random credential; the daemon stores only its SHA-256 in
 `~/.frogg/principals.json` (mode 0600). Pairing tokens are single-use and expire after 10
 minutes. See [connect and pair](/docs/getting-started/connect-and-pair/).
 
+### Device roles
+
+Every paired device holds one of three roles, enforced by the daemon on each request and on
+streamed input (terminal keystrokes, agent messages, dictation, file writes):
+
+| Role | Can |
+| ---- | --- |
+| `owner` | Everything: daemon settings and updates, provider accounts, pairing codes, approving and revoking devices, setting roles, password and claim settings |
+| `operator` | Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No daemon settings, no device management |
+| `viewer` | Read-only: sessions, timelines, terminal output, file browsing and diffs. No input, no command execution, no writes |
+
+A role never widens what a device was granted — it only narrows it. Devices paired before
+roles existed read as `owner`. Only an owner can change a device's role, and a device's own
+role is reported to it in `server_info.callerRole`.
+
+The daemon password and bearer-free trusted clients (loopback, trusted LAN) act as the
+owner. Agents reaching the daemon over the MCP endpoint act as an operator and can never
+manage devices.
+
 Limits:
 
-- Every paired device has full access. Per-device permissions are recorded but not enforced.
-- There is no per-device revoke. `frogg auth reset-claim` removes all devices.
+- There is no per-device revoke from the CLI. `frogg auth reset-claim` removes all devices.
 
 ## Passwords
 
