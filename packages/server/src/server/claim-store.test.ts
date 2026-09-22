@@ -73,3 +73,106 @@ describe("claim store", () => {
     expect(() => store.isClaimed()).toThrow();
   });
 });
+
+describe("per-device credentials", () => {
+  test("migrates a v1 file: every credential becomes an owner device", () => {
+    const home = createHome();
+    const secret = "legacy-secret";
+    writeFileSync(
+      path.join(home, PRINCIPALS_FILENAME),
+      JSON.stringify({
+        version: 1,
+        claimedAt: "2026-01-01T00:00:00.000Z",
+        principals: [
+          {
+            id: "prn_a",
+            label: "Alice",
+            createdAt: "2026-01-01T00:00:00.000Z",
+            permissions: ["daemon.read", "access.manage"],
+            credentials: [
+              {
+                id: "crd_a",
+                sha256: hashCredential(secret),
+                createdAt: "2026-01-01T00:00:00.000Z",
+              },
+              {
+                id: "crd_b",
+                sha256: hashCredential("other"),
+                createdAt: "2026-01-02T00:00:00.000Z",
+                label: "Alice's phone",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+    const store = createClaimStore(home);
+    expect(store.listDevices().map((d) => [d.id, d.name, d.role, d.pairedVia])).toEqual([
+      ["crd_a", "Alice", "owner", "legacy"],
+      ["crd_b", "Alice's phone", "owner", "legacy"],
+    ]);
+    expect(store.findDeviceByToken(secret)?.id).toBe("crd_a");
+    expect(store.claimedAt()).toBe("2026-01-01T00:00:00.000Z");
+
+    expect(store.migrate()).toBe(true);
+    const raw = JSON.parse(readFileSync(path.join(home, PRINCIPALS_FILENAME), "utf8"));
+    expect(raw.version).toBe(2);
+    expect(store.migrate()).toBe(false);
+    expect(createClaimStore(home).findDeviceByToken(secret)?.name).toBe("Alice");
+  });
+
+  test("devices are named, role-scoped, renamed and revoked individually", () => {
+    const store = createClaimStore(createHome());
+    const owner = store.mintPrincipal({ label: "Owner", pairedVia: "claim" });
+    const phone = store.mintPrincipal({
+      label: "Bob",
+      deviceName: "Bob's phone",
+      role: "viewer",
+      pairedVia: "code",
+    });
+    expect(owner.role).toBe("owner");
+    expect(phone).toMatchObject({ role: "viewer", deviceName: "Bob's phone" });
+    expect(store.findDeviceByToken(phone.credential)).toMatchObject({
+      id: phone.credentialId,
+      role: "viewer",
+      pairedVia: "code",
+    });
+    expect(store.findDeviceByToken("nope")).toBeNull();
+
+    expect(store.renameDevice(phone.credentialId, "  Tablet ")?.name).toBe("Tablet");
+    expect(store.renameDevice(phone.credentialId, "  ")).toBeNull();
+    expect(store.renameDevice("crd_missing", "x")).toBeNull();
+
+    expect(store.setCredentialRole(phone.credentialId, "operator")).toBe(true);
+    expect(store.getCredentialRole(phone.credentialId)).toBe("operator");
+    expect(store.getCredentialRole("crd_missing")).toBeNull();
+
+    expect(store.revokeDevice(phone.credentialId)).toBe(true);
+    expect(store.revokeDevice(phone.credentialId)).toBe(false);
+    expect(store.findDeviceByToken(phone.credential)).toBeNull();
+    expect(store.listDevices().map((d) => d.id)).toEqual([owner.credentialId]);
+    expect(store.isClaimed()).toBe(true);
+
+    expect(store.revokeDevice(owner.credentialId)).toBe(true);
+    expect(store.isClaimed()).toBe(false);
+  });
+
+  test("last-seen is visible immediately but persisted at most once a minute", () => {
+    const home = createHome();
+    const store = createClaimStore(home);
+    const minted = store.mintPrincipal({ label: "d" });
+    const t0 = new Date("2026-09-01T00:00:00.000Z");
+    store.touchLastSeen(minted.credentialId, t0);
+    const onDisk = () => createClaimStore(home).getDevice(minted.credentialId)?.lastSeenAt ?? null;
+    expect(onDisk()).toBe(t0.toISOString());
+
+    const t1 = new Date(t0.getTime() + 10_000);
+    store.touchLastSeen(minted.credentialId, t1);
+    expect(store.getDevice(minted.credentialId)?.lastSeenAt).toBe(t1.toISOString());
+    expect(onDisk()).toBe(t0.toISOString());
+
+    const t2 = new Date(t0.getTime() + 61_000);
+    store.touchLastSeen(minted.credentialId, t2);
+    expect(onDisk()).toBe(t2.toISOString());
+  });
+});

@@ -17,6 +17,7 @@ export {
   createClaimStore,
   PRINCIPALS_FILENAME,
   type ClaimStore,
+  type DeviceRecord,
   type PrincipalRecord,
 } from "./claim-store.js";
 export { type DaemonIdentity } from "./identity-route.js";
