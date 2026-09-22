@@ -58,6 +58,10 @@ const sessionMock = vi.hoisted(() => {
     getSessionId = vi.fn(() => "mock-session-id");
     getPermissions = vi.fn(() => this.args.permissions as string[]);
     allowsInbound = vi.fn(() => true);
+    getRole = vi.fn(() => (this.args.role as string | undefined) ?? "owner");
+    setRole = vi.fn((role: string) => {
+      this.args.role = role;
+    });
     allowsPermission = vi.fn(() => true);
     publish = vi.fn((message: unknown) => {
       const onMessage = this.args.onMessage as ((message: unknown) => void) | undefined;
