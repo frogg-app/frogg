@@ -4,6 +4,21 @@ import {
   requiredPermissionForInbound,
   requiredPermissionForOutbound,
 } from "./operation-permissions.js";
+import {
+  minimumRoleForPermission,
+  requiredRoleForInbound,
+  requiredRoleForOutbound,
+  roleSatisfies,
+  type DeviceRole,
+} from "./roles.js";
+
+export {
+  DEVICE_ROLES,
+  isDeviceRole,
+  requiredRoleForInbound,
+  roleSatisfies,
+  type DeviceRole,
+} from "./roles.js";
 
 export { DAEMON_PERMISSIONS, type DaemonPermission };
 
@@ -21,34 +36,62 @@ export function parseDaemonPermissions(values: readonly string[]): DaemonPermiss
 
 export const OWNER_PERMISSIONS: readonly DaemonPermission[] = DAEMON_PERMISSIONS;
 
+/**
+ * A session's authority: the permissions its principal was granted, narrowed by
+ * the connecting device's role. A request passes when its permission is granted
+ * and the role meets the RPC's declared role. Absent a device role (loopback,
+ * password, Hub, legacy pairings) the session is `owner` and permissions alone
+ * decide.
+ */
 export class SessionAuthorization {
   private permissions: ReadonlySet<DaemonPermission>;
+  private role: DeviceRole;
 
-  constructor(permissions: readonly DaemonPermission[]) {
+  constructor(permissions: readonly DaemonPermission[], role: DeviceRole = "owner") {
     this.permissions = new Set(permissions);
+    this.role = role;
   }
 
   allowsInbound(message: SessionInboundMessage): boolean {
-    return this.allows(requiredPermissionForInbound(message.type));
+    return (
+      this.hasPermission(requiredPermissionForInbound(message.type)) &&
+      roleSatisfies(this.role, requiredRoleForInbound(message.type))
+    );
   }
 
   allowsOutbound(message: SessionOutboundMessage): boolean {
-    return this.allows(requiredPermissionForOutbound(message.type));
+    const permission = requiredPermissionForOutbound(message.type);
+    return (
+      this.hasPermission(permission) &&
+      roleSatisfies(this.role, requiredRoleForOutbound(message.type, permission))
+    );
   }
 
   replacePermissions(permissions: readonly DaemonPermission[]): void {
     this.permissions = new Set(permissions);
   }
 
+  replaceRole(role: DeviceRole): void {
+    this.role = role;
+  }
+
+  getRole(): DeviceRole {
+    return this.role;
+  }
+
+  /** Effective permissions: granted and reachable by the current role. */
   listPermissions(): DaemonPermission[] {
-    return [...this.permissions];
+    return [...this.permissions].filter((permission) => this.allowsPermission(permission));
   }
 
   allowsPermission(permission: DaemonPermission): boolean {
-    return this.permissions.has(permission);
+    return (
+      this.permissions.has(permission) &&
+      roleSatisfies(this.role, minimumRoleForPermission(permission))
+    );
   }
 
-  private allows(permission: DaemonPermission | null): boolean {
+  private hasPermission(permission: DaemonPermission | null): boolean {
     return permission === null || this.permissions.has(permission);
   }
 }

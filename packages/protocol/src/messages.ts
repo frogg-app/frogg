@@ -41,6 +41,7 @@ import {
   AuthPairingRequestUpdateMessageSchema,
   PresenceUpdateMessageSchema,
 } from "./device-access-rpc.js";
+import { DeviceRoleSchema } from "./device-access.js";
 import { TerminalActivitySchema } from "./terminal-activity.js";
 import { CLIENT_CAPS } from "./client-capabilities.js";
 import { AGENT_LIFECYCLE_STATUSES } from "./agent-lifecycle.js";
@@ -1594,6 +1595,13 @@ export const DaemonGetStatusRequestSchema = z.object({
 export const DaemonGetPairingOfferRequestSchema = z.object({
   type: z.literal("daemon.get_pairing_offer.request"),
   requestId: z.string(),
+});
+
+export const AuthDeviceSetRoleRequestSchema = z.object({
+  type: z.literal("auth.device.set_role.request"),
+  requestId: z.string(),
+  credentialId: z.string().min(1),
+  role: DeviceRoleSchema,
 });
 
 export const DaemonConfigReloadRequestSchema = z.object({
@@ -3403,6 +3411,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   WaitForFinishRequestSchema,
   DaemonGetStatusRequestSchema,
   DaemonGetPairingOfferRequestSchema,
+  AuthDeviceSetRoleRequestSchema,
   DaemonConfigReloadRequestSchema,
   DaemonUpdateCheckRequestSchema,
   DaemonUpdateStartRequestSchema,
@@ -3863,12 +3872,21 @@ export const ServerInfoStatusPayloadSchema = z
     version: ServerInfoVersionSchema.optional(),
     // COMPAT(sessionPermissions): optional while clients support older daemons.
     permissions: z.array(DaemonPermissionSchema).optional(),
+    // COMPAT(deviceRoles): added in v1.6.0, remove optional parsing after 2027-09-22.
+    // The connecting device role, as enforced per RPC; owner without a device credential.
+    callerRole: DeviceRoleSchema.optional(),
     // COMPAT(desktopManaged): added in v0.1.X, remove optional parsing after 2027-01-16.
     desktopManaged: z.boolean().optional(),
     capabilities: ServerCapabilitiesFromUnknownSchema.optional(),
     // COMPAT(providersSnapshot): added in v0.1.48, remove gating when all clients use snapshot
     features: z
       .object({
+        // COMPAT(deviceRoles): added in v1.6.0, remove after 2027-09-22.
+        // server_info.role is present and enforced per RPC.
+        deviceRoles: z.boolean().optional(),
+        // COMPAT(deviceRoleManagement): added in v1.6.0, remove after 2027-09-22.
+        // auth.device.set_role is available (owner only).
+        deviceRoleManagement: z.boolean().optional(),
         providersSnapshot: z.boolean().optional(),
         // COMPAT(providersSnapshotCwd): added in v0.3.2, remove gate after 2027-02-10.
         providersSnapshotCwd: z.boolean().optional(),
@@ -5219,6 +5237,16 @@ export const DaemonGetPairingOfferResponseSchema = z.object({
       relayEnabled: z.boolean(),
     })
     .passthrough(),
+});
+
+export const AuthDeviceSetRoleResponseSchema = z.object({
+  type: z.literal("auth.device.set_role.response"),
+  payload: z.object({
+    requestId: z.string(),
+    credentialId: z.string(),
+    role: DeviceRoleSchema.nullable(),
+    error: z.string().nullable(),
+  }),
 });
 
 export const DaemonConfigReloadResponseSchema = z.object({
@@ -7099,6 +7127,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   SetVoiceModeResponseMessageSchema,
   DaemonGetStatusResponseSchema,
   DaemonGetPairingOfferResponseSchema,
+  AuthDeviceSetRoleResponseSchema,
   DaemonConfigReloadResponseSchema,
   HubManagementDaemonConnectResponseSchema,
   HubManagementDaemonGetStatusResponseSchema,
@@ -7389,6 +7418,8 @@ export type ListProviderFeaturesResponseMessage = z.infer<
 export type ListAvailableProvidersResponse = z.infer<typeof ListAvailableProvidersResponseSchema>;
 export type DaemonGetStatusResponse = z.infer<typeof DaemonGetStatusResponseSchema>;
 export type DaemonGetPairingOfferResponse = z.infer<typeof DaemonGetPairingOfferResponseSchema>;
+export type AuthDeviceSetRoleRequest = z.infer<typeof AuthDeviceSetRoleRequestSchema>;
+export type AuthDeviceSetRoleResponse = z.infer<typeof AuthDeviceSetRoleResponseSchema>;
 export type DaemonConfigReloadResponse = z.infer<typeof DaemonConfigReloadResponseSchema>;
 export type DiagnosticsResponse = z.infer<typeof DiagnosticsResponseSchema>;
 export type GetProvidersSnapshotResponseMessage = z.infer<

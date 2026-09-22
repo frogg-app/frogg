@@ -114,7 +114,12 @@ import {
 import type { BrowserToolsBroker } from "./browser-tools/broker.js";
 import type { DaemonRuntimeConfig } from "./session/daemon/daemon-session.js";
 import { DirectorySyncService } from "./directory-sync/index.js";
-import { OWNER_PERMISSIONS, type DaemonPermission } from "./authorization/index.js";
+import {
+  OWNER_PERMISSIONS,
+  type DaemonPermission,
+  type DeviceRole,
+} from "./authorization/index.js";
+import type { DeviceRoleStore } from "./authorization/device-role-store.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import {
   APPLICATION_SOCKET_LEASE_CHECK_INTERVAL_MS,
@@ -139,6 +144,28 @@ export interface SessionAdmission {
   principalId: string;
   permissions: readonly DaemonPermission[];
   hubExecutionAgents?: HubExecutionAgents;
+  /** Paired-device credential the connection authenticated with, if any. */
+  device?: { credentialId: string; name: string; role: DeviceRole };
+  /** Explicit role override; otherwise the device's role, otherwise owner. */
+  role?: DeviceRole;
+}
+
+/**
+ * The one place a connection's device role is decided. Every transport (direct,
+ * relay, Hub) reaches a Session through createSessionConnection, which calls this.
+ * Connections without a device credential (loopback, trusted LAN, password,
+ * Hub) and legacy pairings are owner; Hub is still narrowed by its permissions.
+ */
+export function resolveAdmissionRole(admission: SessionAdmission): DeviceRole {
+  return admission.role ?? admission.device?.role ?? "owner";
+}
+
+/** Sessions are never shared across device credentials, whatever the principal. */
+function admissionSessionKey(admission: SessionAdmission, clientId: string): string {
+  const principal = admission.device
+    ? `${admission.principalId}#${admission.device.credentialId}`
+    : admission.principalId;
+  return sessionConnectionKey(principal, clientId);
 }
 
 interface PendingConnection {
@@ -459,6 +486,7 @@ export interface WebSocketLike {
 interface SessionConnectionBase {
   session: Session;
   principalId: string;
+  credentialId: string | null;
   sessionKey: string;
   clientId: string;
   appVersion: string | null;
@@ -484,6 +512,7 @@ interface SocketSessionOptions {
   appVersion: string | null;
   clientCapabilities: Record<string, unknown> | null;
   permissions: readonly DaemonPermission[];
+  role: DeviceRole;
   connectionLogger: pino.Logger;
   onMessage: (message: SessionOutboundMessage) => void;
   onMessageToSource?: (source: object, message: SessionOutboundMessage) => void;
@@ -616,6 +645,7 @@ export class VoiceAssistantWebSocketServer {
   private unsubscribeTerminalActivity: (() => void) | null = null;
   private readonly browserToolsBroker: BrowserToolsBroker | null;
   private readonly hubRelationships: HubRelationshipManagement | null;
+  private deviceRoleStore: DeviceRoleStore | null = null;
   private readonly browserToolsRegistrations = new Map<string, BrowserToolsRegistration>();
   private connectionLifecycle: "starting" | "accepting" | "stopping" = "accepting";
   private readonly advertiseDaemonStatusRpc: boolean;
@@ -1045,6 +1075,44 @@ export class VoiceAssistantWebSocketServer {
     }
   }
 
+  /** Wire the persisted credential-role store; enables auth.device.set_role. */
+  public setDeviceRoleStore(store: DeviceRoleStore | null): void {
+    this.deviceRoleStore = store;
+    this.broadcastCapabilitiesUpdate();
+  }
+
+  /**
+   * Persist a credential's role, then apply it to every live and pending
+   * connection that authenticated with that credential. Returns false when the
+   * credential is unknown.
+   */
+  public async setCredentialRole(credentialId: string, role: DeviceRole): Promise<boolean> {
+    if (!this.deviceRoleStore) return false;
+    if (!(await this.deviceRoleStore.setRole(credentialId, role))) return false;
+    this.applyCredentialRole(credentialId, role);
+    return true;
+  }
+
+  /** Apply a role change to connected sessions; the store is already updated. */
+  public applyCredentialRole(credentialId: string, role: DeviceRole): void {
+    for (const pending of this.pendingConnections.values()) {
+      const device = pending.admission.device;
+      if (device?.credentialId === credentialId) {
+        pending.admission = { ...pending.admission, role, device: { ...device, role } };
+      }
+    }
+    const connections = new Set([
+      ...this.sessions.values(),
+      ...this.externalSessionsByKey.values(),
+    ]);
+    for (const connection of connections) {
+      if (connection.credentialId !== credentialId) continue;
+      connection.session.setRole(role);
+      this.syncBrowserToolsClientRegistration(connection);
+      this.sendToConnection(connection, this.createServerInfoMessage(connection.session));
+    }
+  }
+
   public prepareForShutdown(): void {
     this.connectionLifecycle = "stopping";
   }
@@ -1348,6 +1416,7 @@ export class VoiceAssistantWebSocketServer {
       appVersion,
       clientCapabilities,
       permissions: admission.permissions,
+      role: resolveAdmissionRole(admission),
       connectionLogger,
       onMessage: (msg) => {
         if (!connection) {
@@ -1399,7 +1468,8 @@ export class VoiceAssistantWebSocketServer {
     const base: SessionConnectionBase = {
       session,
       principalId: admission.principalId,
-      sessionKey: sessionConnectionKey(admission.principalId, clientId),
+      credentialId: admission.device?.credentialId ?? null,
+      sessionKey: admissionSessionKey(admission, clientId),
       clientId,
       appVersion,
       clientCapabilities,
@@ -1417,6 +1487,10 @@ export class VoiceAssistantWebSocketServer {
       appVersion: options.appVersion,
       clientCapabilities: options.clientCapabilities,
       permissions: options.permissions,
+      role: options.role,
+      deviceRoles: this.deviceRoleStore
+        ? { setRole: (credentialId, role) => this.setCredentialRole(credentialId, role) }
+        : undefined,
       onMessage: options.onMessage,
       onMessageToSource: options.onMessageToSource,
       onBinaryMessage: options.onBinaryMessage,
@@ -1555,7 +1629,7 @@ export class VoiceAssistantWebSocketServer {
     if (message.appVersion) {
       pending.identity.appVersion = message.appVersion;
     }
-    const sessionKey = sessionConnectionKey(pending.admission.principalId, clientId);
+    const sessionKey = admissionSessionKey(pending.admission, clientId);
     const existing = this.externalSessionsByKey.get(sessionKey);
     if (existing) {
       this.resumeSession({ ws, message, pending, existing });
@@ -1618,6 +1692,7 @@ export class VoiceAssistantWebSocketServer {
       existing.clientCapabilities = newClientCapabilities;
       this.syncBrowserToolsClientRegistration(existing);
     }
+    existing.session.setRole(resolveAdmissionRole(pending.admission));
     existing.sockets.add(ws);
     this.sessions.set(ws, existing);
     pending.identity.sessionId = existing.session.getSessionId();
@@ -1654,10 +1729,19 @@ export class VoiceAssistantWebSocketServer {
       hostname: getHostname(),
       version: this.daemonVersion,
       permissions: session.getPermissions(),
+      // COMPAT(deviceRoles): added in v1.6.0, remove optional parsing after 2027-09-22.
+      callerRole: session.getRole(),
       // COMPAT(desktopManaged): added in v0.1.X, remove optional parsing after 2027-01-16.
       desktopManaged: this.daemonRuntimeConfig?.desktopManaged === true,
       ...(this.serverCapabilities ? { capabilities: this.serverCapabilities } : {}),
       features: {
+        // COMPAT(deviceRoles): added in v1.6.0, remove after 2027-09-22.
+        deviceRoles: true,
+        // COMPAT(deviceRoleManagement): added in v1.6.0, remove after 2027-09-22.
+        // Only the owner can set roles, so only an owner is told it can.
+        ...(this.deviceRoleStore && session.getRole() === "owner"
+          ? { deviceRoleManagement: true }
+          : {}),
         // COMPAT(directorySync): added in v0.3.x, remove gate after 2027-02-12.
         directorySync: true,
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.

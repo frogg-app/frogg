@@ -212,6 +212,8 @@ pub enum SessionMessage {
     DaemonGetStatusRequest(DaemonGetStatusRequest),
     #[serde(rename = "daemon.get_pairing_offer.request")]
     DaemonGetPairingOfferRequest(DaemonGetPairingOfferRequest),
+    #[serde(rename = "daemon.device.set_role.request")]
+    DaemonDeviceSetRoleRequest(DaemonDeviceSetRoleRequest),
     #[serde(rename = "daemon.config.reload.request")]
     DaemonConfigReloadRequest(DaemonConfigReloadRequest),
     #[serde(rename = "daemon.update.check.request")]
@@ -1516,6 +1518,25 @@ pub struct DaemonGetStatusRequest {
 pub struct DaemonGetPairingOfferRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDeviceSetRoleRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "credentialId")]
+    pub credential_id: String,
+    pub role: DaemonDeviceSetRoleRequestRole,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DaemonDeviceSetRoleRequestRole {
+    #[serde(rename = "owner")]
+    Owner,
+    #[serde(rename = "operator")]
+    Operator,
+    #[serde(rename = "viewer")]
+    Viewer,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
