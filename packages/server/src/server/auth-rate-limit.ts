@@ -42,28 +42,34 @@ export function createAuthFailureLimiter(
   const now = options.now ?? (() => Date.now());
   const entries = new Map<string, Entry>();
 
-  function evictIfFull(current: number): void {
+  /** Frees room for `keep`, the key just inserted, which is never the victim. */
+  function evictIfFull(current: number, keep: string): void {
     if (entries.size <= maxKeys) return;
     // Expired keys first: they are dead weight and never worth keeping.
     for (const [key, entry] of entries) {
       if (entries.size <= maxKeys) return;
+      if (key === keep) continue;
       if (entry.blockedUntil <= current && entry.failures.every((at) => at <= current - windowMs)) {
         entries.delete(key);
       }
     }
-    while (entries.size > maxKeys) {
-      let stalest: string | undefined;
-      let stalestAt = Infinity;
-      for (const [key, entry] of entries) {
-        // A blocked key is the one thing worth keeping under pressure.
-        if (entry.blockedUntil > current) continue;
-        if (entry.lastSeenAt < stalestAt) {
-          stalest = key;
-          stalestAt = entry.lastSeenAt;
+    // Then the stalest unblocked key, and only then a blocked one: an active
+    // block is worth keeping, but never at the cost of unbounded memory.
+    for (const blockedToo of [false, true]) {
+      while (entries.size > maxKeys) {
+        let stalest: string | undefined;
+        let stalestAt = Infinity;
+        for (const [key, entry] of entries) {
+          if (key === keep) continue;
+          if (!blockedToo && entry.blockedUntil > current) continue;
+          if (entry.lastSeenAt < stalestAt) {
+            stalest = key;
+            stalestAt = entry.lastSeenAt;
+          }
         }
+        if (stalest === undefined) break;
+        entries.delete(stalest);
       }
-      if (stalest === undefined) return;
-      entries.delete(stalest);
     }
   }
 
@@ -72,7 +78,7 @@ export function createAuthFailureLimiter(
     if (!entry) {
       entry = { failures: [], blockedUntil: 0, lastSeenAt: current };
       entries.set(key, entry);
-      evictIfFull(current);
+      evictIfFull(current, key);
     }
     entry.lastSeenAt = current;
     return entry;

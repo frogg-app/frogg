@@ -57,6 +57,19 @@ describe("auth failure limiter", () => {
     expect(limiter.isBlocked("a")).toBe(true);
   });
 
+  test("keeps an active block while evicting the stalest idle key", () => {
+    const limiter = createAuthFailureLimiter({ maxKeys: 2, maxFailures: 2 });
+    limiter.recordFailure("blocked");
+    limiter.recordFailure("blocked");
+    expect(limiter.isBlocked("blocked")).toBe(true);
+    limiter.recordFailure("idle");
+    // A third key evicts the unblocked one, never the live block.
+    limiter.recordFailure("fresh");
+    limiter.recordFailure("fresh");
+    expect(limiter.isBlocked("blocked")).toBe(true);
+    expect(limiter.isBlocked("fresh")).toBe(true);
+  });
+
   test("bounds how many keys it tracks", () => {
     const limiter = createAuthFailureLimiter({ maxKeys: 2, maxFailures: 1 });
     limiter.recordFailure("a");
