@@ -38,7 +38,10 @@ Only one daemon can use a home directory. A second start fails with
 
 ## Listen address
 
-The default is `0.0.0.0:9999`: every interface, port 9999.
+Stock Frogg defaults to `0.0.0.0:9999`: every interface, port 9999. A brand can ship a
+loopback bind instead (`127.0.0.1:9999`), and then nothing off this machine connects until
+you set an address yourself. `config.json` has no `daemon.listen` until you write one, so
+the brand default applies to a fresh install and your own value always wins.
 
 ```sh
 frogg restart --listen 127.0.0.1:9999        # this machine only (use with SSH or a proxy)

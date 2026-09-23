@@ -255,7 +255,7 @@ What a freshly installed daemon does before anyone configures it.
 
 | Key         | Rule                    | Default                        | Meaning |
 | ----------- | ----------------------- | ------------------------------ | ------- |
-| `bind`      | `"all"` or `"loopback"` | `"all"` for `frogg`, else `"loopback"` | Which interfaces a new daemon listens on |
+| `bind`      | `"all"` or `"loopback"` | `"all"` for `frogg`, else `"loopback"` | Which interfaces a daemon listens on until someone configures an address |
 | `claimMode` | boolean                 | `false` for `frogg`, else `true` | Lock the LAN out and let the first client claim the daemon |
 
 ```json
@@ -268,7 +268,8 @@ The stock `frogg` distribution keeps the open defaults it has always had (`0.0.0
 mode off). Every other brand starts locked down, because a product you ship to other
 people should not trust their network for them.
 
-These are defaults, not locks: `daemon.listen` / `FROGG_LISTEN` and
+A new `config.json` carries no `daemon.listen`, so the bind stays the brand's until an
+owner writes an address. These are defaults, not locks: `daemon.listen` / `FROGG_LISTEN` and
 `daemon.auth.claimMode` / `<PREFIX>_CLAIM_MODE` in a daemon's own configuration win. See
 [security and access](/docs/self-hosting/security/).
 
@@ -276,7 +277,7 @@ These are defaults, not locks: `daemon.listen` / `FROGG_LISTEN` and
 
 | Key       | Rule    | Default | Meaning |
 | --------- | ------- | ------- | ------- |
-| `enabled` | boolean | `true`  | Whether this brand ships a mobile app |
+| `enabled` | boolean | `true`  | Whether this brand ships a mobile app. Its only effect today is the CLI pairing QR |
 
 With `mobile.enabled: false` the CLI stops printing a pairing QR by default — nothing
 would scan it — though `<cliName> pair --qr` still forces one.

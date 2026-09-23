@@ -106,7 +106,8 @@ test("--port becomes a brand-prefixed listen address", async () => {
 
   await startLocalDaemonForeground({ home: "/tmp/acme-home", port: "6798" }, runtime);
 
-  expect(runtime.env?.ACME_LISTEN).toBe("0.0.0.0:6798");
+  // --port changes the port; the bind host stays the brand's (loopback here).
+  expect(runtime.env?.ACME_LISTEN).toBe("127.0.0.1:6798");
   expect(runtime.env?.FROGG_LISTEN).toBeUndefined();
 });
 
