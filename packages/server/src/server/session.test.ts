@@ -19,7 +19,11 @@ import {
   type FileTransferFrame,
 } from "@frogg/protocol/binary-frames/index";
 import { Session } from "./session.js";
-import { OWNER_PERMISSIONS, type DaemonPermission } from "./authorization/index.js";
+import {
+  OWNER_PERMISSIONS,
+  type DaemonPermission,
+  type DeviceRole,
+} from "./authorization/index.js";
 import { DownloadTokenStore } from "./file-download/token-store.js";
 import { StructuredAgentFallbackError } from "./agent/agent-response-loop.js";
 import type { StoredAgentRecord } from "./agent/agent-storage.js";
@@ -284,6 +288,7 @@ vi.mock("./worktree-bootstrap.js", async (importOriginal) => {
 interface SessionForTestOptions {
   clientId?: string;
   permissions?: readonly DaemonPermission[];
+  role?: DeviceRole;
   agentManager?: { [K in keyof SessionOptions["agentManager"]]?: unknown };
   agentStorage?: { [K in keyof SessionOptions["agentStorage"]]?: unknown };
   github?: Partial<ForgeService & GitHubService>;
@@ -427,6 +432,7 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
     daemonVersion: options.daemonVersion,
     daemonRuntimeConfig: options.daemonRuntimeConfig,
     permissions: options.permissions ?? OWNER_PERMISSIONS,
+    ...(options.role ? { role: options.role } : {}),
   };
   return new Session(sessionOptions);
 }
@@ -5574,5 +5580,115 @@ describe("project import dispatch routing", () => {
       payload: { requestId: message.requestId, error: "Import expired; select the source again" },
     });
     await session.cleanup();
+  });
+});
+
+describe("session device roles", () => {
+  function denied(requestId: string, requestType: SessionInboundMessage["type"]) {
+    return {
+      type: "rpc_error",
+      payload: {
+        requestId,
+        requestType,
+        error: `Session is not authorized for ${requestType}`,
+        code: "access_denied",
+      },
+    };
+  }
+
+  test("a viewer is refused every streamed input entrypoint", async () => {
+    const messages: SessionOutboundMessage[] = [];
+    const session = createSessionForTest({ role: "viewer", messages });
+
+    const streamedInput: SessionInboundMessage[] = [
+      { type: "terminal_input", requestId: "t-1", terminalId: "term-1", data: "rm -rf /" },
+      {
+        type: "send_agent_message_request",
+        requestId: "t-2",
+        agentId: "agent-1",
+        text: "do the thing",
+      },
+      {
+        type: "fs.file.write.request",
+        requestId: "t-3",
+        path: "/tmp/x",
+        content: "x",
+      },
+      { type: "dictation_stream_chunk", requestId: "t-4" },
+      { type: "voice_audio_chunk", requestId: "t-5" },
+    ] as unknown as SessionInboundMessage[];
+
+    for (const msg of streamedInput) await session.handleMessage(msg);
+
+    expect(messages).toEqual(streamedInput.map((msg, index) => denied(`t-${index + 1}`, msg.type)));
+  });
+
+  test("a viewer's terminal stdin never reaches the terminal controller", async () => {
+    const session = createSessionForTest({ role: "viewer" });
+    const controller = asSessionInternalsHelper<{
+      terminalController: { handleBinaryFrame: (frame: unknown) => void };
+    }>(session).terminalController;
+    const spy = vi.spyOn(controller, "handleBinaryFrame");
+
+    await session.handleBinaryFrame({
+      kind: "terminal",
+      frame: { slot: 1, opcode: 0, payload: new Uint8Array([1, 2, 3]) },
+    } as never);
+
+    expect(spy).not.toHaveBeenCalled();
+
+    session.setRole("operator");
+    await session.handleBinaryFrame({
+      kind: "terminal",
+      frame: { slot: 1, opcode: 0, payload: new Uint8Array([1, 2, 3]) },
+    } as never);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  test("an operator may drive work but not administer the daemon", async () => {
+    const messages: SessionOutboundMessage[] = [];
+    const session = createSessionForTest({ role: "operator", messages });
+
+    await session.handleMessage({
+      type: "auth.device.set_role.request",
+      requestId: "o-1",
+      credentialId: "cred-1",
+      role: "owner",
+    } as unknown as SessionInboundMessage);
+    await session.handleMessage({
+      type: "set_daemon_config_request",
+      requestId: "o-2",
+    } as unknown as SessionInboundMessage);
+
+    expect(messages).toEqual([
+      denied("o-1", "auth.device.set_role.request"),
+      denied("o-2", "set_daemon_config_request"),
+    ]);
+  });
+
+  test("a role change narrows a live session without reconstructing it", async () => {
+    const messages: SessionOutboundMessage[] = [];
+    const session = createSessionForTest({ messages });
+
+    expect(session.getRole()).toBe("owner");
+    session.setRole("viewer");
+    expect(session.getRole()).toBe("viewer");
+    await session.handleMessage({
+      type: "terminal_input",
+      requestId: "r-1",
+      terminalId: "term-1",
+      data: "x",
+    } as unknown as SessionInboundMessage);
+
+    expect(messages).toEqual([denied("r-1", "terminal_input")]);
+    expect(session.getPermissions()).not.toContain("workspace.write");
+  });
+
+  test("the daemon reports a role-narrowed permission set", () => {
+    expect(createSessionForTest({ role: "viewer" }).getPermissions()).toEqual([
+      "daemon.read",
+      "workspace.read",
+    ]);
   });
 });
