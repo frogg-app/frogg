@@ -1833,6 +1833,224 @@ export const fr: TranslationResources = {
       hostDisconnected: "Hostn'est pas connecté",
     },
   },
+  deviceAccess: {
+    devices: {
+      title: "Appareils appairés",
+    },
+    loading: "Chargement des appareils…",
+    empty: "Aucun appareil n'est encore appairé avec cet hôte.",
+    staleSnapshot: "Cette liste n'est peut-être plus à jour.",
+    staleAfterError: "Affichage de la dernière liste chargée. Elle n'a pas pu être actualisée.",
+    thisDevice: "Cet appareil",
+    unnamedDevice: "Appareil sans nom",
+    renameLabel: "Nom de l'appareil",
+    callerRole: {
+      title: "Votre accès",
+      unknown: "En attente de savoir ce que cet hôte autorise.",
+      unsupported: "Cet hôte n'utilise pas de rôles d'appareil.",
+      noCredential:
+        "Cette connexion ne porte aucune identité d'appareil, l'hôte la traite donc comme un propriétaire.",
+    },
+    roles: {
+      owner: {
+        label: "Propriétaire",
+        description:
+          "Tout : réglages de l'hôte, comptes de fournisseurs, codes d'appairage, ainsi que l'approbation, la révocation et le changement de rôle des appareils.",
+      },
+      operator: {
+        label: "Opérateur",
+        description:
+          "Mener le travail : discussions d'agents, terminaux, scripts d'espace de travail, modifications de fichiers, git et actions de forge. Ni réglages de l'hôte ni gestion des appareils.",
+      },
+      viewer: {
+        label: "Observateur",
+        description:
+          "Lecture seule : sessions, chronologies, sortie du terminal, navigation dans les fichiers et différences. Aucune saisie ni exécution de commande.",
+      },
+    },
+    refusal: {
+      unknown: "En attente que cet hôte indique ce qu'il prend en charge.",
+      unsupported:
+        "Cet hôte est trop ancien pour gérer les appareils. Mettez-le à jour pour utiliser cette fonction.",
+      role: "Seul un propriétaire peut modifier les appareils. Cet appareil est {{role}}.",
+      roleCode: "Seul un propriétaire peut créer un code d'appairage. Cet appareil est {{role}}.",
+    },
+    actions: {
+      rename: "Renommer",
+      revoke: "Révoquer",
+      revokeThisDevice: "Révoquer cet appareil",
+      save: "Enregistrer",
+      cancel: "Annuler",
+      retry: "Réessayer",
+      back: "Retour",
+    },
+    lastSeen: {
+      connected: "Connecté maintenant",
+      never: "Jamais connecté",
+      justNow: "Vu à l'instant",
+      minutes_one: "Vu il y a {{count}} minute",
+      minutes_other: "Vu il y a {{count}} minutes",
+      hours_one: "Vu il y a {{count}} heure",
+      hours_other: "Vu il y a {{count}} heures",
+      days_one: "Vu il y a {{count}} jour",
+      days_other: "Vu il y a {{count}} jours",
+    },
+    errors: {
+      unknownDevice: "Cet appareil n'est plus appairé.",
+      invalidName: "Un nom d'appareil doit compter de 1 à {{max}} caractères.",
+      noPairingCode: "L'hôte n'a renvoyé aucun code d'appairage.",
+    },
+    revoke: {
+      title: "Révoquer {{name}} ?",
+      message:
+        "{{name}} perd l'accès immédiatement et ses connexions se ferment. L'appareil pourra être appairé à nouveau plus tard.",
+      selfTitle: "Révoquer cet appareil ?",
+      selfMessage:
+        "C'est l'appareil que vous utilisez. Le révoquer met fin à cette session aussitôt, et vous devrez l'appairer de nouveau pour revenir.",
+      lastOwnerWarning:
+        "C'est le dernier propriétaire. Ensuite, plus personne ne pourra gérer cet hôte depuis l'application, et vous devriez réinitialiser l'appairage depuis un shell sur l'hôte lui-même.",
+      done: "{{name}} a été révoqué.",
+    },
+    role: {
+      change: "Changer de rôle",
+      done: "{{name}} est désormais {{role}}.",
+      lastOwnerTitle: "Laisser cet hôte sans propriétaire ?",
+      lastOwnerMessage:
+        "{{name}} est le dernier propriétaire. Après cela, plus personne ne pourra gérer l'hôte depuis l'application.",
+      selfDemoteTitle: "Abandonner votre propre accès ?",
+      selfDemoteMessage:
+        "Cet appareil devient {{role}} aussitôt, et vous perdez la gestion des appareils ici.",
+    },
+    requests: {
+      title: "En attente d'approbation",
+      loading: "Recherche de demandes d'appairage…",
+      empty: "Aucun appareil n'attend d'être admis.",
+      untrustedName: "Ce nom a été choisi par l'appareil qui demande à se joindre.",
+      matchCode: "Code de correspondance : {{code}}",
+      from: "Depuis {{address}}",
+      roleLabel: "Approuver en tant que",
+      approve: "Approuver",
+      deny: "Refuser",
+      approved: "{{name}} a été approuvé.",
+      denied: "{{name}} a été refusé.",
+    },
+    code: {
+      title: "Code d'appairage",
+      roleLabel: "Rôle du nouvel appareil",
+      generate: "Générer un code d'appairage",
+      regenerate: "Générer un nouveau code",
+      ownerWarning:
+        "Un code de propriétaire donne au nouvel appareil le contrôle total de cet hôte.",
+      expiresIn: "Expire dans {{time}}",
+      expired: "Ce code a expiré. Générez-en un nouveau.",
+      fingerprint: "Empreinte de la clé : {{fingerprint}}",
+      fingerprintHint:
+        "Lisez-la à voix haute pour que l'autre appareil puisse vérifier qu'elle correspond avant l'appairage.",
+      qrAccessibility: "QR code du lien d'appairage",
+      qrLoading: "Construction du QR code…",
+      qrUnavailable: "Le QR code n'a pas pu être construit. Utilisez plutôt le code ou le lien.",
+      copyCode: "Copier le code",
+      copyLink: "Copier le lien",
+      hide: "Masquer",
+      securityWarning:
+        "Quiconque obtient ce code peut appairer un appareil avec cet hôte jusqu'à son expiration.",
+    },
+    entry: {
+      title: "Saisir un code d'appairage",
+      subtitle: "Saisissez un code qu'un propriétaire a généré pour vous.",
+      hostLabel: "Adresse de l'hôte",
+      hostPlaceholder: "192.168.1.20:9999",
+      codeLabel: "Code d'appairage",
+      useTls: "Se connecter en TLS",
+      verify: "Vérifier cet hôte",
+      verifying: "Vérification de l'identité de l'hôte…",
+      verified: "Cet hôte a prouvé qu'il détient sa propre clé.",
+      compareFingerprint:
+        "Vérifiez que cette empreinte correspond à celle affichée sur l'écran du propriétaire avant d'appairer.",
+      pair: "Appairer",
+      paired: "Appairé avec {{name}}.",
+      problems: {
+        host_required: "Saisissez l'adresse de l'hôte.",
+        port_invalid: "Ce port n'est pas valide.",
+        code_incomplete: "Un code d'appairage compte huit caractères.",
+        code_invalid: "Ce n'est pas un code d'appairage valide.",
+      },
+      refused: {
+        unreachable: "L'hôte n'a pas répondu",
+        fingerprint_mismatch: "Ce n'est pas l'hôte auquel ce code correspond",
+        proof_invalid: "L'hôte n'a pas pu prouver qu'il détient sa clé",
+        server_key_changed: "Cet hôte est déjà connu sous une autre clé",
+      },
+    },
+  },
+  pairConfirm: {
+    title: "Appairer avec cet hôte ?",
+    titleClaim: "Prendre la propriété de cet hôte ?",
+    claimWarning: {
+      title: "Cela fait de vous le propriétaire",
+      body: "La revendication donne à cet appareil le contrôle total de cette machine et de ses agents. Ne continuez que si vous êtes à l'origine de cette action.",
+    },
+    fields: {
+      address: "Adresse",
+      hostname: "Nom",
+      fingerprint: "Empreinte de la clé de l'hôte",
+      expires: "Expiration du lien",
+      role: "Rôle de cet appareil",
+      serverId: "ID du serveur",
+    },
+    roles: {
+      owner: "Propriétaire",
+      operator: "Opérateur",
+      viewer: "Observateur",
+    },
+    verify: {
+      pending: "Vérification de l'identité de l'hôte…",
+      verifiedTitle: "Identité vérifiée",
+      verifiedBody:
+        "L'hôte situé à cette adresse a prouvé qu'il détient la clé correspondant à l'empreinte ci-dessus.",
+      unreachableTitle: "L'hôte n'a pas répondu",
+      refusedTitle: "Refusé : ce n'est pas l'hôte que le lien désigne",
+      reasons: {
+        fingerprintMismatch:
+          "La clé de l'hôte ne correspond pas à l'empreinte du lien. Ne continuez pas.",
+        proofInvalid: "L'hôte n'a pas pu prouver qu'il détient sa propre clé. Ne continuez pas.",
+        keyChanged:
+          "Ce serveur est déjà connu sous une autre clé. Soit l'hôte a été réinstallé, soit quelque chose se fait passer pour lui.",
+      },
+    },
+    expiredTitle: "Ce lien a expiré",
+    expiredBody: "Demandez un nouveau lien d'appairage et réessayez.",
+    errorTitle: "Échec de l'appairage",
+    invalidTitle: "Lien d'appairage non reconnu",
+    invalidBody: "Ce lien n'est pas un lien d'appairage que cette application comprend.",
+    actions: {
+      pair: "Appairer",
+      claim: "Revendiquer cet hôte",
+      cancel: "Annuler",
+      retryVerification: "Réessayer",
+    },
+  },
+  presence: {
+    label: "Également ici",
+    loading: "Recherche des autres personnes présentes…",
+    unknownDevice: "Appareil inconnu",
+    accessibilityLabel: "Autres personnes sur cette session",
+    overflow_one: "+{{count}} autre",
+    overflow_other: "+{{count}} autres",
+    stale: "Peut ne plus être à jour",
+    activity: {
+      viewing: "{{name}} consulte",
+      typing: "{{name}} écrit",
+      sending: "{{name}} envoie",
+      input: "{{name}} écrit ici",
+      idle: "{{name}} est inactif",
+    },
+    composer: {
+      warningOne: "{{name}} travaille aussi là-dessus.",
+      warningMany_one: "{{name}} et {{count}} autre travaillent aussi là-dessus.",
+      warningMany_other: "{{name}} et {{count}} autres travaillent aussi là-dessus.",
+    },
+  },
   pairing: {
     connectionMethods: {
       title: "Ajouter une connexion",
@@ -2564,6 +2782,7 @@ export const fr: TranslationResources = {
       sendFailedTitle: "Impossible d’envoyer la notification de test",
     },
     hostSections: {
+      devices: "Appareils",
       projects: "Projets",
       connections: "Relations",
       agents: "Agents",

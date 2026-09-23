@@ -67,6 +67,33 @@
   requires a device credential.
 - Daemon-wide session presence, so clients can see who else is looking at a
   workspace. Entries expire, and clients re-report while they are watching.
+- A Devices section in a host's settings, so per-device access is managed where
+  it is used rather than only over the wire. It shows this device's own role and
+  what it may do, the devices waiting for an owner to let them in (approve with a
+  role, or deny), the paired devices with their role, last seen and which one is
+  you, and an owner-only pairing code with a countdown, a QR of the pairing link
+  and the daemon's key fingerprint to read out. An operator or a viewer sees the
+  list read-only with a line naming the role an action needs, instead of a button
+  the daemon would refuse. Revoking your own device is confirmed separately
+  because it ends the session, and revoking or demoting the last owner warns
+  first — the daemon has no last-owner guard. `hostSettings.hiddenSections`
+  accepts `devices`, in `config.json` and in `brand.json`.
+- Enter a pairing code when adding a host. Type the host address and the
+  eight-character code; the app makes the daemon prove it holds its key and shows
+  the fingerprint to compare against the owner's screen before anything is
+  redeemed.
+- Pairing links ask before they pair. The pairing screen used to start pairing
+  the moment an external link opened it, so a link in a message or on a web page
+  could pair silently — and for a claim, silently take ownership of a machine. It
+  is now a confirmation showing the address, name, key fingerprint, expiry and
+  the role granted, with a prominent warning when the link would claim ownership.
+  It offers no Pair button at all when the daemon's key does not match the link,
+  when the daemon cannot prove it holds its key, or when a known server presents
+  a different key. `<scheme>://pair/direct?…` links are handled everywhere, and
+  the web build accepts the same parameters as a `#pair/direct?…` fragment.
+- An agent chat and a terminal show who else is on them, by device name and what
+  they are doing. When someone else is active the composer outlines itself in
+  amber and names them — a warning, not a block: the composer stays usable.
 
 ## 1.5.27 — 2026-09-23
 

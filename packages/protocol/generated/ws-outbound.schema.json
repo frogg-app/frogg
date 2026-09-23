@@ -34397,6 +34397,7 @@
                                 "enum": [
                                   "projects",
                                   "pair-device",
+                                  "devices",
                                   "agents",
                                   "providers",
                                   "usage",
@@ -34861,6 +34862,7 @@
                                 "enum": [
                                   "projects",
                                   "pair-device",
+                                  "devices",
                                   "agents",
                                   "providers",
                                   "usage",

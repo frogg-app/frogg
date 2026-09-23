@@ -1,0 +1,63 @@
+---
+title: Shared sessions
+description: See who else is on an agent chat or a terminal, what they are doing, and what the composer warning means.
+sidebar:
+  order: 7
+---
+
+import { Screenshot } from "@/components/docs";
+import appSessionPresenceImg from "@/assets/docs/app/session-presence.png";
+
+Several devices can be on the same agent or terminal at once — your laptop and your phone,
+or two people paired to the same daemon. Frogg shows who they are rather than locking
+anyone out.
+
+## Who else is here
+
+An agent chat and a terminal carry a row above the composer naming the other devices on
+that session and what each is doing.
+
+| Shown as | Meaning |
+| -------- | ------- |
+| viewing | The device has the session open |
+| typing | There is text in its composer |
+| sending | The daemon saw it send a message to the agent |
+| typing here | The daemon saw it send keystrokes to the terminal |
+| idle | It is still there, but not doing anything |
+
+Three names fit; the rest fold into a `+N`. `viewing`, `typing` and `idle` are what the
+other device reports about itself; `sending` and terminal input are what the daemon saw
+for itself.
+
+The row disappears when nobody else is there, when the daemon does not support presence,
+or when the presence request fails — it is chrome, and never makes a session look broken.
+Devices re-report every 30 seconds and the daemon drops an entry it has not heard about
+for 90 seconds, so someone who closes a laptop lid stops showing up on their own.
+
+## The composer warning
+
+When someone else is actively writing to the same agent, the composer outlines itself in
+amber and names them.
+
+<Screenshot src={appSessionPresenceImg} alt="Composer outlined in amber with a line saying another device is also working on this agent" />
+
+It is a warning, not a block: the composer stays fully usable and both messages reach the
+agent. An offline composer says that instead — a composer that cannot reach its daemon has
+something more urgent to say.
+
+## Device names are not trusted
+
+A device's name is chosen by that device. Frogg shows it as plain, truncated text and
+never as part of its own chrome, so a name cannot dress itself up as an app message. The
+same applies to the name on a pairing request waiting for approval.
+
+Names come from the paired device's credential, or — for a connection that carries no
+credential, such as loopback or a trusted LAN — from the name that client announced when
+it connected.
+
+## Requirements
+
+Presence needs a daemon that advertises the `sessionPresence` feature. Against an older
+daemon the row and the composer warning simply do not appear. Nothing about presence
+changes what a device may do: that is its
+[role](/docs/self-hosting/security/#device-roles).

@@ -5,9 +5,16 @@ import { AddHostMethodModal } from "@/components/add-host-method-modal";
 import { AddHostModal } from "@/components/add-host-modal";
 import { AddRemoteSshHostModal } from "@/components/add-remote-ssh-host-modal";
 import { PairLinkModal } from "@/components/pair-link-modal";
+import { PairWithCodeModal } from "@/device-access/pair-with-code-modal";
 import { DeployToHostModal } from "@/components/ssh-deploy/deploy-to-host-modal";
 
-export type AddHostStep = "methods" | "direct" | "remote-ssh" | "pair-link" | "deploy";
+export type AddHostStep =
+  | "methods"
+  | "direct"
+  | "remote-ssh"
+  | "pair-link"
+  | "pair-code"
+  | "deploy";
 
 interface AddHostFlowState {
   step: AddHostStep | null;
@@ -40,6 +47,7 @@ export function AddHostFlowHost() {
   const selectDirect = useCallback(() => setStep("direct"), [setStep]);
   const selectRemoteSsh = useCallback(() => setStep("remote-ssh"), [setStep]);
   const selectPairLink = useCallback(() => setStep("pair-link"), [setStep]);
+  const selectPairCode = useCallback(() => setStep("pair-code"), [setStep]);
   const selectDeploy = useCallback(() => setStep("deploy"), [setStep]);
   const returnToMethods = useCallback(() => setStep("methods"), [setStep]);
   const scanQr = useCallback(() => {
@@ -56,6 +64,7 @@ export function AddHostFlowHost() {
         onDirectConnection={selectDirect}
         onRemoteSsh={selectRemoteSsh}
         onPasteLink={selectPairLink}
+        onPairCode={selectPairCode}
         onDeploy={selectDeploy}
         onScanQr={scanQr}
       />
@@ -75,6 +84,12 @@ export function AddHostFlowHost() {
         visible={visible && step === "deploy"}
         onClose={close}
         onCancel={returnToMethods}
+      />
+      <PairWithCodeModal
+        visible={visible && step === "pair-code"}
+        onClose={close}
+        onCancel={returnToMethods}
+        onSaved={close}
       />
       <PairLinkModal
         visible={visible && step === "pair-link"}

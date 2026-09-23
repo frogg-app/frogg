@@ -3902,6 +3902,7 @@
                             "enum": [
                               "projects",
                               "pair-device",
+                              "devices",
                               "agents",
                               "providers",
                               "usage",

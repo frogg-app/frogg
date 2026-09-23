@@ -214,8 +214,12 @@ vi.mock("@/hooks/use-daemon-config", () => ({
 
 vi.mock("@/runtime/host-runtime", () => ({
   useHostRuntimeIsConnected: () => true,
+  // The section's provider-update query asks for a client; this suite is about
+  // the rows, so there is nothing for it to talk to.
+  useHostRuntimeClient: () => null,
 }));
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProvidersSection } from "./providers-section";
 
 const claudeEntry: ProviderSnapshotEntry = {
@@ -302,8 +306,15 @@ describe("ProvidersSection", () => {
   });
 
   function render(): void {
+    // The section reads provider update state through React Query, so it needs
+    // a client in scope the way the app gives it one.
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {
-      root?.render(<ProvidersSection serverId="server-1" />);
+      root?.render(
+        <QueryClientProvider client={queryClient}>
+          <ProvidersSection serverId="server-1" />
+        </QueryClientProvider>,
+      );
     });
   }
 

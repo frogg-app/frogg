@@ -68,6 +68,7 @@ import {
   type TerminalRendererReadyChange,
 } from "@/utils/terminal-renderer-readiness";
 import { useAppSettings } from "@/hooks/use-settings";
+import { PresenceBar } from "@/presence/presence-bar";
 import { classifyForResolution, fetchDaemonResolution } from "@/assistant-file-links/resolver";
 import type {
   TerminalLocalFileLinkSource,
@@ -1041,6 +1042,7 @@ export function TerminalPane({
 
   return (
     <Animated.View style={containerStyle}>
+      <PresenceBar serverId={serverId} targetKind="terminal" targetId={terminalId} />
       <View style={styles.outputContainer}>
         <View style={styles.terminalGestureContainer}>
           <TerminalEmulator

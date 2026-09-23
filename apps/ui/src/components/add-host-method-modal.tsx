@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { QrCode, Link2, ClipboardPaste, Rocket, Terminal } from "lucide-react-native";
+import { QrCode, Link2, ClipboardPaste, KeyRound, Rocket, Terminal } from "lucide-react-native";
 import { AdaptiveModalSheet, type SheetHeader } from "./adaptive-modal-sheet";
 import { isFdroidBuild } from "@/constants/build-profile";
 import { isNative } from "@/constants/platform";
@@ -20,6 +20,7 @@ export function isScanQrAddHostAvailable(): boolean {
 }
 
 const ThemedQrCode = withUnistyles(QrCode);
+const ThemedKeyRound = withUnistyles(KeyRound);
 const ThemedLink2 = withUnistyles(Link2);
 const ThemedClipboardPaste = withUnistyles(ClipboardPaste);
 const ThemedTerminal = withUnistyles(Terminal);
@@ -61,6 +62,8 @@ export interface AddHostMethodModalProps {
   onRemoteSsh: () => void;
   onScanQr: () => void;
   onPasteLink: () => void;
+  /** Type a pairing code an owner read out, against a host and port. */
+  onPairCode: () => void;
   /** Desktop only: install the daemon on an SSH host, then add it. */
   onDeploy?: () => void;
 }
@@ -73,6 +76,7 @@ export function AddHostMethodModal({
   onDeploy,
   onScanQr,
   onPasteLink,
+  onPairCode,
 }: AddHostMethodModalProps) {
   const { t } = useTranslation();
   const header = useMemo<SheetHeader>(() => ({ title: t("pairing.connectionMethods.title") }), [t]);
@@ -92,6 +96,10 @@ export function AddHostMethodModal({
   const handlePaste = useCallback(() => {
     onPasteLink();
   }, [onPasteLink]);
+
+  const handlePairCode = useCallback(() => {
+    onPairCode();
+  }, [onPairCode]);
 
   return (
     <AdaptiveModalSheet
@@ -168,6 +176,20 @@ export function AddHostMethodModal({
           </View>
         </Pressable>
       ) : null}
+
+      <Pressable
+        style={styles.option}
+        onPress={handlePairCode}
+        accessibilityRole="button"
+        accessibilityLabel={t("deviceAccess.entry.title")}
+        testID="add-host-method-pair-code"
+      >
+        <ThemedKeyRound size={18} uniProps={foregroundIconMapping} />
+        <View style={styles.optionBody}>
+          <Text style={styles.optionText}>{t("deviceAccess.entry.title")}</Text>
+          <Text style={styles.optionSubtext}>{t("deviceAccess.entry.subtitle")}</Text>
+        </View>
+      </Pressable>
 
       <Pressable
         style={styles.option}

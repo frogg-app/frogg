@@ -138,17 +138,45 @@ owner, because they carry no device identity. The Agent MCP endpoint requires an
 
 ### Managing devices
 
-Devices are listed, renamed, revoked and re-roled over the `auth.device.list`,
-`auth.device.rename`, `auth.device.revoke` and `auth.device.set_role` session RPCs, which
-the daemon advertises as the `deviceAccess` feature. Changing a role takes effect on that
-device's live connections immediately. Revoking a credential closes that device's live
-connections immediately; revoking the device you are using is allowed. `frogg auth
-reset-claim` still removes every device at once.
+Devices are managed from the app, in host settings **Devices**: the list of paired devices,
+the queue of devices waiting for an owner's approval, renaming, role changes, revocation,
+and minting a pairing code. See
+[manage devices in the app](/docs/getting-started/connect-and-pair/#manage-devices-in-the-app).
+The daemon advertises this as the `deviceAccess` feature (with `deviceRoles` and
+`deviceRoleManagement`), and a client that does not see it says so instead of offering
+buttons.
+
+Changing a role takes effect on that device's live connections immediately. Revoking a
+credential closes that device's live connections immediately; revoking the device you are
+using is allowed, and ends that session.
 
 Limits:
 
 - There is no per-device revoke or role change from the CLI. `frogg auth reset-claim`
-  removes all devices.
+  removes all devices at once.
+- The daemon has **no last-owner guard**: the last owner can be demoted or revoked, and a
+  daemon with no owner can only be recovered from a shell on its own machine (loopback is
+  trusted, so `frogg auth reset-claim` still works there). The app warns before such a
+  change, but that warning is the client being careful — it is not enforced.
+
+### Pairing links are confirmed, not automatic
+
+A pairing link an app receives from outside — a deep link, a QR code, a `#pair/direct?…`
+fragment on the web — is shown as a confirmation before anything is redeemed, so a link in
+a message or on a web page cannot pair a device, or claim ownership of an unclaimed
+daemon, on its own. The app proves the daemon's identity first and offers no button at all
+when the key does not match the link, when the daemon cannot prove it holds its key, or
+when a server it already knows presents a different key. See
+[pairing links ask before they pair](/docs/getting-started/connect-and-pair/#pairing-links-ask-before-they-pair).
+
+### Session presence
+
+The daemon reports who else is on an agent or a terminal — device name and activity — to
+everyone else on the same session, gated on the `sessionPresence` feature. It is
+information, not a lock: two devices can write to the same agent at once, and the app
+outlines the composer as a warning. Device names come from the other device, so treat them
+as untrusted text. See
+[shared sessions](/docs/using-frogg/shared-sessions/).
 
 ## Passwords
 

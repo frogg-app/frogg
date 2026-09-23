@@ -27,6 +27,7 @@ import type {
 type AuthDeviceListPayload = AuthDeviceListResponse["payload"];
 type AuthDeviceRenamePayload = AuthDeviceRenameResponse["payload"];
 type AuthDeviceRevokePayload = AuthDeviceRevokeResponse["payload"];
+type AuthDeviceSetRolePayload = AuthDeviceSetRoleResponse["payload"];
 type AuthPairingCodeCreatePayload = AuthPairingCodeCreateResponse["payload"];
 type AuthPairingRequestListPayload = AuthPairingRequestListResponse["payload"];
 type AuthPairingRequestDecidePayload = AuthPairingRequestDecideResponse["payload"];
@@ -51,6 +52,7 @@ import {
   type NotificationAudio,
   type ServerInfoStatusPayload,
 } from "@frogg/protocol/messages";
+import type { AuthDeviceSetRoleResponse } from "@frogg/protocol/messages";
 import { validateWSOutboundMessage } from "@frogg/protocol/validation/ws-outbound";
 import type {
   CompanionNotebook,
@@ -5261,6 +5263,20 @@ export class DaemonClient {
     return this.sendNamespacedCorrelatedSessionRequest<"auth.device.revoke.response">({
       requestId,
       message: { type: "auth.device.revoke.request", deviceId },
+    });
+  }
+
+  /**
+   * Owner-only. `credentialId` is the `id` of a device from {@link listDevices}.
+   * The new role applies to that device's live connections immediately.
+   */
+  async setDeviceRole(
+    input: { credentialId: string; role: DeviceRole },
+    requestId?: string,
+  ): Promise<AuthDeviceSetRolePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.device.set_role.response">({
+      requestId,
+      message: { type: "auth.device.set_role.request", ...input },
     });
   }
 

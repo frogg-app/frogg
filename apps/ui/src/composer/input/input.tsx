@@ -61,6 +61,8 @@ import { useComposerHeight } from "./height";
 import { isComposerBackgroundPress } from "./background-press";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
 import type { StaleContextWarning } from "@/composer/stale-context";
+import { PresenceComposerNotice } from "@/presence/composer-presence-notice";
+import type { PresenceWarning } from "@/presence/snapshot";
 import type { NativePastedFile } from "@/composer/native-pasted-image";
 import {
   EditingTextInput,
@@ -183,6 +185,11 @@ export interface MessageInputProps {
    * is nothing to warn about. See `@/composer/stale-context`.
    */
   staleContextWarning?: StaleContextWarning | null;
+  /**
+   * COMPAT(sessionPresence): added in v1.6.0. Set when somebody else is
+   * actively writing to the same agent. Warns in amber; never disables.
+   */
+  presenceWarning?: PresenceWarning | null;
   /** Command issued when application state must replace native-owned text. */
   textReplacement: TextReplacement;
   /** Replaces the submit icon with this label, still inside the composer's own toolbar row. */
@@ -1098,6 +1105,7 @@ interface ResolvedMessageInputProps {
   readOnly: boolean;
   offline: boolean;
   staleContextWarning: StaleContextWarning | null;
+  presenceWarning: PresenceWarning | null;
   textReplacement: TextReplacement;
   submitLabel: string | undefined;
 }
@@ -1150,6 +1158,10 @@ function resolveMessageInputProps(props: MessageInputProps): ResolvedMessageInpu
     // the notice and its outline are resolved away before any of the render
     // paths have to think about the two states together.
     staleContextWarning: props.offline ? null : (props.staleContextWarning ?? null),
+    // Offline wins over every advisory outline: a composer that cannot reach
+    // its daemon has a more urgent thing to say than who else is typing, and
+    // resolving it here keeps the render paths from combining the two.
+    presenceWarning: props.offline ? null : (props.presenceWarning ?? null),
     textReplacement: props.textReplacement,
     submitLabel: props.submitLabel,
   };
@@ -1241,6 +1253,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       readOnly,
       offline,
       staleContextWarning,
+      presenceWarning,
       textReplacement,
       submitLabel,
     } = resolveMessageInputProps(props);
@@ -1766,12 +1779,14 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
         readOnly && styles.inputWrapperReadOnly,
         inputWrapperStyle,
         staleContextWarning !== null && styles.inputWrapperStaleContext,
+        presenceWarning !== null && styles.inputWrapperPresence,
         offline && styles.inputWrapperOffline,
         { opacity: surfacePresentation.input.opacity },
       ],
       [
         inputWrapperStyle,
         offline,
+        presenceWarning,
         readOnly,
         staleContextWarning,
         surfacePresentation.input.opacity,
@@ -1847,6 +1862,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           pointerEvents={surfacePresentation.input.pointerEvents}
         >
           <StaleContextNotice warning={staleContextWarning} />
+          <PresenceComposerNotice warning={presenceWarning} />
           {attachmentSlot}
           {/* Text input */}
           <RenderProfile id="ComposerTextSurface">
@@ -1969,6 +1985,15 @@ const styles = StyleSheet.create((theme: Theme) => ({
   // outline uses, in amber rather than red: this is a cost to know about, not a
   // composer that cannot send.
   inputWrapperStaleContext: {
+    borderColor: theme.colors.palette.amber[500],
+    ...(isWeb ? { boxShadow: `0 0 8px 0 ${theme.colors.palette.amber[500]}66` } : {}),
+  },
+  // COMPAT(sessionPresence): added in v1.6.0. The same amber outline the stale
+  // context warning uses. The two are the same colour on purpose: both say
+  // "know this before you send", and either one alone paints the same border,
+  // so a composer that is both stale and shared is outlined once and carries
+  // two notice lines. The offline outline is listed after both and wins.
+  inputWrapperPresence: {
     borderColor: theme.colors.palette.amber[500],
     ...(isWeb ? { boxShadow: `0 0 8px 0 ${theme.colors.palette.amber[500]}66` } : {}),
   },

@@ -1803,6 +1803,221 @@ export const ja: TranslationResources = {
       hostDisconnected: "ホストが接続されていません",
     },
   },
+  deviceAccess: {
+    devices: {
+      title: "ペアリング済みデバイス",
+    },
+    loading: "デバイスを読み込み中…",
+    empty: "このホストにペアリングされたデバイスはまだありません。",
+    staleSnapshot: "この一覧は最新ではない可能性があります。",
+    staleAfterError: "最後に読み込めた一覧を表示しています。更新できませんでした。",
+    thisDevice: "このデバイス",
+    unnamedDevice: "名前のないデバイス",
+    renameLabel: "デバイス名",
+    callerRole: {
+      title: "あなたのアクセス権",
+      unknown: "このホストが何を許可しているかの応答を待っています。",
+      unsupported: "このホストはデバイスロールを使用していません。",
+      noCredential: "この接続にはデバイス資格情報がないため、ホストはオーナーとして扱います。",
+    },
+    roles: {
+      owner: {
+        label: "オーナー",
+        description:
+          "すべて: ホスト設定、プロバイダーのアカウント、ペアリングコード、デバイスの承認・取り消し・ロール変更。",
+      },
+      operator: {
+        label: "オペレーター",
+        description:
+          "作業の実行: エージェントのチャット、ターミナル、ワークスペーススクリプト、ファイル編集、git とフォージの操作。ホスト設定とデバイス管理はできません。",
+      },
+      viewer: {
+        label: "ビューアー",
+        description:
+          "読み取り専用: セッション、タイムライン、ターミナル出力、ファイル閲覧と差分。入力とコマンド実行はできません。",
+      },
+    },
+    refusal: {
+      unknown: "このホストが対応内容を返すのを待っています。",
+      unsupported: "このホストは古すぎてデバイスを管理できません。使用するには更新してください。",
+      role: "デバイスを変更できるのはオーナーだけです。このデバイスは{{role}}です。",
+      roleCode: "ペアリングコードを作成できるのはオーナーだけです。このデバイスは{{role}}です。",
+    },
+    actions: {
+      rename: "名前を変更",
+      revoke: "取り消す",
+      revokeThisDevice: "このデバイスを取り消す",
+      save: "保存",
+      cancel: "キャンセル",
+      retry: "再試行",
+      back: "戻る",
+    },
+    lastSeen: {
+      connected: "現在接続中",
+      never: "接続履歴なし",
+      justNow: "たった今まで接続",
+      minutes_one: "{{count}} 分前に接続",
+      minutes_other: "{{count}} 分前に接続",
+      hours_one: "{{count}} 時間前に接続",
+      hours_other: "{{count}} 時間前に接続",
+      days_one: "{{count}} 日前に接続",
+      days_other: "{{count}} 日前に接続",
+    },
+    errors: {
+      unknownDevice: "そのデバイスはすでにペアリングされていません。",
+      invalidName: "デバイス名は 1〜{{max}} 文字にしてください。",
+      noPairingCode: "ホストからペアリングコードが返されませんでした。",
+    },
+    revoke: {
+      title: "{{name}} を取り消しますか?",
+      message:
+        "{{name}} はただちにアクセス権を失い、接続が閉じられます。あとで再度ペアリングできます。",
+      selfTitle: "このデバイスを取り消しますか?",
+      selfMessage:
+        "これは今お使いのデバイスです。取り消すとこのセッションは即座に終了し、戻るには再度ペアリングが必要です。",
+      lastOwnerWarning:
+        "これが最後のオーナーです。取り消すとアプリからこのホストを管理できる人がいなくなり、ホスト上のシェルからペアリングをリセットする必要があります。",
+      done: "{{name}} を取り消しました。",
+    },
+    role: {
+      change: "ロールを変更",
+      done: "{{name}} は{{role}}になりました。",
+      lastOwnerTitle: "このホストをオーナーなしにしますか?",
+      lastOwnerMessage:
+        "{{name}} が最後のオーナーです。この後は誰もアプリからホストを管理できなくなります。",
+      selfDemoteTitle: "自分のアクセス権を手放しますか?",
+      selfDemoteMessage:
+        "このデバイスはただちに{{role}}になり、ここでのデバイス管理ができなくなります。",
+    },
+    requests: {
+      title: "承認待ち",
+      loading: "ペアリング要求を確認中…",
+      empty: "参加を待っているデバイスはありません。",
+      untrustedName: "この名前は参加を求めているデバイスが自分で付けたものです。",
+      matchCode: "照合コード: {{code}}",
+      from: "{{address}} から",
+      roleLabel: "承認するロール",
+      approve: "承認",
+      deny: "拒否",
+      approved: "{{name}} を承認しました。",
+      denied: "{{name}} を拒否しました。",
+    },
+    code: {
+      title: "ペアリングコード",
+      roleLabel: "新しいデバイスのロール",
+      generate: "ペアリングコードを生成",
+      regenerate: "新しいコードを生成",
+      ownerWarning: "オーナーのコードは、新しいデバイスにこのホストの完全な制御権を与えます。",
+      expiresIn: "{{time}}後に期限切れ",
+      expired: "このコードは期限切れです。新しいコードを生成してください。",
+      fingerprint: "鍵のフィンガープリント: {{fingerprint}}",
+      fingerprintHint: "ペアリング前に相手のデバイスで一致を確認できるよう、読み上げてください。",
+      qrAccessibility: "ペアリングリンクの QR コード",
+      qrLoading: "QR コードを生成中…",
+      qrUnavailable: "QR コードを生成できませんでした。代わりにコードかリンクを使ってください。",
+      copyCode: "コードをコピー",
+      copyLink: "リンクをコピー",
+      hide: "非表示",
+      securityWarning:
+        "このコードを入手した人は、期限が切れるまでこのホストにデバイスをペアリングできます。",
+    },
+    entry: {
+      title: "ペアリングコードを入力",
+      subtitle: "オーナーが発行したコードを入力してください。",
+      hostLabel: "ホストのアドレス",
+      hostPlaceholder: "192.168.1.20:9999",
+      codeLabel: "ペアリングコード",
+      useTls: "TLS で接続",
+      verify: "このホストを確認",
+      verifying: "ホストの身元を確認中…",
+      verified: "このホストは自身の鍵を保持していることを証明しました。",
+      compareFingerprint:
+        "ペアリングする前に、このフィンガープリントがオーナーの画面のものと一致するか確認してください。",
+      pair: "ペアリング",
+      paired: "{{name}} とペアリングしました。",
+      problems: {
+        host_required: "ホストのアドレスを入力してください。",
+        port_invalid: "そのポートは有効ではありません。",
+        code_incomplete: "ペアリングコードは 8 文字です。",
+        code_invalid: "有効なペアリングコードではありません。",
+      },
+      refused: {
+        unreachable: "ホストが応答しませんでした",
+        fingerprint_mismatch: "このコードの対象となるホストではありません",
+        proof_invalid: "ホストは鍵の保持を証明できませんでした",
+        server_key_changed: "このホストはすでに別の鍵で登録されています",
+      },
+    },
+  },
+  pairConfirm: {
+    title: "このホストとペアリングしますか?",
+    titleClaim: "このホストの所有権を取得しますか?",
+    claimWarning: {
+      title: "これであなたがオーナーになります",
+      body: "所有権を取得すると、このデバイスにそのマシンとエージェントの完全な制御権が与えられます。自分で始めた場合のみ続行してください。",
+    },
+    fields: {
+      address: "アドレス",
+      hostname: "名前",
+      fingerprint: "ホスト鍵のフィンガープリント",
+      expires: "リンクの期限",
+      role: "このデバイスのロール",
+      serverId: "サーバー ID",
+    },
+    roles: {
+      owner: "オーナー",
+      operator: "オペレーター",
+      viewer: "ビューアー",
+    },
+    verify: {
+      pending: "ホストの身元を確認中…",
+      verifiedTitle: "身元を確認しました",
+      verifiedBody:
+        "このアドレスのホストは、上のフィンガープリントに対応する鍵を保持していることを証明しました。",
+      unreachableTitle: "ホストが応答しませんでした",
+      refusedTitle: "拒否: リンクが指すホストではありません",
+      reasons: {
+        fingerprintMismatch:
+          "ホストの鍵がリンクのフィンガープリントと一致しません。続行しないでください。",
+        proofInvalid:
+          "ホストは自身の鍵を保持していることを証明できませんでした。続行しないでください。",
+        keyChanged:
+          "このサーバーはすでに別の鍵で登録されています。ホストが再インストールされたか、何かがなりすましています。",
+      },
+    },
+    expiredTitle: "このリンクは期限切れです",
+    expiredBody: "新しいペアリングリンクを依頼して、もう一度お試しください。",
+    errorTitle: "ペアリングに失敗しました",
+    invalidTitle: "認識できないペアリングリンク",
+    invalidBody: "このリンクは、このアプリが理解できるペアリングリンクではありません。",
+    actions: {
+      pair: "ペアリング",
+      claim: "このホストの所有権を取得",
+      cancel: "キャンセル",
+      retryVerification: "再試行",
+    },
+  },
+  presence: {
+    label: "同席中",
+    loading: "ほかに誰がいるか確認中…",
+    unknownDevice: "不明なデバイス",
+    accessibilityLabel: "このセッションにいるほかの人",
+    overflow_one: "ほか +{{count}}",
+    overflow_other: "ほか +{{count}}",
+    stale: "最新でない可能性があります",
+    activity: {
+      viewing: "{{name}} が閲覧中",
+      typing: "{{name}} が入力中",
+      sending: "{{name}} が送信中",
+      input: "{{name}} がここに入力中",
+      idle: "{{name}} は待機中",
+    },
+    composer: {
+      warningOne: "{{name}} もこれに取り組んでいます。",
+      warningMany_one: "{{name}} ほか {{count}} 人もこれに取り組んでいます。",
+      warningMany_other: "{{name}} ほか {{count}} 人もこれに取り組んでいます。",
+    },
+  },
   pairing: {
     connectionMethods: {
       title: "接続を追加",
@@ -2532,6 +2747,7 @@ export const ja: TranslationResources = {
       sendFailedTitle: "テスト通知を送信できません",
     },
     hostSections: {
+      devices: "デバイス",
       projects: "プロジェクト",
       connections: "接続",
       agents: "エージェント",

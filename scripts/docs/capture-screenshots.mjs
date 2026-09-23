@@ -72,7 +72,16 @@ const terminalShots = {
   },
 };
 
-/** Web UI shots. `path` is relative to the daemon URL; `{serverId}` is substituted. */
+/**
+ * Web UI shots. `path` is relative to the daemon URL; `{serverId}` is substituted.
+ *
+ * Two docs images are not here because neither can be produced from a single
+ * page of a freshly seeded daemon: `app/pair-confirm-claim` needs a pairing
+ * link carrying that daemon's live key fingerprint, and `app/session-presence`
+ * needs a second connection reporting presence on the same agent. Recapture
+ * them with `npm run preview` and `npm run shot` (see the pairing and presence
+ * sections of the docs for the exact URLs).
+ */
 const webShots = {
   "app/home": { path: "/" },
   "app/agent-timeline": {
@@ -98,6 +107,23 @@ const webShots = {
     path: "/settings/hosts/{serverId}/pair-device",
     crop: "dialog",
     steps: (page) => clickText(page, "Pair a device"),
+  },
+  "app/host-devices": { path: "/settings/hosts/{serverId}/devices", crop: "dialog" },
+  "app/pairing-code": {
+    path: "/settings/hosts/{serverId}/devices",
+    crop: "dialog",
+    steps: async (page) => {
+      await page.getByTestId("pairing-code-generate").click();
+      await page.getByTestId("pairing-code-result").waitFor();
+    },
+  },
+  "app/pair-with-code": {
+    path: "/settings/general?addHost=1",
+    crop: "dialog",
+    steps: async (page) => {
+      await page.getByTestId("add-host-method-pair-code").click();
+      await page.getByTestId("pairing-code-entry").waitFor();
+    },
   },
   "app/connections": { path: "/settings/hosts/{serverId}/connections", crop: "dialog" },
   "app/companion-settings": {

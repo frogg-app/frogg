@@ -1891,6 +1891,8 @@ pub enum SetDaemonConfigRequestConfigHostSettingsHiddenSectionsItem {
     Projects,
     #[serde(rename = "pair-device")]
     PairDevice,
+    #[serde(rename = "devices")]
+    Devices,
     #[serde(rename = "agents")]
     Agents,
     #[serde(rename = "providers")]

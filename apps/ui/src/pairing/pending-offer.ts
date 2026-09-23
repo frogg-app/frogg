@@ -1,32 +1,104 @@
+import { brand } from "@frogg/branding";
 import { extractPairingCode, hasOfferFragment } from "@frogg/protocol/connection-offer";
+import { parseDirectPairingDeepLink, type DirectPairingLink } from "@frogg/protocol/device-access";
+
+/**
+ * The two shapes a pairing link can take once it has been recognised: the
+ * connection-offer payload (v2 relay, v3 claim) carried in an `#offer=`
+ * fragment, and the `<scheme>://pair/direct?…` deep link `<cli> pair` prints.
+ */
+export type PendingPairTarget =
+  | { kind: "offer"; url: string }
+  | { kind: "direct"; link: DirectPairingLink };
 
 /**
  * A pairing link that arrived from outside the app (web URL, native
  * `Linking`, desktop deep link) waits here until the `/pair-offer` screen
  * picks it up. Kept in memory only: the payload carries a single-use claim
- * token and must not be persisted or put in a route parameter.
+ * token or pairing code and must not be persisted or put in a route
+ * parameter. The slot holds one target and reading it clears it.
  */
-let pendingOfferUrl: string | null = null;
+let pendingTarget: PendingPairTarget | null = null;
 const listeners = new Set<() => void>();
 
-export function setPendingOfferUrl(url: string): void {
-  pendingOfferUrl = url;
+function notify(): void {
   for (const listener of listeners) listener();
 }
 
+export function setPendingPairTarget(target: PendingPairTarget): void {
+  pendingTarget = target;
+  notify();
+}
+
+export function takePendingPairTarget(): PendingPairTarget | null {
+  const target = pendingTarget;
+  pendingTarget = null;
+  return target;
+}
+
+export function peekPendingPairTarget(): PendingPairTarget | null {
+  return pendingTarget;
+}
+
+export function clearPendingPairTarget(): void {
+  pendingTarget = null;
+  notify();
+}
+
+export function setPendingOfferUrl(url: string): void {
+  setPendingPairTarget({ kind: "offer", url });
+}
+
+/** Legacy accessor: consumes the slot, and yields a URL only for offer links. */
 export function takePendingOfferUrl(): string | null {
-  const url = pendingOfferUrl;
-  pendingOfferUrl = null;
-  return url;
+  const target = takePendingPairTarget();
+  return target?.kind === "offer" ? target.url : null;
 }
 
 export function peekPendingOfferUrl(): string | null {
-  return pendingOfferUrl;
+  return pendingTarget?.kind === "offer" ? pendingTarget.url : null;
 }
 
-export function subscribePendingOffer(listener: () => void): () => void {
+export function subscribePendingPairTarget(listener: () => void): () => void {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** Legacy alias. */
+export const subscribePendingOffer = subscribePendingPairTarget;
+
+/**
+ * The web build never sees a `<scheme>://` URL — a browser will not navigate
+ * to one — so the same link is also accepted as a `#pair/direct?…` fragment on
+ * an ordinary https page. The parameters are identical; only the envelope
+ * differs, and the parsing stays in the protocol package.
+ */
+const DIRECT_PAIRING_FRAGMENT = "#pair/direct?";
+
+export function parseDirectPairingFragment(url: string): DirectPairingLink | null {
+  const index = url.indexOf(DIRECT_PAIRING_FRAGMENT);
+  if (index === -1) return null;
+  const params = url.slice(index + DIRECT_PAIRING_FRAGMENT.length);
+  return parseDirectPairingDeepLink(`${brand.scheme}://pair/direct?${params}`, brand.scheme);
+}
+
+/**
+ * Recognises every pairing link the app accepts from outside. Direct pairing
+ * deep links are tried first (under the brand scheme and the literal `frogg`
+ * scheme, as host-add links are), then the offer forms.
+ */
+export function extractPairTarget(url: string | null | undefined): PendingPairTarget | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  const link =
+    parseDirectPairingDeepLink(trimmed, brand.scheme) ??
+    parseDirectPairingDeepLink(trimmed, "frogg") ??
+    parseDirectPairingFragment(trimmed);
+  if (link) return { kind: "direct", link };
+  const offer = extractOfferLink(trimmed);
+  return offer ? { kind: "offer", url: offer } : null;
 }
 
 /**
