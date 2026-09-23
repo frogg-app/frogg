@@ -1,5 +1,7 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { seedClaudeModelCatalog } from "../test-utils.js";
 
 import { ClaudeTaskProtocolSource } from "./live-source.js";
 
@@ -48,6 +50,10 @@ function taskProgress(usage: Record<string, number>, taskId = "a1730a6215e1f5cf6
     last_tool_name: "Read",
   } as unknown as SDKMessage;
 }
+
+beforeEach(() => {
+  seedClaudeModelCatalog();
+});
 
 describe("ClaudeTaskProtocolSource", () => {
   it("declares a subagent from its announcement, keyed by the Task tool_use id", () => {

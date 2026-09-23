@@ -89,6 +89,12 @@ Providers distributed as npm packages â€” Claude, Codex, Copilot and OpenCode â€
 are the ones Frogg can install. Anything else is reported as *Managed outside
 Frogg*, with a link to the vendor's own instructions.
 
+Several of these also ship a native or standalone installer that puts the binary
+outside npm's reach. Frogg updates whichever copy is on your `PATH`: when that
+copy did not come from npm it runs the CLI's own updater (`codex update`,
+`claude update`, `opencode upgrade`) instead of installing a second copy npm
+would own and nothing would run.
+
 ### Automatic updates
 
 The daemon checks for newer releases in the background and, if you opt in,

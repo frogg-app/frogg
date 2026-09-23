@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+
+import { seedClaudeModelCatalog } from "./providers/claude/test-utils.js";
 import type { ToolPolicy } from "@frogg/protocol/agent-types";
 
 import { createTestLogger } from "../../test-utils/test-logger.js";
@@ -1525,6 +1527,9 @@ describe("model merging", () => {
   });
 
   test("Claude configured models can override or disable inferred thinking options", async () => {
+    // Inference reads the catalog the installed CLI reported, so this says what
+    // it reported.
+    seedClaudeModelCatalog();
     const registry = buildProviderRegistry(logger, {
       providerOverrides: {
         claude: {
@@ -1555,7 +1560,7 @@ describe("model merging", () => {
       models
         .find((model) => model.id === "claude-sonnet-5")
         ?.thinkingOptions?.map((option) => option.id),
-    ).toEqual(["off", "low", "medium", "high", "xhigh", "max", "ultracode"]);
+    ).toEqual(["off", "low", "medium", "high", "max"]);
     expect(models.find((model) => model.id === "claude-opus-5")?.thinkingOptions).toEqual([]);
     expect(models.find((model) => model.id === "custom-explicit")).toMatchObject({
       thinkingOptions: [{ id: "bespoke", label: "Bespoke", isDefault: true }],

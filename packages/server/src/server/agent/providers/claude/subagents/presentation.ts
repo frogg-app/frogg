@@ -1,4 +1,4 @@
-import { findClaudeModel } from "../models.js";
+import { resolveClaudeModelLabel } from "../models.js";
 
 export interface ClaudeSubagentUsage {
   totalTokens?: number;
@@ -32,7 +32,7 @@ function readPart(value: string | undefined): string | undefined {
 function formatModel(modelId: string | undefined): string | undefined {
   const normalized = readPart(modelId);
   if (!normalized) return undefined;
-  return findClaudeModel(normalized)?.label ?? normalized;
+  return resolveClaudeModelLabel(normalized);
 }
 
 function formatEffort(effort: string | undefined): string | undefined {

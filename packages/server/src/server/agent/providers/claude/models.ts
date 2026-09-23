@@ -4,12 +4,20 @@ import * as path from "node:path";
 import type { Logger } from "pino";
 
 import type { AgentModelDefinition } from "../../agent-sdk-types.js";
+import type { ProviderRuntimeSettings } from "../../provider-launch-config.js";
 import {
+  buildClaudeModelDefinitions,
+  buildClaudeThinkingOptions,
   getClaudeCustomModelThinkingOptions,
-  getClaudeManifestModels,
-  normalizeClaudeManifestModelId,
-  normalizeClaudeRuntimeModelId as normalizeClaudeManifestRuntimeModelId,
-} from "./model-manifest.js";
+  lookupClaudeModelByAnyId,
+  lookupClaudeModelCapabilities,
+  lookupClaudeModelLabel,
+} from "./model-catalog.js";
+import {
+  fetchClaudeSupportedModels,
+  type FetchClaudeSupportedModelsOptions,
+} from "./model-catalog-fetch.js";
+import type { ClaudeQueryFactory } from "./query.js";
 
 const CLAUDE_SETTINGS_MODEL_ENV_KEYS = [
   "ANTHROPIC_MODEL",
@@ -19,61 +27,71 @@ const CLAUDE_SETTINGS_MODEL_ENV_KEYS = [
   "ANTHROPIC_DEFAULT_HAIKU_MODEL",
 ] as const;
 
-export function getClaudeModels(claudeCodeVersion?: string): AgentModelDefinition[] {
-  return getClaudeManifestModels(claudeCodeVersion);
+export interface FetchClaudeModelsOptions {
+  logger: Logger;
+  configDir?: string;
+  binaryPath?: string;
+  runtimeSettings?: ProviderRuntimeSettings;
+  launchEnv?: Record<string, string>;
+  queryFactory?: ClaudeQueryFactory;
+  signal?: AbortSignal;
+  /** Test seam — defaults to a real short-lived control-plane query. */
+  fetchSupportedModels?: (
+    options: FetchClaudeSupportedModelsOptions,
+  ) => Promise<Awaited<ReturnType<typeof fetchClaudeSupportedModels>>>;
 }
 
-export function resolveConfiguredClaudeModel(model: AgentModelDefinition): AgentModelDefinition {
-  if (model.thinkingOptions !== undefined) return model;
-
-  const manifestModelId = normalizeClaudeManifestModelId(model.id);
-  const manifestModel = manifestModelId
-    ? getClaudeModels().find((candidate) => candidate.id === manifestModelId)
-    : undefined;
-  if (manifestModel) {
-    return manifestModel.thinkingOptions
-      ? { ...model, thinkingOptions: manifestModel.thinkingOptions }
-      : model;
-  }
-  return { ...model, thinkingOptions: getClaudeCustomModelThinkingOptions() };
-}
-
-export function findClaudeModel(
-  modelId: string | null | undefined,
-): AgentModelDefinition | undefined {
-  const normalizedModelId = normalizeClaudeRuntimeModelId(modelId);
-  if (!normalizedModelId) {
-    return undefined;
-  }
-  return getClaudeModels().find((model) => model.id === normalizedModelId);
-}
-
-export async function getClaudeModelsWithSettings(
-  logger: Logger,
-  configDir?: string,
-  claudeCodeVersion?: string,
+/**
+ * The models this host can run: whatever the installed Claude Code reports,
+ * plus any model named in the user's `settings.json` that the CLI did not list.
+ */
+export async function fetchClaudeModels(
+  options: FetchClaudeModelsOptions,
 ): Promise<AgentModelDefinition[]> {
-  const hardcodedModels = getClaudeModels(claudeCodeVersion);
-  const settingsModels = await readClaudeSettingsModels(logger, configDir);
-  if (settingsModels.length === 0) {
-    return hardcodedModels;
-  }
+  const fetchSupported = options.fetchSupportedModels ?? fetchClaudeSupportedModels;
+  const reported = await fetchSupported({
+    logger: options.logger,
+    ...(options.binaryPath ? { binaryPath: options.binaryPath } : {}),
+    ...(options.runtimeSettings ? { runtimeSettings: options.runtimeSettings } : {}),
+    ...(options.launchEnv ? { launchEnv: options.launchEnv } : {}),
+    ...(options.queryFactory ? { queryFactory: options.queryFactory } : {}),
+    ...(options.signal ? { signal: options.signal } : {}),
+  });
+  const models = buildClaudeModelDefinitions(reported);
 
-  const models = [...hardcodedModels];
-
-  for (const model of settingsModels) {
-    const existingIndex = models.findIndex((candidate) => candidate.id === model.id);
-    if (existingIndex !== -1) {
-      const existing = models[existingIndex];
-      if (existing?.isSelectable === false) {
-        models[existingIndex] = { ...existing, ...model, isSelectable: true };
-      }
+  for (const settingsModel of await readClaudeSettingsModels(options.logger, options.configDir)) {
+    const existingIndex = models.findIndex(
+      (candidate) =>
+        candidate.id === settingsModel.id || candidate.aliases?.includes(settingsModel.id),
+    );
+    if (existingIndex === -1) {
+      models.push(settingsModel);
       continue;
     }
-    models.push(model);
+    // A configured model the CLI also lists keeps the CLI's own row; it only
+    // needs to become selectable if the catalog had hidden it.
+    const existing = models[existingIndex];
+    if (existing?.isSelectable === false) {
+      models[existingIndex] = { ...existing, isSelectable: true };
+    }
   }
 
   return models;
+}
+
+/**
+ * Fill in the thinking options a configured model did not state for itself.
+ *
+ * A model the CLI described gets that model's own options; anything else gets
+ * the generic set, since a custom or gateway model's efforts are unknown.
+ */
+export function resolveConfiguredClaudeModel(model: AgentModelDefinition): AgentModelDefinition {
+  if (model.thinkingOptions !== undefined) return model;
+  const capabilities = lookupClaudeModelCapabilities(model.id);
+  const reported = capabilities
+    ? buildClaudeThinkingOptions(capabilities.effortLevels, capabilities.supportsThinkingDisabled)
+    : undefined;
+  return { ...model, thinkingOptions: reported ?? getClaudeCustomModelThinkingOptions() };
 }
 
 async function readClaudeSettingsModels(
@@ -146,14 +164,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Normalize a runtime model string (from SDK init message) to a known model ID.
- * Handles the `[1m]` suffix that the SDK appends for 1M context sessions.
- */
-export function normalizeClaudeRuntimeModelId(value: string | null | undefined): string | null {
-  return normalizeClaudeManifestRuntimeModelId(value);
-}
-
-/**
  * Placeholder model values Claude Code writes on frames with no real inference behind them.
  * These are not models and must never be displayed.
  */
@@ -162,15 +172,12 @@ const CLAUDE_PLACEHOLDER_MODEL_IDS = new Set(["<synthetic>"]);
 /**
  * Resolve a model id observed on a Claude assistant frame, for display.
  *
- * Prefers the manifest-normalized id so equivalent spellings collapse (a dated alias and a
- * gateway prefix are the same model), but falls back to the raw string when the manifest does
- * not know it. The fallback matters: Claude Code is an Anthropic-compatible client, so subagents
- * routinely report models that are not Anthropic's — Z.AI GLM ids via `ANTHROPIC_BASE_URL`
- * (agents-and-providers/custom-providers.mdx) among them. Manifest-only resolution would blank the model for
- * exactly those users.
- *
- * A `[1m]` suffix is preserved where it names its own manifest entry. Models such as Fable 5
- * that only have a 1M entry normalize the retired suffixed spelling to the canonical ID.
+ * Collapses to the catalog's own id when the observed string names a model the
+ * CLI reported — a dated alias and a gateway prefix are the same model — and
+ * otherwise keeps the raw string. The fallback matters: Claude Code is an
+ * Anthropic-compatible client, so subagents routinely report models that are
+ * not Anthropic's (Z.AI GLM ids via `ANTHROPIC_BASE_URL`, among them), and
+ * dropping those would blank the model for exactly those users.
  *
  * Returns null for placeholders and empty values, meaning "not observed".
  */
@@ -179,5 +186,19 @@ export function resolveObservedClaudeModelId(value: string | null | undefined): 
   if (!trimmed || CLAUDE_PLACEHOLDER_MODEL_IDS.has(trimmed)) {
     return null;
   }
-  return normalizeClaudeManifestRuntimeModelId(trimmed) ?? trimmed;
+  return normalizeClaudeRuntimeModelId(trimmed) ?? trimmed;
+}
+
+/**
+ * Normalize a runtime model string (from an SDK init message, or a provider
+ * prefixed wire id) to the id the catalog knows it by.
+ */
+export function normalizeClaudeRuntimeModelId(value: string | null | undefined): string | null {
+  const capabilities = lookupClaudeModelByAnyId(value);
+  return capabilities?.ids[0] ?? null;
+}
+
+/** The catalog's display label for a model id, falling back to the id itself. */
+export function resolveClaudeModelLabel(modelId: string): string {
+  return lookupClaudeModelLabel(modelId) ?? modelId;
 }

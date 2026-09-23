@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { seedClaudeModelCatalog } from "../test-utils.js";
 
 import { ProviderSubagentStore } from "../../../provider-subagents/store.js";
 import { foldSubagentObservations } from "./observation.js";
@@ -33,6 +35,10 @@ function parentEntries(
     },
   ];
 }
+
+beforeEach(() => {
+  seedClaudeModelCatalog();
+});
 
 describe("Claude workflow replay", () => {
   it("parses the persisted run summary observed from Claude Code 2.1.220", () => {

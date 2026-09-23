@@ -1,5 +1,7 @@
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { seedClaudeModelCatalog } from "../test-utils.js";
 
 import {
   ProviderSubagentStore,
@@ -43,6 +45,10 @@ function applyToStore(observations: SubagentObservation[]): ProviderSubagentDesc
   }
   return descriptor;
 }
+
+beforeEach(() => {
+  seedClaudeModelCatalog();
+});
 
 describe("parseClaudeSubagentMeta", () => {
   it("reads the real sidecar shape", () => {

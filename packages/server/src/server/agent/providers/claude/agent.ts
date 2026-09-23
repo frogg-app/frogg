@@ -31,17 +31,18 @@ import {
   readTaskNotificationToolUseIdFromHistoryRecord,
 } from "./task-notification-tool-call.js";
 import {
-  findClaudeModel,
-  getClaudeModelsWithSettings,
+  fetchClaudeModels,
   normalizeClaudeRuntimeModelId,
   resolveConfiguredClaudeModel,
 } from "./models.js";
 import {
   CLAUDE_DISABLED_THINKING_OPTION_ID,
   CLAUDE_ULTRACODE_THINKING_OPTION_ID,
-  parseClaudeCodeVersion,
+  lookupClaudeContextWindow,
+  recordClaudeContextWindow,
   resolveClaudeDisabledThinkingForModel,
-} from "./model-manifest.js";
+} from "./model-catalog.js";
+import { parseClaudeCodeVersion } from "./claude-code-version.js";
 import { parsePartialJsonObject } from "./partial-json.js";
 import { ClaudeSidechainTracker } from "./sidechain-tracker.js";
 import { ClaudeTaskState } from "./task-state.js";
@@ -408,7 +409,6 @@ interface ClaudeAgentClientOptions {
   runtimeSettings?: ProviderRuntimeSettings;
   queryFactory?: ClaudeQueryFactory;
   resolveBinary?: () => Promise<string>;
-  resolveVersion?: (signal?: AbortSignal) => Promise<string>;
   configDir?: string;
 }
 
@@ -1512,7 +1512,6 @@ export class ClaudeAgentClient implements AgentClient {
   private readonly runtimeSettings?: ProviderRuntimeSettings;
   private readonly queryFactory?: ClaudeQueryFactory;
   private readonly resolveBinary: () => Promise<string>;
-  private readonly resolveVersion: (signal?: AbortSignal) => Promise<string>;
   private readonly configDir?: string;
 
   constructor(options: ClaudeAgentClientOptions) {
@@ -1521,9 +1520,6 @@ export class ClaudeAgentClient implements AgentClient {
     this.runtimeSettings = options.runtimeSettings;
     this.queryFactory = options.queryFactory;
     this.resolveBinary = options.resolveBinary ?? (() => resolveClaudeBinary(this.runtimeSettings));
-    this.resolveVersion =
-      options.resolveVersion ??
-      ((signal) => resolveClaudeCodeVersion(this.runtimeSettings, signal));
     this.configDir = options.configDir;
   }
 
@@ -1582,16 +1578,21 @@ export class ClaudeAgentClient implements AgentClient {
     context?: ProviderRefreshContext,
   ): Promise<ProviderCatalog> {
     // Claude exposes a global catalog here; cwd/force are intentionally irrelevant.
-    let claudeCodeVersion: string | undefined;
-    try {
-      claudeCodeVersion = await runProviderRefreshActivity(context, "version", () =>
-        this.resolveVersion(context?.signal),
-      );
-    } catch (error) {
-      this.logger.warn({ err: error }, "Failed to resolve Claude Code version for model catalog");
-    }
-    const models = await runProviderRefreshActivity(context, "settings", () =>
-      getClaudeModelsWithSettings(this.logger, this.configDir, claudeCodeVersion),
+    // The installed CLI is the only source: it reports the models it accepts and
+    // what each one supports, so nothing about this list is maintained in-repo.
+    const binaryPath = await this.resolveBinary().catch((error: unknown) => {
+      this.logger.debug({ err: error }, "Claude binary not resolved for the model catalog");
+      return undefined;
+    });
+    const models = await runProviderRefreshActivity(context, "models", () =>
+      fetchClaudeModels({
+        logger: this.logger,
+        ...(binaryPath ? { binaryPath } : {}),
+        ...(this.configDir ? { configDir: this.configDir } : {}),
+        ...(this.runtimeSettings ? { runtimeSettings: this.runtimeSettings } : {}),
+        ...(this.queryFactory ? { queryFactory: this.queryFactory } : {}),
+        ...(context?.signal ? { signal: context.signal } : {}),
+      }),
     );
     const modeCatalog = claudeModeCatalog(
       createProviderEnv({
@@ -1968,13 +1969,15 @@ function readClaudeParentToolUseId(message: SDKMessage): string | null {
 }
 
 class ClaudeContextUsageState {
+  private modelId: string | null | undefined;
   private contextWindowMaxTokens: number | undefined;
   private streamRequestInputTokens: number | undefined;
   private streamRequestOutputTokens: number | undefined;
   private compactedContextWindowUsedTokens: number | undefined;
   private completedResultTurns = 0;
 
-  constructor(initialContextWindowMaxTokens?: number) {
+  constructor(modelId: string | null | undefined, initialContextWindowMaxTokens?: number) {
+    this.modelId = modelId;
     this.contextWindowMaxTokens = initialContextWindowMaxTokens;
   }
 
@@ -1984,7 +1987,8 @@ class ClaudeContextUsageState {
     this.compactedContextWindowUsedTokens = undefined;
   }
 
-  setInitialContextWindowMaxTokens(contextWindowMaxTokens: number | undefined): void {
+  setModel(modelId: string | null | undefined, contextWindowMaxTokens: number | undefined): void {
+    this.modelId = modelId;
     this.contextWindowMaxTokens = contextWindowMaxTokens;
   }
 
@@ -1992,6 +1996,10 @@ class ClaudeContextUsageState {
     const contextWindowMaxTokens = extractContextWindowSize(modelUsage);
     if (contextWindowMaxTokens !== undefined) {
       this.contextWindowMaxTokens = contextWindowMaxTokens;
+      // The catalog carries no context window — the CLI only reports one with a
+      // turn's usage — so remember it against the model. The next session on
+      // this model then opens with a meter instead of filling one in mid-turn.
+      recordClaudeContextWindow(this.modelId, contextWindowMaxTokens);
     }
     return this.contextWindowMaxTokens;
   }
@@ -2206,7 +2214,8 @@ class ClaudeAgentSession implements AgentSession {
     this.queryFactory = options.queryFactory;
     this.resolveBinary = options.resolveBinary;
     this.contextUsage = new ClaudeContextUsageState(
-      findClaudeModel(this.config.model)?.contextWindowMaxTokens,
+      this.config.model,
+      lookupClaudeContextWindow(this.config.model),
     );
     const handle = options.handle;
 
@@ -2518,9 +2527,7 @@ class ClaudeAgentSession implements AgentSession {
     if (!claudeModelSupportsFastMode(this.config.model) && this.config.featureValues?.fast_mode) {
       await this.applyFastModeFeature(false, activeQuery);
     }
-    this.contextUsage.setInitialContextWindowMaxTokens(
-      findClaudeModel(this.config.model)?.contextWindowMaxTokens,
-    );
+    this.contextUsage.setModel(this.config.model, lookupClaudeContextWindow(this.config.model));
     this.lastOptionsModel = normalizedModelId ?? this.lastOptionsModel;
     this.lastRuntimeModel = null;
     this.cachedRuntimeInfo = null;

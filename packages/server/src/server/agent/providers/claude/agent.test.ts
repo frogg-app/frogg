@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { PermissionResult, SDKMessage, SDKUserMessage } from "@anthropic-ai/claude-agent-sdk";
 
 import { createTestLogger } from "../../../../test-utils/test-logger.js";
@@ -17,6 +17,10 @@ import {
   toClaudeSdkMcpConfig,
 } from "./agent.js";
 import { claudeProjectDirSync } from "./project-dir.js";
+import { claudeModelInfo, SAMPLE_CLAUDE_MODELS, seedClaudeModelCatalog } from "./test-utils.js";
+import { lookupClaudeContextWindow, resetClaudeModelCapabilitiesForTest } from "./model-catalog.js";
+import { claudeModelSupportsFastMode } from "./feature-definitions.js";
+import type { ClaudeQueryFactory } from "./query.js";
 import { streamSession } from "../test-utils/session-stream-adapter.js";
 import type { AgentSession, AgentTimelineItem, AgentStreamEvent } from "../../agent-sdk-types.js";
 
@@ -408,107 +412,114 @@ describe("convertClaudeHistoryEntry", () => {
 
 describe("ClaudeAgentClient.fetchCatalog", () => {
   const logger = createTestLogger();
+  let configDir = "";
 
-  test("returns hardcoded claude models", async () => {
-    const emptyConfigDir = await fs.mkdtemp(path.join(os.tmpdir(), "frogg-claude-models-empty-"));
-    try {
-      const client = new ClaudeAgentClient({
-        logger,
-        resolveBinary: async () => "/test/claude/bin",
-        resolveVersion: async () => "2.1.219",
-        configDir: emptyConfigDir,
-      });
-      const { models } = await client.fetchCatalog({
-        scope: "workspace",
-        cwd: "/tmp/claude-models",
-        force: false,
-      });
-
-      expect(models.map((m) => m.id)).toEqual([
-        "claude-opus-5",
-        "claude-fable-5-1",
-        "claude-fable-5",
-        "claude-fable-5[1m]",
-        "claude-opus-4-8[1m]",
-        "claude-opus-4-8",
-        "claude-sonnet-5",
-        "claude-sonnet-5[1m]",
-        "claude-opus-4-7[1m]",
-        "claude-opus-4-7",
-        "claude-opus-4-6[1m]",
-        "claude-opus-4-6",
-        "claude-sonnet-4-6[1m]",
-        "claude-sonnet-4-6",
-        "claude-haiku-4-5",
-      ]);
-      expect(models.find((model) => model.id === "claude-fable-5[1m]")?.isSelectable).toBe(false);
-
-      for (const model of models) {
-        expect(model.provider).toBe("claude");
-        expect(model.label.length).toBeGreaterThan(0);
-      }
-
-      const defaultModel = models.find((m) => m.isDefault);
-      expect(defaultModel?.id).toBe("claude-opus-5");
-    } finally {
-      await fs.rm(emptyConfigDir, { recursive: true, force: true });
-    }
+  beforeEach(async () => {
+    seedClaudeModelCatalog();
+    configDir = await fs.mkdtemp(path.join(os.tmpdir(), "frogg-claude-models-empty-"));
   });
 
-  test("preserves the catalog when Claude Code version detection fails", async () => {
-    const emptyConfigDir = await fs.mkdtemp(path.join(os.tmpdir(), "frogg-claude-models-empty-"));
-    try {
-      const client = new ClaudeAgentClient({
-        logger,
-        resolveVersion: async () => {
-          throw new Error("unrecognized version output");
-        },
-        configDir: emptyConfigDir,
-      });
-      const { models } = await client.fetchCatalog({
-        scope: "workspace",
-        cwd: "/tmp/claude-models",
-        force: false,
-      });
-
-      expect(models.find((model) => model.isDefault)?.id).toBe("claude-opus-5");
-      expect(models.map((model) => model.id)).toContain("claude-fable-5");
-    } finally {
-      await fs.rm(emptyConfigDir, { recursive: true, force: true });
-    }
+  afterEach(async () => {
+    await fs.rm(configDir, { recursive: true, force: true });
   });
 
-  test("exposes Ultra Code on xhigh-capable Claude models", async () => {
-    const emptyConfigDir = await fs.mkdtemp(path.join(os.tmpdir(), "frogg-claude-models-empty-"));
-    try {
-      const client = new ClaudeAgentClient({
+  function catalogClient(models = SAMPLE_CLAUDE_MODELS) {
+    const supportedModels = vi.fn(async () => models);
+    const queryFactory = vi.fn(() => ({
+      supportedModels,
+      close: vi.fn(),
+      return: vi.fn(async () => undefined),
+    })) as unknown as ClaudeQueryFactory;
+    return {
+      supportedModels,
+      client: new ClaudeAgentClient({
         logger,
         resolveBinary: async () => "/test/claude/bin",
-        resolveVersion: async () => "2.1.219",
-        configDir: emptyConfigDir,
-      });
-      const { models } = await client.fetchCatalog({
-        scope: "workspace",
-        cwd: "/tmp/claude-models",
-        force: false,
-      });
-      const getThinkingIds = (modelId: string) => {
-        return models.find((model) => model.id === modelId)?.thinkingOptions?.map(({ id }) => id);
-      };
+        queryFactory,
+        configDir,
+      }),
+    };
+  }
 
-      expect(getThinkingIds("claude-opus-5")).toContain("ultracode");
-      expect(getThinkingIds("claude-fable-5-1")).toContain("ultracode");
-      expect(getThinkingIds("claude-fable-5")).toContain("ultracode");
-      expect(getThinkingIds("claude-opus-4-8[1m]")).toContain("ultracode");
-      expect(getThinkingIds("claude-opus-4-8")).toContain("ultracode");
-      expect(getThinkingIds("claude-sonnet-5")).toContain("xhigh");
-      expect(getThinkingIds("claude-sonnet-5")).toContain("ultracode");
-      expect(getThinkingIds("claude-opus-4-7[1m]")).toContain("ultracode");
-      expect(getThinkingIds("claude-opus-4-7")).toContain("ultracode");
-      expect(getThinkingIds("claude-sonnet-4-6")).not.toContain("ultracode");
-    } finally {
-      await fs.rm(emptyConfigDir, { recursive: true, force: true });
+  function fetchCatalog(client: ClaudeAgentClient) {
+    return client.fetchCatalog({ scope: "workspace", cwd: "/tmp/claude-models", force: false });
+  }
+
+  const idsOf = (models: AgentModelDefinition[]) => models.map((model) => model.id);
+  const thinkingIdsOf = (models: AgentModelDefinition[], modelId: string) =>
+    models.find((model) => model.id === modelId)?.thinkingOptions?.map((option) => option.id);
+
+  test("reports exactly the models the installed CLI lists", async () => {
+    const { client, supportedModels } = catalogClient();
+
+    const { models } = await fetchCatalog(client);
+
+    expect(supportedModels).toHaveBeenCalledTimes(1);
+    expect(idsOf(models)).toEqual([
+      "claude-opus-5",
+      "claude-opus-4-8[1m]",
+      "claude-fable-5",
+      "claude-sonnet-5",
+      "claude-haiku-4-5",
+    ]);
+    for (const model of models) {
+      expect(model.provider).toBe("claude");
+      expect(model.label.length).toBeGreaterThan(0);
     }
+    // The CLI lists its preferred model first.
+    expect(models.find((model) => model.isDefault)?.id).toBe("claude-opus-5");
+  });
+
+  test("carries a new model through without any change to this repo", async () => {
+    const { client } = catalogClient([
+      claudeModelInfo({
+        value: "claude-opus-9",
+        displayName: "Opus 9",
+        description: "Opus 9 · Latest release",
+        supportsEffort: true,
+        supportedEffortLevels: ["low", "high", "xhigh"],
+        supportsAdaptiveThinking: true,
+      }),
+    ]);
+
+    const { models } = await fetchCatalog(client);
+
+    expect(idsOf(models)).toEqual(["claude-opus-9"]);
+    expect(models[0].label).toBe("Opus 9");
+    expect(thinkingIdsOf(models, "claude-opus-9")).toEqual([
+      "off",
+      "low",
+      "high",
+      "xhigh",
+      "ultracode",
+    ]);
+  });
+
+  test("takes effort levels, fast mode and Ultra Code from what the CLI reports", async () => {
+    const { client } = catalogClient();
+
+    const { models } = await fetchCatalog(client);
+
+    expect(thinkingIdsOf(models, "claude-opus-5")).toContain("ultracode");
+    expect(thinkingIdsOf(models, "claude-opus-4-8[1m]")).toContain("ultracode");
+    // Sonnet 5 reports no xhigh, so it gets no Ultra Code.
+    expect(thinkingIdsOf(models, "claude-sonnet-5")).not.toContain("xhigh");
+    expect(thinkingIdsOf(models, "claude-sonnet-5")).not.toContain("ultracode");
+    // Haiku reports no effort support at all, so it gets no thinking options.
+    expect(thinkingIdsOf(models, "claude-haiku-4-5")).toBeUndefined();
+
+    expect(claudeModelSupportsFastMode("claude-opus-5")).toBe(true);
+    expect(claudeModelSupportsFastMode("claude-sonnet-5")).toBe(false);
+  });
+
+  test("keeps the canonical wire id as an alias of the row that resolves it", async () => {
+    const { client } = catalogClient();
+
+    const { models } = await fetchCatalog(client);
+
+    expect(models.find((model) => model.id === "claude-opus-4-8[1m]")?.aliases).toEqual([
+      "claude-opus-4-8",
+    ]);
   });
 });
 
@@ -613,6 +624,12 @@ describe("ClaudeAgentClient binary resolution", () => {
 
 describe("ClaudeAgentSession features", () => {
   const logger = createTestLogger();
+
+  // Capability gates read the catalog the installed CLI reported, so these
+  // tests have to say what it reported.
+  beforeEach(() => {
+    seedClaudeModelCatalog();
+  });
 
   function createQueryMock() {
     let endQuery: (() => void) | null = null;
@@ -2533,7 +2550,10 @@ describe("ClaudeAgentSession context window usage", () => {
     }
   });
 
-  test("selected Claude models seed active context window usage with max tokens", async () => {
+  test("reports the context window the turn's own usage names", async () => {
+    // The window arrives with the turn's result, which is the only place the
+    // CLI states it; the catalog carries no window of its own.
+    resetClaudeModelCapabilitiesForTest();
     const session = await createSessionForTurns(
       [[createInitMessage(), createMessageStartEvent(), createSuccessResult()]],
       { model: "claude-sonnet-4-6" },
@@ -2544,12 +2564,12 @@ describe("ClaudeAgentSession context window usage", () => {
 
       expect(events).toContainEqual(
         expect.objectContaining({
-          type: "usage_updated",
+          type: "turn_completed",
           provider: "claude",
-          usage: {
+          usage: expect.objectContaining({
             contextWindowMaxTokens: 200_000,
             contextWindowUsedTokens: 150,
-          },
+          }),
         }),
       );
     } finally {
@@ -2557,28 +2577,22 @@ describe("ClaudeAgentSession context window usage", () => {
     }
   });
 
-  test("selected 1M Claude models seed active context window usage from the catalog", async () => {
-    const session = await createSessionForTurns(
+  test("seeds a later session from the window an earlier turn reported", async () => {
+    // Nothing in this repo knows how large a model's context window is — the
+    // catalog does not carry one — so the first turn on a model teaches it and
+    // every session after that opens with a full meter.
+    resetClaudeModelCapabilitiesForTest();
+    const first = await createSessionForTurns(
       [[createInitMessage(), createMessageStartEvent(), createSuccessResult()]],
-      { model: "claude-sonnet-5[1m]" },
+      { model: "claude-sonnet-4-6" },
     );
-
     try {
-      const events = await collectStreamEvents(session);
-
-      expect(events).toContainEqual(
-        expect.objectContaining({
-          type: "usage_updated",
-          provider: "claude",
-          usage: {
-            contextWindowMaxTokens: 1_000_000,
-            contextWindowUsedTokens: 150,
-          },
-        }),
-      );
+      await collectStreamEvents(first);
     } finally {
-      await session.close();
+      await first.close();
     }
+
+    expect(lookupClaudeContextWindow("claude-sonnet-4-6")).toBe(200_000);
   });
 
   test("message_delta stream events update per-request usage", async () => {

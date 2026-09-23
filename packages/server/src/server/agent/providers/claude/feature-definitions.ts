@@ -1,5 +1,5 @@
 import type { AgentFeature, AgentFeatureToggle } from "../../agent-sdk-types.js";
-import { claudeManifestModelSupportsFastMode } from "./model-manifest.js";
+import { lookupClaudeModelCapabilities } from "./model-catalog.js";
 
 export const CLAUDE_FAST_MODE_FEATURE: Omit<AgentFeatureToggle, "value"> = {
   type: "toggle",
@@ -11,7 +11,7 @@ export const CLAUDE_FAST_MODE_FEATURE: Omit<AgentFeatureToggle, "value"> = {
 };
 
 export function claudeModelSupportsFastMode(modelId: string | null | undefined): boolean {
-  return claudeManifestModelSupportsFastMode(modelId);
+  return lookupClaudeModelCapabilities(modelId)?.supportsFastMode === true;
 }
 
 export function buildClaudeFeatures(input: {

@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { seedClaudeModelCatalog } from "../test-utils.js";
 
 import {
   collectWorkflowChildren,
@@ -13,6 +15,10 @@ const WORKFLOW_ID = "toolu_workflow";
 function journal(lines: unknown[]): string {
   return lines.map((line) => JSON.stringify(line)).join("\n");
 }
+
+beforeEach(() => {
+  seedClaudeModelCatalog();
+});
 
 describe("collectWorkflowChildren", () => {
   it("declares a child from its journal start line before any outcome exists", () => {

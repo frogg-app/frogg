@@ -3,6 +3,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { seedClaudeModelCatalog } from "./test-utils.js";
+
 import { createTestLogger } from "../../../../test-utils/test-logger.js";
 import type { AgentStreamEvent } from "../../agent-sdk-types.js";
 import { ClaudeAgentClient } from "./agent.js";
@@ -73,6 +75,10 @@ function sidechainEntry(options: { agentId?: string; stopReason?: string | null 
     },
   });
 }
+
+beforeEach(() => {
+  seedClaudeModelCatalog();
+});
 
 describe("ClaudeAgentSession persisted subagent replay", () => {
   const logger = createTestLogger();
@@ -252,7 +258,6 @@ describe("ClaudeAgentSession persisted subagent replay", () => {
     const client = new ClaudeAgentClient({
       logger,
       queryFactory,
-      resolveVersion: async () => "2.1.220",
     });
     const session = await client.resumeSession(
       { provider: "claude", sessionId: "replay-session" },

@@ -1,8 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
+import { seedClaudeModelCatalog } from "../test-utils.js";
 import { buildClaudeSubagentSubtitle } from "./presentation.js";
 
 describe("buildClaudeSubagentSubtitle", () => {
+  beforeEach(() => {
+    seedClaudeModelCatalog();
+  });
+
   it("formats Claude facts into one compact provider-owned label", () => {
     expect(
       buildClaudeSubagentSubtitle({
@@ -14,7 +19,7 @@ describe("buildClaudeSubagentSubtitle", () => {
     ).toBe("general-purpose · Opus 5 · High · 16.5k tokens");
   });
 
-  it("uses the manifest label for dated and context-window model variants", () => {
+  it("uses the reported label for context-window model variants", () => {
     expect(buildClaudeSubagentSubtitle({ model: "claude-opus-4-8[1m]" })).toBe("Opus 4.8 1M");
   });
 
