@@ -95,6 +95,15 @@
   they are doing. When someone else is active the composer outlines itself in
   amber and names them — a warning, not a block: the composer stays usable.
 
+## 1.5.28 — 2026-09-23
+
+- Nothing user-facing: this release carries the test-infrastructure repair that
+  brought CI back to green. The browser test project had been failing since a
+  mobile Back fix first pulled expo-router into its dependency graph, and the
+  providers settings tests broke when that section started reading provider
+  versions. Both are fixed, so the suite guards releases again rather than
+  being carried red through each one.
+
 ## 1.5.27 — 2026-09-23
 
 - The provider Version card is visible when the sheet opens. It was placed on

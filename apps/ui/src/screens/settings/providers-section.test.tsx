@@ -7,41 +7,49 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProviderSnapshotEntry } from "@frogg/protocol/agent-types";
 import type { MutableDaemonConfig } from "@frogg/protocol/messages";
 
-const { theme, snapshotState, configState, patchConfigMock, openProviderSettingsMock } = vi.hoisted(
-  () => ({
-    theme: {
-      spacing: { 1: 4, "1.5": 6, 2: 8, 3: 12, 4: 16, 6: 24 },
-      iconSize: { sm: 14, md: 20 },
-      fontSize: { xs: 11, sm: 13, base: 15 },
-      fontWeight: { normal: "400" },
-      borderRadius: { lg: 8 },
-      opacity: { 50: 0.5 },
-      colors: {
-        surface1: "#111",
-        surface2: "#222",
-        surface3: "#333",
-        foreground: "#fff",
-        foregroundMuted: "#aaa",
-        border: "#555",
-        accent: "#0a84ff",
-        statusSuccess: "#00ff00",
-        statusWarning: "#ff9500",
-        statusDanger: "#ff0000",
-        palette: { red: { 300: "#ff6b6b" }, white: "#fff" },
-      },
+const {
+  theme,
+  snapshotState,
+  configState,
+  patchConfigMock,
+  openProviderSettingsMock,
+  providerUpdateState,
+} = vi.hoisted(() => ({
+  theme: {
+    spacing: { 1: 4, "1.5": 6, 2: 8, 3: 12, 4: 16, 6: 24 },
+    iconSize: { sm: 14, md: 20 },
+    fontSize: { xs: 11, sm: 13, base: 15 },
+    fontWeight: { normal: "400" },
+    borderRadius: { lg: 8 },
+    opacity: { 50: 0.5 },
+    colors: {
+      surface1: "#111",
+      surface2: "#222",
+      surface3: "#333",
+      foreground: "#fff",
+      foregroundMuted: "#aaa",
+      border: "#555",
+      accent: "#0a84ff",
+      statusSuccess: "#00ff00",
+      statusWarning: "#ff9500",
+      statusDanger: "#ff0000",
+      palette: { red: { 300: "#ff6b6b" }, white: "#fff" },
     },
-    snapshotState: {
-      entries: undefined as ProviderSnapshotEntry[] | undefined,
-      isLoading: false,
-      isRefreshing: false,
-    },
-    configState: {
-      config: null as MutableDaemonConfig | null,
-    },
-    patchConfigMock: vi.fn(async () => undefined),
-    openProviderSettingsMock: vi.fn(),
-  }),
-);
+  },
+  snapshotState: {
+    entries: undefined as ProviderSnapshotEntry[] | undefined,
+    isLoading: false,
+    isRefreshing: false,
+  },
+  configState: {
+    config: null as MutableDaemonConfig | null,
+  },
+  patchConfigMock: vi.fn(async () => undefined),
+  openProviderSettingsMock: vi.fn(),
+  providerUpdateState: {
+    entries: [] as Array<{ provider: string; status: string; updatable: boolean }>,
+  },
+}));
 
 vi.mock("react-native", () => ({
   Platform: { OS: "web" },
@@ -214,12 +222,26 @@ vi.mock("@/hooks/use-daemon-config", () => ({
 
 vi.mock("@/runtime/host-runtime", () => ({
   useHostRuntimeIsConnected: () => true,
-  // The section's provider-update query asks for a client; this suite is about
-  // the rows, so there is nothing for it to talk to.
-  useHostRuntimeClient: () => null,
 }));
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+// The section reads provider versions through react-query; the unit test has no
+// QueryClientProvider, and the row only cares about the derived entry list.
+vi.mock("@/provider-updates/use-provider-updates", () => ({
+  useProviderUpdates: () => ({
+    entries: providerUpdateState.entries,
+    preferences: null,
+    checkedAt: null,
+    isLoading: false,
+    isRefreshing: false,
+    error: null,
+    installingProvider: null,
+    supported: true,
+    refresh: vi.fn(async () => {}),
+    install: vi.fn(async () => {}),
+    setPreferences: vi.fn(async () => {}),
+  }),
+}));
+
 import { ProvidersSection } from "./providers-section";
 
 const claudeEntry: ProviderSnapshotEntry = {
@@ -291,6 +313,7 @@ describe("ProvidersSection", () => {
     patchConfigMock.mockReset();
     patchConfigMock.mockResolvedValue(undefined);
     openProviderSettingsMock.mockReset();
+    providerUpdateState.entries = [];
   });
 
   afterEach(() => {
@@ -306,15 +329,8 @@ describe("ProvidersSection", () => {
   });
 
   function render(): void {
-    // The section reads provider update state through React Query, so it needs
-    // a client in scope the way the app gives it one.
-    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     act(() => {
-      root?.render(
-        <QueryClientProvider client={queryClient}>
-          <ProvidersSection serverId="server-1" />
-        </QueryClientProvider>,
-      );
+      root?.render(<ProvidersSection serverId="server-1" />);
     });
   }
 
@@ -381,6 +397,40 @@ describe("ProvidersSection", () => {
     const row = findRow("Codex provider details");
     const nodes = descendants(row);
     expect(indexOfMatches(nodes, '[data-icon="Settings"]')).toBe(-1);
+  });
+
+  it("badges a provider whose CLI has a newer release published", () => {
+    snapshotState.entries = [claudeEntry];
+    configState.config = makeConfig();
+    providerUpdateState.entries = [
+      { provider: "claude", status: "update-available", updatable: true },
+    ];
+
+    render();
+
+    expect(container?.querySelector('[data-testid="provider-update-badge-claude"]')).not.toBeNull();
+  });
+
+  it("does not badge a provider that is already current", () => {
+    snapshotState.entries = [claudeEntry];
+    configState.config = makeConfig();
+    providerUpdateState.entries = [{ provider: "claude", status: "up-to-date", updatable: true }];
+
+    render();
+
+    expect(container?.querySelector('[data-testid="provider-update-badge-claude"]')).toBeNull();
+  });
+
+  it("does not badge a provider Frogg cannot install, even with a newer release", () => {
+    snapshotState.entries = [claudeEntry];
+    configState.config = makeConfig();
+    providerUpdateState.entries = [
+      { provider: "claude", status: "update-available", updatable: false },
+    ];
+
+    render();
+
+    expect(container?.querySelector('[data-testid="provider-update-badge-claude"]')).toBeNull();
   });
 
   it("opens the settings modal when the cog is pressed without triggering the row press", () => {

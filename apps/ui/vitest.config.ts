@@ -111,6 +111,11 @@ export default defineConfig({
         find: /^@frogg\/relay$/,
         replacement: path.resolve(__dirname, "../../packages/relay/src/index.ts"),
       },
+      // See the stub for why the real package cannot be scanned by either project.
+      {
+        find: /^expo-router$/,
+        replacement: path.resolve(__dirname, "test-stubs/expo-router.ts"),
+      },
       { find: "@", replacement: path.resolve(__dirname, "src") },
       // Must precede the `react-native` alias: a string `find` matches by prefix, so this subpath
       // would otherwise resolve inside a react-native-web *file* and break the dependency scan.
