@@ -1854,6 +1854,81 @@ export const fr: TranslationResources = {
         description:
           "Revendiquer un nouveau daemon {{brandName}}, ou appairer via le relais chiffré.",
       },
+      deploy: {
+        title: "Déployer sur un hôte",
+        description: "Installe le daemon sur une machine accessible en SSH.",
+      },
+    },
+    deployHost: {
+      title: "Déployer sur un hôte",
+      helper:
+        "Installe le daemon {{brandName}} via SSH avec l’installateur standard, démarre son service et associe cet appareil. Rien à exécuter à la main sur l’hôte.",
+      tabs: { config: "Configuration SSH", manual: "Manuel" },
+      fields: {
+        host: "Hôte",
+        user: "Utilisateur",
+        sshPort: "Port SSH",
+        identityFile: "Fichier de clé",
+        identityFileHint: "Laissez vide pour utiliser ssh-agent et ~/.ssh/config.",
+        daemonPort: "Port du daemon",
+      },
+      network: {
+        label: "Se connecter via",
+        tunnel: "Tunnel SSH",
+        lan: "Réseau",
+        tunnelHint: "Recommandé. Le daemon n’écoute que sur loopback et l’app l’atteint via SSH.",
+        lanHint:
+          "Le daemon écoute sur toutes les interfaces sur le port {{port}} et cet appareil s’y associe par le réseau.",
+      },
+      steps: {
+        connect: "Se connecter et détecter la plateforme",
+        install: "Installer le daemon et démarrer le service",
+        upgrade: "Mettre à jour le daemon depuis {{from}}",
+        reinstall: "Réinstaller le daemon {{version}}",
+        pairCode: "Obtenir le code d’association via SSH",
+        pair: "Associer cet appareil",
+      },
+      skipped: "Ignoré : le daemon n’a émis aucun code d’association ; SSH authentifie l’hôte.",
+      platform: "{{platform}} détecté",
+      formErrors: {
+        hostRequired: "Choisissez ou saisissez un hôte.",
+        invalidHost: "Saisissez un hôte et un utilisateur sans espaces.",
+        invalidSshPort: "Saisissez un port SSH entre 1 et 65535.",
+        invalidDaemonPort: "Saisissez un port de daemon entre 1 et 65535.",
+        invalidKeyFile: "Saisissez un chemin absolu ou commençant par ~/.",
+        tunnelKeyUnsupported:
+          "Les connexions par tunnel SSH n’utilisent que ssh-agent et ~/.ssh/config. Ajoutez cette clé à votre configuration SSH ou connectez-vous par le réseau.",
+      },
+      errors: {
+        ssh_failed: "Connexion SSH impossible. {{detail}}",
+        unsupported_platform:
+          "{{detail}} n’est pas pris en charge. Le daemon tourne sous Linux et macOS, x86_64 ou arm64.",
+        install_failed: "L’installation a échoué. {{detail}}",
+        pair_code_unavailable:
+          "Le daemon n’a pas émis de code d’association. {{detail}} Mettez le daemon à jour ou connectez-vous via un tunnel SSH.",
+        invalid_pair_code: "Le code d’association du daemon est illisible. {{detail}}",
+        fingerprint_mismatch:
+          "La clé du daemon ne correspond pas à l’empreinte indiquée via SSH ; l’association a été arrêtée. {{detail}}",
+        server_mismatch: "Un autre daemon que celui installé via SSH a répondu. {{detail}}",
+        unreachable:
+          "Cet appareil n’atteint pas le daemon sur le port {{port}}. Ouvrez le port dans le pare-feu de l’hôte ou connectez-vous via un tunnel SSH.",
+        claim_rejected:
+          "Le code d’association a déjà servi ou a expiré. Réessayez pour en obtenir un nouveau.",
+        connect_failed: "Connexion au daemon impossible. {{detail}}",
+        cancelled: "Annulé. L’hôte conserve ce qui était déjà installé.",
+      },
+      actions: {
+        deploy: "Déployer",
+        cancel: "Annuler",
+        retry: "Réessayer",
+        back: "Retour",
+        done: "Terminé",
+        showLog: "Afficher le journal",
+        hideLog: "Masquer le journal",
+      },
+      success: "{{name}} a été ajouté.",
+      unverified:
+        "Le daemon n’a émis aucun code d’association ; la connexion repose uniquement sur la clé d’hôte SSH.",
     },
     networkScan: {
       searching: "Recherche…",
@@ -1967,6 +2042,7 @@ export const fr: TranslationResources = {
         empty: "Aucun hôte dans ~/.ssh/config",
         helperBefore: "Se connecte avec ",
         helperAfter: " via votre configuration SSH (clés, utilisateur, port, hôtes de rebond).",
+        viaJump: "{{address}} via {{jump}}",
       },
       fields: {
         target: "Hôte SSH",

@@ -1780,6 +1780,77 @@ export const zhCN: TranslationResources = {
         title: "粘贴配对链接",
         description: "认领新的 {{brandName}} 守护进程，或通过加密中继配对。",
       },
+      deploy: {
+        title: "部署到主机",
+        description: "在可通过 SSH 访问的机器上安装守护进程。",
+      },
+    },
+    deployHost: {
+      title: "部署到主机",
+      helper:
+        "通过 SSH 使用标准安装程序安装 {{brandName}} 守护进程，启动其服务并配对此设备。无需在主机上手动运行任何命令。",
+      tabs: { config: "SSH 配置", manual: "手动" },
+      fields: {
+        host: "主机",
+        user: "用户",
+        sshPort: "SSH 端口",
+        identityFile: "密钥文件",
+        identityFileHint: "留空则使用 ssh-agent 和 ~/.ssh/config。",
+        daemonPort: "守护进程端口",
+      },
+      network: {
+        label: "连接方式",
+        tunnel: "SSH 隧道",
+        lan: "网络",
+        tunnelHint: "推荐。守护进程只监听回环地址，应用通过 SSH 访问它。",
+        lanHint: "守护进程在所有网络接口的 {{port}} 端口监听，此设备通过网络与其配对。",
+      },
+      steps: {
+        connect: "连接并检测平台",
+        install: "安装守护进程并启动服务",
+        upgrade: "从 {{from}} 升级守护进程",
+        reinstall: "重新安装守护进程 {{version}}",
+        pairCode: "通过 SSH 获取配对码",
+        pair: "配对此设备",
+      },
+      skipped: "已跳过：守护进程未签发配对码；主机由 SSH 认证。",
+      platform: "检测到 {{platform}}",
+      formErrors: {
+        hostRequired: "请选择或输入主机。",
+        invalidHost: "主机和用户不能包含空格。",
+        invalidSshPort: "请输入 1 到 65535 之间的 SSH 端口。",
+        invalidDaemonPort: "请输入 1 到 65535 之间的守护进程端口。",
+        invalidKeyFile: "请输入绝对路径或以 ~/ 开头的路径。",
+        tunnelKeyUnsupported:
+          "SSH 隧道连接只使用 ssh-agent 和 ~/.ssh/config。请将此密钥加入 SSH 配置，或改用网络连接。",
+      },
+      errors: {
+        ssh_failed: "无法通过 SSH 连接。{{detail}}",
+        unsupported_platform:
+          "不支持 {{detail}}。守护进程可在 Linux 和 macOS（x86_64 或 arm64）上运行。",
+        install_failed: "安装失败。{{detail}}",
+        pair_code_unavailable:
+          "守护进程未签发配对码。{{detail}} 请更新守护进程，或改用 SSH 隧道连接。",
+        invalid_pair_code: "无法读取守护进程的配对码。{{detail}}",
+        fingerprint_mismatch: "守护进程密钥与通过 SSH 报告的指纹不符，已停止配对。{{detail}}",
+        server_mismatch: "应答的守护进程不是通过 SSH 安装的那一个。{{detail}}",
+        unreachable:
+          "此设备无法访问 {{port}} 端口上的守护进程。请在主机防火墙中开放该端口，或改用 SSH 隧道连接。",
+        claim_rejected: "配对码已被使用或已过期。请重试以获取新的配对码。",
+        connect_failed: "无法连接到守护进程。{{detail}}",
+        cancelled: "已取消。主机上保留已安装的内容。",
+      },
+      actions: {
+        deploy: "部署",
+        cancel: "取消",
+        retry: "重试",
+        back: "返回",
+        done: "完成",
+        showLog: "显示日志",
+        hideLog: "隐藏日志",
+      },
+      success: "已添加 {{name}}。",
+      unverified: "守护进程未签发配对码，因此连接仅依赖 SSH 主机密钥。",
     },
     networkScan: {
       searching: "正在扫描…",
@@ -1888,6 +1959,7 @@ export const zhCN: TranslationResources = {
         empty: "~/.ssh/config 中没有主机",
         helperBefore: "使用 ",
         helperAfter: " 连接，并应用你的 SSH 配置（密钥、用户、端口、跳板机）。",
+        viaJump: "{{address}}（经由 {{jump}}）",
       },
       fields: {
         target: "SSH 主机",

@@ -6,6 +6,7 @@ import { createScriptExecutor } from "./executor.js";
 import { DeployManager } from "./manager.js";
 import { buildProbeScript } from "./probe.js";
 import { deployScript } from "./scripts.js";
+import { cliPairCodeAdapter } from "./pair-code.js";
 
 export const DEPLOY_EVENT = "frogg:event:ssh-deploy-event";
 let manager: DeployManager | undefined;
@@ -23,6 +24,10 @@ export function createSshDeployCommandHandlers(): Record<string, DesktopCommandH
       defaultVersion: app.getVersion(),
       probeScript: buildProbeScript(brand),
       script: deployScript,
+      pairCode: {
+        script: cliPairCodeAdapter.script(brand),
+        parse: cliPairCodeAdapter.parse,
+      },
       emit(event) {
         for (const window of BrowserWindow.getAllWindows()) {
           if (!window.isDestroyed() && !window.webContents.isDestroyed())
@@ -35,6 +40,7 @@ export function createSshDeployCommandHandlers(): Record<string, DesktopCommandH
   const current = manager;
   return {
     ssh_deploy_probe: (args) => current.probe(args),
+    ssh_deploy_pair_code: (args) => current.pairCode(args),
     ssh_deploy_start: (args) => current.start(args),
     ssh_deploy_uninstall: (args) => current.uninstall(args),
     ssh_deploy_cancel: (args) => current.cancel(args),

@@ -38,9 +38,11 @@ import {
 } from "@frogg/protocol/connection-offer";
 import {
   claimDirectOffer as claimDirectOfferOverHttp,
+  claimDirectPairingLink as claimDirectPairingLinkOverHttp,
   type ClaimOfferOptions,
   type ClaimResult,
 } from "@/pairing/claim-offer";
+import type { DirectPairingLink } from "@frogg/protocol/device-access";
 import { resolveDeviceLabel } from "@/pairing/device-label";
 import { readLocalNetworkHints } from "@/network-scan/local-addresses";
 import { shouldUseDesktopDaemon } from "@/desktop/daemon/desktop-daemon";
@@ -1919,6 +1921,31 @@ export class HostRuntimeStore {
     return { profile, serverId: offer.serverId, hostname, endpoint: result.endpoint };
   }
 
+  /**
+   * Redeems a `<scheme>://pair/direct?…` link (what `<cli> pair` prints) and
+   * stores the returned device credential as the host connection's password.
+   */
+  async claimAndUpsertDirectPairingLink(
+    link: DirectPairingLink,
+    input: { label?: string } = {},
+  ): Promise<{
+    profile: HostProfile;
+    serverId: string;
+    hostname: string | null;
+    endpoint: string;
+  }> {
+    const result = await claimDirectPairingLinkOverHttp(link, { label: resolveDeviceLabel() });
+    const hostname = result.hostname ?? link.label ?? null;
+    const profile = await this.upsertDirectConnection({
+      serverId: result.serverId,
+      endpoint: result.endpoint,
+      useTls: result.useTls,
+      password: result.credential,
+      label: input.label ?? hostname ?? undefined,
+    });
+    return { profile, serverId: result.serverId, hostname, endpoint: result.endpoint };
+  }
+
   async upsertConnectionFromAnyOffer(
     offer: AnyConnectionOffer,
     input: { label?: string; endpointOverride?: string } = {},
@@ -2630,6 +2657,15 @@ export interface HostMutations {
     offer: AnyConnectionOffer,
     input?: { label?: string; endpointOverride?: string },
   ) => Promise<HostProfile>;
+  claimAndUpsertDirectPairingLink: (
+    link: DirectPairingLink,
+    input?: { label?: string },
+  ) => Promise<{
+    profile: HostProfile;
+    serverId: string;
+    hostname: string | null;
+    endpoint: string;
+  }>;
   claimAndUpsertDirectOffer: (
     offer: ConnectionOfferV3,
     input?: { label?: string; endpointOverride?: string },
@@ -2662,6 +2698,8 @@ export function useHostMutations(): HostMutations {
       upsertConnectionFromAnyOffer: (offer, input) =>
         store.upsertConnectionFromAnyOffer(offer, input),
       claimAndUpsertDirectOffer: (offer, input) => store.claimAndUpsertDirectOffer(offer, input),
+      claimAndUpsertDirectPairingLink: (link, input) =>
+        store.claimAndUpsertDirectPairingLink(link, input),
       upsertConnectionFromOfferUrl: (url, label) => store.upsertConnectionFromOfferUrl(url, label),
       renameHost: (serverId, label) => store.renameHost(serverId, label),
       setHostColor: (serverId, color) => store.setHostColor(serverId, color),

@@ -46,6 +46,21 @@ it("lists concrete aliases, first values and one include level without reading i
 });
 it("returns an empty picker when no SSH config exists", async () => {
   expect(
-    await readSshConfigHosts("/missing", { read: async () => null, matches: async () => [] }),
+    await readSshConfigHosts("/missing", {
+      read: async () => null,
+      matches: async () => [],
+    }),
   ).toEqual([]);
+});
+it("records the first ProxyJump for the picker", async () => {
+  const home = path.resolve("/user");
+  const config = path.join(home, ".ssh", "config");
+  const hosts = await readSshConfigHosts(home, {
+    read: async (file) =>
+      file === config
+        ? "Host inner\n HostName 10.0.0.5\n ProxyJump bastion,edge\n ProxyJump ignored\n"
+        : null,
+    matches: async () => [],
+  });
+  expect(hosts).toEqual([{ alias: "inner", hostName: "10.0.0.5", proxyJump: "bastion,edge" }]);
 });

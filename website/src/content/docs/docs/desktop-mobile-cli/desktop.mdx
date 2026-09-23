@@ -8,6 +8,7 @@ sidebar:
 import { Screenshot } from "@/components/docs";
 import installerProgress from "@/assets/docs/desktop/windows-installer-progress.png";
 import installerMigrating from "@/assets/docs/desktop/windows-installer-migrating.png";
+import deployToHost from "@/assets/docs/desktop/deploy-to-host.png";
 
 The desktop app is a client. It connects to daemons you install separately, on the same
 computer or elsewhere, and never starts, bundles or stops a daemon. Closing it leaves
@@ -76,18 +77,43 @@ SSH config or takes `user@host`.
 
 ### Deploy a daemon over SSH
 
-If SSH works but no daemon answers, the app offers to **Deploy** one. You can also deploy
-from the host's settings.
+**Hosts → Deploy to host** installs a daemon on a machine you can already reach over SSH
+and adds it as a host, without running anything there by hand. The app also offers
+**Deploy** when SSH works but no daemon answers, and from a host's settings.
 
-1. The app probes the host: OS, architecture, Docker, systemd user services, `curl`, and
-   any existing install.
-2. It pipes the same `install.sh` (or `install-docker.sh`) you would run by hand over SSH.
-   Nothing is uploaded: the host downloads the release bundle from GitHub itself.
-3. It installs the version that matches the app, listening on `0.0.0.0:9999` by default.
-   Choose `127.0.0.1` to keep the daemon reachable only through SSH.
-4. The log streams into the dialog, and the connection retries when the install finishes.
+<Screenshot src={deployToHost} alt="The Deploy to host dialog listing SSH config entries" />
 
-The same screen can **uninstall** the daemon. Daemon state in `~/.frogg` is kept.
+Pick an entry from `~/.ssh/config` — `Include` files, `Host` aliases, `ProxyJump` and
+`IdentityFile` are all honoured, because the connection runs `ssh <alias>` — or switch to
+**Manual** and give `user@host`, ports and an optional key file.
+
+**Connect through** decides how the app reaches the daemon afterwards:
+
+- **SSH tunnel** (recommended) binds the daemon to `127.0.0.1` and reaches it through SSH,
+  so it is never exposed on the network.
+- **Network** binds `0.0.0.0:<daemon port>` and the app connects directly, pairing itself
+  with the code the daemon issues.
+
+The deploy runs as four steps, with the remote log available beneath them:
+
+1. **Connect and detect platform** — OS, architecture, Docker, systemd user services,
+   `curl` and any existing install.
+2. **Install daemon and start service** — the same `install.sh` you would run by hand is
+   piped over SSH. Nothing is uploaded: the host downloads the release bundle itself, at
+   the version that matches the app.
+3. **Get pairing code over SSH** — the app runs the daemon's own `frogg pair` over the
+   same SSH session, so the SSH connection is what vouches for the daemon's identity.
+4. **Pair this device** — the app checks the daemon's key fingerprint against the one the
+   pairing code names, refusing to continue if they differ, and records this device's name
+   on the credential the daemon issues.
+
+Re-running on a host that already has a daemon **upgrades** it, or reinstalls it when the
+versions already match; the step is labelled accordingly. Each step reports its own error —
+an unreachable host, an unsupported platform, a failed install, a rejected or expired code,
+a fingerprint mismatch — and **Retry** restarts from the form. Cancelling stops the remote
+job as well.
+
+The host's settings can also **uninstall** the daemon. Daemon state in `~/.frogg` is kept.
 
 Remote hosts need Linux or macOS with `bash` and `curl`, and outbound access to GitHub.
 

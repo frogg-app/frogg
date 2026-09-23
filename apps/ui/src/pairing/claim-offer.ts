@@ -1,5 +1,6 @@
 import type { ConnectionOfferV3 } from "@frogg/protocol/connection-offer";
 import { normalizeHostPort } from "@frogg/protocol/daemon-endpoints";
+import type { DirectPairingLink } from "@frogg/protocol/device-access";
 
 /**
  * Client side of the daemon's first-run claim gate (docs/permissions.md,
@@ -174,11 +175,17 @@ export async function selectDirectEndpoint(
   );
 }
 
-/** `POST /api/setup/claim`: redeems the single-use token for a device credential. */
+/**
+ * `POST /api/setup/claim`: redeems a single-use offer token, a pairing code, or
+ * a claim-mode claim for a device credential.
+ */
 export async function claimDaemon(input: {
   endpoint: string;
   useTls: boolean;
-  token: string;
+  /** Exactly one of these three. */
+  token?: string;
+  pairingCode?: string;
+  claim?: boolean;
   label: string;
   fetchImpl?: FetchLike;
 }): Promise<{ credential: string; serverId: string | null; principalId: string | null }> {
@@ -190,7 +197,13 @@ export async function claimDaemon(input: {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: input.token, label: input.label }),
+        body: JSON.stringify({
+          ...(input.token ? { token: input.token } : {}),
+          ...(input.pairingCode ? { pairingCode: input.pairingCode } : {}),
+          ...(input.claim ? { claim: true } : {}),
+          label: input.label,
+          deviceName: input.label,
+        }),
       },
     );
   } catch (error) {
@@ -266,6 +279,45 @@ export async function claimDirectOffer(
     ...selected,
     hostname: selected.hostname ?? offer.hostname ?? null,
     serverId: offer.serverId,
+    credential: claimed.credential,
+    principalId: claimed.principalId,
+  };
+}
+
+/**
+ * The `<scheme>://pair/direct?…` link `<cli> pair` prints: one endpoint, the
+ * daemon's key fingerprint, and either a pairing code or claim mode. Unlike a
+ * v3 offer there is no endpoint list to probe — the link names where to go.
+ */
+export async function claimDirectPairingLink(
+  link: DirectPairingLink,
+  input: { label: string } & Pick<ClaimOfferOptions, "fetchImpl">,
+): Promise<ClaimResult> {
+  const endpoint = normalizeHostPort(`${link.host}:${link.port}`);
+  const useTls = link.useTls === true;
+  const claimed = await claimDaemon({
+    endpoint,
+    useTls,
+    ...(link.pairingCode ? { pairingCode: link.pairingCode } : { claim: true }),
+    label: input.label,
+    ...(input.fetchImpl ? { fetchImpl: input.fetchImpl } : {}),
+  });
+  if (link.serverId && claimed.serverId && claimed.serverId !== link.serverId) {
+    throw new ClaimOfferError(
+      "identity_mismatch",
+      `The daemon claimed as ${claimed.serverId}, not ${link.serverId}`,
+      [endpoint],
+    );
+  }
+  const serverId = claimed.serverId ?? link.serverId;
+  if (!serverId) {
+    throw new ClaimOfferError("claim_failed", "The daemon returned no server id", [endpoint]);
+  }
+  return {
+    endpoint,
+    useTls,
+    hostname: link.label ?? null,
+    serverId,
     credential: claimed.credential,
     principalId: claimed.principalId,
   };

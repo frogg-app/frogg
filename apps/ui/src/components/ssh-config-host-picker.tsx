@@ -196,7 +196,14 @@ function HostRow({
   disabled: boolean;
   onSelect: (alias: string) => void;
 }) {
-  const details = formatSshConfigHostDetails(host);
+  const { t } = useTranslation();
+  const address = formatSshConfigHostDetails(host);
+  const details = host.proxyJump
+    ? t("pairing.remoteSsh.sshConfig.viaJump", {
+        address: address || host.alias,
+        jump: host.proxyJump,
+      })
+    : address;
   const handlePress = useCallback(() => onSelect(host.alias), [host.alias, onSelect]);
   const rowStyle = useCallback(
     ({ hovered }: PressableStateCallbackType & { hovered?: boolean }) => [

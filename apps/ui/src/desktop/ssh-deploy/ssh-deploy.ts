@@ -14,6 +14,18 @@ export type SshDeployMethod = "native" | "docker";
 export interface SshDeployTarget {
   host: string;
   sshPort?: number;
+  /** Key file for deploy sessions only; otherwise ssh-agent and ~/.ssh/config apply. */
+  identityFile?: string;
+}
+
+/** What `ssh_deploy_pair_code` reports; see apps/desktop/src/deploy/pair-code.ts. */
+export interface SshDeployPairCode {
+  source: "pair-code" | "pair";
+  deepLink: string;
+  host: string | null;
+  port: number | null;
+  fingerprint: string | null;
+  expiresAt: string | null;
 }
 
 /** What `ssh_deploy_probe` reports about the remote host. */
@@ -142,16 +154,90 @@ function withSessionSshPassword<T extends SshDeployTarget>(target: T): T {
   return sshPassword ? { ...target, sshPassword } : target;
 }
 
+function targetArgs(target: SshDeployTarget): Record<string, unknown> {
+  return withSessionSshPassword({
+    host: target.host,
+    ...(target.sshPort !== undefined ? { sshPort: target.sshPort } : {}),
+    ...(target.identityFile ? { identityFile: target.identityFile } : {}),
+  });
+}
+
 export async function probeSshDeploy(target: SshDeployTarget): Promise<SshDeployProbe> {
   return parseSshDeployProbe(
-    await invokeDesktopCommand<unknown>(
-      "ssh_deploy_probe",
-      withSessionSshPassword({
-        host: target.host,
-        ...(target.sshPort !== undefined ? { sshPort: target.sshPort } : {}),
-      }),
-    ),
+    await invokeDesktopCommand<unknown>("ssh_deploy_probe", targetArgs(target)),
   );
+}
+
+export function parseSshDeployPairCode(raw: unknown): SshDeployPairCode {
+  if (!isRecord(raw) || !text(raw.deepLink)) {
+    throw new Error("The daemon printed no pairing link.");
+  }
+  const port = raw.port;
+  return {
+    source: raw.source === "pair-code" ? "pair-code" : "pair",
+    deepLink: text(raw.deepLink),
+    host: text(raw.host) || null,
+    port:
+      typeof port === "number" && Number.isInteger(port) && port > 0 && port <= 65535 ? port : null,
+    fingerprint: text(raw.fingerprint) || null,
+    expiresAt: text(raw.expiresAt) || null,
+  };
+}
+
+/** Runs the daemon's pairing command over SSH and returns what it printed. */
+export async function fetchSshDeployPairCode(target: SshDeployTarget): Promise<SshDeployPairCode> {
+  return parseSshDeployPairCode(
+    await invokeDesktopCommand<unknown>("ssh_deploy_pair_code", targetArgs(target)),
+  );
+}
+
+/**
+ * Starts a deploy job and settles when it finishes: resolves on `done`,
+ * rejects with the job's detail on `error`. Aborting cancels the remote job.
+ */
+export async function runSshDeployJob(
+  input: SshDeployStartInput,
+  options: { onLog?: (text: string) => void; signal?: AbortSignal } = {},
+): Promise<void> {
+  let jobId: string | null = null;
+  const pending: SshDeployEvent[] = [];
+  let settle: { resolve: () => void; reject: (error: Error) => void } | null = null;
+  const finished = new Promise<void>((resolve, reject) => {
+    settle = { resolve, reject };
+  });
+  const handle = (event: SshDeployEvent) => {
+    if (event.kind === "log") options.onLog?.(event.text);
+    else if (event.kind === "done") settle?.resolve();
+    else settle?.reject(new SshDeployJobError(event.detail, event.cancelled));
+  };
+  const unlisten = await listenToSshDeployEvents((event) => {
+    if (jobId === null) pending.push(event);
+    else if (event.jobId === jobId) handle(event);
+  });
+  const abort = () => {
+    if (jobId) void cancelSshDeploy(jobId).catch(() => undefined);
+  };
+  try {
+    options.signal?.throwIfAborted();
+    jobId = await startSshDeploy(input);
+    options.signal?.addEventListener("abort", abort, { once: true });
+    if (options.signal?.aborted) abort();
+    for (const event of pending.splice(0)) if (event.jobId === jobId) handle(event);
+    await finished;
+  } finally {
+    options.signal?.removeEventListener("abort", abort);
+    unlisten();
+  }
+}
+
+export class SshDeployJobError extends Error {
+  constructor(
+    message: string,
+    readonly cancelled: boolean,
+  ) {
+    super(message);
+    this.name = "SshDeployJobError";
+  }
 }
 
 function jobIdOf(raw: unknown): string {

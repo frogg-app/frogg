@@ -26,6 +26,7 @@ describe("formatSshConfigHostDetails", () => {
       user: null,
       port: null,
       identityFile: null,
+      proxyJump: null,
     };
     expect(formatSshConfigHostDetails(base)).toBe("dev.example.com");
     expect(formatSshConfigHostDetails({ ...base, user: "alice" })).toBe("alice@dev.example.com");
@@ -40,14 +41,34 @@ describe("parseSshConfigHosts", () => {
   it("keeps well-formed entries and drops the rest", () => {
     expect(
       parseSshConfigHosts([
-        { alias: "dev", hostName: "dev.example.com", user: "alice", port: 2222 },
+        {
+          alias: "dev",
+          hostName: "dev.example.com",
+          user: "alice",
+          port: 2222,
+          proxyJump: "bastion",
+        },
         { alias: " " },
         "nope",
         { alias: "bare", port: 70000 },
       ]),
     ).toEqual([
-      { alias: "dev", hostName: "dev.example.com", user: "alice", port: 2222, identityFile: null },
-      { alias: "bare", hostName: null, user: null, port: null, identityFile: null },
+      {
+        alias: "dev",
+        hostName: "dev.example.com",
+        user: "alice",
+        port: 2222,
+        identityFile: null,
+        proxyJump: "bastion",
+      },
+      {
+        alias: "bare",
+        hostName: null,
+        user: null,
+        port: null,
+        identityFile: null,
+        proxyJump: null,
+      },
     ]);
     expect(parseSshConfigHosts(null)).toEqual([]);
   });

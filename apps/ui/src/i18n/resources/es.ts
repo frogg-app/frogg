@@ -1850,6 +1850,81 @@ export const es: TranslationResources = {
         description:
           "Reclama un daemon de {{brandName}} nuevo o empareja mediante el relay cifrado.",
       },
+      deploy: {
+        title: "Desplegar en un host",
+        description: "Instala el daemon en una máquina a la que accedes por SSH.",
+      },
+    },
+    deployHost: {
+      title: "Desplegar en un host",
+      helper:
+        "Instala el daemon de {{brandName}} por SSH con el instalador estándar, inicia su servicio y empareja este dispositivo. No hay que ejecutar nada a mano en el host.",
+      tabs: { config: "Configuración SSH", manual: "Manual" },
+      fields: {
+        host: "Host",
+        user: "Usuario",
+        sshPort: "Puerto SSH",
+        identityFile: "Archivo de clave",
+        identityFileHint: "Déjalo vacío para usar ssh-agent y ~/.ssh/config.",
+        daemonPort: "Puerto del daemon",
+      },
+      network: {
+        label: "Conectar mediante",
+        tunnel: "Túnel SSH",
+        lan: "Red",
+        tunnelHint: "Recomendado. El daemon solo escucha en loopback y la app llega a él por SSH.",
+        lanHint:
+          "El daemon escucha en todas las interfaces en el puerto {{port}} y este dispositivo se empareja con él por la red.",
+      },
+      steps: {
+        connect: "Conectar y detectar la plataforma",
+        install: "Instalar el daemon e iniciar el servicio",
+        upgrade: "Actualizar el daemon desde {{from}}",
+        reinstall: "Reinstalar el daemon {{version}}",
+        pairCode: "Obtener el código de emparejamiento por SSH",
+        pair: "Emparejar este dispositivo",
+      },
+      skipped: "Omitido: el daemon no emitió código de emparejamiento; SSH autentica el host.",
+      platform: "Detectado {{platform}}",
+      formErrors: {
+        hostRequired: "Elige un host o escribe uno.",
+        invalidHost: "Escribe un host y un usuario sin espacios.",
+        invalidSshPort: "Escribe un puerto SSH entre 1 y 65535.",
+        invalidDaemonPort: "Escribe un puerto del daemon entre 1 y 65535.",
+        invalidKeyFile: "Escribe una ruta absoluta o que empiece por ~/.",
+        tunnelKeyUnsupported:
+          "Las conexiones por túnel SSH solo usan ssh-agent y ~/.ssh/config. Añade esta clave a tu configuración SSH o conecta por la red.",
+      },
+      errors: {
+        ssh_failed: "No se pudo conectar por SSH. {{detail}}",
+        unsupported_platform:
+          "{{detail}} no es compatible. El daemon funciona en Linux y macOS, x86_64 o arm64.",
+        install_failed: "La instalación falló. {{detail}}",
+        pair_code_unavailable:
+          "El daemon no emitió un código de emparejamiento. {{detail}} Actualiza el daemon o conecta mediante un túnel SSH.",
+        invalid_pair_code: "No se pudo leer el código de emparejamiento del daemon. {{detail}}",
+        fingerprint_mismatch:
+          "La clave del daemon no coincide con la huella indicada por SSH, así que se detuvo el emparejamiento. {{detail}}",
+        server_mismatch: "Respondió un daemon distinto del instalado por SSH. {{detail}}",
+        unreachable:
+          "Este dispositivo no llega al daemon en el puerto {{port}}. Abre el puerto en el cortafuegos del host o conecta mediante un túnel SSH.",
+        claim_rejected:
+          "El código de emparejamiento ya se usó o caducó. Reintenta para obtener uno nuevo.",
+        connect_failed: "No se pudo conectar al daemon. {{detail}}",
+        cancelled: "Cancelado. El host conserva lo que ya se había instalado.",
+      },
+      actions: {
+        deploy: "Desplegar",
+        cancel: "Cancelar",
+        retry: "Reintentar",
+        back: "Atrás",
+        done: "Listo",
+        showLog: "Mostrar registro",
+        hideLog: "Ocultar registro",
+      },
+      success: "Se añadió {{name}}.",
+      unverified:
+        "El daemon no emitió código de emparejamiento, así que la conexión depende solo de la clave de host SSH.",
     },
     networkScan: {
       searching: "Buscando…",
@@ -1963,6 +2038,7 @@ export const es: TranslationResources = {
         empty: "No hay hosts en ~/.ssh/config",
         helperBefore: "Se conecta con ",
         helperAfter: " usando tu configuración SSH (claves, usuario, puerto, hosts de salto).",
+        viaJump: "{{address}} vía {{jump}}",
       },
       fields: {
         target: "Host SSH",
