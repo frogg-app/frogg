@@ -1,6 +1,6 @@
 {
   "name": "@frogg/highlight",
-  "version": "1.5.31",
+  "version": "1.5.32",
   "files": [
     "dist",
     "!dist/**/*.map",
