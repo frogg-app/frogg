@@ -34,10 +34,11 @@ const successMapping = (theme: Theme) => ({ color: theme.colors.palette.green[50
  * Height of the filled part of a row, which is also its hit target.
  *
  * A pointer aims; a thumb lands, so the row is sized by what is driving it. The split is on
- * breakpoint rather than on `presentation`, because the compact popover — what `compactMode`
- * defaults to — is worked with a thumb just as a sheet is, and would keep the desktop height if
- * the sheet were the thing being asked about. `md` is where `useIsCompactFormFactor` divides, so
- * this and the popover/sheet choice always turn over together.
+ * breakpoint and platform rather than on `presentation`, because the compact popover — what
+ * `compactMode` defaults to — is worked with a thumb just as a sheet is, and would keep the
+ * desktop height if the sheet were the thing being asked about. `MENU_ITEM_HEIGHT` divides
+ * exactly where `useIsCompactInteraction` does, so this and the popover/sheet choice always turn
+ * over together — including on a native tablet, which is wide but still touched.
  *
  * On desktop the number is exactly the content: 18 line + 8 padding + 2 border. Leave the text's
  * `lineHeight` to the platform and the content outgrows `minHeight`, which then does nothing and

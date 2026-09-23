@@ -1,5 +1,5 @@
 import { useUnistyles } from "react-native-unistyles";
-import { isWeb } from "@/constants/platform";
+import { isNative, isWeb } from "@/constants/platform";
 
 export const FOOTER_HEIGHT = 75;
 
@@ -42,6 +42,22 @@ export {
 export function useIsCompactFormFactor(): boolean {
   const { rt } = useUnistyles();
   return rt.breakpoint === "xs" || rt.breakpoint === "sm";
+}
+
+/**
+ * Reactive hook — true when the surface is driven by a thumb rather than a pointer.
+ *
+ * Distinct from {@link useIsCompactFormFactor}, which answers a question about
+ * width and governs layout. This answers a question about the input device and
+ * governs presentation: an Android tablet is wide enough for the desktop shell
+ * but is still touched, so its menus want sheets and thumb-sized rows rather
+ * than anchored popovers sized for a mouse. The popover path is already
+ * web-gated in several places (`resolveIsDesktopAboveSearch`,
+ * `shouldUseMeasuredTopStart`), so routing native there at all was the
+ * inconsistency this closes.
+ */
+export function useIsCompactInteraction(): boolean {
+  return useIsCompactFormFactor() || isNative;
 }
 
 // SplitContainer relies on dnd-kit and DOM-backed accessibility helpers.

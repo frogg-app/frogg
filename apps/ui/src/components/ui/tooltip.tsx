@@ -26,7 +26,7 @@ import {
 } from "react-native";
 import { FadeIn, FadeOut } from "react-native-reanimated";
 import { StyleSheet } from "react-native-unistyles";
-import { useIsCompactFormFactor } from "@/constants/layout";
+import { useIsCompactInteraction } from "@/constants/layout";
 import { FloatingSurface } from "@/components/ui/floating";
 import { isWeb } from "@/constants/platform";
 import { getOverlayRoot, OVERLAY_Z } from "@/lib/overlay-root";
@@ -247,7 +247,7 @@ export function Tooltip({
     onOpenChange,
   });
 
-  const isCompact = useIsCompactFormFactor();
+  const isCompact = useIsCompactInteraction();
   const enabled = isCompact ? enabledOnMobile : enabledOnDesktop;
 
   const value = useMemo<TooltipContextValue>(

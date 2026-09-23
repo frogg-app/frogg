@@ -12,7 +12,7 @@ vi.mock("@/constants/platform", () => ({
 }));
 
 vi.mock("@/constants/layout", () => ({
-  useIsCompactFormFactor: () => false,
+  useIsCompactInteraction: () => false,
 }));
 
 vi.mock("@gorhom/portal", () => ({

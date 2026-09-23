@@ -25,10 +25,10 @@ function buildWidthStyle(input: {
 }
 
 describe("buildDesktopFrameStyle", () => {
-  it("lets a narrow trigger grow to the default desktop ceiling", () => {
+  it("opens a narrow trigger's menu at the readable minimum, not the trigger width", () => {
     expect(buildWidthStyle({ referenceWidth: 120 })).toEqual({
       width: undefined,
-      minWidth: 120,
+      minWidth: 200,
       maxWidth: 400,
     });
   });

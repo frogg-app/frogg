@@ -27,7 +27,7 @@ import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { EditingTextInputHandle } from "@/components/ui/text-input";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { useIsCompactFormFactor } from "@/constants/layout";
+import { useIsCompactInteraction } from "@/constants/layout";
 import {
   BottomSheetScrollView,
   BottomSheetBackdrop,
@@ -1328,7 +1328,7 @@ export function Combobox({
   const resolvedPlaceholder = placeholder ?? t("common.placeholders.search");
   const resolvedEmptyText = emptyText ?? t("common.empty.noOptionsMatchSearch");
   const resolvedTitle = title ?? t("common.actions.select");
-  const isMobile = useIsCompactFormFactor();
+  const isMobile = useIsCompactInteraction();
   const floatingLayer = useOverlayLayer("floating");
   const safeAreaInsets = useSafeAreaInsets();
   const titleColor = theme.colors.foreground;

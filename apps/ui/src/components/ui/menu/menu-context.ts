@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from "react";
 import { Platform, type View } from "react-native";
-import { useIsCompactFormFactor } from "@/constants/layout";
+import { useIsCompactInteraction } from "@/constants/layout";
 import { useDismissKeyboardOnOpen } from "@/components/ui/keyboard-dismiss";
 import {
   closeSubPage,
@@ -108,7 +108,7 @@ export function useMenuState({
   const triggerRef = useRef<View>(null);
   const [anchorRect, setAnchorRect] = useState<Rect | null>(null);
   const [path, setPath] = useState<MenuPath>(MENU_ROOT_PATH);
-  const isCompact = useIsCompactFormFactor();
+  const isCompact = useIsCompactInteraction();
   const presentation: MenuPresentation = isCompact && compactMode === "sheet" ? "sheet" : "popover";
 
   const [isOpen, setIsOpenState] = useControllableOpenState({ open, defaultOpen, onOpenChange });
