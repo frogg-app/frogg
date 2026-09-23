@@ -513,7 +513,9 @@ function resolveTrustLanConfig(
   persisted: ReturnType<typeof loadPersistedConfig>,
 ): boolean {
   return (
-    parseBooleanEnv(env.FROGG_TRUST_LAN) ?? persisted.daemon?.auth?.trustLan ?? DEFAULT_TRUST_LAN
+    parseBooleanEnv(brandEnv(brand, env, "TRUST_LAN")) ??
+    persisted.daemon?.auth?.trustLan ??
+    DEFAULT_TRUST_LAN
   );
 }
 
@@ -528,7 +530,7 @@ function resolveTrustedProxiesConfig(
   );
 }
 
-// FROGG_LISTEN can be:
+// `<BRAND>_LISTEN` (`FROGG_LISTEN` upstream) can be:
 // - host:port (TCP)
 // - /path/to/socket (Unix socket)
 // - unix:///path/to/socket (Unix socket)
@@ -543,7 +545,7 @@ function resolveListenAddress(
 ): string {
   return (
     cli?.listen ??
-    env.FROGG_LISTEN ??
+    brandEnv(brand, env, "LISTEN") ??
     persisted.daemon?.listen ??
     // The brand picks the fresh-install bind: upstream binds every interface,
     // a locked-down brand binds loopback only (brand.json daemon.bind).
@@ -554,14 +556,14 @@ function resolveListenAddress(
 /**
  * Claim mode: the LAN is not trusted and the first client to claim the
  * unclaimed daemon becomes its owner. Off by default upstream; a brand can
- * default it on. `FROGG_CLAIM_MODE` wins, then config.json.
+ * default it on. `<BRAND>_CLAIM_MODE` wins, then config.json.
  */
 function resolveClaimModeConfig(
   env: NodeJS.ProcessEnv,
   persisted: ReturnType<typeof loadPersistedConfig>,
 ): boolean {
   return (
-    parseBooleanEnv(env.FROGG_CLAIM_MODE) ??
+    parseBooleanEnv(brandEnv(brand, env, "CLAIM_MODE")) ??
     persisted.daemon?.auth?.claimMode ??
     brand.daemon.claimMode
   );
@@ -828,7 +830,7 @@ function resolveCoreDaemonOverridePaths(
   cli: CliConfigOverrides | undefined,
 ): string[] {
   const paths: string[] = [];
-  if (cli?.listen !== undefined || env.FROGG_LISTEN !== undefined) {
+  if (cli?.listen !== undefined || brandEnv(brand, env, "LISTEN") !== undefined) {
     paths.push("daemon.listen");
   }
   if (cli?.mcpEnabled !== undefined) paths.push("daemon.mcp.enabled");
@@ -839,8 +841,12 @@ function resolveCoreDaemonOverridePaths(
   if (parseTrustedProxiesEnv(env.FROGG_TRUSTED_PROXIES) !== undefined) {
     paths.push("daemon.trustedProxies");
   }
-  if (parseBooleanEnv(env.FROGG_TRUST_LAN) !== undefined) paths.push("daemon.auth.trustLan");
-  if (parseBooleanEnv(env.FROGG_CLAIM_MODE) !== undefined) paths.push("daemon.auth.claimMode");
+  if (parseBooleanEnv(brandEnv(brand, env, "TRUST_LAN")) !== undefined) {
+    paths.push("daemon.auth.trustLan");
+  }
+  if (parseBooleanEnv(brandEnv(brand, env, "CLAIM_MODE")) !== undefined) {
+    paths.push("daemon.auth.claimMode");
+  }
   if (parsePositiveGitOverride(env.FROGG_GIT_MAX_PROCESSES_PER_SECOND)) {
     paths.push("daemon.git.maxProcessesPerSecond");
   }

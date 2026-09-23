@@ -56,6 +56,14 @@ test("an owner's daemon.listen beats the brand default", async () => {
   expect(loadConfig(home, { env: {} }).listen).toBe("0.0.0.0:10099");
 });
 
+test("the brand's own LISTEN env names the address", async () => {
+  const home = await freshHome();
+  expect(loadConfig(home, { env: { ACME_LISTEN: "0.0.0.0:7001" } }).listen).toBe("0.0.0.0:7001");
+  expect(loadConfig(home, { env: { FROGG_LISTEN: "0.0.0.0:7001" } }).listen).toBe(
+    "127.0.0.1:10099",
+  );
+});
+
 test("PORT changes the port without widening the brand's bind host", async () => {
   const home = await freshHome();
   expect(loadConfig(home, { env: { PORT: "8123" } }).listen).toBe("127.0.0.1:8123");
@@ -71,5 +79,8 @@ test("claim mode defaults on for a locked-down brand and config.json wins", asyn
     JSON.stringify({ daemon: { auth: { claimMode: false } } }),
   );
   expect(loadConfig(off, { env: {} }).claimMode).toBe(false);
-  expect(loadConfig(off, { env: { FROGG_CLAIM_MODE: "1" } }).claimMode).toBe(true);
+  // The override travels under the brand's own env prefix; the upstream name
+  // belongs to another product and must not reach into this one.
+  expect(loadConfig(off, { env: { ACME_CLAIM_MODE: "1" } }).claimMode).toBe(true);
+  expect(loadConfig(off, { env: { FROGG_CLAIM_MODE: "1" } }).claimMode).toBe(false);
 });
