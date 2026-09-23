@@ -514,6 +514,7 @@ export function isSettingsSectionSlug(value: string): value is SettingsSectionSl
 }
 
 export const HOST_SECTION_SLUGS = [
+  "deploy",
   "projects",
   "pair-device",
   "devices",

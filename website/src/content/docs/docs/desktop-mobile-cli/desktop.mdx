@@ -79,7 +79,10 @@ SSH config or takes `user@host`.
 
 **Hosts → Deploy to host** installs a daemon on a machine you can already reach over SSH
 and adds it as a host, without running anything there by hand. The app also offers
-**Deploy** when SSH works but no daemon answers, and from a host's settings.
+**Deploy** when SSH works but no daemon answers. For an SSH-backed host, use the dedicated
+**Deploy** section directly below **Overview** to inspect, upgrade, reinstall or remove its daemon.
+That section keeps the host's SSH-tunnel listener (`127.0.0.1:<daemon port>`) as the redeploy
+default, rather than changing it to a network listener.
 
 <Screenshot src={deployToHost} alt="The Deploy to host dialog listing SSH config entries" />
 

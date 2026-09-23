@@ -17,6 +17,7 @@ import {
   Code2,
   Smartphone,
   MonitorSmartphone,
+  Rocket,
   PanelsTopLeft,
   AudioLines,
 } from "lucide-react-native";
@@ -87,6 +88,7 @@ export interface HostSectionItem {
 
 export const HOST_SECTION_ITEMS: HostSectionItem[] = [
   { id: "host", labelKey: "settings.hostSections.host", icon: Server },
+  { id: "deploy", labelKey: "settings.hostSections.deploy", icon: Rocket },
   {
     id: "projects",
     labelKey: "settings.hostSections.projects",

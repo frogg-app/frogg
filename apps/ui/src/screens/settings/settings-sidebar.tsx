@@ -12,6 +12,7 @@ import { resolveSettingsScope, type SettingsView } from "@/navigation/settings-n
 import { ICON_SIZE, type Theme } from "@/styles/theme";
 import { SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
 import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visibility";
+import { useHosts } from "@/runtime/host-runtime";
 
 type SidebarIcon = ComponentType<{ size: number; color: string }>;
 
@@ -151,6 +152,14 @@ export function SettingsSidebar({
   const hostSectionItems = useVisibleHostSectionItems(
     scope.kind === "host" ? scope.serverId : null,
   );
+  const hosts = useHosts();
+  const hostHasRemoteSsh =
+    scope.kind === "host" &&
+    hosts.some(
+      (host) =>
+        host.serverId === scope.serverId &&
+        host.connections.some((connection) => connection.type === "remoteSsh"),
+    );
 
   let sidebarBody: ReactNode;
   if (scope.kind === "host") {
@@ -159,16 +168,18 @@ export function SettingsSidebar({
     if (view.kind === "project") selectedHostSection = "projects";
     sidebarBody = (
       <View style={sidebarStyles.list}>
-        {hostSectionItems.map((item) => (
-          <SidebarHostSectionButton
-            key={item.id}
-            itemId={item.id}
-            label={t(item.labelKey)}
-            icon={item.icon}
-            isSelected={selectedHostSection === item.id}
-            onSelect={onSelectHostSection}
-          />
-        ))}
+        {hostSectionItems
+          .filter((item) => item.id !== "deploy" || hostHasRemoteSsh)
+          .map((item) => (
+            <SidebarHostSectionButton
+              key={item.id}
+              itemId={item.id}
+              label={t(item.labelKey)}
+              icon={item.icon}
+              isSelected={selectedHostSection === item.id}
+              onSelect={onSelectHostSection}
+            />
+          ))}
       </View>
     );
   } else {

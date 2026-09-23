@@ -2779,6 +2779,7 @@ export const ptBR: TranslationResources = {
       usage: "Uso",
       terminals: "Terminais",
       host: "Visão geral",
+      deploy: "Implantar",
     },
     metadataGeneration: {
       title: "Geração de metadados",
@@ -3158,6 +3159,7 @@ export const ptBR: TranslationResources = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "Falha no túnel SSH: {{detail}}",
         serverIdentityMismatch:
           "Outro daemon ({{actualServerId}}) está respondendo no endereço deste host, não este host ({{expectedServerId}}). Pare o outro daemon ou verifique o endereço. A reconexão continua tentando.",
       },

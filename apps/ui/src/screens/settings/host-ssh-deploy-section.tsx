@@ -6,6 +6,7 @@ import {
   SSH_DEPLOY_RECONNECT_GRACE_MS,
   type SshDeployTarget,
 } from "@/desktop/ssh-deploy/ssh-deploy";
+import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
 import { useSshDeployProbe } from "@/desktop/ssh-deploy/use-ssh-deploy-probe";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { SettingsSection } from "@/screens/settings/settings-section";
@@ -44,6 +45,7 @@ function HostSshDeployCard({
       <SshDeployCard
         target={target}
         daemonPort={connection.daemonPort}
+        initialListen={`127.0.0.1:${connection.daemonPort ?? DEFAULT_SSH_DAEMON_PORT}`}
         probe={state}
         onRefreshProbe={refresh}
         onDeployed={handleDeployed}

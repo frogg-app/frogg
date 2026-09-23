@@ -2683,6 +2683,7 @@ export const zhCN: TranslationResources = {
       usage: "使用情况",
       terminals: "Terminals",
       host: "概览",
+      deploy: "部署",
     },
     metadataGeneration: {
       title: "元数据生成",
@@ -3051,6 +3052,7 @@ export const zhCN: TranslationResources = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "SSH 隧道失败：{{detail}}",
         serverIdentityMismatch:
           "此主机地址上应答的是另一个守护进程 ({{actualServerId}})，而不是此主机 ({{expectedServerId}})。请停止另一个守护进程或检查地址。将继续尝试重新连接。",
       },

@@ -24,6 +24,10 @@ import { confirmDialog } from "@/utils/confirm-dialog";
 
 const ThemedRotateCw = withUnistyles(RotateCw);
 
+function resolveInitialListen(daemonPort: number | undefined, initialListen: string | undefined) {
+  return initialListen ?? defaultSshDeployListen(daemonPort);
+}
+
 const styles = StyleSheet.create((theme) => ({
   actions: {
     flexDirection: "row",
@@ -49,6 +53,8 @@ export interface SshDeployCardProps {
   target: SshDeployTarget;
   /** The daemon port the host was saved with; the listen default follows it. */
   daemonPort?: number;
+  /** A saved SSH connection reaches the daemon through remote loopback. */
+  initialListen?: string;
   probe: SshDeployProbeState;
   onRefreshProbe: () => void;
   /** Called after a successful deploy or upgrade (not after an uninstall). */
@@ -63,6 +69,7 @@ export interface SshDeployCardProps {
 export function SshDeployCard({
   target,
   daemonPort,
+  initialListen,
   probe,
   onRefreshProbe,
   onDeployed,
@@ -70,7 +77,7 @@ export function SshDeployCard({
 }: SshDeployCardProps) {
   const { t } = useTranslation();
   const [method, setMethod] = useState<SshDeployMethod>("native");
-  const defaultListen = defaultSshDeployListen(daemonPort);
+  const defaultListen = resolveInitialListen(daemonPort, initialListen);
   const defaultVersion = resolveAppVersion() ?? "";
   const listenRef = useRef(defaultListen);
   const versionRef = useRef(defaultVersion);

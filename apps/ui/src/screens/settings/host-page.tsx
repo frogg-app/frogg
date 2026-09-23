@@ -137,13 +137,17 @@ function HostNotFound() {
   );
 }
 
-function HostConnectionError({ serverId }: { serverId: string }) {
+function HostConnectionError({ serverId, host }: { serverId: string; host: HostProfile }) {
+  const { t } = useTranslation();
   const snapshot = useHostRuntimeSnapshot(serverId);
   const connectionError = describeHostConnectionError(snapshot);
   if (!connectionError) return null;
+  const hasRemoteSsh = host.connections.some((connection) => connection.type === "remoteSsh");
   return (
     <Text style={styles.errorText} testID="host-connection-error" accessibilityRole="alert">
-      {connectionError}
+      {hasRemoteSsh
+        ? t("settings.host.connectionErrors.remoteSsh", { detail: connectionError })
+        : connectionError}
     </Text>
   );
 }
@@ -180,10 +184,7 @@ export function HostDevicesPage({ serverId }: { serverId: string }) {
 
   return (
     <View>
-      <SettingsSection
-        title={t("deviceAccess.callerRole.title")}
-        testID="host-devices-caller-role"
-      >
+      <SettingsSection title={t("deviceAccess.callerRole.title")} testID="host-devices-caller-role">
         <CallerRoleCard serverId={serverId} />
       </SettingsSection>
 
@@ -271,6 +272,13 @@ export function HostProvidersPage({ serverId }: { serverId: string }) {
   );
 }
 
+/** Deployment is separate from Overview so an SSH host's lifecycle is explicit. */
+export function HostDeployPage({ serverId }: { serverId: string }) {
+  const host = useHostProfile(serverId);
+  if (!host) return <HostNotFound />;
+  return <HostSshDeploySection host={host} />;
+}
+
 export function HostUsagePage({ serverId }: { serverId: string }) {
   const host = useHostProfile(serverId);
   const { view: providerUsageView } = useProviderUsage(serverId);
@@ -325,7 +333,7 @@ export function HostSettingsPage({
 
       <HostStatusBadges host={host} />
       {/* Right under the status, so the reason for an error badge is visible first. */}
-      <HostConnectionError serverId={serverId} />
+      <HostConnectionError serverId={serverId} host={host} />
 
       <HostAppearanceSection host={host} />
 
@@ -335,8 +343,6 @@ export function HostSettingsPage({
 
       {/* Any transport: the daemon itself reports whether it can self-update. */}
       <HostDaemonUpdateSection key={`self-update-${host.serverId}`} host={host} />
-
-      {!isLocalDaemon ? <HostSshDeploySection key={`deploy-${host.serverId}`} host={host} /> : null}
 
       <DaemonConflictWarning serverId={serverId} />
       <ConnectionsSection host={host} />

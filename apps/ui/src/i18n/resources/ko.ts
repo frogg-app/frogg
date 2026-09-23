@@ -2745,6 +2745,7 @@ export const ko: TranslationResources = {
       usage: "사용량",
       terminals: "터미널",
       host: "개요",
+      deploy: "배포",
     },
     metadataGeneration: {
       title: "메타데이터 생성",
@@ -3120,6 +3121,7 @@ export const ko: TranslationResources = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "SSH 터널 실패: {{detail}}",
         serverIdentityMismatch:
           "이 호스트의 주소에서 다른 데몬({{actualServerId}})이 응답하고 있으며, 이 호스트({{expectedServerId}})가 아닙니다. 다른 데몬을 중지하거나 주소를 확인하세요. 재연결은 계속 시도됩니다.",
       },

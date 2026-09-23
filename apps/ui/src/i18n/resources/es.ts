@@ -2795,6 +2795,7 @@ export const es: TranslationResources = {
       usage: "Uso",
       terminals: "Terminals",
       host: "Resumen",
+      deploy: "Implementar",
     },
     metadataGeneration: {
       title: "Generación de metadatos",
@@ -3177,6 +3178,7 @@ export const es: TranslationResources = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "Falló el túnel SSH: {{detail}}",
         serverIdentityMismatch:
           "Otro daemon ({{actualServerId}}) responde en la dirección de este host, no este host ({{expectedServerId}}). Detén el otro daemon o revisa la dirección. Se seguirá intentando reconectar.",
       },

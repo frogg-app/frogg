@@ -2786,6 +2786,7 @@ export const en = {
       usage: "Usage",
       terminals: "Terminals",
       host: "Overview",
+      deploy: "Deploy",
     },
     metadataGeneration: {
       title: "Metadata generation",
@@ -3160,6 +3161,7 @@ export const en = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "SSH tunnel failed: {{detail}}",
         serverIdentityMismatch:
           "A different daemon ({{actualServerId}}) is answering at this host's address, not this host ({{expectedServerId}}). Stop the other daemon or check the address. Reconnecting keeps trying.",
       },

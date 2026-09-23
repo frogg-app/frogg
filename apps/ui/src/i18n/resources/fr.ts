@@ -2801,6 +2801,7 @@ export const fr: TranslationResources = {
       usage: "Utilisation",
       terminals: "Terminals",
       host: "Aperçu",
+      deploy: "Déployer",
     },
     metadataGeneration: {
       title: "Génération de métadonnées",
@@ -3183,6 +3184,7 @@ export const fr: TranslationResources = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "Échec du tunnel SSH : {{detail}}",
         serverIdentityMismatch:
           "Un autre daemon ({{actualServerId}}) répond à l'adresse de cet hôte, pas cet hôte ({{expectedServerId}}). Arrêtez l'autre daemon ou vérifiez l'adresse. La reconnexion continue d'essayer.",
       },
