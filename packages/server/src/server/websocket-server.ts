@@ -117,7 +117,13 @@ import {
 import type { BrowserToolsBroker } from "./browser-tools/broker.js";
 import type { DaemonRuntimeConfig } from "./session/daemon/daemon-session.js";
 import { DirectorySyncService } from "./directory-sync/index.js";
-import { OWNER_PERMISSIONS, type DaemonPermission } from "./authorization/index.js";
+import {
+  OWNER_PERMISSIONS,
+  type DaemonPermission,
+  type SessionTransport,
+} from "./authorization/index.js";
+import { admissionForPrincipal, resolveAdmissionRole } from "./authorization/admission.js";
+import type { DeviceRoleStore } from "./authorization/device-role-store.js";
 import { authorizeTunnelledCredential } from "./auth.js";
 import type { CallerDevice, DeviceAccessService } from "./device-access-service.js";
 import type { DeviceRole } from "@frogg/protocol/device-access";
@@ -142,12 +148,27 @@ export interface ExternalSocketMetadata {
   hubDaemonId?: string;
 }
 
+// Roles are decided in the authorization layer; re-exported for transports.
+export { admissionForPrincipal, resolveAdmissionRole };
+
 export interface SessionAdmission {
   principalId: string;
   permissions: readonly DaemonPermission[];
   hubExecutionAgents?: HubExecutionAgents;
   /** The paired device whose credential admitted this connection, if any. */
   device?: CallerDevice | null;
+  /** Explicit role override; otherwise the device's role, otherwise the transport default. */
+  role?: DeviceRole;
+  /** How the connection reached the daemon; decides the role when no device is known. */
+  transport?: SessionTransport;
+}
+
+/** Sessions are never shared across device credentials, whatever the principal. */
+function admissionSessionKey(admission: SessionAdmission, clientId: string): string {
+  const principal = admission.device
+    ? `${admission.principalId}#${admission.device.id}`
+    : admission.principalId;
+  return sessionConnectionKey(principal, clientId);
 }
 
 interface PendingConnection {
@@ -468,6 +489,7 @@ export interface WebSocketLike {
 interface SessionConnectionBase {
   session: Session;
   principalId: string;
+  credentialId: string | null;
   sessionKey: string;
   clientId: string;
   appVersion: string | null;
@@ -496,6 +518,7 @@ interface SocketSessionOptions {
   appVersion: string | null;
   clientCapabilities: Record<string, unknown> | null;
   permissions: readonly DaemonPermission[];
+  role: DeviceRole;
   connectionLogger: pino.Logger;
   onMessage: (message: SessionOutboundMessage) => void;
   onMessageToSource?: (source: object, message: SessionOutboundMessage) => void;
@@ -646,6 +669,7 @@ export class VoiceAssistantWebSocketServer {
   private readonly auth: DaemonAuthConfig | undefined;
   private deviceAccess: DeviceAccessService | null = null;
   private presence: PresenceService | null = null;
+  private deviceRoleStore: DeviceRoleStore | null = null;
   private readonly browserToolsRegistrations = new Map<string, BrowserToolsRegistration>();
   private connectionLifecycle: "starting" | "accepting" | "stopping" = "accepting";
   private readonly advertiseDaemonStatusRpc: boolean;
@@ -991,12 +1015,13 @@ export class VoiceAssistantWebSocketServer {
       return;
     }
 
-    const device = decision.via === "device" && decision.device ? decision.device : null;
-    await this.attachSocket(ws, request, undefined, false, {
-      principalId: device ? device.principalId : OWNER_SESSION_ADMISSION.principalId,
-      permissions: device ? device.permissions : OWNER_SESSION_ADMISSION.permissions,
-      device,
-    });
+    await this.attachSocket(
+      ws,
+      request,
+      undefined,
+      false,
+      admissionForPrincipal(decision.principal, "direct"),
+    );
   }
 
   public broadcast(message: WSOutboundMessage): void {
@@ -1149,7 +1174,16 @@ export class VoiceAssistantWebSocketServer {
     if (metadata?.transport === "relay") {
       this.incrementRuntimeCounter("relayExternalSocketAttached");
     }
-    await this.attachSocket(ws, undefined, metadata, false, admission, initialHello);
+    // The transport decides the role when the caller brought no device credential.
+    const transport: SessionTransport = metadata?.transport === "hub" ? "hub" : "relay";
+    await this.attachSocket(
+      ws,
+      undefined,
+      metadata,
+      false,
+      { transport, ...admission },
+      initialHello,
+    );
   }
 
   public updatePrincipalPermissions(
@@ -1166,6 +1200,44 @@ export class VoiceAssistantWebSocketServer {
         connection.session.setPermissions(permissions);
         this.syncBrowserToolsClientRegistration(connection);
       }
+    }
+  }
+
+  /** Wire the persisted credential-role store; enables auth.device.set_role. */
+  public setDeviceRoleStore(store: DeviceRoleStore | null): void {
+    this.deviceRoleStore = store;
+    this.broadcastCapabilitiesUpdate();
+  }
+
+  /**
+   * Persist a credential's role, then apply it to every live and pending
+   * connection that authenticated with that credential. Returns false when the
+   * credential is unknown.
+   */
+  public async setCredentialRole(credentialId: string, role: DeviceRole): Promise<boolean> {
+    if (!this.deviceRoleStore) return false;
+    if (!(await this.deviceRoleStore.setRole(credentialId, role))) return false;
+    this.applyCredentialRole(credentialId, role);
+    return true;
+  }
+
+  /** Apply a role change to connected sessions; the store is already updated. */
+  public applyCredentialRole(credentialId: string, role: DeviceRole): void {
+    for (const pending of this.pendingConnections.values()) {
+      const device = pending.admission.device;
+      if (device?.id === credentialId) {
+        pending.admission = { ...pending.admission, role, device: { ...device, role } };
+      }
+    }
+    const connections = new Set([
+      ...this.sessions.values(),
+      ...this.externalSessionsByKey.values(),
+    ]);
+    for (const connection of connections) {
+      if (connection.credentialId !== credentialId) continue;
+      connection.session.setRole(role);
+      this.syncBrowserToolsClientRegistration(connection);
+      this.sendToConnection(connection, this.createServerInfoMessage(connection.session));
     }
   }
 
@@ -1482,6 +1554,7 @@ export class VoiceAssistantWebSocketServer {
       device: admission.device ?? null,
       deviceName: params.deviceName ?? null,
       clientType: params.clientType ?? null,
+      role: resolveAdmissionRole(admission),
       connectionLogger,
       onMessage: (msg) => {
         if (!connection) {
@@ -1533,7 +1606,8 @@ export class VoiceAssistantWebSocketServer {
     const base: SessionConnectionBase = {
       session,
       principalId: admission.principalId,
-      sessionKey: sessionConnectionKey(admission.principalId, clientId),
+      credentialId: admission.device?.id ?? null,
+      sessionKey: admissionSessionKey(admission, clientId),
       clientId,
       appVersion,
       clientCapabilities,
@@ -1556,6 +1630,10 @@ export class VoiceAssistantWebSocketServer {
       clientType: options.clientType,
       deviceAccess: this.deviceAccess,
       presence: this.presence,
+      role: options.role,
+      deviceRoles: this.deviceRoleStore
+        ? { setRole: (credentialId, role) => this.setCredentialRole(credentialId, role) }
+        : undefined,
       onMessage: options.onMessage,
       onMessageToSource: options.onMessageToSource,
       onBinaryMessage: options.onBinaryMessage,
@@ -1694,15 +1772,12 @@ export class VoiceAssistantWebSocketServer {
       });
       return;
     }
-    const device = decision.via === "device" && decision.device ? decision.device : null;
-    if (device) {
-      params.pending.admission = {
-        ...params.pending.admission,
-        principalId: device.principalId,
-        permissions: device.permissions,
-        device,
-      };
-    }
+    // The relay client is admitted at its own device's role: a credential is
+    // required here, and a viewer's credential stays a viewer over the relay.
+    params.pending.admission = {
+      ...params.pending.admission,
+      ...admissionForPrincipal(decision.principal, "relay"),
+    };
     this.handleVerifiedHello(params);
   }
 
@@ -1747,7 +1822,7 @@ export class VoiceAssistantWebSocketServer {
     if (message.appVersion) {
       pending.identity.appVersion = message.appVersion;
     }
-    const sessionKey = sessionConnectionKey(pending.admission.principalId, clientId);
+    const sessionKey = admissionSessionKey(pending.admission, clientId);
     const existing = this.externalSessionsByKey.get(sessionKey);
     if (existing) {
       this.resumeSession({ ws, message, pending, existing });
@@ -1812,6 +1887,7 @@ export class VoiceAssistantWebSocketServer {
       existing.clientCapabilities = newClientCapabilities;
       this.syncBrowserToolsClientRegistration(existing);
     }
+    existing.session.setRole(resolveAdmissionRole(pending.admission));
     existing.sockets.add(ws);
     this.sessions.set(ws, existing);
     pending.identity.sessionId = existing.session.getSessionId();
@@ -1840,6 +1916,25 @@ export class VoiceAssistantWebSocketServer {
     }
   }
 
+  /** Role features for server_info; owner-only management is advertised to owners. */
+  private deviceRoleFeatures(session: Session): Record<string, boolean> {
+    return {
+      // COMPAT(deviceAccess): added in v1.6.0, remove after 2027-09-22.
+      // Advertised whenever the device-access service is wired: the auth.device.*
+      // and auth.pairing_* RPCs are what `frogg pair` and the client UI gate on.
+      ...(this.deviceAccess ? { deviceAccess: true } : {}),
+      // COMPAT(sessionPresence): added in v1.6.0, remove after 2027-09-22.
+      ...(this.presence ? { sessionPresence: true } : {}),
+      // COMPAT(deviceRoles): added in v1.6.0, remove after 2027-09-22.
+      deviceRoles: true,
+      // COMPAT(deviceRoleManagement): added in v1.6.0, remove after 2027-09-22.
+      // Only the owner can set roles, so only an owner is told it can.
+      ...(this.deviceRoleStore && session.getRole() === "owner"
+        ? { deviceRoleManagement: true }
+        : {}),
+    };
+  }
+
   private buildServerInfoStatusPayload(session: Session): ServerInfoStatusPayload {
     return {
       status: "server_info",
@@ -1851,10 +1946,13 @@ export class VoiceAssistantWebSocketServer {
       // COMPAT(deviceAccess): added in v1.6.0. Absent for a credential-less
       // (loopback / trusted LAN) connection.
       ...serverInfoDevice(session),
+      // COMPAT(deviceRoles): added in v1.6.0, remove optional parsing after 2027-09-22.
+      callerRole: session.getRole(),
       // COMPAT(desktopManaged): added in v0.1.X, remove optional parsing after 2027-01-16.
       desktopManaged: this.daemonRuntimeConfig?.desktopManaged === true,
       ...(this.serverCapabilities ? { capabilities: this.serverCapabilities } : {}),
       features: {
+        ...this.deviceRoleFeatures(session),
         // COMPAT(directorySync): added in v0.3.x, remove gate after 2027-02-12.
         directorySync: true,
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.

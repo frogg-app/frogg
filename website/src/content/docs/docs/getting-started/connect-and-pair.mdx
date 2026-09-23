@@ -145,6 +145,13 @@ the **Relay endpoint** card on the same **Pair devices** page, then pair again.
 
 <Screenshot src={appPairDeviceImg} alt="Pair a device dialog asking whether to enable relay" />
 
+### Device roles
+
+Each paired device is an owner, an operator or a viewer, and the daemon enforces that role
+on every request. New devices pair as owners unless the owner picks another role; only an
+owner can change a device's role afterwards. See
+[device roles](/docs/self-hosting/security/#device-roles) for what each role may do.
+
 ### Check and reset
 
 ```sh

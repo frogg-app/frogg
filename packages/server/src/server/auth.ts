@@ -11,6 +11,7 @@ import type { IncomingMessage } from "node:http";
 import type { RequestHandler } from "express";
 
 import type { DeviceRole } from "@frogg/protocol/device-access";
+import { defaultRoleForTransport, roleSatisfies } from "./authorization/roles.js";
 import { DEFAULT_TRUST_LAN, isAuthRequired, type DaemonAccessPolicy } from "./access-policy.js";
 import { hashCredential, type DeviceRecord } from "./claim-store.js";
 import type { AuthFailureLimiter } from "./auth-rate-limit.js";
@@ -212,9 +213,19 @@ export function extractWsBearerToken(protocol: string | null): string | null {
   return segments.slice(2).join(".");
 }
 
-/** How a connection authenticated. `device` is set for paired-device credentials only. */
+/**
+ * Who the daemon decided is talking to it. A paired device carries its own
+ * credential, permissions and role; the daemon password and bearer-free trusted
+ * clients (loopback, trusted LAN) have no device record and act as the owner.
+ */
+export type BearerPrincipal =
+  | { kind: "device"; device: DeviceRecord }
+  | { kind: "password" }
+  | { kind: "trusted" };
+
+/** How a connection authenticated. A paired device is always identified as one. */
 export type BearerDecision =
-  | { ok: true; via: "trusted" | "device" | "password"; device?: DeviceRecord }
+  | { ok: true; principal: BearerPrincipal }
   | { ok: false; reason: "unclaimed" | "missing_token" | "invalid_token" | "rate_limited" };
 
 type RequestLike = Pick<IncomingMessage, "headers" | "socket">;
@@ -252,9 +263,9 @@ function preDecide(
   // bearer is required, so presence and revocation see who it is.
   if (token !== null) {
     const device = resolveDevice(auth, token);
-    if (device) return { ok: true, via: "device", device };
+    if (device) return { ok: true, principal: { kind: "device", device } };
   }
-  if (!requestNeedsBearer(auth, req)) return { ok: true, via: "trusted" };
+  if (!requestNeedsBearer(auth, req)) return { ok: true, principal: { kind: "trusted" } };
   const key = clientKey(req);
   if (auth?.limiter?.isBlocked(key)) return { ok: false, reason: "rate_limited" };
   const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
@@ -274,7 +285,7 @@ function finishPassword(
 ): BearerDecision {
   if (ok) {
     auth?.limiter?.recordSuccess(key);
-    return { ok: true, via: "password" };
+    return { ok: true, principal: { kind: "password" } };
   }
   auth?.limiter?.recordFailure(key);
   return { ok: false, reason: "invalid_token" };
@@ -295,7 +306,7 @@ export async function authorizeTunnelledCredential(
 ): Promise<BearerDecision> {
   if (token !== null) {
     const device = resolveDevice(auth, token);
-    if (device) return { ok: true, via: "device", device };
+    if (device) return { ok: true, principal: { kind: "device", device } };
   }
   if (auth?.limiter?.isBlocked(clientKeyOverride)) return { ok: false, reason: "rate_limited" };
   const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
@@ -429,7 +440,8 @@ export type AgentMcpAuthorization =
   | { ok: true; callerAgentId: string | null }
   | { ok: false; status: 401 | 403 | 429 };
 
-const OPERATOR_ROLES: ReadonlySet<DeviceRole> = new Set(["owner", "operator"]);
+/** The role the `mcp` transport is admitted at; a lower-ranked device is refused. */
+const MCP_MINIMUM_ROLE: DeviceRole = defaultRoleForTransport("mcp");
 
 /**
  * Authorizes a request to /mcp/agents (exempt from the global bearer
@@ -457,7 +469,7 @@ export async function authorizeAgentMcpRequest(input: {
   }
   const device = resolveDevice(input.auth, token);
   if (device) {
-    return OPERATOR_ROLES.has(device.role)
+    return roleSatisfies(device.role, MCP_MINIMUM_ROLE)
       ? { ok: true, callerAgentId: null }
       : { ok: false, status: 403 };
   }

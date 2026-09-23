@@ -198,6 +198,7 @@ import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
 import { createAccessPolicy, DEFAULT_TRUST_LAN } from "./access-policy.js";
 import { createClaimStore, type ClaimStore } from "./claim-store.js";
+import { deviceRoleStoreFrom } from "./authorization/device-role-store.js";
 import { createClaimOfferStore } from "./claim-offer-store.js";
 import { buildDirectClaimOffer, type ClaimOfferSource } from "./claim-offer.js";
 import { renderPairingQrSvg } from "./pairing-qr.js";
@@ -2140,6 +2141,7 @@ export async function createFroggDaemon(
               deviceAccess: deviceAccessService,
               presence: presenceService,
             });
+            wsServer.setDeviceRoleStore(deviceRoleStoreFrom(claimStore));
             wsServer.beginAcceptingConnections();
             {
               const server = wsServer;

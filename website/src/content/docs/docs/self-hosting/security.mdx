@@ -93,19 +93,42 @@ Pairing codes are Crockford base32 without `I`, `L`, `O` or `U`, displayed as `X
 and the daemon folds the ambiguous characters back (`I`/`L` → `1`, `O` → `0`) so a
 mistyped code still works.
 
-### Roles
+### Device roles
 
-Every credential carries a role: `owner`, `operator` or `viewer`. Only an owner can mint an
-owner code or approve a request as owner. The Agent MCP endpoint requires `operator` or
-`owner` — a viewer credential is rejected there with `403`.
+Every credential carries one of three roles, enforced by the daemon at admission and on
+every request, including streamed input (terminal keystrokes, agent messages, dictation,
+file writes):
+
+| Role | Can |
+| ---- | --- |
+| `owner` | Everything: daemon settings and updates, provider accounts, pairing codes, approving and revoking devices, setting roles, password and claim settings |
+| `operator` | Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No daemon settings, no device management |
+| `viewer` | Read-only: sessions, timelines, terminal output, file browsing and diffs. No input, no command execution, no writes |
+
+A role never widens what a device was granted — it only narrows it. Devices paired before
+roles existed read as `owner`. Only an owner can mint an owner code, approve a request as
+owner, or change a device's role; a device's own role is reported to it in
+`server_info.callerRole`, and the daemon advertises the `deviceRoles` feature.
+
+The role comes from the credential wherever one is presented, on a direct connection and
+over the relay alike: a viewer phone stays a viewer whichever way it reaches the daemon.
+The daemon password and bearer-free trusted clients (loopback, trusted LAN) act as the
+owner, because they carry no device identity. The Agent MCP endpoint requires an
+`operator` or `owner` credential — a viewer credential is rejected there with `403`.
 
 ### Managing devices
 
-Devices are listed, renamed and revoked over the `auth.device.list`, `auth.device.rename`
-and `auth.device.revoke` session RPCs, which the daemon advertises as the `deviceAccess`
-feature. Revoking a credential closes that device's live connections immediately;
-revoking the device you are using is allowed. `frogg auth reset-claim` still removes every
-device at once.
+Devices are listed, renamed, revoked and re-roled over the `auth.device.list`,
+`auth.device.rename`, `auth.device.revoke` and `auth.device.set_role` session RPCs, which
+the daemon advertises as the `deviceAccess` feature. Changing a role takes effect on that
+device's live connections immediately. Revoking a credential closes that device's live
+connections immediately; revoking the device you are using is allowed. `frogg auth
+reset-claim` still removes every device at once.
+
+Limits:
+
+- There is no per-device revoke or role change from the CLI. `frogg auth reset-claim`
+  removes all devices.
 
 ## Passwords
 

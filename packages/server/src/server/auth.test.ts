@@ -208,7 +208,7 @@ describe("bearer requirement by client locality", () => {
       if (password) {
         expect(await authorizeBearerAsync(auth, req, "correct-password")).toEqual({
           ok: true,
-          via: "password",
+          principal: { kind: "password" },
         });
         expect(await authorizeBearerAsync(auth, req, "wrong")).toEqual({
           ok: false,

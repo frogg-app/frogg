@@ -270,7 +270,11 @@ import {
 } from "./worktree-session.js";
 import { archiveByScope, type ActiveWorkspaceRef } from "./workspace-archive-service.js";
 import { WorkspaceSetupRuntime } from "./workspace-setup-runtime.js";
-import { SessionAuthorization, type DaemonPermission } from "./authorization/index.js";
+import {
+  SessionAuthorization,
+  type DaemonPermission,
+  type DeviceRole,
+} from "./authorization/index.js";
 
 function resolveWorkspaceSetupRuntime(
   runtime: WorkspaceSetupRuntime | undefined,
@@ -436,9 +440,18 @@ const nodeSessionFileSystem: SessionFileSystem = {
 // Stub types for features under development (modules not yet available)
 type AgentMcpTransportFactory = () => Promise<unknown>;
 
+/** Owner-only device role management, provided by the WebSocket server. */
+export interface SessionDeviceRoleManagement {
+  /** Persists and applies the role; false when the credential is unknown. */
+  setRole(credentialId: string, role: DeviceRole): Promise<boolean>;
+}
+
 export interface SessionOptions {
   clientId: string;
   permissions: readonly DaemonPermission[];
+  /** Connecting device's role; owner when the connection has no device credential. */
+  role?: DeviceRole;
+  deviceRoles?: SessionDeviceRoleManagement;
   appVersion?: string | null;
   clientCapabilities?: Record<string, unknown> | null;
   onMessage: (msg: SessionOutboundMessage) => void;
@@ -647,9 +660,21 @@ function isDaemonUpdateMessage(msg: SessionInboundMessage): msg is DaemonUpdateM
   return DAEMON_UPDATE_MESSAGE_TYPES.has(msg.type);
 }
 
+/**
+ * The access defaults a Session falls back to when its transport did not decide
+ * them: kept out of the constructor so adding one does not grow its complexity.
+ */
+function sessionAccessDefaults(options: SessionOptions): {
+  role: DeviceRole;
+  deviceRoles: SessionDeviceRoleManagement | null;
+} {
+  return { role: options.role ?? "owner", deviceRoles: options.deviceRoles ?? null };
+}
+
 export class Session {
   private readonly clientId: string;
   private readonly authorization: SessionAuthorization;
+  private readonly deviceRoles: SessionDeviceRoleManagement | null;
   private appVersion: string | null;
   private clientCapabilities: ReadonlySet<ClientCapability>;
   private readonly sessionId: string;
@@ -816,7 +841,9 @@ export class Session {
       getWebSocketRuntimeMetrics,
     } = options;
     this.clientId = clientId;
-    this.authorization = new SessionAuthorization(permissions);
+    const access = sessionAccessDefaults(options);
+    this.authorization = new SessionAuthorization(permissions, access.role);
+    this.deviceRoles = access.deviceRoles;
     this.appVersion = appVersion ?? null;
     this.clientCapabilities = parseClientCapabilities(clientCapabilities);
     this.sessionId = uuidv4();
@@ -2103,6 +2130,34 @@ export class Session {
     return this.device;
   }
 
+  public setRole(role: DeviceRole): void {
+    this.authorization.replaceRole(role);
+  }
+
+  public getRole(): DeviceRole {
+    return this.authorization.getRole();
+  }
+
+  private async handleDeviceSetRoleRequest(
+    msg: Extract<SessionInboundMessage, { type: "auth.device.set_role.request" }>,
+  ): Promise<void> {
+    const respond = (role: DeviceRole | null, error: string | null) =>
+      this.emit({
+        type: "auth.device.set_role.response",
+        payload: { requestId: msg.requestId, credentialId: msg.credentialId, role, error },
+      });
+    if (!this.deviceRoles) {
+      respond(null, "Device roles cannot be managed on this daemon");
+      return;
+    }
+    const updated = await this.deviceRoles.setRole(msg.credentialId, msg.role);
+    if (!updated) {
+      respond(null, "Unknown device credential");
+      return;
+    }
+    respond(msg.role, null);
+  }
+
   public getPermissions(): DaemonPermission[] {
     return this.authorization.listPermissions();
   }
@@ -2196,6 +2251,8 @@ export class Session {
         return this.deviceAccessSession.handleDeviceRenameRequest(msg);
       case "auth.device.revoke.request":
         return this.deviceAccessSession.handleDeviceRevokeRequest(msg);
+      case "auth.device.set_role.request":
+        return this.handleDeviceSetRoleRequest(msg);
       case "auth.pairing_code.create.request":
         return this.deviceAccessSession.handlePairingCodeCreateRequest(msg);
       case "auth.pairing_request.list.request":
