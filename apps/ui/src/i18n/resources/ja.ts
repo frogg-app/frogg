@@ -2765,6 +2765,7 @@ export const ja: TranslationResources = {
       usage: "使用状況",
       terminals: "ターミナル",
       host: "概要",
+      deploy: "デプロイ",
     },
     metadataGeneration: {
       title: "メタデータ生成",
@@ -3141,6 +3142,7 @@ export const ja: TranslationResources = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "SSH トンネルに失敗しました: {{detail}}",
         serverIdentityMismatch:
           "このホストのアドレスで別のデーモン ({{actualServerId}}) が応答しています。このホスト ({{expectedServerId}}) ではありません。もう一方のデーモンを停止するか、アドレスを確認してください。再接続は引き続き試行されます。",
       },

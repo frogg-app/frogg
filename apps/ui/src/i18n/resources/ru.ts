@@ -2772,6 +2772,7 @@ export const ru: TranslationResources = {
       usage: "Использование",
       terminals: "Терминалы",
       host: "Обзор",
+      deploy: "Развертывание",
     },
     metadataGeneration: {
       title: "Генерация метаданных",
@@ -3156,6 +3157,7 @@ export const ru: TranslationResources = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "Сбой SSH-туннеля: {{detail}}",
         serverIdentityMismatch:
           "По адресу этого хоста отвечает другой демон ({{actualServerId}}), а не этот хост ({{expectedServerId}}). Остановите другой демон или проверьте адрес. Попытки переподключения продолжаются.",
       },

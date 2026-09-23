@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Remote SSH hosts now have a dedicated Deploy settings section. Redeploying
+  keeps the SSH tunnel's loopback listener as its default instead of exposing
+  the daemon on every network interface, and failed tunnel connections now say
+  so explicitly.
+
 - An update whose download is still building shows how far off it is. When a
   release is tagged, each platform's installer is published as its runner
   finishes, so Settings could offer a new version and then say only "No

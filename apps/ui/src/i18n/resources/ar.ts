@@ -2725,6 +2725,7 @@ export const ar: TranslationResources = {
       usage: "الاستخدام",
       terminals: "Terminals",
       host: "نظرة عامة",
+      deploy: "النشر",
     },
     metadataGeneration: {
       title: "إنشاء البيانات الوصفية",
@@ -3100,6 +3101,7 @@ export const ar: TranslationResources = {
     },
     host: {
       connectionErrors: {
+        remoteSsh: "فشل نفق SSH: {{detail}}",
         serverIdentityMismatch:
           "يستجيب خادم مختلف ({{actualServerId}}) على عنوان هذا المضيف، وليس هذا المضيف ({{expectedServerId}}). أوقف الخادم الآخر أو تحقق من العنوان. تستمر محاولات إعادة الاتصال.",
       },

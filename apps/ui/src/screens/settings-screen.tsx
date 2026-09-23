@@ -62,6 +62,7 @@ import {
   HostDevicesPage,
   HostAgentsPage,
   HostSettingsPage,
+  HostDeployPage,
   HostProvidersPage,
   HostUsagePage,
   HostTerminalsPage,
@@ -97,6 +98,8 @@ function renderHostSettingsContent(
   onHostRemoved: () => void,
 ): ReactNode {
   switch (view.section) {
+    case "deploy":
+      return <HostDeployPage serverId={view.serverId} />;
     case "projects":
       return <ProjectsScreen serverId={view.serverId} />;
     case "pair-device":
