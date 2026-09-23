@@ -1951,7 +1951,7 @@ export const fr: TranslationResources = {
       upgradeHint:
         "Cet hôte exécute le daemon {{version}}. Cette application nécessite la version 0.6.0 ou ultérieure du daemon. Mettez à jour le daemon sur cet hôte, redémarrez son service, puis relancez la recherche. Si vous avez déjà installé une mise à jour, l’ancien daemon est toujours en cours d’exécution.",
       pairingHint:
-        "Obtenez un lien d'appairage : lancez `{{cliName}} daemon pair` sur l'hôte ou ouvrez son adresse web, puis scannez-le ou collez-le ici.",
+        "Obtenez un lien d'appairage : lancez `{{cliName}} pair` sur l'hôte ou ouvrez son adresse web, puis scannez-le ou collez-le ici.",
     },
     claim: {
       title: "Appairer avec un daemon {{brandName}}",
@@ -1966,7 +1966,7 @@ export const fr: TranslationResources = {
       noPendingOffer:
         "Ouvrez un lien d'appairage (a link from the daemon) ou collez-en un depuis Ajouter une connexion.",
       newLinkHint:
-        "Les codes d'appairage sont à usage unique et expirent après dix minutes. Obtenez-en un nouveau : lancez `{{cliName}} daemon pair` sur l'hôte ou rechargez son adresse web.",
+        "Les codes d'appairage sont à usage unique et expirent après dix minutes. Obtenez-en un nouveau : lancez `{{cliName}} pair` sur l'hôte ou rechargez son adresse web.",
       triedEndpoints: "Essayé :",
       manualEndpointHelper:
         "Si le daemon est joignable à une autre adresse (VPN, Docker, autre interface), saisissez-la sous la forme hôte:port.",
@@ -2081,7 +2081,7 @@ export const fr: TranslationResources = {
     link: {
       title: "Coller le lien d'association",
       helper:
-        "Collez le lien de la page de revendication du daemon ou de `{{cliName}} daemon pair`. Un nouveau daemon {{brandName}} est revendiqué par le premier appareil qui s'appaire.",
+        "Collez le lien de la page de revendication du daemon ou de `{{cliName}} pair`. Un nouveau daemon {{brandName}} est revendiqué par le premier appareil qui s'appaire.",
       label: "Lien d'appariement",
       errors: {
         required: "Collez un lien d'appairage (…/pair#offer=…)",

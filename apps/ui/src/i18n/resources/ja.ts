@@ -1922,7 +1922,7 @@ export const ja: TranslationResources = {
       upgradeHint:
         "このホストではデーモン {{version}} が実行されています。このアプリにはデーモン 0.6.0 以降が必要です。このホストのデーモンを更新してサービスを再起動し、もう一度スキャンしてください。すでに更新をインストールした場合は、古いデーモンがまだ実行されています。",
       pairingHint:
-        "ペアリングリンクを取得: ホストで `{{cliName}} daemon pair` を実行するか、その Web アドレスを開き、ここでスキャンまたは貼り付けてください。",
+        "ペアリングリンクを取得: ホストで `{{cliName}} pair` を実行するか、その Web アドレスを開き、ここでスキャンまたは貼り付けてください。",
     },
     claim: {
       title: "{{brandName}} デーモンとペアリング",
@@ -1937,7 +1937,7 @@ export const ja: TranslationResources = {
       noPendingOffer:
         "ペアリングリンク (a link from the daemon) を開くか、「接続を追加」から貼り付けてください。",
       newLinkHint:
-        "ペアリングコードは一回限りで、10 分で期限切れになります。新しいコードを取得: ホストで `{{cliName}} daemon pair` を実行するか、その Web アドレスを再読み込みしてください。",
+        "ペアリングコードは一回限りで、10 分で期限切れになります。新しいコードを取得: ホストで `{{cliName}} pair` を実行するか、その Web アドレスを再読み込みしてください。",
       triedEndpoints: "試行済み:",
       manualEndpointHelper:
         "デーモンに別のアドレス (VPN、Docker、別のインターフェース) で到達できる場合は、host:port の形式で入力してください。",
@@ -2051,7 +2051,7 @@ export const ja: TranslationResources = {
     link: {
       title: "ペアリングリンクを貼り付け",
       helper:
-        "デーモンのクレームページまたは `{{cliName}} daemon pair` のリンクを貼り付けてください。新しい {{brandName}} デーモンは最初にペアリングしたデバイスのものになります。",
+        "デーモンのクレームページまたは `{{cliName}} pair` のリンクを貼り付けてください。新しい {{brandName}} デーモンは最初にペアリングしたデバイスのものになります。",
       label: "ペアリングリンク",
       errors: {
         required: "ペアリングリンクを貼り付けてください (…/pair#offer=…)",

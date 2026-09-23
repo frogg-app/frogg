@@ -1911,7 +1911,7 @@ export const ko: TranslationResources = {
       upgradeHint:
         "이 호스트에서 데몬 {{version}} 버전이 실행 중입니다. 이 앱에는 데몬 0.6.0 이상이 필요합니다. 이 호스트의 데몬을 업데이트하고 서비스를 다시 시작한 후 다시 검색하세요. 이미 업데이트를 설치했다면 이전 데몬이 아직 실행 중입니다.",
       pairingHint:
-        "페어링 링크 받기: 호스트에서 `{{cliName}} daemon pair`를 실행하거나 웹 주소를 연 다음, 여기에서 스캔하거나 붙여넣으세요.",
+        "페어링 링크 받기: 호스트에서 `{{cliName}} pair`를 실행하거나 웹 주소를 연 다음, 여기에서 스캔하거나 붙여넣으세요.",
     },
     claim: {
       title: "{{brandName}} 데몬과 페어링",
@@ -1925,7 +1925,7 @@ export const ko: TranslationResources = {
       successRelayBody: "{{host}}을(를) 암호화 릴레이로 추가했습니다.",
       noPendingOffer: "페어링 링크(a link from the daemon)를 열거나 연결 추가에서 붙여넣으세요.",
       newLinkHint:
-        "페어링 코드는 일회용이며 10분 후 만료됩니다. 새 코드 받기: 호스트에서 `{{cliName}} daemon pair`를 실행하거나 웹 주소를 새로 고치세요.",
+        "페어링 코드는 일회용이며 10분 후 만료됩니다. 새 코드 받기: 호스트에서 `{{cliName}} pair`를 실행하거나 웹 주소를 새로 고치세요.",
       triedEndpoints: "시도한 주소:",
       manualEndpointHelper:
         "데몬에 다른 주소(VPN, Docker, 다른 인터페이스)로 접근할 수 있다면 host:port 형식으로 입력하세요.",
@@ -2038,7 +2038,7 @@ export const ko: TranslationResources = {
     link: {
       title: "페어링 링크 붙여넣기",
       helper:
-        "데몬의 클레임 페이지 또는 `{{cliName}} daemon pair`의 링크를 붙여넣으세요. 새 {{brandName}} 데몬은 처음 페어링한 기기가 소유합니다.",
+        "데몬의 클레임 페이지 또는 `{{cliName}} pair`의 링크를 붙여넣으세요. 새 {{brandName}} 데몬은 처음 페어링한 기기가 소유합니다.",
       label: "페어링 링크",
       errors: {
         required: "페어링 링크를 붙여넣으세요 (…/pair#offer=…)",

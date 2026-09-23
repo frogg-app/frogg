@@ -1932,7 +1932,7 @@ export const ptBR: TranslationResources = {
       upgradeHint:
         "Este host está executando o daemon {{version}}. Este aplicativo requer o daemon 0.6.0 ou posterior. Atualize o daemon neste host, reinicie o serviço e busque novamente. Se você já instalou uma atualização, o daemon antigo ainda está em execução.",
       pairingHint:
-        "Obtenha um link de emparelhamento: execute `{{cliName}} daemon pair` no host ou abra o endereço web dele, depois escaneie ou cole aqui.",
+        "Obtenha um link de emparelhamento: execute `{{cliName}} pair` no host ou abra o endereço web dele, depois escaneie ou cole aqui.",
     },
     claim: {
       title: "Emparelhar com um daemon do {{brandName}}",
@@ -1947,7 +1947,7 @@ export const ptBR: TranslationResources = {
       noPendingOffer:
         "Abra um link de emparelhamento (a link from the daemon) ou cole um em Adicionar conexão.",
       newLinkHint:
-        "Códigos de emparelhamento são de uso único e expiram em dez minutos. Obtenha um novo: execute `{{cliName}} daemon pair` no host ou recarregue o endereço web dele.",
+        "Códigos de emparelhamento são de uso único e expiram em dez minutos. Obtenha um novo: execute `{{cliName}} pair` no host ou recarregue o endereço web dele.",
       triedEndpoints: "Tentado:",
       manualEndpointHelper:
         "Se o daemon estiver acessível em outro endereço (VPN, Docker, outra interface), informe-o como host:porta.",
@@ -2062,7 +2062,7 @@ export const ptBR: TranslationResources = {
     link: {
       title: "Colar link de pareamento",
       helper:
-        "Cole o link da página de reivindicação do daemon ou do `{{cliName}} daemon pair`. Um novo daemon do {{brandName}} é reivindicado pelo primeiro dispositivo que emparelha.",
+        "Cole o link da página de reivindicação do daemon ou do `{{cliName}} pair`. Um novo daemon do {{brandName}} é reivindicado pelo primeiro dispositivo que emparelha.",
       label: "Link de pareamento",
       errors: {
         required: "Cole um link de emparelhamento (…/pair#offer=…)",

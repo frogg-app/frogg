@@ -1873,7 +1873,7 @@ export const zhCN: TranslationResources = {
       upgradeHint:
         "此主机正在运行守护进程 {{version}}。此应用需要 0.6.0 或更高版本的守护进程。请更新此主机上的守护进程，重启其服务，然后重新扫描。如果您已安装更新，则说明旧的守护进程仍在运行。",
       pairingHint:
-        "获取配对链接：在主机上运行 `{{cliName}} daemon pair`，或打开其网页地址，然后在此扫描或粘贴。",
+        "获取配对链接：在主机上运行 `{{cliName}} pair`，或打开其网页地址，然后在此扫描或粘贴。",
     },
     claim: {
       title: "与 {{brandName}} 守护进程配对",
@@ -1885,7 +1885,7 @@ export const zhCN: TranslationResources = {
       successRelayBody: "已通过加密中继添加 {{host}}。",
       noPendingOffer: "打开配对链接 (a link from the daemon)，或在“添加连接”中粘贴一个。",
       newLinkHint:
-        "配对码仅可使用一次，十分钟后过期。获取新配对码：在主机上运行 `{{cliName}} daemon pair`，或刷新其网页地址。",
+        "配对码仅可使用一次，十分钟后过期。获取新配对码：在主机上运行 `{{cliName}} pair`，或刷新其网页地址。",
       triedEndpoints: "已尝试：",
       manualEndpointHelper:
         "如果守护进程可通过其他地址访问（VPN、Docker、其他网卡），请以 host:port 形式输入。",
@@ -1996,7 +1996,7 @@ export const zhCN: TranslationResources = {
     link: {
       title: "粘贴配对链接",
       helper:
-        "粘贴守护进程认领页面或 `{{cliName}} daemon pair` 给出的链接。新的 {{brandName}} 守护进程归第一个配对的设备所有。",
+        "粘贴守护进程认领页面或 `{{cliName}} pair` 给出的链接。新的 {{brandName}} 守护进程归第一个配对的设备所有。",
       label: "配对链接",
       errors: {
         required: "请粘贴配对链接 (…/pair#offer=…)",

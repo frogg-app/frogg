@@ -1911,7 +1911,7 @@ export const en = {
       upgradeHint:
         "This host is running daemon {{version}}. This app requires daemon 0.6.0 or later. Update the daemon on this host, restart its service, then scan again. If you already installed an update, the old daemon is still running.",
       pairingHint:
-        "Get a pairing link: run `{{cliName}} daemon pair` on the host, or open its web address, then scan or paste it here.",
+        "Get a pairing link: run `{{cliName}} pair` on the host, or open its web address, then scan or paste it here.",
     },
     claim: {
       title: "Pair with an {{brandName}} daemon",
@@ -1926,7 +1926,7 @@ export const en = {
       noPendingOffer:
         "Open a pairing link (a link from the daemon) or paste one from Add connection.",
       newLinkHint:
-        "Pairing codes are single-use and expire after ten minutes. Get a new one: run `{{cliName}} daemon pair` on the host, or reload its web address for a fresh code.",
+        "Pairing codes are single-use and expire after ten minutes. Get a new one: run `{{cliName}} pair` on the host, or reload its web address for a fresh code.",
       triedEndpoints: "Tried:",
       manualEndpointHelper:
         "If the daemon is reachable at another address (VPN, Docker, a different interface), enter it as host:port.",
@@ -2040,7 +2040,7 @@ export const en = {
     link: {
       title: "Paste pairing link",
       helper:
-        "Paste the link from the daemon's claim page or from `{{cliName}} daemon pair`. A new {{brandName}} daemon is claimed by the first device that pairs.",
+        "Paste the link from the daemon's claim page or from `{{cliName}} pair`. A new {{brandName}} daemon is claimed by the first device that pairs.",
       label: "Pairing link",
       errors: {
         required: "Paste a pairing link (…/pair#offer=…)",

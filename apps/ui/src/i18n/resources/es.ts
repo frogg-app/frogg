@@ -1947,7 +1947,7 @@ export const es: TranslationResources = {
       upgradeHint:
         "Este equipo está ejecutando el daemon {{version}}. Esta aplicación requiere la versión 0.6.0 o posterior del daemon. Actualiza el daemon en este equipo, reinicia su servicio y vuelve a buscar. Si ya instalaste una actualización, el daemon antiguo sigue ejecutándose.",
       pairingHint:
-        "Obtén un enlace de emparejamiento: ejecuta `{{cliName}} daemon pair` en el host o abre su dirección web, y luego escanéalo o pégalo aquí.",
+        "Obtén un enlace de emparejamiento: ejecuta `{{cliName}} pair` en el host o abre su dirección web, y luego escanéalo o pégalo aquí.",
     },
     claim: {
       title: "Emparejar con un daemon de {{brandName}}",
@@ -1962,7 +1962,7 @@ export const es: TranslationResources = {
       noPendingOffer:
         "Abre un enlace de emparejamiento (a link from the daemon) o pega uno desde Añadir conexión.",
       newLinkHint:
-        "Los códigos de emparejamiento son de un solo uso y caducan a los diez minutos. Consigue uno nuevo: ejecuta `{{cliName}} daemon pair` en el host o recarga su dirección web.",
+        "Los códigos de emparejamiento son de un solo uso y caducan a los diez minutos. Consigue uno nuevo: ejecuta `{{cliName}} pair` en el host o recarga su dirección web.",
       triedEndpoints: "Intentado:",
       manualEndpointHelper:
         "Si el daemon es accesible en otra dirección (VPN, Docker, otra interfaz), escríbela como host:puerto.",
@@ -2077,7 +2077,7 @@ export const es: TranslationResources = {
     link: {
       title: "Pegar enlace de emparejamiento",
       helper:
-        "Pega el enlace de la página de reclamación del daemon o de `{{cliName}} daemon pair`. Un daemon de {{brandName}} nuevo queda reclamado por el primer dispositivo que se empareja.",
+        "Pega el enlace de la página de reclamación del daemon o de `{{cliName}} pair`. Un daemon de {{brandName}} nuevo queda reclamado por el primer dispositivo que se empareja.",
       label: "Enlace de emparejamiento",
       errors: {
         required: "Pega un enlace de emparejamiento (…/pair#offer=…)",
