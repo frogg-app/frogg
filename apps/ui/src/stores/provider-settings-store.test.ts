@@ -7,7 +7,6 @@ describe("provider settings store", () => {
       serverId: null,
       provider: null,
       overlayParentLayer: 0,
-      surface: "diagnostics",
       visible: false,
     });
   });
@@ -25,15 +24,5 @@ describe("provider settings store", () => {
       provider: "claude",
     });
     expect(useProviderSettingsStore.getState().overlayParentLayer).toBe(0);
-  });
-
-  it("opens the full provider settings when asked, and diagnostics by default", () => {
-    useProviderSettingsStore
-      .getState()
-      .open({ serverId: "server-1", provider: "claude", surface: "settings" });
-    expect(useProviderSettingsStore.getState().surface).toBe("settings");
-
-    useProviderSettingsStore.getState().open({ serverId: "server-1", provider: "claude" });
-    expect(useProviderSettingsStore.getState().surface).toBe("diagnostics");
   });
 });

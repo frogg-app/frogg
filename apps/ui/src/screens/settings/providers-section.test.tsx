@@ -47,7 +47,11 @@ const {
   patchConfigMock: vi.fn(async () => undefined),
   openProviderSettingsMock: vi.fn(),
   providerUpdateState: {
-    entries: [] as Array<{ provider: string; status: string; updatable: boolean }>,
+    entries: [] as Array<{
+      provider: string;
+      status: string;
+      updatable: boolean;
+    }>,
   },
 }));
 
@@ -454,24 +458,23 @@ describe("ProvidersSection", () => {
     expect(modal?.textContent).toBe("claude");
   });
 
-  it("opens the diagnostic sheet when the outer row is pressed for a disabled provider", () => {
+  it("opens the settings modal when the outer row is pressed for a disabled provider", () => {
     snapshotState.entries = [disabledCodexEntry];
     configState.config = makeConfig({ codex: { enabled: false } });
 
     render();
 
-    expect(openProviderSettingsMock).not.toHaveBeenCalled();
+    expect(container?.querySelector('[data-testid="provider-settings-modal"]')).toBeNull();
 
     const row = findRow("Codex provider details");
     act(() => {
       row.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
     });
 
-    expect(openProviderSettingsMock).toHaveBeenCalledTimes(1);
-    expect(openProviderSettingsMock).toHaveBeenCalledWith({
-      serverId: "server-1",
-      provider: "codex",
-    });
+    expect(openProviderSettingsMock).not.toHaveBeenCalled();
+    const modal = container?.querySelector('[data-testid="provider-settings-modal"]');
+    expect(modal).not.toBeNull();
+    expect(modal?.textContent).toBe("codex");
   });
 
   it("toggles the provider enabled flag through patchConfig when the switch is pressed", async () => {

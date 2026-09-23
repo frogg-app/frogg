@@ -86,7 +86,10 @@ describe("ProviderUpdateService.check", () => {
     findExecutableMock.mockImplementation(async (name: string) =>
       name === "claude" ? "/usr/bin/claude" : null,
     );
-    execCommandMock.mockResolvedValue({ stdout: "1.9.0 (Claude Code)", stderr: "" });
+    execCommandMock.mockResolvedValue({
+      stdout: "1.9.0 (Claude Code)",
+      stderr: "",
+    });
 
     const snapshot = await createService().check();
     const claude = snapshot.entries.find((entry) => entry.provider === "claude");
@@ -106,7 +109,11 @@ describe("ProviderUpdateService.check", () => {
     const snapshot = await createService().check();
     const pi = snapshot.entries.find((entry) => entry.provider === "pi");
 
-    expect(pi).toMatchObject({ status: "unmanaged", updatable: false, latestVersion: null });
+    expect(pi).toMatchObject({
+      status: "unmanaged",
+      updatable: false,
+      latestVersion: null,
+    });
   });
 
   it("reports a missing binary as not-installed but still names the latest release", async () => {
@@ -173,7 +180,11 @@ describe("ProviderUpdateService.update", () => {
 
     expect(installer).not.toHaveBeenCalled();
     expect(selfUpdater).toHaveBeenCalledWith("/home/user/.local/bin/claude", ["update"], undefined);
-    expect(result).toMatchObject({ updated: true, installedVersion: "2.0.0", error: null });
+    expect(result).toMatchObject({
+      updated: true,
+      installedVersion: "2.0.0",
+      error: null,
+    });
   });
 
   it("still installs through npm when the binary is npm-managed", async () => {
@@ -191,6 +202,35 @@ describe("ProviderUpdateService.update", () => {
 
     expect(selfUpdater).not.toHaveBeenCalled();
     expect(installer).toHaveBeenCalledWith("@anthropic-ai/claude-code", undefined);
+  });
+
+  it("falls back to the CLI's own updater when the global npm prefix is not writable", async () => {
+    findExecutableMock.mockResolvedValue("/usr/lib/node_modules/.bin/claude");
+    execCommandMock
+      .mockResolvedValueOnce({ stdout: "1.9.0", stderr: "" })
+      .mockResolvedValueOnce({ stdout: "2.0.0", stderr: "" });
+    const installer = vi.fn(async () => {
+      throw new Error("EACCES: permission denied, mkdir '/usr/lib/node_modules/@anthropic-ai'");
+    });
+    const selfUpdater = vi.fn(async () => ({ output: "updated" }));
+
+    const result = await createService({
+      descriptors: [{ ...DESCRIPTORS[0], selfUpdateArgs: ["update"] }, DESCRIPTORS[1]],
+      installer,
+      selfUpdater,
+      isNpmManagedBinary: async () => true,
+    }).update("claude");
+
+    expect(selfUpdater).toHaveBeenCalledWith(
+      "/usr/lib/node_modules/.bin/claude",
+      ["update"],
+      undefined,
+    );
+    expect(result).toMatchObject({
+      updated: true,
+      installedVersion: "2.0.0",
+      error: null,
+    });
   });
 
   it("refuses a provider it does not distribute", async () => {

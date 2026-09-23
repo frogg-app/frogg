@@ -78,7 +78,13 @@ export interface ProviderInstaller {
 }
 
 export interface ProviderSelfUpdater {
-  (binaryPath: string, args: readonly string[], signal?: AbortSignal): Promise<{ output: string }>;
+  (
+    binaryPath: string,
+    args: readonly string[],
+    signal?: AbortSignal,
+  ): Promise<{
+    output: string;
+  }>;
 }
 
 const DEFAULT_CACHE_TTL_MS = 30 * 60 * 1000;
@@ -151,7 +157,10 @@ export class ProviderUpdateService {
   private readonly installer: ProviderInstaller;
   private readonly selfUpdater: ProviderSelfUpdater;
   private readonly isNpmManagedBinary: (binaryPath: string) => Promise<boolean>;
-  private cached: { checkedAtMs: number; snapshot: ProviderUpdateSnapshot } | null = null;
+  private cached: {
+    checkedAtMs: number;
+    snapshot: ProviderUpdateSnapshot;
+  } | null = null;
   private inFlight: Promise<ProviderUpdateSnapshot> | null = null;
   private readonly installsInFlight = new Map<string, Promise<ProviderUpdateResult>>();
 
@@ -203,7 +212,10 @@ export class ProviderUpdateService {
     const binaryPath = await this.resolveBinary(descriptor);
     const installed = binaryPath
       ? await probeInstalledVersion(binaryPath, descriptor.versionArgs, signal)
-      : { version: null as string | null, error: undefined as string | undefined };
+      : {
+          version: null as string | null,
+          error: undefined as string | undefined,
+        };
 
     const updatable = isProviderUpdatable(descriptor);
     const base = {
@@ -305,27 +317,52 @@ export class ProviderUpdateService {
       ? (await probeInstalledVersion(binaryPath, descriptor.versionArgs, signal)).version
       : null;
 
+    const canSelfUpdate = Boolean(binaryPath && descriptor.selfUpdateArgs?.length);
+    const selfUpdate = () =>
+      this.selfUpdater(binaryPath as string, descriptor.selfUpdateArgs as string[], signal);
+
     let output = "";
     try {
       const result = (await this.shouldSelfUpdate(descriptor, binaryPath))
-        ? await this.selfUpdater(
-            binaryPath as string,
-            descriptor.selfUpdateArgs as string[],
-            signal,
-          )
+        ? await selfUpdate()
         : await this.installer(descriptor.npmPackage as string, signal);
       output = result.output;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.warn({ provider, err: message }, "provider update failed");
-      return {
-        provider,
-        updated: false,
-        previousVersion,
-        installedVersion: previousVersion,
-        error: message,
-        output,
-      };
+      // A global npm prefix the daemon cannot write to (a root-owned
+      // /usr/lib/node_modules is the common one) fails every time, while the
+      // CLI's own updater installs into the user's home and succeeds.
+      if (canSelfUpdate) {
+        this.logger.warn(
+          { provider, err: message },
+          "npm install failed; falling back to the CLI's own updater",
+        );
+        try {
+          output = (await selfUpdate()).output;
+        } catch (fallbackError) {
+          const fallbackMessage =
+            fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+          this.logger.warn({ provider, err: fallbackMessage }, "provider update failed");
+          return {
+            provider,
+            updated: false,
+            previousVersion,
+            installedVersion: previousVersion,
+            error: fallbackMessage,
+            output,
+          };
+        }
+      } else {
+        this.logger.warn({ provider, err: message }, "provider update failed");
+        return {
+          provider,
+          updated: false,
+          previousVersion,
+          installedVersion: previousVersion,
+          error: message,
+          output,
+        };
+      }
     }
 
     // The freshly installed binary may sit at a new path (first install), so

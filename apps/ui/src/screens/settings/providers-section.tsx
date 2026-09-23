@@ -26,7 +26,6 @@ import { getProviderIcon } from "@/components/provider-icons";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Switch } from "@/components/ui/switch";
 import { SettingsSection } from "@/screens/settings/settings-section";
-import { useProviderSettingsStore } from "@/stores/provider-settings-store";
 import { filterSelectableModels } from "@/provider-selection/model-catalog";
 import { Settings } from "lucide-react-native";
 import { ProviderSettingsModal } from "@/screens/settings/provider-settings-modal/provider-settings-modal";
@@ -93,7 +92,6 @@ interface ProviderRowProps {
   hasUpdate: boolean;
   onPress: (providerId: string) => void;
   onToggleEnabled: (providerId: string, enabled: boolean) => void;
-  onOpenSettings: (providerId: string) => void;
 }
 
 function stopPressInPropagation(event: GestureResponderEvent) {
@@ -110,7 +108,6 @@ function ProviderRow({
   hasUpdate,
   onPress,
   onToggleEnabled,
-  onOpenSettings,
 }: ProviderRowProps) {
   const { t } = useTranslation();
   const { theme } = useUnistyles();
@@ -135,9 +132,6 @@ function ProviderRow({
     },
     [def.id, onToggleEnabled],
   );
-  const handleOpenSettings = useCallback(() => {
-    onOpenSettings(def.id);
-  }, [def.id, onOpenSettings]);
   const rowStyle = useCallback(
     ({ pressed, hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
       settingsStyles.row,
@@ -205,7 +199,7 @@ function ProviderRow({
               {isInstalled ? (
                 <Pressable
                   hitSlop={8}
-                  onPress={handleOpenSettings}
+                  onPress={handlePress}
                   onPressIn={stopPressInPropagation}
                   style={settingsButtonStyle}
                   accessibilityRole="button"
@@ -303,20 +297,12 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
     [providerUpdates.entries],
   );
   const { patchConfig } = useDaemonConfig(serverId);
-  const openProviderSettings = useProviderSettingsStore((state) => state.open);
   const [pendingProviderId, setPendingProviderId] = useState<string | null>(null);
   const [installingProviderId, setInstallingProviderId] = useState<string | null>(null);
   const [settingsModalProviderId, setSettingsModalProviderId] = useState<string | null>(null);
 
   const providerDefinitions = useMemo(() => buildProviderDefinitions(entries), [entries]);
   const hasServer = serverId.length > 0;
-
-  const handleOpenProviderSettings = useCallback(
-    (providerId: string) => {
-      openProviderSettings({ serverId, provider: providerId });
-    },
-    [openProviderSettings, serverId],
-  );
 
   const handleToggleEnabled = useCallback(
     async (providerId: string, enabled: boolean) => {
@@ -394,9 +380,8 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
                   isInstalled={entry.status !== "unavailable"}
                   isFirst={index === 0}
                   hasUpdate={providersWithUpdates.has(def.id)}
-                  onPress={handleOpenProviderSettings}
+                  onPress={handleOpenSettings}
                   onToggleEnabled={handleToggleEnabled}
-                  onOpenSettings={handleOpenSettings}
                 />
               );
             })}

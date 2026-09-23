@@ -29,7 +29,9 @@ async function openProviderSettingsFromModelSelector(page: Page) {
   await expect(modelBrowser).toBeVisible({ timeout: 10_000 });
 
   await page.getByRole("button", { name: /Open .* settings/ }).click();
-  await expect(page.getByTestId("provider-settings-sheet")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("provider-settings-modal")).toBeVisible({
+    timeout: 10_000,
+  });
 }
 
 async function expectModelBrowserVisible(page: Page) {
@@ -93,7 +95,12 @@ async function hasFocusWithin(locator: Locator): Promise<boolean> {
 }
 
 async function expectProviderSettingsVisible(page: Page) {
-  await expect(page.getByTestId("provider-settings-sheet")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("provider-settings-modal")).toBeVisible({
+    timeout: 10_000,
+  });
+  // The model catalogue and its actions live on the provider's own tab, which
+  // the sheet header doubles as.
+  await page.getByTestId("provider-settings-modal-header").click();
   await expect(page.getByRole("button", { name: "Add model" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Diagnostic", exact: true })).toBeVisible();
 }
@@ -102,19 +109,27 @@ async function exerciseProviderSettingsStack(page: Page) {
   await expectProviderSettingsVisible(page);
 
   await page.getByRole("button", { name: "Add model" }).click();
-  await expect(page.getByTestId("add-custom-model-sheet")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("add-custom-model-sheet")).toBeVisible({
+    timeout: 10_000,
+  });
   await closeSheetByHeaderButton(page, "add-custom-model-sheet");
-  await expect(page.getByPlaceholder("e.g. openai/gpt-5")).not.toBeVisible({ timeout: 10_000 });
+  await expect(page.getByPlaceholder("e.g. openai/gpt-5")).not.toBeVisible({
+    timeout: 10_000,
+  });
   await expectProviderSettingsVisible(page);
 
   await page.getByRole("button", { name: "Diagnostic", exact: true }).click();
-  await expect(page.getByTestId("provider-diagnostic-sheet")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("provider-diagnostic-sheet")).toBeVisible({
+    timeout: 10_000,
+  });
   await page.getByRole("button", { name: /Refresh diagnostic/ }).click();
-  await expect(page.getByTestId("provider-diagnostic-sheet")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("provider-diagnostic-sheet")).toBeVisible({
+    timeout: 10_000,
+  });
   await closeSheetByHeaderButton(page, "provider-diagnostic-sheet");
   await expectProviderSettingsVisible(page);
 
-  await page.getByRole("button", { name: "Refresh", exact: true }).click();
+  await page.getByTestId("provider-settings-models-refresh").click();
   await expectProviderSettingsVisible(page);
 }
 
@@ -168,9 +183,9 @@ test.describe("provider settings overlay stack", () => {
       const settingsButton = page.getByTestId("selector-header-settings-mock");
       await settingsButton.click();
 
-      const settings = page.getByTestId("provider-settings-sheet");
+      const settings = page.getByTestId("provider-settings-modal");
       await expect(settings).toBeVisible({ timeout: 10_000 });
-      await expectOverlayAbove(page, "provider-settings-sheet", "combobox-desktop-container");
+      await expectOverlayAbove(page, "provider-settings-modal", "combobox-desktop-container");
 
       await page.keyboard.press("Escape");
       await expect(settings).not.toBeVisible({ timeout: 10_000 });
@@ -191,13 +206,15 @@ test.describe("provider settings overlay stack", () => {
     try {
       await openProviderSettingsFromModelSelector(page);
       await exerciseProviderSettingsStack(page);
-      await closeSheetByHeaderButton(page, "provider-settings-sheet");
+      await closeSheetByHeaderButton(page, "provider-settings-modal");
 
       await expectModelBrowserVisible(page);
       await page.getByRole("button", { name: /Open .* settings/ }).click();
-      await expect(page.getByTestId("provider-settings-sheet")).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByTestId("provider-settings-modal")).toBeVisible({
+        timeout: 10_000,
+      });
       await exerciseProviderSettingsStack(page);
-      await closeSheetByHeaderButton(page, "provider-settings-sheet");
+      await closeSheetByHeaderButton(page, "provider-settings-modal");
 
       await expectModelBrowserVisible(page);
       await closeTopSheet(page);
