@@ -1837,19 +1837,27 @@ export const en = {
         tunnel: "SSH tunnel",
         lan: "Network",
         tunnelHint:
-          "Recommended. The daemon listens on loopback only and the app reaches it through SSH.",
+          "Recommended. The daemon listens on loopback only, so nothing on the host's network can reach it, and the app reaches it through SSH.",
         lanHint:
-          "The daemon listens on all interfaces on port {{port}} and this device pairs with it over the network.",
+          "Exposed. The daemon listens on all interfaces on port {{port}}. The deploy first stops it trusting the host's own network, so every network client has to pair.",
       },
       steps: {
         connect: "Connect and detect platform",
         install: "Install daemon and start service",
         upgrade: "Upgrade daemon from {{from}}",
         reinstall: "Reinstall daemon {{version}}",
+        secure: "Require pairing on the network",
         pairCode: "Get pairing code over SSH",
         pair: "Pair this device",
       },
-      skipped: "Skipped: the daemon issued no pairing code; SSH authenticates the host.",
+      lanTrusted:
+        "Warning: this daemon still treats its own network as trusted, so nearby devices can connect without pairing.",
+      skippedSteps: {
+        secure:
+          "Skipped: the daemon was already installed, so its network trust was left as it is.",
+        pairCode:
+          "Skipped: the daemon issued no pairing code, so this device has no credential on it.",
+      },
       platform: "Detected {{platform}}",
       formErrors: {
         hostRequired: "Choose a host or enter one.",
@@ -1857,19 +1865,21 @@ export const en = {
         invalidSshPort: "Enter an SSH port between 1 and 65535.",
         invalidDaemonPort: "Enter a daemon port between 1 and 65535.",
         invalidKeyFile: "Enter an absolute path or one starting with ~/.",
-        tunnelKeyUnsupported:
-          "SSH tunnel connections use ssh-agent and ~/.ssh/config only. Add this key to your SSH config, or connect through the network.",
       },
       errors: {
         ssh_failed: "Could not connect over SSH. {{detail}}",
         unsupported_platform:
           "{{detail}} is not supported. The daemon runs on Linux and macOS, x86_64 or arm64.",
         install_failed: "The install failed. {{detail}}",
+        harden_failed:
+          "The daemon was installed but its trust of the host's own network could not be turned off, so pairing was stopped. {{detail}}",
         pair_code_unavailable:
           "The daemon did not issue a pairing code. {{detail}} Update the daemon, or connect through an SSH tunnel.",
         invalid_pair_code: "The pairing code from the daemon could not be read. {{detail}}",
         fingerprint_mismatch:
           "The daemon key does not match the fingerprint reported over SSH, so pairing was stopped. {{detail}}",
+        fingerprint_changed:
+          "This host's daemon key has changed since it was first deployed, so pairing was stopped. Remove the host and deploy again only if you replaced the machine. {{detail}}",
         server_mismatch: "A different daemon answered than the one installed over SSH. {{detail}}",
         unreachable:
           "This device cannot reach the daemon on port {{port}}. Open the port in the host firewall, or connect through an SSH tunnel.",
@@ -1888,7 +1898,7 @@ export const en = {
       },
       success: "{{name}} was added.",
       unverified:
-        "The daemon issued no pairing code, so the connection relies on the SSH host key alone.",
+        "The daemon issued this device no credential, so the connection relies on the SSH host key alone and cannot be revoked from the host.",
     },
     networkScan: {
       searching: "Scanning…",

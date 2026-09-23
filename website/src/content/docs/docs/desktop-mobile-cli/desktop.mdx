@@ -85,33 +85,53 @@ and adds it as a host, without running anything there by hand. The app also offe
 
 Pick an entry from `~/.ssh/config` — `Include` files, `Host` aliases, `ProxyJump` and
 `IdentityFile` are all honoured, because the connection runs `ssh <alias>` — or switch to
-**Manual** and give `user@host`, ports and an optional key file.
+**Manual** and give `user@host`, ports and an optional key file. A key file applies to the
+saved host too, so it reconnects with the same key the deploy used — including over a
+tunnel.
 
-**Connect through** decides how the app reaches the daemon afterwards:
+**Connect through** decides how the app reaches the daemon afterwards, and how exposed it
+is:
 
-- **SSH tunnel** (recommended) binds the daemon to `127.0.0.1` and reaches it through SSH,
-  so it is never exposed on the network.
-- **Network** binds `0.0.0.0:<daemon port>` and the app connects directly, pairing itself
-  with the code the daemon issues.
+- **SSH tunnel** (the default) binds the daemon to `127.0.0.1`, so nothing on the remote
+  machine's network can reach it at all, and the app reaches it through SSH.
+- **Network** binds `0.0.0.0:<daemon port>`, so the daemon is reachable from the remote
+  machine's network. The deploy first stops it trusting that network, so every client on
+  it has to pair.
 
-The deploy runs as four steps, with the remote log available beneath them:
+Either way the deploy pairs this device and stores a device credential, so the connection
+can be revoked, given a role, and shown as present from the host — a tunnel is not treated
+as authenticated just because SSH reached it.
+
+The deploy runs as five steps, with the remote log available beneath them:
 
 1. **Connect and detect platform** — OS, architecture, Docker, systemd user services,
    `curl` and any existing install.
 2. **Install daemon and start service** — the same `install.sh` you would run by hand is
    piped over SSH. Nothing is uploaded: the host downloads the release bundle itself, at
    the version that matches the app.
-3. **Get pairing code over SSH** — the app runs the daemon's own `frogg pair` over the
+3. **Require pairing on the network** — a freshly installed daemon trusts its own local
+   network, which would make every machine on it an owner without pairing. The app turns
+   that off (`daemon.auth.trustLan`) before any pairing code exists. It is skipped on a
+   host that already had a daemon, whose existing LAN clients are left alone, and on a
+   daemon too old to have the setting — which the result then warns about.
+4. **Get pairing code over SSH** — the app runs the daemon's own `frogg pair` over the
    same SSH session, so the SSH connection is what vouches for the daemon's identity.
-4. **Pair this device** — the app checks the daemon's key fingerprint against the one the
-   pairing code names, refusing to continue if they differ, and records this device's name
-   on the credential the daemon issues.
+5. **Pair this device** — the app redeems that code and records this device's name on the
+   credential the daemon issues. On a tunnel the code is redeemed through a short-lived
+   loopback forward, closed as soon as pairing finishes.
+
+The app records the daemon's key fingerprint against the host the first time it deploys.
+A later deploy that finds a different key for the same daemon is refused rather than
+paired again, which is what a replaced or impersonated machine looks like. On the first
+deploy the fingerprint arrives over the same SSH session it is checked against, so it is
+SSH — not the fingerprint — that establishes trust; the recorded key is what makes the
+later check meaningful.
 
 Re-running on a host that already has a daemon **upgrades** it, or reinstalls it when the
 versions already match; the step is labelled accordingly. Each step reports its own error —
-an unreachable host, an unsupported platform, a failed install, a rejected or expired code,
-a fingerprint mismatch — and **Retry** restarts from the form. Cancelling stops the remote
-job as well.
+an unreachable host, an unsupported platform, a failed install, a daemon that could not be
+locked down, a rejected or expired code, a fingerprint mismatch or a changed daemon key —
+and **Retry** restarts from the form. Cancelling stops the remote job as well.
 
 The host's settings can also **uninstall** the daemon. Daemon state in `~/.frogg` is kept.
 

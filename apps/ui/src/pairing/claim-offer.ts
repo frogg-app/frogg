@@ -290,10 +290,15 @@ export async function claimDirectOffer(
  */
 export async function claimDirectPairingLink(
   link: DirectPairingLink,
-  input: { label: string } & Pick<ClaimOfferOptions, "fetchImpl">,
+  input: { label: string } & Pick<ClaimOfferOptions, "fetchImpl" | "endpointOverride">,
 ): Promise<ClaimResult> {
-  const endpoint = normalizeHostPort(`${link.host}:${link.port}`);
-  const useTls = link.useTls === true;
+  // A tunnel deploy redeems the same link through a loopback forward, so the
+  // endpoint the link names is not the one this device can reach. The
+  // serverId check below still ties the credential to the daemon SSH named.
+  const endpoint = input.endpointOverride
+    ? normalizeHostPort(input.endpointOverride)
+    : normalizeHostPort(`${link.host}:${link.port}`);
+  const useTls = input.endpointOverride ? false : link.useTls === true;
   const claimed = await claimDaemon({
     endpoint,
     useTls,

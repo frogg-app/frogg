@@ -60,10 +60,14 @@ function deps(overrides: Partial<DeployToHostDeps> = {}): DeployToHostDeps {
       fingerprint: FINGERPRINT,
       expiresAt: null,
     })),
+    harden: vi.fn(async () => ({ trustLan: false, applied: "live", unsupported: false })),
+    tunnelCredential: vi.fn(async () => "device-credential"),
     connectTunnel: vi.fn(async () => ({ serverId: "srv-1", hostname: "box" })),
     claim: vi.fn(async () => ({ serverId: "srv-1", hostname: "box" })),
     claimPairingLink: vi.fn(async () => ({ serverId: "srv-1", hostname: "box" })),
     fingerprint: (key) => daemonKeyFingerprint(key),
+    pinnedFingerprint: vi.fn(() => null),
+    pinFingerprint: vi.fn(async () => undefined),
     ...overrides,
   };
 }
@@ -97,9 +101,12 @@ describe("deploy to host", () => {
       }),
       expect.anything(),
     );
+    // The tunnel pairs for real: the credential rides the tunnel as the
+    // daemon password, so the daemon has a principal to revoke.
     expect(d.connectTunnel).toHaveBeenCalledWith({
       host: "u@box",
       daemonPort: 9999,
+      password: "device-credential",
     });
     expect(d.claim).not.toHaveBeenCalled();
     expect(steps).toEqual([
@@ -107,11 +114,97 @@ describe("deploy to host", () => {
       "connect:done",
       "install:running",
       "install:done",
+      "secure:running",
+      "secure:done",
       "pairCode:running",
       "pairCode:done",
       "pair:running",
       "pair:done",
     ]);
+  });
+
+  it("reports a tunnel host unverified when no credential could be obtained", async () => {
+    const d = deps({ tunnelCredential: vi.fn(async () => null) });
+    await expect(run("tunnel", d).promise).resolves.toMatchObject({ verified: false });
+    expect(d.connectTunnel).toHaveBeenCalledWith(
+      expect.not.objectContaining({ password: expect.anything() }),
+    );
+  });
+
+  it("pins the daemon key on a first deploy", async () => {
+    const d = deps();
+    await expect(run("lan", d).promise).resolves.toMatchObject({ serverId: "srv-1" });
+    expect(d.pinFingerprint).toHaveBeenCalledWith("srv-1", FINGERPRINT);
+  });
+
+  it("refuses a known server id whose key changed", async () => {
+    const d = deps({ pinnedFingerprint: vi.fn(() => "SHA256:someotherkey") });
+    const { promise, steps } = run("lan", d);
+    await expect(promise).rejects.toMatchObject({
+      step: "pairCode",
+      code: "fingerprint_changed",
+    });
+    expect(d.claim).not.toHaveBeenCalled();
+    expect(d.claimPairingLink).not.toHaveBeenCalled();
+    expect(steps).toContain("pairCode:failed");
+  });
+
+  it("accepts the same key spelled the daemon's way", async () => {
+    const d = deps({
+      pinnedFingerprint: vi.fn(() => daemonKeyFingerprintUrlSafe(KEY)),
+    });
+    await expect(run("lan", d).promise).resolves.toMatchObject({ serverId: "srv-1" });
+  });
+
+  it("stops a fresh daemon trusting its LAN before any pairing code exists", async () => {
+    const d = deps();
+    const order: string[] = [];
+    d.harden = vi.fn(async () => {
+      order.push("harden");
+      return { trustLan: false, applied: "live", unsupported: false };
+    });
+    const pairCode = d.pairCode;
+    d.pairCode = vi.fn(async (target) => {
+      order.push("pairCode");
+      return pairCode(target);
+    });
+    await expect(run("lan", d).promise).resolves.toMatchObject({ lanLockedDown: true });
+    expect(d.harden).toHaveBeenCalledWith({ host: "u@box" });
+    expect(order).toEqual(["harden", "pairCode"]);
+  });
+
+  it("leaves an already-installed host's LAN trust alone", async () => {
+    const d = deps({
+      probe: vi.fn(async () => ({
+        ...PROBE,
+        hasFrogg: { installed: true, version: "1.0.0" },
+      })),
+    });
+    const { promise, steps } = run("lan", d);
+    await expect(promise).resolves.toMatchObject({ lanLockedDown: false });
+    expect(d.harden).not.toHaveBeenCalled();
+    expect(steps).toContain("secure:skipped");
+  });
+
+  it("reports a daemon too old to have the setting rather than failing", async () => {
+    const d = deps({
+      harden: vi.fn(async () => ({ trustLan: true, applied: "unsupported", unsupported: true })),
+    });
+    const { promise, steps } = run("lan", d);
+    await expect(promise).resolves.toMatchObject({ lanLockedDown: false });
+    expect(steps).toContain("secure:skipped");
+  });
+
+  it("stops the deploy when the daemon cannot be locked down", async () => {
+    const d = deps({
+      harden: vi.fn(async () => {
+        throw new Error("permission denied");
+      }),
+    });
+    const { promise, steps } = run("lan", d);
+    await expect(promise).rejects.toMatchObject({ step: "secure", code: "harden_failed" });
+    expect(d.pairCode).not.toHaveBeenCalled();
+    expect(steps).toContain("secure:failed");
   });
 
   it("claims over the LAN at the endpoint the pair command reported", async () => {
@@ -285,13 +378,16 @@ describe("deploy to host", () => {
       [{ sshPortText: "70000" }, "invalidSshPort"],
       [{ daemonPortText: "x" }, "invalidDaemonPort"],
       [{ identityFile: "id_rsa" }, "invalidKeyFile"],
-      [{ identityFile: "~/.ssh/k", network: "tunnel" as const }, "tunnelKeyUnsupported"],
     ] as const;
     for (const [override, error] of errors)
       expect(resolveDeployTarget({ ...base, ...override })).toEqual({
         ok: false,
         error,
       });
+    // A manual key file now rides the tunnel too, so the saved host reconnects with it.
+    expect(
+      resolveDeployTarget({ ...base, identityFile: "~/.ssh/k", network: "tunnel" }),
+    ).toMatchObject({ ok: true, target: { identityFile: "~/.ssh/k" } });
   });
 
   it("chooses the listen address and the re-deploy action", () => {

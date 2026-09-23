@@ -28,6 +28,17 @@ export interface SshDeployPairCode {
   expiresAt: string | null;
 }
 
+/**
+ * What `ssh_deploy_harden` reports; see apps/desktop/src/deploy/harden.ts.
+ * `unsupported` means the installed daemon has no `daemon trust-lan` command,
+ * so the host stays LAN-trusted and the modal says so.
+ */
+export interface SshDeployHardenResult {
+  trustLan: boolean;
+  applied: string;
+  unsupported: boolean;
+}
+
 /** What `ssh_deploy_probe` reports about the remote host. */
 export interface SshDeployProbe {
   os: string;
@@ -182,6 +193,55 @@ export function parseSshDeployPairCode(raw: unknown): SshDeployPairCode {
     fingerprint: text(raw.fingerprint) || null,
     expiresAt: text(raw.expiresAt) || null,
   };
+}
+
+export function parseSshDeployHardenResult(raw: unknown): SshDeployHardenResult {
+  if (!isRecord(raw)) throw new Error("The daemon reported no LAN trust setting.");
+  return {
+    trustLan: raw.trustLan === true,
+    applied: text(raw.applied) || "unknown",
+    unsupported: raw.unsupported === true,
+  };
+}
+
+/**
+ * Turns trusted LAN off on the deployed daemon, so a network client must
+ * present a device credential instead of being an owner by virtue of its
+ * subnet. Run before the pairing code is minted.
+ */
+export async function hardenSshDeploy(target: SshDeployTarget): Promise<SshDeployHardenResult> {
+  return parseSshDeployHardenResult(
+    await invokeDesktopCommand<unknown>("ssh_deploy_harden", targetArgs(target)),
+  );
+}
+
+/**
+ * A short-lived loopback forward to a deployed daemon, so a tunnel deploy can
+ * redeem the daemon's pairing code and get a real device credential instead
+ * of talking to an unauthenticated loopback socket. See
+ * apps/desktop/src/deploy/forward.ts.
+ */
+export interface SshDeployForward {
+  forwardId: string;
+  endpoint: string;
+}
+
+export async function openSshDeployForward(
+  target: SshDeployTarget,
+  daemonPort: number,
+): Promise<SshDeployForward> {
+  const raw = await invokeDesktopCommand<unknown>("ssh_deploy_open_forward", {
+    ...targetArgs(target),
+    daemonPort,
+  });
+  const forwardId = isRecord(raw) ? text(raw.forwardId) : "";
+  const endpoint = isRecord(raw) ? text(raw.endpoint) : "";
+  if (!forwardId || !endpoint) throw new Error("The pairing tunnel did not open.");
+  return { forwardId, endpoint };
+}
+
+export async function closeSshDeployForward(forwardId: string): Promise<void> {
+  await invokeDesktopCommand<unknown>("ssh_deploy_close_forward", { forwardId });
 }
 
 /** Runs the daemon's pairing command over SSH and returns what it printed. */

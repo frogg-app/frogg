@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- Deploying over SSH now secures the host it deploys to. A freshly installed
+  daemon still trusted its own local network, so the Network posture handed
+  every machine on the remote subnet ownership without pairing — and the
+  pairing step did not take that back, because it adds a credential rather
+  than requiring one. The deploy now turns that trust off before any pairing
+  code exists, on a first deploy only, so hosts that already had a daemon keep
+  their existing LAN clients. The SSH tunnel stays the default and the Network
+  option says what it exposes.
+- A tunnel deploy pairs for real instead of trusting loopback. It used to skip
+  pairing and report the host unverified, on the grounds that SSH had already
+  authenticated it; SSH authenticates the shell, but the app was then talking
+  to the daemon over an unauthenticated socket with no device identity, so
+  there was no principal to give a role, show as present or revoke. The
+  pairing code is now redeemed through a short-lived loopback forward and the
+  credential is stored on the connection. "Verified" now means the daemon
+  issued this device a credential.
+- The daemon's key is recorded against a host on first deploy, and a later
+  deploy that finds a different key for the same daemon is refused instead of
+  pairing again.
+- A key file can be used with the SSH tunnel. The Remote SSH transport carries
+  an `IdentityFile`, so a host deployed with an explicit key reconnects with
+  it instead of falling back to ssh-agent.
+
 - Per-device access for the daemon. Every paired device now holds its own
   credential with a role (`owner`, `operator` or `viewer`) instead of one
   undifferentiated claim, and a device can be listed, renamed or revoked on its

@@ -1857,19 +1857,28 @@ export const ptBR: TranslationResources = {
         label: "Conectar por",
         tunnel: "Túnel SSH",
         lan: "Rede",
-        tunnelHint: "Recomendado. O daemon escuta apenas no loopback e o app o alcança por SSH.",
+        tunnelHint:
+          "Recomendado. O daemon escuta apenas em loopback, então nada na rede do host o alcança, e o app chega a ele por SSH.",
         lanHint:
-          "O daemon escuta em todas as interfaces na porta {{port}} e este dispositivo pareia com ele pela rede.",
+          "Exposto. O daemon escuta em todas as interfaces na porta {{port}}. A implantação primeiro deixa de confiar na rede do host, de modo que todo cliente de rede precisa parear.",
       },
       steps: {
         connect: "Conectar e detectar a plataforma",
         install: "Instalar o daemon e iniciar o serviço",
         upgrade: "Atualizar o daemon a partir de {{from}}",
         reinstall: "Reinstalar o daemon {{version}}",
+        secure: "Exigir pareamento na rede",
         pairCode: "Obter o código de pareamento por SSH",
         pair: "Parear este dispositivo",
       },
-      skipped: "Ignorado: o daemon não emitiu código de pareamento; o SSH autentica o host.",
+      lanTrusted:
+        "Aviso: este daemon ainda trata a própria rede como confiável, então dispositivos próximos podem conectar sem parear.",
+      skippedSteps: {
+        secure:
+          "Ignorado: o daemon já estava instalado, então a confiança na rede foi mantida como está.",
+        pairCode:
+          "Ignorado: o daemon não emitiu código de pareamento, então este dispositivo não tem credencial nele.",
+      },
       platform: "{{platform}} detectado",
       formErrors: {
         hostRequired: "Escolha um host ou digite um.",
@@ -1877,19 +1886,21 @@ export const ptBR: TranslationResources = {
         invalidSshPort: "Digite uma porta SSH entre 1 e 65535.",
         invalidDaemonPort: "Digite uma porta do daemon entre 1 e 65535.",
         invalidKeyFile: "Digite um caminho absoluto ou iniciado por ~/.",
-        tunnelKeyUnsupported:
-          "Conexões por túnel SSH usam apenas o ssh-agent e o ~/.ssh/config. Adicione esta chave à sua configuração SSH ou conecte pela rede.",
       },
       errors: {
         ssh_failed: "Não foi possível conectar por SSH. {{detail}}",
         unsupported_platform:
           "{{detail}} não é compatível. O daemon roda em Linux e macOS, x86_64 ou arm64.",
         install_failed: "A instalação falhou. {{detail}}",
+        harden_failed:
+          "O daemon foi instalado, mas não foi possível desligar a confiança na rede do host, então o pareamento foi interrompido. {{detail}}",
         pair_code_unavailable:
           "O daemon não emitiu um código de pareamento. {{detail}} Atualize o daemon ou conecte por um túnel SSH.",
         invalid_pair_code: "Não foi possível ler o código de pareamento do daemon. {{detail}}",
         fingerprint_mismatch:
           "A chave do daemon não corresponde à impressão digital informada por SSH, então o pareamento foi interrompido. {{detail}}",
+        fingerprint_changed:
+          "A chave do daemon deste host mudou desde a primeira implantação, então o pareamento foi interrompido. Remova o host e implante de novo apenas se trocou a máquina. {{detail}}",
         server_mismatch: "Respondeu um daemon diferente do instalado por SSH. {{detail}}",
         unreachable:
           "Este dispositivo não alcança o daemon na porta {{port}}. Libere a porta no firewall do host ou conecte por um túnel SSH.",
@@ -1909,7 +1920,7 @@ export const ptBR: TranslationResources = {
       },
       success: "{{name}} foi adicionado.",
       unverified:
-        "O daemon não emitiu código de pareamento, então a conexão depende apenas da chave de host SSH.",
+        "O daemon não emitiu credencial para este dispositivo, então a conexão depende apenas da chave de host SSH e não pode ser revogada pelo host.",
     },
     networkScan: {
       searching: "Buscando…",

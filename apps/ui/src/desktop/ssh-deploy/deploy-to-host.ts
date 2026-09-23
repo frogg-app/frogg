@@ -6,6 +6,7 @@ import {
 import { parseDirectPairingDeepLink, type DirectPairingLink } from "@frogg/protocol/device-access";
 import { brand } from "@frogg/branding";
 import type {
+  SshDeployHardenResult,
   SshDeployPairCode,
   SshDeployProbe,
   SshDeployStartInput,
@@ -19,22 +20,36 @@ import type {
  * anchor: the offer it returns names the daemon (server id and public key),
  * and the network connection must prove it is that daemon.
  *
- * `tunnel` binds the daemon to loopback and connects through an SSH tunnel;
+ * `tunnel` (the default) binds the daemon to loopback and connects through an
+ * SSH tunnel, so nothing on the remote host's network can reach it at all;
  * `lan` binds all interfaces and claims it over the network with the offer's
  * single-use token, recording this device's name on the credential.
+ *
+ * Either way a fresh deploy runs a `secure` step first, which turns trusted
+ * LAN off. Without it the installed daemon treats every peer on the remote
+ * host's network as an owner with no pairing at all, and the pairing step
+ * does not take that back — it adds a credential, it does not require one.
  */
 export type DeployNetwork = "tunnel" | "lan";
-export type DeployStepId = "connect" | "install" | "pairCode" | "pair";
+export type DeployStepId = "connect" | "install" | "secure" | "pairCode" | "pair";
 export type DeployStepStatus = "pending" | "running" | "done" | "skipped" | "failed";
-export const DEPLOY_STEPS: readonly DeployStepId[] = ["connect", "install", "pairCode", "pair"];
+export const DEPLOY_STEPS: readonly DeployStepId[] = [
+  "connect",
+  "install",
+  "secure",
+  "pairCode",
+  "pair",
+];
 
 export type DeployErrorCode =
   | "ssh_failed"
   | "unsupported_platform"
   | "install_failed"
+  | "harden_failed"
   | "pair_code_unavailable"
   | "invalid_pair_code"
   | "fingerprint_mismatch"
+  | "fingerprint_changed"
   | "server_mismatch"
   | "unreachable"
   | "claim_rejected"
@@ -65,6 +80,12 @@ export interface DeployedHost {
   hostname: string | null;
   /** True when the daemon identity was checked against the SSH-issued offer. */
   verified: boolean;
+  /**
+   * True when this deploy left the daemon requiring a credential from LAN
+   * clients. False when the host was already installed (its existing LAN
+   * clients are left alone) or its CLI is too old to have the setting.
+   */
+  lanLockedDown: boolean;
   probe: SshDeployProbe;
 }
 
@@ -72,12 +93,26 @@ export interface DeployToHostDeps {
   probe(target: SshDeployTarget): Promise<SshDeployProbe>;
   install(input: SshDeployStartInput, signal: AbortSignal): Promise<void>;
   pairCode(target: SshDeployTarget): Promise<SshDeployPairCode>;
+  /** Turns trusted LAN off on the deployed daemon; see `harden.ts`. */
+  harden(target: SshDeployTarget): Promise<SshDeployHardenResult>;
   /** Adds (or refreshes) the Remote SSH connection and returns the daemon's identity. */
   connectTunnel(input: {
     host: string;
     sshPort?: number;
     daemonPort: number;
+    identityFile?: string;
+    /** The device credential the tunnel pairing returned, sent as the daemon password. */
+    password?: string;
   }): Promise<{ serverId: string; hostname: string | null }>;
+  /**
+   * Redeems the daemon's pairing code through a loopback forward, so a
+   * loopback-bound daemon still issues this device a real credential. Returns
+   * null when the daemon offered nothing redeemable.
+   */
+  tunnelCredential(
+    pairing: { offer: AnyConnectionOffer | null; link: DirectPairingLink | null },
+    input: { target: SshDeployTarget; daemonPort: number },
+  ): Promise<string | null>;
   /** Redeems a v3 claim offer; the device label is recorded by the daemon. */
   claim(
     offer: ConnectionOfferV3,
@@ -86,6 +121,10 @@ export interface DeployToHostDeps {
   /** Redeems a `<scheme>://pair/direct?…` link, which is what `<cli> pair` prints. */
   claimPairingLink(link: DirectPairingLink): Promise<{ serverId: string; hostname: string | null }>;
   fingerprint(daemonPublicKeyB64: string): Promise<string>;
+  /** The key fingerprint already pinned to this server id, if any. */
+  pinnedFingerprint(serverId: string): string | null;
+  /** Pins the key on first deploy; never overwrites an existing pin. */
+  pinFingerprint(serverId: string, fingerprint: string): Promise<void>;
 }
 
 const SUPPORTED_OS = new Set(["Linux", "Darwin"]);
@@ -146,8 +185,7 @@ export type DeployFormError =
   | "invalidHost"
   | "invalidSshPort"
   | "invalidDaemonPort"
-  | "invalidKeyFile"
-  | "tunnelKeyUnsupported";
+  | "invalidKeyFile";
 
 function parsePortText(text: string, fallback: number | undefined): number | undefined | null {
   const trimmed = text.trim();
@@ -162,9 +200,9 @@ const HOST_PATTERN = /^[^\s@-][^\s@]*$/u;
 /**
  * The form's SSH target. A config entry submits its alias alone so `ssh`
  * resolves HostName, User, Port, IdentityFile and ProxyJump from the config;
- * the manual tab builds `user@host` plus port and an optional key file.
- * A manual key file cannot ride a tunnel connection (which only uses
- * ssh-agent and the config), so that combination asks for a config entry.
+ * the manual tab builds `user@host` plus port and an optional key file. The
+ * key file rides the tunnel connection too, so the saved host reconnects with
+ * the same key the deploy used.
  */
 export function resolveDeployTarget(input: {
   mode: "config" | "manual";
@@ -197,8 +235,6 @@ export function resolveDeployTarget(input: {
   const identityFile = input.identityFile.trim();
   if (identityFile && !/^(~\/|\/|[A-Za-z]:[\\/])/u.test(identityFile))
     return { ok: false, error: "invalidKeyFile" };
-  if (identityFile && input.network === "tunnel")
-    return { ok: false, error: "tunnelKeyUnsupported" };
   return {
     ok: true,
     target: {
@@ -289,6 +325,90 @@ async function resolvePairing(
   return { code, offer, link: null };
 }
 
+/**
+ * Turns trusted LAN off on a host this deploy just installed, and reports
+ * whether the daemon now requires a credential from network clients. A host
+ * that already had the daemon is left as it is: its operator may be relying
+ * on LAN clients that this would disconnect.
+ */
+async function lockDownHost(
+  input: DeployToHostInput,
+  probe: SshDeployProbe,
+  deps: DeployToHostDeps,
+  context: StepContext,
+  onStep: (step: DeployStepId, status: DeployStepStatus) => void,
+): Promise<boolean> {
+  if (deployAction(probe, null) !== "deploy") {
+    onStep("secure", "skipped");
+    return false;
+  }
+  let hardened: SshDeployHardenResult;
+  try {
+    hardened = await deps.harden(input.target);
+  } catch (error) {
+    if (isCancelled(error, context.signal)) throw error;
+    return context.fail("harden_failed", message(error));
+  }
+  onStep("secure", hardened.unsupported ? "skipped" : "done");
+  return !hardened.trustLan;
+}
+
+/**
+ * What the SSH channel says this daemon is: its server id and key
+ * fingerprint, from whichever of the two pairing-code spellings it printed.
+ */
+function pairedIdentity(pairing: {
+  code: SshDeployPairCode | null;
+  offer: AnyConnectionOffer | null;
+  link: DirectPairingLink | null;
+}): { serverId: string | null; fingerprint: string | null } {
+  return {
+    serverId: pairing.offer?.serverId ?? pairing.link?.serverId ?? null,
+    fingerprint: pairing.link?.fingerprint ?? pairing.code?.fingerprint ?? null,
+  };
+}
+
+/**
+ * Trust on first use for the daemon's key.
+ *
+ * The fingerprint itself arrives over the same SSH channel it is checked
+ * against, so on a first deploy it proves only that the pairing link and the
+ * CLI agree — it adds nothing over trusting SSH. Pinning is what makes it
+ * worth anything later: once a server id has a key recorded, a re-deploy that
+ * finds a different key for that same id is refused rather than silently
+ * re-paired, which is what a swapped or impersonated host looks like.
+ */
+function checkPinnedFingerprint(
+  pairing: {
+    code: SshDeployPairCode | null;
+    offer: AnyConnectionOffer | null;
+    link: DirectPairingLink | null;
+  },
+  deps: DeployToHostDeps,
+  context: StepContext,
+): void {
+  const { serverId, fingerprint } = pairedIdentity(pairing);
+  if (!serverId || !fingerprint) return;
+  const pinned = deps.pinnedFingerprint(serverId);
+  if (pinned && normalizeFingerprint(pinned) !== normalizeFingerprint(fingerprint)) {
+    context.fail("fingerprint_changed", `${pinned} ≠ ${fingerprint}`);
+  }
+}
+
+/** Records the key for this server id, so a later deploy can detect a change. */
+async function pinOnFirstDeploy(
+  pairing: {
+    code: SshDeployPairCode | null;
+    offer: AnyConnectionOffer | null;
+    link: DirectPairingLink | null;
+  },
+  serverId: string,
+  deps: DeployToHostDeps,
+): Promise<void> {
+  const { fingerprint } = pairedIdentity(pairing);
+  if (fingerprint) await deps.pinFingerprint(serverId, fingerprint);
+}
+
 /** Adds the host: a tunnel connection, or a claim redeemed over the network. */
 async function performPairing(
   input: DeployToHostInput,
@@ -299,22 +419,34 @@ async function performPairing(
     offer: AnyConnectionOffer | null;
     link: DirectPairingLink | null;
   },
-): Promise<{ serverId: string; hostname: string | null }> {
+): Promise<{ serverId: string; hostname: string | null; credentialed: boolean }> {
   try {
     if (input.network === "tunnel") {
-      return await deps.connectTunnel({
-        host: input.target.host,
-        ...(input.target.sshPort === undefined ? {} : { sshPort: input.target.sshPort }),
+      // Pair over the tunnel rather than trusting the loopback socket: the
+      // credential is what makes revocation, roles and presence work here.
+      const credential = await deps.tunnelCredential(pairing, {
+        target: input.target,
         daemonPort: input.daemonPort,
       });
+      const connected = await deps.connectTunnel({
+        host: input.target.host,
+        ...(input.target.sshPort === undefined ? {} : { sshPort: input.target.sshPort }),
+        ...(input.target.identityFile === undefined
+          ? {}
+          : { identityFile: input.target.identityFile }),
+        daemonPort: input.daemonPort,
+        ...(credential ? { password: credential } : {}),
+      });
+      return { ...connected, credentialed: credential !== null };
     }
     const { code, offer, link } = pairing;
-    if (link) return await deps.claimPairingLink(link);
+    if (link) return { ...(await deps.claimPairingLink(link)), credentialed: true };
     const endpointOverride = code?.host && code.port ? `${code.host}:${code.port}` : undefined;
-    return await deps.claim(
+    const claimed = await deps.claim(
       offer as ConnectionOfferV3,
       endpointOverride ? { endpointOverride } : {},
     );
+    return { ...claimed, credentialed: true };
   } catch (error) {
     if (isCancelled(error, context.signal)) throw error;
     return context.fail(claimErrorCode(error), message(error));
@@ -388,18 +520,34 @@ export async function runDeployToHost(
     }
     onStep("install", "done");
 
+    // Lock the box down before a pairing code exists, so the window in which
+    // the daemon is both reachable and unauthenticated is never opened. Only
+    // on a first deploy: flipping the setting on a host that was already
+    // running would cut off LAN clients the operator is relying on.
+    begin("secure");
+    const lanLockedDown = await lockDownHost(input, probe, deps, context, onStep);
+
     begin("pairCode");
     const pairing = await resolvePairing(input, deps, context);
+    checkPinnedFingerprint(pairing, deps, context);
     onStep("pairCode", pairing.code ? "done" : "skipped");
 
     begin("pair");
-    const paired = await performPairing(input, deps, context, pairing);
+    const { credentialed, ...paired } = await performPairing(input, deps, context, pairing);
     const expectedServerId = pairing.offer?.serverId ?? pairing.link?.serverId ?? null;
     if (expectedServerId && paired.serverId !== expectedServerId) {
       fail("server_mismatch", `${paired.serverId} ≠ ${expectedServerId}`);
     }
+    await pinOnFirstDeploy(pairing, paired.serverId, deps);
     onStep("pair", "done");
-    return { ...paired, verified: pairing.offer !== null || pairing.link !== null, probe };
+    // Verified means the daemon SSH named issued *this device* a credential,
+    // not merely that SSH reached a daemon.
+    return {
+      ...paired,
+      verified: credentialed && (pairing.offer !== null || pairing.link !== null),
+      lanLockedDown,
+      probe,
+    };
   } catch (error) {
     if (error instanceof DeployToHostError) {
       onStep(error.step, "failed");

@@ -1846,20 +1846,28 @@ export const ja: TranslationResources = {
         label: "接続方法",
         tunnel: "SSH トンネル",
         lan: "ネットワーク",
-        tunnelHint: "推奨。デーモンはループバックのみで待ち受け、アプリは SSH 経由で接続します。",
+        tunnelHint:
+          "推奨。デーモンはループバックのみで待ち受けるため、ホストのネットワークからは誰も到達できず、アプリは SSH 経由で接続します。",
         lanHint:
-          "デーモンはすべてのインターフェースのポート {{port}} で待ち受け、このデバイスはネットワーク経由でペアリングします。",
+          "公開。デーモンはポート {{port}} ですべてのインターフェースを待ち受けます。デプロイはまずホスト自身のネットワークへの信頼を解除するので、ネットワーク上のクライアントはすべてペアリングが必要になります。",
       },
       steps: {
         connect: "接続してプラットフォームを検出",
         install: "デーモンをインストールしてサービスを起動",
         upgrade: "デーモンを {{from}} からアップグレード",
         reinstall: "デーモン {{version}} を再インストール",
+        secure: "ネットワークでのペアリングを必須にする",
         pairCode: "SSH でペアリングコードを取得",
         pair: "このデバイスをペアリング",
       },
-      skipped:
-        "スキップ: デーモンがペアリングコードを発行しませんでした。ホストは SSH で認証されます。",
+      lanTrusted:
+        "警告: このデーモンは自分のネットワークを引き続き信頼しているため、近くのデバイスがペアリングなしで接続できます。",
+      skippedSteps: {
+        secure:
+          "スキップ: デーモンはすでにインストールされていたため、ネットワークの信頼設定はそのままにしました。",
+        pairCode:
+          "スキップ: デーモンがペアリングコードを発行しなかったため、このデバイスの資格情報はありません。",
+      },
       platform: "{{platform}} を検出",
       formErrors: {
         hostRequired: "ホストを選択するか入力してください。",
@@ -1867,19 +1875,21 @@ export const ja: TranslationResources = {
         invalidSshPort: "SSH ポートは 1〜65535 で入力してください。",
         invalidDaemonPort: "デーモンのポートは 1〜65535 で入力してください。",
         invalidKeyFile: "絶対パスか ~/ で始まるパスを入力してください。",
-        tunnelKeyUnsupported:
-          "SSH トンネル接続は ssh-agent と ~/.ssh/config のみを使います。この鍵を SSH 設定に追加するか、ネットワーク経由で接続してください。",
       },
       errors: {
         ssh_failed: "SSH で接続できませんでした。{{detail}}",
         unsupported_platform:
           "{{detail}} には対応していません。デーモンは Linux と macOS（x86_64 または arm64）で動作します。",
         install_failed: "インストールに失敗しました。{{detail}}",
+        harden_failed:
+          "デーモンはインストールされましたが、ホスト自身のネットワークへの信頼を解除できなかったため、ペアリングを中止しました。{{detail}}",
         pair_code_unavailable:
           "デーモンがペアリングコードを発行しませんでした。{{detail}} デーモンを更新するか、SSH トンネルで接続してください。",
         invalid_pair_code: "デーモンのペアリングコードを読み取れませんでした。{{detail}}",
         fingerprint_mismatch:
           "デーモンの鍵が SSH で報告されたフィンガープリントと一致しないため、ペアリングを中止しました。{{detail}}",
+        fingerprint_changed:
+          "このホストのデーモン鍵が最初のデプロイ時から変わっているため、ペアリングを中止しました。マシンを入れ替えた場合にかぎり、ホストを削除して再度デプロイしてください。{{detail}}",
         server_mismatch: "SSH でインストールしたものとは別のデーモンが応答しました。{{detail}}",
         unreachable:
           "このデバイスからポート {{port}} のデーモンに到達できません。ホストのファイアウォールでポートを開けるか、SSH トンネルで接続してください。",
@@ -1899,7 +1909,7 @@ export const ja: TranslationResources = {
       },
       success: "{{name}} を追加しました。",
       unverified:
-        "デーモンがペアリングコードを発行しなかったため、接続は SSH のホスト鍵のみに依存します。",
+        "デーモンはこのデバイスに資格情報を発行しなかったため、接続は SSH ホスト鍵のみに依存し、ホスト側から失効させることができません。",
     },
     networkScan: {
       searching: "検索中…",

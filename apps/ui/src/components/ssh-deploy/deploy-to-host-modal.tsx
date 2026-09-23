@@ -5,6 +5,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
 import { Check, Circle, Minus, Rocket, X } from "lucide-react-native";
 import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
+import type { ConnectionOfferV3 } from "@frogg/protocol/connection-offer";
 import type { HostProfile } from "@/types/host-connection";
 import { useHostMutations, useHosts } from "@/runtime/host-runtime";
 import { AdaptiveModalSheet, type SheetHeader } from "@/components/adaptive-modal-sheet";
@@ -26,9 +27,14 @@ import {
   type DeployStepStatus,
   type DeployToHostDeps,
 } from "@/desktop/ssh-deploy/deploy-to-host";
+import { claimDirectOffer, claimDirectPairingLink } from "@/pairing/claim-offer";
+import { resolveDeviceLabel } from "@/pairing/device-label";
 import {
+  closeSshDeployForward,
   describeSshDeployPlatform,
   fetchSshDeployPairCode,
+  hardenSshDeploy,
+  openSshDeployForward,
   probeSshDeploy,
   runSshDeployJob,
   type SshDeployProbe,
@@ -43,9 +49,15 @@ const ThemedCheck = withUnistyles(Check);
 const ThemedX = withUnistyles(X);
 const ThemedMinus = withUnistyles(Minus);
 const ThemedCircle = withUnistyles(Circle);
-const mutedIconMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
-const successIconMapping = (theme: Theme) => ({ color: theme.colors.statusSuccess });
-const dangerIconMapping = (theme: Theme) => ({ color: theme.colors.statusDanger });
+const mutedIconMapping = (theme: Theme) => ({
+  color: theme.colors.foregroundMuted,
+});
+const successIconMapping = (theme: Theme) => ({
+  color: theme.colors.statusSuccess,
+});
+const dangerIconMapping = (theme: Theme) => ({
+  color: theme.colors.statusDanger,
+});
 
 const styles = StyleSheet.create((theme) => ({
   helper: { color: theme.colors.foregroundMuted, fontSize: theme.fontSize.sm },
@@ -98,6 +110,7 @@ type StepStates = Record<DeployStepId, DeployStepStatus>;
 const IDLE_STEPS: StepStates = {
   connect: "pending",
   install: "pending",
+  secure: "pending",
   pairCode: "pending",
   pair: "pending",
 };
@@ -172,7 +185,13 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
   );
 
   const resetForm = useCallback(() => {
-    fields.current = { host: "", user: "", sshPort: "", identityFile: "", daemonPort: "" };
+    fields.current = {
+      host: "",
+      user: "",
+      sshPort: "",
+      identityFile: "",
+      daemonPort: "",
+    };
     setChosenMode(null);
     setAlias(null);
     setNetwork("tunnel");
@@ -223,6 +242,7 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
     error,
     daemonPort,
     verified,
+    lanLockedDown,
     lines,
     showLog,
     toggleLog,
@@ -271,6 +291,8 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
           daemonPort={daemonPort}
           done={phase === "done"}
           verified={verified}
+          lanLockedDown={lanLockedDown}
+          network={network}
           name={saved?.hostname ?? saved?.serverId ?? ""}
           lines={lines}
           showLog={showLog}
@@ -382,6 +404,8 @@ function DeployProgress({
   daemonPort,
   done,
   verified,
+  lanLockedDown,
+  network,
   name,
   lines,
   showLog,
@@ -393,6 +417,8 @@ function DeployProgress({
   daemonPort: number;
   done: boolean;
   verified: boolean;
+  lanLockedDown: boolean;
+  network: DeployNetwork;
   name: string;
   lines: string[];
   showLog: boolean;
@@ -404,13 +430,17 @@ function DeployProgress({
       <DeploySteps steps={steps} probe={probe} testID="deploy-host-steps" />
       {error ? (
         <Text style={styles.error} testID="deploy-host-error">
-          {t(`pairing.deployHost.errors.${error.code}`, { detail: error.detail, port: daemonPort })}
+          {t(`pairing.deployHost.errors.${error.code}`, {
+            detail: error.detail,
+            port: daemonPort,
+          })}
         </Text>
       ) : null}
       {done ? (
         <Text style={styles.note} testID="deploy-host-success">
           {t("pairing.deployHost.success", { name })}
           {verified ? "" : ` ${t("pairing.deployHost.unverified")}`}
+          {network === "lan" && !lanLockedDown ? ` ${t("pairing.deployHost.lanTrusted")}` : ""}
         </Text>
       ) : null}
       {lines.length > 0 ? (
@@ -478,7 +508,13 @@ function DeployLog({ lines }: { lines: string[] }) {
 
 interface ManualFieldsProps {
   size: "sm" | "md";
-  fields: { host: string; user: string; sshPort: string; identityFile: string; daemonPort: string };
+  fields: {
+    host: string;
+    user: string;
+    sshPort: string;
+    identityFile: string;
+    daemonPort: string;
+  };
   formError: DeployFormError | null;
   formErrorText: string | undefined;
   onUser: (value: string) => void;
@@ -579,11 +615,7 @@ function ManualFields({
       <Field
         label={t("pairing.deployHost.fields.identityFile")}
         hint={t("pairing.deployHost.fields.identityFileHint")}
-        error={
-          formError === "invalidKeyFile" || formError === "tunnelKeyUnsupported"
-            ? formErrorText
-            : undefined
-        }
+        error={formError === "invalidKeyFile" ? formErrorText : undefined}
         testID="deploy-host-key"
       >
         <FormTextInput
@@ -684,9 +716,11 @@ function DeploySteps({
   }, [probe, t]);
   const noteFor = (step: DeployStepId): string | null => {
     if (step === "connect" && probe) {
-      return t("pairing.deployHost.platform", { platform: describeSshDeployPlatform(probe) });
+      return t("pairing.deployHost.platform", {
+        platform: describeSshDeployPlatform(probe),
+      });
     }
-    return steps[step] === "skipped" ? t("pairing.deployHost.skipped") : null;
+    return steps[step] === "skipped" ? t(`pairing.deployHost.skippedSteps.${step}`) : null;
   };
   return (
     <View style={styles.steps} testID={testID}>
@@ -710,9 +744,36 @@ interface DeployRunOptions {
   connectTunnel: HostMutations["probeAndUpsertRemoteSshConnection"];
   claim: HostMutations["claimAndUpsertDirectOffer"];
   claimPairingLink: HostMutations["claimAndUpsertDirectPairingLink"];
+  pinnedFingerprint: HostMutations["pinnedDaemonKeyFingerprint"];
+  pinFingerprint: HostMutations["pinDaemonKeyFingerprint"];
   onLog: (text: string) => void;
   onStep: (step: DeployStepId, status: DeployStepStatus) => void;
   onProbe: (probe: SshDeployProbe) => void;
+}
+
+/**
+ * Redeems the daemon's pairing code through a short-lived loopback forward, so
+ * a daemon bound to loopback still hands this device a real credential. The
+ * forward is closed as soon as the claim settles, either way.
+ */
+async function claimOverTunnel(
+  pairing: Parameters<DeployToHostDeps["tunnelCredential"]>[0],
+  input: Parameters<DeployToHostDeps["tunnelCredential"]>[1],
+): Promise<string | null> {
+  if (!pairing.link && pairing.offer?.v !== 3) return null;
+  const forward = await openSshDeployForward(input.target, input.daemonPort);
+  try {
+    const label = resolveDeviceLabel();
+    const claimed = pairing.link
+      ? await claimDirectPairingLink(pairing.link, { label, endpointOverride: forward.endpoint })
+      : await claimDirectOffer(pairing.offer as ConnectionOfferV3, {
+          label,
+          endpointOverride: forward.endpoint,
+        });
+    return claimed.credential;
+  } finally {
+    await closeSshDeployForward(forward.forwardId).catch(() => undefined);
+  }
 }
 
 function asDeployError(caught: unknown): DeployToHostError {
@@ -733,12 +794,15 @@ async function executeDeploy(
   serverId: string;
   hostname: string | null;
   verified: boolean;
+  lanLockedDown: boolean;
 }> {
   let profile: HostProfile | null = null;
   const deps: DeployToHostDeps = {
     probe: probeSshDeploy,
     install: (job, signal) => runSshDeployJob(job, { signal, onLog: options.onLog }),
     pairCode: fetchSshDeployPairCode,
+    harden: hardenSshDeploy,
+    tunnelCredential: claimOverTunnel,
     connectTunnel: async (target) => {
       const result = await options.connectTunnel(target);
       profile = result.profile;
@@ -755,6 +819,8 @@ async function executeDeploy(
       return { serverId: result.serverId, hostname: result.hostname };
     },
     fingerprint: (key) => daemonKeyFingerprint(key),
+    pinnedFingerprint: options.pinnedFingerprint,
+    pinFingerprint: options.pinFingerprint,
   };
   const deployed = await runDeployToHost(input, deps, {
     signal: options.signal,
@@ -766,6 +832,7 @@ async function executeDeploy(
     serverId: deployed.serverId,
     hostname: deployed.hostname,
     verified: deployed.verified,
+    lanLockedDown: deployed.lanLockedDown,
   };
 }
 
@@ -789,6 +856,8 @@ function useDeployRun() {
     probeAndUpsertRemoteSshConnection,
     claimAndUpsertDirectOffer,
     claimAndUpsertDirectPairingLink,
+    pinnedDaemonKeyFingerprint,
+    pinDaemonKeyFingerprint,
   } = useHostMutations();
   const [formError, setFormError] = useState<DeployFormError | null>(null);
   const [phase, setPhase] = useState<Phase>("form");
@@ -797,6 +866,7 @@ function useDeployRun() {
   const [error, setError] = useState<DeployToHostError | null>(null);
   const [daemonPort, setDaemonPort] = useState(DEFAULT_SSH_DAEMON_PORT);
   const [verified, setVerified] = useState(true);
+  const [lanLockedDown, setLanLockedDown] = useState(true);
   const [lines, setLines] = useState<string[]>([]);
   const [showLog, setShowLog] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -837,12 +907,18 @@ function useDeployRun() {
       setPhase("running");
       try {
         const deployed = await executeDeploy(
-          { target: resolved.target, network: form.network, daemonPort: resolved.daemonPort },
+          {
+            target: resolved.target,
+            network: form.network,
+            daemonPort: resolved.daemonPort,
+          },
           {
             signal: controller.signal,
             connectTunnel: probeAndUpsertRemoteSshConnection,
             claim: claimAndUpsertDirectOffer,
             claimPairingLink: claimAndUpsertDirectPairingLink,
+            pinnedFingerprint: pinnedDaemonKeyFingerprint,
+            pinFingerprint: pinDaemonKeyFingerprint,
             onLog: (text) =>
               setLines((previous) => [...previous.slice(-(MAX_LOG_LINES - 1)), text]),
             onStep: (step, status) => setSteps((previous) => ({ ...previous, [step]: status })),
@@ -850,6 +926,7 @@ function useDeployRun() {
           },
         );
         setVerified(deployed.verified);
+        setLanLockedDown(deployed.lanLockedDown);
         resultRef.current = {
           profile: deployed.profile,
           serverId: deployed.serverId,
@@ -869,6 +946,8 @@ function useDeployRun() {
       claimAndUpsertDirectOffer,
       claimAndUpsertDirectPairingLink,
       hosts,
+      pinDaemonKeyFingerprint,
+      pinnedDaemonKeyFingerprint,
       probeAndUpsertRemoteSshConnection,
     ],
   );
@@ -898,6 +977,7 @@ function useDeployRun() {
     error,
     daemonPort,
     verified,
+    lanLockedDown,
     lines,
     showLog,
     start,

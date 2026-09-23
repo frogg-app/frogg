@@ -1837,19 +1837,26 @@ export const ko: TranslationResources = {
         label: "연결 방식",
         tunnel: "SSH 터널",
         lan: "네트워크",
-        tunnelHint: "권장. 데몬은 루프백에서만 수신하고 앱은 SSH를 통해 접속합니다.",
+        tunnelHint:
+          "권장. 데몬이 루프백에서만 대기하므로 호스트 네트워크의 어떤 것도 접근할 수 없고, 앱은 SSH로 접속합니다.",
         lanHint:
-          "데몬은 모든 인터페이스의 {{port}} 포트에서 수신하고 이 기기는 네트워크로 페어링합니다.",
+          "노출됨. 데몬이 포트 {{port}}에서 모든 인터페이스를 수신합니다. 배포는 먼저 호스트 자체 네트워크에 대한 신뢰를 해제하므로 모든 네트워크 클라이언트가 페어링해야 합니다.",
       },
       steps: {
         connect: "연결하고 플랫폼 감지",
         install: "데몬 설치 및 서비스 시작",
         upgrade: "{{from}}에서 데몬 업그레이드",
         reinstall: "데몬 {{version}} 재설치",
+        secure: "네트워크에서 페어링 요구",
         pairCode: "SSH로 페어링 코드 받기",
         pair: "이 기기 페어링",
       },
-      skipped: "건너뜀: 데몬이 페어링 코드를 발급하지 않았습니다. 호스트는 SSH로 인증됩니다.",
+      lanTrusted:
+        "경고: 이 데몬은 여전히 자기 네트워크를 신뢰하므로 주변 기기가 페어링 없이 연결할 수 있습니다.",
+      skippedSteps: {
+        secure: "건너뜀: 데몬이 이미 설치되어 있어 네트워크 신뢰 설정을 그대로 두었습니다.",
+        pairCode: "건너뜀: 데몬이 페어링 코드를 발급하지 않아 이 기기의 자격 증명이 없습니다.",
+      },
       platform: "{{platform}} 감지됨",
       formErrors: {
         hostRequired: "호스트를 선택하거나 입력하세요.",
@@ -1857,19 +1864,21 @@ export const ko: TranslationResources = {
         invalidSshPort: "SSH 포트는 1에서 65535 사이로 입력하세요.",
         invalidDaemonPort: "데몬 포트는 1에서 65535 사이로 입력하세요.",
         invalidKeyFile: "절대 경로나 ~/로 시작하는 경로를 입력하세요.",
-        tunnelKeyUnsupported:
-          "SSH 터널 연결은 ssh-agent와 ~/.ssh/config만 사용합니다. 이 키를 SSH 설정에 추가하거나 네트워크로 연결하세요.",
       },
       errors: {
         ssh_failed: "SSH로 연결하지 못했습니다. {{detail}}",
         unsupported_platform:
           "{{detail}}은(는) 지원되지 않습니다. 데몬은 Linux와 macOS(x86_64 또는 arm64)에서 실행됩니다.",
         install_failed: "설치에 실패했습니다. {{detail}}",
+        harden_failed:
+          "데몬은 설치되었지만 호스트 자체 네트워크에 대한 신뢰를 해제하지 못해 페어링을 중단했습니다. {{detail}}",
         pair_code_unavailable:
           "데몬이 페어링 코드를 발급하지 않았습니다. {{detail}} 데몬을 업데이트하거나 SSH 터널로 연결하세요.",
         invalid_pair_code: "데몬의 페어링 코드를 읽지 못했습니다. {{detail}}",
         fingerprint_mismatch:
           "데몬 키가 SSH로 보고된 지문과 일치하지 않아 페어링을 중단했습니다. {{detail}}",
+        fingerprint_changed:
+          "이 호스트의 데몬 키가 최초 배포 이후 변경되어 페어링을 중단했습니다. 컴퓨터를 교체한 경우에만 호스트를 삭제하고 다시 배포하세요. {{detail}}",
         server_mismatch: "SSH로 설치한 것과 다른 데몬이 응답했습니다. {{detail}}",
         unreachable:
           "이 기기에서 {{port}} 포트의 데몬에 연결할 수 없습니다. 호스트 방화벽에서 포트를 열거나 SSH 터널로 연결하세요.",
@@ -1888,7 +1897,8 @@ export const ko: TranslationResources = {
         hideLog: "로그 숨기기",
       },
       success: "{{name}}을(를) 추가했습니다.",
-      unverified: "데몬이 페어링 코드를 발급하지 않아 연결은 SSH 호스트 키에만 의존합니다.",
+      unverified:
+        "데몬이 이 기기에 자격 증명을 발급하지 않아 연결이 SSH 호스트 키에만 의존하며 호스트에서 취소할 수 없습니다.",
     },
     networkScan: {
       searching: "검색 중…",

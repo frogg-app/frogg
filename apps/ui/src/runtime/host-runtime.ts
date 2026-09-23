@@ -579,6 +579,9 @@ function createDefaultDeps(): HostRuntimeControllerDeps {
             host: connection.host,
             ...(connection.sshPort !== undefined ? { sshPort: connection.sshPort } : {}),
             ...(connection.daemonPort !== undefined ? { daemonPort: connection.daemonPort } : {}),
+            ...(connection.identityFile !== undefined
+              ? { identityFile: connection.identityFile }
+              : {}),
           }),
           // The daemon's password rides the tunnel as the bearer subprotocol,
           // exactly as for directTcp; the shell forwards it on the handshake.
@@ -1840,6 +1843,7 @@ export class HostRuntimeStore {
     host: string;
     sshPort?: number;
     daemonPort?: number;
+    identityFile?: string;
     password?: string;
     label?: string;
   }): Promise<{ profile: HostProfile; serverId: string; hostname: string | null }> {
@@ -2000,6 +2004,29 @@ export class HostRuntimeStore {
 
   async renameHost(serverId: string, label: string): Promise<void> {
     await this.updateHost(serverId, (host) => ({ ...host, label }));
+  }
+
+  /** The daemon key fingerprint pinned to this server id, if it has one. */
+  pinnedDaemonKeyFingerprint(serverId: string): string | null {
+    return (
+      this.hosts.find((host) => host.serverId === serverId)?.pinnedDaemonKeyFingerprint ?? null
+    );
+  }
+
+  /**
+   * Pins a daemon key fingerprint to a server id on first deploy. Never
+   * overwrites an existing pin: a changed key is refused by the deploy flow,
+   * not quietly re-pinned.
+   */
+  async pinDaemonKeyFingerprint(serverId: string, fingerprint: string): Promise<void> {
+    const pin = fingerprint.trim();
+    if (!pin) return;
+    const host = this.hosts.find((entry) => entry.serverId === serverId);
+    if (!host || host.pinnedDaemonKeyFingerprint) return;
+    await this.updateHost(serverId, (entry) => ({
+      ...entry,
+      pinnedDaemonKeyFingerprint: pin,
+    }));
   }
 
   async setHostColor(serverId: string, color: HostColor): Promise<void> {
@@ -2642,6 +2669,7 @@ export interface HostMutations {
     host: string;
     sshPort?: number;
     daemonPort?: number;
+    identityFile?: string;
     password?: string;
     label?: string;
   }) => Promise<{ profile: HostProfile; serverId: string; hostname: string | null }>;
@@ -2680,6 +2708,9 @@ export interface HostMutations {
     label?: string,
   ) => Promise<HostProfile>;
   renameHost: (serverId: string, label: string) => Promise<void>;
+  /** Trust on first use for the deployed daemon's key; see `pinDaemonKeyFingerprint`. */
+  pinnedDaemonKeyFingerprint: (serverId: string) => string | null;
+  pinDaemonKeyFingerprint: (serverId: string, fingerprint: string) => Promise<void>;
   setHostColor: (serverId: string, color: HostColor) => Promise<void>;
   setHostBadgeDisplay: (serverId: string, badgeDisplay: HostBadgeDisplay) => Promise<void>;
   removeHost: (serverId: string) => Promise<void>;
@@ -2702,6 +2733,9 @@ export function useHostMutations(): HostMutations {
         store.claimAndUpsertDirectPairingLink(link, input),
       upsertConnectionFromOfferUrl: (url, label) => store.upsertConnectionFromOfferUrl(url, label),
       renameHost: (serverId, label) => store.renameHost(serverId, label),
+      pinnedDaemonKeyFingerprint: (serverId) => store.pinnedDaemonKeyFingerprint(serverId),
+      pinDaemonKeyFingerprint: (serverId, fingerprint) =>
+        store.pinDaemonKeyFingerprint(serverId, fingerprint),
       setHostColor: (serverId, color) => store.setHostColor(serverId, color),
       setHostBadgeDisplay: (serverId, badgeDisplay) =>
         store.setHostBadgeDisplay(serverId, badgeDisplay),

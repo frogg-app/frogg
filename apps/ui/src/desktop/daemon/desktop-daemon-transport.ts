@@ -1,5 +1,9 @@
 import type { DaemonTransport, DaemonTransportFactory } from "@frogg/client/internal/daemon-client";
-import { validatePort, validateSshHost } from "@frogg/protocol/ssh-transport";
+import {
+  validatePort,
+  validateSshHost,
+  validateSshIdentityFile,
+} from "@frogg/protocol/ssh-transport";
 import type {
   DesktopDaemonTransportTarget,
   LocalTransportErrorDetail,
@@ -42,6 +46,9 @@ export function buildDesktopDaemonTransportUrl(target: DesktopDaemonTransportTar
     if (target.daemonPort !== undefined) {
       url.searchParams.set("daemonPort", String(target.daemonPort));
     }
+    if (target.identityFile !== undefined) {
+      url.searchParams.set("identityFile", target.identityFile);
+    }
   } else {
     url.searchParams.set("path", target.transportPath);
   }
@@ -70,11 +77,15 @@ function parseSshDesktopTransportUrl(parsed: URL, rawUrl: string): DesktopDaemon
     const host = validateSshHost(parsed.searchParams.get("host") ?? "");
     const sshPort = parseOptionalUrlPort(parsed, "port", "SSH port");
     const daemonPort = parseOptionalUrlPort(parsed, "daemonPort", "Daemon port");
+    const rawIdentityFile = parsed.searchParams.get("identityFile");
+    const identityFile =
+      rawIdentityFile === null ? undefined : validateSshIdentityFile(rawIdentityFile);
     return {
       transportType: "ssh",
       host,
       ...(sshPort !== undefined ? { sshPort } : {}),
       ...(daemonPort !== undefined ? { daemonPort } : {}),
+      ...(identityFile !== undefined ? { identityFile } : {}),
     };
   } catch (error) {
     throw new Error(`Invalid SSH transport target: ${rawUrl}`, { cause: error });

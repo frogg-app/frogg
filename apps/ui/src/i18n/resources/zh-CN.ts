@@ -1802,18 +1802,25 @@ export const zhCN: TranslationResources = {
         label: "连接方式",
         tunnel: "SSH 隧道",
         lan: "网络",
-        tunnelHint: "推荐。守护进程只监听回环地址，应用通过 SSH 访问它。",
-        lanHint: "守护进程在所有网络接口的 {{port}} 端口监听，此设备通过网络与其配对。",
+        tunnelHint:
+          "推荐。守护进程仅监听回环地址，主机网络上的任何设备都无法访问，应用通过 SSH 连接。",
+        lanHint:
+          "已暴露。守护进程在端口 {{port}} 上监听所有网络接口。部署会先关闭它对主机所在网络的信任，因此每个网络客户端都必须配对。",
       },
       steps: {
         connect: "连接并检测平台",
         install: "安装守护进程并启动服务",
         upgrade: "从 {{from}} 升级守护进程",
         reinstall: "重新安装守护进程 {{version}}",
+        secure: "要求在网络上配对",
         pairCode: "通过 SSH 获取配对码",
         pair: "配对此设备",
       },
-      skipped: "已跳过：守护进程未签发配对码；主机由 SSH 认证。",
+      lanTrusted: "警告：该守护进程仍然信任自己所在的网络，附近设备无需配对即可连接。",
+      skippedSteps: {
+        secure: "已跳过：守护进程此前已安装，因此保持其网络信任设置不变。",
+        pairCode: "已跳过：守护进程未签发配对码，因此本设备在它上面没有凭据。",
+      },
       platform: "检测到 {{platform}}",
       formErrors: {
         hostRequired: "请选择或输入主机。",
@@ -1821,18 +1828,20 @@ export const zhCN: TranslationResources = {
         invalidSshPort: "请输入 1 到 65535 之间的 SSH 端口。",
         invalidDaemonPort: "请输入 1 到 65535 之间的守护进程端口。",
         invalidKeyFile: "请输入绝对路径或以 ~/ 开头的路径。",
-        tunnelKeyUnsupported:
-          "SSH 隧道连接只使用 ssh-agent 和 ~/.ssh/config。请将此密钥加入 SSH 配置，或改用网络连接。",
       },
       errors: {
         ssh_failed: "无法通过 SSH 连接。{{detail}}",
         unsupported_platform:
           "不支持 {{detail}}。守护进程可在 Linux 和 macOS（x86_64 或 arm64）上运行。",
         install_failed: "安装失败。{{detail}}",
+        harden_failed:
+          "守护进程已安装，但无法关闭它对主机所在网络的信任，因此已停止配对。{{detail}}",
         pair_code_unavailable:
           "守护进程未签发配对码。{{detail}} 请更新守护进程，或改用 SSH 隧道连接。",
         invalid_pair_code: "无法读取守护进程的配对码。{{detail}}",
         fingerprint_mismatch: "守护进程密钥与通过 SSH 报告的指纹不符，已停止配对。{{detail}}",
+        fingerprint_changed:
+          "该主机的守护进程密钥自首次部署以来已更改，因此已停止配对。仅当你更换了机器时，才删除该主机并重新部署。{{detail}}",
         server_mismatch: "应答的守护进程不是通过 SSH 安装的那一个。{{detail}}",
         unreachable:
           "此设备无法访问 {{port}} 端口上的守护进程。请在主机防火墙中开放该端口，或改用 SSH 隧道连接。",
@@ -1850,7 +1859,7 @@ export const zhCN: TranslationResources = {
         hideLog: "隐藏日志",
       },
       success: "已添加 {{name}}。",
-      unverified: "守护进程未签发配对码，因此连接仅依赖 SSH 主机密钥。",
+      unverified: "守护进程未向本设备签发凭据，因此连接仅依赖 SSH 主机密钥，且无法从主机端吊销。",
     },
     networkScan: {
       searching: "正在扫描…",

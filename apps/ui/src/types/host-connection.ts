@@ -7,6 +7,7 @@ import {
   DEFAULT_SSH_DAEMON_PORT,
   validatePort,
   validateSshHost,
+  validateSshIdentityFile,
 } from "@frogg/protocol/ssh-transport";
 import {
   type HostAppearance,
@@ -35,6 +36,8 @@ export interface RemoteSshHostConnection {
   host: string;
   sshPort?: number;
   daemonPort?: number;
+  /** An explicit ssh private key; ssh-agent and `~/.ssh/config` apply otherwise. */
+  identityFile?: string;
   /** The Frogg daemon's password (not ssh's), sent through the tunnel like `directTcp` does. */
   password?: string;
 }
@@ -59,6 +62,12 @@ export type HostLifecycle = Record<string, never>;
 export interface HostProfile {
   serverId: string;
   label: string;
+  /**
+   * The daemon key fingerprint this host was first deployed with, pinned so a
+   * later deploy that finds a different key for the same server id is refused
+   * (trust on first use). `SHA256:<base64>`, as OpenSSH prints fingerprints.
+   */
+  pinnedDaemonKeyFingerprint?: string;
   appearance: HostAppearance;
   lifecycle: HostLifecycle;
   connections: HostConnection[];
@@ -158,6 +167,7 @@ function remoteSshConnectionEquals(
     left.host === right.host &&
     left.sshPort === right.sshPort &&
     left.daemonPort === right.daemonPort &&
+    left.identityFile === right.identityFile &&
     left.password === right.password
   );
 }
@@ -326,10 +336,15 @@ export function createRemoteSshHostConnection(input: {
   host: string;
   sshPort?: number;
   daemonPort?: number;
+  identityFile?: string;
   password?: string;
 }): RemoteSshHostConnection {
   const host = validateSshHost(input.host);
   const sshPort = input.sshPort === undefined ? undefined : validatePort(input.sshPort, "SSH port");
+  const identityFile =
+    input.identityFile === undefined || !input.identityFile.trim()
+      ? undefined
+      : validateSshIdentityFile(input.identityFile);
   const password = input.password?.trim();
 
   const daemonPort =
@@ -350,6 +365,7 @@ export function createRemoteSshHostConnection(input: {
     host,
     ...(sshPort !== undefined ? { sshPort } : {}),
     ...(daemonPort !== undefined ? { daemonPort } : {}),
+    ...(identityFile !== undefined ? { identityFile } : {}),
     ...(password ? { password } : {}),
   };
 }
@@ -378,6 +394,7 @@ const StoredHostConnectionSchema = z.discriminatedUnion("type", [
     host: z.string(),
     sshPort: z.number().optional(),
     daemonPort: z.number().optional(),
+    identityFile: z.string().optional(),
     password: z.string().optional(),
   }),
   z.strictObject({
@@ -391,6 +408,7 @@ const StoredHostConnectionSchema = z.discriminatedUnion("type", [
 const StoredHostProfileSchema = z.strictObject({
   serverId: z.string().trim().min(1),
   label: z.string().optional(),
+  pinnedDaemonKeyFingerprint: z.string().optional(),
   appearance: HostAppearanceSchema.optional(),
   lifecycle: z.strictObject({}).optional(),
   connections: z.array(StoredHostConnectionSchema).min(1),
@@ -430,6 +448,7 @@ function normalizeStoredConnection(connection: StoredHostConnection): HostConnec
         host: connection.host,
         ...(connection.sshPort !== undefined ? { sshPort: connection.sshPort } : {}),
         ...(connection.daemonPort !== undefined ? { daemonPort: connection.daemonPort } : {}),
+        ...(connection.identityFile !== undefined ? { identityFile: connection.identityFile } : {}),
         ...(connection.password !== undefined ? { password: connection.password } : {}),
       });
     } catch {
@@ -481,9 +500,11 @@ export function normalizeStoredHostProfile(entry: unknown): HostProfile | null {
       ? record.preferredConnectionId
       : (connections[0]?.id ?? null);
 
+  const pinnedDaemonKeyFingerprint = record.pinnedDaemonKeyFingerprint?.trim();
   return {
     serverId,
     label,
+    ...(pinnedDaemonKeyFingerprint ? { pinnedDaemonKeyFingerprint } : {}),
     appearance: record.appearance ?? defaultHostAppearance(),
     lifecycle: defaultLifecycle(),
     connections,
