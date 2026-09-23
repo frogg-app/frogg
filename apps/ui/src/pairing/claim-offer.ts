@@ -202,7 +202,6 @@ export async function claimDaemon(input: {
           ...(input.pairingCode ? { pairingCode: input.pairingCode } : {}),
           ...(input.claim ? { claim: true } : {}),
           label: input.label,
-          deviceName: input.label,
         }),
       },
     );
