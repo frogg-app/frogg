@@ -7,6 +7,8 @@
   the daemon on every network interface, and failed tunnel connections now say
   so explicitly.
 
+- Codex usage no longer labels its sole weekly allowance as a session limit.
+
 - An update whose download is still building shows how far off it is. When a
   release is tagged, each platform's installer is published as its runner
   finishes, so Settings could offer a new version and then say only "No
