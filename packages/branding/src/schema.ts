@@ -61,6 +61,7 @@ const installer = z.strictObject({
 export const HOST_SETTINGS_SECTIONS = [
   "projects",
   "pair-device",
+  "devices",
   "agents",
   "providers",
   "usage",
