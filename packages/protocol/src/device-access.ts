@@ -333,6 +333,7 @@ export type PresenceTarget = z.infer<typeof PresenceTargetSchema>;
 
 /** What a client reports. `left` removes it from the target. */
 export const PresenceReportStateSchema = z.enum(["viewing", "typing", "idle", "left"]);
+export type PresenceReportState = z.infer<typeof PresenceReportStateSchema>;
 /** What participants show. `sending` / `input` are derived by the daemon. */
 export const PresenceActivitySchema = z.enum(["viewing", "typing", "idle", "sending", "input"]);
 export type PresenceActivity = z.infer<typeof PresenceActivitySchema>;
