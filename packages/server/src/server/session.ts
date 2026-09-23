@@ -506,7 +506,7 @@ export interface SessionOptions {
     newBranch: string | null,
   ) => void;
   getDaemonTcpPort?: () => number | null;
-  getDaemonTcpHost?: () => string | null;
+  getWorkspaceServiceBindHost?: () => string | null;
   serviceProxyPublicBaseUrl?: string | null;
   resolveScriptHealth?: (hostname: string) => ScriptHealthState | null;
   voice?: {
@@ -750,7 +750,7 @@ export class Session {
   private readonly serviceProxy: ServiceProxySubsystem | null;
   private readonly scriptRuntimeStore: WorkspaceScriptRuntimeStore | null;
   private readonly getDaemonTcpPort: (() => number | null) | null;
-  private readonly getDaemonTcpHost: (() => string | null) | null;
+  private readonly getWorkspaceServiceBindHost: (() => string | null) | null;
   private readonly serviceProxyPublicBaseUrl: string | null;
   private readonly resolveScriptHealth: ((hostname: string) => ScriptHealthState | null) | null;
   private readonly terminalController: TerminalSessionController;
@@ -828,7 +828,7 @@ export class Session {
       workspaceSetupRuntime,
       onBranchChanged,
       getDaemonTcpPort,
-      getDaemonTcpHost,
+      getWorkspaceServiceBindHost,
       serviceProxyPublicBaseUrl,
       resolveScriptHealth,
       voice,
@@ -1156,7 +1156,7 @@ export class Session {
     this.workspaceSetupSnapshots = workspaceSetupSnapshots ?? new Map();
     this.workspaceSetupRuntime = resolveWorkspaceSetupRuntime(workspaceSetupRuntime);
     this.getDaemonTcpPort = getDaemonTcpPort ?? null;
-    this.getDaemonTcpHost = getDaemonTcpHost ?? null;
+    this.getWorkspaceServiceBindHost = getWorkspaceServiceBindHost ?? null;
     this.serviceProxyPublicBaseUrl = serviceProxyPublicBaseUrl ?? null;
     this.resolveScriptHealth = resolveScriptHealth ?? null;
     this.workspaceScripts = createWorkspaceScriptsService({
@@ -1167,7 +1167,7 @@ export class Session {
       projectRegistry: this.projectRegistry,
       workspaceGitService: this.workspaceGitService,
       getDaemonTcpPort: this.getDaemonTcpPort,
-      getDaemonTcpHost: this.getDaemonTcpHost,
+      getWorkspaceServiceBindHost: this.getWorkspaceServiceBindHost,
       serviceProxyPublicBaseUrl: this.serviceProxyPublicBaseUrl,
       resolveScriptHealth: this.resolveScriptHealth,
       logger: this.sessionLogger,
@@ -6967,7 +6967,7 @@ export class Session {
         serviceProxy: this.serviceProxy,
         scriptRuntimeStore: this.scriptRuntimeStore,
         getDaemonTcpPort: this.getDaemonTcpPort,
-        getDaemonTcpHost: this.getDaemonTcpHost,
+        getWorkspaceServiceBindHost: this.getWorkspaceServiceBindHost,
         serviceProxyPublicBaseUrl: this.serviceProxyPublicBaseUrl,
         onScriptsChanged: (workspaceId, workspaceDirectory) => {
           this.workspaceScripts.emitStatusUpdate(workspaceId, workspaceDirectory);

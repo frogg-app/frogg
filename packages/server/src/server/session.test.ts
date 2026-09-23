@@ -314,7 +314,7 @@ interface SessionForTestOptions {
   serviceProxy?: SessionOptions["serviceProxy"];
   scriptRuntimeStore?: SessionOptions["scriptRuntimeStore"];
   getDaemonTcpPort?: () => number | null;
-  getDaemonTcpHost?: () => string | null;
+  getWorkspaceServiceBindHost?: () => string | null;
   providerSnapshotManager?: ProviderSnapshotManager;
   hubExecutionAgents?: SessionOptions["hubExecutionAgents"];
   stt?: SessionOptions["stt"];
@@ -426,7 +426,7 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
     serviceProxy: options.serviceProxy,
     scriptRuntimeStore: options.scriptRuntimeStore,
     getDaemonTcpPort: options.getDaemonTcpPort,
-    getDaemonTcpHost: options.getDaemonTcpHost,
+    getWorkspaceServiceBindHost: options.getWorkspaceServiceBindHost,
     voice: options.voice,
     serverId: options.serverId,
     daemonVersion: options.daemonVersion,
@@ -4548,7 +4548,7 @@ describe("session workspace script handling", () => {
       serviceProxy: { listRoutesForWorkspace: vi.fn(() => []) },
       scriptRuntimeStore: { listForWorkspace: vi.fn(() => []) },
       getDaemonTcpPort: () => 9999,
-      getDaemonTcpHost: () => "127.0.0.1",
+      getWorkspaceServiceBindHost: () => "127.0.0.1",
       messages,
     });
 
@@ -4567,7 +4567,7 @@ describe("session workspace script handling", () => {
         branchName: "feature/service-scripts",
         scriptName: "api",
         daemonPort: 9999,
-        daemonListenHost: "127.0.0.1",
+        workspaceServiceBindHost: "127.0.0.1",
       }),
     );
     expect(messages).toContainEqual({

@@ -186,8 +186,13 @@ import {
   type ManagedProcessRegistry,
 } from "./managed-processes/managed-processes.js";
 import { terminateWithTreeKill } from "../utils/tree-kill.js";
-import { isHostnameAllowed, type HostnamesConfig } from "./hostnames.js";
 import {
+  DEFAULT_ALLOW_PAIRING_HOSTNAME,
+  isHostnameAllowed,
+  type HostnamesConfig,
+} from "./hostnames.js";
+import {
+  createServiceProxyAuthorizer,
   createRequireBearerMiddleware,
   authorizeAgentMcpRequest,
   extractHttpBearerToken,
@@ -414,6 +419,16 @@ export interface FroggDaemonConfig {
   corsAllowedOrigins: string[];
   allowedHosts?: HostnamesConfig;
   hostnames?: HostnamesConfig;
+  /**
+   * Accept the brand's pairing hostname as a `Host` without listing it in
+   * `hostnames`. Default `DEFAULT_ALLOW_PAIRING_HOSTNAME`.
+   */
+  allowPairingHostname?: boolean;
+  /**
+   * Host workspace dev servers bind to (`HOST` in their environment). Defaults
+   * to the brand's `daemon.workspaceServicesBind`, which is loopback.
+   */
+  workspaceServicesBindHost?: string;
   trustedProxies?: true | string[];
   /** Treat private-network clients like loopback (self-hosting/security.mdx, "Access policy"). */
   trustLan?: boolean;
@@ -792,10 +807,9 @@ export async function createFroggDaemon(
     const target = publicListenTarget();
     return target.type === "tcp" ? target.port : null;
   };
-  const publicTcpHost = () => {
-    const target = publicListenTarget();
-    return target.type === "tcp" ? target.host : null;
-  };
+  // Where workspace dev servers bind, independent of the daemon's own listen
+  // host: binding the daemon wide must not publish every dev server with it.
+  const workspaceServiceBindHost = () => config.workspaceServicesBindHost ?? null;
   const publicOrigins = () => {
     const target = publicListenTarget();
     return target.type === "tcp"
@@ -836,6 +850,11 @@ export async function createFroggDaemon(
   const applyAppBaseUrl = () => {
     appBaseUrl = resolvePairingBaseUrl(persistedApp) ?? BRAND_PAIRING_URL;
   };
+  // Restart-scoped, like the listen address: it decides which names this
+  // daemon answers to at all, so it is read once rather than live-edited.
+  const hostnameCheckOptions = {
+    allowPairingHostname: config.allowPairingHostname ?? DEFAULT_ALLOW_PAIRING_HOSTNAME,
+  };
   daemonConfigStore.onFieldChange("hostnames", (value) => {
     configuredHostnames = value as HostnamesConfig | undefined;
   });
@@ -874,10 +893,12 @@ export async function createFroggDaemon(
     logger,
   });
 
+  const authorizeServiceProxyRequest = createServiceProxyAuthorizer(authConfig);
+
   // Service proxy classifies service hosts before daemon auth/route fallthrough.
   // Registered service hosts proxy directly; known service namespaces without a
   // route return 404 and never reach daemon APIs.
-  app.use(serviceProxy.middleware());
+  app.use(serviceProxy.middleware({ authorize: authorizeServiceProxyRequest }));
 
   // Host allowlist / DNS rebinding protection (vite-like semantics).
   // For non-TCP (unix sockets), skip host validation.
@@ -886,7 +907,7 @@ export async function createFroggDaemon(
       const hostHeader = typeof req.headers.host === "string" ? req.headers.host : undefined;
       if (
         publicListenTarget().type === "tcp" &&
-        !isHostnameAllowed(hostHeader, configuredHostnames)
+        !isHostnameAllowed(hostHeader, configuredHostnames, hostnameCheckOptions)
       ) {
         res.status(403).json({ error: "Invalid Host header" });
         return;
@@ -1179,7 +1200,13 @@ export async function createFroggDaemon(
   // VoiceAssistantWebSocketServer attaches its own "upgrade" listener so that
   // script-bound upgrades are forwarded first. The handler is a no-op for
   // requests that don't match a registered script route.
-  httpServer.on("upgrade", serviceProxy.upgradeHandler({ passthroughUnknown: true }));
+  httpServer.on(
+    "upgrade",
+    serviceProxy.upgradeHandler({
+      passthroughUnknown: true,
+      authorize: authorizeServiceProxyRequest,
+    }),
+  );
 
   if (config.serviceProxy?.standaloneListen) {
     serviceProxyListenTarget = parseListenString(config.serviceProxy.standaloneListen);
@@ -1475,7 +1502,7 @@ export async function createFroggDaemon(
         serviceProxy,
         scriptRuntimeStore,
         getDaemonTcpPort: publicTcpPort,
-        getDaemonTcpHost: publicTcpHost,
+        getWorkspaceServiceBindHost: workspaceServiceBindHost,
         serviceProxyPublicBaseUrl,
         onScriptsChanged: null,
       },
@@ -1714,7 +1741,7 @@ export async function createFroggDaemon(
       projectRegistry,
       workspaceGitService,
       getDaemonTcpPort: publicTcpPort,
-      getDaemonTcpHost: publicTcpHost,
+      getWorkspaceServiceBindHost: workspaceServiceBindHost,
       serviceProxyPublicBaseUrl,
       resolveScriptHealth: (hostname) => scriptHealthMonitor.getHealthForHostname(hostname),
       logger,
@@ -2095,6 +2122,7 @@ export async function createFroggDaemon(
               {
                 getAllowedOrigins: () => new Set([...allowedOrigins, ...publicOrigins()]),
                 getHostnames: () => configuredHostnames,
+                hostnameCheckOptions,
                 daemonStatusRpc: dependencies.serverFeatureOverrides?.daemonStatusRpc,
                 relayConfig: dependencies.serverFeatureOverrides?.relayConfig,
                 startPaused: true,
@@ -2122,7 +2150,7 @@ export async function createFroggDaemon(
               scriptRuntimeStore,
               handleBranchChange,
               publicTcpPort,
-              publicTcpHost,
+              workspaceServiceBindHost,
               (hostname) => scriptHealthMonitor.getHealthForHostname(hostname),
               workspaceGitService,
               github,

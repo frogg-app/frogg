@@ -207,18 +207,43 @@ test("branded distributions default the daemon locked down; upstream stays open"
   assert.deepEqual(resolveBrandManifest(minimal).daemon, {
     bind: "loopback",
     bindHost: "127.0.0.1",
+    workspaceServicesBind: "loopback",
+    workspaceServicesBindHost: "127.0.0.1",
     claimMode: true,
   });
   assert.deepEqual(resolveBrandManifest({ ...minimal, id: "frogg" }).daemon, {
     bind: "all",
     bindHost: "0.0.0.0",
+    workspaceServicesBind: "loopback",
+    workspaceServicesBindHost: "127.0.0.1",
     claimMode: false,
   });
   assert.deepEqual(
     resolveBrandManifest({ ...minimal, daemon: { bind: "all", claimMode: false } }).daemon,
-    { bind: "all", bindHost: "0.0.0.0", claimMode: false },
+    {
+      bind: "all",
+      bindHost: "0.0.0.0",
+      workspaceServicesBind: "loopback",
+      workspaceServicesBindHost: "127.0.0.1",
+      claimMode: false,
+    },
   );
   assert.throws(() => resolveBrandManifest({ ...minimal, daemon: { bind: "lan" } }), /bind/);
+});
+
+test("a brand can opt workspace services back onto every interface", () => {
+  const daemon = resolveBrandManifest({
+    ...minimal,
+    daemon: { workspaceServicesBind: "all" },
+  }).daemon;
+  assert.equal(daemon.workspaceServicesBind, "all");
+  assert.equal(daemon.workspaceServicesBindHost, "0.0.0.0");
+  // The daemon's own bind is unaffected by the workspace-service bind.
+  assert.equal(daemon.bindHost, "127.0.0.1");
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, daemon: { workspaceServicesBind: "lan" } }),
+    /workspaceServicesBind/,
+  );
 });
 
 test("mobile defaults on and can be turned off", () => {

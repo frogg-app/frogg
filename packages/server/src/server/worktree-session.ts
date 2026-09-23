@@ -107,7 +107,7 @@ interface CreateFroggWorktreeInBackgroundDependencies {
   serviceProxy: ServiceProxySubsystem | null;
   scriptRuntimeStore: WorkspaceScriptRuntimeStore | null;
   getDaemonTcpPort: (() => number | null) | null;
-  getDaemonTcpHost: (() => string | null) | null;
+  getWorkspaceServiceBindHost: (() => string | null) | null;
   serviceProxyPublicBaseUrl?: string | null;
   onScriptsChanged: ((workspaceId: string, workspaceDirectory: string) => void) | null;
 }

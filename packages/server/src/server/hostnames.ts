@@ -48,11 +48,25 @@ export const PAIRING_HOSTNAME = brand.services.pairingUrl
   ? new URL(brand.services.pairingUrl).hostname
   : "";
 
-function isDefaultAllowedHostname(hostname: string): boolean {
-  // Vite-style defaults: localhost, *.localhost, all IP addresses, and the
-  // pairing hostname.
+/**
+ * Whether the brand's pairing hostname is auto-allowed as a `Host`. It only
+ * helps an owner who reverse-proxies that name at this daemon, so an owner who
+ * does not is handed a name they never asked to answer to. Default true for
+ * the reverse-proxy case; `daemon.allowPairingHostname: false` (or
+ * `<BRAND>_ALLOW_PAIRING_HOSTNAME=0`) drops it.
+ */
+export const DEFAULT_ALLOW_PAIRING_HOSTNAME = true;
+
+export interface HostnameCheckOptions {
+  /** Default `DEFAULT_ALLOW_PAIRING_HOSTNAME`. */
+  allowPairingHostname?: boolean;
+}
+
+function isDefaultAllowedHostname(hostname: string, allowPairingHostname: boolean): boolean {
+  // Vite-style defaults: localhost, *.localhost, all IP addresses, and (unless
+  // the owner opted out) the pairing hostname.
   if (hostname === "localhost") return true;
-  if (hostname === PAIRING_HOSTNAME) return true;
+  if (allowPairingHostname && PAIRING_HOSTNAME && hostname === PAIRING_HOSTNAME) return true;
   if (hostname.endsWith(".localhost")) return true;
   if (net.isIP(hostname) !== 0) return true;
   return false;
@@ -64,12 +78,14 @@ function isDefaultAllowedHostname(hostname: string): boolean {
  * Semantics:
  * - `hostnames === true` => allow any host.
  * - `hostnames === []` or `undefined` => allow localhost, *.localhost, all IPs,
- *   and `pair.frogg.app` (see PAIRING_HOSTNAME).
+ *   and `pair.frogg.app` (see PAIRING_HOSTNAME, unless `allowPairingHostname`
+ *   is false).
  * - `hostnames === ['.example.com', 'myhost']` => allow those *in addition* to defaults.
  */
 export function isHostnameAllowed(
   hostHeader: string | undefined,
   hostnames: HostnamesConfig,
+  options: HostnameCheckOptions = {},
 ): boolean {
   const hostname = hostHeader ? parseHostnameFromHostHeader(hostHeader) : null;
   if (!hostname) return false;
@@ -77,7 +93,14 @@ export function isHostnameAllowed(
   if (hostnames === true) return true;
 
   // Defaults are always allowed.
-  if (isDefaultAllowedHostname(hostname)) return true;
+  if (
+    isDefaultAllowedHostname(
+      hostname,
+      options.allowPairingHostname ?? DEFAULT_ALLOW_PAIRING_HOSTNAME,
+    )
+  ) {
+    return true;
+  }
 
   const patterns = hostnames ?? [];
   for (const pattern of patterns) {

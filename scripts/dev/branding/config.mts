@@ -134,6 +134,11 @@ export async function generateConfig(build: BrandBuild): Promise<void> {
         ]),
       ),
     ),
+    // The hostname pairing links use, so the Rust daemon's Host allowlist can
+    // apply the same default allowance the Node daemon does.
+    PAIRING_HOSTNAME: brand.services.pairingUrl
+      ? new URL(brand.services.pairingUrl).hostname
+      : "",
     DEFAULT_PORT: brand.daemonPort,
     DEFAULT_LISTEN: `127.0.0.1:${brand.daemonPort}`,
     LEGACY_FROGG: brand.legacyFrogg,

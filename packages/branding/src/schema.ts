@@ -156,6 +156,10 @@ export const BrandManifestSchema = z.strictObject({
   daemon: z
     .strictObject({
       bind: z.enum(["all", "loopback"]).optional(),
+      // Where workspace dev servers listen. Loopback for every brand unless a
+      // manifest opts into the wide bind; reach them from another device
+      // through the authenticated service proxy instead.
+      workspaceServicesBind: z.enum(["all", "loopback"]).optional(),
       claimMode: z.boolean().optional(),
     })
     .optional(),
@@ -215,9 +219,15 @@ export function resolveBrandManifest(input: unknown) {
 function resolveDaemonDefaults(manifest: BrandManifest) {
   const upstream = manifest.id === "frogg";
   const bind = manifest.daemon?.bind ?? (upstream ? "all" : "loopback");
+  // Workspace services default to loopback for every brand, upstream included:
+  // a dev server is reached through the daemon's authenticated service proxy,
+  // not by binding it onto the network.
+  const workspaceServicesBind = manifest.daemon?.workspaceServicesBind ?? "loopback";
   return {
     bind,
     bindHost: bind === "all" ? "0.0.0.0" : "127.0.0.1",
+    workspaceServicesBind,
+    workspaceServicesBindHost: workspaceServicesBind === "all" ? "0.0.0.0" : "127.0.0.1",
     claimMode: manifest.daemon?.claimMode ?? !upstream,
   };
 }

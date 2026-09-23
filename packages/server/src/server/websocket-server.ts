@@ -34,7 +34,7 @@ import {
 import { asUint8Array, decodeBinaryFrame } from "@frogg/protocol/binary-frames/index";
 import type { TerminalActivity } from "@frogg/protocol/terminal-activity";
 import type { HostnamesConfig } from "./hostnames.js";
-import { isHostnameAllowed } from "./hostnames.js";
+import { isHostnameAllowed, type HostnameCheckOptions } from "./hostnames.js";
 import {
   Session,
   type SessionLifecycleIntent,
@@ -199,6 +199,8 @@ interface WebSocketServerConfig {
   hostnames?: HostnamesConfig;
   getAllowedOrigins?: () => Set<string>;
   getHostnames?: () => HostnamesConfig | undefined;
+  /** Host-allowlist tuning shared with the HTTP allowlist (pairing-hostname opt-out). */
+  hostnameCheckOptions?: HostnameCheckOptions;
   daemonStatusRpc?: boolean;
   relayConfig?: boolean;
   startPaused?: boolean;
@@ -634,7 +636,7 @@ export class VoiceAssistantWebSocketServer {
   private serviceProxy!: ServiceProxySubsystem | null;
   private scriptRuntimeStore!: WorkspaceScriptRuntimeStore | null;
   private getDaemonTcpPort!: (() => number | null) | null;
-  private getDaemonTcpHost!: (() => string | null) | null;
+  private getWorkspaceServiceBindHost!: (() => string | null) | null;
   private serviceProxyPublicBaseUrl!: string | null;
   private resolveScriptHealth!: ((hostname: string) => ScriptHealthState | null) | null;
   private dictation!: {
@@ -714,7 +716,7 @@ export class VoiceAssistantWebSocketServer {
       newBranch: string | null,
     ) => void,
     getDaemonTcpPort?: () => number | null,
-    getDaemonTcpHost?: () => string | null,
+    getWorkspaceServiceBindHost?: () => string | null,
     resolveScriptHealth?: (hostname: string) => ScriptHealthState | null,
     workspaceGitService?: WorkspaceGitService,
     github?: ForgeService,
@@ -774,7 +776,7 @@ export class VoiceAssistantWebSocketServer {
       scriptRuntimeStore,
       onBranchChanged,
       getDaemonTcpPort,
-      getDaemonTcpHost,
+      getWorkspaceServiceBindHost,
       serviceProxyPublicBaseUrl,
       resolveScriptHealth,
     });
@@ -850,7 +852,7 @@ export class VoiceAssistantWebSocketServer {
       | ((workspaceId: string, oldBranch: string | null, newBranch: string | null) => void)
       | undefined;
     getDaemonTcpPort: (() => number | null) | undefined;
-    getDaemonTcpHost: (() => string | null) | undefined;
+    getWorkspaceServiceBindHost: (() => string | null) | undefined;
     serviceProxyPublicBaseUrl: string | null | undefined;
     resolveScriptHealth: ((hostname: string) => ScriptHealthState | null) | undefined;
   }): void {
@@ -886,7 +888,7 @@ export class VoiceAssistantWebSocketServer {
     this.scriptRuntimeStore = params.scriptRuntimeStore ?? null;
     this.onBranchChanged = params.onBranchChanged ?? null;
     this.getDaemonTcpPort = params.getDaemonTcpPort ?? null;
-    this.getDaemonTcpHost = params.getDaemonTcpHost ?? null;
+    this.getWorkspaceServiceBindHost = params.getWorkspaceServiceBindHost ?? null;
     this.serviceProxyPublicBaseUrl = params.serviceProxyPublicBaseUrl ?? null;
     this.resolveScriptHealth = params.resolveScriptHealth ?? null;
   }
@@ -906,6 +908,7 @@ export class VoiceAssistantWebSocketServer {
           req,
           wsConfig.getAllowedOrigins?.() ?? wsConfig.allowedOrigins ?? new Set(),
           wsConfig.getHostnames?.() ?? wsConfig.hostnames,
+          wsConfig.hostnameCheckOptions ?? {},
           callback,
         );
       },
@@ -960,6 +963,7 @@ export class VoiceAssistantWebSocketServer {
     req: IncomingMessage,
     allowedOrigins: Set<string>,
     hostnames: HostnamesConfig | undefined,
+    hostnameCheckOptions: HostnameCheckOptions,
     callback: (res: boolean, code?: number, message?: string) => void,
   ): void {
     if (this.connectionLifecycle !== "accepting") {
@@ -970,7 +974,7 @@ export class VoiceAssistantWebSocketServer {
     const requestMetadata = extractSocketRequestMetadata(req);
     const origin = requestMetadata.origin;
     const requestHost = requestMetadata.host ?? null;
-    if (requestHost && !isHostnameAllowed(requestHost, hostnames)) {
+    if (requestHost && !isHostnameAllowed(requestHost, hostnames, hostnameCheckOptions)) {
       this.incrementRuntimeCounter("hostRejected");
       this.logger.warn(
         { ...requestMetadata, host: requestHost },
@@ -1697,7 +1701,7 @@ export class VoiceAssistantWebSocketServer {
       workspaceSetupRuntime: this.workspaceSetupRuntime,
       onBranchChanged: this.onBranchChanged ?? undefined,
       getDaemonTcpPort: this.getDaemonTcpPort ?? undefined,
-      getDaemonTcpHost: this.getDaemonTcpHost ?? undefined,
+      getWorkspaceServiceBindHost: this.getWorkspaceServiceBindHost ?? undefined,
       serviceProxyPublicBaseUrl: this.serviceProxyPublicBaseUrl,
       resolveScriptHealth: this.resolveScriptHealth ?? undefined,
       voice: {

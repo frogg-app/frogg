@@ -789,7 +789,7 @@ function createFroggWorktreeForMcpTest(options: {
         serviceProxy: null,
         scriptRuntimeStore: null,
         getDaemonTcpPort: null,
-        getDaemonTcpHost: null,
+        getWorkspaceServiceBindHost: null,
         onScriptsChanged: null,
       },
       input,
