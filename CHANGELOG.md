@@ -1,40 +1,5 @@
 # Changelog
 
-<<<<<<< HEAD
-## 1.5.27 — 2026-09-23
-
-- The provider Version card is visible when the sheet opens. It was placed on
-  the provider's own tab, but the sheet opens on an account, and the header row
-  that switches to the provider tab does not look like a control — so the card
-  shipped effectively invisible. A provider's version is not an account-scoped
-  setting, so it now sits above the account chips and shows whichever tab is
-  selected. The Providers list also badges any provider with a newer release
-  published, so an available update is visible without opening anything.
-
-## 1.5.26 — 2026-09-23
-
-- Providers can be updated from Frogg, and kept updated. Each provider's own tab
-  in host settings gains a Version card showing the installed version against the
-  latest published one, with an Update button for the providers Frogg
-  distributes — Claude, Codex, Copilot and OpenCode, all npm packages — and a
-  link to the vendor's instructions for the ones it does not. `frogg provider
-update` reports the same versions and installs by name or `--all`. The daemon
-  checks for new releases in the background on its own schedule; turning on
-  `providerUpdates.autoUpdate` (the Update automatically switch, or `frogg
-provider update-settings --auto-update true`) lets it install them too, which
-  is off by default because replacing a provider binary under a running session
-  should be the user's decision.
-
-## 1.5.25 — 2026-09-22
-
-- On phones, the account is picked from the composer toolbar rather than from
-  inside the model sheet. When a provider has more than one sign-in registered,
-  choosing which account a new conversation starts as is a decision made about
-  as often as the model, so it now sits beside the model pill instead of two
-  taps deep behind Select model. Providers with a single account keep the row in
-  the sheet, and a launched agent's account is still named by its own pill above
-  the composer.
-=======
 ## Unreleased
 
 - Per-device access for the daemon. Every paired device now holds its own
@@ -79,7 +44,40 @@ provider update-settings --auto-update true`) lets it install them too, which
   requires a device credential.
 - Daemon-wide session presence, so clients can see who else is looking at a
   workspace. Entries expire, and clients re-report while they are watching.
->>>>>>> worktree-agent-a19626058b1c26d7c
+
+## 1.5.27 — 2026-09-23
+
+- The provider Version card is visible when the sheet opens. It was placed on
+  the provider's own tab, but the sheet opens on an account, and the header row
+  that switches to the provider tab does not look like a control — so the card
+  shipped effectively invisible. A provider's version is not an account-scoped
+  setting, so it now sits above the account chips and shows whichever tab is
+  selected. The Providers list also badges any provider with a newer release
+  published, so an available update is visible without opening anything.
+
+## 1.5.26 — 2026-09-23
+
+- Providers can be updated from Frogg, and kept updated. Each provider's own tab
+  in host settings gains a Version card showing the installed version against the
+  latest published one, with an Update button for the providers Frogg
+  distributes — Claude, Codex, Copilot and OpenCode, all npm packages — and a
+  link to the vendor's instructions for the ones it does not. `frogg provider
+update` reports the same versions and installs by name or `--all`. The daemon
+  checks for new releases in the background on its own schedule; turning on
+  `providerUpdates.autoUpdate` (the Update automatically switch, or `frogg
+provider update-settings --auto-update true`) lets it install them too, which
+  is off by default because replacing a provider binary under a running session
+  should be the user's decision.
+
+## 1.5.25 — 2026-09-22
+
+- On phones, the account is picked from the composer toolbar rather than from
+  inside the model sheet. When a provider has more than one sign-in registered,
+  choosing which account a new conversation starts as is a decision made about
+  as often as the model, so it now sits beside the model pill instead of two
+  taps deep behind Select model. Providers with a single account keep the row in
+  the sheet, and a launched agent's account is still named by its own pill above
+  the composer.
 
 ## 1.5.24 — 2026-09-21
 
