@@ -1,6 +1,6 @@
 {
   "name": "@frogg/app",
-  "version": "1.5.25",
+  "version": "1.5.26",
   "private": true,
   "main": "index.ts",
   "scripts": {
