@@ -14,6 +14,7 @@ mod envelope;
 mod frames;
 mod generated;
 mod generated_tests;
+mod hostnames;
 mod http_proxy;
 mod netclass;
 mod proxy;
@@ -44,6 +45,11 @@ struct AppState {
     upstream_url: Option<String>,
     auth: auth::AuthConfig,
     allowed_origins: Vec<String>,
+    /// `Host` allowlist. Checked on every request: `Origin` alone cannot stop
+    /// DNS rebinding, because the same-origin fallback compares `Origin` to
+    /// `Host` and an attacker's page supplies both.
+    hostnames: hostnames::Hostnames,
+    allow_pairing_hostname: bool,
     hostname: String,
     listen: String,
     web_ui_dist: Option<std::path::PathBuf>,
@@ -83,6 +89,8 @@ async fn main() -> anyhow::Result<()> {
         upstream_url: config.upstream.clone(),
         auth: persisted.auth,
         allowed_origins: persisted.allowed_origins,
+        hostnames: persisted.hostnames,
+        allow_pairing_hostname: persisted.allow_pairing_hostname,
         hostname: hostname(),
         listen: config.listen.to_string(),
         http_proxy: config
@@ -94,16 +102,7 @@ async fn main() -> anyhow::Result<()> {
         validate_protocol: config.validate_protocol,
     });
 
-    let app = Router::new()
-        // Unauthenticated by design, matching the Node daemon: health for probes,
-        // identity for LAN scanners and the pairing flow.
-        .route("/api/health", get(health))
-        .route("/api/identity", get(identity).options(identity_preflight))
-        .route("/api/status", get(status))
-        .route("/ws", get(ws_upgrade))
-        // Everything else is the SPA. Registered last so it never shadows /api.
-        .fallback(get(web_ui_handler))
-        .with_state(state.clone());
+    let app = build_router(state.clone());
 
     let listener = tokio::net::TcpListener::bind(config.listen).await?;
     let bound = listener.local_addr()?;
@@ -258,6 +257,55 @@ async fn status(
             StatusCode::UNAUTHORIZED.into_response()
         }
     }
+}
+
+fn build_router(state: Arc<AppState>) -> Router {
+    Router::new()
+        // Unauthenticated by design, matching the Node daemon: health for probes,
+        // identity for LAN scanners and the pairing flow.
+        .route("/api/health", get(health))
+        .route("/api/identity", get(identity).options(identity_preflight))
+        .route("/api/status", get(status))
+        .route("/ws", get(ws_upgrade))
+        // Everything else is the SPA. Registered last so it never shadows /api.
+        .fallback(get(web_ui_handler))
+        // Host allowlist in front of every route, including /ws and the health
+        // and identity routes that are otherwise unauthenticated. Mirrors where
+        // the Node daemon mounts it.
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            enforce_host_allowlist,
+        ))
+        .with_state(state)
+}
+
+/// Rejects any request whose `Host` is not allow-listed, which is what stops
+/// DNS rebinding: a page on an attacker's domain that resolves to 127.0.0.1 or
+/// a LAN address still sends that domain in `Host`.
+async fn enforce_host_allowlist(
+    State(state): State<Arc<AppState>>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    request: axum::extract::Request,
+    next: axum::middleware::Next,
+) -> Response {
+    let host = request
+        .headers()
+        .get(axum::http::header::HOST)
+        .and_then(|value| value.to_str().ok())
+        .map(str::to_owned);
+    if !hostnames::is_hostname_allowed(
+        host.as_deref(),
+        &state.hostnames,
+        state.allow_pairing_hostname,
+    ) {
+        tracing::warn!(?host, %peer, "rejected request with a disallowed Host header");
+        return (
+            StatusCode::FORBIDDEN,
+            Json(json!({ "error": "Invalid Host header" })),
+        )
+            .into_response();
+    }
+    next.run(request).await
 }
 
 fn header<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
@@ -579,7 +627,97 @@ fn civil_from_days(z: i64) -> (i64, u32, u32) {
 
 #[cfg(test)]
 mod tests {
-    use super::civil_from_days;
+    use super::*;
+    use tower::ServiceExt;
+
+    fn test_state(hostnames: hostnames::Hostnames) -> Arc<AppState> {
+        Arc::new(AppState {
+            server_id: "test".into(),
+            started: Instant::now(),
+            upstream_url: None,
+            auth: auth::AuthConfig {
+                password_hash: None,
+                credential_hashes: Vec::new(),
+                trust_lan: true,
+            },
+            allowed_origins: Vec::new(),
+            hostnames,
+            allow_pairing_hostname: true,
+            hostname: "test-host".into(),
+            listen: "127.0.0.1:0".into(),
+            web_ui_dist: None,
+            native_terminals: false,
+            http_proxy: None,
+            validate_protocol: false,
+        })
+    }
+
+    async fn status_for(host: Option<&str>, hostnames: hostnames::Hostnames) -> StatusCode {
+        let mut builder = axum::http::Request::builder().uri("/api/health");
+        if let Some(host) = host {
+            builder = builder.header("host", host);
+        }
+        let request = builder.body(axum::body::Body::empty()).unwrap();
+        build_router(test_state(hostnames))
+            .into_make_service_with_connect_info::<SocketAddr>()
+            .oneshot(SocketAddr::from(([127, 0, 0, 1], 40000)))
+            .await
+            .unwrap()
+            .oneshot(request)
+            .await
+            .unwrap()
+            .status()
+    }
+
+    /// The rebinding case: an attacker's page resolves evil.com to 127.0.0.1,
+    /// so it reaches the daemon, but the browser still sends `Host: evil.com`.
+    #[tokio::test]
+    async fn rejects_a_rebound_host_on_an_otherwise_unauthenticated_route() {
+        assert_eq!(
+            status_for(Some("evil.com:9999"), hostnames::Hostnames::default()).await,
+            StatusCode::FORBIDDEN
+        );
+    }
+
+    #[tokio::test]
+    async fn allows_the_hosts_a_real_client_sends() {
+        for host in ["localhost:9999", "127.0.0.1:9999", "192.168.1.10:9999"] {
+            assert_eq!(
+                status_for(Some(host), hostnames::Hostnames::default()).await,
+                StatusCode::OK,
+                "{host}"
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn allows_a_configured_host_and_still_rejects_the_rest() {
+        let hostnames = hostnames::Hostnames::List(vec![".example.com".into()]);
+        assert_eq!(
+            status_for(Some("frogg.example.com"), hostnames.clone()).await,
+            StatusCode::OK
+        );
+        assert_eq!(
+            status_for(Some("evil.com"), hostnames).await,
+            StatusCode::FORBIDDEN
+        );
+    }
+
+    #[tokio::test]
+    async fn rejects_a_request_with_no_host_header_at_all() {
+        assert_eq!(
+            status_for(None, hostnames::Hostnames::default()).await,
+            StatusCode::FORBIDDEN
+        );
+    }
+
+    #[tokio::test]
+    async fn an_any_allowlist_opts_back_into_the_old_behaviour() {
+        assert_eq!(
+            status_for(Some("evil.com"), hostnames::Hostnames::Any).await,
+            StatusCode::OK
+        );
+    }
 
     #[test]
     fn converts_epoch_days_to_civil_dates() {

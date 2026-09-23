@@ -47,3 +47,7 @@ strip = "debuginfo"
 # unwind (not abort) on purpose: a panic in one connection task must not take
 # down the daemon. Stability over the last few KB of binary size.
 panic = "unwind"
+
+[dev-dependencies]
+# `ServiceExt::oneshot`, so router-level tests drive the real middleware stack.
+tower = { version = "0.5", features = ["util"] }

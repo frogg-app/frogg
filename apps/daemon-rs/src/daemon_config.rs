@@ -5,6 +5,7 @@
 //! is what the Node daemon does, rather than refusing to boot.
 
 use crate::auth::AuthConfig;
+use crate::hostnames::{merge_hostnames, parse_hostnames_env, Hostnames};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
@@ -24,6 +25,43 @@ struct DaemonSection {
     auth: Option<AuthSection>,
     #[serde(default, rename = "trustLan")]
     trust_lan: Option<bool>,
+    #[serde(default)]
+    hostnames: Option<HostnamesSection>,
+    /// The pre-rename name for `hostnames`; still read, as the Node daemon does.
+    #[serde(default, rename = "allowedHosts")]
+    allowed_hosts: Option<HostnamesSection>,
+    #[serde(default, rename = "allowPairingHostname")]
+    allow_pairing_hostname: Option<bool>,
+}
+
+/// `daemon.hostnames` is `true` or an array of patterns.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(untagged)]
+enum HostnamesSection {
+    Any(bool),
+    List(Vec<String>),
+}
+
+impl From<HostnamesSection> for Hostnames {
+    fn from(value: HostnamesSection) -> Self {
+        match value {
+            // Only `true` means "any"; `false` is not a documented value and
+            // degrades to the defaults rather than opening the daemon up.
+            HostnamesSection::Any(true) => Hostnames::Any,
+            HostnamesSection::Any(false) => Hostnames::List(Vec::new()),
+            HostnamesSection::List(list) => Hostnames::List(list),
+        }
+    }
+}
+
+/// `parseBooleanEnv`: the same accepted spellings the Node daemon takes.
+fn parse_boolean_env(value: Option<String>) -> Option<bool> {
+    let normalized = value?.trim().to_ascii_lowercase();
+    match normalized.as_str() {
+        "1" | "true" | "yes" | "on" => Some(true),
+        "0" | "false" | "no" | "off" => Some(false),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -62,6 +100,10 @@ pub struct Loaded {
     pub server_id: String,
     pub allowed_origins: Vec<String>,
     pub auth: AuthConfig,
+    /// `Host` allowlist: DNS-rebinding protection, shared with the Node daemon.
+    pub hostnames: Hostnames,
+    /// Whether the brand's pairing hostname is allowed without being listed.
+    pub allow_pairing_hostname: bool,
 }
 
 /// `$FROGG_HOME`, else `$FROGG_HOME`, else `~/.frogg`.
@@ -100,8 +142,31 @@ pub fn load(home: Option<&Path>) -> Loaded {
         None => daemon.auth.and_then(|a| a.password),
     };
 
+    // `mergeHostnames`: config.json and the env append rather than replace, so
+    // a launch-time value does not silence a persisted entry.
+    let hostnames = merge_hostnames([
+        daemon
+            .hostnames
+            .or(daemon.allowed_hosts)
+            .map(Hostnames::from)
+            .unwrap_or_default(),
+        parse_hostnames_env(
+            std::env::var("FROGG_HOSTNAMES")
+                .or_else(|_| std::env::var("FROGG_ALLOWED_HOSTS"))
+                .ok()
+                .as_deref(),
+        )
+        .unwrap_or_default(),
+    ]);
+    let allow_pairing_hostname =
+        parse_boolean_env(crate::branding::env_value("ALLOW_PAIRING_HOSTNAME"))
+            .or(daemon.allow_pairing_hostname)
+            .unwrap_or(true);
+
     Loaded {
         listen: daemon.listen,
+        hostnames,
+        allow_pairing_hostname,
         server_id: read_or_create_server_id(home),
         allowed_origins: daemon.cors.map(|c| c.allowed_origins).unwrap_or_default(),
         auth: AuthConfig {
