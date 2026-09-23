@@ -274,6 +274,8 @@ export type DaemonAutoUpdateConfig = z.infer<typeof DaemonAutoUpdateConfigSchema
 export const HostSettingsSectionSchema = z.enum([
   "projects",
   "pair-device",
+  // COMPAT(deviceAccess): added in v1.6.0 with the Devices section.
+  "devices",
   "agents",
   "providers",
   "usage",
