@@ -249,6 +249,38 @@ own `config.json` from this list the first time it starts, and the app reads the
 value — so an admin can re-enable a section on the host they run without a new build. See
 [configuration](/docs/reference/configuration/).
 
+## Daemon access defaults
+
+What a freshly installed daemon does before anyone configures it.
+
+| Key         | Rule                    | Default                        | Meaning |
+| ----------- | ----------------------- | ------------------------------ | ------- |
+| `bind`      | `"all"` or `"loopback"` | `"all"` for `frogg`, else `"loopback"` | Which interfaces a new daemon listens on |
+| `claimMode` | boolean                 | `false` for `frogg`, else `true` | Lock the LAN out and let the first client claim the daemon |
+
+```json
+{
+  "daemon": { "bind": "loopback", "claimMode": true }
+}
+```
+
+The stock `frogg` distribution keeps the open defaults it has always had (`0.0.0.0`, claim
+mode off). Every other brand starts locked down, because a product you ship to other
+people should not trust their network for them.
+
+These are defaults, not locks: `daemon.listen` / `FROGG_LISTEN` and
+`daemon.auth.claimMode` / `<PREFIX>_CLAIM_MODE` in a daemon's own configuration win. See
+[security and access](/docs/self-hosting/security/).
+
+## Mobile
+
+| Key       | Rule    | Default | Meaning |
+| --------- | ------- | ------- | ------- |
+| `enabled` | boolean | `true`  | Whether this brand ships a mobile app |
+
+With `mobile.enabled: false` the CLI stops printing a pairing QR by default — nothing
+would scan it — though `<cliName> pair --qr` still forces one.
+
 ## Resolved output
 
 `npm run --silent brand:check -- --brand <dir> --json` prints the resolved brand. It
@@ -262,3 +294,4 @@ adds derived values you cannot set directly:
 | `distribution.releaseBase`   | `https://github.com/<repository>/releases`              |
 | `distribution.updateMode`    | Resolved `updates`                                      |
 | `legacyFrogg`                  | `true` only for `brands/frogg`                            |
+| `daemon.bindHost`            | `0.0.0.0` for `bind: "all"`, `127.0.0.1` for `"loopback"`  |

@@ -12,13 +12,55 @@ it like SSH access to that machine.
 
 | Client connects from | No password | Password set |
 | -------------------- | ----------- | ------------ |
-| Loopback | Allowed | Password |
-| Private network (RFC 1918, link-local, `fc00::/7`) | Allowed while `trustLan` is on (default) | Password |
-| Anywhere else, including CGNAT `100.64.0.0/10` (Tailscale) | Paired-device credential | Password |
+| Loopback | Allowed | Password or device credential |
+| Private network (RFC 1918, link-local, `fc00::/7`) | Allowed while `trustLan` is on (default) | Password or device credential |
+| Anywhere else, including CGNAT `100.64.0.0/10` (Tailscale) | Paired-device credential | Password or device credential |
+
+Two settings override the table:
+
+- `daemon.auth.claimMode` (`FROGG_CLAIM_MODE`). While it is on, the LAN is **not** trusted
+  whatever `trustLan` says, and every client needs a credential. See
+  [claim mode](#claim-mode).
+- A relay connection always needs a device credential. Reaching the daemon through a relay
+  is not evidence of anything, so locality never applies to it.
 
 Unauthenticated routes: `/api/identity` (version and brand, used by LAN scans),
-`/api/health`, and the pairing setup routes. The web app's static files load without
-credentials; its API calls do not.
+`/api/health`, and the device-access routes that are how a device gets its first
+credential (`/api/identity/proof`, `/api/setup/claim`, `/api/setup/request`,
+`/api/setup/offer`, `/api/auth/login`). All of them are rate-limited per client address.
+The web app's static files load without credentials; its API calls do not.
+
+`/api/setup/offer` mints a credential, so it needs one: locality alone never buys a
+pairing offer.
+
+Repeated bad credentials from one address are throttled — 10 failures in 5 minutes blocks
+that address for 5 minutes, and the daemon answers `429`.
+
+## Claim mode
+
+Claim mode is the locked-down posture for a daemon on a network you do not control.
+
+```json title="~/.frogg/config.json"
+{ "daemon": { "auth": { "claimMode": true } } }
+```
+
+- LAN clients are untrusted, so `trustLan` is ignored while it is on. `auth.settings.get`
+  reports both the configured `trustLan` and the effective `lanTrustEffective`.
+- While the daemon is **unclaimed**, the first client to reach `/api/setup/claim` becomes
+  the owner. After that, further devices need a pairing code, an owner approval or the
+  password.
+- Authentication is two-way. The daemon publishes a fingerprint of its long-term key
+  (`sha256:` + unpadded base64url of SHA-256 over the raw 32-byte public key); the client
+  carries it in the pairing link and checks it against `POST /api/identity/proof`, which
+  signs a client-chosen nonce. A daemon that cannot produce the signature is not the daemon
+  you meant to pair with.
+- Turning claim mode on, or turning `trustLan` off, disconnects the sessions that were
+  already relying on LAN trust. It does not wait for their next reconnect.
+
+The stock `frogg` brand ships with claim mode **off** and binds `0.0.0.0`. A brand can flip
+both defaults in `brand.json` (see
+[the brand manifest](/docs/fork-and-rebrand/brand-manifest/)); any other brand defaults to a loopback bind
+with claim mode on.
 
 ### Recommended settings
 
@@ -26,7 +68,7 @@ credentials; its API calls do not.
 | ---------- | -------- |
 | Laptop, daemon on the same machine | Defaults, or `--listen 127.0.0.1:9999` if nothing else should connect |
 | Home or office LAN you control | Defaults |
-| Shared or untrusted LAN | `frogg auth trust-lan off` and pair devices, or set a password |
+| Shared or untrusted LAN | Turn on claim mode (or `frogg auth trust-lan off`) and pair devices with `frogg pair` |
 | Tailscale / VPN | Pair devices (CGNAT addresses are not "private"), or set a password |
 | Docker | Set `FROGG_PASSWORD`; container networking hides real client addresses |
 | Public internet | Do not expose the daemon directly. Use a VPN, SSH, or a TLS reverse proxy plus a password |
@@ -34,19 +76,44 @@ credentials; its API calls do not.
 ## Pairing
 
 Paired devices hold a random credential; the daemon stores only its SHA-256 in
-`~/.frogg/principals.json` (mode 0600). Pairing tokens are single-use and expire after 10
-minutes. See [connect and pair](/docs/getting-started/connect-and-pair/).
+`~/.frogg/principals.json` (mode 0600). See
+[connect and pair](/docs/getting-started/connect-and-pair/).
 
-Limits:
+There are four ways a device gets a credential:
 
-- Every paired device has full access. Per-device permissions are recorded but not enforced.
-- There is no per-device revoke. `frogg auth reset-claim` removes all devices.
+| Route | How |
+| ----- | --- |
+| Pairing code | `frogg pair` mints an 8-symbol code the device types or scans. Single-use, 30–3600 seconds (default 600) |
+| Pairing offer | The older single-use offer token behind `frogg auth pair`, valid 10 minutes |
+| Owner approval | The device posts to `/api/setup/request` and polls; an owner approves it over `auth.pairing_request.decide` and picks its role |
+| Password | `POST /api/auth/login` exchanges the daemon password for a device credential |
+| Claim | In claim mode, the first client on an unclaimed daemon claims it as owner |
+
+Pairing codes are Crockford base32 without `I`, `L`, `O` or `U`, displayed as `XXXX-XXXX`,
+and the daemon folds the ambiguous characters back (`I`/`L` → `1`, `O` → `0`) so a
+mistyped code still works.
+
+### Roles
+
+Every credential carries a role: `owner`, `operator` or `viewer`. Only an owner can mint an
+owner code or approve a request as owner. The Agent MCP endpoint requires `operator` or
+`owner` — a viewer credential is rejected there with `403`.
+
+### Managing devices
+
+Devices are listed, renamed and revoked over the `auth.device.list`, `auth.device.rename`
+and `auth.device.revoke` session RPCs, which the daemon advertises as the `deviceAccess`
+feature. Revoking a credential closes that device's live connections immediately;
+revoking the device you are using is allowed. `frogg auth reset-claim` still removes every
+device at once.
 
 ## Passwords
 
-`frogg auth set-password` stores a bcrypt hash in `daemon.auth.password`. `FROGG_PASSWORD` in
-the daemon's environment overrides it. A password applies to every client, including
-loopback, the web app and the MCP endpoint.
+`frogg auth set-password` stores a scrypt hash (N=2^15, r=8, p=1) in `daemon.auth.password`;
+bcrypt hashes written by older daemons are still accepted on login. `FROGG_PASSWORD` in the
+daemon's environment overrides the stored hash, and while it does, the app reports the
+setting as environment-controlled rather than letting you edit it. A password applies to
+every client, including loopback, the web app and the MCP endpoint.
 
 ## Host and origin checks
 
@@ -56,7 +123,11 @@ loopback, the web app and the MCP endpoint.
 - **CORS**: browsers may call the daemon only from its own origin, the desktop app, and
   `daemon.cors.allowedOrigins` / `FROGG_CORS_ORIGINS`. Avoid `*` outside development.
 - **Proxies**: `X-Forwarded-For` is honoured only from `daemon.trustedProxies` (loopback by
-  default).
+  default), and the daemon walks the header from the right the way `proxy-addr` does. A
+  forwarded client is never treated as loopback: the header is the caller's to write, so
+  `X-Forwarded-For: 127.0.0.1` would otherwise hand any caller the most trusted locality
+  there is. A proxy can still place a client on the LAN, which is trust `trustLan` opted
+  into.
 
 ## TLS and reverse proxies
 
@@ -99,9 +170,17 @@ relay as unavailable in pairing offers.
 
 ## MCP endpoint
 
-`/mcp/agents` lets agents control the daemon. Agents started by the daemon receive a
-per-run token. With no password set, other clients that pass the access policy can use it
-too. Disable it with `daemon.mcp.enabled: false` if you do not use agent orchestration.
+`/mcp/agents` lets agents control the daemon, so it always demands a credential, whatever
+the caller's locality — there is no "no password set, therefore open" case. It accepts:
+
+- the per-agent bearer the daemon injects into an agent it started (this is also how the
+  endpoint knows *which* agent is calling; it is never read from the request URL),
+- the per-run capability token,
+- a paired device credential with role `operator` or `owner`,
+- the daemon password.
+
+Anything else is `401`, and a `viewer` credential is `403`. Disable the endpoint with
+`daemon.mcp.enabled: false` if you do not use agent orchestration.
 
 ## Reporting vulnerabilities
 

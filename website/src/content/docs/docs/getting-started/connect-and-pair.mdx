@@ -28,6 +28,11 @@ LAN trust means anyone on your private network can control agents on the daemon.
 it off on shared networks: `frogg auth trust-lan off`, or set a password.
 :::
 
+**Claim mode** goes further: with `daemon.auth.claimMode: true` (or `FROGG_CLAIM_MODE=1`)
+the LAN is never trusted, every client needs a credential, and the first client to reach
+an unclaimed daemon claims it as owner. Frogg ships with it off; brands built from this
+repo default it on. See [security and access](/docs/self-hosting/security/#claim-mode).
+
 ## Add a host in the app
 
 Open **Hosts** in the sidebar.
@@ -39,7 +44,8 @@ Open **Hosts** in the sidebar.
 | **Direct connection** | All clients   | The daemon is reachable by IP or name: LAN, VPN, Tailscale |
 | **Remote SSH**      | Desktop app     | You can SSH to the host. The app tunnels to the daemon over SSH and can install it for you |
 | **Paste pairing link** | All clients  | You have a link from `frogg auth pair` |
-| **Scan QR code**    | Android app     | The QR code printed by `frogg auth pair` |
+| **Enter a pairing code** | All clients | You have an `XXXX-XXXX` code from `frogg pair` |
+| **Scan QR code**    | Android app     | The QR code printed by `frogg pair` or `frogg auth pair` |
 
 ### Direct connection
 
@@ -56,10 +62,40 @@ hosts) and forwards a connection to the daemon's port on the remote host. Nothin
 exposed on the network. If no daemon is installed there, the app offers to **deploy**
 one with the same install script; see [desktop app](/docs/desktop-mobile-cli/desktop/#remote-ssh).
 
-## Pair a device
+## Pair a device with a code
+
+`frogg pair` is the short way: it mints an 8-symbol code, valid for 10 minutes by default,
+that one device can redeem once.
+
+```sh
+frogg pair
+```
+
+```text
+Pairing code: ABCD-2345
+Daemon address: 192.168.1.10:9999
+Daemon fingerprint: sha256:8Qp1…
+Role: operator
+Expires: 2026-09-22T10:00:00.000Z
+
+frogg://pair/direct?v=1&host=192.168.1.10&port=9999&fp=sha256%3A8Qp1…&pairingCode=ABCD-2345
+```
+
+A QR of that deep link follows on a real terminal, so an Android phone can scan it. Open
+the deep link, scan the QR, or type the code into the app.
+
+The device checks the `fingerprint` before it sends anything: it asks the daemon to sign a
+nonce it chose and verifies the signature against that fingerprint. Pairing is two-way, so
+a daemon impersonating yours cannot collect the code.
+
+Useful flags: `--role viewer` for a read-only device, `--ttl 60` for a code that dies
+quickly, `--json` or `--code-only` for scripts. See
+[the CLI reference](/docs/desktop-mobile-cli/cli/#frogg-pair).
+
+## Pair a device with a link
 
 Pairing gives a device a long-lived credential. It is how you connect from outside the
-private network, and it is required when LAN trust is off.
+private network, and it is required when LAN trust is off or claim mode is on.
 
 <Steps>
 
@@ -129,8 +165,10 @@ daemon now. For automation, use `frogg daemon claim-status --json` and read
 `daemon.pairingRequired` for the daemon's current access decision. The top-level claim fields
 describe persisted configuration only.
 
-There is no per-device revoke. To remove access, forget **all** devices and pair the ones
-you keep again:
+Each device holds its own credential with a role (`owner`, `operator` or `viewer`), and a
+single device can be renamed or revoked on its own over the `auth.device.*` RPCs; revoking
+one drops its live connections straight away. To start over, forget **all** devices and
+pair the ones you keep again:
 
 ```sh
 frogg auth reset-claim
@@ -141,7 +179,7 @@ frogg auth reset-claim
 A password applies to every client, including loopback and the LAN:
 
 ```sh
-frogg auth set-password     # prompts, stores a bcrypt hash in config.json
+frogg auth set-password     # prompts, stores a scrypt hash in config.json
 frogg restart
 ```
 

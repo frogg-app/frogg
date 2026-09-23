@@ -23,7 +23,8 @@ Official Frogg continues to use `FROGG_*`.
 | `FROGG_LISTEN`            | `0.0.0.0:9999`            | Listen target (`host:port`, port, socket or pipe) |
 | `PORT`                  |                           | Port used only when neither `FROGG_LISTEN` nor `daemon.listen` is set |
 | `FROGG_PASSWORD`          |                           | Plaintext password, hashed at startup. Overrides `daemon.auth.password`. Also read by the CLI as its credential |
-| `FROGG_TRUST_LAN`         | `true`                    | Treat private-network clients like loopback |
+| `FROGG_TRUST_LAN`         | `true`                    | Treat private-network clients like loopback. Ignored while claim mode is on |
+| `FROGG_CLAIM_MODE`        | brand default (`false` for `frogg`) | Lock the LAN out and let the first client claim an unclaimed daemon. Overrides `daemon.auth.claimMode` |
 | `FROGG_HOSTNAMES`         |                           | Comma-separated allowed hosts, or `true`. Legacy alias `FROGG_ALLOWED_HOSTS` |
 | `FROGG_CORS_ORIGINS`      |                           | Comma-separated extra origins, or `*` |
 | `FROGG_TRUSTED_PROXIES`   | `loopback`                | Comma-separated proxy IPs, `true`, or `false` |
