@@ -13,6 +13,7 @@ export {
 export { hashDaemonPassword, isBearerTokenValid } from "./auth.js";
 export { DEFAULT_TRUST_LAN } from "./access-policy.js";
 export { generateLocalPairingOffer, type LocalPairingOffer } from "./pairing-offer.js";
+export { renderPairingQr } from "./pairing-qr.js";
 export {
   createClaimStore,
   PRINCIPALS_FILENAME,
