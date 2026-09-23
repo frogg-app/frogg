@@ -1333,7 +1333,6 @@ function SheetAgentControlsContent(props: SheetAgentControlsContentProps) {
 
   return canSelectModel ? (
     <>
-      {accountToolbarControl}
       <CompactModelSheet
         providers={modelSelectorProviders}
         selectedProvider={provider}
@@ -1357,6 +1356,7 @@ function SheetAgentControlsContent(props: SheetAgentControlsContentProps) {
       >
         {sheetControls}
       </CompactModelSheet>
+      {accountToolbarControl}
     </>
   ) : (
     accountToolbarControl
