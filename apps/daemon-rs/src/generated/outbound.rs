@@ -7695,6 +7695,8 @@ pub enum GetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
     Projects,
     #[serde(rename = "pair-device")]
     PairDevice,
+    #[serde(rename = "devices")]
+    Devices,
     #[serde(rename = "agents")]
     Agents,
     #[serde(rename = "providers")]
@@ -7888,6 +7890,8 @@ pub enum SetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
     Projects,
     #[serde(rename = "pair-device")]
     PairDevice,
+    #[serde(rename = "devices")]
+    Devices,
     #[serde(rename = "agents")]
     Agents,
     #[serde(rename = "providers")]
