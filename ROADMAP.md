@@ -264,7 +264,8 @@ The docs rewrite (2026-09-13) replaced `docs/` with the Astro/Starlight site in
 - [ ] **Settings copy** reads "while a Frogg is in the foreground".
 - [ ] **`frogg.json` desktop service** runs `packages/desktop/scripts/dev.sh`, which
       does not exist.
-- [ ] **Per-device revoke** for paired devices does not exist.
+- [x] **Per-device revoke** for paired devices, over `auth.device.revoke`. Revoking
+      closes that device's live connections. No app UI yet — the RPC is the surface.
 - [ ] **Schedules have no UI**; CLI/daemon only.
 - [ ] **Push notifications in the published APK** are unverified.
 - [ ] **Android in-app updating on hardware** is unverified. Settings > Updates checks

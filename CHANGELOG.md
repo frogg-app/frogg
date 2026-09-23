@@ -1,5 +1,41 @@
 # Changelog
 
+## Unreleased
+
+- Per-device access for the daemon. Every paired device now holds its own
+  credential with a role (`owner`, `operator` or `viewer`) instead of one
+  undifferentiated claim, and a device can be listed, renamed or revoked on its
+  own; revoking drops that device's live connections rather than waiting for its
+  next reconnect. Devices reach a credential four ways: a short `XXXX-XXXX`
+  pairing code, the older single-use offer link, an owner approving a request the
+  device posted, or the daemon password. Passwords are hashed with scrypt (bcrypt
+  hashes from older daemons still verify), and repeated failures from one address
+  are throttled.
+- `frogg pair` mints a pairing code from the running daemon. On a terminal it
+  prints the code, the daemon's address and key fingerprint, the role, the expiry,
+  a `frogg://pair/direct` deep link and a QR; `--code-only` prints the bare code,
+  `--json` prints one object for deployment scripts, and neither ever puts a QR
+  into a pipe. A brand that ships no mobile app hides the QR unless `--qr` asks.
+- Claim mode, off by default for Frogg and on by default for any other brand.
+  With it on the LAN is never trusted, every client needs a credential, and the
+  first client to reach an unclaimed daemon claims it as owner. Pairing is
+  two-way: the device verifies the daemon's key fingerprint against a signed
+  nonce before it sends its code. `brand.json` gained `daemon.bind` and
+  `daemon.claimMode` so a fork starts locked down; the Frogg distribution keeps
+  binding `0.0.0.0`.
+- Withdrawing LAN trust, or turning claim mode on, now disconnects the sessions
+  that were relying on it.
+- Security fixes. The Agent MCP endpoint has no unauthenticated case left: it
+  always requires a credential whatever the caller's locality, reads the calling
+  agent from that credential rather than a `?callerAgentId=` anyone could write,
+  and rejects a `viewer`. `/api/setup/offer` mints a credential, so it needs one
+  — LAN trust no longer buys a pairing offer. A client forwarded by a trusted
+  proxy is never classified as loopback, so an `X-Forwarded-For: 127.0.0.1` can
+  no longer claim the daemon's most trusted locality. A relay connection always
+  requires a device credential.
+- Daemon-wide session presence, so clients can see who else is looking at a
+  workspace. Entries expire, and clients re-report while they are watching.
+
 ## 1.5.24 — 2026-09-21
 
 - Back from a screen the sidebar opened returns to the sidebar. Every sidebar row
