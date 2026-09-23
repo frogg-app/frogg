@@ -1,7 +1,13 @@
-import { describe, expect, test } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import type { IncomingMessage } from "node:http";
+import { afterEach, describe, expect, test } from "vitest";
 
+import { createClaimStore } from "./claim-store.js";
 import {
   classifyClientAddress,
+  createAccessPolicy,
   classifyRequestLocality,
   isAuthRequired,
   isLoopbackIp,
@@ -178,5 +184,48 @@ describe("request locality behind proxies", () => {
         trustedProxies: ["loopback"],
       }),
     ).toBe("public");
+  });
+
+  describe("claim mode and LAN trust", () => {
+    const homes: string[] = [];
+    afterEach(() => {
+      for (const home of homes.splice(0)) rmSync(home, { recursive: true, force: true });
+    });
+
+    function policy(input: { trustLan: boolean; claimMode: boolean }) {
+      const home = mkdtempSync(path.join(tmpdir(), "frogg-claim-mode-policy-"));
+      homes.push(home);
+      return createAccessPolicy({
+        claimStore: createClaimStore(home),
+        getTrustedProxies: () => ["loopback"],
+        getTrustLan: () => input.trustLan,
+        getClaimMode: () => input.claimMode,
+      });
+    }
+
+    const lanRequest = {
+      headers: {},
+      socket: { remoteAddress: "192.168.1.10" },
+    } as unknown as IncomingMessage;
+
+    test("claim mode overrides a configured trustLan", () => {
+      const claiming = policy({ trustLan: true, claimMode: true });
+      expect(claiming.trustLan()).toBe(false);
+      expect(claiming.isTrustedClient(lanRequest)).toBe(false);
+
+      const open = policy({ trustLan: true, claimMode: false });
+      expect(open.trustLan()).toBe(true);
+      expect(open.isTrustedClient(lanRequest)).toBe(true);
+    });
+
+    test("loopback stays trusted in claim mode", () => {
+      const claiming = policy({ trustLan: false, claimMode: true });
+      expect(
+        claiming.isLoopbackClient({
+          headers: {},
+          socket: { remoteAddress: "127.0.0.1" },
+        } as unknown as IncomingMessage),
+      ).toBe(true);
+    });
   });
 });

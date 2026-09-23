@@ -608,6 +608,19 @@ function readMutableClaimMode(config: MutableDaemonConfig): boolean {
   return typeof value === "boolean" ? value : false;
 }
 
+/**
+ * After an access-settings change, whether sessions that connected without a
+ * device credential have to be dropped. Claim mode always forces LAN trust off
+ * (see `createAccessPolicy`), so either of the two settling on "no untrusted
+ * client may stay" evicts them; otherwise they keep the trust they had.
+ */
+export function shouldDropCredentiallessSessions(settings: {
+  trustLan: boolean;
+  claimMode: boolean;
+}): boolean {
+  return settings.claimMode || !settings.trustLan;
+}
+
 function configuredTrustLan(config: Pick<FroggDaemonConfig, "trustLan">): boolean {
   return config.trustLan ?? DEFAULT_TRUST_LAN;
 }
@@ -1028,8 +1041,10 @@ export async function createFroggDaemon(
         // Withdrawing LAN trust has to reach the clients it already let in,
         // or it takes effect only at their next reconnect.
         if (
-          !readMutableTrustLan(daemonConfigStore.get()) ||
-          readMutableClaimMode(daemonConfigStore.get())
+          shouldDropCredentiallessSessions({
+            trustLan: readMutableTrustLan(daemonConfigStore.get()),
+            claimMode: readMutableClaimMode(daemonConfigStore.get()),
+          })
         ) {
           wsServer?.dropCredentiallessSessions();
         }
