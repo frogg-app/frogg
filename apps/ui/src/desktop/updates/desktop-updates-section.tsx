@@ -29,6 +29,11 @@ import {
   type DesktopUpdateStrategy,
 } from "@/desktop/updates/desktop-updates";
 import { useDesktopAppUpdater } from "@/desktop/updates/use-desktop-app-updater";
+import {
+  releaseBuildFraction,
+  type ReleaseBuildStatus,
+} from "@/desktop/updates/release-build-status";
+import { useReleaseBuildStatus } from "@/desktop/updates/use-release-build-status";
 import { useSettings, type Settings as EffectiveSettings } from "@/hooks/use-settings";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { settingsStyles } from "@/styles/settings";
@@ -58,6 +63,66 @@ function toBarProgress(progress: AppUpdateProgress): LocalDaemonInstallProgress 
     received: progress.received,
     total: progress.total ?? progress.received,
   };
+}
+
+/** The CI bar reuses the daemon bundle bar; map step counts onto its shape. */
+function toBuildBarProgress(status: ReleaseBuildStatus): LocalDaemonInstallProgress {
+  const fraction = releaseBuildFraction(status);
+  if (fraction === null) {
+    return { status: "installing", phase: "download", received: 0, total: null };
+  }
+  return {
+    status: "installing",
+    phase: "download",
+    received: status.completedSteps,
+    total: status.totalSteps,
+  };
+}
+
+function describeReleaseBuild(
+  status: ReleaseBuildStatus,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  switch (status.state) {
+    case "failed":
+      return t("desktop.updates.section.build.failed", { job: status.jobName });
+    case "succeeded":
+      return t("desktop.updates.section.build.succeeded");
+    case "queued":
+      return t("desktop.updates.section.build.queued", { job: status.jobName });
+    default:
+      return t("desktop.updates.section.build.running", {
+        job: status.jobName,
+        completed: status.completedSteps,
+        total: status.totalSteps,
+        step: status.currentStep ?? t("desktop.updates.section.build.stepUnknown"),
+      });
+  }
+}
+
+/** Progress of the CI job that builds this platform's download, while it runs. */
+function ReleaseBuildProgress({ status }: { status: ReleaseBuildStatus }) {
+  const { t } = useTranslation();
+  const barProgress = useMemo(() => toBuildBarProgress(status), [status]);
+  const openJob = useCallback(() => {
+    if (status.url) void openExternalUrl(status.url);
+  }, [status.url]);
+
+  const detail = describeReleaseBuild(status, t);
+
+  return (
+    <View style={styles.progressRow} testID="desktop-update-build-progress">
+      {status.state === "failed" ? null : <InstallProgressBar progress={barProgress} />}
+      <Text style={status.state === "failed" ? styles.errorText : styles.progressText}>
+        {detail}
+      </Text>
+      {status.url ? (
+        <Button variant="ghost" size="sm" onPress={openJob} style={styles.buildLink}>
+          {t("desktop.updates.section.build.viewJob")}
+        </Button>
+      ) : null}
+    </View>
+  );
 }
 
 function formatLastChecked(
@@ -129,6 +194,8 @@ function AvailableUpdateCard({
   }, [update.releaseUrl]);
   const versionLabel = formatVersionWithPrefix(update.latestVersion);
   const canInstall = update.readyToInstall && !isInstalling;
+  // Only worth asking CI about while this platform's asset is still missing.
+  const buildStatus = useReleaseBuildStatus(update.readyToInstall ? null : update.latestVersion);
 
   return (
     <View style={[settingsStyles.card, styles.availableCard]} testID="desktop-update-available">
@@ -169,6 +236,7 @@ function AvailableUpdateCard({
           <Text style={styles.progressText}>{describeAppUpdateProgress(progress)}</Text>
         </View>
       ) : null}
+      {!update.readyToInstall && buildStatus ? <ReleaseBuildProgress status={buildStatus} /> : null}
       {update.notes ? (
         <View style={styles.notes} testID="desktop-update-notes">
           <Text style={styles.notesTitle}>{t("desktop.updates.section.releaseNotes")}</Text>
@@ -373,6 +441,10 @@ const styles = StyleSheet.create((theme) => ({
   progressText: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,
+  },
+  buildLink: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 0,
   },
   notes: {
     borderTopWidth: 1,

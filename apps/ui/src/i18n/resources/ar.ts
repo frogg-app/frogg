@@ -1478,6 +1478,14 @@ export const ar: TranslationResources = {
           unknown: "ينزّل الإصدار المبني لهذه المنصة.",
         },
         noAsset: "لم يُنشر تنزيل لهذه المنصة بعد.",
+        build: {
+          queued: "البناء في قائمة انتظار CI ({{job}}).",
+          running: "جارٍ بناء {{job}} — الخطوة {{completed}} من {{total}}: {{step}}",
+          stepUnknown: "قيد التحضير",
+          succeeded: "انتهى البناء؛ سيظهر التنزيل هنا قريبًا.",
+          failed: "فشل بناء {{job}}.",
+          viewJob: "عرض مهمة CI",
+        },
         restartRequired: "أعد تشغيل {{brandName}} لإكمال التحديث.",
       },
       callout: {

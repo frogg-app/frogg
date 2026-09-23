@@ -1517,6 +1517,14 @@ export const es: TranslationResources = {
           unknown: "Descarga la versión compilada para esta plataforma.",
         },
         noAsset: "Todavía no hay una descarga publicada para esta plataforma.",
+        build: {
+          queued: "Compilación en cola en CI ({{job}}).",
+          running: "Compilando {{job}}: paso {{completed}} de {{total}}: {{step}}",
+          stepUnknown: "preparando",
+          succeeded: "La compilación terminó; la descarga debería aparecer aquí en breve.",
+          failed: "La compilación de {{job}} falló.",
+          viewJob: "Ver tarea de CI",
+        },
         restartRequired: "Reinicia {{brandName}} para completar la actualización.",
       },
       callout: {

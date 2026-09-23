@@ -1464,6 +1464,14 @@ export const zhCN: TranslationResources = {
           unknown: "下载为此平台构建的版本。",
         },
         noAsset: "此平台的下载尚未发布。",
+        build: {
+          queued: "构建已在 CI 中排队（{{job}}）。",
+          running: "正在构建 {{job}} — 第 {{completed}}/{{total}} 步：{{step}}",
+          stepUnknown: "准备中",
+          succeeded: "构建已完成，下载很快会出现在这里。",
+          failed: "{{job}} 构建失败。",
+          viewJob: "查看 CI 任务",
+        },
         restartRequired: "重启 {{brandName}} 以完成更新。",
       },
       callout: {

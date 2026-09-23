@@ -1491,6 +1491,14 @@ export const en = {
           unknown: "Downloads the release built for this platform.",
         },
         noAsset: "No download is published for this platform yet.",
+        build: {
+          queued: "Build queued on CI ({{job}}).",
+          running: "Building {{job}} — step {{completed}} of {{total}}: {{step}}",
+          stepUnknown: "preparing",
+          succeeded: "The build finished; the download should appear here shortly.",
+          failed: "The {{job}} build failed.",
+          viewJob: "View CI job",
+        },
         restartRequired: "Restart {{brandName}} to finish the update.",
       },
       callout: {

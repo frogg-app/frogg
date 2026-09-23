@@ -1492,6 +1492,14 @@ export const ko: TranslationResources = {
           unknown: "이 플랫폼용으로 빌드된 릴리스를 다운로드합니다.",
         },
         noAsset: "이 플랫폼용 다운로드가 아직 게시되지 않았습니다.",
+        build: {
+          queued: "CI에서 빌드가 대기 중입니다({{job}}).",
+          running: "{{job}} 빌드 중 — {{total}}단계 중 {{completed}}단계: {{step}}",
+          stepUnknown: "준비 중",
+          succeeded: "빌드가 끝났습니다. 곧 다운로드가 표시됩니다.",
+          failed: "{{job}} 빌드에 실패했습니다.",
+          viewJob: "CI 작업 보기",
+        },
         restartRequired: "업데이트를 완료하려면 {{brandName}}를 다시 시작하세요.",
       },
       callout: {

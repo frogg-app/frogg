@@ -1503,6 +1503,14 @@ export const ru: TranslationResources = {
           unknown: "Загружает релиз, собранный для этой платформы.",
         },
         noAsset: "Для этой платформы загрузка ещё не опубликована.",
+        build: {
+          queued: "Сборка в очереди CI ({{job}}).",
+          running: "Сборка {{job}} — шаг {{completed}} из {{total}}: {{step}}",
+          stepUnknown: "подготовка",
+          succeeded: "Сборка завершена; загрузка появится здесь в ближайшее время.",
+          failed: "Сборка {{job}} завершилась ошибкой.",
+          viewJob: "Открыть задачу CI",
+        },
         restartRequired: "Перезапустите {{brandName}}, чтобы завершить обновление.",
       },
       callout: {

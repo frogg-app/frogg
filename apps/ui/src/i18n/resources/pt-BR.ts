@@ -1508,6 +1508,14 @@ export const ptBR: TranslationResources = {
           unknown: "Baixa a versão compilada para esta plataforma.",
         },
         noAsset: "Ainda não há download publicado para esta plataforma.",
+        build: {
+          queued: "Compilação na fila do CI ({{job}}).",
+          running: "Compilando {{job}} — etapa {{completed}} de {{total}}: {{step}}",
+          stepUnknown: "preparando",
+          succeeded: "A compilação terminou; o download deve aparecer aqui em breve.",
+          failed: "A compilação {{job}} falhou.",
+          viewJob: "Ver tarefa de CI",
+        },
         restartRequired: "Reinicie o {{brandName}} para concluir a atualização.",
       },
       callout: {

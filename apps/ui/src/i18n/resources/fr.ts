@@ -1518,6 +1518,15 @@ export const fr: TranslationResources = {
           unknown: "Télécharge la version compilée pour cette plateforme.",
         },
         noAsset: "Aucun téléchargement n'est encore publié pour cette plateforme.",
+        build: {
+          queued: "Compilation en file d'attente sur CI ({{job}}).",
+          running: "Compilation de {{job}} — étape {{completed}} sur {{total}} : {{step}}",
+          stepUnknown: "préparation",
+          succeeded:
+            "La compilation est terminée ; le téléchargement devrait apparaître ici sous peu.",
+          failed: "La compilation {{job}} a échoué.",
+          viewJob: "Voir la tâche CI",
+        },
         restartRequired: "Redémarrez {{brandName}} pour terminer la mise à jour.",
       },
       callout: {

@@ -1497,6 +1497,14 @@ export const ja: TranslationResources = {
           unknown: "このプラットフォーム向けのリリースをダウンロードします。",
         },
         noAsset: "このプラットフォーム向けのダウンロードはまだ公開されていません。",
+        build: {
+          queued: "CI でビルドが待機中です（{{job}}）。",
+          running: "{{job}} をビルド中 — ステップ {{completed}}/{{total}}: {{step}}",
+          stepUnknown: "準備中",
+          succeeded: "ビルドが完了しました。まもなくダウンロードが表示されます。",
+          failed: "{{job}} のビルドに失敗しました。",
+          viewJob: "CI ジョブを表示",
+        },
         restartRequired: "アップデートを完了するには {{brandName}} を再起動してください。",
       },
       callout: {

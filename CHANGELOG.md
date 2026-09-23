@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- An update whose download is still building shows how far off it is. When a
+  release is tagged, each platform's installer is published as its runner
+  finishes, so Settings could offer a new version and then say only "No
+  download is published for this platform yet" — with no way to tell whether that meant ten
+  more minutes or a failed build. The update card now shows the progress of the
+  CI job building your platform's installer, the step it is on, and a link to
+  the job itself, and says plainly when that build has failed.
+
 - The Claude model list is generated from the Claude Code you have installed
   rather than maintained in Frogg. It used to be a hand-written list of fifteen
   models, so a model Anthropic shipped only reached you on a Frogg release, and
