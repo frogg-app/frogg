@@ -168,7 +168,11 @@ import type {
   AgentProviderRuntimeSettingsMap,
   ProviderOverride,
 } from "./agent/provider-launch-config.js";
-import { loadPersistedConfig, type PersistedConfig } from "./persisted-config.js";
+import {
+  loadPersistedConfig,
+  savePersistedConfig,
+  type PersistedConfig,
+} from "./persisted-config.js";
 import { createServiceProxySubsystem, type ServiceProxySubsystem } from "./service-proxy.js";
 import { releaseWorkspaceServicePortPlan } from "./workspace-service-port-registry.js";
 import { ScriptHealthMonitor } from "./script-health-monitor.js";
@@ -208,6 +212,9 @@ import {
   type DeviceAccessDependencies,
 } from "./device-access-routes.js";
 import { createPairingCodeStore, type PairingCodeStore } from "./pairing-code-store.js";
+import { createDeviceAccessService } from "./device-access-service.js";
+import { createPresenceService } from "./presence-service.js";
+import { buildOfferEndpoints } from "./connection-offer.js";
 import { createPairingRequestStore, type PairingRequestStore } from "./pairing-request-store.js";
 import { createLocalTokenFile, type LocalTokenFile } from "./local-token.js";
 import { WorkspaceAutoName } from "./workspace-auto-name.js";
@@ -986,6 +993,71 @@ export async function createFroggDaemon(
       isTrustedClient: (req) => authConfig.access?.isTrustedClient(req) ?? false,
     }),
   );
+  // Presence and the device-access RPCs share the stores the HTTP pairing
+  // routes use, so a device revoked over HTTP disappears from a session too.
+  const presenceService = createPresenceService();
+  const deviceAccessService = createDeviceAccessService({
+    claimStore,
+    pairingCodes,
+    pairingRequests,
+    serverId,
+    daemonPublicKeyB64: daemonKeyPair.publicKeyB64,
+    endpoints: () => {
+      const target = publicListenTarget();
+      if (target.type !== "tcp") return [];
+      return buildOfferEndpoints({ listenHost: target.host, port: target.port }).map((endpoint) => {
+        const separator = endpoint.lastIndexOf(":");
+        return {
+          host: endpoint.slice(0, separator),
+          port: Number(endpoint.slice(separator + 1)),
+        };
+      });
+    },
+    deepLinkScheme: brand.scheme,
+    settings: {
+      read: () => ({
+        claimMode: readMutableClaimMode(daemonConfigStore.get()),
+        trustLan: readMutableTrustLan(daemonConfigStore.get()),
+        passwordEnabled: Boolean(authConfig.password),
+      }),
+      update: async (input) => {
+        daemonConfigStore.patch({
+          ...(input.claimMode === undefined ? {} : { claimMode: input.claimMode }),
+          ...(input.trustLan === undefined ? {} : { trustLan: input.trustLan }),
+        });
+        // Withdrawing LAN trust has to reach the clients it already let in,
+        // or it takes effect only at their next reconnect.
+        if (
+          !readMutableTrustLan(daemonConfigStore.get()) ||
+          readMutableClaimMode(daemonConfigStore.get())
+        ) {
+          wsServer?.dropCredentiallessSessions();
+        }
+      },
+      setPasswordHash: async (hash) => {
+        const persisted = loadPersistedConfig(config.froggHome, logger);
+        savePersistedConfig(
+          config.froggHome,
+          {
+            ...persisted,
+            daemon: {
+              ...persisted.daemon,
+              auth: {
+                ...persisted.daemon?.auth,
+                ...(hash === null ? { password: undefined } : { password: hash }),
+              },
+            },
+          },
+          logger,
+        );
+        authConfig.password = hash ?? undefined;
+      },
+      overrideControlledPaths: () => config.configReload?.overrideControlledPaths ?? [],
+    },
+    connectedCredentialIds: () => new Set(wsServer?.listConnectedDeviceIds() ?? []),
+    onDeviceRevoked: (credentialId) => wsServer?.dropDeviceSessions(credentialId),
+  });
+
   const deviceAccessDeps: DeviceAccessDependencies = {
     serverId,
     daemonKeyPair: daemonKeyPair.keyPair,
@@ -2064,6 +2136,10 @@ export async function createFroggDaemon(
               spokenAlerts,
               companion,
             );
+            wsServer.setDeviceAccessServices({
+              deviceAccess: deviceAccessService,
+              presence: presenceService,
+            });
             wsServer.beginAcceptingConnections();
             {
               const server = wsServer;

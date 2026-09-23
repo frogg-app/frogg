@@ -115,6 +115,9 @@ import type { BrowserToolsBroker } from "./browser-tools/broker.js";
 import type { DaemonRuntimeConfig } from "./session/daemon/daemon-session.js";
 import { DirectorySyncService } from "./directory-sync/index.js";
 import { OWNER_PERMISSIONS, type DaemonPermission } from "./authorization/index.js";
+import type { CallerDevice, DeviceAccessService } from "./device-access-service.js";
+import type { DeviceRole } from "@frogg/protocol/device-access";
+import type { PresenceService } from "./presence-service.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import {
   APPLICATION_SOCKET_LEASE_CHECK_INTERVAL_MS,
@@ -139,6 +142,8 @@ export interface SessionAdmission {
   principalId: string;
   permissions: readonly DaemonPermission[];
   hubExecutionAgents?: HubExecutionAgents;
+  /** The paired device whose credential admitted this connection, if any. */
+  device?: CallerDevice | null;
 }
 
 interface PendingConnection {
@@ -480,6 +485,9 @@ interface BrowserToolsRegistration {
 }
 
 interface SocketSessionOptions {
+  device: CallerDevice | null;
+  deviceName: string | null;
+  clientType: string | null;
   clientId: string;
   appVersion: string | null;
   clientCapabilities: Record<string, unknown> | null;
@@ -499,6 +507,9 @@ interface ClosePhysicalSocketParams {
   ws: WebSocketLike;
   logMessage: string;
   logFields?: Record<string, unknown>;
+  /** Sent as a close frame so the client can tell the user why it was cut off. */
+  closeCode?: number;
+  closeReason?: string;
 }
 
 const SLOW_REQUEST_THRESHOLD_MS = 500;
@@ -549,6 +560,15 @@ function requireWebSocketServices(params: {
  * CLI, so bootstrap does it once and the runtime carries the answer. A daemon
  * built without a Companion runtime has no Companion to advertise.
  */
+/** The paired device a session authenticated as, shaped for server_info. */
+function serverInfoDevice(
+  session: Session,
+): { device: { id: string; name: string; role: DeviceRole } } | Record<string, never> {
+  const device = session.getDevice();
+  if (!device) return {};
+  return { device: { id: device.id, name: device.name, role: device.role } };
+}
+
 function toCompanionCapability(companion: CompanionRuntime | undefined): ServerCapabilityState {
   return companion?.capability ?? { enabled: false, reason: COMPANION_DISABLED_MESSAGE };
 }
@@ -616,6 +636,8 @@ export class VoiceAssistantWebSocketServer {
   private unsubscribeTerminalActivity: (() => void) | null = null;
   private readonly browserToolsBroker: BrowserToolsBroker | null;
   private readonly hubRelationships: HubRelationshipManagement | null;
+  private deviceAccess: DeviceAccessService | null = null;
+  private presence: PresenceService | null = null;
   private readonly browserToolsRegistrations = new Map<string, BrowserToolsRegistration>();
   private connectionLifecycle: "starting" | "accepting" | "stopping" = "accepting";
   private readonly advertiseDaemonStatusRpc: boolean;
@@ -951,7 +973,12 @@ export class VoiceAssistantWebSocketServer {
       return;
     }
 
-    await this.attachSocket(ws, request);
+    const device = decision.via === "device" && decision.device ? decision.device : null;
+    await this.attachSocket(ws, request, undefined, false, {
+      principalId: device ? device.principalId : OWNER_SESSION_ADMISSION.principalId,
+      permissions: device ? device.permissions : OWNER_SESSION_ADMISSION.permissions,
+      device,
+    });
   }
 
   public broadcast(message: WSOutboundMessage): void {
@@ -994,6 +1021,85 @@ export class VoiceAssistantWebSocketServer {
     this.updateServerCapabilities(
       buildServerCapabilities({ readiness, companion: this.companionCapability }),
     );
+  }
+
+  /**
+   * Bootstrap hands these over once the device store exists; the daemon only
+   * advertises `deviceAccess` / `sessionPresence` while it actually has them.
+   */
+  public setDeviceAccessServices(services: {
+    deviceAccess?: DeviceAccessService | null;
+    presence?: PresenceService | null;
+  }): void {
+    this.deviceAccess = services.deviceAccess ?? null;
+    this.presence = services.presence ?? null;
+    for (const connection of this.allConnections()) {
+      this.sendToConnection(connection, this.createServerInfoMessage(connection.session));
+    }
+  }
+
+  private allConnections(): Set<SessionConnection> {
+    return new Set([...this.sessions.values(), ...this.externalSessionsByKey.values()]);
+  }
+
+  /** Credentials that currently have at least one live session. */
+  public listConnectedDeviceIds(): string[] {
+    const ids = new Set<string>();
+    for (const connection of this.allConnections()) {
+      const deviceId = connection.session.getDeviceId();
+      if (deviceId) ids.add(deviceId);
+    }
+    return [...ids];
+  }
+
+  /** Closes every session a revoked device credential is still holding open. */
+  public dropDeviceSessions(credentialId: string): void {
+    for (const connection of this.allConnections()) {
+      if (connection.session.getDeviceId() !== credentialId) continue;
+      this.closeSessionConnection(connection, "Device access revoked");
+    }
+    for (const [ws, pending] of this.pendingConnections) {
+      if (pending.admission.device?.id !== credentialId) continue;
+      this.closePhysicalSocket({
+        ws,
+        closeCode: WS_CLOSE_DAEMON_AUTH_FAILED,
+        closeReason: "Device access revoked",
+        logMessage: "Closing pending connection for a revoked device",
+      });
+    }
+  }
+
+  /**
+   * Closes every session that only got in because the LAN was trusted. Used
+   * when trust is withdrawn, so withdrawing it takes effect at once rather than
+   * at the next reconnect.
+   */
+  public dropCredentiallessSessions(): void {
+    for (const connection of this.allConnections()) {
+      if (connection.session.getDeviceId() !== null) continue;
+      if (this.isLoopbackConnection(connection)) continue;
+      this.closeSessionConnection(connection, "The LAN is no longer trusted");
+    }
+  }
+
+  /** True when every socket behind the session came from this machine. */
+  private isLoopbackConnection(connection: SessionConnection): boolean {
+    for (const ws of connection.sockets) {
+      const peer = this.socketIdentities.get(ws)?.peer;
+      if (peer !== "loopback" && peer !== "local_ipc") return false;
+    }
+    return connection.sockets.size > 0;
+  }
+
+  private closeSessionConnection(connection: SessionConnection, reason: string): void {
+    for (const ws of connection.sockets) {
+      this.closePhysicalSocket({
+        ws,
+        closeCode: WS_CLOSE_DAEMON_AUTH_FAILED,
+        closeReason: reason,
+        logMessage: "Closing session connection",
+      });
+    }
   }
 
   public updateServerCapabilities(capabilities: ServerCapabilities | null | undefined): void {
@@ -1227,7 +1333,7 @@ export class VoiceAssistantWebSocketServer {
   }
 
   private closePhysicalSocket(params: ClosePhysicalSocketParams): void {
-    const { ws, logMessage, logFields } = params;
+    const { ws, logMessage, logFields, closeCode, closeReason } = params;
     this.applicationSocketLease.release(ws);
     if (ws.readyState !== 1) {
       return;
@@ -1241,6 +1347,11 @@ export class VoiceAssistantWebSocketServer {
       logMessage,
     );
     try {
+      if (closeCode !== undefined) {
+        // A revoked or untrusted client is told why, then dropped.
+        ws.close(closeCode, closeReason);
+        return;
+      }
       // A close frame queues behind application data, so it cannot enforce a
       // hard memory cutoff. Production transports expose terminate().
       if (ws.terminate) {
@@ -1337,6 +1448,8 @@ export class VoiceAssistantWebSocketServer {
     clientId: string;
     appVersion: string | null;
     clientCapabilities: Record<string, unknown> | null;
+    deviceName?: string | null;
+    clientType?: string | null;
     connectionLogger: pino.Logger;
     admission: SessionAdmission;
   }): SessionConnection {
@@ -1348,6 +1461,9 @@ export class VoiceAssistantWebSocketServer {
       appVersion,
       clientCapabilities,
       permissions: admission.permissions,
+      device: admission.device ?? null,
+      deviceName: params.deviceName ?? null,
+      clientType: params.clientType ?? null,
       connectionLogger,
       onMessage: (msg) => {
         if (!connection) {
@@ -1417,6 +1533,11 @@ export class VoiceAssistantWebSocketServer {
       appVersion: options.appVersion,
       clientCapabilities: options.clientCapabilities,
       permissions: options.permissions,
+      device: options.device,
+      deviceName: options.deviceName,
+      clientType: options.clientType,
+      deviceAccess: this.deviceAccess,
+      presence: this.presence,
       onMessage: options.onMessage,
       onMessageToSource: options.onMessageToSource,
       onBinaryMessage: options.onBinaryMessage,
@@ -1569,6 +1690,8 @@ export class VoiceAssistantWebSocketServer {
       clientId,
       appVersion: message.appVersion ?? null,
       clientCapabilities: message.capabilities ?? null,
+      deviceName: message.deviceName ?? null,
+      clientType: message.clientType,
       connectionLogger,
       admission: pending.admission,
     });
@@ -1654,6 +1777,9 @@ export class VoiceAssistantWebSocketServer {
       hostname: getHostname(),
       version: this.daemonVersion,
       permissions: session.getPermissions(),
+      // COMPAT(deviceAccess): added in v1.6.0. Absent for a credential-less
+      // (loopback / trusted LAN) connection.
+      ...serverInfoDevice(session),
       // COMPAT(desktopManaged): added in v0.1.X, remove optional parsing after 2027-01-16.
       desktopManaged: this.daemonRuntimeConfig?.desktopManaged === true,
       ...(this.serverCapabilities ? { capabilities: this.serverCapabilities } : {}),

@@ -167,6 +167,10 @@ import {
   type CompanionRuntime,
 } from "./companion/session.js";
 import { CheckoutSession } from "./session/checkout/checkout-session.js";
+import { DeviceAccessSession } from "./session/device-access/device-access-session.js";
+import type { CallerDevice, DeviceAccessService } from "./device-access-service.js";
+import type { PresenceService } from "./presence-service.js";
+
 import {
   createWorkspaceGitObserverService,
   type WorkspaceGitObserverService,
@@ -505,6 +509,13 @@ export interface SessionOptions {
   };
   serverId?: string;
   daemonVersion?: string;
+  deviceAccess?: DeviceAccessService | null;
+  presence?: PresenceService | null;
+  /** The paired device this connection authenticated as, if any. */
+  device?: CallerDevice | null;
+  /** Name a credential-less client gave itself in its hello. */
+  deviceName?: string | null;
+  clientType?: string | null;
   daemonRuntimeConfig?: DaemonRuntimeConfig;
   getWebSocketRuntimeMetrics?: () => DaemonWebSocketRuntimeDiagnosticSnapshot | null;
 }
@@ -722,6 +733,10 @@ export class Session {
   private readonly voiceSession: VoiceSession;
   private readonly companionSession: CompanionSession | null;
   private readonly checkoutSession: CheckoutSession;
+  private readonly deviceAccessSession: DeviceAccessSession;
+  private device: CallerDevice | null = null;
+  private clientType: string | null = null;
+  private helloDeviceName: string | null = null;
   private readonly scheduleSession: ScheduleSession;
   private readonly providerCatalogSession: ProviderCatalogSession;
   private readonly providerAccountSession: ProviderAccountSession;
@@ -1001,6 +1016,7 @@ export class Session {
       },
       logger: this.sessionLogger,
     });
+    this.deviceAccessSession = this.createDeviceAccessSession(options);
     this.projectConfigSession = new ProjectConfigSession({
       host: {
         emit: (msg) => this.emit(msg),
@@ -2064,6 +2080,15 @@ export class Session {
     this.authorization.replacePermissions(permissions);
   }
 
+  /** The paired device credential this connection authenticated with, if any. */
+  public getDeviceId(): string | null {
+    return this.device?.id ?? null;
+  }
+
+  public getDevice(): CallerDevice | null {
+    return this.device;
+  }
+
   public getPermissions(): DaemonPermission[] {
     return this.authorization.listPermissions();
   }
@@ -2091,8 +2116,43 @@ export class Session {
     this.emit(message);
   }
 
+  private createDeviceAccessSession(options: SessionOptions): DeviceAccessSession {
+    this.device = options.device ?? null;
+    this.clientType = options.clientType ?? null;
+    this.helloDeviceName = options.deviceName ?? null;
+    return new DeviceAccessSession({
+      host: { emit: (msg) => this.emit(msg) },
+      deviceAccess: options.deviceAccess ?? null,
+      presence: options.presence ?? null,
+      caller: () => ({ device: this.device }),
+      presenceIdentity: () => ({
+        participantId: this.sessionId,
+        deviceId: this.device?.id ?? null,
+        deviceName: this.device?.name ?? this.helloDeviceName ?? this.clientId,
+        clientType: this.clientType,
+      }),
+      logger: this.sessionLogger,
+    });
+  }
+
+  /** Presence activities the daemon can see for itself, from the traffic itself. */
+  private noteInboundPresenceActivity(msg: SessionInboundMessage): void {
+    if (msg.type === "send_agent_message_request") {
+      this.deviceAccessSession.noteActivity({ kind: "agent", agentId: msg.agentId }, "sending");
+      return;
+    }
+    if (msg.type === "terminal_input") {
+      this.deviceAccessSession.noteActivity(
+        { kind: "terminal", terminalId: msg.terminalId },
+        "input",
+      );
+    }
+  }
+
   private async dispatchInboundMessage(msg: SessionInboundMessage, source?: object): Promise<void> {
+    this.noteInboundPresenceActivity(msg);
     const promise =
+      this.dispatchDeviceAccessMessage(msg) ??
       this.dispatchVoiceAndControlMessage(msg) ??
       this.dispatchAgentRewindMessage(msg, source) ??
       this.dispatchAgentRelationshipMessage(msg) ??
@@ -2111,6 +2171,35 @@ export class Session {
       this.dispatchScheduleMessage(msg) ??
       this.dispatchMiscMessage(msg);
     if (promise) await promise;
+  }
+
+  private dispatchDeviceAccessMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    switch (msg.type) {
+      case "auth.device.list.request":
+        return this.deviceAccessSession.handleDeviceListRequest(msg);
+      case "auth.device.rename.request":
+        return this.deviceAccessSession.handleDeviceRenameRequest(msg);
+      case "auth.device.revoke.request":
+        return this.deviceAccessSession.handleDeviceRevokeRequest(msg);
+      case "auth.pairing_code.create.request":
+        return this.deviceAccessSession.handlePairingCodeCreateRequest(msg);
+      case "auth.pairing_request.list.request":
+        return this.deviceAccessSession.handlePairingRequestListRequest(msg);
+      case "auth.pairing_request.decide.request":
+        return this.deviceAccessSession.handlePairingRequestDecideRequest(msg);
+      case "auth.settings.get.request":
+        return this.deviceAccessSession.handleSettingsGetRequest(msg);
+      case "auth.settings.update.request":
+        return this.deviceAccessSession.handleSettingsUpdateRequest(msg);
+      case "auth.password.set.request":
+        return this.deviceAccessSession.handlePasswordSetRequest(msg);
+      case "presence.report.request":
+        return this.deviceAccessSession.handlePresenceReportRequest(msg);
+      case "presence.get.request":
+        return this.deviceAccessSession.handlePresenceGetRequest(msg);
+      default:
+        return undefined;
+    }
   }
 
   private dispatchOrchestrationSkillsMessage(
@@ -7850,6 +7939,7 @@ export class Session {
     this.terminalController.dispose();
 
     this.checkoutSession.cleanup();
+    this.deviceAccessSession.cleanup();
 
     this.workspaceGitObserver.dispose();
     this.workspaceFilesSession.dispose();

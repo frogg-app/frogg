@@ -25,9 +25,16 @@ import { DAEMON_PASSWORD_MIN_LENGTH, hashDaemonPassword } from "./auth.js";
  */
 export type PairingEndpoint = z.infer<typeof PairingEndpointSchema>;
 
+/** What the access rules need to know about the calling device. */
+export interface CallerDevice {
+  id: string;
+  name: string;
+  role: DeviceRole;
+}
+
 export interface DeviceAccessCaller {
   /** The paired device this connection authenticated as, if any. */
-  device: DeviceRecord | null;
+  device: CallerDevice | null;
 }
 
 export interface DeviceAccessServiceOptions {
@@ -121,6 +128,7 @@ export function createDeviceAccessService(options: DeviceAccessServiceOptions) {
   return {
     settings,
     fingerprint,
+    serverId: options.serverId,
 
     listDevices: (caller: DeviceAccessCaller): DeviceCredential[] =>
       claimStore.listDevices().map((device) => toCredential(device, caller)),
