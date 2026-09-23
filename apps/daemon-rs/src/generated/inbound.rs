@@ -31,6 +31,8 @@ pub struct Hello {
     #[serde(rename = "deviceName", skip_serializing_if = "Option::is_none")]
     pub device_name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth: Option<HelloAuth>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub capabilities: Option<HelloCapabilities>,
 }
 
@@ -46,6 +48,11 @@ pub enum HelloClientType {
     Mcp,
     #[serde(rename = "hub")]
     Hub,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HelloAuth {
+    pub token: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

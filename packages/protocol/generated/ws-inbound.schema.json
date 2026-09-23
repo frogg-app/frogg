@@ -47,6 +47,19 @@
           "type": "string",
           "maxLength": 120
         },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "token"
+          ]
+        },
         "capabilities": {
           "type": "object",
           "properties": {

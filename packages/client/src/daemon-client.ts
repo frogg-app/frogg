@@ -345,6 +345,8 @@ export interface DaemonClientConfig {
   appVersion?: string;
   runtimeGeneration?: number | null;
   password?: string;
+  /** Shown to other participants in session presence. */
+  deviceName?: string;
   authHeader?: string;
   /**
    * The saved host's serverId. A handshake from any other daemon (a different
@@ -6137,6 +6139,12 @@ export class DaemonClient {
           ...this.config.capabilities,
         },
         ...(this.config.appVersion ? { appVersion: this.config.appVersion } : {}),
+        ...(this.config.deviceName ? { deviceName: this.config.deviceName } : {}),
+        // A relay socket reaches the daemon through a tunnel, so the bearer
+        // that a direct connection puts in a header travels in the hello.
+        ...(this.logConnectionPath === "relay" && normalizePassword(this.config.password)
+          ? { auth: { token: normalizePassword(this.config.password)! } }
+          : {}),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to send hello message";

@@ -115,6 +115,7 @@ import type { BrowserToolsBroker } from "./browser-tools/broker.js";
 import type { DaemonRuntimeConfig } from "./session/daemon/daemon-session.js";
 import { DirectorySyncService } from "./directory-sync/index.js";
 import { OWNER_PERMISSIONS, type DaemonPermission } from "./authorization/index.js";
+import { authorizeTunnelledCredential } from "./auth.js";
 import type { CallerDevice, DeviceAccessService } from "./device-access-service.js";
 import type { DeviceRole } from "@frogg/protocol/device-access";
 import type { PresenceService } from "./presence-service.js";
@@ -636,6 +637,7 @@ export class VoiceAssistantWebSocketServer {
   private unsubscribeTerminalActivity: (() => void) | null = null;
   private readonly browserToolsBroker: BrowserToolsBroker | null;
   private readonly hubRelationships: HubRelationshipManagement | null;
+  private readonly auth: DaemonAuthConfig | undefined;
   private deviceAccess: DeviceAccessService | null = null;
   private presence: PresenceService | null = null;
   private readonly browserToolsRegistrations = new Map<string, BrowserToolsRegistration>();
@@ -790,6 +792,7 @@ export class VoiceAssistantWebSocketServer {
       logger: this.logger,
     });
 
+    this.auth = auth;
     this.wss = this.createWebSocketServer(server, wsConfig, auth);
     this.startRuntimeMetricsInterval();
     this.startApplicationSocketLeaseInterval();
@@ -1636,6 +1639,57 @@ export class VoiceAssistantWebSocketServer {
   }
 
   private handleHello(params: {
+    ws: WebSocketLike;
+    message: WSHelloMessage;
+    pending: PendingConnection;
+  }): void {
+    // A relay socket carries no HTTP headers and no real client address, so the
+    // credential travels in the hello and is checked here. Without this the
+    // tunnel itself was the only thing standing between a caller and owner
+    // access. Hub sockets bring their own admission from the relationship.
+    if (params.pending.identity.transport === "relay" && !params.pending.admission.device) {
+      void this.admitRelayHello(params);
+      return;
+    }
+    this.handleVerifiedHello(params);
+  }
+
+  private async admitRelayHello(params: {
+    ws: WebSocketLike;
+    message: WSHelloMessage;
+    pending: PendingConnection;
+  }): Promise<void> {
+    const decision = await authorizeTunnelledCredential(
+      this.auth,
+      params.message.auth?.token ?? null,
+    );
+    if (!decision.ok) {
+      this.clearPendingConnection(params.ws);
+      params.pending.connectionLogger.warn(
+        { reason: decision.reason },
+        "Rejected relay connection without valid daemon credentials",
+      );
+      this.closePhysicalSocket({
+        ws: params.ws,
+        closeCode: WS_CLOSE_DAEMON_AUTH_FAILED,
+        closeReason: decision.reason === "unclaimed" ? "Pairing required" : "Incorrect password",
+        logMessage: "Closing unauthenticated relay connection",
+      });
+      return;
+    }
+    const device = decision.via === "device" && decision.device ? decision.device : null;
+    if (device) {
+      params.pending.admission = {
+        ...params.pending.admission,
+        principalId: device.principalId,
+        permissions: device.permissions,
+        device,
+      };
+    }
+    this.handleVerifiedHello(params);
+  }
+
+  private handleVerifiedHello(params: {
     ws: WebSocketLike;
     message: WSHelloMessage;
     pending: PendingConnection;

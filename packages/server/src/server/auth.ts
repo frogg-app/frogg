@@ -280,6 +280,34 @@ function finishPassword(
   return { ok: false, reason: "invalid_token" };
 }
 
+/**
+ * Authorizes a credential that arrived inside a tunnel (relay), where the
+ * daemon sees no HTTP headers and no real client address. There is no locality
+ * to trust here: a tunnelled client is always remote, so it needs a paired
+ * device credential or the daemon password, exactly like any other remote
+ * client. An unclaimed, passwordless daemon has nothing to check against and
+ * is reported as `unclaimed` so the client is told to pair first.
+ */
+export async function authorizeTunnelledCredential(
+  auth: DaemonAuthConfig | undefined,
+  token: string | null,
+  clientKeyOverride = "relay",
+): Promise<BearerDecision> {
+  if (token !== null) {
+    const device = resolveDevice(auth, token);
+    if (device) return { ok: true, via: "device", device };
+  }
+  if (auth?.limiter?.isBlocked(clientKeyOverride)) return { ok: false, reason: "rate_limited" };
+  const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
+  if (!hasSecrets) return { ok: false, reason: "unclaimed" };
+  if (token === null) return { ok: false, reason: "missing_token" };
+  if (!auth?.password) {
+    auth?.limiter?.recordFailure(clientKeyOverride);
+    return { ok: false, reason: "invalid_token" };
+  }
+  return finishPassword(auth, clientKeyOverride, await verifyDaemonPassword(token, auth.password));
+}
+
 export function authorizeBearerSync(
   auth: DaemonAuthConfig | undefined,
   req: RequestLike,

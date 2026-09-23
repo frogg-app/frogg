@@ -7806,6 +7806,10 @@ export const WSHelloMessageSchema = z.object({
   // COMPAT(sessionPresence): added in v1.6.0. Shown to other participants when
   // the connection has no paired-device credential (loopback / trusted LAN).
   deviceName: z.string().max(120).optional(),
+  // COMPAT(relayCredential): added in v1.6.0, remove gate after 2027-09-22.
+  // A tunnelled transport (relay) carries no HTTP headers to the daemon, so the
+  // client's device credential or daemon password travels inside the hello.
+  auth: z.object({ token: z.string().min(1).max(4096) }).optional(),
   capabilities: z
     .object({
       voice: z.boolean().optional(),
