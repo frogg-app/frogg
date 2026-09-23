@@ -138,6 +138,7 @@ import {
 import { useDesktopBrowserNewTabRequests } from "@/desktop/browser/new-tab-requests";
 import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-types";
 import {
+  resolveExplorerSidebarHostsToggle,
   resolveWorkspaceExplorerToggleOwner,
   WorkspaceExplorerToggle,
   WorkspaceExplorerSidebarToggle,
@@ -1792,6 +1793,13 @@ function WorkspaceScreenContent({
   const explorerSidebarPaneId = useWorkspaceLayoutStore((state) =>
     persistenceKey ? selectExplorerSidebarPaneId(state, persistenceKey) : null,
   );
+  // Without this the header toggle could stand down for a close button that never renders,
+  // leaving the panel with no control at all.
+  const explorerSidebarHostsToggle = resolveExplorerSidebarHostsToggle({
+    isCompact: isMobile,
+    hasExplorerPane: explorerSidebarPaneId !== null,
+    focusModeEnabled: isFocusModeEnabled,
+  });
   const lastMainPaneRef = useLastMainPane({
     workspaceKey: persistenceKey,
     layout: workspaceLayout,
@@ -3758,6 +3766,7 @@ function WorkspaceScreenContent({
             />
             <WorkspaceHeaderExplorerToggle
               owner={explorerToggleOwner}
+              sidebarHostsToggle={explorerSidebarHostsToggle}
               onPress={handleToggleExplorerSidebar}
               label={explorerSidebarToggleLabel}
               tooltipLabel={t("workspace.tabs.explorerSidebar.toggle")}
@@ -3796,6 +3805,7 @@ function WorkspaceScreenContent({
       pullRequestOpenLocation,
       explorerSidebarToggleLabel,
       explorerSidebarToggleAccessibilityState,
+      explorerSidebarHostsToggle,
       explorerToggleOwner,
       t,
     ],

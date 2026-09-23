@@ -36,9 +36,26 @@ describe("explorer toggle placement", () => {
     expect(shouldShowSidebarExplorerToggle({ owner: "window", expanded: true })).toBe(true);
   });
 
+  it("keeps the header toggle when the open sidebar cannot draw its own close button", () => {
+    // The open flag is app-wide but the panel belongs to a workspace. A workspace that
+    // cannot host the sidebar used to hide the header toggle anyway, which left the panel
+    // with no control at all.
+    for (const owner of DESKTOP_OWNERS) {
+      expect(
+        shouldShowHeaderExplorerToggle({ owner, expanded: true, sidebarHostsToggle: false }),
+      ).toBe(true);
+      expect(
+        shouldShowHeaderExplorerToggle({ owner, expanded: true, sidebarHostsToggle: true }),
+      ).toBe(false);
+    }
+  });
+
   it("renders neither control on mobile, which has its own navigation", () => {
     for (const expanded of [true, false]) {
       expect(shouldShowHeaderExplorerToggle({ owner: "mobile", expanded })).toBe(false);
+      expect(
+        shouldShowHeaderExplorerToggle({ owner: "mobile", expanded, sidebarHostsToggle: false }),
+      ).toBe(false);
       expect(shouldShowSidebarExplorerToggle({ owner: "mobile", expanded })).toBe(false);
     }
   });

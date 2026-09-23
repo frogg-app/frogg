@@ -85,6 +85,7 @@ import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-
 import {
   createDefaultLayout,
   findPaneById,
+  selectExplorerSidebarPaneId,
   useWorkspaceLayoutStore,
   type SplitNode,
   type SplitPane,
@@ -354,8 +355,13 @@ export function SplitContainer({
   } | null>(null);
   const maximizedPaneId =
     maximizedPane?.workspaceKey === workspaceKey ? maximizedPane.paneId : null;
-  const explorerSidebarPaneId = useWorkspaceLayoutStore(
-    (state) => state.explorerSidebarPaneIdByWorkspace[workspaceKey] ?? null,
+  // Resolve the same way the store does: a workspace the user has never toggled the panel in
+  // has no registered pane id, but its layout still carries the default Explorer pane. Reading
+  // the registry raw left that pane unfound, which both suppressed the dock — taking the only
+  // remaining toggle with it — and left the pane inside the main split at the workspace's own
+  // split ratio instead of the app-wide width.
+  const explorerSidebarPaneId = useWorkspaceLayoutStore((state) =>
+    selectExplorerSidebarPaneId(state, workspaceKey),
   );
 
   const sensors = useSensors(

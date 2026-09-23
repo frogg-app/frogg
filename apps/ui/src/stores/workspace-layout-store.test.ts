@@ -35,6 +35,7 @@ import {
   normalizeLayout,
   removePaneFromTree,
   removeTabFromTree,
+  selectExplorerSidebarPaneId,
   stripEphemeralTabsFromLayout,
   type SplitNode,
   type SplitPane,
@@ -742,6 +743,44 @@ describe("workspace-layout-store tree transforms", () => {
 });
 
 describe("workspace-layout-store actions", () => {
+  beforeEach(() => {
+    // The panel's open state is app-wide, and a workspace laid out while it is open is born
+    // with Explorer showing. The store outlives each test, so reset the flag or one test's
+    // `showExplorerSidebar` decides how the next test's fresh workspace is born.
+    workspaceLayoutStore.setState({ explorerSidebarOpen: false });
+  });
+
+  it("lays a workspace out with Explorer showing when the panel is open app-wide", () => {
+    // The panel the user left open must be open in the next project too, including one they
+    // reach for the first time. Born hidden, its pane dropped out of tab placement and the
+    // renderer had nothing to dock — which took the only remaining toggle with it.
+    const openedWorkspaceKey = createWorkspaceKey();
+    workspaceLayoutStore.getState().showExplorerSidebar(openedWorkspaceKey);
+
+    const freshWorkspaceKey = createWorkspaceKey();
+    workspaceLayoutStore.getState().openTab({
+      workspaceKey: freshWorkspaceKey,
+      target: { kind: "agent", agentId: "agent-1" },
+      intent: "reveal",
+    });
+
+    const state = workspaceLayoutStore.getState();
+    const layout = state.layoutByWorkspace[freshWorkspaceKey]!;
+    const paneId = selectExplorerSidebarPaneId(state, freshWorkspaceKey);
+    expect(paneId).toBe("explorer");
+    expect(findPaneById(layout.root, paneId)?.hidden).toBeFalsy();
+  });
+
+  it("resolves the Explorer pane for a workspace that has never registered one", () => {
+    // What the renderer reads. A workspace nobody has toggled the panel in has no entry in
+    // the registry, but its layout still carries the default pane; reading the registry raw
+    // found nothing, so the dock never rendered and its close button went with it.
+    const workspaceKey = createWorkspaceKey();
+    const state = workspaceLayoutStore.getState();
+    expect(state.explorerSidebarPaneIdByWorkspace[workspaceKey]).toBeUndefined();
+    expect(selectExplorerSidebarPaneId(state, workspaceKey)).toBe("explorer");
+  });
+
   it("creates duplicate Changes instances while reveal keeps the first instance", () => {
     const workspaceKey = createWorkspaceKey();
     const store = workspaceLayoutStore.getState();

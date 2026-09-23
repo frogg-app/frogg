@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/icon-button-chrome";
 import { paneContentToolbarIconSize, ToolbarButton } from "@/components/ui/pane-content-toolbar";
 import type { ShortcutKey } from "@/utils/format-shortcut";
+import { usesCompactExplorerSidebar } from "@/workspace-tabs/explorer-sidebar";
 
 const ThemedPanelRight = withUnistyles(PanelRight);
 
@@ -33,6 +34,26 @@ export function resolveWorkspaceExplorerToggleOwner({
 }): WorkspaceExplorerToggleOwner {
   if (isMobile) return "mobile";
   return hasMacTrafficLights ? "window" : "header";
+}
+
+/**
+ * Whether the open sidebar is on screen carrying its own close button. Only the docked pane
+ * has one, and only when this workspace's layout can host it — the open flag is app-wide, so
+ * it alone cannot answer this.
+ */
+export function resolveExplorerSidebarHostsToggle({
+  isCompact,
+  hasExplorerPane,
+  focusModeEnabled,
+}: {
+  isCompact: boolean;
+  hasExplorerPane: boolean;
+  focusModeEnabled: boolean;
+}): boolean {
+  if (usesCompactExplorerSidebar({ isCompact })) {
+    return false;
+  }
+  return hasExplorerPane && !focusModeEnabled;
 }
 
 export function WorkspaceExplorerToggle({
@@ -68,21 +89,33 @@ export function WorkspaceExplorerToggle({
 
 interface DesktopWorkspaceExplorerToggleProps extends Omit<WorkspaceExplorerToggleProps, "mobile"> {
   owner: WorkspaceExplorerToggleOwner;
+  /** Whether the open sidebar is actually on screen carrying its own close button. */
+  sidebarHostsToggle?: boolean;
 }
 
 /**
  * The workspace header owns the toggle only while the sidebar is collapsed. Once
  * it is open, the sidebar carries its own close button so the control sits next
  * to the thing it closes instead of across the window.
+ *
+ * `sidebarHostsToggle` is the safety catch: the open flag is app-wide while the
+ * panel it opens belongs to a workspace, so a workspace that cannot draw the
+ * sidebar would otherwise hide the header toggle in favour of a close button
+ * that never renders, leaving no way to reach the panel at all.
  */
 export function shouldShowHeaderExplorerToggle({
   owner,
   expanded,
+  sidebarHostsToggle = true,
 }: {
   owner: WorkspaceExplorerToggleOwner;
   expanded: boolean;
+  sidebarHostsToggle?: boolean;
 }): boolean {
-  return owner !== "mobile" && !expanded;
+  if (owner === "mobile") {
+    return false;
+  }
+  return !expanded || !sidebarHostsToggle;
 }
 
 /** The open sidebar renders its own close button on every desktop platform. */
@@ -99,10 +132,17 @@ export function shouldShowSidebarExplorerToggle({
 export function WorkspaceHeaderExplorerToggle({
   owner,
   accessibilityState,
+  sidebarHostsToggle,
   style,
   ...toggleProps
 }: DesktopWorkspaceExplorerToggleProps) {
-  if (!shouldShowHeaderExplorerToggle({ owner, expanded: accessibilityState.expanded })) {
+  if (
+    !shouldShowHeaderExplorerToggle({
+      owner,
+      expanded: accessibilityState.expanded,
+      sidebarHostsToggle,
+    })
+  ) {
     return null;
   }
   return (
@@ -121,6 +161,7 @@ export function WorkspaceHeaderExplorerToggle({
  */
 export function WorkspaceExplorerSidebarToggle({
   owner,
+  sidebarHostsToggle: _sidebarHostsToggle,
   onPress,
   label,
   tooltipLabel,
