@@ -309,6 +309,12 @@ export interface DaemonServerInfo {
   desktopManaged?: boolean;
   capabilities?: ServerCapabilities;
   features?: ServerInfoStatusPayload["features"];
+  /**
+   * The role the daemon enforces for this connection. Absent on a daemon that
+   * predates roles, and on a credential-less connection (loopback, trusted
+   * LAN) which the daemon treats as an owner.
+   */
+  callerRole?: ServerInfoStatusPayload["callerRole"];
 }
 
 export interface AgentTimelineCursorState {
