@@ -11,6 +11,7 @@ import {
 } from "./args.js";
 import { parseProbeOutput } from "./probe.js";
 import type { ExecuteScript } from "./executor.js";
+import type { PairCodeResult } from "./pair-code.js";
 
 export type DeployEvent =
   | { jobId: string; kind: "log"; text: string; stream: "stdout" | "stderr" }
@@ -34,6 +35,8 @@ interface ManagerOptions {
   script(method: DeployMethod, uninstall?: boolean): string;
   emit(event: DeployEvent): void;
   jobTimeoutMs?: number;
+  /** The pairing-code script (already branded) and its output parser. */
+  pairCode?: { script: string; parse(stdout: string): PairCodeResult };
 }
 
 export class DeployManager {
@@ -56,6 +59,29 @@ export class DeployManager {
       if (result.code !== 0)
         throw new Error(result.stderr.trim() || `SSH probe exited with code ${result.code}`);
       return parseProbeOutput(result.stdout);
+    } finally {
+      this.probes.delete(controller);
+    }
+  }
+
+  /** Runs the daemon's pairing command over SSH; see `pair-code.ts` for the contract. */
+  async pairCode(args: unknown): Promise<PairCodeResult> {
+    const adapter = this.options.pairCode;
+    if (!adapter) throw new Error("Pairing over SSH is unavailable in this build.");
+    const target = parseTarget(args);
+    const controller = new AbortController();
+    this.probes.add(controller);
+    try {
+      const result = await this.options.execute({
+        target,
+        command: "sh -s",
+        script: adapter.script,
+        signal: controller.signal,
+        timeoutMs: 45000,
+      });
+      if (result.code !== 0)
+        throw new Error(result.stderr.trim() || `Pairing command exited with code ${result.code}`);
+      return adapter.parse(result.stdout);
     } finally {
       this.probes.delete(controller);
     }

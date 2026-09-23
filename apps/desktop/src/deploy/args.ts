@@ -2,6 +2,8 @@ export interface SshTarget {
   host: string;
   sshPort?: number;
   sshPassword?: string;
+  /** A key file for this session only; ssh-agent and ~/.ssh/config apply otherwise. */
+  identityFile?: string;
 }
 export type DeployMethod = "native" | "docker";
 export interface DeployRequest {
@@ -46,9 +48,23 @@ export function parseTarget(input: unknown): SshTarget {
     (typeof sshPort !== "number" || !Number.isInteger(sshPort) || sshPort < 1 || sshPort > 65535)
   )
     throw new Error("SSH port must be between 1 and 65535.");
+  const identityFile = text(args.identityFile);
+  if (
+    identityFile &&
+    (identityFile.length > 1024 ||
+      identityFile.startsWith("-") ||
+      hasUnsafeCharacters(identityFile, /^$/u) ||
+      !(
+        identityFile.startsWith("~/") ||
+        identityFile.startsWith("/") ||
+        /^[A-Za-z]:[\\/]/u.test(identityFile)
+      ))
+  )
+    throw new Error("SSH key file must be an absolute or ~/ path.");
   return {
     host,
     ...(sshPort == null ? {} : { sshPort: sshPort as number }),
+    ...(identityFile ? { identityFile } : {}),
     ...(typeof args.sshPassword === "string" && args.sshPassword
       ? { sshPassword: args.sshPassword }
       : {}),
@@ -135,6 +151,7 @@ export function buildSshArgs(target: SshTarget, command: string): string[] {
     "-o",
     "ConnectTimeout=10",
     ...(target.sshPort ? ["-p", String(target.sshPort)] : []),
+    ...(target.identityFile ? ["-i", target.identityFile, "-o", "IdentitiesOnly=yes"] : []),
     target.host,
     command,
   ];

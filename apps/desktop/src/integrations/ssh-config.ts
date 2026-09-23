@@ -8,6 +8,7 @@ export interface SshConfigHost {
   user?: string;
   port?: number;
   identityFile?: string;
+  proxyJump?: string;
 }
 export interface SshConfigFiles {
   read(file: string): Promise<string | null>;
@@ -35,6 +36,7 @@ function applyProperty(host: SshConfigHost, keyword: string, value: string): voi
   if (keyword === "hostname") host.hostName ??= value;
   if (keyword === "user") host.user ??= value;
   if (keyword === "identityfile") host.identityFile ??= value;
+  if (keyword === "proxyjump") host.proxyJump ??= value;
   if (keyword !== "port" || !/^\d+$/.test(value)) return;
   const port = Number(value);
   if (port > 0 && port <= 65535) host.port ??= port;
@@ -46,6 +48,7 @@ function mergeMetadata(targets: SshConfigHost[], entries: SshConfigHost[]): void
       host.user ??= entry.user;
       host.port ??= entry.port;
       host.identityFile ??= entry.identityFile;
+      host.proxyJump ??= entry.proxyJump;
     }
   }
 }

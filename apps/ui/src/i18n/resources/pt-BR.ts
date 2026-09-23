@@ -1835,6 +1835,81 @@ export const ptBR: TranslationResources = {
         description:
           "Reivindique um novo daemon do {{brandName}} ou emparelhe pelo relay criptografado.",
       },
+      deploy: {
+        title: "Implantar em um host",
+        description: "Instala o daemon em uma máquina que você acessa por SSH.",
+      },
+    },
+    deployHost: {
+      title: "Implantar em um host",
+      helper:
+        "Instala o daemon do {{brandName}} por SSH com o instalador padrão, inicia o serviço e pareia este dispositivo. Nada precisa ser executado manualmente no host.",
+      tabs: { config: "Configuração SSH", manual: "Manual" },
+      fields: {
+        host: "Host",
+        user: "Usuário",
+        sshPort: "Porta SSH",
+        identityFile: "Arquivo de chave",
+        identityFileHint: "Deixe vazio para usar o ssh-agent e o ~/.ssh/config.",
+        daemonPort: "Porta do daemon",
+      },
+      network: {
+        label: "Conectar por",
+        tunnel: "Túnel SSH",
+        lan: "Rede",
+        tunnelHint: "Recomendado. O daemon escuta apenas no loopback e o app o alcança por SSH.",
+        lanHint:
+          "O daemon escuta em todas as interfaces na porta {{port}} e este dispositivo pareia com ele pela rede.",
+      },
+      steps: {
+        connect: "Conectar e detectar a plataforma",
+        install: "Instalar o daemon e iniciar o serviço",
+        upgrade: "Atualizar o daemon a partir de {{from}}",
+        reinstall: "Reinstalar o daemon {{version}}",
+        pairCode: "Obter o código de pareamento por SSH",
+        pair: "Parear este dispositivo",
+      },
+      skipped: "Ignorado: o daemon não emitiu código de pareamento; o SSH autentica o host.",
+      platform: "{{platform}} detectado",
+      formErrors: {
+        hostRequired: "Escolha um host ou digite um.",
+        invalidHost: "Digite um host e um usuário sem espaços.",
+        invalidSshPort: "Digite uma porta SSH entre 1 e 65535.",
+        invalidDaemonPort: "Digite uma porta do daemon entre 1 e 65535.",
+        invalidKeyFile: "Digite um caminho absoluto ou iniciado por ~/.",
+        tunnelKeyUnsupported:
+          "Conexões por túnel SSH usam apenas o ssh-agent e o ~/.ssh/config. Adicione esta chave à sua configuração SSH ou conecte pela rede.",
+      },
+      errors: {
+        ssh_failed: "Não foi possível conectar por SSH. {{detail}}",
+        unsupported_platform:
+          "{{detail}} não é compatível. O daemon roda em Linux e macOS, x86_64 ou arm64.",
+        install_failed: "A instalação falhou. {{detail}}",
+        pair_code_unavailable:
+          "O daemon não emitiu um código de pareamento. {{detail}} Atualize o daemon ou conecte por um túnel SSH.",
+        invalid_pair_code: "Não foi possível ler o código de pareamento do daemon. {{detail}}",
+        fingerprint_mismatch:
+          "A chave do daemon não corresponde à impressão digital informada por SSH, então o pareamento foi interrompido. {{detail}}",
+        server_mismatch: "Respondeu um daemon diferente do instalado por SSH. {{detail}}",
+        unreachable:
+          "Este dispositivo não alcança o daemon na porta {{port}}. Libere a porta no firewall do host ou conecte por um túnel SSH.",
+        claim_rejected:
+          "O código de pareamento já foi usado ou expirou. Tente de novo para obter outro.",
+        connect_failed: "Não foi possível conectar ao daemon. {{detail}}",
+        cancelled: "Cancelado. O host mantém o que já foi instalado.",
+      },
+      actions: {
+        deploy: "Implantar",
+        cancel: "Cancelar",
+        retry: "Tentar de novo",
+        back: "Voltar",
+        done: "Concluir",
+        showLog: "Mostrar log",
+        hideLog: "Ocultar log",
+      },
+      success: "{{name}} foi adicionado.",
+      unverified:
+        "O daemon não emitiu código de pareamento, então a conexão depende apenas da chave de host SSH.",
     },
     networkScan: {
       searching: "Buscando…",
@@ -1948,6 +2023,7 @@ export const ptBR: TranslationResources = {
         empty: "Nenhum host em ~/.ssh/config",
         helperBefore: "Conecta com ",
         helperAfter: " usando sua configuração SSH (chaves, usuário, porta, hosts de salto).",
+        viaJump: "{{address}} via {{jump}}",
       },
       fields: {
         target: "Host SSH",

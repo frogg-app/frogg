@@ -1814,6 +1814,81 @@ export const en = {
         title: "Paste pairing link",
         description: "Claim a new {{brandName}} daemon, or pair over the encrypted relay.",
       },
+      deploy: {
+        title: "Deploy to host",
+        description: "Install the daemon on a machine you reach over SSH.",
+      },
+    },
+    deployHost: {
+      title: "Deploy to host",
+      helper:
+        "Installs the {{brandName}} daemon over SSH with the standard installer, starts its service and pairs this device. Nothing has to be run on the host by hand.",
+      tabs: { config: "SSH config", manual: "Manual" },
+      fields: {
+        host: "Host",
+        user: "User",
+        sshPort: "SSH port",
+        identityFile: "Key file",
+        identityFileHint: "Leave empty to use ssh-agent and ~/.ssh/config.",
+        daemonPort: "Daemon port",
+      },
+      network: {
+        label: "Connect through",
+        tunnel: "SSH tunnel",
+        lan: "Network",
+        tunnelHint:
+          "Recommended. The daemon listens on loopback only and the app reaches it through SSH.",
+        lanHint:
+          "The daemon listens on all interfaces on port {{port}} and this device pairs with it over the network.",
+      },
+      steps: {
+        connect: "Connect and detect platform",
+        install: "Install daemon and start service",
+        upgrade: "Upgrade daemon from {{from}}",
+        reinstall: "Reinstall daemon {{version}}",
+        pairCode: "Get pairing code over SSH",
+        pair: "Pair this device",
+      },
+      skipped: "Skipped: the daemon issued no pairing code; SSH authenticates the host.",
+      platform: "Detected {{platform}}",
+      formErrors: {
+        hostRequired: "Choose a host or enter one.",
+        invalidHost: "Enter a host and user without spaces.",
+        invalidSshPort: "Enter an SSH port between 1 and 65535.",
+        invalidDaemonPort: "Enter a daemon port between 1 and 65535.",
+        invalidKeyFile: "Enter an absolute path or one starting with ~/.",
+        tunnelKeyUnsupported:
+          "SSH tunnel connections use ssh-agent and ~/.ssh/config only. Add this key to your SSH config, or connect through the network.",
+      },
+      errors: {
+        ssh_failed: "Could not connect over SSH. {{detail}}",
+        unsupported_platform:
+          "{{detail}} is not supported. The daemon runs on Linux and macOS, x86_64 or arm64.",
+        install_failed: "The install failed. {{detail}}",
+        pair_code_unavailable:
+          "The daemon did not issue a pairing code. {{detail}} Update the daemon, or connect through an SSH tunnel.",
+        invalid_pair_code: "The pairing code from the daemon could not be read. {{detail}}",
+        fingerprint_mismatch:
+          "The daemon key does not match the fingerprint reported over SSH, so pairing was stopped. {{detail}}",
+        server_mismatch: "A different daemon answered than the one installed over SSH. {{detail}}",
+        unreachable:
+          "This device cannot reach the daemon on port {{port}}. Open the port in the host firewall, or connect through an SSH tunnel.",
+        claim_rejected: "The pairing code was already used or has expired. Retry to get a new one.",
+        connect_failed: "Could not connect to the daemon. {{detail}}",
+        cancelled: "Cancelled. The host keeps whatever was already installed.",
+      },
+      actions: {
+        deploy: "Deploy",
+        cancel: "Cancel",
+        retry: "Retry",
+        back: "Back",
+        done: "Done",
+        showLog: "Show log",
+        hideLog: "Hide log",
+      },
+      success: "{{name}} was added.",
+      unverified:
+        "The daemon issued no pairing code, so the connection relies on the SSH host key alone.",
     },
     networkScan: {
       searching: "Scanning…",
@@ -1926,6 +2001,7 @@ export const en = {
         empty: "No hosts in ~/.ssh/config",
         helperBefore: "Connects with ",
         helperAfter: " using your SSH config (keys, user, port, jump hosts).",
+        viaJump: "{{address}} via {{jump}}",
       },
       fields: {
         target: "SSH host",

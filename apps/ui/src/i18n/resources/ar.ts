@@ -1799,6 +1799,80 @@ export const ar: TranslationResources = {
         title: "الصق رابط الاقتران",
         description: "امتلك خادم {{brandName}} جديدًا، أو اقترن عبر المرحّل المشفّر.",
       },
+      deploy: {
+        title: "النشر على مضيف",
+        description: "ثبّت البرنامج الخفي على جهاز تصل إليه عبر SSH.",
+      },
+    },
+    deployHost: {
+      title: "النشر على مضيف",
+      helper:
+        "يثبّت البرنامج الخفي لـ {{brandName}} عبر SSH بالمثبّت القياسي، ويشغّل خدمته ويقرن هذا الجهاز. لا حاجة لتشغيل أي شيء يدويًا على المضيف.",
+      tabs: { config: "إعدادات SSH", manual: "يدوي" },
+      fields: {
+        host: "المضيف",
+        user: "المستخدم",
+        sshPort: "منفذ SSH",
+        identityFile: "ملف المفتاح",
+        identityFileHint: "اتركه فارغًا لاستخدام ssh-agent و‎~/.ssh/config.",
+        daemonPort: "منفذ البرنامج الخفي",
+      },
+      network: {
+        label: "الاتصال عبر",
+        tunnel: "نفق SSH",
+        lan: "الشبكة",
+        tunnelHint:
+          "موصى به. يستمع البرنامج الخفي على الواجهة المحلية فقط ويصل إليه التطبيق عبر SSH.",
+        lanHint:
+          "يستمع البرنامج الخفي على كل الواجهات على المنفذ {{port}} ويقترن هذا الجهاز به عبر الشبكة.",
+      },
+      steps: {
+        connect: "الاتصال واكتشاف المنصة",
+        install: "تثبيت البرنامج الخفي وتشغيل الخدمة",
+        upgrade: "ترقية البرنامج الخفي من {{from}}",
+        reinstall: "إعادة تثبيت البرنامج الخفي {{version}}",
+        pairCode: "الحصول على رمز الإقران عبر SSH",
+        pair: "إقران هذا الجهاز",
+      },
+      skipped: "تم التخطي: لم يُصدر البرنامج الخفي رمز إقران؛ يوثّق SSH المضيف.",
+      platform: "تم اكتشاف {{platform}}",
+      formErrors: {
+        hostRequired: "اختر مضيفًا أو أدخل واحدًا.",
+        invalidHost: "أدخل المضيف والمستخدم دون مسافات.",
+        invalidSshPort: "أدخل منفذ SSH بين 1 و65535.",
+        invalidDaemonPort: "أدخل منفذ البرنامج الخفي بين 1 و65535.",
+        invalidKeyFile: "أدخل مسارًا مطلقًا أو مسارًا يبدأ بـ ~/.",
+        tunnelKeyUnsupported:
+          "اتصالات نفق SSH تستخدم ssh-agent و‎~/.ssh/config فقط. أضف هذا المفتاح إلى إعدادات SSH أو اتصل عبر الشبكة.",
+      },
+      errors: {
+        ssh_failed: "تعذّر الاتصال عبر SSH. {{detail}}",
+        unsupported_platform:
+          "{{detail}} غير مدعوم. يعمل البرنامج الخفي على Linux وmacOS بمعمارية x86_64 أو arm64.",
+        install_failed: "فشل التثبيت. {{detail}}",
+        pair_code_unavailable:
+          "لم يُصدر البرنامج الخفي رمز إقران. {{detail}} حدّث البرنامج الخفي أو اتصل عبر نفق SSH.",
+        invalid_pair_code: "تعذّرت قراءة رمز الإقران من البرنامج الخفي. {{detail}}",
+        fingerprint_mismatch:
+          "مفتاح البرنامج الخفي لا يطابق البصمة المُبلّغ عنها عبر SSH، لذا أُوقف الإقران. {{detail}}",
+        server_mismatch: "أجاب برنامج خفي غير الذي ثُبّت عبر SSH. {{detail}}",
+        unreachable:
+          "لا يستطيع هذا الجهاز الوصول إلى البرنامج الخفي على المنفذ {{port}}. افتح المنفذ في جدار حماية المضيف أو اتصل عبر نفق SSH.",
+        claim_rejected: "رمز الإقران استُخدم أو انتهت صلاحيته. أعد المحاولة للحصول على رمز جديد.",
+        connect_failed: "تعذّر الاتصال بالبرنامج الخفي. {{detail}}",
+        cancelled: "أُلغي. يحتفظ المضيف بما ثُبّت بالفعل.",
+      },
+      actions: {
+        deploy: "نشر",
+        cancel: "إلغاء",
+        retry: "إعادة المحاولة",
+        back: "رجوع",
+        done: "تم",
+        showLog: "إظهار السجل",
+        hideLog: "إخفاء السجل",
+      },
+      success: "تمت إضافة {{name}}.",
+      unverified: "لم يُصدر البرنامج الخفي رمز إقران، لذا يعتمد الاتصال على مفتاح مضيف SSH وحده.",
     },
     networkScan: {
       searching: "جارٍ البحث…",
@@ -1910,6 +1984,7 @@ export const ar: TranslationResources = {
         empty: "لا توجد مضيفات في ~/.ssh/config",
         helperBefore: "يتصل باستخدام ",
         helperAfter: " عبر إعدادات SSH لديك (المفاتيح والمستخدم والمنفذ ومضيفات القفز).",
+        viaJump: "{{address}} عبر {{jump}}",
       },
       fields: {
         target: "مضيف SSH",

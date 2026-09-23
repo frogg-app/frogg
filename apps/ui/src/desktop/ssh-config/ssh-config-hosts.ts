@@ -7,6 +7,8 @@ export interface SshConfigHost {
   user: string | null;
   port: number | null;
   identityFile: string | null;
+  /** Shown only: `ssh` itself evaluates ProxyJump when it resolves the alias. */
+  proxyJump: string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -38,6 +40,7 @@ export function parseSshConfigHosts(raw: unknown): SshConfigHost[] {
       user: toStringOrNull(entry.user),
       port: toPortOrNull(entry.port),
       identityFile: toStringOrNull(entry.identityFile),
+      proxyJump: toStringOrNull(entry.proxyJump),
     });
   }
   return hosts;

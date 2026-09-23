@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { QrCode, Link2, ClipboardPaste, Terminal } from "lucide-react-native";
+import { QrCode, Link2, ClipboardPaste, Rocket, Terminal } from "lucide-react-native";
 import { AdaptiveModalSheet, type SheetHeader } from "./adaptive-modal-sheet";
 import { isFdroidBuild } from "@/constants/build-profile";
 import { isNative } from "@/constants/platform";
@@ -23,7 +23,10 @@ const ThemedQrCode = withUnistyles(QrCode);
 const ThemedLink2 = withUnistyles(Link2);
 const ThemedClipboardPaste = withUnistyles(ClipboardPaste);
 const ThemedTerminal = withUnistyles(Terminal);
-const foregroundIconMapping = (theme: Theme) => ({ color: theme.colors.foreground });
+const ThemedRocket = withUnistyles(Rocket);
+const foregroundIconMapping = (theme: Theme) => ({
+  color: theme.colors.foreground,
+});
 
 const styles = StyleSheet.create((theme) => ({
   option: {
@@ -58,6 +61,8 @@ export interface AddHostMethodModalProps {
   onRemoteSsh: () => void;
   onScanQr: () => void;
   onPasteLink: () => void;
+  /** Desktop only: install the daemon on an SSH host, then add it. */
+  onDeploy?: () => void;
 }
 
 export function AddHostMethodModal({
@@ -65,6 +70,7 @@ export function AddHostMethodModal({
   onClose,
   onDirectConnection,
   onRemoteSsh,
+  onDeploy,
   onScanQr,
   onPasteLink,
 }: AddHostMethodModalProps) {
@@ -123,6 +129,24 @@ export function AddHostMethodModal({
             <Text style={styles.optionText}>{t("pairing.connectionMethods.remoteSsh.title")}</Text>
             <Text style={styles.optionSubtext}>
               {t("pairing.connectionMethods.remoteSsh.description")}
+            </Text>
+          </View>
+        </Pressable>
+      ) : null}
+
+      {onDeploy && isRemoteSshAddHostAvailable() ? (
+        <Pressable
+          style={styles.option}
+          onPress={onDeploy}
+          accessibilityRole="button"
+          accessibilityLabel={t("pairing.connectionMethods.deploy.title")}
+          testID="add-host-method-deploy"
+        >
+          <ThemedRocket size={18} uniProps={foregroundIconMapping} />
+          <View style={styles.optionBody}>
+            <Text style={styles.optionText}>{t("pairing.connectionMethods.deploy.title")}</Text>
+            <Text style={styles.optionSubtext}>
+              {t("pairing.connectionMethods.deploy.description")}
             </Text>
           </View>
         </Pressable>
