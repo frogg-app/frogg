@@ -107,6 +107,10 @@ vi.mock("./push/index.js", () => ({
 
 import { z } from "zod";
 import { VoiceAssistantWebSocketServer } from "./websocket-server";
+import { admissionForPrincipal } from "./authorization/admission.js";
+import { createMemoryDeviceRoleStore } from "./authorization/device-role-store.js";
+import type { DeviceRole } from "./authorization/index.js";
+import type { DeviceRecord } from "./claim-store.js";
 import { DAEMON_PERMISSIONS, parseServerInfoStatusPayload } from "./messages.js";
 import type { SpeechReadinessSnapshot } from "./speech/speech-runtime.js";
 
@@ -414,7 +418,9 @@ async function attachRelayAndHello(params: {
   socket: MockSocket;
   clientId: string;
 }) {
-  await params.server.attachExternalSocket(params.socket, { transport: "relay" });
+  await params.server.attachExternalSocket(params.socket, {
+    transport: "relay",
+  });
   params.socket.emit("message", JSON.stringify(createHelloMessage(params.clientId)));
   expect(params.socket.sent.length).toBeGreaterThan(0);
   const envelope = parseSentEnvelope(params.socket.sent[0]);
@@ -639,7 +645,11 @@ describe("relay external socket reconnect behavior", () => {
     const ownerSocket = new MockSocket();
     const hubSocket = new MockSocket();
 
-    const ownerInfo = await attachRelayAndHello({ server, socket: ownerSocket, clientId });
+    const ownerInfo = await attachRelayAndHello({
+      server,
+      socket: ownerSocket,
+      clientId,
+    });
     await server.attachExternalSocket(
       hubSocket,
       { transport: "hub", hubDaemonId: "daemon-1" },
@@ -752,7 +762,9 @@ describe("relay external socket reconnect behavior", () => {
     socket.emit("message", JSON.stringify({ type: "ping" }));
     await Promise.resolve();
 
-    expect(sentEnvelopes(socket).slice(sentBeforeDiagnostic)).toContainEqual({ type: "pong" });
+    expect(sentEnvelopes(socket).slice(sentBeforeDiagnostic)).toContainEqual({
+      type: "pong",
+    });
 
     providerDiagnostic.finish();
     await Promise.resolve();
@@ -1144,6 +1156,158 @@ describe("relay external socket reconnect behavior", () => {
     expect(frame.slot).toBe(12);
     expect(new TextDecoder().decode(frame.payload ?? new Uint8Array())).toBe("ok");
 
+    await server.close();
+  });
+});
+
+describe("per-device roles over a socket", () => {
+  beforeEach(() => {
+    sessionMock.instances.length = 0;
+    wsModuleMock.MockWebSocketServer.instances.length = 0;
+  });
+
+  function deviceRecord(role: DeviceRole, id = "cred-1"): DeviceRecord {
+    return {
+      id,
+      name: "Phone",
+      role,
+      principalId: `principal-${id}`,
+      principalLabel: "Sam",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      lastSeenAt: null,
+      pairedVia: "code",
+      permissions: [],
+    };
+  }
+
+  async function attachDevice(params: {
+    server: VoiceAssistantWebSocketServer;
+    socket: MockSocket;
+    clientId: string;
+    device: DeviceRecord;
+  }) {
+    await params.server.attachExternalSocket(
+      params.socket,
+      { transport: "relay" },
+      admissionForPrincipal({ kind: "device", device: params.device }, "relay"),
+    );
+    params.socket.emit("message", JSON.stringify(createHelloMessage(params.clientId)));
+    const envelope = parseSentEnvelope(params.socket.sent[0]);
+    return parseServerInfoStatusPayload(envelope.message?.payload);
+  }
+
+  test("a relayed viewer device is admitted as a viewer, not as the owner", async () => {
+    const server = createServer();
+    const socket = new MockSocket();
+
+    const serverInfo = await attachDevice({
+      server,
+      socket,
+      clientId: "cid-viewer",
+      device: deviceRecord("viewer"),
+    });
+
+    expect(sessionMock.instances).toHaveLength(1);
+    expect(sessionMock.instances[0].args.role).toBe("viewer");
+    expect(serverInfo?.callerRole).toBe("viewer");
+    expect(serverInfo?.features?.deviceRoles).toBe(true);
+    await server.close();
+  });
+
+  test("a socket with no device credential keeps owner authority", async () => {
+    const server = createServer();
+    const socket = new MockSocket();
+
+    const serverInfo = await attachDirectAndHello({
+      server,
+      socket,
+      clientId: "cid-direct",
+    });
+
+    expect(sessionMock.instances[0].args.role).toBe("owner");
+    expect(serverInfo.callerRole).toBe("owner");
+    await server.close();
+  });
+
+  test("role management is advertised to owners only, and only with a store", async () => {
+    const withoutStore = createServer();
+    const ownerSocket = new MockSocket();
+    const noStoreInfo = await attachDevice({
+      server: withoutStore,
+      socket: ownerSocket,
+      clientId: "cid-no-store",
+      device: deviceRecord("owner"),
+    });
+    expect(noStoreInfo?.features).not.toHaveProperty("deviceRoleManagement");
+    await withoutStore.close();
+
+    const server = createServer();
+    server.setDeviceRoleStore(
+      createMemoryDeviceRoleStore({ "cred-1": "owner", "cred-2": "viewer" }),
+    );
+
+    const ownerInfo = await attachDevice({
+      server,
+      socket: new MockSocket(),
+      clientId: "cid-owner",
+      device: deviceRecord("owner", "cred-1"),
+    });
+    expect(ownerInfo?.features?.deviceRoleManagement).toBe(true);
+
+    const viewerInfo = await attachDevice({
+      server,
+      socket: new MockSocket(),
+      clientId: "cid-viewer-2",
+      device: deviceRecord("viewer", "cred-2"),
+    });
+    expect(viewerInfo?.features).not.toHaveProperty("deviceRoleManagement");
+    await server.close();
+  });
+
+  test("changing a credential's role narrows its live session and re-announces it", async () => {
+    const server = createServer();
+    server.setDeviceRoleStore(createMemoryDeviceRoleStore({ "cred-1": "owner" }));
+    const socket = new MockSocket();
+    await attachDevice({
+      server,
+      socket,
+      clientId: "cid-demote",
+      device: deviceRecord("owner"),
+    });
+    const session = sessionMock.instances[0];
+
+    await expect(server.setCredentialRole("cred-1", "viewer")).resolves.toBe(true);
+
+    expect(session.setRole).toHaveBeenCalledWith("viewer");
+    expect(session.args.role).toBe("viewer");
+    const announced = sentServerInfoEnvelopes(socket).map(
+      (envelope) => parseServerInfoStatusPayload(envelope.message?.payload)?.callerRole,
+    );
+    expect(announced.at(-1)).toBe("viewer");
+
+    await expect(server.setCredentialRole("cred-unknown", "viewer")).resolves.toBe(false);
+    await server.close();
+  });
+
+  test("two credentials on one clientId never share a session", async () => {
+    const server = createServer();
+    const clientId = "cid-shared";
+
+    await attachDevice({
+      server,
+      socket: new MockSocket(),
+      clientId,
+      device: deviceRecord("owner", "cred-1"),
+    });
+    await attachDevice({
+      server,
+      socket: new MockSocket(),
+      clientId,
+      device: deviceRecord("viewer", "cred-2"),
+    });
+
+    expect(sessionMock.instances).toHaveLength(2);
+    expect(sessionMock.instances.map((session) => session.args.role)).toEqual(["owner", "viewer"]);
     await server.close();
   });
 });
