@@ -1878,6 +1878,8 @@ export const en = {
         invalid_pair_code: "The pairing code from the daemon could not be read. {{detail}}",
         fingerprint_mismatch:
           "The daemon key does not match the fingerprint reported over SSH, so pairing was stopped. {{detail}}",
+        fingerprint_changed:
+          "This host's daemon key has changed since it was first deployed, so pairing was stopped. Remove the host and deploy again only if you replaced the machine. {{detail}}",
         server_mismatch: "A different daemon answered than the one installed over SSH. {{detail}}",
         unreachable:
           "This device cannot reach the daemon on port {{port}}. Open the port in the host firewall, or connect through an SSH tunnel.",

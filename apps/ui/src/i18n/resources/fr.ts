@@ -1918,6 +1918,8 @@ export const fr: TranslationResources = {
         invalid_pair_code: "Le code d’association du daemon est illisible. {{detail}}",
         fingerprint_mismatch:
           "La clé du daemon ne correspond pas à l’empreinte indiquée via SSH ; l’association a été arrêtée. {{detail}}",
+        fingerprint_changed:
+          "La clé du daemon de cet hôte a changé depuis le premier déploiement, l'appairage a donc été arrêté. Supprimez l'hôte et redéployez seulement si vous avez remplacé la machine. {{detail}}",
         server_mismatch: "Un autre daemon que celui installé via SSH a répondu. {{detail}}",
         unreachable:
           "Cet appareil n’atteint pas le daemon sur le port {{port}}. Ouvrez le port dans le pare-feu de l’hôte ou connectez-vous via un tunnel SSH.",

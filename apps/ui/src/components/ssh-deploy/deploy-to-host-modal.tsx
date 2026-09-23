@@ -744,6 +744,8 @@ interface DeployRunOptions {
   connectTunnel: HostMutations["probeAndUpsertRemoteSshConnection"];
   claim: HostMutations["claimAndUpsertDirectOffer"];
   claimPairingLink: HostMutations["claimAndUpsertDirectPairingLink"];
+  pinnedFingerprint: HostMutations["pinnedDaemonKeyFingerprint"];
+  pinFingerprint: HostMutations["pinDaemonKeyFingerprint"];
   onLog: (text: string) => void;
   onStep: (step: DeployStepId, status: DeployStepStatus) => void;
   onProbe: (probe: SshDeployProbe) => void;
@@ -817,6 +819,8 @@ async function executeDeploy(
       return { serverId: result.serverId, hostname: result.hostname };
     },
     fingerprint: (key) => daemonKeyFingerprint(key),
+    pinnedFingerprint: options.pinnedFingerprint,
+    pinFingerprint: options.pinFingerprint,
   };
   const deployed = await runDeployToHost(input, deps, {
     signal: options.signal,
@@ -852,6 +856,8 @@ function useDeployRun() {
     probeAndUpsertRemoteSshConnection,
     claimAndUpsertDirectOffer,
     claimAndUpsertDirectPairingLink,
+    pinnedDaemonKeyFingerprint,
+    pinDaemonKeyFingerprint,
   } = useHostMutations();
   const [formError, setFormError] = useState<DeployFormError | null>(null);
   const [phase, setPhase] = useState<Phase>("form");
@@ -911,6 +917,8 @@ function useDeployRun() {
             connectTunnel: probeAndUpsertRemoteSshConnection,
             claim: claimAndUpsertDirectOffer,
             claimPairingLink: claimAndUpsertDirectPairingLink,
+            pinnedFingerprint: pinnedDaemonKeyFingerprint,
+            pinFingerprint: pinDaemonKeyFingerprint,
             onLog: (text) =>
               setLines((previous) => [...previous.slice(-(MAX_LOG_LINES - 1)), text]),
             onStep: (step, status) => setSteps((previous) => ({ ...previous, [step]: status })),
@@ -938,6 +946,8 @@ function useDeployRun() {
       claimAndUpsertDirectOffer,
       claimAndUpsertDirectPairingLink,
       hosts,
+      pinDaemonKeyFingerprint,
+      pinnedDaemonKeyFingerprint,
       probeAndUpsertRemoteSshConnection,
     ],
   );

@@ -1840,6 +1840,8 @@ export const zhCN: TranslationResources = {
           "守护进程未签发配对码。{{detail}} 请更新守护进程，或改用 SSH 隧道连接。",
         invalid_pair_code: "无法读取守护进程的配对码。{{detail}}",
         fingerprint_mismatch: "守护进程密钥与通过 SSH 报告的指纹不符，已停止配对。{{detail}}",
+        fingerprint_changed:
+          "该主机的守护进程密钥自首次部署以来已更改，因此已停止配对。仅当你更换了机器时，才删除该主机并重新部署。{{detail}}",
         server_mismatch: "应答的守护进程不是通过 SSH 安装的那一个。{{detail}}",
         unreachable:
           "此设备无法访问 {{port}} 端口上的守护进程。请在主机防火墙中开放该端口，或改用 SSH 隧道连接。",

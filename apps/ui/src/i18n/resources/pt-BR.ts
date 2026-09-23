@@ -1899,6 +1899,8 @@ export const ptBR: TranslationResources = {
         invalid_pair_code: "Não foi possível ler o código de pareamento do daemon. {{detail}}",
         fingerprint_mismatch:
           "A chave do daemon não corresponde à impressão digital informada por SSH, então o pareamento foi interrompido. {{detail}}",
+        fingerprint_changed:
+          "A chave do daemon deste host mudou desde a primeira implantação, então o pareamento foi interrompido. Remova o host e implante de novo apenas se trocou a máquina. {{detail}}",
         server_mismatch: "Respondeu um daemon diferente do instalado por SSH. {{detail}}",
         unreachable:
           "Este dispositivo não alcança o daemon na porta {{port}}. Libere a porta no firewall do host ou conecte por um túnel SSH.",

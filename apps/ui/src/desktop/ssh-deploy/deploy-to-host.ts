@@ -49,6 +49,7 @@ export type DeployErrorCode =
   | "pair_code_unavailable"
   | "invalid_pair_code"
   | "fingerprint_mismatch"
+  | "fingerprint_changed"
   | "server_mismatch"
   | "unreachable"
   | "claim_rejected"
@@ -120,6 +121,10 @@ export interface DeployToHostDeps {
   /** Redeems a `<scheme>://pair/direct?…` link, which is what `<cli> pair` prints. */
   claimPairingLink(link: DirectPairingLink): Promise<{ serverId: string; hostname: string | null }>;
   fingerprint(daemonPublicKeyB64: string): Promise<string>;
+  /** The key fingerprint already pinned to this server id, if any. */
+  pinnedFingerprint(serverId: string): string | null;
+  /** Pins the key on first deploy; never overwrites an existing pin. */
+  pinFingerprint(serverId: string, fingerprint: string): Promise<void>;
 }
 
 const SUPPORTED_OS = new Set(["Linux", "Darwin"]);
@@ -348,6 +353,62 @@ async function lockDownHost(
   return !hardened.trustLan;
 }
 
+/**
+ * What the SSH channel says this daemon is: its server id and key
+ * fingerprint, from whichever of the two pairing-code spellings it printed.
+ */
+function pairedIdentity(pairing: {
+  code: SshDeployPairCode | null;
+  offer: AnyConnectionOffer | null;
+  link: DirectPairingLink | null;
+}): { serverId: string | null; fingerprint: string | null } {
+  return {
+    serverId: pairing.offer?.serverId ?? pairing.link?.serverId ?? null,
+    fingerprint: pairing.link?.fingerprint ?? pairing.code?.fingerprint ?? null,
+  };
+}
+
+/**
+ * Trust on first use for the daemon's key.
+ *
+ * The fingerprint itself arrives over the same SSH channel it is checked
+ * against, so on a first deploy it proves only that the pairing link and the
+ * CLI agree — it adds nothing over trusting SSH. Pinning is what makes it
+ * worth anything later: once a server id has a key recorded, a re-deploy that
+ * finds a different key for that same id is refused rather than silently
+ * re-paired, which is what a swapped or impersonated host looks like.
+ */
+function checkPinnedFingerprint(
+  pairing: {
+    code: SshDeployPairCode | null;
+    offer: AnyConnectionOffer | null;
+    link: DirectPairingLink | null;
+  },
+  deps: DeployToHostDeps,
+  context: StepContext,
+): void {
+  const { serverId, fingerprint } = pairedIdentity(pairing);
+  if (!serverId || !fingerprint) return;
+  const pinned = deps.pinnedFingerprint(serverId);
+  if (pinned && normalizeFingerprint(pinned) !== normalizeFingerprint(fingerprint)) {
+    context.fail("fingerprint_changed", `${pinned} ≠ ${fingerprint}`);
+  }
+}
+
+/** Records the key for this server id, so a later deploy can detect a change. */
+async function pinOnFirstDeploy(
+  pairing: {
+    code: SshDeployPairCode | null;
+    offer: AnyConnectionOffer | null;
+    link: DirectPairingLink | null;
+  },
+  serverId: string,
+  deps: DeployToHostDeps,
+): Promise<void> {
+  const { fingerprint } = pairedIdentity(pairing);
+  if (fingerprint) await deps.pinFingerprint(serverId, fingerprint);
+}
+
 /** Adds the host: a tunnel connection, or a claim redeemed over the network. */
 async function performPairing(
   input: DeployToHostInput,
@@ -468,6 +529,7 @@ export async function runDeployToHost(
 
     begin("pairCode");
     const pairing = await resolvePairing(input, deps, context);
+    checkPinnedFingerprint(pairing, deps, context);
     onStep("pairCode", pairing.code ? "done" : "skipped");
 
     begin("pair");
@@ -476,6 +538,7 @@ export async function runDeployToHost(
     if (expectedServerId && paired.serverId !== expectedServerId) {
       fail("server_mismatch", `${paired.serverId} ≠ ${expectedServerId}`);
     }
+    await pinOnFirstDeploy(pairing, paired.serverId, deps);
     onStep("pair", "done");
     // Verified means the daemon SSH named issued *this device* a credential,
     // not merely that SSH reached a daemon.

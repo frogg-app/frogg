@@ -1914,6 +1914,8 @@ export const es: TranslationResources = {
         invalid_pair_code: "No se pudo leer el código de emparejamiento del daemon. {{detail}}",
         fingerprint_mismatch:
           "La clave del daemon no coincide con la huella indicada por SSH, así que se detuvo el emparejamiento. {{detail}}",
+        fingerprint_changed:
+          "La clave del daemon de este host ha cambiado desde el primer despliegue, así que se detuvo el emparejamiento. Elimina el host y vuelve a desplegar solo si cambiaste la máquina. {{detail}}",
         server_mismatch: "Respondió un daemon distinto del instalado por SSH. {{detail}}",
         unreachable:
           "Este dispositivo no llega al daemon en el puerto {{port}}. Abre el puerto en el cortafuegos del host o conecta mediante un túnel SSH.",

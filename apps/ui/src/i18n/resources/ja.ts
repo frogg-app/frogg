@@ -1888,6 +1888,8 @@ export const ja: TranslationResources = {
         invalid_pair_code: "デーモンのペアリングコードを読み取れませんでした。{{detail}}",
         fingerprint_mismatch:
           "デーモンの鍵が SSH で報告されたフィンガープリントと一致しないため、ペアリングを中止しました。{{detail}}",
+        fingerprint_changed:
+          "このホストのデーモン鍵が最初のデプロイ時から変わっているため、ペアリングを中止しました。マシンを入れ替えた場合にかぎり、ホストを削除して再度デプロイしてください。{{detail}}",
         server_mismatch: "SSH でインストールしたものとは別のデーモンが応答しました。{{detail}}",
         unreachable:
           "このデバイスからポート {{port}} のデーモンに到達できません。ホストのファイアウォールでポートを開けるか、SSH トンネルで接続してください。",

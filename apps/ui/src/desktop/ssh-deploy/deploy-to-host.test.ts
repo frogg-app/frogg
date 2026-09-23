@@ -66,6 +66,8 @@ function deps(overrides: Partial<DeployToHostDeps> = {}): DeployToHostDeps {
     claim: vi.fn(async () => ({ serverId: "srv-1", hostname: "box" })),
     claimPairingLink: vi.fn(async () => ({ serverId: "srv-1", hostname: "box" })),
     fingerprint: (key) => daemonKeyFingerprint(key),
+    pinnedFingerprint: vi.fn(() => null),
+    pinFingerprint: vi.fn(async () => undefined),
     ...overrides,
   };
 }
@@ -127,6 +129,31 @@ describe("deploy to host", () => {
     expect(d.connectTunnel).toHaveBeenCalledWith(
       expect.not.objectContaining({ password: expect.anything() }),
     );
+  });
+
+  it("pins the daemon key on a first deploy", async () => {
+    const d = deps();
+    await expect(run("lan", d).promise).resolves.toMatchObject({ serverId: "srv-1" });
+    expect(d.pinFingerprint).toHaveBeenCalledWith("srv-1", FINGERPRINT);
+  });
+
+  it("refuses a known server id whose key changed", async () => {
+    const d = deps({ pinnedFingerprint: vi.fn(() => "SHA256:someotherkey") });
+    const { promise, steps } = run("lan", d);
+    await expect(promise).rejects.toMatchObject({
+      step: "pairCode",
+      code: "fingerprint_changed",
+    });
+    expect(d.claim).not.toHaveBeenCalled();
+    expect(d.claimPairingLink).not.toHaveBeenCalled();
+    expect(steps).toContain("pairCode:failed");
+  });
+
+  it("accepts the same key spelled the daemon's way", async () => {
+    const d = deps({
+      pinnedFingerprint: vi.fn(() => daemonKeyFingerprintUrlSafe(KEY)),
+    });
+    await expect(run("lan", d).promise).resolves.toMatchObject({ serverId: "srv-1" });
   });
 
   it("stops a fresh daemon trusting its LAN before any pairing code exists", async () => {

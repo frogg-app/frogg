@@ -1877,6 +1877,8 @@ export const ko: TranslationResources = {
         invalid_pair_code: "데몬의 페어링 코드를 읽지 못했습니다. {{detail}}",
         fingerprint_mismatch:
           "데몬 키가 SSH로 보고된 지문과 일치하지 않아 페어링을 중단했습니다. {{detail}}",
+        fingerprint_changed:
+          "이 호스트의 데몬 키가 최초 배포 이후 변경되어 페어링을 중단했습니다. 컴퓨터를 교체한 경우에만 호스트를 삭제하고 다시 배포하세요. {{detail}}",
         server_mismatch: "SSH로 설치한 것과 다른 데몬이 응답했습니다. {{detail}}",
         unreachable:
           "이 기기에서 {{port}} 포트의 데몬에 연결할 수 없습니다. 호스트 방화벽에서 포트를 열거나 SSH 터널로 연결하세요.",

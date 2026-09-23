@@ -62,6 +62,12 @@ export type HostLifecycle = Record<string, never>;
 export interface HostProfile {
   serverId: string;
   label: string;
+  /**
+   * The daemon key fingerprint this host was first deployed with, pinned so a
+   * later deploy that finds a different key for the same server id is refused
+   * (trust on first use). `SHA256:<base64>`, as OpenSSH prints fingerprints.
+   */
+  pinnedDaemonKeyFingerprint?: string;
   appearance: HostAppearance;
   lifecycle: HostLifecycle;
   connections: HostConnection[];
@@ -402,6 +408,7 @@ const StoredHostConnectionSchema = z.discriminatedUnion("type", [
 const StoredHostProfileSchema = z.strictObject({
   serverId: z.string().trim().min(1),
   label: z.string().optional(),
+  pinnedDaemonKeyFingerprint: z.string().optional(),
   appearance: HostAppearanceSchema.optional(),
   lifecycle: z.strictObject({}).optional(),
   connections: z.array(StoredHostConnectionSchema).min(1),
@@ -493,9 +500,11 @@ export function normalizeStoredHostProfile(entry: unknown): HostProfile | null {
       ? record.preferredConnectionId
       : (connections[0]?.id ?? null);
 
+  const pinnedDaemonKeyFingerprint = record.pinnedDaemonKeyFingerprint?.trim();
   return {
     serverId,
     label,
+    ...(pinnedDaemonKeyFingerprint ? { pinnedDaemonKeyFingerprint } : {}),
     appearance: record.appearance ?? defaultHostAppearance(),
     lifecycle: defaultLifecycle(),
     connections,
