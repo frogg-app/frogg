@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { extractOfferLink, setPendingOfferUrl, takePendingOfferUrl } from "./pending-offer";
+import { brand } from "@frogg/branding";
+import { daemonKeyFingerprint } from "@frogg/protocol/device-access";
+import {
+  extractOfferLink,
+  extractPairTarget,
+  setPendingOfferUrl,
+  setPendingPairTarget,
+  takePendingOfferUrl,
+  takePendingPairTarget,
+} from "./pending-offer";
+
+const FINGERPRINT = daemonKeyFingerprint("MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=");
 
 describe("extractOfferLink", () => {
   it("accepts fragment, query, and deep-link forms", () => {
@@ -33,5 +44,47 @@ describe("pending offer", () => {
     setPendingOfferUrl("frogg://pair#offer=abc");
     expect(takePendingOfferUrl()).toBe("frogg://pair#offer=abc");
     expect(takePendingOfferUrl()).toBeNull();
+  });
+});
+
+describe("extractPairTarget", () => {
+  const directLink = (scheme: string, extra = "") =>
+    `${scheme}://pair/direct?v=1&host=192.168.1.10&port=9999&fp=${encodeURIComponent(FINGERPRINT)}${extra}`;
+
+  it("recognises a direct pairing link under the brand scheme and the frogg fallback", () => {
+    for (const scheme of new Set([brand.scheme, "frogg"])) {
+      const target = extractPairTarget(directLink(scheme, "&claim=1&role=owner"));
+      expect(target).toMatchObject({
+        kind: "direct",
+        link: { host: "192.168.1.10", port: 9999, claim: true, role: "owner" },
+      });
+    }
+  });
+
+  it("still recognises the offer forms", () => {
+    expect(extractPairTarget("https://frogg.app/pair#offer=abc")).toEqual({
+      kind: "offer",
+      url: "https://frogg.app/pair#offer=abc",
+    });
+    expect(extractPairTarget("https://pair.frogg.app/code/abc")).toEqual({
+      kind: "offer",
+      url: "#offer=abc",
+    });
+    expect(extractPairTarget("https://frogg.app/pair")).toBeNull();
+    expect(extractPairTarget(null)).toBeNull();
+  });
+
+  it("keeps the single-use slot discipline for direct links", () => {
+    const target = extractPairTarget(directLink(brand.scheme))!;
+    setPendingPairTarget(target);
+    expect(takePendingPairTarget()).toBe(target);
+    expect(takePendingPairTarget()).toBeNull();
+  });
+
+  it("does not hand a direct link to the legacy offer accessor", () => {
+    setPendingPairTarget(extractPairTarget(directLink(brand.scheme))!);
+    expect(takePendingOfferUrl()).toBeNull();
+    setPendingOfferUrl("#offer=abc");
+    expect(takePendingOfferUrl()).toBe("#offer=abc");
   });
 });
