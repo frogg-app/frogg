@@ -27,7 +27,11 @@ export interface DeviceAccessCapabilities {
   callerRole: DeviceRole;
   /** False while no handshake has arrived: "unknown", not "viewer". */
   handshakeSeen: boolean;
-  /** This connection carries a device credential of its own. */
+  /**
+   * This connection authenticated as a paired device. `callerRole` is sent
+   * either way, so the device record is the only thing that tells a paired
+   * owner apart from a loopback connection the daemon treats as one.
+   */
   hasDeviceCredential: boolean;
 }
 
@@ -43,7 +47,7 @@ export function readDeviceAccessCapabilities(
     presence: features?.sessionPresence === true,
     callerRole: callerRole ?? DEFAULT_CALLER_ROLE,
     handshakeSeen: Boolean(serverInfo),
-    hasDeviceCredential: callerRole !== undefined,
+    hasDeviceCredential: serverInfo?.device !== undefined,
   };
 }
 

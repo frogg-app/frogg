@@ -26,6 +26,9 @@ export function useDeviceAccess(serverId: string | null | undefined): DeviceAcce
         deviceRoleManagement: info?.features?.deviceRoleManagement === true,
         sessionPresence: info?.features?.sessionPresence === true,
         callerRole: info?.callerRole,
+        deviceId: info?.device?.id,
+        deviceName: info?.device?.name,
+        deviceRole: info?.device?.role,
       };
     }),
   );
@@ -44,6 +47,9 @@ export function useDeviceAccess(serverId: string | null | undefined): DeviceAcce
               sessionPresence: raw.sessionPresence,
             },
             ...(raw.callerRole ? { callerRole: raw.callerRole } : {}),
+            ...(raw.deviceId !== undefined && raw.deviceName !== undefined && raw.deviceRole
+              ? { device: { id: raw.deviceId, name: raw.deviceName, role: raw.deviceRole } }
+              : {}),
           }
         : null,
     );
@@ -53,6 +59,9 @@ export function useDeviceAccess(serverId: string | null | undefined): DeviceAcce
     raw.callerRole,
     raw.deviceAccess,
     raw.deviceRoleManagement,
+    raw.deviceId,
+    raw.deviceName,
+    raw.deviceRole,
     raw.deviceRoles,
     raw.present,
     raw.sessionPresence,

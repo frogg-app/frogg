@@ -315,6 +315,13 @@ export interface DaemonServerInfo {
    * LAN) which the daemon treats as an owner.
    */
   callerRole?: ServerInfoStatusPayload["callerRole"];
+  /**
+   * The paired device this connection authenticated as. Absent on a
+   * credential-less connection (loopback, trusted LAN) — which is what
+   * distinguishes one from a device that really is paired as an owner, since
+   * `callerRole` is sent either way.
+   */
+  device?: ServerInfoStatusPayload["device"];
 }
 
 export interface AgentTimelineCursorState {

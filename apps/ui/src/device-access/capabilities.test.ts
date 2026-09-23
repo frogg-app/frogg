@@ -26,7 +26,9 @@ function serverInfo(overrides: Partial<DaemonServerInfo> = {}): DaemonServerInfo
 
 describe("readDeviceAccessCapabilities", () => {
   it("treats a credential-less connection as an owner, like the daemon does", () => {
-    const capabilities = readDeviceAccessCapabilities(serverInfo());
+    // The daemon sends `callerRole: "owner"` here too, so only the missing
+    // device record tells this apart from a device paired as an owner.
+    const capabilities = readDeviceAccessCapabilities(serverInfo({ callerRole: "owner" }));
     expect(capabilities.callerRole).toBe("owner");
     expect(capabilities.hasDeviceCredential).toBe(false);
     expect(capabilities.handshakeSeen).toBe(true);
@@ -35,7 +37,15 @@ describe("readDeviceAccessCapabilities", () => {
   it("reports the role the daemon enforces when one is sent", () => {
     const capabilities = readDeviceAccessCapabilities(serverInfo({ callerRole: "viewer" }));
     expect(capabilities.callerRole).toBe("viewer");
-    expect(capabilities.hasDeviceCredential).toBe(true);
+    expect(capabilities.hasDeviceCredential).toBe(false);
+  });
+
+  it("knows a paired device from a loopback connection the daemon calls an owner", () => {
+    const paired = readDeviceAccessCapabilities(
+      serverInfo({ callerRole: "owner", device: { id: "d1", name: "Ada's laptop", role: "owner" } }),
+    );
+    expect(paired.hasDeviceCredential).toBe(true);
+    expect(paired.callerRole).toBe("owner");
   });
 
   it("distinguishes no handshake from an unsupported daemon", () => {
