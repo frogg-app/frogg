@@ -159,7 +159,6 @@ function ProviderPane({
 
   return (
     <View style={styles.pane} testID="provider-settings-provider-pane">
-      <ProviderVersionSection serverId={serverId} providerId={providerId} />
       <ProviderModelsSection serverId={serverId} providerId={providerId} />
       {accounts.supported && !accounts.connected ? (
         <Text style={styles.message} testID="provider-settings-accounts-unavailable">
@@ -370,6 +369,11 @@ export function ProviderSettingsModal({
           status={providerStatus}
           onPress={handleSelectProviderTab}
         />
+
+        {/* Above the account tabs on purpose: the sheet opens on an account, and
+            a provider's version is not an account-scoped setting, so burying it
+            on the provider tab put it where nobody looks. */}
+        <ProviderVersionSection serverId={serverId} providerId={providerId} />
 
         {accounts.supported && accounts.isLoading ? (
           <View testID="provider-settings-accounts-loading">

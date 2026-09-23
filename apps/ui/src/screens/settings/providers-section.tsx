@@ -13,6 +13,7 @@ import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { settingsStyles } from "@/styles/settings";
 import { useHostRuntimeIsConnected } from "@/runtime/host-runtime";
+import { useProviderUpdates } from "@/provider-updates/use-provider-updates";
 import { useProvidersSnapshot } from "@/hooks/use-providers-snapshot";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import { buildProviderDefinitions } from "@/utils/provider-definitions";
@@ -88,6 +89,8 @@ interface ProviderRowProps {
   isToggling: boolean;
   isInstalled: boolean;
   isFirst: boolean;
+  /** A newer release of this provider's CLI is published. */
+  hasUpdate: boolean;
   onPress: (providerId: string) => void;
   onToggleEnabled: (providerId: string, enabled: boolean) => void;
   onOpenSettings: (providerId: string) => void;
@@ -104,6 +107,7 @@ function ProviderRow({
   isToggling,
   isInstalled,
   isFirst,
+  hasUpdate,
   onPress,
   onToggleEnabled,
   onOpenSettings,
@@ -173,6 +177,13 @@ function ProviderRow({
                 </Text>
                 {!isCompact ? <Text style={styles.separator}>·</Text> : null}
                 <StatusIndicator status={providerStatus} compact={isCompact} />
+                {hasUpdate ? (
+                  <View style={styles.updateBadge} testID={`provider-update-badge-${def.id}`}>
+                    <Text style={styles.updateBadgeText}>
+                      {t("settings.providers.settingsModal.version.badge")}
+                    </Text>
+                  </View>
+                ) : null}
               </View>
               {providerError && !isCompact ? (
                 <Text style={styles.errorText} numberOfLines={3}>
@@ -279,6 +290,18 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
   const { t } = useTranslation();
   const isConnected = useHostRuntimeIsConnected(serverId);
   const { entries, isLoading, refresh } = useProvidersSnapshot(serverId);
+  // Badging the list row is the only place an available update is visible
+  // without opening a provider, so it drives discovery of the Version card.
+  const providerUpdates = useProviderUpdates(serverId);
+  const providersWithUpdates = useMemo(
+    () =>
+      new Set(
+        providerUpdates.entries
+          .filter((entry) => entry.status === "update-available" && entry.updatable)
+          .map((entry) => entry.provider),
+      ),
+    [providerUpdates.entries],
+  );
   const { patchConfig } = useDaemonConfig(serverId);
   const openProviderSettings = useProviderSettingsStore((state) => state.open);
   const [pendingProviderId, setPendingProviderId] = useState<string | null>(null);
@@ -370,6 +393,7 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
                   isToggling={pendingProviderId === def.id}
                   isInstalled={entry.status !== "unavailable"}
                   isFirst={index === 0}
+                  hasUpdate={providersWithUpdates.has(def.id)}
                   onPress={handleOpenProviderSettings}
                   onToggleEnabled={handleToggleEnabled}
                   onOpenSettings={handleOpenSettings}
@@ -450,6 +474,17 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[1.5],
+  },
+  updateBadge: {
+    backgroundColor: theme.colors.statusWarning,
+    borderRadius: theme.borderRadius.full,
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: theme.spacing[0.5],
+  },
+  updateBadgeText: {
+    color: theme.colors.background,
+    fontSize: theme.fontSize.sm,
+    fontWeight: "600",
   },
   statusDot: {
     width: 8,

@@ -3354,6 +3354,7 @@ export const ko: TranslationResources = {
         },
         version: {
           title: "버전",
+          badge: "업데이트",
           installed: "설치됨 {{version}}",
           latest: "최신 {{version}}",
           update: "업데이트",

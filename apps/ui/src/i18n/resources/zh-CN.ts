@@ -3282,6 +3282,7 @@ export const zhCN: TranslationResources = {
         },
         version: {
           title: "版本",
+          badge: "可更新",
           installed: "已安装 {{version}}",
           latest: "最新 {{version}}",
           update: "更新",

@@ -3396,6 +3396,7 @@ export const ru: TranslationResources = {
         },
         version: {
           title: "Версия",
+          badge: "Обновление",
           installed: "Установлена {{version}}",
           latest: "последняя {{version}}",
           update: "Обновить",

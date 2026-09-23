@@ -3331,6 +3331,7 @@ export const ar: TranslationResources = {
         },
         version: {
           title: "الإصدار",
+          badge: "تحديث",
           installed: "المثبَّت {{version}}",
           latest: "الأحدث {{version}}",
           update: "تحديث",

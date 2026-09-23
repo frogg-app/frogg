@@ -111,8 +111,14 @@ const a = rows[Math.floor(rows.length / 3)]!;
 const b = rows[rows.length - 1]!;
 const span = Math.max(1, b.cycle - a.cycle);
 console.log(`\n--- ${values.scenario}: trend over the last two thirds ---`);
-console.log(`heap      ${(a.heap / 1e6).toFixed(2)} -> ${(b.heap / 1e6).toFixed(2)} MB  (${((b.heap - a.heap) / span / 1e3).toFixed(1)} kB/cycle)`);
-console.log(`nodes     ${a.nodes} -> ${b.nodes}  (${((b.nodes - a.nodes) / span).toFixed(1)}/cycle)`);
-console.log(`listeners ${a.listeners} -> ${b.listeners}  (${((b.listeners - a.listeners) / span).toFixed(1)}/cycle)`);
+console.log(
+  `heap      ${(a.heap / 1e6).toFixed(2)} -> ${(b.heap / 1e6).toFixed(2)} MB  (${((b.heap - a.heap) / span / 1e3).toFixed(1)} kB/cycle)`,
+);
+console.log(
+  `nodes     ${a.nodes} -> ${b.nodes}  (${((b.nodes - a.nodes) / span).toFixed(1)}/cycle)`,
+);
+console.log(
+  `listeners ${a.listeners} -> ${b.listeners}  (${((b.listeners - a.listeners) / span).toFixed(1)}/cycle)`,
+);
 
 await browser.close();

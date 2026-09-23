@@ -3389,6 +3389,7 @@ export const ptBR: TranslationResources = {
         },
         version: {
           title: "Versão",
+          badge: "Atualizar",
           installed: "Instalada {{version}}",
           latest: "mais recente {{version}}",
           update: "Atualizar",

@@ -3409,6 +3409,7 @@ export const es: TranslationResources = {
         },
         version: {
           title: "Versión",
+          badge: "Actualizar",
           installed: "Instalada {{version}}",
           latest: "última {{version}}",
           update: "Actualizar",

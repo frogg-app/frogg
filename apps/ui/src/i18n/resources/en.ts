@@ -3394,6 +3394,7 @@ export const en = {
         },
         version: {
           title: "Version",
+          badge: "Update",
           installed: "Installed {{version}}",
           latest: "latest {{version}}",
           update: "Update",

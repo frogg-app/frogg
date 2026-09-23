@@ -3378,6 +3378,7 @@ export const ja: TranslationResources = {
         },
         version: {
           title: "バージョン",
+          badge: "更新あり",
           installed: "インストール済み {{version}}",
           latest: "最新 {{version}}",
           update: "更新",

@@ -3418,6 +3418,7 @@ export const fr: TranslationResources = {
         },
         version: {
           title: "Version",
+          badge: "Mise à jour",
           installed: "Installée {{version}}",
           latest: "dernière {{version}}",
           update: "Mettre à jour",

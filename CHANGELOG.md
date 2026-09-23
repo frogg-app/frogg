@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.27 — 2026-09-23
+
+- The provider Version card is visible when the sheet opens. It was placed on
+  the provider's own tab, but the sheet opens on an account, and the header row
+  that switches to the provider tab does not look like a control — so the card
+  shipped effectively invisible. A provider's version is not an account-scoped
+  setting, so it now sits above the account chips and shows whichever tab is
+  selected. The Providers list also badges any provider with a newer release
+  published, so an available update is visible without opening anything.
+
 ## 1.5.26 — 2026-09-23
 
 - Providers can be updated from Frogg, and kept updated. Each provider's own tab
