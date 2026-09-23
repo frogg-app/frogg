@@ -1829,6 +1829,225 @@ export const es: TranslationResources = {
       hostDisconnected: "Hostno está conectado",
     },
   },
+  deviceAccess: {
+    devices: {
+      title: "Dispositivos emparejados",
+    },
+    loading: "Cargando dispositivos…",
+    empty: "Todavía no hay dispositivos emparejados con este host.",
+    staleSnapshot: "Puede que esta lista no esté actualizada.",
+    staleAfterError: "Se muestra la última lista que se cargó. No se pudo actualizar.",
+    thisDevice: "Este dispositivo",
+    unnamedDevice: "Dispositivo sin nombre",
+    renameLabel: "Nombre del dispositivo",
+    callerRole: {
+      title: "Tu acceso",
+      unknown: "Esperando a saber qué permite este host.",
+      unsupported: "Este host no usa roles de dispositivo.",
+      noCredential:
+        "Esta conexión no lleva ninguna credencial de dispositivo, así que el host la trata como propietario.",
+    },
+    roles: {
+      owner: {
+        label: "Propietario",
+        description:
+          "Todo: ajustes del host, cuentas de proveedores, códigos de emparejamiento y aprobar, revocar y cambiar el rol de los dispositivos.",
+      },
+      operator: {
+        label: "Operador",
+        description:
+          "Llevar el trabajo: chats de agentes, terminales, scripts del espacio de trabajo, edición de archivos, git y acciones de la forja. Sin ajustes del host ni gestión de dispositivos.",
+      },
+      viewer: {
+        label: "Observador",
+        description:
+          "Solo lectura: sesiones, cronologías, salida de terminal, exploración de archivos y diferencias. Sin entrada ni ejecución de comandos.",
+      },
+    },
+    refusal: {
+      unknown: "Esperando a que este host indique qué admite.",
+      unsupported:
+        "Este host es demasiado antiguo para gestionar dispositivos. Actualízalo para usar esto.",
+      role: "Solo un propietario puede cambiar dispositivos. Este dispositivo es {{role}}.",
+      roleCode:
+        "Solo un propietario puede crear un código de emparejamiento. Este dispositivo es {{role}}.",
+    },
+    actions: {
+      rename: "Renombrar",
+      revoke: "Revocar",
+      revokeThisDevice: "Revocar este dispositivo",
+      save: "Guardar",
+      cancel: "Cancelar",
+      retry: "Reintentar",
+      back: "Atrás",
+    },
+    lastSeen: {
+      connected: "Conectado ahora",
+      never: "Nunca se conectó",
+      justNow: "Visto hace un momento",
+      minutes_one: "Visto hace {{count}} minuto",
+      minutes_other: "Visto hace {{count}} minutos",
+      hours_one: "Visto hace {{count}} hora",
+      hours_other: "Visto hace {{count}} horas",
+      days_one: "Visto hace {{count}} día",
+      days_other: "Visto hace {{count}} días",
+    },
+    errors: {
+      unknownDevice: "Ese dispositivo ya no está emparejado.",
+      invalidName: "El nombre de un dispositivo debe tener entre 1 y {{max}} caracteres.",
+      noPairingCode: "El host no devolvió ningún código de emparejamiento.",
+    },
+    revoke: {
+      title: "¿Revocar {{name}}?",
+      message:
+        "{{name}} pierde el acceso de inmediato y sus conexiones se cierran. Se puede volver a emparejar más adelante.",
+      selfTitle: "¿Revocar este dispositivo?",
+      selfMessage:
+        "Este es el dispositivo que estás usando. Revocarlo termina esta sesión al instante y tendrás que emparejarlo de nuevo para volver a entrar.",
+      lastOwnerWarning:
+        "Este es el último propietario. Después, nadie podrá gestionar este host desde la app y tendrías que restablecer el emparejamiento desde un shell en el propio host.",
+      done: "Se revocó {{name}}.",
+    },
+    role: {
+      change: "Cambiar rol",
+      done: "{{name}} ahora es {{role}}.",
+      lastOwnerTitle: "¿Dejar este host sin propietario?",
+      lastOwnerMessage:
+        "{{name}} es el último propietario. Después de esto, nadie podrá gestionar el host desde la app.",
+      selfDemoteTitle: "¿Renunciar a tu propio acceso?",
+      selfDemoteMessage:
+        "Este dispositivo pasa a ser {{role}} de inmediato y pierdes la gestión de dispositivos aquí.",
+    },
+    requests: {
+      title: "Esperando aprobación",
+      loading: "Comprobando si hay solicitudes de emparejamiento…",
+      empty: "No hay dispositivos esperando a que se les deje entrar.",
+      untrustedName: "Este nombre lo eligió el dispositivo que pide unirse.",
+      matchCode: "Código de coincidencia: {{code}}",
+      from: "Desde {{address}}",
+      roleLabel: "Aprobar como",
+      approve: "Aprobar",
+      deny: "Denegar",
+      approved: "Se aprobó {{name}}.",
+      denied: "Se denegó {{name}}.",
+    },
+    code: {
+      title: "Código de emparejamiento",
+      roleLabel: "Rol para el nuevo dispositivo",
+      generate: "Generar un código de emparejamiento",
+      regenerate: "Generar un código nuevo",
+      ownerWarning:
+        "Un código de propietario da al nuevo dispositivo el control total de este host.",
+      expiresIn: "Caduca en {{time}}",
+      expired: "Este código ha caducado. Genera uno nuevo.",
+      fingerprint: "Huella de la clave: {{fingerprint}}",
+      fingerprintHint:
+        "Léela en voz alta para que el otro dispositivo pueda comprobar que coincide antes de emparejarse.",
+      qrAccessibility: "Código QR del enlace de emparejamiento",
+      qrLoading: "Generando el código QR…",
+      qrUnavailable: "No se pudo generar el código QR. Usa el código o el enlace en su lugar.",
+      copyCode: "Copiar código",
+      copyLink: "Copiar enlace",
+      hide: "Ocultar",
+      securityWarning:
+        "Cualquiera que consiga este código puede emparejar un dispositivo con este host hasta que caduque.",
+    },
+    entry: {
+      title: "Introduce un código de emparejamiento",
+      subtitle: "Escribe un código que un propietario haya generado para ti.",
+      hostLabel: "Dirección del host",
+      hostPlaceholder: "192.168.1.20:9999",
+      codeLabel: "Código de emparejamiento",
+      useTls: "Conectar con TLS",
+      verify: "Comprobar este host",
+      verifying: "Comprobando la identidad del host…",
+      verified: "Este host demostró que posee su propia clave.",
+      compareFingerprint:
+        "Comprueba que esta huella coincide con la de la pantalla del propietario antes de emparejar.",
+      pair: "Emparejar",
+      paired: "Emparejado con {{name}}.",
+      problems: {
+        host_required: "Introduce la dirección del host.",
+        port_invalid: "Ese puerto no es válido.",
+        code_incomplete: "Un código de emparejamiento tiene ocho caracteres.",
+        code_invalid: "Ese no es un código de emparejamiento válido.",
+      },
+      refused: {
+        unreachable: "El host no respondió",
+        fingerprint_mismatch: "Este no es el host al que corresponde el código",
+        proof_invalid: "El host no pudo demostrar que posee su clave",
+        server_key_changed: "Este host ya se conoce con una clave distinta",
+      },
+    },
+  },
+  pairConfirm: {
+    title: "¿Emparejar con este host?",
+    titleClaim: "¿Tomar la propiedad de este host?",
+    claimWarning: {
+      title: "Esto te convierte en el propietario",
+      body: "Reclamarlo da a este dispositivo el control total de esa máquina y de sus agentes. Continúa solo si lo has iniciado tú.",
+    },
+    fields: {
+      address: "Dirección",
+      hostname: "Nombre",
+      fingerprint: "Huella de la clave del host",
+      expires: "El enlace caduca",
+      role: "Rol de este dispositivo",
+      serverId: "ID del servidor",
+    },
+    roles: {
+      owner: "Propietario",
+      operator: "Operador",
+      viewer: "Observador",
+    },
+    verify: {
+      pending: "Comprobando la identidad del host…",
+      verifiedTitle: "Identidad verificada",
+      verifiedBody:
+        "El host de esta dirección demostró que posee la clave que hay detrás de la huella de arriba.",
+      unreachableTitle: "El host no respondió",
+      refusedTitle: "Rechazado: este no es el host que indica el enlace",
+      reasons: {
+        fingerprintMismatch:
+          "La clave del host no coincide con la huella del enlace. No continúes.",
+        proofInvalid: "El host no pudo demostrar que posee su propia clave. No continúes.",
+        keyChanged:
+          "Este servidor ya se conoce con una clave distinta. O bien se reinstaló el host, o algo lo está suplantando.",
+      },
+    },
+    expiredTitle: "Este enlace ha caducado",
+    expiredBody: "Pide un nuevo enlace de emparejamiento e inténtalo otra vez.",
+    errorTitle: "Error de emparejamiento",
+    invalidTitle: "Enlace de emparejamiento no reconocido",
+    invalidBody: "Este enlace no es un enlace de emparejamiento que esta app entienda.",
+    actions: {
+      pair: "Emparejar",
+      claim: "Reclamar este host",
+      cancel: "Cancelar",
+      retryVerification: "Reintentar",
+    },
+  },
+  presence: {
+    label: "También aquí",
+    loading: "Comprobando quién más está aquí…",
+    unknownDevice: "Dispositivo desconocido",
+    accessibilityLabel: "Otras personas en esta sesión",
+    overflow_one: "+{{count}} más",
+    overflow_other: "+{{count}} más",
+    stale: "Puede no estar actualizado",
+    activity: {
+      viewing: "{{name}} está mirando",
+      typing: "{{name}} está escribiendo",
+      sending: "{{name}} está enviando",
+      input: "{{name}} está escribiendo aquí",
+      idle: "{{name}} está inactivo",
+    },
+    composer: {
+      warningOne: "{{name}} también está trabajando en esto.",
+      warningMany_one: "{{name}} y {{count}} más también están trabajando en esto.",
+      warningMany_other: "{{name}} y {{count}} más también están trabajando en esto.",
+    },
+  },
   pairing: {
     connectionMethods: {
       title: "Agregar conexión",
@@ -2547,6 +2766,7 @@ export const es: TranslationResources = {
       sendFailedTitle: "No se pudo enviar la notificación de prueba",
     },
     hostSections: {
+      devices: "Dispositivos",
       projects: "Proyectos",
       connections: "Conexiones",
       agents: "Agents",

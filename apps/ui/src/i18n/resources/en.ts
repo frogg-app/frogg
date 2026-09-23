@@ -1795,6 +1795,221 @@ export const en = {
       hostDisconnected: "Host is not connected",
     },
   },
+  deviceAccess: {
+    devices: {
+      title: "Paired devices",
+    },
+    loading: "Loading devices…",
+    empty: "No devices are paired with this host yet.",
+    staleSnapshot: "This list may be out of date.",
+    staleAfterError: "Showing the last list that loaded. It could not be refreshed.",
+    thisDevice: "This device",
+    unnamedDevice: "Unnamed device",
+    renameLabel: "Device name",
+    callerRole: {
+      title: "Your access",
+      unknown: "Waiting to hear what this host allows.",
+      unsupported: "This host does not use device roles.",
+      noCredential:
+        "This connection carries no device credential, so the host treats it as an owner.",
+    },
+    roles: {
+      owner: {
+        label: "Owner",
+        description:
+          "Everything: host settings, provider accounts, pairing codes, and approving, revoking and re-roling devices.",
+      },
+      operator: {
+        label: "Operator",
+        description:
+          "Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No host settings and no device management.",
+      },
+      viewer: {
+        label: "Viewer",
+        description:
+          "Read-only: sessions, timelines, terminal output, file browsing and diffs. No input and no command execution.",
+      },
+    },
+    refusal: {
+      unknown: "Waiting for this host to say what it supports.",
+      unsupported: "This host is too old to manage devices. Update it to use this.",
+      role: "Only an owner can change devices. This device is a {{role}}.",
+      roleCode: "Only an owner can create a pairing code. This device is a {{role}}.",
+    },
+    actions: {
+      rename: "Rename",
+      revoke: "Revoke",
+      revokeThisDevice: "Revoke this device",
+      save: "Save",
+      cancel: "Cancel",
+      retry: "Try again",
+      back: "Back",
+    },
+    lastSeen: {
+      connected: "Connected now",
+      never: "Never connected",
+      justNow: "Last seen just now",
+      minutes_one: "Last seen {{count}} minute ago",
+      minutes_other: "Last seen {{count}} minutes ago",
+      hours_one: "Last seen {{count}} hour ago",
+      hours_other: "Last seen {{count}} hours ago",
+      days_one: "Last seen {{count}} day ago",
+      days_other: "Last seen {{count}} days ago",
+    },
+    errors: {
+      unknownDevice: "That device is no longer paired.",
+      invalidName: "A device name must be 1 to {{max}} characters.",
+      noPairingCode: "The host did not return a pairing code.",
+    },
+    revoke: {
+      title: "Revoke {{name}}?",
+      message:
+        "{{name}} loses access immediately and its connections close. It can be paired again later.",
+      selfTitle: "Revoke this device?",
+      selfMessage:
+        "This is the device you are using. Revoking it ends this session at once, and you will have to pair again to get back in.",
+      lastOwnerWarning:
+        "This is the last owner. Afterwards nobody can manage this host from the app, and you would have to reset pairing from a shell on the host itself.",
+      done: "{{name}} was revoked.",
+    },
+    role: {
+      change: "Change role",
+      done: "{{name}} is now a {{role}}.",
+      lastOwnerTitle: "Leave this host with no owner?",
+      lastOwnerMessage:
+        "{{name}} is the last owner. After this, nobody can manage the host from the app.",
+      selfDemoteTitle: "Give up your own access?",
+      selfDemoteMessage:
+        "This device becomes a {{role}} straight away, and you lose device management here.",
+    },
+    requests: {
+      title: "Waiting for approval",
+      loading: "Checking for pairing requests…",
+      empty: "No devices are waiting to be let in.",
+      untrustedName: "This name was chosen by the device asking to join.",
+      matchCode: "Match code: {{code}}",
+      from: "From {{address}}",
+      roleLabel: "Approve as",
+      approve: "Approve",
+      deny: "Deny",
+      approved: "{{name}} was approved.",
+      denied: "{{name}} was denied.",
+    },
+    code: {
+      title: "Pairing code",
+      roleLabel: "Role for the new device",
+      generate: "Generate a pairing code",
+      regenerate: "Generate a new code",
+      ownerWarning: "An owner code gives the new device full control of this host.",
+      expiresIn: "Expires in {{time}}",
+      expired: "This code has expired. Generate a new one.",
+      fingerprint: "Key fingerprint: {{fingerprint}}",
+      fingerprintHint: "Read this out so the other device can check it matches before pairing.",
+      qrAccessibility: "QR code for the pairing link",
+      qrLoading: "Building the QR code…",
+      qrUnavailable: "The QR code could not be built. Use the code or the link instead.",
+      copyCode: "Copy code",
+      copyLink: "Copy link",
+      hide: "Hide",
+      securityWarning:
+        "Anyone who gets this code can pair a device with this host until it expires.",
+    },
+    entry: {
+      title: "Enter a pairing code",
+      subtitle: "Type a code an owner generated for you.",
+      hostLabel: "Host address",
+      hostPlaceholder: "192.168.1.20:9999",
+      codeLabel: "Pairing code",
+      useTls: "Connect with TLS",
+      verify: "Check this host",
+      verifying: "Checking the host's identity…",
+      verified: "This host proved it holds its own key.",
+      compareFingerprint:
+        "Check this fingerprint matches the one on the owner's screen before you pair.",
+      pair: "Pair",
+      paired: "Paired with {{name}}.",
+      problems: {
+        host_required: "Enter the host address.",
+        port_invalid: "That port is not valid.",
+        code_incomplete: "A pairing code is eight characters.",
+        code_invalid: "That is not a valid pairing code.",
+      },
+      refused: {
+        unreachable: "The host did not answer",
+        fingerprint_mismatch: "That is not the host this code is for",
+        proof_invalid: "The host could not prove it holds its key",
+        server_key_changed: "This host is already known under a different key",
+      },
+    },
+  },
+  pairConfirm: {
+    title: "Pair with this host?",
+    titleClaim: "Take ownership of this host?",
+    claimWarning: {
+      title: "This makes you the owner",
+      body: "Claiming gives this device full control of that machine and its agents. Only continue if you started this yourself.",
+    },
+    fields: {
+      address: "Address",
+      hostname: "Name",
+      fingerprint: "Host key fingerprint",
+      expires: "Link expires",
+      role: "This device's role",
+      serverId: "Server ID",
+    },
+    roles: {
+      owner: "Owner",
+      operator: "Operator",
+      viewer: "Viewer",
+    },
+    verify: {
+      pending: "Checking the host's identity…",
+      verifiedTitle: "Identity verified",
+      verifiedBody:
+        "The host at this address proved it holds the key behind the fingerprint above.",
+      unreachableTitle: "The host did not answer",
+      refusedTitle: "Refused: this is not the host the link names",
+      reasons: {
+        fingerprintMismatch:
+          "The host's key does not match the fingerprint in the link. Do not continue.",
+        proofInvalid: "The host could not prove it holds its own key. Do not continue.",
+        keyChanged:
+          "This server is already known under a different key. Either the host was reinstalled, or something is impersonating it.",
+      },
+    },
+    expiredTitle: "This link has expired",
+    expiredBody: "Ask for a new pairing link and try again.",
+    errorTitle: "Pairing failed",
+    invalidTitle: "Unrecognised pairing link",
+    invalidBody: "This link is not a pairing link this app understands.",
+    actions: {
+      pair: "Pair",
+      claim: "Claim this host",
+      cancel: "Cancel",
+      retryVerification: "Try again",
+    },
+  },
+  presence: {
+    label: "Also here",
+    loading: "Checking who else is here…",
+    unknownDevice: "Unknown device",
+    accessibilityLabel: "Other people on this session",
+    overflow_one: "+{{count}} more",
+    overflow_other: "+{{count}} more",
+    stale: "May be out of date",
+    activity: {
+      viewing: "{{name}} is viewing",
+      typing: "{{name}} is typing",
+      sending: "{{name}} is sending",
+      input: "{{name}} is typing here",
+      idle: "{{name}} is idle",
+    },
+    composer: {
+      warningOne: "{{name}} is also working on this.",
+      warningMany_one: "{{name}} and {{count}} other are also working on this.",
+      warningMany_other: "{{name}} and {{count}} others are also working on this.",
+    },
+  },
   pairing: {
     connectionMethods: {
       title: "Add connection",
@@ -2543,6 +2758,7 @@ export const en = {
       sendFailedTitle: "Unable to send test notification",
     },
     hostSections: {
+      devices: "Devices",
       projects: "Projects",
       connections: "Connections",
       agents: "Agents",

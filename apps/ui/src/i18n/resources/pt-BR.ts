@@ -1814,6 +1814,224 @@ export const ptBR: TranslationResources = {
       hostDisconnected: "Host não está conectado",
     },
   },
+  deviceAccess: {
+    devices: {
+      title: "Dispositivos pareados",
+    },
+    loading: "Carregando dispositivos…",
+    empty: "Ainda não há dispositivos pareados com este host.",
+    staleSnapshot: "Esta lista pode estar desatualizada.",
+    staleAfterError: "Mostrando a última lista carregada. Não foi possível atualizá-la.",
+    thisDevice: "Este dispositivo",
+    unnamedDevice: "Dispositivo sem nome",
+    renameLabel: "Nome do dispositivo",
+    callerRole: {
+      title: "Seu acesso",
+      unknown: "Aguardando saber o que este host permite.",
+      unsupported: "Este host não usa papéis de dispositivo.",
+      noCredential:
+        "Esta conexão não carrega credencial de dispositivo, então o host a trata como proprietário.",
+    },
+    roles: {
+      owner: {
+        label: "Proprietário",
+        description:
+          "Tudo: configurações do host, contas de provedores, códigos de pareamento e aprovar, revogar e mudar o papel dos dispositivos.",
+      },
+      operator: {
+        label: "Operador",
+        description:
+          "Tocar o trabalho: conversas com agentes, terminais, scripts do espaço de trabalho, edição de arquivos, git e ações da forja. Sem configurações do host e sem gerenciamento de dispositivos.",
+      },
+      viewer: {
+        label: "Visualizador",
+        description:
+          "Somente leitura: sessões, linhas do tempo, saída de terminal, navegação de arquivos e diferenças. Sem entrada e sem execução de comandos.",
+      },
+    },
+    refusal: {
+      unknown: "Aguardando este host informar o que ele suporta.",
+      unsupported:
+        "Este host é antigo demais para gerenciar dispositivos. Atualize-o para usar este recurso.",
+      role: "Apenas um proprietário pode alterar dispositivos. Este dispositivo é {{role}}.",
+      roleCode:
+        "Apenas um proprietário pode criar um código de pareamento. Este dispositivo é {{role}}.",
+    },
+    actions: {
+      rename: "Renomear",
+      revoke: "Revogar",
+      revokeThisDevice: "Revogar este dispositivo",
+      save: "Salvar",
+      cancel: "Cancelar",
+      retry: "Tentar de novo",
+      back: "Voltar",
+    },
+    lastSeen: {
+      connected: "Conectado agora",
+      never: "Nunca conectou",
+      justNow: "Visto agora mesmo",
+      minutes_one: "Visto há {{count}} minuto",
+      minutes_other: "Visto há {{count}} minutos",
+      hours_one: "Visto há {{count}} hora",
+      hours_other: "Visto há {{count}} horas",
+      days_one: "Visto há {{count}} dia",
+      days_other: "Visto há {{count}} dias",
+    },
+    errors: {
+      unknownDevice: "Esse dispositivo não está mais pareado.",
+      invalidName: "O nome do dispositivo precisa ter de 1 a {{max}} caracteres.",
+      noPairingCode: "O host não devolveu um código de pareamento.",
+    },
+    revoke: {
+      title: "Revogar {{name}}?",
+      message:
+        "{{name}} perde o acesso na hora e suas conexões se encerram. Ele pode ser pareado de novo mais tarde.",
+      selfTitle: "Revogar este dispositivo?",
+      selfMessage:
+        "Este é o dispositivo que você está usando. Revogá-lo encerra esta sessão imediatamente, e você terá que parear de novo para voltar.",
+      lastOwnerWarning:
+        "Este é o último proprietário. Depois disso, ninguém poderá gerenciar este host pelo aplicativo, e você teria que redefinir o pareamento por um shell no próprio host.",
+      done: "{{name}} foi revogado.",
+    },
+    role: {
+      change: "Alterar papel",
+      done: "{{name}} agora é {{role}}.",
+      lastOwnerTitle: "Deixar este host sem proprietário?",
+      lastOwnerMessage:
+        "{{name}} é o último proprietário. Depois disso, ninguém poderá gerenciar o host pelo aplicativo.",
+      selfDemoteTitle: "Abrir mão do seu próprio acesso?",
+      selfDemoteMessage:
+        "Este dispositivo passa a ser {{role}} de imediato, e você perde o gerenciamento de dispositivos aqui.",
+    },
+    requests: {
+      title: "Aguardando aprovação",
+      loading: "Procurando solicitações de pareamento…",
+      empty: "Nenhum dispositivo está esperando para entrar.",
+      untrustedName: "Este nome foi escolhido pelo dispositivo que pediu para entrar.",
+      matchCode: "Código de conferência: {{code}}",
+      from: "De {{address}}",
+      roleLabel: "Aprovar como",
+      approve: "Aprovar",
+      deny: "Negar",
+      approved: "{{name}} foi aprovado.",
+      denied: "{{name}} foi negado.",
+    },
+    code: {
+      title: "Código de pareamento",
+      roleLabel: "Papel do novo dispositivo",
+      generate: "Gerar um código de pareamento",
+      regenerate: "Gerar um novo código",
+      ownerWarning: "Um código de proprietário dá ao novo dispositivo controle total deste host.",
+      expiresIn: "Expira em {{time}}",
+      expired: "Este código expirou. Gere um novo.",
+      fingerprint: "Impressão digital da chave: {{fingerprint}}",
+      fingerprintHint:
+        "Leia isto em voz alta para que o outro dispositivo confira se confere antes de parear.",
+      qrAccessibility: "Código QR do link de pareamento",
+      qrLoading: "Gerando o código QR…",
+      qrUnavailable: "Não foi possível gerar o código QR. Use o código ou o link.",
+      copyCode: "Copiar código",
+      copyLink: "Copiar link",
+      hide: "Ocultar",
+      securityWarning:
+        "Qualquer pessoa que obtenha este código pode parear um dispositivo com este host até ele expirar.",
+    },
+    entry: {
+      title: "Informe um código de pareamento",
+      subtitle: "Digite um código que um proprietário gerou para você.",
+      hostLabel: "Endereço do host",
+      hostPlaceholder: "192.168.1.20:9999",
+      codeLabel: "Código de pareamento",
+      useTls: "Conectar com TLS",
+      verify: "Verificar este host",
+      verifying: "Verificando a identidade do host…",
+      verified: "Este host provou que possui a própria chave.",
+      compareFingerprint:
+        "Confira se esta impressão digital confere com a da tela do proprietário antes de parear.",
+      pair: "Parear",
+      paired: "Pareado com {{name}}.",
+      problems: {
+        host_required: "Informe o endereço do host.",
+        port_invalid: "Essa porta não é válida.",
+        code_incomplete: "Um código de pareamento tem oito caracteres.",
+        code_invalid: "Esse não é um código de pareamento válido.",
+      },
+      refused: {
+        unreachable: "O host não respondeu",
+        fingerprint_mismatch: "Este não é o host a que este código se refere",
+        proof_invalid: "O host não conseguiu provar que possui a chave",
+        server_key_changed: "Este host já é conhecido com outra chave",
+      },
+    },
+  },
+  pairConfirm: {
+    title: "Parear com este host?",
+    titleClaim: "Assumir a propriedade deste host?",
+    claimWarning: {
+      title: "Isto torna você o proprietário",
+      body: "Reivindicar dá a este dispositivo controle total daquela máquina e de seus agentes. Só continue se foi você quem iniciou isto.",
+    },
+    fields: {
+      address: "Endereço",
+      hostname: "Nome",
+      fingerprint: "Impressão digital da chave do host",
+      expires: "O link expira",
+      role: "Papel deste dispositivo",
+      serverId: "ID do servidor",
+    },
+    roles: {
+      owner: "Proprietário",
+      operator: "Operador",
+      viewer: "Visualizador",
+    },
+    verify: {
+      pending: "Verificando a identidade do host…",
+      verifiedTitle: "Identidade verificada",
+      verifiedBody:
+        "O host neste endereço provou que possui a chave por trás da impressão digital acima.",
+      unreachableTitle: "O host não respondeu",
+      refusedTitle: "Recusado: este não é o host que o link indica",
+      reasons: {
+        fingerprintMismatch:
+          "A chave do host não confere com a impressão digital do link. Não continue.",
+        proofInvalid: "O host não conseguiu provar que possui a própria chave. Não continue.",
+        keyChanged:
+          "Este servidor já é conhecido com outra chave. Ou o host foi reinstalado, ou algo está se passando por ele.",
+      },
+    },
+    expiredTitle: "Este link expirou",
+    expiredBody: "Peça um novo link de pareamento e tente de novo.",
+    errorTitle: "Falha no pareamento",
+    invalidTitle: "Link de pareamento não reconhecido",
+    invalidBody: "Este link não é um link de pareamento que este aplicativo entenda.",
+    actions: {
+      pair: "Parear",
+      claim: "Reivindicar este host",
+      cancel: "Cancelar",
+      retryVerification: "Tentar de novo",
+    },
+  },
+  presence: {
+    label: "Também aqui",
+    loading: "Verificando quem mais está aqui…",
+    unknownDevice: "Dispositivo desconhecido",
+    accessibilityLabel: "Outras pessoas nesta sessão",
+    overflow_one: "+{{count}} a mais",
+    overflow_other: "+{{count}} a mais",
+    stale: "Pode estar desatualizado",
+    activity: {
+      viewing: "{{name}} está visualizando",
+      typing: "{{name}} está digitando",
+      sending: "{{name}} está enviando",
+      input: "{{name}} está digitando aqui",
+      idle: "{{name}} está ocioso",
+    },
+    composer: {
+      warningOne: "{{name}} também está trabalhando nisto.",
+      warningMany_one: "{{name}} e mais {{count}} também estão trabalhando nisto.",
+      warningMany_other: "{{name}} e mais {{count}} também estão trabalhando nisto.",
+    },
+  },
   pairing: {
     connectionMethods: {
       title: "Adicionar conexão",
@@ -2532,6 +2750,7 @@ export const ptBR: TranslationResources = {
       sendFailedTitle: "Não foi possível enviar a notificação de teste",
     },
     hostSections: {
+      devices: "Dispositivos",
       projects: "Projetos",
       connections: "Conexões",
       agents: "Agentes",
