@@ -141,3 +141,26 @@ describe("fingerprint helpers", () => {
     expect(formatFingerprint("sha256:abcdefgh")).toBe("abcd efgh");
   });
 });
+
+describe("trust on first use", () => {
+  it("still proves possession when no fingerprint is expected", async () => {
+    const daemon = daemonProofServer();
+    const verified = await verifyDaemonIdentity({
+      endpoint: "10.0.0.5:9999",
+      fetchImpl: daemon.fetchImpl,
+    });
+    expect(verified.fingerprint).toBe(daemon.fingerprint);
+  });
+
+  it("still refuses a known host whose key changed", async () => {
+    const daemon = daemonProofServer();
+    const previous = daemonProofServer();
+    await expect(
+      verifyDaemonIdentity({
+        endpoint: "10.0.0.5:9999",
+        knownFingerprint: previous.fingerprint,
+        fetchImpl: daemon.fetchImpl,
+      }),
+    ).rejects.toMatchObject({ code: "server_key_changed" });
+  });
+});

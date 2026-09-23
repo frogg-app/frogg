@@ -56,8 +56,13 @@ export interface VerifyDaemonIdentityOptions {
   /** `host:port` of the daemon. */
   endpoint: string;
   useTls?: boolean;
-  /** The `fp` from the pairing link. */
-  expectedFingerprint: string;
+  /**
+   * The `fp` from the pairing link. Omit it only for a code the user typed by
+   * hand, where there is no link to compare against: possession is still
+   * proved and `knownFingerprint` is still enforced, but the fingerprint has
+   * to be shown to the user to check out of band.
+   */
+  expectedFingerprint?: string;
   /**
    * The fingerprint already stored for this `serverId`, if the host is known.
    * A daemon that answers with the same id under a different key is refused.
@@ -153,7 +158,7 @@ export async function verifyDaemonIdentity(
   } catch {
     throw new DaemonIdentityError("proof_invalid", "The daemon sent an unreadable public key");
   }
-  if (!fingerprintsMatch(actual, options.expectedFingerprint)) {
+  if (options.expectedFingerprint && !fingerprintsMatch(actual, options.expectedFingerprint)) {
     throw new DaemonIdentityError(
       "fingerprint_mismatch",
       "This daemon's key does not match the pairing link",
