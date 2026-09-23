@@ -806,10 +806,9 @@ export async function createFroggDaemon(
     const target = publicListenTarget();
     return target.type === "tcp" ? target.port : null;
   };
-  const publicTcpHost = () => {
-    const target = publicListenTarget();
-    return target.type === "tcp" ? target.host : null;
-  };
+  // Where workspace dev servers bind, independent of the daemon's own listen
+  // host: binding the daemon wide must not publish every dev server with it.
+  const workspaceServiceBindHost = () => config.workspaceServicesBindHost ?? null;
   const publicOrigins = () => {
     const target = publicListenTarget();
     return target.type === "tcp"
@@ -1494,7 +1493,7 @@ export async function createFroggDaemon(
         serviceProxy,
         scriptRuntimeStore,
         getDaemonTcpPort: publicTcpPort,
-        getDaemonTcpHost: publicTcpHost,
+        getWorkspaceServiceBindHost: workspaceServiceBindHost,
         serviceProxyPublicBaseUrl,
         onScriptsChanged: null,
       },
@@ -1733,7 +1732,7 @@ export async function createFroggDaemon(
       projectRegistry,
       workspaceGitService,
       getDaemonTcpPort: publicTcpPort,
-      getDaemonTcpHost: publicTcpHost,
+      getWorkspaceServiceBindHost: workspaceServiceBindHost,
       serviceProxyPublicBaseUrl,
       resolveScriptHealth: (hostname) => scriptHealthMonitor.getHealthForHostname(hostname),
       logger,
@@ -2142,7 +2141,7 @@ export async function createFroggDaemon(
               scriptRuntimeStore,
               handleBranchChange,
               publicTcpPort,
-              publicTcpHost,
+              workspaceServiceBindHost,
               (hostname) => scriptHealthMonitor.getHealthForHostname(hostname),
               workspaceGitService,
               github,

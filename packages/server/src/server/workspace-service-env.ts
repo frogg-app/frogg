@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { projectServiceProxyUrls } from "./service-proxy.js";
 
 export interface WorkspaceServicePeer {
@@ -10,7 +11,7 @@ export interface BuildWorkspaceServiceEnvOptions {
   projectSlug: string;
   branchName: string | null;
   daemonPort: number | null | undefined;
-  daemonListenHost: string | null | undefined;
+  workspaceServiceBindHost: string | null | undefined;
   serviceProxyPublicBaseUrl?: string | null;
   peers: readonly WorkspaceServicePeer[];
 }
@@ -34,7 +35,7 @@ export function buildWorkspaceServiceEnv(
   }
 
   const env: Record<string, string> = {
-    HOST: resolveServiceBindHost(options.daemonListenHost),
+    HOST: resolveServiceBindHost(options.workspaceServiceBindHost),
     FROGG_PORT: String(selfPeer.port),
   };
 
@@ -68,8 +69,21 @@ export function buildWorkspaceServiceEnv(
   return env;
 }
 
-export function resolveServiceBindHost(daemonListenHost: string | null | undefined): string {
-  return isLoopbackListenHost(daemonListenHost) ? "127.0.0.1" : "0.0.0.0";
+/**
+ * The `HOST` a workspace dev server binds to.
+ *
+ * This used to follow the daemon's own listen host, so a daemon on `0.0.0.0`
+ * published every workspace dev server onto the network with no authentication
+ * in front of it. It now follows `daemon.workspaceServices.bindHost`, which
+ * defaults to loopback (brand `daemon.workspaceServicesBind`): another device
+ * reaches the service through the daemon's authenticated service proxy. An
+ * operator who wants the old wide bind sets the key to `0.0.0.0`.
+ */
+export function resolveServiceBindHost(
+  workspaceServiceBindHost: string | null | undefined,
+): string {
+  const configured = workspaceServiceBindHost?.trim();
+  return configured && configured.length > 0 ? configured : brand.daemon.workspaceServicesBindHost;
 }
 
 interface BuildServiceProxyUrlOptions {
@@ -88,20 +102,6 @@ function buildServiceProxyUrl(options: BuildServiceProxyUrlOptions): string | nu
     daemonPort: options.daemonPort,
     publicBaseUrl: options.serviceProxyPublicBaseUrl,
   }).proxyUrl;
-}
-
-function isLoopbackListenHost(host: string | null | undefined): boolean {
-  if (!host) {
-    return true;
-  }
-
-  const normalizedHost = host.trim().toLowerCase();
-  return (
-    normalizedHost === "localhost" ||
-    normalizedHost === "127.0.0.1" ||
-    normalizedHost === "::1" ||
-    normalizedHost === "[::1]"
-  );
 }
 
 export function assertNoServiceEnvNameCollisions(scriptNames: readonly string[]): void {

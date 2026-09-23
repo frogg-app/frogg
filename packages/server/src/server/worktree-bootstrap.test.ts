@@ -1185,7 +1185,7 @@ describe("runAsyncWorktreeBootstrap", () => {
       branchName: "feature-remote-service",
       scriptName: "web",
       daemonPort: 9999,
-      daemonListenHost: "100.64.0.20",
+      workspaceServiceBindHost: "100.64.0.20",
       serviceProxy: routeStore,
       runtimeStore,
       terminalManager: createStubTerminalManager(createTerminalCalls),

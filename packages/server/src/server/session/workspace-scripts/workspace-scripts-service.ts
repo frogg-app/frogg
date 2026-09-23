@@ -60,7 +60,7 @@ export function createWorkspaceScriptsService(deps: {
   projectRegistry: Pick<ProjectRegistry, "get">;
   workspaceGitService: WorkspaceScriptsGitSource;
   getDaemonTcpPort: (() => number | null) | null;
-  getDaemonTcpHost: (() => string | null) | null;
+  getWorkspaceServiceBindHost: (() => string | null) | null;
   serviceProxyPublicBaseUrl: string | null;
   resolveScriptHealth: ((hostname: string) => ScriptHealthState | null) | null;
   globalServicePorts?: FroggServicePortAllocation;
@@ -76,7 +76,7 @@ export function createWorkspaceScriptsService(deps: {
     projectRegistry,
     workspaceGitService,
     getDaemonTcpPort,
-    getDaemonTcpHost,
+    getWorkspaceServiceBindHost,
     serviceProxyPublicBaseUrl,
     resolveScriptHealth,
     globalServicePorts,
@@ -178,7 +178,7 @@ export function createWorkspaceScriptsService(deps: {
       branchName: gitMetadata.currentBranch,
       scriptName: input.scriptName,
       daemonPort: getDaemonTcpPort?.() ?? null,
-      daemonListenHost: getDaemonTcpHost?.() ?? null,
+      workspaceServiceBindHost: getWorkspaceServiceBindHost?.() ?? null,
       serviceProxyPublicBaseUrl,
       serviceProxy: available.serviceProxy,
       runtimeStore: available.runtimeStore,

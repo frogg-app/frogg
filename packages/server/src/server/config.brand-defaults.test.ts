@@ -84,3 +84,54 @@ test("claim mode defaults on for a locked-down brand and config.json wins", asyn
   expect(loadConfig(off, { env: { ACME_CLAIM_MODE: "1" } }).claimMode).toBe(true);
   expect(loadConfig(off, { env: { FROGG_CLAIM_MODE: "1" } }).claimMode).toBe(false);
 });
+
+test("workspace services bind loopback on a fresh install", async () => {
+  const home = await freshHome();
+  expect(loadConfig(home, { env: {} }).workspaceServicesBindHost).toBe("127.0.0.1");
+});
+
+test("config.json opts workspace services onto every interface", async () => {
+  const home = await freshHome();
+  await writeFile(
+    path.join(home, "config.json"),
+    JSON.stringify({ version: 1, daemon: { workspaceServices: { bindHost: "0.0.0.0" } } }),
+  );
+  expect(loadConfig(home, { env: {} }).workspaceServicesBindHost).toBe("0.0.0.0");
+});
+
+test("the workspace-service bind env var wins over config.json", async () => {
+  const home = await freshHome();
+  await writeFile(
+    path.join(home, "config.json"),
+    JSON.stringify({ version: 1, daemon: { workspaceServices: { bindHost: "0.0.0.0" } } }),
+  );
+  const config = loadConfig(home, { env: { ACME_WORKSPACE_SERVICES_BIND_HOST: "127.0.0.1" } });
+  expect(config.workspaceServicesBindHost).toBe("127.0.0.1");
+  expect(config.configReload?.overrideControlledPaths).toContain(
+    "daemon.workspaceServices.bindHost",
+  );
+});
+
+test("a wide daemon bind does not widen the workspace-service bind", async () => {
+  const home = await freshHome();
+  await writeFile(
+    path.join(home, "config.json"),
+    JSON.stringify({ version: 1, daemon: { listen: "0.0.0.0:10099" } }),
+  );
+  const config = loadConfig(home, { env: {} });
+  expect(config.listen).toBe("0.0.0.0:10099");
+  expect(config.workspaceServicesBindHost).toBe("127.0.0.1");
+});
+
+test("the pairing hostname allowance defaults on and is opt-outable", async () => {
+  const home = await freshHome();
+  expect(loadConfig(home, { env: {} }).allowPairingHostname).toBe(true);
+  await writeFile(
+    path.join(home, "config.json"),
+    JSON.stringify({ version: 1, daemon: { allowPairingHostname: false } }),
+  );
+  expect(loadConfig(home, { env: {} }).allowPairingHostname).toBe(false);
+  expect(loadConfig(home, { env: { ACME_ALLOW_PAIRING_HOSTNAME: "1" } }).allowPairingHostname).toBe(
+    true,
+  );
+});

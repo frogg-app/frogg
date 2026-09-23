@@ -117,7 +117,7 @@ function createWorkflowForRequestTest(options: {
         serviceProxy: null,
         scriptRuntimeStore: null,
         getDaemonTcpPort: null,
-        getDaemonTcpHost: null,
+        getWorkspaceServiceBindHost: null,
         onScriptsChanged: null,
       },
       input,
@@ -474,7 +474,7 @@ describe("create-agent worktree setup boundary", () => {
           serviceProxy: null,
           scriptRuntimeStore: null,
           getDaemonTcpPort: null,
-          getDaemonTcpHost: null,
+          getWorkspaceServiceBindHost: null,
           onScriptsChanged: null,
         },
         {

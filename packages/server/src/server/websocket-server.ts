@@ -636,7 +636,7 @@ export class VoiceAssistantWebSocketServer {
   private serviceProxy!: ServiceProxySubsystem | null;
   private scriptRuntimeStore!: WorkspaceScriptRuntimeStore | null;
   private getDaemonTcpPort!: (() => number | null) | null;
-  private getDaemonTcpHost!: (() => string | null) | null;
+  private getWorkspaceServiceBindHost!: (() => string | null) | null;
   private serviceProxyPublicBaseUrl!: string | null;
   private resolveScriptHealth!: ((hostname: string) => ScriptHealthState | null) | null;
   private dictation!: {
@@ -716,7 +716,7 @@ export class VoiceAssistantWebSocketServer {
       newBranch: string | null,
     ) => void,
     getDaemonTcpPort?: () => number | null,
-    getDaemonTcpHost?: () => string | null,
+    getWorkspaceServiceBindHost?: () => string | null,
     resolveScriptHealth?: (hostname: string) => ScriptHealthState | null,
     workspaceGitService?: WorkspaceGitService,
     github?: ForgeService,
@@ -776,7 +776,7 @@ export class VoiceAssistantWebSocketServer {
       scriptRuntimeStore,
       onBranchChanged,
       getDaemonTcpPort,
-      getDaemonTcpHost,
+      getWorkspaceServiceBindHost,
       serviceProxyPublicBaseUrl,
       resolveScriptHealth,
     });
@@ -852,7 +852,7 @@ export class VoiceAssistantWebSocketServer {
       | ((workspaceId: string, oldBranch: string | null, newBranch: string | null) => void)
       | undefined;
     getDaemonTcpPort: (() => number | null) | undefined;
-    getDaemonTcpHost: (() => string | null) | undefined;
+    getWorkspaceServiceBindHost: (() => string | null) | undefined;
     serviceProxyPublicBaseUrl: string | null | undefined;
     resolveScriptHealth: ((hostname: string) => ScriptHealthState | null) | undefined;
   }): void {
@@ -888,7 +888,7 @@ export class VoiceAssistantWebSocketServer {
     this.scriptRuntimeStore = params.scriptRuntimeStore ?? null;
     this.onBranchChanged = params.onBranchChanged ?? null;
     this.getDaemonTcpPort = params.getDaemonTcpPort ?? null;
-    this.getDaemonTcpHost = params.getDaemonTcpHost ?? null;
+    this.getWorkspaceServiceBindHost = params.getWorkspaceServiceBindHost ?? null;
     this.serviceProxyPublicBaseUrl = params.serviceProxyPublicBaseUrl ?? null;
     this.resolveScriptHealth = params.resolveScriptHealth ?? null;
   }
@@ -1701,7 +1701,7 @@ export class VoiceAssistantWebSocketServer {
       workspaceSetupRuntime: this.workspaceSetupRuntime,
       onBranchChanged: this.onBranchChanged ?? undefined,
       getDaemonTcpPort: this.getDaemonTcpPort ?? undefined,
-      getDaemonTcpHost: this.getDaemonTcpHost ?? undefined,
+      getWorkspaceServiceBindHost: this.getWorkspaceServiceBindHost ?? undefined,
       serviceProxyPublicBaseUrl: this.serviceProxyPublicBaseUrl,
       resolveScriptHealth: this.resolveScriptHealth ?? undefined,
       voice: {

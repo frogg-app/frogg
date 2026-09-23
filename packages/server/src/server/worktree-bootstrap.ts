@@ -706,7 +706,7 @@ export interface SpawnWorkspaceScriptOptions {
   branchName: string | null;
   scriptName: string;
   daemonPort?: number | null;
-  daemonListenHost?: string | null;
+  workspaceServiceBindHost?: string | null;
   serviceProxyPublicBaseUrl?: string | null;
   serviceProxy: ServiceProxySubsystem;
   runtimeStore: WorkspaceScriptRuntimeStore;
@@ -731,7 +731,7 @@ async function setupServiceScriptRoute(params: {
   branchName: string | null;
   workspaceId: string;
   daemonPort: number | null | undefined;
-  daemonListenHost: string | null | undefined;
+  workspaceServiceBindHost: string | null | undefined;
   serviceProxyPublicBaseUrl: string | null | undefined;
   existingRuntimeEntry: ReturnType<WorkspaceScriptRuntimeStore["get"]>;
   serviceProxy: ServiceProxySubsystem;
@@ -746,7 +746,7 @@ async function setupServiceScriptRoute(params: {
     branchName,
     workspaceId,
     daemonPort,
-    daemonListenHost,
+    workspaceServiceBindHost,
     serviceProxyPublicBaseUrl,
     existingRuntimeEntry,
     serviceProxy,
@@ -809,7 +809,7 @@ async function setupServiceScriptRoute(params: {
     projectSlug,
     branchName,
     daemonPort,
-    daemonListenHost,
+    workspaceServiceBindHost,
     serviceProxyPublicBaseUrl,
     peers,
   });
@@ -869,7 +869,7 @@ export async function spawnWorkspaceScript(
     branchName,
     scriptName,
     daemonPort,
-    daemonListenHost,
+    workspaceServiceBindHost,
     serviceProxyPublicBaseUrl,
     serviceProxy,
     runtimeStore,
@@ -913,7 +913,7 @@ export async function spawnWorkspaceScript(
         branchName,
         workspaceId,
         daemonPort,
-        daemonListenHost,
+        workspaceServiceBindHost,
         serviceProxyPublicBaseUrl,
         existingRuntimeEntry,
         serviceProxy,

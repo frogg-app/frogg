@@ -15,41 +15,29 @@ describe("normalizeServiceEnvName", () => {
 });
 
 describe("buildWorkspaceServiceEnv", () => {
-  it("uses loopback host binding when daemon listen host is loopback or absent", () => {
-    expect(
-      buildWorkspaceServiceEnv({
-        scriptName: "daemon",
-        projectSlug: "frogg",
-        branchName: "main",
-        daemonPort: 9999,
-        daemonListenHost: null,
-        peers: [{ scriptName: "daemon", port: 5173 }],
-      }).HOST,
-    ).toBe("127.0.0.1");
+  const bindHostFor = (workspaceServiceBindHost: string | null) =>
+    buildWorkspaceServiceEnv({
+      scriptName: "daemon",
+      projectSlug: "frogg",
+      branchName: "main",
+      daemonPort: 9999,
+      workspaceServiceBindHost,
+      peers: [{ scriptName: "daemon", port: 5173 }],
+    }).HOST;
 
-    expect(
-      buildWorkspaceServiceEnv({
-        scriptName: "daemon",
-        projectSlug: "frogg",
-        branchName: "main",
-        daemonPort: 9999,
-        daemonListenHost: "localhost",
-        peers: [{ scriptName: "daemon", port: 5173 }],
-      }).HOST,
-    ).toBe("127.0.0.1");
+  it("binds services to loopback when nothing is configured", () => {
+    // The default no longer follows the daemon's own listen host: binding the
+    // daemon to every interface must not publish workspace dev servers too.
+    expect(bindHostFor(null)).toBe("127.0.0.1");
+    expect(bindHostFor("")).toBe("127.0.0.1");
+    expect(bindHostFor("   ")).toBe("127.0.0.1");
   });
 
-  it("uses network host binding when daemon listen host is non-loopback", () => {
-    expect(
-      buildWorkspaceServiceEnv({
-        scriptName: "daemon",
-        projectSlug: "frogg",
-        branchName: "main",
-        daemonPort: 9999,
-        daemonListenHost: "100.64.0.20",
-        peers: [{ scriptName: "daemon", port: 5173 }],
-      }).HOST,
-    ).toBe("0.0.0.0");
+  it("binds services to the configured host when the operator opts in", () => {
+    expect(bindHostFor("0.0.0.0")).toBe("0.0.0.0");
+    expect(bindHostFor("::")).toBe("::");
+    expect(bindHostFor("100.64.0.20")).toBe("100.64.0.20");
+    expect(bindHostFor("  0.0.0.0  ")).toBe("0.0.0.0");
   });
 
   it("builds default branch self and service URLs", () => {
@@ -59,7 +47,7 @@ describe("buildWorkspaceServiceEnv", () => {
         projectSlug: "frogg",
         branchName: "main",
         daemonPort: 9999,
-        daemonListenHost: null,
+        workspaceServiceBindHost: null,
         peers: [{ scriptName: "daemon", port: 5173 }],
       }),
     ).toEqual({
@@ -78,7 +66,7 @@ describe("buildWorkspaceServiceEnv", () => {
         projectSlug: "frogg",
         branchName: "feature-x",
         daemonPort: 9999,
-        daemonListenHost: null,
+        workspaceServiceBindHost: null,
         peers: [{ scriptName: "daemon", port: 5173 }],
       }),
     ).toEqual({
@@ -96,7 +84,7 @@ describe("buildWorkspaceServiceEnv", () => {
       projectSlug: "frogg",
       branchName: "main",
       daemonPort: 9999,
-      daemonListenHost: null,
+      workspaceServiceBindHost: null,
       peers: [{ scriptName: "daemon", port: 5173 }],
     });
 
@@ -111,7 +99,7 @@ describe("buildWorkspaceServiceEnv", () => {
         projectSlug: "frogg",
         branchName: "main",
         daemonPort: null,
-        daemonListenHost: null,
+        workspaceServiceBindHost: null,
         peers: [{ scriptName: "daemon", port: 5173 }],
       }),
     ).toEqual({
@@ -128,7 +116,7 @@ describe("buildWorkspaceServiceEnv", () => {
         projectSlug: "frogg",
         branchName: "feature-x",
         daemonPort: 9999,
-        daemonListenHost: null,
+        workspaceServiceBindHost: null,
         peers: [
           { scriptName: "api", port: 4000 },
           { scriptName: "web", port: 5173 },
@@ -152,7 +140,7 @@ describe("buildWorkspaceServiceEnv", () => {
         projectSlug: "frogg",
         branchName: "feature-x",
         daemonPort: 9999,
-        daemonListenHost: null,
+        workspaceServiceBindHost: null,
         serviceProxyPublicBaseUrl: "https://services.example.com",
         peers: [
           { scriptName: "api", port: 4000 },
@@ -173,7 +161,7 @@ describe("buildWorkspaceServiceEnv", () => {
         projectSlug: "frogg",
         branchName: "main",
         daemonPort: 9999,
-        daemonListenHost: null,
+        workspaceServiceBindHost: null,
         peers: [
           { scriptName: "app-server", port: 5173 },
           { scriptName: "app.server", port: 4000 },

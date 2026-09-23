@@ -102,7 +102,7 @@ function buildService(options: BuildOptions = {}) {
     projectRegistry: fakeProjectRegistry(options.project ?? null),
     workspaceGitService: options.gitService ?? fakeGitService(),
     getDaemonTcpPort: () => 9999,
-    getDaemonTcpHost: () => "127.0.0.1",
+    getWorkspaceServiceBindHost: () => "127.0.0.1",
     serviceProxyPublicBaseUrl: null,
     resolveScriptHealth: null,
     logger,
@@ -317,7 +317,7 @@ describe("start", () => {
       branchName: "feature/scripts",
       scriptName: "app",
       daemonPort: 9999,
-      daemonListenHost: "127.0.0.1",
+      workspaceServiceBindHost: "127.0.0.1",
     });
     expect(emitted).toContainEqual({
       type: "script_status_update",
