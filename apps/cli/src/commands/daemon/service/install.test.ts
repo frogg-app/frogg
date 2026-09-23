@@ -25,7 +25,9 @@ describe("login service files", () => {
       });
       expect(installed.listen).toBe("0.0.0.0:9999");
       const configPath = path.join(homeDir, ".frogg", "config.json");
-      expect(JSON.parse(readFileSync(configPath, "utf8")).daemon.listen).toBe("0.0.0.0:9999");
+      // Nothing pinned the listener, so config.json keeps no address at all and
+      // the brand's bind default stays in charge.
+      expect(JSON.parse(readFileSync(configPath, "utf8")).daemon).not.toHaveProperty("listen");
       expect(readFileSync(installed.file!, "utf8")).not.toContain("<key>FROGG_LISTEN</key>");
     } finally {
       rmSync(homeDir, { recursive: true, force: true });

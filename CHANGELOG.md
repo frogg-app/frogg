@@ -60,6 +60,15 @@ provider update-settings --auto-update true`) lets it install them too, which
   binding `0.0.0.0`.
 - Withdrawing LAN trust, or turning claim mode on, now disconnects the sessions
   that were relying on it.
+- A brand's `daemon.bind` actually decides where a daemon listens. A new
+  `config.json` no longer pins `daemon.listen` to `0.0.0.0`, so a brand asking
+  for a loopback bind gets one; an address in `config.json`, the environment or
+  `--listen` still wins. `--port` and the login service keep the brand's bind
+  host, and the daemon reads its listen, trusted-LAN and claim-mode environment
+  overrides under the brand's own prefix.
+- `frogg auth claim-mode [on|off]` reports or changes claim mode and applies it
+  to a running daemon without a restart. Loopback stays trusted in claim mode,
+  so it is the way back in when claim mode locks an owner out.
 - Security fixes. The Agent MCP endpoint has no unauthenticated case left: it
   always requires a credential whatever the caller's locality, reads the calling
   agent from that credential rather than a `?callerAgentId=` anyone could write,

@@ -442,7 +442,9 @@ const CONFIG_FILENAME = "config.json";
 const DEFAULT_PERSISTED_CONFIG = PersistedConfigSchema.parse({
   version: 1,
   daemon: {
-    listen: `0.0.0.0:${brand.daemonPort}`,
+    // No `listen` here on purpose: a hardcoded default would pin every fresh
+    // install to every interface and make `brand.json` `daemon.bind` inert.
+    // The listen address is resolved from the brand unless the owner sets one.
     mcp: { enabled: true, injectIntoAgents: false },
     browserTools: { enabled: false },
     git: DEFAULT_GIT_PROCESS_POLICY,

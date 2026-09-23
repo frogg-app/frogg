@@ -60,7 +60,22 @@ Claim mode is the locked-down posture for a daemon on a network you do not contr
 The stock `frogg` brand ships with claim mode **off** and binds `0.0.0.0`. A brand can flip
 both defaults in `brand.json` (see
 [the brand manifest](/docs/fork-and-rebrand/brand-manifest/)); any other brand defaults to a loopback bind
-with claim mode on.
+with claim mode on. Both are defaults for a daemon you have not configured: a `daemon.listen`
+or `daemon.auth.claimMode` you write in `config.json` wins, as does `FROGG_LISTEN` or
+`FROGG_CLAIM_MODE` in the daemon's environment (under a brand's own prefix for a branded build).
+
+### Turning claim mode on and off
+
+```sh
+frogg auth claim-mode          # report the mode that applies, and where it came from
+frogg auth claim-mode on       # lock the LAN out; the first client claims this daemon
+frogg auth claim-mode off      # back to the trusted-LAN, pairing and password rules
+```
+
+It writes `daemon.auth.claimMode` and asks a running daemon to reload, so it applies without
+a restart. Run it in a shell on the daemon's own machine: loopback is trusted whatever claim
+mode says, so this is the way back in if claim mode leaves you locked out of your own daemon.
+The legacy spelling `frogg daemon claim-mode` works too.
 
 ### Recommended settings
 

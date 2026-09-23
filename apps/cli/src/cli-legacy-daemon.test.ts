@@ -82,6 +82,13 @@ describe("installed daemon command compatibility", () => {
       argv: ["trust-lan", "off", "--home", "/test/frogg"],
       options: { home: "/test/frogg" },
     },
+    {
+      // The documented way out when claim mode locks a user out of their own
+      // daemon, so it has to stay reachable from a local shell.
+      source: "claim mode guidance",
+      argv: ["claim-mode", "off", "--home", "/test/frogg"],
+      options: { home: "/test/frogg" },
+    },
     { source: "restart guidance", argv: ["restart", "--no-relay"], options: { relay: false } },
     {
       source: "config reload",
@@ -111,7 +118,7 @@ describe("installed daemon command compatibility", () => {
     await cli.parseAsync(["--json", "daemon", ...argv], { from: "user" });
     expect(invoked).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({ ...options, json: true }),
-      argv[0] === "trust-lan" ? ["off"] : [],
+      argv[0] === "trust-lan" || argv[0] === "claim-mode" ? ["off"] : [],
     );
   });
 

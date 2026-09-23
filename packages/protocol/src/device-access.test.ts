@@ -45,19 +45,22 @@ describe("direct pairing deep link", () => {
   const fingerprint = daemonKeyFingerprint(randomBytes(32).toString("base64"));
 
   it("round-trips every field", () => {
-    const link = buildDirectPairingDeepLink({
-      host: "192.168.1.20",
-      port: 9999,
-      fingerprint,
-      pairingCode: "abcdefgh",
-      claim: true,
-      useTls: true,
-      serverId: "srv_1",
-      label: "Studio Mac",
-      role: "viewer",
-    });
+    const link = buildDirectPairingDeepLink(
+      {
+        host: "192.168.1.20",
+        port: 9999,
+        fingerprint,
+        pairingCode: "abcdefgh",
+        claim: true,
+        useTls: true,
+        serverId: "srv_1",
+        label: "Studio Mac",
+        role: "viewer",
+      },
+      "frogg",
+    );
     expect(link.startsWith("frogg://pair/direct?v=1&host=192.168.1.20&port=9999&fp=")).toBe(true);
-    expect(parseDirectPairingDeepLink(link)).toEqual({
+    expect(parseDirectPairingDeepLink(link, "frogg")).toEqual({
       v: 1,
       host: "192.168.1.20",
       port: 9999,
@@ -74,25 +77,34 @@ describe("direct pairing deep link", () => {
   it("honours the brand scheme and rejects malformed links", () => {
     const link = buildDirectPairingDeepLink({ host: "h", port: 1, fingerprint }, "acme");
     expect(parseDirectPairingDeepLink(link, "acme")?.host).toBe("h");
-    expect(parseDirectPairingDeepLink(link)).toBeNull();
+    expect(parseDirectPairingDeepLink(link, "frogg")).toBeNull();
     expect(
-      parseDirectPairingDeepLink(`frogg://pair/direct?v=1&host=h&port=0&fp=${fingerprint}`),
+      parseDirectPairingDeepLink(
+        `frogg://pair/direct?v=1&host=h&port=0&fp=${fingerprint}`,
+        "frogg",
+      ),
     ).toBeNull();
-    expect(parseDirectPairingDeepLink("frogg://pair/direct?v=1&host=h&port=1&fp=md5:x")).toBeNull();
+    expect(
+      parseDirectPairingDeepLink("frogg://pair/direct?v=1&host=h&port=1&fp=md5:x", "frogg"),
+    ).toBeNull();
     expect(
       parseDirectPairingDeepLink(
         `frogg://pair/direct?v=1&host=h&port=1&fp=${fingerprint}&pairingCode=zz`,
+        "frogg",
       ),
     ).toBeNull();
   });
 
   it("is invisible to the legacy offer-link parser", () => {
-    const link = buildDirectPairingDeepLink({
-      host: "h",
-      port: 1,
-      fingerprint,
-      pairingCode: "ABCDEFGH",
-    });
+    const link = buildDirectPairingDeepLink(
+      {
+        host: "h",
+        port: 1,
+        fingerprint,
+        pairingCode: "ABCDEFGH",
+      },
+      "frogg",
+    );
     expect(isPairingDeepLink(link)).toBe(false);
     expect(extractPairingCode(link)).toBeNull();
   });

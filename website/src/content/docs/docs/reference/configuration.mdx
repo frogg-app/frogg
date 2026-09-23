@@ -30,7 +30,6 @@ This is exactly what a new daemon writes (0.6.19):
 {
   "version": 1,
   "daemon": {
-    "listen": "0.0.0.0:9999",
     "mcp": { "enabled": true, "injectIntoAgents": false },
     "browserTools": { "enabled": false },
     "git": { "maxProcessesPerSecond": 2048, "maxProcessConcurrency": 8 },
@@ -52,7 +51,7 @@ This is exactly what a new daemon writes (0.6.19):
 
 | Key                     | Type                    | Default          | Meaning |
 | ----------------------- | ----------------------- | ---------------- | ------- |
-| `daemon.listen`         | string                  | `0.0.0.0:9999`   | Listen target. Forms: `host:port`, `9999`, `:9999`, `[::1]:9999`, a Unix socket path (`/run/frogg.sock`, `~/frogg.sock`, `unix://...`) or a Windows pipe (`\\.\pipe\frogg`, `pipe://frogg`). Precedence: `--listen` > `FROGG_LISTEN` > this key > `0.0.0.0:$PORT` > `0.0.0.0:9999` |
+| `daemon.listen`         | string                  | unset            | Listen target. Forms: `host:port`, `9999`, `:9999`, `[::1]:9999`, a Unix socket path (`/run/frogg.sock`, `~/frogg.sock`, `unix://...`) or a Windows pipe (`\\.\pipe\frogg`, `pipe://frogg`). A new daemon does not write this key: with it unset the bind host comes from the brand (`0.0.0.0` for `frogg`, `127.0.0.1` for a brand asking for a loopback bind) on port `$PORT` or `9999`. Precedence: `--listen` > `FROGG_LISTEN` > this key > the brand bind |
 | `daemon.hostnames`      | `true` or string[]      | unset            | Allowed `Host` headers (DNS-rebinding protection). `localhost`, `*.localhost`, IP addresses and the pairing host are always allowed. A leading `.` matches subdomains. `true` allows any host |
 | `daemon.allowedHosts`   | same                    | unset            | Legacy alias of `hostnames` |
 | `daemon.trustedProxies` | `true` or string[]      | `["loopback"]`   | Proxies whose `X-Forwarded-For` is trusted. Entries are IPs or `"loopback"` |

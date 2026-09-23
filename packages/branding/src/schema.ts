@@ -199,6 +199,9 @@ export function resolveBrandManifest(input: unknown) {
     projects: resolveProjects(manifest),
     hostSettings: resolveHostSettings(manifest),
     daemon: resolveDaemonDefaults(manifest),
+    // "Does this brand ship a mobile app". Today the only consumer is the CLI,
+    // which stops printing a pairing QR nobody could scan; nothing else in the
+    // daemon or the apps reads it.
     mobile: { enabled: manifest.mobile?.enabled ?? true },
   };
 }

@@ -36,7 +36,8 @@ async function scratch() {
 test("custom daemon defaults use the branded port without inherited Frogg infrastructure", async () => {
   const home = await scratch();
   const config = loadConfig(home, { env: {} });
-  expect(config.listen).toBe("0.0.0.0:10099");
+  // A brand that is not upstream defaults to a loopback bind on its own port.
+  expect(config.listen).toBe("127.0.0.1:10099");
   expect(config.relayEnabled).toBe(false);
   expect(config.relayEndpoint).toBe("");
   expect(config.appBaseUrl).toBe("");

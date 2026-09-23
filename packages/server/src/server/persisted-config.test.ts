@@ -692,8 +692,10 @@ describe("loadPersistedConfig", () => {
     const home = createTempHome();
     try {
       const config = loadPersistedConfig(home);
+      // No default `daemon.listen`: the brand's bind decides the address until
+      // the owner writes one, so a fresh config.json must not pin it.
+      expect(config.daemon).not.toHaveProperty("listen");
       expect(config.daemon).toMatchObject({
-        listen: "0.0.0.0:9999",
         mcp: { enabled: true, injectIntoAgents: false },
         browserTools: { enabled: false },
         autoArchiveAfterMerge: false,

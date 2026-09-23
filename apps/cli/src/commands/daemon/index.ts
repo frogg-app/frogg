@@ -7,6 +7,7 @@ import { runExecutionStatusCommand } from "./execution-status.js";
 import { runStopCommand } from "./stop.js";
 import { runRestartCommand } from "./restart.js";
 import { runSetPasswordCommand } from "./set-password.js";
+import { runClaimModeCommand } from "./claim-mode.js";
 import { runTrustLanCommand } from "./trust-lan.js";
 import { pairCommand } from "./pair.js";
 import { runDaemonReloadCommand } from "./reload.js";
@@ -103,7 +104,7 @@ export function addDaemonLifecycleCommands(program: Command): Command {
   )
     .option(
       "--listen <listen>",
-      `Listen target for the service (default: 0.0.0.0:${brand.daemonPort})`,
+      `Listen target for the service (default: ${brand.daemon.bindHost}:${brand.daemonPort})`,
     )
     .option("--home <path>", `${brand.name} home directory (default: ~/${brand.homeDir})`)
     .action(withOutput(runInstallServiceCommand));
@@ -164,6 +165,17 @@ export function createAuthCommand(): Command {
   )
     .option("--home <path>", `${brand.name} home directory (default: ~/${brand.homeDir})`)
     .action(withOutput(runTrustLanCommand));
+
+  addJsonOption(
+    auth
+      .command("claim-mode")
+      .description(
+        "on: the LAN is untrusted and the first client claims this daemon; off: the usual rules. With no mode, report the current one",
+      )
+      .argument("[mode]", "on or off; omit to read the current mode"),
+  )
+    .option("--home <path>", `${brand.name} home directory (default: ~/${brand.homeDir})`)
+    .action(withOutput(runClaimModeCommand));
 
   return auth;
 }

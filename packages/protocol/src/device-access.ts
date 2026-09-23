@@ -190,9 +190,10 @@ export const DirectPairingLinkSchema = z.object({
 });
 export type DirectPairingLink = z.infer<typeof DirectPairingLinkSchema>;
 
+/** `scheme` is the brand's deep-link scheme (`brand.scheme`); there is no default. */
 export function buildDirectPairingDeepLink(
   link: Omit<DirectPairingLink, "v">,
-  scheme = "frogg",
+  scheme: string,
 ): string {
   const parsed = DirectPairingLinkSchema.parse({ ...link, v: DIRECT_PAIRING_DEEP_LINK_VERSION });
   const params = new URLSearchParams({
@@ -213,7 +214,7 @@ export function buildDirectPairingDeepLink(
 /** Null for anything that is not a well-formed direct pairing link for `scheme`. */
 export function parseDirectPairingDeepLink(
   input: string,
-  scheme = "frogg",
+  scheme: string,
 ): DirectPairingLink | null {
   const prefix = `${scheme}://pair/direct?`;
   const trimmed = input.trim();
