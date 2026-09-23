@@ -256,6 +256,7 @@ What a freshly installed daemon does before anyone configures it.
 | Key         | Rule                    | Default                        | Meaning |
 | ----------- | ----------------------- | ------------------------------ | ------- |
 | `bind`      | `"all"` or `"loopback"` | `"all"` for `frogg`, else `"loopback"` | Which interfaces a daemon listens on until someone configures an address |
+| `workspaceServicesBind` | `"all"` or `"loopback"` | `"loopback"` for every brand | Which interfaces workspace dev servers listen on |
 | `claimMode` | boolean                 | `false` for `frogg`, else `true` | Lock the LAN out and let the first client claim the daemon |
 
 ```json
@@ -268,9 +269,16 @@ The stock `frogg` distribution keeps the open defaults it has always had (`0.0.0
 mode off). Every other brand starts locked down, because a product you ship to other
 people should not trust their network for them.
 
+`workspaceServicesBind` is separate from `bind` and defaults to loopback even for `frogg`:
+a workspace dev server has no authentication of its own, so it is reached through the
+daemon's authenticated service proxy rather than published on the network. A brand that
+really wants the wide bind sets `"workspaceServicesBind": "all"`.
+
 A new `config.json` carries no `daemon.listen`, so the bind stays the brand's until an
 owner writes an address. These are defaults, not locks: `daemon.listen` / `FROGG_LISTEN` and
-`daemon.auth.claimMode` / `<PREFIX>_CLAIM_MODE` in a daemon's own configuration win. See
+`daemon.auth.claimMode` / `<PREFIX>_CLAIM_MODE` and
+`daemon.workspaceServices.bindHost` / `<PREFIX>_WORKSPACE_SERVICES_BIND_HOST` in a
+daemon's own configuration win. See
 [security and access](/docs/self-hosting/security/).
 
 ## Mobile
@@ -296,3 +304,4 @@ adds derived values you cannot set directly:
 | `distribution.updateMode`    | Resolved `updates`                                      |
 | `legacyFrogg`                  | `true` only for `brands/frogg`                            |
 | `daemon.bindHost`            | `0.0.0.0` for `bind: "all"`, `127.0.0.1` for `"loopback"`  |
+| `daemon.workspaceServicesBindHost` | `0.0.0.0` for `workspaceServicesBind: "all"`, else `127.0.0.1` |

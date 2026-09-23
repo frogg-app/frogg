@@ -162,7 +162,9 @@ every client, including loopback, the web app and the MCP endpoint.
 
 - **Host header**: requests must use `localhost`, an IP address, the pairing host, or a
   hostname in `daemon.hostnames` / `FROGG_HOSTNAMES`. Others get `403 Invalid Host header`.
-  This blocks DNS-rebinding attacks from web pages.
+  This blocks DNS-rebinding attacks from web pages. The pairing host is allowed so you can
+  reverse-proxy that name at the daemon; if you do not, set
+  `daemon.allowPairingHostname: false` and the daemon stops answering to it.
 - **CORS**: browsers may call the daemon only from its own origin, the desktop app, and
   `daemon.cors.allowedOrigins` / `FROGG_CORS_ORIGINS`. Avoid `*` outside development.
 - **Proxies**: `X-Forwarded-For` is honoured only from `daemon.trustedProxies` (loopback by
@@ -171,6 +173,26 @@ every client, including loopback, the web app and the MCP endpoint.
   `X-Forwarded-For: 127.0.0.1` would otherwise hand any caller the most trusted locality
   there is. A proxy can still place a client on the LAN, which is trust `trustLan` opted
   into.
+
+## Workspace services
+
+A workspace service (a `frogg.json` script declared as a service) is a dev server the daemon
+starts for you. It has no authentication of its own, so it binds to `127.0.0.1` by default
+even when the daemon itself listens on `0.0.0.0`.
+
+To reach one from another device, use the service URL the daemon hands out
+(`<script>-<project>.localhost` or your `daemon.serviceProxy.publicBaseUrl`) and let the
+daemon's service proxy carry the request. The proxy serves loopback clients directly; any
+other client needs a paired device credential or the daemon password, exactly like the rest
+of the API. Being on a trusted LAN is deliberately not enough here, because `trustLan`
+defaults on.
+
+`daemon.workspaceServices.bindHost: "0.0.0.0"` puts dev servers back on every interface.
+That is an explicit choice to expose unauthenticated ports to the network; prefer the proxy.
+
+If you publish services through your own reverse proxy with
+`daemon.serviceProxy.listen`, that separate listener is not gated by the daemon's
+credentials — your proxy owns access control for it.
 
 ## TLS and reverse proxies
 

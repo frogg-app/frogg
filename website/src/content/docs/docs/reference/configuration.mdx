@@ -54,6 +54,7 @@ This is exactly what a new daemon writes (0.6.19):
 | `daemon.listen`         | string                  | unset            | Listen target. Forms: `host:port`, `9999`, `:9999`, `[::1]:9999`, a Unix socket path (`/run/frogg.sock`, `~/frogg.sock`, `unix://...`) or a Windows pipe (`\\.\pipe\frogg`, `pipe://frogg`). A new daemon does not write this key: with it unset the bind host comes from the brand (`0.0.0.0` for `frogg`, `127.0.0.1` for a brand asking for a loopback bind) on port `$PORT` or `9999`. Precedence: `--listen` > `FROGG_LISTEN` > this key > the brand bind |
 | `daemon.hostnames`      | `true` or string[]      | unset            | Allowed `Host` headers (DNS-rebinding protection). `localhost`, `*.localhost`, IP addresses and the pairing host are always allowed. A leading `.` matches subdomains. `true` allows any host |
 | `daemon.allowedHosts`   | same                    | unset            | Legacy alias of `hostnames` |
+| `daemon.allowPairingHostname` | boolean           | `true`           | Accept the pairing host (`pair.frogg.app`) as a `Host` without listing it. Useful only if you reverse-proxy that name at this daemon; set `false` if you do not |
 | `daemon.trustedProxies` | `true` or string[]      | `["loopback"]`   | Proxies whose `X-Forwarded-For` is trusted. Entries are IPs or `"loopback"` |
 | `daemon.cors.allowedOrigins` | string[]           | `[]`             | Extra browser origins. `"*"` allows any. The daemon's own origins and the desktop app origin are always allowed |
 | `daemon.auth.password`  | scrypt hash             | unset            | Require a password from every client. Set it with `frogg auth set-password`; do not write it by hand. Legacy bcrypt hashes still verify |
@@ -115,6 +116,24 @@ is set, the app shows the endpoint read-only.
 | `daemon.serviceProxy.listen`         | string  | Separate listener for workspace service URLs |
 | `daemon.serviceProxy.publicBaseUrl`  | URL     | Public base for service links, e.g. `https://dev.example.com` |
 | `daemon.serviceProxy.enabled`        | boolean | Compatibility key only; slated for removal |
+
+### Workspace services
+
+| Key                                  | Type   | Default     | Meaning |
+| ------------------------------------ | ------ | ----------- | ------- |
+| `daemon.workspaceServices.bindHost`  | string | `127.0.0.1` | The `HOST` workspace dev servers bind to |
+
+A workspace service (a `frogg.json` script declared as a service) binds to loopback by
+default, **even when the daemon itself listens on `0.0.0.0`**. Reach it from another device
+through the daemon's service proxy, which authenticates the request, rather than by
+connecting to the dev server's port directly.
+
+Setting the key to `0.0.0.0` puts dev servers back on every interface. They have no
+authentication of their own, so anything that can reach the port can reach the service.
+
+The default comes from the brand's `daemon.workspaceServicesBind`, and
+`FROGG_WORKSPACE_SERVICES_BIND_HOST` overrides both. Changing it takes effect for services
+started after the daemon restarts.
 
 ## `app`
 

@@ -26,6 +26,7 @@ Official Frogg continues to use `FROGG_*`.
 | `FROGG_TRUST_LAN`         | `true`                    | Treat private-network clients like loopback. Ignored while claim mode is on |
 | `FROGG_CLAIM_MODE`        | brand default (`false` for `frogg`) | Lock the LAN out and let the first client claim an unclaimed daemon. Overrides `daemon.auth.claimMode` |
 | `FROGG_HOSTNAMES`         |                           | Comma-separated allowed hosts, or `true`. Legacy alias `FROGG_ALLOWED_HOSTS` |
+| `FROGG_ALLOW_PAIRING_HOSTNAME` | `true`               | Accept the pairing host as a `Host` without listing it in `FROGG_HOSTNAMES` |
 | `FROGG_CORS_ORIGINS`      |                           | Comma-separated extra origins, or `*` |
 | `FROGG_TRUSTED_PROXIES`   | `loopback`                | Comma-separated proxy IPs, `true`, or `false` |
 | `FROGG_WEB_UI_ENABLED`    | `false`                   | Serve the web app. Installed services set it to `true` |
@@ -43,6 +44,7 @@ Official Frogg continues to use `FROGG_*`.
 | `FROGG_RELAY_USE_TLS`, `FROGG_RELAY_PUBLIC_USE_TLS` | TLS for the relay. Default `true`; `false` only for a plaintext test relay |
 | `FROGG_SERVICE_PROXY_LISTEN`          | Separate listener for workspace service URLs |
 | `FROGG_SERVICE_PROXY_PUBLIC_BASE_URL` | Public base URL for service links |
+| `FROGG_WORKSPACE_SERVICES_BIND_HOST`  | Host workspace dev servers bind to (default `127.0.0.1`) |
 
 ## Daemon: logging and diagnostics
 
@@ -175,7 +177,7 @@ Workspace services (`scripts` with `"type": "service"` in `frogg.json`):
 
 | Variable                    | Value |
 | --------------------------- | ----- |
-| `HOST`                      | `127.0.0.1` when the daemon listens on loopback, otherwise `0.0.0.0` |
+| `HOST`                      | `daemon.workspaceServices.bindHost`, `127.0.0.1` by default — not the daemon's own bind |
 | `FROGG_PORT`                  | This service's port |
 | `FROGG_URL`                   | This service's proxy URL |
 | `FROGG_SERVICE_<NAME>_PORT`   | Port of every service in the workspace |
