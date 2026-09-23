@@ -192,6 +192,7 @@ import {
   type HostnamesConfig,
 } from "./hostnames.js";
 import {
+  createServiceProxyAuthorizer,
   createRequireBearerMiddleware,
   authorizeAgentMcpRequest,
   extractHttpBearerToken,
@@ -892,10 +893,12 @@ export async function createFroggDaemon(
     logger,
   });
 
+  const authorizeServiceProxyRequest = createServiceProxyAuthorizer(authConfig);
+
   // Service proxy classifies service hosts before daemon auth/route fallthrough.
   // Registered service hosts proxy directly; known service namespaces without a
   // route return 404 and never reach daemon APIs.
-  app.use(serviceProxy.middleware());
+  app.use(serviceProxy.middleware({ authorize: authorizeServiceProxyRequest }));
 
   // Host allowlist / DNS rebinding protection (vite-like semantics).
   // For non-TCP (unix sockets), skip host validation.
@@ -1197,7 +1200,13 @@ export async function createFroggDaemon(
   // VoiceAssistantWebSocketServer attaches its own "upgrade" listener so that
   // script-bound upgrades are forwarded first. The handler is a no-op for
   // requests that don't match a registered script route.
-  httpServer.on("upgrade", serviceProxy.upgradeHandler({ passthroughUnknown: true }));
+  httpServer.on(
+    "upgrade",
+    serviceProxy.upgradeHandler({
+      passthroughUnknown: true,
+      authorize: authorizeServiceProxyRequest,
+    }),
+  );
 
   if (config.serviceProxy?.standaloneListen) {
     serviceProxyListenTarget = parseListenString(config.serviceProxy.standaloneListen);

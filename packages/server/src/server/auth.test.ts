@@ -23,6 +23,7 @@ import {
   hasRealCredential,
   requiredRoleForHttpRoute,
   throttleKeyForAddress,
+  createServiceProxyAuthorizer,
 } from "./auth.js";
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 
@@ -346,5 +347,78 @@ describe("failed-auth throttling is keyed on the resolved client address", () =>
 
   test("IPv4 and IPv4-mapped addresses share one key", () => {
     expect(throttleKeyForAddress("::ffff:192.168.1.5")).toBe(throttleKeyForAddress("192.168.1.5"));
+  });
+});
+
+describe("the service proxy is gated for every client that is not loopback", () => {
+  const homes: string[] = [];
+  afterEach(() => {
+    while (homes.length) rmSync(homes.pop()!, { recursive: true, force: true });
+  });
+
+  function authFor(options: { trustLan: boolean; role?: "owner" | "operator" | "viewer" }) {
+    const home = mkdtempSync(path.join(tmpdir(), "frogg-service-proxy-auth-"));
+    homes.push(home);
+    const store = createClaimStore(home);
+    const minted = options.role
+      ? store.mintPrincipal({ label: "Phone", role: options.role, pairedVia: "code" })
+      : null;
+    return {
+      credential: minted?.credential ?? null,
+      auth: {
+        password: undefined,
+        access: createAccessPolicy({
+          claimStore: store,
+          getTrustedProxies: () => ["loopback"],
+          getTrustLan: () => options.trustLan,
+        }),
+      } satisfies DaemonAuthConfig,
+    };
+  }
+
+  function request(address: string, credential?: string | null): IncomingMessage {
+    return {
+      headers: credential ? { authorization: `Bearer ${credential}` } : {},
+      socket: { remoteAddress: address },
+    } as unknown as IncomingMessage;
+  }
+
+  test("loopback keeps the ambient flow it always had", async () => {
+    const { auth } = authFor({ trustLan: false });
+    const authorize = createServiceProxyAuthorizer(auth);
+    expect(await authorize(request("127.0.0.1"))).toBe(true);
+    expect(await authorize(request("::1"))).toBe(true);
+  });
+
+  test("a LAN client is rejected even though trustLan is on", async () => {
+    // This is the finding: trustLan defaults on, so locality trust alone would
+    // have left every workspace dev server open to the local network.
+    const { auth } = authFor({ trustLan: true });
+    const authorize = createServiceProxyAuthorizer(auth);
+    expect(await authorize(request("192.168.1.10"))).toBe(false);
+    expect(await authorize(request("203.0.113.5"))).toBe(false);
+  });
+
+  test("a LAN or public client with a real device credential is allowed", async () => {
+    const { auth, credential } = authFor({ trustLan: false, role: "viewer" });
+    const authorize = createServiceProxyAuthorizer(auth);
+    expect(await authorize(request("192.168.1.10", credential))).toBe(true);
+    expect(await authorize(request("203.0.113.5", credential))).toBe(true);
+    expect(await authorize(request("203.0.113.5", "not-the-credential"))).toBe(false);
+  });
+
+  test("a forwarded loopback address does not buy loopback trust", async () => {
+    const { auth } = authFor({ trustLan: false });
+    const authorize = createServiceProxyAuthorizer(auth);
+    const forwarded = {
+      headers: { "x-forwarded-for": "127.0.0.1" },
+      socket: { remoteAddress: "127.0.0.1" },
+    } as unknown as IncomingMessage;
+    expect(await authorize(forwarded)).toBe(false);
+  });
+
+  test("without an access policy the gate stays open, as it was before", async () => {
+    const authorize = createServiceProxyAuthorizer(undefined);
+    expect(await authorize(request("203.0.113.5"))).toBe(true);
   });
 });

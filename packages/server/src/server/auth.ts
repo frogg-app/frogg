@@ -564,3 +564,31 @@ export async function isAgentMcpRequestAuthorized(input: {
   });
   return result.ok;
 }
+
+/**
+ * Whether a client may reach a proxied workspace service.
+ *
+ * Service hosts are `<script>-<project>.localhost` names, and any client can
+ * put one in a `Host` header. The service proxy classifies those hosts before
+ * the daemon's Host allowlist and before bearer auth, so without this gate a
+ * LAN or public client could reach workspace dev servers through a daemon it
+ * never authenticated to.
+ *
+ * Loopback keeps the ambient-authority flow it always had — a browser on this
+ * machine following a service URL. Anything else must carry a real daemon
+ * credential. Locality trust is deliberately not enough: `trustLan` defaults
+ * on, and the whole point here is that being on the network does not by itself
+ * open workspace services.
+ */
+export function createServiceProxyAuthorizer(
+  auth: DaemonAuthConfig | undefined,
+): (req: RequestLike) => Promise<boolean> {
+  return async (req) => {
+    if (auth?.access?.isLoopbackClient(req) ?? true) return true;
+    const authorization = req.headers.authorization;
+    const token = extractHttpBearerToken(
+      typeof authorization === "string" ? authorization : undefined,
+    );
+    return hasRealCredential(auth, req, token, "viewer");
+  };
+}

@@ -754,12 +754,26 @@ export { ServiceProxyRouteRegistry as ScriptRouteStore };
 export type ScriptRoute = ServiceProxyRoute;
 export type ScriptRouteEntry = ServiceProxyRouteEntry;
 
+/**
+ * Decides whether a client may reach a proxied workspace service. Returning
+ * false rejects before the request is classified further, so an unauthorized
+ * client cannot tell a live service host from a dead one.
+ *
+ * Service hosts are `<script>-<project>.localhost` names, which any client can
+ * put in a `Host` header. Without this the proxy is ambient authority: a LAN
+ * or public client could reach dev servers through a daemon it never
+ * authenticated to.
+ */
+export type ServiceProxyAuthorizer = (req: IncomingMessage) => boolean | Promise<boolean>;
+
 export function createScriptProxyMiddleware({
   routeStore,
   logger,
+  authorize,
 }: {
   routeStore: ServiceProxyRouteRegistry;
   logger: Logger;
+  authorize?: ServiceProxyAuthorizer;
 }): RequestHandler {
   return (req, res, next) => {
     const classification = routeStore.classifyHost(req.headers.host);
@@ -767,22 +781,56 @@ export function createScriptProxyMiddleware({
       next();
       return;
     }
-    if (classification.type === "known-service-miss") {
-      res.status(404).send("404 Not Found");
+    if (!authorize) {
+      finishServiceRequest({ classification, req, res, logger });
       return;
     }
-    proxyHttpRequest({ req, res, route: classification.route, logger });
+    void (async () => {
+      try {
+        if (!(await authorize(req))) {
+          logger.warn(
+            { host: req.headers.host, remoteAddress: req.socket?.remoteAddress },
+            "Rejected service proxy request without valid daemon credentials",
+          );
+          res.status(401).json({ error: "Unauthorized" });
+          return;
+        }
+        finishServiceRequest({ classification, req, res, logger });
+      } catch (error) {
+        next(error);
+      }
+    })();
   };
+}
+
+function finishServiceRequest({
+  classification,
+  req,
+  res,
+  logger,
+}: {
+  classification: HostClassificationRegistered | HostClassificationKnownMiss;
+  req: Parameters<RequestHandler>[0];
+  res: Parameters<RequestHandler>[1];
+  logger: Logger;
+}): void {
+  if (classification.type === "known-service-miss") {
+    res.status(404).send("404 Not Found");
+    return;
+  }
+  proxyHttpRequest({ req, res, route: classification.route, logger });
 }
 
 export function createScriptProxyUpgradeHandler({
   routeStore,
   logger,
   passthroughUnknown = true,
+  authorize,
 }: {
   routeStore: ServiceProxyRouteRegistry;
   logger: Logger;
   passthroughUnknown?: boolean;
+  authorize?: ServiceProxyAuthorizer;
 }): (req: IncomingMessage, socket: net.Socket, head: Buffer) => void {
   return (req, socket, head) => {
     const classification = routeStore.classifyHost(req.headers.host);
@@ -792,7 +840,27 @@ export function createScriptProxyUpgradeHandler({
       }
       return;
     }
-    proxyUpgradeRequest({ req, socket, head, route: classification.route, logger });
+    const { route } = classification;
+    if (!authorize) {
+      proxyUpgradeRequest({ req, socket, head, route, logger });
+      return;
+    }
+    void (async () => {
+      try {
+        if (!(await authorize(req))) {
+          logger.warn(
+            { host: req.headers.host, remoteAddress: req.socket?.remoteAddress },
+            "Rejected service proxy upgrade without valid daemon credentials",
+          );
+          // The upgrade never completed, so answer in HTTP and close.
+          socket.end("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+          return;
+        }
+        proxyUpgradeRequest({ req, socket, head, route, logger });
+      } catch {
+        socket.destroy();
+      }
+    })();
   };
 }
 
@@ -826,9 +894,10 @@ export interface ServiceProxySubsystem {
     daemonPort: number | null | undefined;
     publicBaseUrl?: string | null;
   }): ServiceProxyWorkspaceScriptProjection;
-  middleware(): RequestHandler;
+  middleware(options?: { authorize?: ServiceProxyAuthorizer }): RequestHandler;
   upgradeHandler(options: {
     passthroughUnknown: boolean;
+    authorize?: ServiceProxyAuthorizer;
   }): (req: IncomingMessage, socket: net.Socket, head: Buffer) => void;
   startStandalone(options: {
     listenTarget: ServiceProxyListenTarget;
@@ -917,12 +986,17 @@ class NodeServiceProxySubsystem implements ServiceProxySubsystem {
     return this.routes.projectWorkspaceServiceState(input);
   }
 
-  middleware(): RequestHandler {
-    return createScriptProxyMiddleware({ routeStore: this.routes, logger: this.logger });
+  middleware(options?: { authorize?: ServiceProxyAuthorizer }): RequestHandler {
+    return createScriptProxyMiddleware({
+      routeStore: this.routes,
+      logger: this.logger,
+      authorize: options?.authorize,
+    });
   }
 
   upgradeHandler(options: {
     passthroughUnknown: boolean;
+    authorize?: ServiceProxyAuthorizer;
   }): (req: IncomingMessage, socket: net.Socket, head: Buffer) => void {
     // Pass passthroughUnknown explicitly: the factory defaults it to true, the
     // subsystem requires callers to choose.
@@ -930,6 +1004,7 @@ class NodeServiceProxySubsystem implements ServiceProxySubsystem {
       routeStore: this.routes,
       logger: this.logger,
       passthroughUnknown: options.passthroughUnknown,
+      authorize: options.authorize,
     });
   }
 
@@ -941,6 +1016,10 @@ class NodeServiceProxySubsystem implements ServiceProxySubsystem {
     }
     const app = express();
     app.set("trust proxy", true);
+    // Deliberately ungated: the standalone listener exists because the operator
+    // configured `daemon.serviceProxy.listen` to publish services behind their
+    // own reverse proxy, which owns access control for it. The daemon's own
+    // HTTP server gates the same middleware (see bootstrap).
     app.use(this.middleware());
     app.use((_req, res) => {
       res.status(404).send("404 Not Found");

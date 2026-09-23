@@ -11,6 +11,7 @@ import {
   buildServiceProxyLabel,
   createServiceProxySubsystem,
   findFreePort,
+  type ServiceProxyAuthorizer,
   ServiceProxyRouteCollisionError,
   ServiceProxyRouteRegistry,
 } from "./service-proxy.js";
@@ -313,7 +314,9 @@ interface ForwardedFixture {
  * echoes the headers it received so tests can assert what actually crossed the
  * proxy, not what a helper returned.
  */
-async function startForwardedHeadersFixture(): Promise<ForwardedFixture> {
+async function startForwardedHeadersFixture(
+  options: { authorize?: ServiceProxyAuthorizer } = {},
+): Promise<ForwardedFixture> {
   const upstreamPort = await findFreePort();
   const upstream = http.createServer((req, res) => {
     res.writeHead(200, { "content-type": "application/json" });
@@ -345,12 +348,15 @@ async function startForwardedHeadersFixture(): Promise<ForwardedFixture> {
   const daemonPort = await findFreePort();
   const app = express();
   app.set("trust proxy", true);
-  app.use(serviceProxy.middleware());
+  app.use(serviceProxy.middleware({ authorize: options.authorize }));
   app.use((_req, res) => {
     res.status(404).send("404 Not Found");
   });
   const daemon = http.createServer(app);
-  daemon.on("upgrade", serviceProxy.upgradeHandler({ passthroughUnknown: false }));
+  daemon.on(
+    "upgrade",
+    serviceProxy.upgradeHandler({ passthroughUnknown: false, authorize: options.authorize }),
+  );
   await new Promise<void>((resolve) => daemon.listen(daemonPort, "127.0.0.1", resolve));
 
   return {
@@ -552,6 +558,121 @@ describe("service proxy forwarded headers", () => {
       // its port survives. Asserted rather than hidden so the day it is fixed
       // this test fails loudly instead of silently passing.
       expect(behindTls["x-forwarded-proto"]).toBe("http");
+    } finally {
+      await fixture.close();
+    }
+  });
+});
+
+/** The raw status line an upgrade attempt came back with, without parsing a body. */
+function upgradeStatusLine(port: number, host: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const socket = net.connect({ port, host: "127.0.0.1" }, () => {
+      socket.write(
+        [
+          "GET / HTTP/1.1",
+          `Host: ${host}`,
+          "Upgrade: websocket",
+          "Connection: Upgrade",
+          "",
+          "",
+        ].join("\r\n"),
+      );
+    });
+    let raw = "";
+    socket.on("data", (chunk: Buffer) => {
+      raw += chunk.toString();
+      if (raw.includes("\r\n")) {
+        socket.destroy();
+        resolve(raw.slice(0, raw.indexOf("\r\n")));
+      }
+    });
+    socket.on("close", () => resolve(raw.split("\r\n")[0] ?? ""));
+    socket.on("error", reject);
+  });
+}
+
+describe("service proxy authorization", () => {
+  it("proxies to the service when the client is authorized", async () => {
+    const fixture = await startForwardedHeadersFixture({ authorize: () => true });
+    try {
+      const response = await httpGet(fixture.daemonPort, fixture.hostname, { path: "/" });
+      expect(response.status).toBe(200);
+    } finally {
+      await fixture.close();
+    }
+  });
+
+  it("rejects an unauthorized client before it reaches the service", async () => {
+    let reachedUpstream = false;
+    const fixture = await startForwardedHeadersFixture({
+      authorize: () => {
+        reachedUpstream = true;
+        return false;
+      },
+    });
+    try {
+      const response = await httpGet(fixture.daemonPort, fixture.hostname, { path: "/" });
+      expect(response.status).toBe(401);
+      expect(reachedUpstream).toBe(true);
+      // The upstream never answered, so no service body leaked through.
+      expect(response.body).not.toContain("x-forwarded-host");
+    } finally {
+      await fixture.close();
+    }
+  });
+
+  it("awaits an async authorizer rather than failing open", async () => {
+    const fixture = await startForwardedHeadersFixture({
+      authorize: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        return false;
+      },
+    });
+    try {
+      expect((await httpGet(fixture.daemonPort, fixture.hostname, { path: "/" })).status).toBe(401);
+    } finally {
+      await fixture.close();
+    }
+  });
+
+  it("hides whether an unroutable service host exists at all", async () => {
+    const fixture = await startForwardedHeadersFixture({ authorize: () => false });
+    try {
+      // Same `<project>` namespace, different script: a known service miss,
+      // which answers 404 for an authorized client. An unauthorized one must
+      // not be able to tell that apart from a live route.
+      const miss = fixture.hostname.replace(/^[^-]+/, "nosuchscript");
+      expect((await httpGet(fixture.daemonPort, miss, { path: "/" })).status).toBe(401);
+      expect((await httpGet(fixture.daemonPort, fixture.hostname, { path: "/" })).status).toBe(401);
+    } finally {
+      await fixture.close();
+    }
+  });
+
+  it("rejects an unauthorized WebSocket upgrade with 401 instead of proxying it", async () => {
+    const fixture = await startForwardedHeadersFixture({ authorize: () => false });
+    try {
+      expect(await upgradeStatusLine(fixture.daemonPort, fixture.hostname)).toContain("401");
+    } finally {
+      await fixture.close();
+    }
+  });
+
+  it("still proxies an authorized WebSocket upgrade", async () => {
+    const fixture = await startForwardedHeadersFixture({ authorize: () => true });
+    try {
+      const headers = await upgradeThroughProxy(fixture.daemonPort, fixture.hostname);
+      expect(headers["x-forwarded-host"]).toBe(fixture.hostname);
+    } finally {
+      await fixture.close();
+    }
+  });
+
+  it("leaves the proxy open when no authorizer is configured", async () => {
+    const fixture = await startForwardedHeadersFixture();
+    try {
+      expect((await httpGet(fixture.daemonPort, fixture.hostname, { path: "/" })).status).toBe(200);
     } finally {
       await fixture.close();
     }
