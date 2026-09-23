@@ -100,6 +100,7 @@ import {
 } from "@/attachments/service";
 import type { AgentUsage } from "@frogg/protocol/agent-types";
 import { resolveStaleContextWarning, type StaleContextWarning } from "@/composer/stale-context";
+import { useComposerPresenceWarning } from "@/presence/composer-presence";
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
 import { ComposerVoiceAlertsToggle } from "@/composer/voice-alerts-toggle";
 import { CONTEXT_METER_GLYPH } from "@/composer/meter-glyph";
@@ -1277,6 +1278,13 @@ function ComposerContentImpl({
     : resolveMessagePlaceholder(inputMode, isDesktopLayout, t, placeholder);
   const userInput = value;
   const staleContextWarning = useStaleContextWarning(agentState, userInput);
+  // COMPAT(sessionPresence): added in v1.6.0. Reports this composer as viewing
+  // (or typing) the agent and reads back whoever else is writing to it.
+  const presenceWarning = useComposerPresenceWarning({
+    serverId,
+    agentId,
+    isComposing: userInput.trim().length > 0,
+  });
   const setUserInput = onChangeText;
   const workspaceAttachments = useWorkspaceAttachmentsForScopes(attachmentScopeKeys);
   const {
@@ -2418,6 +2426,7 @@ function ComposerContentImpl({
                   inputWrapperStyle={inputWrapperStyle}
                   offline={showOfflineComposer}
                   staleContextWarning={staleContextWarning}
+                  presenceWarning={presenceWarning}
                   attachmentSlot={attachmentTray}
                   inputMode={inputMode}
                   readOnly={readOnly}

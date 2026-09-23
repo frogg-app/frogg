@@ -65,6 +65,7 @@ import {
   type ReconnectToastState,
 } from "@/panels/reconnect-toast-state";
 import { usePaneContext, usePaneFocus } from "@/panels/pane-context";
+import { PresenceBar } from "@/presence/presence-bar";
 import { definePanel, type PanelDescriptor } from "@/panels/panel-registry";
 import { RenderProfile } from "@/utils/render-profiler";
 import { buildDraftPanelDescriptor } from "@/panels/draft-panel-descriptor";
@@ -1696,6 +1697,7 @@ function ActiveAgentComposer({
 
   return (
     <View style={inputAreaStyle} onLayout={onInputAreaLayout}>
+      <PresenceBar serverId={serverId} targetKind="agent" targetId={agentId} />
       <SpokenAlertBanner serverId={serverId} agentId={agentId} workspaceId={workspaceId} />
       <Composer
         agentId={agentId}
