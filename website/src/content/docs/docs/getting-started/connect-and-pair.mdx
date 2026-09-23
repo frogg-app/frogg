@@ -9,6 +9,10 @@ import { Screenshot, Steps } from "@/components/docs";
 import appHostsImg from "@/assets/docs/app/hosts.png";
 import appDirectConnectionImg from "@/assets/docs/app/direct-connection.png";
 import appPairDeviceImg from "@/assets/docs/app/pair-device.png";
+import appPairWithCodeImg from "@/assets/docs/app/pair-with-code.png";
+import appPairConfirmClaimImg from "@/assets/docs/app/pair-confirm-claim.png";
+import appHostDevicesImg from "@/assets/docs/app/host-devices.png";
+import appPairingCodeImg from "@/assets/docs/app/pairing-code.png";
 
 ## Who can connect
 
@@ -92,6 +96,33 @@ Useful flags: `--role viewer` for a read-only device, `--ttl 60` for a code that
 quickly, `--json` or `--code-only` for scripts. See
 [the CLI reference](/docs/desktop-mobile-cli/cli/#frogg-pair).
 
+An owner can mint the same code from the app instead, in host settings **Devices** — see
+[manage devices](#manage-devices-in-the-app).
+
+### Type the code into the app
+
+**Hosts → Enter a pairing code** takes the host address and the 8-character code.
+
+<Screenshot src={appPairWithCodeImg} alt="Enter a pairing code dialog with a host address and code field" />
+
+<Steps>
+
+1. Enter `host:port` (and tick **Connect with TLS** only if a TLS proxy fronts the daemon),
+   then the code. It is upper-cased and grouped as you type, and `I` and `L` are read as
+   `1` and `O` as `0`, so a misread character still works.
+
+2. Press **Check this host**. The app asks the daemon to prove it holds its own key and
+   shows the resulting fingerprint. Nothing is redeemed yet.
+
+3. Compare that fingerprint with the one on the owner's screen — `frogg pair` prints it,
+   and so does the pairing code card in host settings **Devices**. Press **Pair** only if
+   they match.
+
+</Steps>
+
+The check can refuse before you get that far: the host did not answer, it could not prove
+it holds its key, or the server is already known here under a different key.
+
 ## Pair a device with a link
 
 Pairing gives a device a long-lived credential. It is how you connect from outside the
@@ -152,7 +183,31 @@ on every request. New devices pair as owners unless the owner picks another role
 owner can change a device's role afterwards. See
 [device roles](/docs/self-hosting/security/#device-roles) for what each role may do.
 
-### Check and reset
+## Manage devices in the app
+
+Host settings **Devices** is where a paired device is approved, renamed, re-roled or
+revoked. Open **Settings → the host → Devices**.
+
+<Screenshot src={appHostDevicesImg} alt="Host settings, Devices, showing Your access, Waiting for approval, Paired devices and Pairing code" />
+
+| Card | What it does |
+| ---- | ------------ |
+| **Your access** | This device's own role and what it may do. A connection with no device credential — loopback, or a trusted LAN — is shown as an owner, because that is how the daemon treats it |
+| **Waiting for approval** | Devices that asked to join. Approve one with the role it should get, or deny it. The name comes from the requesting device, so it is shown as plain untrusted text and the card says so |
+| **Paired devices** | Name, role, when each was last seen, and which one is you. An owner can rename, change role and revoke |
+| **Pairing code** | Mint a code for a new device with the role it should get, with a countdown, a QR of the pairing link, and the daemon's key fingerprint to read out |
+
+Only an owner gets the buttons. An operator or a viewer sees the same list read-only, with
+a line saying which role the action needs rather than a button that would be refused.
+
+Revoking a device closes its live connections at once; revoking the device you are using
+ends the session, and is confirmed separately. Revoking or demoting the last owner is
+warned about first — that warning is the app being careful, not a rule the daemon
+enforces, so read it before confirming.
+
+<Screenshot src={appPairingCodeImg} alt="A minted pairing code with its countdown, QR code and key fingerprint" />
+
+## Check and reset
 
 ```sh
 frogg auth claim-status
@@ -172,14 +227,60 @@ daemon now. For automation, use `frogg daemon claim-status --json` and read
 `daemon.pairingRequired` for the daemon's current access decision. The top-level claim fields
 describe persisted configuration only.
 
-Each device holds its own credential with a role (`owner`, `operator` or `viewer`), and a
-single device can be renamed or revoked on its own over the `auth.device.*` RPCs; revoking
-one drops its live connections straight away. To start over, forget **all** devices and
-pair the ones you keep again:
+The CLI has no per-device revoke or role change; do that in the app under
+[Devices](#manage-devices-in-the-app). To start over from a shell, forget **all** devices
+and pair the ones you keep again:
 
 ```sh
 frogg auth reset-claim
 ```
+
+## Pairing links ask before they pair
+
+Opening a pairing link — from a message, a web page, a QR code or a terminal — never pairs
+on its own. The app shows a confirmation first, and only a button press mints a credential.
+
+<Screenshot src={appPairConfirmClaimImg} alt="Pairing confirmation showing the address, name, key fingerprint and a claim warning" />
+
+The confirmation states the address, the host's name, its key fingerprint, the link's
+expiry, and the role the link grants. A link that would **claim** the daemon — take
+ownership of the machine and its agents — says so in a warning above everything else, and
+its button reads **Claim this host**.
+
+While it is on screen the app verifies the daemon's identity, which is read-only: it asks
+the daemon at that address to sign a challenge and checks the signature against the
+fingerprint in the link. There is **no Pair button at all** when:
+
+- the daemon's key does not match the fingerprint in the link,
+- the daemon cannot prove it holds its own key, or
+- that server ID is already known on this device under a different key. The app pins a
+  daemon's fingerprint after a successful pair, so a second link pointing a familiar server
+  at a new key is refused rather than retried.
+
+A daemon that simply did not answer is a retry, not a refusal.
+
+### Direct pairing links
+
+`frogg pair` prints a link of this shape, and the app handles it on every platform:
+
+```text
+frogg://pair/direct?v=1&host=192.168.1.10&port=9999&fp=sha256%3A8Qp1…&pairingCode=ABCD-2345
+```
+
+| Parameter | Meaning |
+| --------- | ------- |
+| `v` | Link version, `1` |
+| `host`, `port` | Where the daemon is |
+| `fp` | The daemon's key fingerprint, URL-encoded |
+| `pairingCode` | The code to redeem, when the link carries one |
+| `claim=1` | Claim the daemon as owner instead of redeeming a code |
+| `tls=1` | Reach the daemon over TLS |
+| `sid` | The daemon's server ID |
+| `name` | A display name for the host |
+| `role` | The role the link grants |
+
+A browser cannot navigate to a custom scheme, so the web app accepts the same parameters as
+a fragment on an ordinary page: `https://…/#pair/direct?v=1&host=…`.
 
 ## Use a password instead
 
