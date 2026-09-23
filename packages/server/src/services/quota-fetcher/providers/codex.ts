@@ -111,19 +111,23 @@ export class CodexQuotaProvider implements ProviderUsageFetcher {
   }
 
   private toUsage(resp: CodexUsageResponse): ProviderUsage {
-    const session = codexWindow(resp.rate_limit?.primary_window);
+    const primary = codexWindow(resp.rate_limit?.primary_window);
     const weekly = codexWindow(resp.rate_limit?.secondary_window);
     const codeReview = codexWindow(resp.code_review_rate_limit?.primary_window);
     const windows: ProviderUsageWindow[] = [];
 
-    if (session) {
+    // Codex accounts that report only `primary_window` expose their weekly
+    // allowance there. Calling it a session limit invents a limit the account
+    // does not have. When both windows exist, the API distinguishes the
+    // shorter primary window from the weekly secondary window.
+    if (primary) {
       windows.push(
         windowFromUsedPct({
-          id: "session",
-          label: "Session",
-          utilizationPct: session.usedPct,
-          resetsAt: session.resetsAt,
-          tone: toneFromUsedPct(session.usedPct),
+          id: weekly ? "session" : "weekly",
+          label: weekly ? "Session" : "Weekly",
+          utilizationPct: primary.usedPct,
+          resetsAt: primary.resetsAt,
+          tone: toneFromUsedPct(primary.usedPct),
         }),
       );
     }

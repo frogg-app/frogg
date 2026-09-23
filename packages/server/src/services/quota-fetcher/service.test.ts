@@ -1492,6 +1492,34 @@ describe("usage bars escalate as they fill", () => {
       ]),
     );
   });
+
+  it("labels a sole Codex primary window as weekly", async () => {
+    writeCodexAuth(codexHome, "at_codex");
+    const usage = await new CodexQuotaProvider({
+      logger: createLogger(),
+      codexHome,
+      fetch: mockFetch(
+        new Map([
+          [
+            "https://chatgpt.com/backend-api/wham/usage",
+            () =>
+              jsonResponse(
+                makeCodexResponse({
+                  rate_limit: {
+                    primary_window: { used_percent: 1, reset_at: 1_749_072_000 },
+                    secondary_window: null,
+                  },
+                }),
+              ),
+          ],
+        ]),
+      ),
+    }).fetchUsage();
+
+    expect(usage.windows).toEqual([
+      expect.objectContaining({ id: "weekly", label: "Weekly", usedPct: 1 }),
+    ]);
+  });
 });
 
 // Model- and surface-scoped weekly limits arrive in a `limits[]` array rather than the
