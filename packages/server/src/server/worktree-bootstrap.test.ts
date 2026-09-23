@@ -1152,7 +1152,7 @@ describe("runAsyncWorktreeBootstrap", () => {
     expect(createTerminalCalls[0]?.env).toHaveProperty("FROGG_SERVICE_WORKER_PORT");
   });
 
-  it("binds services to the network when the daemon listens on a non-loopback host", async () => {
+  it("binds services to the configured workspace-service host", async () => {
     writeFileSync(
       join(repoDir, "frogg.json"),
       JSON.stringify({
@@ -1185,7 +1185,9 @@ describe("runAsyncWorktreeBootstrap", () => {
       branchName: "feature-remote-service",
       scriptName: "web",
       daemonPort: 9999,
-      workspaceServiceBindHost: "100.64.0.20",
+      // `daemon.workspaceServices.bindHost`, not the daemon's own listen host:
+      // binding the daemon wide must not publish dev servers with it.
+      workspaceServiceBindHost: "0.0.0.0",
       serviceProxy: routeStore,
       runtimeStore,
       terminalManager: createStubTerminalManager(createTerminalCalls),
