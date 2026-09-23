@@ -218,9 +218,13 @@ const styles = StyleSheet.create((theme: Theme) => ({
   qrTile: {
     alignItems: "center",
     alignSelf: "flex-start",
+    // White regardless of theme: a QR has to stay high-contrast to scan.
     backgroundColor: "#ffffff",
     borderRadius: theme.borderRadius.lg,
+    height: 196,
+    justifyContent: "center",
     padding: theme.spacing[2],
+    width: 196,
   },
   qrImage: { height: 180, width: 180 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing[2] },

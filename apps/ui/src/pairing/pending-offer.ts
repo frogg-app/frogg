@@ -59,9 +59,29 @@ export function peekPendingOfferUrl(): string | null {
   return pendingTarget?.kind === "offer" ? pendingTarget.url : null;
 }
 
-export function subscribePendingOffer(listener: () => void): () => void {
+export function subscribePendingPairTarget(listener: () => void): () => void {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/** Legacy alias. */
+export const subscribePendingOffer = subscribePendingPairTarget;
+
+/**
+ * The web build never sees a `<scheme>://` URL — a browser will not navigate
+ * to one — so the same link is also accepted as a `#pair/direct?…` fragment on
+ * an ordinary https page. The parameters are identical; only the envelope
+ * differs, and the parsing stays in the protocol package.
+ */
+const DIRECT_PAIRING_FRAGMENT = "#pair/direct?";
+
+export function parseDirectPairingFragment(url: string): DirectPairingLink | null {
+  const index = url.indexOf(DIRECT_PAIRING_FRAGMENT);
+  if (index === -1) return null;
+  const params = url.slice(index + DIRECT_PAIRING_FRAGMENT.length);
+  return parseDirectPairingDeepLink(`${brand.scheme}://pair/direct?${params}`, brand.scheme);
 }
 
 /**
@@ -74,7 +94,8 @@ export function extractPairTarget(url: string | null | undefined): PendingPairTa
   const trimmed = url.trim();
   const link =
     parseDirectPairingDeepLink(trimmed, brand.scheme) ??
-    parseDirectPairingDeepLink(trimmed, "frogg");
+    parseDirectPairingDeepLink(trimmed, "frogg") ??
+    parseDirectPairingFragment(trimmed);
   if (link) return { kind: "direct", link };
   const offer = extractOfferLink(trimmed);
   return offer ? { kind: "offer", url: offer } : null;

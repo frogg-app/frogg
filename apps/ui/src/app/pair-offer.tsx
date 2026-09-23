@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
@@ -12,7 +12,11 @@ import { DirectPairConfirmation } from "@/pairing/direct-pair-confirmation";
 import { describePairTarget, isPairTargetExpired } from "@/pairing/pair-confirmation";
 import { rememberDaemonFingerprint } from "@/pairing/known-daemon-keys";
 import { usePairWithOffer } from "@/pairing/use-pair-with-offer";
-import { takePendingPairTarget, type PendingPairTarget } from "@/pairing/pending-offer";
+import {
+  clearPendingPairTarget,
+  peekPendingPairTarget,
+  subscribePendingPairTarget,
+} from "@/pairing/pending-offer";
 import { useHosts } from "@/runtime/host-runtime";
 import { buildHostRootRoute, buildOpenProjectRoute } from "@/utils/host-routes";
 
@@ -50,14 +54,21 @@ export default function PairOfferScreen() {
   const { state, pair, retryWithEndpoint, reset } = usePairWithOffer();
   const [confirmed, setConfirmed] = useState(false);
 
-  // Taken once per mount: the slot holds a single-use secret.
-  const targetRef = useRef<PendingPairTarget | null | undefined>(undefined);
-  if (targetRef.current === undefined) targetRef.current = takePendingPairTarget();
-  const target = targetRef.current;
+  // The slot is read without consuming it, and cleared only when the user
+  // leaves or finishes. Consuming it during render loses the link whenever the
+  // screen remounts — which React does on purpose in development — and a
+  // dropped link is indistinguishable from a broken one to the person holding
+  // the phone. The slot is in memory only, so peeking never persists a secret.
+  const target = useSyncExternalStore(
+    subscribePendingPairTarget,
+    peekPendingPairTarget,
+    peekPendingPairTarget,
+  );
 
   const described = useMemo(() => (target ? describePairTarget(target) : null), [target]);
 
   const goBack = useCallback(() => {
+    clearPendingPairTarget();
     reset();
     if (router.canGoBack()) {
       router.back();
@@ -68,6 +79,7 @@ export default function PairOfferScreen() {
 
   const leaveToHost = useCallback(
     (serverId: string) => {
+      clearPendingPairTarget();
       reset();
       router.replace(hosts.length > 1 ? buildOpenProjectRoute() : buildHostRootRoute(serverId));
     },
