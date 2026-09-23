@@ -222,10 +222,13 @@ describe("frogg daemon bootstrap", () => {
       expect(beforeCors.headers.get("access-control-allow-origin")).toBe(
         "https://before.example.test",
       );
+      // Mounted but credentialled: an anonymous caller is rejected by the
+      // endpoint's own auth (401), never waved through on locality alone.
+      // After the reload the route is gone entirely, which reads as 404.
       const beforeMcp = await fetch(`http://127.0.0.1:${target.port}/mcp/agents`, {
         method: "POST",
       });
-      expect(beforeMcp.status).toBe(406);
+      expect(beforeMcp.status).toBe(401);
       const beforeProxyReload = await httpGetWithHost(target.port, proxyHost, "/", {
         "x-forwarded-proto": "https",
       });
@@ -705,9 +708,12 @@ describe("frogg daemon bootstrap", () => {
         },
       },
     );
+    // The debug log only ever runs for an authorized request, so the daemon
+    // needs a password the probe can present as its bearer.
     const daemonHandle = await createTestFroggDaemon({
       logger,
       mcpDebug: true,
+      auth: { password: hashDaemonPassword("secret-debug-token") },
     });
 
     try {

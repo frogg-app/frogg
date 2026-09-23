@@ -20,6 +20,7 @@ import { projectTimelineRows } from "./timeline-projection.js";
 import { getOpenAgentTabLabel, PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
 import { formatSystemNotificationPrompt, startAgentRun } from "./agent-prompt.js";
 import { ensureAgentLoaded, ensureUnarchivedAgentLoaded } from "./agent-loading.js";
+import { deriveAgentMcpToken } from "../auth.js";
 import type { StoredAgentRecord } from "./agent-storage.js";
 import type {
   AgentTimelineFetchOptions,
@@ -2639,8 +2640,10 @@ test("createAgent injects frogg MCP server only into provider launch config", as
   });
   expect(client.lastConfig?.mcpServers).toEqual({
     frogg: {
+      // No `?callerAgentId=`: the endpoint reads the caller from the
+      // credential, because a query string is the caller's to forge.
       type: "http",
-      url: `http://127.0.0.1:9999/mcp/agents?callerAgentId=${snapshot.id}`,
+      url: "http://127.0.0.1:9999/mcp/agents",
     },
     custom: {
       type: "stdio",
@@ -2935,8 +2938,10 @@ test("createAgent allows best-effort internal MCP when the provider session repo
   expect(manager.getMcpAuthToken()).toBe("cap-token");
   expect(client.lastConfig?.mcpServers?.frogg).toEqual({
     type: "http",
-    url: `http://127.0.0.1:9999/mcp/agents?callerAgentId=${snapshot.id}`,
-    headers: { Authorization: "Bearer cap-token" },
+    url: "http://127.0.0.1:9999/mcp/agents",
+    // The bearer is derived per agent, so the endpoint can tell which agent
+    // is calling without trusting anything in the request it can rewrite.
+    headers: { Authorization: `Bearer ${deriveAgentMcpToken("cap-token", snapshot.id)}` },
   });
 
   rmSync(workdir, { recursive: true, force: true });
@@ -2981,7 +2986,7 @@ test("resumeAgentFromPersistence replaces stored internal frogg MCP with current
   expect(client.resumeOverrides[0]?.mcpServers).toEqual({
     frogg: {
       type: "http",
-      url: `http://127.0.0.1:6768/mcp/agents?callerAgentId=${snapshot.id}`,
+      url: "http://127.0.0.1:6768/mcp/agents",
     },
     custom: {
       type: "stdio",
