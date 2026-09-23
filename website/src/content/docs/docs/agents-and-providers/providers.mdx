@@ -70,6 +70,41 @@ It shows how the command resolved, the binary version, auth status (for Claude, 
 output of `claude auth status`) and relevant environment. In the app, expand a provider in
 **host settings → Providers**.
 
+## Keeping providers up to date
+
+Frogg tracks the version of each provider CLI you have installed against the
+latest published release, and can install the newer one for you.
+
+```sh
+frogg provider update            # report installed vs. latest for every provider
+frogg provider update claude     # install the latest Claude Code
+frogg provider update --all      # install every provider that has a newer release
+```
+
+The same information is in the app under **host settings → Providers**: open a
+provider and its own tab shows a **Version** card with the installed and latest
+version, an **Update** button, and the **Update automatically** switch.
+
+Providers distributed as npm packages — Claude, Codex, Copilot and OpenCode —
+are the ones Frogg can install. Anything else is reported as *Managed outside
+Frogg*, with a link to the vendor's own instructions.
+
+### Automatic updates
+
+The daemon checks for newer releases in the background and, if you opt in,
+installs them. Checking is on by default; installing is not, because replacing
+a provider binary underneath a running session is your call.
+
+```sh
+frogg provider update-settings                      # show the current settings
+frogg provider update-settings --auto-update true   # install new releases automatically
+frogg provider update-settings --interval 360       # check every six hours
+frogg provider update-settings --ignore omp,pi      # never check or update these
+```
+
+These map to the `providerUpdates` block of the daemon config — `checkEnabled`,
+`autoUpdate`, `checkIntervalMinutes` and `ignoredProviders`.
+
 ## Models, modes and thinking
 
 Models are discovered from each provider at runtime:

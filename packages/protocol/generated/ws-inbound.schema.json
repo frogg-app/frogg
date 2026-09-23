@@ -4439,6 +4439,78 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "provider.update.check.request"
+                },
+                "forceRefresh": {
+                  "type": "boolean"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.update.install.request"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "provider",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.update.set_preferences.request"
+                },
+                "checkEnabled": {
+                  "type": "boolean"
+                },
+                "autoUpdate": {
+                  "type": "boolean"
+                },
+                "checkIntervalMinutes": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "ignoredProviders": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "provider.account.list.request"
                 },
                 "provider": {

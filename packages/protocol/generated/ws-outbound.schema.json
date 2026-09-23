@@ -45952,6 +45952,340 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "provider.update.check.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "checkedAt": {
+                      "type": "string"
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "up-to-date",
+                              "update-available",
+                              "not-installed",
+                              "unmanaged",
+                              "unknown"
+                            ]
+                          },
+                          "installedVersion": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "latestVersion": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "packageName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "updatable": {
+                            "type": "boolean"
+                          },
+                          "binaryPath": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "manualInstallUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "error": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "status",
+                          "installedVersion",
+                          "latestVersion",
+                          "packageName",
+                          "updatable",
+                          "binaryPath",
+                          "manualInstallUrl",
+                          "error"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "preferences": {
+                      "type": "object",
+                      "properties": {
+                        "checkEnabled": {
+                          "type": "boolean"
+                        },
+                        "autoUpdate": {
+                          "type": "boolean"
+                        },
+                        "checkIntervalMinutes": {
+                          "type": "number"
+                        },
+                        "ignoredProviders": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "checkEnabled",
+                        "autoUpdate",
+                        "checkIntervalMinutes",
+                        "ignoredProviders"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "checkedAt",
+                    "entries",
+                    "preferences",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.update.install.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "updated": {
+                      "type": "boolean"
+                    },
+                    "previousVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "installedVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "output": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "provider",
+                    "updated",
+                    "previousVersion",
+                    "installedVersion",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "provider.update.set_preferences.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "checkedAt": {
+                      "type": "string"
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "up-to-date",
+                              "update-available",
+                              "not-installed",
+                              "unmanaged",
+                              "unknown"
+                            ]
+                          },
+                          "installedVersion": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "latestVersion": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "packageName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "updatable": {
+                            "type": "boolean"
+                          },
+                          "binaryPath": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "manualInstallUrl": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "error": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "status",
+                          "installedVersion",
+                          "latestVersion",
+                          "packageName",
+                          "updatable",
+                          "binaryPath",
+                          "manualInstallUrl",
+                          "error"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "preferences": {
+                      "type": "object",
+                      "properties": {
+                        "checkEnabled": {
+                          "type": "boolean"
+                        },
+                        "autoUpdate": {
+                          "type": "boolean"
+                        },
+                        "checkIntervalMinutes": {
+                          "type": "number"
+                        },
+                        "ignoredProviders": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "checkEnabled",
+                        "autoUpdate",
+                        "checkIntervalMinutes",
+                        "ignoredProviders"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "checkedAt",
+                    "entries",
+                    "preferences",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "provider.account.list.response"
                 },
                 "payload": {

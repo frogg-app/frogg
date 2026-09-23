@@ -238,6 +238,9 @@ import {
 } from "../services/github-service.js";
 import type { ForgeService } from "../services/forge-service.js";
 import type { ProviderUsageService } from "../services/quota-fetcher/service.js";
+import type { ProviderUpdateService } from "../services/provider-updates/service.js";
+import type { ProviderUpdatePreferencesStore } from "../services/provider-updates/preferences.js";
+import { ProviderUpdateSession } from "./session/provider/provider-update-session.js";
 import {
   summarizeFetchWorkspacesEntries,
   workspaceIdsOnCheckout,
@@ -472,6 +475,8 @@ export interface SessionOptions {
   terminalManager: TerminalManager | null;
   providerSnapshotManager: ProviderSnapshotManager;
   providerUsageService: ProviderUsageService;
+  providerUpdateService: ProviderUpdateService;
+  providerUpdatePreferences: ProviderUpdatePreferencesStore;
   hubExecutionAgents?: HubExecutionAgents;
   hubRelationships?: HubRelationshipManagement;
   serviceProxy?: ServiceProxySubsystem;
@@ -725,6 +730,7 @@ export class Session {
   private readonly scheduleSession: ScheduleSession;
   private readonly providerCatalogSession: ProviderCatalogSession;
   private readonly providerAccountSession: ProviderAccountSession;
+  private readonly providerUpdateSession: ProviderUpdateSession;
   private readonly providerAccountStore: ProviderAccountStore;
   private readonly workspaceFilesSession: WorkspaceFilesSession;
   private readonly agentConfigSession: AgentConfigSession;
@@ -774,6 +780,8 @@ export class Session {
       terminalManager,
       providerSnapshotManager,
       providerUsageService,
+      providerUpdateService,
+      providerUpdatePreferences,
       serviceProxy,
       scriptRuntimeStore,
       workspaceSetupSnapshots,
@@ -962,6 +970,12 @@ export class Session {
       providerUsageService,
       logger: this.sessionLogger,
     });
+    this.providerUpdateSession = new ProviderUpdateSession(
+      { emit: (msg) => this.emit(msg) },
+      this.sessionLogger,
+      providerUpdateService,
+      providerUpdatePreferences,
+    );
     this.providerAccountStore = new ProviderAccountStore({ froggHome: this.froggHome });
     this.providerAccountSession = new ProviderAccountSession({
       host: {
@@ -2106,6 +2120,7 @@ export class Session {
       this.dispatchWorkspaceAndProjectMessage(msg) ??
       this.dispatchWorkspaceFileMessage(msg, source) ??
       this.dispatchProviderMessage(msg) ??
+      this.dispatchProviderUpdateMessage(msg) ??
       this.dispatchOrchestrationSkillsMessage(msg) ??
       this.dispatchTerminalMessage(msg) ??
       this.dispatchScheduleMessage(msg) ??
@@ -2674,6 +2689,19 @@ export class Session {
         return this.handleWorkspaceRecoveryInspectRequest(msg);
       case "workspace.recovery.restore.request":
         return this.handleWorkspaceRecoveryRestoreRequest(msg);
+      default:
+        return undefined;
+    }
+  }
+
+  private dispatchProviderUpdateMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    switch (msg.type) {
+      case "provider.update.check.request":
+        return this.providerUpdateSession.handleProviderUpdateCheckRequest(msg);
+      case "provider.update.install.request":
+        return this.providerUpdateSession.handleProviderUpdateInstallRequest(msg);
+      case "provider.update.set_preferences.request":
+        return this.providerUpdateSession.handleProviderUpdateSetPreferencesRequest(msg);
       default:
         return undefined;
     }

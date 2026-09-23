@@ -3387,6 +3387,25 @@ export const ptBR: TranslationResources = {
           title: "Modelos",
           empty: "Este provedor não informou nenhum modelo.",
         },
+        version: {
+          title: "Versão",
+          installed: "Instalada {{version}}",
+          latest: "mais recente {{version}}",
+          update: "Atualizar",
+          install: "Instalar",
+          updating: "Atualizando…",
+          refresh: "Atualizar",
+          autoUpdate: "Atualizar automaticamente",
+          autoUpdateDescription:
+            "Instala em segundo plano as novas versões dos provedores assim que forem publicadas.",
+          status: {
+            "up-to-date": "Atualizado",
+            "update-available": "Atualização disponível",
+            "not-installed": "Não instalado",
+            unmanaged: "Gerenciado fora do Frogg",
+            unknown: "Versão desconhecida",
+          },
+        },
       },
       statuses: {
         disabled: "Desativado",

@@ -3394,6 +3394,25 @@ export const ru: TranslationResources = {
           title: "Модели",
           empty: "Этот провайдер не сообщил ни одной модели.",
         },
+        version: {
+          title: "Версия",
+          installed: "Установлена {{version}}",
+          latest: "последняя {{version}}",
+          update: "Обновить",
+          install: "Установить",
+          updating: "Обновление…",
+          refresh: "Обновить",
+          autoUpdate: "Обновлять автоматически",
+          autoUpdateDescription:
+            "Устанавливать новые выпуски провайдеров в фоновом режиме сразу после публикации.",
+          status: {
+            "up-to-date": "Актуальная версия",
+            "update-available": "Доступно обновление",
+            "not-installed": "Не установлен",
+            unmanaged: "Управляется вне Frogg",
+            unknown: "Версия неизвестна",
+          },
+        },
       },
       statuses: {
         disabled: "Отключён",

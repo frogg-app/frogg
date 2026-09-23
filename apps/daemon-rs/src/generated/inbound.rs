@@ -250,6 +250,12 @@ pub enum SessionMessage {
     ProviderDiagnosticRequest(ProviderDiagnosticRequest),
     #[serde(rename = "provider.usage.list.request")]
     ProviderUsageListRequest(ProviderUsageListRequest),
+    #[serde(rename = "provider.update.check.request")]
+    ProviderUpdateCheckRequest(ProviderUpdateCheckRequest),
+    #[serde(rename = "provider.update.install.request")]
+    ProviderUpdateInstallRequest(ProviderUpdateInstallRequest),
+    #[serde(rename = "provider.update.set_preferences.request")]
+    ProviderUpdateSetPreferencesRequest(ProviderUpdateSetPreferencesRequest),
     #[serde(rename = "provider.account.list.request")]
     ProviderAccountListRequest(ProviderAccountListRequest),
     #[serde(rename = "provider.account.create.request")]
@@ -2045,6 +2051,38 @@ pub struct ProviderUsageListRequest {
     pub provider: Option<String>,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateCheckRequest {
+    #[serde(rename = "forceRefresh", skip_serializing_if = "Option::is_none")]
+    pub force_refresh: Option<bool>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateInstallRequest {
+    pub provider: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateSetPreferencesRequest {
+    #[serde(rename = "checkEnabled", skip_serializing_if = "Option::is_none")]
+    pub check_enabled: Option<bool>,
+    #[serde(rename = "autoUpdate", skip_serializing_if = "Option::is_none")]
+    pub auto_update: Option<bool>,
+    #[serde(
+        rename = "checkIntervalMinutes",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub check_interval_minutes: Option<i64>,
+    #[serde(rename = "ignoredProviders", skip_serializing_if = "Option::is_none")]
+    pub ignored_providers: Option<Vec<String>>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

@@ -28,6 +28,7 @@ import type { Theme } from "@/styles/theme";
 import { AccountPane } from "./account-pane";
 import { AccountTabs, isSynthesizedAccount, withDefaultAccount } from "./account-tabs";
 import { ProviderModelsSection } from "./provider-models-section";
+import { ProviderVersionSection } from "./provider-version-section";
 
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 const loadingSpinnerMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
@@ -158,6 +159,7 @@ function ProviderPane({
 
   return (
     <View style={styles.pane} testID="provider-settings-provider-pane">
+      <ProviderVersionSection serverId={serverId} providerId={providerId} />
       <ProviderModelsSection serverId={serverId} providerId={providerId} />
       {accounts.supported && !accounts.connected ? (
         <Text style={styles.message} testID="provider-settings-accounts-unavailable">

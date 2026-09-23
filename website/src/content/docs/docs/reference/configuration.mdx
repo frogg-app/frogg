@@ -132,6 +132,28 @@ is set, the app shows the endpoint read-only.
 | `agents.metadataGeneration.providers` | array  | unset    | Ordered `[{ provider, model?, thinkingOptionId? }]` used to generate titles, branch names, commit messages and PR text |
 | `agents.skills.selection`            | object  | all      | `{ "mode": "all" }` or `{ "mode": "custom", "skills": ["frogg", "frogg-help"] }`. See [skills](/docs/agents-and-providers/skills/) |
 
+## `providerUpdates`
+
+How the daemon keeps provider CLIs current. See
+[keeping providers up to date](/docs/agents-and-providers/providers/#keeping-providers-up-to-date).
+
+| Key                                   | Type     | Default | Meaning |
+| ------------------------------------- | -------- | ------- | ------- |
+| `providerUpdates.checkEnabled`        | boolean  | `true`  | Poll for newer provider releases in the background |
+| `providerUpdates.autoUpdate`          | boolean  | `false` | Install newer releases as they are found, without asking |
+| `providerUpdates.checkIntervalMinutes`| integer  | `720`   | Minutes between background checks |
+| `providerUpdates.ignoredProviders`    | string[] | `[]`    | Provider ids excluded from checking and automatic installs |
+
+```json
+{
+  "providerUpdates": {
+    "autoUpdate": true,
+    "checkIntervalMinutes": 360,
+    "ignoredProviders": ["omp"]
+  }
+}
+```
+
 ## `providerAccounts`
 
 Multi-sign-in state, keyed by provider id. `claude` and `codex` support accounts today; the

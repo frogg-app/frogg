@@ -388,6 +388,12 @@ pub enum SessionMessage {
     ProviderDiagnosticResponse(ProviderDiagnosticResponse),
     #[serde(rename = "provider.usage.list.response")]
     ProviderUsageListResponse(ProviderUsageListResponse),
+    #[serde(rename = "provider.update.check.response")]
+    ProviderUpdateCheckResponse(ProviderUpdateCheckResponse),
+    #[serde(rename = "provider.update.install.response")]
+    ProviderUpdateInstallResponse(ProviderUpdateInstallResponse),
+    #[serde(rename = "provider.update.set_preferences.response")]
+    ProviderUpdateSetPreferencesResponse(ProviderUpdateSetPreferencesResponse),
     #[serde(rename = "provider.account.list.response")]
     ProviderAccountListResponse(ProviderAccountListResponse),
     #[serde(rename = "provider.account.create.response")]
@@ -10213,6 +10219,151 @@ pub enum ProviderUsageListResponsePayloadProvidersItemDetailsItemTone {
     Warning,
     #[serde(rename = "danger")]
     Danger,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateCheckResponse {
+    pub payload: ProviderUpdateCheckResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateCheckResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "checkedAt")]
+    pub checked_at: String,
+    pub entries: Vec<ProviderUpdateCheckResponsePayloadEntriesItem>,
+    pub preferences: ProviderUpdateCheckResponsePayloadPreferences,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateCheckResponsePayloadEntriesItem {
+    pub provider: String,
+    pub status: ProviderUpdateCheckResponsePayloadEntriesItemStatus,
+    #[serde(rename = "installedVersion", skip_serializing_if = "Option::is_none")]
+    pub installed_version: Option<String>,
+    #[serde(rename = "latestVersion", skip_serializing_if = "Option::is_none")]
+    pub latest_version: Option<String>,
+    #[serde(rename = "packageName", skip_serializing_if = "Option::is_none")]
+    pub package_name: Option<String>,
+    pub updatable: bool,
+    #[serde(rename = "binaryPath", skip_serializing_if = "Option::is_none")]
+    pub binary_path: Option<String>,
+    #[serde(rename = "manualInstallUrl", skip_serializing_if = "Option::is_none")]
+    pub manual_install_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderUpdateCheckResponsePayloadEntriesItemStatus {
+    #[serde(rename = "up-to-date")]
+    UpToDate,
+    #[serde(rename = "update-available")]
+    UpdateAvailable,
+    #[serde(rename = "not-installed")]
+    NotInstalled,
+    #[serde(rename = "unmanaged")]
+    Unmanaged,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateCheckResponsePayloadPreferences {
+    #[serde(rename = "checkEnabled")]
+    pub check_enabled: bool,
+    #[serde(rename = "autoUpdate")]
+    pub auto_update: bool,
+    #[serde(rename = "checkIntervalMinutes")]
+    pub check_interval_minutes: f64,
+    #[serde(rename = "ignoredProviders")]
+    pub ignored_providers: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateInstallResponse {
+    pub payload: ProviderUpdateInstallResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateInstallResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub provider: String,
+    pub updated: bool,
+    #[serde(rename = "previousVersion", skip_serializing_if = "Option::is_none")]
+    pub previous_version: Option<String>,
+    #[serde(rename = "installedVersion", skip_serializing_if = "Option::is_none")]
+    pub installed_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateSetPreferencesResponse {
+    pub payload: ProviderUpdateSetPreferencesResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateSetPreferencesResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "checkedAt")]
+    pub checked_at: String,
+    pub entries: Vec<ProviderUpdateSetPreferencesResponsePayloadEntriesItem>,
+    pub preferences: ProviderUpdateSetPreferencesResponsePayloadPreferences,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateSetPreferencesResponsePayloadEntriesItem {
+    pub provider: String,
+    pub status: ProviderUpdateSetPreferencesResponsePayloadEntriesItemStatus,
+    #[serde(rename = "installedVersion", skip_serializing_if = "Option::is_none")]
+    pub installed_version: Option<String>,
+    #[serde(rename = "latestVersion", skip_serializing_if = "Option::is_none")]
+    pub latest_version: Option<String>,
+    #[serde(rename = "packageName", skip_serializing_if = "Option::is_none")]
+    pub package_name: Option<String>,
+    pub updatable: bool,
+    #[serde(rename = "binaryPath", skip_serializing_if = "Option::is_none")]
+    pub binary_path: Option<String>,
+    #[serde(rename = "manualInstallUrl", skip_serializing_if = "Option::is_none")]
+    pub manual_install_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProviderUpdateSetPreferencesResponsePayloadEntriesItemStatus {
+    #[serde(rename = "up-to-date")]
+    UpToDate,
+    #[serde(rename = "update-available")]
+    UpdateAvailable,
+    #[serde(rename = "not-installed")]
+    NotInstalled,
+    #[serde(rename = "unmanaged")]
+    Unmanaged,
+    #[serde(rename = "unknown")]
+    Unknown,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProviderUpdateSetPreferencesResponsePayloadPreferences {
+    #[serde(rename = "checkEnabled")]
+    pub check_enabled: bool,
+    #[serde(rename = "autoUpdate")]
+    pub auto_update: bool,
+    #[serde(rename = "checkIntervalMinutes")]
+    pub check_interval_minutes: f64,
+    #[serde(rename = "ignoredProviders")]
+    pub ignored_providers: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

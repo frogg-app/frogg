@@ -3407,6 +3407,25 @@ export const es: TranslationResources = {
           title: "Modelos",
           empty: "Este proveedor no informó ningún modelo.",
         },
+        version: {
+          title: "Versión",
+          installed: "Instalada {{version}}",
+          latest: "última {{version}}",
+          update: "Actualizar",
+          install: "Instalar",
+          updating: "Actualizando…",
+          refresh: "Actualizar",
+          autoUpdate: "Actualizar automáticamente",
+          autoUpdateDescription:
+            "Instala en segundo plano las nuevas versiones de los proveedores en cuanto se publican.",
+          status: {
+            "up-to-date": "Actualizado",
+            "update-available": "Actualización disponible",
+            "not-installed": "No instalado",
+            unmanaged: "Gestionado fuera de Frogg",
+            unknown: "Versión desconocida",
+          },
+        },
       },
       statuses: {
         disabled: "Desactivado",

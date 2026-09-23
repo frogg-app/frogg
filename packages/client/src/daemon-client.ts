@@ -92,6 +92,9 @@ import type {
   RefreshProvidersSnapshotResponseMessage,
   ProviderDiagnosticResponseMessage,
   ProviderUsageListResponseMessage,
+  ProviderUpdateCheckResponseMessage,
+  ProviderUpdateInstallResponseMessage,
+  ProviderUpdateSetPreferencesResponseMessage,
   ProviderAccountListResponseMessage,
   ProviderAccountCreateResponseMessage,
   ProviderAccountDeleteResponseMessage,
@@ -500,6 +503,9 @@ type GetProvidersSnapshotPayload = GetProvidersSnapshotResponseMessage["payload"
 type RefreshProvidersSnapshotPayload = RefreshProvidersSnapshotResponseMessage["payload"];
 type ProviderDiagnosticPayload = ProviderDiagnosticResponseMessage["payload"];
 type ProviderUsageListPayload = ProviderUsageListResponseMessage["payload"];
+type ProviderUpdateCheckPayload = ProviderUpdateCheckResponseMessage["payload"];
+type ProviderUpdateInstallPayload = ProviderUpdateInstallResponseMessage["payload"];
+type ProviderUpdateSetPreferencesPayload = ProviderUpdateSetPreferencesResponseMessage["payload"];
 type ProviderAccountListPayload = ProviderAccountListResponseMessage["payload"];
 type ProviderAccountCreatePayload = ProviderAccountCreateResponseMessage["payload"];
 type ProviderAccountDeletePayload = ProviderAccountDeleteResponseMessage["payload"];
@@ -5304,6 +5310,66 @@ export class DaemonClient {
         ...(options?.provider ? { provider: options.provider } : {}),
         ...(options && "providerAccountId" in options && options.providerAccountId !== undefined
           ? { providerAccountId: options.providerAccountId }
+          : {}),
+      },
+    });
+  }
+
+  /**
+   * Provider CLI versions: what is installed, what is published, and whether
+   * Frogg can install the newer one itself.
+   */
+  async checkProviderUpdates(options?: {
+    forceRefresh?: boolean;
+    requestId?: string;
+  }): Promise<ProviderUpdateCheckPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: options?.requestId,
+      message: {
+        type: "provider.update.check.request",
+        ...(options?.forceRefresh !== undefined ? { forceRefresh: options.forceRefresh } : {}),
+      },
+    });
+  }
+
+  /**
+   * Install the latest published release of one provider. The install itself can
+   * take minutes, so the caller should allow a generous timeout.
+   */
+  async installProviderUpdate(options: {
+    provider: string;
+    requestId?: string;
+    timeout?: number;
+  }): Promise<ProviderUpdateInstallPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: options.requestId,
+      message: {
+        type: "provider.update.install.request",
+        provider: options.provider,
+      },
+      ...(options.timeout !== undefined ? { timeout: options.timeout } : {}),
+    });
+  }
+
+  /** Update the background-check and auto-update preferences. */
+  async setProviderUpdatePreferences(options: {
+    checkEnabled?: boolean;
+    autoUpdate?: boolean;
+    checkIntervalMinutes?: number;
+    ignoredProviders?: string[];
+    requestId?: string;
+  }): Promise<ProviderUpdateSetPreferencesPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest({
+      requestId: options.requestId,
+      message: {
+        type: "provider.update.set_preferences.request",
+        ...(options.checkEnabled !== undefined ? { checkEnabled: options.checkEnabled } : {}),
+        ...(options.autoUpdate !== undefined ? { autoUpdate: options.autoUpdate } : {}),
+        ...(options.checkIntervalMinutes !== undefined
+          ? { checkIntervalMinutes: options.checkIntervalMinutes }
+          : {}),
+        ...(options.ignoredProviders !== undefined
+          ? { ignoredProviders: options.ignoredProviders }
           : {}),
       },
     });

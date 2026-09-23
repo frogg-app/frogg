@@ -264,6 +264,25 @@ function normalizeAgentProviders(value: unknown): unknown {
   };
 }
 
+/**
+ * How aggressively the daemon keeps provider CLIs current. Checking is cheap and
+ * on by default; installing on the user's behalf is opt-in.
+ */
+export const ProviderUpdatesConfigSchema = z
+  .object({
+    // Poll for newer provider releases in the background.
+    checkEnabled: z.boolean().optional(),
+    // Install newer releases automatically when a check finds one.
+    autoUpdate: z.boolean().optional(),
+    // Minimum gap between background checks.
+    checkIntervalMinutes: z.number().int().positive().max(10_080).optional(),
+    // Providers excluded from checking and auto-update, by provider id.
+    ignoredProviders: z.array(z.string()).optional(),
+  })
+  .strict();
+
+export type ProviderUpdatesConfig = z.infer<typeof ProviderUpdatesConfigSchema>;
+
 export const PersistedConfigSchema = z
   .object({
     $schema: z.string().optional(),
@@ -367,6 +386,7 @@ export const PersistedConfigSchema = z
 
     providers: ProvidersSchema.optional(),
     providerAccounts: ProviderAccountsConfigSchema.optional(),
+    providerUpdates: ProviderUpdatesConfigSchema.optional(),
     // COMPAT(pluginsRemoved): plugin support was removed; keys written by older daemons are
     // accepted and ignored so existing config files still load. Remove after 2027-09-13.
     pluginsEnabled: z.unknown().optional(),

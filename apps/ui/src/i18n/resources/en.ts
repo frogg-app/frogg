@@ -3392,6 +3392,25 @@ export const en = {
           title: "Models",
           empty: "This provider reported no models.",
         },
+        version: {
+          title: "Version",
+          installed: "Installed {{version}}",
+          latest: "latest {{version}}",
+          update: "Update",
+          install: "Install",
+          updating: "Updating…",
+          refresh: "Refresh",
+          autoUpdate: "Update automatically",
+          autoUpdateDescription:
+            "Install new provider releases in the background as they are published.",
+          status: {
+            "up-to-date": "Up to date",
+            "update-available": "Update available",
+            "not-installed": "Not installed",
+            unmanaged: "Managed outside Frogg",
+            unknown: "Version unknown",
+          },
+        },
       },
       statuses: {
         disabled: "Disabled",

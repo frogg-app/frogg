@@ -100,6 +100,9 @@ import {
   type WebSocketRuntimeDiagnosticSnapshot,
 } from "./websocket/runtime-metrics.js";
 import { ProviderUsageService } from "../services/quota-fetcher/service.js";
+import { ProviderUpdateService } from "../services/provider-updates/service.js";
+import { ProviderUpdatePreferencesStore } from "../services/provider-updates/preferences.js";
+import { ProviderAutoUpdater } from "../services/provider-updates/auto-updater.js";
 import { getProcessMemoryDiagnostics, getProcessUptimeSeconds } from "./process-diagnostics.js";
 import {
   CLIENT_SHUTDOWN_RPC_REASON,
@@ -613,6 +616,9 @@ export class VoiceAssistantWebSocketServer {
   private unsubscribeSpeechReadiness: (() => void) | null = null;
   private unsubscribeDaemonConfigChange: (() => void) | null = null;
   private readonly providerUsageService: ProviderUsageService;
+  private readonly providerUpdateService: ProviderUpdateService;
+  private readonly providerUpdatePreferences: ProviderUpdatePreferencesStore;
+  private readonly providerAutoUpdater: ProviderAutoUpdater;
   private unsubscribeTerminalActivity: (() => void) | null = null;
   private readonly browserToolsBroker: BrowserToolsBroker | null;
   private readonly hubRelationships: HubRelationshipManagement | null;
@@ -767,6 +773,15 @@ export class VoiceAssistantWebSocketServer {
     this.providerUsageService = new ProviderUsageService({
       logger: this.logger,
     });
+
+    this.providerUpdateService = new ProviderUpdateService({ logger: this.logger });
+    this.providerUpdatePreferences = new ProviderUpdatePreferencesStore(this.froggHome);
+    this.providerAutoUpdater = new ProviderAutoUpdater({
+      logger: this.logger,
+      service: this.providerUpdateService,
+      getConfig: () => this.providerUpdatePreferences.read(),
+    });
+    this.providerAutoUpdater.start();
 
     this.wss = this.createWebSocketServer(server, wsConfig, auth);
     this.startRuntimeMetricsInterval();
@@ -1456,6 +1471,8 @@ export class VoiceAssistantWebSocketServer {
       terminalManager: this.terminalManager,
       providerSnapshotManager: this.providerSnapshotManager,
       providerUsageService: this.providerUsageService,
+      providerUpdateService: this.providerUpdateService,
+      providerUpdatePreferences: this.providerUpdatePreferences,
       hubExecutionAgents: options.hubExecutionAgents,
       hubRelationships: options.hubRelationships,
       serviceProxy: this.serviceProxy ?? undefined,
@@ -1673,6 +1690,7 @@ export class VoiceAssistantWebSocketServer {
         ...(this.providerAccountsEnabled ? { providerAccountAllowedModels: true } : {}),
         // COMPAT(providerAccountPreferences): added in v1.5.6, remove after 2027-09-19.
         ...(this.providerAccountsEnabled ? { providerAccountPreferences: true } : {}),
+        providerUpdates: true,
         // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
         // Rides the same manifest gate as the accounts themselves. Whether the
         // agent's own provider can carry its history across is a per-provider

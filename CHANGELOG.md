@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- Providers can be updated from Frogg, and kept updated. Each provider's own tab
+  in host settings gains a Version card showing the installed version against the
+  latest published one, with an Update button for the providers Frogg
+  distributes — Claude, Codex, Copilot and OpenCode, all npm packages — and a
+  link to the vendor's instructions for the ones it does not. `frogg provider
+update` reports the same versions and installs by name or `--all`. The daemon
+  checks for new releases in the background on its own schedule; turning on
+  `providerUpdates.autoUpdate` (the Update automatically switch, or `frogg
+provider update-settings --auto-update true`) lets it install them too, which
+  is off by default because replacing a provider binary under a running session
+  should be the user's decision.
+
 ## 1.5.25 — 2026-09-22
 
 - On phones, the account is picked from the composer toolbar rather than from

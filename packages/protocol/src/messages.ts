@@ -1847,6 +1847,28 @@ export const ProviderUsageListRequestMessageSchema = z.object({
   requestId: z.string(),
 });
 
+export const ProviderUpdateCheckRequestMessageSchema = z.object({
+  type: z.literal("provider.update.check.request"),
+  // Skip the daemon's cached snapshot and re-query the registry.
+  forceRefresh: z.boolean().optional(),
+  requestId: z.string(),
+});
+
+export const ProviderUpdateInstallRequestMessageSchema = z.object({
+  type: z.literal("provider.update.install.request"),
+  provider: AgentProviderSchema,
+  requestId: z.string(),
+});
+
+export const ProviderUpdateSetPreferencesRequestMessageSchema = z.object({
+  type: z.literal("provider.update.set_preferences.request"),
+  checkEnabled: z.boolean().optional(),
+  autoUpdate: z.boolean().optional(),
+  checkIntervalMinutes: z.number().int().positive().optional(),
+  ignoredProviders: z.array(z.string()).optional(),
+  requestId: z.string(),
+});
+
 export const ProviderAccountListRequestMessageSchema = z.object({
   type: z.literal("provider.account.list.request"),
   provider: AgentProviderSchema.optional(),
@@ -3397,6 +3419,9 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   RefreshProvidersSnapshotRequestMessageSchema,
   ProviderDiagnosticRequestMessageSchema,
   ProviderUsageListRequestMessageSchema,
+  ProviderUpdateCheckRequestMessageSchema,
+  ProviderUpdateInstallRequestMessageSchema,
+  ProviderUpdateSetPreferencesRequestMessageSchema,
   ProviderAccountListRequestMessageSchema,
   ProviderAccountCreateRequestMessageSchema,
   ProviderAccountDeleteRequestMessageSchema,
@@ -3857,6 +3882,8 @@ export const ServerInfoStatusPayloadSchema = z
         // provider.account.set_preferences is available and the daemon appends an
         // account's system prompt when launching an agent as it.
         providerAccountPreferences: z.boolean().optional(),
+        // COMPAT(providerUpdates): added in v1.5.26, remove after 2027-09-23.
+        providerUpdates: z.boolean().optional(),
         // COMPAT(agentProviderAccountTransfer): added in v1.5.7, remove after 2027-09-19.
         // agent.provider_account.transfer is available and this daemon's build of
         // the agent's provider can relocate a session between config directories.
@@ -6551,6 +6578,66 @@ export const ProviderUsageListResponseMessageSchema = z.object({
   }),
 });
 
+export const ProviderUpdateStatusSchema = z.enum([
+  "up-to-date",
+  "update-available",
+  "not-installed",
+  "unmanaged",
+  "unknown",
+]);
+
+export const ProviderUpdateEntrySchema = z.object({
+  provider: z.string(),
+  status: ProviderUpdateStatusSchema,
+  installedVersion: z.string().nullable(),
+  latestVersion: z.string().nullable(),
+  packageName: z.string().nullable(),
+  // True when the daemon can perform the update itself.
+  updatable: z.boolean(),
+  binaryPath: z.string().nullable(),
+  manualInstallUrl: z.string().nullable(),
+  error: z.string().nullable(),
+});
+
+export const ProviderUpdatePreferencesSchema = z.object({
+  checkEnabled: z.boolean(),
+  autoUpdate: z.boolean(),
+  checkIntervalMinutes: z.number(),
+  ignoredProviders: z.array(z.string()),
+});
+
+const ProviderUpdateSnapshotPayloadSchema = z.object({
+  requestId: z.string(),
+  checkedAt: z.string(),
+  entries: z.array(ProviderUpdateEntrySchema),
+  preferences: ProviderUpdatePreferencesSchema,
+  error: z.string().nullable(),
+});
+
+export const ProviderUpdateCheckResponseMessageSchema = z.object({
+  type: z.literal("provider.update.check.response"),
+  payload: ProviderUpdateSnapshotPayloadSchema,
+});
+
+export const ProviderUpdateSetPreferencesResponseMessageSchema = z.object({
+  type: z.literal("provider.update.set_preferences.response"),
+  payload: ProviderUpdateSnapshotPayloadSchema,
+});
+
+export const ProviderUpdateInstallResponseMessageSchema = z.object({
+  type: z.literal("provider.update.install.response"),
+  payload: z.object({
+    requestId: z.string(),
+    provider: z.string(),
+    updated: z.boolean(),
+    previousVersion: z.string().nullable(),
+    installedVersion: z.string().nullable(),
+    // Installer stdout/stderr, for surfacing a failed npm run to the user.
+    output: z.string().optional(),
+    error: z.string().nullable(),
+  }),
+});
+
 /**
  * Every provider-account response carries the same payload: the full account
  * list plus the capability manifest, so one round trip is enough for a client
@@ -7126,6 +7213,9 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   RefreshProvidersSnapshotResponseMessageSchema,
   ProviderDiagnosticResponseMessageSchema,
   ProviderUsageListResponseMessageSchema,
+  ProviderUpdateCheckResponseMessageSchema,
+  ProviderUpdateInstallResponseMessageSchema,
+  ProviderUpdateSetPreferencesResponseMessageSchema,
   ProviderAccountListResponseMessageSchema,
   ProviderAccountCreateResponseMessageSchema,
   ProviderAccountDeleteResponseMessageSchema,
@@ -7346,6 +7436,28 @@ export type ProviderUsageBalance = z.infer<typeof ProviderUsageBalanceSchema>;
 export type ProviderUsageDetail = z.infer<typeof ProviderUsageDetailSchema>;
 export type ProviderUsageListResponseMessage = z.infer<
   typeof ProviderUsageListResponseMessageSchema
+>;
+
+export type ProviderUpdateStatus = z.infer<typeof ProviderUpdateStatusSchema>;
+export type ProviderUpdateEntry = z.infer<typeof ProviderUpdateEntrySchema>;
+export type ProviderUpdatePreferences = z.infer<typeof ProviderUpdatePreferencesSchema>;
+export type ProviderUpdateCheckRequestMessage = z.infer<
+  typeof ProviderUpdateCheckRequestMessageSchema
+>;
+export type ProviderUpdateCheckResponseMessage = z.infer<
+  typeof ProviderUpdateCheckResponseMessageSchema
+>;
+export type ProviderUpdateInstallRequestMessage = z.infer<
+  typeof ProviderUpdateInstallRequestMessageSchema
+>;
+export type ProviderUpdateInstallResponseMessage = z.infer<
+  typeof ProviderUpdateInstallResponseMessageSchema
+>;
+export type ProviderUpdateSetPreferencesRequestMessage = z.infer<
+  typeof ProviderUpdateSetPreferencesRequestMessageSchema
+>;
+export type ProviderUpdateSetPreferencesResponseMessage = z.infer<
+  typeof ProviderUpdateSetPreferencesResponseMessageSchema
 >;
 
 export type ProviderAccountListRequestMessage = z.infer<

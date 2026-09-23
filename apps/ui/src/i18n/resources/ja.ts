@@ -3376,6 +3376,25 @@ export const ja: TranslationResources = {
           title: "モデル",
           empty: "このプロバイダーはモデルを報告しませんでした。",
         },
+        version: {
+          title: "バージョン",
+          installed: "インストール済み {{version}}",
+          latest: "最新 {{version}}",
+          update: "更新",
+          install: "インストール",
+          updating: "更新中…",
+          refresh: "再読み込み",
+          autoUpdate: "自動的に更新",
+          autoUpdateDescription:
+            "プロバイダーの新しいリリースが公開され次第、バックグラウンドでインストールします。",
+          status: {
+            "up-to-date": "最新です",
+            "update-available": "更新があります",
+            "not-installed": "未インストール",
+            unmanaged: "Frogg の管理外",
+            unknown: "バージョン不明",
+          },
+        },
       },
       statuses: {
         disabled: "無効",
