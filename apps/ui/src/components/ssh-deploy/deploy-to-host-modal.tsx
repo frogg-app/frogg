@@ -5,6 +5,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
 import { Check, Circle, Minus, Rocket, X } from "lucide-react-native";
 import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
+import type { ConnectionOfferV3 } from "@frogg/protocol/connection-offer";
 import type { HostProfile } from "@/types/host-connection";
 import { useHostMutations, useHosts } from "@/runtime/host-runtime";
 import { AdaptiveModalSheet, type SheetHeader } from "@/components/adaptive-modal-sheet";
@@ -26,10 +27,14 @@ import {
   type DeployStepStatus,
   type DeployToHostDeps,
 } from "@/desktop/ssh-deploy/deploy-to-host";
+import { claimDirectOffer, claimDirectPairingLink } from "@/pairing/claim-offer";
+import { resolveDeviceLabel } from "@/pairing/device-label";
 import {
+  closeSshDeployForward,
   describeSshDeployPlatform,
   fetchSshDeployPairCode,
   hardenSshDeploy,
+  openSshDeployForward,
   probeSshDeploy,
   runSshDeployJob,
   type SshDeployProbe,
@@ -744,6 +749,31 @@ interface DeployRunOptions {
   onProbe: (probe: SshDeployProbe) => void;
 }
 
+/**
+ * Redeems the daemon's pairing code through a short-lived loopback forward, so
+ * a daemon bound to loopback still hands this device a real credential. The
+ * forward is closed as soon as the claim settles, either way.
+ */
+async function claimOverTunnel(
+  pairing: Parameters<DeployToHostDeps["tunnelCredential"]>[0],
+  input: Parameters<DeployToHostDeps["tunnelCredential"]>[1],
+): Promise<string | null> {
+  if (!pairing.link && pairing.offer?.v !== 3) return null;
+  const forward = await openSshDeployForward(input.target, input.daemonPort);
+  try {
+    const label = resolveDeviceLabel();
+    const claimed = pairing.link
+      ? await claimDirectPairingLink(pairing.link, { label, endpointOverride: forward.endpoint })
+      : await claimDirectOffer(pairing.offer as ConnectionOfferV3, {
+          label,
+          endpointOverride: forward.endpoint,
+        });
+    return claimed.credential;
+  } finally {
+    await closeSshDeployForward(forward.forwardId).catch(() => undefined);
+  }
+}
+
 function asDeployError(caught: unknown): DeployToHostError {
   return caught instanceof DeployToHostError
     ? caught
@@ -770,6 +800,7 @@ async function executeDeploy(
     install: (job, signal) => runSshDeployJob(job, { signal, onLog: options.onLog }),
     pairCode: fetchSshDeployPairCode,
     harden: hardenSshDeploy,
+    tunnelCredential: claimOverTunnel,
     connectTunnel: async (target) => {
       const result = await options.connectTunnel(target);
       profile = result.profile;

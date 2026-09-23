@@ -13,6 +13,7 @@ import { parseProbeOutput } from "./probe.js";
 import type { ExecuteScript } from "./executor.js";
 import type { PairCodeResult } from "./pair-code.js";
 import type { HardenResult } from "./harden.js";
+import type { SshForward, SshForwardManager } from "./forward.js";
 
 export type DeployEvent =
   | { jobId: string; kind: "log"; text: string; stream: "stdout" | "stderr" }
@@ -40,6 +41,8 @@ interface ManagerOptions {
   pairCode?: { script: string; parse(stdout: string): PairCodeResult };
   /** The lock-down script (already branded) and its output parser; see `harden.ts`. */
   harden?: { script: string; parse(stdout: string): HardenResult };
+  /** Opens short-lived loopback forwards so a tunnel deploy can pair; see `forward.ts`. */
+  forwards?: SshForwardManager;
 }
 
 export class DeployManager {
@@ -116,6 +119,32 @@ export class DeployManager {
     }
   }
 
+  /**
+   * Opens a loopback forward to the deployed daemon so the app can redeem its
+   * pairing code over the tunnel; see `forward.ts`. Always paired with
+   * `closeForward`, which the caller runs whether pairing succeeded or not.
+   */
+  async openForward(args: unknown): Promise<SshForward> {
+    const forwards = this.options.forwards;
+    if (!forwards) throw new Error("Pairing over a tunnel is unavailable in this build.");
+    const target = parseTarget(args);
+    const daemonPort = record(args).daemonPort;
+    if (
+      typeof daemonPort !== "number" ||
+      !Number.isInteger(daemonPort) ||
+      daemonPort < 1 ||
+      daemonPort > 65535
+    )
+      throw new Error("Daemon port must be between 1 and 65535.");
+    return forwards.open(target, daemonPort);
+  }
+
+  closeForward(args: unknown): { closed: boolean } {
+    const forwardId = record(args).forwardId;
+    if (typeof forwardId !== "string" || !forwardId) throw new Error("forwardId is required");
+    return this.options.forwards?.close(forwardId) ?? { closed: false };
+  }
+
   start(args: unknown): { jobId: string } {
     const request = parseRequest(args, this.options.defaultVersion, this.options.brand);
     return this.launch(
@@ -136,6 +165,7 @@ export class DeployManager {
   }
   cancelAll(): void {
     for (const controller of [...this.jobs.values(), ...this.probes]) controller.abort();
+    this.options.forwards?.closeAll();
   }
 
   private launch(target: SshTarget, command: string, script: string): { jobId: string } {

@@ -61,6 +61,7 @@ function deps(overrides: Partial<DeployToHostDeps> = {}): DeployToHostDeps {
       expiresAt: null,
     })),
     harden: vi.fn(async () => ({ trustLan: false, applied: "live", unsupported: false })),
+    tunnelCredential: vi.fn(async () => "device-credential"),
     connectTunnel: vi.fn(async () => ({ serverId: "srv-1", hostname: "box" })),
     claim: vi.fn(async () => ({ serverId: "srv-1", hostname: "box" })),
     claimPairingLink: vi.fn(async () => ({ serverId: "srv-1", hostname: "box" })),
@@ -98,9 +99,12 @@ describe("deploy to host", () => {
       }),
       expect.anything(),
     );
+    // The tunnel pairs for real: the credential rides the tunnel as the
+    // daemon password, so the daemon has a principal to revoke.
     expect(d.connectTunnel).toHaveBeenCalledWith({
       host: "u@box",
       daemonPort: 9999,
+      password: "device-credential",
     });
     expect(d.claim).not.toHaveBeenCalled();
     expect(steps).toEqual([
@@ -115,6 +119,14 @@ describe("deploy to host", () => {
       "pair:running",
       "pair:done",
     ]);
+  });
+
+  it("reports a tunnel host unverified when no credential could be obtained", async () => {
+    const d = deps({ tunnelCredential: vi.fn(async () => null) });
+    await expect(run("tunnel", d).promise).resolves.toMatchObject({ verified: false });
+    expect(d.connectTunnel).toHaveBeenCalledWith(
+      expect.not.objectContaining({ password: expect.anything() }),
+    );
   });
 
   it("stops a fresh daemon trusting its LAN before any pairing code exists", async () => {

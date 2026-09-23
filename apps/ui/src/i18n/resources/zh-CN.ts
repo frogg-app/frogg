@@ -1819,7 +1819,7 @@ export const zhCN: TranslationResources = {
       lanTrusted: "警告：该守护进程仍然信任自己所在的网络，附近设备无需配对即可连接。",
       skippedSteps: {
         secure: "已跳过：守护进程此前已安装，因此保持其网络信任设置不变。",
-        pairCode: "已跳过：守护进程未签发配对码；主机由 SSH 认证。",
+        pairCode: "已跳过：守护进程未签发配对码，因此本设备在它上面没有凭据。",
       },
       platform: "检测到 {{platform}}",
       formErrors: {
@@ -1857,7 +1857,7 @@ export const zhCN: TranslationResources = {
         hideLog: "隐藏日志",
       },
       success: "已添加 {{name}}。",
-      unverified: "守护进程未签发配对码，因此连接仅依赖 SSH 主机密钥。",
+      unverified: "守护进程未向本设备签发凭据，因此连接仅依赖 SSH 主机密钥，且无法从主机端吊销。",
     },
     networkScan: {
       searching: "正在扫描…",

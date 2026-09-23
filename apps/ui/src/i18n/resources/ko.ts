@@ -1855,7 +1855,7 @@ export const ko: TranslationResources = {
         "경고: 이 데몬은 여전히 자기 네트워크를 신뢰하므로 주변 기기가 페어링 없이 연결할 수 있습니다.",
       skippedSteps: {
         secure: "건너뜀: 데몬이 이미 설치되어 있어 네트워크 신뢰 설정을 그대로 두었습니다.",
-        pairCode: "건너뜀: 데몬이 페어링 코드를 발급하지 않았습니다. 호스트는 SSH로 인증됩니다.",
+        pairCode: "건너뜀: 데몬이 페어링 코드를 발급하지 않아 이 기기의 자격 증명이 없습니다.",
       },
       platform: "{{platform}} 감지됨",
       formErrors: {
@@ -1895,7 +1895,8 @@ export const ko: TranslationResources = {
         hideLog: "로그 숨기기",
       },
       success: "{{name}}을(를) 추가했습니다.",
-      unverified: "데몬이 페어링 코드를 발급하지 않아 연결은 SSH 호스트 키에만 의존합니다.",
+      unverified:
+        "데몬이 이 기기에 자격 증명을 발급하지 않아 연결이 SSH 호스트 키에만 의존하며 호스트에서 취소할 수 없습니다.",
     },
     networkScan: {
       searching: "검색 중…",

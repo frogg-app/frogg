@@ -8,6 +8,7 @@ import { buildProbeScript } from "./probe.js";
 import { deployScript } from "./scripts.js";
 import { cliPairCodeAdapter } from "./pair-code.js";
 import { cliHardenAdapter } from "./harden.js";
+import { SshForwardManager } from "./forward.js";
 
 export const DEPLOY_EVENT = "frogg:event:ssh-deploy-event";
 let manager: DeployManager | undefined;
@@ -33,6 +34,9 @@ export function createSshDeployCommandHandlers(): Record<string, DesktopCommandH
         script: cliHardenAdapter.script(brand),
         parse: cliHardenAdapter.parse,
       },
+      forwards: new SshForwardManager({
+        passwordEnvironment: createSshPasswordEnvironment,
+      }),
       emit(event) {
         for (const window of BrowserWindow.getAllWindows()) {
           if (!window.isDestroyed() && !window.webContents.isDestroyed())
@@ -47,6 +51,8 @@ export function createSshDeployCommandHandlers(): Record<string, DesktopCommandH
     ssh_deploy_probe: (args) => current.probe(args),
     ssh_deploy_pair_code: (args) => current.pairCode(args),
     ssh_deploy_harden: (args) => current.harden(args),
+    ssh_deploy_open_forward: (args) => current.openForward(args),
+    ssh_deploy_close_forward: (args) => current.closeForward(args),
     ssh_deploy_start: (args) => current.start(args),
     ssh_deploy_uninstall: (args) => current.uninstall(args),
     ssh_deploy_cancel: (args) => current.cancel(args),

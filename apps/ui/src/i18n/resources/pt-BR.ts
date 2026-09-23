@@ -1876,7 +1876,8 @@ export const ptBR: TranslationResources = {
       skippedSteps: {
         secure:
           "Ignorado: o daemon já estava instalado, então a confiança na rede foi mantida como está.",
-        pairCode: "Ignorado: o daemon não emitiu código de pareamento; o SSH autentica o host.",
+        pairCode:
+          "Ignorado: o daemon não emitiu código de pareamento, então este dispositivo não tem credencial nele.",
       },
       platform: "{{platform}} detectado",
       formErrors: {
@@ -1917,7 +1918,7 @@ export const ptBR: TranslationResources = {
       },
       success: "{{name}} foi adicionado.",
       unverified:
-        "O daemon não emitiu código de pareamento, então a conexão depende apenas da chave de host SSH.",
+        "O daemon não emitiu credencial para este dispositivo, então a conexão depende apenas da chave de host SSH e não pode ser revogada pelo host.",
     },
     networkScan: {
       searching: "Buscando…",

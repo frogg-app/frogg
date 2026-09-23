@@ -215,6 +215,35 @@ export async function hardenSshDeploy(target: SshDeployTarget): Promise<SshDeplo
   );
 }
 
+/**
+ * A short-lived loopback forward to a deployed daemon, so a tunnel deploy can
+ * redeem the daemon's pairing code and get a real device credential instead
+ * of talking to an unauthenticated loopback socket. See
+ * apps/desktop/src/deploy/forward.ts.
+ */
+export interface SshDeployForward {
+  forwardId: string;
+  endpoint: string;
+}
+
+export async function openSshDeployForward(
+  target: SshDeployTarget,
+  daemonPort: number,
+): Promise<SshDeployForward> {
+  const raw = await invokeDesktopCommand<unknown>("ssh_deploy_open_forward", {
+    ...targetArgs(target),
+    daemonPort,
+  });
+  const forwardId = isRecord(raw) ? text(raw.forwardId) : "";
+  const endpoint = isRecord(raw) ? text(raw.endpoint) : "";
+  if (!forwardId || !endpoint) throw new Error("The pairing tunnel did not open.");
+  return { forwardId, endpoint };
+}
+
+export async function closeSshDeployForward(forwardId: string): Promise<void> {
+  await invokeDesktopCommand<unknown>("ssh_deploy_close_forward", { forwardId });
+}
+
 /** Runs the daemon's pairing command over SSH and returns what it printed. */
 export async function fetchSshDeployPairCode(target: SshDeployTarget): Promise<SshDeployPairCode> {
   return parseSshDeployPairCode(

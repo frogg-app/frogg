@@ -1866,7 +1866,7 @@ export const ja: TranslationResources = {
         secure:
           "スキップ: デーモンはすでにインストールされていたため、ネットワークの信頼設定はそのままにしました。",
         pairCode:
-          "スキップ: デーモンがペアリングコードを発行しませんでした。ホストは SSH で認証されます。",
+          "スキップ: デーモンがペアリングコードを発行しなかったため、このデバイスの資格情報はありません。",
       },
       platform: "{{platform}} を検出",
       formErrors: {
@@ -1907,7 +1907,7 @@ export const ja: TranslationResources = {
       },
       success: "{{name}} を追加しました。",
       unverified:
-        "デーモンがペアリングコードを発行しなかったため、接続は SSH のホスト鍵のみに依存します。",
+        "デーモンはこのデバイスに資格情報を発行しなかったため、接続は SSH ホスト鍵のみに依存し、ホスト側から失効させることができません。",
     },
     networkScan: {
       searching: "検索中…",

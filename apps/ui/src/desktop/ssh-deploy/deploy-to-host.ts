@@ -100,7 +100,18 @@ export interface DeployToHostDeps {
     sshPort?: number;
     daemonPort: number;
     identityFile?: string;
+    /** The device credential the tunnel pairing returned, sent as the daemon password. */
+    password?: string;
   }): Promise<{ serverId: string; hostname: string | null }>;
+  /**
+   * Redeems the daemon's pairing code through a loopback forward, so a
+   * loopback-bound daemon still issues this device a real credential. Returns
+   * null when the daemon offered nothing redeemable.
+   */
+  tunnelCredential(
+    pairing: { offer: AnyConnectionOffer | null; link: DirectPairingLink | null },
+    input: { target: SshDeployTarget; daemonPort: number },
+  ): Promise<string | null>;
   /** Redeems a v3 claim offer; the device label is recorded by the daemon. */
   claim(
     offer: ConnectionOfferV3,
@@ -347,25 +358,34 @@ async function performPairing(
     offer: AnyConnectionOffer | null;
     link: DirectPairingLink | null;
   },
-): Promise<{ serverId: string; hostname: string | null }> {
+): Promise<{ serverId: string; hostname: string | null; credentialed: boolean }> {
   try {
     if (input.network === "tunnel") {
-      return await deps.connectTunnel({
+      // Pair over the tunnel rather than trusting the loopback socket: the
+      // credential is what makes revocation, roles and presence work here.
+      const credential = await deps.tunnelCredential(pairing, {
+        target: input.target,
+        daemonPort: input.daemonPort,
+      });
+      const connected = await deps.connectTunnel({
         host: input.target.host,
         ...(input.target.sshPort === undefined ? {} : { sshPort: input.target.sshPort }),
         ...(input.target.identityFile === undefined
           ? {}
           : { identityFile: input.target.identityFile }),
         daemonPort: input.daemonPort,
+        ...(credential ? { password: credential } : {}),
       });
+      return { ...connected, credentialed: credential !== null };
     }
     const { code, offer, link } = pairing;
-    if (link) return await deps.claimPairingLink(link);
+    if (link) return { ...(await deps.claimPairingLink(link)), credentialed: true };
     const endpointOverride = code?.host && code.port ? `${code.host}:${code.port}` : undefined;
-    return await deps.claim(
+    const claimed = await deps.claim(
       offer as ConnectionOfferV3,
       endpointOverride ? { endpointOverride } : {},
     );
+    return { ...claimed, credentialed: true };
   } catch (error) {
     if (isCancelled(error, context.signal)) throw error;
     return context.fail(claimErrorCode(error), message(error));
@@ -451,15 +471,17 @@ export async function runDeployToHost(
     onStep("pairCode", pairing.code ? "done" : "skipped");
 
     begin("pair");
-    const paired = await performPairing(input, deps, context, pairing);
+    const { credentialed, ...paired } = await performPairing(input, deps, context, pairing);
     const expectedServerId = pairing.offer?.serverId ?? pairing.link?.serverId ?? null;
     if (expectedServerId && paired.serverId !== expectedServerId) {
       fail("server_mismatch", `${paired.serverId} ≠ ${expectedServerId}`);
     }
     onStep("pair", "done");
+    // Verified means the daemon SSH named issued *this device* a credential,
+    // not merely that SSH reached a daemon.
     return {
       ...paired,
-      verified: pairing.offer !== null || pairing.link !== null,
+      verified: credentialed && (pairing.offer !== null || pairing.link !== null),
       lanLockedDown,
       probe,
     };

@@ -1895,7 +1895,8 @@ export const fr: TranslationResources = {
       skippedSteps: {
         secure:
           "Ignoré : le daemon était déjà installé, sa confiance réseau a donc été laissée telle quelle.",
-        pairCode: "Ignoré : le daemon n’a émis aucun code d’association ; SSH authentifie l’hôte.",
+        pairCode:
+          "Ignoré : le daemon n'a émis aucun code d'appairage, cet appareil n'a donc pas d'identifiant sur lui.",
       },
       platform: "{{platform}} détecté",
       formErrors: {
@@ -1936,7 +1937,7 @@ export const fr: TranslationResources = {
       },
       success: "{{name}} a été ajouté.",
       unverified:
-        "Le daemon n’a émis aucun code d’association ; la connexion repose uniquement sur la clé d’hôte SSH.",
+        "Le daemon n'a délivré aucun identifiant à cet appareil : la connexion repose sur la seule clé d'hôte SSH et ne peut pas être révoquée depuis l'hôte.",
     },
     networkScan: {
       searching: "Recherche…",

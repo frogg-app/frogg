@@ -1855,7 +1855,8 @@ export const en = {
       skippedSteps: {
         secure:
           "Skipped: the daemon was already installed, so its network trust was left as it is.",
-        pairCode: "Skipped: the daemon issued no pairing code; SSH authenticates the host.",
+        pairCode:
+          "Skipped: the daemon issued no pairing code, so this device has no credential on it.",
       },
       platform: "Detected {{platform}}",
       formErrors: {
@@ -1895,7 +1896,7 @@ export const en = {
       },
       success: "{{name}} was added.",
       unverified:
-        "The daemon issued no pairing code, so the connection relies on the SSH host key alone.",
+        "The daemon issued this device no credential, so the connection relies on the SSH host key alone and cannot be revoked from the host.",
     },
     networkScan: {
       searching: "Scanning…",

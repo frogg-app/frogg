@@ -1891,7 +1891,8 @@ export const es: TranslationResources = {
       skippedSteps: {
         secure:
           "Omitido: el daemon ya estaba instalado, así que su confianza en la red se dejó como está.",
-        pairCode: "Omitido: el daemon no emitió código de emparejamiento; SSH autentica el host.",
+        pairCode:
+          "Omitido: el daemon no emitió código de emparejamiento, así que este dispositivo no tiene credencial en él.",
       },
       platform: "Detectado {{platform}}",
       formErrors: {
@@ -1932,7 +1933,7 @@ export const es: TranslationResources = {
       },
       success: "Se añadió {{name}}.",
       unverified:
-        "El daemon no emitió código de emparejamiento, así que la conexión depende solo de la clave de host SSH.",
+        "El daemon no emitió credencial para este dispositivo, así que la conexión depende solo de la clave de host SSH y no se puede revocar desde el host.",
     },
     networkScan: {
       searching: "Buscando…",
