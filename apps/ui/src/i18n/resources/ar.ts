@@ -1842,8 +1842,6 @@ export const ar: TranslationResources = {
         invalidSshPort: "أدخل منفذ SSH بين 1 و65535.",
         invalidDaemonPort: "أدخل منفذ البرنامج الخفي بين 1 و65535.",
         invalidKeyFile: "أدخل مسارًا مطلقًا أو مسارًا يبدأ بـ ~/.",
-        tunnelKeyUnsupported:
-          "اتصالات نفق SSH تستخدم ssh-agent و‎~/.ssh/config فقط. أضف هذا المفتاح إلى إعدادات SSH أو اتصل عبر الشبكة.",
       },
       errors: {
         ssh_failed: "تعذّر الاتصال عبر SSH. {{detail}}",

@@ -1877,8 +1877,6 @@ export const ptBR: TranslationResources = {
         invalidSshPort: "Digite uma porta SSH entre 1 e 65535.",
         invalidDaemonPort: "Digite uma porta do daemon entre 1 e 65535.",
         invalidKeyFile: "Digite um caminho absoluto ou iniciado por ~/.",
-        tunnelKeyUnsupported:
-          "Conexões por túnel SSH usam apenas o ssh-agent e o ~/.ssh/config. Adicione esta chave à sua configuração SSH ou conecte pela rede.",
       },
       errors: {
         ssh_failed: "Não foi possível conectar por SSH. {{detail}}",

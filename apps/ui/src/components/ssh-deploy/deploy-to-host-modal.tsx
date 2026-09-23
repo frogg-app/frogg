@@ -43,9 +43,15 @@ const ThemedCheck = withUnistyles(Check);
 const ThemedX = withUnistyles(X);
 const ThemedMinus = withUnistyles(Minus);
 const ThemedCircle = withUnistyles(Circle);
-const mutedIconMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
-const successIconMapping = (theme: Theme) => ({ color: theme.colors.statusSuccess });
-const dangerIconMapping = (theme: Theme) => ({ color: theme.colors.statusDanger });
+const mutedIconMapping = (theme: Theme) => ({
+  color: theme.colors.foregroundMuted,
+});
+const successIconMapping = (theme: Theme) => ({
+  color: theme.colors.statusSuccess,
+});
+const dangerIconMapping = (theme: Theme) => ({
+  color: theme.colors.statusDanger,
+});
 
 const styles = StyleSheet.create((theme) => ({
   helper: { color: theme.colors.foregroundMuted, fontSize: theme.fontSize.sm },
@@ -172,7 +178,13 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
   );
 
   const resetForm = useCallback(() => {
-    fields.current = { host: "", user: "", sshPort: "", identityFile: "", daemonPort: "" };
+    fields.current = {
+      host: "",
+      user: "",
+      sshPort: "",
+      identityFile: "",
+      daemonPort: "",
+    };
     setChosenMode(null);
     setAlias(null);
     setNetwork("tunnel");
@@ -404,7 +416,10 @@ function DeployProgress({
       <DeploySteps steps={steps} probe={probe} testID="deploy-host-steps" />
       {error ? (
         <Text style={styles.error} testID="deploy-host-error">
-          {t(`pairing.deployHost.errors.${error.code}`, { detail: error.detail, port: daemonPort })}
+          {t(`pairing.deployHost.errors.${error.code}`, {
+            detail: error.detail,
+            port: daemonPort,
+          })}
         </Text>
       ) : null}
       {done ? (
@@ -478,7 +493,13 @@ function DeployLog({ lines }: { lines: string[] }) {
 
 interface ManualFieldsProps {
   size: "sm" | "md";
-  fields: { host: string; user: string; sshPort: string; identityFile: string; daemonPort: string };
+  fields: {
+    host: string;
+    user: string;
+    sshPort: string;
+    identityFile: string;
+    daemonPort: string;
+  };
   formError: DeployFormError | null;
   formErrorText: string | undefined;
   onUser: (value: string) => void;
@@ -579,11 +600,7 @@ function ManualFields({
       <Field
         label={t("pairing.deployHost.fields.identityFile")}
         hint={t("pairing.deployHost.fields.identityFileHint")}
-        error={
-          formError === "invalidKeyFile" || formError === "tunnelKeyUnsupported"
-            ? formErrorText
-            : undefined
-        }
+        error={formError === "invalidKeyFile" ? formErrorText : undefined}
         testID="deploy-host-key"
       >
         <FormTextInput
@@ -684,7 +701,9 @@ function DeploySteps({
   }, [probe, t]);
   const noteFor = (step: DeployStepId): string | null => {
     if (step === "connect" && probe) {
-      return t("pairing.deployHost.platform", { platform: describeSshDeployPlatform(probe) });
+      return t("pairing.deployHost.platform", {
+        platform: describeSshDeployPlatform(probe),
+      });
     }
     return steps[step] === "skipped" ? t("pairing.deployHost.skipped") : null;
   };
@@ -837,7 +856,11 @@ function useDeployRun() {
       setPhase("running");
       try {
         const deployed = await executeDeploy(
-          { target: resolved.target, network: form.network, daemonPort: resolved.daemonPort },
+          {
+            target: resolved.target,
+            network: form.network,
+            daemonPort: resolved.daemonPort,
+          },
           {
             signal: controller.signal,
             connectTunnel: probeAndUpsertRemoteSshConnection,

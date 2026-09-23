@@ -4,6 +4,12 @@ export interface SshTransportTarget {
   host: string;
   sshPort?: number;
   daemonPort: number;
+  /**
+   * An explicit ssh private key for this connection. When set, ssh is told to
+   * use only this key (`IdentitiesOnly=yes`) instead of ssh-agent's keys;
+   * `~/.ssh/config` still supplies everything else for the host.
+   */
+  identityFile?: string;
 }
 
 export function validatePort(value: string | number, label: string): number {
@@ -21,6 +27,29 @@ export function validateSshHost(host: string): string {
     throw new Error("SSH host is invalid");
   }
   return normalized;
+}
+
+/**
+ * An ssh key path: absolute, `~/`-relative or a Windows drive path. Rejects
+ * leading `-` (which ssh would read as a flag), whitespace and control
+ * characters so the path can never become another argument.
+ */
+export function validateSshIdentityFile(value: string): string {
+  const path = value.trim();
+  if (!path) throw new Error("SSH key file is required");
+  if (
+    path.length > 1024 ||
+    path.startsWith("-") ||
+    /\s/u.test(path) ||
+    [...path].some((character) => {
+      const code = character.charCodeAt(0);
+      return code < 32 || code === 127;
+    }) ||
+    !(path.startsWith("~/") || path.startsWith("/") || /^[A-Za-z]:[\\/]/u.test(path))
+  ) {
+    throw new Error("SSH key file must be an absolute or ~/ path");
+  }
+  return path;
 }
 
 export function parseSshTransportUri(value: string): SshTransportTarget {
@@ -76,6 +105,9 @@ export function buildSshTunnelArgs(target: SshTransportTarget): string[] {
   ];
   if (target.sshPort !== undefined) {
     args.push("-p", String(validatePort(target.sshPort, "SSH port")));
+  }
+  if (target.identityFile !== undefined) {
+    args.push("-i", validateSshIdentityFile(target.identityFile), "-o", "IdentitiesOnly=yes");
   }
   args.push("-W", `127.0.0.1:${daemonPort}`, host);
   return args;

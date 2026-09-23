@@ -1896,8 +1896,6 @@ export const fr: TranslationResources = {
         invalidSshPort: "Saisissez un port SSH entre 1 et 65535.",
         invalidDaemonPort: "Saisissez un port de daemon entre 1 et 65535.",
         invalidKeyFile: "Saisissez un chemin absolu ou commençant par ~/.",
-        tunnelKeyUnsupported:
-          "Les connexions par tunnel SSH n’utilisent que ssh-agent et ~/.ssh/config. Ajoutez cette clé à votre configuration SSH ou connectez-vous par le réseau.",
       },
       errors: {
         ssh_failed: "Connexion SSH impossible. {{detail}}",

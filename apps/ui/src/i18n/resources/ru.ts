@@ -1873,8 +1873,6 @@ export const ru: TranslationResources = {
         invalidSshPort: "Введите порт SSH от 1 до 65535.",
         invalidDaemonPort: "Введите порт демона от 1 до 65535.",
         invalidKeyFile: "Введите абсолютный путь или путь, начинающийся с ~/.",
-        tunnelKeyUnsupported:
-          "Подключения через SSH-туннель используют только ssh-agent и ~/.ssh/config. Добавьте этот ключ в конфигурацию SSH или подключайтесь по сети.",
       },
       errors: {
         ssh_failed: "Не удалось подключиться по SSH. {{detail}}",

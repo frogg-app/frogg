@@ -1,6 +1,11 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createServer, type Server, type Socket } from "node:net";
-import { buildSshTunnelArgs, validatePort, validateSshHost } from "@frogg/protocol/ssh-transport";
+import {
+  buildSshTunnelArgs,
+  validatePort,
+  validateSshHost,
+  validateSshIdentityFile,
+} from "@frogg/protocol/ssh-transport";
 import { brand } from "@frogg/branding";
 import { createSshPasswordEnvironment } from "./ssh-password.js";
 import type { TransportEndpoint } from "./local-transport.js";
@@ -15,6 +20,8 @@ export interface SshTransportTarget {
   host: string;
   sshPort?: number;
   daemonPort?: number;
+  /** An explicit ssh private key; ssh-agent and `~/.ssh/config` apply otherwise. */
+  identityFile?: string;
   sshPassword?: string;
 }
 
@@ -78,11 +85,16 @@ function parseSshTransportTarget(value: Record<string, unknown>): SshTransportTa
     value.sshPort === undefined ? undefined : validatePortValue(value.sshPort, "SSH port");
   const daemonPort =
     value.daemonPort === undefined ? undefined : validatePortValue(value.daemonPort, "Daemon port");
+  const identityFile =
+    value.identityFile === undefined || value.identityFile === ""
+      ? undefined
+      : validateSshIdentityFile(typeof value.identityFile === "string" ? value.identityFile : "");
   return {
     transportType: "ssh",
     host,
     ...(sshPort !== undefined ? { sshPort } : {}),
     ...(daemonPort !== undefined ? { daemonPort } : {}),
+    ...(identityFile !== undefined ? { identityFile } : {}),
     ...(typeof value.sshPassword === "string" && value.sshPassword
       ? { sshPassword: value.sshPassword }
       : {}),
@@ -132,6 +144,7 @@ export function buildSshArgs(target: SshTransportTarget): string[] {
   const args = buildSshTunnelArgs({
     host: target.host,
     ...(target.sshPort !== undefined ? { sshPort: target.sshPort } : {}),
+    ...(target.identityFile !== undefined ? { identityFile: target.identityFile } : {}),
     daemonPort: target.daemonPort ?? brand.daemonPort,
   });
   if (target.sshPassword) {

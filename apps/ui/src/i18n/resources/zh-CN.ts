@@ -1821,8 +1821,6 @@ export const zhCN: TranslationResources = {
         invalidSshPort: "请输入 1 到 65535 之间的 SSH 端口。",
         invalidDaemonPort: "请输入 1 到 65535 之间的守护进程端口。",
         invalidKeyFile: "请输入绝对路径或以 ~/ 开头的路径。",
-        tunnelKeyUnsupported:
-          "SSH 隧道连接只使用 ssh-agent 和 ~/.ssh/config。请将此密钥加入 SSH 配置，或改用网络连接。",
       },
       errors: {
         ssh_failed: "无法通过 SSH 连接。{{detail}}",

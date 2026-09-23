@@ -77,6 +77,7 @@ export interface DeployToHostDeps {
     host: string;
     sshPort?: number;
     daemonPort: number;
+    identityFile?: string;
   }): Promise<{ serverId: string; hostname: string | null }>;
   /** Redeems a v3 claim offer; the device label is recorded by the daemon. */
   claim(
@@ -146,8 +147,7 @@ export type DeployFormError =
   | "invalidHost"
   | "invalidSshPort"
   | "invalidDaemonPort"
-  | "invalidKeyFile"
-  | "tunnelKeyUnsupported";
+  | "invalidKeyFile";
 
 function parsePortText(text: string, fallback: number | undefined): number | undefined | null {
   const trimmed = text.trim();
@@ -162,9 +162,9 @@ const HOST_PATTERN = /^[^\s@-][^\s@]*$/u;
 /**
  * The form's SSH target. A config entry submits its alias alone so `ssh`
  * resolves HostName, User, Port, IdentityFile and ProxyJump from the config;
- * the manual tab builds `user@host` plus port and an optional key file.
- * A manual key file cannot ride a tunnel connection (which only uses
- * ssh-agent and the config), so that combination asks for a config entry.
+ * the manual tab builds `user@host` plus port and an optional key file. The
+ * key file rides the tunnel connection too, so the saved host reconnects with
+ * the same key the deploy used.
  */
 export function resolveDeployTarget(input: {
   mode: "config" | "manual";
@@ -197,8 +197,6 @@ export function resolveDeployTarget(input: {
   const identityFile = input.identityFile.trim();
   if (identityFile && !/^(~\/|\/|[A-Za-z]:[\\/])/u.test(identityFile))
     return { ok: false, error: "invalidKeyFile" };
-  if (identityFile && input.network === "tunnel")
-    return { ok: false, error: "tunnelKeyUnsupported" };
   return {
     ok: true,
     target: {
@@ -305,6 +303,9 @@ async function performPairing(
       return await deps.connectTunnel({
         host: input.target.host,
         ...(input.target.sshPort === undefined ? {} : { sshPort: input.target.sshPort }),
+        ...(input.target.identityFile === undefined
+          ? {}
+          : { identityFile: input.target.identityFile }),
         daemonPort: input.daemonPort,
       });
     }

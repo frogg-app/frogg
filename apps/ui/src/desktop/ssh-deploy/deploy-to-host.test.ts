@@ -285,13 +285,16 @@ describe("deploy to host", () => {
       [{ sshPortText: "70000" }, "invalidSshPort"],
       [{ daemonPortText: "x" }, "invalidDaemonPort"],
       [{ identityFile: "id_rsa" }, "invalidKeyFile"],
-      [{ identityFile: "~/.ssh/k", network: "tunnel" as const }, "tunnelKeyUnsupported"],
     ] as const;
     for (const [override, error] of errors)
       expect(resolveDeployTarget({ ...base, ...override })).toEqual({
         ok: false,
         error,
       });
+    // A manual key file now rides the tunnel too, so the saved host reconnects with it.
+    expect(
+      resolveDeployTarget({ ...base, identityFile: "~/.ssh/k", network: "tunnel" }),
+    ).toMatchObject({ ok: true, target: { identityFile: "~/.ssh/k" } });
   });
 
   it("chooses the listen address and the re-deploy action", () => {

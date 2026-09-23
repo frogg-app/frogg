@@ -1857,8 +1857,6 @@ export const en = {
         invalidSshPort: "Enter an SSH port between 1 and 65535.",
         invalidDaemonPort: "Enter a daemon port between 1 and 65535.",
         invalidKeyFile: "Enter an absolute path or one starting with ~/.",
-        tunnelKeyUnsupported:
-          "SSH tunnel connections use ssh-agent and ~/.ssh/config only. Add this key to your SSH config, or connect through the network.",
       },
       errors: {
         ssh_failed: "Could not connect over SSH. {{detail}}",

@@ -1892,8 +1892,6 @@ export const es: TranslationResources = {
         invalidSshPort: "Escribe un puerto SSH entre 1 y 65535.",
         invalidDaemonPort: "Escribe un puerto del daemon entre 1 y 65535.",
         invalidKeyFile: "Escribe una ruta absoluta o que empiece por ~/.",
-        tunnelKeyUnsupported:
-          "Las conexiones por túnel SSH solo usan ssh-agent y ~/.ssh/config. Añade esta clave a tu configuración SSH o conecta por la red.",
       },
       errors: {
         ssh_failed: "No se pudo conectar por SSH. {{detail}}",

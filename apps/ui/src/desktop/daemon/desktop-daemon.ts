@@ -51,6 +51,8 @@ export interface RemoteSshTransportTarget {
   host: string;
   sshPort?: number;
   daemonPort?: number;
+  /** An explicit ssh private key; ssh-agent and `~/.ssh/config` apply otherwise. */
+  identityFile?: string;
   /**
    * Answers ssh's own password prompt (askpass in the shell). Never part of
    * the transport URL or the host registry: it lives in memory only.

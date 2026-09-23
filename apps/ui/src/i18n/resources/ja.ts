@@ -1867,8 +1867,6 @@ export const ja: TranslationResources = {
         invalidSshPort: "SSH ポートは 1〜65535 で入力してください。",
         invalidDaemonPort: "デーモンのポートは 1〜65535 で入力してください。",
         invalidKeyFile: "絶対パスか ~/ で始まるパスを入力してください。",
-        tunnelKeyUnsupported:
-          "SSH トンネル接続は ssh-agent と ~/.ssh/config のみを使います。この鍵を SSH 設定に追加するか、ネットワーク経由で接続してください。",
       },
       errors: {
         ssh_failed: "SSH で接続できませんでした。{{detail}}",

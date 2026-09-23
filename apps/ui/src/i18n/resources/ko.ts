@@ -1857,8 +1857,6 @@ export const ko: TranslationResources = {
         invalidSshPort: "SSH 포트는 1에서 65535 사이로 입력하세요.",
         invalidDaemonPort: "데몬 포트는 1에서 65535 사이로 입력하세요.",
         invalidKeyFile: "절대 경로나 ~/로 시작하는 경로를 입력하세요.",
-        tunnelKeyUnsupported:
-          "SSH 터널 연결은 ssh-agent와 ~/.ssh/config만 사용합니다. 이 키를 SSH 설정에 추가하거나 네트워크로 연결하세요.",
       },
       errors: {
         ssh_failed: "SSH로 연결하지 못했습니다. {{detail}}",
