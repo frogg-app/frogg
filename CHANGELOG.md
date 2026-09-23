@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.26 — 2026-09-23
 
 - Providers can be updated from Frogg, and kept updated. Each provider's own tab
   in host settings gains a Version card showing the installed version against the
