@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- Pressing a provider in Settings opens the provider sheet, not the old model
+  list. The row and the cog led to two different surfaces: the cog opened the
+  provider sheet with its accounts, version and model catalogue, while the row
+  itself opened an older, thinner sheet that the newer one had replaced. Both
+  now open the same sheet, and the parts of the old one worth keeping — adding
+  and removing a model id by hand, refreshing the catalogue, and the diagnostic
+  report — sit on the provider's own tab inside it.
+- A provider update no longer fails outright when the global npm directory is
+  not yours to write to. A root-owned `node_modules` made every update end in a
+  permissions error, even for CLIs that can update themselves into your home
+  directory. Frogg now falls back to the CLI's own updater when the install
+  cannot proceed.
+
 - An update whose download is still building shows how far off it is. When a
   release is tagged, each platform's installer is published as its runner
   finishes, so Settings could offer a new version and then say only "No
