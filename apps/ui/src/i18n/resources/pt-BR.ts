@@ -1857,19 +1857,27 @@ export const ptBR: TranslationResources = {
         label: "Conectar por",
         tunnel: "Túnel SSH",
         lan: "Rede",
-        tunnelHint: "Recomendado. O daemon escuta apenas no loopback e o app o alcança por SSH.",
+        tunnelHint:
+          "Recomendado. O daemon escuta apenas em loopback, então nada na rede do host o alcança, e o app chega a ele por SSH.",
         lanHint:
-          "O daemon escuta em todas as interfaces na porta {{port}} e este dispositivo pareia com ele pela rede.",
+          "Exposto. O daemon escuta em todas as interfaces na porta {{port}}. A implantação primeiro deixa de confiar na rede do host, de modo que todo cliente de rede precisa parear.",
       },
       steps: {
         connect: "Conectar e detectar a plataforma",
         install: "Instalar o daemon e iniciar o serviço",
         upgrade: "Atualizar o daemon a partir de {{from}}",
         reinstall: "Reinstalar o daemon {{version}}",
+        secure: "Exigir pareamento na rede",
         pairCode: "Obter o código de pareamento por SSH",
         pair: "Parear este dispositivo",
       },
-      skipped: "Ignorado: o daemon não emitiu código de pareamento; o SSH autentica o host.",
+      lanTrusted:
+        "Aviso: este daemon ainda trata a própria rede como confiável, então dispositivos próximos podem conectar sem parear.",
+      skippedSteps: {
+        secure:
+          "Ignorado: o daemon já estava instalado, então a confiança na rede foi mantida como está.",
+        pairCode: "Ignorado: o daemon não emitiu código de pareamento; o SSH autentica o host.",
+      },
       platform: "{{platform}} detectado",
       formErrors: {
         hostRequired: "Escolha um host ou digite um.",
@@ -1883,6 +1891,8 @@ export const ptBR: TranslationResources = {
         unsupported_platform:
           "{{detail}} não é compatível. O daemon roda em Linux e macOS, x86_64 ou arm64.",
         install_failed: "A instalação falhou. {{detail}}",
+        harden_failed:
+          "O daemon foi instalado, mas não foi possível desligar a confiança na rede do host, então o pareamento foi interrompido. {{detail}}",
         pair_code_unavailable:
           "O daemon não emitiu um código de pareamento. {{detail}} Atualize o daemon ou conecte por um túnel SSH.",
         invalid_pair_code: "Não foi possível ler o código de pareamento do daemon. {{detail}}",

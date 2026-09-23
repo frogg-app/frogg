@@ -29,6 +29,7 @@ import {
 import {
   describeSshDeployPlatform,
   fetchSshDeployPairCode,
+  hardenSshDeploy,
   probeSshDeploy,
   runSshDeployJob,
   type SshDeployProbe,
@@ -104,6 +105,7 @@ type StepStates = Record<DeployStepId, DeployStepStatus>;
 const IDLE_STEPS: StepStates = {
   connect: "pending",
   install: "pending",
+  secure: "pending",
   pairCode: "pending",
   pair: "pending",
 };
@@ -235,6 +237,7 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
     error,
     daemonPort,
     verified,
+    lanLockedDown,
     lines,
     showLog,
     toggleLog,
@@ -283,6 +286,8 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
           daemonPort={daemonPort}
           done={phase === "done"}
           verified={verified}
+          lanLockedDown={lanLockedDown}
+          network={network}
           name={saved?.hostname ?? saved?.serverId ?? ""}
           lines={lines}
           showLog={showLog}
@@ -394,6 +399,8 @@ function DeployProgress({
   daemonPort,
   done,
   verified,
+  lanLockedDown,
+  network,
   name,
   lines,
   showLog,
@@ -405,6 +412,8 @@ function DeployProgress({
   daemonPort: number;
   done: boolean;
   verified: boolean;
+  lanLockedDown: boolean;
+  network: DeployNetwork;
   name: string;
   lines: string[];
   showLog: boolean;
@@ -426,6 +435,7 @@ function DeployProgress({
         <Text style={styles.note} testID="deploy-host-success">
           {t("pairing.deployHost.success", { name })}
           {verified ? "" : ` ${t("pairing.deployHost.unverified")}`}
+          {network === "lan" && !lanLockedDown ? ` ${t("pairing.deployHost.lanTrusted")}` : ""}
         </Text>
       ) : null}
       {lines.length > 0 ? (
@@ -705,7 +715,7 @@ function DeploySteps({
         platform: describeSshDeployPlatform(probe),
       });
     }
-    return steps[step] === "skipped" ? t("pairing.deployHost.skipped") : null;
+    return steps[step] === "skipped" ? t(`pairing.deployHost.skippedSteps.${step}`) : null;
   };
   return (
     <View style={styles.steps} testID={testID}>
@@ -752,12 +762,14 @@ async function executeDeploy(
   serverId: string;
   hostname: string | null;
   verified: boolean;
+  lanLockedDown: boolean;
 }> {
   let profile: HostProfile | null = null;
   const deps: DeployToHostDeps = {
     probe: probeSshDeploy,
     install: (job, signal) => runSshDeployJob(job, { signal, onLog: options.onLog }),
     pairCode: fetchSshDeployPairCode,
+    harden: hardenSshDeploy,
     connectTunnel: async (target) => {
       const result = await options.connectTunnel(target);
       profile = result.profile;
@@ -785,6 +797,7 @@ async function executeDeploy(
     serverId: deployed.serverId,
     hostname: deployed.hostname,
     verified: deployed.verified,
+    lanLockedDown: deployed.lanLockedDown,
   };
 }
 
@@ -816,6 +829,7 @@ function useDeployRun() {
   const [error, setError] = useState<DeployToHostError | null>(null);
   const [daemonPort, setDaemonPort] = useState(DEFAULT_SSH_DAEMON_PORT);
   const [verified, setVerified] = useState(true);
+  const [lanLockedDown, setLanLockedDown] = useState(true);
   const [lines, setLines] = useState<string[]>([]);
   const [showLog, setShowLog] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -873,6 +887,7 @@ function useDeployRun() {
           },
         );
         setVerified(deployed.verified);
+        setLanLockedDown(deployed.lanLockedDown);
         resultRef.current = {
           profile: deployed.profile,
           serverId: deployed.serverId,
@@ -921,6 +936,7 @@ function useDeployRun() {
     error,
     daemonPort,
     verified,
+    lanLockedDown,
     lines,
     showLog,
     start,

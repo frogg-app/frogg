@@ -1837,19 +1837,26 @@ export const en = {
         tunnel: "SSH tunnel",
         lan: "Network",
         tunnelHint:
-          "Recommended. The daemon listens on loopback only and the app reaches it through SSH.",
+          "Recommended. The daemon listens on loopback only, so nothing on the host's network can reach it, and the app reaches it through SSH.",
         lanHint:
-          "The daemon listens on all interfaces on port {{port}} and this device pairs with it over the network.",
+          "Exposed. The daemon listens on all interfaces on port {{port}}. The deploy first stops it trusting the host's own network, so every network client has to pair.",
       },
       steps: {
         connect: "Connect and detect platform",
         install: "Install daemon and start service",
         upgrade: "Upgrade daemon from {{from}}",
         reinstall: "Reinstall daemon {{version}}",
+        secure: "Require pairing on the network",
         pairCode: "Get pairing code over SSH",
         pair: "Pair this device",
       },
-      skipped: "Skipped: the daemon issued no pairing code; SSH authenticates the host.",
+      lanTrusted:
+        "Warning: this daemon still treats its own network as trusted, so nearby devices can connect without pairing.",
+      skippedSteps: {
+        secure:
+          "Skipped: the daemon was already installed, so its network trust was left as it is.",
+        pairCode: "Skipped: the daemon issued no pairing code; SSH authenticates the host.",
+      },
       platform: "Detected {{platform}}",
       formErrors: {
         hostRequired: "Choose a host or enter one.",
@@ -1863,6 +1870,8 @@ export const en = {
         unsupported_platform:
           "{{detail}} is not supported. The daemon runs on Linux and macOS, x86_64 or arm64.",
         install_failed: "The install failed. {{detail}}",
+        harden_failed:
+          "The daemon was installed but its trust of the host's own network could not be turned off, so pairing was stopped. {{detail}}",
         pair_code_unavailable:
           "The daemon did not issue a pairing code. {{detail}} Update the daemon, or connect through an SSH tunnel.",
         invalid_pair_code: "The pairing code from the daemon could not be read. {{detail}}",

@@ -1876,19 +1876,27 @@ export const fr: TranslationResources = {
         label: "Se connecter via",
         tunnel: "Tunnel SSH",
         lan: "Réseau",
-        tunnelHint: "Recommandé. Le daemon n’écoute que sur loopback et l’app l’atteint via SSH.",
+        tunnelHint:
+          "Recommandé. Le daemon n'écoute que sur la boucle locale, donc rien sur le réseau de l'hôte ne peut l'atteindre, et l'app y accède par SSH.",
         lanHint:
-          "Le daemon écoute sur toutes les interfaces sur le port {{port}} et cet appareil s’y associe par le réseau.",
+          "Exposé. Le daemon écoute sur toutes les interfaces sur le port {{port}}. Le déploiement cesse d'abord de faire confiance au réseau de l'hôte, si bien que chaque client réseau doit s'appairer.",
       },
       steps: {
         connect: "Se connecter et détecter la plateforme",
         install: "Installer le daemon et démarrer le service",
         upgrade: "Mettre à jour le daemon depuis {{from}}",
         reinstall: "Réinstaller le daemon {{version}}",
+        secure: "Exiger l'appairage sur le réseau",
         pairCode: "Obtenir le code d’association via SSH",
         pair: "Associer cet appareil",
       },
-      skipped: "Ignoré : le daemon n’a émis aucun code d’association ; SSH authentifie l’hôte.",
+      lanTrusted:
+        "Avertissement : ce daemon considère toujours son propre réseau comme fiable, les appareils proches peuvent donc se connecter sans appairage.",
+      skippedSteps: {
+        secure:
+          "Ignoré : le daemon était déjà installé, sa confiance réseau a donc été laissée telle quelle.",
+        pairCode: "Ignoré : le daemon n’a émis aucun code d’association ; SSH authentifie l’hôte.",
+      },
       platform: "{{platform}} détecté",
       formErrors: {
         hostRequired: "Choisissez ou saisissez un hôte.",
@@ -1902,6 +1910,8 @@ export const fr: TranslationResources = {
         unsupported_platform:
           "{{detail}} n’est pas pris en charge. Le daemon tourne sous Linux et macOS, x86_64 ou arm64.",
         install_failed: "L’installation a échoué. {{detail}}",
+        harden_failed:
+          "Le daemon a été installé mais sa confiance envers le réseau de l'hôte n'a pas pu être désactivée, l'appairage a donc été arrêté. {{detail}}",
         pair_code_unavailable:
           "Le daemon n’a pas émis de code d’association. {{detail}} Mettez le daemon à jour ou connectez-vous via un tunnel SSH.",
         invalid_pair_code: "Le code d’association du daemon est illisible. {{detail}}",

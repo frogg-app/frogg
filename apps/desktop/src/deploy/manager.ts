@@ -12,6 +12,7 @@ import {
 import { parseProbeOutput } from "./probe.js";
 import type { ExecuteScript } from "./executor.js";
 import type { PairCodeResult } from "./pair-code.js";
+import type { HardenResult } from "./harden.js";
 
 export type DeployEvent =
   | { jobId: string; kind: "log"; text: string; stream: "stdout" | "stderr" }
@@ -37,6 +38,8 @@ interface ManagerOptions {
   jobTimeoutMs?: number;
   /** The pairing-code script (already branded) and its output parser. */
   pairCode?: { script: string; parse(stdout: string): PairCodeResult };
+  /** The lock-down script (already branded) and its output parser; see `harden.ts`. */
+  harden?: { script: string; parse(stdout: string): HardenResult };
 }
 
 export class DeployManager {
@@ -81,6 +84,32 @@ export class DeployManager {
       });
       if (result.code !== 0)
         throw new Error(result.stderr.trim() || `Pairing command exited with code ${result.code}`);
+      return adapter.parse(result.stdout);
+    } finally {
+      this.probes.delete(controller);
+    }
+  }
+
+  /**
+   * Turns trusted LAN off on the deployed daemon; see `harden.ts` for why the
+   * deploy does this before it mints a pairing code.
+   */
+  async harden(args: unknown): Promise<HardenResult> {
+    const adapter = this.options.harden;
+    if (!adapter) throw new Error("Locking down a host is unavailable in this build.");
+    const target = parseTarget(args);
+    const controller = new AbortController();
+    this.probes.add(controller);
+    try {
+      const result = await this.options.execute({
+        target,
+        command: "sh -s",
+        script: adapter.script,
+        signal: controller.signal,
+        timeoutMs: 45000,
+      });
+      if (result.code !== 0)
+        throw new Error(result.stderr.trim() || `Lock-down exited with code ${result.code}`);
       return adapter.parse(result.stdout);
     } finally {
       this.probes.delete(controller);

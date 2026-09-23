@@ -7,6 +7,7 @@ import { DeployManager } from "./manager.js";
 import { buildProbeScript } from "./probe.js";
 import { deployScript } from "./scripts.js";
 import { cliPairCodeAdapter } from "./pair-code.js";
+import { cliHardenAdapter } from "./harden.js";
 
 export const DEPLOY_EVENT = "frogg:event:ssh-deploy-event";
 let manager: DeployManager | undefined;
@@ -28,6 +29,10 @@ export function createSshDeployCommandHandlers(): Record<string, DesktopCommandH
         script: cliPairCodeAdapter.script(brand),
         parse: cliPairCodeAdapter.parse,
       },
+      harden: {
+        script: cliHardenAdapter.script(brand),
+        parse: cliHardenAdapter.parse,
+      },
       emit(event) {
         for (const window of BrowserWindow.getAllWindows()) {
           if (!window.isDestroyed() && !window.webContents.isDestroyed())
@@ -41,6 +46,7 @@ export function createSshDeployCommandHandlers(): Record<string, DesktopCommandH
   return {
     ssh_deploy_probe: (args) => current.probe(args),
     ssh_deploy_pair_code: (args) => current.pairCode(args),
+    ssh_deploy_harden: (args) => current.harden(args),
     ssh_deploy_start: (args) => current.start(args),
     ssh_deploy_uninstall: (args) => current.uninstall(args),
     ssh_deploy_cancel: (args) => current.cancel(args),

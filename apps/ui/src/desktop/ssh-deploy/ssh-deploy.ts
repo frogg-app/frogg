@@ -28,6 +28,17 @@ export interface SshDeployPairCode {
   expiresAt: string | null;
 }
 
+/**
+ * What `ssh_deploy_harden` reports; see apps/desktop/src/deploy/harden.ts.
+ * `unsupported` means the installed daemon has no `daemon trust-lan` command,
+ * so the host stays LAN-trusted and the modal says so.
+ */
+export interface SshDeployHardenResult {
+  trustLan: boolean;
+  applied: string;
+  unsupported: boolean;
+}
+
 /** What `ssh_deploy_probe` reports about the remote host. */
 export interface SshDeployProbe {
   os: string;
@@ -182,6 +193,26 @@ export function parseSshDeployPairCode(raw: unknown): SshDeployPairCode {
     fingerprint: text(raw.fingerprint) || null,
     expiresAt: text(raw.expiresAt) || null,
   };
+}
+
+export function parseSshDeployHardenResult(raw: unknown): SshDeployHardenResult {
+  if (!isRecord(raw)) throw new Error("The daemon reported no LAN trust setting.");
+  return {
+    trustLan: raw.trustLan === true,
+    applied: text(raw.applied) || "unknown",
+    unsupported: raw.unsupported === true,
+  };
+}
+
+/**
+ * Turns trusted LAN off on the deployed daemon, so a network client must
+ * present a device credential instead of being an owner by virtue of its
+ * subnet. Run before the pairing code is minted.
+ */
+export async function hardenSshDeploy(target: SshDeployTarget): Promise<SshDeployHardenResult> {
+  return parseSshDeployHardenResult(
+    await invokeDesktopCommand<unknown>("ssh_deploy_harden", targetArgs(target)),
+  );
 }
 
 /** Runs the daemon's pairing command over SSH and returns what it printed. */

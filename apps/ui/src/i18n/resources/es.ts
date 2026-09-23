@@ -1872,19 +1872,27 @@ export const es: TranslationResources = {
         label: "Conectar mediante",
         tunnel: "Túnel SSH",
         lan: "Red",
-        tunnelHint: "Recomendado. El daemon solo escucha en loopback y la app llega a él por SSH.",
+        tunnelHint:
+          "Recomendado. El daemon solo escucha en loopback, así que nada de la red del host puede alcanzarlo, y la app llega a él por SSH.",
         lanHint:
-          "El daemon escucha en todas las interfaces en el puerto {{port}} y este dispositivo se empareja con él por la red.",
+          "Expuesto. El daemon escucha en todas las interfaces en el puerto {{port}}. El despliegue primero deja de confiar en la red del host, de modo que todo cliente de red debe emparejarse.",
       },
       steps: {
         connect: "Conectar y detectar la plataforma",
         install: "Instalar el daemon e iniciar el servicio",
         upgrade: "Actualizar el daemon desde {{from}}",
         reinstall: "Reinstalar el daemon {{version}}",
+        secure: "Exigir emparejamiento en la red",
         pairCode: "Obtener el código de emparejamiento por SSH",
         pair: "Emparejar este dispositivo",
       },
-      skipped: "Omitido: el daemon no emitió código de emparejamiento; SSH autentica el host.",
+      lanTrusted:
+        "Aviso: este daemon sigue considerando fiable su propia red, así que los dispositivos cercanos pueden conectarse sin emparejarse.",
+      skippedSteps: {
+        secure:
+          "Omitido: el daemon ya estaba instalado, así que su confianza en la red se dejó como está.",
+        pairCode: "Omitido: el daemon no emitió código de emparejamiento; SSH autentica el host.",
+      },
       platform: "Detectado {{platform}}",
       formErrors: {
         hostRequired: "Elige un host o escribe uno.",
@@ -1898,6 +1906,8 @@ export const es: TranslationResources = {
         unsupported_platform:
           "{{detail}} no es compatible. El daemon funciona en Linux y macOS, x86_64 o arm64.",
         install_failed: "La instalación falló. {{detail}}",
+        harden_failed:
+          "El daemon se instaló, pero no se pudo desactivar su confianza en la red del host, así que se detuvo el emparejamiento. {{detail}}",
         pair_code_unavailable:
           "El daemon no emitió un código de emparejamiento. {{detail}} Actualiza el daemon o conecta mediante un túnel SSH.",
         invalid_pair_code: "No se pudo leer el código de emparejamiento del daemon. {{detail}}",

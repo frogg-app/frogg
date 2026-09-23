@@ -1837,19 +1837,26 @@ export const ko: TranslationResources = {
         label: "연결 방식",
         tunnel: "SSH 터널",
         lan: "네트워크",
-        tunnelHint: "권장. 데몬은 루프백에서만 수신하고 앱은 SSH를 통해 접속합니다.",
+        tunnelHint:
+          "권장. 데몬이 루프백에서만 대기하므로 호스트 네트워크의 어떤 것도 접근할 수 없고, 앱은 SSH로 접속합니다.",
         lanHint:
-          "데몬은 모든 인터페이스의 {{port}} 포트에서 수신하고 이 기기는 네트워크로 페어링합니다.",
+          "노출됨. 데몬이 포트 {{port}}에서 모든 인터페이스를 수신합니다. 배포는 먼저 호스트 자체 네트워크에 대한 신뢰를 해제하므로 모든 네트워크 클라이언트가 페어링해야 합니다.",
       },
       steps: {
         connect: "연결하고 플랫폼 감지",
         install: "데몬 설치 및 서비스 시작",
         upgrade: "{{from}}에서 데몬 업그레이드",
         reinstall: "데몬 {{version}} 재설치",
+        secure: "네트워크에서 페어링 요구",
         pairCode: "SSH로 페어링 코드 받기",
         pair: "이 기기 페어링",
       },
-      skipped: "건너뜀: 데몬이 페어링 코드를 발급하지 않았습니다. 호스트는 SSH로 인증됩니다.",
+      lanTrusted:
+        "경고: 이 데몬은 여전히 자기 네트워크를 신뢰하므로 주변 기기가 페어링 없이 연결할 수 있습니다.",
+      skippedSteps: {
+        secure: "건너뜀: 데몬이 이미 설치되어 있어 네트워크 신뢰 설정을 그대로 두었습니다.",
+        pairCode: "건너뜀: 데몬이 페어링 코드를 발급하지 않았습니다. 호스트는 SSH로 인증됩니다.",
+      },
       platform: "{{platform}} 감지됨",
       formErrors: {
         hostRequired: "호스트를 선택하거나 입력하세요.",
@@ -1863,6 +1870,8 @@ export const ko: TranslationResources = {
         unsupported_platform:
           "{{detail}}은(는) 지원되지 않습니다. 데몬은 Linux와 macOS(x86_64 또는 arm64)에서 실행됩니다.",
         install_failed: "설치에 실패했습니다. {{detail}}",
+        harden_failed:
+          "데몬은 설치되었지만 호스트 자체 네트워크에 대한 신뢰를 해제하지 못해 페어링을 중단했습니다. {{detail}}",
         pair_code_unavailable:
           "데몬이 페어링 코드를 발급하지 않았습니다. {{detail}} 데몬을 업데이트하거나 SSH 터널로 연결하세요.",
         invalid_pair_code: "데몬의 페어링 코드를 읽지 못했습니다. {{detail}}",

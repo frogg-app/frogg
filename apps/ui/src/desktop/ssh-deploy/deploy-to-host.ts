@@ -6,6 +6,7 @@ import {
 import { parseDirectPairingDeepLink, type DirectPairingLink } from "@frogg/protocol/device-access";
 import { brand } from "@frogg/branding";
 import type {
+  SshDeployHardenResult,
   SshDeployPairCode,
   SshDeployProbe,
   SshDeployStartInput,
@@ -19,19 +20,32 @@ import type {
  * anchor: the offer it returns names the daemon (server id and public key),
  * and the network connection must prove it is that daemon.
  *
- * `tunnel` binds the daemon to loopback and connects through an SSH tunnel;
+ * `tunnel` (the default) binds the daemon to loopback and connects through an
+ * SSH tunnel, so nothing on the remote host's network can reach it at all;
  * `lan` binds all interfaces and claims it over the network with the offer's
  * single-use token, recording this device's name on the credential.
+ *
+ * Either way a fresh deploy runs a `secure` step first, which turns trusted
+ * LAN off. Without it the installed daemon treats every peer on the remote
+ * host's network as an owner with no pairing at all, and the pairing step
+ * does not take that back — it adds a credential, it does not require one.
  */
 export type DeployNetwork = "tunnel" | "lan";
-export type DeployStepId = "connect" | "install" | "pairCode" | "pair";
+export type DeployStepId = "connect" | "install" | "secure" | "pairCode" | "pair";
 export type DeployStepStatus = "pending" | "running" | "done" | "skipped" | "failed";
-export const DEPLOY_STEPS: readonly DeployStepId[] = ["connect", "install", "pairCode", "pair"];
+export const DEPLOY_STEPS: readonly DeployStepId[] = [
+  "connect",
+  "install",
+  "secure",
+  "pairCode",
+  "pair",
+];
 
 export type DeployErrorCode =
   | "ssh_failed"
   | "unsupported_platform"
   | "install_failed"
+  | "harden_failed"
   | "pair_code_unavailable"
   | "invalid_pair_code"
   | "fingerprint_mismatch"
@@ -65,6 +79,12 @@ export interface DeployedHost {
   hostname: string | null;
   /** True when the daemon identity was checked against the SSH-issued offer. */
   verified: boolean;
+  /**
+   * True when this deploy left the daemon requiring a credential from LAN
+   * clients. False when the host was already installed (its existing LAN
+   * clients are left alone) or its CLI is too old to have the setting.
+   */
+  lanLockedDown: boolean;
   probe: SshDeployProbe;
 }
 
@@ -72,6 +92,8 @@ export interface DeployToHostDeps {
   probe(target: SshDeployTarget): Promise<SshDeployProbe>;
   install(input: SshDeployStartInput, signal: AbortSignal): Promise<void>;
   pairCode(target: SshDeployTarget): Promise<SshDeployPairCode>;
+  /** Turns trusted LAN off on the deployed daemon; see `harden.ts`. */
+  harden(target: SshDeployTarget): Promise<SshDeployHardenResult>;
   /** Adds (or refreshes) the Remote SSH connection and returns the daemon's identity. */
   connectTunnel(input: {
     host: string;
@@ -287,6 +309,34 @@ async function resolvePairing(
   return { code, offer, link: null };
 }
 
+/**
+ * Turns trusted LAN off on a host this deploy just installed, and reports
+ * whether the daemon now requires a credential from network clients. A host
+ * that already had the daemon is left as it is: its operator may be relying
+ * on LAN clients that this would disconnect.
+ */
+async function lockDownHost(
+  input: DeployToHostInput,
+  probe: SshDeployProbe,
+  deps: DeployToHostDeps,
+  context: StepContext,
+  onStep: (step: DeployStepId, status: DeployStepStatus) => void,
+): Promise<boolean> {
+  if (deployAction(probe, null) !== "deploy") {
+    onStep("secure", "skipped");
+    return false;
+  }
+  let hardened: SshDeployHardenResult;
+  try {
+    hardened = await deps.harden(input.target);
+  } catch (error) {
+    if (isCancelled(error, context.signal)) throw error;
+    return context.fail("harden_failed", message(error));
+  }
+  onStep("secure", hardened.unsupported ? "skipped" : "done");
+  return !hardened.trustLan;
+}
+
 /** Adds the host: a tunnel connection, or a claim redeemed over the network. */
 async function performPairing(
   input: DeployToHostInput,
@@ -389,6 +439,13 @@ export async function runDeployToHost(
     }
     onStep("install", "done");
 
+    // Lock the box down before a pairing code exists, so the window in which
+    // the daemon is both reachable and unauthenticated is never opened. Only
+    // on a first deploy: flipping the setting on a host that was already
+    // running would cut off LAN clients the operator is relying on.
+    begin("secure");
+    const lanLockedDown = await lockDownHost(input, probe, deps, context, onStep);
+
     begin("pairCode");
     const pairing = await resolvePairing(input, deps, context);
     onStep("pairCode", pairing.code ? "done" : "skipped");
@@ -400,7 +457,12 @@ export async function runDeployToHost(
       fail("server_mismatch", `${paired.serverId} ≠ ${expectedServerId}`);
     }
     onStep("pair", "done");
-    return { ...paired, verified: pairing.offer !== null || pairing.link !== null, probe };
+    return {
+      ...paired,
+      verified: pairing.offer !== null || pairing.link !== null,
+      lanLockedDown,
+      probe,
+    };
   } catch (error) {
     if (error instanceof DeployToHostError) {
       onStep(error.step, "failed");
