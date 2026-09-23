@@ -44,6 +44,8 @@ export interface DaemonAccessPolicy {
   /** `daemon.auth.claimMode`: LAN untrusted, first client claims the unclaimed daemon. */
   claimMode(): boolean;
   clientLocality(req: RequestLike): ClientLocality;
+  /** The client address after trusted proxies; what throttling is keyed on. */
+  clientAddress(req: RequestLike): string | undefined;
   isLoopbackClient(req: RequestLike): boolean;
   /** Loopback, or LAN while `trustLan` is on: no bearer unless a password is set. */
   isTrustedClient(req: RequestLike): boolean;
@@ -215,6 +217,12 @@ export function createAccessPolicy(input: {
     trustLan,
     claimMode,
     clientLocality,
+    clientAddress: (req) =>
+      resolveClientAddress({
+        remoteAddress: req.socket?.remoteAddress,
+        forwardedFor: req.headers["x-forwarded-for"],
+        trustedProxies: input.getTrustedProxies(),
+      }),
     isLoopbackClient: (req) => clientLocality(req) === "loopback",
     isTrustedClient: (req) => isClientTrusted(clientLocality(req), trustLan()),
   };

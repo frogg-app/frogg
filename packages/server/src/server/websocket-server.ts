@@ -1118,6 +1118,20 @@ export class VoiceAssistantWebSocketServer {
    * at the next reconnect.
    */
   public dropCredentiallessSessions(): void {
+    // Connections still inside the hello handshake hold no Session yet, but
+    // they were admitted under the trust that is being withdrawn.
+    for (const [ws, pending] of Array.from(this.pendingConnections.entries())) {
+      if (pending.admission.device) continue;
+      const peer = pending.identity.peer;
+      if (peer === "loopback" || peer === "local_ipc") continue;
+      this.clearPendingConnection(ws);
+      this.closePhysicalSocket({
+        ws,
+        closeCode: WS_CLOSE_DAEMON_AUTH_FAILED,
+        closeReason: "The LAN is no longer trusted",
+        logMessage: "Closing pending connection without a device credential",
+      });
+    }
     for (const connection of this.allConnections()) {
       if (connection.session.getDeviceId() !== null) continue;
       if (this.isLoopbackConnection(connection)) continue;

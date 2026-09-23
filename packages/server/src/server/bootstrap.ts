@@ -1036,6 +1036,9 @@ export async function createFroggDaemon(
         }
       },
       setPasswordHash: async (hash) => {
+        // Enabling a password locks the daemon: clients admitted on locality
+        // alone must re-authenticate rather than keep a grandfathered session.
+        if (hash) wsServer?.dropCredentiallessSessions();
         const persisted = loadPersistedConfig(config.froggHome, logger);
         savePersistedConfig(
           config.froggHome,
@@ -1082,7 +1085,8 @@ export async function createFroggDaemon(
     hasLocalCredential: async (req) => {
       const token = extractHttpBearerToken(req.header("authorization"));
       if (localToken.matches(token)) return true;
-      return hasRealCredential(authConfig, req, token);
+      // An offer mints an owner credential: only an owner may ask for one.
+      return hasRealCredential(authConfig, req, token, "owner");
     },
     claimHandler: createDeviceClaimHandler(deviceAccessDeps),
     logger,

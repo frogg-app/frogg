@@ -20,6 +20,9 @@ import {
   requestNeedsBearer,
   shouldBypassBearerAuth,
   verifyAgentMcpToken,
+  hasRealCredential,
+  requiredRoleForHttpRoute,
+  throttleKeyForAddress,
 } from "./auth.js";
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 
@@ -278,14 +281,70 @@ describe("bearer requirement by client locality", () => {
       minted.credential,
     );
     expect(decision.ok).toBe(true);
-    expect(decision.ok && decision.via).toBe("device");
-    expect(decision.ok && decision.device?.name).toBe("Phone");
-    expect(decision.ok && decision.device?.role).toBe("operator");
+    expect(decision.ok && decision.principal.kind).toBe("device");
+    const device =
+      decision.ok && decision.principal.kind === "device" ? decision.principal.device : null;
+    expect(device?.name).toBe("Phone");
+    expect(device?.role).toBe("operator");
 
     // Revoking the last device drops the credential and unclaims the daemon.
     store.revokeDevice(minted.credentialId);
     expect(
       await authorizeBearerAsync(auth, requestFrom(SOCKETS.public), minted.credential),
     ).toEqual({ ok: false, reason: "unclaimed" });
+  });
+});
+
+describe("HTTP routes are role-gated, not just the WebSocket", () => {
+  const homes: string[] = [];
+  afterEach(() => {
+    while (homes.length) rmSync(homes.pop()!, { recursive: true, force: true });
+  });
+
+  function storeWithDevice(role: "owner" | "operator" | "viewer") {
+    const home = mkdtempSync(path.join(tmpdir(), "frogg-auth-http-role-"));
+    homes.push(home);
+    const store = createClaimStore(home);
+    const minted = store.mintPrincipal({ label: "Phone", role, pairedVia: "code" });
+    return {
+      credential: minted.credential,
+      auth: {
+        password: undefined,
+        access: createAccessPolicy({
+          claimStore: store,
+          getTrustedProxies: () => ["loopback"],
+          getTrustLan: () => false,
+        }),
+      },
+    };
+  }
+
+  test("an offer mints an owner credential, so only an owner may ask for one", async () => {
+    expect(requiredRoleForHttpRoute("/api/setup/offer")).toBe("owner");
+    const viewer = storeWithDevice("viewer");
+    const req = { headers: {}, socket: { remoteAddress: "203.0.113.5" } } as IncomingMessage;
+    expect(await hasRealCredential(viewer.auth, req, viewer.credential, "owner")).toBe(false);
+    const owner = storeWithDevice("owner");
+    expect(await hasRealCredential(owner.auth, req, owner.credential, "owner")).toBe(true);
+  });
+
+  test("routes default to operator, so a new route is never viewer-open by accident", () => {
+    expect(requiredRoleForHttpRoute("/api/something/new")).toBe("operator");
+    expect(requiredRoleForHttpRoute("/api/status")).toBe("viewer");
+  });
+});
+
+describe("failed-auth throttling is keyed on the resolved client address", () => {
+  test("IPv6 collapses to its /64 so address rotation does not buy more attempts", () => {
+    expect(throttleKeyForAddress("2001:db8:1:2:3:4:5:6")).toBe(
+      throttleKeyForAddress("2001:db8:1:2:ffff:ffff:ffff:ffff"),
+    );
+    expect(throttleKeyForAddress("2001:db8:1:3::1")).not.toBe(
+      throttleKeyForAddress("2001:db8:1:2::1"),
+    );
+  });
+
+  test("IPv4 and IPv4-mapped addresses share one key", () => {
+    expect(throttleKeyForAddress("::ffff:192.168.1.5")).toBe(throttleKeyForAddress("192.168.1.5"));
   });
 });

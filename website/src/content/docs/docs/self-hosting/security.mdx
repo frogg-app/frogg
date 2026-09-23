@@ -110,6 +110,11 @@ roles existed read as `owner`. Only an owner can mint an owner code, approve a r
 owner, or change a device's role; a device's own role is reported to it in
 `server_info.callerRole`, and the daemon advertises the `deviceRoles` feature.
 
+Roles are enforced on the HTTP API as well as the session RPCs: every
+authenticated route declares a minimum role, routes that mint credentials (such as
+the pairing offer) are owner-only, and a route that does not declare one requires at
+least an operator. A credential below the route's role is refused with `403`.
+
 The role comes from the credential wherever one is presented, on a direct connection and
 over the relay alike: a viewer phone stays a viewer whichever way it reaches the daemon.
 The daemon password and bearer-free trusted clients (loopback, trusted LAN) act as the

@@ -131,7 +131,7 @@ export function createDeviceClaimHandler(deps: DeviceAccessDependencies): Reques
       res.status(400).json({ error: "Invalid claim request" });
       return;
     }
-    const key = clientKey(req);
+    const key = clientKey(req, deps.auth);
     if (deps.auth.limiter?.isBlocked(key)) {
       res.status(429).json({ error: "Too many failed attempts" });
       return;
@@ -192,7 +192,7 @@ export function createPairingRequestCreateHandler(deps: DeviceAccessDependencies
       res.status(400).json({ error: "Invalid pairing request" });
       return;
     }
-    const key = clientKey(req);
+    const key = clientKey(req, deps.auth);
     if (deps.auth.limiter?.isBlocked(key)) {
       res.status(429).json({ error: "Too many failed attempts" });
       return;
@@ -251,7 +251,7 @@ export function createPasswordLoginHandler(deps: DeviceAccessDependencies): Requ
         res.status(400).json({ error: "Invalid login request" });
         return;
       }
-      const key = clientKey(req);
+      const key = clientKey(req, deps.auth);
       if (deps.auth.limiter?.isBlocked(key)) {
         res.status(429).json({ error: "Too many failed attempts" });
         return;

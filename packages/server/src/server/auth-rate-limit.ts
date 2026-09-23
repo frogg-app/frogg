@@ -28,6 +28,8 @@ export const DEFAULT_AUTH_BLOCK_MS = 5 * 60_000;
 interface Entry {
   failures: number[];
   blockedUntil: number;
+  /** Last time this key was touched; eviction drops the stalest key, not the oldest. */
+  lastSeenAt: number;
 }
 
 export function createAuthFailureLimiter(
@@ -40,17 +42,39 @@ export function createAuthFailureLimiter(
   const now = options.now ?? (() => Date.now());
   const entries = new Map<string, Entry>();
 
-  function entryFor(key: string): Entry {
-    let entry = entries.get(key);
-    if (!entry) {
-      entry = { failures: [], blockedUntil: 0 };
-      entries.set(key, entry);
-      while (entries.size > maxKeys) {
-        const oldest = entries.keys().next().value;
-        if (oldest === undefined) break;
-        entries.delete(oldest);
+  function evictIfFull(current: number): void {
+    if (entries.size <= maxKeys) return;
+    // Expired keys first: they are dead weight and never worth keeping.
+    for (const [key, entry] of entries) {
+      if (entries.size <= maxKeys) return;
+      if (entry.blockedUntil <= current && entry.failures.every((at) => at <= current - windowMs)) {
+        entries.delete(key);
       }
     }
+    while (entries.size > maxKeys) {
+      let stalest: string | undefined;
+      let stalestAt = Infinity;
+      for (const [key, entry] of entries) {
+        // A blocked key is the one thing worth keeping under pressure.
+        if (entry.blockedUntil > current) continue;
+        if (entry.lastSeenAt < stalestAt) {
+          stalest = key;
+          stalestAt = entry.lastSeenAt;
+        }
+      }
+      if (stalest === undefined) return;
+      entries.delete(stalest);
+    }
+  }
+
+  function entryFor(key: string, current: number): Entry {
+    let entry = entries.get(key);
+    if (!entry) {
+      entry = { failures: [], blockedUntil: 0, lastSeenAt: current };
+      entries.set(key, entry);
+      evictIfFull(current);
+    }
+    entry.lastSeenAt = current;
     return entry;
   }
 
@@ -58,7 +82,7 @@ export function createAuthFailureLimiter(
     isBlocked: (key) => (entries.get(key)?.blockedUntil ?? 0) > now(),
     recordFailure: (key) => {
       const current = now();
-      const entry = entryFor(key);
+      const entry = entryFor(key, current);
       entry.failures = entry.failures.filter((at) => at > current - windowMs);
       entry.failures.push(current);
       if (entry.failures.length >= maxFailures) {

@@ -7,6 +7,7 @@ import {
   scryptSync,
   timingSafeEqual,
 } from "node:crypto";
+import net from "node:net";
 import type { IncomingMessage } from "node:http";
 import type { RequestHandler } from "express";
 
@@ -240,8 +241,37 @@ export function requestNeedsBearer(auth: DaemonAuthConfig | undefined, req: Requ
   });
 }
 
-export function clientKey(req: RequestLike): string {
-  return req.socket?.remoteAddress ?? "local";
+/**
+ * The throttle key for a request. Keyed on the address the locality walk
+ * resolves (so a reverse proxy throttles its real clients, not itself) and
+ * collapsed to a /64 for IPv6, because a single host is routinely handed one
+ * and could otherwise rotate addresses for unlimited attempts.
+ */
+export function clientKey(req: RequestLike, auth?: DaemonAuthConfig): string {
+  const resolved = auth?.access?.clientAddress(req) ?? req.socket?.remoteAddress;
+  return throttleKeyForAddress(resolved);
+}
+
+export function throttleKeyForAddress(address: string | undefined): string {
+  if (!address) return "local";
+  const normalized = address.trim().toLowerCase();
+  const ipv4 = normalized.startsWith("::ffff:") ? normalized.slice("::ffff:".length) : normalized;
+  if (net.isIPv4(ipv4)) return ipv4;
+  if (!net.isIPv6(normalized)) return normalized;
+  // Expand enough to take the routing prefix, whatever the compression.
+  const groups = expandIpv6(normalized).slice(0, 4);
+  return `${groups.join(":")}::/64`;
+}
+
+function expandIpv6(address: string): string[] {
+  const [head = "", tail = ""] = address.split("::", 2);
+  const left = head ? head.split(":") : [];
+  const right = address.includes("::") && tail ? tail.split(":") : [];
+  const missing = Math.max(0, 8 - left.length - right.length);
+  const groups = address.includes("::")
+    ? [...left, ...Array.from({ length: missing }, () => "0"), ...right]
+    : address.split(":");
+  return groups.map((group) => group.replace(/^0+(?=.)/u, "") || "0");
 }
 
 function resolveDevice(auth: DaemonAuthConfig | undefined, token: string): DeviceRecord | null {
@@ -266,7 +296,7 @@ function preDecide(
     if (device) return { ok: true, principal: { kind: "device", device } };
   }
   if (!requestNeedsBearer(auth, req)) return { ok: true, principal: { kind: "trusted" } };
-  const key = clientKey(req);
+  const key = clientKey(req, auth);
   if (auth?.limiter?.isBlocked(key)) return { ok: false, reason: "rate_limited" };
   const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
   if (!hasSecrets) return { ok: false, reason: "unclaimed" };
@@ -339,20 +369,51 @@ export async function authorizeBearerAsync(
   return finishPassword(auth, pre.key, await verifyDaemonPassword(pre.token, pre.password));
 }
 
-/** True for a request that carries a real credential (device or password), not locality trust. */
+/**
+ * True for a request that carries a real credential (device or password), not
+ * locality trust, *and* whose credential is at least `minimumRole`. The role
+ * check matters because some HTTP routes mint credentials: without it a viewer
+ * device could promote itself by asking for an owner offer.
+ */
 export async function hasRealCredential(
   auth: DaemonAuthConfig | undefined,
   req: RequestLike,
   token: string | null,
+  minimumRole: DeviceRole = "owner",
 ): Promise<boolean> {
   if (token === null) return false;
-  if (resolveDevice(auth, token)) return true;
-  const key = clientKey(req);
+  const device = resolveDevice(auth, token);
+  if (device) return roleSatisfies(device.role, minimumRole);
+  const key = clientKey(req, auth);
   if (!auth?.password || auth.limiter?.isBlocked(key)) return false;
   const ok = await verifyDaemonPassword(token, auth.password);
   if (ok) auth.limiter?.recordSuccess(key);
   else auth.limiter?.recordFailure(key);
   return ok;
+}
+
+/**
+ * Required device role per authenticated HTTP route, mirroring the inbound RPC
+ * role map. Roles were a WebSocket-only control until this existed, which left
+ * every HTTP route role-blind. Anything not listed here needs at least an
+ * operator: a route that reads or changes daemon state is never a viewer's.
+ */
+const HTTP_ROUTE_ROLE: Record<string, DeviceRole> = {
+  "/api/status": "viewer",
+  "/api/files/download": "viewer",
+  // Mints an owner credential, so only an owner may ask for one.
+  "/api/setup/offer": "owner",
+};
+
+export const DEFAULT_HTTP_ROUTE_ROLE: DeviceRole = "operator";
+
+export function requiredRoleForHttpRoute(path: string): DeviceRole {
+  return HTTP_ROUTE_ROLE[path] ?? DEFAULT_HTTP_ROUTE_ROLE;
+}
+
+/** The role a decided principal carries; a non-device principal is the owner. */
+export function roleForPrincipal(principal: BearerPrincipal): DeviceRole {
+  return principal.kind === "device" ? principal.device.role : "owner";
 }
 
 export function createRequireBearerMiddleware(
@@ -379,6 +440,12 @@ export function createRequireBearerMiddleware(
             error: "Unauthorized",
             ...(decision.reason === "unclaimed" ? { setup: "unclaimed" } : {}),
           });
+          return;
+        }
+        const required = requiredRoleForHttpRoute(req.path);
+        if (!roleSatisfies(roleForPrincipal(decision.principal), required)) {
+          onReject?.({ path: req.path, method: req.method, hasToken: token !== null });
+          res.status(403).json({ error: "Forbidden" });
           return;
         }
         next();
@@ -473,7 +540,7 @@ export async function authorizeAgentMcpRequest(input: {
       ? { ok: true, callerAgentId: null }
       : { ok: false, status: 403 };
   }
-  const key = clientKey(input.req);
+  const key = clientKey(input.req, input.auth);
   if (input.auth?.limiter?.isBlocked(key)) return { ok: false, status: 429 };
   if (input.auth?.password && (await verifyDaemonPassword(token, input.auth.password))) {
     input.auth.limiter?.recordSuccess(key);
