@@ -43,6 +43,23 @@
         "appVersion": {
           "type": "string"
         },
+        "deviceName": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "auth": {
+          "type": "object",
+          "properties": {
+            "token": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            }
+          },
+          "required": [
+            "token"
+          ]
+        },
         "capabilities": {
           "type": "object",
           "properties": {
@@ -133,6 +150,343 @@
         },
         "message": {
           "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.device.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.device.rename.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "deviceId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "deviceId",
+                "name"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.device.revoke.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "deviceId": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "deviceId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.pairing_code.create.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "owner",
+                    "operator",
+                    "viewer"
+                  ]
+                },
+                "ttlSeconds": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.pairing_request.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.pairing_request.decide.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "pairingRequestId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "decision": {
+                  "type": "string",
+                  "enum": [
+                    "approve",
+                    "deny"
+                  ]
+                },
+                "role": {
+                  "type": "string",
+                  "enum": [
+                    "owner",
+                    "operator",
+                    "viewer"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 120
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "pairingRequestId",
+                "decision"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.settings.get.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.settings.update.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "claimMode": {
+                  "type": "boolean"
+                },
+                "trustLan": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "auth.password.set.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "password": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 1024
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "password"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "presence.report.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "target": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "agent"
+                        },
+                        "agentId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "agentId"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "terminal"
+                        },
+                        "terminalId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "terminalId"
+                      ]
+                    }
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "viewing",
+                    "typing",
+                    "idle",
+                    "left"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "target",
+                "state"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "presence.get.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "target": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "agent"
+                        },
+                        "agentId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "agentId"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "terminal"
+                        },
+                        "terminalId": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "terminalId"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "target"
+              ]
+            },
             {
               "type": "object",
               "properties": {

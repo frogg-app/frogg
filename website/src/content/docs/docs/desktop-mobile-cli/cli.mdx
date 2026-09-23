@@ -69,6 +69,45 @@ failed and was rolled back.
 
 `frogg daemon <command>` still works as a hidden alias for these.
 
+## `frogg pair`
+
+`frogg pair` asks the running daemon for a short-lived pairing code another device can
+redeem. The code is 8 Crockford base32 symbols shown as `XXXX-XXXX`.
+
+| Flag | What it does |
+| ---- | ------------ |
+| `--code-only` | Write the bare code to stdout and nothing else |
+| `--json`      | Write one JSON object (see below) |
+| `--qr`        | Print the QR even for a brand that ships no mobile app |
+| `--role <owner\|operator\|viewer>` | Role the redeeming device gets (default `operator`; `owner` requires an owner caller) |
+| `--ttl <seconds>` | How long the code stays valid, 30–3600 (default 600) |
+| `--home <path>` | Which daemon home to ask |
+
+With no flags on a terminal it prints the code, the daemon's address, its key fingerprint,
+the role, the expiry, a `frogg://pair/direct?…` deep link and a scannable QR. The QR never
+goes into a pipe, so redirected output is safe to read from a script.
+
+`--json` writes exactly these fields, for scripts and remote deployment:
+
+```json
+{
+  "code": "ABCD2345",
+  "host": "192.168.1.10",
+  "port": 9999,
+  "fingerprint": "sha256:…",
+  "deeplink": "frogg://pair/direct?v=1&host=192.168.1.10&port=9999&fp=sha256%3A…&pairingCode=ABCD-2345",
+  "expiresAt": "2026-09-22T10:00:00.000Z",
+  "role": "operator"
+}
+```
+
+`host`, `port`, `deeplink` and `expiresAt` are `null` when the daemon has no reachable TCP
+endpoint (a Unix socket, for instance). A failure writes to stderr — one
+`{"code":"PAIRING_CODE_FAILED","message":"…"}` object under `--json`, a bare message under
+`--code-only` — leaves stdout empty and exits `1`. A daemon too old to mint a code fails
+the same way, and the command itself is absent from a CLI that predates it, so probing
+`frogg pair --help` is a reliable capability check.
+
 ## `frogg auth`
 
 | Command                        | What it does |
@@ -77,7 +116,7 @@ failed and was rolled back.
 | `frogg auth claim-status`        | Show whether a device has claimed this daemon |
 | `frogg auth reset-claim`         | Forget **all** paired devices |
 | `frogg auth set-password`        | Prompt for a password and store its hash in `config.json` |
-| `frogg auth trust-lan <on\|off>` | Whether private-network clients connect without pairing or a password |
+| `frogg auth trust-lan <on\|off>` | Whether private-network clients connect without pairing or a password (ignored while claim mode is on) |
 
 See [pairing and access](/docs/getting-started/connect-and-pair/).
 

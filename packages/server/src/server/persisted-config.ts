@@ -98,15 +98,21 @@ const WorktreesConfigSchema = z
   })
   .strict();
 
-const BcryptHashSchema = z.string().regex(/^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/, {
-  message: "Expected a bcrypt hash",
-});
+/** bcrypt (written by older daemons) or the scrypt format new hashes use. */
+const PasswordHashSchema = z
+  .string()
+  .regex(
+    /^(\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}|scrypt\$\d+\$\d+\$\d+\$[A-Za-z0-9_-]+\$[A-Za-z0-9_-]+)$/,
+    { message: "Expected a bcrypt or scrypt password hash" },
+  );
 
 const DaemonAuthSchema = z
   .object({
-    password: BcryptHashSchema.optional(),
+    password: PasswordHashSchema.optional(),
     // Treat private-network clients like loopback (no bearer, no claim gate). Default true.
     trustLan: z.boolean().optional(),
+    // Untrust the LAN and let the first client claim the daemon. Default from brand.json.
+    claimMode: z.boolean().optional(),
   })
   .strict();
 

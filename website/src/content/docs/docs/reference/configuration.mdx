@@ -57,8 +57,9 @@ This is exactly what a new daemon writes (0.6.19):
 | `daemon.allowedHosts`   | same                    | unset            | Legacy alias of `hostnames` |
 | `daemon.trustedProxies` | `true` or string[]      | `["loopback"]`   | Proxies whose `X-Forwarded-For` is trusted. Entries are IPs or `"loopback"` |
 | `daemon.cors.allowedOrigins` | string[]           | `[]`             | Extra browser origins. `"*"` allows any. The daemon's own origins and the desktop app origin are always allowed |
-| `daemon.auth.password`  | bcrypt hash             | unset            | Require a password from every client. Set it with `frogg auth set-password`; do not write it by hand |
-| `daemon.auth.trustLan`  | boolean                 | `true`           | Treat private-network clients like loopback (no credential needed) when no password is set |
+| `daemon.auth.password`  | scrypt hash             | unset            | Require a password from every client. Set it with `frogg auth set-password`; do not write it by hand. Legacy bcrypt hashes still verify |
+| `daemon.auth.trustLan`  | boolean                 | `true`           | Treat private-network clients like loopback (no credential needed) when no password is set. Ignored while `claimMode` is on |
+| `daemon.auth.claimMode` | boolean                 | brand default (`false` for `frogg`) | Lock the LAN out: every client needs a credential, and the first client to reach an unclaimed daemon claims it as owner |
 
 See [security and access](/docs/self-hosting/security/) for how these combine.
 
@@ -255,7 +256,7 @@ These are credentials for voice features, not agent providers.
 `frogg reload` applies these without a restart: `daemon.relay.enabled`,
 `daemon.relay.endpoint`, `daemon.relay.useTls`, `daemon.mcp.*`,
 `daemon.browserTools.enabled`, `daemon.hostnames`, `daemon.cors.allowedOrigins`,
-`daemon.trustedProxies`, `daemon.auth.trustLan`, `daemon.git.*`,
+`daemon.trustedProxies`, `daemon.auth.trustLan`, `daemon.auth.claimMode`, `daemon.git.*`,
 `daemon.autoArchiveAfterMerge`, `daemon.hostSettings.hiddenSections`, `daemon.autoUpdate`, `daemon.enableTerminalAgentHooks`,
 `daemon.appendSystemPrompt`, `daemon.terminalProfiles`, `daemon.agentProfiles`,
 `app.pairingBaseUrl` and `agents.*`.

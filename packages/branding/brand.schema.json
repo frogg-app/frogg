@@ -361,6 +361,25 @@
         }
       },
       "additionalProperties": false
+    },
+    "daemon": {
+      "type": "object",
+      "description": "Fresh-install access defaults. Unset: bind all + claim mode off for the frogg brand, loopback + claim mode on for every other brand.",
+      "properties": {
+        "bind": { "type": "string", "enum": ["all", "loopback"] },
+        "claimMode": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "mobile": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Whether this brand ships a mobile app. When false, `pair` skips the terminal QR unless --qr is passed."
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": ["schemaVersion", "id", "name", "applicationId", "daemonPort", "assets"],

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import type { AgentSessionConfig } from "./agent-sdk-types.js";
+import { verifyAgentMcpToken } from "../auth.js";
 import { withRuntimeFroggMcpServer } from "./runtime-mcp-config.js";
 
 const BASE_CONFIG: AgentSessionConfig = {
@@ -9,7 +10,7 @@ const BASE_CONFIG: AgentSessionConfig = {
 };
 
 describe("withRuntimeFroggMcpServer", () => {
-  test("injects the frogg MCP server with a bearer header when a token is provided", () => {
+  test("injects a per-agent bearer and no caller id in the URL", () => {
     const result = withRuntimeFroggMcpServer({
       config: BASE_CONFIG,
       agentId: "agent-1",
@@ -17,11 +18,26 @@ describe("withRuntimeFroggMcpServer", () => {
       mcpAuthToken: "cap-token",
     });
 
-    expect(result.mcpServers?.frogg).toEqual({
-      type: "http",
-      url: "http://127.0.0.1:9999/mcp/agents?callerAgentId=agent-1",
-      headers: { Authorization: "Bearer cap-token" },
-    });
+    const injected = result.mcpServers?.frogg as { url: string; headers: Record<string, string> };
+    // The caller is carried by the credential, not by a spoofable query string.
+    expect(injected.url).toBe("http://127.0.0.1:9999/mcp/agents");
+    const token = injected.headers.Authorization?.replace("Bearer ", "") ?? "";
+    expect(verifyAgentMcpToken("cap-token", token)).toBe("agent-1");
+    expect(verifyAgentMcpToken("other-secret", token)).toBeNull();
+  });
+
+  test("gives each agent a different token", () => {
+    const tokenFor = (agentId: string) => {
+      const injected = withRuntimeFroggMcpServer({
+        config: BASE_CONFIG,
+        agentId,
+        mcpBaseUrl: "http://127.0.0.1:9999/mcp/agents",
+        mcpAuthToken: "cap-token",
+      }).mcpServers?.frogg as { headers: Record<string, string> } | undefined;
+      return injected?.headers.Authorization;
+    };
+
+    expect(tokenFor("agent-1")).not.toBe(tokenFor("agent-2"));
   });
 
   test("omits the header when no token is available", () => {
@@ -34,7 +50,7 @@ describe("withRuntimeFroggMcpServer", () => {
 
     expect(result.mcpServers?.frogg).toEqual({
       type: "http",
-      url: "http://127.0.0.1:9999/mcp/agents?callerAgentId=agent-1",
+      url: "http://127.0.0.1:9999/mcp/agents",
     });
   });
 

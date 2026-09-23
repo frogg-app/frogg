@@ -1,3 +1,4 @@
+import { deriveAgentMcpToken } from "../auth.js";
 import type { AgentSessionConfig, McpServerConfig } from "./agent-sdk-types.js";
 
 const FROGG_MCP_SERVER_NAME = "frogg";
@@ -31,9 +32,9 @@ export function withRuntimeFroggMcpServer(params: {
   agentId: string;
   mcpBaseUrl: string | null;
   /**
-   * Capability token authenticating the injected connection to the daemon's
-   * Agent MCP endpoint. The daemon password is gated off this route, so without
-   * this header the agent's MCP requests are rejected when a password is set.
+   * Per-run secret the daemon derives each agent's Agent MCP bearer from. The
+   * injected header carries a token bound to this agent's id, so the endpoint
+   * reads the caller from the credential instead of a spoofable query string.
    */
   mcpAuthToken: string | null;
 }): AgentSessionConfig {
@@ -47,9 +48,13 @@ export function withRuntimeFroggMcpServer(params: {
     mcpServers: {
       [FROGG_MCP_SERVER_NAME]: {
         type: "http",
-        url: `${params.mcpBaseUrl}?callerAgentId=${params.agentId}`,
+        url: params.mcpBaseUrl,
         ...(params.mcpAuthToken
-          ? { headers: { Authorization: `Bearer ${params.mcpAuthToken}` } }
+          ? {
+              headers: {
+                Authorization: `Bearer ${deriveAgentMcpToken(params.mcpAuthToken, params.agentId)}`,
+              },
+            }
           : {}),
       },
       ...storedConfig.mcpServers,

@@ -28,6 +28,10 @@ pub struct Hello {
     pub protocol_version: i64,
     #[serde(rename = "appVersion", skip_serializing_if = "Option::is_none")]
     pub app_version: Option<String>,
+    #[serde(rename = "deviceName", skip_serializing_if = "Option::is_none")]
+    pub device_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth: Option<HelloAuth>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub capabilities: Option<HelloCapabilities>,
 }
@@ -44,6 +48,11 @@ pub enum HelloClientType {
     Mcp,
     #[serde(rename = "hub")]
     Hub,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct HelloAuth {
+    pub token: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -94,6 +103,28 @@ pub struct Session {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum SessionMessage {
+    #[serde(rename = "auth.device.list.request")]
+    AuthDeviceListRequest(AuthDeviceListRequest),
+    #[serde(rename = "auth.device.rename.request")]
+    AuthDeviceRenameRequest(AuthDeviceRenameRequest),
+    #[serde(rename = "auth.device.revoke.request")]
+    AuthDeviceRevokeRequest(AuthDeviceRevokeRequest),
+    #[serde(rename = "auth.pairing_code.create.request")]
+    AuthPairingCodeCreateRequest(AuthPairingCodeCreateRequest),
+    #[serde(rename = "auth.pairing_request.list.request")]
+    AuthPairingRequestListRequest(AuthPairingRequestListRequest),
+    #[serde(rename = "auth.pairing_request.decide.request")]
+    AuthPairingRequestDecideRequest(AuthPairingRequestDecideRequest),
+    #[serde(rename = "auth.settings.get.request")]
+    AuthSettingsGetRequest(AuthSettingsGetRequest),
+    #[serde(rename = "auth.settings.update.request")]
+    AuthSettingsUpdateRequest(AuthSettingsUpdateRequest),
+    #[serde(rename = "auth.password.set.request")]
+    AuthPasswordSetRequest(AuthPasswordSetRequest),
+    #[serde(rename = "presence.report.request")]
+    PresenceReportRequest(PresenceReportRequest),
+    #[serde(rename = "presence.get.request")]
+    PresenceGetRequest(PresenceGetRequest),
     #[serde(rename = "project.import.prepare.request")]
     ProjectImportPrepareRequest(ProjectImportPrepareRequest),
     #[serde(rename = "project.import.upload.request")]
@@ -520,6 +551,136 @@ pub enum SessionMessage {
     LoopLogs(LoopLogs),
     #[serde(rename = "loop/stop")]
     LoopStop(LoopStop),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceRenameRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "deviceId")]
+    pub device_id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthDeviceRevokeRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "deviceId")]
+    pub device_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingCodeCreateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<AuthPairingCodeCreateRequestRole>,
+    #[serde(rename = "ttlSeconds", skip_serializing_if = "Option::is_none")]
+    pub ttl_seconds: Option<i64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AuthPairingCodeCreateRequestRole {
+    #[serde(rename = "owner")]
+    Owner,
+    #[serde(rename = "operator")]
+    Operator,
+    #[serde(rename = "viewer")]
+    Viewer,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPairingRequestDecideRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "pairingRequestId")]
+    pub pairing_request_id: String,
+    pub decision: AuthPairingRequestDecideRequestDecision,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub role: Option<AuthPairingRequestDecideRequestRole>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AuthPairingRequestDecideRequestDecision {
+    #[serde(rename = "approve")]
+    Approve,
+    #[serde(rename = "deny")]
+    Deny,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AuthPairingRequestDecideRequestRole {
+    #[serde(rename = "owner")]
+    Owner,
+    #[serde(rename = "operator")]
+    Operator,
+    #[serde(rename = "viewer")]
+    Viewer,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthSettingsGetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthSettingsUpdateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "claimMode", skip_serializing_if = "Option::is_none")]
+    pub claim_mode: Option<bool>,
+    #[serde(rename = "trustLan", skip_serializing_if = "Option::is_none")]
+    pub trust_lan: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AuthPasswordSetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub password: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceReportRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub target: serde_json::Value,
+    pub state: PresenceReportRequestState,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum PresenceReportRequestState {
+    #[serde(rename = "viewing")]
+    Viewing,
+    #[serde(rename = "typing")]
+    Typing,
+    #[serde(rename = "idle")]
+    Idle,
+    #[serde(rename = "left")]
+    Left,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceGetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub target: serde_json::Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

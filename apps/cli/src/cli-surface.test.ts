@@ -55,7 +55,7 @@ describe("canonical CLI surface", () => {
     expect(cli.helpInformation()).not.toContain("hooks");
   });
 
-  it("puts pairing and access under auth rather than the root", () => {
+  it("keeps access control under auth, with pairing a device at the root", () => {
     const cli = createCli();
     const auth = cli.commands.find((command) => command.name() === "auth");
     expect(auth?.commands.map((command) => command.name()).sort()).toEqual([
@@ -65,7 +65,9 @@ describe("canonical CLI surface", () => {
       "set-password",
       "trust-lan",
     ]);
-    expect(cli.commands.map((command) => command.name())).not.toContain("pair");
+    // `pair` at the root mints a pairing code for a device; `auth pair` prints
+    // the relay or LAN claim offer, which is a different question.
+    expect(cli.commands.map((command) => command.name())).toContain("pair");
   });
 
   it("promotes daemon lifecycle to the root while hiding legacy compatibility", () => {

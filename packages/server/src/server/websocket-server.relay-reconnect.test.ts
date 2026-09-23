@@ -17,6 +17,9 @@ import {
   TerminalStreamOpcode,
 } from "@frogg/protocol/terminal-stream-protocol";
 import { CLIENT_CAPS } from "@frogg/protocol/client-capabilities";
+import type { DaemonAuthConfig } from "./auth.js";
+import type { DaemonAccessPolicy } from "./access-policy.js";
+import { OWNER_PERMISSIONS } from "./authorization/index.js";
 
 type SocketListener = (...args: unknown[]) => void;
 
@@ -56,6 +59,8 @@ const sessionMock = vi.hoisted(() => {
     clearAgentTimelineSubscription = vi.fn();
     getClientActivity = vi.fn(() => null);
     getSessionId = vi.fn(() => "mock-session-id");
+    getDevice = vi.fn(() => (this.args.device as unknown) ?? null);
+    getDeviceId = vi.fn(() => (this.args.device as { id?: string } | null)?.id ?? null);
     getPermissions = vi.fn(() => this.args.permissions as string[]);
     allowsInbound = vi.fn(() => true);
     allowsPermission = vi.fn(() => true);
@@ -224,10 +229,40 @@ function createWorkspaceAutoNameStub(): WorkspaceAutoName {
   });
 }
 
+/** Relay hellos need a credential; this stands in for the paired device store. */
+const RELAY_DEVICE_TOKEN = "relay-device-token";
+
+function createRelayAuthConfig(): DaemonAuthConfig {
+  return {
+    access: createStub<DaemonAccessPolicy>({
+      isClaimed: () => true,
+      findDevice: (token: string) =>
+        token === RELAY_DEVICE_TOKEN
+          ? {
+              id: "cred_relay",
+              name: "Relay phone",
+              role: "owner" as const,
+              // Matches the default admission principal, so switching between
+              // the direct and relay paths still resolves to one session.
+              principalId: "owner",
+              principalLabel: "Relay phone",
+              createdAt: new Date(0).toISOString(),
+              lastSeenAt: null,
+              pairedVia: "pairing_code" as const,
+              permissions: [...OWNER_PERMISSIONS],
+            }
+          : null,
+      touchDevice: () => {},
+    }),
+  };
+}
+
 function createServer(options?: {
   speechReadiness?: SpeechReadinessSnapshot | null;
   logger?: ReturnType<typeof createLogger>;
   startPaused?: boolean;
+  /** `null` runs the server with no auth at all, so relay hellos are refused. */
+  auth?: DaemonAuthConfig | null;
 }) {
   const speechReadiness = options?.speechReadiness ?? null;
   const daemonConfigStore = {
@@ -258,7 +293,7 @@ function createServer(options?: {
     null,
     { allowedOrigins: new Set(), startPaused: options?.startPaused },
     createWorkspaceAutoNameStub(),
-    undefined,
+    options?.auth === null ? undefined : (options?.auth ?? createRelayAuthConfig()),
     speechReadiness
       ? {
           resolveStt: () => null,
@@ -387,8 +422,15 @@ function createHelloMessage(
     clientId,
     clientType: "cli" as const,
     protocolVersion: 1,
+    auth: { token: RELAY_DEVICE_TOKEN },
     ...(options?.capabilities ? { capabilities: options.capabilities } : {}),
   };
+}
+
+async function flushMicrotasks(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
 }
 
 function createDirectRequest() {
@@ -412,6 +454,8 @@ async function attachRelayAndHello(params: {
 }) {
   await params.server.attachExternalSocket(params.socket, { transport: "relay" });
   params.socket.emit("message", JSON.stringify(createHelloMessage(params.clientId)));
+  // The relay credential is verified asynchronously before the session opens.
+  await flushMicrotasks();
   expect(params.socket.sent.length).toBeGreaterThan(0);
   const envelope = parseSentEnvelope(params.socket.sent[0]);
   expect(envelope.type).toBe("session");
@@ -678,6 +722,67 @@ describe("relay external socket reconnect behavior", () => {
     await server.close();
   });
 
+  test("refuses a relay hello that carries no device credential", async () => {
+    const server = createServer();
+    const socket = new MockSocket();
+    let closeCode: number | null = null;
+    socket.on("close", (code: unknown) => {
+      closeCode = typeof code === "number" ? code : null;
+    });
+
+    await server.attachExternalSocket(socket, { transport: "relay" });
+    socket.emit(
+      "message",
+      JSON.stringify({
+        type: "hello",
+        clientId: "cid-no-credential",
+        clientType: "cli",
+        protocolVersion: 1,
+      }),
+    );
+    await flushMicrotasks();
+
+    expect(sessionMock.instances).toHaveLength(0);
+    expect(closeCode).toBe(4401);
+
+    await server.close();
+  });
+
+  test("refuses a relay hello whose credential is not a known device", async () => {
+    const server = createServer();
+    const socket = new MockSocket();
+
+    await server.attachExternalSocket(socket, { transport: "relay" });
+    socket.emit(
+      "message",
+      JSON.stringify({
+        type: "hello",
+        clientId: "cid-wrong-credential",
+        clientType: "cli",
+        protocolVersion: 1,
+        auth: { token: "not-a-real-credential" },
+      }),
+    );
+    await flushMicrotasks();
+
+    expect(sessionMock.instances).toHaveLength(0);
+
+    await server.close();
+  });
+
+  test("a relay session runs as the device its credential belongs to", async () => {
+    const server = createServer();
+    const socket = new MockSocket();
+
+    await attachRelayAndHello({ server, socket, clientId: "cid-device-admission" });
+
+    const session = sessionMock.instances.at(-1)!;
+    expect((session.args.device as { id: string }).id).toBe("cred_relay");
+    expect(session.args.permissions).toEqual([...OWNER_PERMISSIONS]);
+
+    await server.close();
+  });
+
   test("logs control RPCs with the socket identity", async () => {
     const logger = createLogger();
     const server = createServer({ logger });
@@ -688,6 +793,7 @@ describe("relay external socket reconnect behavior", () => {
       relayConnectionId: "relay-conn-1",
     });
     socket.emit("message", JSON.stringify(createHelloMessage("cid-control-log")));
+    await flushMicrotasks();
     socket.emit(
       "message",
       JSON.stringify({

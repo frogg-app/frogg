@@ -5,19 +5,23 @@ import path from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 
 import { createAccessPolicy, type DaemonAccessPolicy } from "./access-policy.js";
+import type { DaemonAuthConfig } from "./auth.js";
 import { createClaimStore } from "./claim-store.js";
 import {
   authorizeBearerAsync,
   extractHttpBearerToken,
   extractWsBearerProtocol,
   extractWsBearerToken,
+  authorizeAgentMcpRequest,
+  deriveAgentMcpToken,
   hashDaemonPassword,
-  isAgentMcpRequestAuthorized,
   isBearerTokenValidAsync,
   isBearerTokenValid,
   requestNeedsBearer,
   shouldBypassBearerAuth,
+  verifyAgentMcpToken,
 } from "./auth.js";
+import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 
 const CORRECT_PASSWORD_HASH = "$2b$12$OLxyuuP9uLK30Uzc4wQX0O6liuU/Q1t5P2b0Ebf36mULvpVK3DRZW";
 
@@ -42,11 +46,17 @@ describe("daemon bearer validator", () => {
     );
   });
 
-  test("hashes a password into a bcrypt value", () => {
+  test("hashes a password with scrypt and still verifies legacy bcrypt hashes", () => {
     const hash = hashDaemonPassword("correct-password");
 
-    expect(hash).toMatch(/^\$2[aby]\$12\$/);
+    expect(hash).toMatch(/^scrypt\$\d+\$\d+\$\d+\$/);
+    // Salted: the same password hashes differently every time.
+    expect(hashDaemonPassword("correct-password")).not.toBe(hash);
     expect(isBearerTokenValid({ password: hash, token: "correct-password" })).toBe(true);
+    expect(isBearerTokenValid({ password: hash, token: "wrong" })).toBe(false);
+    expect(isBearerTokenValid({ password: CORRECT_PASSWORD_HASH, token: "correct-password" })).toBe(
+      true,
+    );
   });
 
   test("extracts HTTP bearer tokens", () => {
@@ -81,52 +91,55 @@ describe("daemon bearer validator", () => {
 
 describe("agent MCP request authorizer", () => {
   const CAPABILITY_TOKEN = "cap-token-abc123";
+  const req = { headers: {}, socket: { remoteAddress: "127.0.0.1" } } as unknown as IncomingMessage;
 
-  test("allows any request when no daemon password is configured", async () => {
-    expect(
-      await isAgentMcpRequestAuthorized({
-        password: undefined,
-        capabilityToken: CAPABILITY_TOKEN,
-        authorizationHeader: undefined,
-      }),
-    ).toBe(true);
+  function authorize(authorizationHeader: string | undefined, auth?: DaemonAuthConfig) {
+    return authorizeAgentMcpRequest({
+      auth,
+      req,
+      capabilityToken: CAPABILITY_TOKEN,
+      authorizationHeader,
+    });
+  }
+
+  test("rejects an unauthenticated request even when no password is configured", async () => {
+    // Regression: the endpoint used to be wide open whenever no password was
+    // set, and it drives agents and terminals.
+    expect(await authorize(undefined)).toEqual({ ok: false, status: 401 });
+    expect(await authorize("Bearer nope")).toEqual({ ok: false, status: 401 });
   });
 
-  test("accepts the injected capability token", async () => {
-    expect(
-      await isAgentMcpRequestAuthorized({
-        password: CORRECT_PASSWORD_HASH,
-        capabilityToken: CAPABILITY_TOKEN,
-        authorizationHeader: `Bearer ${CAPABILITY_TOKEN}`,
-      }),
-    ).toBe(true);
+  test("accepts the run capability token with no caller agent", async () => {
+    expect(await authorize(`Bearer ${CAPABILITY_TOKEN}`)).toEqual({
+      ok: true,
+      callerAgentId: null,
+    });
   });
 
-  test("still accepts a valid daemon-password bearer", async () => {
-    expect(
-      await isAgentMcpRequestAuthorized({
-        password: CORRECT_PASSWORD_HASH,
-        capabilityToken: CAPABILITY_TOKEN,
-        authorizationHeader: "Bearer correct-password",
-      }),
-    ).toBe(true);
+  test("takes the caller agent from a per-agent token, not the query string", async () => {
+    const token = deriveAgentMcpToken(CAPABILITY_TOKEN, "agent-7");
+    expect(await authorize(`Bearer ${token}`)).toEqual({ ok: true, callerAgentId: "agent-7" });
+    expect(verifyAgentMcpToken(CAPABILITY_TOKEN, `${token}x`)).toBeNull();
+    expect(await authorize(`Bearer ${token}x`)).toEqual({ ok: false, status: 401 });
   });
 
-  test("rejects requests presenting neither the token nor a valid password", async () => {
-    expect(
-      await isAgentMcpRequestAuthorized({
-        password: CORRECT_PASSWORD_HASH,
-        capabilityToken: CAPABILITY_TOKEN,
-        authorizationHeader: undefined,
-      }),
-    ).toBe(false);
-    expect(
-      await isAgentMcpRequestAuthorized({
-        password: CORRECT_PASSWORD_HASH,
-        capabilityToken: CAPABILITY_TOKEN,
-        authorizationHeader: "Bearer wrong-token",
-      }),
-    ).toBe(false);
+  test("accepts a valid daemon-password bearer", async () => {
+    expect(await authorize("Bearer correct-password", { password: CORRECT_PASSWORD_HASH })).toEqual(
+      { ok: true, callerAgentId: null },
+    );
+  });
+
+  test("throttles repeated bad passwords", async () => {
+    const auth: DaemonAuthConfig = {
+      password: CORRECT_PASSWORD_HASH,
+      limiter: createAuthFailureLimiter({ maxFailures: 3 }),
+    };
+    expect(await authorize("Bearer wrong", auth)).toEqual({ ok: false, status: 401 });
+    expect(await authorize("Bearer wrong", auth)).toEqual({ ok: false, status: 401 });
+    expect(await authorize("Bearer wrong", auth)).toEqual({ ok: false, status: 401 });
+    // Blocked now, and the correct password is not even checked.
+    expect(await authorize("Bearer wrong", auth)).toEqual({ ok: false, status: 429 });
+    expect(await authorize("Bearer correct-password", auth)).toEqual({ ok: false, status: 429 });
   });
 });
 
@@ -193,7 +206,10 @@ describe("bearer requirement by client locality", () => {
       const withoutToken = await authorizeBearerAsync(auth, req, null);
       expect(withoutToken.ok).toBe(!needsBearer);
       if (password) {
-        expect(await authorizeBearerAsync(auth, req, "correct-password")).toEqual({ ok: true });
+        expect(await authorizeBearerAsync(auth, req, "correct-password")).toEqual({
+          ok: true,
+          via: "password",
+        });
         expect(await authorizeBearerAsync(auth, req, "wrong")).toEqual({
           ok: false,
           reason: "invalid_token",
@@ -205,12 +221,71 @@ describe("bearer requirement by client locality", () => {
     },
   );
 
-  test("a LAN client behind a trusted proxy is classified by its forwarded address", () => {
+  test("a forwarded client is classified by its forwarded address but is never loopback", () => {
     const trusting = { password: undefined, access: policyFor(true) };
-    const req = requestFrom("127.0.0.1", "192.168.1.10");
-    expect(trusting.access.clientLocality(req)).toBe("lan");
-    expect(trusting.access.isLoopbackClient(req)).toBe(false);
-    expect(requestNeedsBearer(trusting, req)).toBe(false);
-    expect(requestNeedsBearer({ password: undefined, access: policyFor(false) }, req)).toBe(true);
+    // A reverse proxy can place a client on the LAN...
+    const lanBehindProxy = requestFrom("127.0.0.1", "192.168.1.10");
+    expect(trusting.access.clientLocality(lanBehindProxy)).toBe("lan");
+    expect(trusting.access.isLoopbackClient(lanBehindProxy)).toBe(false);
+    expect(requestNeedsBearer(trusting, lanBehindProxy)).toBe(false);
+    expect(
+      requestNeedsBearer({ password: undefined, access: policyFor(false) }, lanBehindProxy),
+    ).toBe(true);
+
+    // ...but it can never hand a caller loopback, which is the one locality
+    // that stays trusted with the LAN untrusted.
+    const spoofed = requestFrom("127.0.0.1", "127.0.0.1");
+    expect(trusting.access.clientLocality(spoofed)).toBe("public");
+    expect(trusting.access.isLoopbackClient(spoofed)).toBe(false);
+    expect(requestNeedsBearer(trusting, spoofed)).toBe(true);
+  });
+
+  test("claim mode untrusts the LAN and loopback stays open", () => {
+    const home = mkdtempSync(path.join(tmpdir(), "frogg-auth-claim-"));
+    homes.push(home);
+    const access = createAccessPolicy({
+      claimStore: createClaimStore(home),
+      getTrustedProxies: () => ["loopback"],
+      getTrustLan: () => true,
+      getClaimMode: () => true,
+    });
+    expect(access.claimMode()).toBe(true);
+    expect(access.trustLan()).toBe(false);
+    expect(requestNeedsBearer({ password: undefined, access }, requestFrom(SOCKETS.lan))).toBe(
+      true,
+    );
+    expect(requestNeedsBearer({ password: undefined, access }, requestFrom(SOCKETS.loopback))).toBe(
+      false,
+    );
+  });
+
+  test("a paired device credential identifies its device and is accepted anywhere", async () => {
+    const home = mkdtempSync(path.join(tmpdir(), "frogg-auth-device-"));
+    homes.push(home);
+    const store = createClaimStore(home);
+    const minted = store.mintPrincipal({ label: "Phone", role: "operator", pairedVia: "code" });
+    const auth = {
+      password: undefined,
+      access: createAccessPolicy({
+        claimStore: store,
+        getTrustedProxies: () => ["loopback"],
+        getTrustLan: () => false,
+      }),
+    };
+    const decision = await authorizeBearerAsync(
+      auth,
+      requestFrom(SOCKETS.public),
+      minted.credential,
+    );
+    expect(decision.ok).toBe(true);
+    expect(decision.ok && decision.via).toBe("device");
+    expect(decision.ok && decision.device?.name).toBe("Phone");
+    expect(decision.ok && decision.device?.role).toBe("operator");
+
+    // Revoking the last device drops the credential and unclaims the daemon.
+    store.revokeDevice(minted.credentialId);
+    expect(
+      await authorizeBearerAsync(auth, requestFrom(SOCKETS.public), minted.credential),
+    ).toEqual({ ok: false, reason: "unclaimed" });
   });
 });

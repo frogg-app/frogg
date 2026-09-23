@@ -12,8 +12,11 @@ import { renderPairingQr, renderPairingQrSvg } from "./pairing-qr.js";
  * - `GET  /api/setup/status`  public: `{ claimed, pairingRequired }` for the gate page to poll
  * - `POST /api/setup/claim`   public: redeems a claim token, mints the first (or another)
  *                             principal + device credential, and marks the daemon claimed
- * - `POST /api/setup/offer`   behind the normal bearer policy: issues a fresh direct offer
- *                             (loopback CLI, or an already-paired client adding a device)
+ * - `POST /api/setup/offer`   issues a fresh direct offer. Locality is not enough:
+ *                             the caller must present the local token file, a paired
+ *                             device credential, or the daemon password, because an
+ *                             offer is a credential-minting capability and trusting
+ *                             the LAN would let any LAN client mint one.
  */
 const ClaimRequestSchema = z
   .object({
@@ -28,7 +31,14 @@ export interface SetupRouteDependencies {
   claimStore: ClaimStore;
   offerSource: ClaimOfferSource;
   hasPassword: () => boolean;
+  /**
+   * Whether this request carries a credential rather than merely arriving from
+   * a trusted network: the local 0600 token, a paired device, or the password.
+   */
+  hasLocalCredential: (req: Parameters<RequestHandler>[0]) => Promise<boolean>;
   onClaimed?: (input: { principalId: string; label: string }) => void;
+  /** Handles `/api/setup/claim`; device-access-routes.ts owns the real one. */
+  claimHandler?: RequestHandler;
   logger: Logger;
 }
 
@@ -69,6 +79,13 @@ export function createSetupClaimHandler(deps: SetupRouteDependencies): RequestHa
 export function createSetupOfferHandler(deps: SetupRouteDependencies): RequestHandler {
   return (req, res) => {
     void (async () => {
+      // An offer mints a credential, so it needs a credential — an unclaimed
+      // daemon is the one exception, because that is the bootstrap case the
+      // claim gate page itself drives.
+      if (deps.claimStore.isClaimed() && !(await deps.hasLocalCredential(req))) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
       const parsed = OfferRequestSchema.safeParse(req.body);
       const qrMode = parsed.success ? parsed.data?.qr : undefined;
       const requestHost = typeof req.headers.host === "string" ? req.headers.host : undefined;
@@ -102,6 +119,10 @@ export function createSetupOfferHandler(deps: SetupRouteDependencies): RequestHa
 
 export function mountSetupRoutes(app: express.Application, deps: SetupRouteDependencies): void {
   app.get("/api/setup/status", createSetupStatusHandler(deps));
-  app.post("/api/setup/claim", express.json({ limit: "8kb" }), createSetupClaimHandler(deps));
+  app.post(
+    "/api/setup/claim",
+    express.json({ limit: "8kb" }),
+    deps.claimHandler ?? createSetupClaimHandler(deps),
+  );
   app.post("/api/setup/offer", express.json({ limit: "8kb" }), createSetupOfferHandler(deps));
 }

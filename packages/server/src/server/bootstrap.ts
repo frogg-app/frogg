@@ -168,7 +168,11 @@ import type {
   AgentProviderRuntimeSettingsMap,
   ProviderOverride,
 } from "./agent/provider-launch-config.js";
-import { loadPersistedConfig, type PersistedConfig } from "./persisted-config.js";
+import {
+  loadPersistedConfig,
+  savePersistedConfig,
+  type PersistedConfig,
+} from "./persisted-config.js";
 import { createServiceProxySubsystem, type ServiceProxySubsystem } from "./service-proxy.js";
 import { releaseWorkspaceServicePortPlan } from "./workspace-service-port-registry.js";
 import { ScriptHealthMonitor } from "./script-health-monitor.js";
@@ -185,9 +189,12 @@ import { terminateWithTreeKill } from "../utils/tree-kill.js";
 import { isHostnameAllowed, type HostnamesConfig } from "./hostnames.js";
 import {
   createRequireBearerMiddleware,
-  isAgentMcpRequestAuthorized,
+  authorizeAgentMcpRequest,
+  extractHttpBearerToken,
+  hasRealCredential,
   type DaemonAuthConfig,
 } from "./auth.js";
+import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
 import { createAccessPolicy, DEFAULT_TRUST_LAN } from "./access-policy.js";
 import { createClaimStore, type ClaimStore } from "./claim-store.js";
@@ -199,6 +206,17 @@ import { mountPairingCodeRoutes } from "./pairing-code-route.js";
 
 import { createIdentityPreflightHandler, createIdentityRouteHandler } from "./identity-route.js";
 import { mountSetupRoutes } from "./setup-routes.js";
+import {
+  createDeviceClaimHandler,
+  mountDeviceAccessRoutes,
+  type DeviceAccessDependencies,
+} from "./device-access-routes.js";
+import { createPairingCodeStore, type PairingCodeStore } from "./pairing-code-store.js";
+import { createDeviceAccessService } from "./device-access-service.js";
+import { createPresenceService } from "./presence-service.js";
+import { buildOfferEndpoints } from "./connection-offer.js";
+import { createPairingRequestStore, type PairingRequestStore } from "./pairing-request-store.js";
+import { createLocalTokenFile, type LocalTokenFile } from "./local-token.js";
 import { WorkspaceAutoName } from "./workspace-auto-name.js";
 import { createGitMutationService } from "./session/git-mutation/git-mutation-service.js";
 import { workspaceIdsOnCheckout } from "./workspace-directory.js";
@@ -398,6 +416,8 @@ export interface FroggDaemonConfig {
   trustedProxies?: true | string[];
   /** Treat private-network clients like loopback (self-hosting/security.mdx, "Access policy"). */
   trustLan?: boolean;
+  /** LAN untrusted; the first client claims the unclaimed daemon. Overrides trustLan. */
+  claimMode?: boolean;
   mcpEnabled?: boolean;
   mcpInjectIntoAgents?: boolean;
   browserToolsEnabled?: boolean;
@@ -474,6 +494,9 @@ export interface FroggDaemon {
   scriptRuntimeStore: WorkspaceScriptRuntimeStore;
   browserToolsBroker: BrowserToolsBroker;
   claimStore: ClaimStore;
+  pairingCodes: PairingCodeStore;
+  pairingRequests: PairingRequestStore;
+  localToken: LocalTokenFile;
   start(): Promise<void>;
   stop(): Promise<void>;
   getListenTarget(): ListenTarget | null;
@@ -576,6 +599,15 @@ function readMutableTrustLan(config: MutableDaemonConfig): boolean {
   return typeof value === "boolean" ? value : DEFAULT_TRUST_LAN;
 }
 
+/**
+ * `claimMode` rides along in the mutable config the same way, so flipping it
+ * with `frogg daemon claim-mode` or the settings RPC applies without a restart.
+ */
+function readMutableClaimMode(config: MutableDaemonConfig): boolean {
+  const value = (config as Record<string, unknown>).claimMode;
+  return typeof value === "boolean" ? value : false;
+}
+
 function configuredTrustLan(config: Pick<FroggDaemonConfig, "trustLan">): boolean {
   return config.trustLan ?? DEFAULT_TRUST_LAN;
 }
@@ -614,6 +646,7 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
     cors: { allowedOrigins: config.corsAllowedOrigins },
     trustedProxies: config.trustedProxies ?? ["loopback"],
     trustLan: configuredTrustLan(config),
+    claimMode: config.claimMode ?? false,
     git: config.git ?? resolveGitProcessPolicy({ env: process.env }),
     app: { baseUrl: config.appBaseUrl ?? BRAND_PAIRING_URL },
     ...(config.providerCatalogRefreshTimeoutMs !== undefined
@@ -693,12 +726,22 @@ export async function createFroggDaemon(
   // Paired principals/credentials and the first-run claim gate (getting-started/connect-and-pair.mdx).
   const claimStore = createClaimStore(config.froggHome);
   const claimOffers = createClaimOfferStore();
+  const pairingCodes = createPairingCodeStore();
+  const pairingRequests = createPairingRequestStore();
+  // The local CLI and desktop shell read this 0600 file and send it as a
+  // bearer, so privileged local routes need a credential rather than trusting
+  // "the socket looked local".
+  const localToken = createLocalTokenFile(config.froggHome);
+  localToken.ensure();
+  const authFailureLimiter = createAuthFailureLimiter();
   const authConfig: DaemonAuthConfig = {
     ...config.auth,
+    limiter: authFailureLimiter,
     access: createAccessPolicy({
       claimStore,
       getTrustedProxies: () => daemonConfigStore.get().trustedProxies ?? ["loopback"],
       getTrustLan: () => readMutableTrustLan(daemonConfigStore.get()),
+      getClaimMode: () => readMutableClaimMode(daemonConfigStore.get()),
     }),
   };
   const managedProcesses = createBootstrapManagedProcessRegistry(config, logger);
@@ -950,10 +993,97 @@ export async function createFroggDaemon(
       isTrustedClient: (req) => authConfig.access?.isTrustedClient(req) ?? false,
     }),
   );
+  // Presence and the device-access RPCs share the stores the HTTP pairing
+  // routes use, so a device revoked over HTTP disappears from a session too.
+  const presenceService = createPresenceService();
+  const deviceAccessService = createDeviceAccessService({
+    claimStore,
+    pairingCodes,
+    pairingRequests,
+    serverId,
+    daemonPublicKeyB64: daemonKeyPair.publicKeyB64,
+    endpoints: () => {
+      const target = publicListenTarget();
+      if (target.type !== "tcp") return [];
+      return buildOfferEndpoints({ listenHost: target.host, port: target.port }).map((endpoint) => {
+        const separator = endpoint.lastIndexOf(":");
+        return {
+          host: endpoint.slice(0, separator),
+          port: Number(endpoint.slice(separator + 1)),
+        };
+      });
+    },
+    deepLinkScheme: brand.scheme,
+    settings: {
+      read: () => ({
+        claimMode: readMutableClaimMode(daemonConfigStore.get()),
+        trustLan: readMutableTrustLan(daemonConfigStore.get()),
+        passwordEnabled: Boolean(authConfig.password),
+      }),
+      update: async (input) => {
+        daemonConfigStore.patch({
+          ...(input.claimMode === undefined ? {} : { claimMode: input.claimMode }),
+          ...(input.trustLan === undefined ? {} : { trustLan: input.trustLan }),
+        });
+        // Withdrawing LAN trust has to reach the clients it already let in,
+        // or it takes effect only at their next reconnect.
+        if (
+          !readMutableTrustLan(daemonConfigStore.get()) ||
+          readMutableClaimMode(daemonConfigStore.get())
+        ) {
+          wsServer?.dropCredentiallessSessions();
+        }
+      },
+      setPasswordHash: async (hash) => {
+        const persisted = loadPersistedConfig(config.froggHome, logger);
+        savePersistedConfig(
+          config.froggHome,
+          {
+            ...persisted,
+            daemon: {
+              ...persisted.daemon,
+              auth: {
+                ...persisted.daemon?.auth,
+                ...(hash === null ? { password: undefined } : { password: hash }),
+              },
+            },
+          },
+          logger,
+        );
+        authConfig.password = hash ?? undefined;
+      },
+      overrideControlledPaths: () => config.configReload?.overrideControlledPaths ?? [],
+    },
+    connectedCredentialIds: () => new Set(wsServer?.listConnectedDeviceIds() ?? []),
+    onDeviceRevoked: (credentialId) => wsServer?.dropDeviceSessions(credentialId),
+  });
+
+  const deviceAccessDeps: DeviceAccessDependencies = {
+    serverId,
+    daemonKeyPair: daemonKeyPair.keyPair,
+    daemonPublicKeyB64: daemonKeyPair.publicKeyB64,
+    claimStore,
+    offers: claimOffers,
+    pairingCodes,
+    pairingRequests,
+    auth: authConfig,
+    claimMode: () => authConfig.access?.claimMode() ?? false,
+    onPaired: ({ minted }) => {
+      logger.info({ principalId: minted.principalId }, "Daemon claimed by a paired device");
+    },
+    logger,
+  };
+  mountDeviceAccessRoutes(app, deviceAccessDeps);
   mountSetupRoutes(app, {
     claimStore,
     offerSource: claimOfferSource,
     hasPassword: () => Boolean(config.auth?.password),
+    hasLocalCredential: async (req) => {
+      const token = extractHttpBearerToken(req.header("authorization"));
+      if (localToken.matches(token)) return true;
+      return hasRealCredential(authConfig, req, token);
+    },
+    claimHandler: createDeviceClaimHandler(deviceAccessDeps),
     logger,
   });
 
@@ -1637,18 +1767,20 @@ export async function createFroggDaemon(
         res.status(404).json({ error: "Agent MCP endpoint disabled" });
         return;
       }
-      // This route is exempt from the global daemon-password middleware, so it
-      // authenticates here using the injected capability token (or a valid
-      // daemon password). Without this, a password-protected daemon would be
-      // wide open on its agent control plane.
-      if (
-        !(await isAgentMcpRequestAuthorized({
-          password: config.auth?.password,
-          capabilityToken: agentMcpAuthToken,
-          authorizationHeader: req.header("authorization"),
-        }))
-      ) {
-        res.status(401).json({ error: "Unauthorized" });
+      // This route is exempt from the global bearer middleware, so it
+      // authenticates here: a per-agent token derived from the run secret, the
+      // run secret itself, a paired device with an operator role, or the daemon
+      // password. Never locality alone — this endpoint drives agents.
+      const mcpAuth = await authorizeAgentMcpRequest({
+        auth: authConfig,
+        req,
+        capabilityToken: agentMcpAuthToken,
+        authorizationHeader: req.header("authorization"),
+      });
+      if (!mcpAuth.ok) {
+        res
+          .status(mcpAuth.status)
+          .json({ error: mcpAuth.status === 429 ? "Too many failed attempts" : "Unauthorized" });
         return;
       }
       if (config.mcpDebug) {
@@ -1678,14 +1810,11 @@ export async function createFroggDaemon(
           });
           return;
         }
-        const callerAgentIdRaw = req.query.callerAgentId;
-        let callerAgentId: string | undefined;
-        if (typeof callerAgentIdRaw === "string") {
-          callerAgentId = callerAgentIdRaw;
-        } else if (Array.isArray(callerAgentIdRaw) && typeof callerAgentIdRaw[0] === "string") {
-          callerAgentId = callerAgentIdRaw[0];
-        }
-        const { server, transport } = await createAgentMcpSession(callerAgentId);
+        // The caller identity comes from the presented credential, never from
+        // the query string: `?callerAgentId=` was spoofable by any caller.
+        const { server, transport } = await createAgentMcpSession(
+          mcpAuth.callerAgentId ?? undefined,
+        );
         res.on("close", () => {
           void transport.close();
           void server.close();
@@ -2007,6 +2136,10 @@ export async function createFroggDaemon(
               spokenAlerts,
               companion,
             );
+            wsServer.setDeviceAccessServices({
+              deviceAccess: deviceAccessService,
+              presence: presenceService,
+            });
             wsServer.beginAcceptingConnections();
             {
               const server = wsServer;
@@ -2137,6 +2270,9 @@ export async function createFroggDaemon(
     scriptRuntimeStore,
     browserToolsBroker,
     claimStore,
+    pairingCodes,
+    pairingRequests,
+    localToken,
     start,
     stop,
     getListenTarget: () => boundListenTarget,

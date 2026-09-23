@@ -542,7 +542,25 @@ function resolveListenAddress(
     cli?.listen ??
     env.FROGG_LISTEN ??
     persisted.daemon?.listen ??
-    `0.0.0.0:${env.PORT ?? DEFAULT_PORT}`
+    // The brand picks the fresh-install bind: upstream binds every interface,
+    // a locked-down brand binds loopback only (brand.json daemon.bind).
+    `${brand.daemon.bindHost}:${env.PORT ?? DEFAULT_PORT}`
+  );
+}
+
+/**
+ * Claim mode: the LAN is not trusted and the first client to claim the
+ * unclaimed daemon becomes its owner. Off by default upstream; a brand can
+ * default it on. `FROGG_CLAIM_MODE` wins, then config.json.
+ */
+function resolveClaimModeConfig(
+  env: NodeJS.ProcessEnv,
+  persisted: ReturnType<typeof loadPersistedConfig>,
+): boolean {
+  return (
+    parseBooleanEnv(env.FROGG_CLAIM_MODE) ??
+    persisted.daemon?.auth?.claimMode ??
+    brand.daemon.claimMode
   );
 }
 
@@ -639,6 +657,7 @@ function resolveStaticLoadConfigSettings(
     ]),
     trustedProxies: resolveTrustedProxiesConfig(env, persisted),
     trustLan: resolveTrustLanConfig(env, persisted),
+    claimMode: resolveClaimModeConfig(env, persisted),
     appBaseUrl:
       brandEnv(brand, env, "PAIRING_BASE_URL") ??
       env.FROGG_APP_BASE_URL ??
@@ -677,6 +696,7 @@ export function resolveConfigFromPersisted(
     hostnames,
     trustedProxies,
     trustLan,
+    claimMode,
     appBaseUrl,
   } = resolveStaticLoadConfigSettings(env, cli, persisted);
 
@@ -712,6 +732,7 @@ export function resolveConfigFromPersisted(
     hostnames,
     trustedProxies,
     trustLan,
+    claimMode,
     mcpEnabled,
     mcpInjectIntoAgents,
     browserToolsEnabled,
@@ -816,6 +837,7 @@ function resolveCoreDaemonOverridePaths(
     paths.push("daemon.trustedProxies");
   }
   if (parseBooleanEnv(env.FROGG_TRUST_LAN) !== undefined) paths.push("daemon.auth.trustLan");
+  if (parseBooleanEnv(env.FROGG_CLAIM_MODE) !== undefined) paths.push("daemon.auth.claimMode");
   if (parsePositiveGitOverride(env.FROGG_GIT_MAX_PROCESSES_PER_SECOND)) {
     paths.push("daemon.git.maxProcessesPerSecond");
   }

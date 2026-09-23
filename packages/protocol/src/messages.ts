@@ -15,6 +15,32 @@ import {
   ProjectImportReadResponseSchema,
 } from "./project-import/messages.js";
 import { z } from "zod";
+import {
+  AuthDeviceListRequestSchema,
+  AuthDeviceRenameRequestSchema,
+  AuthDeviceRevokeRequestSchema,
+  AuthPairingCodeCreateRequestSchema,
+  AuthPairingRequestListRequestSchema,
+  AuthPairingRequestDecideRequestSchema,
+  AuthSettingsGetRequestSchema,
+  AuthSettingsUpdateRequestSchema,
+  AuthPasswordSetRequestSchema,
+  PresenceReportRequestSchema,
+  PresenceGetRequestSchema,
+  AuthDeviceListResponseSchema,
+  AuthDeviceRenameResponseSchema,
+  AuthDeviceRevokeResponseSchema,
+  AuthPairingCodeCreateResponseSchema,
+  AuthPairingRequestListResponseSchema,
+  AuthPairingRequestDecideResponseSchema,
+  AuthSettingsGetResponseSchema,
+  AuthSettingsUpdateResponseSchema,
+  AuthPasswordSetResponseSchema,
+  PresenceReportResponseSchema,
+  PresenceGetResponseSchema,
+  AuthPairingRequestUpdateMessageSchema,
+  PresenceUpdateMessageSchema,
+} from "./device-access-rpc.js";
 import { TerminalActivitySchema } from "./terminal-activity.js";
 import { CLIENT_CAPS } from "./client-capabilities.js";
 import { AGENT_LIFECYCLE_STATUSES } from "./agent-lifecycle.js";
@@ -3341,6 +3367,17 @@ export const HubExecutionControlRequestSchema = z.object({
 export type HubExecutionControlRequest = z.infer<typeof HubExecutionControlRequestSchema>;
 
 export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
+  AuthDeviceListRequestSchema,
+  AuthDeviceRenameRequestSchema,
+  AuthDeviceRevokeRequestSchema,
+  AuthPairingCodeCreateRequestSchema,
+  AuthPairingRequestListRequestSchema,
+  AuthPairingRequestDecideRequestSchema,
+  AuthSettingsGetRequestSchema,
+  AuthSettingsUpdateRequestSchema,
+  AuthPasswordSetRequestSchema,
+  PresenceReportRequestSchema,
+  PresenceGetRequestSchema,
   ProjectImportPrepareRequestSchema,
   ProjectImportUploadRequestSchema,
   ProjectImportPreviewRequestSchema,
@@ -4029,7 +4066,20 @@ export const ServerInfoStatusPayloadSchema = z
         agentProfiles: z.boolean().optional(),
         // COMPAT(agentConfigApply): added in v0.3.2, remove gate after 2027-02-11.
         agentConfigApply: z.boolean().optional(),
+        // COMPAT(deviceAccess): added in v1.6.0, remove gate after 2027-09-22.
+        // auth.device.*, auth.pairing_code.create, auth.pairing_request.*,
+        // auth.settings.*, auth.password.set and the /api/setup + /api/auth/login
+        // device-credential routes (device-access.ts).
+        deviceAccess: z.boolean().optional(),
+        // COMPAT(sessionPresence): added in v1.6.0, remove gate after 2027-09-22.
+        // presence.report / presence.get / presence.update.
+        sessionPresence: z.boolean().optional(),
       })
+      .optional(),
+    // COMPAT(deviceAccess): added in v1.6.0. The paired device this connection
+    // authenticated as; absent for credential-less (loopback / trusted LAN) connections.
+    device: z
+      .object({ id: z.string(), name: z.string(), role: z.enum(["owner", "operator", "viewer"]) })
       .optional(),
   })
   .passthrough()
@@ -7030,6 +7080,19 @@ export const AgentSkillsImportLegacySelectionResponseSchema = z.object({
 });
 
 export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
+  AuthDeviceListResponseSchema,
+  AuthDeviceRenameResponseSchema,
+  AuthDeviceRevokeResponseSchema,
+  AuthPairingCodeCreateResponseSchema,
+  AuthPairingRequestListResponseSchema,
+  AuthPairingRequestDecideResponseSchema,
+  AuthSettingsGetResponseSchema,
+  AuthSettingsUpdateResponseSchema,
+  AuthPasswordSetResponseSchema,
+  PresenceReportResponseSchema,
+  PresenceGetResponseSchema,
+  AuthPairingRequestUpdateMessageSchema,
+  PresenceUpdateMessageSchema,
   ProjectImportPrepareResponseSchema,
   ProjectImportUploadResponseSchema,
   ProjectImportPreviewResponseSchema,
@@ -7852,6 +7915,13 @@ export const WSHelloMessageSchema = z.object({
   clientType: z.enum(["mobile", "browser", "cli", "mcp", "hub"]),
   protocolVersion: z.number().int(),
   appVersion: z.string().optional(),
+  // COMPAT(sessionPresence): added in v1.6.0. Shown to other participants when
+  // the connection has no paired-device credential (loopback / trusted LAN).
+  deviceName: z.string().max(120).optional(),
+  // COMPAT(relayCredential): added in v1.6.0, remove gate after 2027-09-22.
+  // A tunnelled transport (relay) carries no HTTP headers to the daemon, so the
+  // client's device credential or daemon password travels inside the hello.
+  auth: z.object({ token: z.string().min(1).max(4096) }).optional(),
   capabilities: z
     .object({
       voice: z.boolean().optional(),
@@ -7936,3 +8006,5 @@ export function parseServerInfoStatusPayload(payload: unknown): ServerInfoStatus
   }
   return parsed.data;
 }
+
+export * from "./device-access-rpc.js";

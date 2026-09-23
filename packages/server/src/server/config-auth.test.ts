@@ -52,7 +52,7 @@ describe("daemon auth config", () => {
     });
 
     expect(config.auth?.password).not.toBe(CONFIG_PASSWORD_HASH);
-    expect(config.auth?.password).toMatch(/^\$2[aby]\$12\$/);
+    expect(config.auth?.password).toMatch(/^scrypt\$/);
     expect(isBearerTokenValid({ password: config.auth?.password, token: "from-env" })).toBe(true);
   });
 });

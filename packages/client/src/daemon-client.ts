@@ -5,6 +5,36 @@ import type {
 } from "@frogg/protocol/provider-accounts";
 import { CLIENT_CAPS, type ClientCapability } from "@frogg/protocol/client-capabilities";
 import type { AgentAttentionNotificationPayload } from "@frogg/protocol/agent-attention-notification";
+import type {
+  DeviceRole,
+  PresenceReportState,
+  PresenceTarget,
+} from "@frogg/protocol/device-access";
+import type {
+  AuthDeviceListResponse,
+  AuthDeviceRenameResponse,
+  AuthDeviceRevokeResponse,
+  AuthPairingCodeCreateResponse,
+  AuthPairingRequestDecideResponse,
+  AuthPairingRequestListResponse,
+  AuthPasswordSetResponse,
+  AuthSettingsGetResponse,
+  AuthSettingsUpdateResponse,
+  PresenceGetResponse,
+  PresenceReportResponse,
+} from "@frogg/protocol/device-access-rpc";
+
+type AuthDeviceListPayload = AuthDeviceListResponse["payload"];
+type AuthDeviceRenamePayload = AuthDeviceRenameResponse["payload"];
+type AuthDeviceRevokePayload = AuthDeviceRevokeResponse["payload"];
+type AuthPairingCodeCreatePayload = AuthPairingCodeCreateResponse["payload"];
+type AuthPairingRequestListPayload = AuthPairingRequestListResponse["payload"];
+type AuthPairingRequestDecidePayload = AuthPairingRequestDecideResponse["payload"];
+type AuthSettingsGetPayload = AuthSettingsGetResponse["payload"];
+type AuthSettingsUpdatePayload = AuthSettingsUpdateResponse["payload"];
+type AuthPasswordSetPayload = AuthPasswordSetResponse["payload"];
+type PresenceReportPayload = PresenceReportResponse["payload"];
+type PresenceGetPayload = PresenceGetResponse["payload"];
 import {
   AgentCreateFailedStatusPayloadSchema,
   AgentCreatedStatusPayloadSchema,
@@ -348,6 +378,8 @@ export interface DaemonClientConfig {
   appVersion?: string;
   runtimeGeneration?: number | null;
   password?: string;
+  /** Shown to other participants in session presence. */
+  deviceName?: string;
   authHeader?: string;
   /**
    * The saved host's serverId. A handshake from any other daemon (a different
@@ -5206,6 +5238,111 @@ export class DaemonClient {
     });
   }
 
+  // --- device access (features.deviceAccess) --------------------------------
+
+  async listDevices(requestId?: string): Promise<AuthDeviceListPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.device.list.response">({
+      requestId,
+      message: { type: "auth.device.list.request" },
+    });
+  }
+
+  async renameDevice(
+    input: { deviceId: string; name: string },
+    requestId?: string,
+  ): Promise<AuthDeviceRenamePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.device.rename.response">({
+      requestId,
+      message: { type: "auth.device.rename.request", ...input },
+    });
+  }
+
+  async revokeDevice(deviceId: string, requestId?: string): Promise<AuthDeviceRevokePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.device.revoke.response">({
+      requestId,
+      message: { type: "auth.device.revoke.request", deviceId },
+    });
+  }
+
+  async createPairingCode(
+    input: { role?: DeviceRole; ttlSeconds?: number } = {},
+    requestId?: string,
+  ): Promise<AuthPairingCodeCreatePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.pairing_code.create.response">({
+      requestId,
+      message: { type: "auth.pairing_code.create.request", ...input },
+    });
+  }
+
+  async listPairingRequests(requestId?: string): Promise<AuthPairingRequestListPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.pairing_request.list.response">({
+      requestId,
+      message: { type: "auth.pairing_request.list.request" },
+    });
+  }
+
+  async decidePairingRequest(
+    input: {
+      pairingRequestId: string;
+      decision: "approve" | "deny";
+      role?: DeviceRole;
+      name?: string;
+    },
+    requestId?: string,
+  ): Promise<AuthPairingRequestDecidePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.pairing_request.decide.response">({
+      requestId,
+      message: { type: "auth.pairing_request.decide.request", ...input },
+    });
+  }
+
+  async getAuthSettings(requestId?: string): Promise<AuthSettingsGetPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.settings.get.response">({
+      requestId,
+      message: { type: "auth.settings.get.request" },
+    });
+  }
+
+  async updateAuthSettings(
+    input: { claimMode?: boolean; trustLan?: boolean },
+    requestId?: string,
+  ): Promise<AuthSettingsUpdatePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.settings.update.response">({
+      requestId,
+      message: { type: "auth.settings.update.request", ...input },
+    });
+  }
+
+  /** `null` turns password auth off. */
+  async setDaemonPassword(
+    password: string | null,
+    requestId?: string,
+  ): Promise<AuthPasswordSetPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"auth.password.set.response">({
+      requestId,
+      message: { type: "auth.password.set.request", password },
+    });
+  }
+
+  // --- presence (features.sessionPresence) ----------------------------------
+
+  async reportPresence(
+    input: { target: PresenceTarget; state: PresenceReportState },
+    requestId?: string,
+  ): Promise<PresenceReportPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"presence.report.response">({
+      requestId,
+      message: { type: "presence.report.request", ...input },
+    });
+  }
+
+  async getPresence(target: PresenceTarget, requestId?: string): Promise<PresenceGetPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"presence.get.response">({
+      requestId,
+      message: { type: "presence.get.request", target },
+    });
+  }
+
   async collectDiagnostics(requestId?: string): Promise<DiagnosticsPayload> {
     return this.sendNamespacedCorrelatedSessionRequest({
       requestId,
@@ -6203,6 +6340,12 @@ export class DaemonClient {
           ...this.config.capabilities,
         },
         ...(this.config.appVersion ? { appVersion: this.config.appVersion } : {}),
+        ...(this.config.deviceName ? { deviceName: this.config.deviceName } : {}),
+        // A relay socket reaches the daemon through a tunnel, so the bearer
+        // that a direct connection puts in a header travels in the hello.
+        ...(this.logConnectionPath === "relay" && normalizePassword(this.config.password)
+          ? { auth: { token: normalizePassword(this.config.password)! } }
+          : {}),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to send hello message";

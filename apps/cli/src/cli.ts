@@ -19,6 +19,7 @@ import { createHooksCommand } from "./commands/hooks.js";
 import { onboardCommand } from "./commands/onboard.js";
 import { resolveCliVersion } from "./version.js";
 import { addCommandGroup, addCommandGroupsHelp } from "./help-sections.js";
+import { pairCodeCommand } from "./commands/daemon/pair-code.js";
 
 const VERSION = resolveCliVersion();
 
@@ -40,6 +41,10 @@ export function createCli(): Command {
 
   // First run: set up, start the daemon, print pairing instructions.
   program.addCommand(onboardCommand());
+
+  // Pairing a device is a first-run step, so it sits at the root next to the
+  // daemon's own lifecycle rather than three words deep.
+  program.addCommand(pairCodeCommand());
 
   // The daemon's own lifecycle, at the root: this binary is the daemon.
   addDaemonLifecycleCommands(program);
