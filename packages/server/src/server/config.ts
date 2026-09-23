@@ -26,7 +26,12 @@ import { DEFAULT_TRUST_LAN } from "./access-policy.js";
 import { hashDaemonPassword } from "./auth.js";
 import { resolveSpeechConfig } from "./speech/speech-config-resolver.js";
 import type { RequestedSpeechProviders } from "./speech/speech-types.js";
-import { mergeHostnames, parseHostnamesEnv, type HostnamesConfig } from "./hostnames.js";
+import {
+  DEFAULT_ALLOW_PAIRING_HOSTNAME,
+  mergeHostnames,
+  parseHostnamesEnv,
+  type HostnamesConfig,
+} from "./hostnames.js";
 import { resolveGitProcessPolicy } from "../utils/git-process-scheduler.js";
 import type { DaemonAutoUpdateConfig } from "@frogg/protocol/messages";
 
@@ -530,6 +535,40 @@ function resolveTrustedProxiesConfig(
   );
 }
 
+/**
+ * Whether the brand's pairing hostname is auto-allowed as a `Host`. It is only
+ * useful to an owner who reverse-proxies that name here, so it is opt-outable:
+ * `<BRAND>_ALLOW_PAIRING_HOSTNAME` wins, then `daemon.allowPairingHostname`.
+ */
+function resolveAllowPairingHostname(
+  env: NodeJS.ProcessEnv,
+  persisted: ReturnType<typeof loadPersistedConfig>,
+): boolean {
+  return (
+    parseBooleanEnv(brandEnv(brand, env, "ALLOW_PAIRING_HOSTNAME")) ??
+    persisted.daemon?.allowPairingHostname ??
+    DEFAULT_ALLOW_PAIRING_HOSTNAME
+  );
+}
+
+/**
+ * Host workspace dev servers bind to. Loopback by default (from the brand's
+ * `daemon.workspaceServicesBind`), so a dev server is not published onto the
+ * network just because the daemon is: another device reaches it through the
+ * daemon's authenticated service proxy. `daemon.workspaceServices.bindHost:
+ * "0.0.0.0"` restores the wide bind.
+ */
+function resolveWorkspaceServicesBindHost(
+  env: NodeJS.ProcessEnv,
+  persisted: ReturnType<typeof loadPersistedConfig>,
+): string {
+  const configured =
+    brandEnv(brand, env, "WORKSPACE_SERVICES_BIND_HOST") ??
+    persisted.daemon?.workspaceServices?.bindHost;
+  const trimmed = configured?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : brand.daemon.workspaceServicesBindHost;
+}
+
 // `<BRAND>_LISTEN` (`FROGG_LISTEN` upstream) can be:
 // - host:port (TCP)
 // - /path/to/socket (Unix socket)
@@ -660,6 +699,8 @@ function resolveStaticLoadConfigSettings(
       parseHostnamesEnv(env.FROGG_HOSTNAMES ?? env.FROGG_ALLOWED_HOSTS),
       cli?.hostnames,
     ]),
+    allowPairingHostname: resolveAllowPairingHostname(env, persisted),
+    workspaceServicesBindHost: resolveWorkspaceServicesBindHost(env, persisted),
     trustedProxies: resolveTrustedProxiesConfig(env, persisted),
     trustLan: resolveTrustLanConfig(env, persisted),
     claimMode: resolveClaimModeConfig(env, persisted),
@@ -699,6 +740,8 @@ export function resolveConfigFromPersisted(
     terminalProfiles,
     agentProfiles,
     hostnames,
+    allowPairingHostname,
+    workspaceServicesBindHost,
     trustedProxies,
     trustLan,
     claimMode,
@@ -735,6 +778,8 @@ export function resolveConfigFromPersisted(
     worktreesRoot: resolveWorktreesRoot(froggHome, persisted),
     corsAllowedOrigins: resolveCorsAllowedOrigins(env, persisted),
     hostnames,
+    allowPairingHostname,
+    workspaceServicesBindHost,
     trustedProxies,
     trustLan,
     claimMode,
@@ -825,6 +870,18 @@ function resolveDaemonOverrideControlledPaths(
   ];
 }
 
+/** Override paths for the two network-exposure knobs, split out to keep the core walk simple. */
+function resolveNetworkExposureOverridePaths(env: NodeJS.ProcessEnv): string[] {
+  const paths: string[] = [];
+  if (parseBooleanEnv(brandEnv(brand, env, "ALLOW_PAIRING_HOSTNAME")) !== undefined) {
+    paths.push("daemon.allowPairingHostname");
+  }
+  if (brandEnv(brand, env, "WORKSPACE_SERVICES_BIND_HOST") !== undefined) {
+    paths.push("daemon.workspaceServices.bindHost");
+  }
+  return paths;
+}
+
 function resolveCoreDaemonOverridePaths(
   env: NodeJS.ProcessEnv,
   cli: CliConfigOverrides | undefined,
@@ -841,6 +898,7 @@ function resolveCoreDaemonOverridePaths(
   if (parseTrustedProxiesEnv(env.FROGG_TRUSTED_PROXIES) !== undefined) {
     paths.push("daemon.trustedProxies");
   }
+  paths.push(...resolveNetworkExposureOverridePaths(env));
   if (parseBooleanEnv(brandEnv(brand, env, "TRUST_LAN")) !== undefined) {
     paths.push("daemon.auth.trustLan");
   }

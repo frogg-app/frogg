@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import { PersistedConfigSchema } from "./persisted-config.js";
-import { isHostnameAllowed, mergeHostnames, parseHostnamesEnv } from "./hostnames.js";
+import {
+  PAIRING_HOSTNAME,
+  isHostnameAllowed,
+  mergeHostnames,
+  parseHostnamesEnv,
+} from "./hostnames.js";
 
 describe("hostnames (vite-style)", () => {
   it("allows localhost by default", () => {
@@ -37,6 +42,37 @@ describe("hostnames (vite-style)", () => {
     expect(isHostnameAllowed("foo.example.com:9999", hostnames)).toBe(true);
     expect(isHostnameAllowed("foo.bar.example.com:9999", hostnames)).toBe(true);
     expect(isHostnameAllowed("notexample.com:9999", hostnames)).toBe(false);
+  });
+
+  it("drops the pairing hostname when the owner opts out", () => {
+    expect(isHostnameAllowed("pair.frogg.app", undefined, { allowPairingHostname: false })).toBe(
+      false,
+    );
+    // Opting out narrows nothing else: the other defaults still apply.
+    expect(isHostnameAllowed("localhost:9999", undefined, { allowPairingHostname: false })).toBe(
+      true,
+    );
+    expect(isHostnameAllowed("192.168.1.4:9999", undefined, { allowPairingHostname: false })).toBe(
+      true,
+    );
+  });
+
+  it("still allows an opted-out pairing hostname that is explicitly listed", () => {
+    expect(
+      isHostnameAllowed("pair.frogg.app", [PAIRING_HOSTNAME], { allowPairingHostname: false }),
+    ).toBe(true);
+    expect(isHostnameAllowed("pair.frogg.app", true, { allowPairingHostname: false })).toBe(true);
+  });
+
+  it("accepts the pairing hostname by default when no option is passed", () => {
+    expect(isHostnameAllowed("pair.frogg.app", undefined, {})).toBe(true);
+  });
+
+  it("persists the pairing-hostname opt-out", () => {
+    expect(
+      PersistedConfigSchema.parse({ daemon: { allowPairingHostname: false } }).daemon
+        ?.allowPairingHostname,
+    ).toBe(false);
   });
 
   it("merges arrays (append + de-dupe) and short-circuits on true", () => {

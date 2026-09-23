@@ -34,7 +34,7 @@ import {
 import { asUint8Array, decodeBinaryFrame } from "@frogg/protocol/binary-frames/index";
 import type { TerminalActivity } from "@frogg/protocol/terminal-activity";
 import type { HostnamesConfig } from "./hostnames.js";
-import { isHostnameAllowed } from "./hostnames.js";
+import { isHostnameAllowed, type HostnameCheckOptions } from "./hostnames.js";
 import {
   Session,
   type SessionLifecycleIntent,
@@ -199,6 +199,8 @@ interface WebSocketServerConfig {
   hostnames?: HostnamesConfig;
   getAllowedOrigins?: () => Set<string>;
   getHostnames?: () => HostnamesConfig | undefined;
+  /** Host-allowlist tuning shared with the HTTP allowlist (pairing-hostname opt-out). */
+  hostnameCheckOptions?: HostnameCheckOptions;
   daemonStatusRpc?: boolean;
   relayConfig?: boolean;
   startPaused?: boolean;
@@ -906,6 +908,7 @@ export class VoiceAssistantWebSocketServer {
           req,
           wsConfig.getAllowedOrigins?.() ?? wsConfig.allowedOrigins ?? new Set(),
           wsConfig.getHostnames?.() ?? wsConfig.hostnames,
+          wsConfig.hostnameCheckOptions ?? {},
           callback,
         );
       },
@@ -960,6 +963,7 @@ export class VoiceAssistantWebSocketServer {
     req: IncomingMessage,
     allowedOrigins: Set<string>,
     hostnames: HostnamesConfig | undefined,
+    hostnameCheckOptions: HostnameCheckOptions,
     callback: (res: boolean, code?: number, message?: string) => void,
   ): void {
     if (this.connectionLifecycle !== "accepting") {
@@ -970,7 +974,7 @@ export class VoiceAssistantWebSocketServer {
     const requestMetadata = extractSocketRequestMetadata(req);
     const origin = requestMetadata.origin;
     const requestHost = requestMetadata.host ?? null;
-    if (requestHost && !isHostnameAllowed(requestHost, hostnames)) {
+    if (requestHost && !isHostnameAllowed(requestHost, hostnames, hostnameCheckOptions)) {
       this.incrementRuntimeCounter("hostRejected");
       this.logger.warn(
         { ...requestMetadata, host: requestHost },

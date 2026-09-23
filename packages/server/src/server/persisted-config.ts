@@ -302,6 +302,19 @@ export const PersistedConfigSchema = z
         listen: z.string().optional(),
         hostnames: z.union([z.literal(true), z.array(z.string())]).optional(),
         allowedHosts: z.union([z.literal(true), z.array(z.string())]).optional(),
+        // Whether the brand's pairing hostname is accepted as a `Host` without
+        // being listed in `hostnames`. Useful when that name is reverse-proxied
+        // here; an owner who does not proxy it can turn it off.
+        allowPairingHostname: z.boolean().optional(),
+        // Where workspace dev servers bind. Defaults to loopback (from
+        // brand.json `daemon.workspaceServicesBind`); reach them from another
+        // device through the daemon's authenticated service proxy.
+        workspaceServices: z
+          .object({
+            bindHost: z.string().trim().min(1).optional(),
+          })
+          .strict()
+          .optional(),
         trustedProxies: z.union([z.literal(true), z.array(z.string())]).optional(),
         mcp: z
           .object({
