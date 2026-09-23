@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- The Claude model list is generated from the Claude Code you have installed
+  rather than maintained in Frogg. It used to be a hand-written list of fifteen
+  models, so a model Anthropic shipped only reached you on a Frogg release, and
+  every release had to restate each model's label, effort levels and fast-mode
+  support. Frogg now asks the installed CLI what it supports, the way it already
+  asked Codex. New models appear when you update Claude Code; retired ones stop
+  being offered. Models named in Claude's `settings.json`, and models added
+  through `additionalModels`, are still listed as before.
+- Updating a provider uses the channel it was installed from. Codex and Claude
+  Code ship their own native installers, which put the binary outside npm's
+  reach, so `npm install -g` quietly installed a second copy that nothing ran:
+  the update reported success and the version never moved. Frogg now runs the
+  CLI's own updater when the binary on your `PATH` did not come from npm.
+- Menus and pickers on an Android tablet are worked with a thumb again. A tablet
+  is wide enough that Frogg treated it as a desktop and gave it mouse-sized rows
+  and anchored popovers that opened off to one side, so the model picker in
+  portrait was awkward to hit. Presentation now follows the input device rather
+  than the screen width, while a tablet keeps the wider desktop layout. Menus
+  opened from a short label no longer collapse to the width of that label and
+  truncate every row.
+
 - Deploying over SSH now secures the host it deploys to. A freshly installed
   daemon still trusted its own local network, so the Network posture handed
   every machine on the remote subnet ownership without pairing — and the
