@@ -532,7 +532,10 @@ function resolveTrustedProxiesConfig(
 // - host:port (TCP)
 // - /path/to/socket (Unix socket)
 // - unix:///path/to/socket (Unix socket)
-// Default is TCP at 0.0.0.0:9999
+// With nothing set anywhere, the bind host comes from the brand
+// (`brand.json` `daemon.bind`): every interface upstream, loopback for a
+// locked-down brand. config.json never carries a default `daemon.listen`, so
+// an entry there is always the owner's own choice and wins over the brand.
 function resolveListenAddress(
   env: NodeJS.ProcessEnv,
   cli: CliConfigOverrides | undefined,

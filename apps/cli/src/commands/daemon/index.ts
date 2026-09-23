@@ -103,7 +103,7 @@ export function addDaemonLifecycleCommands(program: Command): Command {
   )
     .option(
       "--listen <listen>",
-      `Listen target for the service (default: 0.0.0.0:${brand.daemonPort})`,
+      `Listen target for the service (default: ${brand.daemon.bindHost}:${brand.daemonPort})`,
     )
     .option("--home <path>", `${brand.name} home directory (default: ~/${brand.homeDir})`)
     .action(withOutput(runInstallServiceCommand));

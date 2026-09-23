@@ -247,7 +247,8 @@ function buildChildEnv(options: DaemonStartOptions): NodeJS.ProcessEnv {
   if (options.listen) {
     childEnv[brandEnvKey("LISTEN")] = options.listen;
   } else if (options.port) {
-    childEnv[brandEnvKey("LISTEN")] = `0.0.0.0:${options.port}`;
+    // Keep the brand's bind host; --port changes the port, not the exposure.
+    childEnv[brandEnvKey("LISTEN")] = `${brand.daemon.bindHost}:${options.port}`;
   }
   if (options.hostnames) {
     childEnv[brandEnvKey("HOSTNAMES")] = options.hostnames;

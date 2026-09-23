@@ -13,7 +13,7 @@ import path from "node:path";
 export const SERVICE_NAME = brand.serviceName;
 export const LAUNCHD_LABEL = brand.launchdLabel;
 export const WINDOWS_TASK_NAME = `${brand.name} Daemon`;
-export const DEFAULT_SERVICE_LISTEN = `0.0.0.0:${brand.daemonPort}`;
+export const DEFAULT_SERVICE_LISTEN = `${brand.daemon.bindHost}:${brand.daemonPort}`;
 
 export type ServicePlatform = "linux" | "darwin" | "win32";
 
