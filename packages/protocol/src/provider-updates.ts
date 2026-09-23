@@ -19,6 +19,13 @@ export interface ProviderUpdateDescriptor {
   kind: ProviderDistributionKind;
   /** npm package name, when `kind` is "npm". */
   npmPackage?: string;
+  /**
+   * Arguments that make the CLI update itself in place. Used when the installed
+   * binary did not come from an npm global install (native or standalone
+   * installers put it outside `node_modules`, where `npm install -g` would
+   * install a second copy that PATH never reaches).
+   */
+  selfUpdateArgs?: readonly string[];
   /** Shown when the provider cannot be updated by us. */
   manualInstallUrl?: string;
 }
@@ -32,6 +39,7 @@ export const PROVIDER_UPDATE_DESCRIPTORS: ProviderUpdateDescriptor[] = [
     versionArgs: NPM_VERSION_ARGS,
     kind: "npm",
     npmPackage: "@anthropic-ai/claude-code",
+    selfUpdateArgs: ["update"],
     manualInstallUrl: "https://docs.claude.com/en/docs/claude-code/setup",
   },
   {
@@ -40,6 +48,7 @@ export const PROVIDER_UPDATE_DESCRIPTORS: ProviderUpdateDescriptor[] = [
     versionArgs: NPM_VERSION_ARGS,
     kind: "npm",
     npmPackage: "@openai/codex",
+    selfUpdateArgs: ["update"],
     manualInstallUrl: "https://github.com/openai/codex",
   },
   {
@@ -56,6 +65,7 @@ export const PROVIDER_UPDATE_DESCRIPTORS: ProviderUpdateDescriptor[] = [
     versionArgs: NPM_VERSION_ARGS,
     kind: "npm",
     npmPackage: "opencode-ai",
+    selfUpdateArgs: ["upgrade"],
     manualInstallUrl: "https://opencode.ai/docs",
   },
   {

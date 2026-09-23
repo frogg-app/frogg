@@ -156,6 +156,43 @@ describe("ProviderUpdateService.update", () => {
     });
   });
 
+  it("runs the CLI's own updater when the binary is not npm-managed", async () => {
+    findExecutableMock.mockResolvedValue("/home/user/.local/bin/claude");
+    execCommandMock
+      .mockResolvedValueOnce({ stdout: "1.9.0", stderr: "" })
+      .mockResolvedValueOnce({ stdout: "2.0.0", stderr: "" });
+    const installer = vi.fn(async () => ({ output: "" }));
+    const selfUpdater = vi.fn(async () => ({ output: "updated" }));
+
+    const result = await createService({
+      descriptors: [{ ...DESCRIPTORS[0], selfUpdateArgs: ["update"] }, DESCRIPTORS[1]],
+      installer,
+      selfUpdater,
+      isNpmManagedBinary: async () => false,
+    }).update("claude");
+
+    expect(installer).not.toHaveBeenCalled();
+    expect(selfUpdater).toHaveBeenCalledWith("/home/user/.local/bin/claude", ["update"], undefined);
+    expect(result).toMatchObject({ updated: true, installedVersion: "2.0.0", error: null });
+  });
+
+  it("still installs through npm when the binary is npm-managed", async () => {
+    findExecutableMock.mockResolvedValue("/usr/lib/node_modules/.bin/claude");
+    execCommandMock.mockResolvedValue({ stdout: "2.0.0", stderr: "" });
+    const installer = vi.fn(async () => ({ output: "" }));
+    const selfUpdater = vi.fn(async () => ({ output: "" }));
+
+    await createService({
+      descriptors: [{ ...DESCRIPTORS[0], selfUpdateArgs: ["update"] }, DESCRIPTORS[1]],
+      installer,
+      selfUpdater,
+      isNpmManagedBinary: async () => true,
+    }).update("claude");
+
+    expect(selfUpdater).not.toHaveBeenCalled();
+    expect(installer).toHaveBeenCalledWith("@anthropic-ai/claude-code", undefined);
+  });
+
   it("refuses a provider it does not distribute", async () => {
     const installer = vi.fn();
     const result = await createService({ installer }).update("pi");

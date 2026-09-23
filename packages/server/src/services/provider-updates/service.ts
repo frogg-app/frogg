@@ -8,6 +8,9 @@
  * runs for the same package corrupt the global prefix.
  */
 
+import { realpath } from "node:fs/promises";
+import path from "node:path";
+
 import type { Logger } from "pino";
 
 import {
@@ -64,10 +67,18 @@ export interface ProviderUpdateServiceOptions {
   now?: () => number;
   /** Overridable for tests; defaults to a real `npm install -g` run. */
   installer?: ProviderInstaller;
+  /** Overridable for tests; defaults to running the CLI's own update subcommand. */
+  selfUpdater?: ProviderSelfUpdater;
+  /** Overridable for tests; decides whether a binary came from an npm global install. */
+  isNpmManagedBinary?: (binaryPath: string) => Promise<boolean>;
 }
 
 export interface ProviderInstaller {
   (packageName: string, signal?: AbortSignal): Promise<{ output: string }>;
+}
+
+export interface ProviderSelfUpdater {
+  (binaryPath: string, args: readonly string[], signal?: AbortSignal): Promise<{ output: string }>;
 }
 
 const DEFAULT_CACHE_TTL_MS = 30 * 60 * 1000;
@@ -95,6 +106,42 @@ async function npmGlobalInstall(
   };
 }
 
+async function runSelfUpdate(
+  binaryPath: string,
+  args: readonly string[],
+  signal?: AbortSignal,
+): Promise<{ output: string }> {
+  const { stdout, stderr } = await execCommand(binaryPath, [...args], {
+    ...createProviderEnvSpec(),
+    timeout: INSTALL_TIMEOUT_MS,
+    maxBuffer: 8 * 1024 * 1024,
+    signal,
+  });
+  return {
+    output: [stdout, stderr]
+      .filter((part) => part.trim().length > 0)
+      .join("\n")
+      .trim(),
+  };
+}
+
+/**
+ * True when the binary on PATH is what `npm install -g` maintains. Native and
+ * standalone installers (Claude Code's installer, Codex's standalone package)
+ * put the binary outside any `node_modules`, and installing the npm package
+ * there just adds a second copy that PATH never reaches — the user sees the
+ * update "succeed" while the reported version never moves.
+ */
+async function isNpmManagedBinary(binaryPath: string): Promise<boolean> {
+  let resolved = binaryPath;
+  try {
+    resolved = await realpath(binaryPath);
+  } catch {
+    // Fall back to the unresolved path; a broken symlink is not npm-managed either way.
+  }
+  return resolved.split(path.sep).includes("node_modules");
+}
+
 export class ProviderUpdateService {
   private readonly logger: Logger;
   private readonly descriptors: ProviderUpdateDescriptor[];
@@ -102,6 +149,8 @@ export class ProviderUpdateService {
   private readonly now: () => number;
   private readonly fetch: RegistryFetch | undefined;
   private readonly installer: ProviderInstaller;
+  private readonly selfUpdater: ProviderSelfUpdater;
+  private readonly isNpmManagedBinary: (binaryPath: string) => Promise<boolean>;
   private cached: { checkedAtMs: number; snapshot: ProviderUpdateSnapshot } | null = null;
   private inFlight: Promise<ProviderUpdateSnapshot> | null = null;
   private readonly installsInFlight = new Map<string, Promise<ProviderUpdateResult>>();
@@ -113,6 +162,8 @@ export class ProviderUpdateService {
     this.now = options.now ?? Date.now;
     this.fetch = options.fetch;
     this.installer = options.installer ?? npmGlobalInstall;
+    this.selfUpdater = options.selfUpdater ?? runSelfUpdate;
+    this.isNpmManagedBinary = options.isNpmManagedBinary ?? isNpmManagedBinary;
   }
 
   async check(
@@ -223,7 +274,9 @@ export class ProviderUpdateService {
   }
 
   private async runUpdate(provider: string, signal?: AbortSignal): Promise<ProviderUpdateResult> {
-    const descriptor = getProviderUpdateDescriptor(provider);
+    const descriptor =
+      this.descriptors.find((candidate) => candidate.provider === provider) ??
+      getProviderUpdateDescriptor(provider);
     if (!descriptor) {
       return {
         provider,
@@ -254,7 +307,13 @@ export class ProviderUpdateService {
 
     let output = "";
     try {
-      const result = await this.installer(descriptor.npmPackage as string, signal);
+      const result = (await this.shouldSelfUpdate(descriptor, binaryPath))
+        ? await this.selfUpdater(
+            binaryPath as string,
+            descriptor.selfUpdateArgs as string[],
+            signal,
+          )
+        : await this.installer(descriptor.npmPackage as string, signal);
       output = result.output;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -287,6 +346,18 @@ export class ProviderUpdateService {
       error: null,
       output,
     };
+  }
+
+  /**
+   * Prefer the CLI's own updater when the binary on PATH was not installed by
+   * npm, so the copy the user actually runs is the one that moves forward.
+   */
+  private async shouldSelfUpdate(
+    descriptor: ProviderUpdateDescriptor,
+    binaryPath: string | null,
+  ): Promise<boolean> {
+    if (!binaryPath || !descriptor.selfUpdateArgs?.length) return false;
+    return !(await this.isNpmManagedBinary(binaryPath));
   }
 
   /** Drop the cached snapshot so the next check hits the network. */
