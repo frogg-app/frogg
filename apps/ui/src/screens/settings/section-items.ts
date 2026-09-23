@@ -16,6 +16,7 @@ import {
   SquareTerminal,
   Code2,
   Smartphone,
+  MonitorSmartphone,
   PanelsTopLeft,
   AudioLines,
 } from "lucide-react-native";
@@ -95,6 +96,11 @@ export const HOST_SECTION_ITEMS: HostSectionItem[] = [
     id: "pair-device",
     labelKey: "openProject.tiles.pairDevice.title",
     icon: Smartphone,
+  },
+  {
+    id: "devices",
+    labelKey: "settings.hostSections.devices",
+    icon: MonitorSmartphone,
   },
   { id: "agents", labelKey: "settings.hostSections.agents", icon: Bot },
   { id: "providers", labelKey: "settings.hostSections.providers", icon: Boxes },

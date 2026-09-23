@@ -17,6 +17,7 @@ const ELLIPSIS = "…";
 
 // C0/C1 controls, bidi overrides and embeddings, zero-width and invisible
 // formatting characters, and the interlinear annotation range.
+// eslint-disable-next-line no-control-regex -- stripping control characters is the point
 const DANGEROUS = /[\u0000-\u001f\u007f-\u009f­؜᠎​-‏‪-‮⁠-⁤⁦-⁯﻿￹-￻]/g;
 
 export interface UntrustedTextOptions {

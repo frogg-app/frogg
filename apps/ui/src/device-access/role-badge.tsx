@@ -80,6 +80,7 @@ function RoleOption({
   onChange: (role: DeviceRole) => void;
 }) {
   const handlePress = useCallback(() => onChange(role), [onChange, role]);
+  const accessibilityState = useMemo(() => ({ selected, disabled }), [disabled, selected]);
   return (
     <Button
       variant={selected ? "default" : "outline"}
@@ -90,7 +91,7 @@ function RoleOption({
       onPress={handlePress}
       style={styles.option}
       accessibilityRole="radio"
-      accessibilityState={{ selected, disabled }}
+      accessibilityState={accessibilityState}
       accessibilityHint={description}
       testID={`device-role-option-${role}`}
     >

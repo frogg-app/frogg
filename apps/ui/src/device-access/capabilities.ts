@@ -123,14 +123,13 @@ export function leavesNoOwner(
   devices: readonly { id: string; role: DeviceRole }[],
   change: { deviceId: string; nextRole: DeviceRole | "revoked" },
 ): boolean {
+  function applyChange(device: { id: string; role: DeviceRole }) {
+    if (device.id !== change.deviceId) return device;
+    if (change.nextRole === "revoked") return null;
+    return { ...device, role: change.nextRole };
+  }
   const after = devices
-    .map((device) =>
-      device.id === change.deviceId
-        ? change.nextRole === "revoked"
-          ? null
-          : { ...device, role: change.nextRole }
-        : device,
-    )
+    .map(applyChange)
     .filter((device): device is { id: string; role: DeviceRole } => device !== null);
   return countOwners(devices) > 0 && countOwners(after) === 0;
 }

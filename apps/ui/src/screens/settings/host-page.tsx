@@ -46,6 +46,11 @@ import { DaemonConflictWarning } from "@/hosts/daemon-conflict-warning";
 import { useDaemonStatus } from "@/desktop/hooks/use-daemon-status";
 import { loadDesktopSettings, useDesktopSettings } from "@/desktop/settings/desktop-settings";
 import { PairDeviceModal } from "@/desktop/components/pair-device-modal";
+import { DevicesList } from "@/device-access/devices-list";
+import { PairingCodeCard } from "@/device-access/pairing-code-card";
+import { PairingRequestsCard } from "@/device-access/pairing-requests-card";
+import { RoleBadge } from "@/device-access/role-badge";
+import { useDeviceAccess } from "@/device-access/use-device-access";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import { useIsLocalDaemon } from "@/hooks/use-is-local-daemon";
 import {
@@ -156,6 +161,70 @@ export function HostPairDevicePage({ serverId }: { serverId: string }) {
       <PairDeviceRow serverId={serverId} />
       <RelayEndpointCard serverId={serverId} />
     </SettingsSection>
+  );
+}
+
+/**
+ * Who can reach this daemon. Every block gates itself on what the daemon
+ * advertises and on this device's own role, so an operator or a viewer sees
+ * the device list and an explanation instead of buttons that would be refused.
+ */
+export function HostDevicesPage({ serverId }: { serverId: string }) {
+  const { t } = useTranslation();
+  const host = useHostProfile(serverId);
+  const access = useDeviceAccess(serverId);
+
+  if (!host) {
+    return <HostNotFound />;
+  }
+
+  return (
+    <View>
+      <SettingsSection
+        title={t("deviceAccess.callerRole.title")}
+        testID="host-devices-caller-role"
+      >
+        <CallerRoleCard serverId={serverId} />
+      </SettingsSection>
+
+      {access.canDecidePairingRequests ? (
+        <SettingsSection title={t("deviceAccess.requests.title")} testID="host-devices-requests">
+          <PairingRequestsCard serverId={serverId} />
+        </SettingsSection>
+      ) : null}
+
+      <SettingsSection title={t("deviceAccess.devices.title")} testID="host-devices-list">
+        <DevicesList serverId={serverId} />
+      </SettingsSection>
+
+      {access.canCreatePairingCode ? (
+        <SettingsSection title={t("deviceAccess.code.title")} testID="host-devices-code">
+          <PairingCodeCard serverId={serverId} />
+        </SettingsSection>
+      ) : null}
+    </View>
+  );
+}
+
+/** This device's own role, so a refusal elsewhere has somewhere to point. */
+function CallerRoleCard({ serverId }: { serverId: string }) {
+  const { t } = useTranslation();
+  const access = useDeviceAccess(serverId);
+  if (!access.handshakeSeen) {
+    return <Text style={styles.emptyText}>{t("deviceAccess.callerRole.unknown")}</Text>;
+  }
+  if (!access.roles) {
+    return <Text style={styles.emptyText}>{t("deviceAccess.callerRole.unsupported")}</Text>;
+  }
+  return (
+    <View style={styles.callerRoleRow} testID="caller-role">
+      <RoleBadge role={access.callerRole} />
+      <Text style={styles.emptyText}>
+        {access.hasDeviceCredential
+          ? t(`deviceAccess.roles.${access.callerRole}.description`)
+          : t("deviceAccess.callerRole.noCredential")}
+      </Text>
+    </View>
   );
 }
 
@@ -1780,6 +1849,11 @@ const terminalProfileStyles = StyleSheet.create((theme) => ({
 }));
 
 const styles = StyleSheet.create((theme) => ({
+  callerRoleRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: theme.spacing[2],
+  },
   updateFailure: {
     marginHorizontal: theme.spacing[4],
     marginBottom: theme.spacing[4],

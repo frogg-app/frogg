@@ -29,6 +29,7 @@ import { AddHostModal } from "@/components/add-host-modal";
 import { AddRemoteSshHostModal } from "@/components/add-remote-ssh-host-modal";
 import { DeployToHostModal } from "@/components/ssh-deploy/deploy-to-host-modal";
 import { PairLinkModal } from "@/components/pair-link-modal";
+import { PairWithCodeModal } from "@/device-access/pair-with-code-modal";
 import { KeyboardShortcutsSection } from "@/screens/settings/keyboard-shortcuts-section";
 import { EditorSection } from "@/screens/settings/editor-section";
 import { AboutSection } from "@/screens/settings/about-section";
@@ -58,6 +59,7 @@ import {
 } from "@/i18n/locales";
 import {
   HostPairDevicePage,
+  HostDevicesPage,
   HostAgentsPage,
   HostSettingsPage,
   HostProvidersPage,
@@ -99,6 +101,8 @@ function renderHostSettingsContent(
       return <ProjectsScreen serverId={view.serverId} />;
     case "pair-device":
       return <HostPairDevicePage serverId={view.serverId} />;
+    case "devices":
+      return <HostDevicesPage serverId={view.serverId} />;
     case "agents":
       return <HostAgentsPage serverId={view.serverId} />;
     case "providers":
@@ -514,6 +518,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
   const [isRemoteSshVisible, setIsRemoteSshVisible] = useState(false);
   const [isDeployVisible, setIsDeployVisible] = useState(false);
   const [isPasteLinkVisible, setIsPasteLinkVisible] = useState(false);
+  const [isPairCodeVisible, setIsPairCodeVisible] = useState(false);
   const [isPlaybackTestRunning, setIsPlaybackTestRunning] = useState(false);
   const [playbackTestResult, setPlaybackTestResult] = useState<string | null>(null);
   const lastOpenedAddHostIntentRef = useRef<string | null>(null);
@@ -603,6 +608,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
     setIsRemoteSshVisible(false);
     setIsDeployVisible(false);
     setIsPasteLinkVisible(false);
+    setIsPairCodeVisible(false);
   }, []);
 
   const goBackToAddConnectionMethods = useCallback(() => {
@@ -610,6 +616,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
     setIsRemoteSshVisible(false);
     setIsDeployVisible(false);
     setIsPasteLinkVisible(false);
+    setIsPairCodeVisible(false);
     setIsAddHostMethodVisible(true);
   }, []);
 
@@ -643,6 +650,11 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
   const handleSelectPasteLink = useCallback(() => {
     setIsAddHostMethodVisible(false);
     setIsPasteLinkVisible(true);
+  }, []);
+
+  const handleSelectPairCode = useCallback(() => {
+    setIsAddHostMethodVisible(false);
+    setIsPairCodeVisible(true);
   }, []);
 
   const handleHostAdded = useCallback(({ serverId }: { serverId: string }) => {
@@ -832,6 +844,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
         onRemoteSsh={handleSelectRemoteSsh}
         onDeploy={handleSelectDeploy}
         onPasteLink={handleSelectPasteLink}
+        onPairCode={handleSelectPairCode}
         onScanQr={handleScanQr}
       />
       <AddHostModal
@@ -857,6 +870,12 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
         onClose={closeAddConnectionFlow}
         onCancel={goBackToAddConnectionMethods}
         onSaved={handleHostAdded}
+      />
+      <PairWithCodeModal
+        visible={isPairCodeVisible}
+        onClose={closeAddConnectionFlow}
+        onCancel={goBackToAddConnectionMethods}
+        onSaved={closeAddConnectionFlow}
       />
     </>
   );
