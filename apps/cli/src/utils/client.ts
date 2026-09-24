@@ -1,4 +1,5 @@
 import { brand } from "@frogg/branding";
+import { brandEnv } from "@frogg/branding/identity";
 import { existsSync, readFileSync } from "node:fs";
 import { loadConfig, resolveFroggHome } from "@frogg/server";
 import {
@@ -17,6 +18,7 @@ import { DaemonClient, type WebSocketLike } from "@frogg/client/internal/daemon-
 import path from "node:path";
 import { WebSocket } from "ws";
 import { getOrCreateCliClientId } from "./client-id.js";
+import { isLocalDaemonHost, readCliLocalToken } from "./local-token.js";
 import { resolveCliVersion } from "../version.js";
 import { createSshTunnel } from "../ssh/ssh-tunnel.js";
 
@@ -243,14 +245,32 @@ export function resolveDaemonTarget(host: string): DaemonTarget {
   };
 }
 
-export function resolveDaemonPassword(host: string): string | undefined {
+/** A password from a `tcp://` URI, else `<PREFIX>_PASSWORD` (`FROGG_PASSWORD` on stock). */
+export function resolveDaemonPassword(
+  host: string,
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
   const trimmed = host.trim();
   if (trimmed.startsWith("tcp://")) {
     const fromUri = parseConnectionUri(trimmed).password;
     if (fromUri) return fromUri;
   }
-  const fromEnv = process.env.FROGG_PASSWORD;
-  return fromEnv && fromEnv.length > 0 ? fromEnv : undefined;
+  return brandEnv(brand, env, "PASSWORD");
+}
+
+/**
+ * The bearer to present to a daemon: a configured password wins; otherwise a
+ * local daemon (loopback or IPC) gets the `local-token` from its home.
+ */
+export function resolveDaemonCredential(
+  host: string,
+  options: { home?: string; env?: NodeJS.ProcessEnv } = {},
+): string | undefined {
+  const env = options.env ?? process.env;
+  const password = resolveDaemonPassword(host, env);
+  if (password) return password;
+  if (!isLocalDaemonHost(host)) return undefined;
+  return readCliLocalToken(options.home, env) ?? undefined;
 }
 
 /**
@@ -393,7 +413,7 @@ export async function connectToDaemon(options?: ConnectOptions): Promise<DaemonC
       throw new Error(`Unable to connect to ${brand.name} daemon via ${hosts.join(", ")}`);
     }
     const host = hosts[index];
-    const password = resolveDaemonPassword(host);
+    const password = resolveDaemonCredential(host);
     const result = await tryConnectHost(host, password, clientId, timeout, nodeWebSocketFactory);
     if ("client" in result) {
       return result.client;

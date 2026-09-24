@@ -31,6 +31,17 @@ export interface DaemonHttpRequest {
   onResponse?: (response: Response) => void;
 }
 
+/** A non-2xx daemon response; `status` lets callers tell auth failures apart. */
+export class DaemonHttpError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "DaemonHttpError";
+  }
+}
+
 export async function daemonHttpJson<T>(request: DaemonHttpRequest): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), request.timeoutMs ?? DEFAULT_HTTP_TIMEOUT_MS);
@@ -45,7 +56,10 @@ export async function daemonHttpJson<T>(request: DaemonHttpRequest): Promise<T> 
       signal: controller.signal,
     });
     if (!response.ok) {
-      throw new Error(`${request.method ?? "GET"} ${request.path} failed with ${response.status}`);
+      throw new DaemonHttpError(
+        `${request.method ?? "GET"} ${request.path} failed with ${response.status}`,
+        response.status,
+      );
     }
     request.onResponse?.(response);
     return (await response.json()) as T;

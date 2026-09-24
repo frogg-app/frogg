@@ -294,6 +294,101 @@ describe("bearer requirement by client locality", () => {
       await authorizeBearerAsync(auth, requestFrom(SOCKETS.public), minted.credential),
     ).toEqual({ ok: false, reason: "unclaimed" });
   });
+
+  describe("a presented bearer is checked even where locality would admit the caller", () => {
+    function claimedLoopback(password?: string) {
+      const home = mkdtempSync(path.join(tmpdir(), "frogg-auth-bearer-"));
+      homes.push(home);
+      const store = createClaimStore(home);
+      const owner = store.mintPrincipal({ label: "Laptop", role: "owner", pairedVia: "code" });
+      const auth: DaemonAuthConfig = {
+        password,
+        limiter: createAuthFailureLimiter(),
+        localToken: { matches: (token) => token === "local-secret" },
+        access: createAccessPolicy({
+          claimStore: store,
+          getTrustedProxies: () => ["loopback"],
+          getTrustLan: () => false,
+        }),
+      };
+      return { store, owner, auth };
+    }
+
+    test("a revoked device credential from loopback is 401, not locality trust", async () => {
+      const { store, owner, auth } = claimedLoopback();
+      const second = store.mintPrincipal({ label: "Phone", role: "owner", pairedVia: "code" });
+      store.revokeDevice(second.credentialId);
+      const req = requestFrom(SOCKETS.loopback);
+      expect(await authorizeBearerAsync(auth, req, second.credential)).toEqual({
+        ok: false,
+        reason: "invalid_token",
+      });
+      expect((await authorizeBearerAsync(auth, req, owner.credential)).ok).toBe(true);
+    });
+
+    test("tokenless loopback stays trusted", async () => {
+      const { auth } = claimedLoopback();
+      expect(await authorizeBearerAsync(auth, requestFrom(SOCKETS.loopback), null)).toEqual({
+        ok: true,
+        principal: { kind: "trusted" },
+      });
+    });
+
+    test("the local token is recognised on loopback, before any 401", async () => {
+      const { auth } = claimedLoopback();
+      expect(
+        await authorizeBearerAsync(auth, requestFrom(SOCKETS.loopback), "local-secret"),
+      ).toEqual({ ok: true, principal: { kind: "local_token" } });
+      expect(
+        await hasRealCredential(auth, requestFrom(SOCKETS.loopback), "local-secret", "owner"),
+      ).toBe(true);
+    });
+
+    test("the local token is also accepted where a password locks loopback", async () => {
+      const { auth } = claimedLoopback(CORRECT_PASSWORD_HASH);
+      const req = requestFrom(SOCKETS.loopback);
+      expect((await authorizeBearerAsync(auth, req, "local-secret")).ok).toBe(true);
+      expect(await authorizeBearerAsync(auth, req, "correct-password")).toEqual({
+        ok: true,
+        principal: { kind: "password" },
+      });
+    });
+
+    test("the local token means nothing from a non-loopback client", async () => {
+      const { auth } = claimedLoopback();
+      const req = requestFrom(SOCKETS.public);
+      expect(await authorizeBearerAsync(auth, req, "local-secret")).toEqual({
+        ok: false,
+        reason: "invalid_token",
+      });
+      expect(await hasRealCredential(auth, req, "local-secret", "owner")).toBe(false);
+    });
+
+    test("a wrong password from loopback is 401 even with a password set", async () => {
+      const { auth } = claimedLoopback(CORRECT_PASSWORD_HASH);
+      expect(await authorizeBearerAsync(auth, requestFrom(SOCKETS.loopback), "wrong")).toEqual({
+        ok: false,
+        reason: "invalid_token",
+      });
+    });
+
+    test("a stray bearer at an unclaimed daemon on a trusted LAN is 401", async () => {
+      const home = mkdtempSync(path.join(tmpdir(), "frogg-auth-stray-"));
+      homes.push(home);
+      const auth: DaemonAuthConfig = {
+        access: createAccessPolicy({
+          claimStore: createClaimStore(home),
+          getTrustedProxies: () => ["loopback"],
+          getTrustLan: () => true,
+        }),
+      };
+      expect(await authorizeBearerAsync(auth, requestFrom(SOCKETS.lan), "stale")).toEqual({
+        ok: false,
+        reason: "invalid_token",
+      });
+      expect((await authorizeBearerAsync(auth, requestFrom(SOCKETS.lan), null)).ok).toBe(true);
+    });
+  });
 });
 
 describe("HTTP routes are role-gated, not just the WebSocket", () => {

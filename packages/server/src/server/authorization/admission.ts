@@ -14,6 +14,12 @@ export interface PrincipalAdmission {
   device?: { id: string; name: string; role: DeviceRole } | null;
   role?: DeviceRole;
   transport?: SessionTransport;
+  /**
+   * Admitted on locality alone (loopback / trusted LAN, no credential). Such a
+   * connection keeps owner authority but may not mint pairing credentials once
+   * the daemon is claimed; see owner-offer-gate.ts.
+   */
+  localityTrusted?: boolean;
 }
 
 /** The single place a connection's role is decided, for every transport. */
@@ -35,7 +41,12 @@ export function admissionForPrincipal(
   transport: SessionTransport = "direct",
 ): PrincipalAdmission {
   if (principal.kind !== "device") {
-    return { principalId: "owner", permissions: OWNER_PERMISSIONS, transport };
+    return {
+      principalId: "owner",
+      permissions: OWNER_PERMISSIONS,
+      transport,
+      ...(principal.kind === "trusted" ? { localityTrusted: true } : {}),
+    };
   }
   const { device } = principal;
   return {

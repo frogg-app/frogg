@@ -8,8 +8,8 @@ import {
   loadConfig,
   resolveFroggHome,
 } from "@frogg/server";
-import { resolveDaemonPassword, tryConnectToDaemon } from "../../utils/client.js";
-import { daemonHttpJson, resolveLoopbackHttpBase } from "./daemon-http.js";
+import { resolveDaemonCredential, tryConnectToDaemon } from "../../utils/client.js";
+import { DaemonHttpError, daemonHttpJson, resolveLoopbackHttpBase } from "./daemon-http.js";
 import { resolveLocalDaemonState } from "./local-daemon.js";
 import { addJsonOption } from "../../utils/command-options.js";
 import { formatPairingInstructions } from "../../output/pairing.js";
@@ -58,6 +58,17 @@ interface DirectOfferResponse {
 }
 
 const PAIRING_DAEMON_RPC_TIMEOUT_MS = 1500;
+
+/** The daemon refused the pairing-offer request: the CLI had no accepted credential. */
+export class PairingAuthError extends Error {
+  readonly code = "PAIRING_UNAUTHORIZED";
+  constructor(readonly status: number) {
+    super(
+      `The daemon refused to create a pairing offer (HTTP ${status}). Run this command as the user that owns the daemon home so the CLI can read its local-token, or set ${brand.envPrefix}_PASSWORD.`,
+    );
+    this.name = "PairingAuthError";
+  }
+}
 const DOCS_BASE = brand.links.docs?.replace(/\/$/, "") ?? null;
 const RELAY_DOCS_URL = DOCS_BASE ? `${DOCS_BASE}/self-hosting/security/#relay` : null;
 const DIRECT_DOCS_URL = DOCS_BASE
@@ -114,7 +125,12 @@ export async function resolveLocalPairingOffer(options: {
 }): Promise<PairingOffer> {
   const state = resolveLocalDaemonState({ home: options.froggHome });
   const serverId = getOrCreateServerId(state.home);
-  const daemonOffer = await resolveDaemonPairingOffer(state.listen, serverId, options.enableRelay);
+  const daemonOffer = await resolveDaemonPairingOffer(
+    state.listen,
+    serverId,
+    options.enableRelay,
+    state.home,
+  );
   if (daemonOffer) return daemonOffer;
 
   if (state.running) {
@@ -144,6 +160,7 @@ async function resolveDaemonPairingOffer(
   listen: string,
   expectedServerId: string,
   enableRelay: boolean | undefined,
+  froggHome: string,
 ): Promise<PairingOffer | null> {
   const client = await tryConnectToDaemon({
     host: listen,
@@ -183,13 +200,27 @@ async function resolveDaemonPairingOffer(
       };
     }
     // Relay off: pair over the LAN with a single-use direct claim offer instead.
-    return (await resolveDirectClaimOffer(listen)) ?? { relayEnabled: false, url: null, qr: null };
+    return (
+      (await resolveDirectClaimOffer(listen, froggHome)) ?? {
+        relayEnabled: false,
+        url: null,
+        qr: null,
+      }
+    );
   } finally {
     await client.close().catch(() => undefined);
   }
 }
 
-async function resolveDirectClaimOffer(listen: string): Promise<PairingOffer | null> {
+/**
+ * Asks a running daemon for a single-use direct claim offer over loopback
+ * HTTP, authenticating with the password or the daemon's local token. An auth
+ * refusal is a hard error; any other failure means "no direct offer".
+ */
+export async function resolveDirectClaimOffer(
+  listen: string,
+  froggHome?: string,
+): Promise<PairingOffer | null> {
   const base = resolveLoopbackHttpBase(listen);
   if (!base) return null;
   try {
@@ -198,7 +229,7 @@ async function resolveDirectClaimOffer(listen: string): Promise<PairingOffer | n
       path: "/api/setup/offer",
       method: "POST",
       body: { qr: "terminal" },
-      bearer: resolveDaemonPassword(listen),
+      bearer: resolveDaemonCredential(listen, { home: froggHome }),
     });
     return {
       relayEnabled: false,
@@ -208,7 +239,10 @@ async function resolveDirectClaimOffer(listen: string): Promise<PairingOffer | n
       expiresAt: direct.expiresAt,
       endpoints: direct.endpoints,
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof DaemonHttpError && (error.status === 401 || error.status === 403)) {
+      throw new PairingAuthError(error.status);
+    }
     return null;
   }
 }
@@ -249,10 +283,17 @@ export async function runPairCommand(
   };
 
   const froggHome = resolveFroggHome();
-  let pairing = await dependencies.resolveOffer({
-    froggHome,
-    enableRelay: options.relay === true,
-  });
+  let pairing: PairingOffer;
+  try {
+    pairing = await dependencies.resolveOffer({
+      froggHome,
+      enableRelay: options.relay === true,
+    });
+  } catch (error) {
+    if (!(error instanceof PairingAuthError)) throw error;
+    reportPairingAuthError(error, options, dependencies.output);
+    return;
+  }
 
   const canPrompt = dependencies.isInteractive() && options.json !== true;
   // A direct (LAN) offer needs no relay; only ask about relay when there is nothing to show.
@@ -274,6 +315,19 @@ export async function runPairCommand(
     dependencies.output,
     await dependencies.resolveAccessMode(options.home),
   );
+}
+
+function reportPairingAuthError(
+  error: PairingAuthError,
+  options: PairOptions,
+  output: PairCommandOutput,
+): void {
+  if (options.json) {
+    output.writeStderr(`${JSON.stringify({ code: error.code, message: error.message })}\n`);
+  } else {
+    output.writeStderr(`${chalk.red(error.message)}\n`);
+  }
+  output.setExitCode(1);
 }
 
 function outputPairingResult(
