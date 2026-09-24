@@ -5,32 +5,34 @@ sidebar:
   order: 2
 ---
 
-:::caution[Build the image yourself for now]
-`froggapp/frogg` on Docker Hub currently has only 0.1.x tags, and `latest` is 0.1.14.
-Clients from 0.6 on require daemon 0.6.0 or later, so the published image does not work
-with current apps. Build from source as shown below until a current image is published.
+:::caution[No published image]
+There is no Frogg image on Docker Hub, so `docker pull froggapp/frogg` fails. Build the
+image from source as shown below. Every command on this page uses that local image.
 :::
 
 ## Build the image
 
-From a checkout of the release you want:
+From a checkout of the release you want (replace `<version>`, for example `1.5.44`):
 
 ```sh
 git clone https://github.com/frogg-app/frogg.git && cd frogg
-git checkout v0.6.19
+git checkout v<version>
 npm ci
 scripts/release/build-docker.sh          # builds froggapp/frogg:<version> for this machine
 ```
 
-`--platform linux/arm64` builds another architecture; `--push` builds amd64 and arm64 and
-pushes (set `FROGG_IMAGE_REPO` to push to your own registry).
+The script tags the image `froggapp/frogg:<version>`. For stable versions it also adds
+`<major>.<minor>`, `<major>` and `latest`. `--platform linux/arm64` builds another
+architecture. `FROGG_IMAGE_REPO` changes the repository name, for example to push to your
+own registry with `--push` (amd64 and arm64).
 
 ## Run it
 
 ```yaml title="compose.yaml"
 services:
   frogg:
-    image: froggapp/frogg:0.6.19
+    image: froggapp/frogg:<version>
+    pull_policy: never              # local build; there is no published image
     container_name: frogg-daemon
     restart: unless-stopped
     ports:
@@ -68,7 +70,7 @@ Inside a container every client address looks like the Docker bridge, not your L
 The base image has no agent CLIs. Extend it:
 
 ```dockerfile title="Dockerfile.agents"
-FROM froggapp/frogg:0.6.19
+FROM froggapp/frogg:<version>
 USER root
 RUN npm install -g @anthropic-ai/claude-code @openai/codex opencode-ai
 ```
@@ -88,10 +90,12 @@ docker exec -it -u frogg frogg-daemon codex login
 `install-docker.sh` wraps `docker run` with sensible defaults and safe updates:
 
 ```sh
-curl -fsSL https://frogg.app/install-docker.sh | FROGG_IMAGE=froggapp/frogg:0.6.19 FROGG_NO_PULL=1 bash
+curl -fsSL https://frogg.app/install-docker.sh | FROGG_VERSION=<version> FROGG_NO_PULL=1 bash
 ```
 
-`FROGG_NO_PULL=1` uses the image you built locally instead of pulling from Docker Hub.
+`FROGG_NO_PULL=1` is required. Without it the script runs `docker pull`, which fails because
+no image is published. With it, the script runs `froggapp/frogg:$FROGG_VERSION` from your
+local images.
 
 It runs container `frogg-daemon` with `--restart unless-stopped`, maps
 `$FROGG_BIND:$FROGG_PORT` to 9999, mounts `$FROGG_HOME` (default `~/.frogg`) and optionally
@@ -108,8 +112,10 @@ docker exec frogg-daemon frogg auth claim-status
 
 ## Update
 
+Build the new version first (see [Build the image](#build-the-image)), then:
+
 ```sh
-curl -fsSL https://frogg.app/install-docker.sh | FROGG_IMAGE=froggapp/frogg:0.6.20 FROGG_NO_PULL=1 bash -s -- --update
+curl -fsSL https://frogg.app/install-docker.sh | FROGG_VERSION=<new-version> FROGG_NO_PULL=1 bash -s -- --update
 ```
 
 `--update` keeps the old container as `frogg-daemon-previous`, starts the new one, and rolls

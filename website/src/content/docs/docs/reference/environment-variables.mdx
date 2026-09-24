@@ -147,7 +147,7 @@ that agent's process. The daemon and every other provider keep the real `HOME`.
 | `FROGG_WORKSPACE`      |                            | Host directory mounted at `/workspace` |
 | `FROGG_PASSWORD`       |                            | Daemon password |
 | `FROGG_CONTAINER`      | `frogg-daemon`               | Container name |
-| `FROGG_NO_PULL`        |                            | `1` skips `docker pull` |
+| `FROGG_NO_PULL`        |                            | `1` skips `docker pull`. Required for `frogg`, which has no published image ([build it locally](/docs/self-hosting/docker/#build-the-image)) |
 | `FROGG_UPDATE`         |                            | `1` is the same as `--update` |
 | `FROGG_HEALTH_TIMEOUT` | `90`                       | Seconds to wait on update |
 

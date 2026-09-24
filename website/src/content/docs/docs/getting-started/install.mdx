@@ -62,17 +62,20 @@ Windows daemon installs have not had the same validation as Linux and macOS.
 </TabItem>
 <TabItem label="Docker">
 
+There is no published Frogg image. Build it from source, then run it with the install
+script:
+
 ```sh
-curl -fsSL https://frogg.app/install-docker.sh | bash
+git clone https://github.com/frogg-app/frogg.git && cd frogg
+git checkout v<version>
+npm ci
+scripts/release/build-docker.sh
+curl -fsSL https://frogg.app/install-docker.sh | FROGG_VERSION=<version> FROGG_NO_PULL=1 bash
 ```
 
-This runs container `frogg-daemon` on port 9999 with state in `~/.frogg`.
-
-:::caution[Published images are out of date]
-At the time of writing, `froggapp/frogg` on Docker Hub only has 0.1.x tags, and `latest`
-points to 0.1.14. Current clients require daemon 0.6.0 or later. Build the image from
-source until a 0.6 image is published. See [Docker](/docs/self-hosting/docker/).
-:::
+This runs container `frogg-daemon` on port 9999 with state in `~/.frogg`. `FROGG_NO_PULL=1`
+stops the script from trying to pull an image. See [Docker](/docs/self-hosting/docker/) for
+Compose, agent CLIs and updates.
 
 </TabItem>
 <TabItem label="Nix">
