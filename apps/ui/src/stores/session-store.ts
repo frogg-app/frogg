@@ -94,6 +94,12 @@ export interface Agent {
   persistence: AgentPersistenceHandle | null;
   runtimeInfo?: AgentRuntimeInfo;
   lastUsage?: AgentUsage;
+  /**
+   * COMPAT(lastUsageAt): added in v1.5.44. When the daemon last saw the provider
+   * send this conversation to the model; survives daemon restarts, unlike
+   * `lastActivityAt`. Absent from older daemons.
+   */
+  lastUsageAt?: Date | null;
   lastError?: string | null;
   title: string | null;
   cwd: string;

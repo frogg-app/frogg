@@ -1378,6 +1378,8 @@ pub struct HubExecutionAgentUpdatePayloadAgent {
     pub runtime_info: Option<HubExecutionAgentUpdatePayloadAgentRuntimeInfo>,
     #[serde(rename = "lastUsage", skip_serializing_if = "Option::is_none")]
     pub last_usage: Option<HubExecutionAgentUpdatePayloadAgentLastUsage>,
+    #[serde(rename = "lastUsageAt", skip_serializing_if = "Option::is_none")]
+    pub last_usage_at: Option<String>,
     #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
     pub last_error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -3848,6 +3850,8 @@ pub struct AgentStatusPayloadInfo {
     pub runtime_info: Option<AgentStatusPayloadInfoRuntimeInfo>,
     #[serde(rename = "lastUsage", skip_serializing_if = "Option::is_none")]
     pub last_usage: Option<AgentStatusPayloadInfoLastUsage>,
+    #[serde(rename = "lastUsageAt", skip_serializing_if = "Option::is_none")]
+    pub last_usage_at: Option<String>,
     #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
     pub last_error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -4397,6 +4401,8 @@ pub struct FetchAgentsResponsePayloadEntriesItemAgent {
     pub runtime_info: Option<FetchAgentsResponsePayloadEntriesItemAgentRuntimeInfo>,
     #[serde(rename = "lastUsage", skip_serializing_if = "Option::is_none")]
     pub last_usage: Option<FetchAgentsResponsePayloadEntriesItemAgentLastUsage>,
+    #[serde(rename = "lastUsageAt", skip_serializing_if = "Option::is_none")]
+    pub last_usage_at: Option<String>,
     #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
     pub last_error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -5031,6 +5037,8 @@ pub struct FetchAgentHistoryResponsePayloadEntriesItemAgent {
     pub runtime_info: Option<FetchAgentHistoryResponsePayloadEntriesItemAgentRuntimeInfo>,
     #[serde(rename = "lastUsage", skip_serializing_if = "Option::is_none")]
     pub last_usage: Option<FetchAgentHistoryResponsePayloadEntriesItemAgentLastUsage>,
+    #[serde(rename = "lastUsageAt", skip_serializing_if = "Option::is_none")]
+    pub last_usage_at: Option<String>,
     #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
     pub last_error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -6461,6 +6469,8 @@ pub struct ClearAgentAttentionResponsePayloadAgentsItem {
     pub runtime_info: Option<ClearAgentAttentionResponsePayloadAgentsItemRuntimeInfo>,
     #[serde(rename = "lastUsage", skip_serializing_if = "Option::is_none")]
     pub last_usage: Option<ClearAgentAttentionResponsePayloadAgentsItemLastUsage>,
+    #[serde(rename = "lastUsageAt", skip_serializing_if = "Option::is_none")]
+    pub last_usage_at: Option<String>,
     #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
     pub last_error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

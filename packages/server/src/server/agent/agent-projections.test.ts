@@ -211,6 +211,22 @@ describe("toStoredAgentRecord", () => {
     });
   });
 
+  // COMPAT(lastUsageAt): added in v1.5.44.
+  it("keeps when usage was last reported across a restart, independent of updatedAt", () => {
+    const agent = createManagedAgent({
+      lastUsage: { contextWindowUsedTokens: 90_000 },
+      lastUsageAt: new Date("2026-09-24T10:00:00.000Z"),
+    });
+    agent.updatedAt = new Date("2026-09-24T12:00:00.000Z");
+
+    expect(toAgentPayload(agent).lastUsageAt).toBe("2026-09-24T10:00:00.000Z");
+    const record = toStoredAgentRecord(agent);
+    expect(record.lastUsageAt).toBe("2026-09-24T10:00:00.000Z");
+
+    const payload = buildStoredAgentPayload(parseStoredAgentRecord(record), ["claude"]);
+    expect(payload.lastUsageAt).toBe("2026-09-24T10:00:00.000Z");
+  });
+
   it("falls back to config mode when current mode is null and handles null title", () => {
     const agent = createManagedAgent({
       currentModeId: null,

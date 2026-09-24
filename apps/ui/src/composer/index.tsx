@@ -288,7 +288,12 @@ function buildAgentStateSelector(serverId: string, agentId: string) {
       // COMPAT(staleContextWarning): added in v1.5.7. How long this conversation
       // has been sitting decides whether its prompt cache is still worth
       // anything. See `@/composer/stale-context`.
-      lastActivityAt: agent?.lastActivityAt ?? null,
+      // COMPAT(lastUsageAt): added in v1.5.44. `lastActivityAt` is bumped by
+      // daemon restarts and metadata edits, which hid the warning; prefer the
+      // persisted last-send time, then the last user message, which also
+      // survive a restart.
+      lastActivityAt:
+        agent?.lastUsageAt ?? agent?.lastUserMessageAt ?? agent?.lastActivityAt ?? null,
       // COMPAT(staleContextWarning): added in v1.5.7. Usage figures only exist
       // once a turn has reported them, so this is what says "there is a
       // conversation here" for an agent whose numbers were never sent.

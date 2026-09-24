@@ -2986,6 +2986,12 @@
                               },
                               "additionalProperties": false
                             },
+                            "lastUsageAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
                             "lastError": {
                               "type": "string"
                             },
@@ -4307,6 +4313,12 @@
                             }
                           },
                           "additionalProperties": false
+                        },
+                        "lastUsageAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "lastError": {
                           "type": "string"
@@ -10509,6 +10521,12 @@
                               },
                               "additionalProperties": false
                             },
+                            "lastUsageAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
                             "lastError": {
                               "type": "string"
                             },
@@ -16053,6 +16071,12 @@
                           },
                           "additionalProperties": false
                         },
+                        "lastUsageAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
                         "lastError": {
                           "type": "string"
                         },
@@ -17159,6 +17183,12 @@
                                   }
                                 },
                                 "additionalProperties": false
+                              },
+                              "lastUsageAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               },
                               "lastError": {
                                 "type": "string"
@@ -18434,6 +18464,12 @@
                                   }
                                 },
                                 "additionalProperties": false
+                              },
+                              "lastUsageAt": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               },
                               "lastError": {
                                 "type": "string"
@@ -21548,6 +21584,12 @@
                               },
                               "additionalProperties": false
                             },
+                            "lastUsageAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
                             "lastError": {
                               "type": "string"
                             },
@@ -22696,6 +22738,12 @@
                                 }
                               },
                               "additionalProperties": false
+                            },
+                            "lastUsageAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "lastError": {
                               "type": "string"
@@ -31444,6 +31492,12 @@
                               },
                               "additionalProperties": false
                             },
+                            "lastUsageAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
                             "lastError": {
                               "type": "string"
                             },
@@ -32565,6 +32619,12 @@
                               }
                             },
                             "additionalProperties": false
+                          },
+                          "lastUsageAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "lastError": {
                             "type": "string"
@@ -37506,6 +37566,12 @@
                                 }
                               },
                               "additionalProperties": false
+                            },
+                            "lastUsageAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "lastError": {
                               "type": "string"

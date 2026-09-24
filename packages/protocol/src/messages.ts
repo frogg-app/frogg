@@ -936,6 +936,11 @@ export const AgentSnapshotPayloadSchema = z.object({
   persistence: AgentPersistenceHandleSchema.nullable(),
   runtimeInfo: AgentRuntimeInfoSchema.optional(),
   lastUsage: AgentUsageSchema.optional(),
+  // COMPAT(lastUsageAt): added in v1.5.44. When `lastUsage` was reported, i.e.
+  // when the provider last sent this conversation's context to the model.
+  // Unlike `updatedAt` it is not bumped by restarts, reloads or metadata edits,
+  // so clients can tell whether the prompt cache has lapsed.
+  lastUsageAt: z.string().nullable().optional(),
   lastError: z.string().optional(),
   title: z.string().nullable(),
   labels: z.record(z.string(), z.string()).default({}),

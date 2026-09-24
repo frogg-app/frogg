@@ -90,6 +90,8 @@ const STORED_AGENT_SCHEMA = z.object({
   persistence: PERSISTENCE_HANDLE_SCHEMA,
   lastError: z.string().nullable().optional(),
   lastUsage: STORED_AGENT_USAGE_SCHEMA,
+  /** COMPAT(lastUsageAt): added in v1.5.44. When `lastUsage` was reported. */
+  lastUsageAt: z.string().nullable().optional(),
   requiresAttention: z.boolean().optional(),
   attentionReason: z.enum(["finished", "error", "permission"]).nullable().optional(),
   attentionTimestamp: z.string().nullable().optional(),

@@ -90,6 +90,9 @@ export function toStoredAgentRecord(
     // COMPAT(persistedAgentUsage): added in v1.5.10. Kept on disk so the
     // context meter still has figures after the daemon restarts.
     lastUsage: sanitizeUsage(agent.lastUsage),
+    // COMPAT(lastUsageAt): added in v1.5.44. Kept on disk so the stale-cache
+    // warning still knows how long the conversation has sat after a restart.
+    lastUsageAt: agent.lastUsageAt ? agent.lastUsageAt.toISOString() : null,
     requiresAttention: agent.attention.requiresAttention,
     attentionReason: agent.attention.requiresAttention ? agent.attention.attentionReason : null,
     attentionTimestamp: agent.attention.requiresAttention
@@ -148,6 +151,9 @@ export function toAgentPayload(
   const usage = sanitizeUsage(agent.lastUsage);
   if (usage !== undefined) {
     payload.lastUsage = usage;
+  }
+  if (agent.lastUsageAt) {
+    payload.lastUsageAt = agent.lastUsageAt.toISOString();
   }
 
   if (agent.autoResume) {
@@ -212,9 +218,16 @@ function buildStoredPersistenceHandle(
  * reported, so a stored agent opens with its context meter intact instead of
  * blank until it next runs.
  */
-function buildStoredUsagePatch(record: StoredAgentRecord): { lastUsage?: AgentUsage } {
+function buildStoredUsagePatch(record: StoredAgentRecord): {
+  lastUsage?: AgentUsage;
+  lastUsageAt?: string;
+} {
   const usage = sanitizeUsage(record.lastUsage);
-  return usage ? { lastUsage: usage } : {};
+  return {
+    ...(usage ? { lastUsage: usage } : {}),
+    // COMPAT(lastUsageAt): added in v1.5.44.
+    ...(record.lastUsageAt ? { lastUsageAt: record.lastUsageAt } : {}),
+  };
 }
 
 export function buildStoredAgentPayload(

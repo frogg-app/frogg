@@ -434,6 +434,12 @@ interface ManagedAgentBase {
   activeTurnId: string | null;
   activeTurnStartedAt: Date | null;
   lastUsage?: AgentUsage;
+  /**
+   * COMPAT(lastUsageAt): added in v1.5.44. When the provider last reported
+   * usage — the last time the context actually went to the model. Persisted so
+   * cache-expiry warnings survive a daemon restart.
+   */
+  lastUsageAt?: Date | null;
   lastError?: string;
   attention: AttentionState;
   /** A resume prompt queued for after the provider's usage limit resets; see usage-limit-auto-resume. */
@@ -1506,6 +1512,7 @@ export class AgentManager {
     const rehydrateFromDisk = options?.rehydrateFromDisk ?? false;
     const preservedHistoryPrimed = existing.historyPrimed;
     const preservedLastUsage = existing.lastUsage;
+    const preservedLastUsageAt = existing.lastUsageAt;
     const preservedLastError = existing.lastError;
     const preservedAttention = existing.attention;
     const handle = existing.persistence;
@@ -1549,6 +1556,7 @@ export class AgentManager {
       lastUserMessageAt: existing.lastUserMessageAt,
       historyPrimed: rehydrateFromDisk ? false : preservedHistoryPrimed,
       lastUsage: preservedLastUsage,
+      lastUsageAt: preservedLastUsageAt,
       lastError: preservedLastError,
       attention: preservedAttention,
     };
@@ -1887,6 +1895,7 @@ export class AgentManager {
         // the usage its last turn reported, so opening it after a daemon
         // restart still shows what the conversation costs.
         lastUsage: record.lastUsage,
+        lastUsageAt: record.lastUsageAt ? new Date(record.lastUsageAt) : null,
         lastError: record.lastError ?? undefined,
         attention: { requiresAttention: false },
         internal: record.internal,
@@ -3362,6 +3371,7 @@ export class AgentManager {
       persistence?: AgentPersistenceHandle;
       historyPrimed?: boolean;
       lastUsage?: AgentUsage;
+      lastUsageAt?: Date | null;
       lastError?: string;
       attention?: AttentionState;
       initialTitle?: string | null;
@@ -3514,6 +3524,7 @@ export class AgentManager {
           labels?: Record<string, string>;
           historyPrimed?: boolean;
           lastUsage?: AgentUsage;
+          lastUsageAt?: Date | null;
           lastError?: string;
           attention?: AttentionState;
           persistence?: AgentPersistenceHandle;
@@ -3555,6 +3566,7 @@ export class AgentManager {
       historyPrimed: options?.historyPrimed ?? durableTimelineHasRows,
       lastUserMessageAt: options?.lastUserMessageAt ?? null,
       lastUsage: options?.lastUsage,
+      lastUsageAt: options?.lastUsageAt,
       lastError: options?.lastError,
       attention: resolveInitialAttention(options?.attention),
       internal: config.internal ?? false,
@@ -4163,8 +4175,7 @@ export class AgentManager {
         this.onStreamThreadStarted(agent);
         return undefined;
       case "usage_updated":
-        agent.lastUsage = event.usage;
-        this.emitState(agent);
+        this.onStreamUsageUpdated(agent, event, options);
         return undefined;
       case "mode_changed":
         agent.currentModeId = event.currentModeId;
@@ -4298,6 +4309,17 @@ export class AgentManager {
     flags.shouldNotifyWaiters = true;
   }
 
+  private onStreamUsageUpdated(
+    agent: ActiveManagedAgent,
+    event: Extract<AgentStreamEvent, { type: "usage_updated" }>,
+    options: HandleStreamEventOptions | undefined,
+  ): void {
+    agent.lastUsage = event.usage;
+    // Replayed history is not a fresh send; it must not restart the cache clock.
+    if (!options?.fromHistory) agent.lastUsageAt = new Date();
+    this.emitState(agent);
+  }
+
   private onStreamTurnCompleted(params: {
     agent: ActiveManagedAgent;
     event: Extract<AgentStreamEvent, { type: "turn_completed" }>;
@@ -4321,6 +4343,22 @@ export class AgentManager {
     if (event.usage) {
       agent.lastUsage = { ...agent.lastUsage, ...event.usage };
     }
+    // A completed turn used the prompt cache whether or not it reported
+    // figures, so the cache clock restarts here either way.
+    agent.lastUsageAt = new Date();
+    this.logger.info(
+      {
+        agentId: agent.id,
+        provider: agent.provider,
+        turnId: eventTurnId,
+        lastUsageAt: agent.lastUsageAt.toISOString(),
+        contextWindowUsedTokens: agent.lastUsage?.contextWindowUsedTokens,
+        contextWindowMaxTokens: agent.lastUsage?.contextWindowMaxTokens,
+        inputTokens: agent.lastUsage?.inputTokens,
+        cachedInputTokens: agent.lastUsage?.cachedInputTokens,
+      },
+      "agent.manager.turn.usage",
+    );
     // If no usage on turn_completed, keep lastUsage as-is so context window
     // data accumulated during streaming isn't lost when the provider omits
     // it from the completion event.
