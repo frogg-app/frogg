@@ -99,7 +99,7 @@ describe("computeSecurityPosture", () => {
     expect(ids({ brand: STOCK, hasPassword: true })).toEqual([]);
   });
 
-  test("acknowledged warnings move out of findings; criticals cannot be acknowledged", () => {
+  test("acknowledged findings, critical included, move out of findings", () => {
     const posture = computeSecurityPosture({
       claimMode: false,
       trustLan: false,
@@ -109,11 +109,11 @@ describe("computeSecurityPosture", () => {
       brand: MANAGED,
       acknowledged: new Set(["bind_diverges", "exposed_without_password"]),
     });
-    expect(posture.findings.map((f) => f.id)).toEqual([
+    expect(posture.findings.map((f) => f.id)).toEqual(["claim_mode_diverges"]);
+    expect(posture.acknowledged?.map((f) => f.id)).toEqual([
       "exposed_without_password",
-      "claim_mode_diverges",
+      "bind_diverges",
     ]);
-    expect(posture.acknowledged?.map((f) => f.id)).toEqual(["bind_diverges"]);
   });
 
   test("an acknowledgement for a finding that is not present adds nothing", () => {

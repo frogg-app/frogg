@@ -75,26 +75,17 @@ export function computeSecurityPosture(input: SecurityPostureInput): SecurityPos
   return splitAcknowledged(findings, input.acknowledged);
 }
 
-/** Only warnings can be marked intended; a critical finding stays until it is fixed. */
-export function isAcknowledgeable(item: SecurityFinding): boolean {
-  return item.severity === "warning";
-}
-
 /**
  * Apply an owner's "this is intended" (or its undo) to the acknowledged set and
- * return the ids to persist. Refuses to acknowledge a finding that is critical now.
+ * return the ids to persist. Any finding can be acknowledged: a sandboxed host
+ * may be deliberately reachable without a password.
  */
 export function updateAcknowledgedFindings(input: {
   acknowledged: Set<string>;
-  current: SecurityPosture;
   findingId: string;
   acknowledge: boolean;
 }): string[] {
   if (input.acknowledge) {
-    const current = input.current.findings.find((item) => item.id === input.findingId);
-    if (current && !isAcknowledgeable(current)) {
-      throw new Error("A critical finding cannot be marked as intended; fix it instead");
-    }
     input.acknowledged.add(input.findingId);
   } else {
     input.acknowledged.delete(input.findingId);
@@ -110,7 +101,7 @@ function splitAcknowledged(
   const active: SecurityFinding[] = [];
   const intended: SecurityFinding[] = [];
   for (const item of findings) {
-    (isAcknowledgeable(item) && acknowledged.has(item.id) ? intended : active).push(item);
+    (acknowledged.has(item.id) ? intended : active).push(item);
   }
   return intended.length > 0 ? { findings: active, acknowledged: intended } : { findings };
 }

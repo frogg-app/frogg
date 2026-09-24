@@ -65,7 +65,7 @@ This is exactly what a new daemon writes (0.6.19):
 | `daemon.auth.trustLan`  | boolean                 | brand default (`true` for `frogg`, else `false`) | Treat private-network clients like loopback (no credential needed) when no password is set. Ignored while `claimMode` is on |
 | `daemon.auth.claimMode` | boolean                 | brand default (`false` for `frogg`) | Lock the LAN out: every client needs a credential, and the first client to reach an unclaimed daemon claims it as owner. Turning it off hands the LAN back to `trustLan`, so set `trustLan: false` with it on untrusted networks |
 | `daemon.auth.claimScope` | `"any"` or `"local"`  | brand default (`"any"`) | Who may claim an unclaimed daemon in claim mode. `"local"` accepts only a loopback client whose bearer is the daemon's local token; anyone else gets `403`. Read at startup. Not read by 1.5.34 and earlier, which refuse a file containing it |
-| `daemon.security.acknowledgedFindings` | string[] | unset | Warning finding ids an owner marked as intended in the app (host settings, **Security**); they raise no notification dot. Written by the app; critical findings are never suppressed. Not read by 1.5.35 and earlier, which refuse a file containing it |
+| `daemon.security.acknowledgedFindings` | string[] | unset | Finding ids an owner marked as intended in the app (host settings, **Security**); they raise no notification dot. Written by the app. Not read by 1.5.35 and earlier, which refuse a file containing it |
 
 See [security and access](/docs/self-hosting/security/) for how these combine.
 

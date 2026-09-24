@@ -42,7 +42,7 @@ export function HostSecurityPage({ serverId }: { serverId: string }) {
 
 /**
  * The host's security findings, each with the fix this device can apply, and
- * any warnings the owner marked as intended. Renders nothing for a daemon
+ * any findings the owner marked as intended. Renders nothing for a daemon
  * without `features.securityPosture` and for a non-owner.
  */
 export function HostSecurityCard({ serverId }: { serverId: string }) {
@@ -128,14 +128,14 @@ function SecurityFindingRow({
       </View>
       <Text style={settingsStyles.rowHint}>{t(`${key}.body`, { id: finding.id })}</Text>
       <FindingFix serverId={serverId} finding={finding} onFixed={onFixed} />
-      {canAcknowledge && finding.severity === "warning" ? (
+      {canAcknowledge ? (
         <AcknowledgeToggle serverId={serverId} findingId={finding.id} acknowledged={false} />
       ) : null}
     </View>
   );
 }
 
-/** A warning the owner marked as intended: muted, no dot, and a way to be warned again. */
+/** A finding the owner marked as intended: muted, no dot, and a way to be warned again. */
 function AcknowledgedFindingRow({
   serverId,
   finding,

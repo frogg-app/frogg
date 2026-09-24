@@ -890,7 +890,6 @@ export async function createFroggDaemon(
   const setSecurityFindingAcknowledged = (findingId: string, acknowledge: boolean) => {
     const ids = updateAcknowledgedFindings({
       acknowledged: acknowledgedSecurityFindings,
-      current: getSecurityPosture(),
       findingId,
       acknowledge,
     });

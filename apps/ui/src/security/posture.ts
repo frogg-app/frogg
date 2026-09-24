@@ -25,7 +25,7 @@ export interface SecurityPostureView {
   acknowledged: readonly SecurityFindingView[];
   /** The worst severity among `findings`, or null when there is nothing to flag. */
   severity: SecuritySeverity | null;
-  /** The daemon can mark warnings as intended (`features.securityAcknowledge`). */
+  /** The daemon can mark findings as intended (`features.securityAcknowledge`). */
   canAcknowledge: boolean;
 }
 

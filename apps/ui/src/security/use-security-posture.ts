@@ -81,7 +81,7 @@ export function useRefreshSecurityPosture(serverId: string): {
 }
 
 /**
- * Mark a warning as intended, or undo that, and apply the posture the daemon
+ * Mark a finding as intended, or undo that, and apply the posture the daemon
  * returns. Resolves false when there is no client to send it through.
  */
 export function useAcknowledgeSecurityFinding(serverId: string): {

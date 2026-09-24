@@ -262,12 +262,12 @@ with its fix, or says the host has no issues:
   `config.json` and restart; reach it through the relay or an SSH tunnel instead.
 - An unknown finding from a newer daemon shows **Open devices**.
 
-A warning that describes a deliberate setup (a daemon bound wider than the brand recommends,
-say) can be marked **This is intended**. It stays on the Security page, muted and labelled
+A finding that describes a deliberate setup (a daemon bound wider than the brand recommends,
+or a sandboxed host reachable without a password, say) can be marked **This is intended**. It stays on the Security page, muted and labelled
 **Intended**, but no longer raises a dot; **Warn me again** undoes it. The choice is stored
 on the daemon in `config.json` under `daemon.security.acknowledgedFindings`, so it applies
-to every owner device. Critical findings cannot be marked as intended; they stay until
-they are fixed. Marking findings needs a daemon that advertises the `securityAcknowledge`
+to every owner device. Critical findings can be marked too; daemons before 1.5.38 refuse
+that and only accept warnings. Marking findings needs a daemon that advertises the `securityAcknowledge`
 feature.
 
 Findings are sent only to owner connections, so operators and viewers see no dot and no

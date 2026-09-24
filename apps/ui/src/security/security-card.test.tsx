@@ -259,13 +259,13 @@ describe("HostSecurityCard", () => {
     expect(screen.queryByTestId("host-security-finding-bind_diverges")).toBeNull();
   });
 
-  it("offers no way to mark a critical finding as intended", () => {
+  it("lets a critical finding be marked as intended", () => {
     seed([{ id: "exposed_without_password", severity: "critical", fixAction: "set_password" }], {
       securityPosture: true,
       securityAcknowledge: true,
     });
     renderCard();
-    expect(screen.queryByTestId("host-security-acknowledge-exposed_without_password")).toBeNull();
+    expect(screen.getByTestId("host-security-acknowledge-exposed_without_password")).toBeTruthy();
   });
 
   it("offers no acknowledge button on a daemon that cannot store it", () => {
