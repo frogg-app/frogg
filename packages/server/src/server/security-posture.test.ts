@@ -44,8 +44,15 @@ describe("computeSecurityPosture", () => {
     ]);
   });
 
-  test("exposed_without_password: trusted LAN on a loopback bind still counts", () => {
-    expect(ids({ brand: STOCK, trustLan: true })).toEqual([
+  test("exposed_without_password never fires for a loopback-only bind", () => {
+    expect(ids({ brand: STOCK, trustLan: true })).toEqual([]);
+    expect(ids({ brand: STOCK, listenTarget: { type: "tcp", host: "[::1]", port: 1 } })).toEqual(
+      [],
+    );
+    expect(ids({ brand: STOCK, listenTarget: { type: "tcp", host: "localhost", port: 1 } })).toEqual(
+      [],
+    );
+    expect(ids({ brand: STOCK, listenTarget: ALL })).toEqual([
       "exposed_without_password:critical:set_password",
     ]);
   });

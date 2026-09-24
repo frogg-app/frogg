@@ -227,14 +227,15 @@ The daemon compares its effective access settings (after environment variables a
 | Finding | Severity | Raised when | Fix |
 | ------- | -------- | ----------- | --- |
 | `unclaimed` | critical off loopback, else warning | Claim mode is on and no device or password has claimed the daemon | Claim it (pair a device) |
-| `exposed_without_password` | critical | Listening off loopback or trusting the LAN, with no password and claim mode off | Set a password |
+| `exposed_without_password` | critical | Listening off loopback with no password and claim mode off (a loopback-only bind never raises it, even with LAN trust on) | Set a password |
 | `trust_lan_diverges` | warning | LAN trust is on but the brand ships it off | Turn LAN trust off |
 | `bind_diverges` | warning | Listening off loopback but the brand binds to loopback | Bind to loopback (config change and restart) |
 | `claim_mode_diverges` | warning | Claim mode is off but the brand ships it on | Turn claim mode on |
 
 A brand that opts into an open posture gets no divergence findings; only the brand's
 manifest values matter, never its name. The stock upstream brand binds to all interfaces and
-trusts the LAN, so a stock daemon without a password reports `exposed_without_password`.
+trusts the LAN, so a stock daemon listening on all interfaces without a password reports
+`exposed_without_password`.
 
 Owners receive the findings in `server_info.security` (re-sent when the password, claim or
 access settings change) and from the `daemon.get_security_posture` RPC; the daemon

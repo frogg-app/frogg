@@ -56,7 +56,9 @@ export function computeSecurityPosture(input: SecurityPostureInput): SecurityPos
   if (input.claimMode && !input.claimed) {
     findings.push(finding("unclaimed", exposed ? "critical" : "warning", "claim"));
   }
-  if ((exposed || input.trustLan) && !input.hasPassword && !input.claimMode) {
+  // Only a listener reachable off loopback is exposed. Trusted LAN widens who
+  // may connect without credentials, but a loopback-only bind never sees LAN peers.
+  if (exposed && !input.hasPassword && !input.claimMode) {
     findings.push(finding("exposed_without_password", "critical", "set_password"));
   }
   if (input.trustLan && !input.brand.trustLan) {
