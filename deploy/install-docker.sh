@@ -129,13 +129,13 @@ start_container() {
     mkdir -p "${FROGG_WORKSPACE}"
     run_args+=(-v "${FROGG_WORKSPACE}:/workspace")
   fi
-  if [ -n "${FROGG_PASSWORD}" ]; then
-    run_args+=(-e "FROGG_PASSWORD=${FROGG_PASSWORD}")
-  fi
+  # Secrets are passed as `-e NAME` with the value exported, so docker reads
+  # them from its environment and they never appear in the process list.
   local var
-  for var in ANTHROPIC_API_KEY OPENAI_API_KEY ANTHROPIC_BASE_URL OPENAI_BASE_URL FROGG_HOSTNAMES; do
+  for var in FROGG_PASSWORD ANTHROPIC_API_KEY OPENAI_API_KEY ANTHROPIC_BASE_URL OPENAI_BASE_URL FROGG_HOSTNAMES; do
     if [ -n "${!var:-}" ]; then
-      run_args+=(-e "${var}=${!var}")
+      export "${var?}"
+      run_args+=(-e "${var}")
     fi
   done
   docker run "${run_args[@]}" "${FROGG_IMAGE}" >/dev/null
