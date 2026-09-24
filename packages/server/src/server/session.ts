@@ -675,8 +675,15 @@ function isDaemonUpdateMessage(msg: SessionInboundMessage): msg is DaemonUpdateM
 function sessionAccessDefaults(options: SessionOptions): {
   role: DeviceRole;
   deviceRoles: SessionDeviceRoleManagement | null;
+  localityTrusted: boolean;
+  isDaemonClaimed: () => boolean;
 } {
-  return { role: options.role ?? "owner", deviceRoles: options.deviceRoles ?? null };
+  return {
+    role: options.role ?? "owner",
+    deviceRoles: options.deviceRoles ?? null,
+    localityTrusted: options.localityTrusted ?? false,
+    isDaemonClaimed: options.isDaemonClaimed ?? (() => false),
+  };
 }
 
 export class Session {
@@ -853,8 +860,8 @@ export class Session {
     this.clientId = clientId;
     const access = sessionAccessDefaults(options);
     this.authorization = new SessionAuthorization(permissions, access.role);
-    this.localityTrusted = options.localityTrusted ?? false;
-    this.isDaemonClaimed = options.isDaemonClaimed ?? (() => false);
+    this.localityTrusted = access.localityTrusted;
+    this.isDaemonClaimed = access.isDaemonClaimed;
     this.deviceRoles = access.deviceRoles;
     this.appVersion = appVersion ?? null;
     this.clientCapabilities = parseClientCapabilities(clientCapabilities);

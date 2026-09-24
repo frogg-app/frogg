@@ -30,8 +30,19 @@ credential (`/api/identity/proof`, `/api/setup/claim`, `/api/setup/request`,
 `/api/setup/offer`, `/api/auth/login`). All of them are rate-limited per client address.
 The web app's static files load without credentials; its API calls do not.
 
-`/api/setup/offer` mints a credential, so it needs one: locality alone never buys a
-pairing offer.
+A bearer that is presented is always checked, even where the table allows the client
+without one. A revoked device credential, a wrong password or any unrecognised token is
+refused with `401` (WebSocket close `4401`), never downgraded to locality trust. Clients
+with a stale stored credential must re-pair. The CLI on the daemon's own machine presents
+the `local-token` file from the daemon home. The daemon accepts it from loopback, unix
+socket and named pipe clients only.
+
+Minting a pairing credential goes through one gate: `/api/setup/offer`, the
+`daemon.get_pairing_offer` RPC and the `auth.pairing_code.create` RPC. Before the daemon
+is claimed, any client that can reach it may start pairing. After that, locality alone is
+not enough. The caller must present an owner device credential, the daemon password or
+the local token. A tokenless loopback or trusted-LAN session keeps its other owner
+authority.
 
 Repeated bad credentials from one address are throttled — 10 failures in 5 minutes blocks
 that address for 5 minutes, and the daemon answers `429`.

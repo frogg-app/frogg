@@ -311,26 +311,43 @@ function preDecide(
   req: RequestLike,
   token: string | null,
 ): BearerDecision | { key: string; token: string; password: string } {
-  if (token !== null) {
-    const device = resolveDevice(auth, token);
-    if (device) return { ok: true, principal: { kind: "device", device } };
-    if (matchesLocalToken(auth, req, token)) return { ok: true, principal: { kind: "local_token" } };
-  }
+  const known = token === null ? null : resolveKnownCredential(auth, req, token);
+  if (known) return { ok: true, principal: known };
   const needsBearer = requestNeedsBearer(auth, req);
   if (!needsBearer && token === null) return { ok: true, principal: { kind: "trusted" } };
   const key = clientKey(req, auth);
   if (auth?.limiter?.isBlocked(key)) return { ok: false, reason: "rate_limited" };
-  if (needsBearer) {
-    const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
-    if (!hasSecrets) return { ok: false, reason: "unclaimed" };
-    if (token === null) return { ok: false, reason: "missing_token" };
-  }
-  // A token is presented here (the tokenless trusted case returned above).
+  const missing = needsBearer ? missingBearerReason(auth, token) : null;
+  if (missing) return { ok: false, reason: missing };
+  // A token is presented here (the tokenless cases returned above).
   if (!auth?.password || token === null) {
     auth?.limiter?.recordFailure(key);
     return { ok: false, reason: "invalid_token" };
   }
   return { key, token, password: auth.password };
+}
+
+/** A device credential or the local token: recognised without a password check. */
+function resolveKnownCredential(
+  auth: DaemonAuthConfig | undefined,
+  req: RequestLike,
+  token: string,
+): BearerPrincipal | null {
+  const device = resolveDevice(auth, token);
+  if (device) return { kind: "device", device };
+  if (matchesLocalToken(auth, req, token)) return { kind: "local_token" };
+  return null;
+}
+
+/** Why a request that needs a bearer cannot even be checked, if it cannot. */
+function missingBearerReason(
+  auth: DaemonAuthConfig | undefined,
+  token: string | null,
+): "unclaimed" | "missing_token" | null {
+  const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
+  if (!hasSecrets) return "unclaimed";
+  if (token === null) return "missing_token";
+  return null;
 }
 
 function finishPassword(
