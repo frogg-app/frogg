@@ -107,6 +107,7 @@ describe("role denials", () => {
     "auth.pairing_code.create.request",
     "auth.settings.update.request",
     "auth.password.set.request",
+    "daemon.get_security_posture.request",
     "set_daemon_config_request",
     "daemon.update.start.request",
     "provider.account.create.request",

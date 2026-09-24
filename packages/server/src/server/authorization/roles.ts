@@ -122,6 +122,7 @@ const INBOUND_ROLE = {
   create_terminal_request: "operator",
   "daemon.config.reload.request": "owner",
   "daemon.get_pairing_offer.request": "owner",
+  "daemon.get_security_posture.request": "owner",
   "daemon.get_status.request": "viewer",
   "daemon.update.check.request": "owner",
   "daemon.update.get_status.request": "owner",

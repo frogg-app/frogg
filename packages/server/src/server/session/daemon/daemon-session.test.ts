@@ -78,6 +78,38 @@ function makeSubsystem(overrides: {
 }
 
 describe("DaemonSession", () => {
+  test("security posture returns the live findings", () => {
+    const posture = { findings: [{ id: "unclaimed", severity: "warning", fixAction: "claim" }] };
+    const { subsystem, emitted } = makeSubsystem({
+      daemonRuntimeConfig: {
+        listen: null,
+        getRelayConfig: () => null,
+        getSecurityPosture: () => posture,
+      },
+    });
+    subsystem.handleGetSecurityPostureRequest({
+      type: "daemon.get_security_posture.request",
+      requestId: "req-sp",
+    });
+    expect(emitted).toEqual([
+      {
+        type: "daemon.get_security_posture.response",
+        payload: { requestId: "req-sp", posture, error: null },
+      },
+    ]);
+  });
+
+  test("security posture reports an error without bootstrap wiring", () => {
+    const { subsystem, emitted } = makeSubsystem({});
+    subsystem.handleGetSecurityPostureRequest({
+      type: "daemon.get_security_posture.request",
+      requestId: "req-sp",
+    });
+    expect(emitted[0]).toMatchObject({
+      payload: { requestId: "req-sp", posture: null, error: expect.any(String) },
+    });
+  });
+
   test("config reload returns the daemon-owned classification", () => {
     const { subsystem, emitted } = makeSubsystem({
       reloadConfig: () => ({

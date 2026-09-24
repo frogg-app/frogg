@@ -234,6 +234,8 @@ pub enum SessionMessage {
     DaemonGetStatusResponse(DaemonGetStatusResponse),
     #[serde(rename = "daemon.get_pairing_offer.response")]
     DaemonGetPairingOfferResponse(DaemonGetPairingOfferResponse),
+    #[serde(rename = "daemon.get_security_posture.response")]
+    DaemonGetSecurityPostureResponse(DaemonGetSecurityPostureResponse),
     #[serde(rename = "auth.device.set_role.response")]
     AuthDeviceSetRoleResponse(AuthDeviceSetRoleResponse),
     #[serde(rename = "daemon.config.reload.response")]
@@ -7209,6 +7211,20 @@ pub struct DaemonGetPairingOfferResponsePayload {
     pub qr: Option<String>,
     #[serde(rename = "relayEnabled")]
     pub relay_enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonGetSecurityPostureResponse {
+    pub payload: DaemonGetSecurityPostureResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonGetSecurityPostureResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub posture: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -1,5 +1,6 @@
 import { brand } from "@frogg/branding";
 import type { Command } from "commander";
+import type { SecurityFinding, SecurityPosture } from "@frogg/protocol/messages";
 import {
   createClaimStore,
   isDaemonClaimed,
@@ -15,13 +16,17 @@ import type {
 } from "../../output/index.js";
 import { daemonHttpJson, resolveLoopbackHttpBase } from "./daemon-http.js";
 import { resolveLocalDaemonState, resolveLocalFroggHome } from "./local-daemon.js";
+import { readCliLocalToken } from "../../utils/local-token.js";
 
 /**
  * `frogg daemon claim-status` and `frogg daemon reset-claim`: inspect or clear the
  * paired principals under $FROGG_HOME (see getting-started/connect-and-pair.mdx).
- * Both work on the files directly, so they do not need a running daemon; the
- * daemon re-reads the principals file on every check, so a reset takes effect
- * live and the pairing page comes back for LAN visitors.
+ * claim-status asks the running daemon first (`/api/setup/status` with the
+ * local token) so env-only settings such as <PREFIX>_PASSWORD are reflected,
+ * and falls back to config.json when no daemon answers; `source` says which.
+ * reset-claim works on the files directly; the daemon re-reads the principals
+ * file on every check, so a reset takes effect live and the pairing page comes
+ * back for LAN visitors.
  */
 interface ClaimPrincipalSummary {
   id: string;
@@ -39,6 +44,10 @@ export interface ClaimStatusResult {
   /** daemon.auth.trustLan: private-network clients connect without pairing or a password. */
   lanTrusted: boolean;
   principals: ClaimPrincipalSummary[];
+  /** Where claimed / password / LAN trust came from: the live daemon, or config.json. */
+  source: "daemon" | "config";
+  /** Security findings from the running daemon; absent when read from config. */
+  findings?: SecurityFinding[];
   daemon:
     | { reachable: true; listen: string | null; pairingRequired: boolean; connectedClients: number }
     | { reachable: false };
@@ -67,6 +76,7 @@ const claimStatusSchema: OutputSchema<ClaimStatusResult> = {
       `Claimed:        ${data.claimed ? `yes (${data.claimedAt ?? "unknown time"})` : "no"}`,
       `Password:       ${data.passwordConfigured ? "configured" : "not configured"}`,
       `LAN trusted:    ${data.lanTrusted ? `yes (${brand.cliName} daemon trust-lan off to require pairing on the LAN)` : "no"}`,
+      `Source:         ${data.source === "daemon" ? "running daemon" : "config.json (daemon not reachable)"}`,
       `Principals:     ${data.principalsPath}`,
       `Daemon:         ${
         data.daemon.reachable
@@ -74,6 +84,9 @@ const claimStatusSchema: OutputSchema<ClaimStatusResult> = {
           : "not reachable over HTTP"
       }`,
     ];
+    for (const finding of data.findings ?? []) {
+      lines.push(`Finding:        ${finding.id} (${finding.severity}; fix: ${finding.fixAction})`);
+    }
     for (const principal of data.principals) {
       lines.push(
         `  - ${principal.label} (${principal.id}, ${principal.credentials} credential${principal.credentials === 1 ? "" : "s"}, ${principal.createdAt})`,
@@ -112,6 +125,40 @@ async function probeDaemonIdentity(listen: string): Promise<ClaimStatusResult["d
   }
 }
 
+interface OwnerSetupStatus {
+  claimed: boolean;
+  passwordEnabled?: boolean;
+  trustLan?: boolean;
+  posture?: SecurityPosture;
+}
+
+/**
+ * The daemon's own view, authenticated with the local token. Only a response
+ * carrying `posture` counts: an older daemon, or one that rejected the token,
+ * answers with the public shape and the caller falls back to config.json.
+ */
+async function probeOwnerSetupStatus(
+  listen: string,
+  froggHome: string,
+): Promise<Required<OwnerSetupStatus> | null> {
+  const base = resolveLoopbackHttpBase(listen);
+  const token = readCliLocalToken(froggHome);
+  if (!base || !token) return null;
+  try {
+    const status = await daemonHttpJson<OwnerSetupStatus>({
+      base,
+      path: "/api/setup/status",
+      bearer: token,
+    });
+    if (!status.posture || status.passwordEnabled === undefined || status.trustLan === undefined) {
+      return null;
+    }
+    return status as Required<OwnerSetupStatus>;
+  } catch {
+    return null;
+  }
+}
+
 export async function describeClaimStatus(home?: string): Promise<ClaimStatusResult> {
   const froggHome = resolveLocalFroggHome(home);
   const store = createClaimStore(froggHome);
@@ -122,13 +169,16 @@ export async function describeClaimStatus(home?: string): Promise<ClaimStatusRes
   // Same rule as the daemon's /api/setup/status: a set password claims it too.
   const claimed = isDaemonClaimed(store, persistedAuth?.password);
   const state = resolveLocalDaemonState({ home });
+  const live = state.running ? await probeOwnerSetupStatus(state.listen, froggHome) : null;
   return {
     home: froggHome,
     principalsPath: store.filePath,
-    claimed,
+    claimed: live?.claimed ?? claimed,
     claimedAt: file.claimedAt ?? null,
-    passwordConfigured,
-    lanTrusted,
+    passwordConfigured: live?.passwordEnabled ?? passwordConfigured,
+    lanTrusted: live?.trustLan ?? lanTrusted,
+    source: live ? "daemon" : "config",
+    ...(live ? { findings: live.posture.findings } : {}),
     principals: file.principals.map((principal) => ({
       id: principal.id,
       label: principal.label,

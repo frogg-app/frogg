@@ -1822,6 +1822,30 @@ describe("daemon status + pairing RPC", () => {
     ]);
   });
 
+  test("daemon.get_security_posture.request routes to the daemon session", async () => {
+    const messages: unknown[] = [];
+    const posture = { findings: [] };
+    const session = createSessionForTest({
+      messages,
+      froggHome: makeHome(),
+      daemonRuntimeConfig: {
+        listen: null,
+        getRelayConfig: () => null,
+        getSecurityPosture: () => posture,
+      },
+    });
+    await session.handleMessage({
+      type: "daemon.get_security_posture.request",
+      requestId: "posture-1",
+    });
+    expect(messages).toEqual([
+      {
+        type: "daemon.get_security_posture.response",
+        payload: { requestId: "posture-1", posture, error: null },
+      },
+    ]);
+  });
+
   test("daemon.get_pairing_offer.request returns an empty offer when relay is disabled", async () => {
     const messages: unknown[] = [];
     const session = createSessionForTest({

@@ -5,11 +5,14 @@ import { z } from "zod";
 import type { ClaimStore } from "./claim-store.js";
 import { buildDirectClaimOffer, type ClaimOfferSource } from "./claim-offer.js";
 import { renderPairingQr, renderPairingQrSvg } from "./pairing-qr.js";
+import type { SecurityPosture } from "@frogg/protocol/messages";
 
 /**
  * First-run pairing routes.
  *
- * - `GET  /api/setup/status`  public: `{ claimed, pairingRequired }` for the gate page to poll
+ * - `GET  /api/setup/status`  public: `{ claimed, pairingRequired }` for the gate page to poll.
+ *                             Owner callers (local token, owner device, password) also
+ *                             get `posture` (security findings) and `trustLan`.
  * - `POST /api/setup/claim`   public: redeems a claim token, mints the first (or another)
  *                             principal + device credential, and marks the daemon claimed
  * - `POST /api/setup/offer`   issues a fresh direct offer. Locality is not enough:
@@ -37,16 +40,33 @@ export interface SetupRouteDependencies {
    */
   hasLocalCredential: (req: Parameters<RequestHandler>[0]) => Promise<boolean>;
   onClaimed?: (input: { principalId: string; label: string }) => void;
+  /** Security findings, returned by `/api/setup/status` to owner callers only. */
+  getSecurityPosture?: () => SecurityPosture;
+  /** Effective LAN trust, returned alongside the posture. */
+  trustLan?: () => boolean;
   /** Handles `/api/setup/claim`; device-access-routes.ts owns the real one. */
   claimHandler?: RequestHandler;
   logger: Logger;
 }
 
 export function createSetupStatusHandler(deps: SetupRouteDependencies): RequestHandler {
-  return (_req, res) => {
-    const claimed = deps.claimStore.isClaimed() || deps.hasPassword();
-    res.setHeader("Cache-Control", "no-store");
-    res.json({ claimed, pairingRequired: !claimed });
+  return (req, res) => {
+    void (async () => {
+      const claimed = deps.claimStore.isClaimed() || deps.hasPassword();
+      const body: Record<string, unknown> = { claimed, pairingRequired: !claimed };
+      // Findings describe how to take the daemon over, so only an owner sees them.
+      // An unauthenticated caller gets the public shape, never a 401: the claim
+      // gate page polls this route.
+      if (deps.getSecurityPosture && req.header("authorization")) {
+        if (await deps.hasLocalCredential(req).catch(() => false)) {
+          body.passwordEnabled = deps.hasPassword();
+          if (deps.trustLan) body.trustLan = deps.trustLan();
+          body.posture = deps.getSecurityPosture();
+        }
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json(body);
+    })();
   };
 }
 

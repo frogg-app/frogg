@@ -139,6 +139,7 @@ import type {
   ProviderAccountSetPreferencesResponseMessage,
   DaemonGetStatusResponse,
   DaemonGetPairingOfferResponse,
+  DaemonGetSecurityPostureResponse,
   DaemonConfigReloadResponse,
   DaemonUpdateChannel,
   DaemonUpdateCheckResponse,
@@ -571,6 +572,7 @@ type ProviderAccountSetAllowedModelsPayload =
 type ProviderAccountSetPreferencesPayload = ProviderAccountSetPreferencesResponseMessage["payload"];
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
+type DaemonSecurityPosturePayload = DaemonGetSecurityPostureResponse["payload"];
 type DiagnosticsPayload = DiagnosticsResponse["payload"];
 type ReadProjectConfigPayload = Extract<
   SessionOutboundMessage,
@@ -5270,6 +5272,18 @@ export class DaemonClient {
         type: "daemon.get_pairing_offer.request",
       },
       responseType: "daemon.get_pairing_offer.response",
+      timeout: options?.timeout,
+    });
+  }
+
+  /** Owner-only security findings (features.securityPosture). */
+  async getDaemonSecurityPosture(options?: {
+    requestId?: string;
+    timeout?: number;
+  }): Promise<DaemonSecurityPosturePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.get_security_posture.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.get_security_posture.request" },
       timeout: options?.timeout,
     });
   }

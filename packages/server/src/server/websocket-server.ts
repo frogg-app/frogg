@@ -1974,6 +1974,24 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
+  private securityPostureFeature(): { securityPosture?: true } {
+    return this.daemonRuntimeConfig?.getSecurityPosture ? { securityPosture: true } : {};
+  }
+
+  private serverInfoSecurity(session: Session): Pick<ServerInfoStatusPayload, "security"> {
+    const getPosture = this.daemonRuntimeConfig?.getSecurityPosture;
+    if (!getPosture || session.getRole() !== "owner") return {};
+    return { security: getPosture() };
+  }
+
+  /**
+   * Re-send server_info so owners see a changed security posture (password
+   * set or cleared, first claim, access settings updated) without reconnecting.
+   */
+  public broadcastSecurityPostureChanged(): void {
+    this.broadcastCapabilitiesUpdate();
+  }
+
   private buildServerInfoStatusPayload(session: Session): ServerInfoStatusPayload {
     return {
       status: "server_info",
@@ -1990,8 +2008,13 @@ export class VoiceAssistantWebSocketServer {
       // COMPAT(desktopManaged): added in v0.1.X, remove optional parsing after 2027-01-16.
       desktopManaged: this.daemonRuntimeConfig?.desktopManaged === true,
       ...(this.serverCapabilities ? { capabilities: this.serverCapabilities } : {}),
+      // COMPAT(securityPosture): added in v1.6.0. Owners only: findings name
+      // how the daemon can be taken over, which is not every device's business.
+      ...this.serverInfoSecurity(session),
       features: {
         ...this.deviceRoleFeatures(session),
+        // COMPAT(securityPosture): added in v1.6.0, remove gate after 2027-09-24.
+        ...this.securityPostureFeature(),
         // COMPAT(directorySync): added in v0.3.x, remove gate after 2027-02-12.
         directorySync: true,
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.
