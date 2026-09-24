@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- The daemon keeps a copy of a version 1 `principals.json` as `principals.v1.bak.json`
+  before it first rewrites the file as version 2. The format change in 1.5.29 is one-way:
+  1.5.28 and earlier can't read the new file. To roll back, restore the copy first. See
+  [updates](https://frogg.app/docs/self-hosting/updates/#rolling-back-to-1528-or-earlier).
+
 ## 1.5.34 — 2026-09-24
 
 - The daemon restart button in host settings showed a raw translation key

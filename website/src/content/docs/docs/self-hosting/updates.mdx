@@ -81,6 +81,28 @@ GitHub's API allows 60 unauthenticated requests an hour. On a 403 or 429 the upd
 Point at a mirror with `FROGG_RELEASE_BASE` (`<base>/download/v<version>/<asset>`) and
 `FROGG_RELEASES_API`.
 
+### Rolling back to 1.5.28 or earlier
+
+1.5.29 changed the paired-device file, `~/.frogg/principals.json`, from version 1 to
+version 2. Older daemons can't read version 2, so a plain `frogg update --to 1.5.28`
+leaves the daemon with no paired devices it recognises. Before its first version 2 write,
+the daemon copies the original file to `~/.frogg/principals.v1.bak.json` (mode 0600). That
+copy is never overwritten.
+
+To roll back:
+
+```sh
+frogg daemon stop
+cp ~/.frogg/principals.v1.bak.json ~/.frogg/principals.json
+chmod 600 ~/.frogg/principals.json
+frogg update --to 1.5.28
+```
+
+Devices paired after the upgrade aren't in the backup, so pair them again. Role changes and
+renames made since the upgrade are lost too. With no backup, the daemon either never had a
+version 1 file or was set up on 1.5.29 or later. In that case, remove `principals.json` and
+claim the daemon again after rolling back.
+
 ## Not self-updatable
 
 `frogg update` refuses and says why for:
