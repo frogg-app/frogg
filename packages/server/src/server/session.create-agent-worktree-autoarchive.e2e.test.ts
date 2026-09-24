@@ -43,6 +43,14 @@ function createGitRepo(): string {
   return repoDir;
 }
 
+// Agents launched from a bare cwd require a registered project; the worktree
+// paths register one implicitly, the plain-checkout cases must do it explicitly.
+async function createRegisteredGitRepo(): Promise<string> {
+  const repoDir = createGitRepo();
+  await ctx.client.addProject(repoDir);
+  return repoDir;
+}
+
 function createGitRepoWithNestedDirectory(): string {
   const repoDir = createGitRepo();
   mkdirSync(path.join(repoDir, "packages", "app"), { recursive: true });
@@ -272,7 +280,7 @@ test("failed nested worktree creation cleans up the created workspace and backin
 }, 30000);
 
 test("create_agent_request with autoArchive archives only the agent when no worktree was created", async () => {
-  const repoDir = createGitRepo();
+  const repoDir = await createRegisteredGitRepo();
   const created = await ctx.client.createAgent({
     config: {
       ...getFullAccessConfig("codex"),
@@ -292,7 +300,7 @@ test("create_agent_request with autoArchive archives only the agent when no work
 });
 
 test("create_agent_request with autoArchive archives an agent whose first turn fails", async () => {
-  const repoDir = createGitRepo();
+  const repoDir = await createRegisteredGitRepo();
   const created = await ctx.client.createAgent({
     config: {
       ...getFullAccessConfig("codex"),
@@ -310,7 +318,7 @@ test("create_agent_request with autoArchive archives an agent whose first turn f
 });
 
 test("create_agent_request without autoArchive keeps today's active listing behavior", async () => {
-  const repoDir = createGitRepo();
+  const repoDir = await createRegisteredGitRepo();
   const created = await ctx.client.createAgent({
     config: {
       ...getFullAccessConfig("codex"),
