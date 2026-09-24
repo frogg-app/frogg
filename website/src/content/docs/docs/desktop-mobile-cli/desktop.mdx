@@ -118,7 +118,9 @@ The deploy runs as five steps, with the remote log available beneath them:
    host that already had a daemon, whose existing LAN clients are left alone, and on a
    daemon too old to have the setting — which the result then warns about.
 4. **Get pairing code over SSH** — the app runs the daemon's own `frogg pair` over the
-   same SSH session, so the SSH connection is what vouches for the daemon's identity.
+   same SSH session, so the SSH connection is what vouches for the daemon's identity. The
+   code grants the owner role when the daemon's CLI supports `--role`. If no code can be
+   obtained, the deploy stops here on both LAN and tunnel connections.
 5. **Pair this device** — the app redeems that code and records this device's name on the
    credential the daemon issues. On a tunnel the code is redeemed through a short-lived
    loopback forward, closed as soon as pairing finishes.
