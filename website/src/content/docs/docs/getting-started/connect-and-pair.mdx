@@ -219,16 +219,20 @@ frogg auth claim-status
 Claimed:        yes (2026-09-24T01:53:22.172Z)
 Password:       not configured
 LAN trusted:    yes (frogg daemon trust-lan off to require pairing on the LAN)
+Source:         running daemon
 Principals:     /home/you/.frogg/principals.json
 Daemon:         reachable at 0.0.0.0:9999 (pairingRequired=false, connectedClients=1)
 ```
 
 `Claimed` is true when device credentials are saved, when the claim latch is set (it stays
 set after every device is revoked) or when `config.json` sets a password. It does not show
-whether anyone is using the daemon now. For automation, use `frogg auth claim-status --json` and read
+whether anyone is using the daemon now. `claim-status` asks the running daemon first (with
+the local token), so a password or LAN trust set only through environment variables is
+reflected, and lists any [security findings](/docs/self-hosting/security/#security-posture).
+When no daemon answers it reads `config.json` instead; `Source` (`source` in `--json`, `daemon`
+or `config`) says which. For automation, use `frogg auth claim-status --json` and read
 `daemon.connectedClients` for live authenticated WebSocket sessions and
-`daemon.pairingRequired` for the daemon's current access decision. The top-level claim fields
-describe persisted configuration only.
+`daemon.pairingRequired` for the daemon's current access decision.
 
 The CLI has no per-device revoke or role change; do that in the app under
 [Devices](#manage-devices-in-the-app). To start over from a shell, forget **all** devices

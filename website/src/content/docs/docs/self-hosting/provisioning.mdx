@@ -108,6 +108,8 @@ frogg auth claim-status --json | jq -e '.claimed' >/dev/null
 
 From another machine, `GET /api/setup/status` needs no credential and returns
 `{"claimed":true,"pairingRequired":false}`. Both count a configured password as claimed.
+With an owner credential the route also returns the daemon's
+[security findings](/docs/self-hosting/security/#security-posture) as `posture`.
 
 A claim is latched: revoking every device does not reopen it. Only
 `frogg auth reset-claim` on the host does. The daemon refuses to revoke or demote the last

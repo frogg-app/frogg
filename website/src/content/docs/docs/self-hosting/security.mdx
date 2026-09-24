@@ -156,6 +156,10 @@ file writes):
 | `operator` | Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No daemon settings, no device management. Terminals and agents run as the daemon user, so an operator is owner-equivalent on the host |
 | `viewer` | Read-only: sessions, timelines, terminal output, file browsing and diffs, limited to files inside registered workspaces and worktrees. No input, no command execution, no writes |
 
+A viewer is an authenticated, paired device. Its read access to every workspace's diffs and
+agent timelines is intentional: pair a device as `viewer` only if it may see all the work on
+this daemon.
+
 For every role, file browsing, previews, writes and downloads refuse any path that resolves
 (through symlinks) into the daemon home: the keypair, local token, principals and config are
 never reachable over the file API. Frogg-owned worktrees under the home are exempt. Only
@@ -218,6 +222,30 @@ information, not a lock: two devices can write to the same agent at once, and th
 outlines the composer as a warning. Device names come from the other device, so treat them
 as untrusted text. See
 [shared sessions](/docs/using-frogg/shared-sessions/).
+
+## Security posture
+
+The daemon compares its effective access settings (after environment variables and
+`config.json`) with its brand manifest's `daemon` defaults and reports findings to owners:
+
+| Finding | Severity | Raised when | Fix |
+| ------- | -------- | ----------- | --- |
+| `unclaimed` | critical off loopback, else warning | Claim mode is on and no device or password has claimed the daemon | Claim it (pair a device) |
+| `exposed_without_password` | critical | Listening off loopback or trusting the LAN, with no password and claim mode off | Set a password |
+| `trust_lan_diverges` | warning | LAN trust is on but the brand ships it off | Turn LAN trust off |
+| `bind_diverges` | warning | Listening off loopback but the brand binds to loopback | Bind to loopback (config change and restart) |
+| `claim_mode_diverges` | warning | Claim mode is off but the brand ships it on | Turn claim mode on |
+
+A brand that opts into an open posture gets no divergence findings; only the brand's
+manifest values matter, never its name. The stock upstream brand binds to all interfaces and
+trusts the LAN, so a stock daemon without a password reports `exposed_without_password`.
+
+Owners receive the findings in `server_info.security` (re-sent when the password, claim or
+access settings change) and from the `daemon.get_security_posture` RPC; the daemon
+advertises the `securityPosture` feature. `GET /api/setup/status` adds `posture`,
+`passwordEnabled` and `trustLan` for an owner credential (the local token, an owner device
+or the password); without one it returns only `claimed` and `pairingRequired`.
+`frogg auth claim-status` prints the same findings.
 
 ## Passwords
 
