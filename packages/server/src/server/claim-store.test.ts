@@ -154,6 +154,10 @@ describe("per-device credentials", () => {
     expect(store.isClaimed()).toBe(true);
 
     expect(store.revokeDevice(owner.credentialId)).toBe(true);
+    // The claim is latched: revoking every device does not reopen it.
+    expect(store.isClaimed()).toBe(true);
+    expect(store.isLastOwner(owner.credentialId)).toBe(false);
+    store.reset();
     expect(store.isClaimed()).toBe(false);
   });
 

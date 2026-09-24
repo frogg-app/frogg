@@ -288,11 +288,12 @@ describe("bearer requirement by client locality", () => {
     expect(device?.name).toBe("Phone");
     expect(device?.role).toBe("operator");
 
-    // Revoking the last device drops the credential and unclaims the daemon.
+    // Revoking the last device drops the credential, but the claim is latched:
+    // the daemon stays claimed, so the stale token is just invalid.
     store.revokeDevice(minted.credentialId);
     expect(
       await authorizeBearerAsync(auth, requestFrom(SOCKETS.public), minted.credential),
-    ).toEqual({ ok: false, reason: "unclaimed" });
+    ).toEqual({ ok: false, reason: "invalid_token" });
   });
 });
 

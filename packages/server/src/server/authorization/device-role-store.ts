@@ -1,3 +1,4 @@
+import { LastOwnerError } from "../claim-store.js";
 import type { DeviceRole } from "./roles.js";
 
 /**
@@ -7,7 +8,10 @@ import type { DeviceRole } from "./roles.js";
  */
 export interface DeviceRoleStore {
   getRole(credentialId: string): DeviceRole | null;
-  /** Returns false when the credential does not exist. */
+  /**
+   * Returns false when the credential does not exist. Throws when the change
+   * would demote the last owner.
+   */
   setRole(credentialId: string, role: DeviceRole): Promise<boolean>;
 }
 
@@ -15,10 +19,14 @@ export interface DeviceRoleStore {
 export function deviceRoleStoreFrom(source: {
   getCredentialRole(credentialId: string): DeviceRole | null;
   setCredentialRole(credentialId: string, role: DeviceRole): boolean;
+  isLastOwner?(credentialId: string): boolean;
 }): DeviceRoleStore {
   return {
     getRole: (credentialId) => source.getCredentialRole(credentialId),
-    setRole: async (credentialId, role) => source.setCredentialRole(credentialId, role),
+    setRole: async (credentialId, role) => {
+      if (role !== "owner" && source.isLastOwner?.(credentialId)) throw new LastOwnerError();
+      return source.setCredentialRole(credentialId, role);
+    },
   };
 }
 

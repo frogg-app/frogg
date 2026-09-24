@@ -138,11 +138,35 @@ export interface ClaimStore {
   revokeDevice(credentialId: string): boolean;
   getCredentialRole(credentialId: string): DeviceRole | null;
   setCredentialRole(credentialId: string, role: DeviceRole): boolean;
+  /** True when `credentialId` is an owner and no other owner credential exists. */
+  isLastOwner(credentialId: string): boolean;
   /** Records a successful authentication; persisted at most once a minute per device. */
   touchLastSeen(credentialId: string, now?: Date): void;
   /** Rewrites a v1 file as v2. Returns true when a rewrite happened. */
   migrate(): boolean;
   reset(): boolean;
+}
+
+export const LAST_OWNER_ERROR =
+  "This is the last owner device. Promote another device to owner first, or run `reset-claim` on the daemon host.";
+
+export class LastOwnerError extends Error {
+  constructor() {
+    super(LAST_OWNER_ERROR);
+    this.name = "LastOwnerError";
+  }
+}
+
+/**
+ * The single "is this daemon claimed" rule: a paired device (or the latch
+ * left by one) or a configured daemon password. Used by the claim route,
+ * `/api/identity`, setup routes and the access settings RPC alike.
+ */
+export function isDaemonClaimed(
+  store: Pick<ClaimStore, "isClaimed">,
+  password: string | boolean | null | undefined,
+): boolean {
+  return Boolean(password) || store.isClaimed();
 }
 
 export function hashCredential(secret: string): string {
@@ -280,7 +304,15 @@ export function createClaimStore(froggHome: string): ClaimStore {
   return {
     filePath,
     read,
-    isClaimed: () => read().principals.some((principal) => principal.credentials.length > 0),
+    // Latched: once a device has claimed the daemon it stays claimed even after
+    // every credential is revoked. Only a local `reset-claim` (reset()) clears it.
+    isClaimed: () => {
+      const current = read();
+      return (
+        Boolean(current.claimedAt) ||
+        current.principals.some((principal) => principal.credentials.length > 0)
+      );
+    },
     claimedAt: () => read().claimedAt ?? null,
     credentialHashes: () =>
       read().principals.flatMap((principal) =>
@@ -365,6 +397,10 @@ export function createClaimStore(froggHome: string): ClaimStore {
       listDevices().find((device) => device.id === credentialId)?.role ?? null,
     setCredentialRole: (credentialId, role) =>
       mutateCredential(credentialId, (credential) => ({ ...credential, role })) !== null,
+    isLastOwner: (credentialId) => {
+      const owners = listDevices().filter((device) => device.role === "owner");
+      return owners.length === 1 && owners[0]!.id === credentialId;
+    },
     touchLastSeen: (credentialId, now = new Date()) => {
       const iso = now.toISOString();
       pendingLastSeen.set(credentialId, iso);

@@ -48,7 +48,13 @@ Claim mode is the locked-down posture for a daemon on a network you do not contr
   reports both the configured `trustLan` and the effective `lanTrustEffective`.
 - While the daemon is **unclaimed**, the first client to reach `/api/setup/claim` becomes
   the owner. After that, further devices need a pairing code, an owner approval or the
-  password.
+  password. A daemon with a password set already counts as claimed.
+- The claim is **latched**: revoking every device does not reopen it. Only
+  `frogg auth reset-claim` on the daemon host clears it.
+- The last owner device cannot be revoked (including signing itself out) or demoted.
+  Promote another device to owner first.
+- An unclaimed daemon in claim mode that listens beyond loopback logs a warning at
+  startup: the first client to reach it becomes its owner.
 - Authentication is two-way. The daemon publishes a fingerprint of its long-term key
   (`sha256:` + unpadded base64url of SHA-256 over the raw 32-byte public key); the client
   carries it in the pairing link and checks it against `POST /api/identity/proof`, which

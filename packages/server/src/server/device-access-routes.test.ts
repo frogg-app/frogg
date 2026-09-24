@@ -16,6 +16,7 @@ import {
 } from "@frogg/relay/e2ee";
 
 import { hashDaemonPassword } from "./auth.js";
+import { createClaimStore } from "./claim-store.js";
 import { LOCAL_TOKEN_FILENAME } from "./local-token.js";
 import { createTestFroggDaemon, type TestFroggDaemon } from "./test-utils/frogg-daemon.js";
 
@@ -97,6 +98,35 @@ describe("device access routes", () => {
 
     const second = await post(base, "/api/setup/claim", { claim: true, deviceName: "Attacker" });
     expect(second.status).toBe(409);
+  });
+
+  test("claim mode: a daemon with a password already counts as claimed", async () => {
+    const { base } = await start({ claimMode: true, password: "correct horse battery" });
+    const res = await post(base, "/api/setup/claim", { claim: true, deviceName: "Attacker" });
+    expect(res.status).toBe(409);
+  });
+
+  test("claim mode: the claim latch survives revoking every device and clears on reset", async () => {
+    const { base, handle } = await start({ claimMode: true });
+    const first = await post(base, "/api/setup/claim", { claim: true, deviceName: "Laptop" });
+    expect(first.status).toBe(201);
+
+    const store = createClaimStore(handle.froggHome);
+    const credentialId = (first.body as { credentialId: string }).credentialId;
+    expect(store.revokeDevice(credentialId)).toBe(true);
+    expect(store.listDevices()).toEqual([]);
+    expect(store.isClaimed()).toBe(true);
+
+    const afterRevoke = await post(base, "/api/setup/claim", {
+      claim: true,
+      deviceName: "Attacker",
+    });
+    expect(afterRevoke.status).toBe(409);
+
+    // Only the local `reset-claim` (the store's reset) reopens the claim.
+    expect(store.reset()).toBe(true);
+    const reclaimed = await post(base, "/api/setup/claim", { claim: true, deviceName: "Laptop" });
+    expect(reclaimed.status).toBe(201);
   });
 
   test("claiming is refused outright when claim mode is off", async () => {

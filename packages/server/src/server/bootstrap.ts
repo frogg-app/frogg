@@ -201,8 +201,8 @@ import {
 } from "./auth.js";
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
-import { createAccessPolicy, DEFAULT_TRUST_LAN } from "./access-policy.js";
-import { createClaimStore, type ClaimStore } from "./claim-store.js";
+import { createAccessPolicy, DEFAULT_TRUST_LAN, isLoopbackIp } from "./access-policy.js";
+import { createClaimStore, isDaemonClaimed, type ClaimStore } from "./claim-store.js";
 import { deviceRoleStoreFrom } from "./authorization/device-role-store.js";
 import { createClaimOfferStore } from "./claim-offer-store.js";
 import { buildDirectClaimOffer, type ClaimOfferSource } from "./claim-offer.js";
@@ -306,6 +306,21 @@ const TERMINAL_ACTIVITY_STATE_MAP = {
   idle: "idle",
   "needs-input": "attention",
 } as const;
+
+/**
+ * Claim mode on an unclaimed daemon hands ownership to the first client that
+ * reaches it, so say so loudly when that client could be anyone on the network.
+ */
+export function shouldWarnUnclaimedExposure(input: {
+  claimMode: boolean;
+  claimed: boolean;
+  listenTarget: ListenTarget;
+}): boolean {
+  if (!input.claimMode || input.claimed) return false;
+  if (input.listenTarget.type !== "tcp") return false;
+  const host = input.listenTarget.host.replace(/^\[|\]$/g, "");
+  return host !== "localhost" && !isLoopbackIp(host);
+}
 
 const LOOPBACK_REMOTE_ADDRESSES = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 
@@ -1023,7 +1038,7 @@ export async function createFroggDaemon(
       hostname: getHostname,
       listen: () => formatListenTarget(publicListenTarget()),
       connectedClients: () => wsServer?.getConnectedClientCount() ?? 0,
-      isClaimed: () => claimStore.isClaimed() || Boolean(config.auth?.password),
+      isClaimed: () => isDaemonClaimed(claimStore, authConfig.password),
       trustLan: () => authConfig.access?.trustLan() ?? DEFAULT_TRUST_LAN,
       isTrustedClient: (req) => authConfig.access?.isTrustedClient(req) ?? false,
     }),
@@ -1117,7 +1132,7 @@ export async function createFroggDaemon(
   mountSetupRoutes(app, {
     claimStore,
     offerSource: claimOfferSource,
-    hasPassword: () => Boolean(config.auth?.password),
+    hasPassword: () => Boolean(authConfig.password),
     hasLocalCredential: async (req) => {
       const token = extractHttpBearerToken(req.header("authorization"));
       if (localToken.matches(token)) return true;
@@ -2085,6 +2100,18 @@ export async function createFroggDaemon(
             }
             if (config.auth?.password) {
               logger.info("Daemon password authentication enabled");
+            }
+            if (
+              shouldWarnUnclaimedExposure({
+                claimMode: authConfig.access?.claimMode() ?? false,
+                claimed: isDaemonClaimed(claimStore, authConfig.password),
+                listenTarget: boundListenTarget,
+              })
+            ) {
+              logger.warn(
+                { listen: formatListenTarget(boundListenTarget) },
+                "Claim mode is on and this daemon is unclaimed while listening beyond loopback: the first client to reach it becomes its owner. Claim it now, or set a password.",
+              );
             }
 
             // Self-update lives next to the listener: the CLI verifies the restarted

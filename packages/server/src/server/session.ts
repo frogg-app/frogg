@@ -2150,7 +2150,13 @@ export class Session {
       respond(null, "Device roles cannot be managed on this daemon");
       return;
     }
-    const updated = await this.deviceRoles.setRole(msg.credentialId, msg.role);
+    let updated: boolean;
+    try {
+      updated = await this.deviceRoles.setRole(msg.credentialId, msg.role);
+    } catch (error) {
+      respond(null, error instanceof Error ? error.message : "Could not change the device role");
+      return;
+    }
     if (!updated) {
       respond(null, "Unknown device credential");
       return;

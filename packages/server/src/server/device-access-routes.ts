@@ -14,7 +14,12 @@ import { deriveSharedKey, encrypt, importPublicKey } from "@frogg/relay/e2ee";
 import type { KeyPair } from "@frogg/relay/e2ee";
 
 import { clientKey, verifyDaemonPassword, type DaemonAuthConfig } from "./auth.js";
-import type { ClaimStore, MintedPrincipal, PairedVia } from "./claim-store.js";
+import {
+  isDaemonClaimed,
+  type ClaimStore,
+  type MintedPrincipal,
+  type PairedVia,
+} from "./claim-store.js";
 import type { ClaimOfferStore } from "./claim-offer-store.js";
 import type { PairingCodeStore } from "./pairing-code-store.js";
 import type { PairingRequestStore } from "./pairing-request-store.js";
@@ -176,7 +181,8 @@ export function createDeviceClaimHandler(deps: DeviceAccessDependencies): Reques
       res.status(409).json({ error: "This daemon is not in claim mode" });
       return;
     }
-    if (deps.claimStore.isClaimed()) {
+    // A daemon password counts as claimed: it already has an administrator.
+    if (isDaemonClaimed(deps.claimStore, deps.auth.password)) {
       deps.auth.limiter?.recordFailure(key);
       res.status(409).json({ error: "This daemon has already been claimed" });
       return;
