@@ -6,7 +6,7 @@ import { useSessionStore } from "@/stores/session-store";
 import { isCiActive, normalizeCiRun, type CiRun } from "./model";
 
 /** Close enough to watch a job land without hammering GitHub's rate limit or Jenkins. */
-const ACTIVE_POLL_MS = 10_000;
+const ACTIVE_POLL_MS = 15_000;
 /** Nothing running: still notice a new push, just not eagerly. */
 const IDLE_POLL_MS = 60_000;
 

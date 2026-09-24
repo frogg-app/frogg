@@ -36,6 +36,81 @@ export function readJenkinsCredentials(env: NodeJS.ProcessEnv): JenkinsCredentia
  * and filters to `branch` only when the user asks for it. Jenkins is the exception: a multibranch
  * job is addressed per branch, so it still reports the checkout's branch alone.
  */
+/** Panes and clients polling the same repo within this window share one GitHub fetch. */
+const GITHUB_SHARED_TTL_MS = 8_000;
+/** After GitHub rate-limits us, stop asking for this long and serve the last result. */
+const GITHUB_RATE_LIMIT_COOLDOWN_MS = 5 * 60_000;
+
+interface GitHubRunsEntry {
+  inFlight: Promise<CiRun[]> | null;
+  runs: CiRun[] | null;
+  fetchedAt: number;
+  cooldownUntil: number;
+  cooldownMessage: string | null;
+}
+
+const githubRunsByRepo = new Map<string, GitHubRunsEntry>();
+let now = () => Date.now();
+
+/** Test seam. */
+export function resetCiServiceState(clock?: () => number): void {
+  githubRunsByRepo.clear();
+  now = clock ?? (() => Date.now());
+}
+
+export function isRateLimitError(error: unknown): boolean {
+  const message = getErrorMessage(error).toLowerCase();
+  return (
+    message.includes("rate limit") ||
+    message.includes("too many requests") ||
+    /\b429\b/.test(message)
+  );
+}
+
+async function loadGitHubRunsShared(
+  key: string,
+  load: () => Promise<CiRun[]>,
+  at: number,
+): Promise<CiRun[]> {
+  let entry = githubRunsByRepo.get(key);
+  if (!entry) {
+    entry = {
+      inFlight: null,
+      runs: null,
+      fetchedAt: 0,
+      cooldownUntil: 0,
+      cooldownMessage: null,
+    };
+    githubRunsByRepo.set(key, entry);
+  }
+  if (entry.inFlight) return entry.inFlight;
+  if (at < entry.cooldownUntil) {
+    if (entry.runs) return entry.runs;
+    throw new Error(entry.cooldownMessage ?? "GitHub rate limit; retrying later");
+  }
+  if (entry.runs && at - entry.fetchedAt < GITHUB_SHARED_TTL_MS) return entry.runs;
+  const current = entry;
+  current.inFlight = load()
+    .then((runs) => {
+      current.runs = runs;
+      current.fetchedAt = now();
+      return runs;
+    })
+    .catch((error: unknown) => {
+      if (isRateLimitError(error)) {
+        current.cooldownUntil = now() + GITHUB_RATE_LIMIT_COOLDOWN_MS;
+        current.cooldownMessage = `GitHub rate limit reached; pausing CI refresh for 5 minutes (${getErrorMessage(
+          error,
+        )})`;
+      }
+      throw error;
+    })
+    .finally(() => {
+      current.inFlight = null;
+    });
+  return current.inFlight;
+}
+
 export async function listCiRuns(input: {
   /**
    * The checkout's branch: what Jenkins is asked for, and what the pane offers to filter to.
@@ -52,9 +127,10 @@ export async function listCiRuns(input: {
   const tasks: Array<{ provider: string; load: () => Promise<CiRun[]> }> = [];
   const githubApi = input.githubApi;
   if (githubApi && config.githubActions !== false) {
+    const key = input.repoRoot ?? "";
     tasks.push({
       provider: "githubActions",
-      load: () => listGitHubActionsRuns({ api: githubApi }),
+      load: () => loadGitHubRunsShared(key, () => listGitHubActionsRuns({ api: githubApi }), now()),
     });
   }
   const jenkins = config.jenkins;
@@ -81,7 +157,11 @@ export async function listCiRuns(input: {
   settled.forEach((outcome, index) => {
     const provider = tasks[index]?.provider ?? "unknown";
     if (outcome.status === "fulfilled") result.runs.push(...outcome.value);
-    else result.providerErrors.push({ provider, message: getErrorMessage(outcome.reason) });
+    else
+      result.providerErrors.push({
+        provider,
+        message: getErrorMessage(outcome.reason),
+      });
   });
   return result;
 }

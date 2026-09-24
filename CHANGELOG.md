@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.39 — 2026-09-24
+
+- CI pane no longer trips GitHub's secondary rate limit (which also broke app update checks):
+  jobs of finished runs are cached, jobs requests are capped at four at once, panes polling
+  the same repo share one fetch, and a rate-limit response pauses GitHub refreshes for five
+  minutes while the last result stays on screen. Active polling is now every 15 seconds.
+
 ## 1.5.38 — 2026-09-24
 
 - Sessions auto-resume after a provider usage limit: the daemon queues a resume prompt a

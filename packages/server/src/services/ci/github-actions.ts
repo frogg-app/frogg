@@ -108,6 +108,37 @@ export function summarizeRunProgress(status: string, jobs: CiJob[]): number | nu
   return known.reduce((sum, value) => sum + value, 0) / jobs.length;
 }
 
+/**
+ * Jobs of a finished run never change, and GitHub run ids are globally unique, so they are kept
+ * across polls. Without this every poll fanned out one jobs request per run (up to 20 at once),
+ * which tripped GitHub's secondary rate limit for everything else on the machine using `gh`.
+ */
+const completedJobsCache = new Map<number, { updatedAt: string | null; jobs: CiJob[] }>();
+const COMPLETED_JOBS_CACHE_LIMIT = 500;
+/** Jobs requests in flight at once; GitHub's secondary limit punishes concurrency. */
+const JOBS_CONCURRENCY = 4;
+
+export function clearGitHubActionsJobsCache(): void {
+  completedJobsCache.clear();
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index] as T);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
+
 /** Every workflow run in the project, newest per workflow and branch. */
 export async function listGitHubActionsRuns(input: { api: GitHubApiGet }): Promise<CiRun[]> {
   const runsResponse = RunsResponseSchema.parse(
@@ -119,31 +150,47 @@ export async function listGitHubActionsRuns(input: { api: GitHubApiGet }): Promi
     if (!latestPerWorkflow.has(key)) latestPerWorkflow.set(key, run);
   }
   const runs = [...latestPerWorkflow.values()].slice(0, MAX_RUNS);
-  return Promise.all(
-    runs.map(async (run) => {
+  return mapWithConcurrency(runs, JOBS_CONCURRENCY, async (run) => {
+    const status = mapGitHubStatus(run.status, run.conclusion);
+    const finished = status !== "running" && status !== "queued";
+    const updatedAt = run.updated_at ?? null;
+    const cached = completedJobsCache.get(run.id);
+    let jobs: CiJob[];
+    if (finished && cached && cached.updatedAt === updatedAt) {
+      jobs = cached.jobs;
+    } else {
       const jobsResponse = JobsResponseSchema.parse(
         await input.api(
           `repos/{owner}/{repo}/actions/runs/${run.id}/jobs?per_page=100&filter=latest`,
         ),
       );
-      const jobs = jobsResponse.jobs.map(toJob);
-      const status = mapGitHubStatus(run.status, run.conclusion);
-      return {
-        id: `githubActions:run:${run.id}`,
-        provider: "githubActions",
-        pipeline: run.name ?? "Workflow",
-        branch: run.head_branch ?? null,
-        number: run.run_number,
-        trigger: run.event ?? null,
-        status,
-        progress: summarizeRunProgress(status, jobs),
-        startedAt: run.run_started_at ?? null,
-        completedAt: status === "running" || status === "queued" ? null : (run.updated_at ?? null),
-        url: run.html_url ?? null,
-        jobs,
-      } satisfies CiRun;
-    }),
-  );
+      jobs = jobsResponse.jobs.map(toJob);
+      if (finished) {
+        completedJobsCache.delete(run.id);
+        completedJobsCache.set(run.id, { updatedAt, jobs });
+        if (completedJobsCache.size > COMPLETED_JOBS_CACHE_LIMIT) {
+          const oldest = completedJobsCache.keys().next().value;
+          if (oldest !== undefined) completedJobsCache.delete(oldest);
+        }
+      } else {
+        completedJobsCache.delete(run.id);
+      }
+    }
+    return {
+      id: `githubActions:run:${run.id}`,
+      provider: "githubActions",
+      pipeline: run.name ?? "Workflow",
+      branch: run.head_branch ?? null,
+      number: run.run_number,
+      trigger: run.event ?? null,
+      status,
+      progress: summarizeRunProgress(status, jobs),
+      startedAt: run.run_started_at ?? null,
+      completedAt: status === "running" || status === "queued" ? null : (run.updated_at ?? null),
+      url: run.html_url ?? null,
+      jobs,
+    } satisfies CiRun;
+  });
 }
 
 /** `gh api <path>` for the checkout, returned as text (job logs are plain text, not JSON). */

@@ -1,5 +1,15 @@
-import { describe, expect, it } from "vitest";
-import { listGitHubActionsRuns, mapGitHubStatus } from "./github-actions.js";
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  clearGitHubActionsJobsCache,
+  listGitHubActionsRuns,
+  mapGitHubStatus,
+} from "./github-actions.js";
+import { listCiRuns, resetCiServiceState } from "./ci-service.js";
+
+beforeEach(() => {
+  clearGitHubActionsJobsCache();
+  resetCiServiceState();
+});
 
 function fakeApi(responses: Record<string, unknown>) {
   const calls: string[] = [];
@@ -155,5 +165,56 @@ describe("listGitHubActionsRuns across branches", () => {
       ["main", 9],
       ["feature/x", 8],
     ]);
+  });
+});
+
+describe("GitHub Actions request volume", () => {
+  const run = (id: number, status: string, updatedAt = "2026-01-01T00:00:00Z") => ({
+    id,
+    name: "CI",
+    workflow_id: id,
+    run_number: id,
+    status,
+    conclusion: status === "completed" ? "success" : null,
+    head_branch: "main",
+    updated_at: updatedAt,
+  });
+
+  it("fetches jobs for a finished run once and re-fetches running ones", async () => {
+    const calls: string[] = [];
+    const api = async (path: string) => {
+      calls.push(path);
+      if (path.includes("/jobs")) return { jobs: [] };
+      return { workflow_runs: [run(1, "completed"), run(2, "in_progress")] };
+    };
+    await listGitHubActionsRuns({ api });
+    await listGitHubActionsRuns({ api });
+    expect(calls.filter((p) => p.includes("runs/1/jobs"))).toHaveLength(1);
+    expect(calls.filter((p) => p.includes("runs/2/jobs"))).toHaveLength(2);
+  });
+
+  it("shares one fetch across concurrent callers and backs off after a rate limit", async () => {
+    let clock = 0;
+    resetCiServiceState(() => clock);
+    let calls = 0;
+    let fail = false;
+    const githubApi = async (path: string) => {
+      calls++;
+      if (fail) throw new Error("gh: HTTP 429: You have exceeded a secondary rate limit");
+      return path.includes("/jobs") ? { jobs: [] } : { workflow_runs: [run(1, "completed")] };
+    };
+    const list = () => listCiRuns({ branch: "main", repoRoot: "/repo", githubApi });
+    await Promise.all([list(), list(), list()]);
+    expect(calls).toBe(2);
+
+    clock = 60_000;
+    fail = true;
+    const limited = await list();
+    expect(limited.providerErrors).toHaveLength(1);
+    const before = calls;
+    clock = 120_000;
+    const cooled = await list();
+    expect(calls).toBe(before);
+    expect(cooled.runs).toHaveLength(1);
   });
 });
