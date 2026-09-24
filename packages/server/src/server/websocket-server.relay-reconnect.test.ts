@@ -70,6 +70,9 @@ const sessionMock = vi.hoisted(() => {
     setRole = vi.fn((role: string) => {
       this.args.role = role;
     });
+    setLocalityTrusted = vi.fn((localityTrusted: boolean) => {
+      this.args.localityTrusted = localityTrusted;
+    });
     allowsPermission = vi.fn(() => true);
     publish = vi.fn((message: unknown) => {
       const onMessage = this.args.onMessage as ((message: unknown) => void) | undefined;
