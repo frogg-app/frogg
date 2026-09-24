@@ -30,7 +30,7 @@ the same signing key. The native module reads the installed app's own certificat
 whether it is the publicly known Android debug key, and the picker offers `-unsigned`
 (debug-signed) or the plain APK to match. When only the mismatched build exists, the app says
 so instead of starting an install Android would reject. This is the part the earlier prototype
-(recorded in `docs/OUTSTANDING-WORK.md`) got wrong: it hardcoded arm64 and refused unsigned
+(recorded in the since-removed outstanding-work note) got wrong: it hardcoded arm64 and refused unsigned
 assets, which are exactly the assets every current install needs.
 
 **ABI order comes from the device.** `Build.SUPPORTED_ABIS` is walked in preference order and
