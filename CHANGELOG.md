@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.38 — 2026-09-24
+
+- Sessions auto-resume after a provider usage limit: the daemon queues a resume prompt a
+  minute after the reset. The composer shows a countdown that can be cancelled; turn it off
+  with the host setting (`daemon.autoResumeOnUsageLimit`, on by default).
+- Sidebar drafts are listed inside the project they target.
+- Host security: critical findings can now be marked **This is intended**, so a sandboxed
+  host that is deliberately reachable without a password no longer shows a red dot.
+
 ## 1.5.37 — 2026-09-24
 
 - CI pane: expanding a finished GitHub Actions job offers **Add to chat**, which saves the
