@@ -171,7 +171,7 @@ export function createAuthCommand(): Command {
     auth
       .command("trust-lan")
       .description(
-        "on: private-network clients connect without pairing or a password (default); off: they must pair",
+        `on: private-network clients connect without pairing or a password; off: they must pair (default: ${brand.daemon.trustLan ? "on" : "off"})`,
       )
       .argument("<mode>", "on or off"),
   )

@@ -1,5 +1,6 @@
 import type { IncomingMessage } from "node:http";
 import net from "node:net";
+import { brand } from "@frogg/branding";
 
 import type { ClaimStore, DeviceRecord } from "./claim-store.js";
 
@@ -10,7 +11,7 @@ import type { ClaimStore, DeviceRecord } from "./claim-store.js";
  * - Loopback clients with no password stay open: a single-machine setup (CLI,
  *   desktop app, dev daemon) must never be locked out of its own daemon.
  * - Private-network clients (RFC 1918, link-local, ULA) are treated like
- *   loopback while `daemon.auth.trustLan` is on (the default): no bearer, no
+ *   loopback while `daemon.auth.trustLan` is on (the brand default): no bearer, no
  *   claim gate. Turning it off makes the LAN behave like the public internet.
  * - Public clients need a bearer. Before the first device pairs ("unclaimed")
  *   no bearer can succeed, and the web UI shows the claim page instead; after
@@ -25,7 +26,11 @@ export type TrustedProxiesSetting = true | readonly string[];
 /** Where a request comes from, after trusted proxies are resolved. */
 export type ClientLocality = "loopback" | "lan" | "public";
 
-export const DEFAULT_TRUST_LAN = true;
+/**
+ * brand.json `daemon.trustLan`: on for upstream Frogg, off for every other brand
+ * unless its manifest opts in. Used wherever config.json does not say.
+ */
+export const DEFAULT_TRUST_LAN: boolean = brand.daemon.trustLan;
 
 type RequestLike = Pick<IncomingMessage, "headers" | "socket">;
 
