@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.40 — 2026-09-24
+
+- Branded builds can lock providers and models in `brand.json`. `providers.allowed` removes
+  every other provider: the daemon never loads it and ignores its `config.json` entry, and the
+  app's add-provider catalog leaves it out. `providers.models` takes allow/deny patterns per
+  provider (`"opencode": { "allow": ["ollama/*"] }`); rejected models are hidden from the picker
+  and refused when an agent is created, resumed or switched.
+- Every brand other than `frogg` now ships OpenCode's hosted `opencode/*` models (free ones
+  included) off. Naming an `opencode` model policy in `brand.json` replaces that default.
+
 ## 1.5.39 — 2026-09-24
 
 - CI pane no longer trips GitHub's secondary rate limit (which also broke app update checks):
