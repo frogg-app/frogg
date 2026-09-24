@@ -3532,6 +3532,7 @@ export const fr: TranslationResources = {
         restart: {
           title: "Redémarrer le démon",
           hint: "Redémarre le processus démon. L'application se reconnectera automatiquement",
+          action: "Redémarrer",
           restarting: "Redémarrage...",
           unableToReconnectTitle: "Impossible de se reconnecter",
           unableToReconnectMessage:

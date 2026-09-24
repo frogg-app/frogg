@@ -3461,6 +3461,7 @@ export const ko: TranslationResources = {
         restart: {
           title: "데몬 재시작",
           hint: "데몬 프로세스를 재시작합니다. 앱이 자동으로 다시 연결됩니다",
+          action: "재시작",
           restarting: "재시작 중...",
           unableToReconnectTitle: "다시 연결할 수 없습니다",
           unableToReconnectMessage:

@@ -3505,6 +3505,7 @@ export const en = {
         restart: {
           title: "Restart daemon",
           hint: "Restarts the daemon process. The app will reconnect automatically",
+          action: "Restart",
           restarting: "Restarting...",
           unableToReconnectTitle: "Unable to reconnect",
           unableToReconnectMessage:

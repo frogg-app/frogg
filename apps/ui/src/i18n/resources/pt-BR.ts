@@ -3505,6 +3505,7 @@ export const ptBR: TranslationResources = {
         restart: {
           title: "Reiniciar daemon",
           hint: "Reinicia o processo do daemon. O app reconectará automaticamente",
+          action: "Reiniciar",
           restarting: "Reiniciando...",
           unableToReconnectTitle: "Não foi possível reconectar",
           unableToReconnectMessage:

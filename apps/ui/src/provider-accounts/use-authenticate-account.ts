@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import type { ProviderAccountState } from "@frogg/protocol/provider-accounts";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
-import { useWorkspace, useWorkspaceKeys } from "@/stores/session-store-hooks";
+import { useTerminalCapableWorkspace } from "@/stores/session-store-hooks";
 
 /**
  * Signing an account in means running the provider's own interactive login in a
@@ -15,15 +15,14 @@ import { useWorkspace, useWorkspaceKeys } from "@/stores/session-store-hooks";
  * Terminals are workspace-scoped end to end (the daemon requires a workspace it
  * can resolve, and the only terminal view lives in a workspace tab), so the
  * login runs in one of the host's existing workspaces. The working directory is
- * irrelevant to a login command; with no workspace on the host there is nowhere
- * to show a terminal, and the action is disabled instead.
+ * irrelevant to a login command, but it must exist: workspaces with no directory
+ * cannot host a terminal, so any workspace that has one will do and only a host
+ * without a single such workspace disables the action.
  */
 export function useAuthenticateProviderAccount(serverId: string) {
   const { t } = useTranslation();
   const client = useHostRuntimeClient(serverId);
-  const workspaceKeys = useWorkspaceKeys(serverId);
-  const hostWorkspaceKey = workspaceKeys[0] ?? null;
-  const workspace = useWorkspace(serverId, hostWorkspaceKey);
+  const workspace = useTerminalCapableWorkspace(serverId);
   const target = useMemo(
     () =>
       workspace?.workspaceDirectory

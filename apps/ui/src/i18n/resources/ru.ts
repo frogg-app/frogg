@@ -3504,6 +3504,7 @@ export const ru: TranslationResources = {
         restart: {
           title: "Перезапустить демон",
           hint: "Перезапускает процесс демона. Приложение автоматически переподключится",
+          action: "Перезапустить",
           restarting: "Перезапуск...",
           unableToReconnectTitle: "Не удалось переподключиться",
           unableToReconnectMessage:

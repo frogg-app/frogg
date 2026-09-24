@@ -3524,6 +3524,7 @@ export const es: TranslationResources = {
         restart: {
           title: "Reiniciar demonio",
           hint: "Reinicia el proceso del demonio. La aplicación se volverá a conectar automáticamente",
+          action: "Reiniciar",
           restarting: "Reiniciando...",
           unableToReconnectTitle: "No se puede volver a conectar",
           unableToReconnectMessage:

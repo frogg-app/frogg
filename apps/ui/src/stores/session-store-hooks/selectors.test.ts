@@ -11,6 +11,7 @@ import {
   selectProjectOrder,
   selectRecommendedProjectPaths,
   selectWorkspace,
+  selectTerminalCapableWorkspace,
   selectWorkspaceDirectory,
   selectWorkspaceFields,
   selectWorkspaceKeys,
@@ -278,6 +279,30 @@ describe("selectWorkspace", () => {
     expect(tracked.current).toBe(before);
 
     tracked.stop();
+  });
+});
+
+describe("selectTerminalCapableWorkspace", () => {
+  it("skips workspaces with no directory instead of giving up on the host", () => {
+    const directoryless = createWorkspace({
+      id: "wks_no_directory",
+      projectId: "project-a",
+      workspaceDirectory: "",
+    });
+    const usable = createWorkspace({
+      id: "wks_usable",
+      projectId: "project-b",
+      workspaceDirectory: "/Users/dev/project",
+    });
+    initializeWorkspaces([directoryless, usable]);
+
+    expect(selectTerminalCapableWorkspace(useSessionStore.getState(), SERVER_ID)).toBe(usable);
+  });
+
+  it("returns null when no workspace on the host has a directory", () => {
+    initializeWorkspaces([createWorkspace({ id: "wks_no_directory", workspaceDirectory: "" })]);
+
+    expect(selectTerminalCapableWorkspace(useSessionStore.getState(), SERVER_ID)).toBeNull();
   });
 });
 

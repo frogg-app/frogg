@@ -117,6 +117,31 @@ export function selectWorkspaceDirectory(
   return selectWorkspace(state, serverId, workspaceId)?.workspaceDirectory || null;
 }
 
+/**
+ * The first workspace on the host that has a real directory. A workspace whose
+ * `workspaceDirectory` is empty cannot host a terminal, so callers that need
+ * somewhere to run one (provider sign-in) must skip it rather than give up on
+ * the host: map order is not a promise that entry zero is usable.
+ */
+export function selectTerminalCapableWorkspace(
+  state: SessionsSnapshot,
+  serverId: string | null,
+): WorkspaceDescriptor | null {
+  if (!serverId) {
+    return null;
+  }
+  const workspaces = state.sessions[serverId]?.workspaces;
+  if (!workspaces) {
+    return null;
+  }
+  for (const workspace of workspaces.values()) {
+    if (workspace.workspaceDirectory) {
+      return workspace;
+    }
+  }
+  return null;
+}
+
 export function selectWorkspaceExists(
   state: SessionsSnapshot,
   serverId: string | null,

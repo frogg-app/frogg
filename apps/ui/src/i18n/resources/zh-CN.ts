@@ -3387,6 +3387,7 @@ export const zhCN: TranslationResources = {
         restart: {
           title: "重启 Daemon",
           hint: "重启 Daemon 进程。应用会自动重新连接",
+          action: "重启",
           restarting: "正在重启...",
           unableToReconnectTitle: "无法重新连接",
           unableToReconnectMessage: "{{name}} 没有重新上线。请确认它已重启。",

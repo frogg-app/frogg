@@ -3440,6 +3440,7 @@ export const ar: TranslationResources = {
         restart: {
           title: "إعادة تشغيل البرنامج الخفي",
           hint: "إعادة تشغيل عملية البرنامج الخفي. سيتم إعادة الاتصال بالتطبيق تلقائيًا",
+          action: "إعادة التشغيل",
           restarting: "جارٍ إعادة التشغيل...",
           unableToReconnectTitle: "غير قادر على إعادة الاتصال",
           unableToReconnectMessage: "لم يعد{{name}}متصلاً بالإنترنت. يرجى التحقق من إعادة تشغيله.",

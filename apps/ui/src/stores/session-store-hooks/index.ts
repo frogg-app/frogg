@@ -14,6 +14,7 @@ import {
   selectWorkspaceDirectory,
   selectWorkspaceExists,
   selectWorkspaceFields,
+  selectTerminalCapableWorkspace,
   selectWorkspaceKeys,
   selectWorkspaceOrderByScope,
   selectWorkspaceStatusesForBadges,
@@ -136,6 +137,14 @@ export function useWorkspaceKeys(serverId: string | null): string[] {
     useSessionStore,
     (state) => selectWorkspaceKeys(state, serverId),
     workspaceEqualityFns.deep,
+  );
+}
+
+export function useTerminalCapableWorkspace(serverId: string | null): WorkspaceDescriptor | null {
+  return useStoreWithEqualityFn(
+    useSessionStore,
+    (state) => selectTerminalCapableWorkspace(state, serverId),
+    workspaceEqualityFns.identity,
   );
 }
 

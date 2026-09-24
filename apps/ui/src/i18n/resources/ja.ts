@@ -3488,6 +3488,7 @@ export const ja: TranslationResources = {
         restart: {
           title: "デーモンを再起動",
           hint: "デーモンプロセスを再起動します。アプリは自動的に再接続します",
+          action: "再起動",
           restarting: "再起動中...",
           unableToReconnectTitle: "再接続できません",
           unableToReconnectMessage:

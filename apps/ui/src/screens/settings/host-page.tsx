@@ -678,7 +678,7 @@ function RestartDaemonCard({ host }: { host: HostProfile }) {
         >
           {isRestarting
             ? t("settings.host.daemon.restart.restarting")
-            : t("settings.host.daemon.restart.confirm")}
+            : t("settings.host.daemon.restart.action")}
         </Button>
       </View>
     </View>
