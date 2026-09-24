@@ -63,7 +63,9 @@ Claim mode is the locked-down posture for a daemon on a network you do not contr
 - `daemon.auth.claimScope: "local"` (`FROGG_CLAIM_SCOPE=local`) narrows who can claim:
   only a loopback client (after trusted-proxy resolution) presenting the daemon's local
   token (`~/.frogg/local-token`) as its bearer. Everyone else gets `403`. Offers, pairing
-  codes and approvals are unaffected. The default is `"any"`. To claim on the host:
+  codes and approvals are unaffected. The default is `"any"`. The daemon reads it at startup,
+so restart after changing it; a daemon older than the key refuses a `config.json` that
+contains it. To claim on the host:
 
   ```sh
   curl -X POST http://127.0.0.1:9999/api/setup/claim \
@@ -92,6 +94,11 @@ LAN trust off and claim mode on. All are defaults for a daemon you have not conf
 `FROGG_LISTEN`, `FROGG_CLAIM_MODE`, `FROGG_TRUST_LAN` or `FROGG_CLAIM_SCOPE` in the daemon's
 environment (under a brand's own prefix for a branded build).
 
+Turning claim mode off hands LAN access back to `trustLan`. If `trustLan` is `true`, from
+`config.json`, the environment, the brand, or a daemon older than the brand's `trustLan`
+default, every private-network client connects with no credential. Set `trustLan: false`
+whenever you turn claim mode off on a network you do not control.
+
 ### Turning claim mode on and off
 
 ```sh
@@ -115,6 +122,7 @@ The legacy spelling `frogg daemon claim-mode` works too.
 | Tailscale / VPN | Pair devices (CGNAT addresses are not "private"), or set a password |
 | Docker | Set `FROGG_PASSWORD`; container networking hides real client addresses |
 | Public internet | Do not expose the daemon directly. Use a VPN, SSH, or a TLS reverse proxy plus a password |
+| Fleet installed by script | Claim mode, `trustLan: false`, `claimScope: "local"`, pinned listen and version. See [provisioning](/docs/self-hosting/provisioning/) |
 
 ## Pairing
 
@@ -122,7 +130,7 @@ Paired devices hold a random credential; the daemon stores only its SHA-256 in
 `~/.frogg/principals.json` (mode 0600). See
 [connect and pair](/docs/getting-started/connect-and-pair/).
 
-There are four ways a device gets a credential:
+A device gets a credential in one of these ways:
 
 | Route | How |
 | ----- | --- |
@@ -187,11 +195,10 @@ using is allowed, and ends that session.
 Limits:
 
 - There is no per-device revoke or role change from the CLI. `frogg auth reset-claim`
-  removes all devices at once.
-- The daemon has **no last-owner guard**: the last owner can be demoted or revoked, and a
-  daemon with no owner can only be recovered from a shell on its own machine (loopback is
-  trusted, so `frogg auth reset-claim` still works there). The app warns before such a
-  change, but that warning is the client being careful — it is not enforced.
+  removes all devices at once and clears the claim latch. It edits the files in the daemon
+  home directly, so it needs a shell on the host, not a connection.
+- The daemon refuses to revoke or demote the **last owner**, including an owner revoking
+  itself. Promote another device to owner first.
 
 ### Pairing links are confirmed, not automatic
 
@@ -214,11 +221,16 @@ as untrusted text. See
 
 ## Passwords
 
-`frogg auth set-password` stores a scrypt hash (N=2^15, r=8, p=1) in `daemon.auth.password`;
-bcrypt hashes written by older daemons are still accepted on login. `FROGG_PASSWORD` in the
+`frogg auth set-password` prompts for a password on a terminal and stores a scrypt hash
+(N=2^15, r=8, p=1) in `daemon.auth.password`; bcrypt hashes written by older daemons are
+still accepted on login. `FROGG_PASSWORD` (`<PREFIX>_PASSWORD` for a branded build) in the
 daemon's environment overrides the stored hash, and while it does, the app reports the
-setting as environment-controlled rather than letting you edit it. A password applies to
-every client, including loopback, the web app and the MCP endpoint.
+setting as environment-controlled rather than letting you edit it. The CLI reads the same
+variable as its credential. A password applies to every client, including loopback, the web
+app and the MCP endpoint, and a daemon with a password counts as claimed.
+
+Neither the daemon nor the CLI takes a password as a command-line argument. For scripted
+installs, see [provisioning](/docs/self-hosting/provisioning/#4-pass-a-password-through-the-environment-never-argv).
 
 ## Host and origin checks
 
@@ -247,7 +259,7 @@ To reach one from another device, use the service URL the daemon hands out
 daemon's service proxy carry the request. The proxy serves loopback clients directly; any
 other client needs a paired device credential or the daemon password, exactly like the rest
 of the API. Being on a trusted LAN is deliberately not enough here, because `trustLan`
-defaults on.
+defaults on for `frogg`.
 
 `daemon.workspaceServices.bindHost: "0.0.0.0"` puts dev servers back on every interface.
 That is an explicit choice to expose unauthenticated ports to the network; prefer the proxy.
