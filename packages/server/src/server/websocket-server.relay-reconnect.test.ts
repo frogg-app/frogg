@@ -493,7 +493,6 @@ async function attachDirectAndHello(params: {
     params.socket,
     createDirectRequest(),
     undefined,
-    false,
     params.admission,
   );
   params.socket.emit("message", JSON.stringify(createHelloMessage(params.clientId)));
