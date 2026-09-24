@@ -25,6 +25,8 @@ import { createSshTunnel } from "../ssh/ssh-tunnel.js";
 export interface ConnectOptions {
   host?: string;
   timeout?: number;
+  /** Daemon home whose local-token authenticates a loopback connection (default: the CLI's home). */
+  home?: string;
 }
 
 export interface DaemonConnectionCommandError {
@@ -413,7 +415,7 @@ export async function connectToDaemon(options?: ConnectOptions): Promise<DaemonC
       throw new Error(`Unable to connect to ${brand.name} daemon via ${hosts.join(", ")}`);
     }
     const host = hosts[index];
-    const password = resolveDaemonCredential(host);
+    const password = resolveDaemonCredential(host, { home: options?.home });
     const result = await tryConnectHost(host, password, clientId, timeout, nodeWebSocketFactory);
     if ("client" in result) {
       return result.client;

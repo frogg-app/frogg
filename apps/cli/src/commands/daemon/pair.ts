@@ -2,15 +2,10 @@ import { brand } from "@frogg/branding";
 import { confirm, isCancel, log } from "@clack/prompts";
 import { Command } from "commander";
 import chalk from "chalk";
-import {
-  generateLocalPairingOffer,
-  getOrCreateServerId,
-  loadConfig,
-  resolveFroggHome,
-} from "@frogg/server";
+import { generateLocalPairingOffer, getOrCreateServerId, loadConfig } from "@frogg/server";
 import { resolveDaemonCredential, tryConnectToDaemon } from "../../utils/client.js";
 import { DaemonHttpError, daemonHttpJson, resolveLoopbackHttpBase } from "./daemon-http.js";
-import { resolveLocalDaemonState } from "./local-daemon.js";
+import { resolveLocalDaemonState, resolveLocalFroggHome } from "./local-daemon.js";
 import { addJsonOption } from "../../utils/command-options.js";
 import { formatPairingInstructions } from "../../output/pairing.js";
 import { buildPairingDeepLink } from "@frogg/protocol/connection-offer";
@@ -164,6 +159,7 @@ async function resolveDaemonPairingOffer(
 ): Promise<PairingOffer | null> {
   const client = await tryConnectToDaemon({
     host: listen,
+    home: froggHome,
     timeout: PAIRING_DAEMON_RPC_TIMEOUT_MS,
   });
   if (!client) return null;
@@ -271,7 +267,6 @@ export async function runPairCommand(
   options: PairOptions,
   dependencyOverrides: Partial<PairCommandDependencies> = {},
 ): Promise<void> {
-  if (options.home) process.env[`${brand.envPrefix}_HOME`] = options.home;
   const dependencies: PairCommandDependencies = {
     resolveOffer: resolveLocalPairingOffer,
     resolveAccessMode: resolveDaemonAccessMode,
@@ -282,7 +277,8 @@ export async function runPairCommand(
     ...dependencyOverrides,
   };
 
-  const froggHome = resolveFroggHome();
+  // --home decides every lookup below, including the local-token bearer.
+  const froggHome = resolveLocalFroggHome(options.home);
   let pairing: PairingOffer;
   try {
     pairing = await dependencies.resolveOffer({
@@ -313,7 +309,7 @@ export async function runPairCommand(
     pairing,
     options,
     dependencies.output,
-    await dependencies.resolveAccessMode(options.home),
+    await dependencies.resolveAccessMode(froggHome),
   );
 }
 

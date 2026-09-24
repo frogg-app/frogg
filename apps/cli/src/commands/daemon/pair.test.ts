@@ -13,6 +13,7 @@ import {
   type PairCommandOutput,
   type PairingOffer,
 } from "./pair.js";
+import { tryConnectToDaemon } from "../../utils/client.js";
 
 const disabledOffer: PairingOffer = { relayEnabled: false, url: null, qr: null };
 const enabledOffer: PairingOffer = {
@@ -259,5 +260,45 @@ describe("direct claim offer over loopback HTTP", () => {
   test("claimed daemon without a token -> PairingAuthError, not a silent null", async () => {
     await expect(resolveDirectClaimOffer(listen, home)).rejects.toBeInstanceOf(PairingAuthError);
     expect(seenAuth).toEqual([undefined]);
+  });
+
+  test("the daemon WebSocket connection sends the --home local token", async () => {
+    writeFileSync(path.join(home, "local-token"), `${TOKEN}\n`, { mode: 0o600 });
+    vi.stubEnv("FROGG_HOME", mkdtempSync(path.join(home, "other-")));
+    const upgradeAuth: Array<string | undefined> = [];
+    server.on("upgrade", (req, socket) => {
+      upgradeAuth.push(req.headers.authorization);
+      socket.destroy();
+    });
+    expect(await tryConnectToDaemon({ host: listen, home, timeout: 500 })).toBeNull();
+    expect(upgradeAuth).toEqual([`Bearer ${TOKEN}`]);
+  });
+});
+
+describe("daemon pair --home", () => {
+  test("resolves every lookup against --home without touching the environment", async () => {
+    const home = mkdtempSync(path.join(tmpdir(), "frogg-pair-home-"));
+    const other = mkdtempSync(path.join(tmpdir(), "frogg-pair-env-"));
+    vi.stubEnv("FROGG_HOME", other);
+    try {
+      const resolveOffer = vi.fn(async () => enabledOffer);
+      const accessMode = vi.fn(resolveAccessMode);
+      await runPairCommand(
+        { home, json: true },
+        {
+          resolveOffer,
+          resolveAccessMode: accessMode,
+          isInteractive: () => false,
+          output: createRecordedOutput(),
+        },
+      );
+      expect(resolveOffer).toHaveBeenCalledWith({ froggHome: home, enableRelay: false });
+      expect(accessMode).toHaveBeenCalledWith(home);
+      expect(process.env.FROGG_HOME).toBe(other);
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(home, { recursive: true, force: true });
+      rmSync(other, { recursive: true, force: true });
+    }
   });
 });

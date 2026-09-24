@@ -105,7 +105,11 @@ export async function mintPairingCode(options: PairCodeOptions): Promise<PairCod
   const role = parseRole(options.role);
   const ttlSeconds = parseTtlSeconds(options.ttl);
   const state = resolveLocalDaemonState({ home: options.home });
-  const client = await tryConnectToDaemon({ host: state.listen, timeout: PAIRING_RPC_TIMEOUT_MS });
+  const client = await tryConnectToDaemon({
+    host: state.listen,
+    home: state.home,
+    timeout: PAIRING_RPC_TIMEOUT_MS,
+  });
   if (!client) {
     throw new Error(
       `No running ${brand.name} daemon answered on ${state.listen}. Start it with \`${brand.cliName} start\`.`,
