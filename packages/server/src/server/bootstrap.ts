@@ -766,6 +766,7 @@ export async function createFroggDaemon(
   const authConfig: DaemonAuthConfig = {
     ...config.auth,
     limiter: authFailureLimiter,
+    localToken,
     access: createAccessPolicy({
       claimStore,
       getTrustedProxies: () => daemonConfigStore.get().trustedProxies ?? ["loopback"],
@@ -1120,7 +1121,6 @@ export async function createFroggDaemon(
     hasPassword: () => Boolean(config.auth?.password),
     hasLocalCredential: async (req) => {
       const token = extractHttpBearerToken(req.header("authorization"));
-      if (localToken.matches(token)) return true;
       // An offer mints an owner credential: only an owner may ask for one.
       return hasRealCredential(authConfig, req, token, "owner");
     },

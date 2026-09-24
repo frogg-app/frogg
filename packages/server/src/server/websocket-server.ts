@@ -161,6 +161,8 @@ export interface SessionAdmission {
   role?: DeviceRole;
   /** How the connection reached the daemon; decides the role when no device is known. */
   transport?: SessionTransport;
+  /** Admitted on locality alone, with no credential presented. */
+  localityTrusted?: boolean;
 }
 
 /** Sessions are never shared across device credentials, whatever the principal. */
@@ -521,6 +523,7 @@ interface SocketSessionOptions {
   clientCapabilities: Record<string, unknown> | null;
   permissions: readonly DaemonPermission[];
   role: DeviceRole;
+  localityTrusted: boolean;
   connectionLogger: pino.Logger;
   onMessage: (message: SessionOutboundMessage) => void;
   onMessageToSource?: (source: object, message: SessionOutboundMessage) => void;
@@ -1573,6 +1576,7 @@ export class VoiceAssistantWebSocketServer {
       deviceName: params.deviceName ?? null,
       clientType: params.clientType ?? null,
       role: resolveAdmissionRole(admission),
+      localityTrusted: admission.localityTrusted ?? false,
       connectionLogger,
       onMessage: (msg) => {
         if (!connection) {
@@ -1649,6 +1653,8 @@ export class VoiceAssistantWebSocketServer {
       deviceAccess: this.deviceAccess,
       presence: this.presence,
       role: options.role,
+      localityTrusted: options.localityTrusted,
+      isDaemonClaimed: () => this.auth?.access?.isClaimed() ?? false,
       deviceRoles: this.deviceRoleStore
         ? { setRole: (credentialId, role) => this.setCredentialRole(credentialId, role) }
         : undefined,
@@ -1906,6 +1912,7 @@ export class VoiceAssistantWebSocketServer {
       this.syncBrowserToolsClientRegistration(existing);
     }
     existing.session.setRole(resolveAdmissionRole(pending.admission));
+    existing.session.setLocalityTrusted(pending.admission.localityTrusted ?? false);
     existing.sockets.add(ws);
     this.sessions.set(ws, existing);
     pending.identity.sessionId = existing.session.getSessionId();

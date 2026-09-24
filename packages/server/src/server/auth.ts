@@ -32,6 +32,12 @@ export interface DaemonAuthConfig {
   access?: DaemonAccessPolicy;
   /** Failed-attempt throttling, keyed by client address. */
   limiter?: AuthFailureLimiter;
+  /**
+   * The 0600 `$FROGG_HOME/local-token` the local CLI presents as its bearer.
+   * Honoured from loopback/IPC clients only: it proves the caller can read the
+   * daemon's home, which a remote peer never can.
+   */
+  localToken?: { matches(token: string | null | undefined): boolean };
 }
 
 export interface BearerAuthRejectContext {
@@ -222,6 +228,7 @@ export function extractWsBearerToken(protocol: string | null): string | null {
 export type BearerPrincipal =
   | { kind: "device"; device: DeviceRecord }
   | { kind: "password" }
+  | { kind: "local_token" }
   | { kind: "trusted" };
 
 /** How a connection authenticated. A paired device is always identified as one. */
@@ -280,28 +287,46 @@ function resolveDevice(auth: DaemonAuthConfig | undefined, token: string): Devic
   return device;
 }
 
+function matchesLocalToken(
+  auth: DaemonAuthConfig | undefined,
+  req: RequestLike,
+  token: string,
+): boolean {
+  if (!auth?.localToken) return false;
+  if (!(auth.access?.isLoopbackClient(req) ?? true)) return false;
+  return auth.localToken.matches(token);
+}
+
 /**
  * Everything but the password check. Returns a final decision, or the key to
  * throttle under when the token must still be checked against the password.
+ *
+ * A presented bearer is always checked, even where locality alone would admit
+ * the caller: a revoked device or a wrong password must never be quietly
+ * upgraded to locality trust. Only a caller presenting nothing is trusted on
+ * locality.
  */
 function preDecide(
   auth: DaemonAuthConfig | undefined,
   req: RequestLike,
   token: string | null,
 ): BearerDecision | { key: string; token: string; password: string } {
-  // A presented device credential always identifies the device, even where no
-  // bearer is required, so presence and revocation see who it is.
   if (token !== null) {
     const device = resolveDevice(auth, token);
     if (device) return { ok: true, principal: { kind: "device", device } };
+    if (matchesLocalToken(auth, req, token)) return { ok: true, principal: { kind: "local_token" } };
   }
-  if (!requestNeedsBearer(auth, req)) return { ok: true, principal: { kind: "trusted" } };
+  const needsBearer = requestNeedsBearer(auth, req);
+  if (!needsBearer && token === null) return { ok: true, principal: { kind: "trusted" } };
   const key = clientKey(req, auth);
   if (auth?.limiter?.isBlocked(key)) return { ok: false, reason: "rate_limited" };
-  const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
-  if (!hasSecrets) return { ok: false, reason: "unclaimed" };
-  if (token === null) return { ok: false, reason: "missing_token" };
-  if (!auth?.password) {
+  if (needsBearer) {
+    const hasSecrets = Boolean(auth?.password) || (auth?.access?.isClaimed() ?? false);
+    if (!hasSecrets) return { ok: false, reason: "unclaimed" };
+    if (token === null) return { ok: false, reason: "missing_token" };
+  }
+  // A token is presented here (the tokenless trusted case returned above).
+  if (!auth?.password || token === null) {
     auth?.limiter?.recordFailure(key);
     return { ok: false, reason: "invalid_token" };
   }
@@ -384,6 +409,7 @@ export async function hasRealCredential(
   if (token === null) return false;
   const device = resolveDevice(auth, token);
   if (device) return roleSatisfies(device.role, minimumRole);
+  if (matchesLocalToken(auth, req, token)) return true;
   const key = clientKey(req, auth);
   if (!auth?.password || auth.limiter?.isBlocked(key)) return false;
   const ok = await verifyDaemonPassword(token, auth.password);

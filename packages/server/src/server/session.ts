@@ -271,6 +271,10 @@ import {
 import { archiveByScope, type ActiveWorkspaceRef } from "./workspace-archive-service.js";
 import { WorkspaceSetupRuntime } from "./workspace-setup-runtime.js";
 import {
+  OWNER_OFFER_MESSAGE_TYPES,
+  mayMintPairingOffer,
+} from "./authorization/owner-offer-gate.js";
+import {
   SessionAuthorization,
   type DaemonPermission,
   type DeviceRole,
@@ -451,6 +455,10 @@ export interface SessionOptions {
   permissions: readonly DaemonPermission[];
   /** Connecting device's role; owner when the connection has no device credential. */
   role?: DeviceRole;
+  /** Admitted on locality alone; see authorization/owner-offer-gate.ts. */
+  localityTrusted?: boolean;
+  /** Whether the daemon has an owner; gates pairing offers for locality-trusted sessions. */
+  isDaemonClaimed?: () => boolean;
   deviceRoles?: SessionDeviceRoleManagement;
   appVersion?: string | null;
   clientCapabilities?: Record<string, unknown> | null;
@@ -674,6 +682,8 @@ function sessionAccessDefaults(options: SessionOptions): {
 export class Session {
   private readonly clientId: string;
   private readonly authorization: SessionAuthorization;
+  private localityTrusted: boolean;
+  private readonly isDaemonClaimed: () => boolean;
   private readonly deviceRoles: SessionDeviceRoleManagement | null;
   private appVersion: string | null;
   private clientCapabilities: ReadonlySet<ClientCapability>;
@@ -843,6 +853,8 @@ export class Session {
     this.clientId = clientId;
     const access = sessionAccessDefaults(options);
     this.authorization = new SessionAuthorization(permissions, access.role);
+    this.localityTrusted = options.localityTrusted ?? false;
+    this.isDaemonClaimed = options.isDaemonClaimed ?? (() => false);
     this.deviceRoles = access.deviceRoles;
     this.appVersion = appVersion ?? null;
     this.clientCapabilities = parseClientCapabilities(clientCapabilities);
@@ -2063,7 +2075,14 @@ export class Session {
         },
         "agent.session.inbound",
       );
-      if (!this.authorization.allowsInbound(msg)) {
+      if (
+        !this.authorization.allowsInbound(msg) ||
+        (OWNER_OFFER_MESSAGE_TYPES.has(msg.type) &&
+          !mayMintPairingOffer({
+            claimed: this.isDaemonClaimed(),
+            localityTrusted: this.localityTrusted,
+          }))
+      ) {
         const requestId = sessionRequestId(msg);
         if (requestId) {
           this.emit({
@@ -2132,6 +2151,10 @@ export class Session {
 
   public setRole(role: DeviceRole): void {
     this.authorization.replaceRole(role);
+  }
+
+  public setLocalityTrusted(localityTrusted: boolean): void {
+    this.localityTrusted = localityTrusted;
   }
 
   public getRole(): DeviceRole {
