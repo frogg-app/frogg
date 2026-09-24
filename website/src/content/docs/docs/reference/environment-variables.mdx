@@ -125,7 +125,7 @@ that agent's process. The daemon and every other provider keep the real `HOME`.
 | `FROGG_BUNDLE_FILE`     |                             | Install from a local bundle |
 | `FROGG_NO_SERVICE`      |                             | `1` skips the systemd/launchd service |
 | `FROGG_NO_MODIFY_PATH`  |                             | `1` leaves shell startup files alone |
-| `FROGG_LISTEN`          | `0.0.0.0:9999`              | Service listen address |
+| `FROGG_LISTEN`          | brand bind on the brand port (`0.0.0.0:9999` for `frogg`) | Service listen address |
 | `FROGG_HOME`            | `~/.frogg`                    | Service state directory |
 | `FROGG_HEALTH_TIMEOUT`  | `30`                        | Seconds to wait for the new daemon |
 

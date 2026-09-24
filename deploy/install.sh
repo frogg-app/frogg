@@ -24,7 +24,9 @@
 #   FROGG_BUNDLE_FILE   install from a local bundle tarball instead of downloading
 #   FROGG_NO_SERVICE=1  skip service installation
 #   FROGG_NO_MODIFY_PATH=1  leave shell startup files unchanged
-#   FROGG_LISTEN        daemon listen address for the service (default: 0.0.0.0:9999)
+#   FROGG_LISTEN        daemon listen address for the service (default: the distribution's bind
+#                     host and port; 0.0.0.0:9999 for stock Frogg, loopback for
+#                     other brands unless their brand.json sets daemon.bind)
 #   FROGG_HOME          daemon state directory for the service (default: ~/.frogg)
 #   FROGG_HEALTH_TIMEOUT seconds to verify the running version (default: 30)
 set -euo pipefail
@@ -43,6 +45,7 @@ BRAND_DAEMON_PREFIX='frogg-daemon'
 BRAND_ARTIFACT_PREFIX='Frogg'
 BRAND_LEGACY_ARTIFACT_CUTOFF='0.2.16'
 BRAND_PORT='9999'
+BRAND_BIND_HOST='0.0.0.0'
 BRAND_RELEASE_BASE='https://github.com/frogg-app/frogg/releases'
 BRAND_DOCKER_IMAGE='froggapp/frogg'
 BRAND_LEGACY='true'
@@ -61,7 +64,7 @@ fi
 FROGG_INSTALL_DIR="${FROGG_INSTALL_DIR:-${HOME}/.local/share/${BRAND_ID}}"
 FROGG_BIN_DIR="${FROGG_BIN_DIR:-${HOME}/.local/bin}"
 FROGG_RELEASE_BASE="${FROGG_RELEASE_BASE:-${BRAND_RELEASE_BASE}}"
-FROGG_LISTEN="${FROGG_LISTEN:-0.0.0.0:${BRAND_PORT}}"
+FROGG_LISTEN="${FROGG_LISTEN:-${BRAND_BIND_HOST}:${BRAND_PORT}}"
 FROGG_VERSION="${FROGG_VERSION:-}"
 FROGG_BUNDLE_FILE="${FROGG_BUNDLE_FILE:-}"
 FROGG_BUNDLE_URL="${FROGG_BUNDLE_URL:-}"

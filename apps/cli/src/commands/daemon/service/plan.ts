@@ -1,6 +1,8 @@
 import { brand } from "@frogg/branding";
 import path from "node:path";
 
+const brandEnvKey = (suffix: string) => `${brand.envPrefix}_${suffix}`;
+
 /**
  * What "start Frogg when I log in" means on each platform, as data: a file to
  * write and commands to run. Pure — the caller supplies the home directory,
@@ -118,7 +120,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 ExecStart=${exec}
-${stop}${input.persistListen === false ? "" : `Environment=FROGG_LISTEN=${input.listen}\n`}Environment=FROGG_WEB_UI_ENABLED=true
+${stop}${input.persistListen === false ? "" : `Environment=${brandEnvKey("LISTEN")}=${input.listen}\n`}Environment=${brandEnvKey("WEB_UI_ENABLED")}=true
 Environment=${unitQuote(`PATH=${servicePath(input)}`)}
 ${home}${executionEnv}Restart=on-failure
 RestartSec=5
@@ -150,8 +152,8 @@ ${programArguments}
   </array>
   <key>EnvironmentVariables</key>
   <dict>
-${input.persistListen === false ? "" : plistEntry("FROGG_LISTEN", input.listen)}${plistEntry(
-    "FROGG_WEB_UI_ENABLED",
+${input.persistListen === false ? "" : plistEntry(brandEnvKey("LISTEN"), input.listen)}${plistEntry(
+    brandEnvKey("WEB_UI_ENABLED"),
     "true",
   )}${plistEntry("PATH", servicePath(input))}${
     input.froggHome ? plistEntry(`${brand.envPrefix}_HOME`, input.froggHome) : ""
