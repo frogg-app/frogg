@@ -89,14 +89,26 @@ leaves the daemon with no paired devices it recognises. Before its first version
 the daemon copies the original file to `~/.frogg/principals.v1.bak.json` (mode 0600). That
 copy is never overwritten.
 
+`config.json` needs the same care. Its schema is strict, and 1.5.28 refuses a file
+containing keys added since: `daemon.auth.claimMode`, `daemon.auth.claimScope`, or a
+password hash starting with `scrypt$` (1.5.28 accepts only bcrypt). Restore a pre-upgrade
+copy of `config.json` if you kept one; otherwise delete those keys and set the password
+again with the old CLI after the rollback.
+
 To roll back:
 
 ```sh
 frogg daemon stop
 cp ~/.frogg/principals.v1.bak.json ~/.frogg/principals.json
 chmod 600 ~/.frogg/principals.json
+jq 'del(.daemon.auth.claimMode, .daemon.auth.claimScope)
+    | if (.daemon.auth.password // "" | startswith("scrypt$")) then del(.daemon.auth.password) else . end' \
+  ~/.frogg/config.json > config.new && install -m 600 config.new ~/.frogg/config.json && rm config.new
 frogg update --to 1.5.28
 ```
+
+The same rule covers any rollback: a key the older version does not know stops it
+starting. `daemon.auth.claimScope` is not read by 1.5.34 or earlier.
 
 Devices paired after the upgrade aren't in the backup, so pair them again. Role changes and
 renames made since the upgrade are lost too. With no backup, the daemon either never had a
