@@ -307,7 +307,7 @@ counts as claimed. See [provisioning](/docs/self-hosting/provisioning/) for scri
 | `Invalid Host header` (HTTP 403) | You reached the daemon by a hostname it does not allow. Add it: `frogg start --hostnames build-box.lan` or `daemon.hostnames` in config |
 | `requires a password` from the CLI | Set `FROGG_PASSWORD` |
 | `The daemon refused to create a pairing offer (HTTP 401)` from `frogg auth pair` | The CLI could not read the daemon home's `local-token`. Run it as the user that owns the daemon home, or set `FROGG_PASSWORD` |
-| `This daemon can only be claimed from the host itself` (HTTP 403) | The daemon has `claimScope: "local"`. Mint a code on the host with `frogg pair` and redeem that instead |
+| `This daemon can only be claimed from the host itself` (HTTP 403) | The daemon has `claimScope: "local"`. Run `frogg auth claim` on the host, or mint a code there with `frogg pair` and redeem that |
 | Browser shows a pairing page | You are connecting from a non-private address. Pair, or connect over the LAN/VPN |
 | Host says it **no longer accepts this device's saved credential** | The daemon refused the stored credential (device revoked, password changed, or daemon reset). The app deletes it and stops retrying; choose **Pair again** on the host's settings page. A `Too many failed attempts` refusal is temporary and keeps retrying |
 | TLS error on Direct connection | Untick **Use SSL** unless a TLS proxy fronts the daemon |

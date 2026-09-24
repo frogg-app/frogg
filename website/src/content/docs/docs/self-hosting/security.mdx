@@ -65,13 +65,9 @@ Claim mode is the locked-down posture for a daemon on a network you do not contr
   token (`~/.frogg/local-token`) as its bearer. Everyone else gets `403`. Offers, pairing
   codes and approvals are unaffected. The default is `"any"`. The daemon reads it at startup,
 so restart after changing it; a daemon older than the key refuses a `config.json` that
-contains it. To claim on the host:
-
-  ```sh
-  curl -X POST http://127.0.0.1:9999/api/setup/claim \
-    -H "Authorization: Bearer $(cat ~/.frogg/local-token)" \
-    -H 'content-type: application/json' -d '{"claim":true,"deviceName":"Host"}'
-  ```
+contains it. To claim on the host, run `frogg auth claim` (add `--home` for a
+  non-default home, `--device-name` to label the owner, `--json` for automation). It
+  sends the local token over loopback and prints the owner credential once.
 - The claim is **latched**: revoking every device does not reopen it. Only
   `frogg auth reset-claim` on the daemon host clears it.
 - The last owner device cannot be revoked (including signing itself out) or demoted.

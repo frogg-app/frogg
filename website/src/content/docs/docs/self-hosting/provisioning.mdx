@@ -114,7 +114,8 @@ A claim is latched: revoking every device does not reopen it. Only
 owner.
 
 `daemon.auth.claimScope: "local"` removes the race altogether. Only a loopback client
-presenting the local token can claim, and anyone else gets `403`. See
+presenting the local token can claim, and anyone else gets `403`. Claim on the host with
+`frogg auth claim --json`, which prints the owner credential once. See
 [claim mode](/docs/self-hosting/security/#claim-mode).
 
 ### 6. Write lock-down-only keys after the new binary is installed
