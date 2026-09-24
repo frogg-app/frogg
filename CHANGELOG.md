@@ -1,6 +1,18 @@
 # Changelog
 
-## Unreleased
+## 1.5.34 — 2026-09-24
+
+- The daemon restart button in host settings showed a raw translation key
+  instead of its label. The key it asked for belonged to a confirmation step
+  the button no longer has, and no locale ever defined it.
+- Signing a provider account in is no longer blocked on hosts that have a
+  workspace with no directory. Sign-in runs the provider's own login in a
+  terminal, which needs a workspace directory to start in; it looked only at
+  the host's first workspace, so one directoryless workspace at the front
+  disabled sign-in for every account on that host.
+- Release notes are generated again for 1.5.x releases. The changelog parser
+  only recognised a hyphen between a version and its date, so every heading
+  written with an em dash was skipped.
 
 - Pressing a provider in Settings opens the provider sheet, not the old model
   list. The row and the cog led to two different surfaces: the cog opened the
