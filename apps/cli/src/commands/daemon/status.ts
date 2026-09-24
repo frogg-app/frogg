@@ -244,16 +244,20 @@ interface DaemonProbeResult {
   note?: string;
 }
 
-type DaemonAuthProbeFailure = "auth_required" | "auth_failed";
+type DaemonAuthProbeFailure = "auth_required" | "auth_failed" | "auth_rate_limited";
 
-function classifyDaemonAuthProbeFailure(error: unknown): DaemonAuthProbeFailure | null {
+export function classifyDaemonAuthProbeFailure(error: unknown): DaemonAuthProbeFailure | null {
   if (!(error instanceof Error)) return null;
   if (error.message === "Password required") return "auth_required";
   if (error.message === "Incorrect password") return "auth_failed";
+  if (error.message === "Too many failed attempts") return "auth_rate_limited";
   return null;
 }
 
 function describeDaemonAuthProbeFailure(host: string, failure: DaemonAuthProbeFailure): string {
+  if (failure === "auth_rate_limited") {
+    return `Daemon is reachable at ${host} but is temporarily refusing connections after too many failed attempts. Wait and retry.`;
+  }
   if (failure === "auth_required") {
     return `Daemon is reachable at ${host} but requires a password. Set FROGG_PASSWORD and retry.`;
   }
@@ -272,7 +276,8 @@ async function probeDaemonOverWebsocket(args: {
     const authFailure = classifyDaemonAuthProbeFailure(error);
     if (authFailure) {
       return {
-        connectedDaemon: authFailure,
+        // Rate limiting only follows rejected credentials, so report it as auth_failed.
+        connectedDaemon: authFailure === "auth_rate_limited" ? "auth_failed" : authFailure,
         note: describeDaemonAuthProbeFailure(host, authFailure),
       };
     }

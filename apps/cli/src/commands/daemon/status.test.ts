@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { selectRelayStatus } from "./status.js";
+import { classifyDaemonAuthProbeFailure, selectRelayStatus } from "./status.js";
 
 describe("selectRelayStatus", () => {
   const persisted = {
@@ -27,5 +27,16 @@ describe("selectRelayStatus", () => {
 
   test("falls back to persisted config when the daemon cannot report live state", () => {
     expect(selectRelayStatus({ persisted })).toBe("disabled");
+  });
+});
+
+describe("classifyDaemonAuthProbeFailure", () => {
+  test("maps daemon 4401 close reasons", () => {
+    expect(classifyDaemonAuthProbeFailure(new Error("Password required"))).toBe("auth_required");
+    expect(classifyDaemonAuthProbeFailure(new Error("Incorrect password"))).toBe("auth_failed");
+    expect(classifyDaemonAuthProbeFailure(new Error("Too many failed attempts"))).toBe(
+      "auth_rate_limited",
+    );
+    expect(classifyDaemonAuthProbeFailure(new Error("socket hang up"))).toBeNull();
   });
 });
