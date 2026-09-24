@@ -5,7 +5,8 @@ import type { Brand } from "@frogg/branding/schema";
  * deploy SSH session. The SSH channel is the trust anchor: whatever the CLI
  * prints here is what the app then verifies the network endpoint against.
  *
- * Adapter contract (source `pair-code`): `<cli> pair --json` prints,
+ * Adapter contract (source `pair-code`): `<cli> pair --json [--role owner]`
+ * (the role flag when `pair --help` lists it) prints,
  * undecorated when stdout is not a TTY,
  * `{code, host, port, fingerprint, deeplink, expiresAt, role}`, where
  * `deeplink` is `<scheme>://pair/direct?…` and `fingerprint` pins the daemon
@@ -46,7 +47,9 @@ export function buildPairCodeScript(brand: PairCodeBrand): string {
     `cli="$root/current/bin/${brand.cliName}"`,
     `[ -x "$cli" ] || cli=$(command -v ${brand.cliName} 2>/dev/null)`,
     `[ -n "$cli" ] || { echo "${brand.cliName} is not installed on this host" >&2; exit 127; }`,
-    `if "$cli" pair --help >/dev/null 2>&1; then source=pair-code; set -- pair --json; else source=pair; set -- daemon pair --json; fi`,
+    // The deploying device becomes the owner. Older CLIs have `pair` without
+    // `--role`, so the flag is only passed when the help output lists it.
+    `if help=$("$cli" pair --help 2>&1 </dev/null); then source=pair-code; set -- pair --json; case "$help" in *--role*) set -- "$@" --role owner;; esac; else source=pair; set -- daemon pair --json; fi`,
     // stderr passes straight through so the app can show the CLI's own reason.
     `out=$("$cli" "$@" </dev/null); code=$?`,
     `[ "$code" = 0 ] || exit "$code"`,

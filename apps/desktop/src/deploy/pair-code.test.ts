@@ -59,7 +59,7 @@ describe("pairing code over SSH", () => {
     "prefers pair-code when the CLI has it and falls back to pair",
     async () => {
       const withPairCode = await runScript(
-        `[ "$1 $2" = "pair --help" ] && exit 0; [ "$1 $2" = "pair --json" ] || exit 9; echo '{"code":"K7Q2","deeplink":"${link}","host":"10.0.0.2","port":9999,"fingerprint":"SHA256:x","role":"admin"}'`,
+        `[ "$1 $2" = "pair --help" ] && exit 0; [ "$*" = "pair --json" ] || exit 9; echo '{"code":"K7Q2","deeplink":"${link}","host":"10.0.0.2","port":9999,"fingerprint":"SHA256:x","role":"admin"}'`,
       );
       expect(parsePairCodeOutput(`banner\n${withPairCode.stdout}`)).toEqual({
         source: "pair-code",
@@ -68,6 +68,15 @@ describe("pairing code over SSH", () => {
         host: "10.0.0.2",
         port: 9999,
         fingerprint: "SHA256:x",
+      });
+      const withRole = await runScript(
+        `[ "$1 $2" = "pair --help" ] && { echo "  --role <role>  role the redeeming device gets"; exit 0; }; [ "$*" = "pair --json --role owner" ] || { echo "args: $*" >&2; exit 9; }; echo '{"deeplink":"${link}","role":"owner"}'`,
+      );
+      expect(withRole.code).toBe(0);
+      expect(parsePairCodeOutput(withRole.stdout)).toEqual({
+        source: "pair-code",
+        deepLink: link,
+        role: "owner",
       });
       const legacy = await runScript(
         `[ "$1" = pair ] && exit 1; [ "$1 $2 $3" = "daemon pair --json" ] || exit 9; printf '{\\n  "deepLink": "${link}"\\n}\\n'`,

@@ -270,8 +270,9 @@ interface StepContext {
 
 /**
  * Obtains the pairing code over SSH and checks it names the daemon we just
- * installed. A tunnel needs no code — SSH already authenticates the host — so
- * an unavailable code only fails the LAN path.
+ * installed. SSH authenticates the host, but a tunnel still needs the code to
+ * pair as owner and verify the daemon identity, so an unavailable code fails
+ * both the tunnel and the LAN path.
  */
 async function resolvePairing(
   input: DeployToHostInput,
@@ -286,7 +287,7 @@ async function resolvePairing(
   try {
     code = await deps.pairCode(input.target);
   } catch (error) {
-    if (input.network === "lan") context.fail("pair_code_unavailable", message(error));
+    context.fail("pair_code_unavailable", message(error));
   }
   if (!code) return { code: null, offer: null, link: null };
 

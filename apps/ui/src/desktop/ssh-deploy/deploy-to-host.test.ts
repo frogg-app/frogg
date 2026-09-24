@@ -283,13 +283,17 @@ describe("deploy to host", () => {
     });
   });
 
-  it("still connects a tunnel when no pairing code is available, unverified", async () => {
+  it("fails a tunnel deploy when no pairing code is available", async () => {
     const d = deps({
       pairCode: async () => Promise.reject(new Error("already claimed")),
     });
     const { promise, steps } = run("tunnel", d);
-    await expect(promise).resolves.toMatchObject({ verified: false });
-    expect(steps).toContain("pairCode:skipped");
+    await expect(promise).rejects.toMatchObject({
+      step: "pairCode",
+      code: "pair_code_unavailable",
+    });
+    expect(steps).toContain("pairCode:failed");
+    expect(steps).not.toContain("pair:running");
   });
 
   it("needs a pairing code for LAN and maps claim failures to actionable codes", async () => {
