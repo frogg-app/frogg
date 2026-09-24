@@ -334,6 +334,8 @@ pub enum SessionMessage {
     CheckoutForgeSetAutoMergeResponse(CheckoutForgeSetAutoMergeResponse),
     #[serde(rename = "checkout.ci.list_runs.response")]
     CheckoutCiListRunsResponse(CheckoutCiListRunsResponse),
+    #[serde(rename = "checkout.ci.download_job_log.response")]
+    CheckoutCiDownloadJobLogResponse(CheckoutCiDownloadJobLogResponse),
     #[serde(rename = "checkout.github.set_auto_merge.response")]
     CheckoutGithubSetAutoMergeResponse(CheckoutGithubSetAutoMergeResponse),
     #[serde(rename = "checkout.commits.list.response")]
@@ -9042,6 +9044,22 @@ pub struct CheckoutCiListRunsResponsePayloadRunsItemJobsItemStepsItem {
 pub struct CheckoutCiListRunsResponsePayloadProviderErrorsItem {
     pub provider: String,
     pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiDownloadJobLogResponse {
+    pub payload: CheckoutCiDownloadJobLogResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiDownloadJobLogResponsePayload {
+    pub cwd: String,
+    #[serde(rename = "jobId")]
+    pub job_id: String,
+    pub file: serde_json::Value,
+    pub error: serde_json::Value,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

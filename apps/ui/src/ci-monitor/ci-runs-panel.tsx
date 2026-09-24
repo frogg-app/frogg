@@ -36,7 +36,7 @@ function CiRunsPanel() {
       </View>
     );
   }
-  return <CiPane serverId={serverId} cwd={cwd} />;
+  return <CiPane serverId={serverId} workspaceId={workspaceId} cwd={cwd} />;
 }
 
 export const ciRunsPanelRegistration = definePanel("ci_runs", {

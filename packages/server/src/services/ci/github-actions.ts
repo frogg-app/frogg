@@ -145,3 +145,40 @@ export async function listGitHubActionsRuns(input: { api: GitHubApiGet }): Promi
     }),
   );
 }
+
+/** `gh api <path>` for the checkout, returned as text (job logs are plain text, not JSON). */
+export type GitHubApiGetText = (path: string) => Promise<string>;
+
+const JOB_ID_PREFIX = "githubActions:job:";
+
+/** The numeric GitHub job id inside a `githubActions:job:<id>` CI job id, or null. */
+export function parseGitHubActionsJobId(id: string): number | null {
+  if (!id.startsWith(JOB_ID_PREFIX)) return null;
+  const value = Number(id.slice(JOB_ID_PREFIX.length));
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+// oxlint-disable-next-line no-control-regex
+const ANSI_ESCAPE = /\u001b\[[0-9;]*[A-Za-z]/g;
+const LINE_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z /;
+
+/**
+ * A job log as an agent should read it: without the per-line ISO timestamps and
+ * terminal colour codes GitHub keeps, which roughly double the token count and
+ * carry nothing a reader needs.
+ */
+export function cleanGitHubActionsLog(raw: string): string {
+  return raw
+    .replace(/^﻿/, "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(LINE_TIMESTAMP, "").replace(ANSI_ESCAPE, ""))
+    .join("\n");
+}
+
+export async function fetchGitHubActionsJobLog(input: {
+  apiText: GitHubApiGetText;
+  jobId: number;
+}): Promise<string> {
+  const raw = await input.apiText(`repos/{owner}/{repo}/actions/jobs/${input.jobId}/logs`);
+  return cleanGitHubActionsLog(raw);
+}

@@ -1,7 +1,14 @@
-import { useCallback, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { ChevronDown, ChevronRight, ExternalLink, GitBranch, RotateCw } from "lucide-react-native";
+import {
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  GitBranch,
+  MessageSquarePlus,
+  RotateCw,
+} from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import {
   PaneContentToolbar,
@@ -34,6 +41,10 @@ import {
   type CiRun,
 } from "./model";
 import { useCiNow, useCiRuns, type CiRunsState } from "./use-ci-runs";
+import { useCiJobLogToChat, type CiJobLogToChat } from "./use-ci-job-log-to-chat";
+
+/** How a job row attaches its log to the focused chat; null where that is not possible. */
+const CiJobLogContext = createContext<CiJobLogToChat | null>(null);
 
 const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedChevronRight = withUnistyles(ChevronRight);
@@ -43,6 +54,7 @@ const ThemedGitBranch = withUnistyles(GitBranch);
 /** The branch filter's icon when the filter is on; muted is "available", full is "applied". */
 const foregroundColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 const ThemedExternalLink = withUnistyles(ExternalLink);
+const ThemedMessageSquarePlus = withUnistyles(MessageSquarePlus);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 
 /**
@@ -56,13 +68,17 @@ const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
  */
 export function CiPane({
   serverId,
+  workspaceId,
   cwd,
   isOpen = true,
 }: {
   serverId: string;
+  /** Where "Add to chat" sends a job's log; without it the button is not offered. */
+  workspaceId?: string | null;
   cwd: string;
   isOpen?: boolean;
 }) {
+  const jobLogToChat = useCiJobLogToChat({ serverId, workspaceId, cwd });
   const state = useCiRuns({ serverId, cwd, enabled: isOpen });
   // Off by default: the pane opens on the whole project.
   const [branchOnly, setBranchOnly] = useState(false);
@@ -73,15 +89,17 @@ export function CiPane({
   );
   const now = useCiNow(runs.some((run) => isCiActive(run.status)));
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content} testID="ci-pane">
-      <CiToolbar
-        state={state}
-        runs={runs}
-        branchOnly={branchOnly}
-        onToggleBranchOnly={toggleBranchOnly}
-      />
-      <CiPaneBody state={state} runs={runs} branchOnly={branchOnly} now={now} />
-    </ScrollView>
+    <CiJobLogContext.Provider value={jobLogToChat}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} testID="ci-pane">
+        <CiToolbar
+          state={state}
+          runs={runs}
+          branchOnly={branchOnly}
+          onToggleBranchOnly={toggleBranchOnly}
+        />
+        <CiPaneBody state={state} runs={runs} branchOnly={branchOnly} now={now} />
+      </ScrollView>
+    </CiJobLogContext.Provider>
   );
 }
 
@@ -378,7 +396,59 @@ function JobRow({ job, now }: { job: CiJob; now: number }) {
               <Text style={styles.stepLink}>{t("ciMonitor.openLogs")}</Text>
             </Pressable>
           ) : null}
+          <AddJobLogToChat job={job} />
         </View>
+      ) : null}
+    </View>
+  );
+}
+
+/**
+ * Saves the job's log on the daemon and attaches it to the focused chat as a file,
+ * so the agent reads it from disk rather than having it pasted into the prompt.
+ */
+function AddJobLogToChat({ job }: { job: CiJob }) {
+  const { t } = useTranslation();
+  const jobLogToChat = useContext(CiJobLogContext);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const add = useCallback(async () => {
+    if (!jobLogToChat) return;
+    setPending(true);
+    setError(null);
+    try {
+      await jobLogToChat.add(job);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setPending(false);
+    }
+  }, [job, jobLogToChat]);
+  const handlePress = useCallback(() => void add(), [add]);
+
+  if (!jobLogToChat || !jobLogToChat.canAdd(job)) return null;
+  return (
+    <View>
+      <Pressable
+        onPress={handlePress}
+        disabled={pending}
+        style={styles.step}
+        accessibilityRole="button"
+        testID="ci-job-add-log-to-chat"
+      >
+        {pending ? (
+          <ThemedLoadingSpinner size={ICON_SIZE.xs} uniProps={foregroundMutedColorMapping} />
+        ) : (
+          <ThemedMessageSquarePlus size={ICON_SIZE.xs} uniProps={foregroundMutedColorMapping} />
+        )}
+        <Text style={styles.stepLink}>
+          {pending ? t("ciMonitor.addingLogToChat") : t("ciMonitor.addLogToChat")}
+        </Text>
+      </Pressable>
+      {error ? (
+        <Text style={styles.stepError}>
+          {t("ciMonitor.addLogToChatFailed", { message: error })}
+        </Text>
       ) : null}
     </View>
   );
@@ -581,6 +651,10 @@ const styles = StyleSheet.create((theme) => ({
   stepLink: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
+  },
+  stepError: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.destructive,
   },
   divider: {
     height: theme.spacing[1],

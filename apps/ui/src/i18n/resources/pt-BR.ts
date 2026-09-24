@@ -11,6 +11,9 @@ export const ptBR: TranslationResources = {
     refresh: "Atualizar CI",
     openRun: "Abrir execução",
     openLogs: "Abrir logs",
+    addLogToChat: "Adicionar ao chat",
+    addingLogToChat: "Baixando log…",
+    addLogToChatFailed: "Não foi possível anexar o log: {{message}}",
     unsupportedTitle: "Atualize o daemon",
     unsupportedDescription: "O daemon deste host é antigo demais para mostrar execuções de CI.",
     errorTitle: "Não foi possível carregar a CI",
@@ -1507,6 +1510,7 @@ export const ptBR: TranslationResources = {
             "Abre a imagem de disco; arraste o {{brandName}} para Aplicativos para concluir.",
           unknown: "Baixa a versão compilada para esta plataforma.",
         },
+        downloadingInBackground: "Baixando em segundo plano; o botão será ativado quando terminar.",
         noAsset: "Ainda não há download publicado para esta plataforma.",
         build: {
           queued: "Compilação na fila do CI ({{job}}).",

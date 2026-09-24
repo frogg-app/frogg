@@ -976,6 +976,8 @@ export interface GitHubService extends ForgeService {
   searchRepositories(options: SearchGitHubRepositoriesOptions): Promise<GitHubRepositorySummary[]>;
   /** `gh api <path>` from the checkout, so `{owner}/{repo}` resolve from its remote. */
   apiGet(input: { cwd: string; path: string }): Promise<unknown>;
+  /** `gh api <path>` as raw text, for endpoints that do not return JSON (job logs). */
+  apiGetText?(input: { cwd: string; path: string }): Promise<string>;
 }
 
 export class GitHubCliMissingError extends ForgeCliMissingError {
@@ -2326,6 +2328,10 @@ export function createGitHubService(options: CreateGitHubServiceOptions = {}): G
     async apiGet(input) {
       const stdout = await run(["api", input.path], { cwd: input.cwd });
       return JSON.parse(stdout) as unknown;
+    },
+
+    async apiGetText(input) {
+      return run(["api", input.path], { cwd: input.cwd });
     },
 
     async searchRepositories(input) {

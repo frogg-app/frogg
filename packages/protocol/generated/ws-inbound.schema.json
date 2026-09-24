@@ -6598,6 +6598,33 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "checkout.ci.download_job_log.request"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "jobId": {
+                  "type": "string"
+                },
+                "jobName": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "cwd",
+                "jobId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "checkout.github.set_auto_merge.request"
                 },
                 "cwd": {

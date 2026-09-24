@@ -88,6 +88,7 @@ const INBOUND_ROLE = {
   "chat/post": "operator",
   "chat/read": "viewer",
   "chat/wait": "viewer",
+  "checkout.ci.download_job_log.request": "operator",
   "checkout.ci.list_runs.request": "viewer",
   "checkout.commits.file_diff.request": "viewer",
   "checkout.commits.list.request": "viewer",

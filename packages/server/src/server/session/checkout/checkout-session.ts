@@ -56,7 +56,12 @@ import { runGitCommand } from "../../../utils/run-git-command.js";
 import { expandTilde } from "../../../utils/path.js";
 import type { GitMetadataGenerator } from "./git-metadata-generator.js";
 import { listCiRuns } from "../../../services/ci/ci-service.js";
-import type { GitHubApiGet } from "../../../services/ci/github-actions.js";
+import {
+  fetchGitHubActionsJobLog,
+  parseGitHubActionsJobId,
+  type GitHubApiGet,
+} from "../../../services/ci/github-actions.js";
+import { saveCiJobLog } from "../../../services/ci/job-log-file.js";
 
 /**
  * The collaborators a checkout command reaches that are NOT part of the checkout
@@ -1361,6 +1366,57 @@ export class CheckoutSession {
           requestId,
         },
       });
+    }
+  }
+
+  /**
+   * Save a GitHub Actions job's log under uploads and return it as a file, so the
+   * app can attach it to a chat and the agent reads it from disk when it needs to.
+   */
+  async handleCheckoutCiDownloadJobLogRequest(
+    msg: Extract<SessionInboundMessage, { type: "checkout.ci.download_job_log.request" }>,
+  ): Promise<void> {
+    const { cwd, jobId, jobName, requestId } = msg;
+    const responseType = "checkout.ci.download_job_log.response" as const;
+    const fail = (message: string) =>
+      this.host.emit({
+        type: responseType,
+        payload: { cwd, jobId, file: null, error: { code: "UNKNOWN", message }, requestId },
+      });
+    try {
+      const githubJobId = parseGitHubActionsJobId(jobId);
+      if (githubJobId === null) {
+        fail("Logs can only be attached for GitHub Actions jobs");
+        return;
+      }
+      const resolvedCwd = expandTilde(cwd);
+      const forge = await this.resolveForgeService(resolvedCwd);
+      const service = forge?.forge === "github" ? forge.service : null;
+      const apiGetText =
+        service && "apiGetText" in service && typeof service.apiGetText === "function"
+          ? (service.apiGetText as (input: { cwd: string; path: string }) => Promise<string>)
+          : null;
+      if (!apiGetText) {
+        fail("This checkout has no GitHub remote to read job logs from");
+        return;
+      }
+      const text = await fetchGitHubActionsJobLog({
+        apiText: (path) => apiGetText({ cwd: resolvedCwd, path }),
+        jobId: githubJobId,
+      });
+      const file = await saveCiJobLog({
+        froggHome: this.froggHome,
+        jobKey: String(githubJobId),
+        ...(jobName ? { jobName } : {}),
+        text,
+        now: Date.now(),
+      });
+      this.host.emit({
+        type: responseType,
+        payload: { cwd, jobId, file, error: null, requestId },
+      });
+    } catch (error) {
+      fail(error instanceof Error ? error.message : String(error));
     }
   }
 

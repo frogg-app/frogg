@@ -23,6 +23,8 @@ export type DesktopUpdateInstallKind =
 export interface DesktopAppUpdateCheckResult {
   hasUpdate: boolean;
   readyToInstall: boolean;
+  /** The shell is fetching this update in the background; it becomes ready when done. */
+  downloading: boolean;
   currentVersion: string | null;
   latestVersion: string | null;
   body: string | null;
@@ -167,6 +169,7 @@ export function parseDesktopAppUpdateCheckResult(result: unknown): DesktopAppUpd
   return {
     hasUpdate: result.hasUpdate === true,
     readyToInstall: result.readyToInstall === true,
+    downloading: result.downloading === true,
     currentVersion: toStringOrNull(result.currentVersion),
     latestVersion: toStringOrNull(result.latestVersion),
     body,

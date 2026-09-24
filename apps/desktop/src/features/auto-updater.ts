@@ -5,7 +5,7 @@ import { existsSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { app } from "electron";
+import { app, BrowserWindow } from "electron";
 import { UUID } from "builder-util-runtime";
 import { autoUpdater } from "electron-updater";
 import {
@@ -153,6 +153,13 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
     autoUpdater.on("update-downloaded", (info) => {
       input.onUpdateDownloaded(info as RuntimeUpdateInfo);
     });
+    autoUpdater.on("download-progress", (progress) => {
+      sendToAllWindows(APP_UPDATE_PROGRESS_EVENT, {
+        phase: "download",
+        received: progress.transferred,
+        total: progress.total,
+      });
+    });
     autoUpdater.on("error", (error) => {
       if (isUpdateChannelNotPublished(error)) return;
       input.onError(error);
@@ -203,8 +210,27 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
   }
 }
 
+const APP_UPDATE_AVAILABLE_EVENT = "frogg:event:app-update-available";
+const APP_UPDATE_PROGRESS_EVENT = "frogg:event:app-update-progress";
+
+function sendToAllWindows(channel: string, payload: unknown): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send(channel, payload);
+  }
+}
+
 const appUpdateService = createAppUpdateService({
   runtime: new ElectronAppUpdateRuntime(),
+  currentVersion: () => app.getVersion(),
+  // The window re-checks on this, so a card that saw the update mid-download
+  // enables "Download & install" as soon as the download lands.
+  onUpdateStateChanged: (result) => {
+    sendToAllWindows(APP_UPDATE_AVAILABLE_EVENT, {
+      ...result,
+      strategy: "github-release",
+      checkedAt: Date.now(),
+    });
+  },
   isPackaged: () => app.isPackaged,
   now: () => Date.now(),
   bucket: async () => bucketFromStagingUserId(await getStagingUserId()),

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- CI pane: expanding a finished GitHub Actions job offers **Add to chat**, which saves the
+  job's log on the daemon (timestamps and colour codes removed) and attaches it to the focused
+  chat as a file the agent reads on demand.
+- Desktop updates: a card that found an update while it was still downloading stayed
+  disabled until settings was reopened. The shell now tells the window when the download
+  starts and finishes (the Electron port had dropped those events), so **Download & install**
+  enables on its own, and the card says the download is under way instead of "No download is
+  published for this platform yet".
+
 ## 1.5.36 — 2026-09-24
 
 - Security moves out of **Overview** into its own host settings section, second in the

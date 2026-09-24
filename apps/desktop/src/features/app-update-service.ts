@@ -10,6 +10,8 @@ export interface AppUpdateCheckResult {
   checkedAt?: number;
   hasUpdate: boolean;
   readyToInstall: boolean;
+  /** The runtime is fetching this update in the background; it becomes ready when done. */
+  downloading?: boolean;
   currentVersion: string;
   latestVersion: string;
   body: string | null;
@@ -78,6 +80,13 @@ export interface AppUpdateServiceDeps {
   reportCheckError?(error: unknown): void;
   reportRuntimeError?(error: unknown): void;
   reportInstallError?(message: string): void;
+  /** This build's version, for results the service reports on its own. */
+  currentVersion?(): string;
+  /**
+   * The background download started or finished. The window only learns of it
+   * through this: without it a card that checked mid-download stays disabled.
+   */
+  onUpdateStateChanged?(result: AppUpdateCheckResult): void;
 }
 
 function buildCheckResult(input: {
@@ -143,6 +152,31 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
     return downloadedUpdateVersion === version;
   }
 
+  function isDownloadingVersion(version: string): boolean {
+    return preparingUpdateVersion === version && downloadedUpdateVersion !== version;
+  }
+
+  function withDownloadState(result: AppUpdateCheckResult): AppUpdateCheckResult {
+    return result.hasUpdate && isDownloadingVersion(result.latestVersion)
+      ? { ...result, downloading: true }
+      : result;
+  }
+
+  function notifyUpdateStateChanged(info: RuntimeUpdateInfo): void {
+    const currentVersion = deps.currentVersion?.();
+    if (!deps.onUpdateStateChanged || !currentVersion || info.version === currentVersion) return;
+    deps.onUpdateStateChanged(
+      withDownloadState(
+        buildCheckResult({
+          currentVersion,
+          hasUpdate: true,
+          readyToInstall: isReadyToInstallVersion(info.version),
+          info,
+        }),
+      ),
+    );
+  }
+
   function clearUpdateState(): void {
     cachedUpdateInfo = null;
     downloadedUpdateVersion = null;
@@ -194,6 +228,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
         if (!alreadyReady && preparingUpdateVersion === null) {
           preparingUpdateVersion = info.version;
         }
+        notifyUpdateStateChanged(info);
       },
       onUpdateDownloaded(info) {
         // A superseded download can finish after a newer manifest check. Keep
@@ -206,6 +241,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
         if (preparationError?.version === info.version) {
           preparationError = null;
         }
+        notifyUpdateStateChanged(info);
       },
       onError(error) {
         if (preparingUpdateVersion) {
@@ -266,7 +302,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
             result.updateInfo,
           );
           if (admittedUpdate) {
-            return admittedUpdate;
+            return withDownloadState(admittedUpdate);
           }
 
           clearUpdateState();
@@ -288,13 +324,15 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
           if (!errorMessage) {
             preparationError = null;
           }
-          return buildCheckResult({
-            currentVersion,
-            hasUpdate: true,
-            readyToInstall: isReadyToInstallVersion(latestVersion),
-            info,
-            errorMessage,
-          });
+          return withDownloadState(
+            buildCheckResult({
+              currentVersion,
+              hasUpdate: true,
+              readyToInstall: isReadyToInstallVersion(latestVersion),
+              info,
+              errorMessage,
+            }),
+          );
         }
 
         clearUpdateState();

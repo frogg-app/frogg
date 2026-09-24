@@ -2521,6 +2521,20 @@ export const CheckoutForgeSetAutoMergeRequestSchema = z.object({
   requestId: z.string(),
 });
 
+/**
+ * Save one CI job's log under the daemon's uploads and return it as a file an
+ * agent can read, so a composer can attach it without pasting the whole log.
+ * GitHub Actions jobs only; `jobId` is the id from checkout.ci.list_runs.
+ */
+export const CheckoutCiDownloadJobLogRequestSchema = z.object({
+  type: z.literal("checkout.ci.download_job_log.request"),
+  cwd: z.string(),
+  jobId: z.string(),
+  /** Used for the saved file's name. */
+  jobName: z.string().optional(),
+  requestId: z.string(),
+});
+
 /** CI runs (GitHub Actions, Jenkins) for the checkout's current branch. */
 export const CheckoutCiListRunsRequestSchema = z.object({
   type: z.literal("checkout.ci.list_runs.request"),
@@ -3546,6 +3560,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   CheckoutPrMergeRequestSchema,
   CheckoutForgeSetAutoMergeRequestSchema,
   CheckoutCiListRunsRequestSchema,
+  CheckoutCiDownloadJobLogRequestSchema,
   CheckoutGithubSetAutoMergeRequestSchema,
   CheckoutCommitsListRequestSchema,
   CheckoutCommitFileDiffRequestSchema,
@@ -4178,6 +4193,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(securityAcknowledge): added in v1.5.36, remove gate after 2027-09-24.
         // daemon.set_security_finding_acknowledged is available.
         securityAcknowledge: z.boolean().optional(),
+        // COMPAT(ciJobLogs): added in v1.5.37, remove gate after 2027-09-24.
+        // checkout.ci.download_job_log is available.
+        ciJobLogs: z.boolean().optional(),
       })
       .optional(),
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
@@ -5983,6 +6001,17 @@ export const CiProviderErrorSchema = z.object({
   message: z.string(),
 });
 
+export const CheckoutCiDownloadJobLogResponseSchema = z.object({
+  type: z.literal("checkout.ci.download_job_log.response"),
+  payload: z.object({
+    cwd: z.string(),
+    jobId: z.string(),
+    file: UploadedFileAttachmentSchema.nullable(),
+    error: CheckoutErrorSchema.nullable(),
+    requestId: z.string(),
+  }),
+});
+
 export const CheckoutCiListRunsResponseSchema = z.object({
   type: z.literal("checkout.ci.list_runs.response"),
   payload: z.object({
@@ -7371,6 +7400,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   CheckoutPrMergeResponseSchema,
   CheckoutForgeSetAutoMergeResponseSchema,
   CheckoutCiListRunsResponseSchema,
+  CheckoutCiDownloadJobLogResponseSchema,
   CheckoutGithubSetAutoMergeResponseSchema,
   CheckoutCommitsListResponseSchema,
   CheckoutCommitFileDiffResponseSchema,
@@ -7875,6 +7905,9 @@ export type CheckoutPrMergeResponse = z.infer<typeof CheckoutPrMergeResponseSche
 export type CheckoutPrMergeMethod = z.infer<typeof CheckoutPrMergeRequestSchema>["mergeMethod"];
 export type CheckoutCiListRunsRequest = z.infer<typeof CheckoutCiListRunsRequestSchema>;
 export type CheckoutCiListRunsResponse = z.infer<typeof CheckoutCiListRunsResponseSchema>;
+export type CheckoutCiDownloadJobLogResponse = z.infer<
+  typeof CheckoutCiDownloadJobLogResponseSchema
+>;
 export type CiRun = z.infer<typeof CiRunSchema>;
 export type CiJob = z.infer<typeof CiJobSchema>;
 export type CiRunner = z.infer<typeof CiRunnerSchema>;

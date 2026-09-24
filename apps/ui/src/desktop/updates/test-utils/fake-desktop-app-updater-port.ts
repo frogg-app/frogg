@@ -42,6 +42,7 @@ function buildCheckResult(
   return {
     hasUpdate: false,
     readyToInstall: false,
+    downloading: false,
     currentVersion: null,
     latestVersion: null,
     body: null,

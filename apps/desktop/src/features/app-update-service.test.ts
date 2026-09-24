@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createAppUpdateService,
+  type AppUpdateCheckResult,
   type AppUpdateRuntime,
   type AppUpdateRuntimeConfiguration,
   type RuntimeUpdateInfo,
@@ -166,6 +167,43 @@ const rolledOutUpdate = {
 };
 
 describe("app update service", () => {
+  it("reports a background download and tells the window when it lands", async () => {
+    const runtime = new FakeAppUpdateRuntime();
+    const notified: AppUpdateCheckResult[] = [];
+    const service = createAppUpdateService({
+      runtime,
+      isPackaged: () => true,
+      now: () => Date.parse("2026-04-28T12:00:00.000Z"),
+      bucket: async () => 0,
+      currentVersion: () => "1.2.3",
+      onUpdateStateChanged: (result) => notified.push(result),
+    });
+    const checkManually = () =>
+      service.checkForAppUpdate({
+        currentVersion: "1.2.3",
+        releaseChannel: "stable",
+        intent: "manual",
+      });
+    runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
+    await checkManually();
+    // electron-updater starts the download on its own once it has seen the update.
+    runtime.prepareUpdate(rolledOutUpdate);
+    expect(notified.at(-1)).toMatchObject({ readyToInstall: false, downloading: true });
+    runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
+    expect(await checkManually()).toMatchObject({
+      hasUpdate: true,
+      readyToInstall: false,
+      downloading: true,
+    });
+
+    runtime.finishUpdateDownload(rolledOutUpdate);
+    expect(notified.at(-1)).toMatchObject({
+      latestVersion: "1.2.4",
+      readyToInstall: true,
+    });
+    expect(notified.at(-1)?.downloading).toBeUndefined();
+  });
+
   it("does not expose automatic stable updates before the user is admitted to rollout", async () => {
     const { runtime, service } = createService();
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });

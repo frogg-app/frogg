@@ -86,6 +86,7 @@ import type {
   CheckoutPrMergeMethod,
   CheckoutForgeSetAutoMergeResponse,
   CheckoutCiListRunsResponse,
+  CheckoutCiDownloadJobLogResponse,
   CheckoutGithubSetAutoMergeResponse,
   CheckoutForgeGetCheckDetailsResponse,
   CheckoutGithubGetCheckDetailsResponse,
@@ -575,6 +576,7 @@ type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DaemonSecurityPosturePayload = DaemonGetSecurityPostureResponse["payload"];
 type DaemonSecurityAcknowledgePayload = DaemonSetSecurityFindingAcknowledgedResponse["payload"];
+type CheckoutCiDownloadJobLogPayload = CheckoutCiDownloadJobLogResponse["payload"];
 type DiagnosticsPayload = DiagnosticsResponse["payload"];
 type ReadProjectConfigPayload = Extract<
   SessionOutboundMessage,
@@ -4375,6 +4377,19 @@ export class DaemonClient {
   }
 
   /** CI runs for the checkout's branch. Providers call out to GitHub and Jenkins, hence the timeout. */
+  /** Save a CI job's log on the daemon and get it back as an attachable file (features.ciJobLogs). */
+  async checkoutCiDownloadJobLog(
+    input: { cwd: string; jobId: string; jobName?: string },
+    requestId?: string,
+  ): Promise<CheckoutCiDownloadJobLogPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"checkout.ci.download_job_log.response">({
+      requestId,
+      message: { type: "checkout.ci.download_job_log.request", ...input },
+      // A long job's log can take a while for GitHub to serve.
+      timeout: 60_000,
+    });
+  }
+
   async checkoutCiListRuns(cwd: string, requestId?: string): Promise<CheckoutCiListRunsPayload> {
     return this.sendNamespacedCorrelatedSessionRequest<"checkout.ci.list_runs.response">({
       requestId,

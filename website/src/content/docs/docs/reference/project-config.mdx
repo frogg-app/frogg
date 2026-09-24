@@ -133,6 +133,12 @@ Jenkins anonymously. A branch Jenkins has not built yet shows no runs rather tha
 Pipeline stages appear as jobs. Jenkins reports no per-stage estimate, so a running stage has no
 percentage; the build's overall progress comes from its estimated duration.
 
+Expanding a finished GitHub Actions job offers **Add to chat**. The daemon downloads the job's
+log with `gh`, drops GitHub's per-line timestamps and colour codes, saves it under
+`~/.frogg/uploads/`, and attaches it to the focused chat as a file. The agent gets the file's
+path and reads the parts it needs, rather than the whole log landing in the prompt. Jenkins
+jobs and jobs still running do not offer it.
+
 ## A real example
 
 Frogg's own repository uses `frogg.json` to install dependencies in new worktrees and to

@@ -11,6 +11,9 @@ export const zhCN: TranslationResources = {
     refresh: "刷新 CI",
     openRun: "打开运行",
     openLogs: "打开日志",
+    addLogToChat: "添加到聊天",
+    addingLogToChat: "正在下载日志…",
+    addLogToChatFailed: "无法附加日志：{{message}}",
     unsupportedTitle: "请更新守护进程",
     unsupportedDescription: "此主机的守护进程版本过旧，无法显示 CI 运行。",
     errorTitle: "无法加载 CI",
@@ -1463,6 +1466,7 @@ export const zhCN: TranslationResources = {
           "macos-dmg": "打开磁盘映像；将 {{brandName}} 拖到“应用程序”以完成。",
           unknown: "下载为此平台构建的版本。",
         },
+        downloadingInBackground: "正在后台下载；完成后按钮将可用。",
         noAsset: "此平台的下载尚未发布。",
         build: {
           queued: "构建已在 CI 中排队（{{job}}）。",

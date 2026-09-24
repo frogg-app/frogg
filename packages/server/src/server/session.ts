@@ -2749,6 +2749,8 @@ export class Session {
       case "checkout.forge.get_check_details.request":
       case "checkout.github.get_check_details.request":
         return this.checkoutSession.handleCheckoutForgeGetCheckDetailsRequest(msg);
+      case "checkout.ci.download_job_log.request":
+        return this.checkoutSession.handleCheckoutCiDownloadJobLogRequest(msg);
       case "checkout.ci.list_runs.request":
         return this.checkoutSession.handleCheckoutCiListRunsRequest(msg);
       case "checkout_pr_status_request":

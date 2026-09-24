@@ -11,6 +11,9 @@ export const fr: TranslationResources = {
     refresh: "Actualiser la CI",
     openRun: "Ouvrir l'exécution",
     openLogs: "Ouvrir les journaux",
+    addLogToChat: "Ajouter au chat",
+    addingLogToChat: "Téléchargement du journal…",
+    addLogToChatFailed: "Impossible de joindre le journal : {{message}}",
     unsupportedTitle: "Mettez à jour le démon",
     unsupportedDescription: "Le démon de cet hôte est trop ancien pour afficher les exécutions CI.",
     errorTitle: "Impossible de charger la CI",
@@ -1517,6 +1520,8 @@ export const fr: TranslationResources = {
             "Ouvre l'image disque ; glissez {{brandName}} dans Applications pour terminer.",
           unknown: "Télécharge la version compilée pour cette plateforme.",
         },
+        downloadingInBackground:
+          "Téléchargement en arrière-plan ; le bouton s'activera une fois terminé.",
         noAsset: "Aucun téléchargement n'est encore publié pour cette plateforme.",
         build: {
           queued: "Compilation en file d'attente sur CI ({{job}}).",

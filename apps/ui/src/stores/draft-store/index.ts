@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import AsyncStorage from "@/storage/brand-storage";
-import type { AttachmentMetadata, WorkspaceFileComposerAttachment } from "@/attachments/types";
+import type { UploadedFileAttachment } from "@frogg/protocol/messages";
+import type {
+  AttachmentMetadata,
+  UserComposerAttachment,
+  WorkspaceFileComposerAttachment,
+} from "@/attachments/types";
 import { appendWorkspaceFileAttachment } from "@/attachments/workspace-file";
 import {
   garbageCollectAttachments,
@@ -50,6 +55,11 @@ interface DraftStoreActions {
   attachWorkspaceFile: (input: {
     draftKey: string;
     attachment: WorkspaceFileComposerAttachment;
+  }) => Promise<void>;
+  /** A file already on the daemon (a CI job log), attached once however often it is added. */
+  attachUploadedFile: (input: {
+    draftKey: string;
+    attachment: UploadedFileAttachment;
   }) => Promise<void>;
   getCreateModalDraft: () => DraftInput | null;
   saveCreateModalDraft: (draft: DraftInput | null) => void;
@@ -402,6 +412,37 @@ export const useDraftStore = create<DraftStore>()(
                 draft: {
                   ...draft,
                   attachments: appendWorkspaceFileAttachment(draft.attachments, attachment),
+                },
+                lifecycle: "active",
+                previousVersion: existing?.version,
+              }),
+            },
+            attachmentFocusRequestByDraftKey: {
+              ...state.attachmentFocusRequestByDraftKey,
+              [draftKey]: (state.attachmentFocusRequestByDraftKey[draftKey] ?? 0) + 1,
+            },
+          };
+        });
+        scheduleAttachmentGc();
+      },
+
+      attachUploadedFile: async ({ draftKey, attachment }) => {
+        await get().hydrateDraftInput({ draftKey });
+        set((state) => {
+          const existing = state.drafts[draftKey];
+          const draft = toDraftInputIfReady(existing) ?? { text: "", attachments: [] };
+          const next: UserComposerAttachment = { kind: "file", attachment };
+          const alreadyAttached = draft.attachments.some(
+            (candidate) =>
+              candidate.kind === "file" && candidate.attachment.path === attachment.path,
+          );
+          return {
+            drafts: {
+              ...state.drafts,
+              [draftKey]: createDraftRecord({
+                draft: {
+                  ...draft,
+                  attachments: alreadyAttached ? draft.attachments : [...draft.attachments, next],
                 },
                 lifecycle: "active",
                 previousVersion: existing?.version,

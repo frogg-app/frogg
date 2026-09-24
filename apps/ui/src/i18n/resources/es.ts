@@ -11,6 +11,9 @@ export const es: TranslationResources = {
     refresh: "Actualizar CI",
     openRun: "Abrir ejecución",
     openLogs: "Abrir registros",
+    addLogToChat: "Añadir al chat",
+    addingLogToChat: "Descargando registro…",
+    addLogToChatFailed: "No se pudo adjuntar el registro: {{message}}",
     unsupportedTitle: "Actualiza el daemon",
     unsupportedDescription:
       "El daemon de este host es demasiado antiguo para mostrar ejecuciones de CI.",
@@ -1516,6 +1519,7 @@ export const es: TranslationResources = {
             "Abre la imagen de disco; arrastra {{brandName}} a Aplicaciones para terminar.",
           unknown: "Descarga la versión compilada para esta plataforma.",
         },
+        downloadingInBackground: "Descargando en segundo plano; el botón se activará al terminar.",
         noAsset: "Todavía no hay una descarga publicada para esta plataforma.",
         build: {
           queued: "Compilación en cola en CI ({{job}}).",

@@ -11,6 +11,9 @@ export const ja: TranslationResources = {
     refresh: "CI を更新",
     openRun: "実行を開く",
     openLogs: "ログを開く",
+    addLogToChat: "チャットに追加",
+    addingLogToChat: "ログをダウンロード中…",
+    addLogToChatFailed: "ログを添付できませんでした: {{message}}",
     unsupportedTitle: "デーモンを更新してください",
     unsupportedDescription: "このホストのデーモンは古いため、CI の実行を表示できません。",
     errorTitle: "CI を読み込めませんでした",
@@ -1496,6 +1499,8 @@ export const ja: TranslationResources = {
             "ディスクイメージを開きます。{{brandName}} を「アプリケーション」にドラッグして完了してください。",
           unknown: "このプラットフォーム向けのリリースをダウンロードします。",
         },
+        downloadingInBackground:
+          "バックグラウンドでダウンロード中です。完了するとボタンが有効になります。",
         noAsset: "このプラットフォーム向けのダウンロードはまだ公開されていません。",
         build: {
           queued: "CI でビルドが待機中です（{{job}}）。",

@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import type { UploadedFileAttachment } from "@frogg/protocol/messages";
 import { createWorkspaceFileAttachment } from "@/attachments/workspace-file";
 import { resolveFocusedChatTarget } from "@/composer/focused-chat-target";
 import { useDraftStore } from "@/stores/draft-store";
@@ -30,5 +31,18 @@ export function useAddFileToChat(input: { serverId: string; workspaceId?: string
     },
     [focusTab, focusedChat, workspaceKey],
   );
-  return { addFile, canAddToChat: focusedChat !== null };
+  const addUploadedFile = useCallback(
+    async (attachment: UploadedFileAttachment) => {
+      if (!focusedChat || !workspaceKey) {
+        return;
+      }
+      await useDraftStore.getState().attachUploadedFile({
+        draftKey: focusedChat.draftKey,
+        attachment,
+      });
+      focusTab(workspaceKey, focusedChat.tabId);
+    },
+    [focusTab, focusedChat, workspaceKey],
+  );
+  return { addFile, addUploadedFile, canAddToChat: focusedChat !== null };
 }

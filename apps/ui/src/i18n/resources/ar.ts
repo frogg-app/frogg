@@ -11,6 +11,9 @@ export const ar: TranslationResources = {
     refresh: "تحديث CI",
     openRun: "فتح التشغيل",
     openLogs: "فتح السجلات",
+    addLogToChat: "أضف إلى المحادثة",
+    addingLogToChat: "جارٍ تنزيل السجل…",
+    addLogToChatFailed: "تعذّر إرفاق السجل: {{message}}",
     unsupportedTitle: "حدّث البرنامج الخفي",
     unsupportedDescription: "البرنامج الخفي على هذا المضيف قديم جدًا لعرض تشغيلات CI.",
     errorTitle: "تعذّر تحميل CI",
@@ -1477,6 +1480,7 @@ export const ar: TranslationResources = {
           "macos-dmg": "يفتح صورة القرص؛ اسحب {{brandName}} إلى مجلد التطبيقات للإنهاء.",
           unknown: "ينزّل الإصدار المبني لهذه المنصة.",
         },
+        downloadingInBackground: "جارٍ التنزيل في الخلفية؛ سيتم تفعيل الزر عند الانتهاء.",
         noAsset: "لم يُنشر تنزيل لهذه المنصة بعد.",
         build: {
           queued: "البناء في قائمة انتظار CI ({{job}}).",

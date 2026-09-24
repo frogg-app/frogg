@@ -11,6 +11,9 @@ export const ko: TranslationResources = {
     refresh: "CI 새로 고침",
     openRun: "실행 열기",
     openLogs: "로그 열기",
+    addLogToChat: "채팅에 추가",
+    addingLogToChat: "로그 다운로드 중…",
+    addLogToChatFailed: "로그를 첨부할 수 없습니다: {{message}}",
     unsupportedTitle: "데몬을 업데이트하세요",
     unsupportedDescription: "이 호스트의 데몬이 오래되어 CI 실행을 표시할 수 없습니다.",
     errorTitle: "CI를 불러오지 못했습니다",
@@ -1491,6 +1494,7 @@ export const ko: TranslationResources = {
             "디스크 이미지를 엽니다. {{brandName}}를 응용 프로그램 폴더로 끌어다 놓아 완료하세요.",
           unknown: "이 플랫폼용으로 빌드된 릴리스를 다운로드합니다.",
         },
+        downloadingInBackground: "백그라운드에서 다운로드 중입니다. 완료되면 버튼이 활성화됩니다.",
         noAsset: "이 플랫폼용 다운로드가 아직 게시되지 않았습니다.",
         build: {
           queued: "CI에서 빌드가 대기 중입니다({{job}}).",

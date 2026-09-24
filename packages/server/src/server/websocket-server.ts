@@ -2024,6 +2024,8 @@ export class VoiceAssistantWebSocketServer {
         ...this.securityPostureFeature(),
         // COMPAT(directorySync): added in v0.3.x, remove gate after 2027-02-12.
         directorySync: true,
+        // COMPAT(ciJobLogs): added in v1.5.37, remove gate after 2027-09-24.
+        ciJobLogs: true,
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.
         providerAgentDefinitions: true,
         // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.

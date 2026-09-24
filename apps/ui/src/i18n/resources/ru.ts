@@ -11,6 +11,9 @@ export const ru: TranslationResources = {
     refresh: "Обновить CI",
     openRun: "Открыть запуск",
     openLogs: "Открыть логи",
+    addLogToChat: "Добавить в чат",
+    addingLogToChat: "Загрузка журнала…",
+    addLogToChatFailed: "Не удалось прикрепить журнал: {{message}}",
     unsupportedTitle: "Обновите демон",
     unsupportedDescription: "Демон на этом хосте слишком старый, чтобы показывать запуски CI.",
     errorTitle: "Не удалось загрузить CI",
@@ -1502,6 +1505,7 @@ export const ru: TranslationResources = {
             "Открывает образ диска; перетащите {{brandName}} в «Программы», чтобы завершить.",
           unknown: "Загружает релиз, собранный для этой платформы.",
         },
+        downloadingInBackground: "Загрузка в фоне; кнопка станет активной, когда она завершится.",
         noAsset: "Для этой платформы загрузка ещё не опубликована.",
         build: {
           queued: "Сборка в очереди CI ({{job}}).",

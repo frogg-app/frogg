@@ -100,6 +100,15 @@ function describeReleaseBuild(
   }
 }
 
+function describeAvailability(
+  update: DesktopAppUpdateCheckResult,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): string {
+  if (update.readyToInstall) return describeInstallKind(update.installKind);
+  if (update.downloading) return t("desktop.updates.section.downloadingInBackground");
+  return t("desktop.updates.section.noAsset");
+}
+
 /** Progress of the CI job that builds this platform's download, while it runs. */
 function ReleaseBuildProgress({ status }: { status: ReleaseBuildStatus }) {
   const { t } = useTranslation();
@@ -194,8 +203,11 @@ function AvailableUpdateCard({
   }, [update.releaseUrl]);
   const versionLabel = formatVersionWithPrefix(update.latestVersion);
   const canInstall = update.readyToInstall && !isInstalling;
-  // Only worth asking CI about while this platform's asset is still missing.
-  const buildStatus = useReleaseBuildStatus(update.readyToInstall ? null : update.latestVersion);
+  // Only worth asking CI about while this platform's asset is still missing; a
+  // download under way means it is published.
+  const buildStatus = useReleaseBuildStatus(
+    update.readyToInstall || update.downloading ? null : update.latestVersion,
+  );
 
   return (
     <View style={[settingsStyles.card, styles.availableCard]} testID="desktop-update-available">
@@ -204,11 +216,7 @@ function AvailableUpdateCard({
           <Text style={settingsStyles.rowTitle}>
             {t("desktop.updates.section.available", { version: versionLabel })}
           </Text>
-          <Text style={settingsStyles.rowHint}>
-            {update.readyToInstall
-              ? describeInstallKind(update.installKind)
-              : t("desktop.updates.section.noAsset")}
-          </Text>
+          <Text style={settingsStyles.rowHint}>{describeAvailability(update, t)}</Text>
         </View>
         <View style={styles.actionGroup}>
           {update.releaseUrl || RELEASES_URL ? (
@@ -236,7 +244,9 @@ function AvailableUpdateCard({
           <Text style={styles.progressText}>{describeAppUpdateProgress(progress)}</Text>
         </View>
       ) : null}
-      {!update.readyToInstall && buildStatus ? <ReleaseBuildProgress status={buildStatus} /> : null}
+      {!update.readyToInstall && !update.downloading && buildStatus ? (
+        <ReleaseBuildProgress status={buildStatus} />
+      ) : null}
       {update.notes ? (
         <View style={styles.notes} testID="desktop-update-notes">
           <Text style={styles.notesTitle}>{t("desktop.updates.section.releaseNotes")}</Text>

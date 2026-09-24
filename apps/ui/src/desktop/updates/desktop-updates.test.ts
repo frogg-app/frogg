@@ -138,6 +138,7 @@ describe("desktop-updates helpers", () => {
     ).toEqual({
       hasUpdate: true,
       readyToInstall: true,
+      downloading: false,
       currentVersion: "0.1.11",
       latestVersion: "0.2.0",
       body: "## Notes",

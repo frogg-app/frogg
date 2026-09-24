@@ -385,6 +385,8 @@ pub enum SessionMessage {
     CheckoutForgeSetAutoMergeRequest(CheckoutForgeSetAutoMergeRequest),
     #[serde(rename = "checkout.ci.list_runs.request")]
     CheckoutCiListRunsRequest(CheckoutCiListRunsRequest),
+    #[serde(rename = "checkout.ci.download_job_log.request")]
+    CheckoutCiDownloadJobLogRequest(CheckoutCiDownloadJobLogRequest),
     #[serde(rename = "checkout.github.set_auto_merge.request")]
     CheckoutGithubSetAutoMergeRequest(CheckoutGithubSetAutoMergeRequest),
     #[serde(rename = "checkout.commits.list.request")]
@@ -2936,6 +2938,17 @@ pub enum CheckoutForgeSetAutoMergeRequestMergeMethod {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CheckoutCiListRunsRequest {
     pub cwd: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutCiDownloadJobLogRequest {
+    pub cwd: String,
+    #[serde(rename = "jobId")]
+    pub job_id: String,
+    #[serde(rename = "jobName", skip_serializing_if = "Option::is_none")]
+    pub job_name: Option<String>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

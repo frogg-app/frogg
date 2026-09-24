@@ -9,6 +9,9 @@ export const en = {
     refresh: "Refresh CI",
     openRun: "Open run",
     openLogs: "Open logs",
+    addLogToChat: "Add to chat",
+    addingLogToChat: "Downloading log…",
+    addLogToChatFailed: "Couldn't attach the log: {{message}}",
     unsupportedTitle: "Update the daemon",
     unsupportedDescription: "This host's daemon is too old to report CI runs.",
     errorTitle: "Couldn't load CI",
@@ -1490,6 +1493,8 @@ export const en = {
           "macos-dmg": "Opens the disk image; drag {{brandName}} to Applications to finish.",
           unknown: "Downloads the release built for this platform.",
         },
+        downloadingInBackground:
+          "Downloading in the background; the button enables when it finishes.",
         noAsset: "No download is published for this platform yet.",
         build: {
           queued: "Build queued on CI ({{job}}).",
