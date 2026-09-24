@@ -1,4 +1,5 @@
 import { describeHostConnectionError } from "@/runtime/host-connection-error";
+import { openAddHostFlow } from "@/hosts/add-host-flow";
 import { brand } from "@frogg/branding";
 import {
   ArrowDown,
@@ -143,13 +144,30 @@ function HostConnectionError({ serverId, host }: { serverId: string; host: HostP
   const connectionError = describeHostConnectionError(snapshot);
   if (!connectionError) return null;
   const hasRemoteSsh = host.connections.some((connection) => connection.type === "remoteSsh");
+  const needsPairing = snapshot?.lastErrorInfo?.code === "pairing_required";
   return (
-    <Text style={styles.errorText} testID="host-connection-error" accessibilityRole="alert">
-      {hasRemoteSsh
-        ? t("settings.host.connectionErrors.remoteSsh", { detail: connectionError })
-        : connectionError}
-    </Text>
+    <View>
+      <Text style={styles.errorText} testID="host-connection-error" accessibilityRole="alert">
+        {hasRemoteSsh && !needsPairing
+          ? t("settings.host.connectionErrors.remoteSsh", { detail: connectionError })
+          : connectionError}
+      </Text>
+      {needsPairing ? (
+        <Button
+          variant="outline"
+          size="sm"
+          onPress={openAddHostMethods}
+          testID="host-connection-pair-again"
+        >
+          {t("settings.host.connectionErrors.pairAgain")}
+        </Button>
+      ) : null}
+    </View>
   );
+}
+
+function openAddHostMethods(): void {
+  openAddHostFlow("methods");
 }
 
 export function HostPairDevicePage({ serverId }: { serverId: string }) {

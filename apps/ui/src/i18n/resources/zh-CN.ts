@@ -3053,6 +3053,10 @@ export const zhCN: TranslationResources = {
     host: {
       connectionErrors: {
         remoteSsh: "SSH 隧道失败：{{detail}}",
+        credentialRejected:
+          "此主机不再接受此设备保存的凭据（{{reason}}）。该凭据已被移除。请重新配对此设备以重新连接。",
+        pairingRequired: "此主机要求先配对此设备才能连接（{{reason}}）。",
+        pairAgain: "重新配对",
         serverIdentityMismatch:
           "此主机地址上应答的是另一个守护进程 ({{actualServerId}})，而不是此主机 ({{expectedServerId}})。请停止另一个守护进程或检查地址。将继续尝试重新连接。",
       },

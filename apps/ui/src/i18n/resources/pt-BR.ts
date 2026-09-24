@@ -3160,6 +3160,11 @@ export const ptBR: TranslationResources = {
     host: {
       connectionErrors: {
         remoteSsh: "Falha no túnel SSH: {{detail}}",
+        credentialRejected:
+          "Este host não aceita mais a credencial salva deste dispositivo ({{reason}}). Ela foi removida. Pareie este dispositivo novamente para reconectar.",
+        pairingRequired:
+          "Este host exige que este dispositivo seja pareado antes de conectar ({{reason}}).",
+        pairAgain: "Parear novamente",
         serverIdentityMismatch:
           "Outro daemon ({{actualServerId}}) está respondendo no endereço deste host, não este host ({{expectedServerId}}). Pare o outro daemon ou verifique o endereço. A reconexão continua tentando.",
       },

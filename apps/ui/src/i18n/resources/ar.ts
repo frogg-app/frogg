@@ -3102,6 +3102,10 @@ export const ar: TranslationResources = {
     host: {
       connectionErrors: {
         remoteSsh: "فشل نفق SSH: {{detail}}",
+        credentialRejected:
+          "لم يعد هذا المضيف يقبل بيانات الاعتماد المحفوظة لهذا الجهاز ({{reason}}). تمت إزالتها. أعد إقران هذا الجهاز لإعادة الاتصال.",
+        pairingRequired: "يتطلب هذا المضيف إقران هذا الجهاز قبل الاتصال ({{reason}}).",
+        pairAgain: "إعادة الإقران",
         serverIdentityMismatch:
           "يستجيب خادم مختلف ({{actualServerId}}) على عنوان هذا المضيف، وليس هذا المضيف ({{expectedServerId}}). أوقف الخادم الآخر أو تحقق من العنوان. تستمر محاولات إعادة الاتصال.",
       },

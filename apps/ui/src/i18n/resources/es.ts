@@ -3179,6 +3179,11 @@ export const es: TranslationResources = {
     host: {
       connectionErrors: {
         remoteSsh: "Falló el túnel SSH: {{detail}}",
+        credentialRejected:
+          "Este host ya no acepta la credencial guardada de este dispositivo ({{reason}}). Se ha eliminado. Vuelve a vincular este dispositivo para reconectar.",
+        pairingRequired:
+          "Este host requiere vincular este dispositivo antes de conectarse ({{reason}}).",
+        pairAgain: "Vincular de nuevo",
         serverIdentityMismatch:
           "Otro daemon ({{actualServerId}}) responde en la dirección de este host, no este host ({{expectedServerId}}). Detén el otro daemon o revisa la dirección. Se seguirá intentando reconectar.",
       },

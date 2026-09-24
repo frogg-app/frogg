@@ -3704,3 +3704,61 @@ describe("HostRuntimeStore initial connection hint bootstrap", () => {
     expect(store.getHosts()).toHaveLength(0);
   });
 });
+
+describe("HostRuntimeStore stale credentials", () => {
+  async function bootWithPassword() {
+    const direct: HostConnection = {
+      id: "direct:lan:9999",
+      type: "directTcp",
+      endpoint: "lan:9999",
+      password: "dev_stale",
+    };
+    const host = makeHost({ connections: [direct] });
+    const storage = createMemoryHostRuntimeStorage({
+      "@frogg:daemon-registry": JSON.stringify([host]),
+      "@frogg:e2e": "1",
+    });
+    const clients: FakeDaemonClient[] = [];
+    const store = new HostRuntimeStore({ storage, deps: makeDeps({ [direct.id]: 5 }, clients) });
+    await store.boot();
+    await vi.waitFor(() => {
+      expect(store.getSnapshot(host.serverId)?.activeConnectionId).toBe(direct.id);
+      expect(clients.length).toBeGreaterThan(0);
+    });
+    return { store, clients, serverId: host.serverId };
+  }
+
+  function storedPassword(store: HostRuntimeStore): string | undefined {
+    const connection = store.getHosts()[0]?.connections[0];
+    return connection?.type === "directTcp" ? connection.password : undefined;
+  }
+
+  it("drops the stored credential when the daemon rejects it", async () => {
+    const { store, clients } = await bootWithPassword();
+    const client = clients[clients.length - 1]!;
+    client.errorInfo = {
+      code: "pairing_required",
+      credentialRejected: true,
+      reason: "Device access revoked",
+    };
+    client.setConnectionState({ status: "disconnected", reason: "Device access revoked" });
+
+    await vi.waitFor(() => expect(storedPassword(store)).toBeUndefined());
+    expect(store.getHosts()[0]?.connections[0]?.id).toBe("direct:lan:9999");
+  });
+
+  it("keeps the credential on transient or rate-limited failures", async () => {
+    const { store, clients } = await bootWithPassword();
+    const client = clients[clients.length - 1]!;
+    client.setConnectionState({ status: "disconnected", reason: "Too many failed attempts" });
+    client.errorInfo = {
+      code: "pairing_required",
+      credentialRejected: false,
+      reason: "Password required",
+    };
+    client.setConnectionState({ status: "disconnected", reason: "Password required" });
+    await Promise.resolve();
+
+    expect(storedPassword(store)).toBe("dev_stale");
+  });
+});

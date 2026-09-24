@@ -3122,6 +3122,10 @@ export const ko: TranslationResources = {
     host: {
       connectionErrors: {
         remoteSsh: "SSH 터널 실패: {{detail}}",
+        credentialRejected:
+          "이 호스트가 이 기기에 저장된 자격 증명을 더 이상 허용하지 않습니다 ({{reason}}). 자격 증명이 삭제되었습니다. 다시 연결하려면 이 기기를 다시 페어링하세요.",
+        pairingRequired: "연결하려면 이 기기를 이 호스트와 페어링해야 합니다 ({{reason}}).",
+        pairAgain: "다시 페어링",
         serverIdentityMismatch:
           "이 호스트의 주소에서 다른 데몬({{actualServerId}})이 응답하고 있으며, 이 호스트({{expectedServerId}})가 아닙니다. 다른 데몬을 중지하거나 주소를 확인하세요. 재연결은 계속 시도됩니다.",
       },

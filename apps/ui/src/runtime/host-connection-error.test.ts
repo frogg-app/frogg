@@ -30,3 +30,31 @@ describe("describeHostConnectionError", () => {
     expect(describeHostConnectionError(null)).toBeNull();
   });
 });
+
+describe("describeHostConnectionError pairing_required", () => {
+  it("renders a rejected credential and a missing pairing as translated copy", async () => {
+    await i18n.changeLanguage("en");
+    expect(
+      describeHostConnectionError({
+        lastError: "Device access revoked",
+        lastErrorInfo: {
+          code: "pairing_required",
+          credentialRejected: true,
+          reason: "Device access revoked",
+        },
+      }),
+    ).toBe(
+      "This host no longer accepts this device's saved credential (Device access revoked). It has been removed. Pair this device again to reconnect.",
+    );
+    expect(
+      describeHostConnectionError({
+        lastError: "Password required",
+        lastErrorInfo: {
+          code: "pairing_required",
+          credentialRejected: false,
+          reason: "Password required",
+        },
+      }),
+    ).toBe("This host needs this device to be paired before it can connect (Password required).");
+  });
+});
