@@ -60,6 +60,19 @@ export function describeTransportClose(event?: unknown): string {
   return "Transport closed";
 }
 
+/**
+ * True when a WebSocket handshake failed because the daemon answered the
+ * upgrade with HTTP 401 instead of accepting and closing with 4401 (the Rust
+ * daemon does this). Browsers hide the status; Node `ws`, OkHttp (Android)
+ * and SocketRocket (iOS) put it in the error message. 429 (rate limited) and
+ * other statuses never match.
+ */
+export function isHttpUnauthorizedHandshakeError(message: string): boolean {
+  return /(?:unexpected server response|bad response code from server|expected http 101 response but was)\W*401\b/i.test(
+    message,
+  );
+}
+
 export function describeTransportError(event?: unknown): string {
   if (!event) {
     return "Transport error";

@@ -196,6 +196,7 @@ import {
   defaultWebSocketFactory,
   describeTransportClose,
   describeTransportError,
+  isHttpUnauthorizedHandshakeError,
   type DaemonTransport,
   type DaemonTransportFactory,
   type WebSocketFactory,
@@ -1405,6 +1406,11 @@ export class DaemonClient {
             clearTimeout(this.pendingGenericTransportErrorTimeout);
             this.pendingGenericTransportErrorTimeout = null;
           }
+          // The handshake error already reported pairing_required; the close
+          // that follows it (code 1006) must not overwrite that.
+          if (!this.shouldReconnect && this.lastErrorInfoValue?.info.code === "pairing_required") {
+            return;
+          }
           const reason = describeTransportClose(event);
           if (reason) {
             this.lastErrorValue = reason;
@@ -1421,6 +1427,14 @@ export class DaemonClient {
         transport.onError((event) => {
           this.resetConnectTimeout();
           const reason = describeTransportError(event);
+          if (isHttpUnauthorizedHandshakeError(reason)) {
+            if (this.pendingGenericTransportErrorTimeout) {
+              clearTimeout(this.pendingGenericTransportErrorTimeout);
+              this.pendingGenericTransportErrorTimeout = null;
+            }
+            this.reportAuthRejected(reason);
+            return;
+          }
           const isGeneric = reason === "Transport error";
           // Browser WebSocket.onerror often provides no useful details and is followed
           // by a close event (often with code 1006). Prefer surfacing the close details
@@ -6826,6 +6840,15 @@ export class DaemonClient {
       event && typeof event === "object" ? (event as { code?: unknown }).code : undefined;
     if (code !== DAEMON_AUTH_FAILED_CLOSE_CODE) return false;
     if (reason === DAEMON_AUTH_RATE_LIMITED_REASON) return false;
+    this.reportAuthRejected(reason);
+    return true;
+  }
+
+  /**
+   * The daemon refused our credentials (4401 close or HTTP 401 on the
+   * upgrade): stop reconnecting and report `pairing_required`.
+   */
+  private reportAuthRejected(reason: string): void {
     const credentialRejected =
       normalizePassword(this.config.password) !== null || Boolean(this.config.authHeader);
     this.logger.warn(
@@ -6843,7 +6866,6 @@ export class DaemonClient {
       event: "AUTH_REJECTED",
       reasonCode: "pairing_required",
     });
-    return true;
   }
 
   private recordLivenessFailure(error: Error): void {
