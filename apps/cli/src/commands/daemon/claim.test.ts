@@ -1,6 +1,7 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { brand } from "@frogg/branding";
 import { createClaimStore } from "@frogg/server";
 import { afterEach, describe, expect, test } from "vitest";
 
@@ -42,6 +43,26 @@ describe("daemon claim-status / reset-claim", () => {
     expect(reset).toMatchObject({ action: "claim_reset", removedPrincipals: 1 });
     expect((await describeClaimStatus(home)).claimed).toBe(false);
     expect(resetClaim(home).action).toBe("not_claimed");
+  });
+
+  test("a configured password counts as claimed; LAN trust defaults to the brand", async () => {
+    const home = createHome();
+    expect((await describeClaimStatus(home)).lanTrusted).toBe(brand.daemon.trustLan);
+
+    writeFileSync(
+      path.join(home, "config.json"),
+      JSON.stringify({
+        daemon: {
+          auth: {
+            password: `$2b$10$${"a".repeat(53)}`,
+            trustLan: !brand.daemon.trustLan,
+          },
+        },
+      }),
+    );
+    const status = await describeClaimStatus(home);
+    expect(status).toMatchObject({ claimed: true, passwordConfigured: true, principals: [] });
+    expect(status.lanTrusted).toBe(!brand.daemon.trustLan);
   });
 
   test("turns a listen target into a loopback HTTP base", () => {

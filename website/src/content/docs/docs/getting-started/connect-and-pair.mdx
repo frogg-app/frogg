@@ -223,9 +223,9 @@ Principals:     /home/you/.frogg/principals.json
 Daemon:         reachable at 0.0.0.0:9999 (pairingRequired=false, connectedClients=1)
 ```
 
-`Claimed` records saved device credentials and the claim latch, which stays set after every
-device is revoked; it does not count a password and does not show whether anyone is using
-the daemon now. For automation, use `frogg auth claim-status --json` and read
+`Claimed` is true when device credentials are saved, when the claim latch is set (it stays
+set after every device is revoked) or when `config.json` sets a password. It does not show
+whether anyone is using the daemon now. For automation, use `frogg auth claim-status --json` and read
 `daemon.connectedClients` for live authenticated WebSocket sessions and
 `daemon.pairingRequired` for the daemon's current access decision. The top-level claim fields
 describe persisted configuration only.

@@ -2,7 +2,7 @@ import { brand } from "@frogg/branding";
 import type { Command } from "commander";
 import {
   createClaimStore,
-  DEFAULT_TRUST_LAN,
+  isDaemonClaimed,
   loadPersistedConfig,
   type DaemonIdentity,
 } from "@frogg/server";
@@ -118,8 +118,9 @@ export async function describeClaimStatus(home?: string): Promise<ClaimStatusRes
   const file = store.read();
   const persistedAuth = loadPersistedConfig(froggHome).daemon?.auth;
   const passwordConfigured = Boolean(persistedAuth?.password);
-  const lanTrusted = persistedAuth?.trustLan ?? DEFAULT_TRUST_LAN;
-  const claimed = store.isClaimed();
+  const lanTrusted = persistedAuth?.trustLan ?? brand.daemon.trustLan;
+  // Same rule as the daemon's /api/setup/status: a set password claims it too.
+  const claimed = isDaemonClaimed(store, persistedAuth?.password);
   const state = resolveLocalDaemonState({ home });
   return {
     home: froggHome,

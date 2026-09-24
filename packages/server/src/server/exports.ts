@@ -16,6 +16,7 @@ export { generateLocalPairingOffer, type LocalPairingOffer } from "./pairing-off
 export { renderPairingQr } from "./pairing-qr.js";
 export {
   createClaimStore,
+  isDaemonClaimed,
   PRINCIPALS_FILENAME,
   type ClaimStore,
   type DeviceRecord,
