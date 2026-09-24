@@ -2388,6 +2388,15 @@ export const ja: TranslationResources = {
       natural: "自然（1.4秒）",
       relaxed: "長い（2.4秒）",
       interruptible: "話しかけて割り込む",
+      interruptDelay: "割り込みまでの時間",
+      interruptInstant: "すぐに（0.1秒）",
+      interruptShort: "短いフレーズ（0.3秒）",
+      interruptDeliberate: "はっきりしたフレーズ（0.6秒）",
+      groups: {
+        voice: "音声",
+        conversation: "会話",
+        appearance: "表示",
+      },
     },
     title: "コンパニオン",
     setup: {
@@ -2468,6 +2477,13 @@ export const ja: TranslationResources = {
         label: "音声グラフィックを動かす",
         description:
           "光がゆっくり流れます。オフにすると静かな表示になります。システムの視差効果を減らす設定は常に優先されます。",
+      },
+      model: {
+        label: "会話モデル",
+        hint: "このホストがコンパニオンとの会話に使うモデルです。次の会話から適用されます。",
+        defaultOption: "デフォルト（{{model}}）",
+        loadFailed: "このホストからモデルを読み込めませんでした。",
+        saveFailed: "会話モデルを保存できませんでした。",
       },
       replyText: {
         label: "返答テキストを表示",

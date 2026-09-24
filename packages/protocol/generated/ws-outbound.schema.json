@@ -34025,6 +34025,12 @@
                         "autoResumeOnUsageLimit": {
                           "type": "boolean"
                         },
+                        "companionModel": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
                         "enableTerminalAgentHooks": {
                           "default": false,
                           "type": "boolean"
@@ -34401,6 +34407,12 @@
                         },
                         "autoResumeOnUsageLimit": {
                           "type": "boolean"
+                        },
+                        "companionModel": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "enableTerminalAgentHooks": {
                           "default": false,

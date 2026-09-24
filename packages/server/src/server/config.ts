@@ -698,6 +698,13 @@ function resolveAutoResumeOnUsageLimit(persisted: ReturnType<typeof loadPersiste
   return persisted.daemon?.autoResumeOnUsageLimit !== false;
 }
 
+/** `features.companion.model`, surfaced as the mutable `companionModel`; null is the default. */
+function resolveCompanionModelSetting(
+  persisted: ReturnType<typeof loadPersistedConfig>,
+): string | null {
+  return persisted.features?.companion?.model ?? null;
+}
+
 function resolveStaticLoadConfigSettings(
   env: NodeJS.ProcessEnv,
   cli: CliConfigOverrides | undefined,
@@ -710,6 +717,7 @@ function resolveStaticLoadConfigSettings(
     browserToolsEnabled: resolveBrowserToolsEnabled(persisted),
     autoArchiveAfterMerge: persisted.daemon?.autoArchiveAfterMerge ?? false,
     autoResumeOnUsageLimit: resolveAutoResumeOnUsageLimit(persisted),
+    companionModel: resolveCompanionModelSetting(persisted),
     hostSettingsHiddenSections: resolveHostSettingsHiddenSections(persisted),
     autoUpdate: resolveAutoUpdateConfig(env, persisted),
     appendSystemPrompt: resolveAppendSystemPrompt(persisted),
@@ -756,6 +764,7 @@ export function resolveConfigFromPersisted(
     browserToolsEnabled,
     autoArchiveAfterMerge,
     autoResumeOnUsageLimit,
+    companionModel,
     hostSettingsHiddenSections,
     autoUpdate,
     appendSystemPrompt,
@@ -812,6 +821,7 @@ export function resolveConfigFromPersisted(
     git: resolveGitProcessConfig(env, persisted),
     autoArchiveAfterMerge,
     autoResumeOnUsageLimit,
+    companionModel,
     hostSettingsHiddenSections,
     autoUpdate,
     enableTerminalAgentHooks: persisted.daemon?.enableTerminalAgentHooks ?? false,

@@ -783,6 +783,8 @@ pub struct CompanionSessionStartRequestConversation {
     pub pause_ms: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub interruptible: Option<bool>,
+    #[serde(rename = "interruptDelayMs", skip_serializing_if = "Option::is_none")]
+    pub interrupt_delay_ms: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1737,6 +1739,8 @@ pub struct SetDaemonConfigRequestConfig {
         skip_serializing_if = "Option::is_none"
     )]
     pub auto_resume_on_usage_limit: Option<bool>,
+    #[serde(rename = "companionModel", skip_serializing_if = "Option::is_none")]
+    pub companion_model: Option<serde_json::Value>,
     #[serde(
         rename = "enableTerminalAgentHooks",
         skip_serializing_if = "Option::is_none"

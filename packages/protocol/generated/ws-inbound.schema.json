@@ -746,6 +746,11 @@
                     "interruptible": {
                       "default": true,
                       "type": "boolean"
+                    },
+                    "interruptDelayMs": {
+                      "type": "integer",
+                      "minimum": 80,
+                      "maximum": 1500
                     }
                   }
                 },
@@ -3638,6 +3643,18 @@
                     },
                     "autoResumeOnUsageLimit": {
                       "type": "boolean"
+                    },
+                    "companionModel": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 200
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
                     },
                     "enableTerminalAgentHooks": {
                       "type": "boolean"

@@ -2351,6 +2351,15 @@ export const ar: TranslationResources = {
       natural: "طبيعي (1.4 ثانية)",
       relaxed: "متأنٍ (2.4 ثانية)",
       interruptible: "السماح بمقاطعة الرد بالكلام",
+      interruptDelay: "المقاطعة بعد",
+      interruptInstant: "فورًا (0.1 ثانية)",
+      interruptShort: "عبارة قصيرة (0.3 ثانية)",
+      interruptDeliberate: "عبارة واضحة (0.6 ثانية)",
+      groups: {
+        voice: "الصوت",
+        conversation: "المحادثة",
+        appearance: "المظهر",
+      },
     },
     title: "الرفيق",
     setup: {
@@ -2429,6 +2438,13 @@ export const ar: TranslationResources = {
         label: "تحريك الرسومات الصوتية",
         description:
           "ضوء متدفق باستمرار. أوقفه لعرض أكثر هدوءًا. يتم دائمًا احترام إعداد تقليل الحركة في النظام.",
+      },
+      model: {
+        label: "نموذج المحادثة",
+        hint: "النموذج الذي يستخدمه هذا المضيف لمحادثات الرفيق. يُطبَّق من المحادثة التالية.",
+        defaultOption: "الافتراضي ({{model}})",
+        loadFailed: "تعذّر تحميل النماذج من هذا المضيف.",
+        saveFailed: "تعذّر حفظ نموذج المحادثة.",
       },
       replyText: {
         label: "إظهار نص الرد",

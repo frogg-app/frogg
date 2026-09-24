@@ -462,6 +462,8 @@ export interface FroggDaemonConfig {
   };
   autoArchiveAfterMerge?: boolean;
   autoResumeOnUsageLimit?: boolean;
+  /** `features.companion.model`; null means the backend default. */
+  companionModel?: string | null;
   hostSettingsHiddenSections?: readonly HostSettingsSection[];
   autoUpdate?: DaemonAutoUpdateConfig;
   enableTerminalAgentHooks?: boolean;
@@ -730,6 +732,7 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
     },
     autoArchiveAfterMerge: config.autoArchiveAfterMerge ?? false,
     autoResumeOnUsageLimit: config.autoResumeOnUsageLimit ?? true,
+    companionModel: config.companionModel ?? null,
     hostSettings: {
       hiddenSections: [...(config.hostSettingsHiddenSections ?? brand.hostSettings.hiddenSections)],
     },
@@ -1985,6 +1988,10 @@ export async function createFroggDaemon(
 
   let companionRefresh: Promise<void> | null = null;
   let companionRefreshedAt = 0;
+  // A picked model should reach the next session, not wait out the cache.
+  daemonConfigStore.onFieldChange("companionModel", () => {
+    companionRefreshedAt = 0;
+  });
   companion.refresh = async () => {
     if (companionRefresh) return companionRefresh;
     if (Date.now() - companionRefreshedAt < 15000) return;

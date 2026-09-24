@@ -2369,6 +2369,15 @@ export const ko: TranslationResources = {
       natural: "자연스럽게(1.4초)",
       relaxed: "여유 있게(2.4초)",
       interruptible: "말해서 응답 중단하기",
+      interruptDelay: "끼어들기까지",
+      interruptInstant: "즉시 (0.1초)",
+      interruptShort: "짧은 말 (0.3초)",
+      interruptDeliberate: "분명한 말 (0.6초)",
+      groups: {
+        voice: "음성",
+        conversation: "대화",
+        appearance: "모양",
+      },
     },
     title: "컴패니언",
     setup: {
@@ -2448,6 +2457,13 @@ export const ko: TranslationResources = {
         label: "음성 그래픽 애니메이션",
         description:
           "빛이 계속 흐릅니다. 차분한 화면을 원하면 끄세요. 시스템의 동작 줄이기 설정을 항상 따릅니다.",
+      },
+      model: {
+        label: "대화 모델",
+        hint: "이 호스트가 컴패니언 대화에 사용하는 모델입니다. 다음 대화부터 적용됩니다.",
+        defaultOption: "기본값 ({{model}})",
+        loadFailed: "이 호스트에서 모델을 불러오지 못했습니다.",
+        saveFailed: "대화 모델을 저장하지 못했습니다.",
       },
       replyText: {
         label: "응답 텍스트 표시",

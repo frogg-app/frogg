@@ -2423,6 +2423,15 @@ export const fr: TranslationResources = {
       natural: "Naturelle (1,4 seconde)",
       relaxed: "Longue (2,4 secondes)",
       interruptible: "Me laisser interrompre en parlant",
+      interruptDelay: "Interrompre après",
+      interruptInstant: "Immédiatement (0,1 seconde)",
+      interruptShort: "Une courte phrase (0,3 seconde)",
+      interruptDeliberate: "Une phrase posée (0,6 seconde)",
+      groups: {
+        voice: "Voix",
+        conversation: "Conversation",
+        appearance: "Apparence",
+      },
     },
     title: "Compagnon",
     setup: {
@@ -2504,6 +2513,13 @@ export const fr: TranslationResources = {
         label: "Animer les effets vocaux",
         description:
           "Une lumière en mouvement continu. Désactivez pour une vue plus calme. Le réglage système de réduction des animations est toujours respecté.",
+      },
+      model: {
+        label: "Modèle de conversation",
+        hint: "Le modèle que cet hôte utilise pour les conversations du Compagnon. S'applique à la prochaine conversation.",
+        defaultOption: "Par défaut ({{model}})",
+        loadFailed: "Impossible de charger les modèles de cet hôte.",
+        saveFailed: "Impossible d'enregistrer le modèle de conversation.",
       },
       replyText: {
         label: "Afficher le texte de la réponse",

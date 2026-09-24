@@ -2314,6 +2314,15 @@ export const zhCN: TranslationResources = {
       natural: "自然（1.4秒）",
       relaxed: "从容（2.4秒）",
       interruptible: "允许说话打断回复",
+      interruptDelay: "打断前等待",
+      interruptInstant: "立即（0.1 秒）",
+      interruptShort: "一个短句（0.3 秒）",
+      interruptDeliberate: "一个完整短句（0.6 秒）",
+      groups: {
+        voice: "语音",
+        conversation: "对话",
+        appearance: "外观",
+      },
     },
     title: "伙伴",
     setup: {
@@ -2388,6 +2397,13 @@ export const zhCN: TranslationResources = {
       animated: {
         label: "启用语音图形动画",
         description: "持续流动的光效。关闭后界面更静谧。始终遵循系统的减少动态效果设置。",
+      },
+      model: {
+        label: "对话模型",
+        hint: "此主机用于 Companion 对话的模型。从下一次对话开始生效。",
+        defaultOption: "默认（{{model}}）",
+        loadFailed: "无法从此主机加载模型。",
+        saveFailed: "无法保存对话模型。",
       },
       replyText: {
         label: "显示回复文本",

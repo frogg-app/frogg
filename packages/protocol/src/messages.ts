@@ -268,6 +268,9 @@ export const MutableDaemonConfigSchema = z
     autoArchiveAfterMerge: z.boolean().default(false),
     // COMPAT(autoResumeOnUsageLimit): added in v1.5.38; absent means an older daemon without the feature.
     autoResumeOnUsageLimit: z.boolean().optional(),
+    // COMPAT(companionModel): added in v1.5.43; absent means an older daemon without the picker.
+    // null is "the backend's default model".
+    companionModel: z.string().nullable().optional(),
     enableTerminalAgentHooks: z.boolean().default(false),
     appendSystemPrompt: z.string().default(""),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -291,6 +294,7 @@ export const MutableDaemonConfigPatchSchema = z
     metadataGeneration: MutableMetadataGenerationConfigSchema.partial().optional(),
     autoArchiveAfterMerge: z.boolean().optional(),
     autoResumeOnUsageLimit: z.boolean().optional(),
+    companionModel: z.string().trim().min(1).max(200).nullable().optional(),
     enableTerminalAgentHooks: z.boolean().optional(),
     appendSystemPrompt: z.string().optional(),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -1033,6 +1037,9 @@ export const CompanionConversationOptionsSchema = z.object({
   speechSpeed: z.number().min(0.75).max(2).optional(),
   pauseMs: z.number().int().min(600).max(3000).default(1400),
   interruptible: z.boolean().default(true),
+  // COMPAT(companionInterruptDelay): added in v1.5.43; older daemons strip it and
+  // keep their fixed 120ms. How long speech must last before it interrupts a reply.
+  interruptDelayMs: z.number().int().min(80).max(1500).optional(),
 });
 export type CompanionConversationOptions = z.infer<typeof CompanionConversationOptionsSchema>;
 

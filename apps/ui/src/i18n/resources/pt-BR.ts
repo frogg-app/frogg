@@ -2402,6 +2402,15 @@ export const ptBR: TranslationResources = {
       natural: "Natural (1,4 segundo)",
       relaxed: "Tranquila (2,4 segundos)",
       interruptible: "Permitir interrupção por voz",
+      interruptDelay: "Interromper após",
+      interruptInstant: "Imediatamente (0,1 segundo)",
+      interruptShort: "Uma frase curta (0,3 segundo)",
+      interruptDeliberate: "Uma frase pausada (0,6 segundo)",
+      groups: {
+        voice: "Voz",
+        conversation: "Conversa",
+        appearance: "Aparência",
+      },
     },
     title: "Companheiro",
     setup: {
@@ -2482,6 +2491,13 @@ export const ptBR: TranslationResources = {
         label: "Animar gráficos de voz",
         description:
           "Luz em movimento contínuo. Desative para uma visualização mais tranquila. A opção de reduzir movimento do sistema é sempre respeitada.",
+      },
+      model: {
+        label: "Modelo de conversa",
+        hint: "O modelo que este host usa nas conversas do Companion. Vale a partir da próxima conversa.",
+        defaultOption: "Padrão ({{model}})",
+        loadFailed: "Não foi possível carregar os modelos deste host.",
+        saveFailed: "Não foi possível salvar o modelo de conversa.",
       },
       replyText: {
         label: "Mostrar o texto da resposta",

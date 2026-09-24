@@ -136,6 +136,33 @@ describe("DaemonConfigStore", () => {
     ]);
   });
 
+  test("patch persists the Companion model and clears it back to the default", () => {
+    const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
+    tempDirs.push(froggHome);
+    const store = new DaemonConfigStore(froggHome, {
+      relay: { enabled: false },
+      mcp: { injectIntoAgents: false },
+      browserTools: { enabled: false },
+      providers: {},
+      metadataGeneration: { providers: [] },
+      autoArchiveAfterMerge: false,
+      enableTerminalAgentHooks: false,
+      appendSystemPrompt: "",
+      companionModel: null,
+    });
+    const changes: unknown[] = [];
+    store.onFieldChange("companionModel", (value) => changes.push(value));
+
+    store.patch({ companionModel: "claude-sonnet-5" });
+    expect(store.get().companionModel).toBe("claude-sonnet-5");
+    expect(loadPersistedConfig(froggHome).features?.companion?.model).toBe("claude-sonnet-5");
+
+    store.patch({ companionModel: null });
+    expect(store.get().companionModel).toBeNull();
+    expect(loadPersistedConfig(froggHome).features?.companion).not.toHaveProperty("model");
+    expect(changes).toEqual(["claude-sonnet-5", null]);
+  });
+
   test("patch persists relay state and emits its field change", () => {
     const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
     tempDirs.push(froggHome);

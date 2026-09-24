@@ -7457,6 +7457,8 @@ pub struct GetDaemonConfigResponsePayloadConfig {
         skip_serializing_if = "Option::is_none"
     )]
     pub auto_resume_on_usage_limit: Option<bool>,
+    #[serde(rename = "companionModel", skip_serializing_if = "Option::is_none")]
+    pub companion_model: Option<String>,
     #[serde(rename = "enableTerminalAgentHooks")]
     pub enable_terminal_agent_hooks: bool,
     #[serde(rename = "appendSystemPrompt")]
@@ -7626,6 +7628,8 @@ pub struct SetDaemonConfigResponsePayloadConfig {
         skip_serializing_if = "Option::is_none"
     )]
     pub auto_resume_on_usage_limit: Option<bool>,
+    #[serde(rename = "companionModel", skip_serializing_if = "Option::is_none")]
+    pub companion_model: Option<String>,
     #[serde(rename = "enableTerminalAgentHooks")]
     pub enable_terminal_agent_hooks: bool,
     #[serde(rename = "appendSystemPrompt")]

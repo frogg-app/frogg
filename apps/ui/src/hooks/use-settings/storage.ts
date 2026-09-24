@@ -115,6 +115,8 @@ export interface AppSettings {
   companionSpeechSpeed: number;
   companionPauseMs: number;
   companionInterruptible: boolean;
+  /** How long speech must last before it interrupts a reply. */
+  companionInterruptDelayMs: number;
   /** Show the Companion's reply text while it speaks. */
   companionShowReplyText: boolean;
   /** How the composer's usage meters refresh themselves, and where they change colour. */
@@ -185,6 +187,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   companionSpeechSpeed: 1.3,
   companionPauseMs: 1400,
   companionInterruptible: true,
+  companionInterruptDelayMs: 120,
   companionShowReplyText: true,
   usageMeters: DEFAULT_USAGE_METER_PREFERENCES,
 };
@@ -318,6 +321,7 @@ const StoredAppSettingsSchema = z
     companionSpeechSpeed: z.number().min(0.75).max(2).catch(1.3),
     companionPauseMs: z.number().int().min(600).max(3000).catch(1400),
     companionInterruptible: z.boolean().catch(true),
+    companionInterruptDelayMs: z.number().int().min(80).max(1500).catch(120),
     companionShowReplyText: z.boolean().catch(true),
     usageMeters: z
       .looseObject({

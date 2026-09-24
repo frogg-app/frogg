@@ -2375,6 +2375,15 @@ export const en = {
       natural: "Natural (1.4 seconds)",
       relaxed: "Relaxed (2.4 seconds)",
       interruptible: "Let me interrupt by speaking",
+      interruptDelay: "Interrupt after",
+      interruptInstant: "Instantly (0.1 seconds)",
+      interruptShort: "A short phrase (0.3 seconds)",
+      interruptDeliberate: "A deliberate phrase (0.6 seconds)",
+      groups: {
+        voice: "Voice",
+        conversation: "Conversation",
+        appearance: "Appearance",
+      },
     },
     title: "Companion",
     setup: {
@@ -2455,6 +2464,13 @@ export const en = {
         label: "Animate voice graphics",
         description:
           "Continuous flowing light. Turn off for a calmer view. System Reduce Motion is always respected.",
+      },
+      model: {
+        label: "Conversation model",
+        hint: "The model this host uses for Companion conversations. Applies to the next conversation.",
+        defaultOption: "Default ({{model}})",
+        loadFailed: "Could not load models from this host.",
+        saveFailed: "Could not save the conversation model.",
       },
       replyText: {
         label: "Show reply text",

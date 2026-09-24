@@ -185,6 +185,7 @@ function CompanionBody({ serverId, isAvailable, unavailableReason }: CompanionBo
       speechSpeed: settings.companionSpeechSpeed,
       pauseMs: settings.companionPauseMs,
       interruptible: settings.companionInterruptible,
+      interruptDelayMs: settings.companionInterruptDelayMs,
     });
   }, [serverId, sessionStarting, settings, activeWorkspace]);
 

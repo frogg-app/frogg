@@ -687,7 +687,10 @@ export class CompanionSession {
       // Local realtime decoding repeatedly revises the whole utterance. Keep the
       // Companion preview stable and emit the full authoritative sentence on endpoint.
       continuousTranscripts: false,
-      endpointing: { confirmMs: 120, silenceMs: this.conversation.pauseMs },
+      endpointing: {
+        confirmMs: this.conversation.interruptDelayMs ?? 120,
+        silenceMs: this.conversation.pauseMs,
+      },
       callbacks: {
         // Barge-in hangs off VAD onset, not the first STT partial. A partial
         // needs the VAD confirm window, a round trip through the recogniser and

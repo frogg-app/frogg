@@ -2417,6 +2417,15 @@ export const es: TranslationResources = {
       natural: "Natural (1,4 segundos)",
       relaxed: "Pausada (2,4 segundos)",
       interruptible: "Permitir interrumpir hablando",
+      interruptDelay: "Interrumpir tras",
+      interruptInstant: "Al instante (0,1 segundos)",
+      interruptShort: "Una frase corta (0,3 segundos)",
+      interruptDeliberate: "Una frase pausada (0,6 segundos)",
+      groups: {
+        voice: "Voz",
+        conversation: "Conversación",
+        appearance: "Apariencia",
+      },
     },
     title: "Compañero",
     setup: {
@@ -2498,6 +2507,13 @@ export const es: TranslationResources = {
         label: "Animar los gráficos de voz",
         description:
           "Luz en movimiento continuo. Desactívalo para una vista más tranquila. Siempre se respeta Reducir movimiento del sistema.",
+      },
+      model: {
+        label: "Modelo de conversación",
+        hint: "El modelo que este host usa para las conversaciones del Compañero. Se aplica a la próxima conversación.",
+        defaultOption: "Predeterminado ({{model}})",
+        loadFailed: "No se pudieron cargar los modelos de este host.",
+        saveFailed: "No se pudo guardar el modelo de conversación.",
       },
       replyText: {
         label: "Mostrar el texto de la respuesta",

@@ -11,6 +11,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { settingsStyles } from "@/styles/settings";
 import { CompanionBehaviorSettings } from "./companion-behavior-settings";
+import { CompanionModelPicker } from "./companion-model-picker";
 
 /** Client-side preferences for the Companion; the daemon decides whether it runs at all. */
 export function CompanionSection() {
@@ -34,20 +35,6 @@ export function CompanionSection() {
     [updateSettings],
   );
 
-  const handleReplyTextChange = useCallback(
-    (companionShowReplyText: boolean) => {
-      void updateSettings({ companionShowReplyText });
-    },
-    [updateSettings],
-  );
-
-  const changeAnimated = useCallback(
-    (companionAnimated: boolean) => {
-      void updateSettings({ companionAnimated });
-    },
-    [updateSettings],
-  );
-
   const changeNativeVoice = useCallback(
     (companionNativeVoice: boolean) => {
       void updateSettings({ companionNativeVoice });
@@ -59,115 +46,82 @@ export function CompanionSection() {
   }, [host.serverId, router]);
 
   return (
-    <SettingsSection title={t("companion.title")} testID="companion-section">
-      <View style={settingsStyles.card}>
-        <View style={settingsStyles.row}>
-          <View style={settingsStyles.rowContent}>
-            <Text style={settingsStyles.rowTitle}>{t("companion.settings.enabled.label")}</Text>
-            <Text style={settingsStyles.rowHint}>
-              {t("companion.settings.enabled.description")}
-            </Text>
-          </View>
-          <Switch
-            value={settings.companionEnabled}
-            onValueChange={handleEnabledChange}
-            accessibilityLabel={t("companion.settings.enabled.label")}
-            testID="settings-companion-enabled"
-          />
-        </View>
-        {settings.companionEnabled && Platform.OS === "web" ? (
-          <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+    <>
+      <SettingsSection title={t("companion.title")} testID="companion-section">
+        <View style={settingsStyles.card}>
+          <View style={settingsStyles.row}>
             <View style={settingsStyles.rowContent}>
-              <Text style={settingsStyles.rowTitle}>
-                {t("companion.settings.nativeVoice.label")}
-              </Text>
+              <Text style={settingsStyles.rowTitle}>{t("companion.settings.enabled.label")}</Text>
               <Text style={settingsStyles.rowHint}>
-                {t("companion.settings.nativeVoice.description")}
+                {t("companion.settings.enabled.description")}
               </Text>
             </View>
             <Switch
-              value={settings.companionNativeVoice}
-              onValueChange={changeNativeVoice}
-              accessibilityLabel={t("companion.settings.nativeVoice.label")}
+              value={settings.companionEnabled}
+              onValueChange={handleEnabledChange}
+              accessibilityLabel={t("companion.settings.enabled.label")}
+              testID="settings-companion-enabled"
             />
           </View>
-        ) : null}
-        <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
-          <View style={settingsStyles.rowContent}>
-            <Text style={settingsStyles.rowTitle}>{status}</Text>
-            {settings.companionEnabled ? (
-              <>
-                <Text style={settingsStyles.rowHint}>{host.unavailableReason}</Text>
-                <Text style={settingsStyles.rowHint}>
-                  {settings.companionNativeVoice
-                    ? t("companion.settings.nativeVoice.label")
-                    : (host.details?.model ?? t("companion.setup.unknown"))}
+          {settings.companionEnabled && Platform.OS === "web" ? (
+            <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+              <View style={settingsStyles.rowContent}>
+                <Text style={settingsStyles.rowTitle}>
+                  {t("companion.settings.nativeVoice.label")}
                 </Text>
                 <Text style={settingsStyles.rowHint}>
-                  {t(
-                    !settings.companionNativeVoice && host.details?.backend === "api"
-                      ? "companion.setup.api"
-                      : "companion.setup.subscription",
-                  )}
+                  {t("companion.settings.nativeVoice.description")}
                 </Text>
-                {!host.details?.conversationControls ? (
+              </View>
+              <Switch
+                value={settings.companionNativeVoice}
+                onValueChange={changeNativeVoice}
+                accessibilityLabel={t("companion.settings.nativeVoice.label")}
+              />
+            </View>
+          ) : null}
+          <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+            <View style={settingsStyles.rowContent}>
+              <Text style={settingsStyles.rowTitle}>{status}</Text>
+              {settings.companionEnabled ? (
+                <>
+                  <Text style={settingsStyles.rowHint}>{host.unavailableReason}</Text>
                   <Text style={settingsStyles.rowHint}>
-                    {t("companion.reason.companion_update_required")}
+                    {settings.companionNativeVoice
+                      ? t("companion.settings.nativeVoice.label")
+                      : (host.details?.model ?? t("companion.setup.unknown"))}
                   </Text>
-                ) : null}
-                {!host.details?.localSpeechReady && !settings.companionNativeVoice ? (
                   <Text style={settingsStyles.rowHint}>
-                    {t("companion.reason.companion_speech_unavailable")}
+                    {t(
+                      !settings.companionNativeVoice && host.details?.backend === "api"
+                        ? "companion.setup.api"
+                        : "companion.setup.subscription",
+                    )}
                   </Text>
-                ) : null}
-              </>
+                  {!host.details?.conversationControls ? (
+                    <Text style={settingsStyles.rowHint}>
+                      {t("companion.reason.companion_update_required")}
+                    </Text>
+                  ) : null}
+                  {!host.details?.localSpeechReady && !settings.companionNativeVoice ? (
+                    <Text style={settingsStyles.rowHint}>
+                      {t("companion.reason.companion_speech_unavailable")}
+                    </Text>
+                  ) : null}
+                </>
+              ) : null}
+            </View>
+            {settings.companionEnabled && host.serverId ? (
+              <Button size="sm" variant="ghost" onPress={openProviders}>
+                {t("companion.setup.providers")}
+              </Button>
             ) : null}
           </View>
-          {settings.companionEnabled && host.serverId ? (
-            <Button size="sm" variant="ghost" onPress={openProviders}>
-              {t("companion.setup.providers")}
-            </Button>
-          ) : null}
+          <CompanionModelPicker serverId={host.serverId} details={host.details} />
         </View>
-        {settings.companionEnabled ? (
-          <>
-            <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
-              <View style={settingsStyles.rowContent}>
-                <Text style={settingsStyles.rowTitle}>
-                  {t("companion.settings.replyText.label")}
-                </Text>
-                <Text style={settingsStyles.rowHint}>
-                  {t("companion.settings.replyText.description")}
-                </Text>
-              </View>
-              <Switch
-                value={settings.companionShowReplyText}
-                onValueChange={handleReplyTextChange}
-                accessibilityLabel={t("companion.settings.replyText.label")}
-                testID="settings-companion-show-reply-text"
-              />
-            </View>
-            <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
-              <View style={settingsStyles.rowContent}>
-                <Text style={settingsStyles.rowTitle}>
-                  {t("companion.settings.animated.label")}
-                </Text>
-                <Text style={settingsStyles.rowHint}>
-                  {t("companion.settings.animated.description")}
-                </Text>
-              </View>
-              <Switch
-                value={settings.companionAnimated}
-                onValueChange={changeAnimated}
-                accessibilityLabel={t("companion.settings.animated.label")}
-                testID="settings-companion-animated"
-              />
-            </View>
-            <CompanionBehaviorSettings />
-          </>
-        ) : null}
-      </View>
-    </SettingsSection>
+      </SettingsSection>
+      <CompanionBehaviorSettings />
+    </>
   );
 }
 

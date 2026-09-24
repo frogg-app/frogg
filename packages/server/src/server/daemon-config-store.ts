@@ -25,6 +25,7 @@ interface SupportedMutableConfigPatch {
   metadataGeneration?: MutableDaemonConfig["metadataGeneration"];
   autoArchiveAfterMerge?: boolean;
   autoResumeOnUsageLimit?: boolean;
+  companionModel?: string | null;
   hostSettings?: { hiddenSections?: HostSettingsSection[] };
   autoUpdate?: Partial<NonNullable<MutableDaemonConfig["autoUpdate"]>>;
   enableTerminalAgentHooks?: boolean;
@@ -183,6 +184,7 @@ const RELOADABLE_PATHS = [
   "daemon.git.maxProcessConcurrency",
   "daemon.autoArchiveAfterMerge",
   "daemon.autoResumeOnUsageLimit",
+  "features.companion.model",
   "daemon.hostSettings.hiddenSections",
   "daemon.autoUpdate",
   "daemon.enableTerminalAgentHooks",
@@ -211,6 +213,7 @@ const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
   ["daemon.git.maxProcessConcurrency", "git.maxProcessConcurrency"],
   ["daemon.autoArchiveAfterMerge", "autoArchiveAfterMerge"],
   ["daemon.autoResumeOnUsageLimit", "autoResumeOnUsageLimit"],
+  ["features.companion.model", "companionModel"],
   ["daemon.hostSettings.hiddenSections", "hostSettings.hiddenSections"],
   ["daemon.autoUpdate", "autoUpdate"],
   ["daemon.enableTerminalAgentHooks", "enableTerminalAgentHooks"],
@@ -291,6 +294,7 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
     ...(patch.autoResumeOnUsageLimit !== undefined
       ? { autoResumeOnUsageLimit: patch.autoResumeOnUsageLimit }
       : {}),
+    ...(patch.companionModel !== undefined ? { companionModel: patch.companionModel } : {}),
     ...(patch.autoUpdate !== undefined ? { autoUpdate: patch.autoUpdate } : {}),
     ...(patch.enableTerminalAgentHooks !== undefined
       ? { enableTerminalAgentHooks: patch.enableTerminalAgentHooks }
@@ -604,7 +608,22 @@ function mergeMutablePatchIntoPersistedConfig(params: {
     ...persisted,
     ...(daemon ? { daemon } : { daemon: undefined }),
     ...(agents ? { agents } : { agents: undefined }),
+    ...(patch.companionModel !== undefined
+      ? { features: withCompanionModel(persisted.features, patch.companionModel) }
+      : {}),
   } as PersistedConfig;
+}
+
+/** `features.companion.model`; null clears it back to the backend default. */
+function withCompanionModel(
+  features: PersistedConfig["features"],
+  model: string | null,
+): PersistedConfig["features"] {
+  const { model: _previous, ...companion } = features?.companion ?? {};
+  return {
+    ...features,
+    companion: model === null ? companion : { ...companion, model },
+  };
 }
 
 function mergeMutableAgentPatch(
