@@ -64,7 +64,6 @@ import {
   HostSettingsPage,
   HostDeployPage,
   HostProvidersPage,
-  HostUsagePage,
   HostTerminalsPage,
 } from "@/screens/settings/host-page";
 import ProjectsScreen from "@/screens/projects-screen";
@@ -113,8 +112,6 @@ function renderHostSettingsContent(
       return <HostAgentsPage serverId={view.serverId} />;
     case "providers":
       return <HostProvidersPage serverId={view.serverId} />;
-    case "usage":
-      return <HostUsagePage serverId={view.serverId} />;
     case "terminals":
       return <HostTerminalsPage serverId={view.serverId} />;
     case "host":

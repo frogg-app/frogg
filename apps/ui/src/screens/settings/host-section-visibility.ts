@@ -3,7 +3,7 @@ import { brand } from "@frogg/branding";
 import type { HostSettingsSection } from "@frogg/protocol/messages";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import { HOST_SECTION_ITEMS, type HostSectionItem } from "@/screens/settings/section-items";
-import type { HostSectionSlug } from "@/utils/host-routes";
+import { isHostSectionSlug, type HostSectionSlug } from "@/utils/host-routes";
 
 /**
  * Which sections of a host's settings this app offers for that host.
@@ -16,7 +16,10 @@ import type { HostSectionSlug } from "@/utils/host-routes";
 export function resolveHiddenHostSections(
   daemonHiddenSections: readonly HostSettingsSection[] | undefined,
 ): readonly HostSectionSlug[] {
-  return daemonHiddenSections ?? brand.hostSettings.hiddenSections;
+  const hidden: readonly string[] = daemonHiddenSections ?? brand.hostSettings.hiddenSections;
+  // A retired section (`usage`, folded into Providers) may still be listed; it
+  // hides nothing, and in particular not the section it moved into.
+  return hidden.filter(isHostSectionSlug);
 }
 
 export function isHostSectionVisible(

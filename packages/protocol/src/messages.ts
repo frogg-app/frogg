@@ -1901,6 +1901,13 @@ export const ProviderUsageListRequestMessageSchema = z.object({
    */
   provider: AgentProviderSchema.optional(),
   providerAccountId: z.string().nullable().optional(),
+  /**
+   * COMPAT(providerUsageMaxAge): added in v1.5.36. The oldest cached figures the
+   * caller will accept, in ms. The daemon floors it (provider rate limits) and
+   * never serves older than its own TTL. An older daemon ignores it and serves
+   * its cache as before.
+   */
+  maxAgeMs: z.number().int().nonnegative().optional(),
   requestId: z.string(),
 });
 

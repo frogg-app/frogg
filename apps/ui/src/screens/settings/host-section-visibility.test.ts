@@ -33,8 +33,14 @@ describe("host settings section visibility", () => {
     // Deploy is a desktop-only client section; the daemon has no setting for it.
     // Security is never hideable: a brand must not be able to hide its warnings.
     const clientOnly = new Set(["deploy", "security"]);
+    // Retired sections stay valid in brand and daemon config so existing files parse.
+    const retired = ["usage"];
     const hideable = HOST_SECTION_SLUGS.filter((slug) => !clientOnly.has(slug));
-    expect([...HOST_SETTINGS_SECTIONS].sort()).toEqual([...hideable].sort());
+    expect([...HOST_SETTINGS_SECTIONS].sort()).toEqual([...hideable, ...retired].sort());
+  });
+
+  it("ignores a retired section rather than hiding what replaced it", () => {
+    expect(resolveHiddenHostSections(["usage", "agents"])).toEqual(["agents"]);
   });
 
   it("sends a view of a hidden section to the first section the host still offers", () => {

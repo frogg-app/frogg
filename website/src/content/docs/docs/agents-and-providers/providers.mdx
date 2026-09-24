@@ -365,16 +365,23 @@ accounts are enabled, naming this behaviour.
 
 ## Usage and limits
 
-**Host settings → Usage** shows provider-reported quota where the provider exposes it
-(for example Claude, Codex and Kimi). Frogg reads those credentials read-only; the CLIs own
-token refresh.
+**Host settings → Providers** ends with a **Usage** section showing provider-reported quota
+where the provider exposes it (for example Claude, Codex and Kimi), including quota sources
+that are not agent providers. Frogg reads those credentials read-only; the CLIs own token
+refresh.
+
+The daemon caches usage for up to five minutes. Hovering a usage ring, an agent's reply and
+the **Refresh** button all ask for fresh figures; the refresh timer asks for figures no older
+than its interval. Either way the daemon reads a provider at most once every five seconds.
+Figures ease to their new value rather than jumping; turn that off under **Settings →
+Appearance**.
 
 The usage section of a chat's context-window meter reports the quota of the account that
 agent runs as: for a provider with [accounts](#provider-accounts-multi-sign-in), Frogg reads
 the credentials from that account's config directory rather than the primary one. On macOS
 the Keychain fallback is used only for the primary directory, so an account whose credentials
 file is missing shows as unavailable instead of borrowing another sign-in's figures. The
-Host settings page still reports the primary directory.
+host-wide Usage section still reports the primary directory.
 
 A provider sheet's account tab reports the same per-account figures: the usage shown on a tab
 is read from that account's own config directory, whether or not it is the account in use.

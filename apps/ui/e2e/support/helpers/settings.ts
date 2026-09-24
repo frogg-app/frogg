@@ -32,7 +32,7 @@ type HostSection =
   | "pair-device"
   | "agents"
   | "providers"
-  | "usage"
+  | "security"
   | "terminals"
   | "host";
 

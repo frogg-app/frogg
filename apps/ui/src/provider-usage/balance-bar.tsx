@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { clampPct, formatAmount, formatResetLabel } from "./format";
+import { formatAmount, formatResetLabel } from "./format";
+import { useEasedPct } from "./use-eased-pct";
 import type { ProviderUsageBalance, ProviderUsageTone } from "./types";
 
 interface ResolvedBalance {
@@ -44,9 +45,10 @@ export function ProviderUsageBalanceBar({ balance }: { balance: ProviderUsageBal
   const tone = balance.tone ?? "default";
   const resetLabel = formatResetLabel(balance.resetsAt);
 
+  const easedPct = useEasedPct(usedPct);
   const fillStyle = useMemo<StyleProp<ViewStyle>>(
-    () => [styles.fill, fillToneStyle(tone), { width: `${clampPct(usedPct ?? 0)}%` }],
-    [usedPct, tone],
+    () => [styles.fill, fillToneStyle(tone), { width: `${easedPct ?? 0}%` }],
+    [easedPct, tone],
   );
 
   return (

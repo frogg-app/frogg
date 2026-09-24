@@ -523,6 +523,7 @@ export class ProviderCatalogSession {
     try {
       const usage = await this.providerUsageService.listUsage({
         configDirs: this.resolveUsageConfigDirs(msg),
+        ...(msg.maxAgeMs === undefined ? {} : { maxAgeMs: msg.maxAgeMs }),
       });
       this.host.emit({
         type: "provider.usage.list.response",

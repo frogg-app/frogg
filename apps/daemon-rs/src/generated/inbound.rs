@@ -2254,6 +2254,8 @@ pub struct ProviderUsageListRequest {
     pub provider: Option<String>,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "maxAgeMs", skip_serializing_if = "Option::is_none")]
+    pub max_age_ms: Option<i64>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

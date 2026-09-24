@@ -1,3 +1,5 @@
+import { formatPct } from "@/provider-usage/format";
+import { useEasedPct } from "@/provider-usage/use-eased-pct";
 import { useCallback, useMemo, useRef, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View, type DimensionValue } from "react-native";
@@ -112,10 +114,10 @@ function ProviderAccountUsageMeter({
   stacked: boolean;
 }) {
   const tint = usageTint(column.pct);
+  const easedPct = useEasedPct(column.pct);
   // A zero-width fill is invisible, so a barely-used window would look
   // identical to one with no bar at all. Keep a sliver.
-  const fillWidth: DimensionValue =
-    column.pct == null ? 0 : `${Math.max(2, Math.min(100, column.pct))}%`;
+  const fillWidth: DimensionValue = easedPct == null ? 0 : `${Math.max(2, easedPct)}%`;
   return (
     <View style={[styles.usageMeter, stacked && styles.usageMeterStacked]}>
       <View style={styles.usageMeterHead}>
@@ -123,7 +125,7 @@ function ProviderAccountUsageMeter({
           {column.label}
         </Text>
         <Text numberOfLines={1} style={[styles.usagePct, tint ? { color: tint } : null]}>
-          {column.pctLabel}
+          {easedPct == null ? column.pctLabel : formatPct(easedPct)}
         </Text>
       </View>
       <View style={styles.usageTrack}>

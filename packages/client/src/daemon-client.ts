@@ -5518,11 +5518,14 @@ export class DaemonClient {
     requestId?: string;
     provider?: AgentProvider;
     providerAccountId?: string | null;
+    /** Oldest cached figures acceptable; the daemon floors it. Omit for its default TTL. */
+    maxAgeMs?: number;
   }): Promise<ProviderUsageListPayload> {
     return this.sendNamespacedCorrelatedSessionRequest({
       requestId: options?.requestId,
       message: {
         type: "provider.usage.list.request",
+        ...(options?.maxAgeMs === undefined ? {} : { maxAgeMs: options.maxAgeMs }),
         ...(options?.provider ? { provider: options.provider } : {}),
         ...(options && "providerAccountId" in options && options.providerAccountId !== undefined
           ? { providerAccountId: options.providerAccountId }

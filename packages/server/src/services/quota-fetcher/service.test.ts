@@ -263,6 +263,45 @@ describe("ProviderUsageService", () => {
     expect(refreshed.providers[0]?.windows[0]?.usedPct).toBe(2);
   });
 
+  it("honours a caller's max age, floored so a provider is not hammered", async () => {
+    let now = Date.parse("2026-06-19T00:00:00.000Z");
+    let calls = 0;
+    const service = new ProviderUsageService({
+      logger: createLogger(),
+      now: () => now,
+      cacheTtlMs: 60_000,
+      fetchers: [
+        {
+          providerId: "claude",
+          displayName: "Claude",
+          fetchUsage: async () => {
+            calls += 1;
+            return {
+              providerId: "claude",
+              displayName: "Claude",
+              status: "available",
+              windows: [{ id: "session", label: "Session", usedPct: calls }],
+            };
+          },
+        },
+      ],
+    });
+
+    await service.listUsage();
+    now += 2_000;
+    // Inside the floor: even "fresh, please" is served from the cache.
+    await service.listUsage({ maxAgeMs: 0 });
+    expect(calls).toBe(1);
+    now += 4_000;
+    const fresh = await service.listUsage({ maxAgeMs: 0 });
+    expect(calls).toBe(2);
+    expect(fresh.providers[0]?.windows[0]?.usedPct).toBe(2);
+    now += 20_000;
+    // Within the caller's 30s and the daemon's TTL: cached.
+    await service.listUsage({ maxAgeMs: 30_000 });
+    expect(calls).toBe(2);
+  });
+
   it("deduplicates concurrent cache misses", async () => {
     let calls = 0;
     let resolveUsage: ((usage: ProviderUsage) => void) | null = null;

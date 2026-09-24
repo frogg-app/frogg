@@ -13,6 +13,8 @@ import {
   deriveUsageTone,
   type UsageMeterPreferences,
 } from "@/provider-usage/meter-preferences";
+import { formatPct } from "@/provider-usage/format";
+import { useEasedPct } from "@/provider-usage/use-eased-pct";
 import { useUsageMeterPreferences } from "@/provider-usage/use-meter-preferences";
 import type { Theme } from "@/styles/theme";
 
@@ -162,13 +164,21 @@ export function QuotaRing({ column, glyph, size, onOpen, testID }: QuotaRingProp
       <TooltipContent side="top" align="center" offset={8}>
         <View style={styles.tooltipContent}>
           <Text style={styles.tooltipTitle}>{column.label}</Text>
-          <Text style={styles.tooltipText}>{`${column.pctLabel} used`}</Text>
+          <EasedUsedLabel pct={column.pct} fallback={column.pctLabel} />
           {column.resetIn ? (
             <Text style={styles.tooltipDetail}>{`Resets in ${column.resetIn}`}</Text>
           ) : null}
         </View>
       </TooltipContent>
     </Tooltip>
+  );
+}
+
+/** "29% used", counting between readings alongside the arc. */
+function EasedUsedLabel({ pct, fallback }: { pct: number | null; fallback: string }) {
+  const eased = useEasedPct(pct);
+  return (
+    <Text style={styles.tooltipText}>{`${eased == null ? fallback : formatPct(eased)} used`}</Text>
   );
 }
 

@@ -18,6 +18,8 @@ export interface ProviderUsageListResult {
 }
 
 const DEFAULT_PROVIDER_USAGE_CACHE_TTL_MS = 5 * 60 * 1000;
+/** No caller can make the daemon ask a provider more often than this. */
+export const MIN_PROVIDER_USAGE_MAX_AGE_MS = 5 * 1000;
 
 export class ProviderUsageService {
   private readonly logger: Logger;
@@ -55,14 +57,20 @@ export class ProviderUsageService {
    */
   async listUsage(options?: {
     forceRefresh?: boolean;
+    /** The oldest cached result the caller accepts; floored at MIN_PROVIDER_USAGE_MAX_AGE_MS. */
+    maxAgeMs?: number;
     configDirs?: Readonly<Record<string, string>>;
   }): Promise<ProviderUsageListResult> {
     const nowMs = this.now();
     const configDirs = options?.configDirs ?? {};
     const cacheKey = buildCacheKey(configDirs);
+    const ttlMs =
+      options?.maxAgeMs === undefined
+        ? this.cacheTtlMs
+        : Math.min(this.cacheTtlMs, Math.max(options.maxAgeMs, MIN_PROVIDER_USAGE_MAX_AGE_MS));
 
     const cached = this.cached.get(cacheKey);
-    if (!options?.forceRefresh && cached && nowMs - cached.fetchedAtMs < this.cacheTtlMs) {
+    if (!options?.forceRefresh && cached && nowMs - cached.fetchedAtMs < ttlMs) {
       return cached.result;
     }
 

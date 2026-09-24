@@ -521,7 +521,6 @@ export const HOST_SECTION_SLUGS = [
   "security",
   "agents",
   "providers",
-  "usage",
   "terminals",
   "host",
 ] as const;
@@ -529,6 +528,8 @@ export const HOST_SECTION_SLUGS = [
 export type HostSectionSlug = (typeof HOST_SECTION_SLUGS)[number];
 
 const LEGACY_HOST_SECTION_SLUGS: Record<string, HostSectionSlug> = {
+  // Usage folded into Providers.
+  usage: "providers",
   orchestration: "agents",
   daemon: "host",
   connections: "host",

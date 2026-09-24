@@ -5,7 +5,6 @@ import {
   Server,
   Bot,
   Boxes,
-  Gauge,
   Keyboard,
   Stethoscope,
   Info,
@@ -89,6 +88,11 @@ export interface HostSectionItem {
 
 export const HOST_SECTION_ITEMS: HostSectionItem[] = [
   { id: "host", labelKey: "settings.hostSections.host", icon: Server },
+  {
+    id: "security",
+    labelKey: "settings.hostSections.security",
+    icon: ShieldCheck,
+  },
   { id: "deploy", labelKey: "settings.hostSections.deploy", icon: Rocket },
   {
     id: "projects",
@@ -105,14 +109,8 @@ export const HOST_SECTION_ITEMS: HostSectionItem[] = [
     labelKey: "settings.hostSections.devices",
     icon: MonitorSmartphone,
   },
-  {
-    id: "security",
-    labelKey: "settings.hostSections.security",
-    icon: ShieldCheck,
-  },
   { id: "agents", labelKey: "settings.hostSections.agents", icon: Bot },
   { id: "providers", labelKey: "settings.hostSections.providers", icon: Boxes },
-  { id: "usage", labelKey: "settings.hostSections.usage", icon: Gauge },
   {
     id: "terminals",
     labelKey: "settings.hostSections.terminals",

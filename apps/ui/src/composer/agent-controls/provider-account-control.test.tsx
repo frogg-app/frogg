@@ -86,6 +86,13 @@ const usageState = {
   byAccount: new Map<string | null, unknown>(),
 };
 
+vi.mock("@/provider-usage/use-meter-preferences", async () => {
+  const { DEFAULT_USAGE_METER_PREFERENCES } = await import("@/provider-usage/meter-preferences");
+  // No easing in tests: the figure should read its final value on first render.
+  return {
+    useUsageMeterPreferences: () => ({ ...DEFAULT_USAGE_METER_PREFERENCES, animate: false }),
+  };
+});
 vi.mock("@/runtime/host-features", () => ({
   useHostFeature: () => usageState.accountScoped,
 }));

@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { useEasedValue } from "@/hooks/use-eased-value";
-import { clampPct, formatPct, formatResetLabel } from "./format";
-import { USAGE_METER_TRANSITION_MS, deriveUsageTone } from "./meter-preferences";
+import { formatPct, formatResetLabel } from "./format";
+import { useEasedPct } from "./use-eased-pct";
+import { deriveUsageTone } from "./meter-preferences";
 import { useUsageMeterPreferences } from "./use-meter-preferences";
 import type { ProviderUsageTone, ProviderUsageWindow } from "./types";
 
@@ -33,11 +33,8 @@ export function ProviderUsageWindowBar({ window }: { window: ProviderUsageWindow
   // own plan that a percentage does not say.
   const tone = window.tone ?? deriveUsageTone(usedPct, preferences);
 
-  const fillWidth = useEasedValue(
-    clampPct(usedPct ?? 0),
-    USAGE_METER_TRANSITION_MS,
-    preferences.animate,
-  );
+  const easedPct = useEasedPct(usedPct);
+  const fillWidth = easedPct ?? 0;
   const fillStyle = useMemo<StyleProp<ViewStyle>>(
     () => [styles.fill, fillToneStyle(tone), { width: `${fillWidth}%` }],
     [fillWidth, tone],
@@ -55,7 +52,7 @@ export function ProviderUsageWindowBar({ window }: { window: ProviderUsageWindow
           {window.label}
         </Text>
         <Text style={styles.value}>
-          {usedPct != null ? formatPct(usedPct) : "—"}
+          {easedPct != null ? formatPct(easedPct) : "—"}
           {trailing ? (
             <Text style={isAtRisk ? styles.atRisk : styles.reset}>{` · ${trailing}`}</Text>
           ) : null}

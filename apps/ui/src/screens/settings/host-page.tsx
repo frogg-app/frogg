@@ -286,6 +286,8 @@ export function HostProvidersPage({ serverId }: { serverId: string }) {
   return (
     <View>
       <ProvidersSection serverId={serverId} />
+      {/* Whole-host usage, including quota sources that are not agent providers. */}
+      <HostProviderUsage serverId={serverId} />
     </View>
   );
 }
@@ -297,8 +299,7 @@ export function HostDeployPage({ serverId }: { serverId: string }) {
   return <HostSshDeploySection host={host} />;
 }
 
-export function HostUsagePage({ serverId }: { serverId: string }) {
-  const host = useHostProfile(serverId);
+function HostProviderUsage({ serverId }: { serverId: string }) {
   const { view: providerUsageView } = useProviderUsage(serverId);
   const accounts = useProviderAccounts(serverId);
   // Refreshing has to reach the per-account queries each card makes for itself,
@@ -308,10 +309,6 @@ export function HostUsagePage({ serverId }: { serverId: string }) {
     () => buildUsageAccountsByProvider(accounts.payload?.accounts ?? [], withDefaultAccount),
     [accounts.payload],
   );
-
-  if (!host) {
-    return <HostNotFound />;
-  }
 
   return (
     <View>

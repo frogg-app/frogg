@@ -10,6 +10,18 @@ import type { ProviderUsageView } from "./types";
 export const PROVIDER_USAGE_STALE_TIME_MS = 5 * 60 * 1000;
 
 /**
+ * Hosts whose next usage reads must skip the daemon's cache, until the stamped
+ * time. A host-wide refresh invalidates queries that each refetch with their own
+ * query function, so the request for fresh figures has to travel out of band.
+ */
+const FORCE_FRESH_WINDOW_MS = 2000;
+const forceFreshUntil = new Map<string, number>();
+
+function wantsFreshUsage(serverId: string | null | undefined): boolean {
+  return (forceFreshUntil.get(serverId ?? "") ?? 0) > Date.now();
+}
+
+/**
  * COMPAT(providerUsageAccountScoped): the account scope is part of the key. Two
  * sign-ins of the same provider report different numbers, so they must never
  * share a cache entry.
@@ -93,12 +105,27 @@ export function useProviderUsage(
   const canFetch = Boolean(serverId && client && isConnected && supportsProviderUsage);
   const enabled = Boolean((options.enabled ?? true) && canFetch);
 
-  const queryFn = useCallback(async () => {
-    if (!client) {
-      throw new Error(providerUsageCopy.clientUnavailable);
-    }
-    return client.listProviderUsage(scope);
-  }, [client, scope]);
+  // The daemon caches usage for minutes, so each read says how old an answer it
+  // will take: the timer's own interval while polling, and "fresh" for a
+  // deliberate refresh (hover, agent response, the refresh button).
+  const timerMaxAgeMs = refetchInterval === false ? undefined : refetchInterval;
+  const fetchUsage = useCallback(
+    async (maxAgeMs: number | undefined) => {
+      if (!client) {
+        throw new Error(providerUsageCopy.clientUnavailable);
+      }
+      return client.listProviderUsage({
+        ...scope,
+        ...(maxAgeMs === undefined ? {} : { maxAgeMs }),
+      });
+    },
+    [client, scope],
+  );
+  const queryFn = useCallback(
+    () => fetchUsage(wantsFreshUsage(serverId) ? 0 : timerMaxAgeMs),
+    [fetchUsage, serverId, timerMaxAgeMs],
+  );
+  const freshQueryFn = useCallback(() => fetchUsage(0), [fetchUsage]);
 
   const query = useQuery({
     queryKey,
@@ -116,13 +143,15 @@ export function useProviderUsage(
 
   const refresh = useCallback(async () => {
     if (!canFetch) return;
-    await queryClient.invalidateQueries({ queryKey });
+    // A timer read already in flight would be joined rather than replaced, and it
+    // may be served from the daemon's cache.
+    await queryClient.cancelQueries({ queryKey });
     await queryClient.fetchQuery({
       queryKey,
-      queryFn,
+      queryFn: freshQueryFn,
       staleTime: 0,
     });
-  }, [canFetch, queryClient, queryFn, queryKey]);
+  }, [canFetch, freshQueryFn, queryClient, queryKey]);
 
   const view = useMemo<ProviderUsageView>(() => {
     if (!serverId || !client || !isConnected) {
@@ -167,6 +196,7 @@ export function useProviderUsage(
 export function useRefreshHostProviderUsage(serverId: string | null | undefined): () => void {
   const queryClient = useQueryClient();
   return useCallback(() => {
+    forceFreshUntil.set(serverId ?? "", Date.now() + FORCE_FRESH_WINDOW_MS);
     void queryClient.invalidateQueries({
       queryKey: ["providerUsage", serverId ?? ""],
       exact: false,
