@@ -489,7 +489,6 @@ export interface SessionOptions {
   workspaceGitService: WorkspaceGitService;
   workspaceAutoName: WorkspaceAutoName;
   daemonConfigStore: DaemonConfigStore;
-  orchestrationSkills?: import("./orchestration-skills/index.js").OrchestrationSkills;
   mcpBaseUrl?: string | null;
   stt: Resolvable<SpeechToTextProvider | null>;
   sttLanguage?: string;
@@ -728,7 +727,6 @@ export class Session {
   private readonly daemonConfigStore: DaemonConfigStore;
   private readonly pushNotifications: PushNotifications;
   private readonly spokenAlerts: SessionOptions["spokenAlerts"];
-  private readonly orchestrationSkills: SessionOptions["orchestrationSkills"];
   private unsubscribeAgentEvents: (() => void) | null = null;
   private unsubscribeProjectMutations: (() => void) | null = null;
   private unsubscribeWorkspaceMutations: (() => void) | null = null;
@@ -825,7 +823,6 @@ export class Session {
       workspaceGitService,
       workspaceAutoName,
       daemonConfigStore,
-      orchestrationSkills,
       stt,
       sttLanguage,
       tts,
@@ -873,7 +870,6 @@ export class Session {
     this.froggHome = froggHome;
     this.projectIcons = new ProjectIconReader(froggHome);
     this.worktreesRoot = worktreesRoot;
-    this.orchestrationSkills = orchestrationSkills;
     this.sessionLogger = logger.child({
       module: "session",
       clientId: this.clientId,
@@ -2268,7 +2264,6 @@ export class Session {
       this.dispatchWorkspaceFileMessage(msg, source) ??
       this.dispatchProviderMessage(msg) ??
       this.dispatchProviderUpdateMessage(msg) ??
-      this.dispatchOrchestrationSkillsMessage(msg) ??
       this.dispatchTerminalMessage(msg) ??
       this.dispatchMiscMessage(msg);
     if (promise) await promise;
@@ -2300,66 +2295,6 @@ export class Session {
         return this.deviceAccessSession.handlePresenceReportRequest(msg);
       case "presence.get.request":
         return this.deviceAccessSession.handlePresenceGetRequest(msg);
-      default:
-        return undefined;
-    }
-  }
-
-  private dispatchOrchestrationSkillsMessage(
-    msg: SessionInboundMessage,
-  ): Promise<void> | undefined {
-    if (!this.orchestrationSkills || !msg.type.startsWith("agent.skills.")) return undefined;
-    const emitStatus = (
-      type:
-        | "agent.skills.get_status.response"
-        | "agent.skills.reconcile.response"
-        | "agent.skills.uninstall.response",
-      requestId: string,
-      operation: Promise<import("./orchestration-skills/index.js").SkillsSnapshot>,
-    ) =>
-      operation.then((status) => {
-        this.emit({ type, payload: { requestId, ...status } });
-        return undefined;
-      });
-    switch (msg.type) {
-      case "agent.skills.get_status.request":
-        return emitStatus(
-          "agent.skills.get_status.response",
-          msg.requestId,
-          this.orchestrationSkills.getStatus(),
-        );
-      case "agent.skills.reconcile.request":
-        return emitStatus(
-          "agent.skills.reconcile.response",
-          msg.requestId,
-          this.orchestrationSkills.reconcile(),
-        );
-      case "agent.skills.uninstall.request":
-        return emitStatus(
-          "agent.skills.uninstall.response",
-          msg.requestId,
-          this.orchestrationSkills.uninstall(),
-        );
-      case "agent.skills.save_selection.request":
-        return this.orchestrationSkills
-          .saveSelection(msg.selection, msg.confirmedRemovals)
-          .then((result) => {
-            this.emit({
-              type: "agent.skills.save_selection.response",
-              payload: { requestId: msg.requestId, ...result },
-            });
-            return undefined;
-          });
-      case "agent.skills.import_legacy_selection.request":
-        return this.orchestrationSkills
-          .importLegacySelectionIfUnset(msg.selection)
-          .then((result) => {
-            this.emit({
-              type: "agent.skills.import_legacy_selection.response",
-              payload: { requestId: msg.requestId, ...result },
-            });
-            return undefined;
-          });
       default:
         return undefined;
     }

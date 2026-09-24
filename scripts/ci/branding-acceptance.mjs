@@ -87,16 +87,6 @@ try {
   );
   assert.equal(metadata.brand.applicationId, manifest.applicationId);
   assert.equal(metadata.asset, artifact);
-  const skill = await readFile(
-    path.join(root, ".generated/branding/skills/frogg/SKILL.md"),
-    "utf8",
-  );
-  const description = skill.match(/^description: (.+)$/m)?.[1];
-  assert.equal(
-    JSON.parse(description),
-    `${manifest.name} reference for managing projects, workspaces, workspace scripts, agents, schedules, and heartbeats.`,
-    "product punctuation remains a literal YAML description",
-  );
   manifest.name = "新しい Atlas Studio";
   manifest.publisher = "A different publisher";
   await writeFile(path.join(scratch, "brand.json"), JSON.stringify(manifest));

@@ -328,7 +328,6 @@ interface SessionForTestOptions {
   messages?: unknown[];
   targetedMessages?: Array<{ source: object; message: SessionOutboundMessage }>;
   binaryMessages?: Uint8Array[];
-  orchestrationSkills?: SessionOptions["orchestrationSkills"];
   workspaceLabelService?: WorkspaceLabelService;
 }
 
@@ -415,7 +414,6 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
       })),
       onChange: vi.fn(() => () => {}),
     }),
-    orchestrationSkills: options.orchestrationSkills,
     stt: options.stt ?? null,
     tts: null,
     terminalManager: options.terminalManager ?? null,
@@ -435,45 +433,6 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
   };
   return new Session(sessionOptions);
 }
-
-test("routes host-scoped agent skills requests through the daemon owner", async () => {
-  const messages: SessionOutboundMessage[] = [];
-  const status = {
-    state: "up-to-date" as const,
-    ops: [],
-    available: ["frogg"],
-    installed: ["frogg"],
-    selection: { mode: "all" as const },
-  };
-  const orchestrationSkills: NonNullable<SessionOptions["orchestrationSkills"]> = {
-    getStatus: vi.fn(async () => status),
-    reconcile: vi.fn(async () => status),
-    uninstall: vi.fn(async () => status),
-    saveSelection: vi.fn(async () => ({ ...status, confirmationRequired: null })),
-    importLegacySelectionIfUnset: vi.fn(async (selection) => ({
-      imported: true,
-      selection,
-    })),
-    autoUpdate: vi.fn(async () => status),
-  };
-  const session = createSessionForTest({ messages, orchestrationSkills });
-
-  await session.handleMessage({
-    type: "agent.skills.save_selection.request",
-    requestId: "save-skills",
-    selection: { mode: "custom", skills: ["frogg"] },
-    confirmedRemovals: ["frogg-loop"],
-  });
-
-  expect(orchestrationSkills.saveSelection).toHaveBeenCalledWith(
-    { mode: "custom", skills: ["frogg"] },
-    ["frogg-loop"],
-  );
-  expect(messages).toContainEqual({
-    type: "agent.skills.save_selection.response",
-    payload: { requestId: "save-skills", ...status, confirmationRequired: null },
-  });
-});
 
 describe("workspace label subscriptions", () => {
   type LabelSubscription = Awaited<ReturnType<WorkspaceLabelService["subscribe"]>>;

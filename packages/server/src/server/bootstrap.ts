@@ -130,7 +130,7 @@ import {
 } from "./workspace-registry.js";
 import { CheckoutDiffManager } from "./checkout-diff-manager.js";
 import { DaemonConfigStore, type MutableDaemonConfig } from "./daemon-config-store.js";
-import { createOrchestrationSkills } from "./orchestration-skills/index.js";
+import { removeRetiredSkills } from "./retired-skills.js";
 import {
   resolveConfigFromPersisted,
   resolvePairingBaseUrl,
@@ -160,7 +160,6 @@ import { getOrCreateServerId } from "./server-id.js";
 import { resolveDaemonVersion } from "./daemon-version.js";
 import type { AgentClient, AgentProvider } from "./agent/agent-sdk-types.js";
 import type {
-  AgentSkillSelection,
   FirstAgentContext,
   HostSettingsSection,
   TerminalProfile,
@@ -468,7 +467,6 @@ export interface FroggDaemonConfig {
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
   terminalProfiles?: TerminalProfile[];
-  skillSelection?: AgentSkillSelection;
   staticDir: string;
   mcpDebug: boolean;
   isDev?: boolean;
@@ -738,7 +736,6 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
     autoUpdate: resolveAutoUpdate(config),
     enableTerminalAgentHooks: config.enableTerminalAgentHooks ?? false,
     appendSystemPrompt: config.appendSystemPrompt ?? "",
-    skills: { selection: config.skillSelection },
   };
 
   if (config.terminalProfiles !== undefined) {
@@ -784,10 +781,14 @@ export async function createFroggDaemon(
       },
     },
   });
-  const orchestrationSkills = createOrchestrationSkills(daemonConfigStore);
-  void orchestrationSkills.autoUpdate().catch((error) => {
-    logger.error({ err: error }, "Failed to maintain orchestration skills at startup");
-  });
+  void removeRetiredSkills()
+    .then((removed) => {
+      if (removed.length > 0) logger.info({ removed }, "Removed skills older daemons installed");
+      return undefined;
+    })
+    .catch((error) => {
+      logger.warn({ err: error }, "Failed to remove skills older daemons installed");
+    });
   const browserToolsPolicy = new DaemonConfigBrowserToolsPolicy(daemonConfigStore);
   const browserToolsBroker = new BrowserToolsBroker({});
 
@@ -2210,7 +2211,6 @@ export async function createFroggDaemon(
               browserToolsBroker,
               hubRelationships,
               workspaceSetupRuntime,
-              orchestrationSkills,
               workspaceLabelService,
               spokenAlerts,
               companion,

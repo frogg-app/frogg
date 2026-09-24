@@ -30,10 +30,6 @@ import {
 import { getDesktopSettingsStore } from "./settings/desktop-settings-electron.js";
 import { isRunningUnderARM64Translation } from "./system/arm64-translation.js";
 import { getDesktopAppLogs } from "./diagnostics/app-logs.js";
-import {
-  deleteLegacySkillSelection,
-  readLegacySkillSelection,
-} from "./integrations/legacy-skill-selection.js";
 
 import type { AppReleaseChannel } from "./features/auto-updater.js";
 
@@ -116,8 +112,6 @@ export function createDesktopCommandHandlers(): Record<string, DesktopCommandHan
     get_local_daemon_version: unsupportedLocalServerCommand,
     install_cli: unsupportedLocalServerCommand,
     get_cli_install_status: unsupportedLocalServerCommand,
-    read_legacy_skill_selection: () => readLegacySkillSelection(),
-    delete_legacy_skill_selection: () => deleteLegacySkillSelection(),
   };
 }
 

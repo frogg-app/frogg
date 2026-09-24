@@ -243,16 +243,6 @@ pub enum SessionMessage {
     HubManagementDaemonPermissionsUpdateRequest(HubManagementDaemonPermissionsUpdateRequest),
     #[serde(rename = "diagnostics.request")]
     DiagnosticsRequest(DiagnosticsRequest),
-    #[serde(rename = "agent.skills.get_status.request")]
-    AgentSkillsGetStatusRequest(AgentSkillsGetStatusRequest),
-    #[serde(rename = "agent.skills.reconcile.request")]
-    AgentSkillsReconcileRequest(AgentSkillsReconcileRequest),
-    #[serde(rename = "agent.skills.uninstall.request")]
-    AgentSkillsUninstallRequest(AgentSkillsUninstallRequest),
-    #[serde(rename = "agent.skills.save_selection.request")]
-    AgentSkillsSaveSelectionRequest(AgentSkillsSaveSelectionRequest),
-    #[serde(rename = "agent.skills.import_legacy_selection.request")]
-    AgentSkillsImportLegacySelectionRequest(AgentSkillsImportLegacySelectionRequest),
     #[serde(rename = "get_daemon_config_request")]
     GetDaemonConfigRequest(GetDaemonConfigRequest),
     #[serde(rename = "set_daemon_config_request")]
@@ -1708,40 +1698,6 @@ pub enum HubManagementDaemonPermissionsUpdateRequestRevokeItem {
 pub struct DiagnosticsRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsGetStatusRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsReconcileRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsUninstallRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsSaveSelectionRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    pub selection: serde_json::Value,
-    #[serde(rename = "confirmedRemovals", skip_serializing_if = "Option::is_none")]
-    pub confirmed_removals: Option<Vec<String>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsImportLegacySelectionRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    pub selection: serde_json::Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

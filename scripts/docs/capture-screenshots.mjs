@@ -6,7 +6,7 @@
 //   node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 [--only a,b] [--list]
 //     [--out website/src/assets/docs] [--brand-tag frogg]
 //
-// Prerequisites (see skills/frogg-docs/SKILL.md, "Screenshots"):
+// Prerequisites (see .claude/skills/frogg-docs/SKILL.md, "Screenshots"):
 //   - A daemon built from this checkout with its web UI (`npm run build:server &&
 //     npm run build:daemon-web-ui`), started on its own port and FROGG_HOME with
 //     `--web-ui`. Never point this at a daemon you did not start.

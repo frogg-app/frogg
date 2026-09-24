@@ -3376,47 +3376,6 @@ export const ja: TranslationResources = {
         overridden:
           "デーモンの起動時オーバーライド（FROGG_RELAY_ENDPOINT または FROGG_RELAY_USE_TLS）で設定されています。デーモンを起動している場所で変更してください。",
       },
-      skills: {
-        ...en.settings.host.skills,
-        sectionTitle: "オーケストレーションスキル",
-        title: "オーケストレーションスキル",
-        description: "エージェントがCLI経由でオーケストレーションできるようにします。",
-        updateAvailable: "更新が利用可能",
-        uninstallTitle: "{{brandName}}スキルをアンインストールしますか？",
-        uninstallMessage:
-          "~/.agents、~/.claude、~/.codexからすべての{{brandName}}オーケストレーションスキルを削除します。",
-        choose: "スキルを選択",
-        chooseAll: "すべてのスキル",
-        chooseAllHint:
-          "後から追加されるものも含め、バンドルされたスキルをすべてインストールしたままにします。",
-        chooseList: "バンドルされたスキル",
-        chooseEmpty: "このビルドにはスキルが含まれていません。",
-        removeTitle: "選択を外したスキルを削除しますか？",
-        removeMessage:
-          "{{skills}} を ~/.agents、~/.claude、~/.codex から削除します。それらのスキルフォルダー内に追加したものもすべて削除されます。",
-        saveFailed: "スキルの選択を保存できませんでした。",
-        statusFailed: "オーケストレーションスキルのステータスを確認できません。",
-        updateFailed: "オーケストレーションスキルを更新できません。",
-        uninstallFailed: "オーケストレーションスキルをアンインストールできません。",
-        saveSelectionFailed: "オーケストレーションスキルの選択を保存できません。",
-        actions: {
-          install: "インストール",
-          installing: "インストール中...",
-          installed: "インストール済み",
-          update: "更新",
-          working: "処理中...",
-          remove: "削除",
-          uninstall: "アンインストール",
-          save: "保存",
-          saving: "保存中...",
-          cancel: "キャンセル",
-        },
-        operations: {
-          add: "スキルを追加",
-          update: "スキルを更新",
-          delete: "スキルを削除",
-        },
-      },
       orchestration: {
         title: "オーケストレーション",
         unavailable: "オーケストレーションを管理するにはこのホストに接続してください",

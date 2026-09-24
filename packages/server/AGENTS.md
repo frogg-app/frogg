@@ -7,7 +7,7 @@ Follow the repository [AGENTS.md](../../AGENTS.md) and the
 [testing](../../website/src/content/docs/docs/contributing/testing.mdx), and
 [security](../../SECURITY.md) for the boundary being changed. Daemon behavior, config and
 CLI changes update the matching page under `website/src/content/docs/docs/` in the same
-change (see [frogg-docs](../../skills/frogg-docs/SKILL.md)).
+change (see [frogg-docs](../../.claude/skills/frogg-docs/SKILL.md)).
 
 The Node daemon is a separately installed service. The Electron desktop app never
 bundles, starts or stops it. Keep agent state and authorization authoritative on

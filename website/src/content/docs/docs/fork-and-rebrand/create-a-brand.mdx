@@ -177,7 +177,7 @@ Brand prepared: Acme Studio (3f9c1a0b52de)
 
 You rarely run this by hand. `npm ci`, `typecheck` and every `dev:*` and `build:*`
 entrypoint prepare the selected brand first. The hash in brackets is the
-**fingerprint** of the manifest, artwork, generator, bundled skills, installer
+**fingerprint** of the manifest, artwork, generator, installer
 templates and app version. An unchanged fingerprint skips asset generation.
 
 Generated output is git-ignored. Never commit it.
@@ -187,7 +187,6 @@ Generated output is git-ignored. Never commit it.
 | `.generated/branding/brand.json`  | Fully resolved brand, read by Electron, release scripts and CI                |
 | `.generated/branding/icons/`      | `icon.ico`, `icon.icns`, PNG sizes for desktop packaging                      |
 | `.generated/branding/scripts/`    | Branded `install.sh`, `uninstall.sh`, `install-docker.sh`, `uninstall-docker.sh` |
-| `.generated/branding/skills/`     | Bundled agent skills, renamed to `<id>-<skill>` for custom brands             |
 | `.generated/branding/deploy/`     | `compose.json`, `pair-worker.json`, `install-worker.json`, `runtime.sh`       |
 | `.generated/branding/eas.json`    | EAS config with your App Store ID, used by `brand:eas`                        |
 | `.generated/branding/provenance.json` | Brand ID, version, source revision and fingerprint                        |

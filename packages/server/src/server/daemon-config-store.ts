@@ -8,7 +8,7 @@ import {
   MutableDaemonConfigSchema,
   MutableDaemonConfigPatchSchema,
 } from "@frogg/protocol/messages";
-import type { AgentSkillSelection, HostSettingsSection } from "@frogg/protocol/messages";
+import type { HostSettingsSection } from "@frogg/protocol/messages";
 
 export type { MutableDaemonConfig, MutableDaemonConfigPatch } from "@frogg/protocol/messages";
 
@@ -30,7 +30,6 @@ interface SupportedMutableConfigPatch {
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
   terminalProfiles?: MutableDaemonConfig["terminalProfiles"];
-  skills?: MutableDaemonConfig["skills"];
 }
 
 interface LoggerLike {
@@ -194,7 +193,6 @@ const RELOADABLE_PATHS = [
   "agents.providers",
   "agents.catalogRefreshTimeoutMs",
   "agents.metadataGeneration",
-  "agents.skills.selection",
 ] as const;
 
 const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
@@ -223,7 +221,6 @@ const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
   ["agents.providers", "providers"],
   ["agents.catalogRefreshTimeoutMs", "catalogRefreshTimeoutMs"],
   ["agents.metadataGeneration", "metadataGeneration"],
-  ["agents.skills.selection", "skills.selection"],
 ]);
 
 function pathBelongsTo(path: string, owner: string): boolean {
@@ -370,10 +367,6 @@ export class DaemonConfigStore {
     return this.applySupportedPatch(parsedPatch);
   }
 
-  public setAgentSkillSelection(selection: AgentSkillSelection): MutableDaemonConfig {
-    return this.applySupportedPatch({ skills: { selection } });
-  }
-
   private applySupportedPatch(parsedPatch: SupportedMutableConfigPatch): MutableDaemonConfig {
     if (parsedPatch.relay?.enabled !== undefined && !this.relayEnabledMutable) {
       throw new Error(
@@ -391,9 +384,6 @@ export class DaemonConfigStore {
     const { removeProviders = [], ...configPatch } = parsedPatch;
     const removedProviders = Array.from(new Set(removeProviders));
     const merged = deepMerge(this.current, configPatch);
-    if (parsedPatch.skills?.selection !== undefined) {
-      merged.skills = { selection: parsedPatch.skills.selection };
-    }
     const next = MutableDaemonConfigSchema.parse(
       omitMetadataGenerationProvidersFromConfig(
         omitProvidersFromConfig(merged, removedProviders),
@@ -625,7 +615,6 @@ function mergeMutableAgentPatch(
   if (
     patch.providers === undefined &&
     patch.metadataGeneration === undefined &&
-    patch.skills === undefined &&
     removeProviders.length === 0
   ) {
     return persistedAgents;
@@ -652,10 +641,6 @@ function mergeMutableAgentPatch(
         (entry) => !removed.has(entry.provider),
       ),
     };
-  }
-
-  if (patch.skills?.selection !== undefined) {
-    next["skills"] = { selection: patch.skills.selection };
   }
 
   return Object.keys(next).length > 0 ? (next as PersistedConfig["agents"]) : undefined;

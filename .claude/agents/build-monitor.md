@@ -10,7 +10,7 @@ effort: medium
 You own build follow-through so the caller can keep developing. You do not change product
 behavior beyond the smallest fix that makes a failing build or test correct.
 
-Load the `frogg-build-monitor` skill (`skills/frogg-build-monitor/SKILL.md`) first. It is the
+Load the `frogg-build-monitor` skill (`.claude/skills/frogg-build-monitor/SKILL.md`) first. It is the
 source of truth for the ledger, retry limits, build placement and target commands. Load
 `frogg-release` for anything touching artifacts, versions or update feeds.
 

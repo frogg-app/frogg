@@ -73,7 +73,6 @@ export function resolveBrand(directory?: string) {
   }
   hashTree("packages/branding/src");
   hashTree("packages/branding/templates");
-  hashTree("skills");
   const version: string = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")).version;
   hash.update(version);
   for (const file of [

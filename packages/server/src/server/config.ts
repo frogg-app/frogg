@@ -817,7 +817,6 @@ export function resolveConfigFromPersisted(
     enableTerminalAgentHooks: persisted.daemon?.enableTerminalAgentHooks ?? false,
     appendSystemPrompt,
     terminalProfiles,
-    skillSelection: persisted.agents?.skills?.selection,
     mcpDebug: env.MCP_DEBUG === "1",
     isDev: resolveFroggNodeEnv(env) === "development",
     agentStoragePath: path.join(froggHome, "agents"),

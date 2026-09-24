@@ -81,7 +81,6 @@ import {
   shouldUseDesktopDaemon,
 } from "@/desktop/daemon/desktop-daemon";
 import { AgentNavigationListener } from "@/desktop/agent-navigation";
-import { LegacyAgentSkillsMigration } from "@/agent-skills/legacy-migration";
 import { listenToDesktopEvent } from "@/desktop/electron/events";
 import { updateDesktopWindowChrome } from "@/desktop/electron/window";
 import { getDesktopHost } from "@/desktop/host";
@@ -579,7 +578,6 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
       <RosettaCalloutSource />
       <UpdateCalloutSource />
       <MobileUpdateCalloutSource />
-      <LegacyAgentSkillsMigration />
       <WorktreeSetupCalloutSource />
       <CommandCenterRootActions />
       <CommandCenterWorkspaceActions />

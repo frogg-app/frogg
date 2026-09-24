@@ -699,6 +699,24 @@ describe("loadPersistedConfig", () => {
     }
   });
 
+  test("drops the skill selection older daemons wrote", () => {
+    const home = createTempHome();
+    try {
+      writeFileSync(
+        path.join(home, "config.json"),
+        JSON.stringify({
+          version: 1,
+          agents: { skills: { selection: { mode: "all" } }, catalogRefreshTimeoutMs: 5000 },
+        }),
+      );
+      const config = loadPersistedConfig(home);
+      expect(config.agents).not.toHaveProperty("skills");
+      expect(config.agents?.catalogRefreshTimeoutMs).toBe(5000);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
   test("writes readable editable defaults for a new home", () => {
     const home = createTempHome();
     try {

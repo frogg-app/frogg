@@ -34,12 +34,7 @@ import { asUint8Array, decodeBinaryFrame } from "@frogg/protocol/binary-frames/i
 import type { TerminalActivity } from "@frogg/protocol/terminal-activity";
 import type { HostnamesConfig } from "./hostnames.js";
 import { isHostnameAllowed, type HostnameCheckOptions } from "./hostnames.js";
-import {
-  Session,
-  type SessionLifecycleIntent,
-  type SessionOptions,
-  type SessionRuntimeMetrics,
-} from "./session.js";
+import { Session, type SessionLifecycleIntent, type SessionRuntimeMetrics } from "./session.js";
 import { ProviderAccountStore } from "./provider-accounts/provider-account-store.js";
 import type { HubRelationshipManagement } from "./hub/relationship-controller.js";
 import { WorkspaceSetupRuntime } from "./workspace-setup-runtime.js";
@@ -698,7 +693,6 @@ export class VoiceAssistantWebSocketServer {
   }
   private readonly advertiseRelayConfig: boolean;
   private readonly directorySync = new DirectorySyncService();
-  private readonly orchestrationSkills: SessionOptions["orchestrationSkills"];
 
   constructor(
     server: HTTPServer,
@@ -742,7 +736,6 @@ export class VoiceAssistantWebSocketServer {
     browserToolsBroker?: BrowserToolsBroker | null,
     hubRelationships?: HubRelationshipManagement | null,
     workspaceSetupRuntime: WorkspaceSetupRuntime = new WorkspaceSetupRuntime(),
-    orchestrationSkills?: SessionOptions["orchestrationSkills"],
     workspaceLabelService?: WorkspaceLabelService,
     spokenAlerts?: SpokenAlertService | null,
     companion?: CompanionRuntime,
@@ -762,7 +755,6 @@ export class VoiceAssistantWebSocketServer {
     this.daemonRuntimeConfig = daemonRuntimeConfig;
     this.browserToolsBroker = browserToolsBroker ?? null;
     this.hubRelationships = hubRelationships ?? null;
-    this.orchestrationSkills = orchestrationSkills;
     this.agentManager = agentManager;
     this.agentStorage = agentStorage;
     this.projectRegistry = projectRegistry ?? createNoopProjectRegistry();
@@ -1680,7 +1672,6 @@ export class VoiceAssistantWebSocketServer {
       workspaceGitService: this.workspaceGitService,
       workspaceAutoName: this.workspaceAutoName,
       daemonConfigStore: this.daemonConfigStore,
-      orchestrationSkills: this.orchestrationSkills,
       mcpBaseUrl: this.mcpBaseUrl,
       stt: () => this.speech?.resolveStt() ?? null,
       sttLanguage: this.speech?.resolveSttLanguage() ?? "en",

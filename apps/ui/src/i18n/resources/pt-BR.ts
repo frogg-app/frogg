@@ -3392,47 +3392,6 @@ export const ptBR: TranslationResources = {
         overridden:
           "Definido por uma opção de inicialização do daemon (FROGG_RELAY_ENDPOINT ou FROGG_RELAY_USE_TLS). Altere onde o daemon é iniciado.",
       },
-      skills: {
-        ...en.settings.host.skills,
-        sectionTitle: "Skills de orquestração",
-        title: "Skills de orquestração",
-        description: "Ensine seus agentes a orquestrar pela CLI",
-        updateAvailable: "Atualização disponível",
-        uninstallTitle: "Desinstalar {{brandName}} skills?",
-        uninstallMessage:
-          "Remove todas as skills de orquestração do {{brandName}} de ~/.agents, ~/.claude e ~/.codex.",
-        choose: "Escolher skills",
-        chooseAll: "Todas as skills",
-        chooseAllHint:
-          "Mantenha instaladas todas as skills incluídas, inclusive as adicionadas depois.",
-        chooseList: "Skills incluídas",
-        chooseEmpty: "Esta versão não inclui skills.",
-        removeTitle: "Remover as skills desmarcadas?",
-        removeMessage:
-          "{{skills}} serão excluídas de ~/.agents, ~/.claude e ~/.codex. Tudo o que você adicionou dentro dessas pastas de skills também é excluído.",
-        saveFailed: "Não foi possível salvar sua seleção de skills.",
-        statusFailed: "Não foi possível verificar o status das skills de orquestração.",
-        updateFailed: "Não foi possível atualizar as skills de orquestração.",
-        uninstallFailed: "Não foi possível desinstalar as skills de orquestração.",
-        saveSelectionFailed: "Não foi possível salvar a seleção de skills de orquestração.",
-        actions: {
-          install: "Instalar",
-          installing: "Instalando...",
-          installed: "Instalado",
-          update: "Atualizar",
-          working: "Trabalhando...",
-          remove: "Remover",
-          uninstall: "Desinstalar",
-          save: "Salvar",
-          saving: "Salvando...",
-          cancel: "Cancelar",
-        },
-        operations: {
-          add: "Adicionar skill",
-          update: "Atualizar skill",
-          delete: "Excluir skill",
-        },
-      },
       orchestration: {
         title: "Orquestração",
         unavailable: "Conecte-se a este host para gerenciar a orquestração",

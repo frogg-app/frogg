@@ -78,14 +78,14 @@ Any change to user-visible behavior, configuration (`config.json`, env vars, `fr
 `brand.json`), CLI commands or flags, protocol-visible features, or the branding, build or
 release pipeline must update the matching docs page in the same PR, and its screenshots when
 the UI changes. Pages live in `website/src/content/docs/docs/<section>/`; images in
-`website/src/assets/docs/`. The [frogg-docs skill](skills/frogg-docs/SKILL.md) maps code areas to
+`website/src/assets/docs/`. The [frogg-docs skill](.claude/skills/frogg-docs/SKILL.md) maps code areas to
 pages and explains screenshots. Preview with `cd website && npm ci && npm run dev`, and check
 with `npm run build && npm run linkcheck`. Write "Frogg" as a plain name, and never document
 features the code does not have. If no docs change is needed, say so in the PR checklist.
 
 ## Release skill
 
-Use [frogg-release](skills/frogg-release/SKILL.md) for builds, benchmarks, update-feed
+Use [frogg-release](.claude/skills/frogg-release/SKILL.md) for builds, benchmarks, update-feed
 changes, packaging migrations and publication. It preserves the installed-client
 update contract across local and CI artifact production.
 
@@ -111,7 +111,7 @@ update contract across local and CI artifact production.
 ## Background build monitoring
 
 After pushing changes that need build supervision, use
-[the build monitor skill](skills/frogg-build-monitor/SKILL.md). Resume the existing
+[the build monitor skill](.claude/skills/frogg-build-monitor/SKILL.md). Resume the existing
 monitor in its isolated workspace instead of waiting for CI in the development
 conversation or starting another monitor. Hand it the pushed SHA, run IDs and
 requested targets. It owns targeted retries, bounded fixes and capacity-aware

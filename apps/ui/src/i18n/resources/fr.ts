@@ -3418,48 +3418,6 @@ export const fr: TranslationResources = {
         overridden:
           "Défini par une option de lancement du daemon (FROGG_RELAY_ENDPOINT ou FROGG_RELAY_USE_TLS). Modifiez-le là où le daemon est lancé.",
       },
-      skills: {
-        ...en.settings.host.skills,
-        sectionTitle: "Compétences en orchestration",
-        title: "Compétences en orchestration",
-        description: "Apprenez à vos agents à orchestrer via leCLI",
-        updateAvailable: "Mise à jour disponible",
-        uninstallTitle: "Désinstaller les compétences {{brandName}}?",
-        uninstallMessage:
-          "Supprime toutes les compétences d'orchestration {{brandName}} de ~/.agents, ~/.claude, ~/.codex.",
-        choose: "Choisir les compétences",
-        chooseAll: "Toutes les compétences",
-        chooseAllHint:
-          "Gardez installées toutes les compétences fournies, y compris celles ajoutées plus tard.",
-        chooseList: "Compétences fournies",
-        chooseEmpty: "Cette version ne fournit aucune compétence.",
-        removeTitle: "Supprimer les compétences décochées ?",
-        removeMessage:
-          "{{skills}} seront supprimées de ~/.agents, ~/.claude et ~/.codex. Tout ce que vous avez ajouté dans ces dossiers de compétences est également supprimé.",
-        saveFailed: "Impossible d'enregistrer votre sélection de compétences.",
-        statusFailed: "Impossible de vérifier l'état des compétences d'orchestration.",
-        updateFailed: "Impossible de mettre à jour les compétences d'orchestration.",
-        uninstallFailed: "Impossible de désinstaller les compétences d'orchestration.",
-        saveSelectionFailed:
-          "Impossible d'enregistrer la sélection des compétences d'orchestration.",
-        actions: {
-          install: "Installer",
-          installing: "Installation...",
-          installed: "Installé",
-          update: "Mise à jour",
-          working: "Fonctionnement...",
-          remove: "Supprimer",
-          uninstall: "Désinstaller",
-          save: "Enregistrer",
-          saving: "Enregistrement...",
-          cancel: "Annuler",
-        },
-        operations: {
-          add: "Ajouter une compétence",
-          update: "Mettre à jour la compétence",
-          delete: "Supprimer la compétence",
-        },
-      },
       orchestration: {
         title: "Orchestration",
         unavailable: "Connectez-vous à cet hôte pour gérer l'orchestration",

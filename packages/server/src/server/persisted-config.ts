@@ -11,11 +11,7 @@ import {
 import type { AgentProviderRuntimeSettingsMap } from "./agent/provider-launch-config.js";
 import { DEFAULT_GIT_PROCESS_POLICY } from "../utils/git-process-scheduler.js";
 import { ensurePrivateFile, writePrivateFileAtomicSync } from "./private-files.js";
-import {
-  AgentSkillSelectionSchema,
-  HostSettingsSectionSchema,
-  TerminalProfileSchema,
-} from "@frogg/protocol/messages";
+import { HostSettingsSectionSchema, TerminalProfileSchema } from "@frogg/protocol/messages";
 import { FroggServicePortAllocationSchema } from "@frogg/protocol/frogg-config-schema";
 import { ProviderAccountSchema } from "@frogg/protocol/provider-accounts";
 
@@ -421,7 +417,6 @@ export const PersistedConfigSchema = z
         providers: z.preprocess(normalizeAgentProviders, ProviderOverridesSchema).optional(),
         catalogRefreshTimeoutMs: z.number().int().positive().max(2_147_483_647).optional(),
         metadataGeneration: AgentMetadataGenerationSchema.optional(),
-        skills: z.object({ selection: AgentSkillSelectionSchema.optional() }).strict().optional(),
       })
       .strict()
       .optional(),
@@ -564,6 +559,13 @@ function stripRemovedConfigFields(parsed: unknown): unknown {
     const daemonRecord = { ...(daemon as Record<string, unknown>) };
     delete daemonRecord.agentProfiles;
     root.daemon = daemonRecord;
+  }
+  // COMPAT(skillsRemoved): the daemon no longer installs skills. Remove after 2027-09-24.
+  const agents = root.agents;
+  if (agents && typeof agents === "object" && !Array.isArray(agents)) {
+    const agentsRecord = { ...(agents as Record<string, unknown>) };
+    delete agentsRecord.skills;
+    root.agents = agentsRecord;
   }
   const providers = root.providers;
   if (!providers || typeof providers !== "object" || Array.isArray(providers)) {

@@ -47,7 +47,6 @@ jobs:
       - run: node scripts/ci/branding-browser.mjs
       - run: node scripts/release/build-daemon-bundle.mjs --target linux-x64 --out-dir dist/bundles
       - run: node --test scripts/ci/branding-install.test.mjs
-      - run: npx vitest run src/server/orchestration-skills/internal/brand-ownership.test.ts --root packages/server
       - uses: actions/upload-artifact@v7
         if: always()
         with:

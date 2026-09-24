@@ -1,7 +1,6 @@
 import { getDesktopHost, isElectronRuntime } from "@/desktop/host";
 import { listenToDesktopEvent } from "@/desktop/electron/events";
 import { invokeDesktopCommand } from "@/desktop/electron/invoke";
-import type { AgentSkillSelection } from "@frogg/protocol/messages";
 import {
   parseLocalDaemonInstallEvent,
   type LocalDaemonInstallEvent,
@@ -367,14 +366,4 @@ export async function getCliInstallStatus(): Promise<InstallStatus> {
 
 export async function installCli(): Promise<InstallStatus> {
   return parseInstallStatus(await invokeDesktopCommand("install_cli"));
-}
-
-// COMPAT(desktopSkillSelectionMigration): added in v0.4.0; remove after 2027-02-16.
-export function readLegacySkillSelection(): Promise<AgentSkillSelection | null> {
-  return invokeDesktopCommand("read_legacy_skill_selection") as Promise<AgentSkillSelection | null>;
-}
-
-// COMPAT(desktopSkillSelectionMigration): added in v0.4.0; remove after 2027-02-16.
-export async function deleteLegacySkillSelection(): Promise<void> {
-  await invokeDesktopCommand("delete_legacy_skill_selection");
 }

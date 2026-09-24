@@ -74,16 +74,6 @@ pub enum SessionMessage {
     HubExecutionAgentStream(HubExecutionAgentStream),
     #[serde(rename = "browser.automation.execute.request")]
     BrowserAutomationExecuteRequest(BrowserAutomationExecuteRequest),
-    #[serde(rename = "agent.skills.get_status.response")]
-    AgentSkillsGetStatusResponse(AgentSkillsGetStatusResponse),
-    #[serde(rename = "agent.skills.reconcile.response")]
-    AgentSkillsReconcileResponse(AgentSkillsReconcileResponse),
-    #[serde(rename = "agent.skills.uninstall.response")]
-    AgentSkillsUninstallResponse(AgentSkillsUninstallResponse),
-    #[serde(rename = "agent.skills.save_selection.response")]
-    AgentSkillsSaveSelectionResponse(AgentSkillsSaveSelectionResponse),
-    #[serde(rename = "agent.skills.import_legacy_selection.response")]
-    AgentSkillsImportLegacySelectionResponse(AgentSkillsImportLegacySelectionResponse),
     #[serde(rename = "activity_log")]
     ActivityLog(ActivityLog),
     #[serde(rename = "assistant_chunk")]
@@ -2382,125 +2372,6 @@ pub struct BrowserAutomationExecuteRequest {
     #[serde(rename = "workspaceId", skip_serializing_if = "Option::is_none")]
     pub workspace_id: Option<String>,
     pub command: serde_json::Value,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsGetStatusResponse {
-    pub payload: AgentSkillsGetStatusResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsGetStatusResponsePayload {
-    pub state: AgentSkillsGetStatusResponsePayloadState,
-    pub ops: Vec<serde_json::Value>,
-    pub available: Vec<String>,
-    pub installed: Vec<String>,
-    pub selection: serde_json::Value,
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum AgentSkillsGetStatusResponsePayloadState {
-    #[serde(rename = "not-installed")]
-    NotInstalled,
-    #[serde(rename = "up-to-date")]
-    UpToDate,
-    #[serde(rename = "drift")]
-    Drift,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsReconcileResponse {
-    pub payload: AgentSkillsReconcileResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsReconcileResponsePayload {
-    pub state: AgentSkillsReconcileResponsePayloadState,
-    pub ops: Vec<serde_json::Value>,
-    pub available: Vec<String>,
-    pub installed: Vec<String>,
-    pub selection: serde_json::Value,
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum AgentSkillsReconcileResponsePayloadState {
-    #[serde(rename = "not-installed")]
-    NotInstalled,
-    #[serde(rename = "up-to-date")]
-    UpToDate,
-    #[serde(rename = "drift")]
-    Drift,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsUninstallResponse {
-    pub payload: AgentSkillsUninstallResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsUninstallResponsePayload {
-    pub state: AgentSkillsUninstallResponsePayloadState,
-    pub ops: Vec<serde_json::Value>,
-    pub available: Vec<String>,
-    pub installed: Vec<String>,
-    pub selection: serde_json::Value,
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum AgentSkillsUninstallResponsePayloadState {
-    #[serde(rename = "not-installed")]
-    NotInstalled,
-    #[serde(rename = "up-to-date")]
-    UpToDate,
-    #[serde(rename = "drift")]
-    Drift,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsSaveSelectionResponse {
-    pub payload: AgentSkillsSaveSelectionResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsSaveSelectionResponsePayload {
-    pub state: AgentSkillsSaveSelectionResponsePayloadState,
-    pub ops: Vec<serde_json::Value>,
-    pub available: Vec<String>,
-    pub installed: Vec<String>,
-    pub selection: serde_json::Value,
-    #[serde(rename = "confirmationRequired")]
-    pub confirmation_required: serde_json::Value,
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum AgentSkillsSaveSelectionResponsePayloadState {
-    #[serde(rename = "not-installed")]
-    NotInstalled,
-    #[serde(rename = "up-to-date")]
-    UpToDate,
-    #[serde(rename = "drift")]
-    Drift,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsImportLegacySelectionResponse {
-    pub payload: AgentSkillsImportLegacySelectionResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct AgentSkillsImportLegacySelectionResponsePayload {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    pub imported: bool,
-    pub selection: serde_json::Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7592,8 +7463,6 @@ pub struct GetDaemonConfigResponsePayloadConfig {
     pub append_system_prompt: String,
     #[serde(rename = "terminalProfiles", skip_serializing_if = "Option::is_none")]
     pub terminal_profiles: Option<Vec<GetDaemonConfigResponsePayloadConfigTerminalProfilesItem>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub skills: Option<GetDaemonConfigResponsePayloadConfigSkills>,
     #[serde(rename = "autoUpdate", skip_serializing_if = "Option::is_none")]
     pub auto_update: Option<GetDaemonConfigResponsePayloadConfigAutoUpdate>,
     #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
@@ -7667,12 +7536,6 @@ pub struct GetDaemonConfigResponsePayloadConfigTerminalProfilesItem {
     pub args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct GetDaemonConfigResponsePayloadConfigSkills {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub selection: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7769,8 +7632,6 @@ pub struct SetDaemonConfigResponsePayloadConfig {
     pub append_system_prompt: String,
     #[serde(rename = "terminalProfiles", skip_serializing_if = "Option::is_none")]
     pub terminal_profiles: Option<Vec<SetDaemonConfigResponsePayloadConfigTerminalProfilesItem>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub skills: Option<SetDaemonConfigResponsePayloadConfigSkills>,
     #[serde(rename = "autoUpdate", skip_serializing_if = "Option::is_none")]
     pub auto_update: Option<SetDaemonConfigResponsePayloadConfigAutoUpdate>,
     #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
@@ -7844,12 +7705,6 @@ pub struct SetDaemonConfigResponsePayloadConfigTerminalProfilesItem {
     pub args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetDaemonConfigResponsePayloadConfigSkills {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub selection: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

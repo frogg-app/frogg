@@ -53,5 +53,5 @@ Then select the relevant pages:
 
 Changes to daemon behavior, config keys, environment variables, CLI commands or
 protocol-visible features update the matching docs page in the same change. Follow the
-`frogg-docs` skill (`skills/frogg-docs/SKILL.md`) for the page map and checks, or hand the
+`frogg-docs` skill (`.claude/skills/frogg-docs/SKILL.md`) for the page map and checks, or hand the
 audit to the `docs-writer` agent.

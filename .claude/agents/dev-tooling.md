@@ -56,7 +56,7 @@ merging a branch.
 
 ## Skills
 
-Project skills live in `skills/<name>/SKILL.md` with YAML frontmatter: `name`,
+Project skills live in `.claude/skills/<name>/SKILL.md` with YAML frontmatter: `name`,
 `description`, and optionally `user-invocable: true` and `argument-hint`. Match that format.
 
 A skill that restates a doc is worthless. A skill earns its place only when it encodes the

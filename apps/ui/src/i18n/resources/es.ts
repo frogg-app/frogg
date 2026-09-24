@@ -3411,47 +3411,6 @@ export const es: TranslationResources = {
         overridden:
           "Definido por una opción de arranque del daemon (FROGG_RELAY_ENDPOINT o FROGG_RELAY_USE_TLS). Cámbialo donde se inicia el daemon.",
       },
-      skills: {
-        ...en.settings.host.skills,
-        sectionTitle: "Habilidades de orquestación",
-        title: "Habilidades de orquestación",
-        description: "Enseñe a sus agentes a orquestar a través delCLI",
-        updateAvailable: "Actualización disponible",
-        uninstallTitle: "¿Desinstalar las habilidades {{brandName}}?",
-        uninstallMessage:
-          "Elimina todas las habilidades de orquestación {{brandName}} de ~/.agents, ~/.claude, ~/.codex.",
-        choose: "Elegir habilidades",
-        chooseAll: "Todas las habilidades",
-        chooseAllHint:
-          "Mantén instaladas todas las habilidades incluidas, también las que se agreguen después.",
-        chooseList: "Habilidades incluidas",
-        chooseEmpty: "Esta versión no incluye habilidades.",
-        removeTitle: "¿Eliminar las habilidades deseleccionadas?",
-        removeMessage:
-          "{{skills}} se eliminarán de ~/.agents, ~/.claude y ~/.codex. También se elimina todo lo que hayas añadido dentro de esas carpetas de habilidades.",
-        saveFailed: "No se pudo guardar tu selección de habilidades.",
-        statusFailed: "No se puede comprobar el estado de las habilidades de orquestación.",
-        updateFailed: "No se pueden actualizar las habilidades de orquestación.",
-        uninstallFailed: "No se pueden desinstalar las habilidades de orquestación.",
-        saveSelectionFailed: "No se puede guardar la selección de habilidades de orquestación.",
-        actions: {
-          install: "Instalar",
-          installing: "Instalando...",
-          installed: "Instalado",
-          update: "Actualizar",
-          working: "Laboral...",
-          remove: "Eliminar",
-          uninstall: "Desinstalar",
-          save: "Guardar",
-          saving: "Guardando...",
-          cancel: "Cancelar",
-        },
-        operations: {
-          add: "Agregar habilidad",
-          update: "Actualizar habilidad",
-          delete: "Eliminar habilidad",
-        },
-      },
       orchestration: {
         title: "Orquestación",
         unavailable: "Conéctese a este host para administrar la orquestación",

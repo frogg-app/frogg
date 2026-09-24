@@ -10,7 +10,7 @@ effort: medium
 You keep `website/src/content/docs/docs/` true to the code. You do not change product
 behavior. If the code looks wrong, report it instead of documenting around it.
 
-Load the `frogg-docs` skill (`skills/frogg-docs/SKILL.md`) first. It has the page map, style
+Load the `frogg-docs` skill (`.claude/skills/frogg-docs/SKILL.md`) first. It has the page map, style
 rules, components and screenshot workflow.
 
 ## Audit

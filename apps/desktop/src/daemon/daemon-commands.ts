@@ -30,10 +30,6 @@ import {
 import { getDesktopSettingsStore } from "../settings/desktop-settings-electron.js";
 import { isRunningUnderARM64Translation } from "../system/arm64-translation.js";
 import { getDesktopAppLogs } from "../diagnostics/app-logs.js";
-import {
-  deleteLegacySkillSelection,
-  readLegacySkillSelection,
-} from "../integrations/legacy-skill-selection.js";
 
 import {
   parseAppUpdateCheckIntent,
@@ -122,8 +118,6 @@ export function createDaemonCommandHandlers(): Record<string, DesktopCommandHand
     get_local_daemon_version: () => getLocalDaemonVersion(),
     install_cli: () => installCli(),
     get_cli_install_status: () => getCliInstallStatus(),
-    read_legacy_skill_selection: () => readLegacySkillSelection(),
-    delete_legacy_skill_selection: () => deleteLegacySkillSelection(),
   };
 }
 

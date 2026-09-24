@@ -50,4 +50,4 @@ i18n and branding literals). Then select the relevant pages and skills:
 
 Changes users can see (screens, flows, settings, CLI output) update the matching docs page
 and its screenshots in the same change. Follow the `frogg-docs` skill
-(`skills/frogg-docs/SKILL.md`) or hand the audit to the `docs-writer` agent.
+(`.claude/skills/frogg-docs/SKILL.md`) or hand the audit to the `docs-writer` agent.
