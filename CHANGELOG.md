@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.44 — 2026-09-24
+
+- The "cache expired" composer warning now survives a daemon restart. The daemon records
+  when a conversation last went to the model (`lastUsageAt`), keeps it on disk with the
+  last usage figures, and the warning times from that instead of the agent's
+  last-updated time, which restarts and renames reset.
+- Every completed turn logs its context size, input and cached-input tokens and
+  timestamp (`agent.manager.turn.usage`).
+- Fixes the 1.5.43 CI failure: a relay reconnect test passed a stale argument.
+
 ## 1.5.43 — 2026-09-24
 
 - **Removed:** the daemon no longer installs its skills into `~/.agents`, `~/.claude`
