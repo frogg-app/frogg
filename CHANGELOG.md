@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.41 — 2026-09-24
+
+- Settings > Updates shows the app update's download progress as it happens. A found release
+  takes over the Check for updates row, and Download & install enables as soon as the
+  download lands.
+- **Removed:** schedules and heartbeats (the daemon service, RPCs, MCP tools, and the
+  `frogg schedule` / `frogg agent heartbeat` commands). They are being rewritten; existing
+  `~/.frogg/schedules` data is left on disk.
+- **Removed:** Frogg agent profiles. Providers manage their own agents. Configs that still
+  carry `daemon.agentProfiles` keep loading; the key is dropped.
+- Non-Frogg brands now fall back to their `brand.json` `trustLan` default (off) in the Node
+  and Rust daemons and the CLI, instead of a hardcoded `true`.
+- Old `/settings/plugins` and plugin deep links redirect to settings; removed plugin config
+  keys are dropped on load. Install and Docker hints name the current commands.
+
 ## 1.5.40 — 2026-09-24
 
 - Branded builds can lock providers and models in `brand.json`. `providers.allowed` removes
