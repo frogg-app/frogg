@@ -60,6 +60,17 @@ notify the parent when they finish.
 `daemon.browserTools.enabled: true` adds `browser_*` tools (tabs, snapshot, click, fill,
 type, navigate, screenshot, evaluate and more). Off by default.
 
+How it works:
+
+- The tools drive the browser pane of a connected desktop app. The daemon relays each
+  call to that app; with no desktop app connected, calls fail with `browser_no_host`.
+- Tabs belong to the agent's workspace and appear in that workspace's browser pane, so
+  you can watch and take over. An agent outside a workspace is refused.
+- Navigation is limited to `http` and `https` URLs.
+- `browser_evaluate` runs JavaScript in the page. Turn the tools on only for hosts whose
+  agents you trust with the sites open in that pane, including signed-in sessions.
+- The setting is per host and needs an owner to change.
+
 ## Your own MCP servers
 
 Frogg has no global registry of user MCP servers. Agents use the MCP servers configured in
