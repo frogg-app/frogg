@@ -3292,6 +3292,58 @@ export const ja: TranslationResources = {
         rowTitle: "デバイスをペアリング",
         rowHint: "QRコードをスキャンするかリンクをコピーしてスマートフォンをこのホストに接続",
       },
+      security: {
+        title: "セキュリティ",
+        dotLabel: "このホストにセキュリティの問題があります",
+        severity: { critical: "重大", warning: "警告" },
+        findings: {
+          unclaimed: {
+            title: "このホストには所有者のデバイスがありません",
+            body: "このホストに到達できる人なら誰でも制御を奪えます。デバイスを所有者としてペアリングして取得してください。",
+          },
+          exposed_without_password: {
+            title: "パスワードなしで到達可能",
+            body: "このホストはネットワーク接続を受け付けていますが、パスワードもクレームモードもありません。パスワードを設定してください。",
+          },
+          trust_lan_diverges: {
+            title: "ローカルネットワークが信頼されています",
+            body: "ローカルネットワーク上のデバイスがペアリングなしで接続できます。推奨設定では許可されていません。",
+          },
+          bind_diverges: {
+            title: "このマシンの外部で待ち受けています",
+            body: "このホストは推奨設定よりも広く、他のマシンからの接続を受け付けています。",
+          },
+          claim_mode_diverges: {
+            title: "クレームモードがオフです",
+            body: "推奨設定では、新しいデバイスは接続前にクレームまたはペアリングが必要です。",
+          },
+          unknown: {
+            title: "セキュリティの問題",
+            body: "デーモンがこのアプリで認識できない問題を報告しました ({{id}})。",
+          },
+        },
+        actions: {
+          claim: "デバイスをペアリング",
+          setPassword: "パスワードを設定",
+          disableTrustLan: "ローカルネットワークを信頼しない",
+          enableClaimMode: "クレームモードをオンにする",
+          openDevices: "デバイスを開く",
+        },
+        bindInstructions:
+          "デーモンの config.json で待ち受けアドレスを 127.0.0.1 に設定し、デーモンを再起動してください。他のデバイスからはリレーまたは SSH トンネル経由で接続します。",
+        pending: "適用中…",
+        actionFailed: "修正を適用できませんでした: {{message}}",
+        password: {
+          label: "新しいパスワード",
+          confirmLabel: "パスワードの確認",
+          hint: "8 文字以上。ペアリングしていないデバイスが接続するときに必要です。",
+          tooShort: "8 文字以上にしてください。",
+          mismatch: "パスワードが一致しません。",
+          save: "パスワードを保存",
+          saving: "保存中…",
+          failed: "パスワードを設定できませんでした: {{message}}",
+        },
+      },
       relayEndpoint: {
         title: "リレーエンドポイント",
         hint: "このホストが接続に使うリレーサーバー（host:port 形式）。空欄にするとリレーは無効のままです。",

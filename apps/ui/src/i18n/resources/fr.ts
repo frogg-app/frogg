@@ -3334,6 +3334,58 @@ export const fr: TranslationResources = {
         rowTitle: "Associer un appareil",
         rowHint: "Scannez un codeQRou copiez un lien pour connecter votre téléphone à cet hôte",
       },
+      security: {
+        title: "Sécurité",
+        dotLabel: "Problèmes de sécurité sur cet hôte",
+        severity: { critical: "Critique", warning: "Avertissement" },
+        findings: {
+          unclaimed: {
+            title: "Aucun appareil ne possède cet hôte",
+            body: "Toute personne pouvant joindre cet hôte peut en prendre le contrôle. Associez un appareil comme propriétaire pour le revendiquer.",
+          },
+          exposed_without_password: {
+            title: "Accessible sans mot de passe",
+            body: "Cet hôte accepte les connexions réseau mais n'a ni mot de passe ni mode de revendication. Définissez un mot de passe.",
+          },
+          trust_lan_diverges: {
+            title: "Le réseau local est approuvé",
+            body: "Les appareils du réseau local se connectent sans association, ce que les paramètres recommandés n'autorisent pas.",
+          },
+          bind_diverges: {
+            title: "Écoute au-delà de cette machine",
+            body: "Cet hôte accepte les connexions d'autres machines, plus largement que les paramètres recommandés.",
+          },
+          claim_mode_diverges: {
+            title: "Le mode de revendication est désactivé",
+            body: "Les paramètres recommandés exigent que les nouveaux appareils soient revendiqués ou associés avant de se connecter.",
+          },
+          unknown: {
+            title: "Problème de sécurité",
+            body: "Le daemon a signalé un problème que cette app ne reconnaît pas ({{id}}).",
+          },
+        },
+        actions: {
+          claim: "Associer un appareil",
+          setPassword: "Définir un mot de passe",
+          disableTrustLan: "Ne plus approuver le réseau local",
+          enableClaimMode: "Activer le mode de revendication",
+          openDevices: "Ouvrir les appareils",
+        },
+        bindInstructions:
+          "Définissez l'adresse d'écoute sur 127.0.0.1 dans le config.json du daemon, puis redémarrez-le. Depuis d'autres appareils, passez par le relais ou un tunnel SSH.",
+        pending: "Application…",
+        actionFailed: "Impossible d'appliquer la correction : {{message}}",
+        password: {
+          label: "Nouveau mot de passe",
+          confirmLabel: "Confirmer le mot de passe",
+          hint: "Au moins 8 caractères. Les appareils non associés en ont besoin pour se connecter.",
+          tooShort: "Utilisez au moins 8 caractères.",
+          mismatch: "Les mots de passe ne correspondent pas.",
+          save: "Enregistrer le mot de passe",
+          saving: "Enregistrement…",
+          failed: "Impossible de définir le mot de passe : {{message}}",
+        },
+      },
       relayEndpoint: {
         title: "Point de terminaison du relais",
         hint: "Serveur relais par lequel cet hôte se connecte, au format hôte:port. Laissez vide pour garder le relais désactivé.",

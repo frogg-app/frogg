@@ -88,6 +88,7 @@ import { hasDaemonReconnectedAfter, type DaemonConnectionMarker } from "./daemon
 import { restartDaemonFromSettings } from "./daemon-restart";
 import { formatHostConnectionLabel } from "./host-connection-display";
 import { HostStatusBadges } from "./host-status-badges";
+import { HostSecurityCard } from "@/security/security-card";
 
 const ThemedArrowUp = withUnistyles(ArrowUp);
 const ThemedArrowDown = withUnistyles(ArrowDown);
@@ -352,6 +353,8 @@ export function HostSettingsPage({
       <HostStatusBadges host={host} />
       {/* Right under the status, so the reason for an error badge is visible first. */}
       <HostConnectionError serverId={serverId} host={host} />
+      {/* High up: an unclaimed or open daemon is the most urgent thing on this page. */}
+      <HostSecurityCard serverId={serverId} />
 
       <HostAppearanceSection host={host} />
 

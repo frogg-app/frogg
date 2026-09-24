@@ -4,6 +4,7 @@ import type { DeviceRole, PendingPairingRequest } from "@frogg/protocol/device-a
 import { useReplicaQuery } from "@/data/query";
 import { useHostRuntimeClient, useHostRuntimeSnapshot } from "@/runtime/host-runtime";
 import { i18n } from "@/i18n/i18next";
+import { useRefreshSecurityPosture } from "@/security/use-security-posture";
 import { devicesQueryKey, pairingRequestsQueryKey } from "./query-keys";
 import { useDeviceAccess } from "./use-device-access";
 
@@ -84,6 +85,7 @@ export interface PairingRequestMutations {
 export function usePairingRequestMutations(serverId: string): PairingRequestMutations {
   const client = useHostRuntimeClient(serverId);
   const queryClient = useQueryClient();
+  const { refresh: refreshSecurityPosture } = useRefreshSecurityPosture(serverId);
 
   const decide = useMutation({
     mutationFn: async (input: PairingRequestDecision) => {
@@ -100,6 +102,8 @@ export function usePairingRequestMutations(serverId: string): PairingRequestMuta
       // An approval mints a credential, so the device list is now out of date.
       if (input.decision === "approve") {
         void queryClient.invalidateQueries({ queryKey: devicesQueryKey(serverId) });
+        // A first approval claims the daemon, which does not re-send server_info for it.
+        void refreshSecurityPosture();
       }
     },
   });

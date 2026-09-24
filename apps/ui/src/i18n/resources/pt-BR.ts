@@ -3309,6 +3309,58 @@ export const ptBR: TranslationResources = {
         rowTitle: "Parear um dispositivo",
         rowHint: "Escaneie um QR code ou copie um link para conectar seu celular a este host",
       },
+      security: {
+        title: "Segurança",
+        dotLabel: "Problemas de segurança neste host",
+        severity: { critical: "Crítico", warning: "Aviso" },
+        findings: {
+          unclaimed: {
+            title: "Nenhum dispositivo é dono deste host",
+            body: "Qualquer pessoa que alcance este host pode assumir o controle. Pareie um dispositivo como dono para reivindicá-lo.",
+          },
+          exposed_without_password: {
+            title: "Acessível sem senha",
+            body: "Este host aceita conexões de rede, mas não tem senha nem modo de reivindicação. Defina uma senha.",
+          },
+          trust_lan_diverges: {
+            title: "A rede local é confiável",
+            body: "Dispositivos na rede local se conectam sem pareamento, o que as configurações recomendadas não permitem.",
+          },
+          bind_diverges: {
+            title: "Escutando além desta máquina",
+            body: "Este host aceita conexões de outras máquinas, mais do que as configurações recomendadas.",
+          },
+          claim_mode_diverges: {
+            title: "O modo de reivindicação está desativado",
+            body: "As configurações recomendadas exigem que novos dispositivos sejam reivindicados ou pareados antes de se conectar.",
+          },
+          unknown: {
+            title: "Problema de segurança",
+            body: "O daemon relatou um problema que este app não reconhece ({{id}}).",
+          },
+        },
+        actions: {
+          claim: "Parear um dispositivo",
+          setPassword: "Definir senha",
+          disableTrustLan: "Deixar de confiar na rede local",
+          enableClaimMode: "Ativar modo de reivindicação",
+          openDevices: "Abrir dispositivos",
+        },
+        bindInstructions:
+          "Defina o endereço de escuta como 127.0.0.1 no config.json do daemon e reinicie-o. Acesse de outros dispositivos pelo relay ou por um túnel SSH.",
+        pending: "Aplicando…",
+        actionFailed: "Não foi possível aplicar a correção: {{message}}",
+        password: {
+          label: "Nova senha",
+          confirmLabel: "Confirmar senha",
+          hint: "Pelo menos 8 caracteres. Dispositivos sem pareamento precisam dela para se conectar.",
+          tooShort: "Use pelo menos 8 caracteres.",
+          mismatch: "As senhas não coincidem.",
+          save: "Salvar senha",
+          saving: "Salvando…",
+          failed: "Não foi possível definir a senha: {{message}}",
+        },
+      },
       relayEndpoint: {
         title: "Endpoint do relay",
         hint: "Servidor relay pelo qual este host se conecta, no formato host:porta. Deixe vazio para manter o relay desligado.",

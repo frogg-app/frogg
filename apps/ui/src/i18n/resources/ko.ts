@@ -3269,6 +3269,58 @@ export const ko: TranslationResources = {
         rowTitle: "기기 페어링",
         rowHint: "QR 코드를 스캔하거나 링크를 복사하여 휴대폰을 이 호스트에 연결하세요",
       },
+      security: {
+        title: "보안",
+        dotLabel: "이 호스트에 보안 문제가 있습니다",
+        severity: { critical: "심각", warning: "경고" },
+        findings: {
+          unclaimed: {
+            title: "이 호스트를 소유한 기기가 없습니다",
+            body: "이 호스트에 접근할 수 있는 누구나 제어권을 가져갈 수 있습니다. 기기를 소유자로 페어링해 호스트를 등록하세요.",
+          },
+          exposed_without_password: {
+            title: "비밀번호 없이 접근 가능",
+            body: "이 호스트는 네트워크 연결을 허용하지만 비밀번호와 등록 모드가 없습니다. 비밀번호를 설정하세요.",
+          },
+          trust_lan_diverges: {
+            title: "로컬 네트워크를 신뢰함",
+            body: "로컬 네트워크의 기기가 페어링 없이 연결됩니다. 권장 설정에서는 허용하지 않습니다.",
+          },
+          bind_diverges: {
+            title: "이 머신 외부에서 수신 대기 중",
+            body: "이 호스트는 권장 설정보다 넓게 다른 머신의 연결을 허용합니다.",
+          },
+          claim_mode_diverges: {
+            title: "등록 모드가 꺼져 있음",
+            body: "권장 설정에서는 새 기기가 연결 전에 등록되거나 페어링되어야 합니다.",
+          },
+          unknown: {
+            title: "보안 문제",
+            body: "데몬이 이 앱에서 인식하지 못하는 문제를 보고했습니다 ({{id}}).",
+          },
+        },
+        actions: {
+          claim: "기기 페어링",
+          setPassword: "비밀번호 설정",
+          disableTrustLan: "로컬 네트워크 신뢰 중지",
+          enableClaimMode: "등록 모드 켜기",
+          openDevices: "기기 열기",
+        },
+        bindInstructions:
+          "데몬의 config.json에서 수신 주소를 127.0.0.1로 설정한 다음 데몬을 다시 시작하세요. 다른 기기에서는 릴레이나 SSH 터널로 접속하세요.",
+        pending: "적용 중…",
+        actionFailed: "수정을 적용하지 못했습니다: {{message}}",
+        password: {
+          label: "새 비밀번호",
+          confirmLabel: "비밀번호 확인",
+          hint: "8자 이상. 페어링되지 않은 기기가 연결할 때 필요합니다.",
+          tooShort: "8자 이상 입력하세요.",
+          mismatch: "비밀번호가 일치하지 않습니다.",
+          save: "비밀번호 저장",
+          saving: "저장 중…",
+          failed: "비밀번호를 설정하지 못했습니다: {{message}}",
+        },
+      },
       relayEndpoint: {
         title: "릴레이 엔드포인트",
         hint: "이 호스트가 연결에 사용하는 릴레이 서버(host:port 형식). 비워 두면 릴레이가 꺼진 상태로 유지됩니다.",

@@ -3310,6 +3310,58 @@ export const en = {
         rowTitle: "Pair a device",
         rowHint: "Scan a QR code or copy a link to connect your phone to this host",
       },
+      security: {
+        title: "Security",
+        dotLabel: "Security issues on this host",
+        severity: { critical: "Critical", warning: "Warning" },
+        findings: {
+          unclaimed: {
+            title: "No device owns this host",
+            body: "Anyone who can reach this host can take control of it. Pair a device as its owner to claim it.",
+          },
+          exposed_without_password: {
+            title: "Reachable without a password",
+            body: "This host accepts network connections but has no password and no claim mode. Set a password.",
+          },
+          trust_lan_diverges: {
+            title: "Local network is trusted",
+            body: "Devices on the local network connect without pairing, which the recommended settings do not allow.",
+          },
+          bind_diverges: {
+            title: "Listening beyond this machine",
+            body: "This host accepts connections from other machines, wider than the recommended settings.",
+          },
+          claim_mode_diverges: {
+            title: "Claim mode is off",
+            body: "The recommended settings require new devices to be claimed or paired before they connect.",
+          },
+          unknown: {
+            title: "Security issue",
+            body: "The daemon reported an issue this app does not recognize ({{id}}).",
+          },
+        },
+        actions: {
+          claim: "Pair a device",
+          setPassword: "Set password",
+          disableTrustLan: "Stop trusting the local network",
+          enableClaimMode: "Turn on claim mode",
+          openDevices: "Open devices",
+        },
+        bindInstructions:
+          "Set the listen address to 127.0.0.1 in the daemon's config.json, then restart the daemon. Reach it from other devices through the relay or an SSH tunnel instead.",
+        pending: "Applying…",
+        actionFailed: "Could not apply the fix: {{message}}",
+        password: {
+          label: "New password",
+          confirmLabel: "Confirm password",
+          hint: "At least 8 characters. Devices without a pairing need it to connect.",
+          tooShort: "Use at least 8 characters.",
+          mismatch: "Passwords do not match.",
+          save: "Save password",
+          saving: "Saving…",
+          failed: "Could not set the password: {{message}}",
+        },
+      },
       relayEndpoint: {
         title: "Relay endpoint",
         hint: "Relay server this host connects through, as host:port. Leave empty to keep relay off.",

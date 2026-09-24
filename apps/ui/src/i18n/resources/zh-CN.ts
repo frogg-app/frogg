@@ -3200,6 +3200,58 @@ export const zhCN: TranslationResources = {
         rowTitle: "配对设备",
         rowHint: "扫描二维码或复制链接，将手机连接到这个 Host",
       },
+      security: {
+        title: "安全",
+        dotLabel: "此主机存在安全问题",
+        severity: { critical: "严重", warning: "警告" },
+        findings: {
+          unclaimed: {
+            title: "此主机没有所有者设备",
+            body: "任何能访问此主机的人都可以控制它。请将一台设备配对为所有者以认领此主机。",
+          },
+          exposed_without_password: {
+            title: "无需密码即可访问",
+            body: "此主机接受网络连接，但没有密码也未开启认领模式。请设置密码。",
+          },
+          trust_lan_diverges: {
+            title: "信任本地网络",
+            body: "本地网络上的设备无需配对即可连接，推荐设置不允许这样做。",
+          },
+          bind_diverges: {
+            title: "在本机之外监听",
+            body: "此主机接受来自其他机器的连接，范围超出推荐设置。",
+          },
+          claim_mode_diverges: {
+            title: "认领模式已关闭",
+            body: "推荐设置要求新设备在连接前先被认领或配对。",
+          },
+          unknown: {
+            title: "安全问题",
+            body: "守护进程报告了此应用无法识别的问题（{{id}}）。",
+          },
+        },
+        actions: {
+          claim: "配对设备",
+          setPassword: "设置密码",
+          disableTrustLan: "不再信任本地网络",
+          enableClaimMode: "开启认领模式",
+          openDevices: "打开设备",
+        },
+        bindInstructions:
+          "在守护进程的 config.json 中将监听地址设为 127.0.0.1，然后重启守护进程。其他设备请通过中继或 SSH 隧道访问。",
+        pending: "正在应用…",
+        actionFailed: "无法应用修复：{{message}}",
+        password: {
+          label: "新密码",
+          confirmLabel: "确认密码",
+          hint: "至少 8 个字符。未配对的设备需要它才能连接。",
+          tooShort: "请至少使用 8 个字符。",
+          mismatch: "两次输入的密码不一致。",
+          save: "保存密码",
+          saving: "正在保存…",
+          failed: "无法设置密码：{{message}}",
+        },
+      },
       relayEndpoint: {
         title: "中继端点",
         hint: "此主机连接所用的中继服务器，格式为 host:port。留空则保持中继关闭。",

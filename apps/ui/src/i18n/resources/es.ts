@@ -3328,6 +3328,58 @@ export const es: TranslationResources = {
         rowTitle: "Emparejar un dispositivo",
         rowHint: "Escanee un códigoQRo copie un enlace para conectar su teléfono a este host",
       },
+      security: {
+        title: "Seguridad",
+        dotLabel: "Problemas de seguridad en este host",
+        severity: { critical: "Crítico", warning: "Advertencia" },
+        findings: {
+          unclaimed: {
+            title: "Ningún dispositivo es propietario de este host",
+            body: "Cualquiera que pueda alcanzar este host puede tomar el control. Vincula un dispositivo como propietario para reclamarlo.",
+          },
+          exposed_without_password: {
+            title: "Accesible sin contraseña",
+            body: "Este host acepta conexiones de red pero no tiene contraseña ni modo de reclamación. Establece una contraseña.",
+          },
+          trust_lan_diverges: {
+            title: "Se confía en la red local",
+            body: "Los dispositivos de la red local se conectan sin vincularse, algo que la configuración recomendada no permite.",
+          },
+          bind_diverges: {
+            title: "Escucha más allá de esta máquina",
+            body: "Este host acepta conexiones de otras máquinas, más de lo que indica la configuración recomendada.",
+          },
+          claim_mode_diverges: {
+            title: "El modo de reclamación está desactivado",
+            body: "La configuración recomendada exige reclamar o vincular los dispositivos nuevos antes de que se conecten.",
+          },
+          unknown: {
+            title: "Problema de seguridad",
+            body: "El daemon informó de un problema que esta app no reconoce ({{id}}).",
+          },
+        },
+        actions: {
+          claim: "Vincular un dispositivo",
+          setPassword: "Establecer contraseña",
+          disableTrustLan: "Dejar de confiar en la red local",
+          enableClaimMode: "Activar el modo de reclamación",
+          openDevices: "Abrir dispositivos",
+        },
+        bindInstructions:
+          "Establece la dirección de escucha en 127.0.0.1 en el config.json del daemon y reinícialo. Accede desde otros dispositivos mediante el relay o un túnel SSH.",
+        pending: "Aplicando…",
+        actionFailed: "No se pudo aplicar la corrección: {{message}}",
+        password: {
+          label: "Nueva contraseña",
+          confirmLabel: "Confirmar contraseña",
+          hint: "Al menos 8 caracteres. Los dispositivos sin vincular la necesitan para conectarse.",
+          tooShort: "Usa al menos 8 caracteres.",
+          mismatch: "Las contraseñas no coinciden.",
+          save: "Guardar contraseña",
+          saving: "Guardando…",
+          failed: "No se pudo establecer la contraseña: {{message}}",
+        },
+      },
       relayEndpoint: {
         title: "Endpoint del relay",
         hint: "Servidor relay por el que se conecta este host, como host:puerto. Déjalo vacío para mantener el relay desactivado.",
