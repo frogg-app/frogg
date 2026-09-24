@@ -3143,6 +3143,11 @@ export const ja: TranslationResources = {
     host: {
       connectionErrors: {
         remoteSsh: "SSH トンネルに失敗しました: {{detail}}",
+        credentialRejected:
+          "このホストは、このデバイスに保存された認証情報を受け付けなくなりました ({{reason}})。認証情報は削除されました。再接続するには、このデバイスを再度ペアリングしてください。",
+        pairingRequired:
+          "接続するには、このデバイスをこのホストとペアリングする必要があります ({{reason}})。",
+        pairAgain: "再ペアリング",
         serverIdentityMismatch:
           "このホストのアドレスで別のデーモン ({{actualServerId}}) が応答しています。このホスト ({{expectedServerId}}) ではありません。もう一方のデーモンを停止するか、アドレスを確認してください。再接続は引き続き試行されます。",
       },

@@ -3162,6 +3162,11 @@ export const en = {
     host: {
       connectionErrors: {
         remoteSsh: "SSH tunnel failed: {{detail}}",
+        credentialRejected:
+          "This host no longer accepts this device's saved credential ({{reason}}). It has been removed. Pair this device again to reconnect.",
+        pairingRequired:
+          "This host needs this device to be paired before it can connect ({{reason}}).",
+        pairAgain: "Pair again",
         serverIdentityMismatch:
           "A different daemon ({{actualServerId}}) is answering at this host's address, not this host ({{expectedServerId}}). Stop the other daemon or check the address. Reconnecting keeps trying.",
       },

@@ -19,6 +19,14 @@ export function describeHostConnectionError(
       actualServerId: info.actualServerId,
     });
   }
+  if (info?.code === "pairing_required") {
+    return i18n.t(
+      info.credentialRejected
+        ? "settings.host.connectionErrors.credentialRejected"
+        : "settings.host.connectionErrors.pairingRequired",
+      { reason: info.reason },
+    );
+  }
   const raw = snapshot?.lastError?.trim() ?? "";
   return raw.length > 0 ? raw : null;
 }

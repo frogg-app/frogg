@@ -3185,6 +3185,11 @@ export const fr: TranslationResources = {
     host: {
       connectionErrors: {
         remoteSsh: "Échec du tunnel SSH : {{detail}}",
+        credentialRejected:
+          "Cet hôte n'accepte plus l'identifiant enregistré de cet appareil ({{reason}}). Il a été supprimé. Associez de nouveau cet appareil pour vous reconnecter.",
+        pairingRequired:
+          "Cet hôte exige que cet appareil soit associé avant de se connecter ({{reason}}).",
+        pairAgain: "Associer à nouveau",
         serverIdentityMismatch:
           "Un autre daemon ({{actualServerId}}) répond à l'adresse de cet hôte, pas cet hôte ({{expectedServerId}}). Arrêtez l'autre daemon ou vérifiez l'adresse. La reconnexion continue d'essayer.",
       },

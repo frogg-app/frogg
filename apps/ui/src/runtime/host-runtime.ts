@@ -1,5 +1,6 @@
 import { getSharedRuntime } from "./shared-runtime";
 import { describeHostConnectionError } from "./host-connection-error";
+import { isStaleCredentialError, withoutConnectionCredential } from "./stale-credential";
 import { brand, brandIdentity } from "@frogg/branding";
 import { matchesBrand } from "@frogg/branding/identity";
 import { useSyncExternalStore, useMemo } from "react";
@@ -2073,6 +2074,26 @@ export class HostRuntimeStore {
     await this.persistHosts();
   }
 
+  /**
+   * The daemon refused this connection's stored credential (revoked device,
+   * changed password, reset daemon). Drop it so the host stops presenting a
+   * dead token and the UI asks for a new pairing. Rate limits and transient
+   * failures never reach here: the client only reports `credentialRejected`
+   * for a non-rate-limited 4401.
+   */
+  private dropStaleCredential(snapshot: HostRuntimeSnapshot): void {
+    if (!isStaleCredentialError(snapshot.lastErrorInfo)) return;
+    const connectionId = snapshot.activeConnectionId;
+    if (!connectionId) return;
+    const host = this.hosts.find((candidate) => candidate.serverId === snapshot.serverId);
+    if (!host) return;
+    const next = withoutConnectionCredential(host, connectionId);
+    if (!next) return;
+    void this.updateHost(snapshot.serverId, () => next).catch((error) =>
+      console.warn("[HostRuntime] Failed to drop a rejected credential", error),
+    );
+  }
+
   async removeConnection(serverId: string, connectionId: string): Promise<void> {
     const host = this.hosts.find((candidate) => candidate.serverId === serverId);
     if (host?.connections.length === 1 && host.connections[0]?.id === connectionId) {
@@ -2235,6 +2256,7 @@ export class HostRuntimeStore {
       this.connectionStatusStartedAtByServer.set(host.serverId, Date.now());
       controller.subscribe(() => {
         const snapshot = controller.getSnapshot();
+        this.dropStaleCredential(snapshot);
         this.syncSessionReplica(snapshot.serverId, snapshot);
         this.syncDirectoryConnection(snapshot.serverId);
         this.emit(snapshot.serverId);

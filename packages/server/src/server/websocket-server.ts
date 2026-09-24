@@ -141,6 +141,26 @@ import {
 
 const WS_CLOSE_DAEMON_AUTH_FAILED = 4401;
 
+/**
+ * 4401 close reasons. "Password required" / "Incorrect password" are stable
+ * strings the CLI classifies; "Too many failed attempts" tells clients the
+ * refusal is transient (rate limit), so they keep their credential and retry.
+ */
+function describeAuthCloseReason(
+  reason: "unclaimed" | "missing_token" | "invalid_token" | "rate_limited",
+): string {
+  switch (reason) {
+    case "unclaimed":
+      return "Pairing required";
+    case "missing_token":
+      return "Password required";
+    case "rate_limited":
+      return "Too many failed attempts";
+    default:
+      return "Incorrect password";
+  }
+}
+
 export interface ExternalSocketMetadata {
   transport: "relay" | "hub";
   externalSessionKey?: string;
@@ -1007,13 +1027,7 @@ export class VoiceAssistantWebSocketServer {
     const decision = authorizeBearerSync(auth, request, token);
     if (!decision.ok) {
       const requestMetadata = extractSocketRequestMetadata(request);
-      // "Password required" / "Incorrect password" are stable strings the CLI classifies.
-      let reason = "Incorrect password";
-      if (decision.reason === "unclaimed") {
-        reason = "Pairing required";
-      } else if (decision.reason === "missing_token") {
-        reason = "Password required";
-      }
+      const reason = describeAuthCloseReason(decision.reason);
       this.logger.warn(
         { ...requestMetadata, hasToken: token !== null, reason: decision.reason },
         "Rejected WebSocket connection without valid daemon credentials",
@@ -1791,7 +1805,7 @@ export class VoiceAssistantWebSocketServer {
       this.closePhysicalSocket({
         ws: params.ws,
         closeCode: WS_CLOSE_DAEMON_AUTH_FAILED,
-        closeReason: decision.reason === "unclaimed" ? "Pairing required" : "Incorrect password",
+        closeReason: describeAuthCloseReason(decision.reason),
         logMessage: "Closing unauthenticated relay connection",
       });
       return;
