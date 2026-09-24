@@ -11,7 +11,7 @@ import { asInternals, createStub } from "./test-utils/class-mocks.js";
 import { createProviderSnapshotManagerStub } from "./test-utils/session-stubs.js";
 
 interface SessionInternals {
-  archiveAgentForClose(agentId: string): Promise<{ archivedAt: string }>;
+  agentLifecycle: { archiveForClose(agentId: string): Promise<{ archivedAt: string }> };
   handleUpdateAgentRequest(
     agentId: string,
     title: string,
@@ -149,7 +149,7 @@ describe("snapshot mutation ownership boundary", () => {
       }),
     );
 
-    const archiveResult = await session.archiveAgentForClose("agent-1");
+    const archiveResult = await session.agentLifecycle.archiveForClose("agent-1");
     expect(archiveSnapshot).toHaveBeenCalledTimes(1);
     expect(archiveResult.archivedAt).toBeTruthy();
 

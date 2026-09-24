@@ -141,7 +141,7 @@ interface SessionTestAccess {
     removedWorkspaceId?: string | null;
     [key: string]: unknown;
   }>;
-  handleArchiveAgentRequest(agentId: string, requestId: string): Promise<unknown>;
+  agentLifecycle: { archive(agentId: string, requestId: string): Promise<unknown> };
   handleMessage(message: unknown): Promise<unknown>;
   handleCreateFroggWorktreeRequest(params: unknown): Promise<unknown>;
   listAgentPayloads(...args: unknown[]): Promise<unknown[]>;
@@ -1643,7 +1643,7 @@ test("archive emits an authoritative agent_update upsert for subscribed clients"
 
   activateAgentUpdatesSubscription(session, "sub-agents", { includeArchived: true });
 
-  await session.handleArchiveAgentRequest("agent-1", "req-archive");
+  await session.agentLifecycle.archive("agent-1", "req-archive");
 
   const update = emitted.find((message) => message.type === "agent_update");
   expect(update?.payload).toMatchObject({

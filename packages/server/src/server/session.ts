@@ -77,6 +77,7 @@ import {
 import { DirectorySyncService } from "./directory-sync/index.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import { WorkspaceLabelsSession } from "./session/workspace-labels/workspace-labels-session.js";
+import { AgentLifecycleSession } from "./session/agent-lifecycle/agent-lifecycle-session.js";
 import { WorkspaceMetadataSession } from "./session/workspace-metadata/workspace-metadata-session.js";
 
 import { AgentManager, AgentRunCancellationError } from "./agent/agent-manager.js";
@@ -92,10 +93,7 @@ import type {
 import { createAgentCommand } from "./agent/create-agent/create.js";
 import { resolveCreateAgentIntent, type CreateAgentIntent } from "./agent/create-agent/intent.js";
 import {
-  archiveAgentCommand,
   cancelAgentRunCommand,
-  closeAgentCommand,
-  detachAgentCommand,
   setAgentModeCommand,
   updateAgentCommand,
 } from "./agent/lifecycle-command.js";
@@ -319,16 +317,6 @@ function resolveSubscriptionId(
 
 function clientUsesLegacyWorkspaceRestore(_appVersion: string | null): boolean {
   return false;
-}
-
-type DeleteFencedAgentStorage = AgentStorage & {
-  beginDelete(agentId: string): void;
-};
-
-function beginAgentDeleteIfSupported(agentStorage: AgentStorage, agentId: string): void {
-  if ("beginDelete" in agentStorage && typeof agentStorage.beginDelete === "function") {
-    (agentStorage as DeleteFencedAgentStorage).beginDelete(agentId);
-  }
 }
 
 const FETCH_AGENTS_SORT_KEYS = ["status_priority", "created_at", "updated_at", "title"] as const;
@@ -726,6 +714,7 @@ export class Session {
   private readonly defaultTimelineSubscriptionSource = {};
   private unsubscribeTerminalWorkspaceContributionEvents: (() => void) | null = null;
   private readonly agentUpdates: AgentUpdatesService;
+  private readonly agentLifecycle: AgentLifecycleSession;
   private workspaceUpdatesSubscription: WorkspaceUpdatesSubscriptionState | null = null;
   private readonly workspaceLabelService: WorkspaceLabelService | null;
   private readonly workspaceLabels: WorkspaceLabelsSession;
@@ -1132,6 +1121,17 @@ export class Session {
         ),
       logger: this.sessionLogger,
     });
+    this.agentLifecycle = new AgentLifecycleSession({
+      agentManager: this.agentManager,
+      agentStorage: this.agentStorage,
+      agentUpdates: this.agentUpdates,
+      logger: this.sessionLogger,
+      emit: (message) => this.emit(message),
+      emitWorkspaceUpdate: (workspaceId) => this.emitWorkspaceUpdateForWorkspaceId(workspaceId),
+      emitWorkspaceUpdates: (workspaceIds) =>
+        this.emitWorkspaceUpdatesForWorkspaceIds(workspaceIds),
+      resolveDelegationRootWorkspaceId: (agentId) => this.resolveDelegationRootWorkspaceId(agentId),
+    });
     this.createAgentLifecycleDispatch = new CreateAgentLifecycleDispatch({
       froggHome: this.froggHome,
       worktreesRoot: this.worktreesRoot,
@@ -1141,7 +1141,7 @@ export class Session {
       workspaceGitService: this.workspaceGitService,
       createFroggWorktreeWorkflow: (input, workflowOptions) =>
         this.createFroggWorktreeWorkflow(input, workflowOptions),
-      archiveAgentForClose: (agentId) => this.archiveAgentForClose(agentId),
+      archiveAgentForClose: (agentId) => this.agentLifecycle.archiveForClose(agentId),
       findWorkspaceIdForCwd: (cwd) => this.findWorkspaceIdForCwd(cwd),
       listActiveWorkspaces: () => this.listActiveWorkspaceRefs(),
       archiveWorkspaceRecord: (workspaceId) => this.archiveWorkspaceRecord(workspaceId),
@@ -2431,9 +2431,9 @@ export class Session {
   private dispatchAgentRelationshipMessage(msg: SessionInboundMessage): Promise<void> | undefined {
     switch (msg.type) {
       case "agent.detach.request":
-        return this.handleDetachAgentRequest(msg.agentId, msg.requestId);
+        return this.agentLifecycle.detach(msg.agentId, msg.requestId);
       case "agent.cancel_auto_resume.request":
-        return this.handleCancelAgentAutoResumeRequest(msg.agentId, msg.requestId);
+        return this.agentLifecycle.cancelAutoResume(msg.agentId, msg.requestId);
       default:
         return undefined;
     }
@@ -2502,9 +2502,9 @@ export class Session {
       case "fetch_agent_request":
         return this.handleFetchAgent(msg.agentId, msg.requestId);
       case "delete_agent_request":
-        return this.handleDeleteAgentRequest(msg.agentId, msg.requestId);
+        return this.agentLifecycle.delete(msg.agentId, msg.requestId);
       case "archive_agent_request":
-        return this.handleArchiveAgentRequest(msg.agentId, msg.requestId);
+        return this.agentLifecycle.archive(msg.agentId, msg.requestId);
       case "close_items_request":
         return this.handleCloseItemsRequest(msg);
       case "update_agent_request":
@@ -2983,160 +2983,9 @@ export class Session {
     }
   }
 
-  private async handleDeleteAgentRequest(agentId: string, requestId: string): Promise<void> {
-    this.sessionLogger.info({ agentId }, `Deleting agent ${agentId} from registry`);
-
-    const knownWorkspaceId =
-      this.agentManager.getAgent(agentId)?.workspaceId ??
-      (await this.agentStorage.get(agentId))?.workspaceId ??
-      null;
-
-    // File-backed storage still needs an early delete fence before closeAgent().
-    beginAgentDeleteIfSupported(this.agentStorage, agentId);
-
-    try {
-      await closeAgentCommand({ agentManager: this.agentManager }, agentId);
-    } catch (error) {
-      this.sessionLogger.warn(
-        { err: error, agentId },
-        `Failed to close agent ${agentId} during delete`,
-      );
-    }
-
-    // Drain queued persistence from the just-closed agent before removing its
-    // durable snapshot, otherwise an in-flight background write can recreate it.
-    await this.agentManager.flush();
-
-    try {
-      await this.agentStorage.remove(agentId);
-      await this.agentManager.deleteAgentState(agentId);
-    } catch (error) {
-      this.sessionLogger.error({ err: error, agentId }, `Failed to fully delete agent ${agentId}`);
-    }
-
-    this.emit({
-      type: "agent_deleted",
-      payload: {
-        agentId,
-        requestId,
-      },
-    });
-
-    await this.agentUpdates.removeAgent(agentId);
-
-    if (knownWorkspaceId) {
-      await this.emitWorkspaceUpdateForWorkspaceId(knownWorkspaceId);
-    }
-  }
-
-  private async handleArchiveAgentRequest(agentId: string, requestId: string): Promise<void> {
-    this.sessionLogger.info({ agentId }, `Archiving agent ${agentId}`);
-
-    const { archivedAt } = await this.archiveAgentForClose(agentId);
-
-    this.emit({
-      type: "agent_archived",
-      payload: {
-        agentId,
-        archivedAt,
-        requestId,
-      },
-    });
-  }
-
-  private async archiveAgentForClose(
-    agentId: string,
-  ): Promise<{ agentId: string; archivedAt: string }> {
-    const { archivedAt, record: archivedRecord } = await archiveAgentCommand(
-      {
-        agentManager: this.agentManager,
-        agentStorage: this.agentStorage,
-        logger: this.sessionLogger,
-      },
-      agentId,
-    );
-
-    if (this.agentUpdates.hasSubscription()) {
-      const payload = await this.agentUpdates.emitStoredRecord(archivedRecord);
-      if (payload.workspaceId) {
-        await this.emitWorkspaceUpdateForWorkspaceId(payload.workspaceId);
-      }
-    }
-
-    return { agentId, archivedAt };
-  }
-
-  private async handleCancelAgentAutoResumeRequest(
-    agentId: string,
-    requestId: string,
-  ): Promise<void> {
-    const found = this.agentManager.getAgent(agentId) !== null;
-    if (found) this.agentManager.setAgentAutoResume(agentId, null);
-    this.emit({
-      type: "agent.cancel_auto_resume.response",
-      payload: {
-        requestId,
-        agentId,
-        accepted: found,
-        error: found ? null : "Agent not found",
-      },
-    });
-  }
-
-  private async handleDetachAgentRequest(agentId: string, requestId: string): Promise<void> {
-    this.sessionLogger.info({ agentId, requestId }, "Detaching agent from parent");
-
-    try {
-      const result = await detachAgentCommand({ agentManager: this.agentManager }, agentId);
-      const affectedWorkspaceIds = new Set<string>();
-
-      if (!result.live) {
-        const payload = await this.agentUpdates.emitStoredRecord(result.record);
-        if (payload.workspaceId) {
-          affectedWorkspaceIds.add(payload.workspaceId);
-        }
-      } else if (result.record.workspaceId) {
-        affectedWorkspaceIds.add(result.record.workspaceId);
-      }
-
-      if (result.previousParentAgentId) {
-        const rootWorkspaceId = await this.resolveDelegationRootWorkspaceId(
-          result.previousParentAgentId,
-        );
-        if (rootWorkspaceId) {
-          affectedWorkspaceIds.add(rootWorkspaceId);
-        }
-      }
-
-      await this.emitWorkspaceUpdatesForWorkspaceIds(affectedWorkspaceIds);
-
-      this.emit({
-        type: "agent.detach.response",
-        payload: {
-          requestId,
-          agentId,
-          accepted: true,
-          error: null,
-        },
-      });
-    } catch (error) {
-      const message = getErrorMessageOr(error, "Failed to detach agent");
-      this.sessionLogger.error({ err: error, agentId, requestId }, "Failed to detach agent");
-      this.emit({
-        type: "agent.detach.response",
-        payload: {
-          requestId,
-          agentId,
-          accepted: false,
-          error: message,
-        },
-      });
-    }
-  }
-
   private async handleCloseItemsRequest(msg: CloseItemsRequest): Promise<void> {
     const archiveResults = await Promise.allSettled(
-      msg.agentIds.map((agentId) => this.archiveAgentForClose(agentId)),
+      msg.agentIds.map((agentId) => this.agentLifecycle.archiveForClose(agentId)),
     );
     const agents = [];
     for (let i = 0; i < archiveResults.length; i += 1) {
