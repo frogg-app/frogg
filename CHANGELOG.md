@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+- Daemon lock-down follow-ups:
+  - Host settings **Overview** has a **Security** card listing the daemon's security
+    findings (unclaimed, reachable without a password, LAN trust, bind address or claim
+    mode differing from the build's defaults) with a fix for each, including setting the
+    daemon password from the app. A dot on **Hosts** and **Overview** flags a host with
+    findings. Owners also get them from `frogg auth claim-status`, which now asks the
+    running daemon first and says whether it read the daemon or `config.json`. A daemon
+    bound only to loopback is never reported as reachable without a password. See
+    [security posture](https://frogg.app/docs/self-hosting/security/#security-posture).
+  - An unknown or revoked credential is refused with HTTP 401 / close code 4401, even on
+    loopback. The app and CLI drop the stale credential and ask you to pair again instead of
+    reconnecting in a loop; Remote SSH hosts do the same. Minting a pairing offer or code
+    over the WebSocket needs the same local credential as the HTTP route.
+  - Claiming: setting a password counts as claiming the daemon, a claim stays latched
+    until `frogg auth reset-claim`, the last owner device can't be revoked or demoted, and
+    the daemon warns at startup when claim mode is on, it is unclaimed and it listens off
+    loopback. New `frogg auth claim` claims a daemon from its own machine.
+  - The CLI reads the daemon's local token for loopback calls and honours
+    `<PREFIX>_PASSWORD` on branded builds; `frogg daemon pair` reports a 401 instead of
+    "no direct offer" and respects `--home`; `frogg pair --json` includes `serverId`.
+  - No role can read or download files inside the daemon's home directory, and viewers
+    only browse files inside registered workspaces and worktrees.
+  - SSH deploy fails when pairing over the tunnel fails and pairs the desktop as owner.
+  - Branded builds: the service plan and `install.sh` use the brand's listen variable and
+    bind host; the brand manifest gains `daemon.trustLan`, `daemon.claimScope` and
+    `daemon.providerUpdateChecks` (`<PREFIX>_CLAIM_SCOPE` overrides the scope).
+    `install-docker.sh` no longer puts the password on the `docker run` command line.
 - The daemon keeps a copy of a version 1 `principals.json` as `principals.v1.bak.json`
   before it first rewrites the file as version 2. The format change in 1.5.29 is one-way:
   1.5.28 and earlier can't read the new file. To roll back, restore the copy first. See

@@ -83,6 +83,18 @@ visible until device or deployment evidence closes them.
 
 ## Next: establish reliable everyday use
 
+- [x] **Daemon lock-down follow-ups.** 401 on unknown credentials with client re-pair,
+      claim latch and last-owner guard, daemon-home file deny and viewer workspace roots,
+      brand bind/trustLan/claimScope keys, `frogg auth claim`, and the security posture
+      card and dot. See [security](website/src/content/docs/docs/self-hosting/security.mdx).
+      Live validation outstanding: saving a password, LAN-trust and claim-mode fixes from the
+      app, and mobile/native layouts of the Security card.
+- [ ] **Port daemon auth to `apps/daemon-rs`.** The Rust reference daemon lacks the
+      lock-down (401 on unknown bearer, claim latch, last-owner guard, home deny, viewer
+      roots, security posture). It is excluded from releases; port before it ever ships.
+- [ ] **Re-send `server_info` after a first claim by pairing code or request.** Only the
+      `/api/setup/claim` path re-sends it; the app must refetch posture after pairing.
+
 - [ ] **Electron platform acceptance.** The user reports scrolling fixed in the 0.4.2 Windows build. Verify sustained memory, voice, close/relaunch, installers and updater handoff on each platform. See [desktop acceptance](website/src/content/docs/docs/desktop-mobile-cli/desktop.mdx).
 
 - [ ] **Windows shutdown and relaunch.** Verify the production Electron app under voice and streaming load, including rapid relaunch and update exits. Keep independently installed daemons running.
