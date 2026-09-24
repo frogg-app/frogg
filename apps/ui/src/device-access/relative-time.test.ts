@@ -11,7 +11,9 @@ describe("describeLastSeen", () => {
   });
 
   it("separates a device that has never connected from a stale one", () => {
-    expect(describeLastSeen({ connected: false, lastSeenAt: null }, NOW)).toEqual({ kind: "never" });
+    expect(describeLastSeen({ connected: false, lastSeenAt: null }, NOW)).toEqual({
+      kind: "never",
+    });
     expect(describeLastSeen({ connected: false, lastSeenAt: "not a date" }, NOW)).toEqual({
       kind: "never",
     });
@@ -26,9 +28,9 @@ describe("describeLastSeen", () => {
   });
 
   it("never reports a negative age from a clock skew", () => {
-    expect(describeLastSeen({ connected: false, lastSeenAt: "2026-09-23T12:05:00.000Z" }, NOW)).toEqual(
-      { kind: "now" },
-    );
+    expect(
+      describeLastSeen({ connected: false, lastSeenAt: "2026-09-23T12:05:00.000Z" }, NOW),
+    ).toEqual({ kind: "now" });
   });
 
   it("maps every description to a key", () => {

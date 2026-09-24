@@ -49,9 +49,9 @@ describe("computeSecurityPosture", () => {
     expect(ids({ brand: STOCK, listenTarget: { type: "tcp", host: "[::1]", port: 1 } })).toEqual(
       [],
     );
-    expect(ids({ brand: STOCK, listenTarget: { type: "tcp", host: "localhost", port: 1 } })).toEqual(
-      [],
-    );
+    expect(
+      ids({ brand: STOCK, listenTarget: { type: "tcp", host: "localhost", port: 1 } }),
+    ).toEqual([]);
     expect(ids({ brand: STOCK, listenTarget: ALL })).toEqual([
       "exposed_without_password:critical:set_password",
     ]);

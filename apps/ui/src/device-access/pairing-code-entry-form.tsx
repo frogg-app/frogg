@@ -31,7 +31,12 @@ type Stage =
   | { kind: "editing" }
   | { kind: "verifying" }
   | { kind: "verified"; serverId: string; fingerprint: string }
-  | { kind: "refused"; code: DaemonIdentityError["code"]; message: string; fingerprint: string | null }
+  | {
+      kind: "refused";
+      code: DaemonIdentityError["code"];
+      message: string;
+      fingerprint: string | null;
+    }
   | { kind: "pairing"; serverId: string; fingerprint: string }
   | { kind: "paired"; label: string };
 
@@ -78,7 +83,11 @@ export function PairingCodeEntryForm({ onPaired }: { onPaired?: (serverId: strin
         endpoint: entryEndpoint(parsed),
         useTls: parsed.useTls,
       });
-      setStage({ kind: "verified", serverId: verified.serverId, fingerprint: verified.fingerprint });
+      setStage({
+        kind: "verified",
+        serverId: verified.serverId,
+        fingerprint: verified.fingerprint,
+      });
     } catch (error) {
       const identity = error instanceof DaemonIdentityError ? error : null;
       setStage({

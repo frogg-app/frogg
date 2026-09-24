@@ -63,7 +63,15 @@ export function useDevices(serverId: string): DevicesView {
       isEmpty: query.data !== undefined && query.data.length === 0,
       refetch,
     }),
-    [query.data, query.error, query.fetchStatus, query.isFetching, query.isPending, query.isStale, refetch],
+    [
+      query.data,
+      query.error,
+      query.fetchStatus,
+      query.isFetching,
+      query.isPending,
+      query.isStale,
+      refetch,
+    ],
   );
 }
 

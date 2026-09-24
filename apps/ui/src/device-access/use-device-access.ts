@@ -13,8 +13,9 @@ import {
  * and what this device's own role allows. Reading both from one place is what
  * keeps a hidden button and a refused RPC from disagreeing.
  */
-export function useDeviceAccess(serverId: string | null | undefined): DeviceAccessCapabilities &
-  DeviceAccessPermissions {
+export function useDeviceAccess(
+  serverId: string | null | undefined,
+): DeviceAccessCapabilities & DeviceAccessPermissions {
   const normalized = serverId?.trim() ?? "";
   const raw = useSessionStore(
     useShallow((state) => {

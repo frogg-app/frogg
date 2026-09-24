@@ -40,10 +40,12 @@ describe("parsePairingCodeEntry", () => {
   });
 
   it("accepts a pasted URL and a bracketed IPv6 address", () => {
-    expect(parsePairingCodeEntry({ endpoint: "http://10.0.0.5:9999", code, useTls: false })).toMatchObject(
-      { ok: true, host: "10.0.0.5", port: 9999 },
-    );
-    expect(parsePairingCodeEntry({ endpoint: "[fd00::1]:9999", code, useTls: false })).toMatchObject({
+    expect(
+      parsePairingCodeEntry({ endpoint: "http://10.0.0.5:9999", code, useTls: false }),
+    ).toMatchObject({ ok: true, host: "10.0.0.5", port: 9999 });
+    expect(
+      parsePairingCodeEntry({ endpoint: "[fd00::1]:9999", code, useTls: false }),
+    ).toMatchObject({
       ok: true,
       host: "fd00::1",
       port: 9999,

@@ -29,14 +29,20 @@ test("installer service launch paths use the generated environment namespace", (
 
 test("generated installer defaults the service bind to the brand's bind host", () => {
   const script = readFileSync(path.join(repo, ".generated/branding/scripts/install.sh"), "utf8");
-  assert.match(script, new RegExp(`^BRAND_BIND_HOST='${brand.daemon.bindHost.replaceAll(".", "\\.")}'$`, "m"));
+  assert.match(
+    script,
+    new RegExp(`^BRAND_BIND_HOST='${brand.daemon.bindHost.replaceAll(".", "\\.")}'$`, "m"),
+  );
   assert.match(script, /FROGG_LISTEN="\$\{FROGG_LISTEN:-\$\{BRAND_BIND_HOST\}:\$\{BRAND_PORT\}\}"/);
   assert.doesNotMatch(script, /FROGG_LISTEN:-0\.0\.0\.0/);
   // Evaluate the defaults block plus the listen default with no override set.
   const block = script.match(/^BRAND_ID=[\s\S]*?^BRAND_COMMANDS=.*$/m)[0];
   const listen = execFileSync(
     "bash",
-    ["-c", `${block}\nFROGG_LISTEN="\${FROGG_LISTEN:-\${BRAND_BIND_HOST}:\${BRAND_PORT}}"\nprintf %s "$FROGG_LISTEN"`],
+    [
+      "-c",
+      `${block}\nFROGG_LISTEN="\${FROGG_LISTEN:-\${BRAND_BIND_HOST}:\${BRAND_PORT}}"\nprintf %s "$FROGG_LISTEN"`,
+    ],
     { encoding: "utf8", env: { PATH: process.env.PATH } },
   );
   assert.equal(listen, `${brand.daemon.bindHost}:${brand.daemonPort}`);

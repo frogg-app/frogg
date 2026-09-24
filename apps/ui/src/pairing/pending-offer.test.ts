@@ -98,9 +98,9 @@ describe("the web fragment form", () => {
   it("accepts a direct pairing link a browser can actually reach", () => {
     // A browser never navigates to `<scheme>://…`, so the web build has to
     // take the same parameters off an ordinary https page.
-    expect(extractPairTarget(`https://example.test/app/#pair/direct?${params}&claim=1`)).toMatchObject(
-      { kind: "direct", link: { host: "192.168.1.10", port: 9999, claim: true } },
-    );
+    expect(
+      extractPairTarget(`https://example.test/app/#pair/direct?${params}&claim=1`),
+    ).toMatchObject({ kind: "direct", link: { host: "192.168.1.10", port: 9999, claim: true } });
   });
 
   it("ignores a fragment that is not a pairing link", () => {

@@ -42,7 +42,10 @@ describe("readDeviceAccessCapabilities", () => {
 
   it("knows a paired device from a loopback connection the daemon calls an owner", () => {
     const paired = readDeviceAccessCapabilities(
-      serverInfo({ callerRole: "owner", device: { id: "d1", name: "Ada's laptop", role: "owner" } }),
+      serverInfo({
+        callerRole: "owner",
+        device: { id: "d1", name: "Ada's laptop", role: "owner" },
+      }),
     );
     expect(paired.hasDeviceCredential).toBe(true);
     expect(paired.callerRole).toBe("owner");

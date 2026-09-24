@@ -22,13 +22,15 @@ function bytesToBase64(bytes: Uint8Array): string {
 }
 
 /** Stands in for `POST /api/identity/proof`, exactly as the daemon answers it. */
-function daemonProofServer(options: {
-  serverId?: string;
-  /** Sign with a different key than the one advertised. */
-  signWith?: ReturnType<typeof generateKeyPair>;
-  advertise?: ReturnType<typeof generateKeyPair>;
-  status?: number;
-} = {}) {
+function daemonProofServer(
+  options: {
+    serverId?: string;
+    /** Sign with a different key than the one advertised. */
+    signWith?: ReturnType<typeof generateKeyPair>;
+    advertise?: ReturnType<typeof generateKeyPair>;
+    status?: number;
+  } = {},
+) {
   const keyPair = options.advertise ?? generateKeyPair();
   const signingKey = options.signWith ?? keyPair;
   const publicKeyB64 = exportPublicKey(keyPair.publicKey);
@@ -40,10 +42,7 @@ function daemonProofServer(options: {
       challengeB64: string;
       clientPublicKeyB64: string;
     };
-    const shared = deriveSharedKey(
-      signingKey.secretKey,
-      importPublicKey(body.clientPublicKeyB64),
-    );
+    const shared = deriveSharedKey(signingKey.secretKey, importPublicKey(body.clientPublicKeyB64));
     const proofB64 = bytesToBase64(new Uint8Array(encrypt(shared, body.challengeB64)));
     return new Response(
       JSON.stringify({

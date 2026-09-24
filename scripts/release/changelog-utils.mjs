@@ -4,7 +4,8 @@
 // The separator is written as a hyphen, an en dash or an em dash depending on who
 // wrote the entry; all three mean the same thing, and matching only the hyphen
 // silently dropped every 1.5.x release from the notes.
-const headingPattern = /^##\s+\[?([^\]\s]+)\]?\s*[-\u2013\u2014]\s*([0-9]{4}-[0-9]{2}-[0-9]{2})\s*$/;
+const headingPattern =
+  /^##\s+\[?([^\]\s]+)\]?\s*[-\u2013\u2014]\s*([0-9]{4}-[0-9]{2}-[0-9]{2})\s*$/;
 const sectionHeadingPattern = /^###\s+(.+?)\s*$/;
 const bulletPattern = /^\s*[-*]\s+(.+?)\s*$/;
 const blockquotePattern = /^\s*>\s?(.*)$/;

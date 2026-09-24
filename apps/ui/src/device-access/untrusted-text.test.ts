@@ -38,9 +38,7 @@ describe("sanitizeUntrustedText", () => {
   });
 
   it("falls back when nothing printable is left", () => {
-    expect(sanitizeUntrustedText("​ ‭", { fallback: "Unnamed device" })).toBe(
-      "Unnamed device",
-    );
+    expect(sanitizeUntrustedText("​ ‭", { fallback: "Unnamed device" })).toBe("Unnamed device");
     expect(sanitizeUntrustedText(null, { fallback: "Unnamed device" })).toBe("Unnamed device");
   });
 });

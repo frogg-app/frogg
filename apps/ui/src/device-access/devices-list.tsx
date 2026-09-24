@@ -44,7 +44,9 @@ export function DevicesList({ serverId, onSelfRevoked, testID }: DevicesListProp
     if (access.canRevokeDevice) return null;
     if (!access.handshakeSeen) return t("deviceAccess.refusal.unknown");
     if (!access.devices) return t("deviceAccess.refusal.unsupported");
-    return t("deviceAccess.refusal.role", { role: t(`deviceAccess.roles.${access.callerRole}.label`) });
+    return t("deviceAccess.refusal.role", {
+      role: t(`deviceAccess.roles.${access.callerRole}.label`),
+    });
   }, [access, t]);
 
   const handleRevoke = useCallback(
@@ -157,7 +159,11 @@ export function DevicesList({ serverId, onSelfRevoked, testID }: DevicesListProp
   return (
     <View style={styles.list} testID={testID ?? "devices-list"}>
       {error ? (
-        <Alert variant="warning" description={t("deviceAccess.staleAfterError")} testID="devices-stale">
+        <Alert
+          variant="warning"
+          description={t("deviceAccess.staleAfterError")}
+          testID="devices-stale"
+        >
           <Button variant="outline" size="sm" leftIcon={RotateCw} onPress={handleRetry}>
             {t("deviceAccess.actions.retry")}
           </Button>

@@ -30,7 +30,10 @@ describe("host settings section visibility", () => {
   });
 
   it("keeps the brand's hideable sections in step with the client's own list", () => {
-    expect([...HOST_SETTINGS_SECTIONS].sort()).toEqual([...HOST_SECTION_SLUGS].sort());
+    // Deploy is a desktop-only client section; the daemon has no setting for it.
+    const clientOnly = new Set(["deploy"]);
+    const hideable = HOST_SECTION_SLUGS.filter((slug) => !clientOnly.has(slug));
+    expect([...HOST_SETTINGS_SECTIONS].sort()).toEqual([...hideable].sort());
   });
 
   it("sends a view of a hidden section to the first section the host still offers", () => {

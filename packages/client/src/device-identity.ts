@@ -4,7 +4,13 @@ import {
   daemonKeyFingerprint,
   type DirectPairingLink,
 } from "@frogg/protocol/device-access";
-import { decrypt, deriveSharedKey, exportPublicKey, generateKeyPair, importPublicKey } from "@frogg/relay/e2ee";
+import {
+  decrypt,
+  deriveSharedKey,
+  exportPublicKey,
+  generateKeyPair,
+  importPublicKey,
+} from "@frogg/relay/e2ee";
 
 /**
  * Two-way authorisation for a direct pairing link, before anything is paired.
@@ -33,7 +39,11 @@ export class DaemonIdentityError extends Error {
   /** The fingerprint the daemon actually presented, when there was one. */
   readonly actualFingerprint: string | null;
 
-  constructor(code: DaemonIdentityErrorCode, message: string, actualFingerprint: string | null = null) {
+  constructor(
+    code: DaemonIdentityErrorCode,
+    message: string,
+    actualFingerprint: string | null = null,
+  ) {
     super(message);
     this.name = "DaemonIdentityError";
     this.code = code;
@@ -125,7 +135,10 @@ export async function verifyDaemonIdentity(
     const response = await fetchImpl(`${base}/api/identity/proof`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ challengeB64, clientPublicKeyB64: exportPublicKey(keyPair.publicKey) }),
+      body: JSON.stringify({
+        challengeB64,
+        clientPublicKeyB64: exportPublicKey(keyPair.publicKey),
+      }),
       signal: controller.signal,
     });
     if (!response.ok) {
@@ -180,13 +193,23 @@ export async function verifyDaemonIdentity(
       importPublicKey(proof.data.daemonPublicKeyB64),
     );
     const bytes = Uint8Array.from(globalThis.atob(proof.data.proofB64), (c) => c.charCodeAt(0));
-    const opened = new TextDecoder().decode(new Uint8Array(decrypt(shared, bytes.buffer as ArrayBuffer)));
+    const opened = new TextDecoder().decode(
+      new Uint8Array(decrypt(shared, bytes.buffer as ArrayBuffer)),
+    );
     if (opened !== challengeB64) {
-      throw new DaemonIdentityError("proof_invalid", "The daemon signed the wrong challenge", actual);
+      throw new DaemonIdentityError(
+        "proof_invalid",
+        "The daemon signed the wrong challenge",
+        actual,
+      );
     }
   } catch (error) {
     if (error instanceof DaemonIdentityError) throw error;
-    throw new DaemonIdentityError("proof_invalid", "The daemon could not prove it holds its key", actual);
+    throw new DaemonIdentityError(
+      "proof_invalid",
+      "The daemon could not prove it holds its key",
+      actual,
+    );
   }
 
   return {

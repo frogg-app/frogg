@@ -356,7 +356,16 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["projects", "pair-device", "agents", "providers", "usage", "terminals", "host"]
+            "enum": [
+              "projects",
+              "pair-device",
+              "devices",
+              "agents",
+              "providers",
+              "usage",
+              "terminals",
+              "host"
+            ]
           }
         }
       },

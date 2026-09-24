@@ -72,7 +72,9 @@ export function PairingCodeCard({ serverId }: { serverId: string }) {
         <Alert variant="warning" description={t("deviceAccess.code.ownerWarning")} />
       ) : null}
 
-      {error ? <Alert variant="error" description={error.message} testID="pairing-code-error" /> : null}
+      {error ? (
+        <Alert variant="error" description={error.message} testID="pairing-code-error" />
+      ) : null}
 
       <Button
         variant="default"
@@ -229,4 +231,3 @@ const styles = StyleSheet.create((theme: Theme) => ({
   qrImage: { height: 180, width: 180 },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing[2] },
 }));
-
