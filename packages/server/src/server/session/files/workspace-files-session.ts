@@ -33,6 +33,7 @@ import {
   writeExplorerFile,
 } from "../../file-explorer/service.js";
 import { workspaceFileObserver, type FileObserver } from "../../file-explorer/observer.js";
+import { DaemonHomeGuard } from "../../file-explorer/daemon-home-guard.js";
 import { getProjectIcon } from "../../../utils/project-icon.js";
 
 /**
@@ -51,6 +52,8 @@ export interface WorkspaceFilesSessionOptions {
   host: WorkspaceFilesSessionHost;
   downloadTokenStore: DownloadTokenStore;
   froggHome: string;
+  /** Configured worktrees root; exempted from the daemon-home deny. */
+  worktreesRoot?: string;
   logger: pino.Logger;
   fileObserver?: FileObserver;
 }
@@ -69,6 +72,7 @@ export class WorkspaceFilesSession {
   private readonly fileUploads: FileUploadStore;
   private readonly fileObserver: FileObserver;
   private readonly fileSubscriptions = new Map<string, () => void>();
+  private readonly homeGuard: DaemonHomeGuard;
 
   constructor(options: WorkspaceFilesSessionOptions) {
     this.host = options.host;
@@ -76,11 +80,34 @@ export class WorkspaceFilesSession {
     this.logger = options.logger;
     this.fileUploads = new FileUploadStore({ froggHome: options.froggHome });
     this.fileObserver = options.fileObserver ?? workspaceFileObserver;
+    this.homeGuard = new DaemonHomeGuard({
+      froggHome: options.froggHome,
+      worktreesRoot: options.worktreesRoot,
+    });
+  }
+
+  /**
+   * Enforces the file-access boundary for a request: throws when the cwd or
+   * any requested path resolves (through symlinks) into a forbidden location.
+   */
+  private async assertAccess(cwd: string, ...relativePaths: string[]): Promise<void> {
+    await this.homeGuard.assertAccessible(cwd, ...relativePaths);
+  }
+
+  /** Error message when access is refused, otherwise null. */
+  private async accessError(cwd: string, ...relativePaths: string[]): Promise<string | null> {
+    try {
+      await this.assertAccess(cwd, ...relativePaths);
+      return null;
+    } catch (error) {
+      return getErrorMessage(error);
+    }
   }
 
   async handleFileSubscribeRequest(request: FileSubscribeRequest): Promise<void> {
     this.fileSubscriptions.get(request.subscriptionId)?.();
     try {
+      await this.assertAccess(request.cwd, request.path);
       const subscription = await this.fileObserver.subscribe(
         { cwd: request.cwd, path: request.path },
         (version) => {
@@ -121,18 +148,24 @@ export class WorkspaceFilesSession {
     this.fileSubscriptions.delete(request.subscriptionId);
     this.host.emit({
       type: "fs.file.unsubscribe.response",
-      payload: { subscriptionId: request.subscriptionId, requestId: request.requestId },
+      payload: {
+        subscriptionId: request.subscriptionId,
+        requestId: request.requestId,
+      },
     });
   }
 
   async handleFileWriteRequest(request: FileWriteRequest): Promise<void> {
-    const result = await writeExplorerFile({
-      root: request.cwd,
-      relativePath: request.path,
-      content: request.content,
-      expectedModifiedAt: request.expectedModifiedAt,
-      expectedRevision: request.expectedRevision,
-    });
+    const denied = await this.accessError(request.cwd, request.path);
+    const result: Awaited<ReturnType<typeof writeExplorerFile>> = denied
+      ? { status: "error", error: denied }
+      : await writeExplorerFile({
+          root: request.cwd,
+          relativePath: request.path,
+          content: request.content,
+          expectedModifiedAt: request.expectedModifiedAt,
+          expectedRevision: request.expectedRevision,
+        });
     this.host.emit({
       type: "fs.file.write.response",
       payload: { result, requestId: request.requestId },
@@ -140,12 +173,19 @@ export class WorkspaceFilesSession {
   }
 
   async handleFileEntryCreateRequest(request: FileEntryCreateRequest): Promise<void> {
-    const result = await createExplorerEntry({
-      root: request.cwd,
-      parentPath: request.parentPath,
-      name: request.name,
-      kind: request.kind,
-    });
+    const denied = await this.accessError(
+      request.cwd,
+      request.parentPath,
+      `${request.parentPath}/${request.name}`,
+    );
+    const result: Awaited<ReturnType<typeof createExplorerEntry>> = denied
+      ? { status: "error", error: denied }
+      : await createExplorerEntry({
+          root: request.cwd,
+          parentPath: request.parentPath,
+          name: request.name,
+          kind: request.kind,
+        });
     this.host.emit({
       type: "fs.entry.create.response",
       payload: {
@@ -160,11 +200,14 @@ export class WorkspaceFilesSession {
   }
 
   async handleFileEntryRenameRequest(request: FileEntryRenameRequest): Promise<void> {
-    const result = await renameExplorerEntry({
-      root: request.cwd,
-      relativePath: request.path,
-      name: request.name,
-    });
+    const denied = await this.accessError(request.cwd, request.path);
+    const result: Awaited<ReturnType<typeof renameExplorerEntry>> = denied
+      ? { status: "error", error: denied }
+      : await renameExplorerEntry({
+          root: request.cwd,
+          relativePath: request.path,
+          name: request.name,
+        });
     this.host.emit({
       type: "fs.entry.rename.response",
       payload: {
@@ -179,10 +222,13 @@ export class WorkspaceFilesSession {
   }
 
   async handleFileEntryDuplicateRequest(request: FileEntryDuplicateRequest): Promise<void> {
-    const result = await duplicateExplorerEntry({
-      root: request.cwd,
-      relativePath: request.path,
-    });
+    const denied = await this.accessError(request.cwd, request.path);
+    const result: Awaited<ReturnType<typeof duplicateExplorerEntry>> = denied
+      ? { status: "error", error: denied }
+      : await duplicateExplorerEntry({
+          root: request.cwd,
+          relativePath: request.path,
+        });
     this.host.emit({
       type: "fs.entry.duplicate.response",
       payload: {
@@ -197,10 +243,13 @@ export class WorkspaceFilesSession {
   }
 
   async handleFileEntryDeleteRequest(request: FileEntryDeleteRequest): Promise<void> {
-    const result = await deleteExplorerEntry({
-      root: request.cwd,
-      relativePath: request.path,
-    });
+    const denied = await this.accessError(request.cwd, request.path);
+    const result: Awaited<ReturnType<typeof deleteExplorerEntry>> = denied
+      ? { status: "error", error: denied }
+      : await deleteExplorerEntry({
+          root: request.cwd,
+          relativePath: request.path,
+        });
     this.host.emit({
       type: "fs.entry.delete.response",
       payload: {
@@ -241,6 +290,7 @@ export class WorkspaceFilesSession {
     }
 
     try {
+      await this.assertAccess(cwd, requestedPath);
       if (mode === "list") {
         const directory = await listDirectoryEntries({
           root: cwd,
@@ -264,7 +314,10 @@ export class WorkspaceFilesSession {
         );
       } else {
         if (request.maxBytes) {
-          const file = await getDownloadableFileInfo({ root: cwd, relativePath: requestedPath });
+          const file = await getDownloadableFileInfo({
+            root: cwd,
+            relativePath: requestedPath,
+          });
           if (file.size > request.maxBytes) {
             throw new Error("File is too large to display");
           }
@@ -366,6 +419,7 @@ export class WorkspaceFilesSession {
     const { cwd, requestId } = request;
 
     try {
+      await this.assertAccess(cwd);
       const icon = await getProjectIcon(cwd);
       this.host.emit({
         type: "project_icon_response",
@@ -415,6 +469,7 @@ export class WorkspaceFilesSession {
     );
 
     try {
+      await this.assertAccess(cwd, requestedPath);
       const info = await getDownloadableFileInfo({
         root: cwd,
         relativePath: requestedPath,

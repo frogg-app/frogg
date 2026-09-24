@@ -873,6 +873,7 @@ export class Session {
       },
       downloadTokenStore,
       froggHome,
+      worktreesRoot,
       logger: this.sessionLogger,
     });
     this.agentManager = agentManager;

@@ -1,13 +1,15 @@
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 import pino from "pino";
 import {
@@ -596,5 +598,119 @@ describe("WorkspaceFilesSession", () => {
     expect(readFileSync(join(froggHome, "uploads", "upload_req-upload", "notes.txt"), "utf8")).toBe(
       "hello world",
     );
+  });
+});
+
+function errorOf(message: SessionOutboundMessage | undefined): unknown {
+  return (message?.payload as { error?: unknown } | undefined)?.error;
+}
+
+describe("WorkspaceFilesSession daemon-home deny", () => {
+  const DENIED = "Access to the daemon home is not allowed";
+
+  test("refuses listing the daemon home or reading inside it", async () => {
+    const { subsystem, emitted, froggHome } = makeSubsystem();
+    writeFileSync(join(froggHome, "daemon-keypair.json"), "{}");
+
+    await subsystem.handleFileExplorerRequest({
+      type: "file_explorer_request",
+      cwd: froggHome,
+      path: ".",
+      mode: "list",
+      requestId: "req-list-home",
+    });
+    await subsystem.handleFileExplorerRequest({
+      type: "file_explorer_request",
+      cwd: dirname(froggHome),
+      path: `${basename(froggHome)}/daemon-keypair.json`,
+      mode: "file",
+      requestId: "req-read-key",
+    });
+
+    expect(emitted.map(errorOf)).toEqual([DENIED, DENIED]);
+  });
+
+  test("refuses a keypair download token", async () => {
+    const { subsystem, emitted, froggHome } = makeSubsystem();
+    writeFileSync(join(froggHome, "daemon-keypair.json"), "{}");
+
+    await subsystem.handleFileDownloadTokenRequest({
+      type: "file_download_token_request",
+      cwd: froggHome,
+      path: "daemon-keypair.json",
+      requestId: "req-token-key",
+    });
+
+    expect(emitted).toEqual([
+      {
+        type: "file_download_token_response",
+        payload: expect.objectContaining({ token: null, error: DENIED }),
+      },
+    ]);
+  });
+
+  test("refuses a write to principals.json", async () => {
+    const { subsystem, emitted, froggHome } = makeSubsystem();
+    writeFileSync(join(froggHome, "principals.json"), "{}");
+
+    await subsystem.handleFileWriteRequest({
+      type: "fs.file.write.request",
+      cwd: froggHome,
+      path: "principals.json",
+      content: '{"owner":"me"}',
+      requestId: "req-write-principals",
+    });
+
+    expect(readFileSync(join(froggHome, "principals.json"), "utf8")).toBe("{}");
+    expect(emitted).toEqual([
+      {
+        type: "fs.file.write.response",
+        payload: { result: { status: "error", error: DENIED }, requestId: "req-write-principals" },
+      },
+    ]);
+  });
+
+  test("refuses a workspace symlink that points into the daemon home", async () => {
+    const cwd = makeDir("workspace-files-symlink-");
+    const { subsystem, emitted, froggHome } = makeSubsystem();
+    writeFileSync(join(froggHome, "local-token"), "secret");
+    symlinkSync(froggHome, join(cwd, "home-link"));
+    symlinkSync(join(froggHome, "local-token"), join(cwd, "token-link"));
+
+    await subsystem.handleFileExplorerRequest({
+      type: "file_explorer_request",
+      cwd,
+      path: "token-link",
+      mode: "file",
+      requestId: "req-file-link",
+    });
+    await subsystem.handleFileEntryCreateRequest({
+      type: "fs.entry.create.request",
+      cwd,
+      parentPath: "home-link",
+      name: "planted.txt",
+      kind: "file",
+      requestId: "req-create-link",
+    });
+
+    expect(emitted.map(errorOf)).toEqual([DENIED, DENIED]);
+    expect(existsSync(join(froggHome, "planted.txt"))).toBe(false);
+  });
+
+  test("allows Frogg-owned worktrees under the daemon home", async () => {
+    const { subsystem, emitted, froggHome } = makeSubsystem();
+    const worktree = join(froggHome, "worktrees", "repo", "wt");
+    mkdirSync(worktree, { recursive: true });
+    writeFileSync(join(worktree, "README.md"), "hi");
+
+    await subsystem.handleFileExplorerRequest({
+      type: "file_explorer_request",
+      cwd: worktree,
+      path: "README.md",
+      mode: "file",
+      requestId: "req-worktree",
+    });
+
+    expect(errorOf(emitted[0])).toBeNull();
   });
 });
