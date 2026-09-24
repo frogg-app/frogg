@@ -1830,12 +1830,12 @@ export const en = {
       operator: {
         label: "Operator",
         description:
-          "Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No host settings and no device management.",
+          "Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No host settings and no device management. Commands run as the host user, so this is equivalent to owner on the host.",
       },
       viewer: {
         label: "Viewer",
         description:
-          "Read-only: sessions, timelines, terminal output, file browsing and diffs. No input and no command execution.",
+          "Read-only: sessions, timelines, terminal output, file browsing and diffs inside workspaces. No input and no command execution.",
       },
     },
     refusal: {

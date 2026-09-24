@@ -1,4 +1,5 @@
 import { brand } from "@frogg/branding";
+import { DaemonHomeGuard } from "./file-explorer/daemon-home-guard.js";
 import express from "express";
 import { createServer as createHTTPServer, type IncomingMessage, type ServerResponse } from "http";
 import { constants, existsSync, unlinkSync } from "fs";
@@ -1138,6 +1139,10 @@ export async function createFroggDaemon(
     });
   });
 
+  const downloadHomeGuard = new DaemonHomeGuard({
+    froggHome: config.froggHome,
+    worktreesRoot: config.worktreesRoot,
+  });
   const handleFileDownload = async (req: express.Request, res: express.Response): Promise<void> => {
     const token =
       typeof req.query.token === "string" && req.query.token.trim().length > 0
@@ -1152,6 +1157,13 @@ export async function createFroggDaemon(
     const entry = downloadTokenStore.consumeToken(token);
     if (!entry) {
       res.status(403).json({ error: "Invalid or expired token" });
+      return;
+    }
+
+    // Re-check at serve time: the path may have been swapped for a symlink
+    // into the daemon home since the token was issued.
+    if (await downloadHomeGuard.isProtected(entry.absolutePath).catch(() => true)) {
+      res.status(403).json({ error: "Access to the daemon home is not allowed" });
       return;
     }
 

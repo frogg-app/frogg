@@ -1864,12 +1864,12 @@ export const es: TranslationResources = {
       operator: {
         label: "Operador",
         description:
-          "Llevar el trabajo: chats de agentes, terminales, scripts del espacio de trabajo, edición de archivos, git y acciones de la forja. Sin ajustes del host ni gestión de dispositivos.",
+          "Llevar el trabajo: chats de agentes, terminales, scripts del espacio de trabajo, edición de archivos, git y acciones de la forja. Sin ajustes del host ni gestión de dispositivos. Los comandos se ejecutan como el usuario del host, así que equivale a propietario en el host.",
       },
       viewer: {
         label: "Observador",
         description:
-          "Solo lectura: sesiones, cronologías, salida de terminal, exploración de archivos y diferencias. Sin entrada ni ejecución de comandos.",
+          "Solo lectura: sesiones, cronologías, salida de terminal, exploración de archivos y diferencias dentro de los espacios de trabajo. Sin entrada ni ejecución de comandos.",
       },
     },
     refusal: {

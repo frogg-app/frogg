@@ -1849,12 +1849,12 @@ export const ptBR: TranslationResources = {
       operator: {
         label: "Operador",
         description:
-          "Tocar o trabalho: conversas com agentes, terminais, scripts do espaço de trabalho, edição de arquivos, git e ações da forja. Sem configurações do host e sem gerenciamento de dispositivos.",
+          "Tocar o trabalho: conversas com agentes, terminais, scripts do espaço de trabalho, edição de arquivos, git e ações da forja. Sem configurações do host e sem gerenciamento de dispositivos. Os comandos rodam como o usuário do host, então equivale a proprietário no host.",
       },
       viewer: {
         label: "Visualizador",
         description:
-          "Somente leitura: sessões, linhas do tempo, saída de terminal, navegação de arquivos e diferenças. Sem entrada e sem execução de comandos.",
+          "Somente leitura: sessões, linhas do tempo, saída de terminal, navegação de arquivos e diferenças dentro dos espaços de trabalho. Sem entrada e sem execução de comandos.",
       },
     },
     refusal: {

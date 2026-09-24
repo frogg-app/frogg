@@ -48,7 +48,12 @@ By default, the daemon binds to `127.0.0.1`. With no password configured, the lo
 
 The daemon also supports an optional shared-secret password (set via `auth.password` in `config.json` or the `FROGG_PASSWORD` env var; stored bcrypt-hashed). When configured, every HTTP request must carry `Authorization: Bearer <password>` and every WebSocket upgrade must include a `Sec-WebSocket-Protocol: frogg.bearer.<password>` subprotocol. Browser WebSocket cannot set custom headers, which is why the token rides in the subprotocol. Health (`GET /api/health`) and CORS preflight (`OPTIONS`) are exempt. The password is intended for direct-TCP exposure (e.g. `tcp://host:port?ssl=true&password=...`); it is **not** a substitute for the relay's E2E encryption when traversing untrusted networks.
 
-Connected clients are trusted operators of the daemon user. File previews follow that authority: a preview request may read any regular file the daemon process can read, while keeping path normalization and symlink checks in the daemon file service. Workspace-relative paths remain a UI convenience, not a security boundary.
+File access has two server-side boundaries, enforced after resolving symlinks:
+
+- **Daemon home.** No file RPC, preview, write or download reaches the daemon's own state directory (keypair, local token, principals, config) for any role. The worktrees root is exempt so Frogg-owned worktrees stay browsable. Daemon config remains editable only through its owner-only RPC.
+- **Viewer confinement.** A `viewer` device can only browse, preview and download inside the directory of a registered, unarchived workspace or worktree.
+
+`owner` and `operator` devices are otherwise unconfined: they read and write any file the daemon user can. An operator can also run terminals and agents, so treat operator as owner-equivalent on the host; only `viewer` is a contained role.
 
 If you expose the daemon beyond loopback, such as by binding to `0.0.0.0`, forwarding it through a tunnel or reverse proxy, or publishing it from a Docker container, you are responsible for restricting and securing that access. Setting a password is strongly recommended in that case.
 

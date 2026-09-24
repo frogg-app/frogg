@@ -117,8 +117,14 @@ file writes):
 | Role | Can |
 | ---- | --- |
 | `owner` | Everything: daemon settings and updates, provider accounts, pairing codes, approving and revoking devices, setting roles, password and claim settings |
-| `operator` | Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No daemon settings, no device management |
-| `viewer` | Read-only: sessions, timelines, terminal output, file browsing and diffs. No input, no command execution, no writes |
+| `operator` | Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No daemon settings, no device management. Terminals and agents run as the daemon user, so an operator is owner-equivalent on the host |
+| `viewer` | Read-only: sessions, timelines, terminal output, file browsing and diffs, limited to files inside registered workspaces and worktrees. No input, no command execution, no writes |
+
+For every role, file browsing, previews, writes and downloads refuse any path that resolves
+(through symlinks) into the daemon home: the keypair, local token, principals and config are
+never reachable over the file API. Frogg-owned worktrees under the home are exempt. Only
+`viewer` is a contained role; hand out `operator` only to devices you would trust with a
+shell on the host.
 
 A role never widens what a device was granted — it only narrows it. Devices paired before
 roles existed read as `owner`. Only an owner can mint an owner code, approve a request as
