@@ -917,16 +917,7 @@ function resolveCoreDaemonOverridePaths(
     paths.push("daemon.trustedProxies");
   }
   paths.push(...resolveNetworkExposureOverridePaths(env));
-  if (parseBooleanEnv(brandEnv(brand, env, "TRUST_LAN")) !== undefined) {
-    paths.push("daemon.auth.trustLan");
-  }
-  if (parseBooleanEnv(brandEnv(brand, env, "CLAIM_MODE")) !== undefined) {
-    paths.push("daemon.auth.claimMode");
-  }
-  const claimScope = brandEnv(brand, env, "CLAIM_SCOPE")?.trim().toLowerCase();
-  if (claimScope === "any" || claimScope === "local") {
-    paths.push("daemon.auth.claimScope");
-  }
+  paths.push(...resolveAuthOverridePaths(env));
   if (parsePositiveGitOverride(env.FROGG_GIT_MAX_PROCESSES_PER_SECOND)) {
     paths.push("daemon.git.maxProcessesPerSecond");
   }
@@ -940,6 +931,21 @@ function resolveCoreDaemonOverridePaths(
     env.FROGG_APP_BASE_URL !== undefined
   ) {
     paths.push("app.baseUrl", "app.pairingBaseUrl");
+  }
+  return paths;
+}
+
+function resolveAuthOverridePaths(env: NodeJS.ProcessEnv): string[] {
+  const paths: string[] = [];
+  if (parseBooleanEnv(brandEnv(brand, env, "TRUST_LAN")) !== undefined) {
+    paths.push("daemon.auth.trustLan");
+  }
+  if (parseBooleanEnv(brandEnv(brand, env, "CLAIM_MODE")) !== undefined) {
+    paths.push("daemon.auth.claimMode");
+  }
+  const claimScope = brandEnv(brand, env, "CLAIM_SCOPE")?.trim().toLowerCase();
+  if (claimScope === "any" || claimScope === "local") {
+    paths.push("daemon.auth.claimScope");
   }
   if (env.FROGG_PASSWORD?.trim()) paths.push("daemon.auth.password");
   return paths;
