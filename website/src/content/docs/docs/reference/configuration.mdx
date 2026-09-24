@@ -14,7 +14,10 @@ use that brand's prefix for every environment override; inherited `FROGG_*` valu
 - The file is created on first start with the defaults below, with private permissions.
 - The schema is **strict**: unknown keys fail startup with
   `[Config] Invalid config in <path>`. Only `daemon.mcp` and `daemon.browserTools` accept
-  extra keys.
+  extra keys. A top-level `listen` is an unknown key: the listen address is
+  `daemon.listen`. A key added in a newer release fails startup on an older daemon, so
+  write it only after the new version is installed, and remove it before rolling back.
+  See [provisioning](/docs/self-hosting/provisioning/).
 - Environment variables and CLI flags override the file. See
   [environment variables](/docs/reference/environment-variables/).
 - Apply changes with `frogg reload`. It reports which paths applied live, which need
@@ -59,8 +62,8 @@ This is exactly what a new daemon writes (0.6.19):
 | `daemon.cors.allowedOrigins` | string[]           | `[]`             | Extra browser origins. `"*"` allows any. The daemon's own origins and the desktop app origin are always allowed |
 | `daemon.auth.password`  | scrypt hash             | unset            | Require a password from every client. Set it with `frogg auth set-password`; do not write it by hand. Legacy bcrypt hashes still verify |
 | `daemon.auth.trustLan`  | boolean                 | brand default (`true` for `frogg`, else `false`) | Treat private-network clients like loopback (no credential needed) when no password is set. Ignored while `claimMode` is on |
-| `daemon.auth.claimMode` | boolean                 | brand default (`false` for `frogg`) | Lock the LAN out: every client needs a credential, and the first client to reach an unclaimed daemon claims it as owner |
-| `daemon.auth.claimScope` | `"any"` or `"local"`  | brand default (`"any"`) | Who may claim an unclaimed daemon in claim mode. `"local"` accepts only a loopback client whose bearer is the daemon's local token; anyone else gets `403`. Read at startup |
+| `daemon.auth.claimMode` | boolean                 | brand default (`false` for `frogg`) | Lock the LAN out: every client needs a credential, and the first client to reach an unclaimed daemon claims it as owner. Turning it off hands the LAN back to `trustLan`, so set `trustLan: false` with it on untrusted networks |
+| `daemon.auth.claimScope` | `"any"` or `"local"`  | brand default (`"any"`) | Who may claim an unclaimed daemon in claim mode. `"local"` accepts only a loopback client whose bearer is the daemon's local token; anyone else gets `403`. Read at startup. Not read by 1.5.34 and earlier, which refuse a file containing it |
 
 See [security and access](/docs/self-hosting/security/) for how these combine.
 

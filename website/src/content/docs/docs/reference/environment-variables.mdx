@@ -10,7 +10,8 @@ variables override [`config.json`](/docs/reference/configuration/); CLI flags ov
 
 :::note[Custom brands]
 Custom brands use their configured prefix for every Frogg setting. For Acme, use
-`ACME_LISTEN`, `ACME_HOME`, `ACME_PASSWORD` and so on. A branded daemon deliberately ignores
+`ACME_LISTEN`, `ACME_HOME`, `ACME_PASSWORD`, `ACME_CLAIM_MODE`, `ACME_TRUST_LAN`,
+`ACME_CLAIM_SCOPE` and so on. The branded CLI reads `ACME_PASSWORD` too. A branded daemon deliberately ignores
 `FROGG_*` values; replace those entries in its service unit and `.env` files before upgrading.
 Official Frogg continues to use `FROGG_*`.
 :::
@@ -22,7 +23,7 @@ Official Frogg continues to use `FROGG_*`.
 | `FROGG_HOME`              | `~/.frogg`                  | State directory |
 | `FROGG_LISTEN`            | brand bind on port `9999` (`0.0.0.0:9999` for `frogg`) | Listen target (`host:port`, port, socket or pipe) |
 | `PORT`                  |                           | Port used only when neither `FROGG_LISTEN` nor `daemon.listen` is set; the bind host still comes from the brand |
-| `FROGG_PASSWORD`          |                           | Plaintext password, hashed at startup. Overrides `daemon.auth.password`. Also read by the CLI as its credential |
+| `FROGG_PASSWORD`          |                           | Plaintext password, hashed at startup. Overrides `daemon.auth.password`. Also read by the CLI as its credential. Set it in the service environment, not on a command line |
 | `FROGG_TRUST_LAN`         | brand default (`true` for `frogg`) | Treat private-network clients like loopback. Ignored while claim mode is on |
 | `FROGG_CLAIM_MODE`        | brand default (`false` for `frogg`) | Lock the LAN out and let the first client claim an unclaimed daemon. Overrides `daemon.auth.claimMode` |
 | `FROGG_CLAIM_SCOPE`       | brand default (`any`)     | `any` or `local`: who may claim an unclaimed daemon. Overrides `daemon.auth.claimScope`; other values are ignored |
@@ -108,7 +109,7 @@ that agent's process. The daemon and every other provider keep the real `HOME`.
 | Variable          | Meaning |
 | ----------------- | ------- |
 | `FROGG_HOST`        | Default daemon for commands (`host:port`, `tcp://host:port`, `ssh://user@host`). Without it the CLI tries the local socket or pipe, then the configured listen address, then `localhost:9999` |
-| `FROGG_PASSWORD`    | Password sent to the daemon |
+| `FROGG_PASSWORD`    | Password sent to the daemon. Without it, the CLI sends the daemon home's `local-token` to a daemon on the same machine |
 | `FROGG_PAIRING_QR`  | `0` hides the QR code in `frogg auth pair` |
 | `FROGG_AUTOSTART`   | `0` or `1`: answer the autostart question in non-interactive `frogg onboard` |
 
@@ -118,7 +119,7 @@ that agent's process. The daemon and every other provider keep the real `HOME`.
 
 | Variable              | Default                     | Meaning |
 | --------------------- | --------------------------- | ------- |
-| `FROGG_VERSION`         | latest release              | Release to install |
+| `FROGG_VERSION`         | latest release              | Release to install. Pin it for repeatable installs |
 | `FROGG_INSTALL_DIR`     | `~/.local/share/frogg`        | Install root |
 | `FROGG_BIN_DIR`         | `~/.local/bin`              | Where `frogg` is linked |
 | `FROGG_RELEASE_BASE`    | GitHub releases             | Download base |
@@ -130,6 +131,8 @@ that agent's process. The daemon and every other provider keep the real `HOME`.
 | `FROGG_HOME`            | `~/.frogg`                    | Service state directory |
 | `FROGG_HEALTH_TIMEOUT`  | `30`                        | Seconds to wait for the new daemon |
 
+`install.sh` does not read `FROGG_PASSWORD`; put it in the service's environment instead
+(see [provisioning](/docs/self-hosting/provisioning/#4-pass-a-password-through-the-environment-never-argv)).
 `uninstall.sh` also reads `FROGG_PURGE=1` to delete `FROGG_HOME`.
 
 `install-docker.sh`:
