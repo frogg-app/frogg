@@ -34740,54 +34740,6 @@
                             "additionalProperties": {}
                           }
                         },
-                        "agentProfiles": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "name": {
-                                "type": "string"
-                              },
-                              "icon": {
-                                "type": "string"
-                              },
-                              "color": {
-                                "type": "string"
-                              },
-                              "provider": {
-                                "type": "string"
-                              },
-                              "model": {
-                                "type": "string"
-                              },
-                              "modeId": {
-                                "type": "string"
-                              },
-                              "thinkingOptionId": {
-                                "type": "string"
-                              },
-                              "featureValues": {
-                                "type": "object",
-                                "propertyNames": {
-                                  "type": "string"
-                                },
-                                "additionalProperties": {}
-                              },
-                              "notes": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "id",
-                              "name",
-                              "provider"
-                            ],
-                            "additionalProperties": {}
-                          }
-                        },
                         "skills": {
                           "type": "object",
                           "properties": {
@@ -35204,54 +35156,6 @@
                               "id",
                               "name",
                               "command"
-                            ],
-                            "additionalProperties": {}
-                          }
-                        },
-                        "agentProfiles": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "id": {
-                                "type": "string"
-                              },
-                              "name": {
-                                "type": "string"
-                              },
-                              "icon": {
-                                "type": "string"
-                              },
-                              "color": {
-                                "type": "string"
-                              },
-                              "provider": {
-                                "type": "string"
-                              },
-                              "model": {
-                                "type": "string"
-                              },
-                              "modeId": {
-                                "type": "string"
-                              },
-                              "thinkingOptionId": {
-                                "type": "string"
-                              },
-                              "featureValues": {
-                                "type": "object",
-                                "propertyNames": {
-                                  "type": "string"
-                                },
-                                "additionalProperties": {}
-                              },
-                              "notes": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "id",
-                              "name",
-                              "provider"
                             ],
                             "additionalProperties": {}
                           }

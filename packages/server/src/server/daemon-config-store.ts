@@ -30,7 +30,6 @@ interface SupportedMutableConfigPatch {
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
   terminalProfiles?: MutableDaemonConfig["terminalProfiles"];
-  agentProfiles?: MutableDaemonConfig["agentProfiles"];
   skills?: MutableDaemonConfig["skills"];
 }
 
@@ -190,7 +189,6 @@ const RELOADABLE_PATHS = [
   "daemon.enableTerminalAgentHooks",
   "daemon.appendSystemPrompt",
   "daemon.terminalProfiles",
-  "daemon.agentProfiles",
   "app.baseUrl",
   "app.pairingBaseUrl",
   "agents.providers",
@@ -220,7 +218,6 @@ const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
   ["daemon.enableTerminalAgentHooks", "enableTerminalAgentHooks"],
   ["daemon.appendSystemPrompt", "appendSystemPrompt"],
   ["daemon.terminalProfiles", "terminalProfiles"],
-  ["daemon.agentProfiles", "agentProfiles"],
   ["app.baseUrl", "app.baseUrl"],
   ["app.pairingBaseUrl", "app.pairingBaseUrl"],
   ["agents.providers", "providers"],
@@ -305,7 +302,6 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
       ? { appendSystemPrompt: patch.appendSystemPrompt }
       : {}),
     ...(patch.terminalProfiles !== undefined ? { terminalProfiles: patch.terminalProfiles } : {}),
-    ...(patch.agentProfiles !== undefined ? { agentProfiles: patch.agentProfiles } : {}),
   };
 }
 
@@ -714,6 +710,5 @@ function mergeMutableDaemonPatch(
   }
   if (patch.appendSystemPrompt !== undefined) next.appendSystemPrompt = patch.appendSystemPrompt;
   if (patch.terminalProfiles !== undefined) next.terminalProfiles = patch.terminalProfiles;
-  if (patch.agentProfiles !== undefined) next.agentProfiles = patch.agentProfiles;
   return Object.keys(next).length > 0 ? next : undefined;
 }

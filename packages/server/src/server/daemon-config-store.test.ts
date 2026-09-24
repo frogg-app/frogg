@@ -42,7 +42,6 @@ function reloadableConfig(
     enableTerminalAgentHooks: daemon.enableTerminalAgentHooks ?? false,
     appendSystemPrompt: daemon.appendSystemPrompt ?? "",
     terminalProfiles: daemon.terminalProfiles,
-    agentProfiles: daemon.agentProfiles,
     cors: { allowedOrigins: [] },
     trustedProxies: ["loopback"],
     trustLan: daemon.auth?.trustLan ?? true,
@@ -221,76 +220,6 @@ describe("DaemonConfigStore", () => {
     // Enabling is still a separate, mutable setting.
     store.patch({ relay: { enabled: true } });
     expect(store.get().relay?.enabled).toBe(true);
-  });
-
-  test("patch round-trips agent profiles through the strictly-parsed persisted config", () => {
-    const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
-    tempDirs.push(froggHome);
-    const store = new DaemonConfigStore(froggHome, {
-      relay: { enabled: false },
-      mcp: { injectIntoAgents: false },
-      browserTools: { enabled: false },
-      providers: {},
-      metadataGeneration: { providers: [] },
-      autoArchiveAfterMerge: false,
-      enableTerminalAgentHooks: false,
-      appendSystemPrompt: "",
-    });
-
-    store.patch({
-      agentProfiles: [
-        {
-          id: "profile_ui",
-          name: "UI work",
-          icon: "🎨",
-          provider: "claude",
-          model: "claude-opus-5",
-          modeId: "plan",
-          thinkingOptionId: "think-hard",
-          featureValues: { webSearch: true },
-          notes: "Use for components, layout and design tokens.",
-        },
-      ],
-    });
-
-    expect(loadPersistedConfig(froggHome).daemon?.agentProfiles).toEqual([
-      {
-        id: "profile_ui",
-        name: "UI work",
-        icon: "🎨",
-        provider: "claude",
-        model: "claude-opus-5",
-        modeId: "plan",
-        thinkingOptionId: "think-hard",
-        featureValues: { webSearch: true },
-        notes: "Use for components, layout and design tokens.",
-      },
-    ]);
-    expect(store.get().agentProfiles).toHaveLength(1);
-  });
-
-  test("patch replaces the whole agent profile list rather than merging entries", () => {
-    const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
-    tempDirs.push(froggHome);
-    const store = new DaemonConfigStore(froggHome, {
-      relay: { enabled: false },
-      mcp: { injectIntoAgents: false },
-      browserTools: { enabled: false },
-      providers: {},
-      metadataGeneration: { providers: [] },
-      autoArchiveAfterMerge: false,
-      enableTerminalAgentHooks: false,
-      appendSystemPrompt: "",
-      agentProfiles: [
-        { id: "a", name: "Keep", provider: "claude" },
-        { id: "b", name: "Drop", provider: "codex" },
-      ],
-    });
-
-    store.patch({ agentProfiles: [{ id: "a", name: "Keep", provider: "claude" }] });
-
-    expect(store.get().agentProfiles).toEqual([{ id: "a", name: "Keep", provider: "claude" }]);
-    expect(loadPersistedConfig(froggHome).daemon?.agentProfiles).toHaveLength(1);
   });
 
   test("rolls back config when a field transition fails", () => {
@@ -1157,14 +1086,13 @@ describe("DaemonConfigStore reload", () => {
     expect(store.get().browserTools.enabled).toBe(false);
   });
 
-  test("removing providers and optional profiles clears live state", () => {
+  test("removing providers and terminal profiles clears live state", () => {
     const { froggHome, store, persisted } = createReloadableStore();
     writeConfig(froggHome, {
       ...persisted,
       daemon: {
         ...persisted.daemon,
         terminalProfiles: [{ id: "shell", name: "Shell", command: "bash" }],
-        agentProfiles: [{ id: "review", name: "Review", provider: "codex" }],
       },
       agents: {
         providers: {
@@ -1177,14 +1105,9 @@ describe("DaemonConfigStore reload", () => {
     writeConfig(froggHome, persisted);
     const result = store.reload();
 
-    expect(result.appliedPaths).toEqual([
-      "agents.providers",
-      "daemon.agentProfiles",
-      "daemon.terminalProfiles",
-    ]);
+    expect(result.appliedPaths).toEqual(["agents.providers", "daemon.terminalProfiles"]);
     expect(store.get().providers).toEqual({});
     expect(store.get().terminalProfiles).toBeUndefined();
-    expect(store.get().agentProfiles).toBeUndefined();
   });
 
   test("reports a launch-controlled edit without changing live state", () => {

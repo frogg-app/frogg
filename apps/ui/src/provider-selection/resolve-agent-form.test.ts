@@ -47,14 +47,6 @@ const TEST_CLAUDE_DEFINITION: AgentProviderDefinition = {
   ],
 };
 
-const TEST_PI_DEFINITION: AgentProviderDefinition = {
-  id: "pi",
-  label: "Pi",
-  description: "Pi test provider",
-  defaultModeId: null,
-  modes: [],
-};
-
 const CODEX_MODELS: AgentModelDefinition[] = [
   {
     provider: "codex",
@@ -1046,42 +1038,6 @@ describe("resolveAgentForm", () => {
 
       expect(next.form.modeId).toBe("full-access");
       expect(next.userModified.modeId).toBe(true);
-    });
-  });
-
-  describe("APPLY_PROFILE_FROM_USER", () => {
-    it("drops a stale saved mode for a modeless profile provider", () => {
-      const next = resolveAgentForm(makeState({ provider: "codex", modeId: "full-access" }), {
-        type: "APPLY_PROFILE_FROM_USER",
-        provider: "pi",
-        modelId: "anthropic/sonnet",
-        modeId: "",
-        thinkingOptionId: "",
-        providerDef: TEST_PI_DEFINITION,
-        providerModels: [{ provider: "pi", id: "anthropic/sonnet", label: "Sonnet" }],
-        providerPrefs: { mode: "full-access" },
-      });
-
-      expect(next.form).toMatchObject({
-        provider: "pi",
-        model: "anthropic/sonnet",
-        modeId: "",
-      });
-    });
-
-    it("restores thinking for the selected model when the profile omits it", () => {
-      const next = resolveAgentForm(makeState(), {
-        type: "APPLY_PROFILE_FROM_USER",
-        provider: "codex",
-        modelId: "gpt-5.3-codex",
-        modeId: "full-access",
-        thinkingOptionId: "",
-        providerDef: TEST_CODEX_DEFINITION,
-        providerModels: CODEX_MODELS,
-        providerPrefs: { thinkingByModel: { "gpt-5.3-codex": "low" } },
-      });
-
-      expect(next.form.thinkingOptionId).toBe("low");
     });
   });
 

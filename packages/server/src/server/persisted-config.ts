@@ -12,7 +12,6 @@ import type { AgentProviderRuntimeSettingsMap } from "./agent/provider-launch-co
 import { DEFAULT_GIT_PROCESS_POLICY } from "../utils/git-process-scheduler.js";
 import { ensurePrivateFile, writePrivateFileAtomicSync } from "./private-files.js";
 import {
-  AgentProfileSchema,
   AgentSkillSelectionSchema,
   HostSettingsSectionSchema,
   TerminalProfileSchema,
@@ -360,7 +359,6 @@ export const PersistedConfigSchema = z
         enableTerminalAgentHooks: z.boolean().optional(),
         appendSystemPrompt: z.string().optional(),
         terminalProfiles: z.array(TerminalProfileSchema).optional(),
-        agentProfiles: z.array(AgentProfileSchema).optional(),
         cors: z
           .object({
             allowedOrigins: z.array(z.string()).optional(),
@@ -560,6 +558,13 @@ function stripRemovedConfigFields(parsed: unknown): unknown {
   // Plugin support was removed; drop the keys older daemons wrote.
   delete root.pluginsEnabled;
   delete root.plugins;
+  // Frogg agent profiles were removed in favour of the providers' own agents.
+  const daemon = root.daemon;
+  if (daemon && typeof daemon === "object" && !Array.isArray(daemon)) {
+    const daemonRecord = { ...(daemon as Record<string, unknown>) };
+    delete daemonRecord.agentProfiles;
+    root.daemon = daemonRecord;
+  }
   const providers = root.providers;
   if (!providers || typeof providers !== "object" || Array.isArray(providers)) {
     return root;

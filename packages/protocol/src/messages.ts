@@ -178,35 +178,6 @@ export const TerminalProfileSchema = z
 
 export type TerminalProfile = z.infer<typeof TerminalProfileSchema>;
 
-/**
- * A named launch bundle: a provider plus the agent-config values a client would
- * otherwise set one control at a time. Field names mirror `AgentSessionConfig`
- * so applying a profile is a copy rather than a translation table.
- *
- * There is deliberately no system prompt here. `AgentSessionConfig.systemPrompt`
- * is creation-only, so a profile carrying one would apply when starting a new
- * agent and silently do nothing when applied to a running one.
- */
-export const AgentProfileSchema = z
-  .object({
-    id: z.string(),
-    name: z.string(),
-    /** A key into the client's icon registry, not a glyph. Unknown keys draw the default. */
-    icon: z.string().optional(),
-    /** An identity colour name shared with host badges. Unknown values draw unthemed. */
-    color: z.string().optional(),
-    provider: z.string(),
-    model: z.string().optional(),
-    modeId: z.string().optional(),
-    thinkingOptionId: z.string().optional(),
-    featureValues: z.record(z.string(), z.unknown()).optional(),
-    /** Free text, surfaced to orchestrating agents by the `list_profiles` MCP tool. */
-    notes: z.string().optional(),
-  })
-  .passthrough();
-
-export type AgentProfile = z.infer<typeof AgentProfileSchema>;
-
 const MutableBrowserToolsConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
@@ -306,7 +277,6 @@ export const MutableDaemonConfigSchema = z
     enableTerminalAgentHooks: z.boolean().default(false),
     appendSystemPrompt: z.string().default(""),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
-    agentProfiles: z.array(AgentProfileSchema).optional(),
     skills: z.object({ selection: AgentSkillSelectionSchema.optional() }).strict().optional(),
     // COMPAT(daemonAutoUpdate): added in v0.1.14, optional so older apps and daemons ignore it.
     autoUpdate: DaemonAutoUpdateConfigSchema.optional(),
@@ -331,7 +301,6 @@ export const MutableDaemonConfigPatchSchema = z
     enableTerminalAgentHooks: z.boolean().optional(),
     appendSystemPrompt: z.string().optional(),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
-    agentProfiles: z.array(AgentProfileSchema).optional(),
     autoUpdate: DaemonAutoUpdateConfigSchema.partial().optional(),
     hostSettings: MutableHostSettingsConfigSchema.partial().optional(),
   })
@@ -4169,11 +4138,6 @@ export const ServerInfoStatusPayloadSchema = z
         fsEntryDuplicate: z.boolean().optional(),
         // COMPAT(checkoutDiscardChanges): added in v0.3.0, remove gate after 2027-02-08.
         checkoutDiscardChanges: z.boolean().optional(),
-        // COMPAT(agentProfiles): added in v0.3.2, remove gate after 2027-02-11.
-        // An older daemon parses its persisted config strictly, so writing
-        // agentProfiles to one is silently dropped. The client hides the feature
-        // rather than letting a save appear to succeed.
-        agentProfiles: z.boolean().optional(),
         // COMPAT(agentConfigApply): added in v0.3.2, remove gate after 2027-02-11.
         agentConfigApply: z.boolean().optional(),
         // COMPAT(deviceAccess): added in v1.6.0, remove gate after 2027-09-22.

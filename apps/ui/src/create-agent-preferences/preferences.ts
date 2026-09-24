@@ -35,9 +35,9 @@ const launchTargetSchema: z.ZodType<LaunchTarget> = z.discriminatedUnion("kind",
 export const FormPreferencesSchema = z.strictObject({
   provider: z.string().optional(),
   providerPreferences: z.record(z.string(), providerPreferencesSchema).optional(),
-  // COMPAT(agentProfileFavoriteMigration): favourites were removed in v0.3.2.
-  // Keep the legacy payload alive until every capable host has had a chance to
-  // import it; ordinary preference writes must not erase it first.
+  // COMPAT(agentProfileFavoriteMigration): favourites were removed in v0.3.2 and
+  // the agent profiles they migrated into were removed in v1.6.0. Still parsed so
+  // stored preferences keep loading (the schema is strict); nothing reads it.
   favoriteModels: z
     .array(
       z.strictObject({
@@ -182,42 +182,6 @@ export function mergeCreateAgentSelectionPreferences(args: {
       mode: args.modeId === undefined ? undefined : modeId || null,
       ...(modelId && thinkingOptionId ? { thinkingByModel: { [modelId]: thinkingOptionId } } : {}),
       ...(featureValues.success ? { featureValues: featureValues.data } : {}),
-    },
-  });
-}
-
-export function applyAgentProfilePreferences(args: {
-  preferences: FormPreferences;
-  previousProvider: AgentProvider | null;
-  previousProviderModeIds: readonly string[];
-  provider: AgentProvider;
-  modelId: string;
-  modeId: string;
-  thinkingOptionId: string;
-  featureValues: Record<string, unknown>;
-}): FormPreferences {
-  let next = args.preferences;
-  if (args.previousProvider) {
-    const previousMode = next.providerPreferences?.[args.previousProvider]?.mode;
-    if (previousMode && !args.previousProviderModeIds.includes(previousMode)) {
-      next = mergeProviderPreferences({
-        preferences: next,
-        provider: args.previousProvider,
-        updates: { mode: null },
-      });
-    }
-  }
-
-  return mergeProviderPreferences({
-    preferences: next,
-    provider: args.provider,
-    updates: {
-      model: args.modelId || undefined,
-      mode: args.modeId || null,
-      ...(args.modelId && args.thinkingOptionId
-        ? { thinkingByModel: { [args.modelId]: args.thinkingOptionId } }
-        : {}),
-      featureValues: args.featureValues,
     },
   });
 }

@@ -681,7 +681,6 @@ function resolveBrowserToolsEnabled(persisted: ReturnType<typeof loadPersistedCo
 function resolveProfileLists(persisted: ReturnType<typeof loadPersistedConfig>) {
   return {
     terminalProfiles: persisted.daemon?.terminalProfiles,
-    agentProfiles: persisted.daemon?.agentProfiles,
   };
 }
 
@@ -761,7 +760,6 @@ export function resolveConfigFromPersisted(
     autoUpdate,
     appendSystemPrompt,
     terminalProfiles,
-    agentProfiles,
     hostnames,
     allowPairingHostname,
     workspaceServicesBindHost,
@@ -819,7 +817,6 @@ export function resolveConfigFromPersisted(
     enableTerminalAgentHooks: persisted.daemon?.enableTerminalAgentHooks ?? false,
     appendSystemPrompt,
     terminalProfiles,
-    agentProfiles,
     skillSelection: persisted.agents?.skills?.selection,
     mcpDebug: env.MCP_DEBUG === "1",
     isDev: resolveFroggNodeEnv(env) === "development",

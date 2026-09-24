@@ -82,7 +82,6 @@ import {
 } from "@/desktop/daemon/desktop-daemon";
 import { AgentNavigationListener } from "@/desktop/agent-navigation";
 import { LegacyAgentSkillsMigration } from "@/agent-skills/legacy-migration";
-import { legacyFavoriteProfileMigration } from "@/agent-profiles/migration";
 import { listenToDesktopEvent } from "@/desktop/electron/events";
 import { updateDesktopWindowChrome } from "@/desktop/electron/window";
 import { getDesktopHost } from "@/desktop/host";
@@ -114,14 +113,12 @@ import {
   hasConfiguredLocalDaemonOverride,
   useHostRegistryLoaded,
   useHostRuntimeClient,
-  useHostRuntimeIsConnected,
   useHosts,
 } from "@/runtime/host-runtime";
 import { getDaemonStartService } from "@/runtime/daemon-start-service";
 import { usePanelStore } from "@/stores/panel-store";
 import { flushDraftPersistStorage } from "@/stores/draft-store";
 import { getNextThemePreference } from "@/styles/theme";
-import { useSessionStore } from "@/stores/session-store";
 import { installWebScrollbarStyles } from "@/styles/install-web-scrollbar-styles";
 import type { HostProfile } from "@/types/host-connection";
 import {
@@ -281,31 +278,9 @@ function ManagedDaemonSession({ daemon }: { daemon: HostProfile }) {
 
   return (
     <SessionProvider key={daemon.serverId} serverId={daemon.serverId} client={client}>
-      <LegacyFavoriteProfileMigrationBootstrap serverId={daemon.serverId} client={client} />
+      {null}
     </SessionProvider>
   );
-}
-
-function LegacyFavoriteProfileMigrationBootstrap({
-  serverId,
-  client,
-}: {
-  serverId: string;
-  client: NonNullable<ReturnType<typeof useHostRuntimeClient>>;
-}) {
-  const serverInfo = useSessionStore((state) => state.sessions[serverId]?.serverInfo ?? null);
-  const isConnected = useHostRuntimeIsConnected(serverId);
-
-  useEffect(() => {
-    if (!serverInfo || !isConnected) {
-      return;
-    }
-    void legacyFavoriteProfileMigration.migrateHost(serverId, client).catch((error) => {
-      console.warn("[AgentProfiles] Failed to migrate legacy favourites", error);
-    });
-  }, [client, isConnected, serverId, serverInfo]);
-
-  return null;
 }
 
 function HostSessionManager() {

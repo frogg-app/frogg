@@ -5,15 +5,14 @@ import {
   expectModelPickerHeight,
   expectModelPickerWidth,
   expectModelSearchResult,
-  expectPinnedProfilesHidden,
   openModelPicker,
   readModelPickerHeight,
   readModelPickerWidth,
   searchAllModels,
-  seedAgentProfiles,
+  showAllModels,
   seedModelProvider,
   expectSearchResultsVirtualized,
-} from "../support/helpers/agent-profiles";
+} from "../support/helpers/model-picker";
 import { expectComposerVisible } from "../support/helpers/composer";
 import { clickNewChat, gotoWorkspace } from "../support/helpers/launcher";
 import { seedWorkspace } from "../support/helpers/seed-client";
@@ -29,14 +28,6 @@ const STUDIO = {
     { id: "studio-fast", label: "Ten second stream", description: "Studio quick pass" },
     { id: "studio-deep", label: "Studio deep think", description: "Studio long pass" },
   ],
-};
-
-// The cross-provider search lives on the picker's root view, and a profile is
-// what keeps the picker opening there.
-const ROOT_VIEW_PROFILE = {
-  id: "agent_profile_e2e_search_root",
-  name: "Search anchor",
-  provider: "mock",
 };
 
 const LARGE_CATALOG_SIZE = 200;
@@ -55,7 +46,6 @@ test.describe("Cross-provider model search", () => {
     page,
   }) => {
     const provider = await seedModelProvider(STUDIO);
-    const profile = await seedAgentProfiles([ROOT_VIEW_PROFILE]);
     const workspace = await seedWorkspace({ repoPrefix: "model-search-providers-" });
 
     try {
@@ -64,6 +54,7 @@ test.describe("Cross-provider model search", () => {
         await clickNewChat(page);
         await expectComposerVisible(page);
         await openModelPicker(page);
+        await showAllModels(page);
       });
       const restingWidth = await readModelPickerWidth(page);
 
@@ -94,10 +85,6 @@ test.describe("Cross-provider model search", () => {
         });
       });
 
-      await test.step("results replace the pinned profiles", async () => {
-        await expectPinnedProfilesHidden(page);
-      });
-
       // Search falls back to subsequence matching, so "no matches" needs letters
       // that cannot be picked out of a model label or description in order.
       await test.step("a query with no matches repeats the query back", async () => {
@@ -107,7 +94,6 @@ test.describe("Cross-provider model search", () => {
       });
     } finally {
       await workspace.cleanup();
-      await profile.restore();
       await provider.restore();
     }
   });
@@ -116,7 +102,6 @@ test.describe("Cross-provider model search", () => {
     page,
   }) => {
     const provider = await seedModelProvider(LARGE_CATALOG);
-    const profile = await seedAgentProfiles([ROOT_VIEW_PROFILE]);
     const workspace = await seedWorkspace({ repoPrefix: "model-search-large-catalog-" });
 
     try {
@@ -125,6 +110,7 @@ test.describe("Cross-provider model search", () => {
         await clickNewChat(page);
         await expectComposerVisible(page);
         await openModelPicker(page);
+        await showAllModels(page);
       });
 
       const restingHeight = await readModelPickerHeight(page);
@@ -153,7 +139,6 @@ test.describe("Cross-provider model search", () => {
       });
     } finally {
       await workspace.cleanup();
-      await profile.restore();
       await provider.restore();
     }
   });

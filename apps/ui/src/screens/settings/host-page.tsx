@@ -21,7 +21,6 @@ import {
   getTerminalProfileIcon,
   DEFAULT_TERMINAL_PROFILES,
 } from "@frogg/protocol/terminal-profiles";
-import { AgentProfilesSection } from "@/agent-profiles";
 import { AgentSkillsSection } from "@/agent-skills";
 import { ProviderAgentDefinitionsSection } from "@/agent-definitions";
 import { MetadataGenerationPage } from "@/screens/settings/metadata-generation-page";
@@ -271,7 +270,6 @@ export function HostAgentsPage({ serverId }: { serverId: string }) {
         </View>
       )}
       <AgentSkillsSection serverId={serverId} />
-      <AgentProfilesSection serverId={serverId} />
     </View>
   );
 }

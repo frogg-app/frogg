@@ -112,7 +112,6 @@ const TOOL_SPECS: Readonly<Record<string, ToolDetailSpec>> = {
   send_terminal_keys: { inputOrder: ["terminalId", "keys", "literal"] },
   list_providers: {},
   list_models: { inputOrder: ["provider"] },
-  list_profiles: {},
   inspect_provider: { inputOrder: ["provider", "cwd", "settings"] },
   list_pending_permissions: {},
   respond_to_permission: { inputOrder: ["agentId", "requestId", "response"] },

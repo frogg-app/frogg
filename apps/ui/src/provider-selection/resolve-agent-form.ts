@@ -87,16 +87,6 @@ export type AgentFormAction =
       providerModels: AgentModelDefinition[] | null;
       providerPrefs?: ProviderPrefs | undefined;
     }
-  | {
-      type: "APPLY_PROFILE_FROM_USER";
-      provider: AgentProvider;
-      modelId: string;
-      modeId: string;
-      thinkingOptionId: string;
-      providerDef: AgentProviderDefinition | undefined;
-      providerModels: AgentModelDefinition[] | null;
-      providerPrefs?: ProviderPrefs | undefined;
-    }
   | { type: "SET_MODE_FROM_USER"; modeId: string }
   | {
       type: "SET_MODEL_FROM_USER";
@@ -112,7 +102,6 @@ export type AgentFormAction =
   | { type: "RESET" };
 
 type CompleteResolutionAction = Extract<AgentFormAction, { type: "COMPLETE_RESOLUTION" }>;
-type ApplyProfileAction = Extract<AgentFormAction, { type: "APPLY_PROFILE_FROM_USER" }>;
 
 export function normalizeSelectedModelId(modelId: string | null | undefined): string {
   return typeof modelId === "string" ? modelId.trim() : "";
@@ -514,24 +503,6 @@ function pickNextModeForProviderAndModel(input: {
   });
 }
 
-function pickNextThinkingOptionForProvider(input: {
-  providerModels: AgentModelDefinition[] | null;
-  providerPrefs: ProviderPrefs | undefined;
-  modelId: string;
-}): string {
-  const { providerModels, providerPrefs, modelId } = input;
-  const preferredThinking = resolvePreferredThinkingOptionId({
-    availableModels: providerModels,
-    providerPrefs,
-    modelId,
-  });
-  return resolveThinkingOptionId({
-    availableModels: providerModels,
-    modelId,
-    requestedThinkingOptionId: preferredThinking,
-  });
-}
-
 function pickNextThinkingOptionForTarget(input: {
   availableModels: AgentModelDefinition[] | null;
   providerPrefs: ProviderPrefs | undefined;
@@ -574,45 +545,6 @@ function completeResolution(
   const nextState = { ...state, resolution: { status: "completed" } as const };
   if (!hasFormStateChanged(state.form, resolved)) return nextState;
   return { ...nextState, form: resolved };
-}
-
-function applyProfile(state: AgentFormReducerState, action: ApplyProfileAction) {
-  const preferredModelId = action.modelId || action.providerPrefs?.model || "";
-  const normalizedModelId = resolveCanonicalModelId(action.providerModels, preferredModelId);
-  const nextModelId = normalizedModelId || resolveDefaultModelId(action.providerModels);
-  const availableModeIds = new Set(action.providerDef?.modes.map((mode) => mode.id) ?? []);
-  const preferredModeId = action.modeId || action.providerPrefs?.mode || "";
-  const defaultModeId = action.providerDef?.defaultModeId ?? "";
-  let nextModeId = "";
-  if (availableModeIds.has(preferredModeId)) {
-    nextModeId = preferredModeId;
-  } else if (availableModeIds.has(defaultModeId)) {
-    nextModeId = defaultModeId;
-  }
-  const nextThinkingOptionId =
-    action.thinkingOptionId ||
-    pickNextThinkingOptionForProvider({
-      providerModels: action.providerModels,
-      providerPrefs: action.providerPrefs,
-      modelId: nextModelId,
-    });
-  return {
-    ...state,
-    form: {
-      ...state.form,
-      provider: action.provider,
-      model: nextModelId,
-      modeId: nextModeId,
-      thinkingOptionId: nextThinkingOptionId,
-    },
-    userModified: {
-      ...state.userModified,
-      provider: true,
-      model: true,
-      modeId: true,
-      thinkingOptionId: true,
-    },
-  };
 }
 
 export function resolveAgentForm(
@@ -669,10 +601,6 @@ export function resolveAgentForm(
         },
         userModified: { ...state.userModified, provider: true, model: true },
       };
-    }
-
-    case "APPLY_PROFILE_FROM_USER": {
-      return applyProfile(state, action);
     }
 
     case "SET_MODE_FROM_USER":

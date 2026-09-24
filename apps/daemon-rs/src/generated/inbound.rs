@@ -1790,8 +1790,6 @@ pub struct SetDaemonConfigRequestConfig {
     pub append_system_prompt: Option<String>,
     #[serde(rename = "terminalProfiles", skip_serializing_if = "Option::is_none")]
     pub terminal_profiles: Option<Vec<SetDaemonConfigRequestConfigTerminalProfilesItem>>,
-    #[serde(rename = "agentProfiles", skip_serializing_if = "Option::is_none")]
-    pub agent_profiles: Option<Vec<SetDaemonConfigRequestConfigAgentProfilesItem>>,
     #[serde(rename = "autoUpdate", skip_serializing_if = "Option::is_none")]
     pub auto_update: Option<SetDaemonConfigRequestConfigAutoUpdate>,
     #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
@@ -1846,27 +1844,6 @@ pub struct SetDaemonConfigRequestConfigTerminalProfilesItem {
     pub args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetDaemonConfigRequestConfigAgentProfilesItem {
-    pub id: String,
-    pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub icon: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub color: Option<String>,
-    pub provider: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub model: Option<String>,
-    #[serde(rename = "modeId", skip_serializing_if = "Option::is_none")]
-    pub mode_id: Option<String>,
-    #[serde(rename = "thinkingOptionId", skip_serializing_if = "Option::is_none")]
-    pub thinking_option_id: Option<String>,
-    #[serde(rename = "featureValues", skip_serializing_if = "Option::is_none")]
-    pub feature_values: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub notes: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

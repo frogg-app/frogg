@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CreateAgentPreferencesService } from "./service";
 import {
-  applyAgentProfilePreferences,
   mergeCreateAgentSelectionPreferences,
   mergeProviderPreferences,
   parseFormPreferences,
@@ -148,33 +147,6 @@ describe("create agent preferences", () => {
     ).toEqual({
       provider: "pi",
       providerPreferences: { pi: { model: "anthropic/sonnet" } },
-    });
-  });
-
-  it("repairs the previous provider while applying a profile", () => {
-    expect(
-      applyAgentProfilePreferences({
-        preferences: {
-          provider: "pi",
-          providerPreferences: {
-            pi: { model: "anthropic/sonnet", mode: "full-access" },
-            mock: { model: "ten-second-stream", mode: "load-test" },
-          },
-        },
-        previousProvider: "pi",
-        previousProviderModeIds: [],
-        provider: "mock",
-        modelId: "one-minute-stream",
-        modeId: "approval-test",
-        thinkingOptionId: "",
-        featureValues: {},
-      }),
-    ).toEqual({
-      provider: "mock",
-      providerPreferences: {
-        pi: { model: "anthropic/sonnet" },
-        mock: { model: "one-minute-stream", mode: "approval-test", featureValues: {} },
-      },
     });
   });
 

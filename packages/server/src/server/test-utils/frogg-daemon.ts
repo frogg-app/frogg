@@ -12,7 +12,6 @@ import {
 import type { AgentClient, AgentProvider } from "../agent/agent-sdk-types.js";
 import { createTestAgentClients } from "./fake-agent-client.js";
 import type { PushNotificationSender } from "../push/index.js";
-import type { AgentProfile } from "@frogg/protocol/messages";
 
 interface TestFroggDaemonOptions {
   daemonVersion?: string;
@@ -49,7 +48,6 @@ interface TestFroggDaemonOptions {
   trustLan?: FroggDaemonConfig["trustLan"];
   claimMode?: FroggDaemonConfig["claimMode"];
   claimScope?: FroggDaemonConfig["claimScope"];
-  agentProfiles?: AgentProfile[];
   autoArchiveAfterMerge?: boolean;
 }
 
@@ -203,7 +201,6 @@ async function prepareTestDaemonConfig(
     voiceLlmModel: options.voiceLlmModel ?? null,
     dictationFinalTimeoutMs: options.dictationFinalTimeoutMs,
     downloadTokenTtlMs: options.downloadTokenTtlMs,
-    agentProfiles: options.agentProfiles,
     autoArchiveAfterMerge: options.autoArchiveAfterMerge,
   };
   return { config, froggHomeRoot, froggHome, staticDir };

@@ -160,7 +160,6 @@ import { getOrCreateServerId } from "./server-id.js";
 import { resolveDaemonVersion } from "./daemon-version.js";
 import type { AgentClient, AgentProvider } from "./agent/agent-sdk-types.js";
 import type {
-  AgentProfile,
   AgentSkillSelection,
   FirstAgentContext,
   HostSettingsSection,
@@ -469,7 +468,6 @@ export interface FroggDaemonConfig {
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
   terminalProfiles?: TerminalProfile[];
-  agentProfiles?: AgentProfile[];
   skillSelection?: AgentSkillSelection;
   staticDir: string;
   mcpDebug: boolean;
@@ -745,10 +743,6 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
 
   if (config.terminalProfiles !== undefined) {
     initialConfig.terminalProfiles = config.terminalProfiles;
-  }
-
-  if (config.agentProfiles !== undefined) {
-    initialConfig.agentProfiles = config.agentProfiles;
   }
 
   return initialConfig;
@@ -1740,7 +1734,6 @@ export async function createFroggDaemon(
     terminalManager,
     getDaemonTcpPort: publicTcpPort,
     providerSnapshotManager,
-    daemonConfigStore,
     github,
     workspaceGitService,
     findWorkspaceIdForCwd: findWorkspaceIdForCwdExternal,
