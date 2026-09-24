@@ -23,8 +23,9 @@ Official Frogg continues to use `FROGG_*`.
 | `FROGG_LISTEN`            | brand bind on port `9999` (`0.0.0.0:9999` for `frogg`) | Listen target (`host:port`, port, socket or pipe) |
 | `PORT`                  |                           | Port used only when neither `FROGG_LISTEN` nor `daemon.listen` is set; the bind host still comes from the brand |
 | `FROGG_PASSWORD`          |                           | Plaintext password, hashed at startup. Overrides `daemon.auth.password`. Also read by the CLI as its credential |
-| `FROGG_TRUST_LAN`         | `true`                    | Treat private-network clients like loopback. Ignored while claim mode is on |
+| `FROGG_TRUST_LAN`         | brand default (`true` for `frogg`) | Treat private-network clients like loopback. Ignored while claim mode is on |
 | `FROGG_CLAIM_MODE`        | brand default (`false` for `frogg`) | Lock the LAN out and let the first client claim an unclaimed daemon. Overrides `daemon.auth.claimMode` |
+| `FROGG_CLAIM_SCOPE`       | brand default (`any`)     | `any` or `local`: who may claim an unclaimed daemon. Overrides `daemon.auth.claimScope`; other values are ignored |
 | `FROGG_HOSTNAMES`         |                           | Comma-separated allowed hosts, or `true`. Legacy alias `FROGG_ALLOWED_HOSTS` |
 | `FROGG_ALLOW_PAIRING_HOSTNAME` | `true`               | Accept the pairing host as a `Host` without listing it in `FROGG_HOSTNAMES` |
 | `FROGG_CORS_ORIGINS`      |                           | Comma-separated extra origins, or `*` |
@@ -125,7 +126,7 @@ that agent's process. The daemon and every other provider keep the real `HOME`.
 | `FROGG_BUNDLE_FILE`     |                             | Install from a local bundle |
 | `FROGG_NO_SERVICE`      |                             | `1` skips the systemd/launchd service |
 | `FROGG_NO_MODIFY_PATH`  |                             | `1` leaves shell startup files alone |
-| `FROGG_LISTEN`          | `0.0.0.0:9999`              | Service listen address |
+| `FROGG_LISTEN`          | brand bind on the brand port (`0.0.0.0:9999` for `frogg`) | Service listen address |
 | `FROGG_HOME`            | `~/.frogg`                    | Service state directory |
 | `FROGG_HEALTH_TIMEOUT`  | `30`                        | Seconds to wait for the new daemon |
 

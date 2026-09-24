@@ -162,6 +162,14 @@ export const BrandManifestSchema = z.strictObject({
       // through the authenticated service proxy instead.
       workspaceServicesBind: z.enum(["all", "loopback"]).optional(),
       claimMode: z.boolean().optional(),
+      // Treat private-network clients like loopback. Upstream default true;
+      // any other brand defaults false.
+      trustLan: z.boolean().optional(),
+      // Who may claim an unclaimed daemon in claim mode: any reachable client,
+      // or only a loopback client holding the daemon's local token.
+      claimScope: z.enum(["any", "local"]).optional(),
+      // Background checks for newer provider CLI releases. Default true.
+      providerUpdateChecks: z.boolean().optional(),
     })
     .optional(),
   mobile: z.strictObject({ enabled: z.boolean().optional() }).optional(),
@@ -213,9 +221,10 @@ export function resolveBrandManifest(input: unknown) {
 
 /**
  * Fresh-install access defaults. The upstream `frogg` brand binds every
- * interface with claim mode off; any other brand defaults locked down
- * (loopback bind, claim mode on) unless its manifest says otherwise. Both are
- * defaults only: `daemon.listen` / `daemon.auth.claimMode` in config.json win.
+ * interface, trusts the LAN and leaves claim mode off; any other brand
+ * defaults locked down (loopback bind, LAN untrusted, claim mode on) unless its
+ * manifest says otherwise. All are defaults only: the matching env var and
+ * config.json key (`daemon.listen`, `daemon.auth.*`, `providerUpdates.checkEnabled`) win.
  */
 function resolveDaemonDefaults(manifest: BrandManifest) {
   const upstream = manifest.id === "frogg";
@@ -230,6 +239,9 @@ function resolveDaemonDefaults(manifest: BrandManifest) {
     workspaceServicesBind,
     workspaceServicesBindHost: workspaceServicesBind === "all" ? "0.0.0.0" : "127.0.0.1",
     claimMode: manifest.daemon?.claimMode ?? !upstream,
+    trustLan: manifest.daemon?.trustLan ?? upstream,
+    claimScope: manifest.daemon?.claimScope ?? "any",
+    providerUpdateChecks: manifest.daemon?.providerUpdateChecks ?? true,
   };
 }
 

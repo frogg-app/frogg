@@ -175,9 +175,18 @@ export class ProviderUpdateService {
     this.isNpmManagedBinary = options.isNpmManagedBinary ?? isNpmManagedBinary;
   }
 
+  /**
+   * `installedOnly` skips the registry lookup for providers with no binary on
+   * this host (the background poller's mode). Such a partial snapshot is never
+   * cached, so an explicit check still reports the latest release of a
+   * provider the user has not installed yet.
+   */
   async check(
-    options: { forceRefresh?: boolean; signal?: AbortSignal } = {},
+    options: { forceRefresh?: boolean; signal?: AbortSignal; installedOnly?: boolean } = {},
   ): Promise<ProviderUpdateSnapshot> {
+    if (options.installedOnly) {
+      return this.runCheck(options.signal, true);
+    }
     const nowMs = this.now();
     if (!options.forceRefresh && this.cached && nowMs - this.cached.checkedAtMs < this.cacheTtlMs) {
       return this.cached.snapshot;
@@ -198,9 +207,12 @@ export class ProviderUpdateService {
     return pending;
   }
 
-  private async runCheck(signal?: AbortSignal): Promise<ProviderUpdateSnapshot> {
+  private async runCheck(
+    signal?: AbortSignal,
+    installedOnly = false,
+  ): Promise<ProviderUpdateSnapshot> {
     const entries = await Promise.all(
-      this.descriptors.map((descriptor) => this.checkOne(descriptor, signal)),
+      this.descriptors.map((descriptor) => this.checkOne(descriptor, signal, installedOnly)),
     );
     return { checkedAt: new Date(this.now()).toISOString(), entries };
   }
@@ -208,6 +220,7 @@ export class ProviderUpdateService {
   private async checkOne(
     descriptor: ProviderUpdateDescriptor,
     signal?: AbortSignal,
+    installedOnly = false,
   ): Promise<ProviderUpdateEntry> {
     const binaryPath = await this.resolveBinary(descriptor);
     const installed = binaryPath
@@ -227,7 +240,7 @@ export class ProviderUpdateService {
       manualInstallUrl: descriptor.manualInstallUrl ?? null,
     };
 
-    if (!updatable) {
+    if (!updatable || (installedOnly && !binaryPath)) {
       return {
         ...base,
         latestVersion: null,

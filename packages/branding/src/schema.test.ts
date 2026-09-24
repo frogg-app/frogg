@@ -210,6 +210,9 @@ test("branded distributions default the daemon locked down; upstream stays open"
     workspaceServicesBind: "loopback",
     workspaceServicesBindHost: "127.0.0.1",
     claimMode: true,
+    trustLan: false,
+    claimScope: "any",
+    providerUpdateChecks: true,
   });
   assert.deepEqual(resolveBrandManifest({ ...minimal, id: "frogg" }).daemon, {
     bind: "all",
@@ -217,6 +220,9 @@ test("branded distributions default the daemon locked down; upstream stays open"
     workspaceServicesBind: "loopback",
     workspaceServicesBindHost: "127.0.0.1",
     claimMode: false,
+    trustLan: true,
+    claimScope: "any",
+    providerUpdateChecks: true,
   });
   assert.deepEqual(
     resolveBrandManifest({ ...minimal, daemon: { bind: "all", claimMode: false } }).daemon,
@@ -226,9 +232,31 @@ test("branded distributions default the daemon locked down; upstream stays open"
       workspaceServicesBind: "loopback",
       workspaceServicesBindHost: "127.0.0.1",
       claimMode: false,
+      trustLan: false,
+      claimScope: "any",
+      providerUpdateChecks: true,
     },
   );
   assert.throws(() => resolveBrandManifest({ ...minimal, daemon: { bind: "lan" } }), /bind/);
+});
+
+test("a managed brand pins trustLan, claimScope and providerUpdateChecks", () => {
+  const daemon = resolveBrandManifest({
+    ...minimal,
+    daemon: { trustLan: true, claimScope: "local", providerUpdateChecks: false },
+  }).daemon;
+  assert.equal(daemon.trustLan, true);
+  assert.equal(daemon.claimScope, "local");
+  assert.equal(daemon.providerUpdateChecks, false);
+  // Upstream can opt out of LAN trust too.
+  assert.equal(
+    resolveBrandManifest({ ...minimal, id: "frogg", daemon: { trustLan: false } }).daemon.trustLan,
+    false,
+  );
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, daemon: { claimScope: "lan" } }),
+    /claimScope/,
+  );
 });
 
 test("a brand can opt workspace services back onto every interface", () => {

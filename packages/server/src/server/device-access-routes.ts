@@ -13,8 +13,19 @@ import {
 import { deriveSharedKey, encrypt, importPublicKey } from "@frogg/relay/e2ee";
 import type { KeyPair } from "@frogg/relay/e2ee";
 
-import { clientKey, verifyDaemonPassword, type DaemonAuthConfig } from "./auth.js";
-import type { ClaimStore, MintedPrincipal, PairedVia } from "./claim-store.js";
+import { isLoopbackIp } from "./access-policy.js";
+import {
+  clientKey,
+  extractHttpBearerToken,
+  verifyDaemonPassword,
+  type DaemonAuthConfig,
+} from "./auth.js";
+import {
+  isDaemonClaimed,
+  type ClaimStore,
+  type MintedPrincipal,
+  type PairedVia,
+} from "./claim-store.js";
 import type { ClaimOfferStore } from "./claim-offer-store.js";
 import type { PairingCodeStore } from "./pairing-code-store.js";
 import type { PairingRequestStore } from "./pairing-request-store.js";
@@ -32,6 +43,13 @@ import type { PairingRequestStore } from "./pairing-request-store.js";
  * All of them are public routes (they are how a device gets its first
  * credential), so every one of them is throttled per client address.
  */
+/**
+ * Who may claim an unclaimed daemon in claim mode (`daemon.auth.claimScope`):
+ * `any` reachable client, or only a `local` one — a loopback client whose
+ * bearer is the daemon's local token (the file only the host user can read).
+ */
+export type ClaimScope = "any" | "local";
+
 export interface DeviceAccessDependencies {
   serverId: string;
   daemonKeyPair: KeyPair;
@@ -43,6 +61,10 @@ export interface DeviceAccessDependencies {
   auth: DaemonAuthConfig;
   /** `daemon.auth.claimMode`. */
   claimMode: () => boolean;
+  /** `daemon.auth.claimScope`. Absent means `any`. */
+  claimScope?: () => ClaimScope;
+  /** The daemon's local-token check; required for a `local` claim scope. */
+  isLocalToken?: (token: string | null) => boolean;
   onPaired?: (input: { minted: MintedPrincipal; via: PairedVia }) => void;
   logger: Logger;
 }
@@ -170,19 +192,48 @@ export function createDeviceClaimHandler(deps: DeviceAccessDependencies): Reques
       return;
     }
 
-    // Claim mode: the first client to reach an unclaimed daemon becomes its
-    // owner. Once claimed, this path is closed forever (short of a reset).
-    if (!deps.claimMode()) {
-      res.status(409).json({ error: "This daemon is not in claim mode" });
-      return;
-    }
-    if (deps.claimStore.isClaimed()) {
-      deps.auth.limiter?.recordFailure(key);
-      res.status(409).json({ error: "This daemon has already been claimed" });
-      return;
-    }
-    res.status(201).json(mint(deps, { deviceName, role: "owner", via: "claim" }));
+    handleOpenClaim(req, res, deps, key, deviceName);
   };
+}
+
+/**
+ * Claim mode: the first client to reach an unclaimed daemon becomes its owner.
+ * Once claimed, this path is closed forever (short of a reset).
+ */
+function handleOpenClaim(
+  req: express.Request,
+  res: express.Response,
+  deps: DeviceAccessDependencies,
+  key: string,
+  deviceName: string,
+): void {
+  if (!deps.claimMode()) {
+    res.status(409).json({ error: "This daemon is not in claim mode" });
+    return;
+  }
+  if (deps.claimScope?.() === "local" && !isLocalClaimant(req, deps)) {
+    deps.auth.limiter?.recordFailure(key);
+    res.status(403).json({ error: "This daemon can only be claimed from the host itself" });
+    return;
+  }
+  // A daemon password counts as claimed: it already has an administrator.
+  if (isDaemonClaimed(deps.claimStore, deps.auth.password)) {
+    deps.auth.limiter?.recordFailure(key);
+    res.status(409).json({ error: "This daemon has already been claimed" });
+    return;
+  }
+  res.status(201).json(mint(deps, { deviceName, role: "owner", via: "claim" }));
+}
+
+/**
+ * A `local` claim needs both: the client resolves to loopback (proxy-aware, so
+ * a forwarded remote client is not loopback), and it presents the local token.
+ */
+function isLocalClaimant(req: express.Request, deps: DeviceAccessDependencies): boolean {
+  const address = deps.auth.access?.clientAddress(req) ?? req.socket?.remoteAddress;
+  if (!isLoopbackIp(address)) return false;
+  const token = extractHttpBearerToken(req.header("authorization"));
+  return deps.isLocalToken?.(token) ?? false;
 }
 
 export function createPairingRequestCreateHandler(deps: DeviceAccessDependencies): RequestHandler {

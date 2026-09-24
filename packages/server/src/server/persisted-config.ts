@@ -113,6 +113,9 @@ const DaemonAuthSchema = z
     trustLan: z.boolean().optional(),
     // Untrust the LAN and let the first client claim the daemon. Default from brand.json.
     claimMode: z.boolean().optional(),
+    // Who may claim an unclaimed daemon: any client, or only a loopback client
+    // holding the local token. Default from brand.json.
+    claimScope: z.enum(["any", "local"]).optional(),
   })
   .strict();
 

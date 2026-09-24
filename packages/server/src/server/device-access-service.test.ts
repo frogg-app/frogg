@@ -5,7 +5,8 @@ import { afterEach, describe, expect, test } from "vitest";
 
 import { normalizePairingCode, parseDirectPairingDeepLink } from "@frogg/protocol/device-access";
 
-import { createClaimStore, type DeviceRecord } from "./claim-store.js";
+import { createClaimStore, LastOwnerError, type DeviceRecord } from "./claim-store.js";
+import { deviceRoleStoreFrom } from "./authorization/device-role-store.js";
 import { createPairingCodeStore } from "./pairing-code-store.js";
 import { createPairingRequestStore } from "./pairing-request-store.js";
 import { createDeviceAccessService, DeviceAccessError } from "./device-access-service.js";
@@ -112,6 +113,53 @@ describe("device access service", () => {
     const h = harness();
     const viewer = h.mint("viewer", "Tablet");
     expect(h.service.revokeDevice({ device: viewer }, viewer.id)).toBe(true);
+  });
+
+  test("the last owner cannot be revoked, by itself or anyone else", () => {
+    const h = harness();
+    const owner = h.mint("owner", "Desk");
+    const operator = h.mint("operator", "Phone");
+
+    expect(() => h.service.revokeDevice({ device: owner }, owner.id)).toThrow(DeviceAccessError);
+    expect(() => h.service.revokeDevice({ device: null }, owner.id)).toThrow(/last owner/);
+    expect(h.claimStore.getDevice(owner.id)).not.toBeNull();
+    expect(h.revoked).toEqual([]);
+    // Operators can still sign themselves out.
+    expect(h.service.revokeDevice({ device: operator }, operator.id)).toBe(true);
+  });
+
+  test("an owner can be revoked while another owner remains", () => {
+    const h = harness();
+    const desk = h.mint("owner", "Desk");
+    const laptop = h.mint("owner", "Laptop");
+    expect(h.service.revokeDevice({ device: desk }, desk.id)).toBe(true);
+    expect(() => h.service.revokeDevice({ device: laptop }, laptop.id)).toThrow(/last owner/);
+  });
+
+  test("the last owner cannot be demoted; another owner can", async () => {
+    const h = harness();
+    const desk = h.mint("owner", "Desk");
+    const roles = deviceRoleStoreFrom(h.claimStore);
+
+    await expect(roles.setRole(desk.id, "operator")).rejects.toBeInstanceOf(LastOwnerError);
+    expect(h.claimStore.getCredentialRole(desk.id)).toBe("owner");
+    expect(await roles.setRole(desk.id, "owner")).toBe(true);
+
+    const laptop = h.mint("owner", "Laptop");
+    expect(await roles.setRole(desk.id, "viewer")).toBe(true);
+    await expect(roles.setRole(laptop.id, "viewer")).rejects.toBeInstanceOf(LastOwnerError);
+  });
+
+  test("settings report claimed with a password, and after the last device is gone", async () => {
+    const h = harness();
+    expect(h.service.settings().claimed).toBe(false);
+    await h.service.setPassword({ device: null }, "a-long-enough-password");
+    expect(h.service.settings().claimed).toBe(true);
+    await h.service.setPassword({ device: null }, null);
+    expect(h.service.settings().claimed).toBe(false);
+    const viewer = h.mint("viewer", "Tablet");
+    h.claimStore.revokeDevice(viewer.id);
+    expect(h.service.settings().claimed).toBe(true);
   });
 
   test("a pairing code carries a role, a fingerprint and a deep link per endpoint", () => {

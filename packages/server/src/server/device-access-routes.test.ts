@@ -16,6 +16,7 @@ import {
 } from "@frogg/relay/e2ee";
 
 import { hashDaemonPassword } from "./auth.js";
+import { createClaimStore } from "./claim-store.js";
 import { LOCAL_TOKEN_FILENAME } from "./local-token.js";
 import { createTestFroggDaemon, type TestFroggDaemon } from "./test-utils/frogg-daemon.js";
 
@@ -31,10 +32,13 @@ describe("device access routes", () => {
     daemon = null;
   });
 
-  async function start(options: { claimMode?: boolean; password?: string } = {}) {
+  async function start(
+    options: { claimMode?: boolean; claimScope?: "any" | "local"; password?: string } = {},
+  ) {
     daemon = await createTestFroggDaemon({
       mcpEnabled: false,
       claimMode: options.claimMode,
+      ...(options.claimScope ? { claimScope: options.claimScope } : {}),
       ...(options.password ? { auth: { password: hashDaemonPassword(options.password) } } : {}),
     });
     return { handle: daemon, base: `http://127.0.0.1:${daemon.port}` };
@@ -44,12 +48,19 @@ describe("device access routes", () => {
     return readFileSync(path.join(handle.froggHome, LOCAL_TOKEN_FILENAME), "utf8").trim();
   }
 
-  async function post(base: string, route: string, body?: unknown, token?: string) {
+  async function post(
+    base: string,
+    route: string,
+    body?: unknown,
+    token?: string,
+    headers: Record<string, string> = {},
+  ) {
     const response = await fetch(`${base}${route}`, {
       method: "POST",
       headers: {
         "content-type": "application/json",
         ...(token ? { authorization: `Bearer ${token}` } : {}),
+        ...headers,
       },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
@@ -97,6 +108,80 @@ describe("device access routes", () => {
 
     const second = await post(base, "/api/setup/claim", { claim: true, deviceName: "Attacker" });
     expect(second.status).toBe(409);
+  });
+
+  test("claim scope local: a loopback client without the local token is refused", async () => {
+    const { base } = await start({ claimMode: true, claimScope: "local" });
+    const bare = await post(base, "/api/setup/claim", { claim: true, deviceName: "Laptop" });
+    expect(bare.status).toBe(403);
+    const wrong = await post(
+      base,
+      "/api/setup/claim",
+      { claim: true, deviceName: "Laptop" },
+      "flt1.not-the-token",
+    );
+    expect(wrong.status).toBe(403);
+  });
+
+  test("claim scope local: loopback with the local token claims the daemon as owner", async () => {
+    const { base, handle } = await start({ claimMode: true, claimScope: "local" });
+    const res = await post(
+      base,
+      "/api/setup/claim",
+      { claim: true, deviceName: "Host" },
+      localToken(handle),
+    );
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ role: "owner", deviceName: "Host" });
+  });
+
+  test("claim scope local: a proxied remote client is refused even with the local token", async () => {
+    const { base, handle } = await start({ claimMode: true, claimScope: "local" });
+    // The test daemon trusts loopback proxies, so the forwarded address is the
+    // client address: a remote client behind a local reverse proxy.
+    const res = await post(
+      base,
+      "/api/setup/claim",
+      { claim: true, deviceName: "Remote" },
+      localToken(handle),
+      { "x-forwarded-for": "203.0.113.7" },
+    );
+    expect(res.status).toBe(403);
+  });
+
+  test("claim scope any: a plain loopback client still claims", async () => {
+    const { base } = await start({ claimMode: true, claimScope: "any" });
+    const res = await post(base, "/api/setup/claim", { claim: true, deviceName: "Laptop" });
+    expect(res.status).toBe(201);
+  });
+
+  test("claim mode: a daemon with a password already counts as claimed", async () => {
+    const { base } = await start({ claimMode: true, password: "correct horse battery" });
+    const res = await post(base, "/api/setup/claim", { claim: true, deviceName: "Attacker" });
+    expect(res.status).toBe(409);
+  });
+
+  test("claim mode: the claim latch survives revoking every device and clears on reset", async () => {
+    const { base, handle } = await start({ claimMode: true });
+    const first = await post(base, "/api/setup/claim", { claim: true, deviceName: "Laptop" });
+    expect(first.status).toBe(201);
+
+    const store = createClaimStore(handle.froggHome);
+    const credentialId = (first.body as { credentialId: string }).credentialId;
+    expect(store.revokeDevice(credentialId)).toBe(true);
+    expect(store.listDevices()).toEqual([]);
+    expect(store.isClaimed()).toBe(true);
+
+    const afterRevoke = await post(base, "/api/setup/claim", {
+      claim: true,
+      deviceName: "Attacker",
+    });
+    expect(afterRevoke.status).toBe(409);
+
+    // Only the local `reset-claim` (the store's reset) reopens the claim.
+    expect(store.reset()).toBe(true);
+    const reclaimed = await post(base, "/api/setup/claim", { claim: true, deviceName: "Laptop" });
+    expect(reclaimed.status).toBe(201);
   });
 
   test("claiming is refused outright when claim mode is off", async () => {

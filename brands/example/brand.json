@@ -18,5 +18,13 @@
       "background": "#20152e",
       "foreground": "#faf5ff"
     }
+  },
+  "daemon": {
+    "bind": "loopback",
+    "workspaceServicesBind": "loopback",
+    "claimMode": true,
+    "trustLan": false,
+    "claimScope": "local",
+    "providerUpdateChecks": false
   }
 }

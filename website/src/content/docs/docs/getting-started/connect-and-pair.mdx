@@ -161,6 +161,8 @@ Details that matter:
   again for another device.
 - The **first device to pair claims** an unclaimed daemon. Until then, a browser opening
   the daemon from a public address sees a pairing page instead of the app.
+- Once claimed, a daemon stays claimed even if every device is removed; only
+  `frogg auth reset-claim` reopens it. The last owner device cannot be removed or demoted.
 - The link contains everything needed to connect. `pair.frogg.app` is a stateless page
   that hands the offer to the app; it never contacts your daemon. Change its base with
   `app.pairingBaseUrl` or `FROGG_PAIRING_BASE_URL`.

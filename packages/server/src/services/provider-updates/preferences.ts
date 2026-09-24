@@ -6,6 +6,8 @@
  * nothing about them can be pinned by an environment variable or CLI flag.
  */
 
+import { brand } from "@frogg/branding";
+
 import {
   loadPersistedConfig,
   savePersistedConfig,
@@ -20,7 +22,8 @@ export interface ResolvedProviderUpdatePreferences {
 }
 
 export const DEFAULT_PROVIDER_UPDATE_PREFERENCES: ResolvedProviderUpdatePreferences = {
-  checkEnabled: true,
+  // brand.json `daemon.providerUpdateChecks`; config.json `providerUpdates.checkEnabled` wins.
+  checkEnabled: brand.daemon.providerUpdateChecks,
   autoUpdate: false,
   checkIntervalMinutes: 12 * 60,
   ignoredProviders: [],

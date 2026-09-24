@@ -258,12 +258,29 @@ What a freshly installed daemon does before anyone configures it.
 | `bind`      | `"all"` or `"loopback"` | `"all"` for `frogg`, else `"loopback"` | Which interfaces a daemon listens on until someone configures an address |
 | `workspaceServicesBind` | `"all"` or `"loopback"` | `"loopback"` for every brand | Which interfaces workspace dev servers listen on |
 | `claimMode` | boolean                 | `false` for `frogg`, else `true` | Lock the LAN out and let the first client claim the daemon |
+| `trustLan`  | boolean                 | `true` for `frogg`, else `false` | Treat private-network clients like loopback. Ignored while claim mode is on |
+| `claimScope` | `"any"` or `"local"`   | `"any"`                        | Who may claim an unclaimed daemon: any reachable client, or only a loopback client presenting the daemon's local token |
+| `providerUpdateChecks` | boolean      | `true`                         | Check for newer provider CLI releases in the background |
+
+A managed deployment pins the whole posture explicitly (this is what `brands/example`
+ships):
 
 ```json
 {
-  "daemon": { "bind": "loopback", "claimMode": true }
+  "daemon": {
+    "bind": "loopback",
+    "workspaceServicesBind": "loopback",
+    "claimMode": true,
+    "trustLan": false,
+    "claimScope": "local",
+    "providerUpdateChecks": false
+  }
 }
 ```
+
+With `claimScope: "local"` the first owner is claimed on the host itself, by a process
+that can read the daemon's local token, so nothing on the network can win the claim race.
+See [claim mode](/docs/self-hosting/security/#claim-mode).
 
 The stock `frogg` distribution keeps the open defaults it has always had (`0.0.0.0`, claim
 mode off). Every other brand starts locked down, because a product you ship to other
@@ -276,7 +293,8 @@ really wants the wide bind sets `"workspaceServicesBind": "all"`.
 
 A new `config.json` carries no `daemon.listen`, so the bind stays the brand's until an
 owner writes an address. These are defaults, not locks: `daemon.listen` / `FROGG_LISTEN` and
-`daemon.auth.claimMode` / `<PREFIX>_CLAIM_MODE` and
+`daemon.auth.claimMode` / `<PREFIX>_CLAIM_MODE`, `daemon.auth.trustLan` / `<PREFIX>_TRUST_LAN`,
+`daemon.auth.claimScope` / `<PREFIX>_CLAIM_SCOPE`, `providerUpdates.checkEnabled` and
 `daemon.workspaceServices.bindHost` / `<PREFIX>_WORKSPACE_SERVICES_BIND_HOST` in a
 daemon's own configuration win. See
 [security and access](/docs/self-hosting/security/).
@@ -305,3 +323,6 @@ adds derived values you cannot set directly:
 | `legacyFrogg`                  | `true` only for `brands/frogg`                            |
 | `daemon.bindHost`            | `0.0.0.0` for `bind: "all"`, `127.0.0.1` for `"loopback"`  |
 | `daemon.workspaceServicesBindHost` | `0.0.0.0` for `workspaceServicesBind: "all"`, else `127.0.0.1` |
+| `daemon.trustLan`            | `true` for `frogg`, else `false`                        |
+| `daemon.claimScope`          | `"any"`                                                 |
+| `daemon.providerUpdateChecks` | `true`                                                 |

@@ -36,6 +36,7 @@ export async function generateInstallers(build: BrandBuild): Promise<void> {
     ARTIFACT_PREFIX: b.artifactPrefix,
     LEGACY_ARTIFACT_CUTOFF: legacyArtifactCutoff,
     PORT: String(b.daemonPort),
+    BIND_HOST: b.daemon.bindHost,
     RELEASE_BASE: b.distribution.releaseBase ?? "",
     DOCKER_IMAGE: b.distribution.dockerImage ?? "",
     LEGACY: String(b.legacyFrogg),

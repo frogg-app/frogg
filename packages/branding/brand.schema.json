@@ -364,10 +364,29 @@
     },
     "daemon": {
       "type": "object",
-      "description": "Fresh-install access defaults. Unset: bind all + claim mode off for the frogg brand, loopback + claim mode on for every other brand.",
+      "description": "Fresh-install access defaults. Unset: bind all, LAN trusted, claim mode off for the frogg brand; loopback, LAN untrusted, claim mode on for every other brand. claimScope defaults any; providerUpdateChecks defaults true.",
       "properties": {
-        "bind": { "type": "string", "enum": ["all", "loopback"] },
-        "claimMode": { "type": "boolean" }
+        "bind": {
+          "type": "string",
+          "enum": ["all", "loopback"]
+        },
+        "workspaceServicesBind": {
+          "type": "string",
+          "enum": ["all", "loopback"]
+        },
+        "claimMode": {
+          "type": "boolean"
+        },
+        "trustLan": {
+          "type": "boolean"
+        },
+        "claimScope": {
+          "type": "string",
+          "enum": ["any", "local"]
+        },
+        "providerUpdateChecks": {
+          "type": "boolean"
+        }
       },
       "additionalProperties": false
     },

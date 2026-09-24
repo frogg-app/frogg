@@ -11,7 +11,12 @@ import {
 import type { PairingEndpointSchema } from "@frogg/protocol/device-access-rpc";
 import type { z } from "zod";
 
-import type { ClaimStore, DeviceRecord } from "./claim-store.js";
+import {
+  LAST_OWNER_ERROR,
+  isDaemonClaimed,
+  type ClaimStore,
+  type DeviceRecord,
+} from "./claim-store.js";
 import type { PairingCodeStore } from "./pairing-code-store.js";
 import type { PairingRequestStore } from "./pairing-request-store.js";
 import { DAEMON_PASSWORD_MIN_LENGTH, hashDaemonPassword } from "./auth.js";
@@ -118,7 +123,7 @@ export function createDeviceAccessService(options: DeviceAccessServiceOptions) {
       trustLan: current.trustLan,
       // Claim mode untrusts the LAN whatever `trustLan` says.
       lanTrustEffective: current.trustLan && !current.claimMode,
-      claimed: claimStore.isClaimed(),
+      claimed: isDaemonClaimed(claimStore, current.passwordEnabled),
       passwordEnabled: current.passwordEnabled,
       overrideControlledPaths: settingsStore.overrideControlledPaths(),
       deviceCount: claimStore.listDevices().length,
@@ -151,6 +156,10 @@ export function createDeviceAccessService(options: DeviceAccessServiceOptions) {
       if (!target) return false;
       // Signing yourself out is always allowed; removing someone else is not.
       if (target.id !== caller.device?.id) requireOwner(caller);
+      // Removing the last owner (self-revoke included) would leave nobody able
+      // to manage access; the latch keeps the daemon claimed, so it would be
+      // recoverable only from the host.
+      if (claimStore.isLastOwner(target.id)) throw new DeviceAccessError(LAST_OWNER_ERROR);
       const revoked = claimStore.revokeDevice(deviceId);
       // Revocation has to reach live connections, or the removed device keeps
       // its session until it happens to reconnect.

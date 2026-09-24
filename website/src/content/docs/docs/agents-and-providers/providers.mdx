@@ -109,7 +109,9 @@ frogg provider update-settings --ignore omp,pi      # never check or update thes
 ```
 
 These map to the `providerUpdates` block of the daemon config — `checkEnabled`,
-`autoUpdate`, `checkIntervalMinutes` and `ignoredProviders`.
+`autoUpdate`, `checkIntervalMinutes` and `ignoredProviders`. `checkEnabled` defaults to the
+brand's `daemon.providerUpdateChecks` (on for `frogg`). Background checks skip providers
+that are not installed on the host; an explicit check still reports their latest release.
 
 ## Models, modes and thinking
 
