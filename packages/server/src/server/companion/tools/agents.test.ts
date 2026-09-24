@@ -83,3 +83,48 @@ it("tracks an ordinary worker through a permission without accepting an unrelate
     await rm(home, { recursive: true, force: true });
   }
 });
+
+it("creates a worktree workspace from an active source workspace only", async () => {
+  const home = await mkdtemp(path.join(tmpdir(), "frogg-companion-workspace-"));
+  const logger = pino({ level: "silent" });
+  const storage = new AgentStorage(home, logger);
+  const manager = new AgentManager({
+    clients: createTestAgentClients(),
+    registry: storage,
+    logger,
+  });
+  const created: Array<{ fromWorkspaceId: string; title: string | null }> = [];
+  const source = { workspaceId: "ws-source", cwd: home, archivedAt: null };
+  const workspaces: Record<string, never> = {
+    "ws-source": source as never,
+    "ws-archived": { ...source, archivedAt: "2026-09-24T00:00:00.000Z" } as never,
+  };
+  try {
+    const tools = createCompanionAgentTools({
+      agentManager: manager,
+      agentStorage: storage,
+      workspaceRegistry: {
+        list: async () => [],
+        get: async (id: string) => workspaces[id] ?? null,
+      },
+      logger,
+      createWorktreeWorkspace: async (input) => {
+        created.push(input);
+        return { workspaceId: "ws-new", title: input.title };
+      },
+    });
+    const made = await invokeCompanionTool(tools, "create_workspace", {
+      fromWorkspaceId: "ws-source",
+      title: "Fix login",
+    });
+    expect(made.ok).toBe(true);
+    expect(created).toEqual([{ fromWorkspaceId: "ws-source", title: "Fix login" }]);
+    const refused = await invokeCompanionTool(tools, "create_workspace", {
+      fromWorkspaceId: "ws-archived",
+    });
+    expect(refused.ok).toBe(false);
+    expect(created).toHaveLength(1);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+});

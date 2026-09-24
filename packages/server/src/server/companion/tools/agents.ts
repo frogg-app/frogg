@@ -19,6 +19,14 @@ export interface CompanionAgentToolDependencies {
   logger: Logger;
   deferredJobs?: CompanionDeferredJobs;
   conversationId?: string;
+  /**
+   * Creates a new worktree workspace branched from an existing workspace's
+   * checkout, so new work does not have to land in a busy workspace.
+   */
+  createWorktreeWorkspace?: (input: {
+    fromWorkspaceId: string;
+    title: string | null;
+  }) => Promise<{ workspaceId: string; title: string | null }>;
 }
 
 interface CompanionAgentSummary {
@@ -188,10 +196,34 @@ export function createCompanionAgentTools(deps: CompanionAgentToolDependencies):
       },
     }),
 
+    ...(deps.createWorktreeWorkspace
+      ? [
+          defineCompanionTool({
+            name: "create_workspace",
+            description:
+              "Create a new isolated worktree workspace, branched from an existing workspace's checkout, for new work that should not share a busy workspace. Returns the workspaceId to pass to create_agent. Call list_workspaces first to pick the source.",
+            deferred: false,
+            schema: z.object({
+              fromWorkspaceId: z.string().min(1),
+              title: z.string().min(1).nullable().default(null),
+            }),
+            handler: async (input) => {
+              const source = await deps.workspaceRegistry.get(input.fromWorkspaceId);
+              if (!source || source.archivedAt) {
+                throw new CompanionToolTargetError(
+                  `No active workspace with id ${input.fromWorkspaceId}`,
+                );
+              }
+              return deps.createWorktreeWorkspace!(input);
+            },
+          }),
+        ]
+      : []),
+
     defineCompanionTool({
       name: "create_agent",
       description:
-        "Start a new agent in an existing workspace with an initial prompt. Call list_workspaces first if the workspace is not already known.",
+        "Start a new agent in an existing workspace with an initial prompt. Call list_workspaces first if the workspace is not already known; use create_workspace when the work needs a fresh workspace.",
       deferred: false,
       schema: z.object({
         workspaceId: z.string().min(1),

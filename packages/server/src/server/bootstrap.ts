@@ -130,6 +130,7 @@ import {
 } from "./workspace-registry.js";
 import { CheckoutDiffManager } from "./checkout-diff-manager.js";
 import { DaemonConfigStore, type MutableDaemonConfig } from "./daemon-config-store.js";
+import { createFroggWorktreeCommand } from "./worktree/commands.js";
 import { removeRetiredSkills } from "./retired-skills.js";
 import {
   resolveConfigFromPersisted,
@@ -1971,6 +1972,27 @@ export async function createFroggDaemon(
         conversationId,
         notebook: companion.notebook,
         logger: sessionLogger,
+        createWorktreeWorkspace: async ({ fromWorkspaceId, title }) => {
+          const source = await workspaceRegistry.get(fromWorkspaceId);
+          if (!source) throw new Error("Workspace is unavailable");
+          const result = await createFroggWorktreeCommand(
+            {
+              froggHome: config.froggHome,
+              worktreesRoot: config.worktreesRoot,
+              createFroggWorktreeWorkflow: createAgentCommandDependencies.createFroggWorktree,
+            },
+            {
+              cwd: source.cwd,
+              projectId: source.projectId,
+              action: "branch-off",
+              ...(title ? { title } : {}),
+            },
+          );
+          if (!result.ok) throw result.cause;
+          const workspace = result.createdWorktree.workspace;
+          await emitWorkspaceUpdatesExternal([workspace.workspaceId]);
+          return { workspaceId: workspace.workspaceId, title: workspace.title ?? null };
+        },
       }),
     runDeferredJob: createCompanionSubagentRunner({
       resolveWorkspaceCwd: async (workspaceId) => {

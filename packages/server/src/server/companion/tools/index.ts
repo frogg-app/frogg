@@ -16,6 +16,7 @@ export const COMPANION_TOOL_NAMES = [
   "list_jobs",
   "get_job_result",
   "send_agent_prompt",
+  "create_workspace",
   "create_agent",
   "cancel_agent",
   "respond_to_permission",
