@@ -1,9 +1,14 @@
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 
-import { createClaimStore, hashCredential, PRINCIPALS_FILENAME } from "./claim-store.js";
+import {
+  createClaimStore,
+  hashCredential,
+  PRINCIPALS_FILENAME,
+  PRINCIPALS_V1_BACKUP_FILENAME,
+} from "./claim-store.js";
 
 const homes: string[] = [];
 
@@ -174,5 +179,55 @@ describe("per-device credentials", () => {
     const t2 = new Date(t0.getTime() + 61_000);
     store.touchLastSeen(minted.credentialId, t2);
     expect(onDisk()).toBe(t2.toISOString());
+  });
+});
+
+describe("v1 downgrade backup", () => {
+  const v1 = JSON.stringify({
+    version: 1,
+    principals: [
+      {
+        id: "prn_a",
+        label: "Alice",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        permissions: ["daemon.read"],
+        credentials: [
+          {
+            id: "crd_a",
+            sha256: hashCredential("s"),
+            createdAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+      },
+    ],
+  });
+
+  test("copies the v1 file once before the first v2 write, mode 0600, never overwritten", () => {
+    const home = createHome();
+    const backup = path.join(home, PRINCIPALS_V1_BACKUP_FILENAME);
+    writeFileSync(path.join(home, PRINCIPALS_FILENAME), v1, { mode: 0o644 });
+
+    const store = createClaimStore(home);
+    expect(existsSync(backup)).toBe(false);
+    expect(store.migrate()).toBe(true);
+    expect(readFileSync(backup, "utf8")).toBe(v1);
+    if (process.platform !== "win32") expect(statSync(backup).mode & 0o777).toBe(0o600);
+
+    // Further v2 writes leave the backup alone.
+    store.mintPrincipal({ label: "Bob" });
+    expect(readFileSync(backup, "utf8")).toBe(v1);
+
+    // A later v1 file (e.g. after a rollback and re-upgrade) does not overwrite it.
+    writeFileSync(path.join(home, PRINCIPALS_FILENAME), v1.replace("Alice", "Carol"));
+    expect(createClaimStore(home).migrate()).toBe(true);
+    expect(readFileSync(backup, "utf8")).toBe(v1);
+  });
+
+  test("no backup for fresh or v2 stores", () => {
+    const home = createHome();
+    const store = createClaimStore(home);
+    store.mintPrincipal({ label: "Owner" });
+    store.mintPrincipal({ label: "Second" });
+    expect(existsSync(path.join(home, PRINCIPALS_V1_BACKUP_FILENAME))).toBe(false);
   });
 });

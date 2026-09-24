@@ -1,5 +1,13 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync, readFileSync, rmSync, statSync } from "node:fs";
+import {
+  chmodSync,
+  constants as fsConstants,
+  copyFileSync,
+  existsSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 
@@ -22,6 +30,12 @@ import { ensurePrivateFile, writePrivateFileAtomicSync } from "./private-files.j
  * principal — and written back as v2 on the next change (or `migrate()`).
  */
 export const PRINCIPALS_FILENAME = "principals.json";
+/**
+ * Verbatim copy of a v1 `principals.json`, taken just before the first v2
+ * write. v1 daemons cannot read v2, so this is the rollback path; it is never
+ * overwritten once it exists.
+ */
+export const PRINCIPALS_V1_BACKUP_FILENAME = "principals.v1.bak.json";
 
 /** lastSeenAt is persisted at most this often per device. */
 export const LAST_SEEN_WRITE_INTERVAL_MS = 60_000;
@@ -157,7 +171,10 @@ function generateId(prefix: string): string {
   return `${prefix}_${randomBytes(9).toString("base64url")}`;
 }
 
-export function upgradePrincipalsFile(raw: unknown): { file: PrincipalsFile; upgraded: boolean } {
+export function upgradePrincipalsFile(raw: unknown): {
+  file: PrincipalsFile;
+  upgraded: boolean;
+} {
   const version = (raw as { version?: unknown } | null)?.version;
   if (version === 1) {
     const legacy = LegacyFileSchema.parse(raw);
@@ -202,8 +219,13 @@ function toDevice(principal: PrincipalRecord, credential: CredentialRecord): Dev
 
 export function createClaimStore(froggHome: string): ClaimStore {
   const filePath = path.join(froggHome, PRINCIPALS_FILENAME);
-  let cache: { mtimeMs: number; size: number; value: PrincipalsFile; upgraded: boolean } | null =
-    null;
+  const backupPath = path.join(froggHome, PRINCIPALS_V1_BACKUP_FILENAME);
+  let cache: {
+    mtimeMs: number;
+    size: number;
+    value: PrincipalsFile;
+    upgraded: boolean;
+  } | null = null;
   // In-memory last-seen times newer than what is on disk.
   const pendingLastSeen = new Map<string, string>();
 
@@ -242,7 +264,19 @@ export function createClaimStore(froggHome: string): ClaimStore {
     };
   }
 
+  function backupV1BeforeFirstWrite(): void {
+    if (!existsSync(filePath) || existsSync(backupPath) || !load().upgraded) return;
+    try {
+      copyFileSync(filePath, backupPath, fsConstants.COPYFILE_EXCL);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+      return;
+    }
+    chmodSync(backupPath, 0o600);
+  }
+
   function write(value: PrincipalsFile): void {
+    backupV1BeforeFirstWrite();
     writePrivateFileAtomicSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
     cache = null;
     pendingLastSeen.clear();
@@ -341,7 +375,10 @@ export function createClaimStore(froggHome: string): ClaimStore {
     renameDevice: (credentialId, name) => {
       const trimmed = name.trim();
       if (!trimmed) return null;
-      return mutateCredential(credentialId, (credential) => ({ ...credential, name: trimmed }));
+      return mutateCredential(credentialId, (credential) => ({
+        ...credential,
+        name: trimmed,
+      }));
     },
     revokeDevice: (credentialId) => {
       const current = read();
@@ -364,14 +401,20 @@ export function createClaimStore(froggHome: string): ClaimStore {
     getCredentialRole: (credentialId) =>
       listDevices().find((device) => device.id === credentialId)?.role ?? null,
     setCredentialRole: (credentialId, role) =>
-      mutateCredential(credentialId, (credential) => ({ ...credential, role })) !== null,
+      mutateCredential(credentialId, (credential) => ({
+        ...credential,
+        role,
+      })) !== null,
     touchLastSeen: (credentialId, now = new Date()) => {
       const iso = now.toISOString();
       pendingLastSeen.set(credentialId, iso);
       const last = lastPersistedAt.get(credentialId) ?? 0;
       if (now.getTime() - last < LAST_SEEN_WRITE_INTERVAL_MS) return;
       lastPersistedAt.set(credentialId, now.getTime());
-      mutateCredential(credentialId, (credential) => ({ ...credential, lastSeenAt: iso }));
+      mutateCredential(credentialId, (credential) => ({
+        ...credential,
+        lastSeenAt: iso,
+      }));
     },
     migrate: () => {
       const loaded = load();
