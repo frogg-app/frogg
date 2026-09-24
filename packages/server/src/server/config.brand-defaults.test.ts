@@ -135,3 +135,32 @@ test("the pairing hostname allowance defaults on and is opt-outable", async () =
     true,
   );
 });
+
+test("LAN trust defaults off for a locked-down brand: env, then config.json, then brand", async () => {
+  const fresh = await freshHome();
+  expect(loadConfig(fresh, { env: {} }).trustLan).toBe(false);
+
+  const on = await freshHome();
+  await writeFile(
+    path.join(on, "config.json"),
+    JSON.stringify({ daemon: { auth: { trustLan: true } } }),
+  );
+  expect(loadConfig(on, { env: {} }).trustLan).toBe(true);
+  expect(loadConfig(on, { env: { ACME_TRUST_LAN: "0" } }).trustLan).toBe(false);
+  expect(loadConfig(on, { env: { FROGG_TRUST_LAN: "0" } }).trustLan).toBe(true);
+});
+
+test("claim scope: env, then config.json, then the brand default", async () => {
+  const fresh = await freshHome();
+  expect(loadConfig(fresh, { env: {} }).claimScope).toBe("any");
+
+  const local = await freshHome();
+  await writeFile(
+    path.join(local, "config.json"),
+    JSON.stringify({ daemon: { auth: { claimScope: "local" } } }),
+  );
+  expect(loadConfig(local, { env: {} }).claimScope).toBe("local");
+  expect(loadConfig(local, { env: { ACME_CLAIM_SCOPE: "any" } }).claimScope).toBe("any");
+  // An unrecognised env value falls through rather than widening the scope.
+  expect(loadConfig(local, { env: { ACME_CLAIM_SCOPE: "everyone" } }).claimScope).toBe("local");
+});

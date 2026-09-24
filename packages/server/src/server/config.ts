@@ -9,6 +9,7 @@ import { z } from "zod";
 import { expandTilde } from "../utils/path.js";
 
 import type { FroggDaemonConfig } from "./bootstrap.js";
+import type { ClaimScope } from "./device-access-routes.js";
 import {
   loadPersistedConfig,
   LogFormatSchema,
@@ -22,7 +23,6 @@ import type {
 } from "./agent/provider-launch-config.js";
 import { ProviderOverrideSchema } from "./agent/provider-launch-config.js";
 import { AgentProviderSchema } from "@frogg/protocol/provider-manifest";
-import { DEFAULT_TRUST_LAN } from "./access-policy.js";
 import { hashDaemonPassword } from "./auth.js";
 import { resolveSpeechConfig } from "./speech/speech-config-resolver.js";
 import type { RequestedSpeechProviders } from "./speech/speech-types.js";
@@ -520,7 +520,8 @@ function resolveTrustLanConfig(
   return (
     parseBooleanEnv(brandEnv(brand, env, "TRUST_LAN")) ??
     persisted.daemon?.auth?.trustLan ??
-    DEFAULT_TRUST_LAN
+    // brand.json `daemon.trustLan`: on upstream, off for any other brand.
+    brand.daemon.trustLan
   );
 }
 
@@ -606,6 +607,20 @@ function resolveClaimModeConfig(
     persisted.daemon?.auth?.claimMode ??
     brand.daemon.claimMode
   );
+}
+
+/**
+ * Who may claim an unclaimed daemon in claim mode: `any` reachable client, or
+ * only a `local` one (loopback, holding the daemon's local token).
+ * `<BRAND>_CLAIM_SCOPE` wins, then config.json, then brand.json.
+ */
+function resolveClaimScopeConfig(
+  env: NodeJS.ProcessEnv,
+  persisted: ReturnType<typeof loadPersistedConfig>,
+): ClaimScope {
+  const fromEnv = brandEnv(brand, env, "CLAIM_SCOPE")?.trim().toLowerCase();
+  if (fromEnv === "any" || fromEnv === "local") return fromEnv;
+  return persisted.daemon?.auth?.claimScope ?? brand.daemon.claimScope;
 }
 
 function resolveAuthConfig(
@@ -704,6 +719,7 @@ function resolveStaticLoadConfigSettings(
     trustedProxies: resolveTrustedProxiesConfig(env, persisted),
     trustLan: resolveTrustLanConfig(env, persisted),
     claimMode: resolveClaimModeConfig(env, persisted),
+    claimScope: resolveClaimScopeConfig(env, persisted),
     appBaseUrl:
       brandEnv(brand, env, "PAIRING_BASE_URL") ??
       env.FROGG_APP_BASE_URL ??
@@ -745,6 +761,7 @@ export function resolveConfigFromPersisted(
     trustedProxies,
     trustLan,
     claimMode,
+    claimScope,
     appBaseUrl,
   } = resolveStaticLoadConfigSettings(env, cli, persisted);
 
@@ -783,6 +800,7 @@ export function resolveConfigFromPersisted(
     trustedProxies,
     trustLan,
     claimMode,
+    claimScope,
     mcpEnabled,
     mcpInjectIntoAgents,
     browserToolsEnabled,

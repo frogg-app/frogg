@@ -215,6 +215,7 @@ import { mountSetupRoutes } from "./setup-routes.js";
 import {
   createDeviceClaimHandler,
   mountDeviceAccessRoutes,
+  type ClaimScope,
   type DeviceAccessDependencies,
 } from "./device-access-routes.js";
 import { createPairingCodeStore, type PairingCodeStore } from "./pairing-code-store.js";
@@ -449,6 +450,8 @@ export interface FroggDaemonConfig {
   trustLan?: boolean;
   /** LAN untrusted; the first client claims the unclaimed daemon. Overrides trustLan. */
   claimMode?: boolean;
+  /** Who may claim in claim mode: any client, or loopback + local token only. Default any. */
+  claimScope?: ClaimScope;
   mcpEnabled?: boolean;
   mcpInjectIntoAgents?: boolean;
   browserToolsEnabled?: boolean;
@@ -1123,6 +1126,8 @@ export async function createFroggDaemon(
     pairingRequests,
     auth: authConfig,
     claimMode: () => authConfig.access?.claimMode() ?? false,
+    claimScope: () => config.claimScope ?? "any",
+    isLocalToken: (token) => localToken.matches(token),
     onPaired: ({ minted }) => {
       logger.info({ principalId: minted.principalId }, "Daemon claimed by a paired device");
     },
