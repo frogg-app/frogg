@@ -34,7 +34,9 @@ frogg agent ls --host ssh://dev@build-box     # SSH to the host, then its local 
 
 Without `--host`, the CLI uses `FROGG_HOST`, then the local daemon's socket or pipe, then the
 configured listen address, then `localhost:9999`. Set `FROGG_PASSWORD` if the daemon has a
-password.
+password. Without one, the CLI authenticates to a daemon on this machine (loopback, socket or
+pipe) with the `local-token` file in the daemon home, so run it as the user that owns that home.
+If the daemon refuses the credential, `frogg daemon pair` reports the error and exits 1.
 
 ## Daemon lifecycle
 

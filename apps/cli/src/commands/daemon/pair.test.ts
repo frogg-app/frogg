@@ -1,6 +1,13 @@
-import { describe, expect, test, vi } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { createServer, type Server } from "node:http";
+import type { AddressInfo } from "node:net";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
+  PairingAuthError,
+  resolveDirectClaimOffer,
   pairingQrEnabled,
   runPairCommand,
   type PairCommandOutput,
@@ -174,10 +181,83 @@ describe("daemon pair workflow", () => {
     expect(stdout).toContain("Access: password set");
   });
 
+  test("an auth refusal is reported as an error with exit 1", async () => {
+    const output = createRecordedOutput();
+
+    await runPairCommand(
+      { json: true },
+      {
+        resolveOffer: async () => {
+          throw new PairingAuthError(401);
+        },
+        resolveAccessMode,
+        confirmRelay: vi.fn(),
+        printDirectGuidance: vi.fn(),
+        isInteractive: () => false,
+        output,
+      },
+    );
+
+    expect(output.stderr.join("")).toContain('"code":"PAIRING_UNAUTHORIZED"');
+    expect(output.stdout).toEqual([]);
+    expect(output.exitCode).toBe(1);
+  });
+
   test("FROGG_PAIRING_QR=0 turns the terminal QR off", () => {
     expect(pairingQrEnabled({})).toBe(true);
     expect(pairingQrEnabled({ FROGG_PAIRING_QR: "1" })).toBe(true);
     expect(pairingQrEnabled({ FROGG_PAIRING_QR: "0" })).toBe(false);
     expect(pairingQrEnabled({ FROGG_PAIRING_QR: "off" })).toBe(false);
+  });
+});
+
+describe("direct claim offer over loopback HTTP", () => {
+  const TOKEN = "flt1.test-token";
+  let home: string;
+  let server: Server;
+  let listen: string;
+  let seenAuth: Array<string | undefined>;
+
+  beforeEach(async () => {
+    vi.stubEnv("FROGG_PASSWORD", "");
+    home = mkdtempSync(path.join(tmpdir(), "frogg-pair-"));
+    seenAuth = [];
+    // Mimics a claimed daemon: /api/setup/offer needs the local token.
+    server = createServer((req, res) => {
+      seenAuth.push(req.headers.authorization);
+      if (req.headers.authorization !== `Bearer ${TOKEN}`) {
+        res.writeHead(401).end();
+        return;
+      }
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(
+        JSON.stringify({
+          url: "https://pair.example/claim#t",
+          expiresAt: "2099-01-01T00:00:00Z",
+          endpoints: ["127.0.0.1"],
+          qr: null,
+        }),
+      );
+    });
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+    listen = `127.0.0.1:${(server.address() as AddressInfo).port}`;
+  });
+
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  test("claimed daemon + local token -> direct offer", async () => {
+    writeFileSync(path.join(home, "local-token"), `${TOKEN}\n`, { mode: 0o600 });
+    const offer = await resolveDirectClaimOffer(listen, home);
+    expect(seenAuth).toEqual([`Bearer ${TOKEN}`]);
+    expect(offer).toMatchObject({ mode: "direct", url: "https://pair.example/claim#t" });
+  });
+
+  test("claimed daemon without a token -> PairingAuthError, not a silent null", async () => {
+    await expect(resolveDirectClaimOffer(listen, home)).rejects.toBeInstanceOf(PairingAuthError);
+    expect(seenAuth).toEqual([undefined]);
   });
 });

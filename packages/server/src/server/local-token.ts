@@ -12,8 +12,10 @@ import { ensurePrivateFile, writePrivateFileAtomicSync } from "./private-files.j
  * with no remote address at all (unix socket, named pipe) used to be trusted
  * unconditionally.
  *
- * The local CLI and the desktop shell read this file and send it as a bearer,
- * which is what lets privileged local routes require a real credential.
+ * The local CLI reads this file (`apps/cli/src/utils/local-token.ts`) and
+ * sends it as the bearer to a loopback or IPC daemon when no password is
+ * configured, which is what lets privileged local routes require a real
+ * credential.
  */
 export const LOCAL_TOKEN_FILENAME = "local-token";
 
