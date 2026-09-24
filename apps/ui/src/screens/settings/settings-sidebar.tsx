@@ -13,6 +13,9 @@ import { ICON_SIZE, type Theme } from "@/styles/theme";
 import { SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
 import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visibility";
 import { useHosts } from "@/runtime/host-runtime";
+import type { SecuritySeverity } from "@/security/posture";
+import { SecurityDot } from "@/security/security-dot";
+import { useSecuritySeverity } from "@/security/use-security-posture";
 
 type SidebarIcon = ComponentType<{ size: number; color: string }>;
 
@@ -85,6 +88,7 @@ interface SidebarHostSectionButtonProps {
   icon: SidebarIcon;
   isSelected: boolean;
   onSelect: (section: HostSectionSlug) => void;
+  securitySeverity?: SecuritySeverity | null;
 }
 
 function SidebarHostSectionButton({
@@ -93,6 +97,7 @@ function SidebarHostSectionButton({
   icon: IconComponent,
   isSelected,
   onSelect,
+  securitySeverity = null,
 }: SidebarHostSectionButtonProps) {
   const handlePress = useCallback(() => {
     onSelect(itemId);
@@ -119,6 +124,10 @@ function SidebarHostSectionButton({
       >
         {label}
       </Text>
+      <SecurityDot
+        severity={securitySeverity}
+        testID={`settings-host-section-${itemId}-security-dot`}
+      />
     </Pressable>
   );
 }
@@ -153,6 +162,7 @@ export function SettingsSidebar({
     scope.kind === "host" ? scope.serverId : null,
   );
   const hosts = useHosts();
+  const securitySeverity = useSecuritySeverity(scope.kind === "host" ? scope.serverId : "");
   const hostHasRemoteSsh =
     scope.kind === "host" &&
     hosts.some(
@@ -178,6 +188,8 @@ export function SettingsSidebar({
               icon={item.icon}
               isSelected={selectedHostSection === item.id}
               onSelect={onSelectHostSection}
+              // The Security card lives on the overview, so that is where the dot points.
+              securitySeverity={item.id === "host" ? securitySeverity : null}
             />
           ))}
       </View>

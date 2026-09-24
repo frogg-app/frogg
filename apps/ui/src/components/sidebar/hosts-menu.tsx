@@ -18,6 +18,8 @@ import { openAddHostFlow, openPairScan } from "@/hosts/add-host-flow";
 import { openHostSettings } from "@/navigation/settings-navigation";
 import { useHostRuntimeSnapshot, useHosts } from "@/runtime/host-runtime";
 import { orderHostsLocalFirst } from "@/types/host-connection";
+import { SecurityDot } from "@/security/security-dot";
+import { useSecuritySeverity, useWorstSecuritySeverity } from "@/security/use-security-posture";
 import type { Theme } from "@/styles/theme";
 
 const MENU_WIDTH = 260;
@@ -60,6 +62,15 @@ export function HostsMenu({ onBeforeAction }: HostsMenuProps): ReactElement {
   );
   const enableBuiltInDaemonOption = useEnableBuiltInDaemonOption();
   const addHostKeys = useShortcutKeys("add-host");
+  const hostIds = useMemo(() => hosts.map((host) => host.serverId), [hosts]);
+  const worstSecuritySeverity = useWorstSecuritySeverity(hostIds);
+  const triggerTrailing = useMemo(
+    () =>
+      worstSecuritySeverity ? (
+        <SecurityDot severity={worstSecuritySeverity} testID="sidebar-hosts-security-dot" />
+      ) : null,
+    [worstSecuritySeverity],
+  );
 
   const runAction = useCallback(
     (action: () => void) => () => {
@@ -98,6 +109,7 @@ export function HostsMenu({ onBeforeAction }: HostsMenuProps): ReactElement {
         testID="sidebar-hosts"
         nativeID="sidebar-hosts"
         variant="compact"
+        trailing={triggerTrailing}
       />
       <MenuSurface
         side="top"
@@ -175,6 +187,17 @@ function HostsMenuHostItem({
   onOpen: (serverId: string) => void;
 }): ReactElement {
   const activeConnection = useHostRuntimeSnapshot(serverId)?.activeConnection ?? null;
+  const securitySeverity = useSecuritySeverity(serverId);
+  const trailing = useMemo(
+    () =>
+      securitySeverity ? (
+        <SecurityDot
+          severity={securitySeverity}
+          testID={`sidebar-hosts-item-${serverId}-security-dot`}
+        />
+      ) : null,
+    [securitySeverity, serverId],
+  );
   const leading = useMemo(
     () => (
       <View style={styles.dotSlot}>
@@ -189,6 +212,7 @@ function HostsMenuHostItem({
       leading={leading}
       description={activeConnection ? formatActiveConnectionLabel(activeConnection) : undefined}
       onSelect={handleSelect}
+      trailing={trailing}
       testID={`sidebar-hosts-item-${serverId}`}
     >
       {label}

@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { LucideIcon } from "lucide-react-native";
@@ -35,6 +35,8 @@ interface SidebarHeaderRowProps {
   shortcutKeys?: ShortcutKey[][] | null;
   /** Render as the trigger of the enclosing `MenuRoot` instead of a plain button. */
   menuTrigger?: boolean;
+  /** Small indicator after the label, such as a notification dot. Not shown in the icon variant. */
+  trailing?: ReactNode;
 }
 
 export function SidebarHeaderRow({
@@ -48,6 +50,7 @@ export function SidebarHeaderRow({
   variant = "header",
   shortcutKeys = null,
   menuTrigger = false,
+  trailing = null,
 }: SidebarHeaderRowProps) {
   const ThemedIcon = useMemo(() => withUnistyles(Icon), [Icon]);
 
@@ -80,13 +83,14 @@ export function SidebarHeaderRow({
           {variant === "icon" ? null : (
             <SidebarHeaderRowLabel label={label} isHighlighted={isHighlighted} />
           )}
+          {variant !== "icon" ? trailing : null}
           {variant !== "icon" && shortcutKeys && Boolean(state.hovered) ? (
             <Shortcut chord={shortcutKeys} style={styles.shortcut} />
           ) : null}
         </>
       );
     },
-    [ThemedIcon, isActive, label, shortcutKeys, variant],
+    [ThemedIcon, isActive, label, shortcutKeys, trailing, variant],
   );
 
   if (menuTrigger) {
