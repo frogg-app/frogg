@@ -12,6 +12,7 @@ import { runTrustLanCommand } from "./trust-lan.js";
 import { pairCommand } from "./pair.js";
 import { runDaemonReloadCommand } from "./reload.js";
 import { runClaimStatusCommand, runResetClaimCommand } from "./claim.js";
+import { runAuthClaimCommand } from "./auth-claim.js";
 import { selfUpdateCommand } from "./self-update/command.js";
 import { runInstallServiceCommand, runUninstallServiceCommand } from "./service/command.js";
 import { withOutput } from "../../output/index.js";
@@ -130,6 +131,17 @@ export function createAuthCommand(): Command {
   const auth = new Command("auth").description("Manage pairing and daemon access");
 
   auth.addCommand(pairCommand());
+
+  addJsonOption(
+    auth
+      .command("claim")
+      .description(
+        "Claim this unclaimed daemon (claim mode) from the host and print the owner credential",
+      ),
+  )
+    .option("--home <path>", `${brand.name} home directory (default: ~/${brand.homeDir})`)
+    .option("--device-name <name>", `Name for the owner device (default: ${brand.cliName} CLI)`)
+    .action(withOutput(runAuthClaimCommand));
 
   addJsonOption(
     auth

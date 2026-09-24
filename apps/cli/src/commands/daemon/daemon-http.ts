@@ -36,6 +36,8 @@ export class DaemonHttpError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** The daemon's `{ error }` body, when it sent one. */
+    readonly detail: string | null = null,
   ) {
     super(message);
     this.name = "DaemonHttpError";
@@ -59,11 +61,21 @@ export async function daemonHttpJson<T>(request: DaemonHttpRequest): Promise<T> 
       throw new DaemonHttpError(
         `${request.method ?? "GET"} ${request.path} failed with ${response.status}`,
         response.status,
+        await readErrorDetail(response),
       );
     }
     request.onResponse?.(response);
     return (await response.json()) as T;
   } finally {
     clearTimeout(timer);
+  }
+}
+
+async function readErrorDetail(response: Response): Promise<string | null> {
+  try {
+    const body = (await response.json()) as { error?: unknown };
+    return typeof body.error === "string" ? body.error : null;
+  } catch {
+    return null;
   }
 }

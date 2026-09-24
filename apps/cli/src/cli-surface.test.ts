@@ -59,6 +59,7 @@ describe("canonical CLI surface", () => {
     const cli = createCli();
     const auth = cli.commands.find((command) => command.name() === "auth");
     expect(auth?.commands.map((command) => command.name()).sort()).toEqual([
+      "claim",
       "claim-mode",
       "claim-status",
       "pair",
