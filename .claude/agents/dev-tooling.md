@@ -19,7 +19,7 @@ assigned checkout; leave other worktrees alone.
 
 - `apps/` holds deliverables (`desktop` = Electron app-only, `ui` = Expo web client, `cli`).
 - `packages/` holds libraries only (`protocol`, `client`, `server`, `relay`, `highlight`,
-  `plugin`, ...). No `index.ts` barrel files.
+  `branding`, ...). No `index.ts` barrel files.
 - `scripts/` is split into `dev/`, `release/`, `ci/`. `deploy/` holds Docker and Nix.
 - `website/src/content/docs/docs/` holds the documentation — read the relevant page before
   non-trivial work. Tooling that changes build, release or branding steps updates
@@ -33,7 +33,7 @@ The npm workspace graph is not automatic — build order matters and skipping a 
 confusing stale-type errors:
 
 ```
-build:protocol → build:client → build:server-deps (highlight, plugin, relay) → build:server
+build:protocol → build:client → build:server-deps (highlight, relay) → build:server
 ```
 
 `npm run build:server` already chains all of it. `npm run build:app-deps` is the equivalent

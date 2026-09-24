@@ -50,5 +50,10 @@ export default function SettingsSectionRoute() {
     );
   }
 
+  // COMPAT(pluginsRemoved): the Plugins section was removed. Remove after 2027-09-13.
+  if (rawSection === "plugins") {
+    return <Redirect href={buildSettingsRoute()} />;
+  }
+
   return <SettingsRouteEntry view={view} openAddHostIntent={openAddHostIntent} />;
 }

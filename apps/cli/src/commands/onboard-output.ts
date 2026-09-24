@@ -48,7 +48,7 @@ export function describeReachability(input: {
   lines.push(describeAccessMode(input.accessMode));
   if (input.pairingRequired) {
     lines.push(`Pair a device: ${brand.cliName} pair`);
-    lines.push(`Or use a password instead: ${brand.cliName} daemon set-password`);
+    lines.push(`Or use a password instead: ${brand.cliName} auth set-password`);
   }
   return lines;
 }

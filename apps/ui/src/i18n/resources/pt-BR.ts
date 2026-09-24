@@ -1445,7 +1445,7 @@ export const ptBR: TranslationResources = {
       fullStatus: {
         title: "Status completo",
         modalTitle: "Status do daemon",
-        hint: "Executa `{{cliName}} daemon status` e mostra a saída",
+        hint: "Executa `{{cliName}} status` e mostra a saída",
         view: "Ver status",
         copied: "Status copiado para a área de transferência.",
         fetchFailed: "Falha ao buscar status do daemon: {{message}}",
@@ -1682,6 +1682,10 @@ export const ptBR: TranslationResources = {
     },
   },
   openProject: {
+    chooseHost: {
+      importSession: "Importar do host",
+      setupProviders: "Escolher host",
+    },
     tiles: {
       addProject: {
         title: "Adicionar um projeto",

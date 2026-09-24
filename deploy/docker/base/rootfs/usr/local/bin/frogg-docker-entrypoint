@@ -50,7 +50,7 @@ fi
 if [[ -z "${FROGG_PASSWORD:-}" ]] && [[ ! -s "${state_home}/principals.json" ]]; then
   {
     echo "[${BRAND_ID}] No password and no paired device yet: the daemon is unclaimed."
-    echo "[${BRAND_ID}] Open http://<host>:${FROGG_LISTEN##*:}/ from another machine (or run '${BRAND_CLI} daemon pair' here)"
+    echo "[${BRAND_ID}] Open http://<host>:${FROGG_LISTEN##*:}/ from another machine (or run '${BRAND_CLI} auth pair' here)"
     echo "[${BRAND_ID}] and pair from the ${BRAND_NAME} app; the first device to pair owns this daemon."
     echo "[${BRAND_ID}] Set FROGG_PASSWORD instead if you prefer a shared password."
   } >&2

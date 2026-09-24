@@ -202,8 +202,8 @@ if [ "${FROGG_BIND}" = "127.0.0.1" ] || [ "${FROGG_BIND}" = "localhost" ]; then
 elif [ -z "${FROGG_PASSWORD}" ]; then
   log "no FROGG_PASSWORD set: the daemon is unclaimed until the first device pairs (open the web UI or run the pair command below)"
 fi
-log "pair a client:   docker exec ${FROGG_CONTAINER} ${BRAND_CLI} daemon pair"
-log "pairing status:  docker exec ${FROGG_CONTAINER} ${BRAND_CLI} daemon claim-status"
+log "pair a client:   docker exec ${FROGG_CONTAINER} ${BRAND_CLI} auth pair"
+log "pairing status:  docker exec ${FROGG_CONTAINER} ${BRAND_CLI} auth claim-status"
 log "logs:            docker logs -f ${FROGG_CONTAINER}"
 log "update later:    FROGG_VERSION=<tag> bash install-docker.sh --update   (rolls back if the new image is unhealthy)"
 log "install agents:  docker exec -it ${FROGG_CONTAINER} bash   (see https://frogg.app/docs/self-hosting/docker/)"

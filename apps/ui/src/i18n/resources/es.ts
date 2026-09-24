@@ -1454,7 +1454,7 @@ export const es: TranslationResources = {
       fullStatus: {
         title: "Estado completo",
         modalTitle: "EstadoDaemon",
-        hint: "Ejecuta`{{cliName}} daemon status`y muestra la salida.",
+        hint: "Ejecuta`{{cliName}} status`y muestra la salida.",
         view: "Ver estado",
         copied: "Estado copiado al portapapeles.",
         fetchFailed: "No se pudo recuperar el estado del demonio:{{message}}",
@@ -1697,6 +1697,10 @@ export const es: TranslationResources = {
     },
   },
   openProject: {
+    chooseHost: {
+      importSession: "Importar desde el host",
+      setupProviders: "Elegir host",
+    },
     tiles: {
       addProject: {
         title: "Agregar un proyecto",

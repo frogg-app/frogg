@@ -75,7 +75,7 @@ const claimStatusSchema: OutputSchema<ClaimStatusResult> = {
     const lines = [
       `Claimed:        ${data.claimed ? `yes (${data.claimedAt ?? "unknown time"})` : "no"}`,
       `Password:       ${data.passwordConfigured ? "configured" : "not configured"}`,
-      `LAN trusted:    ${data.lanTrusted ? `yes (${brand.cliName} daemon trust-lan off to require pairing on the LAN)` : "no"}`,
+      `LAN trusted:    ${data.lanTrusted ? `yes (${brand.cliName} auth trust-lan off to require pairing on the LAN)` : "no"}`,
       `Source:         ${data.source === "daemon" ? "running daemon" : "config.json (daemon not reachable)"}`,
       `Principals:     ${data.principalsPath}`,
       `Daemon:         ${

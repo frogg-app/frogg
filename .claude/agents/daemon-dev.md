@@ -11,8 +11,8 @@ shared delegation workflow in the root file.
 
 ## Scope
 
-- Primary: `packages/server/`, `packages/protocol/`, `packages/relay/`, and
-  `packages/plugin/`; daemon management commands under `apps/cli/`.
+- Primary: `packages/server/`, `packages/protocol/` and `packages/relay/`;
+  daemon management commands under `apps/cli/`.
 - Coordinate edits to `packages/client/` and shared schemas with `client-dev`.
   Agree request, response, event, error, and capability semantics before splitting work.
 - Node is the production daemon. The retired Rust backend is inactive reference source.

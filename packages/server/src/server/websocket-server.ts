@@ -1040,7 +1040,6 @@ export class VoiceAssistantWebSocketServer {
       ws,
       request,
       undefined,
-      false,
       admissionForPrincipal(decision.principal, "direct"),
     );
   }
@@ -1211,14 +1210,7 @@ export class VoiceAssistantWebSocketServer {
     }
     // The transport decides the role when the caller brought no device credential.
     const transport: SessionTransport = metadata?.transport === "hub" ? "hub" : "relay";
-    await this.attachSocket(
-      ws,
-      undefined,
-      metadata,
-      false,
-      { transport, ...admission },
-      initialHello,
-    );
+    await this.attachSocket(ws, undefined, metadata, { transport, ...admission }, initialHello);
   }
 
   public updatePrincipalPermissions(
@@ -1506,14 +1498,10 @@ export class VoiceAssistantWebSocketServer {
     ws: WebSocketLike,
     request?: unknown,
     metadata?: ExternalSocketMetadata,
-    allowDuringStartup = false,
     admission: SessionAdmission = OWNER_SESSION_ADMISSION,
     initialHello?: WSHelloMessage,
   ): Promise<void> {
-    if (
-      this.connectionLifecycle === "stopping" ||
-      (this.connectionLifecycle === "starting" && !allowDuringStartup)
-    ) {
+    if (this.connectionLifecycle === "stopping" || this.connectionLifecycle === "starting") {
       try {
         ws.close(WS_CLOSE_SERVER_SHUTDOWN, "Server shutting down");
       } catch {

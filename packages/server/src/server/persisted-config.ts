@@ -417,10 +417,6 @@ export const PersistedConfigSchema = z
     providers: ProvidersSchema.optional(),
     providerAccounts: ProviderAccountsConfigSchema.optional(),
     providerUpdates: ProviderUpdatesConfigSchema.optional(),
-    // COMPAT(pluginsRemoved): plugin support was removed; keys written by older daemons are
-    // accepted and ignored so existing config files still load. Remove after 2027-09-13.
-    pluginsEnabled: z.unknown().optional(),
-    plugins: z.unknown().optional(),
     worktrees: WorktreesConfigSchema.optional(),
     agents: z
       .object({
@@ -561,6 +557,9 @@ function stripRemovedConfigFields(parsed: unknown): unknown {
 
   const root = { ...(parsed as Record<string, unknown>) };
   stripPaseoDefaults(root);
+  // Plugin support was removed; drop the keys older daemons wrote.
+  delete root.pluginsEnabled;
+  delete root.plugins;
   const providers = root.providers;
   if (!providers || typeof providers !== "object" || Array.isArray(providers)) {
     return root;

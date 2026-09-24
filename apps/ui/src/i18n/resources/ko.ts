@@ -1429,7 +1429,7 @@ export const ko: TranslationResources = {
       fullStatus: {
         title: "전체 상태",
         modalTitle: "데몬 상태",
-        hint: "`{{cliName}} daemon status`를 실행하고 출력을 표시합니다",
+        hint: "`{{cliName}} status`를 실행하고 출력을 표시합니다",
         view: "상태 보기",
         copied: "상태가 클립보드에 복사되었습니다.",
         fetchFailed: "데몬 상태를 가져오지 못했습니다: {{message}}",
@@ -1664,6 +1664,10 @@ export const ko: TranslationResources = {
     },
   },
   openProject: {
+    chooseHost: {
+      importSession: "호스트에서 가져오기",
+      setupProviders: "호스트 선택",
+    },
     tiles: {
       addProject: {
         title: "프로젝트 추가",

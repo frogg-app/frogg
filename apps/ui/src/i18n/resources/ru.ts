@@ -1438,7 +1438,7 @@ export const ru: TranslationResources = {
       fullStatus: {
         title: "Полный статус",
         modalTitle: "Статус демона",
-        hint: "Выполняет команду `{{cliName}} daemon status` и показывает результат",
+        hint: "Выполняет команду `{{cliName}} status` и показывает результат",
         view: "Посмотреть статус",
         copied: "Статус скопирован в буфер обмена.",
         fetchFailed: "Не удалось получить статус демона: {{message}}",
@@ -1678,6 +1678,10 @@ export const ru: TranslationResources = {
     },
   },
   openProject: {
+    chooseHost: {
+      importSession: "Импорт с хоста",
+      setupProviders: "Выберите хост",
+    },
     tiles: {
       addProject: {
         title: "Добавить проект",

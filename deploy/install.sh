@@ -10,7 +10,7 @@
 # installer, so agent CLIs visible here are visible to the daemon.
 # Non-interactive and idempotent: re-running upgrades in place and restarts
 # the service. Later upgrades can also run on the host itself with
-# `frogg daemon self-update` (or from a connected client), which uses the same
+# `frogg update` (or from a connected client), which uses the same
 # layout: versions/<v>, the `current` link, and the `previous` marker it
 # rolls back to when a new version fails to come up.
 #
@@ -259,7 +259,7 @@ install_bundle() {
     ln -sfn "versions/${BUNDLE_VERSION}" "${FROGG_INSTALL_DIR}/current"
   fi
 
-  # The rollback target for `${BRAND_CLI} daemon self-update`; only changes on a real
+  # The rollback target for `${BRAND_CLI} update`; only changes on a real
   # version switch so a re-run never points previous at the current version.
   if [ -n "${PREVIOUS_VERSION}" ] && [ "${PREVIOUS_VERSION}" != "${BUNDLE_VERSION}" ]; then
     printf '%s\n' "${PREVIOUS_VERSION}" > "${FROGG_INSTALL_DIR}/previous"
@@ -360,7 +360,7 @@ restart_systemd_service() {
     # print.
     log "this shell runs inside ${SERVICE_NAME}; handing the restart to a transient unit"
     log "restarting ${SERVICE_NAME} (systemd user service); this terminal ends with the daemon that hosts it"
-    log "the restart continues without this shell; check it with: ${BRAND_CLI} daemon status"
+    log "the restart continues without this shell; check it with: ${BRAND_CLI} status"
     if systemd-run --user --collect --quiet \
       --unit="${SERVICE_NAME}-install-$$" \
       -- /bin/sh -c "systemctl --user stop '${SERVICE_NAME}'; '${FROGG_INSTALL_DIR}/current/bin/${BRAND_CLI}' daemon stop --force >/dev/null 2>&1; systemctl --user start '${SERVICE_NAME}'"; then
@@ -576,7 +576,7 @@ print_next_steps() {
   echo
   log "${BRAND_NAME} daemon ${BUNDLE_VERSION} installed."
   if [ "${FROGG_NO_SERVICE}" = "1" ]; then
-    log "no service installed; start the daemon with: ${BRAND_CLI} daemon start --listen ${FROGG_LISTEN} --web-ui"
+    log "no service installed; start the daemon with: ${BRAND_CLI} start --listen ${FROGG_LISTEN} --web-ui"
   else
     urls="$(web_ui_urls)"
     if [ -n "${urls}" ]; then
@@ -591,12 +591,12 @@ print_next_steps() {
     if [ "${host}" = "127.0.0.1" ] || [ "${host}" = "localhost" ] || [ "${host}" = "[::1]" ] || [ "${host}" = "::1" ]; then
       log "the daemon listens on loopback; reach it through an SSH tunnel or re-run with FROGG_LISTEN=0.0.0.0:${port}"
     elif [[ "${listen}" != /* ]]; then
-      log "the daemon is network-reachable; set a password with: ${BRAND_CLI} daemon set-password"
+      log "the daemon is network-reachable; set a password with: ${BRAND_CLI} auth set-password"
     fi
   fi
-  log "pair a client:     ${BRAND_CLI} daemon pair"
-  log "check status:      ${BRAND_CLI} daemon status"
-  log "update later:      ${BRAND_CLI} daemon self-update   (rolls back by itself if the new version fails)"
+  log "pair a client:     ${BRAND_CLI} auth pair"
+  log "check status:      ${BRAND_CLI} status"
+  log "update later:      ${BRAND_CLI} update   (rolls back by itself if the new version fails)"
   case ":${PATH}:" in
     *":${FROGG_BIN_DIR}:"*) ;;
     *)

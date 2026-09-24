@@ -19,7 +19,7 @@
     },
     "desktop": {
       "type": "service",
-      "command": "FROGG_DEV_MANAGED_HOME=1 FROGG_DEV_ROOT=\"${FROGG_WORKTREE_PATH:-$PWD}\" FROGG_HOME=\"${FROGG_WORKTREE_PATH:-$PWD}/.dev/frogg-home\" FROGG_LISTEN=0.0.0.0:${FROGG_SERVICE_DAEMON_PORT:-6768} FROGG_DEV_DAEMON_ENDPOINT=localhost:${FROGG_SERVICE_DAEMON_PORT:-6768} EXPO_PORT=${FROGG_PORT:-} exec ./packages/desktop/scripts/dev.sh"
+      "command": "FROGG_DEV_MANAGED_HOME=1 FROGG_DEV_ROOT=\"${FROGG_WORKTREE_PATH:-$PWD}\" FROGG_HOME=\"${FROGG_WORKTREE_PATH:-$PWD}/.dev/frogg-home\" FROGG_LISTEN=0.0.0.0:${FROGG_SERVICE_DAEMON_PORT:-6768} FROGG_DEV_DAEMON_ENDPOINT=localhost:${FROGG_SERVICE_DAEMON_PORT:-6768} EXPO_PORT=${FROGG_PORT:-} exec npm run dev:desktop"
     },
     "ios-simulator": {
       "type": "service",

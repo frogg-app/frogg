@@ -1419,7 +1419,7 @@ export const ar: TranslationResources = {
       fullStatus: {
         title: "الوضع الكامل",
         modalTitle: "حالة Daemon",
-        hint: "يقوم بتشغيل`{{cliName}} daemon status`ويظهر الإخراج",
+        hint: "يقوم بتشغيل`{{cliName}} status`ويظهر الإخراج",
         view: "عرض الحالة",
         copied: "تم نسخ الحالة إلى الحافظة.",
         fetchFailed: "فشل جلب حالة البرنامج الخفي:{{message}}",
@@ -1649,6 +1649,10 @@ export const ar: TranslationResources = {
     },
   },
   openProject: {
+    chooseHost: {
+      importSession: "استيراد من المضيف",
+      setupProviders: "اختر المضيف",
+    },
     tiles: {
       addProject: {
         title: "أضف مشروعًا",

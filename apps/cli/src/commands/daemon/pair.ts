@@ -339,13 +339,13 @@ function outputPairingResult(
           code: "RELAY_DISABLED",
           message:
             "Relay pairing is disabled for this daemon and no direct offer is available (is the daemon running on TCP?).",
-          action: `Run ${brand.cliName} daemon pair --relay --json to enable it explicitly.`,
+          action: `Run ${brand.cliName} auth pair --relay --json to enable it explicitly.`,
         })}\n`,
       );
     } else {
       output.writeStderr(`${chalk.red("Relay pairing is disabled for this daemon.")}\n`);
       output.writeStderr(
-        `${chalk.yellow(`Run ${brand.cliName} daemon pair --relay to enable it.`)}\n`,
+        `${chalk.yellow(`Run ${brand.cliName} auth pair --relay to enable it.`)}\n`,
       );
     }
     output.setExitCode(1);

@@ -1407,7 +1407,7 @@ export const zhCN: TranslationResources = {
       fullStatus: {
         title: "完整状态",
         modalTitle: "Daemon 状态",
-        hint: "运行 `{{cliName}} daemon status` 并显示输出",
+        hint: "运行 `{{cliName}} status` 并显示输出",
         view: "查看状态",
         copied: "状态已复制到剪贴板。",
         fetchFailed: "获取 daemon 状态失败：{{message}}",
@@ -1630,6 +1630,10 @@ export const zhCN: TranslationResources = {
     },
   },
   openProject: {
+    chooseHost: {
+      importSession: "从主机导入",
+      setupProviders: "选择主机",
+    },
     tiles: {
       addProject: {
         title: "添加 project",

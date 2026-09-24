@@ -1431,7 +1431,7 @@ export const en = {
       fullStatus: {
         title: "Full status",
         modalTitle: "Daemon status",
-        hint: "Runs `{{cliName}} daemon status` and shows the output",
+        hint: "Runs `{{cliName}} status` and shows the output",
         view: "View status",
         copied: "Status copied to clipboard.",
         fetchFailed: "Failed to fetch daemon status: {{message}}",
@@ -1484,7 +1484,7 @@ export const en = {
         strategySigned: "Updates are verified by the signed Tauri updater.",
         autoCheck: {
           title: "Check automatically",
-          hint: "Look for new versions every 6 hours while an {{brandName}} window is open.",
+          hint: "Look for new versions every 6 hours while a {{brandName}} window is open.",
         },
         check: "Check for updates",
         checking: "Checking...",
@@ -1664,6 +1664,10 @@ export const en = {
     },
   },
   openProject: {
+    chooseHost: {
+      importSession: "Import from host",
+      setupProviders: "Choose host",
+    },
     tiles: {
       addProject: {
         title: "Add a project",
@@ -2824,8 +2828,7 @@ export const en = {
       title: "Voice alerts",
       autoPlay: {
         label: "Auto-play spoken alerts",
-        description:
-          "Speak agent alerts as they arrive while an {{brandName}} is in the foreground.",
+        description: "Speak agent alerts as they arrive while {{brandName}} is in the foreground.",
       },
       replyConfirm: {
         label: "Confirm voice replies",

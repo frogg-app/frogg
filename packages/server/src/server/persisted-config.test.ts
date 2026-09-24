@@ -36,14 +36,10 @@ describe("PersistedConfigSchema daemon auth config", () => {
 });
 
 describe("PersistedConfigSchema removed plugin keys", () => {
-  test("still accepts plugin keys written by older daemons", () => {
-    const parsed = PersistedConfigSchema.parse({
-      version: 1,
-      pluginsEnabled: true,
-      plugins: { review: { source: "directory", path: "/plugins/review" } },
-    });
-
-    expect(parsed.pluginsEnabled).toBe(true);
+  test("rejects plugin keys in the schema; loading strips them first", () => {
+    expect(PersistedConfigSchema.safeParse({ version: 1, pluginsEnabled: true }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -688,6 +684,21 @@ describe("PersistedConfigSchema voice mode config", () => {
 });
 
 describe("loadPersistedConfig", () => {
+  test("drops plugin keys written by older daemons", () => {
+    const home = createTempHome();
+    try {
+      writeFileSync(
+        path.join(home, "config.json"),
+        JSON.stringify({ version: 1, pluginsEnabled: true, plugins: { review: {} } }),
+      );
+      const config = loadPersistedConfig(home);
+      expect(config).not.toHaveProperty("pluginsEnabled");
+      expect(config).not.toHaveProperty("plugins");
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+
   test("writes readable editable defaults for a new home", () => {
     const home = createTempHome();
     try {
