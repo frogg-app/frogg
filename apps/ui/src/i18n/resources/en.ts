@@ -946,7 +946,7 @@ export const en = {
             "Update isn't available because this branch is already up to date with {{baseRef}}",
           mergePrNoGithub: "Merge PR isn't available right now because GitHub isn't connected",
           archiveNotWorktree:
-            "Archive isn't available here because this session was not created as an {{brandName}} worktree",
+            "Archive isn't available here because this session was not created as a {{brandName}} worktree",
           mergePrNoForge:
             "Merge {{noun}} isn't available right now because {{brand}} isn't connected",
           mergePrMissing: "Merge PR isn't available because there isn't a pull request yet",
@@ -1758,7 +1758,7 @@ export const en = {
     },
     remoteHost: {
       title: "Use a remote host",
-      description: "Connect to an {{brandName}} daemon on another machine.",
+      description: "Connect to a {{brandName}} daemon on another machine.",
     },
     actions: {
       settings: "Settings",
@@ -2160,7 +2160,7 @@ export const en = {
         "Get a pairing link: run `{{cliName}} pair` on the host, or open its web address, then scan or paste it here.",
     },
     claim: {
-      title: "Pair with an {{brandName}} daemon",
+      title: "Pair with a {{brandName}} daemon",
       thisDaemon: "this {{brandName}} daemon",
       claiming: "Pairing with {{host}}…",
       explainer:
@@ -2193,7 +2193,7 @@ export const en = {
     },
     direct: {
       title: "Direct connection",
-      helper: "Enter the address of an {{brandName}} server.",
+      helper: "Enter the address of a {{brandName}} server.",
       fields: {
         host: "Host",
         port: "Port",
@@ -2207,7 +2207,7 @@ export const en = {
         show: "Show advanced",
         hide: "Hide advanced",
         helper:
-          "Any form works: host, host:port, http(s)://host:port, ws(s)://host:port or tcp://host:port?ssl=true. An {{brandName}} daemon speaks HTTP and WebSocket on port {{port}}.",
+          "Any form works: host, host:port, http(s)://host:port, ws(s)://host:port or tcp://host:port?ssl=true. A {{brandName}} daemon speaks HTTP and WebSocket on port {{port}}.",
         resolved: "Will connect to",
       },
       passwordVisibility: {
@@ -2238,7 +2238,7 @@ export const en = {
     },
     remoteSsh: {
       title: "Remote SSH",
-      helper: "Connect to an {{brandName}} daemon running on the remote host.",
+      helper: "Connect to a {{brandName}} daemon running on the remote host.",
       tabs: {
         config: "SSH config",
         manual: "Manual",
@@ -2290,7 +2290,7 @@ export const en = {
       label: "Pairing link",
       errors: {
         required: "Paste a pairing link (…/pair#offer=…)",
-        missingOffer: "That is not an {{brandName}} pairing link",
+        missingOffer: "That is not a {{brandName}} pairing link",
         emptyOffer: "Offer payload is empty",
         invalid: "Invalid pairing link",
         unableToPair: "Unable to pair host",
