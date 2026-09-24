@@ -19,7 +19,7 @@ pub struct AuthConfig {
 }
 
 fn default_trust_lan() -> bool {
-    true
+    crate::branding::DEFAULT_TRUST_LAN
 }
 
 #[derive(Debug, PartialEq, Eq)]

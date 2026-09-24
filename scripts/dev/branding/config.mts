@@ -140,6 +140,8 @@ export async function generateConfig(build: BrandBuild): Promise<void> {
     DEFAULT_PORT: brand.daemonPort,
     DEFAULT_LISTEN: `127.0.0.1:${brand.daemonPort}`,
     LEGACY_FROGG: brand.legacyFrogg,
+    // So the Rust daemon falls back to the brand's LAN policy, like the Node daemon.
+    DEFAULT_TRUST_LAN: brand.daemon.trustLan,
     RELEASES_API: brand.distribution.releasesApi ?? "",
     RELEASE_BASE: brand.distribution.releaseBase ?? "",
     UPDATE_MODE: brand.distribution.updateMode,
