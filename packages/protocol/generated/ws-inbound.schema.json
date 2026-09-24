@@ -3194,6 +3194,22 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.get_security_posture.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "auth.device.set_role.request"
                 },
                 "requestId": {

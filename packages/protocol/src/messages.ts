@@ -1594,6 +1594,13 @@ export const DaemonGetStatusRequestSchema = z.object({
   requestId: z.string(),
 });
 
+/** Owner-only: the daemon's security findings (see SecurityPostureSchema). */
+export const DaemonGetSecurityPostureRequestSchema = z.object({
+  type: z.literal("daemon.get_security_posture.request"),
+  requestId: z.string(),
+});
+export type DaemonGetSecurityPostureRequest = z.infer<typeof DaemonGetSecurityPostureRequestSchema>;
+
 export const DaemonGetPairingOfferRequestSchema = z.object({
   type: z.literal("daemon.get_pairing_offer.request"),
   requestId: z.string(),
@@ -3435,6 +3442,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   WaitForFinishRequestSchema,
   DaemonGetStatusRequestSchema,
   DaemonGetPairingOfferRequestSchema,
+  DaemonGetSecurityPostureRequestSchema,
   AuthDeviceSetRoleRequestSchema,
   DaemonConfigReloadRequestSchema,
   DaemonUpdateCheckRequestSchema,
@@ -3890,6 +3898,49 @@ const ServerCapabilitiesFromUnknownSchema = z
     return parsed.data;
   });
 
+/**
+ * Known security finding ids. The wire field is a plain string so a daemon can
+ * add findings without breaking older clients; unknown ids should render as a
+ * generic warning.
+ */
+export const SECURITY_FINDING_IDS = [
+  "unclaimed",
+  "exposed_without_password",
+  "trust_lan_diverges",
+  "bind_diverges",
+  "claim_mode_diverges",
+] as const;
+export type SecurityFindingId = (typeof SECURITY_FINDING_IDS)[number];
+/** Known severities; `critical` means any network client can take control. */
+export const SECURITY_FINDING_SEVERITIES = ["critical", "warning"] as const;
+export type SecurityFindingSeverity = (typeof SECURITY_FINDING_SEVERITIES)[number];
+/**
+ * Known fix actions. `claim` and `set_password` are doable from a client
+ * (pairing / auth.password.set); `disable_trust_lan` and `enable_claim_mode`
+ * via auth.settings.update; `bind_loopback` needs a config change and restart.
+ */
+export const SECURITY_FIX_ACTIONS = [
+  "claim",
+  "set_password",
+  "disable_trust_lan",
+  "enable_claim_mode",
+  "bind_loopback",
+] as const;
+export type SecurityFixAction = (typeof SECURITY_FIX_ACTIONS)[number];
+
+export const SecurityFindingSchema = z.object({
+  id: z.string(),
+  severity: z.string(),
+  fixAction: z.string(),
+});
+export type SecurityFinding = z.infer<typeof SecurityFindingSchema>;
+
+/** Effective daemon access settings compared against the brand manifest defaults. */
+export const SecurityPostureSchema = z.object({
+  findings: z.array(SecurityFindingSchema),
+});
+export type SecurityPosture = z.infer<typeof SecurityPostureSchema>;
+
 export const ServerInfoStatusPayloadSchema = z
   .object({
     status: z.literal("server_info"),
@@ -4094,8 +4145,15 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(sessionPresence): added in v1.6.0, remove gate after 2027-09-22.
         // presence.report / presence.get / presence.update.
         sessionPresence: z.boolean().optional(),
+        // COMPAT(securityPosture): added in v1.6.0, remove gate after 2027-09-24.
+        // daemon.get_security_posture is available and owners receive
+        // server_info.security.
+        securityPosture: z.boolean().optional(),
       })
       .optional(),
+    // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
+    // only; the findings a notification dot should reflect.
+    security: SecurityPostureSchema.optional(),
     // COMPAT(deviceAccess): added in v1.6.0. The paired device this connection
     // authenticated as; absent for credential-less (loopback / trusted LAN) connections.
     device: z
@@ -5266,6 +5324,15 @@ export const DaemonGetPairingOfferResponseSchema = z.object({
       relayEnabled: z.boolean(),
     })
     .passthrough(),
+});
+
+export const DaemonGetSecurityPostureResponseSchema = z.object({
+  type: z.literal("daemon.get_security_posture.response"),
+  payload: z.object({
+    requestId: z.string(),
+    posture: SecurityPostureSchema.nullable(),
+    error: z.string().nullable(),
+  }),
 });
 
 export const AuthDeviceSetRoleResponseSchema = z.object({
@@ -7216,6 +7283,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   SetVoiceModeResponseMessageSchema,
   DaemonGetStatusResponseSchema,
   DaemonGetPairingOfferResponseSchema,
+  DaemonGetSecurityPostureResponseSchema,
   AuthDeviceSetRoleResponseSchema,
   DaemonConfigReloadResponseSchema,
   HubManagementDaemonConnectResponseSchema,
@@ -7510,6 +7578,9 @@ export type ListProviderFeaturesResponseMessage = z.infer<
 export type ListAvailableProvidersResponse = z.infer<typeof ListAvailableProvidersResponseSchema>;
 export type DaemonGetStatusResponse = z.infer<typeof DaemonGetStatusResponseSchema>;
 export type DaemonGetPairingOfferResponse = z.infer<typeof DaemonGetPairingOfferResponseSchema>;
+export type DaemonGetSecurityPostureResponse = z.infer<
+  typeof DaemonGetSecurityPostureResponseSchema
+>;
 export type AuthDeviceSetRoleRequest = z.infer<typeof AuthDeviceSetRoleRequestSchema>;
 export type AuthDeviceSetRoleResponse = z.infer<typeof AuthDeviceSetRoleResponseSchema>;
 export type DaemonConfigReloadResponse = z.infer<typeof DaemonConfigReloadResponseSchema>;

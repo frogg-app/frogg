@@ -33473,6 +33473,79 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.get_security_posture.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "posture": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "findings": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "severity": {
+                                    "type": "string"
+                                  },
+                                  "fixAction": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "severity",
+                                  "fixAction"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "findings"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "posture",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "auth.device.set_role.response"
                 },
                 "payload": {
