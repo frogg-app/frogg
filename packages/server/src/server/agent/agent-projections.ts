@@ -150,6 +150,14 @@ export function toAgentPayload(
     payload.lastUsage = usage;
   }
 
+  if (agent.autoResume) {
+    payload.autoResume = {
+      resumeAt: agent.autoResume.resumeAt.toISOString(),
+      resetsAt: agent.autoResume.resetsAt?.toISOString() ?? null,
+      detectedAt: agent.autoResume.detectedAt.toISOString(),
+    };
+  }
+
   if (agent.lastError !== undefined) {
     payload.lastError = agent.lastError;
   }

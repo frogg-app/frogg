@@ -146,6 +146,18 @@ export const en = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "Cancel?",
+      accessibilityLabel: "Auto-resume in {{countdown}}. Press to cancel.",
+      cancelFailed: "Could not cancel the auto-resume",
+      dialog: {
+        title: "Auto-resume queued",
+        message:
+          "This session hit its provider usage limit. {{brandName}} will send a resume prompt a minute after the limit resets, in {{countdown}} ({{time}}).\n\nCancel the auto-resume?",
+        confirm: "Cancel auto-resume",
+        keep: "Keep",
+      },
+    },
     placeholders: {
       desktop: "Message the agent, tag @files, or use /commands and /skills",
       mobile: "Message, @files, /commands",

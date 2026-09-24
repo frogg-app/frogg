@@ -357,7 +357,10 @@ function MobileSidebar({
           </Pressable>
         </WindowChromeSafeArea>
 
-        <SidebarWorkspaceDrafts onBeforeNavigate={closeSidebar} />
+        <SidebarWorkspaceDrafts
+          onBeforeNavigate={closeSidebar}
+          projects={groupMode === "project" ? projects : undefined}
+        />
         {isInitialLoad && !hasActiveHostFilter ? (
           <SidebarAgentListSkeleton />
         ) : (
@@ -524,7 +527,7 @@ function DesktopSidebar({
           </View>
         </View>
 
-        <SidebarWorkspaceDrafts />
+        <SidebarWorkspaceDrafts projects={groupMode === "project" ? projects : undefined} />
         {isInitialLoad && !hasActiveHostFilter ? (
           <SidebarAgentListSkeleton />
         ) : (

@@ -150,6 +150,18 @@ export const fr: TranslationResources = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "Annuler ?",
+      accessibilityLabel: "Reprise automatique dans {{countdown}}. Appuyez pour annuler.",
+      cancelFailed: "Impossible d'annuler la reprise automatique",
+      dialog: {
+        title: "Reprise automatique programmée",
+        message:
+          "Cette session a atteint la limite d'utilisation du fournisseur. {{brandName}} enverra une invite de reprise une minute après la réinitialisation de la limite, dans {{countdown}} ({{time}}).\n\nAnnuler la reprise automatique ?",
+        confirm: "Annuler la reprise",
+        keep: "Conserver",
+      },
+    },
     placeholders: {
       desktop: "Envoyez un message à l'agent, marquez@filesou utilisez/commandset/skills",
       mobile: "Message,@files,/commands",

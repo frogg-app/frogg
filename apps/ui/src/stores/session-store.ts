@@ -71,6 +71,12 @@ export interface AgentRuntimeInfo {
   extra?: Record<string, unknown>;
 }
 
+export interface AgentAutoResume {
+  resumeAt: Date;
+  resetsAt: Date | null;
+  detectedAt: Date;
+}
+
 export interface Agent {
   serverId: string;
   id: string;
@@ -104,6 +110,8 @@ export interface Agent {
   requiresAttention?: boolean;
   attentionReason?: "finished" | "error" | "permission" | null;
   attentionTimestamp?: Date | null;
+  /** A daemon-queued resume after a provider usage limit; null when none is pending. */
+  autoResume?: AgentAutoResume | null;
   archivedAt?: Date | null;
   parentAgentId: string | null;
   labels: Record<string, string>;

@@ -2871,6 +2871,19 @@ export class DaemonClient {
     }
   }
 
+  async cancelAgentAutoResume(agentId: string): Promise<void> {
+    const payload =
+      await this.sendNamespacedCorrelatedSessionRequest<"agent.cancel_auto_resume.response">({
+        message: {
+          type: "agent.cancel_auto_resume.request",
+          agentId,
+        },
+      });
+    if (!payload.accepted) {
+      throw new Error(payload.error ?? "cancelAgentAutoResume rejected");
+    }
+  }
+
   async updateAgent(
     agentId: string,
     updates: { name?: string; labels?: Record<string, string> },

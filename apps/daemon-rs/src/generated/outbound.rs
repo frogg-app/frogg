@@ -274,6 +274,8 @@ pub enum SessionMessage {
     AgentProviderAccountTransferResponse(AgentProviderAccountTransferResponse),
     #[serde(rename = "agent.detach.response")]
     AgentDetachResponse(AgentDetachResponse),
+    #[serde(rename = "agent.cancel_auto_resume.response")]
+    AgentCancelAutoResumeResponse(AgentCancelAutoResumeResponse),
     #[serde(rename = "agent.rewind.response")]
     AgentRewindResponse(AgentRewindResponse),
     #[serde(rename = "update_agent_response")]
@@ -1424,6 +1426,8 @@ pub struct HubExecutionAgentUpdatePayloadAgent {
     pub provider_unavailable: Option<bool>,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "autoResume", skip_serializing_if = "Option::is_none")]
+    pub auto_resume: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -4011,6 +4015,8 @@ pub struct AgentStatusPayloadInfo {
     pub provider_unavailable: Option<bool>,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "autoResume", skip_serializing_if = "Option::is_none")]
+    pub auto_resume: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -4558,6 +4564,8 @@ pub struct FetchAgentsResponsePayloadEntriesItemAgent {
     pub provider_unavailable: Option<bool>,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "autoResume", skip_serializing_if = "Option::is_none")]
+    pub auto_resume: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -5190,6 +5198,8 @@ pub struct FetchAgentHistoryResponsePayloadEntriesItemAgent {
     pub provider_unavailable: Option<bool>,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "autoResume", skip_serializing_if = "Option::is_none")]
+    pub auto_resume: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -6618,6 +6628,8 @@ pub struct ClearAgentAttentionResponsePayloadAgentsItem {
     pub provider_unavailable: Option<bool>,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "autoResume", skip_serializing_if = "Option::is_none")]
+    pub auto_resume: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7587,6 +7599,11 @@ pub struct GetDaemonConfigResponsePayloadConfig {
     pub metadata_generation: GetDaemonConfigResponsePayloadConfigMetadataGeneration,
     #[serde(rename = "autoArchiveAfterMerge")]
     pub auto_archive_after_merge: bool,
+    #[serde(
+        rename = "autoResumeOnUsageLimit",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub auto_resume_on_usage_limit: Option<bool>,
     #[serde(rename = "enableTerminalAgentHooks")]
     pub enable_terminal_agent_hooks: bool,
     #[serde(rename = "appendSystemPrompt")]
@@ -7782,6 +7799,11 @@ pub struct SetDaemonConfigResponsePayloadConfig {
     pub metadata_generation: SetDaemonConfigResponsePayloadConfigMetadataGeneration,
     #[serde(rename = "autoArchiveAfterMerge")]
     pub auto_archive_after_merge: bool,
+    #[serde(
+        rename = "autoResumeOnUsageLimit",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub auto_resume_on_usage_limit: Option<bool>,
     #[serde(rename = "enableTerminalAgentHooks")]
     pub enable_terminal_agent_hooks: bool,
     #[serde(rename = "appendSystemPrompt")]
@@ -8063,6 +8085,24 @@ pub struct AgentDetachResponse {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AgentDetachResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    pub accepted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notice: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCancelAutoResumeResponse {
+    pub payload: AgentCancelAutoResumeResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCancelAutoResumeResponsePayload {
     #[serde(rename = "requestId")]
     pub request_id: String,
     #[serde(rename = "agentId")]

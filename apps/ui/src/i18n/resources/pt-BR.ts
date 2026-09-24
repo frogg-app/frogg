@@ -148,6 +148,18 @@ export const ptBR: TranslationResources = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "Cancelar?",
+      accessibilityLabel: "Retomada automática em {{countdown}}. Toque para cancelar.",
+      cancelFailed: "Não foi possível cancelar a retomada automática",
+      dialog: {
+        title: "Retomada automática agendada",
+        message:
+          "Esta sessão atingiu o limite de uso do provedor. O {{brandName}} enviará um prompt de retomada um minuto após o limite ser redefinido, em {{countdown}} ({{time}}).\n\nCancelar a retomada automática?",
+        confirm: "Cancelar retomada",
+        keep: "Manter",
+      },
+    },
     placeholders: {
       desktop: "Envie uma mensagem ao agente, marque @files ou use /commands e /skills",
       mobile: "Mensagem, @files, /commands",

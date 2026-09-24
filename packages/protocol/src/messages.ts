@@ -321,6 +321,8 @@ export const MutableDaemonConfigSchema = z
       providers: [],
     }),
     autoArchiveAfterMerge: z.boolean().default(false),
+    // COMPAT(autoResumeOnUsageLimit): added in v1.5.38; absent means an older daemon without the feature.
+    autoResumeOnUsageLimit: z.boolean().optional(),
     enableTerminalAgentHooks: z.boolean().default(false),
     appendSystemPrompt: z.string().default(""),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -345,6 +347,7 @@ export const MutableDaemonConfigPatchSchema = z
     removeProviders: z.array(z.string().min(1)).optional(),
     metadataGeneration: MutableMetadataGenerationConfigSchema.partial().optional(),
     autoArchiveAfterMerge: z.boolean().optional(),
+    autoResumeOnUsageLimit: z.boolean().optional(),
     enableTerminalAgentHooks: z.boolean().optional(),
     appendSystemPrompt: z.string().optional(),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -1003,6 +1006,18 @@ export const AgentSnapshotPayloadSchema = z.object({
    * config dir, a string = that account.
    */
   providerAccountId: z.string().nullable().optional(),
+  /**
+   * COMPAT(autoResumeOnUsageLimit): added in v1.5.38. Present while the daemon
+   * holds a resume prompt for after the provider's usage limit resets.
+   */
+  autoResume: z
+    .object({
+      resumeAt: z.string(),
+      resetsAt: z.string().nullable(),
+      detectedAt: z.string(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export type AgentSnapshotPayload = z.infer<typeof AgentSnapshotPayloadSchema>;
@@ -2265,6 +2280,17 @@ export const AgentDetachRequestMessageSchema = z.object({
 
 export const AgentDetachResponseMessageSchema = z.object({
   type: z.literal("agent.detach.response"),
+  payload: AgentActionResponsePayloadSchema,
+});
+
+export const AgentCancelAutoResumeRequestMessageSchema = z.object({
+  type: z.literal("agent.cancel_auto_resume.request"),
+  agentId: z.string(),
+  requestId: z.string(),
+});
+
+export const AgentCancelAutoResumeResponseMessageSchema = z.object({
+  type: z.literal("agent.cancel_auto_resume.response"),
   payload: AgentActionResponsePayloadSchema,
 });
 
@@ -3544,6 +3570,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   AgentConfigApplyRequestMessageSchema,
   AgentProviderAccountTransferRequestMessageSchema,
   AgentDetachRequestMessageSchema,
+  AgentCancelAutoResumeRequestMessageSchema,
   AgentRewindRequestMessageSchema,
   AgentPermissionResponseMessageSchema,
   CheckoutStatusRequestSchema,
@@ -7370,6 +7397,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   AgentConfigApplyResponseMessageSchema,
   AgentProviderAccountTransferResponseMessageSchema,
   AgentDetachResponseMessageSchema,
+  AgentCancelAutoResumeResponseMessageSchema,
   AgentRewindResponseMessageSchema,
   UpdateAgentResponseMessageSchema,
   ProjectRenameResponseSchema,
@@ -7609,6 +7637,9 @@ export type AgentProviderAccountTransferResponseMessage = z.infer<
   typeof AgentProviderAccountTransferResponseMessageSchema
 >;
 export type AgentDetachResponseMessage = z.infer<typeof AgentDetachResponseMessageSchema>;
+export type AgentCancelAutoResumeResponseMessage = z.infer<
+  typeof AgentCancelAutoResumeResponseMessageSchema
+>;
 export type AgentRewindResponseMessage = z.infer<typeof AgentRewindResponseMessageSchema>;
 export type UpdateAgentResponseMessage = z.infer<typeof UpdateAgentResponseMessageSchema>;
 export type ProjectRenameResponse = z.infer<typeof ProjectRenameResponseSchema>;
@@ -7869,6 +7900,9 @@ export type AgentProviderAccountTransferRequestMessage = z.infer<
   typeof AgentProviderAccountTransferRequestMessageSchema
 >;
 export type AgentDetachRequestMessage = z.infer<typeof AgentDetachRequestMessageSchema>;
+export type AgentCancelAutoResumeRequestMessage = z.infer<
+  typeof AgentCancelAutoResumeRequestMessageSchema
+>;
 export type AgentPermissionResponseMessage = z.infer<typeof AgentPermissionResponseMessageSchema>;
 export type CheckoutStatusRequest = z.infer<typeof CheckoutStatusRequestSchema>;
 export type CheckoutStatusResponse = z.infer<typeof CheckoutStatusResponseSchema>;

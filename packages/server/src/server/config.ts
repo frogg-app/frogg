@@ -694,6 +694,11 @@ function resolveHostSettingsHiddenSections(persisted: ReturnType<typeof loadPers
   return persisted.daemon?.hostSettings?.hiddenSections ?? brand.hostSettings.hiddenSections;
 }
 
+/** On by default: a limit-hit session resumes unless the owner opts out. */
+function resolveAutoResumeOnUsageLimit(persisted: ReturnType<typeof loadPersistedConfig>): boolean {
+  return persisted.daemon?.autoResumeOnUsageLimit !== false;
+}
+
 function resolveStaticLoadConfigSettings(
   env: NodeJS.ProcessEnv,
   cli: CliConfigOverrides | undefined,
@@ -705,6 +710,7 @@ function resolveStaticLoadConfigSettings(
       cli?.mcpInjectIntoAgents ?? persisted.daemon?.mcp?.injectIntoAgents ?? false,
     browserToolsEnabled: resolveBrowserToolsEnabled(persisted),
     autoArchiveAfterMerge: persisted.daemon?.autoArchiveAfterMerge ?? false,
+    autoResumeOnUsageLimit: resolveAutoResumeOnUsageLimit(persisted),
     hostSettingsHiddenSections: resolveHostSettingsHiddenSections(persisted),
     autoUpdate: resolveAutoUpdateConfig(env, persisted),
     appendSystemPrompt: resolveAppendSystemPrompt(persisted),
@@ -750,6 +756,7 @@ export function resolveConfigFromPersisted(
     mcpInjectIntoAgents,
     browserToolsEnabled,
     autoArchiveAfterMerge,
+    autoResumeOnUsageLimit,
     hostSettingsHiddenSections,
     autoUpdate,
     appendSystemPrompt,
@@ -806,6 +813,7 @@ export function resolveConfigFromPersisted(
     browserToolsEnabled,
     git: resolveGitProcessConfig(env, persisted),
     autoArchiveAfterMerge,
+    autoResumeOnUsageLimit,
     hostSettingsHiddenSections,
     autoUpdate,
     enableTerminalAgentHooks: persisted.daemon?.enableTerminalAgentHooks ?? false,

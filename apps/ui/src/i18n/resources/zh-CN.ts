@@ -148,6 +148,18 @@ export const zhCN: TranslationResources = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "取消?",
+      accessibilityLabel: "{{countdown}} 后自动继续。点按取消。",
+      cancelFailed: "无法取消自动继续",
+      dialog: {
+        title: "已安排自动继续",
+        message:
+          "此会话已达到提供商的使用上限。{{brandName}} 将在上限重置一分钟后({{countdown}} 后,{{time}})发送继续提示。\n\n取消自动继续?",
+        confirm: "取消自动继续",
+        keep: "保留",
+      },
+    },
     placeholders: {
       desktop: "给 Agent 发消息，标记 @files，或使用 /commands 和 /skills",
       mobile: "发消息，@files，/commands",

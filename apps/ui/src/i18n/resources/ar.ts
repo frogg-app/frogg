@@ -148,6 +148,18 @@ export const ar: TranslationResources = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "إلغاء؟",
+      accessibilityLabel: "استئناف تلقائي خلال {{countdown}}. اضغط للإلغاء.",
+      cancelFailed: "تعذّر إلغاء الاستئناف التلقائي",
+      dialog: {
+        title: "تمت جدولة الاستئناف التلقائي",
+        message:
+          "بلغت هذه الجلسة حد استخدام المزوّد. سيرسل {{brandName}} طلب استئناف بعد دقيقة من إعادة ضبط الحد، خلال {{countdown}} ({{time}}).\n\nهل تريد إلغاء الاستئناف التلقائي؟",
+        confirm: "إلغاء الاستئناف التلقائي",
+        keep: "إبقاء",
+      },
+    },
     placeholders: {
       desktop: "أرسل رسالة إلى الوكيل أو ضع علامة على @files أو استخدم /commands و /skills",
       mobile: "الرسالة، @files ، /commands",

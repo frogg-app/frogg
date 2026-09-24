@@ -353,6 +353,8 @@ pub enum SessionMessage {
     AgentProviderAccountTransferRequest(AgentProviderAccountTransferRequest),
     #[serde(rename = "agent.detach.request")]
     AgentDetachRequest(AgentDetachRequest),
+    #[serde(rename = "agent.cancel_auto_resume.request")]
+    AgentCancelAutoResumeRequest(AgentCancelAutoResumeRequest),
     #[serde(rename = "agent.rewind.request")]
     AgentRewindRequest(AgentRewindRequest),
     #[serde(rename = "agent_permission_response")]
@@ -1793,6 +1795,11 @@ pub struct SetDaemonConfigRequestConfig {
     )]
     pub auto_archive_after_merge: Option<bool>,
     #[serde(
+        rename = "autoResumeOnUsageLimit",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub auto_resume_on_usage_limit: Option<bool>,
+    #[serde(
         rename = "enableTerminalAgentHooks",
         skip_serializing_if = "Option::is_none"
     )]
@@ -2735,6 +2742,14 @@ pub struct AgentProviderAccountTransferRequest {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AgentDetachRequest {
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCancelAutoResumeRequest {
     #[serde(rename = "agentId")]
     pub agent_id: String,
     #[serde(rename = "requestId")]

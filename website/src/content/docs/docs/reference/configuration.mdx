@@ -37,6 +37,7 @@ This is exactly what a new daemon writes (0.6.19):
     "browserTools": { "enabled": false },
     "git": { "maxProcessesPerSecond": 2048, "maxProcessConcurrency": 8 },
     "autoArchiveAfterMerge": false,
+    "autoResumeOnUsageLimit": true,
     "autoUpdate": { "enabled": false, "channel": "stable", "checkIntervalHours": 24, "quietHours": null },
     "enableTerminalAgentHooks": false,
     "appendSystemPrompt": "",
@@ -77,6 +78,7 @@ See [security and access](/docs/self-hosting/security/) for how these combine.
 | `daemon.browserTools.enabled`     | boolean | `false` | Expose browser automation tools over MCP |
 | `daemon.appendSystemPrompt`       | string  | `""`    | Text appended to every agent's system prompt |
 | `daemon.autoArchiveAfterMerge`    | boolean | `false` | Archive agents after their branch merges |
+| `daemon.autoResumeOnUsageLimit`   | boolean | `true`  | When a session hits its provider usage limit, send a resume prompt a minute after the limit resets. The composer shows a countdown that cancels it |
 | `daemon.hostSettings.hiddenSections` | string[] | brand default | Host settings sections the app does not offer for this daemon: any of `projects`, `pair-device`, `devices`, `agents`, `providers`, `terminals`, `host`. `usage` is still accepted but ignored: usage now lives under Providers. **Security** cannot be hidden |
 | `daemon.enableTerminalAgentHooks` | boolean | `false` | Install activity hooks for agent CLIs started in terminals |
 | `daemon.terminalProfiles`         | array   | built-in profiles | `[{ id, name, command, args?, icon? }]`. `[]` means none |
@@ -280,7 +282,7 @@ These are credentials for voice features, not agent providers.
 `daemon.relay.endpoint`, `daemon.relay.useTls`, `daemon.mcp.*`,
 `daemon.browserTools.enabled`, `daemon.hostnames`, `daemon.cors.allowedOrigins`,
 `daemon.trustedProxies`, `daemon.auth.trustLan`, `daemon.auth.claimMode`, `daemon.git.*`,
-`daemon.autoArchiveAfterMerge`, `daemon.hostSettings.hiddenSections`, `daemon.autoUpdate`, `daemon.enableTerminalAgentHooks`,
+`daemon.autoArchiveAfterMerge`, `daemon.autoResumeOnUsageLimit`, `daemon.hostSettings.hiddenSections`, `daemon.autoUpdate`, `daemon.enableTerminalAgentHooks`,
 `daemon.appendSystemPrompt`, `daemon.terminalProfiles`, `daemon.agentProfiles`,
 `app.pairingBaseUrl` and `agents.*`.
 

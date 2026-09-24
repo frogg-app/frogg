@@ -46,6 +46,7 @@ import {
   type DraftAgentControlsProps,
 } from "@/composer/agent-controls";
 import { ContextWindowMeter } from "@/components/context-window-meter";
+import { ComposerAutoResumeButton } from "@/composer/auto-resume/auto-resume-button";
 import { useImageAttachmentPicker } from "@/hooks/use-image-attachment-picker";
 import { selectAgentTurnPresentation, useSessionStore } from "@/stores/session-store";
 import { useFilePicker } from "@/hooks/use-file-picker";
@@ -2052,6 +2053,9 @@ function ComposerContentImpl({
           providerAccountId: agentState.providerAccountId,
           agentId,
         })}
+        {hasAgent && agentId ? (
+          <ComposerAutoResumeButton serverId={serverId} agentId={agentId} />
+        ) : null}
         {mode.showAgentControls ? (
           <ComposerVoiceAlertsToggle serverId={serverId} workspaceId={workspaceId} />
         ) : null}

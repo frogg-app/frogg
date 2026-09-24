@@ -3110,6 +3110,7 @@ describe("HostRuntimeStore", () => {
       }).agent;
       const staleAgent: Agent = {
         ...stale,
+        autoResume: null,
         activeTurn: stale.activeTurn
           ? {
               turnId: stale.activeTurn.turnId,

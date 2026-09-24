@@ -24,6 +24,7 @@ interface SupportedMutableConfigPatch {
   removeProviders?: string[];
   metadataGeneration?: MutableDaemonConfig["metadataGeneration"];
   autoArchiveAfterMerge?: boolean;
+  autoResumeOnUsageLimit?: boolean;
   hostSettings?: { hiddenSections?: HostSettingsSection[] };
   autoUpdate?: Partial<NonNullable<MutableDaemonConfig["autoUpdate"]>>;
   enableTerminalAgentHooks?: boolean;
@@ -183,6 +184,7 @@ const RELOADABLE_PATHS = [
   "daemon.git.maxProcessesPerSecond",
   "daemon.git.maxProcessConcurrency",
   "daemon.autoArchiveAfterMerge",
+  "daemon.autoResumeOnUsageLimit",
   "daemon.hostSettings.hiddenSections",
   "daemon.autoUpdate",
   "daemon.enableTerminalAgentHooks",
@@ -212,6 +214,7 @@ const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
   ["daemon.git.maxProcessesPerSecond", "git.maxProcessesPerSecond"],
   ["daemon.git.maxProcessConcurrency", "git.maxProcessConcurrency"],
   ["daemon.autoArchiveAfterMerge", "autoArchiveAfterMerge"],
+  ["daemon.autoResumeOnUsageLimit", "autoResumeOnUsageLimit"],
   ["daemon.hostSettings.hiddenSections", "hostSettings.hiddenSections"],
   ["daemon.autoUpdate", "autoUpdate"],
   ["daemon.enableTerminalAgentHooks", "enableTerminalAgentHooks"],
@@ -290,6 +293,9 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
       : {}),
     ...(patch.autoArchiveAfterMerge !== undefined
       ? { autoArchiveAfterMerge: patch.autoArchiveAfterMerge }
+      : {}),
+    ...(patch.autoResumeOnUsageLimit !== undefined
+      ? { autoResumeOnUsageLimit: patch.autoResumeOnUsageLimit }
       : {}),
     ...(patch.autoUpdate !== undefined ? { autoUpdate: patch.autoUpdate } : {}),
     ...(patch.enableTerminalAgentHooks !== undefined
@@ -696,6 +702,9 @@ function mergeMutableDaemonPatch(
   }
   if (patch.autoArchiveAfterMerge !== undefined) {
     next.autoArchiveAfterMerge = patch.autoArchiveAfterMerge;
+  }
+  if (patch.autoResumeOnUsageLimit !== undefined) {
+    next.autoResumeOnUsageLimit = patch.autoResumeOnUsageLimit;
   }
   if (patch.autoUpdate !== undefined) {
     next.autoUpdate = { ...next.autoUpdate, ...patch.autoUpdate };

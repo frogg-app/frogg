@@ -148,6 +148,8 @@ import {
   type ActiveWorkspaceRef,
 } from "./workspace-archive-service.js";
 import { setupAutoArchiveOnMerge } from "./auto-archive-on-merge/index.js";
+import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
+import { sendPromptToAgent } from "./agent/agent-prompt.js";
 import { wrapSessionMessage, type SessionOutboundMessage } from "./messages.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
 import { createConfiguredTerminalManager } from "../terminal/terminal-manager-factory.js";
@@ -462,6 +464,7 @@ export interface FroggDaemonConfig {
     maxProcessConcurrency: number;
   };
   autoArchiveAfterMerge?: boolean;
+  autoResumeOnUsageLimit?: boolean;
   hostSettingsHiddenSections?: readonly HostSettingsSection[];
   autoUpdate?: DaemonAutoUpdateConfig;
   enableTerminalAgentHooks?: boolean;
@@ -731,6 +734,7 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
       providers: config.metadataGeneration?.providers ?? [],
     },
     autoArchiveAfterMerge: config.autoArchiveAfterMerge ?? false,
+    autoResumeOnUsageLimit: config.autoResumeOnUsageLimit ?? true,
     hostSettings: {
       hiddenSections: [...(config.hostSettingsHiddenSections ?? brand.hostSettings.hiddenSections)],
     },
@@ -1522,6 +1526,25 @@ export async function createFroggDaemon(
       await emitWorkspaceUpdatesExternal([workspaceId]);
     },
     logger,
+  });
+
+  const usageLimitAutoResume = setupUsageLimitAutoResume({
+    agentManager,
+    isEnabled: () => daemonConfigStore.get().autoResumeOnUsageLimit !== false,
+    resume: async (agentId, prompt) => {
+      await sendPromptToAgent({
+        agentManager,
+        agentStorage,
+        agentId,
+        prompt,
+        unarchive: false,
+        logger,
+      });
+    },
+    logger,
+  });
+  daemonConfigStore.onFieldChange("autoResumeOnUsageLimit", (value) => {
+    if (value === false) usageLimitAutoResume.cancelAll();
   });
 
   setupAutoArchiveOnMerge({
@@ -2366,6 +2389,7 @@ export async function createFroggDaemon(
     // Freeze both ingress and registration before taking the agent closure snapshot.
     wsServer?.prepareForShutdown();
     agentManager.prepareForShutdown();
+    usageLimitAutoResume.dispose();
     const midTurnAgentIds = collectMidTurnAgentIds(agentManager.listAgents());
     await closeAllAgents(logger, agentManager);
     await agentManager.flushForShutdown().catch(() => undefined);

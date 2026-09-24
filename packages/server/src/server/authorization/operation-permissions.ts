@@ -7,6 +7,7 @@ type OutboundOperation = SessionOutboundMessage["type"];
 const INBOUND_PERMISSION = {
   abort_request: "workspace.write",
   "agent.config.apply.request": "workspace.write",
+  "agent.cancel_auto_resume.request": "workspace.write",
   "agent.detach.request": "workspace.write",
   "agent.fork_context.request": "workspace.read",
   "agent.provider_account.transfer.request": "workspace.write",
@@ -238,6 +239,7 @@ const INBOUND_PERMISSION = {
 const OUTBOUND_PERMISSION = {
   activity_log: "workspace.read",
   "agent.config.apply.response": "workspace.write",
+  "agent.cancel_auto_resume.response": "workspace.write",
   "agent.detach.response": "workspace.write",
   "agent.fork_context.response": "workspace.read",
   "agent.provider_account.transfer.response": "workspace.write",

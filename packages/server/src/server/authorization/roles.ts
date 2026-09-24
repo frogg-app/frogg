@@ -49,6 +49,7 @@ const PERMISSION_MIN_ROLE = {
 const INBOUND_ROLE = {
   abort_request: "operator",
   "agent.config.apply.request": "operator",
+  "agent.cancel_auto_resume.request": "operator",
   "agent.detach.request": "operator",
   "agent.fork_context.request": "viewer",
   "agent.provider_account.transfer.request": "operator",

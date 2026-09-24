@@ -2513,6 +2513,8 @@ export class Session {
     switch (msg.type) {
       case "agent.detach.request":
         return this.handleDetachAgentRequest(msg.agentId, msg.requestId);
+      case "agent.cancel_auto_resume.request":
+        return this.handleCancelAgentAutoResumeRequest(msg.agentId, msg.requestId);
       default:
         return undefined;
     }
@@ -3185,6 +3187,23 @@ export class Session {
     }
 
     return { agentId, archivedAt };
+  }
+
+  private async handleCancelAgentAutoResumeRequest(
+    agentId: string,
+    requestId: string,
+  ): Promise<void> {
+    const found = this.agentManager.getAgent(agentId) !== null;
+    if (found) this.agentManager.setAgentAutoResume(agentId, null);
+    this.emit({
+      type: "agent.cancel_auto_resume.response",
+      payload: {
+        requestId,
+        agentId,
+        accepted: found,
+        error: found ? null : "Agent not found",
+      },
+    });
   }
 
   private async handleDetachAgentRequest(agentId: string, requestId: string): Promise<void> {

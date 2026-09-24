@@ -365,6 +365,7 @@ export function HostSettingsPage({
       {isConnected ? (
         <SettingsSection title={t("settings.hostSections.workspaces")}>
           <AutoArchiveMergedWorkspacesCard serverId={serverId} />
+          <AutoResumeOnUsageLimitCard serverId={serverId} />
         </SettingsSection>
       ) : null}
 
@@ -1008,6 +1009,47 @@ function AutoArchiveMergedWorkspacesCard({ serverId }: { serverId: string }) {
           onValueChange={handleValueChange}
           accessibilityLabel="Archive merged PR workspaces"
           testID="host-page-auto-archive-merged-workspaces-switch"
+        />
+      </View>
+    </View>
+  );
+}
+
+function AutoResumeOnUsageLimitCard({ serverId }: { serverId: string }) {
+  const isConnected = useHostRuntimeIsConnected(serverId);
+  const { config, patchConfig } = useDaemonConfig(serverId);
+
+  const handleValueChange = useCallback(
+    (next: boolean) => {
+      void patchConfig({ autoResumeOnUsageLimit: next }).catch((error) => {
+        console.error("[HostPage] Failed to update auto-resume on usage limit", error);
+        Alert.alert(
+          "Unable to update sessions",
+          error instanceof Error ? error.message : String(error),
+        );
+      });
+    },
+    [patchConfig],
+  );
+
+  // COMPAT(autoResumeOnUsageLimit): older daemons do not report the field and cannot resume.
+  if (!isConnected || config?.autoResumeOnUsageLimit === undefined) return null;
+
+  return (
+    <View style={settingsStyles.card} testID="host-page-auto-resume-usage-limit-card">
+      <View style={settingsStyles.row}>
+        <View style={settingsStyles.rowContent}>
+          <Text style={settingsStyles.rowTitle}>Resume after usage limits</Text>
+          <Text style={settingsStyles.rowHint}>
+            When a session hits its provider usage limit, send a resume prompt a minute after the
+            limit resets
+          </Text>
+        </View>
+        <Switch
+          value={config.autoResumeOnUsageLimit}
+          onValueChange={handleValueChange}
+          accessibilityLabel="Resume sessions after usage limits"
+          testID="host-page-auto-resume-usage-limit-switch"
         />
       </View>
     </View>

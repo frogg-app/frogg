@@ -148,6 +148,18 @@ export const ru: TranslationResources = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "Отменить?",
+      accessibilityLabel: "Автовозобновление через {{countdown}}. Нажмите, чтобы отменить.",
+      cancelFailed: "Не удалось отменить автовозобновление",
+      dialog: {
+        title: "Автовозобновление запланировано",
+        message:
+          "Сессия достигла лимита использования провайдера. {{brandName}} отправит запрос на продолжение через минуту после сброса лимита — через {{countdown}} ({{time}}).\n\nОтменить автовозобновление?",
+        confirm: "Отменить автовозобновление",
+        keep: "Оставить",
+      },
+    },
     placeholders: {
       desktop: "Напишите агенту сообщение, отметьте @files или используйте /commands и /skills.",
       mobile: "Сообщение,@files,/commands",

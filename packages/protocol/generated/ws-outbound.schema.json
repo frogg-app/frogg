@@ -3043,6 +3043,36 @@
                                 "string",
                                 "null"
                               ]
+                            },
+                            "autoResume": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "resumeAt": {
+                                      "type": "string"
+                                    },
+                                    "resetsAt": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "detectedAt": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "resumeAt",
+                                    "resetsAt",
+                                    "detectedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -4334,6 +4364,36 @@
                           "type": [
                             "string",
                             "null"
+                          ]
+                        },
+                        "autoResume": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "resumeAt": {
+                                  "type": "string"
+                                },
+                                "resetsAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "detectedAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "resumeAt",
+                                "resetsAt",
+                                "detectedAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
                           ]
                         }
                       },
@@ -11181,6 +11241,36 @@
                                 "string",
                                 "null"
                               ]
+                            },
+                            "autoResume": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "resumeAt": {
+                                      "type": "string"
+                                    },
+                                    "resetsAt": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "detectedAt": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "resumeAt",
+                                    "resetsAt",
+                                    "detectedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -16695,6 +16785,36 @@
                             "string",
                             "null"
                           ]
+                        },
+                        "autoResume": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "resumeAt": {
+                                  "type": "string"
+                                },
+                                "resetsAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "detectedAt": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "resumeAt",
+                                "resetsAt",
+                                "detectedAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -17771,6 +17891,36 @@
                                 "type": [
                                   "string",
                                   "null"
+                                ]
+                              },
+                              "autoResume": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "resumeAt": {
+                                        "type": "string"
+                                      },
+                                      "resetsAt": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "detectedAt": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "resumeAt",
+                                      "resetsAt",
+                                      "detectedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
                                 ]
                               }
                             },
@@ -19016,6 +19166,36 @@
                                 "type": [
                                   "string",
                                   "null"
+                                ]
+                              },
+                              "autoResume": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "resumeAt": {
+                                        "type": "string"
+                                      },
+                                      "resetsAt": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "detectedAt": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "resumeAt",
+                                      "resetsAt",
+                                      "detectedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
                                 ]
                               }
                             },
@@ -22100,6 +22280,36 @@
                                 "string",
                                 "null"
                               ]
+                            },
+                            "autoResume": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "resumeAt": {
+                                      "type": "string"
+                                    },
+                                    "resetsAt": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "detectedAt": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "resumeAt",
+                                    "resetsAt",
+                                    "detectedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -23218,6 +23428,36 @@
                               "type": [
                                 "string",
                                 "null"
+                              ]
+                            },
+                            "autoResume": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "resumeAt": {
+                                      "type": "string"
+                                    },
+                                    "resetsAt": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "detectedAt": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "resumeAt",
+                                    "resetsAt",
+                                    "detectedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
                               ]
                             }
                           },
@@ -31936,6 +32176,36 @@
                                 "string",
                                 "null"
                               ]
+                            },
+                            "autoResume": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "resumeAt": {
+                                      "type": "string"
+                                    },
+                                    "resetsAt": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "detectedAt": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "resumeAt",
+                                    "resetsAt",
+                                    "detectedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
@@ -33027,6 +33297,36 @@
                             "type": [
                               "string",
                               "null"
+                            ]
+                          },
+                          "autoResume": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "resumeAt": {
+                                    "type": "string"
+                                  },
+                                  "resetsAt": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "detectedAt": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "resumeAt",
+                                  "resetsAt",
+                                  "detectedAt"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
                             ]
                           }
                         },
@@ -34397,6 +34697,9 @@
                           "default": false,
                           "type": "boolean"
                         },
+                        "autoResumeOnUsageLimit": {
+                          "type": "boolean"
+                        },
                         "enableTerminalAgentHooks": {
                           "default": false,
                           "type": "boolean"
@@ -34860,6 +35163,9 @@
                         },
                         "autoArchiveAfterMerge": {
                           "default": false,
+                          "type": "boolean"
+                        },
+                        "autoResumeOnUsageLimit": {
                           "type": "boolean"
                         },
                         "enableTerminalAgentHooks": {
@@ -36355,6 +36661,109 @@
                 "type": {
                   "type": "string",
                   "const": "agent.detach.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "agentId": {
+                      "type": "string"
+                    },
+                    "accepted": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "notice": {
+                      "anyOf": [
+                        {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "info"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "message"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "warning"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "message"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "error"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "message"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "agentId",
+                    "accepted",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "agent.cancel_auto_resume.response"
                 },
                 "payload": {
                   "type": "object",
@@ -37999,6 +38408,36 @@
                               "type": [
                                 "string",
                                 "null"
+                              ]
+                            },
+                            "autoResume": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "resumeAt": {
+                                      "type": "string"
+                                    },
+                                    "resetsAt": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "detectedAt": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "resumeAt",
+                                    "resetsAt",
+                                    "detectedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
                               ]
                             }
                           },

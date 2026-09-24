@@ -423,10 +423,22 @@ export type AgentTimelineItem =
   | { type: "error"; message: string }
   | CompactionTimelineItem;
 
+/** A provider-reported usage-limit rejection; `resetsAt` is ISO-8601 when the provider said. */
+export interface UsageLimitSignal {
+  resetsAt: string | null;
+}
+
 export type AgentStreamEvent =
   | { type: "thread_started"; sessionId: string; provider: AgentProvider }
   | { type: "turn_started"; provider: AgentProvider; turnId?: string }
-  | { type: "turn_completed"; provider: AgentProvider; usage?: AgentUsage; turnId?: string }
+  | {
+      type: "turn_completed";
+      provider: AgentProvider;
+      usage?: AgentUsage;
+      turnId?: string;
+      /** The provider refused the turn because the account's usage limit was hit. */
+      usageLimit?: UsageLimitSignal;
+    }
   | { type: "usage_updated"; provider: AgentProvider; usage: AgentUsage; turnId?: string }
   | {
       type: "mode_changed";
@@ -447,6 +459,7 @@ export type AgentStreamEvent =
       code?: string;
       diagnostic?: string;
       turnId?: string;
+      usageLimit?: UsageLimitSignal;
     }
   | { type: "turn_canceled"; provider: AgentProvider; reason: string; turnId?: string }
   | {

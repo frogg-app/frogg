@@ -73,6 +73,15 @@ export function projectAgentSnapshot(agent: Agent): AgentSnapshotPayload {
     requiresAttention: agent.requiresAttention ?? false,
     attentionReason: agent.attentionReason ?? null,
     attentionTimestamp: agent.attentionTimestamp?.toISOString() ?? null,
+    ...(agent.autoResume
+      ? {
+          autoResume: {
+            resumeAt: agent.autoResume.resumeAt.toISOString(),
+            resetsAt: agent.autoResume.resetsAt?.toISOString() ?? null,
+            detectedAt: agent.autoResume.detectedAt.toISOString(),
+          },
+        }
+      : {}),
     archivedAt: agent.archivedAt?.toISOString() ?? null,
   };
 }
@@ -123,6 +132,13 @@ export function normalizeAgentSnapshot(snapshot: AgentSnapshotPayload, serverId:
     requiresAttention: snapshot.requiresAttention ?? false,
     attentionReason: snapshot.attentionReason ?? null,
     attentionTimestamp,
+    autoResume: snapshot.autoResume
+      ? {
+          resumeAt: new Date(snapshot.autoResume.resumeAt),
+          resetsAt: snapshot.autoResume.resetsAt ? new Date(snapshot.autoResume.resetsAt) : null,
+          detectedAt: new Date(snapshot.autoResume.detectedAt),
+        }
+      : null,
     archivedAt,
     parentAgentId,
     labels: snapshot.labels,

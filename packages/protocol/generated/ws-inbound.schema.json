@@ -3803,6 +3803,9 @@
                     "autoArchiveAfterMerge": {
                       "type": "boolean"
                     },
+                    "autoResumeOnUsageLimit": {
+                      "type": "boolean"
+                    },
                     "enableTerminalAgentHooks": {
                       "type": "boolean"
                     },
@@ -6103,6 +6106,26 @@
                 "type": {
                   "type": "string",
                   "const": "agent.detach.request"
+                },
+                "agentId": {
+                  "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "agentId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "agent.cancel_auto_resume.request"
                 },
                 "agentId": {
                   "type": "string"

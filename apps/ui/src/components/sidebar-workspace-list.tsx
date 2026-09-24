@@ -138,6 +138,7 @@ import {
 import { getDesktopHost } from "@/desktop/host";
 import { OpenInFileManagerMenuItem } from "@/workspace/open-in-file-manager/menu-item";
 import { useLocalDaemonServerId } from "@/hooks/use-is-local-daemon";
+import { SidebarWorkspaceDrafts } from "@/components/sidebar/sidebar-workspace-drafts";
 import type { HostBadgeModel } from "@/hosts/appearance";
 import { useHostBadges } from "@/hosts/use-host-badges";
 import { useSidebarRowItems } from "@/components/sidebar/display-preferences/model";
@@ -1801,6 +1802,9 @@ function ProjectBlock({
         dragHandleProps={dragHandleProps}
       />
 
+      {collapsed ? null : (
+        <SidebarWorkspaceDrafts project={project} onBeforeNavigate={onWorkspacePress} />
+      )}
       {projectChildren}
     </View>
   );

@@ -396,6 +396,12 @@ interface HandleStreamEventOptions {
   fromHistory?: boolean;
 }
 
+export interface AgentAutoResumeState {
+  resumeAt: Date;
+  resetsAt: Date | null;
+  detectedAt: Date;
+}
+
 interface ManagedAgentBase {
   id: string;
   provider: AgentProvider;
@@ -430,6 +436,8 @@ interface ManagedAgentBase {
   lastUsage?: AgentUsage;
   lastError?: string;
   attention: AttentionState;
+  /** A resume prompt queued for after the provider's usage limit resets; see usage-limit-auto-resume. */
+  autoResume?: AgentAutoResumeState | null;
   foregroundTurnWaiters: Set<ForegroundTurnWaiter>;
   finalizedForegroundTurnIds: Set<string>;
   unsubscribeSession: (() => void) | null;
@@ -2025,6 +2033,16 @@ export class AgentManager {
       throw new Error(`Agent not found in storage after detach: ${agentId}`);
     }
     return { record: result.record, live: false, previousParentAgentId };
+  }
+
+  /** Publishes (or clears) the queued usage-limit resume shown on the agent's snapshot. */
+  setAgentAutoResume(agentId: string, autoResume: AgentAutoResumeState | null): boolean {
+    const agent = this.agents.get(agentId);
+    if (!agent || agent.internal) return false;
+    if (!agent.autoResume && !autoResume) return false;
+    agent.autoResume = autoResume;
+    this.emitState(agent);
+    return true;
   }
 
   notifyAgentState(agentId: string): void {

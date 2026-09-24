@@ -148,6 +148,18 @@ export const ja: TranslationResources = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "キャンセル?",
+      accessibilityLabel: "{{countdown}} 後に自動再開。押してキャンセル。",
+      cancelFailed: "自動再開をキャンセルできませんでした",
+      dialog: {
+        title: "自動再開を予約済み",
+        message:
+          "このセッションはプロバイダーの使用上限に達しました。{{brandName}} は上限がリセットされた 1 分後({{countdown}} 後、{{time}})に再開プロンプトを送信します。\n\n自動再開をキャンセルしますか?",
+        confirm: "自動再開をキャンセル",
+        keep: "維持する",
+      },
+    },
     placeholders: {
       desktop: "エージェントにメッセージ、@ファイル、/コマンドや/スキルを入力",
       mobile: "メッセージ、@ファイル、/コマンド",

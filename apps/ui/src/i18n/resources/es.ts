@@ -149,6 +149,18 @@ export const es: TranslationResources = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "¿Cancelar?",
+      accessibilityLabel: "Reanudación automática en {{countdown}}. Pulsa para cancelar.",
+      cancelFailed: "No se pudo cancelar la reanudación automática",
+      dialog: {
+        title: "Reanudación automática programada",
+        message:
+          "Esta sesión alcanzó el límite de uso del proveedor. {{brandName}} enviará un mensaje para reanudar un minuto después de que se restablezca el límite, en {{countdown}} ({{time}}).\n\n¿Cancelar la reanudación automática?",
+        confirm: "Cancelar reanudación",
+        keep: "Mantener",
+      },
+    },
     placeholders: {
       desktop: "Envíe un mensaje al agente, etiquete@fileso use/commandsy/skills",
       mobile: "Mensaje,@files,/commands",

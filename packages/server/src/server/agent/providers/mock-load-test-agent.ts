@@ -242,7 +242,14 @@ function shouldEmitPlanApprovalPrompt(prompt: AgentPromptInput): boolean {
 }
 
 function shouldEmitTurnFailure(prompt: AgentPromptInput): boolean {
-  return /emit\s+(?:a\s+)?synthetic\s+turn\s+failure/i.test(promptToText(prompt));
+  return /emit\s+(?:a\s+)?synthetic\s+(?:turn\s+failure|usage\s+limit)/i.test(promptToText(prompt));
+}
+
+/** A provider-shaped usage-limit refusal, so the auto-resume path can be exercised locally. */
+function syntheticFailureMessage(prompt: AgentPromptInput): string {
+  return /synthetic\s+usage\s+limit/i.test(promptToText(prompt))
+    ? "You've hit your usage limit. Try again in 2 hours 14 minutes."
+    : "Requested mock provider failure";
 }
 
 function parseSteeringReplayShape(prompt: AgentPromptInput): SteeringReplayShape | null {
@@ -824,7 +831,7 @@ export class MockLoadTestAgentSession implements AgentSession {
     const steeringReplayShape = parseSteeringReplayShape(prompt);
     const scheduleTurn = () => {
       if (shouldEmitTurnFailure(prompt)) {
-        this.scheduleFailedTurn(turn);
+        this.scheduleFailedTurn(turn, syntheticFailureMessage(prompt));
       } else if (steeringReplayShape) {
         this.scheduleSteeringReplayTurn(turn, steeringReplayShape);
       } else if (this.streamingAssistantResponse !== null) {
@@ -1107,7 +1114,7 @@ export class MockLoadTestAgentSession implements AgentSession {
     turn.timer.unref?.();
   }
 
-  private scheduleFailedTurn(turn: ActiveTurn): void {
+  private scheduleFailedTurn(turn: ActiveTurn, error: string): void {
     turn.timer = setTimeout(() => {
       if (this.activeTurn !== turn) {
         return;
@@ -1119,7 +1126,7 @@ export class MockLoadTestAgentSession implements AgentSession {
         type: "turn_failed",
         provider: this.provider,
         turnId: turn.turnId,
-        error: "Requested mock provider failure",
+        error,
       });
       turn.resolve({
         sessionId: this.id,

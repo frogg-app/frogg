@@ -148,6 +148,18 @@ export const ko: TranslationResources = {
     },
   },
   composer: {
+    autoResume: {
+      cancel: "취소?",
+      accessibilityLabel: "{{countdown}} 후 자동 재개. 눌러서 취소.",
+      cancelFailed: "자동 재개를 취소할 수 없습니다",
+      dialog: {
+        title: "자동 재개 예약됨",
+        message:
+          "이 세션이 공급자 사용 한도에 도달했습니다. {{brandName}}은(는) 한도가 재설정된 1분 후({{countdown}} 후, {{time}}) 재개 프롬프트를 보냅니다.\n\n자동 재개를 취소할까요?",
+        confirm: "자동 재개 취소",
+        keep: "유지",
+      },
+    },
     placeholders: {
       desktop: "에이전트에게 메시지를 보내거나 @files 태그, /commands, /skills를 사용하세요",
       mobile: "메시지, @files, /commands",

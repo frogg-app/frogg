@@ -124,6 +124,7 @@ import {
   type SteerActiveTurnOptions,
   type SteerResult,
   type AgentStreamEvent,
+  type UsageLimitSignal,
   type AgentTimelineItem,
   type AgentUsage,
   type AgentRuntimeInfo,
@@ -2194,6 +2195,8 @@ class ClaudeAgentSession implements AgentSession {
   private pendingInterruptAbort = false;
   private foregroundHasVisibleActivity = false;
   private activeTurnHasAssistantText = false;
+  /** Set by a rejected `rate_limit_event`; carried onto the turn's terminal event. */
+  private pendingUsageLimit: UsageLimitSignal | null = null;
   private readonly contextUsage: ClaudeContextUsageState;
   private userMessageIds: string[] = [];
   private readonly emittedUserMessageIds = new Set<string>();
@@ -4205,6 +4208,7 @@ class ClaudeAgentSession implements AgentSession {
     }
 
     this.forgetReadSteer(message);
+    this.observeUsageLimit(message);
 
     switch (message.type) {
       case "system":
@@ -4533,11 +4537,30 @@ class ClaudeAgentSession implements AgentSession {
     }
   }
 
+  /** Claude reports a usage-limit rejection as a rate-limit event, then a `rate_limit` reply. */
+  private observeUsageLimit(message: SDKMessage): void {
+    if (message.type === "rate_limit_event" && message.rate_limit_info.status === "rejected") {
+      const { resetsAt } = message.rate_limit_info;
+      this.pendingUsageLimit = {
+        resetsAt: resetsAt ? new Date(resetsAt * 1000).toISOString() : null,
+      };
+    } else if (message.type === "assistant" && message.error === "rate_limit") {
+      this.pendingUsageLimit ??= { resetsAt: null };
+    }
+  }
+
+  private takePendingUsageLimit(): { usageLimit?: UsageLimitSignal } {
+    const usageLimit = this.pendingUsageLimit;
+    this.pendingUsageLimit = null;
+    return usageLimit ? { usageLimit } : {};
+  }
+
   private appendResultEvents(
     message: Extract<SDKMessage, { type: "result" }>,
     events: AgentStreamEvent[],
   ): void {
     const usage = this.convertUsage(message, message.modelUsage);
+    const usageLimit = this.takePendingUsageLimit();
     if (message.subtype === "success") {
       events.push(...this.sidechainTracker.finishAll("completed"));
       // Built-in slash commands (e.g. /voice, /usage, "Unknown command: …")
@@ -4558,7 +4581,7 @@ class ClaudeAgentSession implements AgentSession {
           },
         });
       }
-      events.push({ type: "turn_completed", provider: "claude", usage });
+      events.push({ type: "turn_completed", provider: "claude", usage, ...usageLimit });
       return;
     }
     const errorMessage =
@@ -4566,7 +4589,7 @@ class ClaudeAgentSession implements AgentSession {
         ? message.errors.join("\n")
         : "Claude run failed";
     events.push(...this.sidechainTracker.finishAll("failed"));
-    events.push(this.buildTurnFailedEvent(errorMessage));
+    events.push({ ...this.buildTurnFailedEvent(errorMessage), ...usageLimit });
   }
 
   private createClaudeSessionChangedNotice(
