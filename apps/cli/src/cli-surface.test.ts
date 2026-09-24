@@ -16,7 +16,7 @@ describe("canonical CLI surface", () => {
     for (const name of ["start", "stop", "restart", "status", "update", "onboard"]) {
       expect(help).toContain(name);
     }
-    for (const name of ["agent", "auth", "workspace", "project", "schedule"]) {
+    for (const name of ["agent", "auth", "workspace", "project"]) {
       expect(help).not.toContain(`  ${name} `);
     }
     expect(help).not.toContain("worktree");
@@ -42,10 +42,12 @@ describe("canonical CLI surface", () => {
     expect(agentCommand("open")).toBeUndefined();
   });
 
-  it("nests heartbeats under agent, where they are scoped", () => {
+  it("has no schedule or heartbeat commands", () => {
     const cli = createCli();
-    expect(cli.commands.map((command) => command.name())).not.toContain("heartbeat");
-    expect(agentCommand("heartbeat")).toBeDefined();
+    const names = cli.commands.map((command) => command.name());
+    expect(names).not.toContain("schedule");
+    expect(names).not.toContain("heartbeat");
+    expect(agentCommand("heartbeat")).toBeUndefined();
   });
 
   it("keeps hooks working but out of the help output", () => {
@@ -109,15 +111,11 @@ describe("canonical CLI surface", () => {
     expect(run?.helpInformation()).not.toContain("--detach");
   });
 
-  it("offers thinking configuration when running, updating, and scheduling agents", () => {
-    const cli = createCli();
+  it("offers thinking configuration when running and updating agents", () => {
     const run = agentCommand("run");
     const update = agentCommand("update");
-    const schedule = cli.commands.find((command) => command.name() === "schedule");
-    const scheduleCreate = schedule?.commands.find((command) => command.name() === "create");
 
     expect(run?.helpInformation()).toContain("--thinking <id>");
     expect(update?.helpInformation()).toContain("--thinking <id>");
-    expect(scheduleCreate?.helpInformation()).toContain("--thinking <id>");
   });
 });

@@ -129,7 +129,6 @@ import {
   type WorkspaceArchiveContext,
 } from "./workspace-registry.js";
 import { CheckoutDiffManager } from "./checkout-diff-manager.js";
-import { ScheduleService } from "./schedule/service.js";
 import { DaemonConfigStore, type MutableDaemonConfig } from "./daemon-config-store.js";
 import { createOrchestrationSkills } from "./orchestration-skills/index.js";
 import {
@@ -1722,85 +1721,6 @@ export async function createFroggDaemon(
       }),
   });
 
-  const createScheduleLocalWorkspaceExternal = async (input: {
-    cwd: string;
-    firstAgentContext: FirstAgentContext;
-  }) => {
-    const workspace = await workspaceProvisioning.createWorkspaceForDirectory(
-      input.cwd,
-      resolveFirstAgentPromptTitle(input.firstAgentContext),
-    );
-    workspaceAutoName.scheduleForDirectory({
-      workspaceId: workspace.workspaceId,
-      cwd: workspace.cwd,
-      firstAgentContext: input.firstAgentContext,
-    });
-    await emitWorkspaceUpdatesExternal([workspace.workspaceId]);
-    return workspace;
-  };
-  const createScheduleFroggWorktreeExternal = async (input: {
-    cwd: string;
-    firstAgentContext: FirstAgentContext;
-  }) => {
-    const result = await createFroggWorktreeForTools({
-      cwd: input.cwd,
-      firstAgentContext: input.firstAgentContext,
-    });
-    await emitWorkspaceUpdatesExternal([result.workspace.workspaceId]);
-    return result;
-  };
-  const archiveScheduleWorkspaceExternal = async (workspaceId: string) => {
-    await archiveByScope(
-      {
-        froggHome: config.froggHome,
-        froggWorktreesBaseRoot: config.worktreesRoot,
-        github,
-        workspaceGitService,
-        agentManager,
-        agentStorage,
-        findWorkspaceIdForCwd: findWorkspaceIdForCwdExternal,
-        listActiveWorkspaces: listActiveWorkspacesExternal,
-        getWorkspace: (workspaceIdToGet) => workspaceRegistry.get(workspaceIdToGet),
-        archiveWorkspaceRecord: archiveWorkspaceRecordExternal,
-        emitWorkspaceUpdatesForWorkspaceIds: emitWorkspaceUpdatesExternal,
-        markWorkspaceArchiving: markWorkspaceArchivingExternal,
-        clearWorkspaceArchiving: clearWorkspaceArchivingExternal,
-        killTerminalsForWorkspace: (workspaceIdToKill) =>
-          killTerminalsForWorkspace(
-            {
-              terminalManager,
-              sessionLogger: logger,
-            },
-            workspaceIdToKill,
-          ),
-        stopWorkspaceSetup: (workspaceIdToStop) => workspaceSetupRuntime.stop(workspaceIdToStop),
-        sessionLogger: logger,
-      },
-      {
-        scope: { kind: "workspace", workspaceId },
-        requestId: "schedule-run-finish",
-      },
-    );
-  };
-  const scheduleService = new ScheduleService({
-    froggHome: config.froggHome,
-    logger,
-    agentManager,
-    agentStorage,
-    createAgent,
-    createDirectoryWorkspace: createScheduleLocalWorkspaceExternal,
-    createFroggWorktreeWorkspace: createScheduleFroggWorktreeExternal,
-    archiveWorkspace: archiveScheduleWorkspaceExternal,
-  });
-  await scheduleService.start();
-  agentManager.setAgentArchivedCallback(async (agentId) => {
-    try {
-      await scheduleService.completeForAgent(agentId);
-    } catch (error) {
-      logger.warn({ err: error, agentId }, "Failed to complete schedules for archived agent");
-    }
-  });
-  logger.info({ elapsed: elapsed() }, "Schedule service initialized");
   logger.info({ elapsed: elapsed() }, "Loading persisted agent registry");
   const persistedRecords = await agentStorage.list();
   logger.info(
@@ -1819,7 +1739,6 @@ export async function createFroggDaemon(
     agentStorage,
     terminalManager,
     getDaemonTcpPort: publicTcpPort,
-    scheduleService,
     providerSnapshotManager,
     daemonConfigStore,
     github,
@@ -2262,7 +2181,6 @@ export async function createFroggDaemon(
               },
               projectRegistry,
               workspaceRegistry,
-              scheduleService,
               checkoutDiffManager,
               serviceProxy,
               scriptRuntimeStore,
@@ -2408,7 +2326,6 @@ export async function createFroggDaemon(
     await agentProviderRuntime.shutdown();
     terminalManager.killAll();
     await speechService.stop();
-    await scheduleService.stop().catch(() => undefined);
     await relayRuntime?.stop().catch(() => undefined);
     if (wsServer) {
       await wsServer.close();

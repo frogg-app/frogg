@@ -222,7 +222,6 @@ function createSessionForWireCompatTest(options?: {
     workspaceRegistry:
       new EmptyWorkspaceRegistry() as unknown as SessionOptions["workspaceRegistry"],
     directorySync: options?.directorySync,
-    scheduleService: {} as SessionOptions["scheduleService"],
     checkoutDiffManager: {
       scheduleRefreshForCwd() {},
       onWorkspaceStateMayHaveChanged() {},

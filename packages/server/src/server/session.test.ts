@@ -41,7 +41,6 @@ import {
   asAgentStorage,
   asDownloadTokenStore,
   asPushNotifications,
-  asScheduleService,
   asCheckoutDiffManager,
   asGitHubService,
   asWorkspaceGitService,
@@ -406,7 +405,6 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
       list: vi.fn().mockResolvedValue([]),
     },
     workspaceLabelService: options.workspaceLabelService,
-    scheduleService: asScheduleService(),
     checkoutDiffManager: asCheckoutDiffManager(checkoutDiffManager),
     github: asGitHubService(github),
     workspaceGitService: asWorkspaceGitService(workspaceGitService),
@@ -4950,69 +4948,6 @@ describe("session pull request timeline handling", () => {
         requestId: "request-check-details",
       },
     });
-  });
-});
-
-describe("schedule dispatch routing", () => {
-  // Each schedule/* type must reach its domain handler. The injected service stub
-  // is unstubbed, so every handler's own try/catch emits its domain rpc_error code.
-  // handleMessage receives already-parsed messages, so these fixtures only need to
-  // satisfy the TS union here — zod parsing happens upstream at the transport.
-  const routingCases: Array<{ msg: SessionInboundMessage; code: string }> = [
-    {
-      msg: {
-        type: "schedule/create",
-        requestId: "rt-sched-create",
-        prompt: "p",
-        cadence: { type: "every", everyMs: 1000 },
-        target: { type: "agent", agentId: "00000000-0000-0000-0000-000000000000" },
-      },
-      code: "schedule_request_failed",
-    },
-    { msg: { type: "schedule/list", requestId: "rt-sched-list" }, code: "schedule_request_failed" },
-    {
-      msg: { type: "schedule/inspect", requestId: "rt-sched-inspect", scheduleId: "s1" },
-      code: "schedule_request_failed",
-    },
-    {
-      msg: { type: "schedule/logs", requestId: "rt-sched-logs", scheduleId: "s1" },
-      code: "schedule_request_failed",
-    },
-    {
-      msg: { type: "schedule/pause", requestId: "rt-sched-pause", scheduleId: "s1" },
-      code: "schedule_request_failed",
-    },
-    {
-      msg: { type: "schedule/resume", requestId: "rt-sched-resume", scheduleId: "s1" },
-      code: "schedule_request_failed",
-    },
-    {
-      msg: { type: "schedule/delete", requestId: "rt-sched-delete", scheduleId: "s1" },
-      code: "schedule_request_failed",
-    },
-    {
-      msg: { type: "schedule/run-once", requestId: "rt-sched-run-once", scheduleId: "s1" },
-      code: "schedule_request_failed",
-    },
-    {
-      msg: { type: "schedule/update", requestId: "rt-sched-update", scheduleId: "s1", name: "new" },
-      code: "schedule_request_failed",
-    },
-  ];
-
-  test.each(routingCases)("routes $msg.type to its domain handler", async ({ msg, code }) => {
-    const messages: SessionOutboundMessage[] = [];
-    const session = createSessionForTest({ messages });
-
-    await session.handleMessage(msg);
-
-    const routed = messages
-      .filter(
-        (m): m is Extract<SessionOutboundMessage, { type: "rpc_error" }> => m.type === "rpc_error",
-      )
-      .find((m) => m.payload.requestId === msg.requestId);
-    expect(routed, `${msg.type} did not route to a handler (silent no-op)`).toBeDefined();
-    expect(routed?.payload.code).toBe(code);
   });
 });
 

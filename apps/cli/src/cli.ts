@@ -9,7 +9,6 @@ import {
 import { createPermissionsCommand } from "./commands/permissions/index.js";
 import { createProviderCommand } from "./commands/provider/index.js";
 import { createProjectCommand } from "./commands/project/index.js";
-import { createScheduleCommand } from "./commands/schedule/index.js";
 import { createScriptCommand } from "./commands/script/index.js";
 import { createTerminalCommand } from "./commands/terminal/index.js";
 import { createWorktreeCommand } from "./commands/worktree/index.js";
@@ -69,7 +68,6 @@ export function createCli(): Command {
 
   groups.push(createTerminalCommand());
   groups.push(createScriptCommand());
-  groups.push(createScheduleCommand());
   groups.push(createPermissionsCommand());
   groups.push(createProviderCommand());
   groups.push(createProjectCommand());

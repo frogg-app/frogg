@@ -179,7 +179,6 @@ import {
   createAgentStructuredTextGeneration,
   createGitMetadataGenerator,
 } from "./session/checkout/git-metadata-generator.js";
-import { ScheduleSession } from "./session/schedule/schedule-session.js";
 import { ProviderCatalogSession } from "./session/provider/provider-catalog-session.js";
 import { ProviderAccountSession } from "./session/provider/provider-account-session.js";
 import { ProviderAccountStore } from "./provider-accounts/provider-account-store.js";
@@ -232,7 +231,6 @@ import type { CheckoutDiffManager } from "./checkout-diff-manager.js";
 import type { Resolvable } from "./speech/provider-resolver.js";
 import type { SpeechReadinessSnapshot } from "./speech/speech-runtime.js";
 import type pino from "pino";
-import { ScheduleService } from "./schedule/service.js";
 import {
   createGitHubService,
   GitHubAuthenticationError,
@@ -482,7 +480,6 @@ export interface SessionOptions {
   directorySync?: DirectorySyncService;
   workspaceLabelService?: WorkspaceLabelService;
   filesystem?: SessionFileSystem;
-  scheduleService: ScheduleService;
   checkoutDiffManager: CheckoutDiffManager;
   github?: ForgeService;
   createAgentMcpTransport?: AgentMcpTransportFactory;
@@ -784,7 +781,6 @@ export class Session {
   private device: CallerDevice | null = null;
   private clientType: string | null = null;
   private helloDeviceName: string | null = null;
-  private readonly scheduleSession: ScheduleSession;
   private readonly providerCatalogSession: ProviderCatalogSession;
   private readonly providerAccountSession: ProviderAccountSession;
   private readonly providerUpdateSession: ProviderUpdateSession;
@@ -823,7 +819,6 @@ export class Session {
       directorySync,
       workspaceLabelService,
       filesystem,
-      scheduleService,
       checkoutDiffManager,
       github,
       renameCurrentBranch,
@@ -1012,11 +1007,6 @@ export class Session {
         this.emitWorkspaceUpdateForWorkspaceId(workspaceId),
       emitStatusUpdate: (cwd, snapshot) => this.checkoutSession.emitStatusUpdate(cwd, snapshot),
       onBranchChanged,
-      logger: this.sessionLogger,
-    });
-    this.scheduleSession = new ScheduleSession({
-      host: { emit: (msg) => this.emit(msg) },
-      scheduleService,
       logger: this.sessionLogger,
     });
     this.providerCatalogSession = new ProviderCatalogSession({
@@ -2280,7 +2270,6 @@ export class Session {
       this.dispatchProviderUpdateMessage(msg) ??
       this.dispatchOrchestrationSkillsMessage(msg) ??
       this.dispatchTerminalMessage(msg) ??
-      this.dispatchScheduleMessage(msg) ??
       this.dispatchMiscMessage(msg);
     if (promise) await promise;
   }
@@ -2968,31 +2957,6 @@ export class Session {
         return this.handleWorkspaceScriptStopRequest(msg);
       default:
         return this.terminalController.dispatch(msg);
-    }
-  }
-
-  private dispatchScheduleMessage(msg: SessionInboundMessage): Promise<void> | undefined {
-    switch (msg.type) {
-      case "schedule/create":
-        return this.scheduleSession.handleScheduleCreateRequest(msg);
-      case "schedule/list":
-        return this.scheduleSession.handleScheduleListRequest(msg);
-      case "schedule/inspect":
-        return this.scheduleSession.handleScheduleInspectRequest(msg);
-      case "schedule/logs":
-        return this.scheduleSession.handleScheduleLogsRequest(msg);
-      case "schedule/pause":
-        return this.scheduleSession.handleSchedulePauseRequest(msg);
-      case "schedule/resume":
-        return this.scheduleSession.handleScheduleResumeRequest(msg);
-      case "schedule/delete":
-        return this.scheduleSession.handleScheduleDeleteRequest(msg);
-      case "schedule/run-once":
-        return this.scheduleSession.handleScheduleRunOnceRequest(msg);
-      case "schedule/update":
-        return this.scheduleSession.handleScheduleUpdateRequest(msg);
-      default:
-        return undefined;
     }
   }
 

@@ -6,26 +6,25 @@ description: Monitor Frogg CI after pushes in a background agent, diagnose and f
 # Frogg build monitor
 
 Keep development moving while one dedicated agent owns build follow-through. A skill
-is instructions, not a running service: create or resume the monitor and confirm its
-heartbeat before claiming that future pushes are watched. Use the `frogg` skill for
-agent/workspace/heartbeat operations and `frogg-release` for artifact and update rules.
+is instructions, not a running service: create or resume the monitor and confirm it is
+running before claiming that future pushes are watched. Use the `frogg` skill for
+agent/workspace operations and `frogg-release` for artifact and update rules.
 
 ## Start or resume independently
 
-- Reuse the repository's existing monitor agent and heartbeat. Record their IDs and
+- Reuse the repository's existing monitor agent. Record its ID and
   workspace in the monitor's durable ledger; do not spawn another monitor per push.
 - Give it its own worktree from current `origin/main`. Never build or fix in the
-  developer's active checkout. Use configured agent profiles and their notes; if
-  none fit, discover available providers and use a supported default.
+  developer's active checkout. Discover available providers and use a supported
+  default.
 - Pass repository, branch, requested targets, known runs, source SHA, allowed fixes
   and integration scope. Preserve existing user authorization. Current Frogg targets
   are Windows x64 Electron client, Linux x64 Node daemon, Android arm64 client.
-- In the monitor agent, create one five-minute heartbeat using the available Frogg
-  heartbeat tool or `frogg agent heartbeat create --help`. Each tick checks new runs,
-  advances existing repairs/builds, records results, then yields. Do not sit in an
-  endless shell polling loop. Stop/delete the heartbeat when monitoring is cancelled.
+- Wait on runs with `gh run watch RUN_ID --exit-status` rather than a hand-rolled
+  polling loop. After each run finishes, check for new runs, advance existing
+  repairs/builds and record results.
 - Store a small ledger in the monitor workspace's `.dev/build-monitor/`: repository,
-  branch, monitor/heartbeat IDs, source SHAs, workflow/run/job IDs, attempts and
+  branch, monitor agent ID, source SHAs, workflow/run/job IDs, attempts and
   failure signatures, owned builder worktrees/processes, artifact paths/checksums,
   start/end times and blocked reasons. Atomically update it. Treat unknown state as
   unknown; an old successful artifact does not validate a new commit.
@@ -38,7 +37,7 @@ agent/workspace/heartbeat operations and `frogg-release` for artifact and update
 Run `gh run list --repo OWNER/REPO --branch BRANCH --limit 20 --json
  databaseId,headSha,workflowName,status,conclusion` and inspect jobs with
 `gh run view RUN_ID --repo OWNER/REPO --json jobs`. Compare against the ledger.
-Read newer pushes on every tick; do not assume a previously observed head is current.
+Read newer pushes after every run finishes; do not assume a previously observed head is current.
 
 A completed job's logs can be fetched while sibling jobs still run:
 
@@ -114,7 +113,7 @@ Use current wrappers, consulting their help and
 --out-dir release-assets` produces the bundled test client. Preserve actual
   signing status; a debug variant without bundled JS is not a standalone client.
 
-Keep supervised local builds running between heartbeat turns; record their process
+Keep supervised local builds running between checks; record their process
 or terminal IDs and log locations. On restart verify ownership and liveness before
 resuming; never blindly start duplicate builds. If using a local build to replace a
 queued CI artifact, only cancel the exact duplicate job when supported and safe;
@@ -127,4 +126,4 @@ required GitHub checks.
 For each target record SHA, version, builder, actual artifact and checksum, signing
 status, check results, elapsed time and remaining device/update validation. Keep
 mixed revisions visible. An artifact build is not installed-client acceptance.
-On a quiet tick, retain the heartbeat for future pushes and yield without rebuilding.
+When nothing new has been pushed, yield without rebuilding.

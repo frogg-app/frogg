@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { createHeartbeatCommand } from "../heartbeat/index.js";
 import { runModeCommand } from "./mode.js";
 import { addArchiveOptions, runArchiveCommand } from "./archive.js";
 import { addDeleteOptions, runDeleteCommand } from "./delete.js";
@@ -94,12 +93,6 @@ export function createAgentCommand(): Command {
         [],
       ),
   ).action(withOutput(runUpdateCommand));
-
-  // Heartbeats are an agent scheduling its own recurring prompts, keyed on the
-
-  // caller's FROGG_AGENT_ID. It was a top-level group; it belongs here.
-
-  agent.addCommand(createHeartbeatCommand());
 
   return agent;
 }

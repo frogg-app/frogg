@@ -1,6 +1,6 @@
 ---
 title: CLI reference
-description: The frogg command-line interface — daemon lifecycle, pairing, agents, schedules, sessions, terminals and providers.
+description: The frogg command-line interface — daemon lifecycle, pairing, agents, sessions, terminals and providers.
 sidebar:
   order: 4
 ---
@@ -146,7 +146,6 @@ See [pairing and access](/docs/getting-started/connect-and-pair/). For scripted 
 | `frogg agent reload <id>`             | Restart the provider process |
 | `frogg agent detach <id>`             | Make a subagent independent |
 | `frogg agent update <id>`             | Rename, change thinking level or labels |
-| `frogg agent heartbeat create\|update\|delete` | Recurring prompts to the calling agent (run inside an agent) |
 
 `frogg agent run` flags:
 
@@ -181,17 +180,6 @@ Alias `frogg permit`.
 | `frogg permissions ls`                      | Pending requests across agents |
 | `frogg permissions allow <agent> [req_id]`  | Allow one, or `--all`. `--input <json>` edits the tool input |
 | `frogg permissions deny <agent> [req_id]`   | Deny one, or `--all`. `--message`, `--interrupt` |
-
-## `frogg schedule`
-
-| Command                         | What it does |
-| ------------------------------- | ------------ |
-| `frogg schedule create <prompt>`  | `--every 5m` or `--cron "0 9 * * 1-5"`, `--timezone` (default UTC), `--name`, `--provider`, `--mode`, `--thinking`, `--cwd`, `--run-now`, `--max-runs`, `--expires-in` |
-| `frogg schedule ls`, `inspect <id>`, `logs <id>` | Inspect |
-| `frogg schedule pause <id>`, `resume <id>`, `run-once <id>`, `delete <id>` | Control |
-| `frogg schedule update <id>`      | Change cadence, prompt, provider, limits |
-
-See [schedules](/docs/using-frogg/schedules/).
 
 ## `frogg project` and `frogg workspace`
 

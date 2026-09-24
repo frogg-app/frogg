@@ -7,7 +7,6 @@ import { curateAgentActivity } from "./activity-curator.js";
 import { selectItemsByProjectedLimit } from "./timeline-projection.js";
 import type { AgentStorage } from "./agent-storage.js";
 import { serializeAgentSnapshot } from "../messages.js";
-import { StoredScheduleSchema } from "@frogg/protocol/schedule/types";
 import type { AgentProvider } from "./agent-sdk-types.js";
 
 export const AgentProviderEnum = z.string();
@@ -245,9 +244,4 @@ export function parseDurationString(input: string): number {
   }
 
   return totalMs;
-}
-
-export function toScheduleSummary(schedule: z.infer<typeof StoredScheduleSchema>) {
-  const { runs: _runs, ...summary } = schedule;
-  return summary;
 }

@@ -24,8 +24,8 @@ to main or skip CI), keep it. Don't widen it.
 ## Loop
 
 1. Work in your own worktree from the source SHA. Never build in the caller's checkout.
-2. Read or create the ledger in `.dev/build-monitor/`. Reuse an existing monitor and
-   heartbeat rather than starting a duplicate.
+2. Read or create the ledger in `.dev/build-monitor/`. Reuse an existing monitor rather
+   than starting a duplicate.
 3. List runs for the branch, compare with the ledger, and pick up newer heads.
 4. For each failed job, fetch its logs with the job API and find the root cause.
 5. Transient failure: rerun that job only, once. Deterministic failure: reproduce it,
@@ -33,8 +33,8 @@ to main or skip CI), keep it. Don't widen it.
    authorization allows. Dispatch only the affected target.
 6. After two failed fixes for the same cause, stop that repair and report it. Keep the
    other targets moving.
-7. Update the ledger, then yield. Rely on the heartbeat or background notifications, not
-   a shell polling loop.
+7. Update the ledger, then yield. Wait on runs with `gh run watch <id>
+--exit-status` or background notifications, not a shell polling loop.
 
 ## Never
 

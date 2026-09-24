@@ -23,7 +23,7 @@ one or more daemons to watch and control those agents. Closing a client does not
           |  Daemon (@frogg/server, Node)              |
           |  HTTP: /ws  /api/*  /mcp/agents  web UI  |
           |  agents, projects, workspaces, worktrees |
-          |  terminals, schedules                    |
+          |  terminals                               |
           +---------------------+--------------------+
                                 |
              provider processes (Claude, Codex, ACP agents, ...)
@@ -34,7 +34,7 @@ one or more daemons to watch and control those agents. Closing a client does not
 ## Components
 
 **Daemon** (`packages/server`). Spawns and supervises agent processes, streams their timelines,
-manages projects, workspaces, worktrees, terminals and schedules, and enforces authorization.
+manages projects, workspaces, worktrees and terminals, and enforces authorization.
 Agent state stays authoritative on the daemon across client disconnects. The daemon is installed
 separately (install script, daemon bundle, Docker or `frogg` CLI) and listens on `0.0.0.0:9999` by
 default. `FROGG_LISTEN`, `daemon.listen` in `config.json`, or `--listen` override it. The listen
@@ -137,7 +137,7 @@ This table lists the main entries only. See [Configuration](/docs/reference/conf
 ## MCP endpoint
 
 The daemon serves an MCP endpoint at `/mcp/agents` on its HTTP server. Agents it launches get
-this endpoint injected so they can use Frogg tools: workspaces, agents, permissions, schedules and
-heartbeats. The tools come from a transport-neutral catalog in
+this endpoint injected so they can use Frogg tools: workspaces, agents, terminals and
+permissions. The tools come from a transport-neutral catalog in
 `packages/server/src/server/agent/tools/`; MCP is one adapter over it. The route authenticates
 its own requests rather than using the daemon bearer check.

@@ -1,12 +1,12 @@
 ---
 title: MCP tools for agents
-description: The daemon's MCP endpoint lets agents create agents, run scripts, drive terminals, schedule work and answer permissions.
+description: The daemon's MCP endpoint lets agents create agents, run scripts, drive terminals and answer permissions.
 sidebar:
   order: 3
 ---
 
 The daemon serves a Model Context Protocol endpoint so agents can use Frogg itself: start
-other agents, watch them, run session scripts, schedule follow-ups. This is how an agent
+other agents, watch them, run session scripts. This is how an agent
 orchestrates others.
 
 ## Endpoint
@@ -50,8 +50,6 @@ Without injection, agents can still use the `frogg` CLI from their shell; the bu
 | Sessions   | `create_workspace`, `list_workspaces`, `rename_workspace`, `archive_workspace` |
 | Scripts      | `list_workspace_scripts`, `start_workspace_script`, `stop_workspace_script` |
 | Terminals    | `list_terminals`, `create_terminal`, `capture_terminal`, `send_terminal_keys`, `kill_terminal` |
-| Schedules    | `create_schedule`, `list_schedules`, `inspect_schedule`, `update_schedule`, `pause_schedule`, `resume_schedule`, `run_schedule_once`, `schedule_logs`, `delete_schedule` |
-| Heartbeats   | `create_heartbeat`, `delete_heartbeat` |
 | Providers    | `list_providers`, `list_models`, `list_profiles`, `inspect_provider` |
 | Permissions  | `list_pending_permissions`, `respond_to_permission` |
 
