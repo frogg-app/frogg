@@ -307,13 +307,30 @@ export type { TerminalStreamEvent };
  * render in its own words; the English `lastError` stays for logs and
  * diagnostics.
  */
-export interface DaemonClientErrorInfo {
-  code: "server_identity_mismatch";
-  /** The saved host's serverId. */
-  expectedServerId: string;
-  /** The serverId of the daemon that answered instead. */
-  actualServerId: string;
-}
+export type DaemonClientErrorInfo =
+  | {
+      code: "server_identity_mismatch";
+      /** The saved host's serverId. */
+      expectedServerId: string;
+      /** The serverId of the daemon that answered instead. */
+      actualServerId: string;
+    }
+  | {
+      /**
+       * The daemon refused this client's credentials (WS close 4401). The
+       * client stops reconnecting; a new pairing (or password) is needed.
+       */
+      code: "pairing_required";
+      /** True when a credential was presented and rejected, so it is stale. */
+      credentialRejected: boolean;
+      /** The daemon's close reason, e.g. "Device access revoked". */
+      reason: string;
+    };
+
+/** WS close code the daemon uses when it refuses a connection's credentials. */
+export const DAEMON_AUTH_FAILED_CLOSE_CODE = 4401;
+/** Close reason for a rate-limited 4401; transient, so reconnecting is right. */
+const DAEMON_AUTH_RATE_LIMITED_REASON = "Too many failed attempts";
 
 export type ConnectionState =
   | { status: "idle" }
@@ -1391,6 +1408,9 @@ export class DaemonClient {
           const reason = describeTransportClose(event);
           if (reason) {
             this.lastErrorValue = reason;
+          }
+          if (this.handleAuthRejectedClose(event, reason)) {
+            return;
           }
           this.scheduleReconnect({
             reason,
@@ -6791,6 +6811,37 @@ export class DaemonClient {
       reason,
       event: "SERVER_IDENTITY_MISMATCH",
       reasonCode: "server_identity_mismatch",
+    });
+    return true;
+  }
+
+  /**
+   * A 4401 close means the daemon refused our credentials. Retrying with the
+   * same credential can only fail again (and feeds the daemon's failure
+   * limiter), so stop reconnecting and report `pairing_required`. A
+   * rate-limited 4401 is transient and keeps the normal reconnect path.
+   */
+  private handleAuthRejectedClose(event: unknown, reason: string): boolean {
+    const code =
+      event && typeof event === "object" ? (event as { code?: unknown }).code : undefined;
+    if (code !== DAEMON_AUTH_FAILED_CLOSE_CODE) return false;
+    if (reason === DAEMON_AUTH_RATE_LIMITED_REASON) return false;
+    const credentialRejected =
+      normalizePassword(this.config.password) !== null || Boolean(this.config.authHeader);
+    this.logger.warn(
+      { serverId: this.logServerId, reason, credentialRejected },
+      "daemon_client_auth_rejected",
+    );
+    this.lastErrorValue = reason;
+    this.lastErrorInfoValue = {
+      message: reason,
+      info: { code: "pairing_required", credentialRejected, reason },
+    };
+    this.shouldReconnect = false;
+    this.scheduleReconnect({
+      reason,
+      event: "AUTH_REJECTED",
+      reasonCode: "pairing_required",
     });
     return true;
   }
