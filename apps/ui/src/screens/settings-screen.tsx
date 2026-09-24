@@ -81,6 +81,7 @@ import {
   type SettingsView,
 } from "@/navigation/settings-navigation";
 import { SettingsSidebar } from "@/screens/settings/settings-sidebar";
+import { HostSecurityPage } from "@/security/security-card";
 import { HOST_SECTION_ITEMS, SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
 import {
   resolveHiddenSectionRedirect,
@@ -106,6 +107,8 @@ function renderHostSettingsContent(
       return <HostPairDevicePage serverId={view.serverId} />;
     case "devices":
       return <HostDevicesPage serverId={view.serverId} />;
+    case "security":
+      return <HostSecurityPage serverId={view.serverId} />;
     case "agents":
       return <HostAgentsPage serverId={view.serverId} />;
     case "providers":

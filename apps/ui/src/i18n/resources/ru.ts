@@ -2762,6 +2762,7 @@ export const ru: TranslationResources = {
       sendFailedTitle: "Не удалось отправить тестовое уведомление",
     },
     hostSections: {
+      security: "Безопасность",
       devices: "Устройства",
       projects: "Проекты",
       connections: "Подключения",
@@ -3310,7 +3311,10 @@ export const ru: TranslationResources = {
       security: {
         title: "Безопасность",
         dotLabel: "Проблемы безопасности на этом хосте",
+        findingsTitle: "Проблемы",
+        noFindings: "На этом хосте проблем безопасности не найдено.",
         severity: { critical: "Критично", warning: "Предупреждение" },
+        acknowledged: "Задумано",
         findings: {
           unclaimed: {
             title: "У этого хоста нет владельца",
@@ -3343,6 +3347,8 @@ export const ru: TranslationResources = {
           disableTrustLan: "Не доверять локальной сети",
           enableClaimMode: "Включить режим закрепления",
           openDevices: "Открыть устройства",
+          acknowledge: "Так и задумано",
+          unacknowledge: "Снова предупреждать",
         },
         bindInstructions:
           "Укажите адрес прослушивания 127.0.0.1 в config.json демона и перезапустите его. С других устройств подключайтесь через relay или SSH-туннель.",

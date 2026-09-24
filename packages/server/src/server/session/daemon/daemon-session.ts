@@ -25,6 +25,8 @@ export interface DaemonRuntimeConfig {
   update?: DaemonUpdateService;
   /** Live security findings (security-posture.ts); absent without bootstrap wiring. */
   getSecurityPosture?(): SecurityPosture;
+  /** Persist a warning as intended (or undo it); throws for a critical finding. */
+  setSecurityFindingAcknowledged?(findingId: string, acknowledged: boolean): SecurityPosture;
   getRelayConfig(): {
     enabled: boolean;
     endpoint: string;
@@ -232,6 +234,30 @@ export class DaemonSession {
             posture: null,
             error: "Security posture is not available on this daemon",
           },
+    });
+    return Promise.resolve();
+  }
+
+  handleSetSecurityFindingAcknowledgedRequest(
+    msg: Extract<
+      SessionInboundMessage,
+      { type: "daemon.set_security_finding_acknowledged.request" }
+    >,
+  ): Promise<void> {
+    const setAcknowledged = this.daemonRuntimeConfig?.setSecurityFindingAcknowledged;
+    let payload: { posture: SecurityPosture | null; error: string | null };
+    if (!setAcknowledged) {
+      payload = { posture: null, error: "Security findings cannot be acknowledged on this daemon" };
+    } else {
+      try {
+        payload = { posture: setAcknowledged(msg.findingId, msg.acknowledged), error: null };
+      } catch (error) {
+        payload = { posture: null, error: error instanceof Error ? error.message : String(error) };
+      }
+    }
+    this.host.emit({
+      type: "daemon.set_security_finding_acknowledged.response",
+      payload: { requestId: msg.requestId, ...payload },
     });
     return Promise.resolve();
   }

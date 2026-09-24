@@ -123,6 +123,7 @@ const INBOUND_ROLE = {
   "daemon.config.reload.request": "owner",
   "daemon.get_pairing_offer.request": "owner",
   "daemon.get_security_posture.request": "owner",
+  "daemon.set_security_finding_acknowledged.request": "owner",
   "daemon.get_status.request": "viewer",
   "daemon.update.check.request": "owner",
   "daemon.update.get_status.request": "owner",

@@ -250,9 +250,9 @@ or the password); without one it returns only `claimed` and `pairingRequired`.
 ### In the app
 
 When a connected daemon reports findings, the app shows a dot on **Hosts** in the sidebar,
-on the host's row in the hosts menu and on **Overview** in its host settings: red for a
-critical finding, amber for warnings only. Host settings **Overview** lists each finding in a
-**Security** card with its fix:
+on the host's row in the hosts menu and on **Security** in its host settings: red for a
+critical finding, amber for warnings only. Host settings **Security** lists each finding
+with its fix, or says the host has no issues:
 
 - **Pair a device** or **Open devices**: claim the daemon by pairing this device.
 - **Set password**: sets the daemon password (at least 8 characters) without a restart.
@@ -262,10 +262,18 @@ critical finding, amber for warnings only. Host settings **Overview** lists each
   `config.json` and restart; reach it through the relay or an SSH tunnel instead.
 - An unknown finding from a newer daemon shows **Open devices**.
 
-Findings are sent only to owner connections, so operators and viewers see no dot or card.
-Daemons without the `securityPosture` feature show neither.
+A warning that describes a deliberate setup (a daemon bound wider than the brand recommends,
+say) can be marked **This is intended**. It stays on the Security page, muted and labelled
+**Intended**, but no longer raises a dot; **Warn me again** undoes it. The choice is stored
+on the daemon in `config.json` under `daemon.security.acknowledgedFindings`, so it applies
+to every owner device. Critical findings cannot be marked as intended; they stay until
+they are fixed. Marking findings needs a daemon that advertises the `securityAcknowledge`
+feature.
 
-<Screenshot src={hostSecurityImg} alt="Host settings Overview with a Security card reporting Reachable without a password, a Set password button and a dot on Overview and Hosts" />
+Findings are sent only to owner connections, so operators and viewers see no dot and no
+Security section. Daemons without the `securityPosture` feature show neither.
+
+<Screenshot src={hostSecurityImg} alt="Host settings Security section listing Reachable without a password with a Set password button, and Listening beyond this machine with a This is intended button, with a dot on Security and Hosts" />
 
 ## Passwords
 

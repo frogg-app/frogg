@@ -2785,6 +2785,7 @@ export const es: TranslationResources = {
       sendFailedTitle: "No se pudo enviar la notificación de prueba",
     },
     hostSections: {
+      security: "Seguridad",
       devices: "Dispositivos",
       projects: "Proyectos",
       connections: "Conexiones",
@@ -3331,7 +3332,10 @@ export const es: TranslationResources = {
       security: {
         title: "Seguridad",
         dotLabel: "Problemas de seguridad en este host",
+        findingsTitle: "Hallazgos",
+        noFindings: "No se encontraron problemas de seguridad en este host.",
         severity: { critical: "Crítico", warning: "Advertencia" },
+        acknowledged: "Intencionado",
         findings: {
           unclaimed: {
             title: "Ningún dispositivo es propietario de este host",
@@ -3364,6 +3368,8 @@ export const es: TranslationResources = {
           disableTrustLan: "Dejar de confiar en la red local",
           enableClaimMode: "Activar el modo de reclamación",
           openDevices: "Abrir dispositivos",
+          acknowledge: "Es intencionado",
+          unacknowledge: "Volver a avisarme",
         },
         bindInstructions:
           "Establece la dirección de escucha en 127.0.0.1 en el config.json del daemon y reinícialo. Accede desde otros dispositivos mediante el relay o un túnel SSH.",

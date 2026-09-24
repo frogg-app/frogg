@@ -2755,6 +2755,7 @@ export const ja: TranslationResources = {
       sendFailedTitle: "テスト通知を送信できません",
     },
     hostSections: {
+      security: "セキュリティ",
       devices: "デバイス",
       projects: "プロジェクト",
       connections: "接続",
@@ -3295,7 +3296,10 @@ export const ja: TranslationResources = {
       security: {
         title: "セキュリティ",
         dotLabel: "このホストにセキュリティの問題があります",
+        findingsTitle: "検出結果",
+        noFindings: "このホストにセキュリティ上の問題は見つかりませんでした。",
         severity: { critical: "重大", warning: "警告" },
+        acknowledged: "意図的",
         findings: {
           unclaimed: {
             title: "このホストには所有者のデバイスがありません",
@@ -3328,6 +3332,8 @@ export const ja: TranslationResources = {
           disableTrustLan: "ローカルネットワークを信頼しない",
           enableClaimMode: "クレームモードをオンにする",
           openDevices: "デバイスを開く",
+          acknowledge: "意図した設定です",
+          unacknowledge: "再度警告する",
         },
         bindInstructions:
           "デーモンの config.json で待ち受けアドレスを 127.0.0.1 に設定し、デーモンを再起動してください。他のデバイスからはリレーまたは SSH トンネル経由で接続します。",

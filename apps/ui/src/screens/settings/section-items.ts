@@ -20,6 +20,7 @@ import {
   Rocket,
   PanelsTopLeft,
   AudioLines,
+  ShieldCheck,
 } from "lucide-react-native";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 
@@ -103,6 +104,11 @@ export const HOST_SECTION_ITEMS: HostSectionItem[] = [
     id: "devices",
     labelKey: "settings.hostSections.devices",
     icon: MonitorSmartphone,
+  },
+  {
+    id: "security",
+    labelKey: "settings.hostSections.security",
+    icon: ShieldCheck,
   },
   { id: "agents", labelKey: "settings.hostSections.agents", icon: Bot },
   { id: "providers", labelKey: "settings.hostSections.providers", icon: Boxes },

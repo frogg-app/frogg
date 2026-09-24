@@ -203,7 +203,7 @@ import {
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
 import { createAccessPolicy, DEFAULT_TRUST_LAN, isLoopbackIp } from "./access-policy.js";
-import { computeSecurityPosture } from "./security-posture.js";
+import { computeSecurityPosture, updateAcknowledgedFindings } from "./security-posture.js";
 import { createClaimStore, isDaemonClaimed, type ClaimStore } from "./claim-store.js";
 import { deviceRoleStoreFrom } from "./authorization/device-role-store.js";
 import { createClaimOfferStore } from "./claim-offer-store.js";
@@ -635,6 +635,30 @@ function readMutableTrustLan(config: MutableDaemonConfig): boolean {
   return typeof value === "boolean" ? value : DEFAULT_TRUST_LAN;
 }
 
+/** Warning findings an owner marked as intended (`daemon.security.acknowledgedFindings`). */
+function loadAcknowledgedSecurityFindings(froggHome: string, logger: Logger): Set<string> {
+  const persisted = loadPersistedConfig(froggHome, logger);
+  return new Set(persisted.daemon?.security?.acknowledgedFindings ?? []);
+}
+
+function saveAcknowledgedSecurityFindings(froggHome: string, ids: string[], logger: Logger): void {
+  const persisted = loadPersistedConfig(froggHome, logger);
+  savePersistedConfig(
+    froggHome,
+    {
+      ...persisted,
+      daemon: {
+        ...persisted.daemon,
+        security: {
+          ...persisted.daemon?.security,
+          acknowledgedFindings: ids.length > 0 ? ids : undefined,
+        },
+      },
+    },
+    logger,
+  );
+}
+
 /**
  * `claimMode` rides along in the mutable config the same way, so flipping it
  * with `frogg daemon claim-mode` or the settings RPC applies without a restart.
@@ -848,6 +872,7 @@ export async function createFroggDaemon(
     app.set("trust proxy", value ?? ["loopback"]);
   });
   let boundListenTarget: ListenTarget | null = null;
+  const acknowledgedSecurityFindings = loadAcknowledgedSecurityFindings(config.froggHome, logger);
   const getSecurityPosture = () =>
     computeSecurityPosture({
       claimMode: authConfig.access?.claimMode() ?? false,
@@ -856,7 +881,19 @@ export async function createFroggDaemon(
       claimed: isDaemonClaimed(claimStore, authConfig.password),
       listenTarget: boundListenTarget ?? listenTarget,
       brand: brand.daemon,
+      acknowledged: acknowledgedSecurityFindings,
     });
+  const setSecurityFindingAcknowledged = (findingId: string, acknowledge: boolean) => {
+    const ids = updateAcknowledgedFindings({
+      acknowledged: acknowledgedSecurityFindings,
+      current: getSecurityPosture(),
+      findingId,
+      acknowledge,
+    });
+    saveAcknowledgedSecurityFindings(config.froggHome, ids, logger);
+    wsServer?.broadcastSecurityPostureChanged();
+    return getSecurityPosture();
+  };
   let workspaceRegistry: FileBackedWorkspaceRegistry | null = null;
   const terminalManager = createConfiguredTerminalManager({
     getTerminalActivityUrl: () => createTerminalActivityUrl(boundListenTarget),
@@ -2226,6 +2263,7 @@ export async function createFroggDaemon(
                 desktopManaged: config.desktopManaged === true,
                 update: updateService,
                 getSecurityPosture,
+                setSecurityFindingAcknowledged,
                 getRelayConfig: () =>
                   relayRuntime?.getConfig() ?? {
                     enabled: daemonConfigStore.get().relay?.enabled ?? relayEnabled,

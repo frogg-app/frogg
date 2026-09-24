@@ -31,7 +31,8 @@ describe("host settings section visibility", () => {
 
   it("keeps the brand's hideable sections in step with the client's own list", () => {
     // Deploy is a desktop-only client section; the daemon has no setting for it.
-    const clientOnly = new Set(["deploy"]);
+    // Security is never hideable: a brand must not be able to hide its warnings.
+    const clientOnly = new Set(["deploy", "security"]);
     const hideable = HOST_SECTION_SLUGS.filter((slug) => !clientOnly.has(slug));
     expect([...HOST_SETTINGS_SECTIONS].sort()).toEqual([...hideable].sort());
   });

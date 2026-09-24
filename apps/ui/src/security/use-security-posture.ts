@@ -10,6 +10,7 @@ function useSecurityInputs(serverId: string) {
       const info = state.sessions[serverId]?.serverInfo;
       return {
         securityPosture: info?.features?.securityPosture === true,
+        securityAcknowledge: info?.features?.securityAcknowledge === true,
         callerRole: info?.callerRole,
         security: info?.security,
       };
@@ -22,11 +23,14 @@ export function useSecurityPosture(serverId: string): SecurityPostureView {
   return useMemo(
     () =>
       readSecurityPosture({
-        features: { securityPosture: inputs.securityPosture },
+        features: {
+          securityPosture: inputs.securityPosture,
+          securityAcknowledge: inputs.securityAcknowledge,
+        },
         ...(inputs.callerRole ? { callerRole: inputs.callerRole } : {}),
         ...(inputs.security ? { security: inputs.security } : {}),
       }),
-    [inputs.callerRole, inputs.securityPosture, inputs.security],
+    [inputs.callerRole, inputs.securityAcknowledge, inputs.securityPosture, inputs.security],
   );
 }
 
@@ -74,4 +78,26 @@ export function useRefreshSecurityPosture(serverId: string): {
     }
   }, [client, serverId, setPosture]);
   return { refresh, isRefreshing };
+}
+
+/**
+ * Mark a warning as intended, or undo that, and apply the posture the daemon
+ * returns. Resolves false when there is no client to send it through.
+ */
+export function useAcknowledgeSecurityFinding(serverId: string): {
+  setAcknowledged: (findingId: string, acknowledged: boolean) => Promise<boolean>;
+} {
+  const client = useHostRuntimeClient(serverId);
+  const setPosture = useSessionStore((state) => state.setSessionSecurityPosture);
+  const setAcknowledged = useCallback(
+    async (findingId: string, acknowledged: boolean) => {
+      if (!client) return false;
+      const payload = await client.setSecurityFindingAcknowledged({ findingId, acknowledged });
+      if (payload.error) throw new Error(payload.error);
+      if (payload.posture) setPosture(serverId, payload.posture);
+      return true;
+    },
+    [client, serverId, setPosture],
+  );
+  return { setAcknowledged };
 }

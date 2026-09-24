@@ -236,6 +236,8 @@ pub enum SessionMessage {
     DaemonGetPairingOfferResponse(DaemonGetPairingOfferResponse),
     #[serde(rename = "daemon.get_security_posture.response")]
     DaemonGetSecurityPostureResponse(DaemonGetSecurityPostureResponse),
+    #[serde(rename = "daemon.set_security_finding_acknowledged.response")]
+    DaemonSetSecurityFindingAcknowledgedResponse(DaemonSetSecurityFindingAcknowledgedResponse),
     #[serde(rename = "auth.device.set_role.response")]
     AuthDeviceSetRoleResponse(AuthDeviceSetRoleResponse),
     #[serde(rename = "daemon.config.reload.response")]
@@ -7220,6 +7222,20 @@ pub struct DaemonGetSecurityPostureResponse {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DaemonGetSecurityPostureResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub posture: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSetSecurityFindingAcknowledgedResponse {
+    pub payload: DaemonSetSecurityFindingAcknowledgedResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSetSecurityFindingAcknowledgedResponsePayload {
     #[serde(rename = "requestId")]
     pub request_id: String,
     pub posture: serde_json::Value,

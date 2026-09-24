@@ -11,7 +11,11 @@ import { SettingsSection } from "@/screens/settings/settings-section";
 import { settingsStyles } from "@/styles/settings";
 import type { SecurityFindingView } from "./posture";
 import { SecurityDot } from "./security-dot";
-import { useRefreshSecurityPosture, useSecurityPosture } from "./use-security-posture";
+import {
+  useAcknowledgeSecurityFinding,
+  useRefreshSecurityPosture,
+  useSecurityPosture,
+} from "./use-security-posture";
 
 /** The daemon enforces the same minimum (`auth.password.set`). */
 export const MIN_DAEMON_PASSWORD_LENGTH = 8;
@@ -27,35 +31,62 @@ export function validateDaemonPassword(password: string, confirm: string): Passw
   return null;
 }
 
+/** Host settings › Security. */
+export function HostSecurityPage({ serverId }: { serverId: string }) {
+  return (
+    <View>
+      <HostSecurityCard serverId={serverId} />
+    </View>
+  );
+}
+
 /**
- * The host's security findings, each with the fix this device can apply.
- * Renders nothing for a daemon without `features.securityPosture`, for a
- * non-owner, and when the daemon has nothing to report.
+ * The host's security findings, each with the fix this device can apply, and
+ * any warnings the owner marked as intended. Renders nothing for a daemon
+ * without `features.securityPosture` and for a non-owner.
  */
 export function HostSecurityCard({ serverId }: { serverId: string }) {
   const { t } = useTranslation();
   const posture = useSecurityPosture(serverId);
   const isConnected = useHostRuntimeIsConnected(serverId);
   const { refresh } = useRefreshSecurityPosture(serverId);
-  const hasFindings = posture.findings.length > 0;
+  const hasFindings = posture.findings.length > 0 || posture.acknowledged.length > 0;
 
   // Pairing elsewhere does not re-send server_info, so re-read on arrival.
   useEffect(() => {
-    if (isConnected && hasFindings) void refresh();
-  }, [hasFindings, isConnected, refresh]);
+    if (isConnected && posture.available) void refresh();
+  }, [isConnected, posture.available, refresh]);
 
-  if (!hasFindings) return null;
+  if (!posture.available) return null;
 
   return (
-    <SettingsSection title={t("settings.host.security.title")} testID="host-security-section">
+    <SettingsSection
+      title={t("settings.host.security.findingsTitle")}
+      testID="host-security-section"
+    >
       <View style={settingsStyles.card} testID="host-security-card">
+        {hasFindings ? null : (
+          <View style={styles.findingRow} testID="host-security-clear">
+            <Text style={settingsStyles.rowHint}>{t("settings.host.security.noFindings")}</Text>
+          </View>
+        )}
         {posture.findings.map((finding, index) => (
           <SecurityFindingRow
             key={finding.id}
             serverId={serverId}
             finding={finding}
             isFirst={index === 0}
+            canAcknowledge={posture.canAcknowledge}
             onFixed={refresh}
+          />
+        ))}
+        {posture.acknowledged.map((finding, index) => (
+          <AcknowledgedFindingRow
+            key={finding.id}
+            serverId={serverId}
+            finding={finding}
+            isFirst={index === 0 && posture.findings.length === 0}
+            canAcknowledge={posture.canAcknowledge}
           />
         ))}
       </View>
@@ -71,11 +102,13 @@ function SecurityFindingRow({
   serverId,
   finding,
   isFirst,
+  canAcknowledge,
   onFixed,
 }: {
   serverId: string;
   finding: SecurityFindingView;
   isFirst: boolean;
+  canAcknowledge: boolean;
   onFixed: () => Promise<void>;
 }) {
   const { t } = useTranslation();
@@ -95,6 +128,97 @@ function SecurityFindingRow({
       </View>
       <Text style={settingsStyles.rowHint}>{t(`${key}.body`, { id: finding.id })}</Text>
       <FindingFix serverId={serverId} finding={finding} onFixed={onFixed} />
+      {canAcknowledge && finding.severity === "warning" ? (
+        <AcknowledgeToggle serverId={serverId} findingId={finding.id} acknowledged={false} />
+      ) : null}
+    </View>
+  );
+}
+
+/** A warning the owner marked as intended: muted, no dot, and a way to be warned again. */
+function AcknowledgedFindingRow({
+  serverId,
+  finding,
+  isFirst,
+  canAcknowledge,
+}: {
+  serverId: string;
+  finding: SecurityFindingView;
+  isFirst: boolean;
+  canAcknowledge: boolean;
+}) {
+  const { t } = useTranslation();
+  const key = findingCopyKey(finding);
+  return (
+    <View
+      style={[styles.findingRow, !isFirst && settingsStyles.rowBorder]}
+      testID={`host-security-acknowledged-${finding.id}`}
+    >
+      <View style={styles.findingHeader}>
+        <Text style={[settingsStyles.rowHint, styles.findingTitle]}>{t(`${key}.title`)}</Text>
+        <StatusBadge label={t("settings.host.security.acknowledged")} />
+        {canAcknowledge ? (
+          <View style={styles.inlineAction}>
+            <AcknowledgeToggle serverId={serverId} findingId={finding.id} acknowledged inline />
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+function AcknowledgeToggle({
+  serverId,
+  findingId,
+  acknowledged,
+  inline = false,
+}: {
+  serverId: string;
+  findingId: string;
+  /** Whether the finding is currently marked as intended. */
+  acknowledged: boolean;
+  /** Sits in a row header rather than an actions row of its own. */
+  inline?: boolean;
+}) {
+  const { t } = useTranslation();
+  const { setAcknowledged } = useAcknowledgeSecurityFinding(serverId);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const toggle = useCallback(async () => {
+    setIsPending(true);
+    setError(null);
+    try {
+      const sent = await setAcknowledged(findingId, !acknowledged);
+      if (!sent) setError(t("common.errors.daemonClientUnavailable"));
+    } catch (cause) {
+      setError(t("settings.host.security.actionFailed", { message: describeError(cause) }));
+    } finally {
+      setIsPending(false);
+    }
+  }, [acknowledged, findingId, setAcknowledged, t]);
+  const handlePress = useCallback(() => void toggle(), [toggle]);
+
+  return (
+    <View>
+      <View style={inline ? styles.inlineActions : styles.actions}>
+        <Button
+          size="sm"
+          variant="ghost"
+          onPress={handlePress}
+          disabled={isPending}
+          testID={`host-security-${acknowledged ? "unacknowledge" : "acknowledge"}-${findingId}`}
+        >
+          {isPending
+            ? t("settings.host.security.pending")
+            : t(
+                acknowledged
+                  ? "settings.host.security.actions.unacknowledge"
+                  : "settings.host.security.actions.acknowledge",
+              )}
+        </Button>
+      </View>
+      {error ? <Text style={settingsStyles.rowError}>{error}</Text> : null}
     </View>
   );
 }
@@ -389,6 +513,13 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "flex-end",
     gap: theme.spacing[2],
     marginTop: theme.spacing[2],
+  },
+  inlineAction: {
+    marginLeft: "auto",
+  },
+  inlineActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
   },
   passwordForm: {
     gap: theme.spacing[3],

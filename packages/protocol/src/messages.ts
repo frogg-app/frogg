@@ -1601,6 +1601,20 @@ export const DaemonGetSecurityPostureRequestSchema = z.object({
 });
 export type DaemonGetSecurityPostureRequest = z.infer<typeof DaemonGetSecurityPostureRequestSchema>;
 
+/**
+ * Owner-only: mark a warning finding as intended (or undo that). The daemon
+ * refuses critical findings; those stay until they are fixed.
+ */
+export const DaemonSetSecurityFindingAcknowledgedRequestSchema = z.object({
+  type: z.literal("daemon.set_security_finding_acknowledged.request"),
+  requestId: z.string(),
+  findingId: z.string().min(1).max(128),
+  acknowledged: z.boolean(),
+});
+export type DaemonSetSecurityFindingAcknowledgedRequest = z.infer<
+  typeof DaemonSetSecurityFindingAcknowledgedRequestSchema
+>;
+
 export const DaemonGetPairingOfferRequestSchema = z.object({
   type: z.literal("daemon.get_pairing_offer.request"),
   requestId: z.string(),
@@ -3443,6 +3457,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   DaemonGetStatusRequestSchema,
   DaemonGetPairingOfferRequestSchema,
   DaemonGetSecurityPostureRequestSchema,
+  DaemonSetSecurityFindingAcknowledgedRequestSchema,
   AuthDeviceSetRoleRequestSchema,
   DaemonConfigReloadRequestSchema,
   DaemonUpdateCheckRequestSchema,
@@ -3937,7 +3952,11 @@ export type SecurityFinding = z.infer<typeof SecurityFindingSchema>;
 
 /** Effective daemon access settings compared against the brand manifest defaults. */
 export const SecurityPostureSchema = z.object({
+  /** Findings to surface; these drive the notification dot. */
   findings: z.array(SecurityFindingSchema),
+  // COMPAT(securityAcknowledge): added in v1.5.36. Warnings the owner marked as
+  // intended. Kept out of `findings` so older apps drop the dot for them too.
+  acknowledged: z.array(SecurityFindingSchema).optional(),
 });
 export type SecurityPosture = z.infer<typeof SecurityPostureSchema>;
 
@@ -4149,6 +4168,9 @@ export const ServerInfoStatusPayloadSchema = z
         // daemon.get_security_posture is available and owners receive
         // server_info.security.
         securityPosture: z.boolean().optional(),
+        // COMPAT(securityAcknowledge): added in v1.5.36, remove gate after 2027-09-24.
+        // daemon.set_security_finding_acknowledged is available.
+        securityAcknowledge: z.boolean().optional(),
       })
       .optional(),
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
@@ -5328,6 +5350,15 @@ export const DaemonGetPairingOfferResponseSchema = z.object({
 
 export const DaemonGetSecurityPostureResponseSchema = z.object({
   type: z.literal("daemon.get_security_posture.response"),
+  payload: z.object({
+    requestId: z.string(),
+    posture: SecurityPostureSchema.nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonSetSecurityFindingAcknowledgedResponseSchema = z.object({
+  type: z.literal("daemon.set_security_finding_acknowledged.response"),
   payload: z.object({
     requestId: z.string(),
     posture: SecurityPostureSchema.nullable(),
@@ -7284,6 +7315,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   DaemonGetStatusResponseSchema,
   DaemonGetPairingOfferResponseSchema,
   DaemonGetSecurityPostureResponseSchema,
+  DaemonSetSecurityFindingAcknowledgedResponseSchema,
   AuthDeviceSetRoleResponseSchema,
   DaemonConfigReloadResponseSchema,
   HubManagementDaemonConnectResponseSchema,
@@ -7580,6 +7612,9 @@ export type DaemonGetStatusResponse = z.infer<typeof DaemonGetStatusResponseSche
 export type DaemonGetPairingOfferResponse = z.infer<typeof DaemonGetPairingOfferResponseSchema>;
 export type DaemonGetSecurityPostureResponse = z.infer<
   typeof DaemonGetSecurityPostureResponseSchema
+>;
+export type DaemonSetSecurityFindingAcknowledgedResponse = z.infer<
+  typeof DaemonSetSecurityFindingAcknowledgedResponseSchema
 >;
 export type AuthDeviceSetRoleRequest = z.infer<typeof AuthDeviceSetRoleRequestSchema>;
 export type AuthDeviceSetRoleResponse = z.infer<typeof AuthDeviceSetRoleResponseSchema>;

@@ -2791,6 +2791,7 @@ export const fr: TranslationResources = {
       sendFailedTitle: "Impossible d’envoyer la notification de test",
     },
     hostSections: {
+      security: "Sécurité",
       devices: "Appareils",
       projects: "Projets",
       connections: "Relations",
@@ -3337,7 +3338,10 @@ export const fr: TranslationResources = {
       security: {
         title: "Sécurité",
         dotLabel: "Problèmes de sécurité sur cet hôte",
+        findingsTitle: "Constats",
+        noFindings: "Aucun problème de sécurité détecté sur cet hôte.",
         severity: { critical: "Critique", warning: "Avertissement" },
+        acknowledged: "Voulu",
         findings: {
           unclaimed: {
             title: "Aucun appareil ne possède cet hôte",
@@ -3370,6 +3374,8 @@ export const fr: TranslationResources = {
           disableTrustLan: "Ne plus approuver le réseau local",
           enableClaimMode: "Activer le mode de revendication",
           openDevices: "Ouvrir les appareils",
+          acknowledge: "C'est voulu",
+          unacknowledge: "M'avertir à nouveau",
         },
         bindInstructions:
           "Définissez l'adresse d'écoute sur 127.0.0.1 dans le config.json du daemon, puis redémarrez-le. Depuis d'autres appareils, passez par le relais ou un tunnel SSH.",

@@ -2639,6 +2639,8 @@ export class Session {
         return this.daemonSession.handleGetPairingOfferRequest(msg);
       case "daemon.get_security_posture.request":
         return this.daemonSession.handleGetSecurityPostureRequest(msg);
+      case "daemon.set_security_finding_acknowledged.request":
+        return this.daemonSession.handleSetSecurityFindingAcknowledgedRequest(msg);
       default:
         return undefined;
     }

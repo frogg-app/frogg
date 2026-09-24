@@ -2715,6 +2715,7 @@ export const ar: TranslationResources = {
       sendFailedTitle: "تعذر إرسال إشعار الاختبار",
     },
     hostSections: {
+      security: "الأمان",
       devices: "الأجهزة",
       projects: "المشاريع",
       connections: "اتصالات",
@@ -3251,7 +3252,10 @@ export const ar: TranslationResources = {
       security: {
         title: "الأمان",
         dotLabel: "مشكلات أمان على هذا المضيف",
+        findingsTitle: "النتائج",
+        noFindings: "لم يتم العثور على مشكلات أمنية في هذا المضيف.",
         severity: { critical: "حرج", warning: "تحذير" },
+        acknowledged: "مقصود",
         findings: {
           unclaimed: {
             title: "لا يوجد جهاز يملك هذا المضيف",
@@ -3284,6 +3288,8 @@ export const ar: TranslationResources = {
           disableTrustLan: "إيقاف الثقة بالشبكة المحلية",
           enableClaimMode: "تشغيل وضع المطالبة",
           openDevices: "فتح الأجهزة",
+          acknowledge: "هذا مقصود",
+          unacknowledge: "نبّهني مجددًا",
         },
         bindInstructions:
           "عيّن عنوان الاستماع إلى 127.0.0.1 في ملف config.json الخاص بالخادم، ثم أعد تشغيله. اتصل من الأجهزة الأخرى عبر المرحّل أو نفق SSH.",

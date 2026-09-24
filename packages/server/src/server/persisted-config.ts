@@ -388,6 +388,13 @@ export const PersistedConfigSchema = z
           .strict()
           .optional(),
         auth: DaemonAuthSchema.optional(),
+        security: z
+          .object({
+            // Warning finding ids the owner marked as intended, so they raise no dot.
+            acknowledgedFindings: z.array(z.string().min(1)).optional(),
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .transform(({ allowedHosts, ...daemon }) => {

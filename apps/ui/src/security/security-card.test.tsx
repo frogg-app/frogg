@@ -130,6 +130,14 @@ beforeEach(() => {
     getDaemonSecurityPosture: vi.fn(async () => ({ requestId: "r", posture: null, error: null })),
     setDaemonPassword: vi.fn(async () => ({ requestId: "r", settings: null, error: null })),
     updateAuthSettings: vi.fn(async () => ({ requestId: "r", settings: null, error: null })),
+    setSecurityFindingAcknowledged: vi.fn(async () => ({
+      requestId: "r",
+      posture: {
+        findings: [],
+        acknowledged: [{ id: "bind_diverges", severity: "warning", fixAction: "bind_loopback" }],
+      },
+      error: null,
+    })),
   };
 });
 afterEach(cleanup);
@@ -194,7 +202,8 @@ describe("HostSecurityCard", () => {
       fireEvent.click(screen.getByTestId("host-security-password-save"));
     });
     expect(runtime.client?.setDaemonPassword).toHaveBeenCalledWith("correct horse");
-    await waitFor(() => expect(screen.queryByTestId("host-security-card")).toBeNull());
+    await waitFor(() => expect(screen.getByTestId("host-security-clear")).toBeTruthy());
+    expect(screen.queryByTestId("host-security-finding-exposed_without_password")).toBeNull();
   });
 
   it("keeps the typed password and shows the daemon's error when setting fails", async () => {
@@ -225,5 +234,43 @@ describe("HostSecurityCard", () => {
       fireEvent.click(screen.getByTestId("host-security-fix-trust_lan_diverges"));
     });
     expect(runtime.client?.updateAuthSettings).toHaveBeenCalledWith({ trustLan: false });
+  });
+
+  it("says so when the daemon reports nothing", () => {
+    seed([]);
+    renderCard();
+    expect(screen.getByTestId("host-security-clear").textContent).toBe(t.noFindings);
+  });
+
+  it("marks a warning as intended and shows it muted", async () => {
+    seed([{ id: "bind_diverges", severity: "warning", fixAction: "bind_loopback" }], {
+      securityPosture: true,
+      securityAcknowledge: true,
+    });
+    renderCard();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("host-security-acknowledge-bind_diverges"));
+    });
+    expect(runtime.client?.setSecurityFindingAcknowledged).toHaveBeenCalledWith({
+      findingId: "bind_diverges",
+      acknowledged: true,
+    });
+    expect(screen.getByTestId("host-security-acknowledged-bind_diverges")).toBeTruthy();
+    expect(screen.queryByTestId("host-security-finding-bind_diverges")).toBeNull();
+  });
+
+  it("offers no way to mark a critical finding as intended", () => {
+    seed([{ id: "exposed_without_password", severity: "critical", fixAction: "set_password" }], {
+      securityPosture: true,
+      securityAcknowledge: true,
+    });
+    renderCard();
+    expect(screen.queryByTestId("host-security-acknowledge-exposed_without_password")).toBeNull();
+  });
+
+  it("offers no acknowledge button on a daemon that cannot store it", () => {
+    seed([{ id: "bind_diverges", severity: "warning", fixAction: "bind_loopback" }]);
+    renderCard();
+    expect(screen.queryByTestId("host-security-acknowledge-bind_diverges")).toBeNull();
   });
 });

@@ -15,7 +15,7 @@ import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visi
 import { useHosts } from "@/runtime/host-runtime";
 import type { SecuritySeverity } from "@/security/posture";
 import { SecurityDot } from "@/security/security-dot";
-import { useSecuritySeverity } from "@/security/use-security-posture";
+import { useSecurityPosture } from "@/security/use-security-posture";
 
 type SidebarIcon = ComponentType<{ size: number; color: string }>;
 
@@ -162,7 +162,7 @@ export function SettingsSidebar({
     scope.kind === "host" ? scope.serverId : null,
   );
   const hosts = useHosts();
-  const securitySeverity = useSecuritySeverity(scope.kind === "host" ? scope.serverId : "");
+  const securityPosture = useSecurityPosture(scope.kind === "host" ? scope.serverId : "");
   const hostHasRemoteSsh =
     scope.kind === "host" &&
     hosts.some(
@@ -180,6 +180,8 @@ export function SettingsSidebar({
       <View style={sidebarStyles.list}>
         {hostSectionItems
           .filter((item) => item.id !== "deploy" || hostHasRemoteSsh)
+          // Only an owner on a daemon that reports its posture has anything to see here.
+          .filter((item) => item.id !== "security" || securityPosture.available)
           .map((item) => (
             <SidebarHostSectionButton
               key={item.id}
@@ -188,8 +190,7 @@ export function SettingsSidebar({
               icon={item.icon}
               isSelected={selectedHostSection === item.id}
               onSelect={onSelectHostSection}
-              // The Security card lives on the overview, so that is where the dot points.
-              securitySeverity={item.id === "host" ? securitySeverity : null}
+              securitySeverity={item.id === "security" ? securityPosture.severity : null}
             />
           ))}
       </View>

@@ -2776,6 +2776,7 @@ export const en = {
       sendFailedTitle: "Unable to send test notification",
     },
     hostSections: {
+      security: "Security",
       devices: "Devices",
       projects: "Projects",
       connections: "Connections",
@@ -3313,7 +3314,10 @@ export const en = {
       security: {
         title: "Security",
         dotLabel: "Security issues on this host",
+        findingsTitle: "Findings",
+        noFindings: "No security issues found on this host.",
         severity: { critical: "Critical", warning: "Warning" },
+        acknowledged: "Intended",
         findings: {
           unclaimed: {
             title: "No device owns this host",
@@ -3346,6 +3350,8 @@ export const en = {
           disableTrustLan: "Stop trusting the local network",
           enableClaimMode: "Turn on claim mode",
           openDevices: "Open devices",
+          acknowledge: "This is intended",
+          unacknowledge: "Warn me again",
         },
         bindInstructions:
           "Set the listen address to 127.0.0.1 in the daemon's config.json, then restart the daemon. Reach it from other devices through the relay or an SSH tunnel instead.",

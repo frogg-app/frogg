@@ -140,6 +140,7 @@ import type {
   DaemonGetStatusResponse,
   DaemonGetPairingOfferResponse,
   DaemonGetSecurityPostureResponse,
+  DaemonSetSecurityFindingAcknowledgedResponse,
   DaemonConfigReloadResponse,
   DaemonUpdateChannel,
   DaemonUpdateCheckResponse,
@@ -573,6 +574,7 @@ type ProviderAccountSetPreferencesPayload = ProviderAccountSetPreferencesRespons
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DaemonSecurityPosturePayload = DaemonGetSecurityPostureResponse["payload"];
+type DaemonSecurityAcknowledgePayload = DaemonSetSecurityFindingAcknowledgedResponse["payload"];
 type DiagnosticsPayload = DiagnosticsResponse["payload"];
 type ReadProjectConfigPayload = Extract<
   SessionOutboundMessage,
@@ -5286,6 +5288,19 @@ export class DaemonClient {
       message: { type: "daemon.get_security_posture.request" },
       timeout: options?.timeout,
     });
+  }
+
+  /** Mark a warning finding as intended, or undo that (features.securityAcknowledge). */
+  async setSecurityFindingAcknowledged(
+    input: { findingId: string; acknowledged: boolean },
+    requestId?: string,
+  ): Promise<DaemonSecurityAcknowledgePayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.set_security_finding_acknowledged.response">(
+      {
+        requestId,
+        message: { type: "daemon.set_security_finding_acknowledged.request", ...input },
+      },
+    );
   }
 
   // --- device access (features.deviceAccess) --------------------------------

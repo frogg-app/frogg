@@ -221,6 +221,8 @@ pub enum SessionMessage {
     DaemonGetPairingOfferRequest(DaemonGetPairingOfferRequest),
     #[serde(rename = "daemon.get_security_posture.request")]
     DaemonGetSecurityPostureRequest(DaemonGetSecurityPostureRequest),
+    #[serde(rename = "daemon.set_security_finding_acknowledged.request")]
+    DaemonSetSecurityFindingAcknowledgedRequest(DaemonSetSecurityFindingAcknowledgedRequest),
     #[serde(rename = "auth.device.set_role.request")]
     AuthDeviceSetRoleRequest(AuthDeviceSetRoleRequest),
     #[serde(rename = "daemon.config.reload.request")]
@@ -1539,6 +1541,15 @@ pub struct DaemonGetPairingOfferRequest {
 pub struct DaemonGetSecurityPostureRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSetSecurityFindingAcknowledgedRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "findingId")]
+    pub finding_id: String,
+    pub acknowledged: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

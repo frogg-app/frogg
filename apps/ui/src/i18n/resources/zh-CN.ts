@@ -2674,6 +2674,7 @@ export const zhCN: TranslationResources = {
       sendFailedTitle: "无法发送测试通知",
     },
     hostSections: {
+      security: "安全",
       devices: "设备",
       projects: "项目",
       connections: "连接",
@@ -3203,7 +3204,10 @@ export const zhCN: TranslationResources = {
       security: {
         title: "安全",
         dotLabel: "此主机存在安全问题",
+        findingsTitle: "检查结果",
+        noFindings: "此主机未发现安全问题。",
         severity: { critical: "严重", warning: "警告" },
+        acknowledged: "有意为之",
         findings: {
           unclaimed: {
             title: "此主机没有所有者设备",
@@ -3236,6 +3240,8 @@ export const zhCN: TranslationResources = {
           disableTrustLan: "不再信任本地网络",
           enableClaimMode: "开启认领模式",
           openDevices: "打开设备",
+          acknowledge: "这是有意为之",
+          unacknowledge: "重新提醒我",
         },
         bindInstructions:
           "在守护进程的 config.json 中将监听地址设为 127.0.0.1，然后重启守护进程。其他设备请通过中继或 SSH 隧道访问。",

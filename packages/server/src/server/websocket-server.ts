@@ -1974,8 +1974,15 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
-  private securityPostureFeature(): { securityPosture?: true } {
-    return this.daemonRuntimeConfig?.getSecurityPosture ? { securityPosture: true } : {};
+  private securityPostureFeature(): { securityPosture?: true; securityAcknowledge?: true } {
+    const runtime = this.daemonRuntimeConfig;
+    return {
+      ...(runtime?.getSecurityPosture ? { securityPosture: true } : {}),
+      // COMPAT(securityAcknowledge): added in v1.5.36, remove gate after 2027-09-24.
+      ...(runtime?.getSecurityPosture && runtime.setSecurityFindingAcknowledged
+        ? { securityAcknowledge: true }
+        : {}),
+    };
   }
 
   private serverInfoSecurity(session: Session): Pick<ServerInfoStatusPayload, "security"> {

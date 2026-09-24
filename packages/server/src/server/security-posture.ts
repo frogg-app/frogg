@@ -26,6 +26,8 @@ export interface SecurityPostureInput {
   claimed: boolean;
   listenTarget: ListenTarget | null;
   brand: SecurityPostureBrandDefaults;
+  /** Finding ids the owner marked as intended (`daemon.security.acknowledgedFindings`). */
+  acknowledged?: ReadonlySet<string>;
 }
 
 /** A TCP listener on anything other than loopback is reachable from the network. */
@@ -70,5 +72,45 @@ export function computeSecurityPosture(input: SecurityPostureInput): SecurityPos
   if (!input.claimMode && input.brand.claimMode) {
     findings.push(finding("claim_mode_diverges", "warning", "enable_claim_mode"));
   }
-  return { findings };
+  return splitAcknowledged(findings, input.acknowledged);
+}
+
+/** Only warnings can be marked intended; a critical finding stays until it is fixed. */
+export function isAcknowledgeable(item: SecurityFinding): boolean {
+  return item.severity === "warning";
+}
+
+/**
+ * Apply an owner's "this is intended" (or its undo) to the acknowledged set and
+ * return the ids to persist. Refuses to acknowledge a finding that is critical now.
+ */
+export function updateAcknowledgedFindings(input: {
+  acknowledged: Set<string>;
+  current: SecurityPosture;
+  findingId: string;
+  acknowledge: boolean;
+}): string[] {
+  if (input.acknowledge) {
+    const current = input.current.findings.find((item) => item.id === input.findingId);
+    if (current && !isAcknowledgeable(current)) {
+      throw new Error("A critical finding cannot be marked as intended; fix it instead");
+    }
+    input.acknowledged.add(input.findingId);
+  } else {
+    input.acknowledged.delete(input.findingId);
+  }
+  return [...input.acknowledged].sort();
+}
+
+function splitAcknowledged(
+  findings: SecurityFinding[],
+  acknowledged: ReadonlySet<string> | undefined,
+): SecurityPosture {
+  if (!acknowledged || acknowledged.size === 0) return { findings };
+  const active: SecurityFinding[] = [];
+  const intended: SecurityFinding[] = [];
+  for (const item of findings) {
+    (isAcknowledgeable(item) && acknowledged.has(item.id) ? intended : active).push(item);
+  }
+  return intended.length > 0 ? { findings: active, acknowledged: intended } : { findings };
 }

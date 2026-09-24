@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readSecurityPosture } from "./posture";
+import { EMPTY_SECURITY_POSTURE, readSecurityPosture } from "./posture";
 
 const finding = (id: string, severity: string, fixAction: string) => ({ id, severity, fixAction });
 
@@ -62,6 +62,30 @@ describe("readSecurityPosture", () => {
   it("is empty when the daemon reports no findings", () => {
     expect(
       readSecurityPosture({ features: { securityPosture: true }, security: { findings: [] } }),
-    ).toEqual({ findings: [], severity: null });
+    ).toEqual({ ...EMPTY_SECURITY_POSTURE, available: true });
+  });
+
+  it("keeps acknowledged warnings out of the severity that drives the dot", () => {
+    const view = readSecurityPosture({
+      features: { securityPosture: true, securityAcknowledge: true },
+      security: {
+        findings: [],
+        acknowledged: [{ id: "bind_diverges", severity: "warning", fixAction: "bind_loopback" }],
+      },
+    });
+    expect(view.severity).toBeNull();
+    expect(view.acknowledged.map((item) => item.id)).toEqual(["bind_diverges"]);
+    expect(view.canAcknowledge).toBe(true);
+  });
+
+  it("only offers acknowledging when the daemon advertises it", () => {
+    const view = readSecurityPosture({
+      features: { securityPosture: true },
+      security: {
+        findings: [{ id: "bind_diverges", severity: "warning", fixAction: "bind_loopback" }],
+      },
+    });
+    expect(view.severity).toBe("warning");
+    expect(view.canAcknowledge).toBe(false);
   });
 });

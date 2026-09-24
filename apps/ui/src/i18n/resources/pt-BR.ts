@@ -2769,6 +2769,7 @@ export const ptBR: TranslationResources = {
       sendFailedTitle: "Não foi possível enviar a notificação de teste",
     },
     hostSections: {
+      security: "Segurança",
       devices: "Dispositivos",
       projects: "Projetos",
       connections: "Conexões",
@@ -3312,7 +3313,10 @@ export const ptBR: TranslationResources = {
       security: {
         title: "Segurança",
         dotLabel: "Problemas de segurança neste host",
+        findingsTitle: "Descobertas",
+        noFindings: "Nenhum problema de segurança encontrado neste host.",
         severity: { critical: "Crítico", warning: "Aviso" },
+        acknowledged: "Intencional",
         findings: {
           unclaimed: {
             title: "Nenhum dispositivo é dono deste host",
@@ -3345,6 +3349,8 @@ export const ptBR: TranslationResources = {
           disableTrustLan: "Deixar de confiar na rede local",
           enableClaimMode: "Ativar modo de reivindicação",
           openDevices: "Abrir dispositivos",
+          acknowledge: "Isso é intencional",
+          unacknowledge: "Avisar novamente",
         },
         bindInstructions:
           "Defina o endereço de escuta como 127.0.0.1 no config.json do daemon e reinicie-o. Acesse de outros dispositivos pelo relay ou por um túnel SSH.",

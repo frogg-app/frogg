@@ -2735,6 +2735,7 @@ export const ko: TranslationResources = {
       sendFailedTitle: "테스트 알림을 보낼 수 없음",
     },
     hostSections: {
+      security: "보안",
       devices: "기기",
       projects: "프로젝트",
       connections: "연결",
@@ -3272,7 +3273,10 @@ export const ko: TranslationResources = {
       security: {
         title: "보안",
         dotLabel: "이 호스트에 보안 문제가 있습니다",
+        findingsTitle: "발견 사항",
+        noFindings: "이 호스트에서 보안 문제가 발견되지 않았습니다.",
         severity: { critical: "심각", warning: "경고" },
+        acknowledged: "의도됨",
         findings: {
           unclaimed: {
             title: "이 호스트를 소유한 기기가 없습니다",
@@ -3305,6 +3309,8 @@ export const ko: TranslationResources = {
           disableTrustLan: "로컬 네트워크 신뢰 중지",
           enableClaimMode: "등록 모드 켜기",
           openDevices: "기기 열기",
+          acknowledge: "의도한 설정입니다",
+          unacknowledge: "다시 경고",
         },
         bindInstructions:
           "데몬의 config.json에서 수신 주소를 127.0.0.1로 설정한 다음 데몬을 다시 시작하세요. 다른 기기에서는 릴레이나 SSH 터널로 접속하세요.",
