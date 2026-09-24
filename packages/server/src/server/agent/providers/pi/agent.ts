@@ -722,7 +722,7 @@ function createPiFroggExtensionFile(systemPrompt?: string): PiTempFile {
 	  });
 
 	  pi.registerCommand("${FROGG_PI_CAPTURE_EXTENSION_COMMAND}", {
-	    description: "Internal Frogg entry capture bridge",
+	    description: "Internal entry capture bridge",
 	    handler: async (args, ctx) => {
 	      const payload = decodePayload(args.trim());
 	      emitEntryCapture(ctx, "command", payload.requestId);
@@ -730,7 +730,7 @@ function createPiFroggExtensionFile(systemPrompt?: string): PiTempFile {
 	  });
 
 	  pi.registerCommand("${FROGG_PI_TREE_EXTENSION_COMMAND}", {
-	    description: "Internal Frogg tree navigation bridge",
+	    description: "Internal tree navigation bridge",
 	    handler: async (args, ctx) => {
 	      const payload = decodePayload(args.trim());
 	      try {

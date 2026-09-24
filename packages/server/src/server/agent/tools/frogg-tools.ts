@@ -598,7 +598,7 @@ export function createFroggToolCatalog(options: FroggToolHostDependencies): Frog
     ): Promise<FroggToolResult> {
       const tool = tools.get(name);
       if (!tool) {
-        throw new Error(`Frogg tool not found: ${name}`);
+        throw new Error(`Tool not found: ${name}`);
       }
       return tool.handler(await parseToolInput(tool, input), context);
     },

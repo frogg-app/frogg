@@ -2954,8 +2954,8 @@ export const fr: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} est basé sur <upstream>Frogg</upstream>.",
-      attributionUpstream: "Frogg est basé sur <upstream>Paseo</upstream>.",
+      attribution: "{{brandFullName}} est basé sur <upstream>frogg</upstream>.",
+      attributionUpstream: "frogg est basé sur <upstream>Paseo</upstream>.",
       title: "À propos",
       appVersion: "Version de l'application",
       thisDevice: "Cet appareil",
@@ -3467,7 +3467,7 @@ export const fr: TranslationResources = {
       agentDefinitions: {
         title: "Définitions d'agents",
         description:
-          "Agents chargés par vos fournisseurs depuis cet hôte. Frogg se contente de les lister ; modifiez les fichiers pour les changer.",
+          "Agents chargés par vos fournisseurs depuis cet hôte. {{brandName}} se contente de les lister ; modifiez les fichiers pour les changer.",
         projectTitle: "Définitions d'agents du projet",
         projectDescription: "Agents chargés par vos fournisseurs depuis le dossier de ce projet.",
         empty: "Aucune définition d'agent trouvée",
@@ -3511,7 +3511,7 @@ export const fr: TranslationResources = {
         remove: "Supprimer",
         removeConfirmTitle: "Supprimer {{name}} ?",
         removeConfirmMessage:
-          "Frogg oublie ce compte. Son répertoire de configuration {{path}} et les identifiants qu'il contient restent sur le disque.",
+          "{{brandName}} oublie ce compte. Son répertoire de configuration {{path}} et les identifiants qu'il contient restent sur le disque.",
       },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",
@@ -3807,7 +3807,7 @@ export const fr: TranslationResources = {
             "up-to-date": "À jour",
             "update-available": "Mise à jour disponible",
             "not-installed": "Non installé",
-            unmanaged: "Géré en dehors de Frogg",
+            unmanaged: "Géré en dehors de {{brandName}}",
             unknown: "Version inconnue",
           },
         },

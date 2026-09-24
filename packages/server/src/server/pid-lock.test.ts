@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { mkdtemp, open, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -83,7 +84,7 @@ describe("pid-lock ownership", () => {
       await expect(isLocked(froggHome)).resolves.toMatchObject({ locked: true });
       await expect(
         acquirePidLock(froggHome, null, { ownerPid: replacementOwnerPid }),
-      ).rejects.toThrow("Another Frogg daemon is already running");
+      ).rejects.toThrow(`Another ${brand.name} daemon is already running`);
 
       const lock = await getPidLockInfo(froggHome);
       expect(lock?.pid).toBe(process.pid);
@@ -147,7 +148,7 @@ describe("pid-lock ownership", () => {
 
       await expect(
         acquirePidLock(froggHome, null, { ownerPid: process.pid + 10_000 }),
-      ).rejects.toThrow("Another Frogg daemon is already running");
+      ).rejects.toThrow(`Another ${brand.name} daemon is already running`);
 
       const lock = await getPidLockInfo(froggHome);
       expect(lock?.pid).toBe(process.pid);
@@ -245,7 +246,7 @@ describe("pid-lock ownership", () => {
 
       await expect(
         acquirePidLock(froggHome, null, { ownerPid: process.pid + 10_000 }),
-      ).rejects.toThrow("Another Frogg daemon is already running");
+      ).rejects.toThrow(`Another ${brand.name} daemon is already running`);
 
       const lock = await getPidLockInfo(froggHome);
       expect(lock?.pid).toBe(process.pid);

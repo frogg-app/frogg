@@ -316,7 +316,7 @@ export function requireFroggWorktreeBaseRefName(worktreeRoot: string): string {
   const metadataPath = getFroggWorktreeMetadataPath(worktreeRoot);
   const metadata = readFroggWorktreeMetadata(worktreeRoot);
   if (!metadata) {
-    throw new Error(`Missing Frogg worktree base metadata: ${metadataPath}`);
+    throw new Error(`Missing worktree base metadata: ${metadataPath}`);
   }
   return metadata.baseRefName;
 }

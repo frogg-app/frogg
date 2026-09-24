@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { type ChildProcess, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
@@ -1196,7 +1197,7 @@ export class ACPAgentClient implements AgentClient {
               this.clientCapabilityMeta,
               this.clientCapabilities,
             ),
-            clientInfo: { name: "Frogg", version: "dev" },
+            clientInfo: { name: brand.name, version: "dev" },
           }),
           transport.spawnError,
           ...(initializeTimeoutPromise ? [initializeTimeoutPromise] : []),
@@ -2528,7 +2529,7 @@ export class ACPAgentSession implements AgentSession, ACPClient {
           this.clientCapabilityMeta,
           this.clientCapabilities,
         ),
-        clientInfo: { name: "Frogg", version: "dev" },
+        clientInfo: { name: brand.name, version: "dev" },
       }),
     );
 

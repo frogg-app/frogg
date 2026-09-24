@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -111,7 +112,7 @@ describe("prompt attachments", () => {
       }),
     ).toBe(
       [
-        "Frogg review attachment (base)",
+        `${brand.name} review attachment (base)`,
         "CWD: /tmp/repo",
         "Base: main",
         "",

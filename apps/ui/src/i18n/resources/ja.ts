@@ -2913,8 +2913,8 @@ export const ja: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} は <upstream>Frogg</upstream> をベースにしています。",
-      attributionUpstream: "Frogg は <upstream>Paseo</upstream> をベースにしています。",
+      attribution: "{{brandFullName}} は <upstream>frogg</upstream> をベースにしています。",
+      attributionUpstream: "frogg は <upstream>Paseo</upstream> をベースにしています。",
       title: "アプリ情報",
       appVersion: "アプリバージョン",
       thisDevice: "このデバイス",
@@ -3424,7 +3424,7 @@ export const ja: TranslationResources = {
       agentDefinitions: {
         title: "エージェント定義",
         description:
-          "プロバイダーがこのホストから読み込むエージェントです。Frogg は一覧表示のみ行います。変更するにはファイルを編集してください。",
+          "プロバイダーがこのホストから読み込むエージェントです。{{brandName}} は一覧表示のみ行います。変更するにはファイルを編集してください。",
         projectTitle: "プロジェクトのエージェント定義",
         projectDescription:
           "プロバイダーがこのプロジェクトのディレクトリから読み込むエージェントです。",
@@ -3468,7 +3468,7 @@ export const ja: TranslationResources = {
         remove: "削除",
         removeConfirmTitle: "{{name}} を削除しますか？",
         removeConfirmMessage:
-          "Frogg はこのアカウントを忘れます。設定ディレクトリ {{path}} とその中の資格情報はディスクに残ります。",
+          "{{brandName}} はこのアカウントを忘れます。設定ディレクトリ {{path}} とその中の資格情報はディスクに残ります。",
       },
       workspaces: {
         unavailable: "セッションを管理するにはこのホストに接続してください",
@@ -3763,7 +3763,7 @@ export const ja: TranslationResources = {
             "up-to-date": "最新です",
             "update-available": "更新があります",
             "not-installed": "未インストール",
-            unmanaged: "Frogg の管理外",
+            unmanaged: "{{brandName}} の管理外",
             unknown: "バージョン不明",
           },
         },

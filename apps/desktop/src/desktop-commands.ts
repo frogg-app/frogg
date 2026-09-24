@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { listSshConfigHosts } from "./integrations/ssh-config.js";
 import { createSshDeployCommandHandlers } from "./deploy/commands.js";
 import { localAddresses, reverseLookup, probeIdentity } from "./network-service.js";
@@ -38,7 +39,7 @@ import type { AppReleaseChannel } from "./features/auto-updater.js";
 
 function unsupportedLocalServerCommand(): never {
   throw new Error(
-    "Frogg is a client app. Install and manage the Frogg server and CLI separately, then add a server connection in the app.",
+    `${brand.name} is a client app. Install and manage the ${brand.name} server and CLI separately, then add a server connection in the app.`,
   );
 }
 

@@ -2874,8 +2874,8 @@ export const ar: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} مبني على <upstream>Frogg</upstream>.",
-      attributionUpstream: "Frogg مبني على <upstream>Paseo</upstream>.",
+      attribution: "{{brandFullName}} مبني على <upstream>frogg</upstream>.",
+      attributionUpstream: "frogg مبني على <upstream>Paseo</upstream>.",
       title: "عن",
       appVersion: "نسخة التطبيق",
       thisDevice: "هذا الجهاز",
@@ -3379,7 +3379,7 @@ export const ar: TranslationResources = {
       agentDefinitions: {
         title: "تعريفات الوكلاء",
         description:
-          "الوكلاء الذين يحمّلهم مزوّدوك من هذا المضيف. يكتفي Frogg بعرضهم؛ عدّل الملفات لتغييرهم.",
+          "الوكلاء الذين يحمّلهم مزوّدوك من هذا المضيف. يكتفي {{brandName}} بعرضهم؛ عدّل الملفات لتغييرهم.",
         projectTitle: "تعريفات وكلاء المشروع",
         projectDescription: "الوكلاء الذين يحمّلهم مزوّدوك من مجلد هذا المشروع.",
         empty: "لم يتم العثور على تعريفات وكلاء",
@@ -3421,7 +3421,7 @@ export const ar: TranslationResources = {
         remove: "إزالة",
         removeConfirmTitle: "إزالة {{name}}؟",
         removeConfirmMessage:
-          "سينسى Frogg هذا الحساب. يبقى دليل الإعدادات {{path}} وبيانات الاعتماد بداخله على القرص.",
+          "سينسى {{brandName}} هذا الحساب. يبقى دليل الإعدادات {{path}} وبيانات الاعتماد بداخله على القرص.",
       },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",
@@ -3707,7 +3707,7 @@ export const ar: TranslationResources = {
             "up-to-date": "محدَّث",
             "update-available": "يتوفر تحديث",
             "not-installed": "غير مثبَّت",
-            unmanaged: "تتم إدارته خارج Frogg",
+            unmanaged: "تتم إدارته خارج {{brandName}}",
             unknown: "إصدار غير معروف",
           },
         },

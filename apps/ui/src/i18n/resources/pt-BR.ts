@@ -2931,8 +2931,8 @@ export const ptBR: TranslationResources = {
       },
     },
     about: {
-      attribution: "O {{brandFullName}} é baseado no <upstream>Frogg</upstream>.",
-      attributionUpstream: "O Frogg é baseado no <upstream>Paseo</upstream>.",
+      attribution: "O {{brandFullName}} é baseado no <upstream>frogg</upstream>.",
+      attributionUpstream: "O frogg é baseado no <upstream>Paseo</upstream>.",
       title: "Sobre",
       appVersion: "Versão do app",
       thisDevice: "Este dispositivo",
@@ -3441,7 +3441,7 @@ export const ptBR: TranslationResources = {
       agentDefinitions: {
         title: "Definições de agentes",
         description:
-          "Agentes que seus provedores carregam deste host. O Frogg apenas os lista; edite os arquivos para alterá-los.",
+          "Agentes que seus provedores carregam deste host. O {{brandName}} apenas os lista; edite os arquivos para alterá-los.",
         projectTitle: "Definições de agentes do projeto",
         projectDescription: "Agentes que seus provedores carregam do diretório deste projeto.",
         empty: "Nenhuma definição de agente encontrada",
@@ -3485,7 +3485,7 @@ export const ptBR: TranslationResources = {
         remove: "Remover",
         removeConfirmTitle: "Remover {{name}}?",
         removeConfirmMessage:
-          "O Frogg esquece esta conta. O diretório de configuração {{path}} e as credenciais nele permanecem no disco.",
+          "O {{brandName}} esquece esta conta. O diretório de configuração {{path}} e as credenciais nele permanecem no disco.",
       },
       workspaces: {
         unavailable: "Conecte-se a este host para gerenciar sessões",
@@ -3777,7 +3777,7 @@ export const ptBR: TranslationResources = {
             "up-to-date": "Atualizado",
             "update-available": "Atualização disponível",
             "not-installed": "Não instalado",
-            unmanaged: "Gerenciado fora do Frogg",
+            unmanaged: "Gerenciado fora do {{brandName}}",
             unknown: "Versão desconhecida",
           },
         },

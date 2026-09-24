@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import type { Logger } from "pino";
 import type { AgentManager, ManagedAgent } from "./agent-manager.js";
 import type { AgentStorage, StoredAgentRecord } from "./agent-storage.js";
@@ -6,7 +7,7 @@ import { sendPromptToAgent } from "./agent-prompt.js";
 export const DAEMON_RESTART_INTERRUPT_REASON = "daemon_restart";
 export const INTERRUPTED_TURN_MAX_AGE_MS = 60 * 60 * 1000;
 export const INTERRUPTED_TURN_CONTINUATION_PROMPT =
-  "The Frogg daemon restarted while you were mid-turn, so your last tool call was killed. " +
+  `The ${brand.name} daemon restarted while you were mid-turn, so your last tool call was killed. ` +
   "Re-check the current state and continue the task where you left off.";
 
 type LiveAgentShape = Pick<

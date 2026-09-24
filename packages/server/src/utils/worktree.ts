@@ -1089,7 +1089,7 @@ export async function deleteFroggWorktree({
   } else if (cwd) {
     resolvedWorktreesRoot = await getFroggWorktreesRoot(cwd, froggHome, worktreesBaseRoot);
   } else {
-    throw new Error("cwd or worktreesRoot is required to delete a Frogg worktree");
+    throw new Error("cwd or worktreesRoot is required to delete a worktree");
   }
 
   const requestedPath = worktreePath ?? join(resolvedWorktreesRoot, worktreeSlug!);
@@ -1106,7 +1106,7 @@ export async function deleteFroggWorktree({
     resolvedWorktree,
   );
   if (relativeWorktreePath === null || relativeWorktreePath === "") {
-    throw new Error("Refusing to delete non-Frogg worktree");
+    throw new Error("Refusing to delete a worktree this app did not create");
   }
 
   if (await pathExists(resolvedWorktree)) {
@@ -1602,10 +1602,10 @@ async function validateGitBranchName(cwd: string, branchName: string): Promise<v
 function normalizeRequiredBaseBranch(baseBranch: string): string {
   const normalizedBaseBranch = normalizeBaseRefName(baseBranch);
   if (!normalizedBaseBranch) {
-    throw new Error("Base branch is required when creating a Frogg worktree");
+    throw new Error("Base branch is required when creating a worktree");
   }
   if (normalizedBaseBranch === "HEAD") {
-    throw new Error("Base branch cannot be HEAD when creating a Frogg worktree");
+    throw new Error("Base branch cannot be HEAD when creating a worktree");
   }
   return normalizedBaseBranch;
 }

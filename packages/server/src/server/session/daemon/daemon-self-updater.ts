@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { getErrorMessage } from "@frogg/protocol/error-utils";
 import {
   daemonInstallOriginRuntime,
@@ -43,8 +44,7 @@ const defaultRuntime: DaemonSelfUpdateRuntime = {
   installOrigin: daemonInstallOriginRuntime,
 };
 
-const DESKTOP_MANAGED_UPDATE_ERROR =
-  "This daemon is managed by Frogg Desktop. Update Frogg Desktop on the host.";
+const DESKTOP_MANAGED_UPDATE_ERROR = `This daemon is managed by the ${brand.name} desktop app. Update the app on the host.`;
 
 export class DaemonSelfUpdater {
   private inProgress = false;

@@ -130,7 +130,7 @@ describe("describeDaemonInstall", () => {
         desktopManaged: true,
         platform: "linux",
       }).reason,
-    ).toMatch(/Frogg Desktop/);
+    ).toMatch(/desktop app/);
     const dev = describeDaemonInstall({
       env: { FROGG_INSTALL_DIR: installDir },
       desktopManaged: false,

@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -89,7 +90,7 @@ export async function ensurePathInShellRc(): Promise<{
     }
 
     await fs.mkdir(path.dirname(info.rcFile), { recursive: true });
-    await fs.appendFile(info.rcFile, `\n# Added by Frogg\n${info.exportLine}\n`);
+    await fs.appendFile(info.rcFile, `\n# Added by ${brand.name}\n${info.exportLine}\n`);
 
     return { shellUpdated: true };
   } catch (err) {

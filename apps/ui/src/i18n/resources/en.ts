@@ -2935,8 +2935,8 @@ export const en = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} is based on <upstream>Frogg</upstream>.",
-      attributionUpstream: "Frogg is based on <upstream>Paseo</upstream>.",
+      attribution: "{{brandFullName}} is based on <upstream>frogg</upstream>.",
+      attributionUpstream: "frogg is based on <upstream>Paseo</upstream>.",
       title: "About",
       appVersion: "App version",
       thisDevice: "This device",
@@ -3444,7 +3444,7 @@ export const en = {
       agentDefinitions: {
         title: "Agent definitions",
         description:
-          "Agents your providers load from this host. Frogg only lists them; edit the files to change them.",
+          "Agents your providers load from this host. {{brandName}} only lists them; edit the files to change them.",
         projectTitle: "Project agent definitions",
         projectDescription: "Agents your providers load from this project's directory.",
         empty: "No agent definitions found",
@@ -3487,7 +3487,7 @@ export const en = {
         remove: "Remove",
         removeConfirmTitle: "Remove {{name}}?",
         removeConfirmMessage:
-          "Frogg forgets this account. Its config directory {{path}} and the credentials in it stay on disk.",
+          "{{brandName}} forgets this account. Its config directory {{path}} and the credentials in it stay on disk.",
       },
       workspaces: {
         unavailable: "Connect to this host to manage sessions",
@@ -3778,7 +3778,7 @@ export const en = {
             "up-to-date": "Up to date",
             "update-available": "Update available",
             "not-installed": "Not installed",
-            unmanaged: "Managed outside Frogg",
+            unmanaged: "Managed outside {{brandName}}",
             unknown: "Version unknown",
           },
         },

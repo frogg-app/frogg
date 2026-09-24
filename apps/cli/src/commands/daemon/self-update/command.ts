@@ -165,7 +165,7 @@ export function selfUpdateCommand(): Command {
         "--no-wait",
         "Return after handing off to the supervisor instead of waiting for the outcome",
       )
-      .option("--home <path>", "Frogg home directory (default: ~/.frogg)")
+      .option("--home <path>", `${brand.name} home directory (default: ~/${brand.homeDir})`)
       .option(
         "--install-dir <dir>",
         `Install root (default: ${brand.envPrefix}_INSTALL_DIR or ~/.local/share/${brand.id})`,

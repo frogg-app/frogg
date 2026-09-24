@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { existsSync, lstatSync, readFileSync, realpathSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -76,7 +77,7 @@ export function describeDaemonInstall(input: DescribeDaemonInstallInput): Daemon
     return {
       ...base,
       updatable: false,
-      reason: "This daemon is managed by Frogg Desktop; updating the app updates it.",
+      reason: `This daemon is managed by the ${brand.name} desktop app; updating the app updates it.`,
     };
   }
   const modulePath = fileURLToPath(input.moduleUrl ?? import.meta.url);

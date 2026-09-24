@@ -2949,8 +2949,8 @@ export const es: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} está basado en <upstream>Frogg</upstream>.",
-      attributionUpstream: "Frogg está basado en <upstream>Paseo</upstream>.",
+      attribution: "{{brandFullName}} está basado en <upstream>frogg</upstream>.",
+      attributionUpstream: "frogg está basado en <upstream>Paseo</upstream>.",
       title: "Acerca de",
       appVersion: "Versión de la aplicación",
       thisDevice: "este dispositivo",
@@ -3460,7 +3460,7 @@ export const es: TranslationResources = {
       agentDefinitions: {
         title: "Definiciones de agentes",
         description:
-          "Agentes que tus proveedores cargan desde este host. Frogg solo los enumera; edita los archivos para cambiarlos.",
+          "Agentes que tus proveedores cargan desde este host. {{brandName}} solo los enumera; edita los archivos para cambiarlos.",
         projectTitle: "Definiciones de agentes del proyecto",
         projectDescription:
           "Agentes que tus proveedores cargan desde el directorio de este proyecto.",
@@ -3505,7 +3505,7 @@ export const es: TranslationResources = {
         remove: "Eliminar",
         removeConfirmTitle: "¿Eliminar {{name}}?",
         removeConfirmMessage:
-          "Frogg olvidará esta cuenta. Su directorio de configuración {{path}} y las credenciales que contiene permanecen en el disco.",
+          "{{brandName}} olvidará esta cuenta. Su directorio de configuración {{path}} y las credenciales que contiene permanecen en el disco.",
       },
       workspaces: {
         unavailable: "Connect to this host to manage workspaces",
@@ -3798,7 +3798,7 @@ export const es: TranslationResources = {
             "up-to-date": "Actualizado",
             "update-available": "Actualización disponible",
             "not-installed": "No instalado",
-            unmanaged: "Gestionado fuera de Frogg",
+            unmanaged: "Gestionado fuera de {{brandName}}",
             unknown: "Versión desconocida",
           },
         },

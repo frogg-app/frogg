@@ -108,7 +108,7 @@ function isSamePidLock(left: PidLockInfo, right: PidLockInfo): boolean {
 
 function createLockHeldError(lock: PidLockInfo): PidLockError {
   return new PidLockError(
-    `Another Frogg daemon is already running (PID ${lock.pid}, started ${lock.startedAt})`,
+    `Another ${brand.name} daemon is already running (PID ${lock.pid}, started ${lock.startedAt})`,
     lock,
   );
 }
@@ -161,7 +161,7 @@ async function writeNewPidLock(pidPath: string, lockInfo: PidLockInfo): Promise<
     const raceLock = await readPidLock(pidPath);
     if (raceLock) {
       throw new PidLockError(
-        `Another Frogg daemon is already running (PID ${raceLock.pid})`,
+        `Another ${brand.name} daemon is already running (PID ${raceLock.pid})`,
         raceLock,
       );
     }

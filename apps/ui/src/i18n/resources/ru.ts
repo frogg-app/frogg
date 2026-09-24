@@ -2927,8 +2927,8 @@ export const ru: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} основан на <upstream>Frogg</upstream>.",
-      attributionUpstream: "Frogg основан на <upstream>Paseo</upstream>.",
+      attribution: "{{brandFullName}} основан на <upstream>frogg</upstream>.",
+      attributionUpstream: "frogg основан на <upstream>Paseo</upstream>.",
       title: "О приложении",
       appVersion: "Версия приложения",
       thisDevice: "Это устройство",
@@ -3441,7 +3441,7 @@ export const ru: TranslationResources = {
       agentDefinitions: {
         title: "Определения агентов",
         description:
-          "Агенты, которые ваши провайдеры загружают с этого хоста. Frogg только показывает их список; чтобы изменить агента, отредактируйте файл.",
+          "Агенты, которые ваши провайдеры загружают с этого хоста. {{brandName}} только показывает их список; чтобы изменить агента, отредактируйте файл.",
         projectTitle: "Определения агентов проекта",
         projectDescription: "Агенты, которые ваши провайдеры загружают из каталога этого проекта.",
         empty: "Определения агентов не найдены",
@@ -3484,7 +3484,7 @@ export const ru: TranslationResources = {
         remove: "Удалить",
         removeConfirmTitle: "Удалить {{name}}?",
         removeConfirmMessage:
-          "Frogg забудет эту запись. Её каталог конфигурации {{path}} и учётные данные в нём останутся на диске.",
+          "{{brandName}} забудет эту запись. Её каталог конфигурации {{path}} и учётные данные в нём останутся на диске.",
       },
       workspaces: {
         unavailable: "Подключитесь к этому хосту, чтобы управлять сессиями",
@@ -3781,7 +3781,7 @@ export const ru: TranslationResources = {
             "up-to-date": "Актуальная версия",
             "update-available": "Доступно обновление",
             "not-installed": "Не установлен",
-            unmanaged: "Управляется вне Frogg",
+            unmanaged: "Управляется вне {{brandName}}",
             unknown: "Версия неизвестна",
           },
         },

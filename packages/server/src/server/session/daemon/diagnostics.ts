@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { open, statfs } from "node:fs/promises";
 import { cpus, freemem, loadavg, platform, release, totalmem, type } from "node:os";
 import path from "node:path";
@@ -61,7 +62,7 @@ const LOG_TAIL_MAX_BYTES = 64 * 1024;
 
 export async function collectDaemonDiagnostics(options: DaemonDiagnosticsOptions): Promise<string> {
   const sections: string[] = [
-    formatSection("Frogg diagnostics", [
+    formatSection(`${brand.name} diagnostics`, [
       { label: "Collected at", value: new Date().toISOString() },
       { label: "Server ID", value: options.serverId ?? "unknown" },
       { label: "Daemon version", value: options.daemonVersion ?? "unknown" },
@@ -122,7 +123,7 @@ function collectProcessEntries(options: DaemonDiagnosticsOptions): DiagnosticEnt
     { label: "PATH", value: getEnvValue("PATH", "Path") ?? "unset" },
     { label: "Shell", value: formatDaemonShell() },
     { label: "Uptime", value: formatDurationMs(process.uptime() * 1000) },
-    { label: "Frogg home", value: options.froggHome },
+    { label: `${brand.name} home`, value: options.froggHome },
     { label: "RSS", value: formatBytes(memory.rss) },
     {
       label: "Heap used",

@@ -70,7 +70,7 @@ export async function createFroggWorktreeCommand<Result extends CreateFroggWorkt
 ): Promise<CreateFroggWorktreeCommandResult<Result>> {
   try {
     if (!dependencies.createFroggWorktreeWorkflow) {
-      throw new Error("Frogg worktree service is not configured");
+      throw new Error("Worktree service is not configured");
     }
 
     const createdWorktree = await dependencies.createFroggWorktreeWorkflow({
@@ -134,7 +134,7 @@ export async function archiveCommand(
       return {
         ok: false,
         code: "NOT_ALLOWED",
-        message: "Worktree is not a Frogg-owned worktree",
+        message: "Worktree was not created by this app",
         removedAgents: [],
       };
     }
@@ -195,7 +195,7 @@ async function resolveArchiveTarget(
     const worktrees = await dependencies.workspaceGitService.listWorktrees(repoRoot);
     const match = worktrees.find((entry) => entry.branchName === input.branchName);
     if (!match) {
-      throw new Error(`Frogg worktree not found for branch ${input.branchName}`);
+      throw new Error(`Worktree not found for branch ${input.branchName}`);
     }
     return match.path;
   }

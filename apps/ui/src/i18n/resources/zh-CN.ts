@@ -2829,8 +2829,8 @@ export const zhCN: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}} 基于 <upstream>Frogg</upstream> 构建。",
-      attributionUpstream: "Frogg 基于 <upstream>Paseo</upstream> 构建。",
+      attribution: "{{brandFullName}} 基于 <upstream>frogg</upstream> 构建。",
+      attributionUpstream: "frogg 基于 <upstream>Paseo</upstream> 构建。",
       title: "关于",
       appVersion: "应用版本",
       thisDevice: "此设备",
@@ -3330,7 +3330,8 @@ export const zhCN: TranslationResources = {
       },
       agentDefinitions: {
         title: "智能体定义",
-        description: "你的提供方从此主机加载的智能体。Frogg 仅列出它们；如需修改请编辑文件。",
+        description:
+          "你的提供方从此主机加载的智能体。{{brandName}} 仅列出它们；如需修改请编辑文件。",
         projectTitle: "项目智能体定义",
         projectDescription: "你的提供方从此项目目录加载的智能体。",
         empty: "未找到智能体定义",
@@ -3369,7 +3370,7 @@ export const zhCN: TranslationResources = {
         remove: "删除",
         removeConfirmTitle: "删除 {{name}}？",
         removeConfirmMessage:
-          "Frogg 将忘记此账户。其配置目录 {{path}} 及其中的凭据仍保留在磁盘上。",
+          "{{brandName}} 将忘记此账户。其配置目录 {{path}} 及其中的凭据仍保留在磁盘上。",
       },
       workspaces: {
         unavailable: "连接到这个 Host 以管理会话",
@@ -3648,7 +3649,7 @@ export const zhCN: TranslationResources = {
             "up-to-date": "已是最新",
             "update-available": "有可用更新",
             "not-installed": "未安装",
-            unmanaged: "由 Frogg 之外管理",
+            unmanaged: "由 {{brandName}} 之外管理",
             unknown: "版本未知",
           },
         },

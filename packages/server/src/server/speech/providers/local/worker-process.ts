@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import pino from "pino";
 
 import type { StreamingTranscriptionSession } from "../../speech-provider.js";
@@ -18,7 +19,7 @@ import type {
 } from "./worker-protocol.js";
 import { bufferToWorkerBytes, workerBytesToBuffer } from "./worker-bytes.js";
 
-process.title = "Frogg Voice";
+process.title = `${brand.name} Voice`;
 
 type LocalSttEngine = SherpaOfflineRecognizerEngine;
 

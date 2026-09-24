@@ -2895,8 +2895,8 @@ export const ko: TranslationResources = {
       },
     },
     about: {
-      attribution: "{{brandFullName}}는 <upstream>Frogg</upstream>를 기반으로 합니다.",
-      attributionUpstream: "Frogg는 <upstream>Paseo</upstream>를 기반으로 합니다.",
+      attribution: "{{brandFullName}}는 <upstream>frogg</upstream>를 기반으로 합니다.",
+      attributionUpstream: "frogg는 <upstream>Paseo</upstream>를 기반으로 합니다.",
       title: "정보",
       appVersion: "앱 버전",
       thisDevice: "이 기기",
@@ -3400,7 +3400,7 @@ export const ko: TranslationResources = {
       agentDefinitions: {
         title: "에이전트 정의",
         description:
-          "공급자가 이 호스트에서 불러오는 에이전트입니다. Frogg는 목록만 표시하며, 변경하려면 파일을 편집하세요.",
+          "공급자가 이 호스트에서 불러오는 에이전트입니다. {{brandName}}는 목록만 표시하며, 변경하려면 파일을 편집하세요.",
         projectTitle: "프로젝트 에이전트 정의",
         projectDescription: "공급자가 이 프로젝트 디렉터리에서 불러오는 에이전트입니다.",
         empty: "에이전트 정의를 찾을 수 없습니다",
@@ -3441,7 +3441,7 @@ export const ko: TranslationResources = {
         remove: "삭제",
         removeConfirmTitle: "{{name}}을(를) 삭제할까요?",
         removeConfirmMessage:
-          "Frogg가 이 계정을 잊습니다. 설정 디렉터리 {{path}}와(과) 그 안의 자격 증명은 디스크에 남습니다.",
+          "{{brandName}}가 이 계정을 잊습니다. 설정 디렉터리 {{path}}와(과) 그 안의 자격 증명은 디스크에 남습니다.",
       },
       workspaces: {
         unavailable: "세션을 관리하려면 이 호스트에 연결하세요",
@@ -3731,7 +3731,7 @@ export const ko: TranslationResources = {
             "up-to-date": "최신 상태",
             "update-available": "업데이트 사용 가능",
             "not-installed": "설치되지 않음",
-            unmanaged: "Frogg 외부에서 관리됨",
+            unmanaged: "{{brandName}} 외부에서 관리됨",
             unknown: "버전 알 수 없음",
           },
         },

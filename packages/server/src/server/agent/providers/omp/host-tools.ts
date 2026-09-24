@@ -132,7 +132,7 @@ function sendMissingCatalogResult(
   runtimeSession.sendHostToolResult(
     toOmpHostToolErrorResult(
       request.id,
-      `Host tool "${request.toolName}" was called before Frogg tools were registered`,
+      `Host tool "${request.toolName}" was called before host tools were registered`,
     ),
   );
 }

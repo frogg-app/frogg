@@ -586,7 +586,7 @@ async function createMcpWorktree(
 ): Promise<CreateFroggWorktreeWorkflowResult> {
   try {
     if (!options.createFroggWorktree) {
-      throw new Error("Frogg worktree service is not configured");
+      throw new Error("Worktree service is not configured");
     }
     return await options.createFroggWorktree(options.input, {
       ...(options.resolveDefaultBranch

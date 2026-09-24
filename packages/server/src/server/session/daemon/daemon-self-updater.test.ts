@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { describe, expect, test } from "vitest";
 import {
   DaemonSelfUpdateInProgressError,
@@ -108,7 +109,7 @@ describe("DaemonSelfUpdater", () => {
 
     expect(result).toEqual({
       success: false,
-      error: "This daemon is managed by Frogg Desktop. Update Frogg Desktop on the host.",
+      error: `This daemon is managed by the ${brand.name} desktop app. Update the app on the host.`,
       newVersion: null,
     });
     expect(phases).toEqual([]);

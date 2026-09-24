@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 /**
  * Tracks the installed and latest-published versions of each agent provider CLI,
  * and installs updates on request or automatically.
@@ -319,8 +320,8 @@ export class ProviderUpdateService {
         previousVersion: null,
         installedVersion: null,
         error: descriptor.manualInstallUrl
-          ? `${provider} is not installed through a channel Frogg manages. Update it manually: ${descriptor.manualInstallUrl}`
-          : `${provider} is not installed through a channel Frogg manages.`,
+          ? `${provider} is not installed through a channel ${brand.name} manages. Update it manually: ${descriptor.manualInstallUrl}`
+          : `${provider} is not installed through a channel ${brand.name} manages.`,
         output: "",
       };
     }

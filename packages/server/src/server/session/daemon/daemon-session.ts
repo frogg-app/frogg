@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import type pino from "pino";
 import type { ProviderAvailability } from "../../agent/agent-manager.js";
 import type { SessionInboundMessage, SessionOutboundMessage } from "../../messages.js";
@@ -324,7 +325,7 @@ export class DaemonSession {
         type: "diagnostics.response",
         payload: {
           requestId: msg.requestId,
-          diagnostic: `Frogg diagnostics\n  Error: ${
+          diagnostic: `${brand.name} diagnostics\n  Error: ${
             error instanceof Error ? error.message : String(error)
           }`,
         },
