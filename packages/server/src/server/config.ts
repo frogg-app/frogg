@@ -923,6 +923,10 @@ function resolveCoreDaemonOverridePaths(
   if (parseBooleanEnv(brandEnv(brand, env, "CLAIM_MODE")) !== undefined) {
     paths.push("daemon.auth.claimMode");
   }
+  const claimScope = brandEnv(brand, env, "CLAIM_SCOPE")?.trim().toLowerCase();
+  if (claimScope === "any" || claimScope === "local") {
+    paths.push("daemon.auth.claimScope");
+  }
   if (parsePositiveGitOverride(env.FROGG_GIT_MAX_PROCESSES_PER_SECOND)) {
     paths.push("daemon.git.maxProcessesPerSecond");
   }

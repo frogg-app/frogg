@@ -94,6 +94,7 @@ describe("server config", () => {
         FROGG_RELAY_ENDPOINT: "relay.example.test:443",
         FROGG_TRUSTED_PROXIES: "true",
         FROGG_TRUST_LAN: "0",
+        FROGG_CLAIM_SCOPE: "local",
         FROGG_WEB_UI_ENABLED: "true",
         FROGG_LOG_FILE_PATH: "custom.log",
         FROGG_VOICE_LLM_PROVIDER: "codex",
@@ -102,6 +103,7 @@ describe("server config", () => {
     });
 
     expect(config.configReload?.overrideControlledPaths).toEqual([
+      "daemon.auth.claimScope",
       "daemon.auth.password",
       "daemon.auth.trustLan",
       "daemon.listen",
@@ -113,6 +115,7 @@ describe("server config", () => {
       "log.file.path",
     ]);
     expect(config.trustLan).toBe(false);
+    expect(config.claimScope).toBe("local");
     expect(config.listen).toBe("127.0.0.1:7000");
     expect(config.trustedProxies).toBe(true);
     expect(config.log?.file?.path).toBe("custom.log");
