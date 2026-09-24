@@ -40,7 +40,9 @@ impl HttpProxy {
         })
     }
 
-    pub async fn forward(&self, mut request: Request<Body>) -> Response<Body> {
+    /// `client_ip` replaces any client-supplied X-Forwarded-For, so the Node
+    /// daemon (with this front as a trusted proxy) sees the real caller.
+    pub async fn forward(&self, mut request: Request<Body>, client_ip: &str) -> Response<Body> {
         let path_and_query = request
             .uri()
             .path_and_query()
@@ -52,6 +54,10 @@ impl HttpProxy {
         *request.uri_mut() = uri;
         // Host must match the upstream, or its origin checks reject us.
         request.headers_mut().remove(axum::http::header::HOST);
+        request.headers_mut().remove("x-forwarded-for");
+        if let Ok(value) = client_ip.parse() {
+            request.headers_mut().insert("x-forwarded-for", value);
+        }
 
         match self.client.request(request).await {
             Ok(response) => {

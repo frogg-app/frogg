@@ -58,6 +58,10 @@ impl Terminals {
         Ok((id, slot))
     }
 
+    pub fn owns_slot(&self, slot: u8) -> bool {
+        self.sessions.contains_key(&slot)
+    }
+
     pub fn slot_for(&self, terminal_id: &str) -> Option<u8> {
         self.by_id.get(terminal_id).copied()
     }

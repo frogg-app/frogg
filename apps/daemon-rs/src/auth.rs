@@ -6,86 +6,120 @@ use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use subtle::ConstantTimeEq;
 
-#[derive(Debug, Default, Clone, Deserialize)]
-pub struct AuthConfig {
-    /// bcrypt hash of the daemon password, as written by `hashDaemonPassword`.
-    #[serde(default)]
-    pub password_hash: Option<String>,
-    /// sha256-hex hashes of issued client credentials (the claim store).
-    #[serde(default)]
-    pub credential_hashes: Vec<String>,
-    #[serde(default = "default_trust_lan")]
-    pub trust_lan: bool,
+/// Device roles, ordered so a higher role satisfies a lower requirement.
+/// Mirrors `DEVICE_ROLES` in `server/claim-store.ts`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Role {
+    Viewer,
+    Operator,
+    Owner,
 }
 
-fn default_trust_lan() -> bool {
-    crate::branding::DEFAULT_TRUST_LAN
+/// One paired device: the sha256 of its credential and the role it carries.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Device {
+    pub sha256: String,
+    pub role: Role,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct AuthConfig {
+    /// bcrypt hash of the daemon password, as written by `hashDaemonPassword`.
+    pub password_hash: Option<String>,
+    /// Paired devices from `principals.json`.
+    pub devices: Vec<Device>,
+    /// `principals.json` `claimedAt`: the claim latch. Once claimed, a daemon
+    /// stays claimed after every device is revoked, until a local reset.
+    pub claimed_at: bool,
+    /// Contents of `$FROGG_HOME/local-token`, honoured from loopback only.
+    pub local_token: Option<String>,
+    pub trust_lan: bool,
+    /// Claim mode switches LAN trust off, as `access-policy.ts` does.
+    pub claim_mode: bool,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Decision {
-    Ok,
+    /// Admitted, carrying the role the connection acts with.
+    Ok(Role),
     Unclaimed,
     MissingToken,
     InvalidToken,
 }
 
 impl AuthConfig {
-    /// Claimed means at least one credential has been issued, matching
-    /// `claimStore.isClaimed()`. A password alone does not claim the daemon.
+    /// Matches `claimStore.isClaimed()`: latched by `claimedAt`, or any device.
+    /// A password alone does not claim the daemon.
     pub fn is_claimed(&self) -> bool {
-        !self.credential_hashes.is_empty()
+        self.claimed_at || !self.devices.is_empty()
     }
 
     fn has_secrets(&self) -> bool {
-        self.password_hash.is_some() || !self.credential_hashes.is_empty()
+        self.password_hash.is_some() || self.is_claimed()
     }
 
     pub fn needs_bearer(&self, client: Locality) -> bool {
-        netclass::is_auth_required(self.password_hash.is_some(), client, self.trust_lan)
+        netclass::is_auth_required(
+            self.password_hash.is_some(),
+            client,
+            self.trust_lan && !self.claim_mode,
+        )
     }
 
-    /// Mirrors `authorizeBearerSync`. Returns `Ok` when the request may proceed.
+    /// Mirrors `authorizeBearerSync`. A presented bearer is always checked,
+    /// even where locality alone would admit the caller: a revoked device or a
+    /// wrong password must never be quietly upgraded to locality trust. Only a
+    /// caller presenting nothing is trusted on locality.
     pub fn authorize(&self, client: Locality, token: Option<&str>) -> Decision {
-        if !self.needs_bearer(client) {
-            return Decision::Ok;
+        if let Some(token) = token {
+            if let Some(role) = self.known_credential(client, token) {
+                return Decision::Ok(role);
+            }
         }
-        if !self.has_secrets() {
-            return Decision::Unclaimed;
-        }
+        let needs_bearer = self.needs_bearer(client);
         let Some(token) = token else {
-            return Decision::MissingToken;
+            if !needs_bearer {
+                return Decision::Ok(Role::Owner);
+            }
+            return if self.has_secrets() {
+                Decision::MissingToken
+            } else {
+                Decision::Unclaimed
+            };
         };
-        if self.token_is_valid(token) {
-            Decision::Ok
-        } else {
-            Decision::InvalidToken
-        }
-    }
-
-    fn token_is_valid(&self, token: &str) -> bool {
-        if matches_credential(token, &self.credential_hashes) {
-            return true;
+        if needs_bearer && !self.has_secrets() {
+            return Decision::Unclaimed;
         }
         match &self.password_hash {
             // bcrypt is deliberately slow; that cost is the point.
-            Some(hash) => bcrypt::verify(token, hash).unwrap_or(false),
-            None => false,
+            Some(hash) if bcrypt::verify(token, hash).unwrap_or(false) => Decision::Ok(Role::Owner),
+            _ => Decision::InvalidToken,
         }
+    }
+
+    /// A device credential or the loopback-only local token.
+    fn known_credential(&self, client: Locality, token: &str) -> Option<Role> {
+        if let Some(role) = match_device(token, &self.devices) {
+            return Some(role);
+        }
+        let local = self.local_token.as_deref()?;
+        (client == Locality::Loopback && bool::from(local.as_bytes().ct_eq(token.as_bytes())))
+            .then_some(Role::Owner)
     }
 }
 
-/// Constant-time comparison against every stored hash, matching the Node code's
-/// deliberate non-short-circuit loop.
-fn matches_credential(token: &str, credential_hashes: &[String]) -> bool {
+/// Constant-time comparison against every device, matching the Node code's
+/// deliberate non-short-circuit loop. The last match wins, as in Node.
+fn match_device(token: &str, devices: &[Device]) -> Option<Role> {
     let provided = Sha256::digest(token.as_bytes());
-    let mut matched = false;
-    for hash in credential_hashes {
-        let Ok(expected) = hex_decode(hash) else {
+    let mut matched = None;
+    for device in devices {
+        let Ok(expected) = hex_decode(&device.sha256) else {
             continue;
         };
-        if expected.len() == provided.len() {
-            matched |= bool::from(provided.as_slice().ct_eq(&expected));
+        if expected.len() == provided.len() && bool::from(provided.as_slice().ct_eq(&expected)) {
+            matched = Some(device.role);
         }
     }
     matched
@@ -211,7 +245,10 @@ mod tests {
     #[test]
     fn loopback_clients_skip_auth_when_no_password_is_set() {
         let cfg = AuthConfig::default();
-        assert_eq!(cfg.authorize(Locality::Loopback, None), Decision::Ok);
+        assert_eq!(
+            cfg.authorize(Locality::Loopback, None),
+            Decision::Ok(Role::Owner)
+        );
     }
 
     #[test]
@@ -223,12 +260,12 @@ mod tests {
     #[test]
     fn accepts_a_matching_credential_hash() {
         let cfg = AuthConfig {
-            credential_hashes: vec![hex_encode(&Sha256::digest(b"s3cret"))],
+            devices: vec![device(b"s3cret", Role::Operator)],
             ..Default::default()
         };
         assert_eq!(
             cfg.authorize(Locality::Public, Some("s3cret")),
-            Decision::Ok
+            Decision::Ok(Role::Operator)
         );
         assert_eq!(
             cfg.authorize(Locality::Public, Some("wrong")),
@@ -249,7 +286,7 @@ mod tests {
         };
         assert_eq!(
             cfg.authorize(Locality::Loopback, Some("hunter2")),
-            Decision::Ok
+            Decision::Ok(Role::Owner)
         );
         assert_eq!(
             cfg.authorize(Locality::Loopback, Some("nope")),
@@ -302,6 +339,87 @@ mod tests {
             None,
             &["*".to_string()]
         ));
+    }
+
+    fn device(secret: &[u8], role: Role) -> Device {
+        Device {
+            sha256: hex_encode(&Sha256::digest(secret)),
+            role,
+        }
+    }
+
+    #[test]
+    fn an_unknown_bearer_is_rejected_even_where_locality_would_admit() {
+        let cfg = AuthConfig {
+            devices: vec![device(b"known", Role::Viewer)],
+            trust_lan: true,
+            ..Default::default()
+        };
+        // Presenting nothing on loopback is trusted...
+        assert_eq!(
+            cfg.authorize(Locality::Loopback, None),
+            Decision::Ok(Role::Owner)
+        );
+        // ...but a revoked or wrong credential is never upgraded to that trust.
+        assert_eq!(
+            cfg.authorize(Locality::Loopback, Some("revoked")),
+            Decision::InvalidToken
+        );
+        assert_eq!(
+            cfg.authorize(Locality::Lan, Some("revoked")),
+            Decision::InvalidToken
+        );
+        // A known device keeps its own role rather than locality's owner.
+        assert_eq!(
+            cfg.authorize(Locality::Loopback, Some("known")),
+            Decision::Ok(Role::Viewer)
+        );
+    }
+
+    #[test]
+    fn the_claim_latch_keeps_a_daemon_claimed_after_every_device_is_revoked() {
+        let cfg = AuthConfig {
+            claimed_at: true,
+            ..Default::default()
+        };
+        assert!(cfg.is_claimed());
+        assert_eq!(
+            cfg.authorize(Locality::Public, None),
+            Decision::MissingToken
+        );
+    }
+
+    #[test]
+    fn claim_mode_turns_lan_trust_off() {
+        let cfg = AuthConfig {
+            trust_lan: true,
+            claim_mode: true,
+            ..Default::default()
+        };
+        assert!(cfg.needs_bearer(Locality::Lan));
+        assert!(!cfg.needs_bearer(Locality::Loopback));
+    }
+
+    #[test]
+    fn the_local_token_is_honoured_from_loopback_only() {
+        let cfg = AuthConfig {
+            local_token: Some("local".into()),
+            devices: vec![device(b"x", Role::Owner)],
+            ..Default::default()
+        };
+        assert_eq!(
+            cfg.authorize(Locality::Loopback, Some("local")),
+            Decision::Ok(Role::Owner)
+        );
+        assert_eq!(
+            cfg.authorize(Locality::Lan, Some("local")),
+            Decision::InvalidToken
+        );
+    }
+
+    #[test]
+    fn roles_are_ordered() {
+        assert!(Role::Owner > Role::Operator && Role::Operator > Role::Viewer);
     }
 
     fn hex_encode(bytes: &[u8]) -> String {

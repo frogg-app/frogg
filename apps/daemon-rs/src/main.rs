@@ -16,6 +16,7 @@ mod generated;
 mod generated_tests;
 mod hostnames;
 mod http_proxy;
+mod http_routes;
 mod netclass;
 mod proxy;
 mod pty;
@@ -43,7 +44,7 @@ struct AppState {
     server_id: String,
     started: Instant,
     upstream_url: Option<String>,
-    auth: auth::AuthConfig,
+    auth: daemon_config::AuthStore,
     allowed_origins: Vec<String>,
     /// `Host` allowlist. Checked on every request: `Origin` alone cannot stop
     /// DNS rebinding, because the same-origin fallback compares `Origin` to
@@ -81,13 +82,12 @@ async fn main() -> anyhow::Result<()> {
     let persisted = daemon_config::load(home.as_deref());
     let config = config::Config::from_env(persisted.listen.as_deref())?;
 
-    let auth_required =
-        persisted.auth.password_hash.is_some() || !persisted.auth.credential_hashes.is_empty();
+    let auth_required = persisted.auth.password_hash.is_some() || persisted.auth.is_claimed();
     let state = Arc::new(AppState {
         server_id: persisted.server_id.clone(),
         started: Instant::now(),
         upstream_url: config.upstream.clone(),
-        auth: persisted.auth,
+        auth: daemon_config::AuthStore::new(home.clone(), persisted.auth),
         allowed_origins: persisted.allowed_origins,
         hostnames: persisted.hostnames,
         allow_pairing_hostname: persisted.allow_pairing_hostname,
@@ -134,6 +134,7 @@ async fn main() -> anyhow::Result<()> {
 /// configured, which is the Node behaviour when the web UI is disabled.
 async fn web_ui_handler(
     State(state): State<Arc<AppState>>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
     request: axum::extract::Request,
 ) -> Response {
     let uri = request.uri().clone();
@@ -143,12 +144,23 @@ async fn web_ui_handler(
     // index.html turns a missing route into a silently corrupt response (a file
     // download that yields HTML). Proxy them, or fail loudly.
     if http_proxy::is_daemon_path(uri.path()) {
+        // The Node daemon sees this proxy as a loopback caller, so the bearer
+        // gate and route roles `createRequireBearerMiddleware` applies must be
+        // applied here, in front of it.
+        if let Some(response) =
+            gate_daemon_route(&state, peer, request.method(), uri.path(), &headers)
+        {
+            return response;
+        }
         return match state.http_proxy.as_ref() {
-            Some(proxy) => proxy.forward(request).await,
+            Some(proxy) => proxy.forward(request, &peer.ip().to_string()).await,
             None => StatusCode::NOT_FOUND.into_response(),
         };
     }
 
+    if request.method() != axum::http::Method::GET && request.method() != axum::http::Method::HEAD {
+        return StatusCode::METHOD_NOT_ALLOWED.into_response();
+    }
     let Some(dist) = state.web_ui_dist.as_deref() else {
         return StatusCode::NOT_FOUND.into_response();
     };
@@ -174,6 +186,41 @@ async fn web_ui_handler(
     response
         .body(body.into())
         .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+}
+
+/// Mirrors `createRequireBearerMiddleware` + `requiredRoleForHttpRoute` for the
+/// routes proxied to Node. Returns a rejection, or None to let the request on.
+fn gate_daemon_route(
+    state: &AppState,
+    peer: SocketAddr,
+    method: &axum::http::Method,
+    path: &str,
+    headers: &HeaderMap,
+) -> Option<Response> {
+    if !path.starts_with("/api/") || http_routes::bypasses_bearer(method.as_str(), path) {
+        return None;
+    }
+    let token = auth::extract_http_bearer_token(header(headers, "authorization"));
+    match state
+        .auth
+        .current()
+        .authorize(state.locality(peer), token.as_deref())
+    {
+        auth::Decision::Ok(role) if role >= http_routes::required_role(path) => None,
+        auth::Decision::Ok(_) => {
+            Some((StatusCode::FORBIDDEN, Json(json!({ "error": "Forbidden" }))).into_response())
+        }
+        decision => {
+            tracing::warn!(?decision, %peer, path, "rejected proxied daemon route");
+            Some(
+                (
+                    StatusCode::UNAUTHORIZED,
+                    Json(json!({ "error": "Unauthorized" })),
+                )
+                    .into_response(),
+            )
+        }
+    }
 }
 
 async fn health() -> impl IntoResponse {
@@ -213,8 +260,9 @@ async fn identity(
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
 ) -> Response {
     let locality = state.locality(peer);
-    let trusted = netclass::is_client_trusted(locality, state.auth.trust_lan);
-    let claimed = state.auth.is_claimed();
+    let auth = state.auth.current();
+    let trusted = netclass::is_client_trusted(locality, auth.trust_lan && !auth.claim_mode);
+    let claimed = auth.is_claimed();
     discovery_headers(
         Json(json!({
             "product": "frogg",
@@ -224,7 +272,7 @@ async fn identity(
             "version": DAEMON_VERSION,
             "listen": state.listen,
             "pairingRequired": !claimed && !trusted,
-            "lanTrusted": state.auth.trust_lan,
+            "lanTrusted": auth.trust_lan && !auth.claim_mode,
         }))
         .into_response(),
     )
@@ -245,8 +293,12 @@ async fn status(
     headers: HeaderMap,
 ) -> Response {
     let token = auth::extract_http_bearer_token(header(&headers, "authorization"));
-    match state.auth.authorize(state.locality(peer), token.as_deref()) {
-        auth::Decision::Ok => Json(json!({
+    match state
+        .auth
+        .current()
+        .authorize(state.locality(peer), token.as_deref())
+    {
+        auth::Decision::Ok(_) => Json(json!({
             "status": "ok",
             "uptimeMs": state.started.elapsed().as_millis() as u64,
             "runtime": "rust",
@@ -268,7 +320,9 @@ fn build_router(state: Arc<AppState>) -> Router {
         .route("/api/status", get(status))
         .route("/ws", get(ws_upgrade))
         // Everything else is the SPA. Registered last so it never shadows /api.
-        .fallback(get(web_ui_handler))
+        // Any method: daemon paths are proxied whatever their verb, and the
+        // SPA half answers 405 to anything but GET itself.
+        .fallback(web_ui_handler)
         // Host allowlist in front of every route, including /ws and the health
         // and identity routes that are otherwise unauthenticated. Mirrors where
         // the Node daemon mounts it.
@@ -328,13 +382,17 @@ async fn ws_upgrade(
 
     let protocol_header = header(&headers, "sec-websocket-protocol").map(str::to_owned);
     let token = auth::extract_ws_bearer_token(protocol_header.as_deref());
-    match state.auth.authorize(state.locality(peer), token.as_deref()) {
-        auth::Decision::Ok => {}
+    let role = match state
+        .auth
+        .current()
+        .authorize(state.locality(peer), token.as_deref())
+    {
+        auth::Decision::Ok(role) => role,
         decision => {
             tracing::warn!(?decision, %peer, "rejected websocket upgrade");
             return (StatusCode::UNAUTHORIZED, "Unauthorized").into_response();
         }
-    }
+    };
 
     // Echo back the exact subprotocol the client offered, or the upgrade fails.
     let selected = protocol_header.as_deref().and_then(|h| {
@@ -347,10 +405,22 @@ async fn ws_upgrade(
         Some(protocol) => ws.protocols([protocol]),
         None => ws,
     };
-    ws.on_upgrade(move |socket| handle_socket(socket, state))
+    let client = Client {
+        role,
+        bearer: token,
+        ip: peer.ip().to_string(),
+    };
+    ws.on_upgrade(move |socket| handle_socket(socket, state, client))
 }
 
-async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
+/// Who a connection is: the role it acts with, and what to forward upstream.
+struct Client {
+    role: auth::Role,
+    bearer: Option<String>,
+    ip: String,
+}
+
+async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>, client: Client) {
     let (from_upstream_tx, mut from_upstream_rx) = mpsc::channel::<proxy::Frame>(256);
     // Frames produced locally (native terminal output) rather than by upstream.
     let (local_tx, mut local_rx) = mpsc::channel::<Vec<u8>>(256);
@@ -361,7 +431,14 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
     // If the Node daemon is unreachable we still serve the message types we
     // implement natively rather than dropping the client.
     let upstream = match &state.upstream_url {
-        Some(url) => match proxy::Upstream::connect(url, from_upstream_tx).await {
+        Some(url) => match proxy::Upstream::connect(
+            url,
+            from_upstream_tx,
+            client.bearer.as_deref(),
+            &client.ip,
+        )
+        .await
+        {
             Ok(up) => Some(up),
             Err(err) => {
                 tracing::warn!(error = %err, "no upstream; serving native message types only");
@@ -405,12 +482,12 @@ async fn handle_socket(mut socket: WebSocket, state: Arc<AppState>) {
                         if state.validate_protocol {
                             validate_against_schema(&text);
                         }
-                        if !handle_text(&text, &mut socket, upstream.as_ref(), terminals.as_mut()).await {
+                        if !handle_text(&text, &mut socket, upstream.as_ref(), terminals.as_mut(), client.role).await {
                             break;
                         }
                     }
                     Message::Binary(bytes) => {
-                        if !handle_binary(bytes, upstream.as_ref(), terminals.as_mut()).await {
+                        if !handle_binary(bytes, upstream.as_ref(), terminals.as_mut(), client.role).await {
                             break;
                         }
                     }
@@ -459,6 +536,7 @@ async fn handle_text(
     socket: &mut WebSocket,
     upstream: Option<&proxy::Upstream>,
     terminals: Option<&mut terminals::Terminals>,
+    role: auth::Role,
 ) -> bool {
     let parsed: Inbound = match serde_json::from_str(text) {
         Ok(v) => v,
@@ -479,7 +557,7 @@ async fn handle_text(
         }
         Inbound::Session { message } => {
             if let Some(terminals) = terminals {
-                if let Some(reply) = native_terminal_reply(message, terminals) {
+                if let Some(reply) = native_terminal_reply(message, terminals, role) {
                     return socket.send(Message::Text(reply.to_string())).await.is_ok();
                 }
             }
@@ -498,9 +576,22 @@ async fn handle_text(
 fn native_terminal_reply(
     message: &serde_json::Value,
     terminals: &mut terminals::Terminals,
+    role: auth::Role,
 ) -> Option<serde_json::Value> {
     let request_id = message.get("requestId")?.as_str()?.to_string();
     match message.get("type")?.as_str()? {
+        // `create_terminal_request` is an operator RPC in `authorization/roles.ts`.
+        "create_terminal_request" if role < auth::Role::Operator => Some(json!({
+            "type": "session",
+            "message": {
+                "type": "create_terminal_response",
+                "payload": {
+                    "terminal": null,
+                    "error": "This device's role does not allow creating terminals.",
+                    "requestId": request_id,
+                }
+            }
+        })),
         "create_terminal_request" => {
             let cwd = message.get("cwd").and_then(|c| c.as_str());
             let size = message.get("size");
@@ -551,6 +642,7 @@ async fn handle_binary(
     bytes: Vec<u8>,
     upstream: Option<&proxy::Upstream>,
     terminals: Option<&mut terminals::Terminals>,
+    role: auth::Role,
 ) -> bool {
     match frames::decode(&bytes) {
         Some(frames::Frame::Terminal {
@@ -561,6 +653,15 @@ async fn handle_binary(
             // Natively-owned slots are served here; everything else falls
             // through to the Node daemon, which still owns the registry.
             if let Some(terminals) = terminals {
+                // A viewer reads terminal output but never types into it.
+                let writes = matches!(
+                    opcode,
+                    frames::TerminalOpcode::Input | frames::TerminalOpcode::Resize
+                );
+                if writes && role < auth::Role::Operator && terminals.owns_slot(slot) {
+                    tracing::debug!(slot, "dropping terminal input from a viewer");
+                    return true;
+                }
                 let payload = payload.to_vec();
                 if terminals.handle(opcode, slot, &payload).await {
                     return true;
@@ -635,11 +736,10 @@ mod tests {
             server_id: "test".into(),
             started: Instant::now(),
             upstream_url: None,
-            auth: auth::AuthConfig {
-                password_hash: None,
-                credential_hashes: Vec::new(),
+            auth: daemon_config::AuthStore::fixed(auth::AuthConfig {
                 trust_lan: true,
-            },
+                ..Default::default()
+            }),
             allowed_origins: Vec::new(),
             hostnames,
             allow_pairing_hostname: true,

@@ -34,8 +34,30 @@ pub enum SendOutcome {
 impl Upstream {
     /// Dials the Node daemon and starts both pump tasks. Frames arriving from
     /// upstream are pushed to `from_upstream` for the caller to relay to its client.
-    pub async fn connect(url: &str, from_upstream: mpsc::Sender<Frame>) -> Result<Self> {
-        let (stream, _) = tokio_tungstenite::connect_async(url)
+    ///
+    /// `bearer` is the credential the client authenticated with, forwarded so the
+    /// Node daemon resolves the same device and role rather than treating this
+    /// loopback connection as trusted. `client_ip` travels as X-Forwarded-For,
+    /// which Node honours when this front is one of its trusted proxies.
+    pub async fn connect(
+        url: &str,
+        from_upstream: mpsc::Sender<Frame>,
+        bearer: Option<&str>,
+        client_ip: &str,
+    ) -> Result<Self> {
+        use tokio_tungstenite::tungstenite::client::IntoClientRequest;
+        let mut request = url
+            .into_client_request()
+            .with_context(|| format!("building upstream request for {url}"))?;
+        let headers = request.headers_mut();
+        headers.insert("x-forwarded-for", client_ip.parse()?);
+        if let Some(token) = bearer {
+            headers.insert(
+                "sec-websocket-protocol",
+                format!("frogg.bearer.{token}").parse()?,
+            );
+        }
+        let (stream, _) = tokio_tungstenite::connect_async(request)
             .await
             .with_context(|| format!("dialing upstream daemon at {url}"))?;
         let (mut write, mut read) = stream.split();
