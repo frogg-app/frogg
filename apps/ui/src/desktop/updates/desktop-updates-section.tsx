@@ -1,8 +1,8 @@
 import { brand } from "@frogg/branding";
 // Settings > Updates for the desktop shell: current version and update
 // strategy, release channel, automatic checks, "Check for updates" with the
-// last-checked time, and the available release with its notes and a
-// Download & install button that shows the shell's download progress.
+// last-checked time. A found release takes over that row: Download & install
+// enables once the background download lands, with its progress bar below.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Text, View } from "react-native";
@@ -55,7 +55,12 @@ const ThemedRefresh = withUnistyles(RefreshCw, (theme) => ({
 function toBarProgress(progress: AppUpdateProgress): LocalDaemonInstallProgress {
   const fraction = appUpdateProgressFraction(progress);
   if (progress.status !== "active" || fraction === null) {
-    return { status: "installing", phase: "download", received: 0, total: null };
+    return {
+      status: "installing",
+      phase: "download",
+      received: 0,
+      total: null,
+    };
   }
   return {
     status: "installing",
@@ -69,7 +74,12 @@ function toBarProgress(progress: AppUpdateProgress): LocalDaemonInstallProgress 
 function toBuildBarProgress(status: ReleaseBuildStatus): LocalDaemonInstallProgress {
   const fraction = releaseBuildFraction(status);
   if (fraction === null) {
-    return { status: "installing", phase: "download", received: 0, total: null };
+    return {
+      status: "installing",
+      phase: "download",
+      received: 0,
+      total: null,
+    };
   }
   return {
     status: "installing",
@@ -182,66 +192,35 @@ function useAutoCheckToggle() {
   return { autoCheck, isUpdating, toggle };
 }
 
-interface AvailableUpdateCardProps {
-  update: DesktopAppUpdateCheckResult;
-  progress: AppUpdateProgress;
-  isInstalling: boolean;
-  onInstall: () => void;
-}
-
-function AvailableUpdateCard({
+/**
+ * Everything under the "Check for updates" row once a release is found: the
+ * download bar (background download or install), the CI build while this
+ * platform's asset is still missing, and the release notes.
+ */
+function AvailableUpdateDetails({
   update,
   progress,
-  isInstalling,
-  onInstall,
-}: AvailableUpdateCardProps) {
+}: {
+  update: DesktopAppUpdateCheckResult;
+  progress: AppUpdateProgress;
+}) {
   const { t } = useTranslation();
-  const downloadIcon = useMemo(() => <ThemedDownload />, []);
   const barProgress = useMemo(() => toBarProgress(progress), [progress]);
-  const openRelease = useCallback(() => {
-    void openExternalUrl(update.releaseUrl ?? RELEASES_URL);
-  }, [update.releaseUrl]);
-  const versionLabel = formatVersionWithPrefix(update.latestVersion);
-  const canInstall = update.readyToInstall && !isInstalling;
   // Only worth asking CI about while this platform's asset is still missing; a
   // download under way means it is published.
   const buildStatus = useReleaseBuildStatus(
     update.readyToInstall || update.downloading ? null : update.latestVersion,
   );
+  const showBar = progress.status === "active" || (update.downloading && !update.readyToInstall);
 
   return (
-    <View style={[settingsStyles.card, styles.availableCard]} testID="desktop-update-available">
-      <View style={settingsStyles.row}>
-        <View style={settingsStyles.rowContent}>
-          <Text style={settingsStyles.rowTitle}>
-            {t("desktop.updates.section.available", { version: versionLabel })}
-          </Text>
-          <Text style={settingsStyles.rowHint}>{describeAvailability(update, t)}</Text>
-        </View>
-        <View style={styles.actionGroup}>
-          {update.releaseUrl || RELEASES_URL ? (
-            <Button variant="outline" size="sm" onPress={openRelease}>
-              {t("desktop.updates.section.viewOnGithub")}
-            </Button>
-          ) : null}
-          <Button
-            size="sm"
-            leftIcon={downloadIcon}
-            onPress={onInstall}
-            disabled={!canInstall}
-            loading={isInstalling}
-            testID="desktop-update-install"
-          >
-            {isInstalling
-              ? t("desktop.updates.section.installing")
-              : t("desktop.updates.section.downloadAndInstall")}
-          </Button>
-        </View>
-      </View>
-      {progress.status === "active" ? (
-        <View style={styles.progressRow}>
+    <>
+      {showBar ? (
+        <View style={styles.progressRow} testID="desktop-update-progress">
           <InstallProgressBar progress={barProgress} />
-          <Text style={styles.progressText}>{describeAppUpdateProgress(progress)}</Text>
+          {progress.status === "active" ? (
+            <Text style={styles.progressText}>{describeAppUpdateProgress(progress)}</Text>
+          ) : null}
         </View>
       ) : null}
       {!update.readyToInstall && !update.downloading && buildStatus ? (
@@ -253,6 +232,93 @@ function AvailableUpdateCard({
           <MarkdownRenderer text={update.notes} compact />
         </View>
       ) : null}
+    </>
+  );
+}
+
+interface UpdateCheckRowProps {
+  available: DesktopAppUpdateCheckResult | null;
+  statusText: string;
+  lastCheckedText: string;
+  showLastChecked: boolean;
+  errorMessage: string | null;
+  restartRequired: boolean;
+  isChecking: boolean;
+  isInstalling: boolean;
+  onCheck: () => void;
+  onInstall: () => void;
+}
+
+/** "Check for updates", or the found release with Download & install once it is downloaded. */
+function UpdateCheckRow({
+  available,
+  statusText,
+  lastCheckedText,
+  showLastChecked,
+  errorMessage,
+  restartRequired,
+  isChecking,
+  isInstalling,
+  onCheck,
+  onInstall,
+}: UpdateCheckRowProps) {
+  const { t } = useTranslation();
+  const refreshIcon = useMemo(() => <ThemedRefresh />, []);
+  const downloadIcon = useMemo(() => <ThemedDownload />, []);
+  const releaseUrl = available?.releaseUrl ?? RELEASES_URL;
+  const openRelease = useCallback(() => {
+    void openExternalUrl(releaseUrl);
+  }, [releaseUrl]);
+
+  return (
+    <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+      <View style={settingsStyles.rowContent}>
+        <Text style={settingsStyles.rowTitle}>
+          {available
+            ? t("desktop.updates.section.available", {
+                version: formatVersionWithPrefix(available.latestVersion),
+              })
+            : t("desktop.updates.section.check")}
+        </Text>
+        <Text style={settingsStyles.rowHint}>
+          {available ? describeAvailability(available, t) : statusText}
+        </Text>
+        {showLastChecked ? <Text style={settingsStyles.rowHint}>{lastCheckedText}</Text> : null}
+        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        {restartRequired ? (
+          <Text style={styles.noticeText}>{t("desktop.updates.section.restartRequired")}</Text>
+        ) : null}
+      </View>
+      {available ? (
+        <View style={styles.actionGroup}>
+          <Button variant="outline" size="sm" onPress={openRelease}>
+            {t("desktop.updates.section.viewOnGithub")}
+          </Button>
+          <Button
+            size="sm"
+            leftIcon={downloadIcon}
+            onPress={onInstall}
+            disabled={!available.readyToInstall || isInstalling}
+            loading={isInstalling}
+            testID="desktop-update-install"
+          >
+            {isInstalling
+              ? t("desktop.updates.section.installing")
+              : t("desktop.updates.section.downloadAndInstall")}
+          </Button>
+        </View>
+      ) : (
+        <Button
+          variant="outline"
+          size="sm"
+          leftIcon={refreshIcon}
+          onPress={onCheck}
+          disabled={isChecking || isInstalling}
+          testID="desktop-update-check"
+        >
+          {isChecking ? t("desktop.updates.section.checking") : t("desktop.updates.section.check")}
+        </Button>
+      )}
     </View>
   );
 }
@@ -288,12 +354,17 @@ export function DesktopUpdatesSection({ appVersion }: { appVersion: string | nul
   );
   const releaseChannelOptions = useMemo(
     () => [
-      { value: "stable" as const, label: t("settings.about.releaseChannel.stable") },
-      { value: "beta" as const, label: t("settings.about.releaseChannel.beta") },
+      {
+        value: "stable" as const,
+        label: t("settings.about.releaseChannel.stable"),
+      },
+      {
+        value: "beta" as const,
+        label: t("settings.about.releaseChannel.beta"),
+      },
     ],
     [t],
   );
-  const refreshIcon = useMemo(() => <ThemedRefresh />, []);
 
   const handleCheck = useCallback(() => {
     void checkForUpdates();
@@ -328,8 +399,10 @@ export function DesktopUpdatesSection({ appVersion }: { appVersion: string | nul
   }
 
   const lastCheckedText = formatLastChecked(t, lastCheckedAt, availableUpdate?.checkedAt);
-  const showAvailable =
-    availableUpdate !== null && (status === "available" || status === "pending" || isInstalling);
+  const available =
+    availableUpdate !== null && (status === "available" || status === "pending" || isInstalling)
+      ? availableUpdate
+      : null;
 
   return (
     <SettingsSection title={t("desktop.updates.section.title")} testID="desktop-updates-section">
@@ -381,38 +454,20 @@ export function DesktopUpdatesSection({ appVersion }: { appVersion: string | nul
             accessibilityLabel={t("desktop.updates.section.autoCheck.title")}
           />
         </View>
-        <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
-          <View style={settingsStyles.rowContent}>
-            <Text style={settingsStyles.rowTitle}>{t("desktop.updates.section.check")}</Text>
-            <Text style={settingsStyles.rowHint}>{statusText}</Text>
-            <Text style={settingsStyles.rowHint}>{lastCheckedText}</Text>
-            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
-            {status === "installed" ? (
-              <Text style={styles.noticeText}>{t("desktop.updates.section.restartRequired")}</Text>
-            ) : null}
-          </View>
-          <Button
-            variant="outline"
-            size="sm"
-            leftIcon={refreshIcon}
-            onPress={handleCheck}
-            disabled={isChecking || isInstalling}
-            testID="desktop-update-check"
-          >
-            {isChecking
-              ? t("desktop.updates.section.checking")
-              : t("desktop.updates.section.check")}
-          </Button>
-        </View>
-      </View>
-      {showAvailable && availableUpdate ? (
-        <AvailableUpdateCard
-          update={availableUpdate}
-          progress={progress}
+        <UpdateCheckRow
+          available={available}
+          statusText={statusText}
+          lastCheckedText={lastCheckedText}
+          showLastChecked={available !== null || lastCheckedAt === null}
+          errorMessage={errorMessage}
+          restartRequired={status === "installed"}
+          isChecking={isChecking}
           isInstalling={isInstalling}
+          onCheck={handleCheck}
           onInstall={handleInstall}
         />
-      ) : null}
+        {available ? <AvailableUpdateDetails update={available} progress={progress} /> : null}
+      </View>
     </SettingsSection>
   );
 }
@@ -439,9 +494,6 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "flex-end",
     // Holds the buttons against the right edge once the row has wrapped them onto their own line.
     marginLeft: "auto",
-  },
-  availableCard: {
-    marginTop: theme.spacing[3],
   },
   progressRow: {
     paddingHorizontal: theme.spacing[4],

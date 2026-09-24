@@ -35,7 +35,7 @@ export interface UseDesktopAppUpdaterReturn {
   lastCheckedAt: number | null;
   isChecking: boolean;
   isInstalling: boolean;
-  /** Download / verify / install progress reported by the shell while installing. */
+  /** Download / verify / install progress reported by the shell, including the background download. */
   progress: AppUpdateProgress;
   checkForUpdates: (options?: {
     intent?: DesktopAppUpdateCheckIntent;
@@ -58,20 +58,20 @@ export function useDesktopAppUpdater(): UseDesktopAppUpdaterReturn {
           checkDesktopAppUpdate,
           async installDesktopAppUpdate(input) {
             // The updater publishes installing before entering this port, so
-            // even delayed progress-listener setup has immediate busy feedback.
-            setProgress({ status: "active", phase: "download", received: 0, total: null });
-            let unlisten: (() => void) | null = null;
+            // the bar shows immediately even before the first progress event.
+            setProgress((current) =>
+              current.status === "active"
+                ? current
+                : {
+                    status: "active",
+                    phase: "download",
+                    received: 0,
+                    total: null,
+                  },
+            );
             try {
-              try {
-                unlisten = await listenToDesktopAppUpdateProgress((event) => {
-                  setProgress((current) => reduceAppUpdateProgress(current, event));
-                });
-              } catch {
-                // Progress is optional; installation failures still reach the updater.
-              }
               return await installDesktopAppUpdate(input);
             } finally {
-              unlisten?.();
               setProgress((current) =>
                 current.status === "error" ? current : IDLE_APP_UPDATE_PROGRESS,
               );
@@ -115,6 +115,42 @@ export function useDesktopAppUpdater(): UseDesktopAppUpdaterReturn {
     }
     void checkForUpdates({ intent: "automatic", silent: true });
   }, [checkForUpdates, isDesktopApp]);
+
+  // The shell reports download progress for the background download as well as
+  // for an explicit install, so listen for as long as the section is mounted.
+  useEffect(() => {
+    if (!isDesktopApp) {
+      return undefined;
+    }
+    let disposed = false;
+    let unlisten: (() => void) | null = null;
+    listenToDesktopAppUpdateProgress((event) => {
+      setProgress((current) => reduceAppUpdateProgress(current, event));
+    })
+      .then((dispose) => {
+        if (disposed) {
+          dispose();
+        } else {
+          unlisten = dispose;
+        }
+        return;
+      })
+      .catch(() => {
+        // Progress is optional; the ready event still enables the button.
+      });
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [isDesktopApp]);
+
+  // Once the download lands the bar has nothing left to show.
+  const readyToInstall = snapshot.availableUpdate?.readyToInstall ?? false;
+  useEffect(() => {
+    if (readyToInstall && !snapshot.isInstalling) {
+      setProgress((current) => (current.status === "active" ? IDLE_APP_UPDATE_PROGRESS : current));
+    }
+  }, [readyToInstall, snapshot.isInstalling]);
 
   // Fresh shell checks announce a newer version here. The automatic re-check
   // reads the cache without emitting again and refreshes local state.
