@@ -1869,12 +1869,12 @@ export const fr: TranslationResources = {
       operator: {
         label: "Opérateur",
         description:
-          "Mener le travail : discussions d'agents, terminaux, scripts d'espace de travail, modifications de fichiers, git et actions de forge. Ni réglages de l'hôte ni gestion des appareils.",
+          "Mener le travail : discussions d'agents, terminaux, scripts d'espace de travail, modifications de fichiers, git et actions de forge. Ni réglages de l'hôte ni gestion des appareils. Les commandes s'exécutent en tant qu'utilisateur de l'hôte : c'est l'équivalent d'un propriétaire sur l'hôte.",
       },
       viewer: {
         label: "Observateur",
         description:
-          "Lecture seule : sessions, chronologies, sortie du terminal, navigation dans les fichiers et différences. Aucune saisie ni exécution de commande.",
+          "Lecture seule : sessions, chronologies, sortie du terminal, navigation dans les fichiers et différences au sein des espaces de travail. Aucune saisie ni exécution de commande.",
       },
     },
     refusal: {
