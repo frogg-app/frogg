@@ -1,22 +1,21 @@
 # Frogg roadmap
 
-Pruned against `main` at 1.5.41 (2026-09-24). [Changelog](CHANGELOG.md) records
+Pruned against `main` at 1.5.43 (2026-09-24). [Changelog](CHANGELOG.md) records
 completed work. Unchecked items are open; "acceptance" items need a device or
 deployment run, not more code.
 
 ## Engineering
 
-- [ ] **Port daemon auth to `apps/daemon-rs`.** It has claim state and the brand
-      `trustLan` default, but not 401 on unknown bearer, the last-owner guard, home
-      deny, viewer roots or security posture. Excluded from releases; port before it ships.
-- [ ] **Tighten the Electron CSP.** The shell sets no Content-Security-Policy.
-      Enumerate required origins and verify direct, relay, SSH and local connections.
-- [ ] **Branding workflow fails on every branch** (`brands/example` jobs in
-      `branding.yml`). Fix or drop so it stops hiding real failures.
-- [ ] **`historical_frogg_names_remain_addressable` (daemon-rs) fails:** expects
-      `Frogg-0.2.16-…`, gets `frogg-0.2.16-…`.
-- [ ] **Session decomposition.** Next slice is workspace request handling, then
-      agent lifecycle (`git show 70767eda:docs/refactors/session-decomposition-plan.md`).
+- [ ] **Session decomposition.** Workspace labels, title/pin and agent delete/archive/
+      detach are extracted. Next: workspace create/archive, then agent create/resume/refresh
+      (`git show 70767eda:docs/refactors/session-decomposition-plan.md`).
+- [ ] **`daemon-rs` follow-ups.** Auth rate limiting is not ported. Behind the Rust
+      front, Node needs loopback in `daemon.trustedProxies` so X-Forwarded-For locality
+      applies to the claim/login routes.
+- [ ] **Known failing tests outside CI's set:** three
+      `session.create-agent-worktree-autoarchive.e2e` cases ("Project is not
+      registered"); `websocket-server.relay-reconnect` "reuses one session…" also fails on
+      `main` CI.
 - [ ] **Browser E2E baseline.** Run the settings Playwright specs (updated, never run)
       and the plugin-removal e2e.
 - [ ] **Provider toggles re-enable after updates.** Writer unidentified; next time
@@ -26,19 +25,12 @@ deployment run, not more code.
 ## Features
 
 - [ ] **Schedules rewrite.** The old system was removed in 1.5.41.
-- [ ] **LAN discovery in Add host.** Discover candidates and show their
-      `/api/identity` without typing an address.
-- [ ] **Browser automation.** Daemon-driven Playwright; define workflow and permissions first.
-- [ ] **Frogg-managed skills.** Decide whether to drop the orchestration skills the
-      daemon installs into `~/.claude/skills` / `~/.codex/skills` or make them read-only.
 - [ ] **Provider agent folders.** Verify Codex/Copilot/OpenCode paths against real
       installs; add Cursor, Kiro, Kimi, Trae, Pi and OMP. "Open in editor" only works
       with a local daemon.
-- [ ] **Companion settings.** Group into Voice/Conversation/Appearance; interrupt-delay
-      presets; model picker (new RPC + `server_info.features` gate).
-- [ ] **Companion gaps.** Correlate native voice results with durable jobs (no repeats
-      after reconnect), word-level playback reconciliation, workspace creation before
-      `create_agent`. "Reload agent" can start a second writer before closing the first.
+- [ ] **Companion word-level playback.** Interrupted replies are recorded per finished
+      sentence (never claiming unheard text). Word-level needs word timings the local
+      speech engines do not report.
 - [ ] **iOS delivery.** Signing, distribution and device acceptance.
 
 ## Distribution and ops

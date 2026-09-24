@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.5.43 — 2026-09-24
+
+- **Removed:** the daemon no longer installs its skills into `~/.agents`, `~/.claude`
+  and `~/.codex`. On start it removes the copies older daemons left, but only folders
+  that are exactly as installed; anything edited keeps its folder. The Orchestration
+  skills host setting and `agents.skills` config key (dropped on load) are gone.
+- Companion settings are grouped into Voice, Conversation and Appearance. New: **Interrupt
+  after** (how long you must speak before it stops talking) and **Conversation model**,
+  which sets the host's `features.companion.model`.
+- The Companion can create a worktree workspace for new work before starting an agent.
+- Codex native voice no longer repeats finished task results after a reconnect.
+- Reloading an agent closes its old provider session before starting the new one, so two
+  sessions never write to the same transcript.
+- The desktop app sends a Content-Security-Policy: scripts only from the bundle; no
+  plugins, framing or form posts.
+- `daemon-rs` gains the daemon lock-down: unknown credentials get 401, device roles,
+  the claim latch and `claimMode` apply, revocations take effect without a restart, and
+  the client's credential is forwarded so Node enforces roles for every forwarded message.
+- English copy says "a frogg", not "an frogg".
+- The Branding acceptance workflow passes again.
+
 ## 1.5.42 — 2026-09-24
 
 - The right sidebar toggle now always sits in the workspace header, whether the sidebar is open
