@@ -22,3 +22,5 @@ export const brandIdentity = Object.freeze({
  * is every upstream build.
  */
 export const release = Object.freeze({ version: releaseVersion });
+
+export { isModelAllowed, isProviderAllowed, type ProviderPolicy } from "./provider-policy.js";

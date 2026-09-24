@@ -22,6 +22,7 @@ import {
   type AcpProviderCatalogItem,
 } from "@/hooks/use-acp-provider-catalog";
 import { ProviderCatalogList } from "@/components/provider-catalog-list";
+import { ACP_PROVIDER_CATALOG } from "@/data/acp-provider-catalog";
 import { getProviderIcon } from "@/components/provider-icons";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Switch } from "@/components/ui/switch";
@@ -389,7 +390,7 @@ export function ProvidersSection({ serverId }: ProvidersSectionProps) {
         ) : null}
       </SettingsSection>
 
-      {hasServer && isConnected ? (
+      {hasServer && isConnected && ACP_PROVIDER_CATALOG.length > 0 ? (
         <SettingsSection
           title={t("settings.providers.addProvider")}
           testID="host-page-add-provider-card"

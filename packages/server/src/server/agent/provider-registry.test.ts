@@ -534,6 +534,7 @@ import {
   AGENT_PROVIDER_DEFINITIONS,
   buildProviderRegistry,
   createAllClients,
+  ModelNotAllowedError,
 } from "./provider-registry.js";
 import { FakeOmp } from "./providers/omp/test-utils/fake-omp.js";
 
@@ -1834,5 +1835,70 @@ describe("fetchCatalog", () => {
     expect(injectedClient.fetchCatalog).toHaveBeenCalledTimes(1);
     expect(catalog.models.map((model) => model.id)).toEqual(["catalog-model"]);
     expect(catalog.modes.map((mode) => mode.id)).toEqual(["ask"]);
+  });
+});
+
+describe("build provider policy", () => {
+  const policy = {
+    allowed: ["claude", "codex", "local-codex"],
+    models: { codex: { allow: ["local/*"], deny: ["local/blocked"] } },
+  };
+
+  test("drops providers outside the allowed list, config entries included", () => {
+    const registry = buildProviderRegistry(logger, {
+      providerPolicy: policy,
+      providerOverrides: {
+        copilot: { enabled: true },
+        gemini: { extends: "acp" },
+        "local-codex": { extends: "codex", label: "Local Codex" },
+        "zai-claude": { extends: "claude", label: "Z.AI" },
+      },
+    });
+
+    expect(Object.keys(registry).sort()).toEqual(["claude", "codex", "local-codex"]);
+  });
+
+  test("hides and refuses models the policy rejects, derived profiles included", async () => {
+    mockState.runtimeModels.set("codex", [
+      { provider: "codex", id: "local/qwen", label: "Qwen", isDefault: true },
+      { provider: "codex", id: "local/blocked", label: "Blocked" },
+      { provider: "codex", id: "hosted/free", label: "Free" },
+    ]);
+    const registry = buildProviderRegistry(logger, {
+      providerPolicy: policy,
+      providerOverrides: { "local-codex": { extends: "codex", label: "Local Codex" } },
+    });
+    const options = { scope: "workspace", cwd: "/tmp/policy", force: false } as const;
+
+    for (const provider of ["codex", "local-codex"]) {
+      const { models } = await registry[provider].fetchCatalog(options);
+      expect(models.map((model) => model.id)).toEqual(["local/qwen"]);
+
+      const client = registry[provider].createClient(logger);
+      expect((await client.fetchCatalog(options)).models.map((model) => model.id)).toEqual([
+        "local/qwen",
+      ]);
+      await expect(
+        client.createSession({ provider, cwd: "/tmp/policy", model: "hosted/free" }),
+      ).rejects.toBeInstanceOf(ModelNotAllowedError);
+      // Allowed and unset models both reach the provider.
+      await expect(
+        client.createSession({ provider, cwd: "/tmp/policy", model: "local/qwen" }),
+      ).rejects.toThrow("not implemented");
+      await expect(client.createSession({ provider, cwd: "/tmp/policy" })).rejects.toThrow(
+        "not implemented",
+      );
+    }
+  });
+
+  test("an unset model is refused when the policy leaves none", async () => {
+    mockState.runtimeModels.set("codex", [{ provider: "codex", id: "hosted/free", label: "Free" }]);
+    const client = buildProviderRegistry(logger, { providerPolicy: policy }).codex.createClient(
+      logger,
+    );
+
+    await expect(client.createSession({ provider: "codex", cwd: "/tmp/policy" })).rejects.toThrow(
+      ModelNotAllowedError,
+    );
   });
 });

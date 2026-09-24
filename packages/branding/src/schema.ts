@@ -71,6 +71,16 @@ export const HOST_SETTINGS_SECTIONS = [
   "host",
 ] as const;
 
+/** Provider or model id pattern; `*` matches any run of characters. */
+const idPattern = z
+  .string()
+  .regex(/^[A-Za-z0-9*][A-Za-z0-9._:/@*-]*$/)
+  .max(160);
+const modelPolicy = z.strictObject({
+  allow: z.array(idPattern).optional(),
+  deny: z.array(idPattern).optional(),
+});
+
 export const BrandManifestSchema = z.strictObject({
   schemaVersion: z.literal(1),
   id: slug,
@@ -174,6 +184,15 @@ export const BrandManifestSchema = z.strictObject({
       providerUpdateChecks: z.boolean().optional(),
     })
     .optional(),
+  providers: z
+    .strictObject({
+      // Every provider id this build may run: builtins, derived profiles and
+      // custom ACP entries alike. Omitted = no restriction.
+      allowed: z.array(slug).min(1).optional(),
+      // Per-provider model allow/deny patterns, matched against model ids.
+      models: z.record(slug, modelPolicy).optional(),
+    })
+    .optional(),
   mobile: z.strictObject({ enabled: z.boolean().optional() }).optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
@@ -214,6 +233,7 @@ export function resolveBrandManifest(input: unknown) {
     projects: resolveProjects(manifest),
     hostSettings: resolveHostSettings(manifest),
     daemon: resolveDaemonDefaults(manifest),
+    providers: resolveProviders(manifest),
     // "Does this brand ship a mobile app". Today the only consumer is the CLI,
     // which stops printing a pairing QR nobody could scan; nothing else in the
     // daemon or the apps reads it.
@@ -245,6 +265,32 @@ function resolveDaemonDefaults(manifest: BrandManifest) {
     claimScope: manifest.daemon?.claimScope ?? "any",
     providerUpdateChecks: manifest.daemon?.providerUpdateChecks ?? true,
   };
+}
+
+/**
+ * OpenCode's own `opencode/*` models run on OpenCode's hosted service, free
+ * ones included. A branded build ships them off unless its manifest names an
+ * OpenCode model policy, so enabling OpenCode for local models does not also
+ * open a path to an external endpoint.
+ */
+const BRANDED_DEFAULT_MODEL_POLICIES: Record<string, { allow: string[]; deny: string[] }> = {
+  opencode: { allow: [], deny: ["opencode/*"] },
+};
+
+/**
+ * Which providers and models this build may run. Unlike the daemon defaults
+ * this is a lock: config.json cannot add a provider outside `allowed` or select
+ * a model the policy rejects, and the client leaves them out entirely.
+ */
+function resolveProviders(manifest: BrandManifest) {
+  const upstream = manifest.id === "frogg";
+  const models: Record<string, { allow: string[]; deny: string[] }> = upstream
+    ? {}
+    : { ...BRANDED_DEFAULT_MODEL_POLICIES };
+  for (const [provider, policy] of Object.entries(manifest.providers?.models ?? {})) {
+    models[provider] = { allow: policy.allow ?? [], deny: policy.deny ?? [] };
+  }
+  return { allowed: manifest.providers?.allowed ?? null, models };
 }
 
 /** Installer presentation defaults follow the dark palette so a brand needs no extra fields. */

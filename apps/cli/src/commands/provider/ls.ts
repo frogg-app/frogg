@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { brand, isProviderAllowed } from "@frogg/branding";
 import type { CommandOptions, ListResult, OutputSchema } from "../../output/index.js";
 import type { ProviderSnapshotEntry } from "@frogg/protocol/agent-types";
 import { AGENT_PROVIDER_DEFINITIONS } from "@frogg/protocol/provider-manifest";
@@ -14,7 +15,9 @@ export interface ProviderListItem {
 }
 
 /** Derive provider list from the manifest — single source of truth */
-const PROVIDERS: ProviderListItem[] = AGENT_PROVIDER_DEFINITIONS.map((def) => ({
+const PROVIDERS: ProviderListItem[] = AGENT_PROVIDER_DEFINITIONS.filter((def) =>
+  isProviderAllowed(brand.providers, def.id),
+).map((def) => ({
   provider: def.id,
   label: def.label,
   status: "available",

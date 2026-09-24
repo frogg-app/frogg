@@ -1,3 +1,4 @@
+import { brand, isProviderAllowed } from "@frogg/branding";
 import { ACP_PROVIDER_ICON_SVGS } from "@/assets/acp-provider-icons";
 
 export interface AcpProviderCatalogEntry {
@@ -369,7 +370,10 @@ const CATALOG_DATA = [
   },
 ] as const;
 
-export const ACP_PROVIDER_CATALOG: AcpProviderCatalogEntry[] = CATALOG_DATA.map((entry) => ({
+// A build with a provider list offers only the listed entries; the daemon would ignore the rest.
+export const ACP_PROVIDER_CATALOG: AcpProviderCatalogEntry[] = CATALOG_DATA.filter((entry) =>
+  isProviderAllowed(brand.providers, entry.id),
+).map((entry) => ({
   id: entry.id,
   title: entry.title,
   description: entry.description,

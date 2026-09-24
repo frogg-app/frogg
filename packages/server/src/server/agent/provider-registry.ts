@@ -1,6 +1,7 @@
 import type { Logger } from "pino";
 import type { ProviderOptions, ToolPolicy } from "@frogg/protocol/agent-types";
 import { z } from "zod";
+import { brand, isModelAllowed, isProviderAllowed, type ProviderPolicy } from "@frogg/branding";
 
 import type {
   AgentClient,
@@ -103,6 +104,8 @@ export interface ProviderDefinition extends AgentProviderDefinition {
 }
 
 export interface BuildProviderRegistryOptions {
+  /** The build's provider lock; defaults to brand.json `providers`. */
+  providerPolicy?: ProviderPolicy;
   runtimeSettings?: AgentProviderRuntimeSettingsMap;
   /**
    * Env overlay contributed by the provider's active sign-in account
@@ -148,6 +151,8 @@ interface ResolvedProvider {
   providerParams?: unknown;
   createBaseClient: (logger: Logger) => AgentClient;
   contract: ProviderContract;
+  /** The build's model policy for this provider; null when it lists every model. */
+  modelGate?: ModelGate | null;
 }
 
 interface ProviderContract {
@@ -603,6 +608,23 @@ function createRegistryEntry(
   provider: AgentProvider,
   resolved: ResolvedProvider,
 ): ProviderDefinition {
+  const entry = createUngatedRegistryEntry(logger, provider, resolved);
+  const gate = resolved.modelGate;
+  if (!gate) return entry;
+  return {
+    ...entry,
+    fetchCatalog: async (options, client, context) => {
+      const catalog = await entry.fetchCatalog(options, client, context);
+      return { ...catalog, models: gate.filter(catalog.models) };
+    },
+  };
+}
+
+function createUngatedRegistryEntry(
+  logger: Logger,
+  provider: AgentProvider,
+  resolved: ResolvedProvider,
+): ProviderDefinition {
   const modelClient = resolved.createBaseClient(logger);
   const profileModels = resolveConfiguredModels(provider, modelClient, resolved.profileModels);
   const additionalModels = resolveConfiguredModels(
@@ -699,6 +721,96 @@ function createRegistryEntry(
   };
 }
 
+export class ModelNotAllowedError extends Error {
+  constructor(provider: AgentProvider, modelId: string | null) {
+    super(
+      modelId
+        ? `Model '${modelId}' is not available for provider '${provider}' in this build`
+        : `Provider '${provider}' has no model available in this build`,
+    );
+    this.name = "ModelNotAllowedError";
+  }
+}
+
+interface ModelGate {
+  allows(modelId: string): boolean;
+  filter(models: AgentModelDefinition[]): AgentModelDefinition[];
+}
+
+function createModelGate(
+  policy: ProviderPolicy,
+  provider: AgentProvider,
+  derivedFromProviderId: string | null,
+): ModelGate | null {
+  const providerIds = derivedFromProviderId ? [provider, derivedFromProviderId] : [provider];
+  if (!providerIds.some((id) => policy.models[id])) return null;
+  const allows = (modelId: string) => isModelAllowed(policy, providerIds, modelId);
+  return { allows, filter: (models) => models.filter((model) => allows(model.id)) };
+}
+
+/** `target` with `overrides` layered on top; other members stay bound to `target`. */
+function withOverrides<T extends object>(target: T, overrides: Partial<T>): T {
+  return new Proxy(target, {
+    get(inner, property) {
+      if (Object.hasOwn(overrides, property)) return overrides[property as keyof T];
+      const value = Reflect.get(inner, property, inner);
+      return typeof value === "function" ? value.bind(inner) : value;
+    },
+  });
+}
+
+/**
+ * Enforce the build's model policy on a client: hidden from the catalog, and
+ * refused at create, resume and switch. A session created without a model would
+ * run the provider's own default, which may sit outside the policy, so it gets
+ * the catalog's first allowed model instead.
+ */
+function gateClientModels(
+  provider: AgentProvider,
+  inner: AgentClient,
+  gate: ModelGate,
+): AgentClient {
+  const assertAllowed = (modelId: string | null | undefined) => {
+    if (modelId && !gate.allows(modelId)) throw new ModelNotAllowedError(provider, modelId);
+  };
+  const gateSession = (session: AgentSession): AgentSession => {
+    const setModel = session.setModel?.bind(session);
+    if (!setModel) return session;
+    return withOverrides(session, {
+      setModel: async (modelId: string | null) => {
+        if (modelId === null) throw new ModelNotAllowedError(provider, null);
+        assertAllowed(modelId);
+        await setModel(modelId);
+      },
+    });
+  };
+  const fetchCatalog: AgentClient["fetchCatalog"] = async (options, context) => {
+    const catalog = await inner.fetchCatalog(options, context);
+    return { ...catalog, models: gate.filter(catalog.models) };
+  };
+  return withOverrides(inner, {
+    fetchCatalog,
+    createSession: async (config: AgentSessionConfig, launchContext) => {
+      let model = config.model;
+      if (model) {
+        assertAllowed(model);
+      } else {
+        const { models } = await fetchCatalog(
+          { scope: "workspace", cwd: config.cwd, force: false },
+          undefined,
+        );
+        model = (models.find((entry) => entry.isDefault) ?? models[0])?.id;
+        if (!model) throw new ModelNotAllowedError(provider, null);
+      }
+      return gateSession(await inner.createSession({ ...config, model }, launchContext));
+    },
+    resumeSession: async (handle, overrides, launchContext, options) => {
+      assertAllowed(overrides?.model);
+      return gateSession(await inner.resumeSession(handle, overrides, launchContext, options));
+    },
+  });
+}
+
 function createResolvedProviderClient(
   logger: Logger,
   provider: AgentProvider,
@@ -708,16 +820,17 @@ function createResolvedProviderClient(
   const profileModels = resolveConfiguredModels(provider, inner, resolved.profileModels);
   const additionalModels = resolveConfiguredModels(provider, inner, resolved.additionalModels);
   const hasModelOverrides = profileModels.length > 0 || additionalModels.length > 0;
-  if (inner.provider === provider && !hasModelOverrides) {
-    return inner;
-  }
-  return wrapClientProvider(
-    provider,
-    inner,
-    profileModels,
-    additionalModels,
-    resolved.profileModelsAreAdditive,
-  );
+  const client =
+    inner.provider === provider && !hasModelOverrides
+      ? inner
+      : wrapClientProvider(
+          provider,
+          inner,
+          profileModels,
+          additionalModels,
+          resolved.profileModelsAreAdditive,
+        );
+  return resolved.modelGate ? gateClientModels(provider, client, resolved.modelGate) : client;
 }
 
 function buildResolvedBuiltinProviders(
@@ -896,12 +1009,49 @@ function addDerivedProviders(
   }
 }
 
+/**
+ * Drop config entries for providers outside this build's list before they are
+ * read, so a stale or hand-edited config.json can neither add one nor break startup.
+ */
+function filterAllowedOverrides(
+  logger: Logger,
+  policy: ProviderPolicy,
+  providerOverrides: Record<string, ProviderOverride> = {},
+): Record<string, ProviderOverride> {
+  return Object.fromEntries(
+    Object.entries(providerOverrides).filter(([provider]) => {
+      if (isProviderAllowed(policy, provider)) return true;
+      logger.warn(
+        { provider },
+        "Ignoring provider config: provider is not available in this build",
+      );
+      return false;
+    }),
+  );
+}
+
+/** Remove providers this build does not ship, and attach each survivor's model policy. */
+function applyProviderPolicy(
+  resolvedProviders: Map<string, ResolvedProvider>,
+  policy: ProviderPolicy,
+): void {
+  for (const [provider, resolved] of resolvedProviders) {
+    const base = resolved.derivedFromProviderId;
+    if (!isProviderAllowed(policy, provider) || (base && !isProviderAllowed(policy, base))) {
+      resolvedProviders.delete(provider);
+      continue;
+    }
+    resolved.modelGate = createModelGate(policy, provider, base);
+  }
+}
+
 export function buildProviderRegistry(
   logger: Logger,
   options?: BuildProviderRegistryOptions,
 ): Record<AgentProvider, ProviderDefinition> {
   const runtimeSettings = options?.runtimeSettings;
-  const providerOverrides = options?.providerOverrides ?? {};
+  const policy = options?.providerPolicy ?? brand.providers;
+  const providerOverrides = filterAllowedOverrides(logger, policy, options?.providerOverrides);
   const resolvedProviders = buildResolvedBuiltinProviders(
     providerOverrides,
     runtimeSettings,
@@ -919,6 +1069,8 @@ export function buildProviderRegistry(
     openCodeBridge: options?.openCodeBridge,
     ...(options?.providerAccountEnv ? { providerAccountEnv: options.providerAccountEnv } : {}),
   });
+
+  applyProviderPolicy(resolvedProviders, policy);
 
   return Object.fromEntries(
     [...resolvedProviders.entries()].map(([provider, resolved]) => [

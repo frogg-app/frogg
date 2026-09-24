@@ -312,6 +312,39 @@ owner writes an address. These are defaults, not locks: `daemon.listen` / `<PREF
 daemon's own configuration win. See
 [security and access](/docs/self-hosting/security/).
 
+## Providers
+
+Which providers and models a build may run. Unlike the sections above, this is a lock:
+nothing in a daemon's `config.json` can widen it.
+
+| Key       | Rule                                        | Default | Meaning |
+| --------- | ------------------------------------------- | ------- | ------- |
+| `allowed` | non-empty list of provider ids              | every provider | Providers the build ships. Builtins, derived profiles (`extends`) and custom ACP entries alike |
+| `models`  | `{ "<providerId>": { "allow": [...], "deny": [...] } }` | see below | Model id patterns per provider; `*` matches anything |
+
+```json
+{
+  "providers": {
+    "allowed": ["claude", "opencode"],
+    "models": { "opencode": { "allow": ["ollama/*", "lmstudio/*"] } }
+  }
+}
+```
+
+- A provider outside `allowed` is gone, not disabled: the daemon never loads it, drops any
+  `config.json` entry for it with a warning, and the app's add-provider catalog and the CLI's
+  offline `provider ls` leave it out. A derived profile needs both its own id and the provider
+  it extends listed.
+- A model passes when it matches an `allow` pattern (or `allow` is empty) and no `deny`
+  pattern. A derived profile is held to its base provider's policy as well as its own.
+  Rejected models are missing from the model picker, and the daemon refuses them when an agent
+  is created, resumed with a model override, or switched.
+- An agent created without a model gets the first allowed one rather than the provider's own
+  default, which could sit outside the policy. With no allowed model, creation fails.
+- Every brand other than `frogg` defaults OpenCode to `{ "deny": ["opencode/*"] }`: OpenCode's
+  own models, free ones included, run on OpenCode's hosted service. Naming any `opencode` policy
+  replaces that default, so `"opencode": {}` turns them back on.
+
 ## Mobile
 
 | Key       | Rule    | Default | Meaning |
@@ -341,3 +374,5 @@ adds derived values you cannot set directly:
 | `daemon.trustLan`            | `true` for `frogg`, else `false`                        |
 | `daemon.claimScope`          | `"any"`                                                 |
 | `daemon.providerUpdateChecks` | `true`                                                 |
+| `providers.allowed`          | `null` (every provider) unless set                      |
+| `providers.models`           | `{}` for `frogg`, else `{ "opencode": { "allow": [], "deny": ["opencode/*"] } }` plus the manifest's entries |

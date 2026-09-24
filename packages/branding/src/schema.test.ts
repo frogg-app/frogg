@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { BrandManifestSchema, resolveBrandManifest } from "./schema.js";
 import { brandEnv, matchesBrand, normalizeBrandEnvironment, storageKey } from "./identity.js";
 import { daemonArtifactName } from "./artifacts.js";
+import { isModelAllowed, isProviderAllowed } from "./provider-policy.js";
 
 const minimal = {
   schemaVersion: 1,
@@ -280,4 +281,38 @@ test("mobile defaults on and can be turned off", () => {
     resolveBrandManifest({ ...minimal, mobile: { enabled: false } }).mobile.enabled,
     false,
   );
+});
+
+test("provider policy locks providers and keeps OpenCode's hosted models off for brands", () => {
+  const open = resolveBrandManifest({ ...minimal, id: "frogg" }).providers;
+  assert.deepEqual(open, { allowed: null, models: {} });
+  assert.equal(isModelAllowed(open, ["opencode"], "opencode/big-pickle"), true);
+
+  const branded = resolveBrandManifest({
+    ...minimal,
+    providers: { allowed: ["claude", "opencode"] },
+  }).providers;
+  assert.equal(isProviderAllowed(branded, "claude"), true);
+  assert.equal(isProviderAllowed(branded, "codex"), false);
+  assert.equal(isModelAllowed(branded, ["opencode"], "opencode/big-pickle"), false);
+  assert.equal(isModelAllowed(branded, ["opencode"], "ollama/llama3.1:8b"), true);
+  // A derived profile inherits the policy of the provider it extends.
+  assert.equal(isModelAllowed(branded, ["local-oc", "opencode"], "opencode/grok-code"), false);
+
+  const local = resolveBrandManifest({
+    ...minimal,
+    providers: { models: { opencode: { allow: ["ollama/*", "lmstudio/*"] } } },
+  }).providers;
+  assert.equal(isModelAllowed(local, ["opencode"], "ollama/qwen3"), true);
+  assert.equal(isModelAllowed(local, ["opencode"], "anthropic/claude-sonnet-5"), false);
+  // Naming an OpenCode policy replaces the branded default.
+  assert.equal(
+    isModelAllowed(
+      resolveBrandManifest({ ...minimal, providers: { models: { opencode: {} } } }).providers,
+      ["opencode"],
+      "opencode/big-pickle",
+    ),
+    true,
+  );
+  assert.throws(() => resolveBrandManifest({ ...minimal, providers: { allowed: [] } }), /allowed/);
 });
