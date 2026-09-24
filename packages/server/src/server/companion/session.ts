@@ -207,6 +207,13 @@ export class CompanionSession {
   private wireTurnId = 0;
   private runningTurn = false;
   private readonly nativeJobHandoffs = new Set<string>();
+  /**
+   * Settled jobs handed to native voice and not yet spoken. The append RPC only
+   * says Codex accepted the text; a finished assistant transcript afterwards is
+   * the proof it was said, so only then is a job marked announced. Anything
+   * still here when the session ends replays on the next conversation.
+   */
+  private nativeUnspokenJobs: string[] = [];
   private readonly pendingJobs = new Map<string, CompanionDeferredJob>();
   /** Retry unheard updates after user input, without an inference retry loop. */
   private readonly retryJobs = new Map<string, CompanionDeferredJob>();
@@ -492,7 +499,10 @@ export class CompanionSession {
       onTranscript: (role, text, isFinal) => {
         if (generation !== this.generation) return;
         if (role === "user") this.emitTranscript(text, isFinal);
-        else this.emitReply(text, isFinal);
+        else {
+          this.emitReply(text, isFinal);
+          if (isFinal) this.acknowledgeNativeJobs();
+        }
       },
       onError: (error) => {
         if (generation !== this.generation) return;
@@ -996,14 +1006,21 @@ export class CompanionSession {
       const handoffId = `${job.jobId}:${job.status}:${job.summary ?? ""}`;
       if (this.nativeJobHandoffs.has(handoffId)) return;
       this.nativeJobHandoffs.add(handoffId);
-      // An append acknowledgement is not proof the audio was delivered. Keep results unannounced
-      // for reconnection until native transcript/playback acknowledgement is qualified.
+      // Accepted is not spoken: the job is marked announced by acknowledgeNativeJobs once
+      // the reply that follows it finishes, so a dropped session replays it instead.
+      const generation = this.generation;
       void this.nativeVoice
         .appendSpeech(
           job.status === "running"
             ? `${job.summary}. Ask about this specific permission.`
             : describeSettledJob(job),
         )
+        .then(() => {
+          if (generation === this.generation && job.status !== "running") {
+            this.nativeUnspokenJobs.push(job.jobId);
+          }
+          return undefined;
+        })
         .catch((error: unknown) => {
           this.nativeJobHandoffs.delete(handoffId);
           this.logger.warn({ err: error }, "Native result handoff failed");
@@ -1013,6 +1030,13 @@ export class CompanionSession {
     this.retryJobs.delete(job.jobId);
     this.pendingJobs.set(job.jobId, { ...job });
     this.flushJobs();
+  }
+
+  /** A finished native reply follows the handed-off results: they were spoken. */
+  private acknowledgeNativeJobs(): void {
+    const spoken = this.nativeUnspokenJobs;
+    this.nativeUnspokenJobs = [];
+    for (const jobId of spoken) this.runtime.jobs?.markAnnounced(jobId);
   }
 
   private flushJobs(): void {
@@ -1113,6 +1137,7 @@ export class CompanionSession {
     this.pendingJobs.clear();
     this.retryJobs.clear();
     this.nativeJobHandoffs.clear();
+    this.nativeUnspokenJobs = [];
     this.pendingUserText = [];
     this.isUserSpeaking = false;
 
