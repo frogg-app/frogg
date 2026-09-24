@@ -79,17 +79,18 @@ mod tests {
                 daemon_artifact("0.2.15", "darwin", "x64"),
                 "frogg-daemon-0.2.15-darwin-x64.tar.gz"
             );
+            // The prefix follows brand.json (lowercased in 1.5), so compare shape, not casing.
             assert_eq!(
                 daemon_artifact("0.2.16", "darwin", "x64"),
-                "Frogg-0.2.16-mac-x86_64-daemon.tar.gz"
+                format!("{ARTIFACT_PREFIX}-0.2.16-mac-x86_64-daemon.tar.gz")
             );
             assert_eq!(
                 desktop_artifact("0.2.15", "linux-x86_64.deb"),
-                "Frogg-0.2.15-amd64.deb"
+                format!("{ARTIFACT_PREFIX}-0.2.15-amd64.deb")
             );
             assert_eq!(
                 desktop_artifact("0.2.16", "linux-x86_64.deb"),
-                "Frogg-0.2.16-linux-x86_64.deb"
+                format!("{ARTIFACT_PREFIX}-0.2.16-linux-x86_64.deb")
             );
         }
     }
