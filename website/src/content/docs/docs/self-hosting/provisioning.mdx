@@ -1,0 +1,225 @@
+---
+title: Provisioning a fleet
+description: Install, lock down and pair Frogg daemons from a script — config keys, listen pinning, owner pairing, passwords, version pinning, checksums and backups.
+sidebar:
+  order: 6
+---
+
+import { Steps } from "@/components/docs";
+
+This page is for installing daemons from a script or a configuration-management tool,
+on machines you do not sit at. It assumes you have read
+[security and access](/docs/self-hosting/security/).
+
+Commands use the stock names: `frogg`, `FROGG_*` and `~/.frogg`. A branded build uses its
+own CLI name, environment prefix (`<PREFIX>_*`) and home directory; it ignores `FROGG_*`.
+Examples use `jq`.
+
+## Checklist
+
+### 1. Write `daemon.listen`, never a top-level `listen`
+
+The listen address lives under `daemon` in `config.json`. The schema is strict, so a
+top-level key is not ignored. The daemon refuses to start:
+
+```text
+[Config] Invalid config in /home/you/.frogg/config.json:
+  - : Unrecognized key: "listen"
+```
+
+The same applies to any key the running version does not know. See
+[step 6](#6-write-lock-down-only-keys-after-the-new-binary-is-installed).
+
+### 2. Pin the listen address explicitly
+
+Where a daemon listens is decided in this order: `--listen`, then `<PREFIX>_LISTEN` in
+its environment, then `daemon.listen` in `config.json`, then the brand's `bind` on its port.
+The stock brand binds `0.0.0.0`; other brands bind `127.0.0.1`.
+
+Set it in both places:
+
+- Pass `FROGG_LISTEN` (`<PREFIX>_LISTEN`) to `install.sh`. The service unit it writes
+  carries that value.
+- Write the same value to `daemon.listen`.
+
+A service unit written by an older CLI can carry `FROGG_LISTEN` on a branded build. The
+branded daemon ignores it, so without `daemon.listen` it falls back to the brand default.
+Re-running the installer rewrites the unit.
+
+### 3. Pair an owner with `frogg pair --json --role owner`
+
+```sh
+if frogg pair --help 2>/dev/null | grep -q -- '--role'; then
+  frogg pair --json --role owner          # 1.5.29 and later: a pairing code
+else
+  frogg daemon pair --json                # older CLIs: a single-use offer link
+fi
+```
+
+`frogg pair --json` prints one object with `code`, `host`, `port`, `fingerprint`,
+`deeplink`, `expiresAt` and `role`. See [the CLI reference](/docs/desktop-mobile-cli/cli/#frogg-pair).
+The fallback prints a single-use link in `url`, valid for 10 minutes. Redeeming it makes
+the device an owner.
+
+Run the command on the daemon host as the user that owns the daemon home. The CLI
+authenticates with the home's `local-token` file. Once the daemon is claimed, nothing else
+on the host can mint an owner code without a credential: a loopback connection alone is not
+enough. If the daemon refuses, the command exits 1. Under `--json` it writes
+`{"code":"PAIRING_CODE_FAILED",…}` (`frogg pair`) or `{"code":"PAIRING_UNAUTHORIZED",…}`
+(`frogg daemon pair`) to stderr.
+
+### 4. Pass a password through the environment, never argv
+
+A password on a command line is visible to every user through `ps` and lands in shell
+history. The daemon reads `<PREFIX>_PASSWORD` from its environment, hashes it at startup,
+and it overrides `daemon.auth.password`. The CLI reads the same variable. There is no flag
+for either.
+
+On Linux, put it in a systemd drop-in. The installer rewrites the unit, not the drop-in:
+
+```ini title="~/.config/systemd/user/frogg-daemon.service.d/password.conf"
+[Service]
+EnvironmentFile=%h/.config/frogg/daemon.env
+```
+
+```text title="~/.config/frogg/daemon.env (mode 0600)"
+FROGG_PASSWORD=…
+```
+
+```sh
+systemctl --user daemon-reload && systemctl --user restart frogg-daemon
+```
+
+`frogg auth set-password` stores a hash in `config.json` but only prompts on a terminal. It
+has no non-interactive or stdin mode. A daemon with a password counts as claimed.
+
+`install-docker.sh` passes `FROGG_PASSWORD` to `docker run -e`. The value appears in that
+command's arguments while it runs.
+
+### 5. Pair immediately after install; treat "claimed" as ready
+
+With claim mode on, an unclaimed daemon belongs to the first client that claims it. Close
+that window at once: mint the owner code in the same run that installs the daemon, redeem
+it, and do not report the machine ready until the daemon says it is claimed:
+
+```sh
+frogg auth claim-status --json | jq -e '.claimed' >/dev/null
+```
+
+From another machine, `GET /api/setup/status` needs no credential and returns
+`{"claimed":true,"pairingRequired":false}`. It also counts a password as claimed;
+`claim-status` counts only paired devices and the claim latch.
+
+A claim is latched: revoking every device does not reopen it. Only
+`frogg auth reset-claim` on the host does. The daemon refuses to revoke or demote the last
+owner.
+
+`daemon.auth.claimScope: "local"` removes the race altogether. Only a loopback client
+presenting the local token can claim, and anyone else gets `403`. See
+[claim mode](/docs/self-hosting/security/#claim-mode).
+
+### 6. Write lock-down-only keys after the new binary is installed
+
+Because the config schema is strict, a daemon older than a key refuses the whole file.
+This includes an old daemon restarted with it, the CLI of that version, and an automatic
+rollback to the previous version when an update fails its health check.
+
+| Key | First version that reads it |
+| --- | --------------------------- |
+| `daemon.auth.claimMode` | 1.5.29 |
+| `daemon.auth.claimScope` | the first release after 1.5.34 |
+
+Install the new version, confirm `frogg --version`, then write the keys and restart.
+`claimScope` is read at startup only; `frogg reload` does not apply it. Remove these keys
+before [rolling back](/docs/self-hosting/updates/#rolling-back-to-1528-or-earlier) to a
+version that predates them.
+
+### 7. Pin the version and verify the checksum
+
+Install a named version, not "latest", and fetch the installer from that release rather
+than from `frogg.app`:
+
+```sh
+V=1.5.34
+curl -fsSLO "https://github.com/frogg-app/frogg/releases/download/v$V/install.sh"
+FROGG_VERSION=$V FROGG_LISTEN=127.0.0.1:9999 bash install.sh
+```
+
+The installer downloads the bundle and its `.sha256` sidecar and stops on a mismatch. The
+sidecar comes from the same place as the bundle, so for an independent check, record the
+expected SHA-256 in your provisioning tool and install from a file you verified:
+
+```sh
+f=frogg-daemon-$V-linux-x64.tar.gz
+curl -fsSLO "https://github.com/frogg-app/frogg/releases/download/v$V/$f"
+echo "<expected sha256>  $f" | sha256sum -c -
+FROGG_BUNDLE_FILE=$PWD/$f FROGG_LISTEN=127.0.0.1:9999 bash install.sh
+```
+
+Daemon releases publish one `.sha256` per asset. There is no combined `SHA256SUMS` for
+daemon bundles; desktop builds have `SHA256SUMS-desktop`. Pin updates the same way with
+`frogg update --to <version>`, and leave `daemon.autoUpdate.enabled` off on machines whose
+version you manage.
+
+### 8. Back up config and principals; set `claimMode` and `trustLan` explicitly
+
+Before any install or upgrade, copy both files:
+
+```sh
+cp -p ~/.frogg/config.json ~/.frogg/principals.json "$BACKUP_DIR"/
+```
+
+`principals.json` holds the paired devices. Since 1.5.29 it is version 2, and older daemons
+cannot read it. See [rolling back](/docs/self-hosting/updates/#rolling-back-to-1528-or-earlier).
+Both files are mode 0600 and hold credential hashes, so keep the backup private.
+
+Write `claimMode` and `trustLan` yourself instead of relying on the defaults. Defaults
+depend on the brand and changed between versions: before the release that added the
+brand's `trustLan`, every brand trusted the LAN whenever claim mode was off. Turning claim
+mode off with `trustLan` still `true` lets every private-network client in with no
+credential.
+
+```json
+{ "daemon": { "auth": { "claimMode": true, "trustLan": false } } }
+```
+
+## Per-machine order
+
+<Steps>
+
+1. **Back up** `config.json` and `principals.json` if the machine already has a daemon.
+
+2. **Install the pinned, verified version** listening on loopback
+   (`FROGG_LISTEN=127.0.0.1:<port>`), so nothing off the host can reach it yet.
+
+3. **Check the version.** `frogg --version` and `frogg status` show the version you pinned.
+
+4. **Write the config** in one change, merged into the existing file:
+
+   ```sh
+   jq '.daemon.listen = "0.0.0.0:9999"
+       | .daemon.auth.claimMode = true
+       | .daemon.auth.trustLan = false
+       | .daemon.auth.claimScope = "local"' ~/.frogg/config.json > config.new \
+     && install -m 600 config.new ~/.frogg/config.json && rm config.new
+   ```
+
+   Leave out `claimScope` on a version that predates it.
+
+5. **Add the password drop-in** if you use a password.
+
+6. **Re-run the pinned installer with the final address** (`FROGG_LISTEN=0.0.0.0:9999`).
+   The unit's environment wins over `daemon.listen`, so the two must agree. The installer
+   restarts the service and waits until the daemon reports healthy.
+
+7. **Pair the owner at once** with `frogg pair --json --role owner`, or the fallback, and
+   redeem the code on the owner's device. Without `claimScope: "local"`, this is the
+   window in which another client could claim the daemon, so keep it short.
+
+8. **Wait for "claimed".** `frogg auth claim-status --json` reports `"claimed": true`. Only
+   now report the machine ready.
+
+9. **Verify the posture.** `frogg auth claim-mode` reports the mode and where it came from,
+   and `frogg status` shows `LAN Trusted false`.
+
+</Steps>
