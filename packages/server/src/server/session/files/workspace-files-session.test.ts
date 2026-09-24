@@ -24,6 +24,7 @@ import {
 } from "./workspace-files-session.js";
 import { DownloadTokenStore } from "../../file-download/token-store.js";
 import type { SessionOutboundMessage } from "../../messages.js";
+import type { DeviceRole } from "../../authorization/index.js";
 
 const tempDirs: string[] = [];
 
@@ -43,6 +44,8 @@ function makeSubsystem(
   options: {
     hasBinaryChannel?: boolean;
     emitBinary?: (frame: Uint8Array) => Promise<void> | void;
+    role?: DeviceRole;
+    workspaceRoots?: string[];
   } = {},
 ) {
   const emitted: SessionOutboundMessage[] = [];
@@ -62,6 +65,8 @@ function makeSubsystem(
     downloadTokenStore: new DownloadTokenStore({ ttlMs: 60_000 }),
     froggHome,
     logger: pino({ level: "silent" }),
+    getRole: () => options.role ?? "owner",
+    listWorkspaceRoots: async () => options.workspaceRoots ?? [],
   });
   return {
     subsystem,
@@ -710,6 +715,78 @@ describe("WorkspaceFilesSession daemon-home deny", () => {
       mode: "file",
       requestId: "req-worktree",
     });
+
+    expect(errorOf(emitted[0])).toBeNull();
+  });
+});
+
+describe("WorkspaceFilesSession viewer workspace roots", () => {
+  const OUTSIDE = "Viewers can only access files inside a registered workspace";
+
+  async function list(subsystem: WorkspaceFilesSession, cwd: string, path = ".") {
+    await subsystem.handleFileExplorerRequest({
+      type: "file_explorer_request",
+      cwd,
+      path,
+      mode: "list",
+      requestId: `req-${cwd}`,
+    });
+  }
+
+  test("refuses ~ and / for a viewer", async () => {
+    const workspace = makeDir("workspace-files-viewer-");
+    const { subsystem, emitted } = makeSubsystem({ role: "viewer", workspaceRoots: [workspace] });
+
+    await list(subsystem, "~");
+    await list(subsystem, "/");
+
+    expect(emitted.map(errorOf)).toEqual([OUTSIDE, OUTSIDE]);
+  });
+
+  test("allows a viewer inside a registered workspace and its subdirectories", async () => {
+    const workspace = makeDir("workspace-files-viewer-");
+    mkdirSync(join(workspace, "src"));
+    writeFileSync(join(workspace, "src", "a.ts"), "x");
+    const { subsystem, emitted } = makeSubsystem({ role: "viewer", workspaceRoots: [workspace] });
+
+    await list(subsystem, workspace);
+    await list(subsystem, join(workspace, "src"));
+
+    expect(emitted.map(errorOf)).toEqual([null, null]);
+  });
+
+  test("refuses a viewer download token outside workspaces", async () => {
+    const workspace = makeDir("workspace-files-viewer-");
+    const outside = makeDir("workspace-files-outside-");
+    writeFileSync(join(outside, "id_rsa"), "key");
+    const { subsystem, emitted } = makeSubsystem({ role: "viewer", workspaceRoots: [workspace] });
+
+    await subsystem.handleFileDownloadTokenRequest({
+      type: "file_download_token_request",
+      cwd: outside,
+      path: "id_rsa",
+      requestId: "req-viewer-token",
+    });
+
+    expect(errorOf(emitted[0])).toBe(OUTSIDE);
+  });
+
+  test("refuses a viewer cwd that symlinks out of a workspace", async () => {
+    const workspace = makeDir("workspace-files-viewer-");
+    const outside = makeDir("workspace-files-outside-");
+    symlinkSync(outside, join(workspace, "escape"));
+    const { subsystem, emitted } = makeSubsystem({ role: "viewer", workspaceRoots: [workspace] });
+
+    await list(subsystem, join(workspace, "escape"));
+
+    expect(errorOf(emitted[0])).toBe(OUTSIDE);
+  });
+
+  test.each(["owner", "operator"] as const)("leaves %s unconfined", async (role) => {
+    const outside = makeDir("workspace-files-outside-");
+    const { subsystem, emitted } = makeSubsystem({ role, workspaceRoots: [] });
+
+    await list(subsystem, outside);
 
     expect(errorOf(emitted[0])).toBeNull();
   });

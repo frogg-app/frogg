@@ -33,7 +33,12 @@ import {
   writeExplorerFile,
 } from "../../file-explorer/service.js";
 import { workspaceFileObserver, type FileObserver } from "../../file-explorer/observer.js";
-import { DaemonHomeGuard } from "../../file-explorer/daemon-home-guard.js";
+import { canonicalizePath, DaemonHomeGuard } from "../../file-explorer/daemon-home-guard.js";
+import { expandUserPath, isSameOrDescendantPath } from "../../path-utils.js";
+import type { DeviceRole } from "../../authorization/index.js";
+
+export const VIEWER_OUTSIDE_WORKSPACE_MESSAGE =
+  "Viewers can only access files inside a registered workspace";
 import { getProjectIcon } from "../../../utils/project-icon.js";
 
 /**
@@ -56,6 +61,13 @@ export interface WorkspaceFilesSessionOptions {
   worktreesRoot?: string;
   logger: pino.Logger;
   fileObserver?: FileObserver;
+  /** The connection's current device role; owner when omitted. */
+  getRole?: () => DeviceRole;
+  /**
+   * Roots of registered workspaces and worktrees. Viewers are confined to
+   * these; owner and operator are not.
+   */
+  listWorkspaceRoots?: () => Promise<string[]>;
 }
 
 /**
@@ -73,6 +85,8 @@ export class WorkspaceFilesSession {
   private readonly fileObserver: FileObserver;
   private readonly fileSubscriptions = new Map<string, () => void>();
   private readonly homeGuard: DaemonHomeGuard;
+  private readonly getRole: () => DeviceRole;
+  private readonly listWorkspaceRoots: () => Promise<string[]>;
 
   constructor(options: WorkspaceFilesSessionOptions) {
     this.host = options.host;
@@ -84,6 +98,8 @@ export class WorkspaceFilesSession {
       froggHome: options.froggHome,
       worktreesRoot: options.worktreesRoot,
     });
+    this.getRole = options.getRole ?? (() => "owner");
+    this.listWorkspaceRoots = options.listWorkspaceRoots ?? (async () => []);
   }
 
   /**
@@ -92,6 +108,17 @@ export class WorkspaceFilesSession {
    */
   private async assertAccess(cwd: string, ...relativePaths: string[]): Promise<void> {
     await this.homeGuard.assertAccessible(cwd, ...relativePaths);
+    if (this.getRole() === "viewer") await this.assertInsideWorkspace(cwd);
+  }
+
+  private async assertInsideWorkspace(cwd: string): Promise<void> {
+    const canonicalCwd = await canonicalizePath(expandUserPath(cwd));
+    for (const root of await this.listWorkspaceRoots()) {
+      if (!root.trim()) continue;
+      const canonicalRoot = await canonicalizePath(expandUserPath(root));
+      if (isSameOrDescendantPath(canonicalRoot, canonicalCwd)) return;
+    }
+    throw new Error(VIEWER_OUTSIDE_WORKSPACE_MESSAGE);
   }
 
   /** Error message when access is refused, otherwise null. */

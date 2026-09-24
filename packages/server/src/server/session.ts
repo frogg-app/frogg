@@ -875,6 +875,11 @@ export class Session {
       froggHome,
       worktreesRoot,
       logger: this.sessionLogger,
+      getRole: () => this.authorization.getRole(),
+      listWorkspaceRoots: async () =>
+        (await workspaceRegistry.list())
+          .filter((workspace) => !workspace.archivedAt)
+          .flatMap((workspace) => [workspace.cwd, workspace.worktreeRoot ?? ""]),
     });
     this.agentManager = agentManager;
     this.agentStorage = agentStorage;
