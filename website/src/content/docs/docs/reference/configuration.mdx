@@ -58,8 +58,9 @@ This is exactly what a new daemon writes (0.6.19):
 | `daemon.trustedProxies` | `true` or string[]      | `["loopback"]`   | Proxies whose `X-Forwarded-For` is trusted. Entries are IPs or `"loopback"` |
 | `daemon.cors.allowedOrigins` | string[]           | `[]`             | Extra browser origins. `"*"` allows any. The daemon's own origins and the desktop app origin are always allowed |
 | `daemon.auth.password`  | scrypt hash             | unset            | Require a password from every client. Set it with `frogg auth set-password`; do not write it by hand. Legacy bcrypt hashes still verify |
-| `daemon.auth.trustLan`  | boolean                 | `true`           | Treat private-network clients like loopback (no credential needed) when no password is set. Ignored while `claimMode` is on |
+| `daemon.auth.trustLan`  | boolean                 | brand default (`true` for `frogg`, else `false`) | Treat private-network clients like loopback (no credential needed) when no password is set. Ignored while `claimMode` is on |
 | `daemon.auth.claimMode` | boolean                 | brand default (`false` for `frogg`) | Lock the LAN out: every client needs a credential, and the first client to reach an unclaimed daemon claims it as owner |
+| `daemon.auth.claimScope` | `"any"` or `"local"`  | brand default (`"any"`) | Who may claim an unclaimed daemon in claim mode. `"local"` accepts only a loopback client whose bearer is the daemon's local token; anyone else gets `403`. Read at startup |
 
 See [security and access](/docs/self-hosting/security/) for how these combine.
 
@@ -158,7 +159,7 @@ How the daemon keeps provider CLIs current. See
 
 | Key                                   | Type     | Default | Meaning |
 | ------------------------------------- | -------- | ------- | ------- |
-| `providerUpdates.checkEnabled`        | boolean  | `true`  | Poll for newer provider releases in the background |
+| `providerUpdates.checkEnabled`        | boolean  | brand default (`true`) | Poll for newer provider releases in the background. Providers not installed on the host are skipped |
 | `providerUpdates.autoUpdate`          | boolean  | `false` | Install newer releases as they are found, without asking |
 | `providerUpdates.checkIntervalMinutes`| integer  | `720`   | Minutes between background checks |
 | `providerUpdates.ignoredProviders`    | string[] | `[]`    | Provider ids excluded from checking and automatic installs |

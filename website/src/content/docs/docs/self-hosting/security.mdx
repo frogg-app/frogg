@@ -13,7 +13,7 @@ it like SSH access to that machine.
 | Client connects from | No password | Password set |
 | -------------------- | ----------- | ------------ |
 | Loopback | Allowed | Password or device credential |
-| Private network (RFC 1918, link-local, `fc00::/7`) | Allowed while `trustLan` is on (default) | Password or device credential |
+| Private network (RFC 1918, link-local, `fc00::/7`) | Allowed while `trustLan` is on (default for `frogg`) | Password or device credential |
 | Anywhere else, including CGNAT `100.64.0.0/10` (Tailscale) | Paired-device credential | Password or device credential |
 
 Two settings override the table:
@@ -49,6 +49,16 @@ Claim mode is the locked-down posture for a daemon on a network you do not contr
 - While the daemon is **unclaimed**, the first client to reach `/api/setup/claim` becomes
   the owner. After that, further devices need a pairing code, an owner approval or the
   password. A daemon with a password set already counts as claimed.
+- `daemon.auth.claimScope: "local"` (`FROGG_CLAIM_SCOPE=local`) narrows who can claim:
+  only a loopback client (after trusted-proxy resolution) presenting the daemon's local
+  token (`~/.frogg/local-token`) as its bearer. Everyone else gets `403`. Offers, pairing
+  codes and approvals are unaffected. The default is `"any"`. To claim on the host:
+
+  ```sh
+  curl -X POST http://127.0.0.1:9999/api/setup/claim \
+    -H "Authorization: Bearer $(cat ~/.frogg/local-token)" \
+    -H 'content-type: application/json' -d '{"claim":true,"deviceName":"Host"}'
+  ```
 - The claim is **latched**: revoking every device does not reopen it. Only
   `frogg auth reset-claim` on the daemon host clears it.
 - The last owner device cannot be revoked (including signing itself out) or demoted.
@@ -63,12 +73,13 @@ Claim mode is the locked-down posture for a daemon on a network you do not contr
 - Turning claim mode on, or turning `trustLan` off, disconnects the sessions that were
   already relying on LAN trust. It does not wait for their next reconnect.
 
-The stock `frogg` brand ships with claim mode **off** and binds `0.0.0.0`. A brand can flip
-both defaults in `brand.json` (see
-[the brand manifest](/docs/fork-and-rebrand/brand-manifest/)); any other brand defaults to a loopback bind
-with claim mode on. Both are defaults for a daemon you have not configured: a `daemon.listen`
-or `daemon.auth.claimMode` you write in `config.json` wins, as does `FROGG_LISTEN` or
-`FROGG_CLAIM_MODE` in the daemon's environment (under a brand's own prefix for a branded build).
+The stock `frogg` brand ships with claim mode **off**, LAN trust **on** and binds `0.0.0.0`.
+A brand can change these defaults, plus `claimScope`, in `brand.json` (see
+[the brand manifest](/docs/fork-and-rebrand/brand-manifest/)); any other brand defaults to a loopback bind,
+LAN trust off and claim mode on. All are defaults for a daemon you have not configured: a
+`daemon.listen` or `daemon.auth.*` value you write in `config.json` wins, as does
+`FROGG_LISTEN`, `FROGG_CLAIM_MODE`, `FROGG_TRUST_LAN` or `FROGG_CLAIM_SCOPE` in the daemon's
+environment (under a brand's own prefix for a branded build).
 
 ### Turning claim mode on and off
 
