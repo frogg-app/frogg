@@ -5,6 +5,9 @@ sidebar:
   order: 4
 ---
 
+import { Screenshot } from "@/components/docs";
+import hostSecurityImg from "@/assets/docs/app/host-security.png";
+
 A Frogg daemon can run commands on its host through agents and terminals. Treat access to
 it like SSH access to that machine.
 
@@ -243,6 +246,26 @@ advertises the `securityPosture` feature. `GET /api/setup/status` adds `posture`
 `passwordEnabled` and `trustLan` for an owner credential (the local token, an owner device
 or the password); without one it returns only `claimed` and `pairingRequired`.
 `frogg auth claim-status` prints the same findings.
+
+### In the app
+
+When a connected daemon reports findings, the app shows a dot on **Hosts** in the sidebar,
+on the host's row in the hosts menu and on **Overview** in its host settings: red for a
+critical finding, amber for warnings only. Host settings **Overview** lists each finding in a
+**Security** card with its fix:
+
+- **Pair a device** or **Open devices**: claim the daemon by pairing this device.
+- **Set password**: sets the daemon password (at least 8 characters) without a restart.
+- **Stop trusting the local network** / **Turn on claim mode**: change the daemon's access
+  settings.
+- Bind divergence: instructions only. Set the listen address to `127.0.0.1` in the daemon's
+  `config.json` and restart; reach it through the relay or an SSH tunnel instead.
+- An unknown finding from a newer daemon shows **Open devices**.
+
+Findings are sent only to owner connections, so operators and viewers see no dot or card.
+Daemons without the `securityPosture` feature show neither.
+
+<Screenshot src={hostSecurityImg} alt="Host settings Overview with a Security card reporting Reachable without a password, a Set password button and a dot on Overview and Hosts" />
 
 ## Passwords
 
