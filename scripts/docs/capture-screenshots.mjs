@@ -108,6 +108,11 @@ const webShots = {
     crop: "dialog",
     steps: (page) => clickText(page, "Pair a device"),
   },
+  "app/relay-endpoint": {
+    path: "/settings/hosts/{serverId}/pair-device",
+    crop: "dialog",
+    steps: (page) => page.getByTestId("host-page-relay-endpoint-card").waitFor(),
+  },
   "app/host-devices": { path: "/settings/hosts/{serverId}/devices", crop: "dialog" },
   "app/pairing-code": {
     path: "/settings/hosts/{serverId}/devices",
@@ -146,6 +151,40 @@ const webShots = {
       await clickText(page, "main");
       await page.getByLabel("Start Companion").click();
       await page.waitForTimeout(4000);
+    },
+  },
+  "app/project-import": {
+    path: "/",
+    crop: "dialog",
+    steps: async (page) => {
+      await page.getByTestId("sidebar-add-project").click();
+      await page.getByTestId("add-project-flow-method-import").click();
+    },
+  },
+  "app/sidebar-draft": {
+    path: "/",
+    // The top of the sidebar, down to the New session row under the draft.
+    crop: async (page) => {
+      const sidebar = await page.getByTestId("sidebar-add-project").boundingBox();
+      const row = await page
+        .locator('[data-testid^="sidebar-project-new-workspace-row-"]')
+        .first()
+        .boundingBox();
+      if (!sidebar || !row) return undefined;
+      return {
+        x: 0,
+        y: 0,
+        width: sidebar.x * 2 + sidebar.width,
+        height: row.y + row.height + 16,
+      };
+    },
+    steps: async (page) => {
+      // Drafts live in memory, so leave the form with in-app navigation, not a reload.
+      await page.locator('[data-testid^="sidebar-project-new-workspace-row-"]').first().click();
+      await page.waitForTimeout(2500);
+      await page.keyboard.type("Add a health check endpoint");
+      await page.getByTestId("sidebar-home").click();
+      await page.locator('[data-testid^="sidebar-workspace-draft-"]').first().waitFor();
     },
   },
   "fork/home": { path: "/", file: (tag) => `fork/home-${tag}` },
@@ -199,6 +238,8 @@ async function main() {
         let clip;
         if (shot.crop === "dialog") {
           clip = (await page.locator('[role="dialog"]').last().boundingBox()) ?? undefined;
+        } else if (typeof shot.crop === "function") {
+          clip = await shot.crop(page);
         }
         const buffer = await page.screenshot({ clip });
         const file = shot.file ? shot.file(values["brand-tag"]) : name;
@@ -263,7 +304,9 @@ function writeBrandFixtures() {
 }
 
 function seedDemoProject(base) {
-  const repo = mkdtempSync(path.join(os.tmpdir(), "frogg-docs-demo-"));
+  // The directory name is the project name the app shows.
+  const repo = path.join(mkdtempSync(path.join(os.tmpdir(), "frogg-docs-demo-")), "acme-api");
+  mkdirSync(repo);
   const git = (...args) => execFileSync("git", args, { cwd: repo, stdio: "ignore" });
   writeFileSync(path.join(repo, "README.md"), "# acme-api\n\nA tiny HTTP service.\n");
   git("init", "-q", "-b", "main");
@@ -362,5 +405,6 @@ async function composeBrandComparison() {
 }
 
 await main();
-await composeBrandComparison();
+// Only recompose when this run could have refreshed a home shot.
+if (wanted("fork/home")) await composeBrandComparison();
 rmSync(path.join(root, ".generated/docs-fixtures"), { recursive: true, force: true });

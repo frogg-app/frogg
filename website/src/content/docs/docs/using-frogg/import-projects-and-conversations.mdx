@@ -5,17 +5,22 @@ sidebar:
   order: 2
 ---
 
+import { Screenshot } from "@/components/docs";
+import appProjectImportImg from "@/assets/docs/app/project-import.png";
+
 **Add project → Import project and conversations** brings an existing project and its
 agent conversations into a daemon. The entry appears only when the daemon reports the
 `projectImport` capability (0.7.0 and later). It needs the `workspace.manage` permission;
 importing provider sessions also needs `workspace.write`.
 
 There is no CLI command for this flow. To import one provider session into a project you
-already have, **Import session** on the home screen still works as before.
+already have, **Import conversation** on the home screen still works as before.
 
 ## Pick a source
 
 The dialog asks where the conversations live:
+
+<Screenshot src={appProjectImportImg} alt="Import project and conversations dialog with the daemon source selected, the project directory and exported conversation directory fields, and Preview import" width={520} />
 
 | Source               | Reads | Imports as |
 | -------------------- | ----- | ---------- |

@@ -5,6 +5,9 @@ sidebar:
   order: 1
 ---
 
+import { Screenshot } from "@/components/docs";
+import appSidebarDraftImg from "@/assets/docs/app/sidebar-draft.png";
+
 ## Model
 
 - A **project** is a directory you registered on a daemon, usually a git repository.
@@ -39,7 +42,7 @@ other session.
 Starting an agent, session, terminal or script in a directory does not register it as a
 project. Add the directory first, then choose its project or session.
 
-Import existing Claude Code or Codex sessions with **Import session** on the home screen.
+Import existing Claude Code or Codex sessions with **Import conversation** on the home screen.
 To bring in a whole project with its conversations, from the daemon host or from your
 computer, use **Add project → Import project and conversations**; see
 [Import projects and conversations](/docs/using-frogg/import-projects-and-conversations/).
@@ -75,9 +78,12 @@ project.
 ### Unfinished new-session forms
 
 If you leave the new-session screen before launching, the sidebar shows a
-**New session (draft)** row, with the project name when one is selected. Selecting it
+**New session (draft)** row under the draft's project. A draft that matches no listed
+project is shown at the top level as **New session (draft) · project name**. Selecting it
 reopens the form with its project, prompt, attachments, provider and model selections,
 isolation and starting ref.
+
+<Screenshot src={appSidebarDraftImg} alt="Sidebar with a New session (draft) row under the acme-api project, above its New session row" width={320} />
 
 - A launch in progress stays locked while you navigate elsewhere, so returning to the draft
   cannot submit it twice.

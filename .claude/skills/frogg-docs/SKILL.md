@@ -110,14 +110,15 @@ npm ci
 npm run build:server && npm run build:daemon-web-ui
 FROGG_HOME=/tmp/frogg-docs-home node apps/cli/bin/frogg start --listen 0.0.0.0:17900 --web-ui --no-relay
 node scripts/docs/capture-screenshots.mjs --list
-node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 --seed
+FROGG_HOME=/tmp/frogg-docs-home node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 --seed
 node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 --only app/host-providers
 FROGG_HOME=/tmp/frogg-docs-home node apps/cli/bin/frogg stop
 ```
 
 - Use your own port and `FROGG_HOME`; never capture from someone else's daemon. Unset
   `FROGG_AGENT_ID` if you run the CLI from inside an agent.
-- `--seed` creates a demo repo and project. `app/agent-timeline` and
+- `--seed` creates a demo `acme-api` repo and project through the CLI, so run it with the
+  daemon's `FROGG_HOME`; otherwise the CLI uses `~/.frogg` and can be refused. `app/agent-timeline` and
   `app/permission-request` need an agent run (provider credits) in that project: run
   `frogg agent run --provider claude/claude-haiku-4-5 --mode default ...` and capture while a
   permission is pending.
