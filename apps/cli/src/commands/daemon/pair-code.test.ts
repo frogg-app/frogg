@@ -76,6 +76,7 @@ describe("pair", () => {
       deeplink: "frogg://pair/direct?v=1&host=192.168.1.10",
       expiresAt: "2026-09-22T10:00:00.000Z",
       role: "operator",
+      serverId: "srv_1",
     });
   });
 

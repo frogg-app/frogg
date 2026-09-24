@@ -194,6 +194,7 @@ export async function runPairCodeCommand(
           deeplink: result.deeplink,
           expiresAt: result.expiresAt,
           role: result.role,
+          serverId: result.serverId,
         },
         null,
         2,
