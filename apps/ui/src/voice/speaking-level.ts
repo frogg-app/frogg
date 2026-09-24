@@ -4,7 +4,7 @@
  * The orb needs two independent amplitudes, not one: the microphone while the
  * user speaks, and the reply while the Companion does. Driving it from capture
  * alone left it inert for the whole half of the conversation the user is
- * listening to. See docs/companion-voice-design.md.
+ * listening to.
  */
 
 /** Signed 16-bit PCM, little endian, which is what the daemon sends. */

@@ -50,7 +50,7 @@ interface HostsMenuProps {
 /**
  * The sidebar footer's Hosts entry: ways to add a host, then the hosts you
  * have, local first. Picking a host opens that host's settings. A popover on
- * wide layouts and a bottom sheet on compact ones (docs/menus.md).
+ * wide layouts and a bottom sheet on compact ones.
  */
 export function HostsMenu({ onBeforeAction }: HostsMenuProps): ReactElement {
   const { t } = useTranslation();

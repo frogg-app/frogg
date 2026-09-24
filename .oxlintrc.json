@@ -108,7 +108,7 @@
               {
                 "name": "react-native-unistyles",
                 "importNames": ["useUnistyles"],
-                "message": "useUnistyles is banned by docs/unistyles.md. Grandfathered files may only leave the override burn-down list."
+                "message": "useUnistyles is banned in apps/ui/src (see website/src/content/docs/docs/contributing/coding-standards.mdx). Grandfathered files may only leave the override burn-down list."
               }
             ]
           }
@@ -134,7 +134,7 @@
               {
                 "name": "react-native-unistyles",
                 "importNames": ["useUnistyles"],
-                "message": "useUnistyles is banned by docs/unistyles.md. Grandfathered files may only leave the override burn-down list."
+                "message": "useUnistyles is banned in apps/ui/src (see website/src/content/docs/docs/contributing/coding-standards.mdx). Grandfathered files may only leave the override burn-down list."
               }
             ]
           }
@@ -186,7 +186,7 @@
               {
                 "name": "react-native-unistyles",
                 "importNames": ["useUnistyles"],
-                "message": "useUnistyles is banned by docs/unistyles.md. Grandfathered files may only leave the override burn-down list."
+                "message": "useUnistyles is banned in apps/ui/src (see website/src/content/docs/docs/contributing/coding-standards.mdx). Grandfathered files may only leave the override burn-down list."
               }
             ]
           }

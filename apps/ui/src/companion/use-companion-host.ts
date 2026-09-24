@@ -18,8 +18,7 @@ export interface CompanionHost {
 }
 
 /**
- * The daemon the Companion talks to. v1 orchestrates one daemon (docs/companion.md
- * § Scope), so this is the host you are already looking at, or the only connected
+ * The daemon the Companion talks to. v1 orchestrates one daemon, so this is the host you are already looking at, or the only connected
  * one when you are not in a workspace.
  */
 export function useCompanionHost(): CompanionHost {

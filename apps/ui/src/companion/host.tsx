@@ -31,8 +31,8 @@ const sendIcon = <ThemedSend size={16} />;
 
 /**
  * The Companion surface. Mounted once in the app container's singleton block —
- * it is global, so it is neither a route nor a fourth mobile panel
- * (docs/mobile-panels.md). Compact gets the bottom sheet, desktop the centred
+ * it is global, so it is neither a route nor a fourth mobile panel.
+ * Compact gets the bottom sheet, desktop the centred
  * card; `AdaptiveModalSheet` owns that split.
  */
 export function CompanionHost() {

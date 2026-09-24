@@ -3,8 +3,8 @@ import { normalizeHostPort } from "@frogg/protocol/daemon-endpoints";
 import type { DirectPairingLink } from "@frogg/protocol/device-access";
 
 /**
- * Client side of the daemon's first-run claim gate (docs/permissions.md,
- * "Claimed state"). A v3 offer lists the daemon's direct endpoints and a
+ * Client side of the daemon's first-run claim gate (claim mode in
+ * website/src/content/docs/docs/self-hosting/security.mdx). A v3 offer lists the daemon's direct endpoints and a
  * single-use claim token; this module picks an endpoint that answers
  * `/api/identity` with the offer's `serverId`, redeems the token with
  * `POST /api/setup/claim`, and returns the device credential that becomes the

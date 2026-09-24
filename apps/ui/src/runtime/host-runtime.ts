@@ -1897,7 +1897,8 @@ export class HostRuntimeStore {
    * A v3 direct claim offer: prove one of the daemon's endpoints is the daemon
    * the offer names, redeem the single-use token, and store the returned
    * device credential as the password of a directTcp connection. The daemon
-   * is claimed by this device from then on (docs/permissions.md).
+   * is claimed by this device from then on (claim mode in
+   * website/src/content/docs/docs/self-hosting/security.mdx).
    */
   async claimAndUpsertDirectOffer(
     offer: ConnectionOfferV3,

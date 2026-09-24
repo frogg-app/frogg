@@ -34,8 +34,8 @@ import { PressHighlight } from "@/components/ui/press-highlight";
  * A menu opened by a long press or a right click, anchored to the point of the gesture rather
  * than to a trigger box.
  *
- * Everything below the trigger is the shared menu engine — see `@/components/ui/menu` and
- * docs/menus.md. Only the way it opens is different from `dropdown-menu.tsx`.
+ * Everything below the trigger is the shared menu engine — see `@/components/ui/menu`.
+ * Only the way it opens is different from `dropdown-menu.tsx`.
  */
 
 export { MenuItem as ContextMenuItem };
