@@ -9,6 +9,7 @@ export {
   decodeMessageData,
   describeTransportClose,
   describeTransportError,
+  isHttpUnauthorizedHandshakeError,
   encodeUtf8String,
   extractRelayMessage,
   normalizeTransportPayload,
