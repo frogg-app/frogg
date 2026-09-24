@@ -244,6 +244,11 @@ Valid sections are `projects`, `pair-device`, `devices`, `agents`, `providers`, 
 `terminals` and `host`. Hidden means unreachable, not merely unlisted: the nav entry is gone and a
 link straight to the section lands on the host's settings instead.
 
+Hiding is a client-side choice; the daemon still enforces roles. Think twice before hiding
+`devices` on a claim-mode brand: it is where an owner approves pairing requests, changes
+roles and revokes a lost device. Without it, the only way to remove a device is
+`<cliName> auth reset-claim` on the host, which removes all of them.
+
 This is a default, not a lock. A daemon seeds `daemon.hostSettings.hiddenSections` in its
 own `config.json` from this list the first time it starts, and the app reads the daemon's
 value — so an admin can re-enable a section on the host they run without a new build. See
@@ -282,8 +287,16 @@ With `claimScope: "local"` the first owner is claimed on the host itself, by a p
 that can read the daemon's local token, so nothing on the network can win the claim race.
 See [claim mode](/docs/self-hosting/security/#claim-mode).
 
+:::caution[`claimMode: false` needs `trustLan: false`]
+Turning claim mode off hands LAN access back to `trustLan`. If `trustLan` is `true`, every
+client on a private network connects with no credential. That applies whether `true` comes from
+`brand.json`, a daemon's `config.json` or `<PREFIX>_TRUST_LAN`, or from a daemon older than the
+`trustLan` key, which trusts the LAN for every brand. A brand that ships `claimMode: false` should
+also ship `trustLan: false` unless it means to trust the LAN.
+:::
+
 The stock `frogg` distribution keeps the open defaults it has always had (`0.0.0.0`, claim
-mode off). Every other brand starts locked down, because a product you ship to other
+mode off, LAN trusted). Every other brand starts locked down, because a product you ship to other
 people should not trust their network for them.
 
 `workspaceServicesBind` is separate from `bind` and defaults to loopback even for `frogg`:
@@ -292,7 +305,7 @@ daemon's authenticated service proxy rather than published on the network. A bra
 really wants the wide bind sets `"workspaceServicesBind": "all"`.
 
 A new `config.json` carries no `daemon.listen`, so the bind stays the brand's until an
-owner writes an address. These are defaults, not locks: `daemon.listen` / `FROGG_LISTEN` and
+owner writes an address. These are defaults, not locks: `daemon.listen` / `<PREFIX>_LISTEN` and
 `daemon.auth.claimMode` / `<PREFIX>_CLAIM_MODE`, `daemon.auth.trustLan` / `<PREFIX>_TRUST_LAN`,
 `daemon.auth.claimScope` / `<PREFIX>_CLAIM_SCOPE`, `providerUpdates.checkEnabled` and
 `daemon.workspaceServices.bindHost` / `<PREFIX>_WORKSPACE_SERVICES_BIND_HOST` in a
@@ -306,7 +319,9 @@ daemon's own configuration win. See
 | `enabled` | boolean | `true`  | Whether this brand ships a mobile app. Its only effect today is the CLI pairing QR |
 
 With `mobile.enabled: false` the CLI stops printing a pairing QR by default — nothing
-would scan it — though `<cliName> pair --qr` still forces one.
+would scan it — though `<cliName> pair --qr` still forces one. `--json` and `--code-only`
+never print a QR, so provisioning scripts are unaffected. See
+[provisioning](/docs/self-hosting/provisioning/).
 
 ## Resolved output
 
