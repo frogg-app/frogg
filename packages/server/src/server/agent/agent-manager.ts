@@ -1519,24 +1519,54 @@ export class AgentManager {
     const { storedConfig, launchConfig } = await this.prepareSessionConfig(refreshConfig, agentId);
     const launchContext = await this.buildLaunchContext(agentId, client, storedConfig);
     const providerLaunchConfig = this.resolveProviderLaunchConfig(launchConfig, launchContext);
+    this.assertAcceptingAgentRegistrations();
+    // Same provider, same capabilities: refuse an MCP config the live session
+    // cannot honour before anything is closed.
+    if (
+      provider === existing.provider &&
+      Object.keys(storedConfig.mcpServers ?? {}).length > 0 &&
+      existing.session?.capabilities.supportsMcpServers !== true
+    ) {
+      throw new Error(`Provider '${storedConfig.provider}' does not support MCP servers`);
+    }
 
-    const session = handle
-      ? await client.resumeSession(handle, providerLaunchConfig, launchContext)
-      : await client.createSession(providerLaunchConfig, launchContext);
-    await this.requireExternalMcpSupport(session, storedConfig);
+    // Close the old session before starting the new one: both resume the same
+    // provider session, and two live writers corrupt its transcript.
+    this.cancelRunningProviderSubagents(agentId);
+    const closedExisting = this.prepareAgentForClosure(existing, "agent reloaded");
+    try {
+      await this.persistSnapshot(closedExisting);
+    } finally {
+      await this.closeReloadedSession(existing.session, agentId);
+    }
+
+    const registration = {
+      labels: existing.labels,
+      workspaceId: existing.workspaceId,
+      owner: existing.owner,
+      createdAt: existing.createdAt,
+      updatedAt: existing.updatedAt,
+      lastUserMessageAt: existing.lastUserMessageAt,
+      historyPrimed: rehydrateFromDisk ? false : preservedHistoryPrimed,
+      lastUsage: preservedLastUsage,
+      lastError: preservedLastError,
+      attention: preservedAttention,
+    };
+
+    let session: AgentSession;
+    try {
+      session = handle
+        ? await client.resumeSession(handle, providerLaunchConfig, launchContext)
+        : await client.createSession(providerLaunchConfig, launchContext);
+      await this.requireExternalMcpSupport(session, storedConfig);
+    } catch (error) {
+      await this.restoreAfterFailedReload(existing, agentId, registration);
+      throw error;
+    }
 
     let handedToRegistration = false;
     try {
       this.assertAcceptingAgentRegistrations();
-
-      this.cancelRunningProviderSubagents(agentId);
-      const closedExisting = this.prepareAgentForClosure(existing, "agent reloaded");
-      try {
-        await this.persistSnapshot(closedExisting);
-      } finally {
-        await this.closeReloadedSession(existing.session, agentId);
-      }
-
       if (rehydrateFromDisk) {
         // Wipe the in-memory timeline so registerSession mints a new epoch and
         // hydrateTimelineFromProvider re-streams the freshly read provider history.
@@ -1548,22 +1578,37 @@ export class AgentManager {
 
       // Preserve existing labels and timeline during reload.
       handedToRegistration = true;
-      return this.registerSession(session, storedConfig, agentId, {
-        labels: existing.labels,
-        workspaceId: existing.workspaceId,
-        owner: existing.owner,
-        createdAt: existing.createdAt,
-        updatedAt: existing.updatedAt,
-        lastUserMessageAt: existing.lastUserMessageAt,
-        historyPrimed: rehydrateFromDisk ? false : preservedHistoryPrimed,
-        lastUsage: preservedLastUsage,
-        lastError: preservedLastError,
-        attention: preservedAttention,
-      });
+      return this.registerSession(session, storedConfig, agentId, registration);
     } finally {
       if (!handedToRegistration) {
         await this.closeUnregisteredSession(session);
       }
+    }
+  }
+
+  /**
+   * The old session is already closed when a reload's new session fails, so
+   * bring the agent back on its previous config rather than leave it dead.
+   */
+  private async restoreAfterFailedReload(
+    existing: ManagedAgent,
+    agentId: string,
+    registration: Parameters<AgentManager["registerSession"]>[3],
+  ): Promise<void> {
+    try {
+      const client = this.requireClient(existing.persistence?.provider ?? existing.provider);
+      const { storedConfig, launchConfig } = await this.prepareSessionConfig(
+        existing.config as AgentSessionConfig,
+        agentId,
+      );
+      const launchContext = await this.buildLaunchContext(agentId, client, storedConfig);
+      const launch = this.resolveProviderLaunchConfig(launchConfig, launchContext);
+      const session = existing.persistence
+        ? await client.resumeSession(existing.persistence, launch, launchContext)
+        : await client.createSession(launch, launchContext);
+      this.registerSession(session, storedConfig, agentId, registration);
+    } catch (error) {
+      this.logger.warn({ err: error, agentId }, "Could not restore agent after a failed reload");
     }
   }
 

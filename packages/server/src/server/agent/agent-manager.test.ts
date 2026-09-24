@@ -1634,7 +1634,7 @@ test("reload leaves a closed durable snapshot when shutdown starts during the sw
   }
 });
 
-test("reload closes both sessions when the closed snapshot cannot be persisted", async () => {
+test("reload closes the session and opens no replacement when the closed snapshot cannot be persisted", async () => {
   const workdir = mkdtempSync(join(tmpdir(), "agent-manager-reload-persist-failure-test-"));
   const storagePath = join(workdir, "agents");
   const storage = new AgentStorage(storagePath, logger);
@@ -1673,7 +1673,9 @@ test("reload closes both sessions when the closed snapshot cannot be persisted",
     }).toEqual({
       agents: [],
       originalSessionClosed: true,
-      replacementSessionClosed: true,
+      // The old session closes before the replacement starts, so a failed
+      // persist means the replacement is never opened at all.
+      replacementSessionClosed: false,
     });
   } finally {
     client.finishClosing();
@@ -2809,7 +2811,8 @@ test("reloadAgentSession preserves the live session when its replacement cannot 
       }),
     ).rejects.toThrow("Provider 'codex' does not support MCP servers");
 
-    expect(replacement.closed).toBe(true);
+    // Refused before anything closed: the replacement is never started.
+    expect(replacement.closed).toBe(false);
     expect(original.closed).toBe(false);
     expect(manager.getAgent(created.id)?.session).toBe(original);
     expect(manager.getAgent(created.id)?.lifecycle).toBe("idle");
@@ -10188,4 +10191,45 @@ test("onWorkspaceStateMayHaveChanged is not called for running shell tool calls"
   await manager.runAgent(snapshot.id, { text: "merge it" });
 
   expect(onWorkspaceStateMayHaveChanged).not.toHaveBeenCalled();
+});
+
+test("reload closes the previous session before the replacement starts", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-test-"));
+  const events: string[] = [];
+  class OrderedSession extends CloseRecordingTestAgentSession {
+    constructor(private readonly name: string) {
+      super({ provider: "codex", cwd: workdir });
+    }
+    override async close(): Promise<void> {
+      events.push(`close ${this.name}`);
+      await super.close();
+    }
+  }
+  class OrderedClient extends TestAgentClient {
+    override async createSession(): Promise<AgentSession> {
+      events.push("start original");
+      return new OrderedSession("original");
+    }
+    override async resumeSession(): Promise<AgentSession> {
+      events.push("start replacement");
+      return new OrderedSession("replacement");
+    }
+  }
+  const manager = new AgentManager({
+    clients: { codex: new OrderedClient() },
+    registry: new AgentStorage(join(workdir, "agents"), logger),
+    logger,
+  });
+  try {
+    const created = await manager.createAgent(
+      { provider: "codex", cwd: workdir },
+      "00000000-0000-4000-8000-000000000110",
+      { workspaceId: undefined },
+    );
+    await manager.reloadAgentSession(created.id);
+    expect(events).toEqual(["start original", "close original", "start replacement"]);
+  } finally {
+    await manager.flushForShutdown().catch(() => undefined);
+    rmSync(workdir, { recursive: true, force: true });
+  }
 });
