@@ -1,3 +1,4 @@
+import { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { describe, expect, it, vi } from "vitest";
 import {
   buildDesktopDaemonTransportUrl,
@@ -182,4 +183,39 @@ describe("desktop-daemon-transport", () => {
 
     expect(() => transportFactory!({ url })).toThrow("Invalid SSH transport target");
   });
+
+  it.each([
+    ["4401 close", { kind: "close", code: 4401, reason: "Device access revoked" }],
+    [
+      "HTTP 401 upgrade",
+      { kind: "error", error: "Failed to connect: Unexpected server response: 401" },
+    ],
+  ] as const)(
+    "a Remote SSH %s reaches the daemon client as pairing required",
+    async (_label, event) => {
+      const rpc = createFakeLocalDaemonTransportRpc();
+      const client = new DaemonClient({
+        url: buildDesktopDaemonTransportUrl({ transportType: "ssh", host: "build-box" }),
+        clientId: "clsk_test",
+        password: "dev_stale",
+        logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+        reconnect: { enabled: true, baseDelayMs: 5, maxDelayMs: 5 },
+        transportFactory: createDesktopDaemonTransportFactory(rpc)!,
+      });
+      const connectResult = client.connect().catch((error: Error) => error);
+      rpc.resolveListen(vi.fn());
+      await Promise.resolve();
+      const sessionId = rpc.openCalls[0]?.sessionId ?? "";
+      expect(rpc.openCalls[0]?.protocols).toEqual(["frogg.bearer.dev_stale"]);
+      if (event.kind === "close") rpc.emitEvent({ sessionId, kind: "open" });
+      rpc.emitEvent({ sessionId, ...event });
+
+      expect(await connectResult).toBeInstanceOf(Error);
+      expect(client.lastErrorInfo).toMatchObject({
+        code: "pairing_required",
+        credentialRejected: true,
+      });
+      await client.close();
+    },
+  );
 });

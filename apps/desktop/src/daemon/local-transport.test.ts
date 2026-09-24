@@ -211,4 +211,57 @@ describe("local transport session lifecycle", () => {
     expect(createWebSocket).not.toHaveBeenCalled();
     expect(events).toEqual([]);
   });
+
+  function createScriptedSocket() {
+    const handlers = new Map<string, (...args: unknown[]) => void>();
+    const socket = {
+      readyState: 0,
+      once: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        handlers.set(event, handler);
+      }),
+      on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        handlers.set(event, handler);
+      }),
+      send: vi.fn(),
+      close: vi.fn(),
+      terminate: vi.fn(),
+    } as unknown as TransportWebSocket;
+    const fire = (event: string, ...args: unknown[]) => handlers.get(event)?.(...args);
+    return { socket, fire };
+  }
+
+  it("passes the daemon's 4401 close code and reason through to the renderer", async () => {
+    const { socket, fire } = createScriptedSocket();
+    const { events, manager } = createManagerHarness(async () => createEndpoint(), [socket]);
+
+    manager.open(SESSION_INPUT);
+    await Promise.resolve();
+    await Promise.resolve();
+    fire("open");
+    fire("close", 4401, Buffer.from("Device access revoked"));
+
+    expect(events).toEqual([
+      { sessionId: SESSION_INPUT.sessionId, kind: "open" },
+      {
+        sessionId: SESSION_INPUT.sessionId,
+        kind: "close",
+        code: 4401,
+        reason: "Device access revoked",
+      },
+    ]);
+  });
+
+  it("keeps the HTTP status of a refused upgrade in the error message", async () => {
+    const { socket, fire } = createScriptedSocket();
+    const { events, manager } = createManagerHarness(async () => createEndpoint(), [socket]);
+
+    manager.open(SESSION_INPUT);
+    await Promise.resolve();
+    await Promise.resolve();
+    fire("error", new Error("Unexpected server response: 401"));
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ kind: "error" });
+    expect(events[0]?.error).toContain("Unexpected server response: 401");
+  });
 });
