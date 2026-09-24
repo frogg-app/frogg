@@ -77,6 +77,7 @@ import {
 import { DirectorySyncService } from "./directory-sync/index.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import { WorkspaceLabelsSession } from "./session/workspace-labels/workspace-labels-session.js";
+import { WorkspaceMetadataSession } from "./session/workspace-metadata/workspace-metadata-session.js";
 
 import { AgentManager, AgentRunCancellationError } from "./agent/agent-manager.js";
 import { buildTimelinePromptIndex } from "./agent/timeline-prompt-index.js";
@@ -728,6 +729,7 @@ export class Session {
   private workspaceUpdatesSubscription: WorkspaceUpdatesSubscriptionState | null = null;
   private readonly workspaceLabelService: WorkspaceLabelService | null;
   private readonly workspaceLabels: WorkspaceLabelsSession;
+  private readonly workspaceMetadata: WorkspaceMetadataSession;
   private projectSyncEnabled = false;
   private readonly workspaceUpdateTails = new Map<string, Promise<void>>();
   private clientActivity: {
@@ -879,6 +881,13 @@ export class Session {
     this.workspaceRegistry = workspaceRegistry;
     this.directorySync = resolveDirectorySync(directorySync);
     this.workspaceLabelService = resolveWorkspaceLabelService(workspaceLabelService);
+    this.workspaceMetadata = new WorkspaceMetadataSession({
+      workspaceRegistry: this.workspaceRegistry,
+      emit: (message) => this.emit(message),
+      emitWorkspaceUpdates: (workspaceIds) =>
+        this.emitWorkspaceUpdatesForWorkspaceIds(workspaceIds),
+      logger: this.sessionLogger,
+    });
     this.workspaceLabels = new WorkspaceLabelsSession({
       service: this.workspaceLabelService,
       emit: (message) => this.emit(message),
@@ -2738,9 +2747,9 @@ export class Session {
       case "workspace.clear_attention.request":
         return this.handleWorkspaceClearAttentionRequest(msg);
       case "workspace.title.set.request":
-        return this.handleWorkspaceTitleSetRequest(msg.workspaceId, msg.title, msg.requestId);
+        return this.workspaceMetadata.setTitle(msg.workspaceId, msg.title, msg.requestId);
       case "workspace.pin.set.request":
-        return this.handleWorkspacePinSetRequest(msg.workspaceId, msg.pinned, msg.requestId);
+        return this.workspaceMetadata.setPinned(msg.workspaceId, msg.pinned, msg.requestId);
       default:
         return this.dispatchProjectImportMessage(msg);
     }
@@ -3507,124 +3516,6 @@ export class Session {
           error: getErrorMessageOr(error, "Failed to remove project"),
         },
       });
-    }
-  }
-
-  private async handleWorkspaceTitleSetRequest(
-    workspaceId: string,
-    title: string | null,
-    requestId: string,
-  ): Promise<void> {
-    this.sessionLogger.info(
-      { workspaceId, requestId, hasTitle: typeof title === "string" },
-      "session: workspace.title.set.request",
-    );
-
-    try {
-      const trimmed = title?.trim() ?? "";
-      const nextTitle = trimmed.length === 0 ? null : trimmed;
-      const updatedAt = new Date().toISOString();
-      const updated = await this.workspaceRegistry.update(workspaceId, (existing) => ({
-        ...existing,
-        title: nextTitle,
-        updatedAt,
-      }));
-      if (!updated) {
-        this.emit({
-          type: "workspace.title.set.response",
-          payload: {
-            requestId,
-            workspaceId,
-            accepted: false,
-            title: null,
-            error: "Workspace not found",
-          },
-        });
-        return;
-      }
-
-      this.emit({
-        type: "workspace.title.set.response",
-        payload: {
-          requestId,
-          workspaceId,
-          accepted: true,
-          title: nextTitle,
-          error: null,
-        },
-      });
-
-      await this.emitWorkspaceUpdatesForWorkspaceIds([workspaceId]);
-    } catch (error) {
-      this.sessionLogger.error(
-        { err: error, workspaceId, requestId },
-        "session: workspace.title.set.request error",
-      );
-      this.emit({
-        type: "activity_log",
-        payload: {
-          id: uuidv4(),
-          timestamp: new Date(),
-          type: "error",
-          content: `Failed to set workspace title: ${getErrorMessage(error)}`,
-        },
-      });
-      this.emit({
-        type: "workspace.title.set.response",
-        payload: {
-          requestId,
-          workspaceId,
-          accepted: false,
-          title: null,
-          error: getErrorMessageOr(error, "Failed to set workspace title"),
-        },
-      });
-    }
-  }
-
-  private async handleWorkspacePinSetRequest(
-    workspaceId: string,
-    pinned: boolean,
-    requestId: string,
-  ): Promise<void> {
-    const logContext = { workspaceId, pinned, requestId };
-    this.sessionLogger.info(logContext, "session: workspace.pin.set.request");
-    const emitResponse = (accepted: boolean, pinnedAt: string | null, error: string | null) => {
-      this.emit({
-        type: "workspace.pin.set.response",
-        payload: { requestId, workspaceId, accepted, pinnedAt, error },
-      });
-    };
-
-    try {
-      const nextPinnedAt = pinned ? new Date().toISOString() : null;
-      const updatedAt = new Date().toISOString();
-      const updated = await this.workspaceRegistry.update(workspaceId, (existing) => ({
-        ...existing,
-        pinnedAt: nextPinnedAt,
-        updatedAt,
-      }));
-      if (!updated) {
-        emitResponse(false, null, "Workspace not found");
-        return;
-      }
-      emitResponse(true, nextPinnedAt, null);
-      await this.emitWorkspaceUpdatesForWorkspaceIds([workspaceId]);
-    } catch (error) {
-      this.sessionLogger.error(
-        { ...logContext, err: error },
-        "session: workspace.pin.set.request error",
-      );
-      this.emit({
-        type: "activity_log",
-        payload: {
-          id: uuidv4(),
-          timestamp: new Date(),
-          type: "error",
-          content: `Failed to pin workspace: ${getErrorMessage(error)}`,
-        },
-      });
-      emitResponse(false, null, getErrorMessageOr(error, "Failed to pin workspace"));
     }
   }
 
