@@ -6,8 +6,14 @@ import {
 
 describe("Explorer sidebar layout", () => {
   it("keeps the sidebar width fixed when the workspace body changes size", () => {
-    const narrow = resolveExplorerSidebarDockSizes({ requestedWidth: 320, containerWidth: 1200 });
-    const wide = resolveExplorerSidebarDockSizes({ requestedWidth: 320, containerWidth: 1520 });
+    const narrow = resolveExplorerSidebarDockSizes({
+      requestedWidth: 320,
+      containerWidth: 1200,
+    });
+    const wide = resolveExplorerSidebarDockSizes({
+      requestedWidth: 320,
+      containerWidth: 1520,
+    });
 
     expect(narrow[1] * 1200).toBeCloseTo(320);
     expect(wide[1] * 1520).toBeCloseTo(320);
@@ -18,5 +24,22 @@ describe("Explorer sidebar layout", () => {
     expect(resolveExplorerSidebarWidth({ requestedWidth: 900, containerWidth: 1600 })).toBe(900);
     expect(resolveExplorerSidebarWidth({ requestedWidth: 900, containerWidth: 1200 })).toBe(800);
     expect(resolveExplorerSidebarWidth({ requestedWidth: 600, containerWidth: 750 })).toBe(350);
+  });
+
+  it("never shrinks below the width the dock content needs", () => {
+    expect(
+      resolveExplorerSidebarWidth({
+        requestedWidth: 240,
+        containerWidth: 700,
+        minimumWidth: 310,
+      }),
+    ).toBe(310);
+    expect(
+      resolveExplorerSidebarWidth({
+        requestedWidth: 400,
+        containerWidth: 1200,
+        minimumWidth: 310,
+      }),
+    ).toBe(400);
   });
 });

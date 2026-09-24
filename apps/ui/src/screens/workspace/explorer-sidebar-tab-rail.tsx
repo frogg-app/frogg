@@ -1,9 +1,23 @@
-import { useCallback, useMemo, useState, type ComponentType, type ReactNode } from "react";
-import { Text, View } from "react-native";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from "react";
+import { Text, View, type LayoutChangeEvent } from "react-native";
 import { ArrowLeftToLine, Plus, X } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import Animated from "react-native-reanimated";
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { SortableInlineList } from "@/components/sortable-inline-list";
 import type {
   DraggableListDragHandleProps,
@@ -34,7 +48,7 @@ import {
 } from "@/workspace-tabs/launcher";
 import { panelSupportsHost } from "@/panels/panel-manifest";
 import type { PanelIconProps } from "@/panels/panel-registry";
-import type { Theme } from "@/styles/theme";
+import { SPACING, type Theme } from "@/styles/theme";
 import type { SurfaceBackdrop } from "@/styles/surface-backdrop";
 import {
   HorizontalScrollBoundaryShades,
@@ -43,8 +57,44 @@ import {
 
 const TAB_GAP = 4;
 const TAB_DROP_INDICATOR_WIDTH = 4;
+const RAIL_PADDING = 4;
+const TAB_PADDING = SPACING[2];
+const TAB_ICON_SIZE = iconButtonChromeGlyphSize("small");
+const LABEL_GAP = SPACING[1];
+const LABEL_MAX_WIDTH = 140;
+const ICON_ONLY_TAB_WIDTH = TAB_PADDING * 2 + TAB_ICON_SIZE;
+const LABEL_TRANSITION = { duration: 240, easing: Easing.bezier(0.2, 0, 0, 1) };
 
-const mutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+/**
+ * Tabs drop to icons only when their labels no longer fit, and the rail reports the icon-only
+ * width so the dock never shrinks below it: every tab stays visible and clickable.
+ */
+export function resolveExplorerSidebarTabRailMetrics(input: {
+  labelWidths: (number | undefined)[];
+  availableWidth: number;
+}): {
+  iconOnlyWidth: number;
+  labelledWidth: number;
+  collapsed: boolean | null;
+} {
+  const iconOnlyWidth =
+    RAIL_PADDING * 2 + input.labelWidths.length * (TAB_GAP + ICON_ONLY_TAB_WIDTH);
+  let labelledWidth = iconOnlyWidth;
+  for (const width of input.labelWidths) {
+    labelledWidth += (width ?? 0) + LABEL_GAP;
+  }
+  const measured =
+    input.availableWidth > 0 && input.labelWidths.every((width) => width !== undefined);
+  return {
+    iconOnlyWidth: Math.ceil(iconOnlyWidth),
+    labelledWidth: Math.ceil(labelledWidth),
+    collapsed: measured ? labelledWidth > input.availableWidth : null,
+  };
+}
+
+const mutedColorMapping = (theme: Theme) => ({
+  color: theme.colors.foregroundMuted,
+});
 
 interface ExplorerSidebarTabRailProps {
   paneId: string;
@@ -59,6 +109,8 @@ interface ExplorerSidebarTabRailProps {
   onMoveTabToMain: (tabId: string) => void;
   onReorderTabs: (tabs: WorkspaceTabDescriptor[]) => void;
   trailingAccessory?: ReactNode;
+  /** Reports the rail's usable width and the width its icon-only tabs need. */
+  onMeasure?: (metrics: { availableWidth: number; iconOnlyWidth: number }) => void;
 }
 
 function tabKey(item: WorkspaceDesktopTabRowItem): string {
@@ -78,8 +130,12 @@ function ExplorerSidebarTab({
   onMoveTabToMain,
   normalizedServerId,
   normalizedWorkspaceId,
+  collapsed,
+  onLabelMeasured,
 }: {
   item: WorkspaceDesktopTabRowItem;
+  collapsed: boolean | null;
+  onLabelMeasured: (tabId: string, width: number) => void;
   isDragging: boolean;
   dragHandleProps?: DraggableListDragHandleProps;
   onNavigateTab: (tabId: string) => void;
@@ -110,6 +166,38 @@ function ExplorerSidebarTab({
   );
   const closeLeading = useMemo(() => <ThemedX size={14} uniProps={mutedColorMapping} />, []);
   const accessibilityState = useMemo(() => ({ selected: item.isActive }), [item.isActive]);
+  const tabId = item.tab.tabId;
+  const [labelWidth, setLabelWidth] = useState(0);
+  const handleLabelLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const width = Math.min(LABEL_MAX_WIDTH, Math.ceil(event.nativeEvent.layout.width));
+      setLabelWidth(width);
+      onLabelMeasured(tabId, width);
+    },
+    [onLabelMeasured, tabId],
+  );
+  // 1 = label shown, 0 = icon only. The first resolved state snaps; later changes animate.
+  const labelProgress = useSharedValue(collapsed ? 0 : 1);
+  const hasResolvedRef = useRef(collapsed !== null);
+  useEffect(() => {
+    if (collapsed === null) return;
+    const target = collapsed ? 0 : 1;
+    if (!hasResolvedRef.current) {
+      hasResolvedRef.current = true;
+      labelProgress.value = target;
+      return;
+    }
+    labelProgress.value = withTiming(target, LABEL_TRANSITION);
+  }, [collapsed, labelProgress]);
+  const labelSlotStyle = useAnimatedStyle(
+    () => ({
+      width: (labelWidth + LABEL_GAP) * labelProgress.value,
+      // The label fades out ahead of the width so it never looks clipped mid-collapse.
+      opacity: interpolate(labelProgress.value, [0.35, 1], [0, 1], "clamp"),
+      transform: [{ translateX: interpolate(labelProgress.value, [0, 1], [-4, 0]) }],
+    }),
+    [labelWidth],
+  );
   const renderPresentation = useCallback(
     (presentation: WorkspaceTabPresentation) => (
       <ContextMenu>
@@ -140,14 +228,17 @@ function ExplorerSidebarTab({
                 strokeWidth={1.5}
                 backdrop={resolveExplorerSidebarTabBackdrop()}
               />
-              <Text
-                selectable={false}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-                style={[styles.tabLabel, item.isActive ? styles.tabLabelActive : null]}
-              >
-                {presentation.label}
-              </Text>
+              <Animated.View style={[styles.labelSlot, labelSlotStyle]}>
+                <Text
+                  selectable={false}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                  onLayout={handleLabelLayout}
+                  style={[styles.tabLabel, item.isActive ? styles.tabLabelActive : null]}
+                >
+                  {presentation.label}
+                </Text>
+              </Animated.View>
             </ContextMenuTrigger>
           </TooltipTrigger>
           <TooltipContent side="bottom" align="center" offset={8}>
@@ -173,6 +264,8 @@ function ExplorerSidebarTab({
       handleHoverIn,
       handleHoverOut,
       handleClose,
+      handleLabelLayout,
+      labelSlotStyle,
       handleMoveToMain,
       handlePress,
       hovered,
@@ -263,8 +356,34 @@ export function ExplorerSidebarTabRail({
   onMoveTabToMain,
   onReorderTabs,
   trailingAccessory,
+  onMeasure,
 }: ExplorerSidebarTabRailProps) {
   const scrollBoundary = useHorizontalScrollBoundary();
+  const [labelWidths, setLabelWidths] = useState<Record<string, number>>({});
+  const [availableWidth, setAvailableWidth] = useState(0);
+  const handleLabelMeasured = useCallback((tabId: string, width: number) => {
+    setLabelWidths((current) =>
+      current[tabId] === width ? current : { ...current, [tabId]: width },
+    );
+  }, []);
+  const handleScrollContainerLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = Math.floor(event.nativeEvent.layout.width);
+    setAvailableWidth((current) => (current === width ? current : width));
+  }, []);
+  const metrics = useMemo(
+    () =>
+      resolveExplorerSidebarTabRailMetrics({
+        labelWidths: tabs.map((item) => labelWidths[item.tab.tabId]),
+        availableWidth,
+      }),
+    [availableWidth, labelWidths, tabs],
+  );
+  const collapsed = metrics.collapsed;
+  useEffect(() => {
+    if (availableWidth > 0) {
+      onMeasure?.({ availableWidth, iconOnlyWidth: metrics.iconOnlyWidth });
+    }
+  }, [availableWidth, metrics.iconOnlyWidth, onMeasure]);
   const { t } = useTranslation();
   const groups = useWorkspaceTabLaunchCatalog({
     serverId: normalizedServerId,
@@ -315,6 +434,8 @@ export function ExplorerSidebarTabRail({
             onMoveTabToMain={onMoveTabToMain}
             normalizedServerId={normalizedServerId}
             normalizedWorkspaceId={normalizedWorkspaceId}
+            collapsed={collapsed}
+            onLabelMeasured={handleLabelMeasured}
           />
           {showAfter ? <View style={[styles.dropIndicator, styles.dropIndicatorAfter]} /> : null}
         </View>
@@ -322,6 +443,8 @@ export function ExplorerSidebarTabRail({
     },
     [
       activeDragTabId,
+      collapsed,
+      handleLabelMeasured,
       normalizedServerId,
       normalizedWorkspaceId,
       onNavigateTab,
@@ -339,7 +462,7 @@ export function ExplorerSidebarTabRail({
         style={[styles.track, titlebarDragSurfaceStyle as never]}
         testID="explorer-sidebar-tab-rail"
       >
-        <View style={styles.scrollContainer}>
+        <View style={styles.scrollContainer} onLayout={handleScrollContainerLayout}>
           <Animated.ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -407,7 +530,7 @@ const styles = StyleSheet.create((theme) => ({
   scrollContent: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 4,
+    paddingHorizontal: RAIL_PADDING,
   },
   trailingAccessory: {
     marginRight: 4,
@@ -418,13 +541,16 @@ const styles = StyleSheet.create((theme) => ({
   },
   tab: {
     height: HEADER_CONTROL_HEIGHT,
-    maxWidth: 180,
-    paddingHorizontal: theme.spacing[2],
+    paddingHorizontal: TAB_PADDING,
     borderRadius: theme.borderRadius.md,
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing[1],
     userSelect: "none",
+  },
+  labelSlot: {
+    alignSelf: "stretch",
+    overflow: "hidden",
+    justifyContent: "center",
   },
   tabHovered: {
     backgroundColor: theme.colors.interactionHighlight,
@@ -433,8 +559,10 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.interactionHighlight,
   },
   tabLabel: {
-    minWidth: 0,
-    flexShrink: 1,
+    // Absolute so the label keeps its natural width while the slot around it animates.
+    position: "absolute",
+    left: LABEL_GAP,
+    maxWidth: LABEL_MAX_WIDTH,
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,

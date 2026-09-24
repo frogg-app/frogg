@@ -138,10 +138,8 @@ import {
 import { useDesktopBrowserNewTabRequests } from "@/desktop/browser/new-tab-requests";
 import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-types";
 import {
-  resolveExplorerSidebarHostsToggle,
   resolveWorkspaceExplorerToggleOwner,
   WorkspaceExplorerToggle,
-  WorkspaceExplorerSidebarToggle,
   WorkspaceHeaderExplorerToggle,
 } from "@/screens/workspace/workspace-explorer-toggle";
 import { useHasWindowChromeObstruction } from "@/utils/desktop-window";
@@ -234,7 +232,11 @@ function getWorkspaceFileLocationFields(
   if (target?.kind !== "file") {
     return { path: null };
   }
-  return { path: target.path, lineStart: target.lineStart, lineEnd: target.lineEnd };
+  return {
+    path: target.path,
+    lineStart: target.lineStart,
+    lineEnd: target.lineEnd,
+  };
 }
 
 function buildWorkspaceFileLocation(
@@ -243,13 +245,19 @@ function buildWorkspaceFileLocation(
   if (fields.path === null) {
     return null;
   }
-  return { path: fields.path, lineStart: fields.lineStart, lineEnd: fields.lineEnd };
+  return {
+    path: fields.path,
+    lineStart: fields.lineStart,
+    lineEnd: fields.lineEnd,
+  };
 }
 
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
 const ThemedChevronDown = withUnistyles(ChevronDown);
 
-const mutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+const mutedColorMapping = (theme: Theme) => ({
+  color: theme.colors.foregroundMuted,
+});
 
 const GATED_WORKSPACE_HEADER_LEFT = <SidebarMenuToggle />;
 
@@ -746,7 +754,9 @@ const MobileWorkspaceTabSwitcher = memo(function MobileWorkspaceTabSwitcher({
         ref={anchorRef}
         testID="workspace-tab-switcher-trigger"
         accessibilityRole="button"
-        accessibilityLabel={t("workspace.tabs.switcher.trigger", { count: tabs.length })}
+        accessibilityLabel={t("workspace.tabs.switcher.trigger", {
+          count: tabs.length,
+        })}
         style={switcherTriggerStyle}
         onPress={handleOpenSwitcher}
       >
@@ -1513,12 +1523,18 @@ function useLastMainPane(input: {
   layout: WorkspaceLayout | null;
   explorerSidebarPaneId: string | null;
 }) {
-  const lastMainPaneRef = useRef<{ workspaceKey: string | null; paneId: string | null }>({
+  const lastMainPaneRef = useRef<{
+    workspaceKey: string | null;
+    paneId: string | null;
+  }>({
     workspaceKey: null,
     paneId: null,
   });
   if (lastMainPaneRef.current.workspaceKey !== input.workspaceKey) {
-    lastMainPaneRef.current = { workspaceKey: input.workspaceKey, paneId: null };
+    lastMainPaneRef.current = {
+      workspaceKey: input.workspaceKey,
+      paneId: null,
+    };
   }
   const focusedPaneId = input.layout?.focusedPaneId ?? null;
   if (focusedPaneId && focusedPaneId !== input.explorerSidebarPaneId) {
@@ -1597,7 +1613,9 @@ function WorkspaceScreenContent({
     ) {
       return;
     }
-    prefetchProvidersSnapshot(normalizedServerId, client, { cwd: workspaceDirectory });
+    prefetchProvidersSnapshot(normalizedServerId, client, {
+      cwd: workspaceDirectory,
+    });
   }, [
     client,
     isConnected,
@@ -1628,7 +1646,14 @@ function WorkspaceScreenContent({
       target: WorkspaceTabTarget,
       placement?: WorkspaceTabPlacement,
       stateValue?: JsonValue,
-    ) => openTab({ workspaceKey, target, intent: "new", placement, state: stateValue }),
+    ) =>
+      openTab({
+        workspaceKey,
+        target,
+        intent: "new",
+        placement,
+        state: stateValue,
+      }),
     [openTab],
   );
   const revealWorkspaceChildTab = useCallback(
@@ -1637,7 +1662,14 @@ function WorkspaceScreenContent({
       target: WorkspaceTabTarget,
       parentTabId: string,
       placement?: WorkspaceTabPlacement,
-    ) => openTab({ workspaceKey, target, intent: "reveal", parentTabId, placement }),
+    ) =>
+      openTab({
+        workspaceKey,
+        target,
+        intent: "reveal",
+        parentTabId,
+        placement,
+      }),
     [openTab],
   );
   // File targets stay identity-stable so the same path reuses its tab. Keep navigation
@@ -1793,13 +1825,6 @@ function WorkspaceScreenContent({
   const explorerSidebarPaneId = useWorkspaceLayoutStore((state) =>
     persistenceKey ? selectExplorerSidebarPaneId(state, persistenceKey) : null,
   );
-  // Without this the header toggle could stand down for a close button that never renders,
-  // leaving the panel with no control at all.
-  const explorerSidebarHostsToggle = resolveExplorerSidebarHostsToggle({
-    isCompact: isMobile,
-    hasExplorerPane: explorerSidebarPaneId !== null,
-    focusModeEnabled: isFocusModeEnabled,
-  });
   const lastMainPaneRef = useLastMainPane({
     workspaceKey: persistenceKey,
     layout: workspaceLayout,
@@ -2317,9 +2342,14 @@ function WorkspaceScreenContent({
           tabs: tabCount,
         }),
       agentsAndTabs: ({ agents, tabs: tabCount }) =>
-        t("workspace.tabs.confirmations.bulk.agentsAndTabs", { agents, tabs: tabCount }),
+        t("workspace.tabs.confirmations.bulk.agentsAndTabs", {
+          agents,
+          tabs: tabCount,
+        }),
       terminals: ({ terminals: terminalCount }) =>
-        t("workspace.tabs.confirmations.bulk.terminals", { terminals: terminalCount }),
+        t("workspace.tabs.confirmations.bulk.terminals", {
+          terminals: terminalCount,
+        }),
       tabs: ({ tabs: tabCount }) => t("workspace.tabs.confirmations.bulk.tabs", { tabs: tabCount }),
       agents: ({ agents }) => t("workspace.tabs.confirmations.bulk.agents", { agents }),
     }),
@@ -2558,7 +2588,10 @@ function WorkspaceScreenContent({
               useSessionStore.getState().sessions[normalizedServerId]?.agents?.get(agentId) ?? null;
             closePolicy = resolveCloseAgentTabPolicy(latestAgent);
           } catch (error) {
-            console.error("[WorkspaceScreen] Failed to close subagent tab", { error, agentId });
+            console.error("[WorkspaceScreen] Failed to close subagent tab", {
+              error,
+              agentId,
+            });
             toast.error(t("workspace.tabs.toasts.failedToCloseAgent"));
             return;
           }
@@ -2595,7 +2628,10 @@ function WorkspaceScreenContent({
     function handleClosePassiveTab(input: { tabId: string; target?: WorkspaceTabTarget | null }) {
       setHoveredCloseTabKey((current) => (current === input.tabId ? null : current));
       if (persistenceKey) {
-        closeWorkspaceTabWithCleanup({ tabId: input.tabId, target: input.target });
+        closeWorkspaceTabWithCleanup({
+          tabId: input.tabId,
+          target: input.target,
+        });
       }
     },
     [closeWorkspaceTabWithCleanup, persistenceKey],
@@ -2633,7 +2669,10 @@ function WorkspaceScreenContent({
         return;
       }
       if (tab.target.kind === "terminal") {
-        await handleCloseTerminalTab({ tabId, terminalId: tab.target.terminalId });
+        await handleCloseTerminalTab({
+          tabId,
+          terminalId: tab.target.terminalId,
+        });
         return;
       }
       if (tab.target.kind === "agent") {
@@ -2729,7 +2768,9 @@ function WorkspaceScreenContent({
         return;
       }
 
-      toast.show(t("workspace.tabs.toasts.reloadingAgent"), { durationMs: null });
+      toast.show(t("workspace.tabs.toasts.reloadingAgent"), {
+        durationMs: null,
+      });
       try {
         await client.refreshAgent(agentId);
         // Send the existing cursor so the server detects the new epoch and
@@ -2742,10 +2783,17 @@ function WorkspaceScreenContent({
           direction: "tail",
           projection: "projected",
           ...(currentCursor
-            ? { cursor: { epoch: currentCursor.epoch, seq: currentCursor.endSeq } }
+            ? {
+                cursor: {
+                  epoch: currentCursor.epoch,
+                  seq: currentCursor.endSeq,
+                },
+              }
             : {}),
         });
-        toast.show(t("workspace.tabs.toasts.reloadedAgent"), { variant: "success" });
+        toast.show(t("workspace.tabs.toasts.reloadedAgent"), {
+          variant: "success",
+        });
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : t("workspace.tabs.toasts.failedToReloadAgent"),
@@ -2825,7 +2873,9 @@ function WorkspaceScreenContent({
         title,
         message:
           modifiedCount > 0
-            ? `${bulkMessage}\n\n${t("workspace.tabs.confirmations.bulkUnsaved", { count: modifiedCount })}`
+            ? `${bulkMessage}\n\n${t("workspace.tabs.confirmations.bulkUnsaved", {
+                count: modifiedCount,
+              })}`
             : bulkMessage,
         confirmLabel: t("workspace.tabs.confirmations.close"),
         cancelLabel: t("workspace.tabs.confirmations.cancel"),
@@ -3766,7 +3816,6 @@ function WorkspaceScreenContent({
             />
             <WorkspaceHeaderExplorerToggle
               owner={explorerToggleOwner}
-              sidebarHostsToggle={explorerSidebarHostsToggle}
               onPress={handleToggleExplorerSidebar}
               label={explorerSidebarToggleLabel}
               tooltipLabel={t("workspace.tabs.explorerSidebar.toggle")}
@@ -3805,7 +3854,6 @@ function WorkspaceScreenContent({
       pullRequestOpenLocation,
       explorerSidebarToggleLabel,
       explorerSidebarToggleAccessibilityState,
-      explorerSidebarHostsToggle,
       explorerToggleOwner,
       t,
     ],
@@ -3814,25 +3862,6 @@ function WorkspaceScreenContent({
   const showScreenHeader = useMemo(
     () => shouldShowWorkspaceScreenHeader({ isFocusModeEnabled, isMobile }),
     [isFocusModeEnabled, isMobile],
-  );
-  const renderExplorerSidebarHeaderAction = useCallback(
-    () => (
-      <WorkspaceExplorerSidebarToggle
-        owner={explorerToggleOwner}
-        onPress={handleToggleExplorerSidebar}
-        label={explorerSidebarToggleLabel}
-        tooltipLabel={t("workspace.tabs.explorerSidebar.toggle")}
-        tooltipKeys={EXPLORER_TOGGLE_KEYS}
-        accessibilityState={explorerSidebarToggleAccessibilityState}
-      />
-    ),
-    [
-      explorerSidebarToggleAccessibilityState,
-      explorerSidebarToggleLabel,
-      explorerToggleOwner,
-      handleToggleExplorerSidebar,
-      t,
-    ],
   );
   const createTerminalDisabled = useMemo(
     () => createTerminalMutation.isPending || pendingTerminalCreateInput !== null,
@@ -3944,7 +3973,6 @@ function WorkspaceScreenContent({
       <SplitContainer
         layout={workspaceLayout}
         renderMainHeader={renderWorkspaceScreenHeader}
-        renderExplorerSidebarHeaderAction={renderExplorerSidebarHeaderAction}
         focusModeEnabled={desktopFocusModeEnabled}
         onExitFocusMode={toggleFocusMode}
         workspaceKey={persistenceKey}
@@ -3981,7 +4009,6 @@ function WorkspaceScreenContent({
     canRenderDesktopPaneSplits,
     workspaceLayout,
     renderWorkspaceScreenHeader,
-    renderExplorerSidebarHeaderAction,
     persistenceKey,
     desktopFocusModeEnabled,
     toggleFocusMode,

@@ -1,5 +1,5 @@
-import { useCallback, useMemo, type ReactNode } from "react";
-import { View } from "react-native";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { View, type LayoutChangeEvent } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { PaneToolbarAccessoryProvider } from "@/components/ui/pane-content-toolbar";
 import { RetainedPanel } from "@/components/retained-panel";
@@ -46,6 +46,8 @@ interface ExplorerSidebarDockProps {
     tab: WorkspaceTabDescriptor;
   }) => WorkspacePaneContentModel;
   headerAction?: ReactNode;
+  /** Width below which the dock's tab rail would stop fitting its icon-only tabs. */
+  onMinimumWidthChange?: (width: number) => void;
 }
 
 /** A dock shell over the shared panel host. It owns no workspace-pane capabilities. */
@@ -65,7 +67,34 @@ export function ExplorerSidebarDock({
   onReorderTabsInPane,
   buildPaneContentModel,
   headerAction,
+  onMinimumWidthChange,
 }: ExplorerSidebarDockProps) {
+  const [dockWidth, setDockWidth] = useState(0);
+  const [railMetrics, setRailMetrics] = useState<{
+    availableWidth: number;
+    iconOnlyWidth: number;
+  } | null>(null);
+  const handleDockLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = Math.round(event.nativeEvent.layout.width);
+    setDockWidth((current) => (current === width ? current : width));
+  }, []);
+  const handleRailMeasure = useCallback(
+    (metrics: { availableWidth: number; iconOnlyWidth: number }) =>
+      setRailMetrics((current) =>
+        current?.availableWidth === metrics.availableWidth &&
+        current.iconOnlyWidth === metrics.iconOnlyWidth
+          ? current
+          : metrics,
+      ),
+    [],
+  );
+  useEffect(() => {
+    if (!onMinimumWidthChange || !railMetrics || dockWidth <= 0) return;
+    // Whatever the rail loses to window controls and accessories stays fixed as the dock
+    // resizes, so the minimum is that overhead plus the icon-only tabs.
+    const railOverhead = Math.max(0, dockWidth - railMetrics.availableWidth);
+    onMinimumWidthChange(railOverhead + railMetrics.iconOnlyWidth);
+  }, [dockWidth, onMinimumWidthChange, railMetrics]);
   const paneState = useMemo(() => deriveWorkspacePaneState({ pane, tabs: uiTabs }), [pane, uiTabs]);
   const tabs = useMemo(() => paneState.tabs.map((tab) => tab.descriptor), [paneState.tabs]);
   const activeTabId = paneState.activeTabId;
@@ -101,7 +130,7 @@ export function ExplorerSidebarDock({
   return (
     <RetainedPanel active>
       <WindowChromeRegion corners="top-right">
-        <View style={styles.dock} testID="workspace-explorer-sidebar">
+        <View style={styles.dock} testID="workspace-explorer-sidebar" onLayout={handleDockLayout}>
           <WindowChromeSafeArea
             placement="inline"
             style={styles.tabRail}
@@ -123,6 +152,7 @@ export function ExplorerSidebarDock({
               onMoveTabToMain={onMoveTabToMain}
               onReorderTabs={handleReorderTabs}
               trailingAccessory={toolbarOwnsHeaderAction ? null : headerAction}
+              onMeasure={handleRailMeasure}
             />
             <View pointerEvents="none" style={styles.tabRailDivider} />
           </WindowChromeSafeArea>

@@ -242,7 +242,10 @@ function computeTabOverDropPreview(input: {
   if (!targetPane) {
     return null;
   }
-  const targetTabs = getWorkspacePaneDescriptors({ pane: targetPane, tabs: uiTabs });
+  const targetTabs = getWorkspacePaneDescriptors({
+    pane: targetPane,
+    tabs: uiTabs,
+  });
   return computeTabDropPreview({
     activePaneId: activeData.paneId,
     activeTabId: activeData.tabId,
@@ -436,18 +439,22 @@ export function SplitContainer({
   const [previewExplorerSidebarWidth, setPreviewExplorerSidebarWidth] = useState<number | null>(
     null,
   );
+  // The dock reports the width its icon-only tab rail needs so every tab stays reachable.
+  const [explorerSidebarMinimumWidth, setExplorerSidebarMinimumWidth] = useState(0);
   const requestedExplorerSidebarWidth = previewExplorerSidebarWidth ?? storedExplorerSidebarWidth;
   const explorerSidebarWidth = resolveExplorerSidebarWidth({
     requestedWidth: requestedExplorerSidebarWidth,
     containerWidth: workspaceShellWidth,
+    minimumWidth: explorerSidebarMinimumWidth,
   });
   const explorerSidebarDockSizes = useMemo(
     () =>
       resolveExplorerSidebarDockSizes({
         requestedWidth: requestedExplorerSidebarWidth,
         containerWidth: workspaceShellWidth,
+        minimumWidth: explorerSidebarMinimumWidth,
       }),
-    [requestedExplorerSidebarWidth, workspaceShellWidth],
+    [explorerSidebarMinimumWidth, requestedExplorerSidebarWidth, workspaceShellWidth],
   );
   // The app-wide flag decides, not this workspace's pane: the panel stays open across a jump
   // to another session even though each session keeps its own tree.
@@ -474,11 +481,12 @@ export function SplitContainer({
           resolveExplorerSidebarWidth({
             requestedWidth: nextRatio * workspaceShellWidth,
             containerWidth: workspaceShellWidth,
+            minimumWidth: explorerSidebarMinimumWidth,
           }),
         );
       }
     },
-    [workspaceShellWidth],
+    [explorerSidebarMinimumWidth, workspaceShellWidth],
   );
   const commitExplorerSidebarResize = useCallback(
     (_groupId: string, sizes: number[]) => {
@@ -489,11 +497,12 @@ export function SplitContainer({
           resolveExplorerSidebarWidth({
             requestedWidth: nextRatio * workspaceShellWidth,
             containerWidth: workspaceShellWidth,
+            minimumWidth: explorerSidebarMinimumWidth,
           }),
         );
       }
     },
-    [resizeExplorerSidebar, workspaceShellWidth],
+    [explorerSidebarMinimumWidth, resizeExplorerSidebar, workspaceShellWidth],
   );
   const renderRoot = useMemo(() => wrapRootPaneForStableMount(splitRoot.root), [splitRoot.root]);
   const handleDragStart = useCallback((event: DragStartEvent) => {
@@ -576,8 +585,14 @@ export function SplitContainer({
         return;
       }
 
-      const sourceTabs = getWorkspacePaneDescriptors({ pane: sourcePane, tabs: uiTabs });
-      const targetTabs = getWorkspacePaneDescriptors({ pane: targetPane, tabs: uiTabs });
+      const sourceTabs = getWorkspacePaneDescriptors({
+        pane: sourcePane,
+        tabs: uiTabs,
+      });
+      const targetTabs = getWorkspacePaneDescriptors({
+        pane: targetPane,
+        tabs: uiTabs,
+      });
       const sourceIndex = sourceTabs.findIndex((tab) => tab.tabId === activeData.tabId);
       const resolvedTabDropPreview =
         tabDropPreview?.paneId === overData.paneId ? tabDropPreview : null;
@@ -742,6 +757,7 @@ export function SplitContainer({
                   activeDragTabId={activeDragTabId}
                   tabDropPreview={tabDropPreview}
                   headerAction={renderExplorerSidebarHeaderAction?.()}
+                  onMinimumWidthChange={setExplorerSidebarMinimumWidth}
                 />
               </View>
             </>
@@ -1410,7 +1426,6 @@ const styles = StyleSheet.create((theme) => ({
   },
   explorerSidebarDock: {
     flexShrink: 0,
-    minWidth: 240,
     minHeight: 0,
     backgroundColor: theme.colors.surfaceSidebar,
   },
