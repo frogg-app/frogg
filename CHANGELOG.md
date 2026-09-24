@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.36 — 2026-09-24
+
+- Security moves out of **Overview** into its own host settings section, second in the
+  list, which carries the notification dot and says when a host has no issues. Brands
+  cannot hide it. A warning that describes a deliberate setup can be marked **This is
+  intended**: it stays listed, muted, but raises no dot on any owner device (**Warn me
+  again** undoes it). The choice is stored in `config.json` as
+  `daemon.security.acknowledgedFindings`; 1.5.35 and earlier refuse a file containing it.
+  Critical findings cannot be dismissed. See
+  [security posture](https://frogg.app/docs/self-hosting/security/#in-the-app).
+- Usage refreshes when you mean it to: hovering a usage ring, an agent's reply and
+  **Refresh** now fetch fresh figures instead of the daemon's five-minute cache (a provider
+  is read at most every five seconds). Usage figures ease to new values instead of jumping.
+- The **Usage** host section is folded into **Providers**, which now ends with the
+  whole-host usage list. Old links go to Providers; `usage` in `hiddenSections` is ignored.
+- Branded builds no longer show "Frogg" in process names (supervisor, voice worker) or in
+  daemon, desktop, CLI and app messages. Attribution text uses lowercase "frogg".
+
 ## 1.5.35 — 2026-09-24
 
 - Daemon lock-down follow-ups:
