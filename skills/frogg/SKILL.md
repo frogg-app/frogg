@@ -51,7 +51,7 @@ frogg script stop <name> [--cwd <path> | --workspace <workspace-id>]
 
 **`create_agent`** — required: `title`, `provider` (`claude/opus`, `codex/gpt-5.4`, …), `initialPrompt`. Optional: `workspaceId`, `notifyOnFinish`, `settings`, `labels`. Returns `{ agentId, workspaceId, … }`.
 
-Initial runtime settings live under `settings`: `modeId`, `thinkingOptionId`, and provider-specific `features`. Agent profiles are the preferred source for these values. For Codex fast mode, pass `settings: { features: { "fast_mode": true } }` when creating the agent.
+Initial runtime settings live under `settings`: `modeId`, `thinkingOptionId`, and provider-specific `features`. For Codex fast mode, pass `settings: { features: { "fast_mode": true } }` when creating the agent.
 
 Agent-scoped creation always creates your subagent. Omit `workspaceId` to use your current workspace; pass a workspace returned by `create_workspace` for isolated delegation. Placement never changes parentage.
 
@@ -67,20 +67,9 @@ Agent-scoped `create_agent` defaults `notifyOnFinish` to true. Set it to `false`
 
 **`archive_agent`** — `{ agentId }`. Interrupts if running, removes from active list.
 
-## Agent profiles and provider discovery
+## Provider discovery
 
-**`list_profiles`** — named launch bundles configured by the human. Before choosing how to launch a delegated agent, call this tool and read every profile's `notes`. Pick a named profile the user requested, or the profile whose notes best match the work.
-
-There is no `profile` parameter on `create_agent`. Materialize the selected profile into the call:
-
-- combine `provider` and `model` as the `provider/model` value for `create_agent.provider`
-- copy `modeId` to `settings.modeId`
-- copy `thinkingOptionId` to `settings.thinkingOptionId`
-- copy `featureValues` to `settings.features`
-
-Omit absent values. Do not remember a selected profile or infer drift later; a profile is only launch configuration.
-
-If no profile fits, or no profiles are configured, use the provider discovery tools below rather than guessing. Tell the user when you fall back because no configured profile fits.
+Pick the provider and model with these tools rather than guessing.
 
 **`list_providers`** — compact provider availability and modes.
 

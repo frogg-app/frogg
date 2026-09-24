@@ -2,7 +2,7 @@
 name: frogg-advisor
 description: Spin up a single agent as an advisor — second opinion on the current task. Use when the user says "advisor", "second opinion", "what does X think", or wants an outside take without delegating the work itself.
 user-invocable: true
-argument-hint: "[--profile <name>] <question or topic>"
+argument-hint: "[--provider <provider/model>] <question or topic>"
 ---
 
 # Frogg Advisor
@@ -13,15 +13,13 @@ Single agent. Reads the situation you're in. Gives a judgment. You decide what t
 
 ## Prerequisites
 
-Read the **frogg** skill. Call `list_profiles` before choosing the advisor. Do not create the advisor until you have read the configured profiles and their `notes`.
+Read the **frogg** skill. Use its provider discovery tools to choose the advisor.
 
 ## Picking the advisor
 
-1. **User named a profile** (`--profile UI Work`) → select it by name.
-2. **Otherwise** choose the profile whose `notes` best fit the question. Match the actual work: design and approach, audit and review, or research and root-cause analysis.
-3. **Contrast helps.** When several profiles fit, prefer a different provider family from your own so the second opinion is genuinely fresh.
-
-Materialize the selected profile into `create_agent` as described by the **frogg** skill. If no profile fits, use Frogg's provider discovery fallback.
+1. **User named a provider or model** → use it.
+2. **Otherwise** pick what best fits the question: design and approach, audit and review, or research and root-cause analysis.
+3. **Contrast helps.** Prefer a different provider family from your own so the second opinion is genuinely fresh.
 
 ## The briefing
 

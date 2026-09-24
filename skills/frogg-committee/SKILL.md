@@ -6,24 +6,24 @@ user-invocable: true
 
 # Committee Skill
 
-Two agents from contrasting profiles, fresh context, planning a solution in parallel.
+Two agents from contrasting providers, fresh context, planning a solution in parallel.
 
 **User's additional context:** $ARGUMENTS
 
 ## Prerequisites
 
-Read the **frogg** skill. Call `list_profiles` before choosing committee members. Do not create committee agents until you have read the configured profiles and their `notes`.
+Read the **frogg** skill. Use its provider discovery tools to choose committee members.
 
-Contrast is the point of a committee, so pick profiles from different provider families when possible. Materialize each profile into `create_agent`.
+Contrast is the point of a committee, so pick different provider families when possible.
 
 ## Composition
 
-Two members with different reasoning styles, selected from configured Agent profiles:
+Two members with different reasoning styles, chosen through provider discovery:
 
-- one whose notes fit planning, research, or root-cause analysis
-- one contrasting high-reasoning profile from another provider family
+- one high-reasoning model suited to planning, research, or root-cause analysis
+- one contrasting high-reasoning model from another provider family
 
-If the user names profiles, use those. If fewer than two suitable profiles are configured, use Frogg's provider discovery fallback for the missing member and tell the user. Override the selection only when the user explicitly asks for different members.
+If the user names providers or models, use those.
 
 ## Hard rules
 

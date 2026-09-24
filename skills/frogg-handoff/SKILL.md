@@ -12,11 +12,11 @@ Transfer the current task — context, decisions, failed attempts, constraints �
 
 ## Prerequisites
 
-Read the **frogg** skill. Call `list_profiles` before choosing the receiving agent. Do not create it until you have read the configured profiles and their `notes`.
+Read the **frogg** skill. Use its provider discovery tools to choose the receiving agent.
 
 ## Parsing arguments
 
-1. **Agent profile** — explicit profile name first; otherwise choose the profile whose `notes` best match the work. Materialize it into `create_agent` as described by the **frogg** skill. If no profile fits, use Frogg's provider discovery fallback.
+1. **Provider and model** — the one the user named; otherwise the best fit for the work from provider discovery.
 2. **Isolation** — "in a worktree" / "worktree" → create a workspace with `isolation: "worktree"`, using a short branch name derived from the task.
 3. **Task description** — anything else the user said.
 

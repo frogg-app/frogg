@@ -82,7 +82,6 @@ See [security and access](/docs/self-hosting/security/) for how these combine.
 | `daemon.hostSettings.hiddenSections` | string[] | brand default | Host settings sections the app does not offer for this daemon: any of `projects`, `pair-device`, `devices`, `agents`, `providers`, `terminals`, `host`. `usage` is still accepted but ignored: usage now lives under Providers. **Security** cannot be hidden |
 | `daemon.enableTerminalAgentHooks` | boolean | `false` | Install activity hooks for agent CLIs started in terminals |
 | `daemon.terminalProfiles`         | array   | built-in profiles | `[{ id, name, command, args?, icon? }]`. `[]` means none |
-| `daemon.agentProfiles`            | array   | unset   | Saved agent presets: `[{ id, name, provider, model?, modeId?, thinkingOptionId?, featureValues?, notes?, icon?, color? }]` |
 | `daemon.git.maxProcessesPerSecond` | integer | `2048` | Git process spawn rate limit |
 | `daemon.git.maxProcessConcurrency` | integer | `8`    | Concurrent git processes |
 
@@ -283,7 +282,7 @@ These are credentials for voice features, not agent providers.
 `daemon.browserTools.enabled`, `daemon.hostnames`, `daemon.cors.allowedOrigins`,
 `daemon.trustedProxies`, `daemon.auth.trustLan`, `daemon.auth.claimMode`, `daemon.git.*`,
 `daemon.autoArchiveAfterMerge`, `daemon.autoResumeOnUsageLimit`, `daemon.hostSettings.hiddenSections`, `daemon.autoUpdate`, `daemon.enableTerminalAgentHooks`,
-`daemon.appendSystemPrompt`, `daemon.terminalProfiles`, `daemon.agentProfiles`,
+`daemon.appendSystemPrompt`, `daemon.terminalProfiles`,
 `app.pairingBaseUrl` and `agents.*`.
 
 Everything else, including `daemon.listen`, `daemon.auth.password`, `features`
