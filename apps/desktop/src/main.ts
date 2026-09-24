@@ -1,6 +1,7 @@
 import { configureDesktopProcess } from "./process-configuration.js";
 import log from "electron-log/main";
 import { handleDesktopIpc } from "./ipc-security.js";
+import { withAppCsp } from "./app-csp.js";
 import { registerNetworkHandlers } from "./network.js";
 import { hostAddInbox } from "./host-add-inbox.js";
 import { pairingInbox } from "./pairing-inbox.js";
@@ -288,10 +289,12 @@ async function bootstrap(): Promise<void> {
 
     // SPA fallback: serve index.html for routes without a file extension
     if (!relativePath || !path.extname(relativePath)) {
-      return net.fetch(pathToFileURL(path.join(appDistDir, "index.html")).toString());
+      return net
+        .fetch(pathToFileURL(path.join(appDistDir, "index.html")).toString())
+        .then(withAppCsp);
     }
 
-    return net.fetch(pathToFileURL(filePath).toString());
+    return net.fetch(pathToFileURL(filePath).toString()).then(withAppCsp);
   });
 
   await applyAppIcon();
