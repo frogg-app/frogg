@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.37 — 2026-09-24
 
 - CI pane: expanding a finished GitHub Actions job offers **Add to chat**, which saves the
   job's log on the daemon (timestamps and colour codes removed) and attaches it to the focused
