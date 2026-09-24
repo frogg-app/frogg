@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.35 — 2026-09-24
 
 - Daemon lock-down follow-ups:
   - Host settings **Overview** has a **Security** card listing the daemon's security
