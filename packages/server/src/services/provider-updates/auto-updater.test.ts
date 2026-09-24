@@ -49,6 +49,8 @@ describe("ProviderAutoUpdater", () => {
     updater.stop();
 
     expect(check).toHaveBeenCalledTimes(1);
+    // Background checks skip the registry for providers not on this host.
+    expect(check).toHaveBeenCalledWith({ forceRefresh: true, installedOnly: true });
     expect(update).not.toHaveBeenCalled();
   });
 

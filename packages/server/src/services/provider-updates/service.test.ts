@@ -129,6 +129,36 @@ describe("ProviderUpdateService.check", () => {
     });
   });
 
+  it("installedOnly skips the registry for a missing provider and is not cached", async () => {
+    findExecutableMock.mockResolvedValue(null);
+    const fetch = registryFetch({ "@anthropic-ai/claude-code": "2.0.0" });
+    const service = createService({ fetch });
+
+    const partial = await service.check({ forceRefresh: true, installedOnly: true });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(partial.entries.find((entry) => entry.provider === "claude")).toMatchObject({
+      status: "not-installed",
+      latestVersion: null,
+    });
+
+    // An explicit check afterwards still asks the registry.
+    const full = await service.check();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(full.entries.find((entry) => entry.provider === "claude")?.latestVersion).toBe("2.0.0");
+  });
+
+  it("installedOnly still checks an installed provider", async () => {
+    findExecutableMock.mockImplementation(async (name: string) =>
+      name === "claude" ? "/usr/bin/claude" : null,
+    );
+    execCommandMock.mockResolvedValue({ stdout: "1.9.0", stderr: "" });
+    const snapshot = await createService().check({ forceRefresh: true, installedOnly: true });
+    expect(snapshot.entries.find((entry) => entry.provider === "claude")).toMatchObject({
+      status: "update-available",
+      latestVersion: "2.0.0",
+    });
+  });
+
   it("serves the cached snapshot until it is forced to refresh", async () => {
     findExecutableMock.mockResolvedValue("/usr/bin/claude");
     execCommandMock.mockResolvedValue({ stdout: "2.0.0", stderr: "" });

@@ -9,6 +9,7 @@
 import type { Logger } from "pino";
 
 import type { ProviderUpdatesConfig } from "../../server/persisted-config.js";
+import { resolveProviderUpdatePreferences } from "./preferences.js";
 import type { ProviderUpdateService, ProviderUpdateSnapshot } from "./service.js";
 
 const DEFAULT_CHECK_INTERVAL_MINUTES = 12 * 60;
@@ -75,11 +76,12 @@ export class ProviderAutoUpdater {
     this.running = true;
     const config = this.getConfig();
     try {
-      if (config?.checkEnabled === false) {
+      if (!resolveProviderUpdatePreferences(config).checkEnabled) {
         return;
       }
       const ignored = new Set(config?.ignoredProviders ?? []);
-      const snapshot = await this.service.check({ forceRefresh: true });
+      // Background checks only ask the registry about providers on this host.
+      const snapshot = await this.service.check({ forceRefresh: true, installedOnly: true });
       this.onSnapshot?.(snapshot);
 
       if (config?.autoUpdate !== true) {
