@@ -322,6 +322,11 @@ export interface DaemonServerInfo {
    * `callerRole` is sent either way.
    */
   device?: ServerInfoStatusPayload["device"];
+  /**
+   * The daemon's security findings (`features.securityPosture`). Sent to owner
+   * connections only; absent on older daemons and for operators and viewers.
+   */
+  security?: ServerInfoStatusPayload["security"];
 }
 
 export interface AgentTimelineCursorState {
@@ -482,6 +487,11 @@ interface SessionStoreActions {
   updateSessionClient: (serverId: string, client: DaemonClient, clientGeneration?: number) => void;
   setViewedTimelineSync: (serverId: string, sync: ViewedTimelineUiBridge | null) => void;
   updateSessionServerInfo: (serverId: string, info: DaemonServerInfo) => void;
+  /** Replace the security posture after an explicit refetch (pairing does not re-send server_info). */
+  setSessionSecurityPosture: (
+    serverId: string,
+    security: NonNullable<DaemonServerInfo["security"]>,
+  ) => void;
 
   // Audio state
   setIsPlayingAudio: (serverId: string, playing: boolean) => void;
@@ -717,6 +727,18 @@ function areServerInfoFeaturesEqual(
   return JSON.stringify(current ?? null) === JSON.stringify(next ?? null);
 }
 
+type ServerAccessInfo = Pick<DaemonServerInfo, "callerRole" | "device" | "security">;
+
+function isServerAccessUnchanged(
+  current: ServerAccessInfo | null | undefined,
+  next: ServerAccessInfo,
+): boolean {
+  return equal(
+    { callerRole: current?.callerRole, device: current?.device, security: current?.security },
+    next,
+  );
+}
+
 function isSessionServerInfoUnchanged(input: {
   currentServerInfo: SessionState["serverInfo"] | undefined;
   nextHostname: string | null;
@@ -726,6 +748,7 @@ function isSessionServerInfoUnchanged(input: {
   nextFeatures: ServerInfoStatusPayload["features"] | undefined;
   nextServerId: string;
   nextBrand: ServerInfoStatusPayload["brand"];
+  nextAccess: ServerAccessInfo;
 }): boolean {
   const {
     currentServerInfo,
@@ -744,7 +767,8 @@ function isSessionServerInfoUnchanged(input: {
     prevVersion === nextVersion &&
     currentServerInfo?.desktopManaged === nextDesktopManaged &&
     areServerCapabilitiesEqual(currentServerInfo?.capabilities, nextCapabilities) &&
-    areServerInfoFeaturesEqual(currentServerInfo?.features, nextFeatures)
+    areServerInfoFeaturesEqual(currentServerInfo?.features, nextFeatures) &&
+    isServerAccessUnchanged(currentServerInfo, input.nextAccess)
   );
 }
 
@@ -894,6 +918,11 @@ export const useSessionStore = create<SessionStore>()(
               nextFeatures,
               nextServerId: info.serverId,
               nextBrand: info.brand,
+              nextAccess: {
+                callerRole: info.callerRole,
+                device: info.device,
+                security: info.security,
+              },
             })
           ) {
             return prev;
@@ -915,8 +944,27 @@ export const useSessionStore = create<SessionStore>()(
                     : {}),
                   ...(nextCapabilities ? { capabilities: nextCapabilities } : {}),
                   ...(nextFeatures ? { features: nextFeatures } : {}),
+                  ...(info.callerRole ? { callerRole: info.callerRole } : {}),
+                  ...(info.device ? { device: info.device } : {}),
+                  ...(info.security ? { security: info.security } : {}),
                 },
               },
+            },
+          };
+        });
+      },
+
+      setSessionSecurityPosture: (serverId, security) => {
+        set((prev) => {
+          const session = prev.sessions[serverId];
+          if (!session?.serverInfo || equal(session.serverInfo.security, security)) {
+            return prev;
+          }
+          return {
+            ...prev,
+            sessions: {
+              ...prev.sessions,
+              [serverId]: { ...session, serverInfo: { ...session.serverInfo, security } },
             },
           };
         });

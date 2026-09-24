@@ -768,3 +768,33 @@ it("retains and refreshes the connected host's reported product identity", () =>
   update("test-server", { serverId: "test-server", hostname: "host", version: "1.0.0" });
   expect(useSessionStore.getState().sessions["test-server"].serverInfo?.brand).toBeUndefined();
 });
+
+it("keeps the caller role, device and security posture from server_info", () => {
+  initializeTestSession();
+  const store = useSessionStore.getState();
+  const base = { serverId: "test-server", hostname: "host", version: "1.6.0" };
+  const security = { findings: [{ id: "unclaimed", severity: "critical", fixAction: "claim" }] };
+  store.updateSessionServerInfo("test-server", {
+    ...base,
+    features: { securityPosture: true },
+    callerRole: "owner",
+    security,
+  });
+  const info = () => useSessionStore.getState().sessions["test-server"].serverInfo;
+  expect(info()?.callerRole).toBe("owner");
+  expect(info()?.security).toEqual(security);
+
+  // A re-sent server_info after the fix clears the findings.
+  store.updateSessionServerInfo("test-server", {
+    ...base,
+    features: { securityPosture: true },
+    callerRole: "owner",
+    security: { findings: [] },
+  });
+  expect(info()?.security?.findings).toEqual([]);
+
+  // An explicit refetch replaces only the posture.
+  store.setSessionSecurityPosture("test-server", security);
+  expect(info()?.security).toEqual(security);
+  expect(info()?.callerRole).toBe("owner");
+});
