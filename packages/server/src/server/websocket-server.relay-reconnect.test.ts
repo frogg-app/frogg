@@ -1,3 +1,4 @@
+import type { DaemonRuntimeConfig } from "./session/daemon/daemon-session.js";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { Server as HTTPServer } from "http";
 import type pino from "pino";
@@ -277,6 +278,7 @@ function createServer(options?: {
   startPaused?: boolean;
   /** `null` runs the server with no auth at all, so relay hellos are refused. */
   auth?: DaemonAuthConfig | null;
+  daemonRuntimeConfig?: DaemonRuntimeConfig;
 }) {
   const speechReadiness = options?.speechReadiness ?? null;
   const daemonConfigStore = {
@@ -351,6 +353,7 @@ function createServer(options?: {
     undefined,
     undefined,
     createProviderSnapshotManagerStub().manager,
+    options?.daemonRuntimeConfig,
   );
 }
 
@@ -1418,6 +1421,48 @@ describe("per-device roles over a socket", () => {
       device: deviceRecord("viewer", "cred-2"),
     });
     expect(viewerInfo?.features).not.toHaveProperty("deviceRoleManagement");
+    await server.close();
+  });
+
+  test("security posture reaches owners only and is advertised only when wired", async () => {
+    const unwired = createServer();
+    const unwiredInfo = await attachDevice({
+      server: unwired,
+      socket: new MockSocket(),
+      clientId: "cid-unwired",
+      device: deviceRecord("owner"),
+    });
+    expect(unwiredInfo?.features).not.toHaveProperty("securityPosture");
+    expect(unwiredInfo).not.toHaveProperty("security");
+    await unwired.close();
+
+    const posture = { findings: [{ id: "unclaimed", severity: "critical", fixAction: "claim" }] };
+    const server = createServer({
+      daemonRuntimeConfig: {
+        listen: null,
+        getRelayConfig: () => null,
+        getSecurityPosture: () => posture,
+      },
+    });
+    const ownerInfo = await attachDevice({
+      server,
+      socket: new MockSocket(),
+      clientId: "cid-owner-sp",
+      device: deviceRecord("owner", "cred-1"),
+    });
+    expect(ownerInfo?.features?.securityPosture).toBe(true);
+    expect(ownerInfo?.security).toEqual(posture);
+
+    for (const role of ["operator", "viewer"] as const) {
+      const info = await attachDevice({
+        server,
+        socket: new MockSocket(),
+        clientId: `cid-${role}-sp`,
+        device: deviceRecord(role, `cred-${role}`),
+      });
+      expect(info?.features?.securityPosture).toBe(true);
+      expect(info).not.toHaveProperty("security");
+    }
     await server.close();
   });
 

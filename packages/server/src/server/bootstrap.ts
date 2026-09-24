@@ -203,6 +203,7 @@ import {
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
 import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
 import { createAccessPolicy, DEFAULT_TRUST_LAN, isLoopbackIp } from "./access-policy.js";
+import { computeSecurityPosture } from "./security-posture.js";
 import { createClaimStore, isDaemonClaimed, type ClaimStore } from "./claim-store.js";
 import { deviceRoleStoreFrom } from "./authorization/device-role-store.js";
 import { createClaimOfferStore } from "./claim-offer-store.js";
@@ -847,6 +848,15 @@ export async function createFroggDaemon(
     app.set("trust proxy", value ?? ["loopback"]);
   });
   let boundListenTarget: ListenTarget | null = null;
+  const getSecurityPosture = () =>
+    computeSecurityPosture({
+      claimMode: authConfig.access?.claimMode() ?? false,
+      trustLan: authConfig.access?.trustLan() ?? DEFAULT_TRUST_LAN,
+      hasPassword: Boolean(authConfig.password),
+      claimed: isDaemonClaimed(claimStore, authConfig.password),
+      listenTarget: boundListenTarget ?? listenTarget,
+      brand: brand.daemon,
+    });
   let workspaceRegistry: FileBackedWorkspaceRegistry | null = null;
   const terminalManager = createConfiguredTerminalManager({
     getTerminalActivityUrl: () => createTerminalActivityUrl(boundListenTarget),
@@ -1090,6 +1100,7 @@ export async function createFroggDaemon(
         ) {
           wsServer?.dropCredentiallessSessions();
         }
+        wsServer?.broadcastSecurityPostureChanged();
       },
       setPasswordHash: async (hash) => {
         // Enabling a password locks the daemon: clients admitted on locality
@@ -1111,6 +1122,7 @@ export async function createFroggDaemon(
           logger,
         );
         authConfig.password = hash ?? undefined;
+        wsServer?.broadcastSecurityPostureChanged();
       },
       overrideControlledPaths: () => config.configReload?.overrideControlledPaths ?? [],
     },
@@ -1132,6 +1144,7 @@ export async function createFroggDaemon(
     isLocalToken: (token) => localToken.matches(token),
     onPaired: ({ minted }) => {
       logger.info({ principalId: minted.principalId }, "Daemon claimed by a paired device");
+      wsServer?.broadcastSecurityPostureChanged();
     },
     logger,
   };
@@ -1146,6 +1159,8 @@ export async function createFroggDaemon(
       return hasRealCredential(authConfig, req, token, "owner");
     },
     claimHandler: createDeviceClaimHandler(deviceAccessDeps),
+    getSecurityPosture,
+    trustLan: () => authConfig.access?.trustLan() ?? DEFAULT_TRUST_LAN,
     logger,
   });
 
@@ -2210,6 +2225,7 @@ export async function createFroggDaemon(
                 },
                 desktopManaged: config.desktopManaged === true,
                 update: updateService,
+                getSecurityPosture,
                 getRelayConfig: () =>
                   relayRuntime?.getConfig() ?? {
                     enabled: daemonConfigStore.get().relay?.enabled ?? relayEnabled,

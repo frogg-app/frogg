@@ -2632,10 +2632,24 @@ export class Session {
     }
   }
 
+  /** Owner-only `daemon.*` reads about reaching and securing this daemon. */
+  private dispatchDaemonAccessMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    switch (msg.type) {
+      case "daemon.get_pairing_offer.request":
+        return this.daemonSession.handleGetPairingOfferRequest(msg);
+      case "daemon.get_security_posture.request":
+        return this.daemonSession.handleGetSecurityPostureRequest(msg);
+      default:
+        return undefined;
+    }
+  }
+
   private dispatchAgentConfigMessage(msg: SessionInboundMessage): Promise<void> | undefined {
     if (isDaemonUpdateMessage(msg)) {
       return this.dispatchDaemonUpdateMessage(msg);
     }
+    const daemonAccess = this.dispatchDaemonAccessMessage(msg);
+    if (daemonAccess) return daemonAccess;
     switch (msg.type) {
       case "set_agent_mode_request":
         return this.agentConfigSession.handleSetAgentModeRequest(msg);
@@ -2657,8 +2671,6 @@ export class Session {
         return undefined;
       case "daemon.get_status.request":
         return this.daemonSession.handleGetStatusRequest(msg);
-      case "daemon.get_pairing_offer.request":
-        return this.daemonSession.handleGetPairingOfferRequest(msg);
       case "daemon.config.reload.request":
         this.daemonSession.handleConfigReloadRequest(msg);
         return undefined;

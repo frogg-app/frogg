@@ -13,6 +13,7 @@ import type { PersistedProjectRecord, PersistedWorkspaceRecord } from "../../wor
 import type { HubRelationshipManagement } from "../../hub/relationship-controller.js";
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import type { DaemonUpdateService } from "./daemon-update-service.js";
+import type { SecurityPosture } from "@frogg/protocol/messages";
 
 export interface DaemonRuntimeConfig {
   listen: string | null;
@@ -21,6 +22,8 @@ export interface DaemonRuntimeConfig {
   desktopManaged?: boolean;
   /** Versioned-install self-update; absent on daemons started without bootstrap wiring. */
   update?: DaemonUpdateService;
+  /** Live security findings (security-posture.ts); absent without bootstrap wiring. */
+  getSecurityPosture?(): SecurityPosture;
   getRelayConfig(): {
     enabled: boolean;
     endpoint: string;
@@ -213,6 +216,23 @@ export class DaemonSession {
         },
       });
     }
+  }
+
+  handleGetSecurityPostureRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.get_security_posture.request" }>,
+  ): Promise<void> {
+    const getPosture = this.daemonRuntimeConfig?.getSecurityPosture;
+    this.host.emit({
+      type: "daemon.get_security_posture.response",
+      payload: getPosture
+        ? { requestId: msg.requestId, posture: getPosture(), error: null }
+        : {
+            requestId: msg.requestId,
+            posture: null,
+            error: "Security posture is not available on this daemon",
+          },
+    });
+    return Promise.resolve();
   }
 
   async handleGetPairingOfferRequest(

@@ -129,6 +129,25 @@ describe("first-run claim gate", () => {
     expect(daemon.claimStore.isClaimed()).toBe(true);
     expect(daemon.claimStore.read().principals[0]?.label).toBe("Phone");
 
+    // The owner's credential also gets the security posture; anonymous callers never do.
+    const ownerStatus = await (
+      await fetch(`${base}/api/setup/status`, {
+        headers: { ...PUBLIC, authorization: `Bearer ${minted.credential}` },
+      })
+    ).json();
+    expect(ownerStatus).toMatchObject({ claimed: true, passwordEnabled: false });
+    expect(Array.isArray(ownerStatus.posture.findings)).toBe(true);
+    expect(ownerStatus.posture.findings.some((f: { id: string }) => f.id === "unclaimed")).toBe(
+      false,
+    );
+    const anonStatus = await (await fetch(`${base}/api/setup/status`, { headers: PUBLIC })).json();
+    expect(anonStatus).toEqual({ claimed: true, pairingRequired: false });
+    const badStatus = await fetch(`${base}/api/setup/status`, {
+      headers: { ...PUBLIC, authorization: "Bearer nope" },
+    });
+    expect(badStatus.status).toBe(200);
+    expect(await badStatus.json()).toEqual({ claimed: true, pairingRequired: false });
+
     // The token was single-use.
     const replay = await fetch(`${base}/api/setup/claim`, {
       method: "POST",
