@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.42 — 2026-09-24
+
+- The right sidebar toggle now always sits in the workspace header, whether the sidebar is open
+  or closed, instead of moving into the sidebar's own toolbar.
+- The sidebar's Files/Changes/CI tabs animate down to icons when their labels no longer fit and
+  expand again once there's room. The sidebar never gets narrower than the icon-only tabs, so
+  every tab stays visible and clickable.
+
 ## 1.5.41 — 2026-09-24
 
 - Settings > Updates shows the app update's download progress as it happens. A found release
