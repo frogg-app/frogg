@@ -1,6 +1,6 @@
 # Frogg roadmap
 
-Pruned against `main` at 1.5.43 (2026-09-24). [Changelog](CHANGELOG.md) records
+Pruned against `main` at 1.5.45 (2026-09-25). [Changelog](CHANGELOG.md) records
 completed work. Unchecked items are open; "acceptance" items need a device or
 deployment run, not more code.
 
@@ -12,10 +12,8 @@ deployment run, not more code.
 - [ ] **`daemon-rs` follow-ups.** Auth rate limiting is not ported. Behind the Rust
       front, Node needs loopback in `daemon.trustedProxies` so X-Forwarded-For locality
       applies to the claim/login routes.
-- [ ] **Known failing tests outside CI's set:** three
-      `session.create-agent-worktree-autoarchive.e2e` cases ("Project is not
-      registered"); `websocket-server.relay-reconnect` "reuses one session…" also fails on
-      `main` CI.
+- [ ] **Known failing test outside CI's set:** `websocket-server.liveness.e2e` "a resumed
+      stale socket is bounded and removed without disrupting its replacement" times out.
 - [ ] **Browser E2E baseline.** Run the settings Playwright specs (updated, never run)
       and the plugin-removal e2e.
 - [ ] **Provider toggles re-enable after updates.** Writer unidentified; next time
@@ -37,14 +35,16 @@ deployment run, not more code.
 
 - [ ] **Signing.** Android release key (breaks in-place updates for existing installs:
       owner decision), Windows Authenticode, macOS Developer ID/notarization, updater signing.
-- [ ] **Docker Hub.** `froggapp/frogg` has no tags; publish or remove the docs reference.
+- [ ] **Docker Hub.** `froggapp/frogg` has no tags; the docs now build from source. Publish,
+      or make `deploy/install-docker.sh` skip the pull when a local image exists (its
+      `--update` hint omits `FROGG_NO_PULL=1`). The landing page still lists Docker uncaveated.
 - [ ] **Website deploys.** Add `CLOUDFLARE_API_TOKEN` (and `CLOUDFLARE_ACCOUNT_ID`);
       `website.yml` skips deploys without it. frogg.app is serving.
 - [ ] **Custom-brand release run.** No full `release.yml` run for a non-Frogg brand yet.
-- [ ] **Docs screenshots.** Pairing (relay endpoint card), import dialog, sidebar draft row
-      (`scripts/docs/capture-screenshots.mjs`).
-- [ ] **Dangling design-doc references** in `apps/ui` comments and `.oxlintrc.json`.
-- [ ] **Leftover i18n keys** `hostSections.connections` / `hostSections.metadata`: delete if unused.
+- [ ] **Docs screenshots.** `app/home.png` predates the "Import conversation" action and the
+      icon sidebar; recapture and update its alt text in `first-agent.mdx`.
+- [ ] **Import dialog copy.** The directory hint offers "a new directory" for the daemon
+      source, which needs an existing one.
 
 ## Acceptance (needs devices or live deployments)
 

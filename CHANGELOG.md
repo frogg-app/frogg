@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.45 — 2026-09-25
+
+- Docker docs no longer tell you to pull `froggapp/frogg`, which has no published tags:
+  every Docker path builds the image from source and installs with `FROGG_NO_PULL=1`.
+- New docs screenshots for the relay endpoint card, the import dialog and the sidebar draft
+  row; the docs now say **Import conversation**, and describe when a draft row shows its
+  project name.
+- Fixes three autoArchive e2e cases that created agents in an unregistered project.
+- Removes dead references to deleted design docs and two unused i18n keys.
+
 ## 1.5.44 — 2026-09-24
 
 - The "cache expired" composer warning now survives a daemon restart. The daemon records
