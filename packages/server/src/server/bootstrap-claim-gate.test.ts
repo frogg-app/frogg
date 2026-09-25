@@ -159,6 +159,10 @@ describe("first-run claim gate", () => {
     const afterClaim = await fetch(`${base}/`, { headers: PUBLIC });
     expect(await afterClaim.text()).toContain("the app");
     expect((await (await fetch(`${base}/api/identity`)).json()).pairingRequired).toBe(false);
+    // Claimed means no pairing prompt, but a public client still needs its credential.
+    expect(
+      (await (await fetch(`${base}/api/identity`, { headers: PUBLIC })).json()).credentialRequired,
+    ).toBe(true);
 
     // The minted credential is the bearer for HTTP and WebSocket from public clients.
     const withCredential = await fetch(`${base}/api/status`, {

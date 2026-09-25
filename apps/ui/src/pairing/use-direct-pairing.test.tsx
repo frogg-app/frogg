@@ -33,6 +33,15 @@ const LINK: DirectPairingLink = {
   claim: true,
   serverId: "srv-1",
 };
+const LOCAL_LINK: DirectPairingLink = {
+  v: 1,
+  host: "127.0.0.1",
+  port: 9999,
+  fingerprint: FINGERPRINT,
+  pairingCode: "ABCD2345",
+  serverId: "srv-1",
+  role: "owner",
+};
 const IDENTITY = {
   serverId: "srv-1",
   fingerprint: FINGERPRINT,
@@ -143,5 +152,52 @@ describe("useDirectPairing", () => {
       await result.current.confirm();
     });
     expect(result.current.state.status).toBe("success");
+  });
+
+  it("auto-confirm: a local link still waits for the button when it is off", async () => {
+    const { result } = renderHook(() => useDirectPairing(LOCAL_LINK));
+    await waitFor(() => expect(result.current.state.status).toBe("ready"));
+    expect(mocks.claim).not.toHaveBeenCalled();
+  });
+
+  it("auto-confirm: pairs by itself once the identity is proved", async () => {
+    mocks.claim.mockResolvedValue({
+      serverId: "srv-1",
+      hostname: "studio",
+      endpoint: "127.0.0.1:9999",
+      role: "owner",
+      profile: {},
+    });
+    const { result } = renderHook(() => useDirectPairing(LOCAL_LINK, { autoConfirm: true }));
+    await waitFor(() => expect(result.current.state.status).toBe("success"));
+    expect(mocks.verify).toHaveBeenCalledTimes(1);
+    expect(mocks.claim).toHaveBeenCalledTimes(1);
+    expect(mocks.remember).toHaveBeenCalledWith("srv-1", FINGERPRINT);
+    expect(result.current.state).toMatchObject({
+      hostname: "studio",
+      role: "owner",
+    });
+  });
+
+  it("auto-confirm: never pairs a daemon whose key does not match", async () => {
+    mocks.verify.mockRejectedValue(
+      new DaemonIdentityError("fingerprint_mismatch", "key does not match", "sha256:other"),
+    );
+    const { result } = renderHook(() => useDirectPairing(LOCAL_LINK, { autoConfirm: true }));
+    await waitFor(() => expect(result.current.state.status).toBe("refused"));
+    expect(mocks.claim).not.toHaveBeenCalled();
+  });
+
+  it("auto-confirm: tries once, then leaves a failed pair to the button", async () => {
+    mocks.claim.mockRejectedValueOnce(new Error("the daemon rejected the code"));
+    const { result } = renderHook(() => useDirectPairing(LOCAL_LINK, { autoConfirm: true }));
+    await waitFor(() => expect(result.current.state.status).toBe("error"));
+    expect(mocks.claim).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await result.current.confirm();
+    });
+    expect(result.current.state.status).toBe("success");
+    expect(mocks.claim).toHaveBeenCalledTimes(2);
   });
 });

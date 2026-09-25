@@ -156,6 +156,28 @@ describe("claimDaemon", () => {
     });
   });
 
+  it("returns the role the daemon granted", async () => {
+    const fetchImpl = makeFetch({
+      "127.0.0.1:9999": {
+        claim: () =>
+          jsonResponse(201, {
+            serverId: "srv_devbox",
+            principalId: "p_1",
+            credential: "cred",
+            role: "owner",
+          }),
+      },
+    });
+    const claimed = await claimDaemon({
+      endpoint: "127.0.0.1:9999",
+      useTls: false,
+      pairingCode: "ABCD2345",
+      label: "x",
+      fetchImpl,
+    });
+    expect(claimed.role).toBe("owner");
+  });
+
   it("maps a 403 to token_rejected", async () => {
     const fetchImpl = makeFetch({
       "192.168.1.10:9999": {

@@ -2051,6 +2051,12 @@ export const fr: TranslationResources = {
       cancel: "Annuler",
       retryVerification: "Réessayer",
     },
+    auto: {
+      title: "Appairage avec cette machine",
+      pairing: "Appairage automatique…",
+      paired: "Appairé avec {{hostname}}",
+      pairedAs: "Appairé avec {{hostname}} en tant que {{role}}",
+    },
   },
   presence: {
     label: "Également ici",

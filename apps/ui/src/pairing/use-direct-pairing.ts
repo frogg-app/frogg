@@ -5,7 +5,7 @@ import {
   type DaemonIdentityErrorCode,
   type VerifiedDaemonIdentity,
 } from "@frogg/client/internal/device-identity";
-import type { DirectPairingLink } from "@frogg/protocol/device-access";
+import type { DeviceRole, DirectPairingLink } from "@frogg/protocol/device-access";
 import { useHostMutations } from "@/runtime/host-runtime";
 import { readKnownDaemonFingerprint, rememberDaemonFingerprint } from "./known-daemon-keys";
 
@@ -17,6 +17,11 @@ import { readKnownDaemonFingerprint, rememberDaemonFingerprint } from "./known-d
  * paired and no credential is minted until `confirm()` is called from a button
  * press, so a link opened from a message or a web page cannot pair — or claim
  * ownership of a machine — on its own.
+ *
+ * The one exception is `autoConfirm` (see `canAutoConfirmDirectLink`): a
+ * loopback link carrying a pairing code, on a brand that opts in. It confirms
+ * by itself once, as soon as the identity check passes; a refused or
+ * unreachable daemon, or a failed pair, leaves the usual screen and button.
  */
 export type DirectPairingErrorCode = DaemonIdentityErrorCode | "pair_failed";
 
@@ -34,7 +39,13 @@ export type DirectPairingState =
       actualFingerprint: string | null;
     }
   | { status: "pairing"; identity: VerifiedDaemonIdentity }
-  | { status: "success"; serverId: string; hostname: string | null; endpoint: string }
+  | {
+      status: "success";
+      serverId: string;
+      hostname: string | null;
+      endpoint: string;
+      role: DeviceRole | null;
+    }
   | {
       status: "error";
       identity: VerifiedDaemonIdentity;
@@ -57,6 +68,10 @@ export interface DirectPairingController {
   confirm: () => Promise<void>;
 }
 
+export interface DirectPairingOptions {
+  autoConfirm?: boolean;
+}
+
 function toState(error: unknown): DirectPairingState {
   if (error instanceof DaemonIdentityError) {
     if (REFUSING_CODES.has(error.code)) {
@@ -76,13 +91,19 @@ function toState(error: unknown): DirectPairingState {
   };
 }
 
-export function useDirectPairing(link: DirectPairingLink | null): DirectPairingController {
+export function useDirectPairing(
+  link: DirectPairingLink | null,
+  options: DirectPairingOptions = {},
+): DirectPairingController {
+  const autoConfirm = options.autoConfirm === true;
   const { claimAndUpsertDirectPairingLink } = useHostMutations();
   const [state, setState] = useState<DirectPairingState>({ status: "verifying" });
   const [attempt, setAttempt] = useState(0);
   const stateRef = useRef(state);
   stateRef.current = state;
   const busyRef = useRef(false);
+  // One automatic attempt per link: after a failure the user decides.
+  const autoAttemptedRef = useRef<DirectPairingLink | null>(null);
 
   useEffect(() => {
     if (!link) return;
@@ -122,6 +143,7 @@ export function useDirectPairing(link: DirectPairingLink | null): DirectPairingC
         serverId: result.serverId,
         hostname: result.hostname,
         endpoint: result.endpoint,
+        role: result.role ?? null,
       });
     } catch (error) {
       setState({
@@ -134,6 +156,13 @@ export function useDirectPairing(link: DirectPairingLink | null): DirectPairingC
       busyRef.current = false;
     }
   }, [claimAndUpsertDirectPairingLink, link]);
+
+  useEffect(() => {
+    if (!autoConfirm || !link || state.status !== "ready") return;
+    if (autoAttemptedRef.current === link) return;
+    autoAttemptedRef.current = link;
+    void confirm();
+  }, [autoConfirm, confirm, link, state.status]);
 
   return { state, retryVerification, confirm };
 }

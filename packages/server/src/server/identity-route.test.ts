@@ -49,6 +49,7 @@ describe("GET /api/identity", () => {
       connectedClients: () => 2,
       trustLan: () => true,
       isTrustedClient: () => trusted,
+      needsCredential: () => !trusted || claimed,
     };
     expect(describeDaemonIdentity(deps, PUBLIC_REQUEST)).toEqual({
       product: "frogg",
@@ -59,6 +60,7 @@ describe("GET /api/identity", () => {
       listen: "0.0.0.0:9999",
       connectedClients: 2,
       pairingRequired: true,
+      credentialRequired: true,
       lanTrusted: true,
     });
     // A loopback or trusted-LAN requester connects straight away while unclaimed.
@@ -67,6 +69,8 @@ describe("GET /api/identity", () => {
     trusted = false;
     claimed = true;
     expect(describeDaemonIdentity(deps, PUBLIC_REQUEST).pairingRequired).toBe(false);
+    // Claimed (or password-protected): no pairing prompt, but still a credential.
+    expect(describeDaemonIdentity(deps, PUBLIC_REQUEST).credentialRequired).toBe(true);
   });
 
   test("serves JSON with no-store caching", async () => {
@@ -82,6 +86,7 @@ describe("GET /api/identity", () => {
         connectedClients: () => 0,
         trustLan: () => false,
         isTrustedClient: (req) => req.socket.remoteAddress === "127.0.0.1",
+        needsCredential: () => false,
       }),
     );
     const port = await listen(app);
@@ -99,6 +104,7 @@ describe("GET /api/identity", () => {
       listen: null,
       connectedClients: 0,
       pairingRequired: false,
+      credentialRequired: false,
       lanTrusted: false,
     });
   });
