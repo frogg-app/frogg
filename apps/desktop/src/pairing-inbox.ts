@@ -1,6 +1,18 @@
 import { brand } from "@frogg/branding";
+import { parseDirectPairingDeepLink } from "@frogg/protocol/device-access";
 
+/**
+ * A pairing link the renderer's `/pair-offer` screen handles: the offer form
+ * (`<scheme>://pair#offer=…`) or the direct form `<cli> pair` prints
+ * (`<scheme>://pair/direct?…`), under the brand scheme or the literal `frogg`.
+ */
 export function isPairingOfferLink(value: string): boolean {
+  if (
+    parseDirectPairingDeepLink(value, brand.scheme) !== null ||
+    parseDirectPairingDeepLink(value, "frogg") !== null
+  ) {
+    return true;
+  }
   try {
     const url = new URL(value);
     return (

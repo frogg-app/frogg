@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- The desktop app now opens `<scheme>://pair/direct?…` links, from argv on a cold start,
+  from a second instance, and from `open-url`. The Electron shell only accepted
+  `pair#offer=` and `host/add` links, so a direct pairing link brought the window forward
+  and did nothing.
+- A direct pairing link's server ID is read from `sid` or `serverId`. Before, a link that
+  spelled it `serverId` lost it, which skipped the server ID cross-check on redemption.
 - A brand can set `pairing.autoConfirmLocal` so a `pair/direct` link pairs with no click
   when its host is loopback, it carries a pairing code, and the daemon proves the key
   behind `fp`. Any other link, or any failure, shows the confirmation screen as before.
