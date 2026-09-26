@@ -1,4 +1,5 @@
 import { brand } from "@frogg/branding";
+import { compareVersionStrings, isStableVersion } from "@frogg/protocol/release-version";
 import type { ReleaseChannel } from "@/hooks/use-settings";
 import type { AndroidInstallerInfo } from "@/mobile/updates/android-app-installer";
 
@@ -8,7 +9,7 @@ const APK_ABIS = ["arm64-v8a", "armeabi-v7a", "x86_64", "x86", "universal"] as c
 // Frogg-1.5.17-android-arm64-v8a.apk, ...-arm64-v8a-unsigned.apk (debug-signed),
 // ...-arm64-v8a-development-unsigned.apk (the `.debug` application id).
 const APK_ASSET_PATTERN = new RegExp(
-  `^(?<prefix>.+)-(?<version>\\d+\\.\\d+\\.\\d+(?:-beta\\.\\d+)?)-android-(?<abi>${APK_ABIS.join("|")})(?<identity>-development)?(?<flavour>-unsigned|-debug)?\\.apk$`,
+  `^(?<prefix>.+)-(?<version>\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z]+(?:\\.[0-9A-Za-z]+)*)?)-android-(?<abi>${APK_ABIS.join("|")})(?<identity>-development)?(?<flavour>-unsigned|-debug)?\\.apk$`,
 );
 
 export interface GithubReleaseAsset {
@@ -66,27 +67,9 @@ export function normalizeVersion(value: string | null | undefined): string | nul
   return trimmed ? trimmed : null;
 }
 
-function versionParts(version: string): { numbers: number[]; beta: number | null } {
-  const [core, beta] = version.split("-beta.");
-  return {
-    numbers: core.split(".").map((part) => Number.parseInt(part, 10) || 0),
-    beta: beta === undefined ? null : Number.parseInt(beta, 10) || 0,
-  };
-}
-
-/** Ordinary semver ordering for the versions this project publishes: 1.2.3 and 1.2.3-beta.4. */
+/** Release ordering shared with desktop and the daemon. */
 export function compareReleaseVersions(left: string, right: string): number {
-  const a = versionParts(left);
-  const b = versionParts(right);
-  for (let index = 0; index < Math.max(a.numbers.length, b.numbers.length); index++) {
-    const difference = (a.numbers[index] ?? 0) - (b.numbers[index] ?? 0);
-    if (difference !== 0) return difference > 0 ? 1 : -1;
-  }
-  if (a.beta === b.beta) return 0;
-  // A release outranks its own betas.
-  if (a.beta === null) return 1;
-  if (b.beta === null) return -1;
-  return a.beta > b.beta ? 1 : -1;
+  return Math.sign(compareVersionStrings(left, right));
 }
 
 export function isNewerVersion(candidate: string | null, current: string | null): boolean {
@@ -146,7 +129,11 @@ export function selectApkAsset(
   return { asset: null, signatureMismatch: false };
 }
 
-/** The newest published release for the channel; betas are beta-channel only. */
+/**
+ * The newest published release for the channel. The stable app never takes a beta, and the beta
+ * app (its own install, `<applicationId>.beta`) takes betas only: a stable release carries none of
+ * its APKs.
+ */
 export function selectRelease(
   releases: readonly GithubRelease[],
   channel: ReleaseChannel,
@@ -156,8 +143,8 @@ export function selectRelease(
     if (release.draft) continue;
     const version = normalizeVersion(release.tag_name);
     if (!version) continue;
-    const isPrerelease = release.prerelease === true || version.includes("-beta.");
-    if (isPrerelease && channel !== "beta") continue;
+    const isPrerelease = release.prerelease === true || !isStableVersion(version);
+    if (isPrerelease !== (channel === "beta")) continue;
     if (!best || compareReleaseVersions(version, best.version) > 0) {
       best = { release, version };
     }

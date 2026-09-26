@@ -28,5 +28,9 @@
     "typecheck": {
       "command": "npm run typecheck"
     }
+  },
+  "streams": {
+    "development": "main",
+    "stable": "stable"
   }
 }

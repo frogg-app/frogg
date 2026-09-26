@@ -91,12 +91,39 @@ export const FroggCiConfigSchema = z
   })
   .passthrough();
 
+/**
+ * Release streams: which branch cuts betas and which cuts stable releases, and for a fork, the
+ * upstream it pulls from. The release scripts (scripts/release/streams-config.mjs) and the
+ * daemon's stream graph read the same block; both default development to "main" and stable to
+ * "stable", and a fork's upstream to the "upstream" remote following upstream's stable releases.
+ */
+export const FroggStreamsConfigSchema = z
+  .object({
+    development: z.string().optional(),
+    stable: z.string().optional(),
+    upstream: z
+      .object({
+        remote: z.string().optional(),
+        /** owner/name, for opening pull requests upstream. */
+        repository: z.string().optional(),
+        development: z.string().optional(),
+        stable: z.string().optional(),
+        follow: z.enum(["stable", "development"]).optional(),
+        /** The fork's build counter name: releases are 1.8.0-acme.N, betas 1.8.0-rc.1.acme.N. */
+        suffix: z.string().optional(),
+      })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+
 export const FroggConfigRawSchema = z
   .object({
     worktree: FroggWorktreeConfigRawSchema.optional(),
     scripts: z.record(z.string(), FroggScriptEntryRawSchema).optional(),
     metadataGeneration: FroggMetadataGenerationSchema.optional(),
     ci: FroggCiConfigSchema.optional(),
+    streams: FroggStreamsConfigSchema.optional(),
   })
   .passthrough();
 
@@ -115,6 +142,7 @@ export const FroggConfigSchema = FroggConfigRawSchema.extend({
   metadataGeneration: FroggMetadataGenerationSchema.optional(),
   // A malformed ci block must not take the rest of the config down with it.
   ci: FroggCiConfigSchema.optional().catch(undefined),
+  streams: FroggStreamsConfigSchema.optional().catch(undefined),
 })
   .passthrough()
   .catch({});
@@ -147,5 +175,6 @@ export type FroggServicePortAllocation = z.infer<typeof FroggServicePortAllocati
 export type FroggConfigRaw = z.infer<typeof FroggConfigRawSchema>;
 export type FroggConfig = z.infer<typeof FroggConfigSchema>;
 export type FroggCiConfig = z.infer<typeof FroggCiConfigSchema>;
+export type FroggStreamsConfig = z.infer<typeof FroggStreamsConfigSchema>;
 export type FroggConfigRevision = z.infer<typeof FroggConfigRevisionSchema>;
 export type ProjectConfigRpcError = z.infer<typeof ProjectConfigRpcErrorSchema>;

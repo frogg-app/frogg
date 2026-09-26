@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="400" viewBox="0 0 1120 400" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="arrow-stable" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#1f8a55"/></marker>
+<marker id="arrow-beta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c77700"/></marker>
+<marker id="arrow-upstream" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#6d28d9"/></marker>
+<marker id="arrow-backport" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9a5b12"/></marker>
+<marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#5b6462"/></marker>
+<marker id="arrow-danger" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#c62828"/></marker>
+</defs>
+<rect width="1120" height="400" rx="16" fill="#ffffff"/>
+<text x="40" y="44" font-size="18.9" font-weight="600" fill="#18181b" text-anchor="start">One machine, two installs. Nothing is shared: port, data, service, CLI, app id.</text>
+<text x="40" y="66" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">Run your agents in frogg; install each beta in frogg beta to try it.</text>
+<rect x="40" y="92" width="440" height="244" rx="14" fill="#f6f7f7" stroke="#1f8a55" stroke-width="1.5"/>
+<rect x="40" y="92" width="440" height="44" rx="14" fill="#1f8a55" fill-opacity="0.16"/>
+<text x="60" y="120" font-size="23" font-weight="700" fill="#1f8a55" text-anchor="start">frogg</text>
+<text x="60" y="164" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">App</text>
+<text x="190" y="164" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg</text>
+<text x="60" y="194" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">Daemon</text>
+<text x="190" y="194" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg-daemon :9999</text>
+<text x="60" y="224" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">Data</text>
+<text x="190" y="224" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">~/.frogg</text>
+<text x="60" y="254" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">CLI</text>
+<text x="190" y="254" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg</text>
+<text x="60" y="284" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">App id</text>
+<text x="190" y="284" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">app.frogg.frogg</text>
+<text x="60" y="322" font-size="16.9" font-weight="600" fill="#1f8a55" text-anchor="start">Updates to stable releases only</text>
+<rect x="640" y="92" width="440" height="244" rx="14" fill="#f6f7f7" stroke="#c77700" stroke-width="1.5"/>
+<rect x="640" y="92" width="440" height="44" rx="14" fill="#c77700" fill-opacity="0.16"/>
+<text x="660" y="120" font-size="23" font-weight="700" fill="#c77700" text-anchor="start">frogg beta</text>
+<text x="660" y="164" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">App</text>
+<text x="790" y="164" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg beta</text>
+<text x="660" y="194" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">Daemon</text>
+<text x="790" y="194" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg-beta-daemon :9998</text>
+<text x="660" y="224" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">Data</text>
+<text x="790" y="224" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">~/.frogg-beta</text>
+<text x="660" y="254" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">CLI</text>
+<text x="790" y="254" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg-beta</text>
+<text x="660" y="284" font-size="17.6" font-weight="400" fill="#5b6462" text-anchor="start">App id</text>
+<text x="790" y="284" font-size="17.6" font-weight="400" fill="#18181b" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">app.frogg.frogg.beta</text>
+<text x="660" y="322" font-size="16.9" font-weight="600" fill="#c77700" text-anchor="start">Updates to betas only</text>
+<path d="M 500 214 L 626 214" stroke="#5b6462" stroke-width="2" marker-end="url(#arrow-muted)"/>
+<text x="560" y="200" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="middle">agents build it</text>
+<text x="560" y="236" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="middle">you test it</text>
+<text x="40" y="372" font-size="16.9" font-weight="400" fill="#5b6462" text-anchor="start">Worktree dev daemons (npm run dev:server) use their own home and port, so they touch neither install.</text>
+</svg>

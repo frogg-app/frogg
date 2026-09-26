@@ -213,6 +213,7 @@ const WorkspaceTabTargetStorageSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("files") }),
   z.strictObject({ kind: z.literal("pull_request") }),
   z.strictObject({ kind: z.literal("ci_runs") }),
+  z.strictObject({ kind: z.literal("release_streams") }),
   z.strictObject({
     kind: z.literal("file"),
     path: z.string(),

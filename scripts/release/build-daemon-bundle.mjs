@@ -28,6 +28,7 @@
 // downloaded, nothing is compiled.
 
 import { daemonArtifactName } from "../../packages/branding/src/artifact-contract.mjs";
+import { parseChannelVersion } from "./release-channel.mjs";
 import { existsSync } from "node:fs";
 import { loadBrand } from "../dev/branding/load.cjs";
 import {
@@ -340,8 +341,19 @@ export async function packBundle({ stagingDir, bundleName, archiveName, outDir, 
   return { archivePath, digest };
 }
 
+/**
+ * Bundle filenames carry the release's upstream version: a fork build `1.8.0-acme.2` ships
+ * `...-1.8.0-<platform>-<arch>`, and a beta keeps its channel part (`1.8.0-rc.1`). The CLI
+ * updater and install.sh look the bundle up by the same rule (`artifactVersion`).
+ */
 export function daemonAssetName(version, platform, arch) {
-  return daemonArtifactName(brand, version, platform, arch);
+  return daemonArtifactName(brand, bundleArtifactVersion(version), platform, arch);
+}
+
+function bundleArtifactVersion(version) {
+  const parsed = parseChannelVersion(version);
+  if (!parsed) return version;
+  return parsed.upstream ? `${parsed.core}-${parsed.upstream}` : parsed.core;
 }
 
 async function main() {

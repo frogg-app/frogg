@@ -328,6 +328,8 @@ pub enum SessionMessage {
     CheckoutForgeSetAutoMergeResponse(CheckoutForgeSetAutoMergeResponse),
     #[serde(rename = "checkout.ci.list_runs.response")]
     CheckoutCiListRunsResponse(CheckoutCiListRunsResponse),
+    #[serde(rename = "checkout.streams.get_graph.response")]
+    CheckoutStreamsGetGraphResponse(CheckoutStreamsGetGraphResponse),
     #[serde(rename = "checkout.ci.download_job_log.response")]
     CheckoutCiDownloadJobLogResponse(CheckoutCiDownloadJobLogResponse),
     #[serde(rename = "checkout.github.set_auto_merge.response")]
@@ -8936,6 +8938,106 @@ pub struct CheckoutCiListRunsResponsePayloadRunsItemJobsItemStepsItem {
 pub struct CheckoutCiListRunsResponsePayloadProviderErrorsItem {
     pub provider: String,
     pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphResponse {
+    pub payload: CheckoutStreamsGetGraphResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphResponsePayload {
+    pub cwd: String,
+    pub config: serde_json::Value,
+    pub streams: Vec<CheckoutStreamsGetGraphResponsePayloadStreamsItem>,
+    pub flows: Vec<CheckoutStreamsGetGraphResponsePayloadFlowsItem>,
+    pub changes: Vec<CheckoutStreamsGetGraphResponsePayloadChangesItem>,
+    pub events: Vec<CheckoutStreamsGetGraphResponsePayloadEventsItem>,
+    pub truncated: bool,
+    #[serde(rename = "fetchedAt", skip_serializing_if = "Option::is_none")]
+    pub fetched_at: Option<String>,
+    #[serde(rename = "fetchError", skip_serializing_if = "Option::is_none")]
+    pub fetch_error: Option<String>,
+    pub error: serde_json::Value,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphResponsePayloadStreamsItem {
+    pub id: String,
+    pub kind: String,
+    pub label: String,
+    pub r#ref: String,
+    pub channel: String,
+    pub exists: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub head: Option<String>,
+    #[serde(rename = "headDate", skip_serializing_if = "Option::is_none")]
+    pub head_date: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    pub unreleased: f64,
+    pub releases: Vec<CheckoutStreamsGetGraphResponsePayloadStreamsItemReleasesItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphResponsePayloadStreamsItemReleasesItem {
+    pub tag: String,
+    pub version: String,
+    pub sha: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphResponsePayloadFlowsItem {
+    pub from: String,
+    pub to: String,
+    pub kind: String,
+    pub pending: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub command: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphResponsePayloadChangesItem {
+    pub sha: String,
+    pub subject: String,
+    pub r#type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scope: Option<String>,
+    pub breaking: bool,
+    pub author: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date: Option<String>,
+    pub origin: String,
+    pub presence: Vec<CheckoutStreamsGetGraphResponsePayloadChangesItemPresenceItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphResponsePayloadChangesItemPresenceItem {
+    pub stream: String,
+    pub state: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub via: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub release: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphResponsePayloadEventsItem {
+    pub kind: String,
+    pub from: String,
+    pub to: String,
+    #[serde(rename = "fromRelease", skip_serializing_if = "Option::is_none")]
+    pub from_release: Option<String>,
+    #[serde(rename = "toRelease", skip_serializing_if = "Option::is_none")]
+    pub to_release: Option<String>,
+    pub sha: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date: Option<String>,
+    pub count: f64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

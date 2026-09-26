@@ -1,5 +1,112 @@
 import { projectImportCopies } from "./project-import";
 export const en = {
+  releaseStreams: {
+    label: "Release streams",
+    subtitle: "Betas, stable releases and upstream, and which changes have reached each",
+    refresh: "Refresh release streams",
+    toolbarSummary_one: "{{development}} → {{stable}}: {{count}} change waiting",
+    toolbarSummary_other: "{{development}} → {{stable}}: {{count}} changes waiting",
+    unsupportedTitle: "Update the daemon",
+    unsupportedDescription: "This host's daemon is too old to report release streams.",
+    errorTitle: "Couldn't read the release streams",
+    fetchFailed:
+      "Couldn't fetch from the remotes ({{message}}). Showing what this checkout already has.",
+    stream: {
+      development: "Development",
+      stable: "Stable",
+      upstreamDevelopment: "Upstream beta",
+      upstreamStable: "Upstream stable",
+    },
+    channel: {
+      stable: "stable",
+      beta: "beta",
+    },
+    card: {
+      missing: "Branch not created yet",
+      noRelease: "No release yet",
+      latest: "Latest {{version}}, {{time}}",
+      unreleased_one: "{{count}} unreleased commit",
+      unreleased_other: "{{count}} unreleased commits",
+    },
+    graph: {
+      unreleased: "+{{count}} unreleased",
+      upToDate: "released",
+      missing: "not created",
+      promote: "promoted",
+      backport_one: "{{count}} backport",
+      backport_other: "{{count}} backports",
+      sync: "synced",
+      contribute: "contributed",
+      waiting: "{{count}} waiting",
+    },
+    legend: {
+      release: "Release",
+      tip: "Branch tip",
+      promote: "Promotion",
+      backport: "Backport",
+      sync: "Upstream sync",
+      waiting: "Waiting to move",
+    },
+    setup: {
+      title: "Set up release streams",
+      description:
+        "Betas ship from {{development}} and stable releases from {{stable}}, which doesn't exist yet. Create it from the newest stable release:",
+    },
+    flows: {
+      title: "Waiting to move",
+      none: "Every change has reached every stream it is headed for.",
+      pending_one: "{{count}} change",
+      pending_other: "{{count}} changes",
+      counts: "Features: {{features}} · Fixes: {{fixes}} · Other: {{other}}",
+      runOn: "Run on {{branch}}:",
+      copy: "Copy command",
+      copied: "Copied",
+      promote: {
+        title: "{{from}} → {{to}}: promote",
+        description: "Ships the open beta line as the next stable release.",
+      },
+      forwardPort: {
+        title: "{{from}} → {{to}}: forward-port",
+        description:
+          "Fixes made only on stable. Cherry-pick them onto development, or promotion will drop them.",
+      },
+      sync: {
+        title: "{{from}} → {{to}}: merge upstream",
+        description:
+          "Upstream changes your development branch has not merged yet. Your beta build tests them before they reach your stable users.",
+      },
+      contribute: {
+        title: "{{from}} → {{to}}: contribute",
+        description:
+          "Your changes that upstream does not have. Offer the product changes back so you stop carrying them.",
+      },
+    },
+    changes: {
+      title: "Changes",
+      filter: {
+        all: "All",
+        features: "Features",
+        fixes: "Fixes",
+        waiting: "Waiting",
+      },
+      search: "Filter by text, scope or commit",
+      empty: "No changes match.",
+      truncated: "Showing the newest {{count}} changes.",
+      origin: "Made on {{stream}}",
+    },
+    presence: {
+      released: "released",
+      landed: "unreleased",
+      pending: "waiting",
+      absent: "—",
+      via: {
+        promotion: "promoted",
+        backport: "backport",
+        sync: "synced",
+        contribution: "contributed",
+      },
+    },
+  },
   ciMonitor: {
     label: "CI",
     subtitle: "GitHub Actions and Jenkins runs for this project",
@@ -3062,7 +3169,8 @@ export const en = {
       versionDiffers: "Version differs from this device",
       releaseChannel: {
         label: "Release channel",
-        description: "Switch to Beta to get updates sooner and help shape them",
+        stableHint: "Betas are a separate app, {{beta}}, that installs beside this one",
+        betaHint: "This beta installs beside {{stable}} and only updates to betas",
         stable: "Stable",
         beta: "Beta",
       },
@@ -3665,9 +3773,6 @@ export const en = {
           autoUpdate: {
             title: "Update automatically",
             hint: "Checks the channel daily and updates when no agents are running. A rollback protects against a daemon that does not start, not against a bad UI build, which ships with the app.",
-            channelLabel: "Release channel",
-            stable: "Stable",
-            beta: "Beta",
           },
         },
         update: {

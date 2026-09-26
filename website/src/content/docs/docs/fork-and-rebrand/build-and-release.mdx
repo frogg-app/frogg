@@ -63,9 +63,10 @@ environment (used by the branding matrix), then the external repository, then th
 
 ## Report the build you published
 
-A downstream rebuild of an upstream version — `1.4.1-acme.2`, the second build of upstream
-1.4.1 — has nowhere to put that number: the workspace version stays at the upstream one so
-merges never conflict on manifests. Set `<PREFIX>_RELEASE_VERSION` (or `FROGG_RELEASE_VERSION`)
+With [release streams](/docs/contributing/release-streams/#fork-versions) and
+`streams.upstream.suffix` set, the release scripts put your full version (`1.4.1-acme.2`) in
+`package.json` and nothing more is needed. For a one-off rebuild outside that flow, the
+workspace version can stay at upstream's and the build can be stamped instead. Set `<PREFIX>_RELEASE_VERSION` (or `FROGG_RELEASE_VERSION`)
 before `brand:prepare` and the build stamps it, so **Settings → About** reports what was
 installed instead of the version it forked from:
 
@@ -272,9 +273,11 @@ real release; the naming contract lives in `packages/branding/src/artifact-contr
 Everything keys off `distribution.repository` in your brand.
 
 - **Desktop app.** electron-updater reads
-  `https://github.com/<repository>/releases/latest/download/` on the stable channel,
-  then pins to the version named in `release.json`. The beta channel picks the newest
-  non-draft release. Users choose the channel in the app. Updates download in the
+  `https://github.com/<repository>/releases/latest/download/` in the stable build, then
+  pins to the version named in `release.json`. The beta build (`<id>-beta`, built for
+  `-beta.N` tags) picks the newest non-draft beta. There is no channel setting: each build
+  updates within its own channel, and the two install side by side
+  ([release streams](/docs/contributing/release-streams/)). Updates download in the
   background and install when the app quits; AppImage builds do not install on quit. Set
   `FROGG_ELECTRON_UPDATE_URL` to test against another HTTPS feed.
 - **Daemon.** `install.sh` from your release downloads your daemon bundles. On the host,

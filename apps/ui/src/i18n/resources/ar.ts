@@ -2,6 +2,112 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
+  releaseStreams: {
+    label: "مسارات الإصدارات",
+    subtitle: "الإصدارات التجريبية والمستقرة والمصدر الأعلى، وأي التغييرات وصلت إلى كل منها",
+    refresh: "تحديث مسارات الإصدارات",
+    toolbarSummary_one: "{{development}} ← {{stable}}: {{count}} تغيير بانتظار النقل",
+    toolbarSummary_other: "{{development}} ← {{stable}}: {{count}} تغييرات بانتظار النقل",
+    unsupportedTitle: "حدّث البرنامج الخفي",
+    unsupportedDescription: "البرنامج الخفي على هذا المضيف قديم جدًا ولا يعرض مسارات الإصدارات.",
+    errorTitle: "تعذّرت قراءة مسارات الإصدارات",
+    fetchFailed: "تعذّر الجلب من المستودعات البعيدة ({{message}}). يُعرض ما هو موجود في هذه النسخة.",
+    stream: {
+      development: "التطوير",
+      stable: "المستقر",
+      upstreamDevelopment: "تجريبي المصدر الأعلى",
+      upstreamStable: "مستقر المصدر الأعلى",
+    },
+    channel: {
+      stable: "مستقر",
+      beta: "تجريبي",
+    },
+    card: {
+      missing: "لم يُنشأ الفرع بعد",
+      noRelease: "لا يوجد إصدار بعد",
+      latest: "أحدث إصدار {{version}}، {{time}}",
+      unreleased_one: "{{count}} إيداع غير منشور",
+      unreleased_other: "{{count}} إيداعات غير منشورة",
+    },
+    graph: {
+      unreleased: "+{{count}} غير منشور",
+      upToDate: "منشور",
+      missing: "غير منشأ",
+      promote: "تمت الترقية",
+      backport_one: "{{count}} نقل عكسي",
+      backport_other: "{{count}} عمليات نقل عكسي",
+      sync: "تمت المزامنة",
+      contribute: "تمت المساهمة",
+      waiting: "{{count}} بالانتظار",
+    },
+    legend: {
+      release: "إصدار",
+      tip: "طرف الفرع",
+      promote: "ترقية",
+      backport: "نقل عكسي",
+      sync: "مزامنة المصدر الأعلى",
+      waiting: "بانتظار النقل",
+    },
+    setup: {
+      title: "إعداد مسارات الإصدارات",
+      description:
+        "تُنشر الإصدارات التجريبية من {{development}} والمستقرة من {{stable}}، وهو غير موجود بعد. أنشئه من أحدث إصدار مستقر:",
+    },
+    flows: {
+      title: "بانتظار النقل",
+      none: "وصل كل تغيير إلى جميع المسارات المتجه إليها.",
+      pending_one: "{{count}} تغيير",
+      pending_other: "{{count}} تغييرات",
+      counts: "الميزات: {{features}} · الإصلاحات: {{fixes}} · أخرى: {{other}}",
+      runOn: "شغّل على {{branch}}:",
+      copy: "نسخ الأمر",
+      copied: "تم النسخ",
+      promote: {
+        title: "{{from}} ← {{to}}: ترقية",
+        description: "ينشر خط الإصدار التجريبي المفتوح كإصدار مستقر تالٍ.",
+      },
+      forwardPort: {
+        title: "{{from}} ← {{to}}: نقل أمامي",
+        description:
+          "إصلاحات أُجريت على الفرع المستقر فقط. انقلها إلى التطوير بـ cherry-pick وإلا ستضيع عند الترقية.",
+      },
+      sync: {
+        title: "{{from}} ← {{to}}: دمج المصدر الأعلى",
+        description:
+          "تغييرات من المصدر الأعلى لم يدمجها فرع التطوير بعد. يختبرها إصدارك التجريبي قبل وصولها إلى مستخدمي الإصدار المستقر.",
+      },
+      contribute: {
+        title: "{{from}} ← {{to}}: مساهمة",
+        description:
+          "تغييراتك التي لا يملكها المصدر الأعلى. أعد تغييرات المنتج إليه حتى لا تضطر إلى صيانتها بنفسك.",
+      },
+    },
+    changes: {
+      title: "التغييرات",
+      filter: {
+        all: "الكل",
+        features: "الميزات",
+        fixes: "الإصلاحات",
+        waiting: "بالانتظار",
+      },
+      search: "التصفية بالنص أو النطاق أو الإيداع",
+      empty: "لا توجد تغييرات مطابقة.",
+      truncated: "يُعرض أحدث {{count}} تغيير.",
+      origin: "أُجري على {{stream}}",
+    },
+    presence: {
+      released: "منشور",
+      landed: "غير منشور",
+      pending: "بالانتظار",
+      absent: "—",
+      via: {
+        promotion: "تمت ترقيته",
+        backport: "نقل عكسي",
+        sync: "تمت مزامنته",
+        contribution: "تمت المساهمة به",
+      },
+    },
+  },
   ciMonitor: {
     label: "CI",
     subtitle: "تشغيلات GitHub Actions وJenkins لهذا المشروع",
@@ -3000,7 +3106,8 @@ export const ar: TranslationResources = {
       versionDiffers: "الإصدار يختلف عن هذا الجهاز",
       releaseChannel: {
         label: "الافراج عن القناة",
-        description: "قم بالتبديل إلى Beta للحصول على التحديثات عاجلاً والمساعدة في تشكيلها",
+        stableHint: "الإصدارات التجريبية تطبيق منفصل، {{beta}}، يُثبَّت بجانب هذا التطبيق",
+        betaHint: "يُثبَّت هذا الإصدار التجريبي بجانب {{stable}} ولا يتحدّث إلا إلى إصدارات تجريبية",
         stable: "Stable",
         beta: "Beta",
       },
@@ -3600,9 +3707,6 @@ export const ar: TranslationResources = {
           autoUpdate: {
             title: "التحديث تلقائيًا",
             hint: "يتحقق من القناة يوميًا ويحدّث عندما لا تعمل أي وكلاء. تحمي العودة من برنامج خفي لا يبدأ، لا من واجهة معطوبة تُشحن مع التطبيق.",
-            channelLabel: "قناة الإصدارات",
-            stable: "مستقر",
-            beta: "تجريبي",
           },
         },
         update: {

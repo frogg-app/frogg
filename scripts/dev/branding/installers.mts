@@ -40,6 +40,7 @@ export async function generateInstallers(build: BrandBuild): Promise<void> {
     RELEASE_BASE: b.distribution.releaseBase ?? "",
     DOCKER_IMAGE: b.distribution.dockerImage ?? "",
     LEGACY: String(b.legacyFrogg),
+    CHANNEL: b.channel,
   };
   const defaults =
     Object.entries(fields)

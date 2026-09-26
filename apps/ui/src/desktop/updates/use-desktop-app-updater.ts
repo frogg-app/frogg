@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   checkDesktopAppUpdate,
@@ -15,7 +16,6 @@ import {
   reduceAppUpdateProgress,
   type AppUpdateProgress,
 } from "@/desktop/updates/app-update-progress";
-import { useDesktopSettings } from "@/desktop/settings/desktop-settings";
 import { useDesktopIpcErrorReporter } from "@/desktop/hooks/desktop-ipc-error";
 import {
   createDesktopAppUpdater,
@@ -46,8 +46,8 @@ export interface UseDesktopAppUpdaterReturn {
 
 export function useDesktopAppUpdater(): UseDesktopAppUpdaterReturn {
   const isDesktopApp = shouldShowDesktopUpdateSection();
-  const { settings: desktopSettings } = useDesktopSettings();
-  const releaseChannel = desktopSettings.releaseChannel;
+  // The channel is the build's: frogg beta is a separate install that only takes betas.
+  const releaseChannel = brand.channel;
   const reportError = useDesktopIpcErrorReporter();
   const [progress, setProgress] = useState<AppUpdateProgress>(IDLE_APP_UPDATE_PROGRESS);
 

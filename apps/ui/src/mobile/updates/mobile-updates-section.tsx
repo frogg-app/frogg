@@ -9,11 +9,11 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Download, RefreshCw } from "lucide-react-native";
 import { Button } from "@/components/ui/button";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { formatBytes } from "@/desktop/daemon/local-daemon-install-progress";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
-import { useSettings, type Settings } from "@/hooks/use-settings";
+import { useSettings } from "@/hooks/use-settings";
+import { ReleaseChannelRow } from "@/release-channel/release-channel-row";
 import type { MobileUpdateProgress } from "@/mobile/updates/mobile-app-updater";
 import {
   RELEASES_PAGE_URL,
@@ -151,19 +151,6 @@ export function MobileUpdatesSection({ appVersion }: { appVersion: string | null
   } = useMobileAppUpdater();
 
   const refreshIcon = useMemo(() => <ThemedRefresh />, []);
-  const channelOptions = useMemo(
-    () => [
-      { value: "stable" as const, label: t("settings.about.releaseChannel.stable") },
-      { value: "beta" as const, label: t("settings.about.releaseChannel.beta") },
-    ],
-    [t],
-  );
-  const handleChannelChange = useCallback(
-    (mobileUpdateChannel: Settings["mobileUpdateChannel"]) => {
-      void updateSettings({ mobileUpdateChannel });
-    },
-    [updateSettings],
-  );
   const toggleAutoCheck = useCallback(() => {
     void updateSettings({ mobileUpdateAutoCheck: !settings.mobileUpdateAutoCheck });
   }, [settings.mobileUpdateAutoCheck, updateSettings]);
@@ -199,20 +186,7 @@ export function MobileUpdatesSection({ appVersion }: { appVersion: string | null
             {formatVersionWithPrefix(appVersion)}
           </Text>
         </View>
-        <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
-          <View style={settingsStyles.rowContent}>
-            <Text style={settingsStyles.rowTitle}>{t("settings.about.releaseChannel.label")}</Text>
-            <Text style={settingsStyles.rowHint}>
-              {t("settings.about.releaseChannel.description")}
-            </Text>
-          </View>
-          <SegmentedControl
-            size="sm"
-            value={settings.mobileUpdateChannel}
-            onValueChange={handleChannelChange}
-            options={channelOptions}
-          />
-        </View>
+        <ReleaseChannelRow />
         <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
           <View style={settingsStyles.rowContent}>
             <Text style={settingsStyles.rowTitle}>

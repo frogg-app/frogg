@@ -190,6 +190,8 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
         );
         autoUpdater.setFeedURL({ provider: "generic", url: feed.url });
         autoUpdater.channel = feed.channel;
+        // electron-updater's channel setter turns allowDowngrade back on.
+        autoUpdater.allowDowngrade = false;
       }
       const result = await autoUpdater.checkForUpdates();
       if (!result) return null;

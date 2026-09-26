@@ -2723,6 +2723,8 @@ export class Session {
         return this.checkoutSession.handleCheckoutCiDownloadJobLogRequest(msg);
       case "checkout.ci.list_runs.request":
         return this.checkoutSession.handleCheckoutCiListRunsRequest(msg);
+      case "checkout.streams.get_graph.request":
+        return this.checkoutSession.handleCheckoutStreamsGetGraphRequest(msg);
       case "checkout_pr_status_request":
         return this.checkoutSession.handleCheckoutPrStatusRequest(msg);
       case "pull_request_timeline_request":

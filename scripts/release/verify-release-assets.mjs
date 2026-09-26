@@ -1,3 +1,4 @@
+import { channelOfVersion } from "./release-channel.mjs";
 import { electronUpdateProtocol } from "./verify-electron-update-path.mjs";
 import { valid, lt, rcompare } from "semver";
 import { execFileSync } from "node:child_process";
@@ -14,7 +15,7 @@ export function verifyReleaseAssets({ descriptor, manifests, release, previousDe
     release.tag_name !== `v${descriptor.version}`
   )
     throw new Error("Release identity mismatch");
-  if (descriptor.channel !== (descriptor.version.includes("-") ? "beta" : "stable"))
+  if (descriptor.channel !== channelOfVersion(descriptor.version))
     throw new Error("Release channel mismatch");
   if (
     !descriptor.updatePaths ||
@@ -109,7 +110,10 @@ async function loadPreviousDescriptor(gh, repo, version, directory) {
         !release.draft &&
         valid(release.tag_name) &&
         lt(release.tag_name, version) &&
-        (version.includes("-") || !release.prerelease),
+        // The previous release of the same build: betas update from betas, stable (fork
+        // rebuilds included) from stable.
+        channelOfVersion(release.tag_name) === channelOfVersion(version) &&
+        (channelOfVersion(version) === "beta" || !release.prerelease),
     )
     .sort((a, b) => rcompare(a.tag_name, b.tag_name))[0];
   if (!previous?.assets.some((asset) => asset.name === "release.json")) return undefined;

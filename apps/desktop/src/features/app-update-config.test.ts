@@ -65,7 +65,8 @@ it("discovers beta tags independently of GitHub's stable latest download alias",
   );
 });
 
-it("graduates beta users to a newer stable release using stable metadata", async () => {
+it("keeps the beta app on betas when a newer stable release exists", async () => {
+  // frogg beta is a separate install; a stable release carries none of its payloads.
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
@@ -73,29 +74,23 @@ it("graduates beta users to a newer stable release using stable metadata", async
       fetchReleases: async () => [
         { tag_name: "v0.7.0-beta.2", draft: false },
         { tag_name: "v0.7.0", draft: false },
+        { tag_name: "v0.7.1-acme.2", draft: false },
       ],
     }),
-  ).resolves.toEqual({ url: `${releaseBase}/download/v0.7.0`, channel: "electron-latest" });
+  ).resolves.toEqual({ url: `${releaseBase}/download/v0.7.0-beta.2`, channel: "electron-beta" });
 });
 
-it("offers the newest downstream rebuild of a release rather than the release itself", async () => {
-  // Plain semver ranks `0.7.0-acme.2` below `0.7.0` because the suffix is formally
-  // a prerelease, which reported a newer rebuild as "already up to date".
+it("orders betas numerically", async () => {
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
       releaseChannel: "beta",
       fetchReleases: async () => [
-        { tag_name: "v0.7.0", draft: false },
-        { tag_name: "v0.7.0-acme.1", draft: false },
-        { tag_name: "v0.7.0-acme.2", draft: false },
+        { tag_name: "v0.7.0-beta.9", draft: false },
+        { tag_name: "v0.7.0-beta.10", draft: false },
       ],
     }),
-  ).resolves.toEqual({
-    url: `${releaseBase}/download/v0.7.0-acme.2`,
-    // A rebuild of a stable release is stable, not a beta.
-    channel: "electron-latest",
-  });
+  ).resolves.toEqual({ url: `${releaseBase}/download/v0.7.0-beta.10`, channel: "electron-beta" });
 });
 
 it("keeps stable, explicit generic feeds, and disabled distributions out of beta discovery", async () => {
@@ -132,7 +127,7 @@ it("surfaces release discovery failures and rejects insecure overrides", async (
       releaseChannel: "beta",
       fetchReleases: async () => [],
     }),
-  ).rejects.toThrow("No published desktop release");
+  ).rejects.toThrow("No published beta release");
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
@@ -197,8 +192,8 @@ it("rejects incompatible descriptors and propagates discovery failures", async (
     resolveElectronUpdateFeed({
       releaseBase,
       releaseChannel: "beta",
-      fetchReleases: async () => [{ tag_name: "v0.6.9", draft: false }],
-      fetchDescriptor: async () => descriptor("0.6.8"),
+      fetchReleases: async () => [{ tag_name: "v0.6.9-beta.2", draft: false }],
+      fetchDescriptor: async () => descriptor("0.6.9-beta.1"),
     }),
   ).rejects.toThrow("does not match");
 });

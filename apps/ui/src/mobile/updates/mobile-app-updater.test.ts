@@ -82,6 +82,35 @@ describe("mobile app updater — check", () => {
     expect(silent.getSnapshot().status).toBe("idle");
     expect(silent.getSnapshot().errorMessage).toBeNull();
   });
+
+  it("drops the offer when told to", async () => {
+    const updater = createUpdater();
+    await updater.checkForUpdates({ channel: "beta" });
+    expect(updater.getSnapshot().availableUpdate).not.toBeNull();
+
+    updater.discardAvailableUpdate();
+
+    expect(updater.getSnapshot()).toMatchObject({ availableUpdate: null, status: "idle" });
+  });
+
+  it("ignores a check for the old channel that lands after the offer is dropped", async () => {
+    let resolveCheck: (result: MobileAppUpdateCheckResult) => void = () => {};
+    const updater = createUpdater({
+      check: vi.fn(
+        () =>
+          new Promise<MobileAppUpdateCheckResult>((resolve) => {
+            resolveCheck = resolve;
+          }),
+      ),
+    });
+    const pending = updater.checkForUpdates({ channel: "beta" });
+
+    updater.discardAvailableUpdate();
+    resolveCheck(buildCheckResult({ latestVersion: "1.6.0-beta.1" }));
+    await pending;
+
+    expect(updater.getSnapshot()).toMatchObject({ availableUpdate: null, status: "idle" });
+  });
 });
 
 describe("mobile app updater — download and install", () => {

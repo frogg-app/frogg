@@ -2,6 +2,112 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
+  releaseStreams: {
+    label: "릴리스 스트림",
+    subtitle: "베타, 안정 릴리스, 업스트림과 각 스트림에 도달한 변경 사항",
+    refresh: "릴리스 스트림 새로 고침",
+    toolbarSummary_one: "{{development}} → {{stable}}: 대기 중인 변경 {{count}}개",
+    toolbarSummary_other: "{{development}} → {{stable}}: 대기 중인 변경 {{count}}개",
+    unsupportedTitle: "데몬을 업데이트하세요",
+    unsupportedDescription: "이 호스트의 데몬이 오래되어 릴리스 스트림을 보고할 수 없습니다.",
+    errorTitle: "릴리스 스트림을 읽지 못했습니다",
+    fetchFailed: "원격에서 가져오지 못했습니다({{message}}). 이 체크아웃에 있는 내용을 표시합니다.",
+    stream: {
+      development: "개발",
+      stable: "안정",
+      upstreamDevelopment: "업스트림 베타",
+      upstreamStable: "업스트림 안정",
+    },
+    channel: {
+      stable: "안정",
+      beta: "베타",
+    },
+    card: {
+      missing: "브랜치가 아직 없음",
+      noRelease: "아직 릴리스 없음",
+      latest: "최신 {{version}}, {{time}}",
+      unreleased_one: "릴리스되지 않은 커밋 {{count}}개",
+      unreleased_other: "릴리스되지 않은 커밋 {{count}}개",
+    },
+    graph: {
+      unreleased: "+{{count}} 미릴리스",
+      upToDate: "릴리스됨",
+      missing: "생성 안 됨",
+      promote: "승격됨",
+      backport_one: "백포트 {{count}}개",
+      backport_other: "백포트 {{count}}개",
+      sync: "동기화됨",
+      contribute: "기여됨",
+      waiting: "{{count}}개 대기 중",
+    },
+    legend: {
+      release: "릴리스",
+      tip: "브랜치 끝",
+      promote: "승격",
+      backport: "백포트",
+      sync: "업스트림 동기화",
+      waiting: "이동 대기",
+    },
+    setup: {
+      title: "릴리스 스트림 설정",
+      description:
+        "베타는 {{development}}에서, 안정 릴리스는 {{stable}}에서 나오지만 그 브랜치가 아직 없습니다. 최신 안정 릴리스에서 만드세요:",
+    },
+    flows: {
+      title: "이동 대기",
+      none: "모든 변경 사항이 가야 할 스트림에 도달했습니다.",
+      pending_one: "변경 {{count}}개",
+      pending_other: "변경 {{count}}개",
+      counts: "기능: {{features}} · 수정: {{fixes}} · 기타: {{other}}",
+      runOn: "{{branch}}에서 실행:",
+      copy: "명령 복사",
+      copied: "복사됨",
+      promote: {
+        title: "{{from}} → {{to}}: 승격",
+        description: "열려 있는 베타 라인을 다음 안정 릴리스로 내보냅니다.",
+      },
+      forwardPort: {
+        title: "{{from}} → {{to}}: 전방 이식",
+        description:
+          "안정 브랜치에서만 한 수정입니다. 개발 브랜치로 체리픽하지 않으면 승격 때 사라집니다.",
+      },
+      sync: {
+        title: "{{from}} → {{to}}: 업스트림 병합",
+        description:
+          "개발 브랜치에 아직 병합하지 않은 업스트림 변경입니다. 안정 사용자에게 가기 전에 베타 빌드로 검증합니다.",
+      },
+      contribute: {
+        title: "{{from}} → {{to}}: 기여",
+        description:
+          "업스트림에 없는 내 변경 사항입니다. 제품 변경은 돌려보내면 직접 유지할 필요가 없습니다.",
+      },
+    },
+    changes: {
+      title: "변경 사항",
+      filter: {
+        all: "전체",
+        features: "기능",
+        fixes: "수정",
+        waiting: "대기 중",
+      },
+      search: "텍스트, 범위 또는 커밋으로 필터",
+      empty: "일치하는 변경 사항이 없습니다.",
+      truncated: "최신 변경 {{count}}개를 표시합니다.",
+      origin: "{{stream}}에서 작성",
+    },
+    presence: {
+      released: "릴리스됨",
+      landed: "미릴리스",
+      pending: "대기 중",
+      absent: "—",
+      via: {
+        promotion: "승격됨",
+        backport: "백포트",
+        sync: "동기화됨",
+        contribution: "기여됨",
+      },
+    },
+  },
   ciMonitor: {
     label: "CI",
     subtitle: "이 프로젝트의 GitHub Actions 및 Jenkins 실행",
@@ -3023,7 +3129,8 @@ export const ko: TranslationResources = {
       versionDiffers: "이 기기와 버전이 다릅니다",
       releaseChannel: {
         label: "릴리스 채널",
-        description: "Beta로 전환하면 업데이트를 더 빨리 받고 개선에 참여할 수 있습니다",
+        stableHint: "베타는 이 앱과 나란히 설치되는 별도 앱 {{beta}}입니다",
+        betaHint: "이 베타는 {{stable}}와 나란히 설치되며 베타로만 업데이트됩니다",
         stable: "안정",
         beta: "베타",
       },
@@ -3622,9 +3729,6 @@ export const ko: TranslationResources = {
           autoUpdate: {
             title: "자동 업데이트",
             hint: "채널을 매일 확인하고 실행 중인 에이전트가 없을 때 업데이트합니다. 롤백은 시작되지 않는 데몬을 막아 주지만, 앱과 함께 배포되는 UI의 문제는 막지 못합니다.",
-            channelLabel: "릴리스 채널",
-            stable: "안정",
-            beta: "베타",
           },
         },
         update: {

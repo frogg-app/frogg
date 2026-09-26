@@ -3962,6 +3962,46 @@
                         }
                       },
                       "additionalProperties": {}
+                    },
+                    "streams": {
+                      "type": "object",
+                      "properties": {
+                        "development": {
+                          "type": "string"
+                        },
+                        "stable": {
+                          "type": "string"
+                        },
+                        "upstream": {
+                          "type": "object",
+                          "properties": {
+                            "remote": {
+                              "type": "string"
+                            },
+                            "repository": {
+                              "type": "string"
+                            },
+                            "development": {
+                              "type": "string"
+                            },
+                            "stable": {
+                              "type": "string"
+                            },
+                            "follow": {
+                              "type": "string",
+                              "enum": [
+                                "stable",
+                                "development"
+                              ]
+                            },
+                            "suffix": {
+                              "type": "string"
+                            }
+                          },
+                          "additionalProperties": {}
+                        }
+                      },
+                      "additionalProperties": {}
                     }
                   },
                   "additionalProperties": {}
@@ -6427,6 +6467,29 @@
                 },
                 "cwd": {
                   "type": "string"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "cwd",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "checkout.streams.get_graph.request"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "fetch": {
+                  "type": "boolean"
                 },
                 "requestId": {
                   "type": "string"
