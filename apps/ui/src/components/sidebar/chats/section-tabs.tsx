@@ -42,8 +42,7 @@ export function useEffectiveSidebarSection(): SidebarSection {
 }
 
 const SECTION_INDEX: Record<SidebarSection, number> = { projects: 0, chats: 1 };
-const TRACK_PADDING = 3;
-// Ease-out-quint: leaves fast and glides into place, which reads as a physical pill.
+// Ease-out-quint: leaves fast and glides into place, which reads as a physical capsule.
 const PILL_TIMING = { duration: 280, easing: Easing.bezier(0.22, 1, 0.36, 1) } as const;
 const CONTENT_SHIFT_PX = 12;
 const CONTENT_TIMING = { duration: 220, easing: Easing.out(Easing.cubic) } as const;
@@ -53,30 +52,40 @@ const ThemedMessage = withUnistyles(MessageCircle);
 const selectedIconColor = (theme: Theme) => ({ color: theme.colors.foreground });
 const idleIconColor = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
+interface TabGeometry {
+  x: SharedValue<number>;
+  width: SharedValue<number>;
+}
+
 /**
- * The Projects | Chats segmented control that heads the sidebar, with the display menu beside it.
- * Rendered once above both lists so the pill can slide between them. The menu keeps its slot on
- * Chats (faded and inert) so the control never changes width mid-switch.
+ * The sidebar's section header: Projects | Chats as label-sized tabs where the section title
+ * used to sit, with the display menu as a plain trailing action. A capsule behind the selected
+ * tab slides and resizes between the two measured labels. Rendered once above both lists so the
+ * capsule animates instead of remounting. The menu only applies to Projects and fades on Chats.
  */
 export function SidebarSectionBar() {
   const { t } = useTranslation();
   const section = useEffectiveSidebarSection();
   const setSection = useSidebarSectionStore((state) => state.setSection);
   const reducedMotion = useReducedMotion();
-  const trackWidth = useSharedValue(0);
   const progress = useSharedValue(SECTION_INDEX[section]);
+  const projectsX = useSharedValue(0);
+  const projectsWidth = useSharedValue(0);
+  const chatsX = useSharedValue(0);
+  const chatsWidth = useSharedValue(0);
+  const projectsGeometry = useMemo(
+    (): TabGeometry => ({ x: projectsX, width: projectsWidth }),
+    [projectsWidth, projectsX],
+  );
+  const chatsGeometry = useMemo(
+    (): TabGeometry => ({ x: chatsX, width: chatsWidth }),
+    [chatsWidth, chatsX],
+  );
 
   useEffect(() => {
     const target = SECTION_INDEX[section];
     progress.value = reducedMotion ? target : withTiming(target, PILL_TIMING);
   }, [progress, reducedMotion, section]);
-
-  const handleTrackLayout = useCallback(
-    (event: LayoutChangeEvent) => {
-      trackWidth.value = event.nativeEvent.layout.width;
-    },
-    [trackWidth],
-  );
 
   const isProjects = section === "projects";
   const menuSlotStyle = useMemo(
@@ -86,14 +95,15 @@ export function SidebarSectionBar() {
 
   return (
     <View style={styles.bar}>
-      <View style={styles.track} accessibilityRole="tablist" onLayout={handleTrackLayout}>
-        <SectionPill trackWidth={trackWidth} progress={progress} />
+      <View style={styles.tabs} accessibilityRole="tablist">
+        <SectionPill progress={progress} from={projectsGeometry} to={chatsGeometry} />
         <SectionTab
           section="projects"
           icon={ThemedFolder}
           label={t("sidebar.sections.projects")}
           selected={isProjects}
           onSelect={setSection}
+          geometry={projectsGeometry}
         />
         <SectionTab
           section="chats"
@@ -101,6 +111,7 @@ export function SidebarSectionBar() {
           label={t("sidebar.sections.chats")}
           selected={!isProjects}
           onSelect={setSection}
+          geometry={chatsGeometry}
         />
       </View>
       <View style={menuSlotStyle} pointerEvents={isProjects ? "auto" : "none"}>
@@ -121,22 +132,24 @@ export function SidebarSectionBar() {
 
 /**
  * Memoized on its shared values alone so a section change never re-renders it: on web a
- * re-render re-applies the style snapshot and flashes the pill for a frame mid-spring.
+ * re-render re-applies the style snapshot and flashes the capsule for a frame mid-slide.
  */
 const SectionPill = memo(function SectionPill({
-  trackWidth,
   progress,
+  from,
+  to,
 }: {
-  trackWidth: SharedValue<number>;
   progress: SharedValue<number>;
+  from: TabGeometry;
+  to: TabGeometry;
 }) {
   const pillStyle = useAnimatedStyle(() => {
-    const segment = Math.max(0, (trackWidth.value - TRACK_PADDING * 2) / 2);
+    // Clamped: reanimated-web can evaluate an animation's first frame before its start time.
+    const t = Math.min(1, Math.max(0, progress.value));
     return {
-      width: segment,
-      opacity: trackWidth.value > 0 ? 1 : 0,
-      // Clamped: reanimated-web can evaluate an animation's first frame before its start time.
-      transform: [{ translateX: Math.min(1, Math.max(0, progress.value)) * segment }],
+      width: from.width.value + (to.width.value - from.width.value) * t,
+      opacity: from.width.value > 0 && to.width.value > 0 ? 1 : 0,
+      transform: [{ translateX: from.x.value + (to.x.value - from.x.value) * t }],
     };
   });
   const style = useMemo(() => [staticStyles.pill, pillStyle], [pillStyle]);
@@ -153,14 +166,23 @@ const SectionTab = memo(function SectionTab({
   label,
   selected,
   onSelect,
+  geometry,
 }: {
   section: SidebarSection;
   icon: typeof ThemedFolder;
   label: string;
   selected: boolean;
   onSelect: (section: SidebarSection) => void;
+  geometry: TabGeometry;
 }) {
   const handlePress = useCallback(() => onSelect(section), [onSelect, section]);
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      geometry.x.value = event.nativeEvent.layout.x;
+      geometry.width.value = event.nativeEvent.layout.width;
+    },
+    [geometry],
+  );
   const style = useCallback(
     ({ hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.tab,
@@ -176,6 +198,7 @@ const SectionTab = memo(function SectionTab({
       accessibilityState={accessibilityState}
       testID={`sidebar-section-${section}`}
       style={style}
+      onLayout={handleLayout}
     >
       <Icon
         size={13}
@@ -235,9 +258,9 @@ export function SidebarSectionTransition({
 const staticStyles = RNStyleSheet.create({
   pill: {
     position: "absolute",
-    top: TRACK_PADDING,
-    bottom: TRACK_PADDING,
-    left: TRACK_PADDING,
+    top: 0,
+    bottom: 0,
+    left: 0,
   },
   content: {
     flex: 1,
@@ -246,55 +269,47 @@ const staticStyles = RNStyleSheet.create({
 });
 
 const styles = StyleSheet.create((theme) => ({
+  // Insets match the project rows so the first tab's icon sits on the row icon rail.
   bar: {
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing[1],
-    paddingHorizontal: theme.spacing[2],
+    justifyContent: "space-between",
+    gap: theme.spacing[2],
+    paddingLeft: theme.spacing[2],
+    paddingRight: theme.spacing[3],
     paddingTop: theme.spacing[2],
-    paddingBottom: theme.spacing[2],
+    paddingBottom: theme.spacing[1],
   },
-  track: {
+  tabs: {
     position: "relative",
-    flex: 1,
-    minWidth: 0,
     flexDirection: "row",
-    padding: TRACK_PADDING,
-    borderRadius: 10,
-    backgroundColor: theme.colors.surface0,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    alignItems: "center",
+    gap: 2,
   },
   pillSurface: {
     flex: 1,
-    borderRadius: 7,
+    borderRadius: theme.borderRadius.md,
     backgroundColor: theme.colors.surface2,
-    borderWidth: 1,
-    borderColor: theme.colors.borderAccent,
-    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.04) inset",
+    boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 1px 2px rgba(0, 0, 0, 0.3)",
   },
   tab: {
-    flex: 1,
-    minWidth: 0,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 6,
-    height: 26,
-    borderRadius: 7,
+    height: 28,
+    paddingHorizontal: 10,
+    borderRadius: theme.borderRadius.md,
   },
   tabHovered: {
-    opacity: 0.85,
+    backgroundColor: theme.colors.surface1,
   },
   tabLabel: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.normal,
-    letterSpacing: 0.1,
+    fontWeight: theme.fontWeight.medium,
   },
   tabLabelSelected: {
     color: theme.colors.foreground,
-    fontWeight: theme.fontWeight.medium,
   },
   menuSlot: {
     flexShrink: 0,
