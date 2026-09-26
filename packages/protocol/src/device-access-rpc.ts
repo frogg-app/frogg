@@ -188,7 +188,7 @@ export const PresenceReportRequestSchema = z.object({
   target: PresenceTargetSchema,
   state: PresenceReportStateSchema,
   /**
-   * COMPAT(connectedClients): added in v1.5.48. The name this client wants to
+   * COMPAT(connectedClients): added in v1.5.51. The name this client wants to
    * be shown under, so renaming yourself does not need a reconnect. Ignored
    * for paired devices, whose name belongs to the device record.
    */

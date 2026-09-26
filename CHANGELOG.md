@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.5.51 — 2026-09-26
+
+- **Connected now** (Host settings → Devices) lists every client connected to a host —
+  paired or loopback/trusted-network — with the sessions each is in and when it connected.
+  Every role can see it. New `presence.list_connections` RPC, gated on
+  `features.connectedClients`.
+- **Your name**: each device picks the name others see. It rides the hello and every
+  presence report, so a rename applies without reconnecting. Paired devices keep their
+  credential name.
+- **Nicknames**: give any other client a private nickname from its row. It replaces that
+  client's name everywhere presence names someone and never leaves the device. Nicknames
+  are keyed by `clientKey`, a one-way hash of the other app's install id.
+- The daemon no longer falls back to a client's raw client id (a session-resume key) as its
+  presence name, which leaked it to everyone on the session as `cid_…`.
+- The presence row is redesigned: an avatar stack and one sentence ("Paz is typing · 1 more
+  here") aligned with the composer column. The amber in-composer warning is replaced by a
+  quiet accent edge on the composer.
+- **Hide projects and sessions** per device: from the project and session ⋯ menus, the
+  hold-Ctrl quick-action rail, and the command center. Hiding offers Undo; **Show hidden (N)**
+  in the sidebar display menu (and the command center) reveals them to unhide. Nothing
+  changes on the daemon or for other users.
+
 ## 1.5.49 — 2026-09-26
 
 - A **viewer** device now only sees the work: sessions, timelines, terminal output, and
