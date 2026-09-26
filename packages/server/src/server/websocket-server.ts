@@ -1988,11 +1988,11 @@ export class VoiceAssistantWebSocketServer {
       // COMPAT(securityPosture): added in v1.6.0. Owners only: findings name
       // how the daemon can be taken over, which is not every device's business.
       ...this.serverInfoSecurity(session),
-      // COMPAT(chats): added in v1.5.53, remove optional after 2027-09-26.
+      // COMPAT(chats): added in v1.5.57, remove optional after 2027-09-26.
       chatProviders: [...CHAT_SUPPORTED_PROVIDERS],
       features: {
         ...this.deviceRoleFeatures(session),
-        // COMPAT(chats): added in v1.5.53, remove gate after 2027-09-26.
+        // COMPAT(chats): added in v1.5.57, remove gate after 2027-09-26.
         chats: true,
         // COMPAT(securityPosture): added in v1.6.0, remove gate after 2027-09-24.
         ...this.securityPostureFeature(),

@@ -103,6 +103,8 @@ export interface DesktopWindowBridge {
   minimize?: () => Promise<void>;
   close?: () => Promise<void>;
   toggleMaximize?: () => Promise<void>;
+  startDrag?: (start: { clientX: number; clientY: number; viewportWidth: number }) => Promise<void>;
+  endDrag?: () => Promise<void>;
   isMaximized?: () => Promise<boolean>;
   setFullscreen?: (fullscreen: boolean) => Promise<void>;
   isFullscreen?: () => Promise<boolean>;
@@ -200,6 +202,8 @@ export interface DesktopHostBridge {
   /** False for app-only shells; omitted by legacy shells that manage a daemon. */
   supportsLocalDaemon?: boolean;
   platform?: string;
+  /** Username (Windows/macOS) or hostname (Linux) of this machine. */
+  deviceName?: string | null;
   windowChromeMode?: string;
   invoke?: DesktopInvokeBridge["invoke"];
   getPendingOpenProject?: () => Promise<string | null>;

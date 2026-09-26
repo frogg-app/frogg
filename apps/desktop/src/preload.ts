@@ -23,6 +23,13 @@ function readWindowChromeMode(): DesktopWindowChromeMode {
   return process.platform === "linux" ? "custom-linux" : "custom-windows";
 }
 
+// Keep the prefix in sync with DEVICE_NAME_ARGUMENT_PREFIX in system/device-name.ts.
+function readDeviceName(): string | null {
+  const prefix = "--frogg-device-name=";
+  const value = process.argv.find((argument) => argument.startsWith(prefix))?.slice(prefix.length);
+  return value?.trim() || null;
+}
+
 interface AttachedBrowserRegistration {
   browserId: string;
   workspaceId: string;
@@ -38,6 +45,7 @@ contextBridge.exposeInMainWorld("froggDesktop", {
     cancelProbe: (requestId: string) => ipcRenderer.invoke("frogg:network:cancelProbe", requestId),
   },
   platform: process.platform,
+  deviceName: readDeviceName(),
   supportsLocalDaemon: false,
   windowChromeMode: readWindowChromeMode(),
   invoke: (command: string, args?: Record<string, unknown>) =>
@@ -69,6 +77,9 @@ contextBridge.exposeInMainWorld("froggDesktop", {
       minimize: () => ipcRenderer.invoke("frogg:window:minimize"),
       close: () => ipcRenderer.invoke("frogg:window:close"),
       toggleMaximize: () => ipcRenderer.invoke("frogg:window:toggleMaximize"),
+      startDrag: (start: { clientX: number; clientY: number; viewportWidth: number }) =>
+        ipcRenderer.invoke("frogg:window:startDrag", start),
+      endDrag: () => ipcRenderer.invoke("frogg:window:endDrag"),
       isMaximized: () => ipcRenderer.invoke("frogg:window:isMaximized"),
       setFullscreen: (fullscreen: boolean) =>
         ipcRenderer.invoke("frogg:window:setFullscreen", fullscreen),

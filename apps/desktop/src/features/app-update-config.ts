@@ -47,6 +47,16 @@ export function resolveElectronUpdateUrl(
   );
 }
 
+export const UPDATE_RATE_LIMITED_MESSAGE =
+  "GitHub is rate-limiting update checks from this network. Try again in a few minutes.";
+
+/** GitHub answers a throttled feed request with 429 and an HTML page the user should not see. */
+export function isUpdateRateLimitError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  if ("statusCode" in error && error.statusCode === 429) return true;
+  return error instanceof Error && /^429\b|\(429\)/.test(error.message);
+}
+
 export interface ElectronUpdateFeed {
   url: string;
   channel: "electron-latest" | "electron-beta";

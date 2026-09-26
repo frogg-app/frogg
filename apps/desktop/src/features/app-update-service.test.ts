@@ -204,6 +204,40 @@ describe("app update service", () => {
     expect(notified.at(-1)?.downloading).toBeUndefined();
   });
 
+  it("does not re-notify the window when a re-check reports the same state", async () => {
+    const runtime = new FakeAppUpdateRuntime();
+    const notified: AppUpdateCheckResult[] = [];
+    const service = createAppUpdateService({
+      runtime,
+      isPackaged: () => true,
+      now: () => Date.parse("2026-04-28T12:00:00.000Z"),
+      bucket: async () => 0,
+      currentVersion: () => "1.2.3",
+      onUpdateStateChanged: (result) => notified.push(result),
+    });
+    const check = () =>
+      service.checkForAppUpdate({
+        currentVersion: "1.2.3",
+        releaseChannel: "stable",
+        intent: "automatic",
+      });
+
+    runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
+    await check();
+    runtime.prepareUpdate(rolledOutUpdate);
+    runtime.finishUpdateDownload(rolledOutUpdate);
+    expect(notified).toHaveLength(2);
+
+    // Every electron-updater check re-emits both events for the cached download.
+    for (let i = 0; i < 3; i += 1) {
+      runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
+      await check();
+      runtime.prepareUpdate(rolledOutUpdate);
+      runtime.finishUpdateDownload(rolledOutUpdate);
+    }
+    expect(notified).toHaveLength(2);
+  });
+
   it("does not expose automatic stable updates before the user is admitted to rollout", async () => {
     const { runtime, service } = createService();
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });

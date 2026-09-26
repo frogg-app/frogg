@@ -2833,7 +2833,7 @@ export const WorkspaceCreateRequestSchema = z.object({
       path: z.string(),
       projectId: z.string().optional(),
     }),
-    // COMPAT(chats): added in v1.5.53, gate on features.chats. A new chat: the
+    // COMPAT(chats): added in v1.5.57, gate on features.chats. A new chat: the
     // daemon creates its directory under <froggHome>/chats itself.
     z.object({
       kind: z.literal("chat"),
@@ -3919,7 +3919,7 @@ export const ServerInfoStatusPayloadSchema = z
     // COMPAT(desktopManaged): added in v0.1.X, remove optional parsing after 2027-01-16.
     desktopManaged: z.boolean().optional(),
     capabilities: ServerCapabilitiesFromUnknownSchema.optional(),
-    // COMPAT(chats): added in v1.5.53, remove optional after 2027-09-26.
+    // COMPAT(chats): added in v1.5.57, remove optional after 2027-09-26.
     // Providers that can run in a chat; present when features.chats is.
     chatProviders: z.array(z.string()).optional(),
     // COMPAT(providersSnapshot): added in v0.1.48, remove gating when all clients use snapshot
@@ -4109,7 +4109,7 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(connectedClients): added in v1.5.52, remove gate after 2027-09-26.
         // presence.list_connections and PresenceParticipant.clientKey.
         connectedClients: z.boolean().optional(),
-        // COMPAT(chats): added in v1.5.53, remove gate after 2027-09-26.
+        // COMPAT(chats): added in v1.5.57, remove gate after 2027-09-26.
         // workspace.create source kind "chat", WorkspaceDescriptor.chat and
         // server_info.chatProviders.
         chats: z.boolean().optional(),
@@ -4421,7 +4421,7 @@ export const WorkspaceDescriptorPayloadSchema = z
     pinnedAt: z.string().nullable().optional(),
     // COMPAT(workspaceLabels): added in v0.5.0, remove optional after 2027-08-14.
     labels: z.array(z.string()).optional(),
-    // COMPAT(chats): added in v1.5.53, remove optional after 2027-09-26.
+    // COMPAT(chats): added in v1.5.57, remove optional after 2027-09-26.
     // A chat: a project-less conversation whose agents run read-only with no
     // skills or MCP servers. Clients list these apart from projects.
     chat: z.boolean().optional(),
@@ -4601,7 +4601,7 @@ export const WorkspaceProjectDescriptorPayloadSchema = z.object({
   projectIconRevision: z.string().optional(),
   projectRootPath: z.string(),
   projectKind: z.enum(["git", "non_git", "directory"]),
-  // COMPAT(chats): added in v1.5.53, remove optional after 2027-09-26.
+  // COMPAT(chats): added in v1.5.57, remove optional after 2027-09-26.
   // The project that holds every chat; clients keep it out of project lists.
   chats: z.boolean().optional(),
   // COMPAT(workspaceCreatedAt): added in v1.1.0, remove optional after 2027-03-14.

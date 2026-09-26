@@ -1,8 +1,9 @@
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
+  isUpdateRateLimitError,
   writeElectronUpdateConfig,
   resolveElectronUpdateUrl,
   resolveElectronUpdateFeed as resolveFeed,
@@ -261,4 +262,19 @@ it("honors explicit migration instructions after the application architecture ch
       }),
     }),
   ).rejects.toThrow("no compatible automatic update path");
+});
+
+describe("isUpdateRateLimitError", () => {
+  it("recognises electron-updater and release-discovery 429s only", () => {
+    expect(
+      isUpdateRateLimitError(Object.assign(new Error("HTTP error"), { statusCode: 429 })),
+    ).toBe(true);
+    expect(isUpdateRateLimitError(new Error('429 "method: GET url: https://github.com/x"'))).toBe(
+      true,
+    );
+    expect(isUpdateRateLimitError(new Error("Release discovery failed (429)."))).toBe(true);
+    expect(isUpdateRateLimitError(new Error("Release discovery failed (404)."))).toBe(false);
+    expect(isUpdateRateLimitError(new Error("version 1.4290.0"))).toBe(false);
+    expect(isUpdateRateLimitError(null)).toBe(false);
+  });
 });

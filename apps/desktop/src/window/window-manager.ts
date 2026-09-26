@@ -9,6 +9,7 @@ import {
   type WebContents,
 } from "electron";
 import { handleDesktopIpc } from "../ipc-security.js";
+import { readManualDragStart, startManualWindowDrag, stopManualWindowDrag } from "./manual-drag.js";
 
 import type { WindowState, WindowStateStore } from "../settings/window-state.js";
 import type { DesktopWindowChromeMode } from "./chrome.js";
@@ -173,6 +174,18 @@ export function registerWindowManager(input: { mode: DesktopWindowChromeMode }):
     } else {
       win.maximize();
     }
+  });
+
+  handleDesktopIpc("frogg:window:startDrag", (event, payload: unknown) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const start = readManualDragStart(payload);
+    if (!win || !start || win.isFullScreen()) return;
+    startManualWindowDrag(win, start);
+  });
+
+  handleDesktopIpc("frogg:window:endDrag", (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) stopManualWindowDrag(win);
   });
 
   handleDesktopIpc("frogg:window:isFullscreen", (event) => {

@@ -1,15 +1,35 @@
 # Changelog
 
-## Unreleased
+## 1.5.57 — 2026-09-26
 
 - **Chats**: a Projects | Chats switch at the top of the sidebar. A chat is a project-less
   conversation stored in `$FROGG_HOME/chats/<id>`, listed by day with search, and started
   from **New chat** with the usual model, thinking and account pickers. The daemon launches
   every agent in a chat folder with no skills, plugins, subagents, `CLAUDE.md` or MCP
   servers, no shell, reads anywhere, writes only inside its own folder, and a per-chat
-  **Web** toggle. Claude only for now. New `workspace.create` source `{ kind: "chat" }`,
+  **Web** toggle. Claude only for now. The section header is now Projects | Chats tabs with
+  a sliding capsule, and the list crossfades between sections. New `workspace.create` source `{ kind: "chat" }`,
   `WorkspaceDescriptor.chat`, project descriptor `chats` and `server_info.chatProviders`,
   gated on `features.chats`.
+
+## 1.5.55 — 2026-09-26
+
+- Desktop update checks no longer loop until GitHub rate-limits them. Since 1.5.37 each
+  check re-announced the same update to every window, which started another check at
+  once, so any client with an update waiting hammered the release feed until GitHub
+  answered 429. The shell now tells windows only when the update's state changes. A
+  rate-limited check now reads "GitHub is rate-limiting update checks from this network"
+  rather than showing GitHub's HTML error page.
+
+## 1.5.53 — 2026-09-26
+
+- The presence row is pinned inside the agent composer (the box grows for it), so the
+  pills above the composer no longer shift.
+- "Is typing" now means the composer text was edited in the last 5 seconds, shown with an
+  animated ellipsis; text left sitting in the box no longer counts.
+- Default device names: the signed-in username on Windows and macOS desktops, the hostname
+  on Linux, and the phone name on mobile, replacing "Frogg Desktop" / "Frogg (Android) on …".
+  Nicknames and a chosen **Your name** still take precedence.
 
 ## 1.5.52 — 2026-09-26
 

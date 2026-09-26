@@ -15,9 +15,10 @@ anyone out.
 
 ## Who else is here
 
-An agent chat and a terminal carry a row above the composer: a stack of avatars for the
-other devices on that session and one sentence about them. Whoever is actively writing
-leads it ("Paz is typing · 2 more here", with a live dot); otherwise it says who is there
+An agent chat carries a row pinned at the top inside its composer (a terminal, above its
+output): a stack of avatars for the other devices on that session and one sentence about
+them. Whoever is actively writing leads it ("Paz is typing…" with animated dots and a live
+dot, then "2 more here"); otherwise it says who is there
 ("Paz and Sam are here").
 
 <Screenshot src={appSessionPresenceImg} alt="Avatar stack above the composer with the line: Paz's laptop is typing, 1 more here" />
@@ -25,7 +26,7 @@ leads it ("Paz is typing · 2 more here", with a live dot); otherwise it says wh
 | Shown as | Meaning |
 | -------- | ------- |
 | is viewing / is here | The device has the session open |
-| is typing | There is text in its composer |
+| is typing | It edited its composer text in the last 5 seconds |
 | is sending | The daemon saw it send a message to the agent |
 | is typing here | The daemon saw it send keystrokes to the terminal |
 | is idle | It is still there, but not doing anything |
@@ -51,8 +52,9 @@ each one is in and when it connected. Every role can see it; it grants nothing.
 
 <Screenshot src={appConnectedClientsImg} alt="Connected now: your name field, then one row per connected client with its avatar, badges and the session it is in" />
 
-- **Your name** is how you appear to everyone else on the host. It defaults to the app and
-  device name, is stored on this device, and takes effect within one presence heartbeat —
+- **Your name** is how you appear to everyone else on the host. It defaults to the device
+  name: the signed-in username on Windows and macOS desktops, the hostname on Linux, and
+  the phone's name on mobile. It is stored on this device, and takes effect within one presence heartbeat —
   no reconnect. A paired device keeps the name on its credential, which an owner can
   rename under **Paired devices**.
 - **Nicknames**: the pencil on another client's row gives it a nickname only you see. It
