@@ -15,7 +15,8 @@
 # rolls back to when a new version fails to come up.
 #
 # Environment overrides:
-#   FROGG_VERSION       release to install (default: latest GitHub release)
+#   FROGG_VERSION       release to install (default: the newest release of this build's
+#                     channel: the Latest release for stable, the newest -beta.N for beta)
 #   FROGG_INSTALL_DIR   install root (default: ~/.local/share/frogg)
 #   FROGG_BIN_DIR       where frogg/frogg are linked (default: ~/.local/bin)
 #   FROGG_RELEASE_BASE  release download base (default: GitHub releases)
@@ -49,6 +50,7 @@ BRAND_BIND_HOST='0.0.0.0'
 BRAND_RELEASE_BASE='https://github.com/frogg-app/frogg/releases'
 BRAND_DOCKER_IMAGE='froggapp/frogg'
 BRAND_LEGACY='true'
+BRAND_CHANNEL='stable'
 BRAND_COMMANDS=(frogg frogg)
 # END BRAND DEFAULTS
 
@@ -140,9 +142,28 @@ resolve_newest_stable_version() {
   [ -n "${FROGG_VERSION}" ] || die "no stable release found at ${api}"
 }
 
+# The beta build installs betas only: newest vX.Y.Z-beta.N from the API. GitHub has
+# no "latest prerelease" alias, and a stable release carries no beta bundles.
+resolve_newest_beta_version() {
+  local api body tag
+  api="$(printf '%s' "${FROGG_RELEASE_BASE}" |
+    sed -n 's#^https://github.com/\([^/]*\)/\([^/]*\)/releases/*$#https://api.github.com/repos/\1/\2/releases?per_page=30#p')"
+  [ -n "${api}" ] || die "set ${BRAND_ENV_PREFIX}_VERSION: ${FROGG_RELEASE_BASE} is not a GitHub releases URL"
+  body="$(curl -fsSL "${api}")" || die "could not list releases from ${api}"
+  tag="$(printf '%s\n' "${body}" | tr ',{' '\n\n' |
+    sed -n 's/^ *"tag_name" *: *"\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*-beta\.[0-9][0-9]*\)" *$/\1/p' |
+    sed 's/^v//' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -n1)"
+  FROGG_VERSION="${tag}"
+  [ -n "${FROGG_VERSION}" ] || die "no beta release found at ${api}"
+}
+
 resolve_latest_version() {
   [ -n "${FROGG_RELEASE_BASE}" ] || die "No release source configured; supply ${BRAND_ENV_PREFIX}_BUNDLE_FILE or ${BRAND_ENV_PREFIX}_BUNDLE_URL"
   need curl
+  if [ "${BRAND_CHANNEL}" = "beta" ]; then
+    resolve_newest_beta_version
+    return
+  fi
   local effective candidate
   effective="$(curl -fsSL -o /dev/null -w '%{url_effective}' "${FROGG_RELEASE_BASE}/latest")" ||
     die "could not resolve the latest release from ${FROGG_RELEASE_BASE}/latest"

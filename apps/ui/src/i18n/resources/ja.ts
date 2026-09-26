@@ -2990,7 +2990,8 @@ export const ja: TranslationResources = {
       versionDiffers: "このデバイスとバージョンが異なります",
       releaseChannel: {
         label: "リリースチャンネル",
-        description: "ベータに切り替えると早期に更新を取得してフィードバックを提供できます",
+        stableHint: "ベータ版は別アプリ {{beta}} として、このアプリと並べてインストールされます",
+        betaHint: "このベータ版は {{stable}} と並べてインストールされ、ベータ版にのみ更新されます",
         stable: "安定版",
         beta: "ベータ",
       },
@@ -3599,9 +3600,6 @@ export const ja: TranslationResources = {
           autoUpdate: {
             title: "自動的に更新",
             hint: "チャンネルを毎日確認し、エージェントが実行されていないときに更新します。ロールバックは起動しないデーモンから守るもので、アプリに同梱されるUIの不具合には対応しません。",
-            channelLabel: "リリースチャンネル",
-            stable: "安定版",
-            beta: "ベータ",
           },
         },
         update: {

@@ -12,6 +12,7 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     brand: { type: "string" },
+    channel: { type: "string" },
     dir: { type: "string" },
     id: { type: "string" },
     name: { type: "string" },
@@ -52,14 +53,15 @@ if (command === "init") {
     `Brand created at ${destination}. Build with FROGG_BRAND_DIR=${destination}\n`,
   );
 } else if (command === "check") {
-  const build = resolveBrand(values.brand);
+  const build = resolveBrand(values.brand, values.channel);
   await validateAssets(build);
   process.stdout.write(
     values.json
       ? JSON.stringify(build.brand, null, 2) + "\n"
-      : `${build.brand.name}: valid (${build.brand.applicationId}); updates ${build.brand.distribution.updateMode}\n`,
+      : `${build.brand.name}: valid (${build.brand.applicationId}, ${build.channel} channel); updates ${build.brand.distribution.updateMode}\n`,
   );
 } else if (command === "prepare") {
+  if (values.channel) process.env.FROGG_BRAND_CHANNEL = values.channel;
   const build = await prepareBrand(values.brand);
   process.stdout.write(`Brand prepared: ${build.brand.name} (${build.fingerprint.slice(0, 12)})\n`);
 } else if (command === "stage") {
@@ -70,5 +72,7 @@ if (command === "init") {
     JSON.stringify(z.toJSONSchema(BrandManifestSchema), null, 2) + "\n",
   );
 } else {
-  throw new Error("Usage: brand.ts init|check|prepare|schema [--brand <directory>]");
+  throw new Error(
+    "Usage: brand.ts init|check|prepare|schema [--brand <directory>] [--channel stable|beta]",
+  );
 }

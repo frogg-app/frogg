@@ -3007,7 +3007,8 @@ export const ptBR: TranslationResources = {
       versionDiffers: "A versão é diferente da deste dispositivo",
       releaseChannel: {
         label: "Canal de lançamento",
-        description: "Troque para Beta para receber atualizações antes e ajudar a moldá-las",
+        stableHint: "As betas são um app separado, {{beta}}, instalado ao lado deste",
+        betaHint: "Esta beta é instalada ao lado de {{stable}} e só atualiza para betas",
         stable: "Stable",
         beta: "Beta",
       },
@@ -3614,9 +3615,6 @@ export const ptBR: TranslationResources = {
           autoUpdate: {
             title: "Atualizar automaticamente",
             hint: "Consulta o canal diariamente e atualiza quando nenhum agente está em execução. O rollback protege contra um daemon que não inicia, não contra uma UI com defeito, que vem junto com o app.",
-            channelLabel: "Canal de releases",
-            stable: "Estável",
-            beta: "Beta",
           },
         },
         update: {

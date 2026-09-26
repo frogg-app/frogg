@@ -5,6 +5,7 @@ import {
   createExternalProcessEnv,
   createFroggInternalEnv,
   resolveFroggNodeEnv,
+  withoutInternalBrandEnv,
 } from "./frogg-env.js";
 
 describe("frogg env contract", () => {
@@ -117,5 +118,19 @@ describe("frogg env contract", () => {
       "production",
     );
     expect(resolveFroggNodeEnv({ NODE_ENV: "test", FROGG_NODE_ENV: "local" })).toBeUndefined();
+  });
+
+  test("a branded daemon keeps its own internal names out of launched commands", () => {
+    const env = {
+      FROGG_HOME: "/home/me/.frogg-beta",
+      FROGG_BETA_HOME: "/home/me/.frogg-beta",
+      PATH: "/usr/bin",
+    };
+    expect(withoutInternalBrandEnv(env, "FROGG_BETA")).toEqual({
+      FROGG_BETA_HOME: "/home/me/.frogg-beta",
+      PATH: "/usr/bin",
+    });
+    // Stock frogg's names are its own; nothing to strip.
+    expect(withoutInternalBrandEnv(env, "FROGG")).toBe(env);
   });
 });

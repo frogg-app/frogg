@@ -2904,7 +2904,8 @@ export const zhCN: TranslationResources = {
       versionDiffers: "版本与此设备不同",
       releaseChannel: {
         label: "发布通道",
-        description: "切换到 Beta 可更早获取更新并参与改进",
+        stableHint: "Beta 版是单独的应用 {{beta}}，与本应用并存安装",
+        betaHint: "此 Beta 版与 {{stable}} 并存安装，且只更新到 Beta 版",
         stable: "Stable",
         beta: "Beta",
       },
@@ -3495,9 +3496,6 @@ export const zhCN: TranslationResources = {
           autoUpdate: {
             title: "自动更新",
             hint: "每天检查发布渠道，并在没有代理运行时更新。回退只能应对无法启动的守护进程，无法应对随应用一起发布的有问题的界面。",
-            channelLabel: "发布渠道",
-            stable: "稳定版",
-            beta: "测试版",
           },
         },
         update: {

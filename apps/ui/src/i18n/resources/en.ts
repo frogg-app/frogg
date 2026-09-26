@@ -3011,7 +3011,8 @@ export const en = {
       versionDiffers: "Version differs from this device",
       releaseChannel: {
         label: "Release channel",
-        description: "Switch to Beta to get updates sooner and help shape them",
+        stableHint: "Betas are a separate app, {{beta}}, that installs beside this one",
+        betaHint: "This beta installs beside {{stable}} and only updates to betas",
         stable: "Stable",
         beta: "Beta",
       },
@@ -3614,9 +3615,6 @@ export const en = {
           autoUpdate: {
             title: "Update automatically",
             hint: "Checks the channel daily and updates when no agents are running. A rollback protects against a daemon that does not start, not against a bad UI build, which ships with the app.",
-            channelLabel: "Release channel",
-            stable: "Stable",
-            beta: "Beta",
           },
         },
         update: {

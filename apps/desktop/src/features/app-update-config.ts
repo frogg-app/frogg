@@ -97,11 +97,13 @@ async function resolveLegacyFeed(input: {
       if (value.draft !== false || typeof value.tag_name !== "string") return [];
       const version = parseVersion(value.tag_name)?.raw;
       if (!version) return [];
+      // The beta app is its own install: a stable release carries none of its payloads.
+      if (isStableVersion(version)) return [];
       return [{ tag: value.tag_name, version }];
     })
     .sort((a, b) => -compareVersionStrings(a.version, b.version));
   const release = candidates[0];
-  if (!release) throw new Error("No published desktop release is available.");
+  if (!release) throw new Error("No published beta release is available.");
   return {
     url: `${input.releaseBase!.replace(/\/$/, "")}/download/${encodeURIComponent(release.tag)}`,
     // A downstream rebuild of a stable release is still stable, so classify by

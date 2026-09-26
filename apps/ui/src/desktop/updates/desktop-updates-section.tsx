@@ -10,7 +10,6 @@ import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Download, RefreshCw } from "lucide-react-native";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
 import { InstallProgressBar } from "@/desktop/components/local-daemon-bundle-card";
@@ -34,7 +33,7 @@ import {
   type ReleaseBuildStatus,
 } from "@/desktop/updates/release-build-status";
 import { useReleaseBuildStatus } from "@/desktop/updates/use-release-build-status";
-import { useSettings, type Settings as EffectiveSettings } from "@/hooks/use-settings";
+import { ReleaseChannelRow } from "@/release-channel/release-channel-row";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { settingsStyles } from "@/styles/settings";
 import { openExternalUrl } from "@/utils/open-external-url";
@@ -325,7 +324,6 @@ function UpdateCheckRow({
 
 export function DesktopUpdatesSection({ appVersion }: { appVersion: string | null }) {
   const { t } = useTranslation();
-  const { settings, updateSettings } = useSettings();
   const strategy = useUpdateStrategy();
   const {
     autoCheck,
@@ -346,25 +344,6 @@ export function DesktopUpdatesSection({ appVersion }: { appVersion: string | nul
     installUpdate,
   } = useDesktopAppUpdater();
 
-  const handleReleaseChannelChange = useCallback(
-    (releaseChannel: EffectiveSettings["releaseChannel"]) => {
-      void updateSettings({ releaseChannel });
-    },
-    [updateSettings],
-  );
-  const releaseChannelOptions = useMemo(
-    () => [
-      {
-        value: "stable" as const,
-        label: t("settings.about.releaseChannel.stable"),
-      },
-      {
-        value: "beta" as const,
-        label: t("settings.about.releaseChannel.beta"),
-      },
-    ],
-    [t],
-  );
 
   const handleCheck = useCallback(() => {
     void checkForUpdates();
@@ -424,20 +403,7 @@ export function DesktopUpdatesSection({ appVersion }: { appVersion: string | nul
             {formatVersionWithPrefix(appVersion)}
           </Text>
         </View>
-        <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
-          <View style={settingsStyles.rowContent}>
-            <Text style={settingsStyles.rowTitle}>{t("settings.about.releaseChannel.label")}</Text>
-            <Text style={settingsStyles.rowHint}>
-              {t("settings.about.releaseChannel.description")}
-            </Text>
-          </View>
-          <SegmentedControl
-            size="sm"
-            value={settings.releaseChannel}
-            onValueChange={handleReleaseChannelChange}
-            options={releaseChannelOptions}
-          />
-        </View>
+        <ReleaseChannelRow />
         <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
           <View style={settingsStyles.rowContent}>
             <Text style={settingsStyles.rowTitle}>

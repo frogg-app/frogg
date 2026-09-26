@@ -50,6 +50,9 @@ env:
   TRUSTED_SIGNING_ACCOUNT: ${{ secrets.TRUSTED_SIGNING_ACCOUNT }}
   TRUSTED_SIGNING_PROFILE: ${{ secrets.TRUSTED_SIGNING_PROFILE }}
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  # A -beta.N tag builds the beta channel's identity (frogg beta: its own app id, CLI, port and
+  # home), which installs beside the stable build. brand:prepare reads this in every job.
+  FROGG_BRAND_CHANNEL: ${{ contains(github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name, '-') && 'beta' || 'stable' }}
 
 jobs:
   meta:
@@ -103,11 +106,12 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
-      # Stable tags ship from main, betas from beta. Android-only reruns rebuild
-      # old tags, which may predate the rule, so they skip it.
-      - name: Require the tag on its release branch
+      # Betas ship from the development stream, stable releases from the stable stream
+      # (frogg.json "streams"). Android-only reruns rebuild old tags, which may predate
+      # the rule, so they skip it.
+      - name: Require the tag on its stream's branch
         if: inputs.only != 'android'
-        run: bash scripts/release/assert-tag-branch.sh "$RELEASE_TAG"
+        run: node scripts/release/streams.mjs assert-tag "$RELEASE_TAG"
 
       # Secrets are detected once here; jobs that need them read the flags. The
       # docker flags are optional, and so is android_signing: when
@@ -764,6 +768,7 @@ jobs:
           file: deploy/docker/base/Dockerfile
           build-args: |
             FROGG_BRAND_DIR=${{ env.BRAND_BUILD_INPUT }}
+            FROGG_BRAND_CHANNEL=${{ env.FROGG_BRAND_CHANNEL }}
             FROGG_SOURCE_REVISION=${{ github.sha }}
             FROGG_VERSION=${{ env.VERSION }}
           platforms: linux/amd64

@@ -129,7 +129,11 @@ export function selectApkAsset(
   return { asset: null, signatureMismatch: false };
 }
 
-/** The newest published release for the channel; betas are beta-channel only. */
+/**
+ * The newest published release for the channel. The stable app never takes a beta, and the beta
+ * app (its own install, `<applicationId>.beta`) takes betas only: a stable release carries none of
+ * its APKs.
+ */
 export function selectRelease(
   releases: readonly GithubRelease[],
   channel: ReleaseChannel,
@@ -140,7 +144,7 @@ export function selectRelease(
     const version = normalizeVersion(release.tag_name);
     if (!version) continue;
     const isPrerelease = release.prerelease === true || !isStableVersion(version);
-    if (isPrerelease && channel !== "beta") continue;
+    if (isPrerelease !== (channel === "beta")) continue;
     if (!best || compareReleaseVersions(version, best.version) > 0) {
       best = { release, version };
     }

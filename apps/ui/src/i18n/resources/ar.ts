@@ -2949,7 +2949,8 @@ export const ar: TranslationResources = {
       versionDiffers: "الإصدار يختلف عن هذا الجهاز",
       releaseChannel: {
         label: "الافراج عن القناة",
-        description: "قم بالتبديل إلى Beta للحصول على التحديثات عاجلاً والمساعدة في تشكيلها",
+        stableHint: "الإصدارات التجريبية تطبيق منفصل، {{beta}}، يُثبَّت بجانب هذا التطبيق",
+        betaHint: "يُثبَّت هذا الإصدار التجريبي بجانب {{stable}} ولا يتحدّث إلا إلى إصدارات تجريبية",
         stable: "Stable",
         beta: "Beta",
       },
@@ -3549,9 +3550,6 @@ export const ar: TranslationResources = {
           autoUpdate: {
             title: "التحديث تلقائيًا",
             hint: "يتحقق من القناة يوميًا ويحدّث عندما لا تعمل أي وكلاء. تحمي العودة من برنامج خفي لا يبدأ، لا من واجهة معطوبة تُشحن مع التطبيق.",
-            channelLabel: "قناة الإصدارات",
-            stable: "مستقر",
-            beta: "تجريبي",
           },
         },
         update: {

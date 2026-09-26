@@ -5,8 +5,9 @@ import { resolveBrand, root } from "./resolve.mjs";
 /** Explicit self-contained input for Docker contexts and Nix source derivations. */
 export async function stageBrand(directory?: string): Promise<string> {
   const build = resolveBrand(directory);
-  if (build.brand.legacyFrogg) return "brands/frogg";
-  const relative = `.branding-input/${build.brand.id}`;
+  // The channel travels separately (FROGG_BRAND_CHANNEL); the input is the stable manifest.
+  if (build.official) return "brands/frogg";
+  const relative = `.branding-input/${build.manifest.id}`;
   const target = path.join(root, relative);
   if (build.selected === target) return relative;
   await rm(target, { recursive: true, force: true });

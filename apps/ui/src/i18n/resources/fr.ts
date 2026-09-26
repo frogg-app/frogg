@@ -3031,8 +3031,8 @@ export const fr: TranslationResources = {
       versionDiffers: "La version diffère de cet appareil",
       releaseChannel: {
         label: "Canal de sortie",
-        description:
-          "Passez àBetapour obtenir des mises à jour plus tôt et contribuer à les façonner",
+        stableHint: "Les bêtas sont une app distincte, {{beta}}, qui s’installe à côté de celle-ci",
+        betaHint: "Cette bêta s’installe à côté de {{stable}} et ne se met à jour que vers des bêtas",
         stable: "Stable",
         beta: "Beta",
       },
@@ -3640,9 +3640,6 @@ export const fr: TranslationResources = {
           autoUpdate: {
             title: "Mettre à jour automatiquement",
             hint: "Vérifie le canal chaque jour et met à jour quand aucun agent ne tourne. Le retour arrière protège contre un daemon qui ne démarre pas, pas contre une interface défectueuse, livrée avec l'app.",
-            channelLabel: "Canal de releases",
-            stable: "Stable",
-            beta: "Bêta",
           },
         },
         update: {

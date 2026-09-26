@@ -156,7 +156,8 @@ function matchesChannel(release: GitHubRelease, channel: UpdateChannel): boolean
     // a prerelease of one, so it belongs to the stable channel too.
     return release.prerelease !== true && isStableVersion(release.tag_name);
   }
-  return true;
+  // The beta build is its own install and only ever moves between betas.
+  return !isStableVersion(release.tag_name);
 }
 
 /**

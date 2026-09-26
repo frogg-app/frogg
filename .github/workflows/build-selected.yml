@@ -38,6 +38,10 @@ defaults:
 env:
   ONNXRUNTIME_NODE_INSTALL: skip
   CI: "true"
+  # Test builds of the stable branch are the stable app; anything else (main, pull requests)
+  # builds frogg beta, so a tester installs it beside their stable app instead of over it.
+  # Mirrors `node scripts/release/streams.mjs channel-for-ref`.
+  FROGG_BRAND_CHANNEL: ${{ (github.ref_name == 'stable' || github.base_ref == 'stable') && 'stable' || 'beta' }}
   LEFTHOOK: "0"
 
 jobs:

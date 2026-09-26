@@ -2971,7 +2971,8 @@ export const ko: TranslationResources = {
       versionDiffers: "이 기기와 버전이 다릅니다",
       releaseChannel: {
         label: "릴리스 채널",
-        description: "Beta로 전환하면 업데이트를 더 빨리 받고 개선에 참여할 수 있습니다",
+        stableHint: "베타는 이 앱과 나란히 설치되는 별도 앱 {{beta}}입니다",
+        betaHint: "이 베타는 {{stable}}와 나란히 설치되며 베타로만 업데이트됩니다",
         stable: "안정",
         beta: "베타",
       },
@@ -3570,9 +3571,6 @@ export const ko: TranslationResources = {
           autoUpdate: {
             title: "자동 업데이트",
             hint: "채널을 매일 확인하고 실행 중인 에이전트가 없을 때 업데이트합니다. 롤백은 시작되지 않는 데몬을 막아 주지만, 앱과 함께 배포되는 UI의 문제는 막지 못합니다.",
-            channelLabel: "릴리스 채널",
-            stable: "안정",
-            beta: "베타",
           },
         },
         update: {

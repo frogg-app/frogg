@@ -137,7 +137,8 @@ function getSharedUpdater(): MobileAppUpdater {
 export function useMobileAppUpdater(): UseMobileAppUpdaterReturn {
   const isSupported = shouldShowMobileUpdates();
   const { settings } = useSettings();
-  const channel = settings.mobileUpdateChannel;
+  // The channel is the build's: frogg beta is a separate app that only takes betas.
+  const channel = brand.channel;
   const autoCheck = settings.mobileUpdateAutoCheck;
 
   const updater = useMemo(() => getSharedUpdater(), []);
