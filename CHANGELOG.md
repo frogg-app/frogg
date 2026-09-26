@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.5.53 — 2026-09-26
+
+- The presence row is pinned inside the agent composer (the box grows for it), so the
+  pills above the composer no longer shift.
+- "Is typing" now means the composer text was edited in the last 5 seconds, shown with an
+  animated ellipsis; text left sitting in the box no longer counts.
+- Default device names: the signed-in username on Windows and macOS desktops, the hostname
+  on Linux, and the phone name on mobile, replacing "Frogg Desktop" / "Frogg (Android) on …".
+  Nicknames and a chosen **Your name** still take precedence.
+
 ## 1.5.52 — 2026-09-26
 
 - **Connected now** (Host settings → Devices) lists every client connected to a host —
