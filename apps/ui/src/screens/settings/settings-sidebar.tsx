@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { Pressable, ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { brand } from "@frogg/branding";
 import { useTranslation } from "react-i18next";
 import { isElectronRuntime } from "@/desktop/host";
 import { SETTINGS_DESKTOP_SIDEBAR_WIDTH } from "@/constants/layout";
@@ -16,6 +17,9 @@ import { useHosts } from "@/runtime/host-runtime";
 import type { SecuritySeverity } from "@/security/posture";
 import { SecurityDot } from "@/security/security-dot";
 import { useSecurityPosture } from "@/security/use-security-posture";
+import { BrandLogo } from "@/components/icons/brand-logo";
+import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
+import { resolveAppVersion } from "@/utils/app-version";
 
 type SidebarIcon = ComponentType<{ size: number; color: string }>;
 
@@ -237,6 +241,22 @@ export function SettingsSidebar({
       ) : (
         sidebarBody
       )}
+      {isDesktop ? <SettingsSidebarFooter /> : null}
+    </View>
+  );
+}
+
+function SettingsSidebarFooter() {
+  const versionText = formatVersionWithPrefix(resolveAppVersion());
+  return (
+    <View style={sidebarStyles.footer} testID="settings-sidebar-footer">
+      <BrandLogo size={24} />
+      <Text style={sidebarStyles.footerName} numberOfLines={1}>
+        {brand.name}
+      </Text>
+      <Text style={sidebarStyles.footerVersion} numberOfLines={1}>
+        {versionText}
+      </Text>
     </View>
   );
 }
@@ -280,6 +300,23 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontWeight: theme.fontWeight.normal,
     flex: 1,
+  },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+    paddingVertical: theme.spacing[3],
+    paddingHorizontal: theme.spacing[4],
+  },
+  footerName: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
+    color: theme.colors.foreground,
+    flexShrink: 1,
+  },
+  footerVersion: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foregroundMuted,
   },
   labelSelected: {
     color: theme.colors.foreground,
