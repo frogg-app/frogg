@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.46 — 2026-09-26
 
 - The desktop app now opens `<scheme>://pair/direct?…` links, from argv on a cold start,
   from a second instance, and from `open-url`. The Electron shell only accepted
