@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.5.55 — 2026-09-26
+
+- Desktop update checks no longer loop until GitHub rate-limits them. Since 1.5.37 each
+  check re-announced the same update to every window, which started another check at
+  once, so any client with an update waiting hammered the release feed until GitHub
+  answered 429. The shell now tells windows only when the update's state changes. A
+  rate-limited check now reads "GitHub is rate-limiting update checks from this network"
+  rather than showing GitHub's HTML error page.
+
 ## 1.5.53 — 2026-09-26
 
 - The presence row is pinned inside the agent composer (the box grows for it), so the

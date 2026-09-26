@@ -147,6 +147,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
   let preparationError: { version: string; message: string } | null = null;
   let preparingUpdateVersion: string | null = null;
   let checkQueue: Promise<void> = Promise.resolve();
+  let lastNotifiedState: string | null = null;
 
   function isReadyToInstallVersion(version: string): boolean {
     return downloadedUpdateVersion === version;
@@ -165,16 +166,22 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
   function notifyUpdateStateChanged(info: RuntimeUpdateInfo): void {
     const currentVersion = deps.currentVersion?.();
     if (!deps.onUpdateStateChanged || !currentVersion || info.version === currentVersion) return;
-    deps.onUpdateStateChanged(
-      withDownloadState(
-        buildCheckResult({
-          currentVersion,
-          hasUpdate: true,
-          readyToInstall: isReadyToInstallVersion(info.version),
-          info,
-        }),
-      ),
+    const result = withDownloadState(
+      buildCheckResult({
+        currentVersion,
+        hasUpdate: true,
+        readyToInstall: isReadyToInstallVersion(info.version),
+        info,
+      }),
     );
+    // electron-updater emits update-available (and update-downloaded for a cached
+    // file) on every check, and the window re-checks on each notification. Only a
+    // change of state may notify, or the two re-trigger each other until GitHub
+    // answers 429.
+    const state = `${result.latestVersion}:${result.readyToInstall}:${result.downloading === true}`;
+    if (state === lastNotifiedState) return;
+    lastNotifiedState = state;
+    deps.onUpdateStateChanged(result);
   }
 
   function clearUpdateState(): void {
@@ -182,6 +189,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
     downloadedUpdateVersion = null;
     preparationError = null;
     preparingUpdateVersion = null;
+    lastNotifiedState = null;
   }
 
   function buildPreviouslyAdmittedUpdateResult(

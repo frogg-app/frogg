@@ -1,5 +1,9 @@
 import { brand } from "@frogg/branding";
-import { resolveElectronUpdateFeed } from "./app-update-config.js";
+import {
+  isUpdateRateLimitError,
+  resolveElectronUpdateFeed,
+  UPDATE_RATE_LIMITED_MESSAGE,
+} from "./app-update-config.js";
 import { writeElectronUpdateConfig, resolveElectronUpdateUrl } from "./app-update-config.js";
 import { existsSync } from "node:fs";
 import { randomBytes } from "node:crypto";
@@ -162,7 +166,11 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
     });
     autoUpdater.on("error", (error) => {
       if (isUpdateChannelNotPublished(error)) return;
-      input.onError(error);
+      input.onError(
+        isUpdateRateLimitError(error)
+          ? new Error(UPDATE_RATE_LIMITED_MESSAGE, { cause: error })
+          : error,
+      );
     });
   }
 
@@ -195,6 +203,9 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
           "No Electron update feed has been published for this release channel yet.",
           { cause: error },
         );
+      }
+      if (isUpdateRateLimitError(error)) {
+        throw new Error(UPDATE_RATE_LIMITED_MESSAGE, { cause: error });
       }
       throw error;
     }
