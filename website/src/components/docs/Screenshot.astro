@@ -6,6 +6,7 @@
  *   <Screenshot src={shot} alt="The pairing dialog" caption="Scan the code from your phone." />
  *
  * `lightSrc` (optional) is shown instead of `src` while the site is in light theme.
+ * SVG sources (diagrams) are served unchanged; raster ones are resized to WebP.
  */
 import type { ImageMetadata } from "astro";
 import { getImage } from "astro:assets";
@@ -26,6 +27,16 @@ const { src, alt, caption, lightSrc, width, variant = "frame" } = Astro.props;
 async function render(source: ImageMetadata | string) {
   if (typeof source === "string") {
     return { inline: source, zoom: source, width: undefined, height: undefined, srcset: undefined };
+  }
+  // Diagrams are vector: serve them as they are rather than rasterising them.
+  if (source.format === "svg") {
+    return {
+      inline: source.src,
+      zoom: source.src,
+      width: source.width,
+      height: source.height,
+      srcset: undefined,
+    };
   }
   const inlineWidths = [480, 720, 960, 1440].filter((w) => w < source.width);
   const inline = await getImage({

@@ -63,9 +63,10 @@ environment (used by the branding matrix), then the external repository, then th
 
 ## Report the build you published
 
-A downstream rebuild of an upstream version — `1.4.1-acme.2`, the second build of upstream
-1.4.1 — has nowhere to put that number: the workspace version stays at the upstream one so
-merges never conflict on manifests. Set `<PREFIX>_RELEASE_VERSION` (or `FROGG_RELEASE_VERSION`)
+With [release streams](/docs/contributing/release-streams/#fork-versions) and
+`streams.upstream.suffix` set, the release scripts put your full version (`1.4.1-acme.2`) in
+`package.json` and nothing more is needed. For a one-off rebuild outside that flow, the
+workspace version can stay at upstream's and the build can be stamped instead. Set `<PREFIX>_RELEASE_VERSION` (or `FROGG_RELEASE_VERSION`)
 before `brand:prepare` and the build stamps it, so **Settings → About** reports what was
 installed instead of the version it forked from:
 

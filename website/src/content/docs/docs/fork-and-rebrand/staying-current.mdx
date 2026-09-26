@@ -33,7 +33,12 @@ Declare upstream once in `frogg.json`, next to your own streams
 ```json
 {
   "streams": {
-    "upstream": { "remote": "upstream", "repository": "frogg-app/frogg", "follow": "stable" }
+    "upstream": {
+      "remote": "upstream",
+      "repository": "frogg-app/frogg",
+      "follow": "stable",
+      "suffix": "acme"
+    }
   }
 }
 ```
@@ -76,7 +81,7 @@ test upstream betas as they land.
 
    ```sh
    git push origin main
-   npm run release:beta      # 1.7.0-beta.1 after merging upstream 1.7.0
+   npm run release:beta      # 1.7.0-rc.1.acme.1 after merging upstream 1.7.0
    ```
 
    Your beta build (`<id>-beta`) installs beside your stable app, so you can check the
@@ -174,14 +179,17 @@ the pull request.
 
 ## Version your releases
 
-The root `package.json` version is your product version. Release tags must equal it.
-Desktop and daemon updates compare these versions with semver.
+Set `streams.upstream.suffix` to a short name for your builds (`acme`). Your releases then
+carry upstream's version with your build counter after it:
 
-`npm run release:beta` keeps you on upstream's numbers: after merging upstream `1.7.0` your
-next beta is `1.7.0-beta.1`, and promoting it ships your `1.7.0`, so a release maps to
-upstream's changelog directly. Fork-only fixes between upstream releases are stable patches
-(`1.7.1`) backported with `release:backport`. When upstream later ships a version you already
-used, your next beta opens the line above it.
+- Your beta of upstream `1.8.0`: `1.8.0-rc.1.acme.1`, `1.8.0-rc.1.acme.2`, ...
+- Your release of it: `1.8.0-acme.1`; a fix you ship before upstream's next release:
+  `1.8.0-acme.2`.
+
+A release maps onto upstream's changelog directly, and your fixes never collide with
+upstream's patch numbers. See
+[fork versions](/docs/contributing/release-streams/#fork-versions) for the ordering rule: the
+channel part (`rc.1`) always comes before your counter.
 
 Avoid build metadata such as `0.6.20+acme.1`. Semver ignores it when comparing, so
 updaters do not see `+acme.2` as newer than `+acme.1`, and Docker tags cannot contain `+`.

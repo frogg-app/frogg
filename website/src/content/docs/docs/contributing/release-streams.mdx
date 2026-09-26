@@ -7,6 +7,14 @@ sidebar:
 
 import { Screenshot, Steps } from "@/components/docs";
 import releaseStreams from "@/assets/docs/app/release-streams.png";
+import streamsDark from "@/assets/docs/diagrams/release-streams-dark.svg";
+import streamsLight from "@/assets/docs/diagrams/release-streams-light.svg";
+import sideDark from "@/assets/docs/diagrams/side-by-side-dark.svg";
+import sideLight from "@/assets/docs/diagrams/side-by-side-light.svg";
+import forkDark from "@/assets/docs/diagrams/fork-streams-dark.svg";
+import forkLight from "@/assets/docs/diagrams/fork-streams-light.svg";
+import versionsDark from "@/assets/docs/diagrams/version-order-dark.svg";
+import versionsLight from "@/assets/docs/diagrams/version-order-light.svg";
 
 Frogg ships from two branches, called **streams**:
 
@@ -14,6 +22,13 @@ Frogg ships from two branches, called **streams**:
 | ----------- | -------- | --------------- | ------------------------------------------------------------ |
 | Development | `main`   | `X.Y.0-beta.N`  | **frogg beta**: its own app, daemon, CLI and data            |
 | Stable      | `stable` | `X.Y.Z`         | **frogg**: what users run                                    |
+
+<Screenshot
+  src={streamsDark}
+  lightSrc={streamsLight}
+  variant="bare"
+  alt="Two lanes: stable above, main below. Feature branches land on main, which ships betas. Backports and a promotion carry changes up to stable releases."
+/>
 
 Work lands on `main` and ships as betas. Stable users get a beta line only when it is
 **promoted**. Stable gets fixes in between by **backporting** them from `main`. Nothing
@@ -40,6 +55,13 @@ identity its own name:
 | URL scheme       | `frogg://`               | `frogg-beta://`               |
 | Environment      | `FROGG_*`                | `FROGG_BETA_*`                |
 | Release assets   | `frogg-<version>-…`      | `frogg-beta-<version>-…`      |
+
+<Screenshot
+  src={sideDark}
+  lightSrc={sideLight}
+  variant="bare"
+  alt="frogg and frogg beta side by side on one machine, each with its own app, daemon port, data directory, CLI and application id."
+/>
 
 Its icons carry an amber **BETA** ribbon. Each build updates only within its own channel:
 frogg never offers a beta, and frogg beta only moves between betas. There is no channel
@@ -179,6 +201,7 @@ them explicitly:
 | `streams.upstream.development`  | `main`      | Upstream's development branch                                |
 | `streams.upstream.stable`       | `stable`    | Upstream's stable branch                                     |
 | `streams.upstream.follow`       | `stable`    | `stable` merges upstream's releases; `development` its betas |
+| `streams.upstream.suffix`       | none        | The fork's build counter name (`acme`): see [fork versions](#fork-versions) |
 
 The Release streams tab also treats a remote named `upstream` as the upstream stream when
 `frogg.json` does not declare one. The scripts need it declared.
@@ -190,10 +213,22 @@ the same side-by-side identity rules (see
 [`channels.beta`](/docs/fork-and-rebrand/brand-manifest/#channels) to rename them). The
 upstream stream is how updates arrive and how changes go back.
 
+<Screenshot
+  src={forkDark}
+  lightSrc={forkLight}
+  variant="bare"
+  alt="Upstream's stable and main lanes above the fork's stable and main. An upstream release syncs into the fork's main, ships as fork betas, is promoted to fork stable; a fork change is contributed back to upstream main."
+/>
+
 ```json
 {
   "streams": {
-    "upstream": { "remote": "upstream", "repository": "frogg-app/frogg", "follow": "stable" }
+    "upstream": {
+      "remote": "upstream",
+      "repository": "frogg-app/frogg",
+      "follow": "stable",
+      "suffix": "acme"
+    }
   }
 }
 ```
@@ -216,8 +251,9 @@ upstream stream is how updates arrive and how changes go back.
    Upstream tags are fetched into `refs/remotes/upstream/tags/`, not `refs/tags/`, because
    your releases reuse upstream's version numbers.
 
-2. **Test it as your beta.** `npm run release:beta` starts the upstream line you merged
-   (merging upstream `1.7.0` gives `1.7.0-beta.1`), so your versions track upstream's.
+2. **Test it as your beta.** `npm run release:beta` cuts a release candidate of the upstream
+   version you merged: `1.7.0-rc.1.acme.1`, then `.acme.2` for each fix you add
+   ([fork versions](#fork-versions)).
    Install your beta beside your stable app and check it before your users see it.
 
 3. **Promote** to your stable users with `npm run release:promote`, exactly as upstream does.
@@ -239,3 +275,34 @@ upstream stream is how updates arrive and how changes go back.
 See [Stay current with upstream](/docs/fork-and-rebrand/staying-current/) and
 [Contributing upstream](/docs/fork-and-rebrand/contributing-upstream/) for the conflicts and
 review rules around this flow.
+
+### Fork versions
+
+A fork ships upstream's version numbers with its own build counter after them, named by
+`streams.upstream.suffix`. The version's channel part comes first, so every updater orders
+fork and upstream versions correctly and knows which app takes each:
+
+<Screenshot
+  src={versionsDark}
+  lightSrc={versionsLight}
+  variant="bare"
+  alt="Versions from oldest to newest: 1.8.0-beta.3, 1.8.0-beta.3.acme.1, 1.8.0-rc.1.acme.1 (beta app), 1.8.0, 1.8.0-acme.1, 1.8.0-acme.2 (stable app), 1.9.0-beta.1 (beta app)."
+/>
+
+| Command            | Following upstream stable | Following upstream `main`   |
+| ------------------ | ------------------------- | --------------------------- |
+| `release:beta`     | `1.8.0-rc.1.acme.N`       | `1.8.0-beta.3.acme.N`       |
+| `release:promote`  | `1.8.0-acme.N`            | `1.8.0-acme.N`              |
+| `release:patch`    | next `1.8.0-acme.N`       | next `1.8.0-acme.N`         |
+
+- A version is a beta when its suffix **starts** with a channel name (`beta`, `rc`, `alpha`,
+  ...). Anything else after the version is a build counter, and the build is stable.
+  `1.8.0-acme.1-beta.1` is therefore a stable rebuild, not a beta: always put the channel
+  part first.
+- Fixes you ship between upstream releases take the next build counter (`1.8.0-acme.2`), not a
+  patch number, so they never collide with upstream's `1.8.1`.
+- Daemon bundle names drop the counter (`acme-daemon-1.8.0-linux-x64.tar.gz` in release
+  `v1.8.0-acme.2`); the installer and the updater look them up the same way.
+- Without `suffix`, a fork numbers its releases like upstream does, with its own minors and
+  patches. That works, but its versions stop meaning "which upstream release is this".
+
