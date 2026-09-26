@@ -72,6 +72,36 @@ function newestStableTag(ref) {
   const tags = gitTry(["tag", "--merged", ref, "--sort=-v:refname", "--list", "v[0-9]*"]) ?? "";
   return tags.split("\n").find((tag) => /^v\d+\.\d+\.\d+$/.test(tag)) ?? null;
 }
+/**
+ * Upstream's branches, and its tags under refs/remotes/<remote>/tags/: a fork ships upstream's
+ * version numbers, so upstream's v1.6.0 would collide with the fork's own v1.6.0 in refs/tags.
+ * The daemon's stream graph reads the same namespace.
+ */
+function fetchUpstream(remote) {
+  git([
+    "fetch",
+    "--quiet",
+    "--no-tags",
+    remote,
+    `+refs/heads/*:refs/remotes/${remote}/*`,
+    `+refs/tags/*:refs/remotes/${remote}/tags/*`,
+  ]);
+}
+function newestUpstreamStableTag(remote, branch) {
+  const refs =
+    gitTry([
+      "for-each-ref",
+      "--merged",
+      `${remote}/${branch}`,
+      "--sort=-v:refname",
+      "--format=%(refname)",
+      `refs/remotes/${remote}/tags/`,
+    ]) ?? "";
+  return refs.split("\n").find((ref) => /\/v\d+\.\d+\.\d+$/.test(ref)) ?? null;
+}
+function describeRef(ref) {
+  return ref.replace(/^refs\/remotes\/[^/]+\/tags\//, "").replace(/^refs\/(?:remotes|heads)\//, "");
+}
 /** The stable version: the stable branch's own, else (before `streams init`) the newest stable tag. */
 function stableVersionOf(config) {
   const fromBranch = readVersion(`origin/${config.stable}`) ?? readVersion(config.stable);
@@ -168,7 +198,11 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     if (stable) out.push(line("stable", stable));
     else out.push(`  stable       (no ${config.stable} branch yet; run \`npm run streams -- init\`)`);
     if (config.upstream) {
-      gitTry(["fetch", "--quiet", "--tags", config.upstream.remote]);
+      try {
+        fetchUpstream(config.upstream.remote);
+      } catch {
+        // Offline: report from the refs already fetched.
+      }
       const follow = upstreamFollowRef(config);
       if (refExists(follow)) out.push(line("upstream", follow));
       else out.push(`  upstream     ${follow} not found; add the remote and fetch`);
@@ -306,21 +340,21 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     if (!resume) {
       assertClean();
       const { remote, stable, follow } = config.upstream;
-      git(["fetch", "--tags", remote]);
+      fetchUpstream(remote);
       let ref = explicitRef ?? upstreamFollowRef(config);
       // Following upstream stable means following its releases, not whatever is on the branch.
       if (!explicitRef && follow === "stable") {
-        ref = newestStableTag(`${remote}/${stable}`) ?? ref;
+        ref = newestUpstreamStableTag(remote, stable) ?? ref;
       }
       if (!refExists(ref)) fail(`${ref} not found. Is the "${remote}" remote set up?`);
       if (gitTry(["merge-base", "--is-ancestor", ref, "HEAD"]) !== null) {
-        return void process.stdout.write(`Already up to date with ${ref}.\n`);
+        return void process.stdout.write(`Already up to date with ${describeRef(ref)}.\n`);
       }
       const version = readVersion("HEAD");
-      writeFileSync(syncStateFile(), `${version}\n${ref}\n`);
+      writeFileSync(syncStateFile(), `${version}\n${describeRef(ref)}\n`);
       const merged = spawnSync(
         "git",
-        ["merge", "--no-ff", "--no-commit", "-m", `Merge upstream ${ref}`, ref],
+        ["merge", "--no-ff", "--no-commit", "-m", `Merge upstream ${describeRef(ref)}`, ref],
         { cwd: rootDir, stdio: "inherit" },
       );
       if (merged.status !== 0) {
@@ -365,7 +399,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     const branchOption = option(args, "--branch");
     if (args.length === 0) fail("Name the commits to offer upstream: release:contribute -- <commit...>");
     const { remote, development, repository } = config.upstream;
-    git(["fetch", remote, development]);
+    fetchUpstream(remote);
     const subjects = args.map((commit) => gitOut(["log", "-1", "--format=%s", commit]));
     for (const commit of args) {
       const files = gitOut(["show", "--format=", "--name-only", commit]).split("\n").filter(Boolean);
