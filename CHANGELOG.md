@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.5.51 — 2026-09-26
+## 1.5.52 — 2026-09-26
 
 - **Connected now** (Host settings → Devices) lists every client connected to a host —
   paired or loopback/trusted-network — with the sessions each is in and when it connected.

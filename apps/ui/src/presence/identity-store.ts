@@ -1,5 +1,5 @@
 /**
- * COMPAT(connectedClients): added in v1.5.51.
+ * COMPAT(connectedClients): added in v1.5.52.
  *
  * Who this app is to everyone else on a daemon, and what this app calls
  * everyone else. Both are local: the display name is sent to daemons (in the

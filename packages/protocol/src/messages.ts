@@ -4098,7 +4098,7 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(sessionPresence): added in v1.6.0, remove gate after 2027-09-22.
         // presence.report / presence.get / presence.update.
         sessionPresence: z.boolean().optional(),
-        // COMPAT(connectedClients): added in v1.5.51, remove gate after 2027-09-26.
+        // COMPAT(connectedClients): added in v1.5.52, remove gate after 2027-09-26.
         // presence.list_connections and PresenceParticipant.clientKey.
         connectedClients: z.boolean().optional(),
         // COMPAT(securityPosture): added in v1.6.0, remove gate after 2027-09-24.

@@ -349,7 +349,7 @@ export const PresenceParticipantSchema = z.object({
   deviceName: z.string(),
   clientType: z.string().nullable(),
   /**
-   * COMPAT(connectedClients): added in v1.5.51. A one-way hash of the client's
+   * COMPAT(connectedClients): added in v1.5.52. A one-way hash of the client's
    * install id: stable across reconnects, so a viewer can attach a nickname,
    * but useless for resuming the other client's session.
    */

@@ -1,5 +1,5 @@
 /**
- * COMPAT(connectedClients): added in v1.5.51.
+ * COMPAT(connectedClients): added in v1.5.52.
  *
  * Everyone connected to one host right now — paired devices and loopback or
  * trusted-network clients alike — with where each of them is working. Any role
