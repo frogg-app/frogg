@@ -1,5 +1,6 @@
-import { getIsElectronRuntime } from "@/constants/layout";
+import { getIsElectronRuntime, HEADER_INNER_HEIGHT } from "@/constants/layout";
 import { isNative } from "@/constants/platform";
+import { useCustomDesktopWindowControls } from "@/utils/desktop-window";
 
 /**
  * VS Code-style titlebar drag region for Electron.
@@ -71,6 +72,39 @@ export function TitlebarDragRegion() {
       <div style={DRAG_OVERLAY_STYLE} {...titlebarDragSurfaceProps} />
       {/* Top-edge resizer — VS Code .resizer (titlebarpart.css:249-256) */}
       <div style={TOP_RESIZER_STYLE} />
+    </>
+  );
+}
+
+const WINDOW_DRAG_STRIP_STYLE: React.CSSProperties = {
+  ...titlebarDragSurfaceStyle,
+  position: "fixed",
+  top: 0,
+  left: 0,
+  right: 0,
+  height: HEADER_INNER_HEIGHT,
+};
+
+const WINDOW_TOP_RESIZER_STYLE: React.CSSProperties = { ...TOP_RESIZER_STYLE, position: "fixed" };
+
+/**
+ * Window-wide title bar strip for custom chrome (Windows/Linux). Chromium only recomputes
+ * `-webkit-app-region` rects when a drag element itself re-lays out, so the per-header
+ * overlays go stale when sidebars animate or resize (transforms move them without a
+ * layout), leaving only fragments of the top bar draggable. This strip never moves, so
+ * its rect stays valid. Render it BEFORE the app content: later no-drag elements (the
+ * index.html backstop on buttons, inputs, tabs, ...) punch their holes through it.
+ */
+export function WindowTitlebarDragStrip() {
+  const { visible } = useCustomDesktopWindowControls();
+  if (isNative || !visible) {
+    return null;
+  }
+
+  return (
+    <>
+      <div style={WINDOW_DRAG_STRIP_STYLE} {...titlebarDragSurfaceProps} />
+      <div style={WINDOW_TOP_RESIZER_STYLE} />
     </>
   );
 }
