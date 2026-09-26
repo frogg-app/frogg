@@ -129,6 +129,19 @@ export function resolveWindowChromeSafeArea(input: {
   return { paddingLeft: topLeft?.width ?? 0, paddingRight: topRight?.width ?? 0 };
 }
 
+/**
+ * Dev-only: `?chrome=windows|linux|mac` on a web build reserves space for desktop window controls
+ * as if running in Electron, so chrome-dependent layouts can be checked in the web preview.
+ */
+function readDevChromeOverride(): DesktopWindowChromeMode | null {
+  if (!__DEV__ || isNative || typeof location === "undefined") return null;
+  const value = new URLSearchParams(location.search).get("chrome");
+  if (value === "windows") return "custom-windows";
+  if (value === "linux") return "custom-linux";
+  if (value === "mac") return "native-mac";
+  return null;
+}
+
 export function WindowChromeProvider({ children }: { children: ReactNode }) {
   const [isElectronReady, setIsElectronReady] = useState(getIsElectronRuntime);
   const [windowState, setWindowState] = useState({ isFullscreen: false, isMaximized: false });
@@ -208,7 +221,7 @@ export function WindowChromeProvider({ children }: { children: ReactNode }) {
   const obstruction = useMemo(
     () =>
       resolveWindowChromeObstruction({
-        mode: isElectronReady ? getDesktopWindowChromeMode() : null,
+        mode: isElectronReady ? getDesktopWindowChromeMode() : readDevChromeOverride(),
         isFullscreen: windowState.isFullscreen,
       }),
     [isElectronReady, windowState.isFullscreen],
