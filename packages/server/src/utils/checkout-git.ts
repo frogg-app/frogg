@@ -617,6 +617,43 @@ async function tryResolveMergeBase(cwd: string, baseRef: string): Promise<string
   }
 }
 
+/**
+ * What HEAD still adds on top of `comparisonRef`, judged by content rather than commit ids.
+ *
+ * Diffing from the merge-base alone over-counts once the base already holds some of the branch:
+ * after a cherry-pick, squash or rebase merge the merge-base never moves, so a fully landed branch
+ * kept reporting its whole original diff and commits. Instead, merge HEAD into the base in memory
+ * (`merge-tree --write-tree`, no worktree or index writes); diffing the base against that merged
+ * tree is exactly what the branch would still contribute. Every "compared to base" surface
+ * (committed diff, commit list, ahead count, shortstat) goes through this so they agree.
+ * `mergedTree` is null when the merge conflicts or git lacks --write-tree; callers then fall back
+ * to the merge-base diff.
+ */
+interface UnmergedComparison {
+  mergedTree: string | null;
+  /** The base already contains everything HEAD would add. */
+  fullyMerged: boolean;
+}
+
+async function resolveUnmergedComparison(
+  cwd: string,
+  comparisonRef: string,
+  run: RunGitCommand = runGitCommand,
+): Promise<UnmergedComparison> {
+  const gitOptions = { cwd, envOverlay: READ_ONLY_GIT_ENV };
+  try {
+    const [merged, base] = await Promise.all([
+      run(["merge-tree", "--write-tree", comparisonRef, "HEAD"], gitOptions),
+      run(["rev-parse", `${comparisonRef}^{tree}`], gitOptions),
+    ]);
+    const mergedTree = merged.stdout.split("\n")[0]?.trim() || null;
+    return { mergedTree, fullyMerged: mergedTree !== null && mergedTree === base.stdout.trim() };
+  } catch {
+    // Conflicts exit non-zero; older git lacks --write-tree.
+    return { mergedTree: null, fullyMerged: false };
+  }
+}
+
 type FileStat = { additions: number; deletions: number; isBinary: boolean } | null;
 
 function normalizeNumstatPath(pathField: string): string {
@@ -1650,7 +1687,19 @@ async function getAheadBehind(
   if (!comparisonBaseRef) {
     return null;
   }
-  return getAheadBehindForComparisonRef(cwd, comparisonBaseRef, currentBranch, context);
+  // When the base is also what the branch pushes to or pulls from (its own remote copy, or a
+  // tracked base) the count feeds push/pull, so it stays exact.
+  const facts = context?.facts?.isGit ? context.facts : null;
+  const upstreamRef = facts
+    ? (facts.upstreamStatus?.ref ?? checkoutFactsConfiguredRemoteRef(facts))
+    : null;
+  const landed =
+    branchNameFromRef(comparisonBaseRef) !== currentBranch &&
+    (!upstreamRef ||
+      normalizeRemoteTrackingRef(upstreamRef) !== normalizeRemoteTrackingRef(comparisonBaseRef));
+  return getAheadBehindForComparisonRef(cwd, comparisonBaseRef, currentBranch, context, {
+    landed,
+  });
 }
 
 export interface UpstreamStatus {
@@ -1658,21 +1707,39 @@ export interface UpstreamStatus {
   aheadBehind: AheadBehind;
 }
 
+/**
+ * Commit counts either side of `comparisonRef`. Upstream comparisons count exact commits, which
+ * is what push and pull act on. Base comparisons (`landed: true`) ignore work the base already
+ * has in another form: patch-identical commits (cherry-picks, rebases) and, when the base holds
+ * all of the branch's content (squash merges), every remaining commit.
+ */
 async function getAheadBehindForComparisonRef(
   cwd: string,
   comparisonRef: string,
   currentBranch: string,
   context?: CheckoutContext,
+  options: { landed?: boolean } = {},
 ): Promise<AheadBehind | null> {
-  const { stdout } = await getRunGitCommand(context)(
-    ["rev-list", "--left-right", "--count", `${comparisonRef}...${currentBranch}`],
+  const run = getRunGitCommand(context);
+  const { stdout } = await run(
+    [
+      "rev-list",
+      "--left-right",
+      "--count",
+      ...(options.landed ? ["--cherry-pick"] : []),
+      `${comparisonRef}...${currentBranch}`,
+    ],
     { cwd, envOverlay: READ_ONLY_GIT_ENV, logger: context?.logger },
   );
   const [behindRaw, aheadRaw] = stdout.trim().split(/\s+/);
   const behind = Number.parseInt(behindRaw ?? "0", 10);
-  const ahead = Number.parseInt(aheadRaw ?? "0", 10);
+  let ahead = Number.parseInt(aheadRaw ?? "0", 10);
   if (Number.isNaN(behind) || Number.isNaN(ahead)) {
     return null;
+  }
+  if (options.landed && ahead > 0) {
+    const unmerged = await resolveUnmergedComparison(cwd, comparisonRef, run);
+    if (unmerged.fullyMerged) ahead = 0;
   }
   return { ahead, behind };
 }
@@ -2281,6 +2348,7 @@ interface CheckoutCommitLogInput {
   cwd: string;
   revision: string;
   maxCount?: number;
+  extraArgs?: string[];
 }
 
 function mapNameStatusLetter(letter: string): CheckoutCommitFileStatus | undefined {
@@ -2424,10 +2492,12 @@ async function getCheckoutCommitRecords({
   cwd,
   revision,
   maxCount,
+  extraArgs = [],
 }: CheckoutCommitLogInput): Promise<ParsedCheckoutCommit[]> {
   const args = [
     "log",
     revision,
+    ...extraArgs,
     "--diff-merges=first-parent",
     `--format=${COMMIT_LOG_FORMAT}`,
     "--raw",
@@ -2503,11 +2573,18 @@ export async function listCheckoutCommits({
   let workspaceRecords: ParsedCheckoutCommit[] = [];
   let baseRevision = "HEAD";
   if (comparisonBaseRef) {
-    const [records, mergeBase] = await Promise.all([
-      getCheckoutCommitRecords({ cwd, revision: `${comparisonBaseRef}..HEAD` }),
+    const [records, mergeBase, unmerged] = await Promise.all([
+      // --cherry-pick drops commits whose patch the base already has (cherry-picks, rebases).
+      getCheckoutCommitRecords({
+        cwd,
+        revision: `${comparisonBaseRef}...HEAD`,
+        extraArgs: ["--cherry-pick", "--right-only"],
+      }),
       tryResolveMergeBase(cwd, comparisonBaseRef),
+      resolveUnmergedComparison(cwd, comparisonBaseRef),
     ]);
-    workspaceRecords = records;
+    // A squash merge leaves no patch-identical commit, but the content check still catches it.
+    workspaceRecords = unmerged.fullyMerged ? [] : records;
     baseRevision = mergeBase ?? "";
   }
 
@@ -2739,13 +2816,8 @@ async function getCheckoutShortstatUncached(
 }
 
 /**
- * Tracked lines this checkout would still add to `comparisonRef`.
- *
- * Diffing from the merge-base alone over-counts once the base already holds some of the branch:
- * after a squash or rebase merge the merge-base never moves, so a fully merged branch kept
- * reporting its whole original diff. Instead, merge HEAD into the base in memory
- * (`merge-tree --write-tree`, no worktree or index writes) and count what that merge adds, plus
- * uncommitted changes against HEAD. A conflicting merge falls back to the merge-base diff.
+ * Tracked lines this checkout would still add to `comparisonRef` (see `resolveUnmergedComparison`),
+ * plus uncommitted changes against HEAD.
  */
 async function getUnmergedTrackedShortstat(input: {
   run: ReturnType<typeof getRunGitCommand>;
@@ -2755,14 +2827,7 @@ async function getUnmergedTrackedShortstat(input: {
 }): Promise<CheckoutShortstat | null> {
   const { run, cwd, comparisonRef, mergeBase } = input;
   const gitOptions = { cwd, envOverlay: READ_ONLY_GIT_ENV };
-  let mergedTree: string | null = null;
-  try {
-    const { stdout } = await run(["merge-tree", "--write-tree", comparisonRef, "HEAD"], gitOptions);
-    mergedTree = stdout.split("\n")[0]?.trim() || null;
-  } catch {
-    // Conflicts exit non-zero; older git lacks --write-tree. Either way, use the merge-base diff.
-    mergedTree = null;
-  }
+  const { mergedTree } = await resolveUnmergedComparison(cwd, comparisonRef, run);
   if (!mergedTree) {
     const { stdout } = await run(["diff", "--shortstat", mergeBase], gitOptions);
     return parseCheckoutShortstat(stdout);
@@ -3322,6 +3387,10 @@ async function resolveCheckoutDiffRefs(
     return null;
   }
   const bestBaseRef = await resolveBestComparisonBaseRef(cwd, baseRef);
+  const { mergedTree } = await resolveUnmergedComparison(cwd, bestBaseRef);
+  if (mergedTree) {
+    return { baseRef: bestBaseRef, targetRef: mergedTree, includeUntracked: false };
+  }
   return {
     baseRef: (await tryResolveMergeBase(cwd, bestBaseRef)) ?? bestBaseRef,
     targetRef: "HEAD",

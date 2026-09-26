@@ -31,6 +31,7 @@ import {
   getCheckoutWorkingTreeShortstat,
   getPullRequestStatus,
   getCheckoutStatus,
+  listCheckoutCommits,
   checkoutResolvedBranch,
   listBranchSuggestions,
   mergeToBase,
@@ -242,6 +243,12 @@ function commitFile(cwd: string, path: string, content: string, message: string)
   writeFileSync(join(cwd, path), content);
   execFileSync("git", ["add", path], { cwd });
   execFileSync("git", ["-c", "commit.gpgsign=false", "commit", "-m", message], { cwd });
+}
+
+/** Subjects of the commits the branch still has over its base. */
+async function unlandedCommitSubjects(cwd: string): Promise<string[]> {
+  const { commits } = await listCheckoutCommits({ cwd });
+  return commits.filter((commit) => !commit.isOnBase).map((commit) => commit.subject);
 }
 
 describe("checkout git utilities", () => {
@@ -1389,6 +1396,69 @@ const x = 1;
 
     const diff = await getCheckoutDiff(repoDir, { mode: "base", baseRef: "main" });
     expect(diff.diff).toContain("feature.txt");
+  });
+
+  describe("work the base already has in another form", () => {
+    function landOnMain(paths: string[]): void {
+      execFileSync("git", ["checkout", "main"], { cwd: repoDir });
+      // -x changes the message, so the copies get new ids even within the same second.
+      execFileSync("git", ["-c", "commit.gpgsign=false", "cherry-pick", "-x", ...paths], {
+        cwd: repoDir,
+      });
+      commitFile(repoDir, "main-only.txt", "main\n", "unrelated main work");
+      execFileSync("git", ["checkout", "feature"], { cwd: repoDir });
+    }
+
+    function featureCommit(path: string): string {
+      commitFile(repoDir, path, `${path}\n`, `add ${path}`);
+      return execFileSync("git", ["rev-parse", "HEAD"], { cwd: repoDir, encoding: "utf8" }).trim();
+    }
+
+    it("hides a branch whose commits were cherry-picked onto the base", async () => {
+      execFileSync("git", ["checkout", "-b", "feature"], { cwd: repoDir });
+      const first = featureCommit("a.txt");
+      const second = featureCommit("b.txt");
+      landOnMain([first, second]);
+
+      const diff = await getCheckoutDiff(repoDir, { mode: "base", baseRef: "main" });
+      expect(diff.diff).toBe("");
+      expect(await unlandedCommitSubjects(repoDir)).toEqual([]);
+      const status = await getCheckoutStatus(repoDir);
+      expect(status.isGit && status.aheadBehind).toEqual({ ahead: 0, behind: 1 });
+    });
+
+    it("hides a branch squash-merged into the base", async () => {
+      execFileSync("git", ["checkout", "-b", "feature"], { cwd: repoDir });
+      featureCommit("a.txt");
+      featureCommit("b.txt");
+      execFileSync("git", ["checkout", "main"], { cwd: repoDir });
+      execFileSync("git", ["merge", "--squash", "feature"], { cwd: repoDir });
+      execFileSync("git", ["-c", "commit.gpgsign=false", "commit", "-m", "squash"], {
+        cwd: repoDir,
+      });
+      execFileSync("git", ["checkout", "feature"], { cwd: repoDir });
+
+      const diff = await getCheckoutDiff(repoDir, { mode: "base", baseRef: "main" });
+      expect(diff.diff).toBe("");
+      expect(await unlandedCommitSubjects(repoDir)).toEqual([]);
+      const status = await getCheckoutStatus(repoDir);
+      expect(status.isGit && status.aheadBehind?.ahead).toBe(0);
+    });
+
+    it("keeps only the work that has not landed yet", async () => {
+      execFileSync("git", ["checkout", "-b", "feature"], { cwd: repoDir });
+      const landed = featureCommit("a.txt");
+      featureCommit("b.txt");
+      landOnMain([landed]);
+
+      const diff = await getCheckoutDiff(repoDir, { mode: "base", baseRef: "main" });
+      expect(diff.diff).toContain("b.txt");
+      expect(diff.diff).not.toContain("a.txt");
+      expect(diff.diff).not.toContain("main-only.txt");
+      expect(await unlandedCommitSubjects(repoDir)).toEqual(["add b.txt"]);
+      const status = await getCheckoutStatus(repoDir);
+      expect(status.isGit && status.aheadBehind?.ahead).toBe(1);
+    });
   });
 
   it("does not include dirty working tree changes in base mode", async () => {
