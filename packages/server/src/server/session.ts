@@ -4339,6 +4339,7 @@ export class Session {
     } = msg;
 
     try {
+      await this.workspaceFilesSession.assertViewerSearchRoot(cwd);
       const workspaceCwd = cwd?.trim();
       const searchesWorkspace = Boolean(workspaceCwd);
       const entries = await searchDirectoryEntries({

@@ -287,7 +287,13 @@ async function collectHostDiagnosticSections(
       ]),
     );
 
-    if (serverInfo?.features?.daemonDiagnostics === true) {
+    if (serverInfo?.callerRole === "viewer") {
+      sections.push(
+        formatDiagnosticSection(`Daemon diagnostics: ${host.label}`, [
+          { label: "Status", value: "not available to a viewer" },
+        ]),
+      );
+    } else if (serverInfo?.features?.daemonDiagnostics === true) {
       const result = await client.collectDiagnostics();
       sections.push(result.diagnostic);
     } else {

@@ -782,6 +782,23 @@ describe("WorkspaceFilesSession viewer workspace roots", () => {
     expect(errorOf(emitted[0])).toBe(OUTSIDE);
   });
 
+  test("roots a viewer's directory search in a workspace", async () => {
+    const workspace = makeDir("workspace-files-viewer-");
+    const outside = makeDir("workspace-files-outside-");
+    const { subsystem } = makeSubsystem({ role: "viewer", workspaceRoots: [workspace] });
+
+    await expect(subsystem.assertViewerSearchRoot(undefined)).rejects.toThrow(OUTSIDE);
+    await expect(subsystem.assertViewerSearchRoot("  ")).rejects.toThrow(OUTSIDE);
+    await expect(subsystem.assertViewerSearchRoot(outside)).rejects.toThrow(OUTSIDE);
+    await expect(subsystem.assertViewerSearchRoot(workspace)).resolves.toBeUndefined();
+  });
+
+  test.each(["owner", "operator"] as const)("leaves %s search unrooted", async (role) => {
+    const { subsystem } = makeSubsystem({ role, workspaceRoots: [] });
+
+    await expect(subsystem.assertViewerSearchRoot(undefined)).resolves.toBeUndefined();
+  });
+
   test.each(["owner", "operator"] as const)("leaves %s unconfined", async (role) => {
     const outside = makeDir("workspace-files-outside-");
     const { subsystem, emitted } = makeSubsystem({ role, workspaceRoots: [] });

@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { SessionInboundMessageSchema, type SessionInboundMessage } from "../messages.js";
+import {
+  SessionInboundMessageSchema,
+  type SessionInboundMessage,
+  type SessionOutboundMessage,
+} from "../messages.js";
 import type { DeviceRecord } from "../claim-store.js";
 import {
   DEVICE_ROLES,
@@ -123,6 +127,8 @@ describe("role denials", () => {
     "start_workspace_script_request",
     "checkout_push_request",
     "create_agent_request",
+    "get_daemon_config_request",
+    "diagnostics.request",
   ] as const;
 
   const readOnly = [
@@ -139,6 +145,26 @@ describe("role denials", () => {
     for (const type of readOnly) expect(viewer.allowsInbound(message(type))).toBe(true);
     for (const type of operatorOnly) expect(viewer.allowsInbound(message(type))).toBe(false);
     for (const type of ownerOnly) expect(viewer.allowsInbound(message(type))).toBe(false);
+  });
+
+  test("a viewer is not sent daemon configuration", () => {
+    const configChanged = {
+      type: "status",
+      payload: { status: "daemon_config_changed", config: {} },
+    } as unknown as SessionOutboundMessage;
+    const configResponse = {
+      type: "get_daemon_config_response",
+      payload: {},
+    } as unknown as SessionOutboundMessage;
+    const serverInfo = {
+      type: "status",
+      payload: { status: "server_info" },
+    } as unknown as SessionOutboundMessage;
+
+    expect(sessionAs("viewer").allowsOutbound(configChanged)).toBe(false);
+    expect(sessionAs("viewer").allowsOutbound(configResponse)).toBe(false);
+    expect(sessionAs("viewer").allowsOutbound(serverInfo)).toBe(true);
+    expect(sessionAs("operator").allowsOutbound(configChanged)).toBe(true);
   });
 
   test("a viewer cannot write over the binary channel either", () => {

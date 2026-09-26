@@ -5,6 +5,7 @@ import type { MutableDaemonConfig, MutableDaemonConfigPatch } from "@frogg/proto
 import { useReplicaQuery } from "@/data/query";
 import { daemonConfigQueryKey } from "@/data/daemon-config";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
+import { useSessionStore } from "@/stores/session-store";
 
 interface UseDaemonConfigResult {
   config: MutableDaemonConfig | null;
@@ -17,11 +18,15 @@ export function useDaemonConfig(serverId: string | null): UseDaemonConfigResult 
   const queryClient = useQueryClient();
   const client = useHostRuntimeClient(serverId ?? "");
   const isConnected = useHostRuntimeIsConnected(serverId ?? "");
+  // The daemon refuses its config to a viewer; don't ask for it.
+  const isViewer = useSessionStore(
+    (state) => state.sessions[serverId ?? ""]?.serverInfo?.callerRole === "viewer",
+  );
   const queryKey = useMemo(() => daemonConfigQueryKey(serverId), [serverId]);
 
   const configQuery = useReplicaQuery({
     queryKey,
-    enabled: Boolean(serverId && client && isConnected),
+    enabled: Boolean(serverId && client && isConnected && !isViewer),
     pushEvent: "status:daemon_config_changed",
     queryFn: async () => {
       if (!client) {

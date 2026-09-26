@@ -43,6 +43,7 @@ const PERMISSION_MIN_ROLE = {
  * permission row in operation-permissions.ts. A request must pass both.
  *
  * - viewer: read-only views of sessions, timelines, terminal output, workspaces.
+ *   Not daemon configuration or diagnostics: those describe the host, not the work.
  * - operator: drive agents, terminals, scripts, file and git edits, workspaces.
  * - owner: daemon settings, provider accounts, updates, pairing, device access.
  */
@@ -127,7 +128,7 @@ const INBOUND_ROLE = {
   "daemon.update.request": "owner",
   "daemon.update.start.request": "owner",
   delete_agent_request: "operator",
-  "diagnostics.request": "viewer",
+  "diagnostics.request": "operator",
   dictation_stream_cancel: "operator",
   dictation_stream_chunk: "operator",
   dictation_stream_finish: "operator",
@@ -152,7 +153,7 @@ const INBOUND_ROLE = {
   "fs.file.subscribe.request": "viewer",
   "fs.file.unsubscribe.request": "viewer",
   "fs.file.write.request": "operator",
-  get_daemon_config_request: "viewer",
+  get_daemon_config_request: "operator",
   get_providers_snapshot_request: "viewer",
   github_search_request: "viewer",
   "hub.execution.agent.create.request": "operator",
@@ -270,6 +271,9 @@ const INBOUND_ROLE = {
  */
 const OUTBOUND_ROLE_OVERRIDES: Partial<Record<OutboundOperation, DeviceRole>> = {
   agent_permission_resolved: "viewer",
+  // Daemon configuration and diagnostics describe the host, not the work.
+  get_daemon_config_response: "operator",
+  "diagnostics.response": "operator",
   // Operators may see who is paired and how access is configured, not change it.
   "auth.device.list.response": "operator",
   "auth.settings.get.response": "operator",
@@ -308,11 +312,23 @@ export function minimumRoleForPermission(permission: DaemonPermission): DeviceRo
   return PERMISSION_MIN_ROLE[permission];
 }
 
+/**
+ * `status` frames share one message type, so a status carrying more than a
+ * viewer may see declares its role by its `status` discriminator.
+ */
+const STATUS_ROLE_OVERRIDES: Partial<Record<string, DeviceRole>> = {
+  daemon_config_changed: "operator",
+};
+
 export function requiredRoleForOutbound(
-  operation: OutboundOperation,
+  message: SessionOutboundMessage,
   permission: DaemonPermission | null,
 ): DeviceRole {
-  const override = OUTBOUND_ROLE_OVERRIDES[operation];
+  if (message.type === "status") {
+    const statusOverride = STATUS_ROLE_OVERRIDES[message.payload?.status];
+    if (statusOverride) return statusOverride;
+  }
+  const override = OUTBOUND_ROLE_OVERRIDES[message.type];
   if (override) return override;
   return permission === null ? "viewer" : PERMISSION_MIN_ROLE[permission];
 }

@@ -111,6 +111,16 @@ export class WorkspaceFilesSession {
     if (this.getRole() === "viewer") await this.assertInsideWorkspace(cwd);
   }
 
+  /**
+   * Viewers only see inside registered workspaces, so a search a viewer runs
+   * must be rooted in one. Other roles are unaffected.
+   */
+  async assertViewerSearchRoot(cwd: string | undefined): Promise<void> {
+    if (this.getRole() !== "viewer") return;
+    if (!cwd?.trim()) throw new Error(VIEWER_OUTSIDE_WORKSPACE_MESSAGE);
+    await this.assertAccess(cwd.trim());
+  }
+
   private async assertInsideWorkspace(cwd: string): Promise<void> {
     const canonicalCwd = await canonicalizePath(expandUserPath(cwd));
     for (const root of await this.listWorkspaceRoots()) {

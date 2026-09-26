@@ -67,7 +67,7 @@ export class SessionAuthorization {
     const permission = requiredPermissionForOutbound(message.type);
     return (
       this.hasPermission(permission) &&
-      roleSatisfies(this.role, requiredRoleForOutbound(message.type, permission))
+      roleSatisfies(this.role, requiredRoleForOutbound(message, permission))
     );
   }
 
