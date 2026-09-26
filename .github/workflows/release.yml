@@ -70,6 +70,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
 
       - uses: ./.github/actions/select-brand
         with:
@@ -101,6 +102,12 @@ jobs:
           esac
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+      # Stable tags ship from main, betas from beta. Android-only reruns rebuild
+      # old tags, which may predate the rule, so they skip it.
+      - name: Require the tag on its release branch
+        if: inputs.only != 'android'
+        run: bash scripts/release/assert-tag-branch.sh "$RELEASE_TAG"
 
       # Secrets are detected once here; jobs that need them read the flags. The
       # docker flags are optional, and so is android_signing: when
@@ -780,4 +787,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release edit "$RELEASE_TAG" --draft=false
+          PRERELEASE: ${{ needs.meta.outputs.prerelease }}
+        # Latest only ever moves forward: when two runs finish out of order, the
+        # older version publishes without taking Latest from the newer one.
+        # `gh release view` with no tag returns the current Latest.
+        run: |
+          if [ "$PRERELEASE" = "true" ]; then
+            gh release edit "$RELEASE_TAG" --draft=false --prerelease --latest=false
+            exit 0
+          fi
+          current="$(gh release view --json tagName --jq .tagName 2>/dev/null || true)"
+          newest="$(printf '%s\n%s\n' "${current#v}" "${RELEASE_TAG#v}" | sort -V | tail -n1)"
+          if [ -z "$current" ] || [ "$newest" = "${RELEASE_TAG#v}" ]; then
+            gh release edit "$RELEASE_TAG" --draft=false --latest
+          else
+            echo "::warning::$current is newer than $RELEASE_TAG; publishing without moving Latest."
+            gh release edit "$RELEASE_TAG" --draft=false --latest=false
+          fi
