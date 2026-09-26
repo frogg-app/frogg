@@ -284,7 +284,7 @@ export function buildMacAppleSiliconDownloadUrl(version: string | null | undefin
     return null;
   }
 
-  return `${RELEASE_DOWNLOAD_BASE_URL}/v${normalizedVersion}/${brand.artifactPrefix}-${normalizedVersion}-aarch64.dmg`;
+  return `${RELEASE_DOWNLOAD_BASE_URL}/v${normalizedVersion}/${brand.artifactPrefix}-${normalizedVersion}-mac-arm64.dmg`;
 }
 
 export function buildDaemonUpdateDiagnostics(result: LocalDaemonUpdateResult): string {
