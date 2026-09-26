@@ -14,8 +14,7 @@
     "name": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 160,
-      "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+      "maxLength": 160
     },
     "applicationId": {
       "type": "string",
@@ -29,20 +28,17 @@
     "fullName": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 160,
-      "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+      "maxLength": 160
     },
     "description": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 160,
-      "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+      "maxLength": 160
     },
     "publisher": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 160,
-      "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+      "maxLength": 160
     },
     "cliName": {
       "type": "string",
@@ -112,7 +108,9 @@
           "minLength": 1
         }
       },
-      "required": ["icon"],
+      "required": [
+        "icon"
+      ],
       "additionalProperties": false
     },
     "colors": {
@@ -142,7 +140,12 @@
               "pattern": "^#[0-9a-fA-F]{6}$"
             }
           },
-          "required": ["accent", "accentForeground", "background", "foreground"],
+          "required": [
+            "accent",
+            "accentForeground",
+            "background",
+            "foreground"
+          ],
           "additionalProperties": false
         },
         "dark": {
@@ -169,7 +172,12 @@
               "pattern": "^#[0-9a-fA-F]{6}$"
             }
           },
-          "required": ["accent", "accentForeground", "background", "foreground"],
+          "required": [
+            "accent",
+            "accentForeground",
+            "background",
+            "foreground"
+          ],
           "additionalProperties": false
         }
       },
@@ -181,8 +189,7 @@
         "tagline": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 80,
-          "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+          "maxLength": 80
         },
         "colors": {
           "type": "object",
@@ -228,32 +235,27 @@
             "installing": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 80,
-              "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+              "maxLength": 80
             },
             "migrating": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 80,
-              "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+              "maxLength": 80
             },
             "ready": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 80,
-              "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+              "maxLength": 80
             },
             "launching": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 80,
-              "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+              "maxLength": 80
             },
             "elevationRequired": {
               "type": "string",
               "minLength": 1,
-              "maxLength": 160,
-              "pattern": "^[^\\x00-\\x1f\\x7f]*$"
+              "maxLength": 160
             }
           },
           "additionalProperties": false
@@ -313,7 +315,11 @@
         },
         "updates": {
           "type": "string",
-          "enum": ["disabled", "github-release", "tauri-signed"]
+          "enum": [
+            "disabled",
+            "github-release",
+            "tauri-signed"
+          ]
         },
         "updaterPublicKey": {
           "type": "string",
@@ -382,15 +388,20 @@
     },
     "daemon": {
       "type": "object",
-      "description": "Fresh-install access defaults. Unset: bind all, LAN trusted, claim mode off for the frogg brand; loopback, LAN untrusted, claim mode on for every other brand. claimScope defaults any; providerUpdateChecks defaults true.",
       "properties": {
         "bind": {
           "type": "string",
-          "enum": ["all", "loopback"]
+          "enum": [
+            "all",
+            "loopback"
+          ]
         },
         "workspaceServicesBind": {
           "type": "string",
-          "enum": ["all", "loopback"]
+          "enum": [
+            "all",
+            "loopback"
+          ]
         },
         "claimMode": {
           "type": "boolean"
@@ -400,10 +411,58 @@
         },
         "claimScope": {
           "type": "string",
-          "enum": ["any", "local"]
+          "enum": [
+            "any",
+            "local"
+          ]
         },
         "providerUpdateChecks": {
           "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "providers": {
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+          }
+        },
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "maxLength": 48,
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "allow": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 160,
+                  "pattern": "^[A-Za-z0-9*][A-Za-z0-9._:/@*-]*$"
+                }
+              },
+              "deny": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 160,
+                  "pattern": "^[A-Za-z0-9*][A-Za-z0-9._:/@*-]*$"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
         }
       },
       "additionalProperties": false
@@ -412,13 +471,89 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "type": "boolean",
-          "description": "Whether this brand ships a mobile app. When false, `pair` skips the terminal QR unless --qr is passed."
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "channels": {
+      "type": "object",
+      "properties": {
+        "beta": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "fullName": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            },
+            "applicationId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:\\.[a-z][a-z0-9]*){2,}$"
+            },
+            "daemonPort": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65535
+            },
+            "cliName": {
+              "type": "string",
+              "maxLength": 48,
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+            },
+            "desktopBinaryName": {
+              "type": "string",
+              "maxLength": 48,
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+            },
+            "homeDir": {
+              "type": "string",
+              "pattern": "^\\.[a-z][a-z0-9-]*$"
+            },
+            "envPrefix": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$"
+            },
+            "scheme": {
+              "type": "string",
+              "maxLength": 48,
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+            },
+            "serviceName": {
+              "type": "string",
+              "maxLength": 48,
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+            },
+            "launchdLabel": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9.-]*$"
+            },
+            "artifactPrefix": {
+              "type": "string",
+              "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+            },
+            "badge": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
     }
   },
-  "required": ["schemaVersion", "id", "name", "applicationId", "daemonPort", "assets"],
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "applicationId",
+    "daemonPort",
+    "assets"
+  ],
   "additionalProperties": false
 }

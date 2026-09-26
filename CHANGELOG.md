@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.6.0-beta.1 — 2026-09-26
+
+- **frogg beta installs beside frogg.** Betas are now their own build of the brand: app
+  `frogg beta` (`app.frogg.frogg.beta`), daemon `frogg-beta-daemon` on port 9998 with state in
+  `~/.frogg-beta`, CLI `frogg-beta`, scheme `frogg-beta://`, `FROGG_BETA_*` environment, and
+  icons with an amber BETA ribbon. Each build updates within its own channel, so the Stable/Beta
+  switches in desktop, Android and host settings are gone; Settings → Updates shows which build
+  it is. Any brand gets the same with `channels.beta` (all optional) in `brand.json`, selected by
+  `FROGG_BRAND_CHANNEL=beta`, which the release workflow sets for `-beta.N` tags.
+- A branded daemon started from another install's shell ignores that install's inherited
+  `FROGG_*` settings, and commands its agents run no longer see its own internal copies.
+- **Release streams.** `main` cuts betas and `stable` cuts releases (`frogg.json` `streams`).
+  New `release:beta`, `release:promote` (copies `main` onto `stable` and cuts `X.Y.0`),
+  `release:backport`, and for forks `release:sync-upstream` and `release:contribute`;
+  `npm run streams` prints where each stream is. The version scripts refuse a cut on the wrong
+  branch, and `release.yml` fails a tag that is not on its stream's branch. `release:minor` and
+  `release:major` are removed: a stable minor arrives by promotion.
+- **Release streams tab** (new-tab menu): a stream graph with one lane per stream, releases in
+  time order and connectors for promotions, backports, upstream syncs and contributions; what is
+  waiting on each flow with the command that moves it; and every recent feature and fix with
+  the streams and first release that have it. New `checkout.streams.get_graph` RPC, gated on
+  `features.releaseStreams`.
+- The desktop app never offers an older build than the one installed, and the Apple Silicon
+  download link points at the real `-mac-arm64.dmg`. Android uses the shared version ordering.
+  `install.sh`'s fallback resolves only stable releases. GitHub Latest never moves backwards
+  when two release runs finish out of order.
+- Removed unused Paseo-era release scripts.
 ## 1.5.55 — 2026-09-26
 
 - Desktop update checks no longer loop until GitHub rate-limits them. Since 1.5.37 each

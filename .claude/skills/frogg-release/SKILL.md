@@ -91,7 +91,11 @@ to compare the metadata against GitHub asset sizes and digests.
 After publication, verify the unauthenticated Latest API and download each public
 channel manifest/JSON descriptor; check version, payload URLs, sizes and hashes.
 For beta, verify explicit version routing independently of stable Latest. Do not
-mark a beta as Latest. Stop automatic retries when the same deterministic failure
+mark a beta as Latest. Betas are cut only from `main` (`npm run release:beta`) and stable
+releases only from `stable` (`release:patch`, `release:promote`); fixes reach stable with
+`release:backport`. A beta tag builds frogg beta (`FROGG_BRAND_CHANNEL=beta`: its own app
+id, `frogg-beta-*` assets, `electron-beta*.yml`), so check those names on beta releases. See
+website/src/content/docs/docs/contributing/release-streams.mdx. Stop automatic retries when the same deterministic failure
 recurs; repair its cause before another attempt. Preserve tags when cleaning
 superseded drafts unless the user explicitly requests tag deletion.
 

@@ -1,6 +1,6 @@
 ---
 title: Stay current with upstream
-description: Merge upstream Frogg into your fork, resolve conflicts, automate a sync check, and version fork releases.
+description: Merge upstream Frogg into your fork, test it as your beta before your users get it, resolve conflicts, automate a sync check, and version fork releases.
 sidebar:
   order: 7
 ---
@@ -27,33 +27,43 @@ macOS signing, a patched component), and the root `package.json` version.
 
 ## Merge upstream
 
+Declare upstream once in `frogg.json`, next to your own streams
+([release streams](/docs/contributing/release-streams/#forks)):
+
+```json
+{
+  "streams": {
+    "upstream": { "remote": "upstream", "repository": "frogg-app/frogg", "follow": "stable" }
+  }
+}
+```
+
+`follow: "stable"` takes upstream's tested releases; `"development"` takes its `main` so you
+test upstream betas as they land.
+
 <Steps>
 
-1. Start from a clean `main`:
+1. See what is coming. The **Release streams** tab (new-tab menu) shows upstream's lanes,
+   the changes you have not merged, and which ones are features or fixes. From a terminal:
 
    ```sh
-   git switch main
-   git pull --ff-only origin main
-   git fetch upstream --tags
+   npm run streams
    ```
 
-2. See what is coming:
+2. Merge into your development branch:
 
    ```sh
-   git log --oneline main..upstream/main | head -30
-   git diff --stat main...upstream/main -- CHANGELOG.md .github/ packages/branding/
+   git switch main && git pull --ff-only
+   npm run release:sync-upstream
    ```
 
-   Read the new `CHANGELOG.md` sections. Upgrade notes that affect clients and daemons
-   together are called out there.
+   It fetches upstream (tags into `refs/remotes/upstream/tags/`, since your releases reuse
+   upstream's version numbers), merges the newest upstream stable tag (or upstream `main`,
+   or `--ref <ref>`), resolves version-file conflicts by restamping your version, and commits
+   `Merge upstream v1.7.0`. Other conflicts stop the merge: resolve them, `git add`, then
+   `npm run release:sync-upstream -- --continue`.
 
-3. Merge:
-
-   ```sh
-   git merge --no-ff upstream/main -m "Merge upstream Frogg $(git describe --tags --abbrev=0 upstream/main)"
-   ```
-
-4. Reinstall and check the brand still resolves against the new schema and generator:
+3. Check the brand still resolves against the new schema and generator:
 
    ```sh
    npm ci
@@ -62,13 +72,21 @@ macOS signing, a patched component), and the root `package.json` version.
    npm run verify -- --fast
    ```
 
-5. Run the app locally with your brand (`npm run dev:server`, `npm run dev:app`) and
-   look at the screens you care about.
-
-6. Push and let CI run:
+4. Push, then cut a beta and test the update before your users get it:
 
    ```sh
    git push origin main
+   npm run release:beta      # 1.7.0-beta.1 after merging upstream 1.7.0
+   ```
+
+   Your beta build (`<id>-beta`) installs beside your stable app, so you can check the
+   update path and the upstream changes on one machine.
+
+5. Promote it to your stable users from your `stable` branch:
+
+   ```sh
+   git switch stable && git pull
+   npm run release:promote
    ```
 
 </Steps>
@@ -132,7 +150,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git remote add upstream https://github.com/frogg-app/frogg.git
-          git fetch upstream main --tags
+          git fetch --no-tags upstream '+refs/heads/*:refs/remotes/upstream/*' '+refs/tags/*:refs/remotes/upstream/tags/*'
           if [ -z "$(git rev-list HEAD..upstream/main)" ]; then
             echo "Already up to date."; exit 0
           fi
@@ -159,14 +177,11 @@ the pull request.
 The root `package.json` version is your product version. Release tags must equal it.
 Desktop and daemon updates compare these versions with semver.
 
-Recommended scheme:
-
-- **Ship upstream versions.** After merging upstream 0.6.20, release your fork as
-  `v0.6.20`. Users can map your release to upstream's changelog directly.
-- **Fork-only fixes** between upstream releases: bump the patch (`0.6.21`). On the next
-  upstream merge, set the version to whichever is higher, plus one patch.
-- **Betas** use a prerelease suffix: `npm run version:all:beta:patch` gives
-  `0.6.21-beta.1`. Stable clients ignore them.
+`npm run release:beta` keeps you on upstream's numbers: after merging upstream `1.7.0` your
+next beta is `1.7.0-beta.1`, and promoting it ships your `1.7.0`, so a release maps to
+upstream's changelog directly. Fork-only fixes between upstream releases are stable patches
+(`1.7.1`) backported with `release:backport`. When upstream later ships a version you already
+used, your next beta opens the line above it.
 
 Avoid build metadata such as `0.6.20+acme.1`. Semver ignores it when comparing, so
 updaters do not see `+acme.2` as newer than `+acme.1`, and Docker tags cannot contain `+`.

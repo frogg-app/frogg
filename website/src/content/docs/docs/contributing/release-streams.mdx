@@ -1,0 +1,241 @@
+---
+title: Release streams
+description: Develop on a beta stream without disturbing stable users, install frogg beta beside frogg, promote and backport, and run the same flow in a fork that follows upstream.
+sidebar:
+  order: 7
+---
+
+import { Screenshot, Steps } from "@/components/docs";
+import releaseStreams from "@/assets/docs/app/release-streams.png";
+
+Frogg ships from two branches, called **streams**:
+
+| Stream      | Branch   | Releases        | Installs as                                                  |
+| ----------- | -------- | --------------- | ------------------------------------------------------------ |
+| Development | `main`   | `X.Y.0-beta.N`  | **frogg beta**: its own app, daemon, CLI and data            |
+| Stable      | `stable` | `X.Y.Z`         | **frogg**: what users run                                    |
+
+Work lands on `main` and ships as betas. Stable users get a beta line only when it is
+**promoted**. Stable gets fixes in between by **backporting** them from `main`. Nothing
+merges from `stable` back into `main`, so version files never conflict.
+
+A fork adds a third stream: **upstream**. It merges upstream's releases into its own `main`,
+tests them as its own beta, then promotes them to its stable users. See
+[Forks](#forks) below.
+
+## frogg beta installs beside frogg
+
+A beta release is built as a separate product. The release workflow selects the brand's
+**beta channel** for any `-beta.N` tag (`FROGG_BRAND_CHANNEL=beta`). That gives every install
+identity its own name:
+
+| Identity         | frogg                    | frogg beta                    |
+| ---------------- | ------------------------ | ----------------------------- |
+| App name         | `frogg`                  | `frogg beta`                  |
+| Application id   | `app.frogg.frogg`        | `app.frogg.frogg.beta`        |
+| Daemon port      | `9999`                   | `9998`                        |
+| State directory  | `~/.frogg`               | `~/.frogg-beta`               |
+| CLI              | `frogg`                  | `frogg-beta`                  |
+| Service          | `frogg-daemon`           | `frogg-beta-daemon`           |
+| URL scheme       | `frogg://`               | `frogg-beta://`               |
+| Environment      | `FROGG_*`                | `FROGG_BETA_*`                |
+| Release assets   | `frogg-<version>-…`      | `frogg-beta-<version>-…`      |
+
+Its icons carry an amber **BETA** ribbon. Each build updates only within its own channel:
+frogg never offers a beta, and frogg beta only moves between betas. There is no channel
+setting to switch. Settings → Updates shows which channel the build is.
+
+A frogg beta daemon ignores `FROGG_*` variables it inherits, so starting it from a terminal
+the stable daemon opened does not pick up the stable home or port. The reverse holds too:
+commands frogg beta's agents run do not see frogg beta's internal settings.
+
+### Develop frogg with frogg
+
+1. Run your agents in **frogg** (stable). They edit this repository.
+2. Install **frogg beta** on the same machine to try each beta:
+
+   ```sh
+   curl -fsSL https://github.com/frogg-app/frogg/releases/download/v<beta>/install.sh | bash
+   ```
+
+   The beta installer puts `frogg-beta` next to `frogg` and registers `frogg-beta-daemon`
+   on port 9998. With no `FROGG_BETA_VERSION` set, it installs the newest `-beta.N` release.
+   Install the frogg beta desktop app or APK from the same release.
+3. For work that is not released yet, use a worktree dev daemon
+   ([development setup](/docs/contributing/development-setup/)). It uses its own home and
+   port, so it does not touch either install.
+
+Stable and beta are separate daemons with separate projects, sessions and pairings. A
+frogg client can still add the frogg beta daemon as a host (`localhost:9998`) if you want
+one window on both.
+
+## Everyday flow
+
+<Steps>
+
+1. **Land work on `main`** as usual. CI builds frogg beta test artifacts on every push.
+
+2. **Cut a beta** when you want testers on it:
+
+   ```sh
+   git switch main && git pull
+   npm run release:beta
+   ```
+
+   It opens the next minor line above stable (`1.6.0-beta.1`), or continues the open one
+   (`1.6.0-beta.4`). `npm run release:beta -- --major` opens the next major line.
+   `-- --print` shows the version without cutting it.
+
+3. **Backport a fix** that stable users need now. Land it on `main` first, then:
+
+   ```sh
+   git switch stable && git pull
+   npm run release:backport -- <commit> [<commit>...]
+   git push
+   npm run release:patch
+   ```
+
+   Backports use `git cherry-pick -x`, so the graph and the change list can tell a fix is
+   already on stable. A stable patch must stay below the open beta line.
+
+4. **Promote** the beta line when it is ready:
+
+   ```sh
+   git switch stable && git pull
+   npm run release:promote
+   ```
+
+   This copies `main` onto `stable` exactly (a merge whose tree is `main`'s), cuts `X.Y.0`,
+   tags and pushes it. It refuses when `stable` has a fix `main` lacks, because the copy would
+   drop it: cherry-pick those onto `main` first, or pass `--allow-drop` if they are obsolete.
+   The next `release:beta` opens the following minor.
+
+</Steps>
+
+`npm run streams` prints the same picture in a terminal:
+
+```text
+Streams
+  development  origin/main                  1.7.0-beta.1
+  stable       origin/stable                1.6.0
+
+3 change(s) on main not yet in stable
+  ...
+```
+
+The release scripts refuse to cut a version on the wrong branch, and `release.yml` fails a
+tag that is not on its stream's branch. `release:minor` and `release:major` are gone: a
+stable minor only arrives by promotion.
+
+### First-time setup
+
+Create `stable` from the newest stable release once:
+
+```sh
+npm run streams -- init --push
+```
+
+Until then the graph draws stable history from the stable tags on `main`, and the Release
+streams tab shows the same command.
+
+## The Release streams tab
+
+Open it from the new-tab menu (**+** → **Release streams**). It reads the checkout's
+`origin` and, in a fork, `upstream`, fetching them at most once a minute.
+
+<Screenshot src={releaseStreams} alt="Release streams tab: stream cards, the stream graph, flows waiting to move and the change list" />
+
+- **Cards** show each stream's branch, version, newest release and unreleased commits.
+- **The graph** has one lane per stream, the most stable at the top. Filled nodes are
+  releases, hollow ones are branch tips. Green connectors are promotions, dashed amber are
+  backports, purple are upstream syncs and contributions. A dotted connector with a count is
+  work still waiting to move.
+- **Waiting to move** lists each flow with its features and fixes and the command that moves
+  them: promote, forward-port (fixes made only on stable), merge upstream, contribute.
+- **Changes** lists recent commits by conventional-commit type, and for each stream whether
+  the change is released (with the first release that has it), on the branch but unreleased,
+  waiting, or absent. Filter to features, fixes or what is still waiting.
+
+## Configuration
+
+`frogg.json` declares the streams. These are the defaults; frogg's own `frogg.json` sets
+them explicitly:
+
+```json
+{
+  "streams": {
+    "development": "main",
+    "stable": "stable"
+  }
+}
+```
+
+| Key                             | Default     | Meaning                                                      |
+| ------------------------------- | ----------- | ------------------------------------------------------------ |
+| `streams.development`           | `main`      | Branch that cuts betas                                       |
+| `streams.stable`                | `stable`    | Branch that cuts stable releases                             |
+| `streams.upstream.remote`       | `upstream`  | Remote a fork pulls from                                     |
+| `streams.upstream.repository`   | from remote | `owner/name`, for pull requests upstream                     |
+| `streams.upstream.development`  | `main`      | Upstream's development branch                                |
+| `streams.upstream.stable`       | `stable`    | Upstream's stable branch                                     |
+| `streams.upstream.follow`       | `stable`    | `stable` merges upstream's releases; `development` its betas |
+
+The Release streams tab also treats a remote named `upstream` as the upstream stream when
+`frogg.json` does not declare one. The scripts need it declared.
+
+## Forks
+
+A fork runs the same two streams under its own brand. Its beta builds are `<id>-beta` with
+the same side-by-side identity rules (see
+[`channels.beta`](/docs/fork-and-rebrand/brand-manifest/#channels) to rename them). The
+upstream stream is how updates arrive and how changes go back.
+
+```json
+{
+  "streams": {
+    "upstream": { "remote": "upstream", "repository": "frogg-app/frogg", "follow": "stable" }
+  }
+}
+```
+
+<Steps>
+
+1. **Pull upstream** into your development branch:
+
+   ```sh
+   git switch main && git pull
+   npm run release:sync-upstream
+   ```
+
+   With `follow: "stable"` this merges upstream's newest stable release tag; with
+   `"development"` it merges upstream's `main` so you can test its betas as they land.
+   `--ref <ref>` merges something specific. Conflicts in version files resolve themselves
+   (upstream's file, restamped with your version). Anything else stops for you: resolve,
+   `git add`, then `npm run release:sync-upstream -- --continue`.
+
+   Upstream tags are fetched into `refs/remotes/upstream/tags/`, not `refs/tags/`, because
+   your releases reuse upstream's version numbers.
+
+2. **Test it as your beta.** `npm run release:beta` starts the upstream line you merged
+   (merging upstream `1.7.0` gives `1.7.0-beta.1`), so your versions track upstream's.
+   Install your beta beside your stable app and check it before your users see it.
+
+3. **Promote** to your stable users with `npm run release:promote`, exactly as upstream does.
+
+4. **Contribute back.** The Release streams tab and `npm run streams` list your commits
+   upstream does not have. Offer the product ones back:
+
+   ```sh
+   npm run release:contribute -- <commit> [<commit>...] [--branch contrib/name] [--open-pr]
+   ```
+
+   It cherry-picks them onto upstream's development branch in a scratch worktree, pushes the
+   branch to your fork, and prints the `gh pr create` command (or runs it with `--open-pr`).
+   It refuses commits that touch your `brands/` directory. Once upstream merges them, the next
+   sync makes them upstream's, and they stop being yours to carry.
+
+</Steps>
+
+See [Stay current with upstream](/docs/fork-and-rebrand/staying-current/) and
+[Contributing upstream](/docs/fork-and-rebrand/contributing-upstream/) for the conflicts and
+review rules around this flow.

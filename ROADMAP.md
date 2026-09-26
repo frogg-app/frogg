@@ -40,6 +40,12 @@ deployment run, not more code.
       `--update` hint omits `FROGG_NO_PULL=1`). The landing page still lists Docker uncaveated.
 - [ ] **Website deploys.** Add `CLOUDFLARE_API_TOKEN` (and `CLOUDFLARE_ACCOUNT_ID`);
       `website.yml` skips deploys without it. frogg.app is serving.
+- [ ] **Release streams go-live.** Create `stable` from v1.5.52 (`npm run streams -- init
+    --push`) and move branch protection/rules to cover it; cut the first
+      `1.6.0-beta.1` and check the frogg beta desktop, APK and daemon install beside frogg
+      and update beta-to-beta. iOS beta needs its own App Store Connect app (the beta
+      build drops `iosStoreId`). The frogg.app installer Worker serves stable only; beta
+      installs use the `install.sh` on a beta release.
 - [ ] **Custom-brand release run.** No full `release.yml` run for a non-Frogg brand yet.
 - [ ] **Docs screenshots.** `app/home.png` predates the "Import conversation" action and the
       icon sidebar; recapture and update its alt text in `first-agent.mdx`.
