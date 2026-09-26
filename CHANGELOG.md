@@ -38,6 +38,7 @@
   docs site and in [docs/release-streams.md](docs/release-streams.md)
   (`node scripts/docs/stream-diagrams.mjs` regenerates them).
 - Removed unused Paseo-era release scripts.
+
 ## 1.5.55 — 2026-09-26
 
 - Desktop update checks no longer loop until GitHub rate-limits them. Since 1.5.37 each
