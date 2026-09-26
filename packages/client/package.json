@@ -1,6 +1,6 @@
 {
   "name": "@frogg/client",
-  "version": "1.5.46",
+  "version": "1.5.47",
   "description": "Frogg client SDK package",
   "files": [
     "dist",
@@ -43,8 +43,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@frogg/protocol": "1.5.46",
-    "@frogg/relay": "1.5.46",
+    "@frogg/protocol": "1.5.47",
+    "@frogg/relay": "1.5.47",
     "zod": "^4.4.3"
   },
   "devDependencies": {
