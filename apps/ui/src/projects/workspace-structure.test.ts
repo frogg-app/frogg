@@ -38,6 +38,30 @@ function workspace(id: string, projectId: string, root: string): WorkspaceDescri
 }
 
 describe("buildWorkspaceStructureProjects", () => {
+  test("keeps chats and the chats project out of every project", () => {
+    const result = buildWorkspaceStructureProjects({
+      sessions: [
+        {
+          serverId: "host-a",
+          projects: [
+            project({ id: "prj_app", key: null, root: "/a/app" }),
+            { ...project({ id: "prj_chats", key: null, root: "/home/.frogg/chats" }), chats: true },
+          ],
+          workspaces: [
+            workspace("ws-app", "prj_app", "/a/app"),
+            // An older daemon filed this chat under the enclosing repo's project.
+            { ...workspace("ws-chat-old", "prj_app", "/a/app/chats/1"), chat: true },
+            { ...workspace("ws-chat", "prj_chats", "/home/.frogg/chats/2"), chat: true },
+          ],
+        },
+      ],
+    });
+
+    expect(result.map((entry) => [entry.projectName, entry.workspaceKeys])).toEqual([
+      ["acme/app", ["host-a:ws-app"]],
+    ]);
+  });
+
   test("groups the same project key across hosts and keeps host-local ids", () => {
     const key = "remote:github.com/acme/app";
     const result = buildWorkspaceStructureProjects({

@@ -59,7 +59,12 @@ import { SidebarAgentListSkeleton } from "./sidebar-agent-list-skeleton";
 import { SidebarCalloutSlot } from "./sidebar-callout-slot";
 import { SidebarWorkspaceList } from "./sidebar-workspace-list";
 import { SidebarChatList } from "./sidebar/chats/sidebar-chat-list";
-import { SidebarSectionTabs, useEffectiveSidebarSection } from "./sidebar/chats/section-tabs";
+import {
+  SidebarSectionBar,
+  SidebarSectionTransition,
+  useAnyHostSupportsChats,
+  useEffectiveSidebarSection,
+} from "./sidebar/chats/section-tabs";
 
 type SidebarTheme = ReturnType<typeof useUnistyles>["theme"];
 
@@ -315,6 +320,7 @@ function MobileSidebar({
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
   const section = useEffectiveSidebarSection();
   const showListSkeleton = isInitialLoad && !hasActiveHostFilter;
+  const chatsSupported = useAnyHostSupportsChats();
   const { gesture: closeGesture, gestureRef: closeGestureRef } = useCloseAgentListGesture();
 
   const handleWorkspacePress = useCallback(() => {
@@ -361,36 +367,39 @@ function MobileSidebar({
           </Pressable>
         </WindowChromeSafeArea>
 
-        {section === "chats" ? <SidebarChatList onBeforeNavigate={closeSidebar} /> : null}
-        {section === "projects" ? (
-          <SidebarWorkspaceDrafts
-            onBeforeNavigate={closeSidebar}
-            projects={groupMode === "project" ? projects : undefined}
-          />
-        ) : null}
-        {section === "projects" && showListSkeleton ? <SidebarAgentListSkeleton /> : null}
-        {section === "projects" && !showListSkeleton ? (
-          <SidebarWorkspaceList
-            collapsedProjectKeys={collapsedProjectKeys}
-            onToggleProjectCollapsed={toggleProjectCollapsed}
-            shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
-            groupMode={groupMode}
-            workspaceGroups={workspaceGroups}
-            projectIconTargets={projectIconTargets}
-            pinnedGroups={pinnedGroups}
-            projects={projects}
-            hasProjectsBeforeFilter={hasProjectsBeforeFilter}
-            hasActiveProjectFilter={hasActiveProjectFilter}
-            workspaceEntriesByKey={workspaceEntriesByKey}
-            isRefreshing={isManualRefresh && isRevalidating}
-            onRefresh={handleRefresh}
-            onWorkspacePress={handleWorkspacePress}
-            onAddProject={handleOpenProject}
-            parentGestureRef={closeGestureRef}
-            dragGestureHostActive={active}
-            listHeaderComponent={workspacesSectionHeaderElement}
-          />
-        ) : null}
+        {chatsSupported ? <SidebarSectionBar /> : null}
+        <SidebarSectionTransition section={section}>
+          {section === "chats" ? <SidebarChatList onBeforeNavigate={closeSidebar} /> : null}
+          {section === "projects" ? (
+            <SidebarWorkspaceDrafts
+              onBeforeNavigate={closeSidebar}
+              projects={groupMode === "project" ? projects : undefined}
+            />
+          ) : null}
+          {section === "projects" && showListSkeleton ? <SidebarAgentListSkeleton /> : null}
+          {section === "projects" && !showListSkeleton ? (
+            <SidebarWorkspaceList
+              collapsedProjectKeys={collapsedProjectKeys}
+              onToggleProjectCollapsed={toggleProjectCollapsed}
+              shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
+              groupMode={groupMode}
+              workspaceGroups={workspaceGroups}
+              projectIconTargets={projectIconTargets}
+              pinnedGroups={pinnedGroups}
+              projects={projects}
+              hasProjectsBeforeFilter={hasProjectsBeforeFilter}
+              hasActiveProjectFilter={hasActiveProjectFilter}
+              workspaceEntriesByKey={workspaceEntriesByKey}
+              isRefreshing={isManualRefresh && isRevalidating}
+              onRefresh={handleRefresh}
+              onWorkspacePress={handleWorkspacePress}
+              onAddProject={handleOpenProject}
+              parentGestureRef={closeGestureRef}
+              dragGestureHostActive={active}
+              listHeaderComponent={workspacesSectionHeaderElement}
+            />
+          ) : null}
+        </SidebarSectionTransition>
 
         <SidebarFooter
           handleOpenProject={handleOpenProject}
@@ -431,6 +440,7 @@ function DesktopSidebar({
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
   const section = useEffectiveSidebarSection();
   const showListSkeleton = isInitialLoad && !hasActiveHostFilter;
+  const chatsSupported = useAnyHostSupportsChats();
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const setSidebarWidth = usePanelStore((state) => state.setSidebarWidth);
   const { width: viewportWidth } = useWindowDimensions();
@@ -535,30 +545,33 @@ function DesktopSidebar({
           </View>
         </View>
 
-        {section === "chats" ? <SidebarChatList /> : null}
-        {section === "projects" ? (
-          <SidebarWorkspaceDrafts projects={groupMode === "project" ? projects : undefined} />
-        ) : null}
-        {section === "projects" && showListSkeleton ? <SidebarAgentListSkeleton /> : null}
-        {section === "projects" && !showListSkeleton ? (
-          <SidebarWorkspaceList
-            collapsedProjectKeys={collapsedProjectKeys}
-            onToggleProjectCollapsed={toggleProjectCollapsed}
-            shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
-            groupMode={groupMode}
-            workspaceGroups={workspaceGroups}
-            projectIconTargets={projectIconTargets}
-            pinnedGroups={pinnedGroups}
-            projects={projects}
-            hasProjectsBeforeFilter={hasProjectsBeforeFilter}
-            hasActiveProjectFilter={hasActiveProjectFilter}
-            workspaceEntriesByKey={workspaceEntriesByKey}
-            isRefreshing={isManualRefresh && isRevalidating}
-            onRefresh={handleRefresh}
-            onAddProject={handleOpenProject}
-            listHeaderComponent={workspacesSectionHeaderElement}
-          />
-        ) : null}
+        {chatsSupported ? <SidebarSectionBar /> : null}
+        <SidebarSectionTransition section={section}>
+          {section === "chats" ? <SidebarChatList /> : null}
+          {section === "projects" ? (
+            <SidebarWorkspaceDrafts projects={groupMode === "project" ? projects : undefined} />
+          ) : null}
+          {section === "projects" && showListSkeleton ? <SidebarAgentListSkeleton /> : null}
+          {section === "projects" && !showListSkeleton ? (
+            <SidebarWorkspaceList
+              collapsedProjectKeys={collapsedProjectKeys}
+              onToggleProjectCollapsed={toggleProjectCollapsed}
+              shortcutIndexByWorkspaceKey={shortcutIndexByWorkspaceKey}
+              groupMode={groupMode}
+              workspaceGroups={workspaceGroups}
+              projectIconTargets={projectIconTargets}
+              pinnedGroups={pinnedGroups}
+              projects={projects}
+              hasProjectsBeforeFilter={hasProjectsBeforeFilter}
+              hasActiveProjectFilter={hasActiveProjectFilter}
+              workspaceEntriesByKey={workspaceEntriesByKey}
+              isRefreshing={isManualRefresh && isRevalidating}
+              onRefresh={handleRefresh}
+              onAddProject={handleOpenProject}
+              listHeaderComponent={workspacesSectionHeaderElement}
+            />
+          ) : null}
+        </SidebarSectionTransition>
 
         <SidebarCalloutSlot />
 
@@ -581,9 +594,12 @@ function DesktopSidebar({
 }
 
 function WorkspacesSectionHeader() {
+  const { t } = useTranslation();
+  // With chats available, SidebarSectionBar above the list owns the title and the menu.
+  if (useAnyHostSupportsChats()) return null;
   return (
     <View style={styles.workspacesSectionHeader}>
-      <SidebarSectionTabs />
+      <Text style={styles.workspacesSectionTitle}>{t("sidebar.sections.projects")}</Text>
       <View style={styles.workspacesSectionActions}>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
@@ -637,6 +653,11 @@ const styles = StyleSheet.create((theme) => ({
     paddingRight: 4,
     paddingTop: theme.spacing[1],
     paddingBottom: theme.spacing[1],
+  },
+  workspacesSectionTitle: {
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.normal,
   },
   workspacesSectionActions: {
     flexDirection: "row",

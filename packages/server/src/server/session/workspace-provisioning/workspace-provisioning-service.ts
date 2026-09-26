@@ -63,6 +63,11 @@ export interface WorkspaceProvisioningService {
     input: CreateWorktreeWorkspaceInput,
   ): Promise<PersistedWorkspaceRecord>;
   findOrCreateProjectForDirectory(cwd: string): Promise<PersistedProjectRecord>;
+  /**
+   * The project that holds every chat. Always rooted at the chats directory itself and never
+   * git-derived, so a FROGG_HOME inside a repository does not file chats under that repo.
+   */
+  findOrCreateChatsProject(chatsRoot: string): Promise<PersistedProjectRecord>;
   ensureWorkspaceRecordUnarchived(
     workspace: PersistedWorkspaceRecord,
   ): Promise<PersistedWorkspaceRecord>;
@@ -181,6 +186,23 @@ export function createWorkspaceProvisioningService(deps: {
         serverId,
       }),
       timestamp,
+    });
+  }
+
+  async function findOrCreateChatsProject(chatsRoot: string): Promise<PersistedProjectRecord> {
+    const rootPath = resolve(chatsRoot);
+    return projectRegistry.getOrCreateActiveByRoot({
+      rootPath,
+      kind: "non_git",
+      displayName: "Chats",
+      projectKey: deriveProjectKey({
+        rootPath,
+        remoteUrl: null,
+        worktreeRoot: null,
+        mainRepoRoot: null,
+        serverId,
+      }),
+      timestamp: new Date().toISOString(),
     });
   }
 
@@ -476,6 +498,7 @@ export function createWorkspaceProvisioningService(deps: {
     createWorkspaceForDirectory,
     createWorkspaceForWorktree,
     findOrCreateProjectForDirectory,
+    findOrCreateChatsProject,
     ensureWorkspaceRecordUnarchived,
   };
 }

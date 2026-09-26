@@ -16,14 +16,12 @@ export async function createChatWorkspace(input: {
   expectsInitialAgent: boolean;
   workspaceProvisioning: Pick<
     WorkspaceProvisioningService,
-    "findOrCreateProjectForDirectory" | "createWorkspaceForDirectory"
+    "findOrCreateChatsProject" | "createWorkspaceForDirectory"
   >;
 }): Promise<PersistedWorkspaceRecord> {
   const directory = join(input.chatsRoot, randomUUID());
   await mkdir(directory, { recursive: true, mode: 0o700 });
-  const project = await input.workspaceProvisioning.findOrCreateProjectForDirectory(
-    input.chatsRoot,
-  );
+  const project = await input.workspaceProvisioning.findOrCreateChatsProject(input.chatsRoot);
   return input.workspaceProvisioning.createWorkspaceForDirectory(
     directory,
     input.title,

@@ -14,10 +14,11 @@ import {
   useActiveWorkspaceSelection,
 } from "@/stores/navigation-active-workspace-store";
 import type { Theme } from "@/styles/theme";
+import { getStatusDotColor } from "@/utils/status-dot-color";
+import { STATUS_INDICATOR_FILLED_DOT_SIZE } from "@/utils/status-indicator-geometry";
 import { buildNewChatRoute } from "@/utils/host-routes";
 import { toErrorMessage } from "@/utils/error-messages";
 import { archiveWorkspaceOptimistically } from "@/workspace/workspace-archive";
-import { SidebarSectionTabs } from "./section-tabs";
 import { groupSidebarChats, toSidebarChatItem, type SidebarChatItem } from "./chat-list-model";
 
 type HoverState = PressableStateCallbackType & { hovered?: boolean };
@@ -148,9 +149,6 @@ export function SidebarChatList({ onBeforeNavigate }: { onBeforeNavigate?: () =>
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <SidebarSectionTabs />
-      </View>
       <Pressable
         onPress={handleNewChat}
         disabled={!newChatServerId}
@@ -158,7 +156,7 @@ export function SidebarChatList({ onBeforeNavigate }: { onBeforeNavigate?: () =>
         accessibilityRole="button"
         style={newChatButtonStyle}
       >
-        <ThemedNewChatIcon size={14} uniProps={foregroundColorMapping} />
+        <ThemedNewChatIcon size={15} uniProps={foregroundColorMapping} />
         <Text style={styles.newChatLabel}>{t("sidebar.chats.newChat")}</Text>
       </Pressable>
       <View style={styles.search}>
@@ -184,6 +182,7 @@ function statusDotStyle(status: SidebarChatItem["status"]) {
     case "failed":
       return styles.dotFailed;
     case "needs_input":
+      return styles.dotNeedsInput;
     case "attention":
       return styles.dotAttention;
     default:
@@ -257,24 +256,18 @@ const styles = StyleSheet.create((theme) => ({
     minHeight: 0,
     paddingHorizontal: theme.spacing[2],
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingLeft: theme.spacing[2],
-    paddingTop: theme.spacing[1],
-    paddingBottom: theme.spacing[2],
-  },
   newChat: {
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing[2],
+    gap: 10,
+    minHeight: 34,
     paddingHorizontal: theme.spacing[2],
-    paddingVertical: theme.spacing[2],
     borderRadius: theme.borderRadius.md,
   },
   newChatLabel: {
     color: theme.colors.foreground,
-    fontSize: theme.fontSize.sm,
+    fontSize: theme.fontSize.base,
+    lineHeight: 20,
   },
   search: {
     marginVertical: theme.spacing[1],
@@ -288,16 +281,17 @@ const styles = StyleSheet.create((theme) => ({
   groupLabel: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
     paddingHorizontal: theme.spacing[2],
-    paddingTop: theme.spacing[3],
+    paddingTop: theme.spacing[4],
     paddingBottom: theme.spacing[1],
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing[2],
+    gap: 10,
+    minHeight: 34,
     paddingHorizontal: theme.spacing[2],
-    paddingVertical: 6,
     borderRadius: theme.borderRadius.md,
   },
   rowHovered: {
@@ -307,30 +301,38 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surface2,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: STATUS_INDICATOR_FILLED_DOT_SIZE,
+    height: STATUS_INDICATOR_FILLED_DOT_SIZE,
+    borderRadius: theme.borderRadius.full,
   },
   dotRunning: {
-    backgroundColor: theme.colors.statusDotRunning,
+    backgroundColor: getStatusDotColor({ theme, bucket: "running" }) ?? undefined,
   },
   dotFailed: {
-    backgroundColor: theme.colors.statusDotDanger,
+    backgroundColor: getStatusDotColor({ theme, bucket: "failed" }) ?? undefined,
+  },
+  dotNeedsInput: {
+    backgroundColor: getStatusDotColor({ theme, bucket: "needs_input" }) ?? undefined,
   },
   dotAttention: {
-    backgroundColor: theme.colors.statusDotWarning,
+    backgroundColor: getStatusDotColor({ theme, bucket: "attention" }) ?? undefined,
   },
+  // Matches the project rows' idle dot: present, but quieter than any state that means something.
   dotIdle: {
-    backgroundColor: theme.colors.surface4,
+    backgroundColor: theme.colors.foregroundExtraMuted,
+    opacity: 0.3,
   },
+  // Same type as the project rows so the two sections read as one list.
   rowLabel: {
     flex: 1,
     minWidth: 0,
-    color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.sm,
+    color: theme.colors.foreground,
+    fontSize: theme.fontSize.base,
+    lineHeight: 20,
+    opacity: 0.76,
   },
   rowLabelActive: {
-    color: theme.colors.foreground,
+    opacity: 1,
   },
   empty: {
     color: theme.colors.foregroundMuted,

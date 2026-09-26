@@ -83,6 +83,8 @@ export function buildWorkspaceStructureProjects(input: {
 
   for (const session of input.sessions) {
     for (const workspace of session.workspaces) {
+      // Chats never group under a project, even one an older daemon filed them under.
+      if (workspace.chat) continue;
       const viewKey = viewKeyByServerProjectId.get(session.serverId)?.get(workspace.projectId);
       if (!viewKey) continue;
       byProject.get(viewKey)?.workspaces.push({
