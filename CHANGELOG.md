@@ -10,7 +10,11 @@
 - **Host metrics and owned storage.** New `daemon.host.get_metrics` (CPU, memory, disk holding
   `FROGG_HOME`, daemon RSS/CPU), `daemon.storage.list` (cached sizes of each Frogg-owned area)
   and `daemon.storage.clean` (rotated logs, spoken-alert cache, stale temp) RPCs, gated on
-  `features.hostResources`. The client Host settings view is not built yet.
+  `features.hostResources`.
+- **Host settings → Resources.** Live CPU, memory and disk usage bars plus daemon process
+  load (polled every 5 seconds while settings is open), the size of each Frogg-owned storage
+  area with **Refresh**, and a confirmed **Clean** for logs, speech cache and temp (owners).
+  Hidden for daemons without `features.hostResources`.
 
 ## 1.6.0-beta.1 — 2026-09-26
 

@@ -22,8 +22,8 @@ deployment run, not more code.
 
 ## Features
 
-- [ ] **Host settings: metrics and storage.** Daemon RPCs are in (`features.hostResources`);
-      the client view is not. Orphaned-worktree cleanup is not offered: size only until the
+- [ ] **Host settings: metrics and storage.** Daemon RPCs and the Host → Resources view are
+      in; native (desktop/mobile) rendering and an owner-run clean are not yet validated. Orphaned-worktree cleanup is not offered: size only until the
       daemon can prove a worktree has no workspace or agent.
 - [ ] **Schedules rewrite.** The old system was removed in 1.5.41.
 - [ ] **Provider agent folders.** Verify Codex/Copilot/OpenCode paths against real

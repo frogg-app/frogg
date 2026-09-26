@@ -76,11 +76,25 @@ On start, the daemon removes debris earlier processes left behind, in the backgr
 It matches exact names only, skips symlinks, entries owned by another user and anything a
 live process holds, and logs what it removed. A sweep failure never stops the daemon.
 
-Clients with `features.hostResources` can show host metrics (CPU, memory, disk holding
-`FROGG_HOME`, daemon process load) and the size of each storage area Frogg owns. Owners
-can clean three areas on demand: rotated logs (never the live `daemon.log`), the spoken
-alert cache (`tts-cache`), and stale temp debris. Agents, projects, worktrees, uploads,
-models and installed daemon versions are shown for size only.
+### Resources in the app
+
+Host settings → **Host** has a **Resources** section when the daemon supports it
+(`features.hostResources`; older daemons hide it):
+
+- **Live load.** Host CPU (with core count and load average where the OS reports one),
+  memory, and the disk holding `FROGG_HOME`, as usage bars that refresh every 5 seconds
+  while settings is open. The daemon process row shows its PID, RSS and heap, CPU as a
+  share of one core (it can exceed 100%), and uptime.
+- **Owned storage.** The size and entry count of each area Frogg owns: logs, agent state,
+  projects, worktrees, uploads, project import staging, speech cache, models, daemon
+  versions and temp. Sizes are cached on the daemon for 5 minutes; **Refresh** remeasures.
+  A size prefixed with `≥` is a lower bound, because the walk stopped at its entry cap.
+- **Clean.** Owners can clean three areas after a confirmation: rotated logs (never the live
+  `daemon.log`), the spoken alert cache (`tts-cache`), and stale temp debris. The result
+  shows what was freed, then the list remeasures. Other areas are shown for size only.
+
+Viewers see metrics only; storage sizes need the operator role and cleaning needs owner. See
+[device roles](/docs/getting-started/connect-and-pair/#device-roles).
 
 ## Logs
 
