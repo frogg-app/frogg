@@ -2,6 +2,108 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
+  releaseStreams: {
+    label: "Flux de versions",
+    subtitle: "Bêtas, versions stables et upstream, et les changements arrivés dans chacun",
+    refresh: "Actualiser les flux de versions",
+    toolbarSummary_one: "{{development}} → {{stable}} : {{count}} changement en attente",
+    toolbarSummary_other: "{{development}} → {{stable}} : {{count}} changements en attente",
+    unsupportedTitle: "Mettez à jour le daemon",
+    unsupportedDescription: "Le daemon de cet hôte est trop ancien pour décrire les flux de versions.",
+    errorTitle: "Impossible de lire les flux de versions",
+    fetchFailed: "Impossible de récupérer depuis les dépôts distants ({{message}}). Affichage de ce que cette copie contient déjà.",
+    stream: {
+      development: "Développement",
+      stable: "Stable",
+      upstreamDevelopment: "Bêta upstream",
+      upstreamStable: "Stable upstream",
+    },
+    channel: {
+      stable: "stable",
+      beta: "bêta",
+    },
+    card: {
+      missing: "Branche pas encore créée",
+      noRelease: "Aucune version",
+      latest: "Dernière {{version}}, {{time}}",
+      unreleased_one: "{{count}} commit non publié",
+      unreleased_other: "{{count}} commits non publiés",
+    },
+    graph: {
+      unreleased: "+{{count}} non publiés",
+      upToDate: "publiée",
+      missing: "non créée",
+      promote: "promu",
+      backport_one: "{{count}} backport",
+      backport_other: "{{count}} backports",
+      sync: "synchronisé",
+      contribute: "contribué",
+      waiting: "{{count}} en attente",
+    },
+    legend: {
+      release: "Version",
+      tip: "Pointe de branche",
+      promote: "Promotion",
+      backport: "Backport",
+      sync: "Synchro upstream",
+      waiting: "En attente",
+    },
+    setup: {
+      title: "Configurer les flux de versions",
+      description: "Les bêtas partent de {{development}} et les versions stables de {{stable}}, qui n’existe pas encore. Créez-la depuis la dernière version stable :",
+    },
+    flows: {
+      title: "En attente",
+      none: "Chaque changement a atteint tous les flux auxquels il est destiné.",
+      pending_one: "{{count}} changement",
+      pending_other: "{{count}} changements",
+      counts: "{{features}} fonctionnalités · {{fixes}} correctifs · {{other}} autres",
+      runOn: "À lancer sur {{branch}} :",
+      copy: "Copier la commande",
+      copied: "Copié",
+      promote: {
+        title: "{{from}} → {{to}} : promouvoir",
+        description: "Publie la ligne bêta ouverte comme prochaine version stable.",
+      },
+      forwardPort: {
+        title: "{{from}} → {{to}} : reporter",
+        description: "Correctifs faits uniquement sur stable. Reportez-les sur développement par cherry-pick, sinon la promotion les perdra.",
+      },
+      sync: {
+        title: "{{from}} → {{to}} : fusionner l’upstream",
+        description: "Changements upstream que votre branche de développement n’a pas encore fusionnés. Votre build bêta les teste avant vos utilisateurs stables.",
+      },
+      contribute: {
+        title: "{{from}} → {{to}} : contribuer",
+        description: "Vos changements que l’upstream n’a pas. Proposez-lui les changements produit pour ne plus les porter vous-même.",
+      },
+    },
+    changes: {
+      title: "Changements",
+      filter: {
+        all: "Tous",
+        features: "Fonctionnalités",
+        fixes: "Correctifs",
+        waiting: "En attente",
+      },
+      search: "Filtrer par texte, portée ou commit",
+      empty: "Aucun changement ne correspond.",
+      truncated: "Affichage des {{count}} changements les plus récents.",
+      origin: "Fait sur {{stream}}",
+    },
+    presence: {
+      released: "publié",
+      landed: "non publié",
+      pending: "en attente",
+      absent: "—",
+      via: {
+        promotion: "promu",
+        backport: "backport",
+        sync: "synchronisé",
+        contribution: "contribué",
+      },
+    },
+  },
   ciMonitor: {
     label: "CI",
     subtitle: "Exécutions GitHub Actions et Jenkins pour ce projet",

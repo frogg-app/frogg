@@ -2,6 +2,108 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const es: TranslationResources = {
+  releaseStreams: {
+    label: "Flujos de versiones",
+    subtitle: "Betas, versiones estables y upstream, y qué cambios ha alcanzado cada uno",
+    refresh: "Actualizar flujos de versiones",
+    toolbarSummary_one: "{{development}} → {{stable}}: {{count}} cambio en espera",
+    toolbarSummary_other: "{{development}} → {{stable}}: {{count}} cambios en espera",
+    unsupportedTitle: "Actualiza el daemon",
+    unsupportedDescription: "El daemon de este host es demasiado antiguo para informar de los flujos de versiones.",
+    errorTitle: "No se pudieron leer los flujos de versiones",
+    fetchFailed: "No se pudo obtener de los remotos ({{message}}). Se muestra lo que ya tiene este checkout.",
+    stream: {
+      development: "Desarrollo",
+      stable: "Estable",
+      upstreamDevelopment: "Beta upstream",
+      upstreamStable: "Estable upstream",
+    },
+    channel: {
+      stable: "estable",
+      beta: "beta",
+    },
+    card: {
+      missing: "Rama aún sin crear",
+      noRelease: "Aún sin versión",
+      latest: "Última {{version}}, {{time}}",
+      unreleased_one: "{{count}} commit sin publicar",
+      unreleased_other: "{{count}} commits sin publicar",
+    },
+    graph: {
+      unreleased: "+{{count}} sin publicar",
+      upToDate: "publicada",
+      missing: "sin crear",
+      promote: "promovido",
+      backport_one: "{{count}} backport",
+      backport_other: "{{count}} backports",
+      sync: "sincronizado",
+      contribute: "aportado",
+      waiting: "{{count}} en espera",
+    },
+    legend: {
+      release: "Versión",
+      tip: "Punta de la rama",
+      promote: "Promoción",
+      backport: "Backport",
+      sync: "Sincronización upstream",
+      waiting: "En espera",
+    },
+    setup: {
+      title: "Configurar flujos de versiones",
+      description: "Las betas salen de {{development}} y las versiones estables de {{stable}}, que aún no existe. Créala desde la versión estable más reciente:",
+    },
+    flows: {
+      title: "En espera",
+      none: "Cada cambio ha llegado a todos los flujos a los que se dirige.",
+      pending_one: "{{count}} cambio",
+      pending_other: "{{count}} cambios",
+      counts: "{{features}} funciones · {{fixes}} correcciones · {{other}} otros",
+      runOn: "Ejecutar en {{branch}}:",
+      copy: "Copiar comando",
+      copied: "Copiado",
+      promote: {
+        title: "{{from}} → {{to}}: promover",
+        description: "Publica la línea beta abierta como la próxima versión estable.",
+      },
+      forwardPort: {
+        title: "{{from}} → {{to}}: llevar adelante",
+        description: "Correcciones hechas solo en estable. Aplícalas en desarrollo con cherry-pick o la promoción las descartará.",
+      },
+      sync: {
+        title: "{{from}} → {{to}}: fusionar upstream",
+        description: "Cambios de upstream que tu rama de desarrollo aún no ha fusionado. Tu build beta los prueba antes de que lleguen a tus usuarios estables.",
+      },
+      contribute: {
+        title: "{{from}} → {{to}}: aportar",
+        description: "Cambios tuyos que upstream no tiene. Devuelve los cambios de producto para no tener que mantenerlos tú.",
+      },
+    },
+    changes: {
+      title: "Cambios",
+      filter: {
+        all: "Todos",
+        features: "Funciones",
+        fixes: "Correcciones",
+        waiting: "En espera",
+      },
+      search: "Filtrar por texto, ámbito o commit",
+      empty: "Ningún cambio coincide.",
+      truncated: "Se muestran los {{count}} cambios más recientes.",
+      origin: "Hecho en {{stream}}",
+    },
+    presence: {
+      released: "publicado",
+      landed: "sin publicar",
+      pending: "en espera",
+      absent: "—",
+      via: {
+        promotion: "promovido",
+        backport: "backport",
+        sync: "sincronizado",
+        contribution: "aportado",
+      },
+    },
+  },
   ciMonitor: {
     label: "CI",
     subtitle: "Ejecuciones de GitHub Actions y Jenkins para este proyecto",

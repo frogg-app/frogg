@@ -2,6 +2,108 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
+  releaseStreams: {
+    label: "发布流",
+    subtitle: "Beta 版、稳定版和上游，以及各自已包含的变更",
+    refresh: "刷新发布流",
+    toolbarSummary_one: "{{development}} → {{stable}}：{{count}} 项变更待处理",
+    toolbarSummary_other: "{{development}} → {{stable}}：{{count}} 项变更待处理",
+    unsupportedTitle: "请更新守护进程",
+    unsupportedDescription: "此主机的守护进程版本过旧，无法报告发布流。",
+    errorTitle: "无法读取发布流",
+    fetchFailed: "无法从远程仓库获取（{{message}}）。显示此检出中已有的内容。",
+    stream: {
+      development: "开发",
+      stable: "稳定",
+      upstreamDevelopment: "上游 Beta",
+      upstreamStable: "上游稳定",
+    },
+    channel: {
+      stable: "稳定",
+      beta: "Beta",
+    },
+    card: {
+      missing: "分支尚未创建",
+      noRelease: "尚无发布",
+      latest: "最新 {{version}}，{{time}}",
+      unreleased_one: "{{count}} 个未发布提交",
+      unreleased_other: "{{count}} 个未发布提交",
+    },
+    graph: {
+      unreleased: "+{{count}} 未发布",
+      upToDate: "已发布",
+      missing: "未创建",
+      promote: "已晋升",
+      backport_one: "{{count}} 个回移",
+      backport_other: "{{count}} 个回移",
+      sync: "已同步",
+      contribute: "已贡献",
+      waiting: "{{count}} 项待处理",
+    },
+    legend: {
+      release: "发布",
+      tip: "分支末端",
+      promote: "晋升",
+      backport: "回移",
+      sync: "上游同步",
+      waiting: "等待流转",
+    },
+    setup: {
+      title: "设置发布流",
+      description: "Beta 版从 {{development}} 发布，稳定版从 {{stable}} 发布，但该分支尚不存在。请从最新的稳定版创建：",
+    },
+    flows: {
+      title: "等待流转",
+      none: "所有变更都已到达其目标发布流。",
+      pending_one: "{{count}} 项变更",
+      pending_other: "{{count}} 项变更",
+      counts: "{{features}} 项功能 · {{fixes}} 项修复 · {{other}} 项其他",
+      runOn: "在 {{branch}} 上运行：",
+      copy: "复制命令",
+      copied: "已复制",
+      promote: {
+        title: "{{from}} → {{to}}：晋升",
+        description: "将当前 Beta 线作为下一个稳定版发布。",
+      },
+      forwardPort: {
+        title: "{{from}} → {{to}}：前移",
+        description: "仅在稳定分支上的修复。请 cherry-pick 到开发分支，否则晋升时会丢失。",
+      },
+      sync: {
+        title: "{{from}} → {{to}}：合并上游",
+        description: "开发分支尚未合并的上游变更。在到达稳定版用户之前，由你的 Beta 构建先行测试。",
+      },
+      contribute: {
+        title: "{{from}} → {{to}}：贡献",
+        description: "上游没有的你的变更。把产品相关的变更贡献回去，就不必自己长期维护。",
+      },
+    },
+    changes: {
+      title: "变更",
+      filter: {
+        all: "全部",
+        features: "功能",
+        fixes: "修复",
+        waiting: "待处理",
+      },
+      search: "按文本、范围或提交筛选",
+      empty: "没有匹配的变更。",
+      truncated: "显示最新的 {{count}} 项变更。",
+      origin: "在 {{stream}} 上提交",
+    },
+    presence: {
+      released: "已发布",
+      landed: "未发布",
+      pending: "待处理",
+      absent: "—",
+      via: {
+        promotion: "已晋升",
+        backport: "回移",
+        sync: "已同步",
+        contribution: "已贡献",
+      },
+    },
+  },
   ciMonitor: {
     label: "CI",
     subtitle: "此项目的 GitHub Actions 和 Jenkins 运行",

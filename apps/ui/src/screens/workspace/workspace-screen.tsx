@@ -1,3 +1,4 @@
+import { i18n } from "@/i18n/i18next";
 import { describeHostConnectionError } from "@/runtime/host-connection-error";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { JsonValue } from "@frogg/protocol/agent-types";
@@ -356,6 +357,9 @@ function getFallbackTabOptionLabel(
   if (tab.target.kind === "ci_runs") {
     return "CI";
   }
+  if (tab.target.kind === "release_streams") {
+    return i18n.t("releaseStreams.label");
+  }
   if (tab.target.kind === "commit_diff") {
     return tab.target.sha.slice(0, 7);
   }
@@ -411,6 +415,9 @@ function getFallbackTabOptionDescription(
   }
   if (tab.target.kind === "ci_runs") {
     return "CI";
+  }
+  if (tab.target.kind === "release_streams") {
+    return i18n.t("releaseStreams.label");
   }
   return tab.target.path;
 }

@@ -2,6 +2,108 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
+  releaseStreams: {
+    label: "Потоки выпусков",
+    subtitle: "Бета-версии, стабильные выпуски и upstream, и какие изменения дошли до каждого",
+    refresh: "Обновить потоки выпусков",
+    toolbarSummary_one: "{{development}} → {{stable}}: ожидает изменений: {{count}}",
+    toolbarSummary_other: "{{development}} → {{stable}}: ожидает изменений: {{count}}",
+    unsupportedTitle: "Обновите демон",
+    unsupportedDescription: "Демон на этом хосте слишком старый и не сообщает о потоках выпусков.",
+    errorTitle: "Не удалось прочитать потоки выпусков",
+    fetchFailed: "Не удалось получить данные с удалённых репозиториев ({{message}}). Показано то, что уже есть в этой копии.",
+    stream: {
+      development: "Разработка",
+      stable: "Стабильный",
+      upstreamDevelopment: "Бета upstream",
+      upstreamStable: "Стабильный upstream",
+    },
+    channel: {
+      stable: "стабильный",
+      beta: "бета",
+    },
+    card: {
+      missing: "Ветка ещё не создана",
+      noRelease: "Выпусков пока нет",
+      latest: "Последний {{version}}, {{time}}",
+      unreleased_one: "Невыпущенных коммитов: {{count}}",
+      unreleased_other: "Невыпущенных коммитов: {{count}}",
+    },
+    graph: {
+      unreleased: "+{{count}} не выпущено",
+      upToDate: "выпущено",
+      missing: "не создана",
+      promote: "продвинуто",
+      backport_one: "бэкпортов: {{count}}",
+      backport_other: "бэкпортов: {{count}}",
+      sync: "синхронизировано",
+      contribute: "передано",
+      waiting: "ожидает: {{count}}",
+    },
+    legend: {
+      release: "Выпуск",
+      tip: "Вершина ветки",
+      promote: "Продвижение",
+      backport: "Бэкпорт",
+      sync: "Синхронизация с upstream",
+      waiting: "Ожидает переноса",
+    },
+    setup: {
+      title: "Настройте потоки выпусков",
+      description: "Бета-версии выходят из {{development}}, стабильные выпуски — из {{stable}}, которой ещё нет. Создайте её из последнего стабильного выпуска:",
+    },
+    flows: {
+      title: "Ожидает переноса",
+      none: "Все изменения дошли до всех потоков, куда они направлялись.",
+      pending_one: "Изменений: {{count}}",
+      pending_other: "Изменений: {{count}}",
+      counts: "функций: {{features}} · исправлений: {{fixes}} · прочего: {{other}}",
+      runOn: "Запустите в {{branch}}:",
+      copy: "Скопировать команду",
+      copied: "Скопировано",
+      promote: {
+        title: "{{from}} → {{to}}: продвинуть",
+        description: "Выпускает открытую бета-линию как следующий стабильный выпуск.",
+      },
+      forwardPort: {
+        title: "{{from}} → {{to}}: перенести вперёд",
+        description: "Исправления, сделанные только в стабильной ветке. Перенесите их в разработку через cherry-pick, иначе продвижение их потеряет.",
+      },
+      sync: {
+        title: "{{from}} → {{to}}: слить upstream",
+        description: "Изменения upstream, которые ещё не слиты в вашу ветку разработки. Бета-сборка проверит их до того, как они дойдут до стабильных пользователей.",
+      },
+      contribute: {
+        title: "{{from}} → {{to}}: предложить upstream",
+        description: "Ваши изменения, которых нет в upstream. Верните продуктовые изменения, чтобы не поддерживать их самим.",
+      },
+    },
+    changes: {
+      title: "Изменения",
+      filter: {
+        all: "Все",
+        features: "Функции",
+        fixes: "Исправления",
+        waiting: "Ожидают",
+      },
+      search: "Фильтр по тексту, области или коммиту",
+      empty: "Нет подходящих изменений.",
+      truncated: "Показаны последние изменения: {{count}}.",
+      origin: "Сделано в {{stream}}",
+    },
+    presence: {
+      released: "выпущено",
+      landed: "не выпущено",
+      pending: "ожидает",
+      absent: "—",
+      via: {
+        promotion: "продвинуто",
+        backport: "бэкпорт",
+        sync: "синхронизировано",
+        contribution: "передано",
+      },
+    },
+  },
   ciMonitor: {
     label: "CI",
     subtitle: "Запуски GitHub Actions и Jenkins для этого проекта",
