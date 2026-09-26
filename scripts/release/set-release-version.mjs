@@ -2,6 +2,12 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  assertBranchForMode,
+  assertStableBelowBeta,
+  BETA_BRANCH,
+  STABLE_BRANCH,
+} from "./release-branches.mjs";
 import { computeNextReleaseVersion } from "./release-version-utils.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -61,6 +67,32 @@ const nextVersion = computeNextReleaseVersion(currentVersion, args.mode);
 if (args.print) {
   process.stdout.write(`${nextVersion}\n`);
   process.exit(0);
+}
+
+function readRemoteBetaVersion() {
+  try {
+    execFileSync("git", ["fetch", "--quiet", "origin", BETA_BRANCH], {
+      cwd: rootDir,
+      stdio: "ignore",
+    });
+    const pkg = execFileSync("git", ["show", `origin/${BETA_BRANCH}:package.json`], {
+      cwd: rootDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return JSON.parse(pkg).version ?? null;
+  } catch {
+    return null; // no beta branch yet
+  }
+}
+
+const branch = execFileSync("git", ["branch", "--show-current"], {
+  cwd: rootDir,
+  encoding: "utf8",
+}).trim();
+assertBranchForMode(args.mode, branch);
+if (branch === STABLE_BRANCH) {
+  assertStableBelowBeta(nextVersion, readRemoteBetaVersion());
 }
 
 execFileSync(

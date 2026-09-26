@@ -1,3 +1,5 @@
+import { isNewerVersion } from "@frogg/protocol/release-version";
+
 import {
   rolloutManifestSchema,
   shouldAdmitAppUpdate,
@@ -189,7 +191,11 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
     checkedInfo: RuntimeUpdateInfo,
   ): AppUpdateCheckResult | null {
     const info = cachedUpdateInfo;
-    if (!info || info.version === currentVersion || info.version !== checkedInfo.version) {
+    if (
+      !info ||
+      !isNewerVersion(info.version, currentVersion) ||
+      info.version !== checkedInfo.version
+    ) {
       return null;
     }
 
@@ -315,7 +321,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
 
         const info = result.updateInfo;
         const latestVersion = info.version;
-        const hasUpdate = latestVersion !== currentVersion;
+        const hasUpdate = isNewerVersion(latestVersion, currentVersion);
 
         if (hasUpdate) {
           cachedUpdateInfo = info;

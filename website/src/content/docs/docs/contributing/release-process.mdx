@@ -60,6 +60,32 @@ notes only say that no changelog entry exists.
 `release:push` refuses to continue when the local tag is not on `HEAD`, or when the remote tag
 points at a different commit. It never moves an existing tag.
 
+## Branches
+
+| Branch | Cuts                             | Commands                                                                                      |
+| ------ | -------------------------------- | --------------------------------------------------------------------------------------------- |
+| `main` | stable `X.Y.Z`                   | `release:patch` (every landed change), `release:promote` (ships the beta line as `X.Y.0`)    |
+| `beta` | `X.Y.0-beta.N` of the next minor | `release:beta:minor` (start a line), `release:beta:next` (every landed change)                |
+
+- Feature work targets `beta` once a beta line is open; fixes target `main`.
+- After every stable cut, run `npm run release:sync-beta` on `beta` to bring the fix over. It
+  keeps beta's version: version-file conflicts are restamped, anything else stops for you to
+  resolve, then `npm run release:sync-beta -- --continue`.
+- The `version:all:*` scripts refuse to run on the wrong branch. `release:minor` and
+  `release:major` also refuse while `origin/beta` is open on that minor or lower; ship it with
+  `release:promote`.
+- `release:promote` (on `main`): merges `origin/beta`, runs `release:check`, cuts `X.Y.0`, pushes
+  the tag, fast-forwards `beta` to `main` (never forced). Start the next line with
+  `release:beta:minor` on `beta`.
+- `release.yml` fails a stable tag that is not on `main` and a beta tag that is not on `beta`, and
+  never moves GitHub Latest to an older version. Betas publish as prereleases, never Latest.
+- Betas are for internal testers only: set Settings → Updates → channel to Beta (desktop,
+  Android) and `frogg daemon self-update --channel beta` (daemon, or the host's channel in
+  Settings).
+
+The rules live in `scripts/release/release-branches.mjs`; the git side is
+`scripts/release/branch-flow.mjs`.
+
 ## Version modes
 
 `scripts/release/set-release-version.mjs` computes the next version. Preview it without changing
@@ -80,9 +106,9 @@ node scripts/release/set-release-version.mjs --mode beta-patch --print
 | `beta-next`  | `version:all:beta:next`         | error           | `0.6.20-beta.2`      |
 | `promote`    | `version:all:promote`           | error           | `0.6.20`             |
 
-Only `-beta.N` prereleases are accepted. There are no `release:beta` or `release:promote`
-scripts. For a beta, run `npm run release:check`, the `version:all:beta:*` script, then
-`npm run release:push`.
+Only `-beta.N` prereleases are accepted. Stable modes run on `main` and beta modes on `beta`;
+see [Branches](#branches) for the `release:beta:*`, `release:sync-beta` and `release:promote`
+scripts that wrap them.
 
 ## The release workflow
 
@@ -90,7 +116,7 @@ scripts. For a beta, run `npm run release:check`, the `version:all:beta:*` scrip
 
 | Job                | What it does                                                                                     |
 | ------------------ | ------------------------------------------------------------------------------------------------ |
-| `meta`             | Fails unless the tag matches `package.json`. Marks `-*` versions as prerelease. Detects optional secrets, picks the platform matrix, extracts release notes from `CHANGELOG.md`, creates a **draft** release, uploads the install and uninstall scripts |
+| `meta`             | Fails unless the tag matches `package.json` and is on its release branch (`main` for stable, `beta` for `-beta.N`; skipped for `only: android`). Marks `-*` versions as prerelease. Detects optional secrets, picks the platform matrix, extracts release notes from `CHANGELOG.md`, creates a **draft** release, uploads the install and uninstall scripts |
 | `ui`               | Exports the web UI once (`npm run build:ui`)                                                     |
 | `desktop`          | Matrix: Windows x64, Linux x64 (`ubuntu-22.04`), macOS arm64 and x64. Runs `npm run build:desktop -- --target <target>` and uploads installers. Runs the Electron smoke test on the packaged Linux build |
 | `daemon-build`     | Builds the server stack and bundles the shared web UI into the daemon                            |
@@ -98,7 +124,7 @@ scripts. For a beta, run `npm run release:check`, the `version:all:beta:*` scrip
 | `android`          | Builds the arm64-v8a APK with `scripts/release/build-android-apk.mjs --serial`                   |
 | `updater-manifest` | Full builds only. Generates `release.json`, the Electron channel manifests and `SHA256SUMS-desktop` from the uploaded binaries, then runs `verify-release-assets.mjs` |
 | `docker`           | Only with Docker Hub credentials. Builds `deploy/docker/base/Dockerfile` for `linux/amd64` and pushes it |
-| `publish`          | Clears the draft flag only if `meta`, `desktop`, `daemon-bundle`, `android` and `updater-manifest` succeeded, `docker` succeeded or was skipped, and the run built all platforms |
+| `publish`          | Clears the draft flag only if `meta`, `desktop`, `daemon-bundle`, `android` and `updater-manifest` succeeded, `docker` succeeded or was skipped, and the run built all platforms. Stable releases take GitHub Latest only when newer than the current Latest; betas publish as prereleases without it |
 
 Manual dispatch inputs:
 

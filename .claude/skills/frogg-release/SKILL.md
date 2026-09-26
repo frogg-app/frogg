@@ -91,7 +91,8 @@ to compare the metadata against GitHub asset sizes and digests.
 After publication, verify the unauthenticated Latest API and download each public
 channel manifest/JSON descriptor; check version, payload URLs, sizes and hashes.
 For beta, verify explicit version routing independently of stable Latest. Do not
-mark a beta as Latest. Stop automatic retries when the same deterministic failure
+mark a beta as Latest. Betas are cut only from `beta`, stable only from `main`; use
+`release:beta:*`, `release:sync-beta`, `release:promote` (see release-process.mdx → Branches). Stop automatic retries when the same deterministic failure
 recurs; repair its cause before another attempt. Preserve tags when cleaning
 superseded drafts unless the user explicitly requests tag deletion.
 

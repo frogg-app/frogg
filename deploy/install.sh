@@ -125,20 +125,19 @@ sha256_of() {
   fi
 }
 
-# Newest release including pre-releases, from the GitHub API. Needed because
-# every 0.x release is published as a pre-release and `/releases/latest`
-# skips those, redirecting to the releases index instead of a tag.
-resolve_latest_prerelease_version() {
-  local api tag
+# Fallback when /releases/latest does not resolve (e.g. every newer release is
+# still a draft): newest plain vX.Y.Z from the API, skipping betas and the old
+# companion-preview / execution-test prereleases.
+resolve_newest_stable_version() {
+  local api body tag
   api="$(printf '%s' "${FROGG_RELEASE_BASE}" |
-    sed -n 's#^https://github.com/\([^/]*\)/\([^/]*\)/releases/*$#https://api.github.com/repos/\1/\2/releases?per_page=1#p')"
+    sed -n 's#^https://github.com/\([^/]*\)/\([^/]*\)/releases/*$#https://api.github.com/repos/\1/\2/releases?per_page=30#p')"
   [ -n "${api}" ] || die "could not resolve the latest release from ${FROGG_RELEASE_BASE}/latest"
-  local body
   body="$(curl -fsSL "${api}")" || die "could not resolve the latest release from ${api}"
   tag="$(printf '%s\n' "${body}" | tr ',{' '\n\n' |
-    sed -n 's/^ *"tag_name" *: *"\([^"]*\)" *$/\1/p' | sed -n '1p')"
+    sed -n 's/^ *"tag_name" *: *"\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)" *$/\1/p' | sed -n '1p')"
   FROGG_VERSION="${tag#v}"
-  [ -n "${FROGG_VERSION}" ] || die "could not parse a version from ${api}"
+  [ -n "${FROGG_VERSION}" ] || die "no stable release found at ${api}"
 }
 
 resolve_latest_version() {
@@ -155,7 +154,7 @@ resolve_latest_version() {
       return
       ;;
   esac
-  resolve_latest_prerelease_version
+  resolve_newest_stable_version
 }
 
 # Sets BUNDLE_PATH to a verified tarball, downloading it when needed.

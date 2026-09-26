@@ -55,6 +55,8 @@ export interface MobileAppUpdater {
     silent?: boolean;
   }): Promise<MobileAppUpdateCheckResult | null>;
   downloadAndInstall(): Promise<AndroidApkInstallResult | null>;
+  /** Forgets the current offer, e.g. after a channel switch; no-op mid-download or install. */
+  discardAvailableUpdate(): void;
 }
 
 const INITIAL_SNAPSHOT: MobileAppUpdaterSnapshot = {
@@ -216,5 +218,10 @@ export function createMobileAppUpdater(deps: MobileAppUpdaterDeps): MobileAppUpd
     },
     checkForUpdates,
     downloadAndInstall,
+    discardAvailableUpdate() {
+      if (snapshot.status === "downloading" || snapshot.status === "installing") return;
+      checkVersion++; // an in-flight check for the old channel must not land
+      commit({ status: "idle", availableUpdate: null });
+    },
   };
 }
