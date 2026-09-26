@@ -34935,6 +34935,43 @@
                                     }
                                   },
                                   "additionalProperties": {}
+                                },
+                                "streams": {
+                                  "type": "object",
+                                  "properties": {
+                                    "development": {
+                                      "type": "string"
+                                    },
+                                    "stable": {
+                                      "type": "string"
+                                    },
+                                    "upstream": {
+                                      "type": "object",
+                                      "properties": {
+                                        "remote": {
+                                          "type": "string"
+                                        },
+                                        "repository": {
+                                          "type": "string"
+                                        },
+                                        "development": {
+                                          "type": "string"
+                                        },
+                                        "stable": {
+                                          "type": "string"
+                                        },
+                                        "follow": {
+                                          "type": "string",
+                                          "enum": [
+                                            "stable",
+                                            "development"
+                                          ]
+                                        }
+                                      },
+                                      "additionalProperties": {}
+                                    }
+                                  },
+                                  "additionalProperties": {}
                                 }
                               },
                               "additionalProperties": {}
@@ -35255,6 +35292,43 @@
                                     "job"
                                   ],
                                   "additionalProperties": false
+                                }
+                              },
+                              "additionalProperties": {}
+                            },
+                            "streams": {
+                              "type": "object",
+                              "properties": {
+                                "development": {
+                                  "type": "string"
+                                },
+                                "stable": {
+                                  "type": "string"
+                                },
+                                "upstream": {
+                                  "type": "object",
+                                  "properties": {
+                                    "remote": {
+                                      "type": "string"
+                                    },
+                                    "repository": {
+                                      "type": "string"
+                                    },
+                                    "development": {
+                                      "type": "string"
+                                    },
+                                    "stable": {
+                                      "type": "string"
+                                    },
+                                    "follow": {
+                                      "type": "string",
+                                      "enum": [
+                                        "stable",
+                                        "development"
+                                      ]
+                                    }
+                                  },
+                                  "additionalProperties": {}
                                 }
                               },
                               "additionalProperties": {}
@@ -41702,6 +41776,415 @@
                     "runs",
                     "providers",
                     "providerErrors",
+                    "error",
+                    "requestId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "checkout.streams.get_graph.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "cwd": {
+                      "type": "string"
+                    },
+                    "config": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "development": {
+                              "type": "string"
+                            },
+                            "stable": {
+                              "type": "string"
+                            },
+                            "upstream": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "remote": {
+                                      "type": "string"
+                                    },
+                                    "repository": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "development": {
+                                      "type": "string"
+                                    },
+                                    "stable": {
+                                      "type": "string"
+                                    },
+                                    "follow": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "remote",
+                                    "repository",
+                                    "development",
+                                    "stable",
+                                    "follow"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "declared": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "development",
+                            "stable",
+                            "upstream",
+                            "declared"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "streams": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "ref": {
+                            "type": "string"
+                          },
+                          "channel": {
+                            "type": "string"
+                          },
+                          "exists": {
+                            "type": "boolean"
+                          },
+                          "head": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "headDate": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "version": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "unreleased": {
+                            "type": "number"
+                          },
+                          "releases": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "tag": {
+                                  "type": "string"
+                                },
+                                "version": {
+                                  "type": "string"
+                                },
+                                "sha": {
+                                  "type": "string"
+                                },
+                                "date": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "tag",
+                                "version",
+                                "sha",
+                                "date"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "kind",
+                          "label",
+                          "ref",
+                          "channel",
+                          "exists",
+                          "head",
+                          "headDate",
+                          "version",
+                          "unreleased",
+                          "releases"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "flows": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "from": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string"
+                          },
+                          "pending": {
+                            "type": "number"
+                          },
+                          "command": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "from",
+                          "to",
+                          "kind",
+                          "pending",
+                          "command"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "changes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "sha": {
+                            "type": "string"
+                          },
+                          "subject": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "scope": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "breaking": {
+                            "type": "boolean"
+                          },
+                          "author": {
+                            "type": "string"
+                          },
+                          "date": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "origin": {
+                            "type": "string"
+                          },
+                          "presence": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "stream": {
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "type": "string"
+                                },
+                                "via": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "release": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "stream",
+                                "state",
+                                "via",
+                                "release"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "sha",
+                          "subject",
+                          "type",
+                          "scope",
+                          "breaking",
+                          "author",
+                          "date",
+                          "origin",
+                          "presence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string"
+                          },
+                          "from": {
+                            "type": "string"
+                          },
+                          "to": {
+                            "type": "string"
+                          },
+                          "fromRelease": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "toRelease": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "sha": {
+                            "type": "string"
+                          },
+                          "date": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "count": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "from",
+                          "to",
+                          "fromRelease",
+                          "toRelease",
+                          "sha",
+                          "date",
+                          "count"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "truncated": {
+                      "type": "boolean"
+                    },
+                    "fetchedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "fetchError": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "NOT_GIT_REPO",
+                                "NOT_ALLOWED",
+                                "MERGE_CONFLICT",
+                                "UNKNOWN"
+                              ]
+                            },
+                            "message": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cwd",
+                    "config",
+                    "streams",
+                    "flows",
+                    "changes",
+                    "events",
+                    "truncated",
+                    "fetchedAt",
+                    "fetchError",
                     "error",
                     "requestId"
                   ],
