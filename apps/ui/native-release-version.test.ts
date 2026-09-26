@@ -23,10 +23,24 @@ describe("native release version", () => {
     });
   });
 
-  it("rejects beta numbers that consume the stable iOS build slot", () => {
-    expect(() => getNativeReleaseVersion("0.2.6-beta.999")).toThrow(
-      "iOS beta number must be between 1 and 998",
+  it("rejects beta numbers that reach the release-candidate slots", () => {
+    expect(() => getNativeReleaseVersion("0.2.6-beta.500")).toThrow(
+      "iOS beta number must be between 1 and 499",
     );
+  });
+
+  it("places release candidates after betas and fork rebuilds on their channel's slot", () => {
+    expect(getNativeReleaseVersion("1.8.0-rc.1.acme.2")).toEqual({
+      appVersion: "1.8.0",
+      androidVersionCode: 1008000,
+      iosBuildNumber: "1008000501",
+    });
+    expect(getNativeReleaseVersion("1.8.0-beta.3.acme.1").iosBuildNumber).toBe("1008000003");
+    expect(getNativeReleaseVersion("1.8.0-acme.2")).toEqual({
+      appVersion: "1.8.0",
+      androidVersionCode: 1008000,
+      iosBuildNumber: "1008000999",
+    });
   });
 
   it("derives one F-Droid version code per published ABI", () => {

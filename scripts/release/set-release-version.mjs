@@ -2,7 +2,8 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { computeNextReleaseVersion, parseReleaseVersion } from "./release-version-utils.mjs";
+import { channelOfVersion, parseChannelVersion } from "./release-channel.mjs";
+import { computeNextReleaseVersion } from "./release-version-utils.mjs";
 import { readStreamsConfig } from "./streams-config.mjs";
 import { assertStablePatch } from "./streams-core.mjs";
 
@@ -65,7 +66,7 @@ if (!currentVersion) {
 }
 
 const nextVersion = args.version
-  ? parseReleaseVersion(args.version).version
+  ? explicitVersion(args.version)
   : computeNextReleaseVersion(currentVersion, args.mode);
 
 if (args.print) {
@@ -87,7 +88,7 @@ function assertStreamBranch(version, mode) {
     cwd: rootDir,
     encoding: "utf8",
   }).trim();
-  const beta = parseReleaseVersion(version).isPrerelease;
+  const beta = channelOfVersion(version) === "beta";
   const required = beta ? streams.development : streams.stable;
   if (branch !== required) {
     throw new Error(
@@ -124,3 +125,10 @@ execFileSync(
   ["version", nextVersion, "--include-workspace-root", "--message", "chore(release): cut %s"],
   { cwd: rootDir, stdio: "inherit" },
 );
+
+function explicitVersion(value) {
+  const parsed = parseChannelVersion(value);
+  if (!parsed)
+    throw new Error(`--version ${value} is not a release version (X.Y.Z with an optional suffix).`);
+  return parsed.version;
+}

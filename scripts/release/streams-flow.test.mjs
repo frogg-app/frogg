@@ -14,6 +14,7 @@ const SCRIPTS = [
   "streams.mjs",
   "streams-config.mjs",
   "streams-core.mjs",
+  "release-channel.mjs",
   "release-version-utils.mjs",
   "set-release-version.mjs",
   "push-current-release-tag.mjs",
@@ -203,3 +204,63 @@ test("a fork syncs upstream releases and contributes changes back", { timeout: 1
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+test(
+  "a fork with a build suffix ships upstream's versions with its own counter",
+  { timeout: 120_000 },
+  () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), "streams-suffix-"));
+    try {
+      const upstream = scaffold(root, "upstream");
+      streams(upstream.work, "init", "--push");
+
+      const forkOrigin = path.join(root, "fork.git");
+      const fork = path.join(root, "fork");
+      git(root, "clone", "-q", "--bare", upstream.origin, forkOrigin);
+      git(root, "clone", "-q", forkOrigin, fork);
+      git(fork, "remote", "add", "upstream", upstream.origin);
+      writeFileSync(
+        path.join(fork, "frogg.json"),
+        JSON.stringify({ streams: { upstream: { follow: "stable", suffix: "acme" } } }, null, 2),
+      );
+      git(fork, "commit", "-qam", "chore: declare the upstream stream");
+      git(fork, "push", "-q", "origin", "main");
+      streams(fork, "init", "--push");
+
+      // Upstream ships 1.6.0.
+      commit(upstream.work, "upstream.txt", "new\n", "feat: upstream feature");
+      streams(upstream.work, "beta", "--skip-check");
+      git(upstream.work, "switch", "-q", "stable");
+      streams(upstream.work, "promote", "--skip-check");
+
+      // The fork merges it and cuts a release candidate of upstream 1.6.0 for its beta testers.
+      streams(fork, "sync-upstream");
+      streams(fork, "beta", "--skip-check");
+      assert.equal(version(fork), "1.6.0-rc.1.acme.1");
+      assert.match(streams(fork, "assert-tag", "v1.6.0-rc.1.acme.1"), /on origin\/main/);
+      const fix = commit(fork, "fix.txt", "fixed\n", "fix: fork-only fix");
+      streams(fork, "beta", "--skip-check");
+      assert.equal(version(fork), "1.6.0-rc.1.acme.2");
+
+      // Promoted to its stable users as 1.6.0-acme.1; a backported fix ships as 1.6.0-acme.2.
+      git(fork, "switch", "-q", "-c", "stable", "--track", "origin/stable");
+      streams(fork, "promote", "--skip-check");
+      assert.equal(version(fork), "1.6.0-acme.1");
+      assert.match(streams(fork, "assert-tag", "v1.6.0-acme.1"), /on origin\/stable/);
+      const late = commit(fork, "late.txt", "late\n", "fix: after the release");
+      git(fork, "reset", "-q", "--hard", "HEAD~1");
+      assert.ok(late && fix);
+      git(fork, "switch", "-q", "main");
+      const mainFix = commit(fork, "hot.txt", "hot\n", "fix: hot fix");
+      git(fork, "push", "-q", "origin", "main");
+      git(fork, "switch", "-q", "stable");
+      streams(fork, "backport", mainFix);
+      git(fork, "push", "-q", "origin", "stable");
+      assert.equal(streams(fork, "patch", "--print"), "1.6.0-acme.2");
+      streams(fork, "patch", "--skip-check");
+      assert.equal(version(fork), "1.6.0-acme.2");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  },
+);

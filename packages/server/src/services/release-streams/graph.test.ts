@@ -207,6 +207,31 @@ describe("release streams graph", () => {
     expect(flows.contribute).toMatchObject({ to: "upstream-development", pending: 1 });
   });
 
+  test("fork rebuild tags are stable and channel-part tags are betas", async () => {
+    const { work } = product();
+    commit(work, "s.txt", "chore(release): cut 1.5.0-acme.1", "1.5.0-acme.1");
+    tag(work, "v1.5.0-acme.1");
+    git(work, "branch", "-f", "stable");
+    commit(work, "a.txt", "feat: fork feature");
+    commit(work, "p.txt", "chore(release): cut 1.6.0-rc.1.acme.1", "1.6.0-rc.1.acme.1");
+    tag(work, "v1.6.0-rc.1.acme.1");
+    commit(work, "q.txt", "chore(release): cut 1.6.0-beta.2.acme.1", "1.6.0-beta.2.acme.1");
+    tag(work, "v1.6.0-beta.2.acme.1");
+    git(work, "push", "-q", "origin", "main", "stable", "--tags");
+    const config = resolveReleaseStreamsConfig({ raw: null, remotes: ["origin"] });
+    const graph = await buildReleaseStreamsGraph({ git: runner(work), config });
+    const streams = Object.fromEntries(graph.streams.map((s) => [s.id, s]));
+    expect(streams.stable!.releases.map((r) => r.version)).toEqual(["1.5.0-acme.1", "1.5.0"]);
+    expect(streams.development!.releases.map((r) => r.version)).toEqual([
+      "1.6.0-rc.1.acme.1",
+      "1.6.0-beta.2.acme.1",
+    ]);
+    expect(find(graph.changes, "feat: fork feature").development).toMatchObject({
+      state: "shipped",
+      release: "1.6.0-rc.1.acme.1",
+    });
+  });
+
   test("config defaults and upstream detection", () => {
     expect(resolveReleaseStreamsConfig({ raw: null, remotes: ["origin"] })).toEqual({
       development: "main",

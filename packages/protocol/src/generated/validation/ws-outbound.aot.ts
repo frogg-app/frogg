@@ -10324,6 +10324,8 @@ if(__o_3899["stable"]!==undefined){if(typeof __o_3899["stable"]!=="string"){__ui
 }
 if(__o_3899["follow"]!==undefined){if(__o_3899["follow"]!=="stable"&&__o_3899["follow"]!=="development"){__ui_3861.push({code:"invalid_value",values:["stable","development"],input:__o_3899["follow"],path:["message"].concat("payload").concat("config").concat("streams").concat("upstream").concat("follow")});}
 }
+if(__o_3899["suffix"]!==undefined){if(typeof __o_3899["suffix"]!=="string"){__ui_3861.push({code:"invalid_type",expected:"string",input:__o_3899["suffix"],path:["message"].concat("payload").concat("config").concat("streams").concat("upstream").concat("suffix")});}
+}
 }
 }
 }
@@ -10435,6 +10437,8 @@ if(__o_3952["development"]!==undefined){if(typeof __o_3952["development"]!=="str
 if(__o_3952["stable"]!==undefined){if(typeof __o_3952["stable"]!=="string"){__ui_3914.push({code:"invalid_type",expected:"string",input:__o_3952["stable"],path:["message"].concat("payload").concat("config").concat("streams").concat("upstream").concat("stable")});}
 }
 if(__o_3952["follow"]!==undefined){if(__o_3952["follow"]!=="stable"&&__o_3952["follow"]!=="development"){__ui_3914.push({code:"invalid_value",values:["stable","development"],input:__o_3952["follow"],path:["message"].concat("payload").concat("config").concat("streams").concat("upstream").concat("follow")});}
+}
+if(__o_3952["suffix"]!==undefined){if(typeof __o_3952["suffix"]!=="string"){__ui_3914.push({code:"invalid_type",expected:"string",input:__o_3952["suffix"],path:["message"].concat("payload").concat("config").concat("streams").concat("upstream").concat("suffix")});}
 }
 }
 }

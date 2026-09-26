@@ -1,3 +1,4 @@
+import { channelOfVersion } from "./release-channel.mjs";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, readdir, stat, writeFile } from "node:fs/promises";
@@ -54,7 +55,7 @@ export async function buildElectronReleaseManifests({
     throw new Error("Electron Mac updates require one x64 and one arm64 payload");
   }
   await mkdir(out, { recursive: true });
-  const channel = version.includes("-") ? "electron-beta" : "electron-latest";
+  const channel = channelOfVersion(version) === "beta" ? "electron-beta" : "electron-latest";
   const releaseDate = new Date().toISOString();
   const platforms = {};
   for (const [platform, groupNames] of Object.entries(groups)) {

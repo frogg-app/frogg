@@ -6,6 +6,7 @@
 //
 // A beta line is always ahead of stable, so a stable patch can never overtake it and the beta
 // app never sees its own version come back as a stable release.
+import { parseChannelVersion } from "./release-channel.mjs";
 import { formatReleaseVersion, parseReleaseVersion } from "./release-version-utils.mjs";
 
 function core(version) {
@@ -94,6 +95,8 @@ export function promotionVersion({ developmentVersion, stableVersion }) {
 
 /** A stable patch must stay below the open beta line. */
 export function assertStablePatch({ nextStable, developmentVersion }) {
+  // Fork versions (1.9.0-rc.1.acme.1) keep upstream's core, so a patch cannot reach them.
+  if (parseChannelVersion(developmentVersion)?.downstream) return;
   const development = parseReleaseVersion(developmentVersion);
   if (development.isBeta && compareCore(nextStable, development.baseVersion) >= 0) {
     throw new Error(
@@ -118,4 +121,79 @@ export function isVersionOwnedFile(file) {
 /** Release cut commits carry nothing but a version; they never need propagating. */
 export function isReleaseCutSubject(subject) {
   return /^chore\(release\): (?:cut|promote) /.test(subject);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Fork versions. A fork ships upstream's version with its own build counter after it, so its
+// releases map one-to-one onto upstream's and never collide with them:
+//
+//   stable  1.8.0-acme.1, 1.8.0-acme.2 (a backported fix), then 1.9.0-acme.1
+//   beta    1.9.0-beta.3.acme.1  a fork build of upstream's beta
+//           1.9.0-rc.1.acme.2    a fork build of upstream's 1.9.0 release, before rollout
+//
+// The channel part comes first (see release-channel.mjs), so every beta sorts below the stable
+// release it leads to, and `rc` sorts above upstream's betas of the same version.
+
+function forkCounter(version, prefix) {
+  if (!version?.startsWith(prefix)) return 0;
+  const rest = version.slice(prefix.length);
+  return /^\d+$/.test(rest) ? Number(rest) : 0;
+}
+
+function requireFork(parsed, label, value) {
+  if (!parsed) throw new Error(`${label} ${value} is not a release version.`);
+  return parsed;
+}
+
+/**
+ * The next fork beta, from the upstream version its development branch last merged.
+ * Continues the counter while that upstream version is unchanged.
+ */
+export function nextForkBetaVersion({ developmentVersion, upstreamVersion, suffix }) {
+  const upstream = requireFork(parseChannelVersion(upstreamVersion), "Upstream", upstreamVersion);
+  if (upstream.downstream) {
+    throw new Error(
+      `Upstream version ${upstreamVersion} carries a build suffix; expected upstream's own.`,
+    );
+  }
+  const channel = upstream.upstream ?? "rc.1";
+  const prefix = `${upstream.core}-${channel}.${suffix}.`;
+  return `${prefix}${forkCounter(developmentVersion, prefix) + 1}`;
+}
+
+/** Promoting a fork beta ships its upstream version with the next stable build counter. */
+export function forkPromotionVersion({ developmentVersion, stableVersion, suffix }) {
+  const development = requireFork(
+    parseChannelVersion(developmentVersion),
+    "Development",
+    developmentVersion,
+  );
+  if (!development.upstream) {
+    throw new Error(
+      `The development branch is on ${developmentVersion}, not a beta. Cut one with release:beta first.`,
+    );
+  }
+  const stable = stableVersion ? parseChannelVersion(stableVersion) : null;
+  if (stable && compareCoreParts(development, stable) < 0) {
+    throw new Error(
+      `Beta ${developmentVersion} is behind stable ${stableVersion}; nothing to promote.`,
+    );
+  }
+  const prefix = `${development.core}-${suffix}.`;
+  return `${prefix}${forkCounter(stableVersion, prefix) + 1}`;
+}
+
+/** A fork's stable patch is the next build of the same upstream version. */
+export function nextForkPatchVersion({ stableVersion, suffix }) {
+  const stable = requireFork(parseChannelVersion(stableVersion), "Stable", stableVersion);
+  if (stable.upstream) throw new Error(`Stable is on ${stableVersion}, which is a beta.`);
+  const prefix = `${stable.core}-${suffix}.`;
+  return `${prefix}${forkCounter(stableVersion, prefix) + 1}`;
+}
+
+function compareCoreParts(a, b) {
+  for (const key of ["major", "minor", "patch"]) {
+    if (a[key] !== b[key]) return a[key] > b[key] ? 1 : -1;
+  }
+  return 0;
 }

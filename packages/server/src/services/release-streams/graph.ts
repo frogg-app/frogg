@@ -7,7 +7,11 @@ import type {
   ReleaseStreamRelease,
   ReleaseStreamsConfig,
 } from "@frogg/protocol/messages";
-import { compareVersionStrings } from "@frogg/protocol/release-version";
+import {
+  compareVersionStrings,
+  isStableVersion,
+  parseVersion,
+} from "@frogg/protocol/release-version";
 
 /** Runs git in the checkout and returns stdout; rejects on failure. */
 export type StreamsGit = (args: string[]) => Promise<string>;
@@ -25,8 +29,30 @@ export const CHANGE_WINDOW = 150;
 const RELEASES_PER_STREAM = 12;
 const INCOMING_WINDOW = 100;
 
-const STABLE_TAG = /^v\d+\.\d+\.\d+$/;
-const BETA_TAG = /^v\d+\.\d+\.\d+-beta\.\d+$/;
+/**
+ * Release tags by channel, the same rule every updater uses: a suffix that starts with a channel
+ * name (`-beta.3`, `-rc.1.acme.2`) is a beta; plain versions and fork rebuilds (`-acme.2`) are
+ * stable.
+ */
+const RELEASE_TAG = /^v\d+\.\d+\.\d+(?:-[0-9A-Za-z]+(?:\.[0-9A-Za-z]+)*)?$/;
+type TagChannel = "stable" | "beta";
+function tagChannel(tag: string): TagChannel | null {
+  if (!RELEASE_TAG.test(tag) || !parseVersion(tag)) return null;
+  return isStableVersion(tag) ? "stable" : "beta";
+}
+/** Shell patterns for git's --refs/--exclude: tags whose suffix starts with a channel name. */
+const CHANNEL_GLOBS = [
+  "alpha",
+  "beta",
+  "rc",
+  "pre",
+  "preview",
+  "next",
+  "canary",
+  "dev",
+  "nightly",
+  "snapshot",
+].flatMap((channel) => [`v*-${channel}`, `v*-${channel}.*`]);
 const RELEASE_CUT = /^chore\(release\): (?:cut|promote) /;
 const PROMOTE = /^chore\(release\): promote \S+ (\S+) to /;
 const SYNC = /^Merge upstream (\S+)/;
@@ -42,7 +68,7 @@ interface StreamRef {
   channel: "beta" | "stable";
   tagNamespace: string;
   /** Which tags count as this stream's releases. */
-  tagPattern: RegExp;
+  tagChannel: TagChannel;
 }
 
 interface Commit {
@@ -99,7 +125,7 @@ function streamRefs(config: ReleaseStreamsConfig, refExists: Set<string>): Strea
         ref: `refs/remotes/${remote}/${stable}`,
         channel: "stable",
         tagNamespace: `refs/remotes/${remote}/tags/`,
-        tagPattern: STABLE_TAG,
+        tagChannel: "stable",
       },
       {
         id: "upstream-development",
@@ -108,7 +134,7 @@ function streamRefs(config: ReleaseStreamsConfig, refExists: Set<string>): Strea
         ref: `refs/remotes/${remote}/${development}`,
         channel: "beta",
         tagNamespace: `refs/remotes/${remote}/tags/`,
-        tagPattern: BETA_TAG,
+        tagChannel: "beta",
       },
     );
   }
@@ -120,7 +146,7 @@ function streamRefs(config: ReleaseStreamsConfig, refExists: Set<string>): Strea
       ref: local(config.stable),
       channel: "stable",
       tagNamespace: "refs/tags/",
-      tagPattern: STABLE_TAG,
+      tagChannel: "stable",
     },
     {
       id: "development",
@@ -129,7 +155,7 @@ function streamRefs(config: ReleaseStreamsConfig, refExists: Set<string>): Strea
       ref: local(config.development),
       channel: "beta",
       tagNamespace: "refs/tags/",
-      tagPattern: BETA_TAG,
+      tagChannel: "beta",
     },
   );
   return refs;
@@ -151,7 +177,7 @@ async function releasesOn(
   git: StreamsGit,
   ref: string,
   namespace: string,
-  pattern: RegExp,
+  channel: TagChannel,
 ): Promise<ReleaseStreamRelease[]> {
   const out = await tryGit(git, [
     "for-each-ref",
@@ -164,7 +190,7 @@ async function releasesOn(
   for (const line of lines(out)) {
     const [refname = "", object = "", peeled = "", date = ""] = line.split(SEP);
     const tag = refname.slice(namespace.length);
-    if (tag.includes("/") || !pattern.test(tag)) continue;
+    if (tag.includes("/") || tagChannel(tag) !== channel) continue;
     releases.push({ tag, version: tag.slice(1), sha: peeled || object, date: date || null });
   }
   return releases.sort((a, b) => compareVersionStrings(b.version, a.version));
@@ -181,7 +207,11 @@ async function firstReleases(
 ): Promise<Map<string, string>> {
   const result = new Map<string, string>();
   if (shas.length === 0) return result;
-  const pattern = stream.tagPattern === BETA_TAG ? "v*-beta.*" : "v*";
+  const globs = CHANNEL_GLOBS.map((glob) => `${stream.tagNamespace}${glob}`);
+  const filter =
+    stream.tagChannel === "beta"
+      ? globs.map((glob) => `--refs=${glob}`)
+      : [`--refs=${stream.tagNamespace}v*`, ...globs.map((glob) => `--exclude=${glob}`)];
   for (let index = 0; index < shas.length; index += 200) {
     const batch = shas.slice(index, index + 200);
     const out = await tryGit(git, [
@@ -189,14 +219,13 @@ async function firstReleases(
       "--name-only",
       "--no-undefined",
       "--always",
-      `--refs=${stream.tagNamespace}${pattern}`,
-      ...(stream.tagPattern === STABLE_TAG ? [`--exclude=${stream.tagNamespace}*-*`] : []),
+      ...filter,
       ...batch,
     ]);
     const names = lines(out);
     batch.forEach((sha, i) => {
       const name = names[i]?.replace(/[~^].*$/, "").replace(/^(?:remotes\/[^/]+\/)?tags\//, "");
-      if (name && stream.tagPattern.test(name)) result.set(sha, name.slice(1));
+      if (name && tagChannel(name) === stream.tagChannel) result.set(sha, name.slice(1));
     });
   }
   return result;
@@ -273,7 +302,7 @@ async function readStream(
   const fallback = stream.id === "stable" && hasDev ? ctx.dev.ref : null;
   const source = present ? stream.ref : fallback;
   const releases = source
-    ? await releasesOn(git, source, stream.tagNamespace, stream.tagPattern)
+    ? await releasesOn(git, source, stream.tagNamespace, stream.tagChannel)
     : [];
   const newest = releases[0];
   let head: string | null = null;

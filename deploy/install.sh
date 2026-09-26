@@ -136,11 +136,18 @@ resolve_newest_stable_version() {
     sed -n 's#^https://github.com/\([^/]*\)/\([^/]*\)/releases/*$#https://api.github.com/repos/\1/\2/releases?per_page=30#p')"
   [ -n "${api}" ] || die "could not resolve the latest release from ${FROGG_RELEASE_BASE}/latest"
   body="$(curl -fsSL "${api}")" || die "could not resolve the latest release from ${api}"
+  # A stable release is vX.Y.Z, or a fork rebuild of one (vX.Y.Z-acme.2): any suffix that
+  # does not start with a channel name.
   tag="$(printf '%s\n' "${body}" | tr ',{' '\n\n' |
-    sed -n 's/^ *"tag_name" *: *"\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)" *$/\1/p' | sed -n '1p')"
+    sed -nE 's/^ *"tag_name" *: *"(v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)" *$/\1/p' |
+    grep -Ev -- "${CHANNEL_SUFFIX}" | sed -n '1p')"
   FROGG_VERSION="${tag#v}"
   [ -n "${FROGG_VERSION}" ] || die "no stable release found at ${api}"
 }
+
+# A version suffix that starts with an upstream channel name marks a beta
+# (scripts/release/release-channel.mjs has the same list).
+CHANNEL_SUFFIX='-(alpha|beta|rc|pre|preview|next|canary|dev|nightly|snapshot)(\.|$)'
 
 # The beta build installs betas only: newest vX.Y.Z-beta.N from the API. GitHub has
 # no "latest prerelease" alias, and a stable release carries no beta bundles.
@@ -150,9 +157,10 @@ resolve_newest_beta_version() {
     sed -n 's#^https://github.com/\([^/]*\)/\([^/]*\)/releases/*$#https://api.github.com/repos/\1/\2/releases?per_page=30#p')"
   [ -n "${api}" ] || die "set ${BRAND_ENV_PREFIX}_VERSION: ${FROGG_RELEASE_BASE} is not a GitHub releases URL"
   body="$(curl -fsSL "${api}")" || die "could not list releases from ${api}"
+  # A beta's suffix starts with a channel name: v1.6.0-beta.2, or a fork's v1.8.0-rc.1.acme.2.
   tag="$(printf '%s\n' "${body}" | tr ',{' '\n\n' |
-    sed -n 's/^ *"tag_name" *: *"\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*-beta\.[0-9][0-9]*\)" *$/\1/p' |
-    sed 's/^v//' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -n1)"
+    sed -nE 's/^ *"tag_name" *: *"(v[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z.]+)" *$/\1/p' |
+    grep -E -- "${CHANNEL_SUFFIX}" | sed 's/^v//' | sort -V | tail -n1)"
   FROGG_VERSION="${tag}"
   [ -n "${FROGG_VERSION}" ] || die "no beta release found at ${api}"
 }
@@ -208,13 +216,17 @@ acquire_bundle() {
     name="${url##*/}"
   else
     [ -n "${FROGG_VERSION}" ] || resolve_latest_version
-    name="${BRAND_DAEMON_PREFIX}-${FROGG_VERSION}-${PLATFORM}-${ARCH}.tar.gz"
+    # Bundle names drop a fork's build counter (1.8.0-acme.2 ships ...-1.8.0-...) and keep a
+    # beta's channel part (1.8.0-rc.1.acme.2 ships ...-1.8.0-rc.1-...), like the CLI updater.
+    artifact_version="$(printf '%s' "${FROGG_VERSION}" |
+      sed -E 's/^([0-9]+\.[0-9]+\.[0-9]+)(-((alpha|beta|rc|pre|preview|next|canary|dev|nightly|snapshot)(\.[0-9]+)*))?(\..*|-.*)?$/\1\2/')"
+    name="${BRAND_DAEMON_PREFIX}-${artifact_version}-${PLATFORM}-${ARCH}.tar.gz"
     if [ "$BRAND_LEGACY" = true ] && ! brand_legacy_artifact_version "$FROGG_VERSION"; then
       public_platform="$PLATFORM"
       public_arch="$ARCH"
       [ "$public_platform" = "darwin" ] && public_platform="mac"
       [ "$public_arch" = "x64" ] && public_arch="x86_64"
-      name="${BRAND_ARTIFACT_PREFIX}-${FROGG_VERSION}-${public_platform}-${public_arch}-daemon.tar.gz"
+      name="${BRAND_ARTIFACT_PREFIX}-${artifact_version}-${public_platform}-${public_arch}-daemon.tar.gz"
     fi
     url="${FROGG_RELEASE_BASE}/download/v${FROGG_VERSION}/${name}"
   fi

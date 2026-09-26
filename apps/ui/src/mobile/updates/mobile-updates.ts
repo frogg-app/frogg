@@ -9,7 +9,7 @@ const APK_ABIS = ["arm64-v8a", "armeabi-v7a", "x86_64", "x86", "universal"] as c
 // Frogg-1.5.17-android-arm64-v8a.apk, ...-arm64-v8a-unsigned.apk (debug-signed),
 // ...-arm64-v8a-development-unsigned.apk (the `.debug` application id).
 const APK_ASSET_PATTERN = new RegExp(
-  `^(?<prefix>.+)-(?<version>\\d+\\.\\d+\\.\\d+(?:-beta\\.\\d+)?)-android-(?<abi>${APK_ABIS.join("|")})(?<identity>-development)?(?<flavour>-unsigned|-debug)?\\.apk$`,
+  `^(?<prefix>.+)-(?<version>\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z]+(?:\\.[0-9A-Za-z]+)*)?)-android-(?<abi>${APK_ABIS.join("|")})(?<identity>-development)?(?<flavour>-unsigned|-debug)?\\.apk$`,
 );
 
 export interface GithubReleaseAsset {

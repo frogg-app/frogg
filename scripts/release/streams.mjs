@@ -11,9 +11,15 @@ import {
   branchForVersion,
   channelForBranch,
   readStreamsConfig,
+  resolveStreamsConfig,
   upstreamFollowRef,
 } from "./streams-config.mjs";
+import { computeNextReleaseVersion } from "./release-version-utils.mjs";
 import {
+  assertStablePatch,
+  forkPromotionVersion,
+  nextForkBetaVersion,
+  nextForkPatchVersion,
   isReleaseCutSubject,
   isVersionOwnedFile,
   nextBetaVersion,
@@ -42,6 +48,24 @@ function npm(args) {
 function fail(message) {
   process.stderr.write(`\n${message}\n`);
   process.exit(1);
+}
+
+/**
+ * The streams config as the development branch has it. It is that branch's to change, and the
+ * stable branch only gets it by promotion, so on stable the checked-out copy can be out of date
+ * (a fork's first promotion runs on a stable branch cut before `streams.upstream` existed).
+ */
+function loadStreamsConfig() {
+  const local = readStreamsConfig(rootDir);
+  const text =
+    gitTry(["show", `origin/${local.development}:frogg.json`]) ??
+    gitTry(["show", `${local.development}:frogg.json`]);
+  if (!text) return local;
+  try {
+    return resolveStreamsConfig(JSON.parse(text).streams);
+  } catch {
+    return local;
+  }
 }
 
 function currentBranch() {
@@ -204,6 +228,7 @@ const commands = {
 
   status                      where each stream is and what has not propagated yet
   beta [--major] [--print]    cut the next beta from the development branch
+  patch [--print]             cut the next stable patch (backported fixes) on the stable branch
   promote [--print]           ship the development branch's beta line as stable (on the stable branch)
   backport <commit...>        cherry-pick fixes from development onto stable (then release:patch)
   sync-upstream [--ref <ref>] [--continue]
@@ -219,7 +244,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   },
 
   status() {
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     fetchOrigin(config.development, config.stable);
     const dev = refExists(`origin/${config.development}`)
       ? `origin/${config.development}`
@@ -271,7 +296,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   },
 
   beta(args) {
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     const print = flag(args, "--print");
     const skipCheck = flag(args, "--skip-check");
     const major = flag(args, "--major");
@@ -286,28 +311,68 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
       const base = gitTry(["merge-base", "HEAD", follow]);
       upstreamVersion = base ? readVersion(base) : null;
     }
-    const version = nextBetaVersion({
-      developmentVersion: readVersion("HEAD"),
-      stableVersion: stableVersionOf(config),
-      upstreamVersion,
-      major,
-    });
+    const suffix = config.upstream?.suffix;
+    if (suffix && !upstreamVersion) {
+      fail(`No merge with ${follow} yet. Run \`npm run release:sync-upstream\` first.`);
+    }
+    if (suffix && major) fail("A fork's version follows upstream's; --major does not apply.");
+    const version = suffix
+      ? nextForkBetaVersion({ developmentVersion: readVersion("HEAD"), upstreamVersion, suffix })
+      : nextBetaVersion({
+          developmentVersion: readVersion("HEAD"),
+          stableVersion: stableVersionOf(config),
+          upstreamVersion,
+          major,
+        });
     if (print) return void process.stdout.write(`${version}\n`);
     cut(version, { skipCheck });
   },
 
+  patch(args) {
+    const config = loadStreamsConfig();
+    const print = flag(args, "--print");
+    const skipCheck = flag(args, "--skip-check");
+    if (!print) {
+      assertOnBranch(config.stable, "release:patch");
+      assertClean();
+    }
+    const current = readVersion("HEAD");
+    const suffix = config.upstream?.suffix;
+    const version = suffix
+      ? nextForkPatchVersion({ stableVersion: current, suffix })
+      : computeNextReleaseVersion(current, "patch");
+    if (print) return void process.stdout.write(`${version}\n`);
+    fetchOrigin(config.development);
+    const developmentVersion = readVersion(`origin/${config.development}`);
+    if (!suffix && developmentVersion) {
+      try {
+        assertStablePatch({ nextStable: version, developmentVersion });
+      } catch (error) {
+        fail(error.message);
+      }
+    }
+    cut(version, { skipCheck });
+  },
+
   promote(args) {
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     const print = flag(args, "--print");
     const skipCheck = flag(args, "--skip-check");
     const allowDrop = flag(args, "--allow-drop");
     fetchOrigin(config.development, config.stable);
     const devRef = `origin/${config.development}`;
     if (!refExists(devRef)) fail(`${devRef} not found.`);
-    const version = promotionVersion({
-      developmentVersion: readVersion(devRef),
-      stableVersion: readVersion("HEAD"),
-    });
+    const suffix = config.upstream?.suffix;
+    const version = suffix
+      ? forkPromotionVersion({
+          developmentVersion: readVersion(devRef),
+          stableVersion: readVersion("HEAD"),
+          suffix,
+        })
+      : promotionVersion({
+          developmentVersion: readVersion(devRef),
+          stableVersion: readVersion("HEAD"),
+        });
     if (print) return void process.stdout.write(`${version}\n`);
     assertOnBranch(config.stable, "release:promote");
     assertClean();
@@ -333,7 +398,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   },
 
   backport(args) {
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     if (args.length === 0) fail("Name the commits to backport: release:backport -- <commit...>");
     assertOnBranch(config.stable, "release:backport");
     assertClean();
@@ -367,7 +432,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   },
 
   "sync-upstream"(args) {
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     if (!config.upstream) fail('frogg.json has no "streams.upstream"; this is not a fork.');
     const resume = flag(args, "--continue");
     const explicitRef = option(args, "--ref");
@@ -429,7 +494,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   },
 
   contribute(args) {
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     if (!config.upstream) fail('frogg.json has no "streams.upstream"; this is not a fork.');
     const openPr = flag(args, "--open-pr");
     const branchOption = option(args, "--branch");
@@ -506,7 +571,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   },
 
   init(args) {
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     const push = flag(args, "--push");
     fetchOrigin(config.development, config.stable);
     if (refExists(`origin/${config.stable}`) || refExists(config.stable)) {
@@ -522,7 +587,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
 
   "assert-tag"(args) {
     const tag = args[0] ?? fail("usage: assert-tag <tag>");
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     const branch = branchForVersion(config, tag);
     gitTry(["fetch", "--quiet", "origin", `+refs/heads/${branch}:refs/remotes/origin/${branch}`]);
     if (!refExists(`origin/${branch}`)) {
@@ -537,7 +602,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   },
 
   "channel-for-ref"(args) {
-    const config = readStreamsConfig(rootDir);
+    const config = loadStreamsConfig();
     process.stdout.write(
       `${channelForBranch(config, (args[0] ?? "").replace(/^refs\/heads\//, ""))}\n`,
     );

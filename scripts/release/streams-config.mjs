@@ -3,6 +3,7 @@
 // (packages/protocol/src/frogg-config-schema.ts, FroggStreamsConfigSchema); keep the
 // defaults here and there in step (streams-config.test.mjs checks the examples in the docs).
 import { readFileSync } from "node:fs";
+import { UPSTREAM_CHANNELS, channelOfVersion } from "./release-channel.mjs";
 import path from "node:path";
 
 export const DEFAULT_STREAMS = Object.freeze({
@@ -27,9 +28,11 @@ function branchName(value, fallback, label) {
  *
  *   development  branch whose commits ship as betas (default "main")
  *   stable       branch whose commits ship as stable releases (default "stable")
- *   upstream     for a fork: the remote it pulls from, that remote's two branches, and which of
+ *   upstream     for a fork: the remote it pulls from, that remote's two branches, which of
  *                them the fork's development branch follows ("stable" by default: pull tested
- *                upstream releases; "development" to test upstream betas as they land)
+ *                upstream releases; "development" to test upstream betas as they land), and
+ *                the fork's build suffix ("acme": releases are 1.8.0-acme.N, betas
+ *                1.8.0-rc.1.acme.N), which keeps fork versions on upstream's numbers
  */
 export function resolveStreamsConfig(raw) {
   const input = raw && typeof raw === "object" ? raw : {};
@@ -48,8 +51,20 @@ export function resolveStreamsConfig(raw) {
     if (u.repository !== undefined && !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(u.repository)) {
       throw new Error("frogg.json streams.upstream.repository must be owner/name");
     }
+    const suffix = u.suffix ?? null;
+    if (
+      suffix !== null &&
+      (typeof suffix !== "string" ||
+        !/^[a-z][a-z0-9]*$/.test(suffix) ||
+        UPSTREAM_CHANNELS.includes(suffix))
+    ) {
+      throw new Error(
+        'frogg.json streams.upstream.suffix must be a lowercase word that is not a channel name ("acme", not "beta")',
+      );
+    }
     upstream = {
       remote: branchName(u.remote, "upstream", "upstream.remote"),
+      suffix,
       repository: u.repository ?? null,
       development: branchName(u.development, DEFAULT_STREAMS.development, "upstream.development"),
       stable: branchName(u.stable, DEFAULT_STREAMS.stable, "upstream.stable"),
@@ -77,9 +92,12 @@ export function upstreamFollowRef(config) {
   return `${config.upstream.remote}/${branch}`;
 }
 
-/** Stable tags ship from the stable branch, -beta.N tags from the development branch. */
+/**
+ * Betas (a version with a channel part: `-beta.3`, `-rc.1.acme.2`) ship from the development
+ * branch; stable releases, fork rebuilds included (`-acme.2`), from the stable branch.
+ */
 export function branchForVersion(config, version) {
-  return /-/.test(version.replace(/^v/, "")) ? config.development : config.stable;
+  return channelOfVersion(version) === "beta" ? config.development : config.stable;
 }
 
 /** Workflow builds of a branch: the stable branch builds the stable identity, anything else beta. */

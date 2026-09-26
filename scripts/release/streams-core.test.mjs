@@ -8,6 +8,9 @@ import {
 } from "./streams-config.mjs";
 import {
   assertStablePatch,
+  forkPromotionVersion,
+  nextForkBetaVersion,
+  nextForkPatchVersion,
   isReleaseCutSubject,
   isVersionOwnedFile,
   nextBetaVersion,
@@ -143,6 +146,7 @@ test("streams config defaults, fork upstream, and validation", () => {
   });
   assert.deepEqual(fork.upstream, {
     remote: "upstream",
+    suffix: null,
     repository: "frogg-app/frogg",
     development: "main",
     stable: "stable",
@@ -156,4 +160,65 @@ test("streams config defaults, fork upstream, and validation", () => {
   assert.throws(() => resolveStreamsConfig({ development: "x", stable: "x" }), /different/);
   assert.throws(() => resolveStreamsConfig({ stable: "--force" }), /branch name/);
   assert.throws(() => resolveStreamsConfig({ upstream: { follow: "nightly" } }), /follow/);
+});
+
+test("a fork keeps upstream's numbers and counts its own builds after them", () => {
+  // Following upstream's releases: a candidate of upstream 1.9.0 before rollout.
+  assert.equal(
+    nextForkBetaVersion({
+      developmentVersion: "1.8.0-acme.2",
+      upstreamVersion: "1.9.0",
+      suffix: "acme",
+    }),
+    "1.9.0-rc.1.acme.1",
+  );
+  assert.equal(
+    nextForkBetaVersion({
+      developmentVersion: "1.9.0-rc.1.acme.1",
+      upstreamVersion: "1.9.0",
+      suffix: "acme",
+    }),
+    "1.9.0-rc.1.acme.2",
+  );
+  // Following upstream's betas.
+  assert.equal(
+    nextForkBetaVersion({
+      developmentVersion: "1.9.0-rc.1.acme.2",
+      upstreamVersion: "1.10.0-beta.3",
+      suffix: "acme",
+    }),
+    "1.10.0-beta.3.acme.1",
+  );
+  assert.equal(
+    forkPromotionVersion({
+      developmentVersion: "1.9.0-rc.1.acme.2",
+      stableVersion: "1.8.0-acme.2",
+      suffix: "acme",
+    }),
+    "1.9.0-acme.1",
+  );
+  // Fork-only work on an upstream version already shipped continues its build counter.
+  assert.equal(
+    forkPromotionVersion({
+      developmentVersion: "1.9.0-rc.1.acme.4",
+      stableVersion: "1.9.0-acme.1",
+      suffix: "acme",
+    }),
+    "1.9.0-acme.2",
+  );
+  assert.throws(
+    () =>
+      forkPromotionVersion({
+        developmentVersion: "1.9.0-acme.1",
+        stableVersion: null,
+        suffix: "acme",
+      }),
+    /not a beta/,
+  );
+  assert.equal(
+    nextForkPatchVersion({ stableVersion: "1.9.0-acme.2", suffix: "acme" }),
+    "1.9.0-acme.3",
+  );
+  assert.equal(nextForkPatchVersion({ stableVersion: "1.9.0", suffix: "acme" }), "1.9.0-acme.1");
+  assert.throws(() => resolveStreamsConfig({ upstream: { suffix: "beta" } }), /not a channel name/);
 });

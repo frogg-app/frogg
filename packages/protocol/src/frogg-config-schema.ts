@@ -109,6 +109,8 @@ export const FroggStreamsConfigSchema = z
         development: z.string().optional(),
         stable: z.string().optional(),
         follow: z.enum(["stable", "development"]).optional(),
+        /** The fork's build counter name: releases are 1.8.0-acme.N, betas 1.8.0-rc.1.acme.N. */
+        suffix: z.string().optional(),
       })
       .passthrough()
       .optional(),

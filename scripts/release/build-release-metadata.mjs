@@ -1,3 +1,4 @@
+import { channelOfVersion } from "./release-channel.mjs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
@@ -10,7 +11,7 @@ export async function buildReleaseMetadata(options) {
   const descriptor = {
     schemaVersion: 1,
     version: options.version,
-    channel: options.version.includes("-") ? "beta" : "stable",
+    channel: channelOfVersion(options.version),
     updatePaths: {
       "electron-updater": update,
       "tauri-updater": {
