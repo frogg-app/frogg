@@ -1400,9 +1400,21 @@ export const fr: TranslationResources = {
     },
   },
   newChat: {
+    titles: {
+      t1: "Que voulez-vous savoir ?",
+      t2: "Qu'avez-vous en tête ?",
+      t3: "Demandez-moi ce que vous voulez.",
+      t4: "Qu'est-ce qu'on résout aujourd'hui ?",
+      t5: "Par où commencer ?",
+      t6: "Une question ?",
+      t7: "Qu'est-ce qui vous intrigue ?",
+      t8: "Sur quoi puis-je vous aider à réfléchir ?",
+      t9: "Qu'est-ce qu'on approfondit ?",
+      t10: "Besoin d'un deuxième avis ?",
+      t11: "Sur quoi travaillez-vous ?",
+      t12: "Réfléchissons-y ensemble.",
+    },
     placeholder: "Posez n'importe quelle question…",
-    title: "Que voulez-vous savoir ?",
-    subtitle: "Sans projet. Aucun skill ni serveur MCP, accès aux fichiers en lecture seule.",
     send: "Démarrer la discussion",
     errors: {
       hostUnsupported: "Cet hôte ne peut pas exécuter de discussions. Mettez à jour son daemon.",

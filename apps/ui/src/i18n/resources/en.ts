@@ -1376,9 +1376,21 @@ export const en = {
     },
   },
   newChat: {
+    titles: {
+      t1: "What do you want to know?",
+      t2: "What's on your mind?",
+      t3: "Ask me anything.",
+      t4: "What are we figuring out today?",
+      t5: "Where should we start?",
+      t6: "Got a question?",
+      t7: "What are you curious about?",
+      t8: "What can I help you think through?",
+      t9: "What should we dig into?",
+      t10: "Need a second opinion?",
+      t11: "What are you working on?",
+      t12: "Let's work something out.",
+    },
     placeholder: "Ask anything…",
-    title: "What do you want to know?",
-    subtitle: "Not tied to a project. No skills or MCP servers, read-only file access.",
     send: "Start chat",
     errors: {
       hostUnsupported: "This host can't run chats. Update its daemon.",

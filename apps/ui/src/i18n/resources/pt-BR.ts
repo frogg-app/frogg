@@ -1390,10 +1390,21 @@ export const ptBR: TranslationResources = {
     },
   },
   newChat: {
+    titles: {
+      t1: "O que você quer saber?",
+      t2: "O que está pensando?",
+      t3: "Pergunte o que quiser.",
+      t4: "O que vamos descobrir hoje?",
+      t5: "Por onde começamos?",
+      t6: "Tem uma pergunta?",
+      t7: "Sobre o que você está curioso?",
+      t8: "Em que posso ajudar você a pensar?",
+      t9: "O que vamos investigar?",
+      t10: "Precisa de uma segunda opinião?",
+      t11: "No que você está trabalhando?",
+      t12: "Vamos resolver algo juntos.",
+    },
     placeholder: "Pergunte qualquer coisa…",
-    title: "O que você quer saber?",
-    subtitle:
-      "Sem projeto vinculado. Sem skills nem servidores MCP, acesso somente leitura aos arquivos.",
     send: "Iniciar chat",
     errors: {
       hostUnsupported: "Este host não pode executar chats. Atualize o daemon dele.",

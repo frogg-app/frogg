@@ -1399,10 +1399,21 @@ export const es: TranslationResources = {
     },
   },
   newChat: {
+    titles: {
+      t1: "¿Qué quieres saber?",
+      t2: "¿Qué tienes en mente?",
+      t3: "Pregúntame lo que quieras.",
+      t4: "¿Qué vamos a resolver hoy?",
+      t5: "¿Por dónde empezamos?",
+      t6: "¿Tienes una pregunta?",
+      t7: "¿Qué te da curiosidad?",
+      t8: "¿En qué te ayudo a pensar?",
+      t9: "¿Qué investigamos?",
+      t10: "¿Necesitas una segunda opinión?",
+      t11: "¿En qué estás trabajando?",
+      t12: "Vamos a resolver algo.",
+    },
     placeholder: "Pregunta lo que quieras…",
-    title: "¿Qué quieres saber?",
-    subtitle:
-      "Sin proyecto asociado. Sin skills ni servidores MCP, acceso de solo lectura a archivos.",
     send: "Iniciar chat",
     errors: {
       hostUnsupported: "Este host no puede ejecutar chats. Actualiza su daemon.",

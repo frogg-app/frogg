@@ -24,6 +24,24 @@ import { buildFirstAgentContext, submitWorkspaceDraft } from "./new-workspace-sc
 import { getWorkspaceNamingAttachments } from "./new-workspace-fork-context";
 
 const NEW_CHAT_DRAFT_KEY = "new-chat";
+const NEW_CHAT_TITLE_KEYS = [
+  "t1",
+  "t2",
+  "t3",
+  "t4",
+  "t5",
+  "t6",
+  "t7",
+  "t8",
+  "t9",
+  "t10",
+  "t11",
+  "t12",
+] as const;
+
+function pickNewChatTitleKey(): (typeof NEW_CHAT_TITLE_KEYS)[number] {
+  return NEW_CHAT_TITLE_KEYS[Math.floor(Math.random() * NEW_CHAT_TITLE_KEYS.length)]!;
+}
 /** Matches CHAT_WEB_ACCESS_FEATURE_ID on the daemon. */
 export const CHAT_WEB_ACCESS_FEATURE_ID = "web_access";
 const EMPTY_CHAT_PROVIDERS: readonly string[] = [];
@@ -47,6 +65,8 @@ export function NewChatScreen({ serverId }: { serverId: string }) {
   const mergeWorkspaces = useSessionStore((state) => state.mergeWorkspaces);
   const [isPending, setIsPending] = useState(false);
   const [webAccess, setWebAccess] = useState(true);
+  // Picked once per visit so the heading does not change under the user while they type.
+  const [titleKey] = useState(pickNewChatTitleKey);
 
   const chatDraft = useAgentInputDraft({
     draftKey: NEW_CHAT_DRAFT_KEY,
@@ -200,8 +220,7 @@ export function NewChatScreen({ serverId }: { serverId: string }) {
         <TitlebarDragRegion />
         <View style={staticStyles.centered}>
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>{t("newChat.title")}</Text>
-            <Text style={styles.subtitle}>{t("newChat.subtitle")}</Text>
+            <Text style={styles.title}>{t(`newChat.titles.${titleKey}`)}</Text>
           </View>
           <Composer
             externalKeyboardShift
@@ -265,9 +284,5 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize["2xl"],
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foreground,
-  },
-  subtitle: {
-    fontSize: theme.fontSize.sm,
-    color: theme.colors.foregroundMuted,
   },
 }));
