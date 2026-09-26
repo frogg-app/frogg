@@ -229,7 +229,13 @@ export function layoutStreamGraph(input: {
     // A backport or contribution leaves from the source lane just before it lands.
     const from = resolve(event.from, event.fromRelease, Math.max(0, to.column - 1));
     if (!from || from.key === to.key) continue;
-    edges.push({ key: `${event.kind}:${event.sha}`, kind: event.kind, from, to, count: event.count });
+    edges.push({
+      key: `${event.kind}:${event.sha}`,
+      kind: event.kind,
+      from,
+      to,
+      count: event.count,
+    });
   }
 
   const pending: PendingArrow[] = [];

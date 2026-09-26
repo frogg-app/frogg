@@ -20,7 +20,9 @@ export const uiOutput = path.join(root, "apps/ui/.generated/branding");
 export function resolveChannel(value?: string): ReleaseChannel {
   const selected = value ?? (process.env.FROGG_BRAND_CHANNEL?.trim() || "stable");
   if (!(RELEASE_CHANNELS as readonly string[]).includes(selected)) {
-    throw new Error(`Unknown release channel "${selected}"; expected ${RELEASE_CHANNELS.join(" or ")}`);
+    throw new Error(
+      `Unknown release channel "${selected}"; expected ${RELEASE_CHANNELS.join(" or ")}`,
+    );
   }
   return selected as ReleaseChannel;
 }

@@ -50,14 +50,15 @@ export const zhCN: TranslationResources = {
     },
     setup: {
       title: "设置发布流",
-      description: "Beta 版从 {{development}} 发布，稳定版从 {{stable}} 发布，但该分支尚不存在。请从最新的稳定版创建：",
+      description:
+        "Beta 版从 {{development}} 发布，稳定版从 {{stable}} 发布，但该分支尚不存在。请从最新的稳定版创建：",
     },
     flows: {
       title: "等待流转",
       none: "所有变更都已到达其目标发布流。",
       pending_one: "{{count}} 项变更",
       pending_other: "{{count}} 项变更",
-      counts: "{{features}} 项功能 · {{fixes}} 项修复 · {{other}} 项其他",
+      counts: "功能：{{features}} · 修复：{{fixes}} · 其他：{{other}}",
       runOn: "在 {{branch}} 上运行：",
       copy: "复制命令",
       copied: "已复制",

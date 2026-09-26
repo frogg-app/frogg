@@ -79,7 +79,10 @@ describe("release streams graph", () => {
     const streams = Object.fromEntries(graph.streams.map((s) => [s.id, s]));
     expect(streams.stable!.releases.map((r) => r.version)).toEqual(["1.5.1", "1.5.0"]);
     expect(streams.stable!.ref).toBe("refs/remotes/origin/stable");
-    expect(streams.development!.releases.map((r) => r.version)).toEqual(["1.6.0-beta.2", "1.6.0-beta.1"]);
+    expect(streams.development!.releases.map((r) => r.version)).toEqual([
+      "1.6.0-beta.2",
+      "1.6.0-beta.1",
+    ]);
     expect(streams.development!.version).toBe("1.6.0-beta.2");
     expect(streams.development!.unreleased).toBe(1);
 
@@ -127,6 +130,12 @@ describe("release streams graph", () => {
       release: "1.6.0",
     });
     expect(after.flows.find((f) => f.kind === "promote")?.pending).toBe(0);
+    // Backports and the hotfix from before the promotion are not stranded afterwards.
+    expect(after.flows.find((f) => f.kind === "forward-port")).toBeUndefined();
+    commit(work, "late.txt", "fix: after the promotion");
+    git(work, "push", "-q", "origin", "stable");
+    const later = await buildReleaseStreamsGraph({ git: runner(work), config });
+    expect(later.flows.find((f) => f.kind === "forward-port")).toMatchObject({ pending: 1 });
     expect(after.events).toContainEqual(
       expect.objectContaining({ kind: "promote", fromRelease: "1.6.0-beta.2", toRelease: "1.6.0" }),
     );

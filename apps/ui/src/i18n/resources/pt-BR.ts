@@ -9,9 +9,11 @@ export const ptBR: TranslationResources = {
     toolbarSummary_one: "{{development}} → {{stable}}: {{count}} mudança aguardando",
     toolbarSummary_other: "{{development}} → {{stable}}: {{count}} mudanças aguardando",
     unsupportedTitle: "Atualize o daemon",
-    unsupportedDescription: "O daemon deste host é antigo demais para informar os fluxos de versões.",
+    unsupportedDescription:
+      "O daemon deste host é antigo demais para informar os fluxos de versões.",
     errorTitle: "Não foi possível ler os fluxos de versões",
-    fetchFailed: "Não foi possível buscar dos remotos ({{message}}). Mostrando o que este checkout já tem.",
+    fetchFailed:
+      "Não foi possível buscar dos remotos ({{message}}). Mostrando o que este checkout já tem.",
     stream: {
       development: "Desenvolvimento",
       stable: "Estável",
@@ -50,14 +52,15 @@ export const ptBR: TranslationResources = {
     },
     setup: {
       title: "Configurar fluxos de versões",
-      description: "As betas saem de {{development}} e as versões estáveis de {{stable}}, que ainda não existe. Crie-o a partir da versão estável mais recente:",
+      description:
+        "As betas saem de {{development}} e as versões estáveis de {{stable}}, que ainda não existe. Crie-o a partir da versão estável mais recente:",
     },
     flows: {
       title: "Aguardando",
       none: "Cada mudança chegou a todos os fluxos a que se destina.",
       pending_one: "{{count}} mudança",
       pending_other: "{{count}} mudanças",
-      counts: "{{features}} recursos · {{fixes}} correções · {{other}} outros",
+      counts: "Recursos: {{features}} · Correções: {{fixes}} · Outros: {{other}}",
       runOn: "Execute em {{branch}}:",
       copy: "Copiar comando",
       copied: "Copiado",
@@ -67,15 +70,18 @@ export const ptBR: TranslationResources = {
       },
       forwardPort: {
         title: "{{from}} → {{to}}: levar adiante",
-        description: "Correções feitas só no estável. Aplique-as no desenvolvimento com cherry-pick, ou a promoção vai descartá-las.",
+        description:
+          "Correções feitas só no estável. Aplique-as no desenvolvimento com cherry-pick, ou a promoção vai descartá-las.",
       },
       sync: {
         title: "{{from}} → {{to}}: mesclar upstream",
-        description: "Mudanças do upstream que seu branch de desenvolvimento ainda não mesclou. Seu build beta as testa antes dos usuários estáveis.",
+        description:
+          "Mudanças do upstream que seu branch de desenvolvimento ainda não mesclou. Seu build beta as testa antes dos usuários estáveis.",
       },
       contribute: {
         title: "{{from}} → {{to}}: contribuir",
-        description: "Suas mudanças que o upstream não tem. Devolva as mudanças de produto para não precisar mantê-las.",
+        description:
+          "Suas mudanças que o upstream não tem. Devolva as mudanças de produto para não precisar mantê-las.",
       },
     },
     changes: {

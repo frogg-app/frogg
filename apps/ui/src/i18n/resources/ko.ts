@@ -50,14 +50,15 @@ export const ko: TranslationResources = {
     },
     setup: {
       title: "릴리스 스트림 설정",
-      description: "베타는 {{development}}에서, 안정 릴리스는 {{stable}}에서 나오지만 그 브랜치가 아직 없습니다. 최신 안정 릴리스에서 만드세요:",
+      description:
+        "베타는 {{development}}에서, 안정 릴리스는 {{stable}}에서 나오지만 그 브랜치가 아직 없습니다. 최신 안정 릴리스에서 만드세요:",
     },
     flows: {
       title: "이동 대기",
       none: "모든 변경 사항이 가야 할 스트림에 도달했습니다.",
       pending_one: "변경 {{count}}개",
       pending_other: "변경 {{count}}개",
-      counts: "기능 {{features}} · 수정 {{fixes}} · 기타 {{other}}",
+      counts: "기능: {{features}} · 수정: {{fixes}} · 기타: {{other}}",
       runOn: "{{branch}}에서 실행:",
       copy: "명령 복사",
       copied: "복사됨",
@@ -67,15 +68,18 @@ export const ko: TranslationResources = {
       },
       forwardPort: {
         title: "{{from}} → {{to}}: 전방 이식",
-        description: "안정 브랜치에서만 한 수정입니다. 개발 브랜치로 체리픽하지 않으면 승격 때 사라집니다.",
+        description:
+          "안정 브랜치에서만 한 수정입니다. 개발 브랜치로 체리픽하지 않으면 승격 때 사라집니다.",
       },
       sync: {
         title: "{{from}} → {{to}}: 업스트림 병합",
-        description: "개발 브랜치에 아직 병합하지 않은 업스트림 변경입니다. 안정 사용자에게 가기 전에 베타 빌드로 검증합니다.",
+        description:
+          "개발 브랜치에 아직 병합하지 않은 업스트림 변경입니다. 안정 사용자에게 가기 전에 베타 빌드로 검증합니다.",
       },
       contribute: {
         title: "{{from}} → {{to}}: 기여",
-        description: "업스트림에 없는 내 변경 사항입니다. 제품 변경은 돌려보내면 직접 유지할 필요가 없습니다.",
+        description:
+          "업스트림에 없는 내 변경 사항입니다. 제품 변경은 돌려보내면 직접 유지할 필요가 없습니다.",
       },
     },
     changes: {

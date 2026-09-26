@@ -119,6 +119,40 @@ function unpropagated(base, head) {
     .map((sha) => ({ sha, subject: gitOut(["log", "-1", "--format=%s", sha]) }))
     .filter((commit) => !isReleaseCutSubject(commit.subject));
 }
+/**
+ * Changes on stable that development lacks and promotion would drop. Only work since the last
+ * promotion counts (promotion copies development's tree up, so older stable-only commits are
+ * already in development or were superseded), and a backport's source is on development.
+ */
+function strandedOnStable(devRef, stableRef) {
+  const lastPromotion =
+    gitTry([
+      "log",
+      "--first-parent",
+      "--merges",
+      "-1",
+      "--format=%H",
+      "--grep=^chore(release): promote ",
+      stableRef,
+    ]) || null;
+  const lines =
+    gitTry(["cherry", devRef, stableRef, ...(lastPromotion ? [lastPromotion] : [])]) ?? "";
+  return lines
+    .split("\n")
+    .filter((line) => line.startsWith("+ "))
+    .map((line) => line.slice(2))
+    .filter((sha) => gitOut(["rev-list", "--parents", "-n", "1", sha]).split(" ").length === 2)
+    .map((sha) => ({
+      sha,
+      subject: gitOut(["log", "-1", "--format=%s", sha]),
+      body: gitOut(["log", "-1", "--format=%B", sha]),
+    }))
+    .filter((commit) => !isReleaseCutSubject(commit.subject))
+    .filter((commit) => {
+      const source = /\(cherry picked from commit ([0-9a-f]+)\)/.exec(commit.body)?.[1];
+      return !source || gitTry(["merge-base", "--is-ancestor", source, devRef]) === null;
+    });
+}
 function flag(args, name) {
   const index = args.indexOf(name);
   if (index === -1) return false;
@@ -196,7 +230,8 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
       `  ${label.padEnd(12)} ${ref.padEnd(28)} ${readVersion(ref) ?? "?"}`;
     const out = ["Streams", line("development", dev)];
     if (stable) out.push(line("stable", stable));
-    else out.push(`  stable       (no ${config.stable} branch yet; run \`npm run streams -- init\`)`);
+    else
+      out.push(`  stable       (no ${config.stable} branch yet; run \`npm run streams -- init\`)`);
     if (config.upstream) {
       try {
         fetchUpstream(config.upstream.remote);
@@ -212,7 +247,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
       const pending = unpropagated(stable, dev);
       out.push(`${pending.length} change(s) on ${config.development} not yet in stable`);
       for (const c of pending.slice(0, 15)) out.push(`  ${c.sha.slice(0, 9)} ${c.subject}`);
-      const stranded = unpropagated(dev, stable);
+      const stranded = strandedOnStable(dev, stable);
       if (stranded.length) {
         out.push(`${stranded.length} stable-only change(s) missing from ${config.development}:`);
         for (const c of stranded) out.push(`  ${c.sha.slice(0, 9)} ${c.subject}`);
@@ -227,7 +262,9 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
         const outgoing = unpropagated(upstreamDev, dev).filter(
           (c) => gitOut(["rev-list", "--parents", "-n", "1", c.sha]).split(" ").length === 2,
         );
-        out.push(`${outgoing.length} fork change(s) not upstream (candidates for release:contribute)`);
+        out.push(
+          `${outgoing.length} fork change(s) not upstream (candidates for release:contribute)`,
+        );
         for (const c of outgoing.slice(0, 15)) out.push(`  ${c.sha.slice(0, 9)} ${c.subject}`);
       }
     }
@@ -277,9 +314,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     assertClean();
     // Promotion copies the development tree up. A fix made only on stable would be dropped by
     // that copy, so it must reach development first.
-    const stranded = unpropagated(devRef, "HEAD").filter(
-      (c) => gitOut(["rev-list", "--parents", "-n", "1", c.sha]).split(" ").length === 2,
-    );
+    const stranded = strandedOnStable(devRef, "HEAD");
     if (stranded.length && !allowDrop) {
       fail(
         `These stable commits are not on ${config.development}; promoting would drop them:\n` +
@@ -307,7 +342,9 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     for (const commit of args) {
       const subject = gitOut(["log", "-1", "--format=%s", commit]);
       if (isReleaseCutSubject(subject)) fail(`${subject}: release cuts are not backported.`);
-      const files = gitOut(["show", "--format=", "--name-only", commit]).split("\n").filter(Boolean);
+      const files = gitOut(["show", "--format=", "--name-only", commit])
+        .split("\n")
+        .filter(Boolean);
       if (files.length && files.every(isVersionOwnedFile))
         fail(`${subject}: only touches version files; nothing to backport.`);
       process.stdout.write(`backporting: ${subject}\n`);
@@ -358,7 +395,9 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
         { cwd: rootDir, stdio: "inherit" },
       );
       if (merged.status !== 0) {
-        const conflicted = gitOut(["diff", "--name-only", "--diff-filter=U"]).split("\n").filter(Boolean);
+        const conflicted = gitOut(["diff", "--name-only", "--diff-filter=U"])
+          .split("\n")
+          .filter(Boolean);
         const owned = conflicted.filter(isVersionOwnedFile);
         // Version lines always conflict; take upstream's file (it carries upstream's dependency
         // changes) and restamp the fork's version below.
@@ -378,9 +417,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
       fail("No upstream merge in progress.");
     }
     if (gitOut(["diff", "--name-only", "--diff-filter=U"])) fail("Some files still conflict.");
-    const [version, ref] = readFileSync(syncStateFile(), "utf8")
-      .trim()
-      .split("\n");
+    const [version, ref] = readFileSync(syncStateFile(), "utf8").trim().split("\n");
     restamp(version);
     git(["add", "-u"]);
     git(["add", "--", "package-lock.json"]);
@@ -397,15 +434,22 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     if (!config.upstream) fail('frogg.json has no "streams.upstream"; this is not a fork.');
     const openPr = flag(args, "--open-pr");
     const branchOption = option(args, "--branch");
-    if (args.length === 0) fail("Name the commits to offer upstream: release:contribute -- <commit...>");
+    if (args.length === 0)
+      fail("Name the commits to offer upstream: release:contribute -- <commit...>");
     const { remote, development, repository } = config.upstream;
     fetchUpstream(remote);
     const subjects = args.map((commit) => gitOut(["log", "-1", "--format=%s", commit]));
     for (const commit of args) {
-      const files = gitOut(["show", "--format=", "--name-only", commit]).split("\n").filter(Boolean);
-      const branded = files.filter((file) => file.startsWith("brands/") && !file.startsWith("brands/example/"));
+      const files = gitOut(["show", "--format=", "--name-only", commit])
+        .split("\n")
+        .filter(Boolean);
+      const branded = files.filter(
+        (file) => file.startsWith("brands/") && !file.startsWith("brands/example/"),
+      );
       if (branded.length) {
-        fail(`${commit} touches your brand (${branded.join(", ")}); upstream only takes product changes.`);
+        fail(
+          `${commit} touches your brand (${branded.join(", ")}); upstream only takes product changes.`,
+        );
       }
     }
     const slug = subjects[0]
@@ -420,7 +464,10 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     try {
       git(["worktree", "add", "--quiet", "-b", branch, scratch, `${remote}/${development}`]);
       for (const commit of args) {
-        const picked = spawnSync("git", ["cherry-pick", "-x", commit], { cwd: scratch, stdio: "inherit" });
+        const picked = spawnSync("git", ["cherry-pick", "-x", commit], {
+          cwd: scratch,
+          stdio: "inherit",
+        });
         if (picked.status !== 0) {
           spawnSync("git", ["cherry-pick", "--abort"], { cwd: scratch });
           fail(
@@ -492,7 +539,9 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
 
   "channel-for-ref"(args) {
     const config = readStreamsConfig(rootDir);
-    process.stdout.write(`${channelForBranch(config, (args[0] ?? "").replace(/^refs\/heads\//, ""))}\n`);
+    process.stdout.write(
+      `${channelForBranch(config, (args[0] ?? "").replace(/^refs\/heads\//, ""))}\n`,
+    );
   },
 };
 

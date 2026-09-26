@@ -85,7 +85,9 @@ function classify(subject: string): { type: string; scope: string | null; breaki
 
 function streamRefs(config: ReleaseStreamsConfig, refExists: Set<string>): StreamRef[] {
   const local = (branch: string) =>
-    refExists.has(`refs/remotes/origin/${branch}`) ? `refs/remotes/origin/${branch}` : `refs/heads/${branch}`;
+    refExists.has(`refs/remotes/origin/${branch}`)
+      ? `refs/remotes/origin/${branch}`
+      : `refs/heads/${branch}`;
   const refs: StreamRef[] = [];
   if (config.upstream) {
     const { remote, stable, development } = config.upstream;
@@ -205,10 +207,12 @@ async function cherry(
   git: StreamsGit,
   upstream: string,
   head: string,
+  limit: string | null = null,
 ): Promise<{ missing: string[]; equivalent: string[] }> {
   const missing: string[] = [];
   const equivalent: string[] = [];
-  for (const line of lines(await tryGit(git, ["cherry", upstream, head]))) {
+  const args = ["cherry", upstream, head, ...(limit ? [limit] : [])];
+  for (const line of lines(await tryGit(git, args))) {
     if (line.startsWith("+ ")) missing.push(line.slice(2));
     else if (line.startsWith("- ")) equivalent.push(line.slice(2));
   }
@@ -258,7 +262,14 @@ export async function buildReleaseStreamsGraph(input: {
     const newest = releases[0];
     const unreleased =
       present && newest
-        ? Number((await tryGit(git, ["rev-list", "--count", "--no-merges", `${newest.sha}..${stream.ref}`])) ?? 0)
+        ? Number(
+            (await tryGit(git, [
+              "rev-list",
+              "--count",
+              "--no-merges",
+              `${newest.sha}..${stream.ref}`,
+            ])) ?? 0,
+          )
         : 0;
     streams.push({
       id: stream.id,
@@ -282,7 +293,14 @@ export async function buildReleaseStreamsGraph(input: {
   // The change window: recent development commits, what upstream has that development lacks,
   // and anything made on stable alone.
   const devLog = parseLog(
-    await tryGit(git, ["log", "--no-merges", `--format=${LOG_FORMAT}`, "-n", String(CHANGE_WINDOW + 1), dev.ref]),
+    await tryGit(git, [
+      "log",
+      "--no-merges",
+      `--format=${LOG_FORMAT}`,
+      "-n",
+      String(CHANGE_WINDOW + 1),
+      dev.ref,
+    ]),
   ).filter((commit) => !RELEASE_CUT.test(commit.subject));
   const truncated = devLog.length > CHANGE_WINDOW;
   const window = devLog.slice(0, CHANGE_WINDOW);
@@ -309,16 +327,6 @@ export async function buildReleaseStreamsGraph(input: {
   const notInStable = hasStable ? await revSet(git, [`${stable.ref}..${dev.ref}`]) : null;
   const toStable = hasStable ? await cherry(git, stable.ref, dev.ref) : null;
   const backported = new Set(toStable?.equivalent ?? []);
-  const stableOnly = hasStable
-    ? parseLog(
-        await tryGit(git, ["log", "--no-merges", `--format=${LOG_FORMAT}`, `${dev.ref}..${stable.ref}`]),
-      )
-    : [];
-  const stableOnlyCherry = hasStable ? await cherry(git, dev.ref, stable.ref) : null;
-  const stranded = stableOnly.filter(
-    (commit) =>
-      !RELEASE_CUT.test(commit.subject) && (stableOnlyCherry?.missing.includes(commit.sha) ?? false),
-  );
 
   // Backports: the stable commit that carries each development commit (`cherry-pick -x`).
   const backportLog = hasStable
@@ -340,6 +348,40 @@ export async function buildReleaseStreamsGraph(input: {
       backportCarrier.set(match[1]!, { sha, date: date || null });
     }
   }
+  // Stable-only work that development lacks. A promotion copies development's tree up, so
+  // anything on stable before the last promotion is either in development or was dropped on
+  // purpose; and a backport's source is on development by definition.
+  const lastPromotion = hasStable
+    ? (await tryGit(git, [
+        "log",
+        "--first-parent",
+        "--merges",
+        "-1",
+        "--format=%H",
+        "--grep=^chore(release): promote ",
+        stable.ref,
+      ])) || null
+    : null;
+  const stableOnly = hasStable
+    ? parseLog(
+        await tryGit(git, [
+          "log",
+          "--no-merges",
+          `--format=${LOG_FORMAT}`,
+          `${dev.ref}..${stable.ref}`,
+          ...(lastPromotion ? [`^${lastPromotion}`] : []),
+        ]),
+      )
+    : [];
+  const stableOnlyCherry = hasStable ? await cherry(git, dev.ref, stable.ref, lastPromotion) : null;
+  const carrierShas = new Set([...backportCarrier.values()].map((carrier) => carrier.sha));
+  const stranded = stableOnly.filter(
+    (commit) =>
+      !RELEASE_CUT.test(commit.subject) &&
+      !carrierShas.has(commit.sha) &&
+      (stableOnlyCherry?.missing.includes(commit.sha) ?? false),
+  );
+
   const carrierFor = (sha: string) => {
     for (const [picked, carrier] of backportCarrier) {
       if (sha.startsWith(picked) || picked.startsWith(sha)) return carrier;
@@ -358,12 +400,24 @@ export async function buildReleaseStreamsGraph(input: {
 
   // First release per stream.
   const windowShas = window.map((commit) => commit.sha);
-  const carrierShas = windowShas.map((sha) => carrierFor(sha)?.sha).filter((sha): sha is string => !!sha);
+  const windowCarriers = windowShas
+    .map((sha) => carrierFor(sha)?.sha)
+    .filter((sha): sha is string => !!sha);
   const [devReleases, stableReleases, upDevReleases, upStableReleases] = await Promise.all([
     firstReleases(git, windowShas, dev),
-    hasStable ? firstReleases(git, [...windowShas, ...carrierShas, ...stranded.map((c) => c.sha)], stable) : new Map<string, string>(),
-    exists(upDev) ? firstReleases(git, [...windowShas, ...incoming.map((c) => c.sha)], upDev) : new Map<string, string>(),
-    exists(upStable) ? firstReleases(git, [...windowShas, ...incoming.map((c) => c.sha)], upStable) : new Map<string, string>(),
+    hasStable
+      ? firstReleases(
+          git,
+          [...windowShas, ...windowCarriers, ...stranded.map((c) => c.sha)],
+          stable,
+        )
+      : new Map<string, string>(),
+    exists(upDev)
+      ? firstReleases(git, [...windowShas, ...incoming.map((c) => c.sha)], upDev)
+      : new Map<string, string>(),
+    exists(upStable)
+      ? firstReleases(git, [...windowShas, ...incoming.map((c) => c.sha)], upStable)
+      : new Map<string, string>(),
   ]);
 
   const presence = (
@@ -414,17 +468,29 @@ export async function buildReleaseStreamsGraph(input: {
     if (!hasStable || !notInStable) {
       entries.push(presence("stable", "pending", null));
     } else if (!notInStable.has(commit.sha)) {
-      entries.push(presence("stable", "landed", "promotion", stableReleases.get(commit.sha) ?? null));
+      entries.push(
+        presence("stable", "landed", "promotion", stableReleases.get(commit.sha) ?? null),
+      );
     } else if (backported.has(commit.sha)) {
       const carrier = carrierFor(commit.sha);
       entries.push(
-        presence("stable", "landed", "backport", carrier ? (stableReleases.get(carrier.sha) ?? null) : null),
+        presence(
+          "stable",
+          "landed",
+          "backport",
+          carrier ? (stableReleases.get(carrier.sha) ?? null) : null,
+        ),
       );
     } else {
       entries.push(presence("stable", "pending", null));
     }
     entries.push(
-      presence("development", "landed", forkMade ? "commit" : "sync", devReleases.get(commit.sha) ?? null),
+      presence(
+        "development",
+        "landed",
+        forkMade ? "commit" : "sync",
+        devReleases.get(commit.sha) ?? null,
+      ),
     );
     changes.push({ ...commit, ...classify(commit.subject), origin, presence: entries });
   }
@@ -460,7 +526,10 @@ export async function buildReleaseStreamsGraph(input: {
       origin: "stable",
       presence: [
         ...(config.upstream
-          ? [presence("upstream-stable", "absent", null), presence("upstream-development", "absent", null)]
+          ? [
+              presence("upstream-stable", "absent", null),
+              presence("upstream-development", "absent", null),
+            ]
           : []),
         presence("stable", "landed", "commit", stableReleases.get(commit.sha) ?? null),
         presence("development", "absent", null),
@@ -526,7 +595,11 @@ export async function buildReleaseStreamsGraph(input: {
       ]),
     );
     const promotions = merges.filter((commit) => PROMOTE.test(commit.subject));
-    const promotedTo = await firstReleases(git, promotions.map((c) => c.sha), stable);
+    const promotedTo = await firstReleases(
+      git,
+      promotions.map((c) => c.sha),
+      stable,
+    );
     for (const commit of promotions) {
       events.push({
         kind: "promote",
@@ -541,7 +614,11 @@ export async function buildReleaseStreamsGraph(input: {
     }
     const byRelease = new Map<string, ReleaseStreamEvent>();
     const carriers = [...backportCarrier.values()];
-    const carrierReleases = await firstReleases(git, carriers.map((c) => c.sha), stable);
+    const carrierReleases = await firstReleases(
+      git,
+      carriers.map((c) => c.sha),
+      stable,
+    );
     for (const carrier of carriers) {
       const release = carrierReleases.get(carrier.sha) ?? null;
       const key = release ?? "unreleased";
@@ -564,9 +641,21 @@ export async function buildReleaseStreamsGraph(input: {
   }
   if (follow && exists(follow)) {
     const syncs = parseLog(
-      await tryGit(git, ["log", "--merges", "--first-parent", `--format=${LOG_FORMAT}`, "-n", "40", dev.ref]),
+      await tryGit(git, [
+        "log",
+        "--merges",
+        "--first-parent",
+        `--format=${LOG_FORMAT}`,
+        "-n",
+        "40",
+        dev.ref,
+      ]),
     ).filter((commit) => SYNC.test(commit.subject));
-    const syncedInto = await firstReleases(git, syncs.map((c) => c.sha), dev);
+    const syncedInto = await firstReleases(
+      git,
+      syncs.map((c) => c.sha),
+      dev,
+    );
     for (const commit of syncs) {
       const label = SYNC.exec(commit.subject)?.[1] ?? null;
       events.push({

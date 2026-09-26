@@ -24,7 +24,9 @@ export function ReleaseChannelRow() {
       </View>
       <View style={[styles.pill, beta ? styles.pillBeta : null]}>
         <Text style={[styles.pillText, beta ? styles.pillTextBeta : null]}>
-          {beta ? t("settings.about.releaseChannel.beta") : t("settings.about.releaseChannel.stable")}
+          {beta
+            ? t("settings.about.releaseChannel.beta")
+            : t("settings.about.releaseChannel.stable")}
         </Text>
       </View>
     </View>

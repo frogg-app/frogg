@@ -23,9 +23,9 @@ export function compareCore(a, b) {
 }
 
 function maxCore(...versions) {
-  return versions.filter(Boolean).reduce((best, version) =>
-    !best || compareCore(version, best) > 0 ? version : best,
-  );
+  return versions
+    .filter(Boolean)
+    .reduce((best, version) => (!best || compareCore(version, best) > 0 ? version : best));
 }
 
 /**
@@ -68,7 +68,12 @@ export function nextBetaVersion({ developmentVersion, stableVersion, upstreamVer
   }
   if (upstreamLine) return `${upstreamLine}-beta.1`;
   const from = core(maxCore(development.baseVersion, stable));
-  return formatReleaseVersion({ major: from.major, minor: from.minor + 1, patch: 0, prerelease: "beta.1" });
+  return formatReleaseVersion({
+    major: from.major,
+    minor: from.minor + 1,
+    patch: 0,
+    prerelease: "beta.1",
+  });
 }
 
 /** Promoting ships the development branch's beta line as its stable version. */

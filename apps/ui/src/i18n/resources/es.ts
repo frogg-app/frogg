@@ -9,9 +9,11 @@ export const es: TranslationResources = {
     toolbarSummary_one: "{{development}} → {{stable}}: {{count}} cambio en espera",
     toolbarSummary_other: "{{development}} → {{stable}}: {{count}} cambios en espera",
     unsupportedTitle: "Actualiza el daemon",
-    unsupportedDescription: "El daemon de este host es demasiado antiguo para informar de los flujos de versiones.",
+    unsupportedDescription:
+      "El daemon de este host es demasiado antiguo para informar de los flujos de versiones.",
     errorTitle: "No se pudieron leer los flujos de versiones",
-    fetchFailed: "No se pudo obtener de los remotos ({{message}}). Se muestra lo que ya tiene este checkout.",
+    fetchFailed:
+      "No se pudo obtener de los remotos ({{message}}). Se muestra lo que ya tiene este checkout.",
     stream: {
       development: "Desarrollo",
       stable: "Estable",
@@ -50,14 +52,15 @@ export const es: TranslationResources = {
     },
     setup: {
       title: "Configurar flujos de versiones",
-      description: "Las betas salen de {{development}} y las versiones estables de {{stable}}, que aún no existe. Créala desde la versión estable más reciente:",
+      description:
+        "Las betas salen de {{development}} y las versiones estables de {{stable}}, que aún no existe. Créala desde la versión estable más reciente:",
     },
     flows: {
       title: "En espera",
       none: "Cada cambio ha llegado a todos los flujos a los que se dirige.",
       pending_one: "{{count}} cambio",
       pending_other: "{{count}} cambios",
-      counts: "{{features}} funciones · {{fixes}} correcciones · {{other}} otros",
+      counts: "Funciones: {{features}} · Correcciones: {{fixes}} · Otros: {{other}}",
       runOn: "Ejecutar en {{branch}}:",
       copy: "Copiar comando",
       copied: "Copiado",
@@ -67,15 +70,18 @@ export const es: TranslationResources = {
       },
       forwardPort: {
         title: "{{from}} → {{to}}: llevar adelante",
-        description: "Correcciones hechas solo en estable. Aplícalas en desarrollo con cherry-pick o la promoción las descartará.",
+        description:
+          "Correcciones hechas solo en estable. Aplícalas en desarrollo con cherry-pick o la promoción las descartará.",
       },
       sync: {
         title: "{{from}} → {{to}}: fusionar upstream",
-        description: "Cambios de upstream que tu rama de desarrollo aún no ha fusionado. Tu build beta los prueba antes de que lleguen a tus usuarios estables.",
+        description:
+          "Cambios de upstream que tu rama de desarrollo aún no ha fusionado. Tu build beta los prueba antes de que lleguen a tus usuarios estables.",
       },
       contribute: {
         title: "{{from}} → {{to}}: aportar",
-        description: "Cambios tuyos que upstream no tiene. Devuelve los cambios de producto para no tener que mantenerlos tú.",
+        description:
+          "Cambios tuyos que upstream no tiene. Devuelve los cambios de producto para no tener que mantenerlos tú.",
       },
     },
     changes: {

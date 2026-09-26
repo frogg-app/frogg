@@ -19,7 +19,10 @@ test("the first beta opens the next minor above stable", () => {
     nextBetaVersion({ developmentVersion: "1.5.52", stableVersion: "1.5.52" }),
     "1.6.0-beta.1",
   );
-  assert.equal(nextBetaVersion({ developmentVersion: "1.5.52", stableVersion: null }), "1.6.0-beta.1");
+  assert.equal(
+    nextBetaVersion({ developmentVersion: "1.5.52", stableVersion: null }),
+    "1.6.0-beta.1",
+  );
 });
 
 test("an open beta line continues", () => {

@@ -11,7 +11,8 @@ export const ja: TranslationResources = {
     unsupportedTitle: "デーモンを更新してください",
     unsupportedDescription: "このホストのデーモンは古いため、リリースストリームを表示できません。",
     errorTitle: "リリースストリームを読み込めませんでした",
-    fetchFailed: "リモートから取得できませんでした（{{message}}）。このチェックアウトにある情報を表示しています。",
+    fetchFailed:
+      "リモートから取得できませんでした（{{message}}）。このチェックアウトにある情報を表示しています。",
     stream: {
       development: "開発",
       stable: "安定版",
@@ -50,14 +51,15 @@ export const ja: TranslationResources = {
     },
     setup: {
       title: "リリースストリームを設定",
-      description: "ベータは {{development}} から、安定版は {{stable}} からリリースしますが、そのブランチはまだありません。最新の安定版から作成してください：",
+      description:
+        "ベータは {{development}} から、安定版は {{stable}} からリリースしますが、そのブランチはまだありません。最新の安定版から作成してください：",
     },
     flows: {
       title: "移動待ち",
       none: "すべての変更が、向かうべきストリームに届いています。",
       pending_one: "{{count}} 件の変更",
       pending_other: "{{count}} 件の変更",
-      counts: "機能 {{features}} · 修正 {{fixes}} · その他 {{other}}",
+      counts: "機能: {{features}} · 修正: {{fixes}} · その他: {{other}}",
       runOn: "{{branch}} で実行：",
       copy: "コマンドをコピー",
       copied: "コピーしました",
@@ -67,15 +69,18 @@ export const ja: TranslationResources = {
       },
       forwardPort: {
         title: "{{from}} → {{to}}：前方移植",
-        description: "安定版だけで行われた修正です。開発にチェリーピックしないと、昇格時に失われます。",
+        description:
+          "安定版だけで行われた修正です。開発にチェリーピックしないと、昇格時に失われます。",
       },
       sync: {
         title: "{{from}} → {{to}}：アップストリームをマージ",
-        description: "開発ブランチにまだマージしていないアップストリームの変更です。安定版ユーザーに届く前にベータ版で検証できます。",
+        description:
+          "開発ブランチにまだマージしていないアップストリームの変更です。安定版ユーザーに届く前にベータ版で検証できます。",
       },
       contribute: {
         title: "{{from}} → {{to}}：貢献",
-        description: "アップストリームにないあなたの変更です。製品の変更は還元すれば、自分で抱え続ける必要がなくなります。",
+        description:
+          "アップストリームにないあなたの変更です。製品の変更は還元すれば、自分で抱え続ける必要がなくなります。",
       },
     },
     changes: {

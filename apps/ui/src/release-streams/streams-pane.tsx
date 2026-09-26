@@ -4,12 +4,23 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Check, Copy, RotateCw, TriangleAlert } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import type { ReleaseStream, ReleaseStreamChange, ReleaseStreamFlow } from "@frogg/protocol/messages";
-import { PaneContentToolbar, PaneToolbarAccessory, paneContentToolbarIconSize } from "@/components/ui/pane-content-toolbar";
+import type {
+  ReleaseStream,
+  ReleaseStreamChange,
+  ReleaseStreamFlow,
+} from "@frogg/protocol/messages";
+import {
+  PaneContentToolbar,
+  PaneToolbarAccessory,
+  paneContentToolbarIconSize,
+} from "@/components/ui/pane-content-toolbar";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { SearchInput } from "@/components/ui/combobox";
-import { foregroundMutedColorMapping, warningColorMapping } from "@/git/pull-request-panel/section-kit";
+import {
+  foregroundMutedColorMapping,
+  warningColorMapping,
+} from "@/git/pull-request-panel/section-kit";
 import { ICON_SIZE } from "@/styles/theme";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
 import { formatTimeAgo } from "@/utils/time";
@@ -70,7 +81,11 @@ export function StreamsPane({
     : "";
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.content} testID="release-streams-pane">
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+      testID="release-streams-pane"
+    >
       <PaneContentToolbar style={styles.toolbar} testID="release-streams-toolbar">
         <Text style={styles.toolbarText} numberOfLines={1}>
           {summary}
@@ -92,7 +107,10 @@ export function StreamsPane({
                   uniProps={foregroundMutedColorMapping}
                 />
               ) : (
-                <ThemedRotateCw size={paneContentToolbarIconSize(false)} uniProps={foregroundMutedColorMapping} />
+                <ThemedRotateCw
+                  size={paneContentToolbarIconSize(false)}
+                  uniProps={foregroundMutedColorMapping}
+                />
               )}
             </Pressable>
           ) : null}
@@ -203,7 +221,9 @@ function StreamCard({ stream }: { stream: ReleaseStream }) {
         <Text style={styles.cardTitle} numberOfLines={1}>
           {streamName(t, stream.id)}
         </Text>
-        <View style={[styles.channelPill, beta ? styles.channelPillBeta : styles.channelPillStable]}>
+        <View
+          style={[styles.channelPill, beta ? styles.channelPillBeta : styles.channelPillStable]}
+        >
           <Text style={[styles.channelPillText, beta ? styles.channelPillTextBeta : null]}>
             {t(`releaseStreams.channel.${beta ? "beta" : "stable"}`)}
           </Text>
@@ -224,7 +244,9 @@ function StreamCard({ stream }: { stream: ReleaseStream }) {
             : t("releaseStreams.card.noRelease")}
       </Text>
       {stream.exists && stream.unreleased > 0 ? (
-        <Text style={styles.muted}>{t("releaseStreams.card.unreleased", { count: stream.unreleased })}</Text>
+        <Text style={styles.muted}>
+          {t("releaseStreams.card.unreleased", { count: stream.unreleased })}
+        </Text>
       ) : null}
     </View>
   );
@@ -275,9 +297,15 @@ function FlowCard({ flow, data }: { flow: ReleaseStreamFlow; data: StreamsGraphP
   const key = kind === "forward-port" ? "forwardPort" : kind;
   const counts = summarizeFlow(flow, data.changes);
   const warn = kind === "forward-port";
-  const branch = flow.kind === "promote" || flow.kind === "forward-port" ? data.config?.stable : data.config?.development;
+  const branch =
+    flow.kind === "promote" || flow.kind === "forward-port"
+      ? data.config?.stable
+      : data.config?.development;
   return (
-    <View style={[styles.flowCard, warn ? styles.flowCardWarn : null]} testID={`release-streams-flow-${flow.kind}`}>
+    <View
+      style={[styles.flowCard, warn ? styles.flowCardWarn : null]}
+      testID={`release-streams-flow-${flow.kind}`}
+    >
       <View style={styles.flowHeader}>
         {warn ? <ThemedWarning size={ICON_SIZE.sm} uniProps={warningColorMapping} /> : null}
         <Text style={styles.flowTitle}>
@@ -286,12 +314,12 @@ function FlowCard({ flow, data }: { flow: ReleaseStreamFlow; data: StreamsGraphP
             to: streamName(t, flow.to),
           })}
         </Text>
-        <Text style={styles.flowCount}>{t("releaseStreams.flows.pending", { count: flow.pending })}</Text>
+        <Text style={styles.flowCount}>
+          {t("releaseStreams.flows.pending", { count: flow.pending })}
+        </Text>
       </View>
       <Text style={styles.muted}>{t(`releaseStreams.flows.${key}.description`)}</Text>
-      <Text style={styles.muted}>
-        {t("releaseStreams.flows.counts", counts)}
-      </Text>
+      <Text style={styles.muted}>{t("releaseStreams.flows.counts", counts)}</Text>
       {flow.command ? (
         <>
           {branch && flow.kind !== "forward-port" && flow.kind !== "contribute" ? (
@@ -320,7 +348,9 @@ function CommandLine({ command }: { command: string }) {
       </Text>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={copied ? t("releaseStreams.flows.copied") : t("releaseStreams.flows.copy")}
+        accessibilityLabel={
+          copied ? t("releaseStreams.flows.copied") : t("releaseStreams.flows.copy")
+        }
         onPress={copy}
         hitSlop={8}
         style={iconButtonStyle}
@@ -339,7 +369,10 @@ function ChangeList({ data, streams }: { data: StreamsGraphPayload; streams: Rel
   const { t } = useTranslation();
   const [filter, setFilter] = useState<ChangeFilter>("all");
   const [query, setQuery] = useState("");
-  const visible = useMemo(() => filterChanges(data.changes, filter, query), [data.changes, filter, query]);
+  const visible = useMemo(
+    () => filterChanges(data.changes, filter, query),
+    [data.changes, filter, query],
+  );
   const options = useMemo(
     () =>
       (["all", "features", "fixes", "waiting"] as const).map((value) => ({
@@ -362,7 +395,9 @@ function ChangeList({ data, streams }: { data: StreamsGraphPayload; streams: Rel
       {visible.length === 0 ? (
         <Text style={[styles.muted, styles.padded]}>{t("releaseStreams.changes.empty")}</Text>
       ) : (
-        visible.map((change) => <ChangeRow key={`${change.origin}:${change.sha}`} change={change} columns={columns} />)
+        visible.map((change) => (
+          <ChangeRow key={`${change.origin}:${change.sha}`} change={change} columns={columns} />
+        ))
       )}
       {data.truncated ? (
         <Text style={[styles.mutedSmall, styles.padded]}>
@@ -376,7 +411,11 @@ function ChangeList({ data, streams }: { data: StreamsGraphPayload; streams: Rel
 function ChangeRow({ change, columns }: { change: ReleaseStreamChange; columns: ReleaseStream[] }) {
   const { t } = useTranslation();
   const typeStyle =
-    change.type === "feat" ? styles.typeFeat : change.type === "fix" || change.type === "perf" ? styles.typeFix : styles.typeOther;
+    change.type === "feat"
+      ? styles.typeFeat
+      : change.type === "fix" || change.type === "perf"
+        ? styles.typeFix
+        : styles.typeOther;
   return (
     <View style={styles.changeRow} testID="release-streams-change">
       <View style={styles.changeHeader}>
@@ -397,7 +436,10 @@ function ChangeRow({ change, columns }: { change: ReleaseStreamChange; columns: 
         {columns.map((stream) => {
           const entry = change.presence.find((p) => p.stream === stream.id);
           const stateName = normalizePresenceState(entry?.state ?? "absent");
-          const via = entry?.via && entry.via !== "commit" ? t(`releaseStreams.presence.via.${entry.via}`, { defaultValue: entry.via }) : null;
+          const via =
+            entry?.via && entry.via !== "commit"
+              ? t(`releaseStreams.presence.via.${entry.via}`, { defaultValue: entry.via })
+              : null;
           const text =
             stateName === "shipped"
               ? (entry?.release ?? t("releaseStreams.presence.released"))
@@ -457,12 +499,20 @@ const styles = StyleSheet.create((theme) => ({
   toolbarActions: { flexDirection: "row", alignItems: "center", gap: theme.spacing[1] },
   iconButton: { padding: theme.spacing[1], borderRadius: theme.borderRadius.base },
   iconButtonHover: { backgroundColor: theme.colors.surface2 },
-  body: { paddingHorizontal: theme.spacing[3], paddingTop: theme.spacing[3], gap: theme.spacing[3] },
+  body: {
+    paddingHorizontal: theme.spacing[3],
+    paddingTop: theme.spacing[3],
+    gap: theme.spacing[3],
+  },
   loading: { padding: theme.spacing[6], alignItems: "center" },
   padded: { paddingVertical: theme.spacing[2] },
   muted: { fontSize: theme.fontSize.sm, color: theme.colors.foregroundMuted },
   mutedSmall: { fontSize: theme.fontSize.sm, color: theme.colors.foregroundExtraMuted },
-  mono: { fontSize: theme.fontSize.sm, fontFamily: theme.fontFamily.mono, color: theme.colors.foregroundMuted },
+  mono: {
+    fontSize: theme.fontSize.sm,
+    fontFamily: theme.fontFamily.mono,
+    color: theme.colors.foregroundMuted,
+  },
   sectionTitle: {
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
@@ -477,7 +527,11 @@ const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.borderAccent,
     backgroundColor: theme.colors.surface1,
   },
-  setupTitle: { fontSize: theme.fontSize.base, fontWeight: theme.fontWeight.semibold, color: theme.colors.foreground },
+  setupTitle: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.foreground,
+  },
   cards: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing[2] },
   card: {
     flexGrow: 1,
@@ -490,8 +544,18 @@ const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface1,
   },
-  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: theme.spacing[2] },
-  cardTitle: { flexShrink: 1, fontSize: theme.fontSize.base, fontWeight: theme.fontWeight.semibold, color: theme.colors.foreground },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: theme.spacing[2],
+  },
+  cardTitle: {
+    flexShrink: 1,
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.foreground,
+  },
   cardVersion: {
     fontSize: theme.fontSize.xl,
     fontWeight: theme.fontWeight.semibold,
@@ -499,7 +563,11 @@ const styles = StyleSheet.create((theme) => ({
     fontVariant: ["tabular-nums"],
     marginVertical: 2,
   },
-  channelPill: { borderRadius: theme.borderRadius.full, paddingHorizontal: theme.spacing[2], paddingVertical: 1 },
+  channelPill: {
+    borderRadius: theme.borderRadius.full,
+    paddingHorizontal: theme.spacing[2],
+    paddingVertical: 1,
+  },
   channelPillStable: { backgroundColor: theme.colors.surface3 },
   channelPillBeta: { backgroundColor: theme.colors.palette.amber[500] },
   channelPillText: { fontSize: theme.fontSize.sm, color: theme.colors.foreground },
@@ -511,15 +579,28 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     gap: theme.spacing[2],
   },
-  legend: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing[3], paddingHorizontal: theme.spacing[3] },
+  legend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: theme.spacing[3],
+    paddingHorizontal: theme.spacing[3],
+  },
   legendItem: { flexDirection: "row", alignItems: "center", gap: theme.spacing[1] },
   legendText: { fontSize: theme.fontSize.sm, color: theme.colors.foregroundMuted },
   legendRelease: { ...SWATCH, backgroundColor: theme.colors.statusSuccess },
   legendTip: { ...SWATCH, borderWidth: 2, borderColor: theme.colors.foregroundMuted },
   legendPromote: { ...LINE_SWATCH, borderTopColor: theme.colors.statusSuccess },
-  legendBackport: { ...LINE_SWATCH, borderTopColor: theme.colors.statusWarning, borderStyle: "dashed" },
+  legendBackport: {
+    ...LINE_SWATCH,
+    borderTopColor: theme.colors.statusWarning,
+    borderStyle: "dashed",
+  },
   legendSync: { ...LINE_SWATCH, borderTopColor: theme.colors.statusMerged },
-  legendWaiting: { ...LINE_SWATCH, borderTopColor: theme.colors.foregroundMuted, borderStyle: "dotted" },
+  legendWaiting: {
+    ...LINE_SWATCH,
+    borderTopColor: theme.colors.foregroundMuted,
+    borderStyle: "dotted",
+  },
   flows: { gap: theme.spacing[2] },
   flowCard: {
     gap: theme.spacing[1],
@@ -530,8 +611,17 @@ const styles = StyleSheet.create((theme) => ({
   },
   flowCardWarn: { borderColor: theme.colors.statusWarning },
   flowHeader: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
-  flowTitle: { flex: 1, fontSize: theme.fontSize.base, fontWeight: theme.fontWeight.medium, color: theme.colors.foreground },
-  flowCount: { fontSize: theme.fontSize.sm, color: theme.colors.foregroundMuted, fontVariant: ["tabular-nums"] },
+  flowTitle: {
+    flex: 1,
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.medium,
+    color: theme.colors.foreground,
+  },
+  flowCount: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foregroundMuted,
+    fontVariant: ["tabular-nums"],
+  },
   command: {
     flexDirection: "row",
     alignItems: "center",
@@ -541,8 +631,19 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.borderRadius.md,
     backgroundColor: theme.colors.surface2,
   },
-  commandText: { flex: 1, fontSize: theme.fontSize.sm, fontFamily: theme.fontFamily.mono, color: theme.colors.foreground },
-  changeControls: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: theme.spacing[2], marginVertical: theme.spacing[2] },
+  commandText: {
+    flex: 1,
+    fontSize: theme.fontSize.sm,
+    fontFamily: theme.fontFamily.mono,
+    color: theme.colors.foreground,
+  },
+  changeControls: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: theme.spacing[2],
+    marginVertical: theme.spacing[2],
+  },
   search: { flexGrow: 1, flexBasis: 200 },
   changeRow: {
     gap: theme.spacing[1],
@@ -556,7 +657,11 @@ const styles = StyleSheet.create((theme) => ({
   typeFeat: { backgroundColor: theme.colors.statusMerged },
   typeFix: { backgroundColor: theme.colors.statusWarning },
   typeOther: { backgroundColor: theme.colors.surface3 },
-  typeText: { fontSize: theme.fontSize.sm, fontFamily: theme.fontFamily.mono, color: theme.colors.surface0 },
+  typeText: {
+    fontSize: theme.fontSize.sm,
+    fontFamily: theme.fontFamily.mono,
+    color: theme.colors.surface0,
+  },
   presenceRow: { flexDirection: "row", flexWrap: "wrap", gap: theme.spacing[1] },
   presence: {
     flexDirection: "row",

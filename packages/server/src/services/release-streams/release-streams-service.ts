@@ -62,7 +62,8 @@ export async function getReleaseStreams(input: {
   };
   entries.set(input.repoRoot, entry);
   const wantsFetch =
-    input.fetch === true && (entry.fetchedAt === null || now() - entry.fetchedAt > FETCH_INTERVAL_MS);
+    input.fetch === true &&
+    (entry.fetchedAt === null || now() - entry.fetchedAt > FETCH_INTERVAL_MS);
   if (entry.inFlight) return entry.inFlight;
   if (!wantsFetch && entry.result && now() - entry.computedAt < SHARED_TTL_MS) return entry.result;
 

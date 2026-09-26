@@ -24,17 +24,27 @@ function sh(cwd, cmd, args) {
     cwd,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
-    env: { ...process.env, GIT_AUTHOR_NAME: "t", GIT_AUTHOR_EMAIL: "t@t", GIT_COMMITTER_NAME: "t", GIT_COMMITTER_EMAIL: "t@t" },
+    env: {
+      ...process.env,
+      GIT_AUTHOR_NAME: "t",
+      GIT_AUTHOR_EMAIL: "t@t",
+      GIT_COMMITTER_NAME: "t",
+      GIT_COMMITTER_EMAIL: "t@t",
+    },
   }).trim();
 }
 const git = (cwd, ...args) => sh(cwd, "git", args);
 const streams = (cwd, ...args) =>
   sh(cwd, process.execPath, [path.join(cwd, "scripts/release/streams.mjs"), ...args]);
 function streamsFails(cwd, ...args) {
-  const result = spawnSync(process.execPath, [path.join(cwd, "scripts/release/streams.mjs"), ...args], {
-    cwd,
-    encoding: "utf8",
-  });
+  const result = spawnSync(
+    process.execPath,
+    [path.join(cwd, "scripts/release/streams.mjs"), ...args],
+    {
+      cwd,
+      encoding: "utf8",
+    },
+  );
   assert.notEqual(result.status, 0, `expected streams ${args.join(" ")} to fail`);
   return result.stderr + result.stdout;
 }
@@ -131,7 +141,10 @@ test("betas on main, backports and promotion on stable", { timeout: 120_000 }, (
     streams(work, "promote", "--skip-check");
     assert.equal(version(work), "1.6.0");
     // Promotion copies the development tree up exactly.
-    assert.equal(git(work, "diff", "--stat", "origin/main", "HEAD", "--", ".", ":!package.json"), "");
+    assert.equal(
+      git(work, "diff", "--stat", "origin/main", "HEAD", "--", ".", ":!package.json"),
+      "",
+    );
     assert.match(streams(work, "assert-tag", "v1.6.0"), /on origin\/stable/);
 
     git(work, "switch", "-q", "main");

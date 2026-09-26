@@ -92,7 +92,9 @@ function assertStreamBranch(version, mode) {
   if (branch !== required) {
     throw new Error(
       `${version} is a ${beta ? "beta" : "stable"} release, cut from ${required}; you are on ${branch || "(detached)"}.` +
-        (beta ? " Use `npm run release:beta`." : " Use `npm run release:patch` or `npm run release:promote` there."),
+        (beta
+          ? " Use `npm run release:beta`."
+          : " Use `npm run release:patch` or `npm run release:promote` there."),
     );
   }
   if (!beta && (mode === "minor" || mode === "major")) {

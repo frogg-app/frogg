@@ -15,7 +15,9 @@ const branchPattern = /^[A-Za-z0-9._/-]+$/;
 function branchName(value, fallback, label) {
   if (value === undefined || value === null) return fallback;
   if (typeof value !== "string" || !branchPattern.test(value) || value.startsWith("-")) {
-    throw new Error(`frogg.json streams.${label} must be a branch name, got ${JSON.stringify(value)}`);
+    throw new Error(
+      `frogg.json streams.${label} must be a branch name, got ${JSON.stringify(value)}`,
+    );
   }
   return value;
 }

@@ -27,7 +27,10 @@ const CENTERED_PADDED_STYLE = {
 function ReleaseStreamsPanel() {
   const { t } = useTranslation();
   const { serverId, workspaceId, target } = usePaneContext();
-  invariant(target.kind === "release_streams", "ReleaseStreamsPanel requires release_streams target");
+  invariant(
+    target.kind === "release_streams",
+    "ReleaseStreamsPanel requires release_streams target",
+  );
   const cwd = useWorkspaceDirectory(serverId, workspaceId);
   if (!cwd) {
     return (

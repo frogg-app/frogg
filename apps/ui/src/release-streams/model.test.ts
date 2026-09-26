@@ -14,7 +14,12 @@ function stream(id: string, releases: Array<[string, string]>, extra: Partial<Re
     headDate: "2026-09-26T00:00:00Z",
     version: releases[0]?.[0] ?? null,
     unreleased: 2,
-    releases: releases.map(([version, date]) => ({ tag: `v${version}`, version, sha: version, date })),
+    releases: releases.map(([version, date]) => ({
+      tag: `v${version}`,
+      version,
+      sha: version,
+      date,
+    })),
     ...extra,
   } satisfies ReleaseStream;
 }
@@ -34,7 +39,12 @@ function change(
     author: "t",
     date: null,
     origin,
-    presence: Object.entries(presence).map(([s, state]) => ({ stream: s, state, via: null, release: null })),
+    presence: Object.entries(presence).map(([s, state]) => ({
+      stream: s,
+      state,
+      via: null,
+      release: null,
+    })),
   };
 }
 
@@ -115,7 +125,10 @@ describe("release streams model", () => {
       change("fix: c", "fix", { stable: "pending", development: "landed" }),
     ];
     expect(filterChanges(changes, "features", "").map((c) => c.subject)).toEqual(["feat: a"]);
-    expect(filterChanges(changes, "waiting", "").map((c) => c.subject)).toEqual(["feat: a", "fix: c"]);
+    expect(filterChanges(changes, "waiting", "").map((c) => c.subject)).toEqual([
+      "feat: a",
+      "fix: c",
+    ]);
     expect(filterChanges(changes, "all", "c").map((c) => c.subject)).toEqual(["fix: c"]);
     expect(
       summarizeFlow(

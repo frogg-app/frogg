@@ -9,9 +9,11 @@ export const fr: TranslationResources = {
     toolbarSummary_one: "{{development}} → {{stable}} : {{count}} changement en attente",
     toolbarSummary_other: "{{development}} → {{stable}} : {{count}} changements en attente",
     unsupportedTitle: "Mettez à jour le daemon",
-    unsupportedDescription: "Le daemon de cet hôte est trop ancien pour décrire les flux de versions.",
+    unsupportedDescription:
+      "Le daemon de cet hôte est trop ancien pour décrire les flux de versions.",
     errorTitle: "Impossible de lire les flux de versions",
-    fetchFailed: "Impossible de récupérer depuis les dépôts distants ({{message}}). Affichage de ce que cette copie contient déjà.",
+    fetchFailed:
+      "Impossible de récupérer depuis les dépôts distants ({{message}}). Affichage de ce que cette copie contient déjà.",
     stream: {
       development: "Développement",
       stable: "Stable",
@@ -50,14 +52,15 @@ export const fr: TranslationResources = {
     },
     setup: {
       title: "Configurer les flux de versions",
-      description: "Les bêtas partent de {{development}} et les versions stables de {{stable}}, qui n’existe pas encore. Créez-la depuis la dernière version stable :",
+      description:
+        "Les bêtas partent de {{development}} et les versions stables de {{stable}}, qui n’existe pas encore. Créez-la depuis la dernière version stable :",
     },
     flows: {
       title: "En attente",
       none: "Chaque changement a atteint tous les flux auxquels il est destiné.",
       pending_one: "{{count}} changement",
       pending_other: "{{count}} changements",
-      counts: "{{features}} fonctionnalités · {{fixes}} correctifs · {{other}} autres",
+      counts: "Fonctionnalités : {{features}} · Correctifs : {{fixes}} · Autres : {{other}}",
       runOn: "À lancer sur {{branch}} :",
       copy: "Copier la commande",
       copied: "Copié",
@@ -67,15 +70,18 @@ export const fr: TranslationResources = {
       },
       forwardPort: {
         title: "{{from}} → {{to}} : reporter",
-        description: "Correctifs faits uniquement sur stable. Reportez-les sur développement par cherry-pick, sinon la promotion les perdra.",
+        description:
+          "Correctifs faits uniquement sur stable. Reportez-les sur développement par cherry-pick, sinon la promotion les perdra.",
       },
       sync: {
         title: "{{from}} → {{to}} : fusionner l’upstream",
-        description: "Changements upstream que votre branche de développement n’a pas encore fusionnés. Votre build bêta les teste avant vos utilisateurs stables.",
+        description:
+          "Changements upstream que votre branche de développement n’a pas encore fusionnés. Votre build bêta les teste avant vos utilisateurs stables.",
       },
       contribute: {
         title: "{{from}} → {{to}} : contribuer",
-        description: "Vos changements que l’upstream n’a pas. Proposez-lui les changements produit pour ne plus les porter vous-même.",
+        description:
+          "Vos changements que l’upstream n’a pas. Proposez-lui les changements produit pour ne plus les porter vous-même.",
       },
     },
     changes: {
@@ -3134,7 +3140,8 @@ export const fr: TranslationResources = {
       releaseChannel: {
         label: "Canal de sortie",
         stableHint: "Les bêtas sont une app distincte, {{beta}}, qui s’installe à côté de celle-ci",
-        betaHint: "Cette bêta s’installe à côté de {{stable}} et ne se met à jour que vers des bêtas",
+        betaHint:
+          "Cette bêta s’installe à côté de {{stable}} et ne se met à jour que vers des bêtas",
         stable: "Stable",
         beta: "Beta",
       },

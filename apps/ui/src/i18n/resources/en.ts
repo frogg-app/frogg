@@ -9,7 +9,8 @@ export const en = {
     unsupportedTitle: "Update the daemon",
     unsupportedDescription: "This host's daemon is too old to report release streams.",
     errorTitle: "Couldn't read the release streams",
-    fetchFailed: "Couldn't fetch from the remotes ({{message}}). Showing what this checkout already has.",
+    fetchFailed:
+      "Couldn't fetch from the remotes ({{message}}). Showing what this checkout already has.",
     stream: {
       development: "Development",
       stable: "Stable",
@@ -48,14 +49,15 @@ export const en = {
     },
     setup: {
       title: "Set up release streams",
-      description: "Betas ship from {{development}} and stable releases from {{stable}}, which doesn't exist yet. Create it from the newest stable release:",
+      description:
+        "Betas ship from {{development}} and stable releases from {{stable}}, which doesn't exist yet. Create it from the newest stable release:",
     },
     flows: {
       title: "Waiting to move",
       none: "Every change has reached every stream it is headed for.",
       pending_one: "{{count}} change",
       pending_other: "{{count}} changes",
-      counts: "{{features}} features · {{fixes}} fixes · {{other}} other",
+      counts: "Features: {{features}} · Fixes: {{fixes}} · Other: {{other}}",
       runOn: "Run on {{branch}}:",
       copy: "Copy command",
       copied: "Copied",
@@ -65,15 +67,18 @@ export const en = {
       },
       forwardPort: {
         title: "{{from}} → {{to}}: forward-port",
-        description: "Fixes made only on stable. Cherry-pick them onto development, or promotion will drop them.",
+        description:
+          "Fixes made only on stable. Cherry-pick them onto development, or promotion will drop them.",
       },
       sync: {
         title: "{{from}} → {{to}}: merge upstream",
-        description: "Upstream changes your development branch has not merged yet. Your beta build tests them before they reach your stable users.",
+        description:
+          "Upstream changes your development branch has not merged yet. Your beta build tests them before they reach your stable users.",
       },
       contribute: {
         title: "{{from}} → {{to}}: contribute",
-        description: "Your changes that upstream does not have. Offer the product changes back so you stop carrying them.",
+        description:
+          "Your changes that upstream does not have. Offer the product changes back so you stop carrying them.",
       },
     },
     changes: {

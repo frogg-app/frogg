@@ -344,7 +344,6 @@ export function DesktopUpdatesSection({ appVersion }: { appVersion: string | nul
     installUpdate,
   } = useDesktopAppUpdater();
 
-
   const handleCheck = useCallback(() => {
     void checkForUpdates();
   }, [checkForUpdates]);
