@@ -1,6 +1,6 @@
 {
   "name": "@frogg/cli",
-  "version": "1.5.55",
+  "version": "1.5.56",
   "description": "Frogg CLI - control your AI coding agents from the command line",
   "bin": {
     "frogg": "bin/frogg"
@@ -28,10 +28,10 @@
   },
   "dependencies": {
     "@clack/prompts": "1.1.0",
-    "@frogg/branding": "1.5.55",
-    "@frogg/client": "1.5.55",
-    "@frogg/protocol": "1.5.55",
-    "@frogg/server": "1.5.55",
+    "@frogg/branding": "1.5.56",
+    "@frogg/client": "1.5.56",
+    "@frogg/protocol": "1.5.56",
+    "@frogg/server": "1.5.56",
     "chalk": "^5.3.0",
     "commander": "^12.0.0",
     "mime-types": "^3.0.2",
