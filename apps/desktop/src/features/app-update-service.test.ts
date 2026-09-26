@@ -246,6 +246,40 @@ describe("app update service", () => {
     });
   });
 
+  it("does not offer an older stable build to a beta install", async () => {
+    const { runtime, service } = createService();
+    // electron-updater reports an update for any version change once its channel
+    // setter has turned allowDowngrade back on.
+    runtime.nextCheck({
+      isUpdateAvailable: true,
+      updateInfo: { ...rolledOutUpdate, version: "1.5.45" },
+    });
+
+    const result = await service.checkForAppUpdate({
+      currentVersion: "1.6.0-beta.1",
+      releaseChannel: "stable",
+      intent: "manual",
+    });
+
+    expect(result).toMatchObject({ hasUpdate: false, latestVersion: "1.6.0-beta.1" });
+  });
+
+  it("still offers a newer stable build", async () => {
+    const { runtime, service } = createService();
+    runtime.nextCheck({
+      isUpdateAvailable: true,
+      updateInfo: { ...rolledOutUpdate, version: "1.5.46" },
+    });
+
+    const result = await service.checkForAppUpdate({
+      currentVersion: "1.5.45",
+      releaseChannel: "stable",
+      intent: "manual",
+    });
+
+    expect(result).toMatchObject({ hasUpdate: true, latestVersion: "1.5.46" });
+  });
+
   it("keeps a manually admitted update after a rollout-gated automatic recheck", async () => {
     const { runtime, service } = createService();
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
