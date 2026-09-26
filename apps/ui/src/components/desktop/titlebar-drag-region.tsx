@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { getIsElectronRuntime, HEADER_INNER_HEIGHT } from "@/constants/layout";
+import { getDesktopWindow, toggleDesktopMaximize } from "@/desktop/electron/window";
 import { isNative } from "@/constants/platform";
 import { useCustomDesktopWindowControls } from "@/utils/desktop-window";
 
@@ -97,6 +99,10 @@ const WINDOW_TOP_RESIZER_STYLE: React.CSSProperties = { ...TOP_RESIZER_STYLE, po
  */
 export function WindowTitlebarDragStrip() {
   const { visible } = useCustomDesktopWindowControls();
+  useEffect(() => {
+    if (isNative || !visible) return;
+    return installManualDragFallback();
+  }, [visible]);
   if (isNative || !visible) {
     return null;
   }
@@ -107,4 +113,55 @@ export function WindowTitlebarDragStrip() {
       <div style={WINDOW_TOP_RESIZER_STYLE} />
     </>
   );
+}
+
+function isWindowDragTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  // app-region inherits, so a header's text and icons report "drag" and controls under the
+  // index.html backstop report "no-drag".
+  const style = getComputedStyle(target) as CSSStyleDeclaration & {
+    appRegion?: string;
+    webkitAppRegion?: string;
+  };
+  return (style.appRegion || style.webkitAppRegion) === "drag";
+}
+
+/**
+ * When the OS honours a drag region it swallows the press, so the page never sees it. A
+ * mousedown that does reach a drag surface means the native move failed (Windows can drop
+ * regions entirely), so move the window from the main process instead.
+ */
+function installManualDragFallback(): () => void {
+  let dragging = false;
+  const end = () => {
+    if (!dragging) return;
+    dragging = false;
+    void getDesktopWindow()?.endDrag?.();
+  };
+  const onMouseDown = (event: MouseEvent) => {
+    if (event.button !== 0 || !isWindowDragTarget(event.target)) return;
+    event.preventDefault();
+    if (event.detail === 2) {
+      end();
+      void toggleDesktopMaximize();
+      return;
+    }
+    const win = getDesktopWindow();
+    if (typeof win?.startDrag !== "function") return;
+    dragging = true;
+    void win.startDrag({
+      clientX: event.clientX,
+      clientY: event.clientY,
+      viewportWidth: window.innerWidth,
+    });
+  };
+  window.addEventListener("mousedown", onMouseDown, true);
+  window.addEventListener("mouseup", end, true);
+  window.addEventListener("blur", end);
+  return () => {
+    end();
+    window.removeEventListener("mousedown", onMouseDown, true);
+    window.removeEventListener("mouseup", end, true);
+    window.removeEventListener("blur", end);
+  };
 }

@@ -103,6 +103,8 @@ export interface DesktopWindowBridge {
   minimize?: () => Promise<void>;
   close?: () => Promise<void>;
   toggleMaximize?: () => Promise<void>;
+  startDrag?: (start: { clientX: number; clientY: number; viewportWidth: number }) => Promise<void>;
+  endDrag?: () => Promise<void>;
   isMaximized?: () => Promise<boolean>;
   setFullscreen?: (fullscreen: boolean) => Promise<void>;
   isFullscreen?: () => Promise<boolean>;

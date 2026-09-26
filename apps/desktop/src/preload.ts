@@ -77,6 +77,9 @@ contextBridge.exposeInMainWorld("froggDesktop", {
       minimize: () => ipcRenderer.invoke("frogg:window:minimize"),
       close: () => ipcRenderer.invoke("frogg:window:close"),
       toggleMaximize: () => ipcRenderer.invoke("frogg:window:toggleMaximize"),
+      startDrag: (start: { clientX: number; clientY: number; viewportWidth: number }) =>
+        ipcRenderer.invoke("frogg:window:startDrag", start),
+      endDrag: () => ipcRenderer.invoke("frogg:window:endDrag"),
       isMaximized: () => ipcRenderer.invoke("frogg:window:isMaximized"),
       setFullscreen: (fullscreen: boolean) =>
         ipcRenderer.invoke("frogg:window:setFullscreen", fullscreen),
