@@ -1,4 +1,5 @@
 import { PanelRight } from "lucide-react-native";
+import { createContext, useContext } from "react";
 import { type StyleProp, type ViewStyle } from "react-native";
 import { withUnistyles } from "react-native-unistyles";
 import { HeaderToggleButton } from "@/components/headers/header-toggle-button";
@@ -70,15 +71,19 @@ interface DesktopWorkspaceExplorerToggleProps extends Omit<WorkspaceExplorerTogg
 }
 
 /**
- * The toggle lives in the workspace header on every desktop platform, open or closed, so it
- * never moves and stays reachable whether or not this workspace can draw the sidebar.
+ * True while the explorer sidebar dock is drawn. The dock then pins the toggle at the right of
+ * its tab rail, so the toggle keeps the same top-right spot whether the sidebar is open or not.
  */
+export const ExplorerSidebarDockedContext = createContext(false);
+
 export function shouldShowHeaderExplorerToggle({
   owner,
+  docked,
 }: {
   owner: WorkspaceExplorerToggleOwner;
+  docked: boolean;
 }): boolean {
-  return owner !== "mobile";
+  return owner !== "mobile" && !docked;
 }
 
 export function WorkspaceHeaderExplorerToggle({
@@ -87,7 +92,8 @@ export function WorkspaceHeaderExplorerToggle({
   style,
   ...toggleProps
 }: DesktopWorkspaceExplorerToggleProps) {
-  if (!shouldShowHeaderExplorerToggle({ owner })) {
+  const docked = useContext(ExplorerSidebarDockedContext);
+  if (!shouldShowHeaderExplorerToggle({ owner, docked })) {
     return null;
   }
   return (

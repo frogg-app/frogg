@@ -63,7 +63,11 @@ const TAB_ICON_SIZE = iconButtonChromeGlyphSize("small");
 const LABEL_GAP = SPACING[1];
 const LABEL_MAX_WIDTH = 140;
 const ICON_ONLY_TAB_WIDTH = TAB_PADDING * 2 + TAB_ICON_SIZE;
-const LABEL_TRANSITION = { duration: 240, easing: Easing.bezier(0.2, 0, 0, 1) };
+const LABEL_TRANSITION = { duration: 260, easing: Easing.bezier(0.2, 0, 0, 1) };
+// The label is only visible over the last stretch of the slot's travel. With the ease-out curve
+// that stretch is the tail of an expand and the first instant of a collapse, so labels fade in
+// once their slot has opened and are gone before it closes: never seen clipped mid-transition.
+const LABEL_VISIBLE_FROM = 0.9;
 
 /**
  * Tabs drop to icons only when their labels no longer fit, and the rail reports the icon-only
@@ -192,9 +196,10 @@ function ExplorerSidebarTab({
   const labelSlotStyle = useAnimatedStyle(
     () => ({
       width: (labelWidth + LABEL_GAP) * labelProgress.value,
-      // The label fades out ahead of the width so it never looks clipped mid-collapse.
-      opacity: interpolate(labelProgress.value, [0.35, 1], [0, 1], "clamp"),
-      transform: [{ translateX: interpolate(labelProgress.value, [0, 1], [-4, 0]) }],
+      opacity: interpolate(labelProgress.value, [LABEL_VISIBLE_FROM, 1], [0, 1], "clamp"),
+      transform: [
+        { translateX: interpolate(labelProgress.value, [LABEL_VISIBLE_FROM, 1], [-3, 0], "clamp") },
+      ],
     }),
     [labelWidth],
   );

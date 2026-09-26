@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { View, type LayoutChangeEvent } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { PaneToolbarAccessoryProvider } from "@/components/ui/pane-content-toolbar";
 import { RetainedPanel } from "@/components/retained-panel";
 import {
   TITLEBAR_DRAG_SURFACE_DATASET,
@@ -17,15 +16,6 @@ import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-
 import type { SplitPane } from "@/stores/workspace-layout-store";
 import type { WorkspaceTab } from "@/workspace-tabs/model";
 import { WindowChromeRegion, WindowChromeSafeArea } from "@/utils/desktop-window";
-
-/** Panels whose primary toolbar renders the sidebar close toggle itself. */
-const PANEL_KINDS_WITH_TOOLBAR_ACCESSORY = new Set<WorkspaceTabDescriptor["target"]["kind"]>([
-  "files",
-  "changes_tree",
-  "working_diff",
-  "pull_request",
-  "ci_runs",
-]);
 
 interface ExplorerSidebarDockProps {
   pane: SplitPane;
@@ -122,11 +112,6 @@ export function ExplorerSidebarDock({
     [onReorderTabsInPane, pane.id],
   );
 
-  const activeTab = tabs.find((tab) => tab.tabId === activeTabId);
-  const toolbarOwnsHeaderAction = activeTab
-    ? PANEL_KINDS_WITH_TOOLBAR_ACCESSORY.has(activeTab.target.kind)
-    : false;
-
   return (
     <RetainedPanel active>
       <WindowChromeRegion corners="top-right">
@@ -151,24 +136,22 @@ export function ExplorerSidebarDock({
               onCreateNewTab={onCreateNewTab}
               onMoveTabToMain={onMoveTabToMain}
               onReorderTabs={handleReorderTabs}
-              trailingAccessory={toolbarOwnsHeaderAction ? null : headerAction}
+              trailingAccessory={headerAction}
               onMeasure={handleRailMeasure}
             />
             <View pointerEvents="none" style={styles.tabRailDivider} />
           </WindowChromeSafeArea>
           <View style={styles.content}>
-            <PaneToolbarAccessoryProvider accessory={headerAction}>
-              <WorkspacePanelHost
-                paneId={pane.id}
-                tabs={tabs}
-                activeTabId={activeTabId}
-                normalizedServerId={normalizedServerId}
-                normalizedWorkspaceId={normalizedWorkspaceId}
-                isWorkspaceFocused={isWorkspaceFocused}
-                isPaneFocused
-                buildPaneContentModel={buildPaneContentModel}
-              />
-            </PaneToolbarAccessoryProvider>
+            <WorkspacePanelHost
+              paneId={pane.id}
+              tabs={tabs}
+              activeTabId={activeTabId}
+              normalizedServerId={normalizedServerId}
+              normalizedWorkspaceId={normalizedWorkspaceId}
+              isWorkspaceFocused={isWorkspaceFocused}
+              isPaneFocused
+              buildPaneContentModel={buildPaneContentModel}
+            />
           </View>
         </View>
       </WindowChromeRegion>
