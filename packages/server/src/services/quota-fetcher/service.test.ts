@@ -15,6 +15,7 @@ import { KimiQuotaProvider } from "./providers/kimi.js";
 import { MiniMaxQuotaProvider } from "./providers/minimax.js";
 import { ZaiQuotaProvider } from "./providers/zai.js";
 import { ProviderUsageService } from "./service.js";
+import { ProviderRateLimitedError } from "./usage.js";
 
 function writeClaudeCredentials(
   dir: string,
@@ -259,7 +260,7 @@ describe("ProviderUsageService", () => {
     const refreshed = await service.listUsage({ forceRefresh: true });
 
     expect(calls).toBe(2);
-    expect(cached).toBe(first);
+    expect(cached).toEqual(first);
     expect(refreshed.providers[0]?.windows[0]?.usedPct).toBe(2);
   });
 
@@ -292,7 +293,7 @@ describe("ProviderUsageService", () => {
     // Inside the floor: even "fresh, please" is served from the cache.
     await service.listUsage({ maxAgeMs: 0 });
     expect(calls).toBe(1);
-    now += 4_000;
+    now += 28_000;
     const fresh = await service.listUsage({ maxAgeMs: 0 });
     expect(calls).toBe(2);
     expect(fresh.providers[0]?.windows[0]?.usedPct).toBe(2);
@@ -335,7 +336,7 @@ describe("ProviderUsageService", () => {
     });
 
     const [firstResult, secondResult] = await Promise.all([first, second]);
-    expect(firstResult).toBe(secondResult);
+    expect(firstResult).toEqual(secondResult);
     expect(calls).toBe(1);
   });
 
@@ -381,7 +382,121 @@ describe("ProviderUsageService", () => {
     expect(seen).toEqual([undefined, "/home/u/.claude-steve"]);
     expect(unscoped.providers[0]?.planLabel).toBe("Max 20x");
     expect(scoped.providers[0]?.planLabel).toBe("Pro 1x");
-    expect(unscopedAgain).toBe(unscoped);
+    expect(unscopedAgain).toEqual(unscoped);
+  });
+
+  // Regression: the cache was keyed by the whole request, so every distinct
+  // account scope re-read every provider, and the default Claude sign-in was
+  // re-read once per scope that happened to name another provider.
+  it("shares each provider's read across requests scoped to other providers", async () => {
+    const calls: string[] = [];
+    const fetcher = (providerId: string): ProviderUsageFetcher => ({
+      providerId,
+      displayName: providerId,
+      fetchUsage: async (context) => {
+        calls.push(`${providerId}:${context?.configDir ?? "default"}`);
+        return { providerId, displayName: providerId, status: "available", windows: [] };
+      },
+    });
+    const service = new ProviderUsageService({
+      logger: createLogger(),
+      now: () => Date.parse("2026-06-19T00:00:00.000Z"),
+      fetchers: [fetcher("claude"), fetcher("codex")],
+    });
+
+    await service.listUsage();
+    await service.listUsage({ configDirs: { claude: "/a" } });
+    await service.listUsage({ configDirs: { claude: "/b" } });
+    await service.listUsage({ configDirs: { codex: "/c" } });
+    await service.listUsage({ configDirs: { claude: "/a" }, maxAgeMs: 0 });
+
+    expect(calls).toEqual([
+      "claude:default",
+      "codex:default",
+      "claude:/a",
+      "claude:/b",
+      "codex:/c",
+    ]);
+  });
+
+  it("holds a rate-limited provider off, serving its last good figures", async () => {
+    let now = Date.parse("2026-06-19T00:00:00.000Z");
+    let calls = 0;
+    let limited = false;
+    const service = new ProviderUsageService({
+      logger: createLogger(),
+      now: () => now,
+      cacheTtlMs: 60_000,
+      fetchers: [
+        {
+          providerId: "claude",
+          displayName: "Claude",
+          fetchUsage: async () => {
+            calls += 1;
+            if (limited) throw new ProviderRateLimitedError(null);
+            return {
+              providerId: "claude",
+              displayName: "Claude",
+              status: "available",
+              windows: [{ id: "session", label: "Session", usedPct: 40 }],
+            };
+          },
+        },
+      ],
+    });
+
+    await service.listUsage();
+    limited = true;
+    now += 60_000;
+    const during = await service.listUsage({ forceRefresh: true });
+    expect(calls).toBe(2);
+    expect(during.providers[0]?.status).toBe("available");
+    expect(during.providers[0]?.windows[0]?.usedPct).toBe(40);
+
+    // Inside the first 60s cooldown nothing reaches the provider.
+    now += 59_000;
+    await service.listUsage({ forceRefresh: true });
+    expect(calls).toBe(2);
+
+    // A second 429 doubles the hold-off.
+    now += 1_000;
+    await service.listUsage({ forceRefresh: true });
+    expect(calls).toBe(3);
+    now += 119_000;
+    await service.listUsage({ forceRefresh: true });
+    expect(calls).toBe(3);
+    now += 1_000;
+    limited = false;
+    await service.listUsage({ forceRefresh: true });
+    expect(calls).toBe(4);
+  });
+
+  it("honours Retry-After when it is longer than the backoff", async () => {
+    let now = Date.parse("2026-06-19T00:00:00.000Z");
+    let calls = 0;
+    const service = new ProviderUsageService({
+      logger: createLogger(),
+      now: () => now,
+      fetchers: [
+        {
+          providerId: "claude",
+          displayName: "Claude",
+          fetchUsage: async () => {
+            calls += 1;
+            throw new ProviderRateLimitedError(600_000);
+          },
+        },
+      ],
+    });
+
+    const first = await service.listUsage();
+    expect(first.providers[0]?.status).toBe("error");
+    now += 599_000;
+    await service.listUsage({ forceRefresh: true });
+    expect(calls).toBe(1);
+    now += 1_000;
+    await service.listUsage({ forceRefresh: true });
+    expect(calls).toBe(2);
   });
 
   it("isolates one provider error without dropping other providers", async () => {

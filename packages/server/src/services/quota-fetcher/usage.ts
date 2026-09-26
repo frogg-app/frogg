@@ -19,15 +19,40 @@ export const ApiOptionalStringSchema = z.preprocess(
   z.coerce.string().optional(),
 );
 
-export function fetchProviderApi(
+/**
+ * A provider told us to back off (HTTP 429). Thrown from the shared fetch
+ * helper so every provider reports it the same way and the service can hold
+ * that provider off instead of retrying on the next read.
+ */
+export class ProviderRateLimitedError extends Error {
+  constructor(readonly retryAfterMs: number | null) {
+    super("Usage API rate limited");
+    this.name = "ProviderRateLimitedError";
+  }
+}
+
+/** Retry-After as delta-seconds or an HTTP date; null when absent or unparseable. */
+export function parseRetryAfterMs(value: string | null, nowMs: number = Date.now()): number | null {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const date = Date.parse(value);
+  return Number.isNaN(date) ? null : Math.max(0, date - nowMs);
+}
+
+export async function fetchProviderApi(
   fetchApi: ProviderApiFetch,
   input: RequestInfo | URL,
   init: RequestInit = {},
 ): Promise<Response> {
-  return fetchApi(input, {
+  const res = await fetchApi(input, {
     ...init,
     signal: init.signal ?? AbortSignal.timeout(PROVIDER_HTTP_TIMEOUT_MS),
   });
+  if (res.status === 429) {
+    throw new ProviderRateLimitedError(parseRetryAfterMs(res.headers.get("retry-after")));
+  }
+  return res;
 }
 
 export function unavailableUsage(provider: {
