@@ -61,6 +61,10 @@ deployment run, not more code.
 - [ ] Security card: saving a password, LAN-trust and claim-mode fixes from the app,
       mobile layout. Relay endpoint setting against a real relay.
 - [ ] Import: interrupted transfer, corrupt cleanup, cross-machine.
+- [ ] Unattended local pairing (`pairing.autoConfirmLocal`): branded desktop build against
+      a password-protected loopback daemon, opening `pair --json --role owner`'s deep link
+      with no clicks; LAN host, stock brand and wrong `fp` still ask or refuse; re-pair
+      replaces the credential. Also `pair` against a daemon bound to `[::]`.
 
 ## Deferred deliberately
 

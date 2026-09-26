@@ -2030,6 +2030,12 @@ export const ptBR: TranslationResources = {
       cancel: "Cancelar",
       retryVerification: "Tentar de novo",
     },
+    auto: {
+      title: "Pareando com esta máquina",
+      pairing: "Pareando automaticamente…",
+      paired: "Pareado com {{hostname}}",
+      pairedAs: "Pareado com {{hostname}} como {{role}}",
+    },
   },
   presence: {
     label: "Também aqui",

@@ -2025,6 +2025,12 @@ export const ru: TranslationResources = {
       cancel: "Отмена",
       retryVerification: "Повторить попытку",
     },
+    auto: {
+      title: "Сопряжение с этим компьютером",
+      pairing: "Автоматическое сопряжение…",
+      paired: "Сопряжено с {{hostname}}",
+      pairedAs: "Сопряжено с {{hostname}} с ролью «{{role}}»",
+    },
   },
   presence: {
     label: "Тоже здесь",

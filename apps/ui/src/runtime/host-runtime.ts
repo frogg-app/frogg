@@ -43,7 +43,7 @@ import {
   type ClaimOfferOptions,
   type ClaimResult,
 } from "@/pairing/claim-offer";
-import type { DirectPairingLink } from "@frogg/protocol/device-access";
+import type { DeviceRole, DirectPairingLink } from "@frogg/protocol/device-access";
 import { resolveDeviceLabel } from "@/pairing/device-label";
 import { readLocalNetworkHints } from "@/network-scan/local-addresses";
 import { shouldUseDesktopDaemon } from "@/desktop/daemon/desktop-daemon";
@@ -1939,6 +1939,7 @@ export class HostRuntimeStore {
     serverId: string;
     hostname: string | null;
     endpoint: string;
+    role?: DeviceRole;
   }> {
     const result = await claimDirectPairingLinkOverHttp(link, { label: resolveDeviceLabel() });
     const hostname = result.hostname ?? link.label ?? null;
@@ -1949,7 +1950,13 @@ export class HostRuntimeStore {
       password: result.credential,
       label: input.label ?? hostname ?? undefined,
     });
-    return { profile, serverId: result.serverId, hostname, endpoint: result.endpoint };
+    return {
+      profile,
+      serverId: result.serverId,
+      hostname,
+      endpoint: result.endpoint,
+      ...(result.role ? { role: result.role } : {}),
+    };
   }
 
   async upsertConnectionFromAnyOffer(
@@ -2716,6 +2723,7 @@ export interface HostMutations {
     serverId: string;
     hostname: string | null;
     endpoint: string;
+    role?: DeviceRole;
   }>;
   claimAndUpsertDirectOffer: (
     offer: ConnectionOfferV3,

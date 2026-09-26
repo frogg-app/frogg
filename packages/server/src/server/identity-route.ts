@@ -25,6 +25,14 @@ export interface DaemonIdentity {
    * everyone once the daemon is claimed or has a password.
    */
   pairingRequired: boolean;
+  /**
+   * Whether *this requester* must present a credential (a device credential,
+   * the password or the local token) before the daemon accepts it. Unlike
+   * `pairingRequired` this stays true on a claimed or password-protected
+   * daemon, so a client can tell "connect straight away" from "needs a
+   * credential first".
+   */
+  credentialRequired: boolean;
   /** The daemon's `daemon.auth.trustLan` mode: private-network clients connect without pairing. */
   lanTrusted: boolean;
 }
@@ -41,6 +49,8 @@ export interface IdentityRouteDependencies {
   trustLan: () => boolean;
   /** Loopback or trusted-LAN requester (see access-policy.ts). */
   isTrustedClient: (req: RequestLike) => boolean;
+  /** This requester needs a bearer (see `requestNeedsBearer` in auth.ts). */
+  needsCredential: (req: RequestLike) => boolean;
 }
 
 export function describeDaemonIdentity(
@@ -56,6 +66,7 @@ export function describeDaemonIdentity(
     listen: deps.listen(),
     connectedClients: deps.connectedClients(),
     pairingRequired: !deps.isClaimed() && !deps.isTrustedClient(req),
+    credentialRequired: deps.needsCredential(req),
     lanTrusted: deps.trustLan(),
   };
 }

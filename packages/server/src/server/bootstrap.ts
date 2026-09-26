@@ -198,6 +198,7 @@ import {
   authorizeAgentMcpRequest,
   extractHttpBearerToken,
   hasRealCredential,
+  requestNeedsBearer,
   type DaemonAuthConfig,
 } from "./auth.js";
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
@@ -1094,6 +1095,7 @@ export async function createFroggDaemon(
       isClaimed: () => isDaemonClaimed(claimStore, authConfig.password),
       trustLan: () => authConfig.access?.trustLan() ?? DEFAULT_TRUST_LAN,
       isTrustedClient: (req) => authConfig.access?.isTrustedClient(req) ?? false,
+      needsCredential: (req) => requestNeedsBearer(authConfig, req),
     }),
   );
   // Presence and the device-access RPCs share the stores the HTTP pairing

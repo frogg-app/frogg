@@ -1988,6 +1988,12 @@ export const ar: TranslationResources = {
       cancel: "إلغاء",
       retryVerification: "أعد المحاولة",
     },
+    auto: {
+      title: "الإقران مع هذا الجهاز",
+      pairing: "جارٍ الإقران تلقائيًا…",
+      paired: "تم الإقران مع {{hostname}}",
+      pairedAs: "تم الإقران مع {{hostname}} بصفة {{role}}",
+    },
   },
   presence: {
     label: "حاضرون أيضًا",

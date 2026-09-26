@@ -162,8 +162,12 @@ or with `frogg update`; see [updates](/docs/self-hosting/updates/).
 - `frogg .` (or any directory) on the command line opens that directory as a project in the
   desktop app.
 - `frogg://` links open the app: agent links (`frogg://h/<serverId>/agent/<agentId>`),
-  pairing links (`frogg://pair#offer=...`) and host links
-  (`frogg://host/add?type=directTcp&host=<host>&port=<port>`).
+  pairing links (`frogg://pair#offer=...`, and the `frogg://pair/direct?...` link
+  `frogg pair` prints) and host links
+  (`frogg://host/add?type=directTcp&host=<host>&port=<port>`). A pairing link passed as
+  the first argument, or opened while the app is already running, brings the window
+  forward on the pairing screen; see
+  [pairing links ask before they pair](/docs/getting-started/connect-and-pair/#pairing-links-ask-before-they-pair).
 - A host link registers a daemon that needs no pairing: the app adds it if it is absent,
   selects it and connects. Opening the same link again reconnects that host instead of
   adding a duplicate. `label=<name>` names the host and `tls=1` connects over TLS. This is

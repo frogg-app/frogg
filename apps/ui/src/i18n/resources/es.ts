@@ -2046,6 +2046,12 @@ export const es: TranslationResources = {
       cancel: "Cancelar",
       retryVerification: "Reintentar",
     },
+    auto: {
+      title: "Emparejando con este equipo",
+      pairing: "Emparejando automáticamente…",
+      paired: "Emparejado con {{hostname}}",
+      pairedAs: "Emparejado con {{hostname}} como {{role}}",
+    },
   },
   presence: {
     label: "También aquí",

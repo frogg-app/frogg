@@ -185,6 +185,18 @@ test("project browsing starts at the brand's directory when it names one", () =>
   );
 });
 
+test("local pairing links ask for confirmation unless a brand opts in", () => {
+  assert.equal(resolveBrandManifest(minimal).pairing.autoConfirmLocal, false);
+  assert.equal(
+    resolveBrandManifest({ ...minimal, pairing: { autoConfirmLocal: true } }).pairing
+      .autoConfirmLocal,
+    true,
+  );
+  assert.throws(
+    () => resolveBrandManifest({ ...minimal, pairing: { autoConfirm: true } }),
+    /pairing/,
+  );
+});
 test("a brand can ship host settings sections hidden", () => {
   assert.deepEqual(resolveBrandManifest(minimal).hostSettings.hiddenSections, []);
   assert.deepEqual(

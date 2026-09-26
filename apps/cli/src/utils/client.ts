@@ -18,6 +18,7 @@ import { DaemonClient, type WebSocketLike } from "@frogg/client/internal/daemon-
 import path from "node:path";
 import { WebSocket } from "ws";
 import { getOrCreateCliClientId } from "./client-id.js";
+import { normalizeListenTargetForConnect } from "../commands/daemon/listen-target.js";
 import { isLocalDaemonHost, readCliLocalToken } from "./local-token.js";
 import { resolveCliVersion } from "../version.js";
 import { createSshTunnel } from "../ssh/ssh-tunnel.js";
@@ -120,7 +121,9 @@ export function normalizeDaemonHost(raw: string): string | null {
     return `127.0.0.1:${trimmed}`;
   }
 
-  return trimmed.includes(":") ? trimmed : null;
+  // A wildcard bind from the pid file or config (`0.0.0.0:9999`, `:::9999`,
+  // `[::]:9999`) is not a destination; dial the matching loopback instead.
+  return trimmed.includes(":") ? normalizeListenTargetForConnect(trimmed) : null;
 }
 
 export function resolveDefaultDaemonHost(env: NodeJS.ProcessEnv = process.env): string {

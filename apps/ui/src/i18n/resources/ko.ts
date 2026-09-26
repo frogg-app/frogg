@@ -2005,6 +2005,12 @@ export const ko: TranslationResources = {
       cancel: "취소",
       retryVerification: "다시 시도",
     },
+    auto: {
+      title: "이 컴퓨터와 페어링 중",
+      pairing: "자동으로 페어링하는 중…",
+      paired: "{{hostname}}와(과) 페어링됨",
+      pairedAs: "{{hostname}}와(과) {{role}}(으)로 페어링됨",
+    },
   },
   presence: {
     label: "함께 있는 사람",

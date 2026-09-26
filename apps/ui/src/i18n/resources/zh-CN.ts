@@ -1963,6 +1963,12 @@ export const zhCN: TranslationResources = {
       cancel: "取消",
       retryVerification: "重试",
     },
+    auto: {
+      title: "正在与本机配对",
+      pairing: "正在自动配对…",
+      paired: "已与 {{hostname}} 配对",
+      pairedAs: "已以{{role}}身份与 {{hostname}} 配对",
+    },
   },
   presence: {
     label: "同时在场",

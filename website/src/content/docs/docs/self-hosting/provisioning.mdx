@@ -68,6 +68,13 @@ enough. If the daemon refuses, the command exits 1. Under `--json` it writes
 `{"code":"PAIRING_CODE_FAILED",…}` (`frogg pair`) or `{"code":"PAIRING_UNAUTHORIZED",…}`
 (`frogg daemon pair`) to stderr.
 
+On a brand with
+[`pairing.autoConfirmLocal`](/docs/fork-and-rebrand/brand-manifest/#pairing), a tool on the
+same machine can hand the `deeplink` straight to the desktop app. If the daemon listens on
+loopback, the app pairs as the code's role with no clicks, and running it again replaces the
+credential on the existing host. See
+[local links on managed builds](/docs/getting-started/connect-and-pair/#local-links-on-managed-builds).
+
 ### 4. Pass a password through the environment, never argv
 
 A password on a command line is visible to every user through `ps` and lands in shell
@@ -108,6 +115,9 @@ frogg auth claim-status --json | jq -e '.claimed' >/dev/null
 
 From another machine, `GET /api/setup/status` needs no credential and returns
 `{"claimed":true,"pairingRequired":false}`. Both count a configured password as claimed.
+So `pairingRequired: false` does not mean a client can connect without a credential. For
+that, read `credentialRequired` from `GET /api/identity`: it is `true` whenever this
+requester must present a device credential, the password or the local token.
 With an owner credential the route also returns the daemon's
 [security findings](/docs/self-hosting/security/#security-posture) as `posture`.
 

@@ -95,6 +95,16 @@ describe("direct pairing deep link", () => {
     ).toBeNull();
   });
 
+  it("reads the server id from `sid` or `serverId`", () => {
+    const base = `frogg://pair/direct?v=1&host=h&port=1&fp=${fingerprint}`;
+    expect(parseDirectPairingDeepLink(`${base}&sid=srv_1`, "frogg")?.serverId).toBe("srv_1");
+    expect(parseDirectPairingDeepLink(`${base}&serverId=srv_2`, "frogg")?.serverId).toBe("srv_2");
+    expect(parseDirectPairingDeepLink(`${base}&sid=srv_1&serverId=srv_2`, "frogg")?.serverId).toBe(
+      "srv_1",
+    );
+    expect(parseDirectPairingDeepLink(base, "frogg")?.serverId).toBeUndefined();
+  });
+
   it("is invisible to the legacy offer-link parser", () => {
     const link = buildDirectPairingDeepLink(
       {

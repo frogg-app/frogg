@@ -2009,6 +2009,12 @@ export const en = {
       cancel: "Cancel",
       retryVerification: "Try again",
     },
+    auto: {
+      title: "Pairing with this machine",
+      pairing: "Pairing automatically…",
+      paired: "Paired with {{hostname}}",
+      pairedAs: "Paired with {{hostname}} as {{role}}",
+    },
   },
   presence: {
     label: "Also here",

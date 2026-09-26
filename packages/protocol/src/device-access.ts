@@ -225,6 +225,7 @@ export function parseDirectPairingDeepLink(
   const code = rawCode ? normalizePairingCode(rawCode) : null;
   if (rawCode && !code) return null;
   const flag = (key: string) => params.get(key) === "1" || params.get(key) === "true";
+  const serverId = params.get("sid") || params.get("serverId");
   const result = DirectPairingLinkSchema.safeParse({
     v: Number(params.get("v")),
     host: params.get("host") ?? "",
@@ -233,7 +234,9 @@ export function parseDirectPairingDeepLink(
     ...(code ? { pairingCode: code } : {}),
     ...(flag("claim") ? { claim: true } : {}),
     ...(flag("tls") ? { useTls: true } : {}),
-    ...(params.get("sid") ? { serverId: params.get("sid")! } : {}),
+    // `sid` is what `buildDirectPairingDeepLink` writes; `serverId` is accepted
+    // for links assembled by hand or by other tools.
+    ...(serverId ? { serverId } : {}),
     ...(params.get("name") ? { label: params.get("name")! } : {}),
     ...(params.get("role") ? { role: params.get("role")! } : {}),
   });

@@ -249,6 +249,8 @@ frogg auth reset-claim
 
 Opening a pairing link — from a message, a web page, a QR code or a terminal — never pairs
 on its own. The app shows a confirmation first, and only a button press mints a credential.
+The one exception is a local pairing link on a brand that opts in; see
+[local links on managed builds](#local-links-on-managed-builds).
 
 <Screenshot src={appPairConfirmClaimImg} alt="Pairing confirmation showing the address, name, key fingerprint and a claim warning" />
 
@@ -269,6 +271,29 @@ fingerprint in the link. There is **no Pair button at all** when:
 
 A daemon that simply did not answer is a retry, not a refusal.
 
+### Local links on managed builds
+
+A brand can set
+[`pairing.autoConfirmLocal`](/docs/fork-and-rebrand/brand-manifest/#pairing) so that a
+provisioning script on the daemon's own machine can pair the desktop app with no clicks.
+Stock Frogg leaves it off. With it on, a `pair/direct` link pairs by itself only when
+**all** of these hold:
+
+- its `host` is loopback: `127.0.0.1`, `::1` or `localhost`;
+- it carries a `pairingCode`. A `claim=1` link, or an `#offer=` link, still asks;
+- the daemon at that address proves the key behind `fp`, exactly as above.
+
+The role is the one the code was minted with, whatever the link's `role` says. Only an
+owner of the daemon can mint a code: an owner device, the password, or the host's
+`local-token`, which the daemon accepts only from loopback. A web page cannot mint one for
+your local daemon.
+
+The app shows a progress card with no buttons, then lands on the host and reports
+"Paired with *hostname* as *role*". If the identity check refuses the daemon, the daemon
+does not answer, or the pair fails, the usual confirmation screen appears instead. Opening
+a second code link for the same daemon replaces the credential on the existing host
+rather than adding another.
+
 ### Direct pairing links
 
 `frogg pair` prints a link of this shape, and the app handles it on every platform:
@@ -285,7 +310,7 @@ frogg://pair/direct?v=1&host=192.168.1.10&port=9999&fp=sha256%3A8Qp1…&pairingC
 | `pairingCode` | The code to redeem, when the link carries one |
 | `claim=1` | Claim the daemon as owner instead of redeeming a code |
 | `tls=1` | Reach the daemon over TLS |
-| `sid` | The daemon's server ID |
+| `sid` | The daemon's server ID (`serverId` is accepted too) |
 | `name` | A display name for the host |
 | `role` | The role the link grants |
 

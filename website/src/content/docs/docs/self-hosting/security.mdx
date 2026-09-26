@@ -213,6 +213,12 @@ when the key does not match the link, when the daemon cannot prove it holds its 
 when a server it already knows presents a different key. See
 [pairing links ask before they pair](/docs/getting-started/connect-and-pair/#pairing-links-ask-before-they-pair).
 
+A brand can opt out of the click for one case only, with
+[`pairing.autoConfirmLocal`](/docs/fork-and-rebrand/brand-manifest/#pairing): a
+loopback link carrying a pairing code, from a daemon that passes the same identity check.
+A code for a daemon can only be minted by an owner of that daemon, so a link that pairs
+this way gives nobody access they did not already have.
+
 ### Session presence
 
 The daemon reports who else is on an agent or a terminal — device name and activity — to

@@ -203,6 +203,26 @@ With `repository` set:
 
 Custom products never fall back to Frogg's releases.
 
+## Pairing
+
+Whether a local pairing link needs the confirmation click.
+
+| Key                | Rule    | Default | Meaning                                                  |
+| ------------------ | ------- | ------- | -------------------------------------------------------- |
+| `autoConfirmLocal` | boolean | `false` | Pair a verified loopback code link without a button press |
+
+```json
+{
+  "pairing": { "autoConfirmLocal": true }
+}
+```
+
+With it on, a `<scheme>://pair/direct?…` link pairs by itself when its host is `127.0.0.1`,
+`::1` or `localhost`, it carries a `pairingCode`, and the daemon proves the key behind the
+link's fingerprint. Any other link, and any failure, shows the usual confirmation. Choose it
+for managed installs where a provisioning tool on the same machine pairs the desktop app.
+See [local links on managed builds](/docs/getting-started/connect-and-pair/#local-links-on-managed-builds).
+
 ## Projects
 
 Where "Add project" starts browsing on the daemon.
@@ -368,6 +388,7 @@ adds derived values you cannot set directly:
 | `distribution.releasesApi`   | `https://api.github.com/repos/<repository>/releases`    |
 | `distribution.releaseBase`   | `https://github.com/<repository>/releases`              |
 | `distribution.updateMode`    | Resolved `updates`                                      |
+| `pairing.autoConfirmLocal`   | Resolved `autoConfirmLocal`                             |
 | `legacyFrogg`                  | `true` only for `brands/frogg`                            |
 | `daemon.bindHost`            | `0.0.0.0` for `bind: "all"`, `127.0.0.1` for `"loopback"`  |
 | `daemon.workspaceServicesBindHost` | `0.0.0.0` for `workspaceServicesBind: "all"`, else `127.0.0.1` |

@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.46 — 2026-09-26
+
+- The desktop app now opens `<scheme>://pair/direct?…` links, from argv on a cold start,
+  from a second instance, and from `open-url`. The Electron shell only accepted
+  `pair#offer=` and `host/add` links, so a direct pairing link brought the window forward
+  and did nothing.
+- A direct pairing link's server ID is read from `sid` or `serverId`. Before, a link that
+  spelled it `serverId` lost it, which skipped the server ID cross-check on redemption.
+- A brand can set `pairing.autoConfirmLocal` so a `pair/direct` link pairs with no click
+  when its host is loopback, it carries a pairing code, and the daemon proves the key
+  behind `fp`. Any other link, or any failure, shows the confirmation screen as before.
+  Off for stock Frogg. The app reports the role the daemon granted.
+- `GET /api/identity` adds `credentialRequired`: whether this requester must present a
+  credential. `pairingRequired` stays false on a password-protected or claimed daemon, so
+  it could not answer that.
+- `pair` and other CLI commands reach a daemon whose pid file records an unbracketed IPv6
+  wildcard (`:::9999`); it is dialled as `[::1]` like `[::]` and `0.0.0.0` already were.
+
 ## 1.5.45 — 2026-09-25
 
 - Docker docs no longer tell you to pull `froggapp/frogg`, which has no published tags:

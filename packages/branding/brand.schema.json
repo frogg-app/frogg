@@ -339,6 +339,15 @@
       },
       "additionalProperties": false
     },
+    "pairing": {
+      "type": "object",
+      "properties": {
+        "autoConfirmLocal": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
     "projects": {
       "type": "object",
       "properties": {

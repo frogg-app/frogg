@@ -4,7 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { brand } from "@frogg/branding";
 
-import { resolveDaemonCredential, resolveDaemonPassword } from "./client.js";
+import { resolveDaemonCredential, resolveDaemonPassword, resolveDaemonTarget } from "./client.js";
 import { isLocalDaemonHost, readCliLocalToken } from "./local-token.js";
 
 const PASSWORD_KEY = `${brand.envPrefix.replace(/_+$/, "")}_PASSWORD`;
@@ -66,5 +66,18 @@ describe("local token credential", () => {
     expect(isLocalDaemonHost("tcp://127.0.0.1:6767?ssl=true")).toBe(true);
     expect(isLocalDaemonHost("/run/frogg.sock")).toBe(true);
     expect(isLocalDaemonHost("10.0.0.2:6767")).toBe(false);
+  });
+});
+
+describe("resolveDaemonTarget", () => {
+  test("dials loopback for a wildcard bind read from the pid file", () => {
+    expect(resolveDaemonTarget(":::9999").url).toBe("ws://[::1]:9999/ws");
+    expect(resolveDaemonTarget("[::]:9999").url).toBe("ws://[::1]:9999/ws");
+    expect(resolveDaemonTarget("0.0.0.0:9999").url).toBe("ws://127.0.0.1:9999/ws");
+  });
+
+  test("leaves an addressable host alone", () => {
+    expect(resolveDaemonTarget("127.0.0.1:9999").url).toBe("ws://127.0.0.1:9999/ws");
+    expect(resolveDaemonTarget("10.0.0.2:9999").url).toBe("ws://10.0.0.2:9999/ws");
   });
 });

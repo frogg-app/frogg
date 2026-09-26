@@ -1,6 +1,10 @@
 import type { ConnectionOfferV3 } from "@frogg/protocol/connection-offer";
 import { normalizeHostPort } from "@frogg/protocol/daemon-endpoints";
-import type { DirectPairingLink } from "@frogg/protocol/device-access";
+import {
+  DeviceRoleSchema,
+  type DeviceRole,
+  type DirectPairingLink,
+} from "@frogg/protocol/device-access";
 
 /**
  * Client side of the daemon's first-run claim gate (claim mode in
@@ -56,6 +60,8 @@ export interface ClaimResult extends SelectedEndpoint {
   serverId: string;
   credential: string;
   principalId: string | null;
+  /** The role the daemon granted, when it says (the code's role, not the link's). */
+  role?: DeviceRole;
 }
 
 export const DEFAULT_PROBE_TIMEOUT_MS = 4_000;
@@ -188,7 +194,12 @@ export async function claimDaemon(input: {
   claim?: boolean;
   label: string;
   fetchImpl?: FetchLike;
-}): Promise<{ credential: string; serverId: string | null; principalId: string | null }> {
+}): Promise<{
+  credential: string;
+  serverId: string | null;
+  principalId: string | null;
+  role?: DeviceRole;
+}> {
   const fetchImpl = resolveFetch(input.fetchImpl);
   let response: Response;
   try {
@@ -239,10 +250,12 @@ export async function claimDaemon(input: {
       input.endpoint,
     ]);
   }
+  const role = DeviceRoleSchema.safeParse(body.role);
   return {
     credential,
     serverId: readString(body, "serverId"),
     principalId: readString(body, "principalId"),
+    ...(role.success ? { role: role.data } : {}),
   };
 }
 
@@ -280,6 +293,7 @@ export async function claimDirectOffer(
     serverId: offer.serverId,
     credential: claimed.credential,
     principalId: claimed.principalId,
+    ...(claimed.role ? { role: claimed.role } : {}),
   };
 }
 
@@ -324,5 +338,6 @@ export async function claimDirectPairingLink(
     serverId,
     credential: claimed.credential,
     principalId: claimed.principalId,
+    ...(claimed.role ? { role: claimed.role } : {}),
   };
 }

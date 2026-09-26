@@ -156,6 +156,13 @@ export const BrandManifestSchema = z.strictObject({
       expoProjectId: z.uuid().optional(),
     })
     .optional(),
+  pairing: z
+    .strictObject({
+      // Pair a loopback `pair/direct` link that carries a pairing code without
+      // the confirmation click, once the daemon has proved its key.
+      autoConfirmLocal: z.boolean().optional(),
+    })
+    .optional(),
   projects: z
     .strictObject({
       defaultDirectory: z.string().min(1).optional(),
@@ -230,6 +237,7 @@ export function resolveBrandManifest(input: unknown) {
     ...resolveLinksAndServices(manifest, repository),
     installer: resolveInstaller(manifest, dark),
     distribution,
+    pairing: resolvePairing(manifest),
     projects: resolveProjects(manifest),
     hostSettings: resolveHostSettings(manifest),
     daemon: resolveDaemonDefaults(manifest),
@@ -403,6 +411,17 @@ function resolveDistribution(manifest: BrandManifest) {
     iosStoreId: distribution.iosStoreId ?? null,
     expoProjectId: distribution.expoProjectId ?? null,
   };
+}
+
+/**
+ * `autoConfirmLocal` lets a managed install pair with a daemon on the same
+ * machine from a `<scheme>://pair/direct?…` link alone. It applies only when
+ * the link's host is loopback, it carries a pairing code (which only an owner
+ * of that daemon can mint), and the daemon proves the key behind the link's
+ * fingerprint; any other link still asks. Off unless the brand opts in.
+ */
+function resolvePairing(manifest: BrandManifest) {
+  return { autoConfirmLocal: manifest.pairing?.autoConfirmLocal ?? false };
 }
 
 function resolveIdentity(manifest: BrandManifest) {

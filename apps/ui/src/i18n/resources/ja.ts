@@ -2017,6 +2017,12 @@ export const ja: TranslationResources = {
       cancel: "キャンセル",
       retryVerification: "再試行",
     },
+    auto: {
+      title: "このマシンとペアリング中",
+      pairing: "自動でペアリングしています…",
+      paired: "{{hostname}} とペアリングしました",
+      pairedAs: "{{hostname}} と {{role}} としてペアリングしました",
+    },
   },
   presence: {
     label: "同席中",
