@@ -3,7 +3,7 @@
 // strips. Built for agents: one command replaces a throwaway Playwright script, and the output is
 // a few lines instead of a page dump. Run `npm run probe -- --help` for usage.
 import { execFileSync } from "node:child_process";
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
 import type { Page } from "@playwright/test";
@@ -106,6 +106,7 @@ async function checkBundle(text: string): Promise<void> {
   for (const line of hits.slice(0, 5)) console.log(`  ${line.trim().slice(0, 160)}`);
 }
 
+// oxlint-disable-next-line complexity -- flat step-verb dispatcher
 async function main(): Promise<void> {
   if (values.bundle) return checkBundle(values.bundle);
   const target = positionals[0] ?? "chat";
