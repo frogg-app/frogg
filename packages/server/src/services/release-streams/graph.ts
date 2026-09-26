@@ -223,438 +223,447 @@ async function revSet(git: StreamsGit, args: string[]): Promise<Set<string>> {
   return new Set(lines(await tryGit(git, ["rev-list", ...args])));
 }
 
-export async function buildReleaseStreamsGraph(input: {
+interface Carrier {
+  sha: string;
+  date: string | null;
+}
+
+/** Everything the stages below share: the refs, and what they read from git once. */
+interface GraphContext {
   git: StreamsGit;
   config: ReleaseStreamsConfig;
-}): Promise<ReleaseStreamsGraph> {
-  const { git, config } = input;
-  const known = new Set(
-    lines(await tryGit(git, ["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"])),
-  );
-  const refs = streamRefs(config, known);
-  const byId = new Map(refs.map((stream) => [stream.id, stream]));
-  const exists = (stream: StreamRef | undefined): stream is StreamRef =>
-    !!stream && known.has(stream.ref);
-  const dev = byId.get("development")!;
-  const stable = byId.get("stable")!;
-  const upDev = byId.get("upstream-development");
-  const upStable = byId.get("upstream-stable");
-  const follow = config.upstream?.follow === "development" ? upDev : upStable;
-  const followId: string | null = follow?.id ?? null;
-  const hasDev = exists(dev);
-  const hasStable = exists(stable);
+  known: Set<string>;
+  dev: StreamRef;
+  stable: StreamRef;
+  upDev: StreamRef | null;
+  upStable: StreamRef | null;
+  /** The upstream stream the fork merges from, when it exists locally. */
+  follow: StreamRef | null;
+  hasStable: boolean;
+}
 
-  // Streams, their versions and releases.
-  const streams: ReleaseStream[] = [];
-  for (const stream of refs) {
-    const present = known.has(stream.ref);
-    // Before `streams init` there is no stable branch, but the stable releases that were cut from
-    // the development branch are still the stable history worth drawing.
-    const source = present ? stream.ref : stream.id === "stable" && hasDev ? dev.ref : null;
-    const [head, releases, version] = source
-      ? await Promise.all([
-          tryGit(git, ["log", "-1", `--format=%H${SEP}%cI`, stream.ref]),
-          releasesOn(git, source, stream.tagNamespace, stream.tagPattern),
-          present ? readVersion(git, stream.ref) : Promise.resolve(null),
-        ])
-      : [null, [], null];
-    const [headSha = null, headDate = null] = present && head ? head.split(SEP) : [];
-    const newest = releases[0];
-    const unreleased =
-      present && newest
-        ? Number(
-            (await tryGit(git, [
-              "rev-list",
-              "--count",
-              "--no-merges",
-              `${newest.sha}..${stream.ref}`,
-            ])) ?? 0,
-          )
-        : 0;
-    streams.push({
-      id: stream.id,
-      kind: stream.kind,
-      label: stream.label,
-      ref: stream.ref,
-      channel: stream.channel,
-      exists: present,
-      head: headSha,
-      headDate: headDate || null,
-      version: version ?? (present ? null : (newest?.version ?? null)),
-      unreleased,
-      releases: releases.slice(0, RELEASES_PER_STREAM),
-    });
-  }
+type PresenceState = "shipped" | "landed" | "pending" | "absent";
 
-  if (!hasDev) {
-    return { streams, flows: [], changes: [], events: [], truncated: false };
-  }
+function presence(
+  stream: string,
+  state: PresenceState,
+  via: string | null,
+  release: string | null = null,
+): ReleaseStreamPresence {
+  return { stream, state: state === "landed" && release ? "shipped" : state, via, release };
+}
 
-  // The change window: recent development commits, what upstream has that development lacks,
-  // and anything made on stable alone.
-  const devLog = parseLog(
-    await tryGit(git, [
-      "log",
-      "--no-merges",
-      `--format=${LOG_FORMAT}`,
-      "-n",
-      String(CHANGE_WINDOW + 1),
-      dev.ref,
-    ]),
-  ).filter((commit) => !RELEASE_CUT.test(commit.subject));
-  const truncated = devLog.length > CHANGE_WINDOW;
-  const window = devLog.slice(0, CHANGE_WINDOW);
+function logArgs(...rest: string[]): string[] {
+  return ["log", "--no-merges", `--format=${LOG_FORMAT}`, ...rest];
+}
 
-  const upstreamRefs = [upDev, upStable].filter(exists).map((stream) => stream.ref);
-  const forkOnly = upstreamRefs.length
-    ? await revSet(git, ["--no-merges", dev.ref, "--not", ...upstreamRefs])
-    : null;
-  const incoming =
-    follow && exists(follow)
-      ? parseLog(
-          await tryGit(git, [
-            "log",
-            "--no-merges",
-            `--format=${LOG_FORMAT}`,
-            "-n",
-            String(INCOMING_WINDOW),
-            `${dev.ref}..${follow.ref}`,
-          ]),
-        ).filter((commit) => !RELEASE_CUT.test(commit.subject))
-      : [];
+function withoutCuts(commits: Commit[]): Commit[] {
+  return commits.filter((commit) => !RELEASE_CUT.test(commit.subject));
+}
 
-  // Stable against development.
-  const notInStable = hasStable ? await revSet(git, [`${stable.ref}..${dev.ref}`]) : null;
-  const toStable = hasStable ? await cherry(git, stable.ref, dev.ref) : null;
-  const backported = new Set(toStable?.equivalent ?? []);
-
-  // Backports: the stable commit that carries each development commit (`cherry-pick -x`).
-  const backportLog = hasStable
-    ? lines(
-        await tryGit(git, [
-          "log",
-          "--no-merges",
-          "--grep=cherry picked from commit",
-          `--format=%H${SEP}%cI${SEP}%B%x1e`,
-          `${dev.ref}..${stable.ref}`,
-        ]),
-      )
+async function readStream(
+  ctx: GraphContext,
+  stream: StreamRef,
+  hasDev: boolean,
+): Promise<ReleaseStream> {
+  const { git } = ctx;
+  const present = ctx.known.has(stream.ref);
+  // Before `streams init` there is no stable branch, but the stable releases that were cut from
+  // the development branch are still the stable history worth drawing.
+  const fallback = stream.id === "stable" && hasDev ? ctx.dev.ref : null;
+  const source = present ? stream.ref : fallback;
+  const releases = source
+    ? await releasesOn(git, source, stream.tagNamespace, stream.tagPattern)
     : [];
-  const backportCarrier = new Map<string, { sha: string; date: string | null }>();
-  for (const record of backportLog.join("\n").split("\x1e")) {
+  const newest = releases[0];
+  let head: string | null = null;
+  let headDate: string | null = null;
+  let version: string | null = newest?.version ?? null;
+  let unreleased = 0;
+  if (present) {
+    const tip = await tryGit(git, ["log", "-1", `--format=%H${SEP}%cI`, stream.ref]);
+    [head = null, headDate = null] = tip ? tip.split(SEP) : [];
+    version = await readVersion(git, stream.ref);
+    if (newest) {
+      const count = await tryGit(git, [
+        "rev-list",
+        "--count",
+        "--no-merges",
+        `${newest.sha}..${stream.ref}`,
+      ]);
+      unreleased = Number(count ?? 0);
+    }
+  }
+  return {
+    id: stream.id,
+    kind: stream.kind,
+    label: stream.label,
+    ref: stream.ref,
+    channel: stream.channel,
+    exists: present,
+    head,
+    headDate: headDate || null,
+    version,
+    unreleased,
+    releases: releases.slice(0, RELEASES_PER_STREAM),
+  };
+}
+
+/** Stable-only commits (`cherry-pick -x`) mapped from the development commit they carry. */
+async function readBackports(ctx: GraphContext): Promise<Map<string, Carrier>> {
+  const carriers = new Map<string, Carrier>();
+  if (!ctx.hasStable) return carriers;
+  const log = await tryGit(ctx.git, [
+    "log",
+    "--no-merges",
+    "--grep=cherry picked from commit",
+    `--format=%H${SEP}%cI${SEP}%B%x1e`,
+    `${ctx.dev.ref}..${ctx.stable.ref}`,
+  ]);
+  for (const record of (log ?? "").split("\x1e")) {
     const [sha = "", date = "", body = ""] = record.trim().split(SEP);
     if (!sha) continue;
     for (const match of body.matchAll(CHERRY_PICKED)) {
-      backportCarrier.set(match[1]!, { sha, date: date || null });
+      carriers.set(match[1]!, { sha, date: date || null });
     }
   }
-  // Stable-only work that development lacks. A promotion copies development's tree up, so
-  // anything on stable before the last promotion is either in development or was dropped on
-  // purpose; and a backport's source is on development by definition.
-  const lastPromotion = hasStable
-    ? (await tryGit(git, [
-        "log",
-        "--first-parent",
-        "--merges",
-        "-1",
-        "--format=%H",
-        "--grep=^chore(release): promote ",
-        stable.ref,
-      ])) || null
-    : null;
-  const stableOnly = hasStable
-    ? parseLog(
-        await tryGit(git, [
-          "log",
-          "--no-merges",
-          `--format=${LOG_FORMAT}`,
-          `${dev.ref}..${stable.ref}`,
-          ...(lastPromotion ? [`^${lastPromotion}`] : []),
-        ]),
-      )
-    : [];
-  const stableOnlyCherry = hasStable ? await cherry(git, dev.ref, stable.ref, lastPromotion) : null;
-  const carrierShas = new Set([...backportCarrier.values()].map((carrier) => carrier.sha));
-  const stranded = stableOnly.filter(
-    (commit) =>
-      !RELEASE_CUT.test(commit.subject) &&
-      !carrierShas.has(commit.sha) &&
-      (stableOnlyCherry?.missing.includes(commit.sha) ?? false),
-  );
+  return carriers;
+}
 
-  const carrierFor = (sha: string) => {
-    for (const [picked, carrier] of backportCarrier) {
+/**
+ * Stable-only work that development lacks. A promotion copies development's tree up, so
+ * anything on stable before the last promotion is either in development or was dropped on
+ * purpose; and a backport's source is on development by definition.
+ */
+async function readStranded(ctx: GraphContext, carriers: Map<string, Carrier>): Promise<Commit[]> {
+  if (!ctx.hasStable) return [];
+  const { git, dev, stable } = ctx;
+  const lastPromotion =
+    (await tryGit(git, [
+      "log",
+      "--first-parent",
+      "--merges",
+      "-1",
+      "--format=%H",
+      "--grep=^chore(release): promote ",
+      stable.ref,
+    ])) || null;
+  const since = lastPromotion ? [`^${lastPromotion}`] : [];
+  const stableOnly = parseLog(await tryGit(git, logArgs(`${dev.ref}..${stable.ref}`, ...since)));
+  const missing = new Set((await cherry(git, dev.ref, stable.ref, lastPromotion)).missing);
+  const carrierShas = new Set([...carriers.values()].map((carrier) => carrier.sha));
+  return withoutCuts(stableOnly).filter(
+    (commit) => !carrierShas.has(commit.sha) && missing.has(commit.sha),
+  );
+}
+
+function carrierLookup(carriers: Map<string, Carrier>) {
+  return (sha: string): Carrier | null => {
+    for (const [picked, carrier] of carriers) {
       if (sha.startsWith(picked) || picked.startsWith(sha)) return carrier;
     }
     return null;
   };
+}
 
-  // Upstream against the fork.
-  const upDevCherry = exists(upDev) && forkOnly ? await cherry(git, upDev.ref, dev.ref) : null;
-  const inUpDev = exists(upDev)
-    ? await revSet(git, ["-n", String(CHANGE_WINDOW * 20), upDev.ref])
-    : new Set<string>();
-  const inUpStable = exists(upStable)
-    ? await revSet(git, ["-n", String(CHANGE_WINDOW * 20), upStable.ref])
-    : new Set<string>();
+interface Relations {
+  window: Commit[];
+  truncated: boolean;
+  incoming: Commit[];
+  stranded: Commit[];
+  /** Development commits not upstream; null when there is no upstream. */
+  forkOnly: Set<string> | null;
+  notInStable: Set<string> | null;
+  promotable: Set<string>;
+  backported: Set<string>;
+  carriers: Map<string, Carrier>;
+  carrierFor: (sha: string) => Carrier | null;
+  contributed: Set<string>;
+  uncontributed: Set<string>;
+  inUpDev: Set<string>;
+  inUpStable: Set<string>;
+}
 
-  // First release per stream.
-  const windowShas = window.map((commit) => commit.sha);
-  const windowCarriers = windowShas
-    .map((sha) => carrierFor(sha)?.sha)
-    .filter((sha): sha is string => !!sha);
-  const [devReleases, stableReleases, upDevReleases, upStableReleases] = await Promise.all([
+async function readRelations(ctx: GraphContext): Promise<Relations> {
+  const { git, dev, stable, upDev, upStable, follow, hasStable } = ctx;
+  const devLog = withoutCuts(
+    parseLog(await tryGit(git, logArgs("-n", String(CHANGE_WINDOW + 1), dev.ref))),
+  );
+  const upstreamRefs = [upDev, upStable].flatMap((stream) => (stream ? [stream.ref] : []));
+  const forkOnly = upstreamRefs.length
+    ? await revSet(git, ["--no-merges", dev.ref, "--not", ...upstreamRefs])
+    : null;
+  const incoming = follow
+    ? withoutCuts(
+        parseLog(
+          await tryGit(git, logArgs("-n", String(INCOMING_WINDOW), `${dev.ref}..${follow.ref}`)),
+        ),
+      )
+    : [];
+  const toStable = hasStable ? await cherry(git, stable.ref, dev.ref) : null;
+  const carriers = await readBackports(ctx);
+  const toUpstream = upDev && forkOnly ? await cherry(git, upDev.ref, dev.ref) : null;
+  const recent = (stream: StreamRef | null) =>
+    stream ? revSet(git, ["-n", String(CHANGE_WINDOW * 20), stream.ref]) : new Set<string>();
+  return {
+    window: devLog.slice(0, CHANGE_WINDOW),
+    truncated: devLog.length > CHANGE_WINDOW,
+    incoming,
+    stranded: await readStranded(ctx, carriers),
+    forkOnly,
+    notInStable: hasStable ? await revSet(git, [`${stable.ref}..${dev.ref}`]) : null,
+    promotable: new Set(toStable?.missing ?? []),
+    backported: new Set(toStable?.equivalent ?? []),
+    carriers,
+    carrierFor: carrierLookup(carriers),
+    contributed: new Set(toUpstream?.equivalent ?? []),
+    uncontributed: new Set(toUpstream?.missing ?? []),
+    inUpDev: await recent(upDev),
+    inUpStable: await recent(upStable),
+  };
+}
+
+type ReleaseMaps = Record<"dev" | "stable" | "upDev" | "upStable", Map<string, string>>;
+
+async function readFirstReleases(ctx: GraphContext, rel: Relations): Promise<ReleaseMaps> {
+  const { git, dev, stable, upDev, upStable, hasStable } = ctx;
+  const windowShas = rel.window.map((commit) => commit.sha);
+  const carried = windowShas.flatMap((sha) => {
+    const carrier = rel.carrierFor(sha);
+    return carrier ? [carrier.sha] : [];
+  });
+  const upstreamShas = [...windowShas, ...rel.incoming.map((c) => c.sha)];
+  const none = Promise.resolve(new Map<string, string>());
+  const [devMap, stableMap, upDevMap, upStableMap] = await Promise.all([
     firstReleases(git, windowShas, dev),
     hasStable
-      ? firstReleases(
-          git,
-          [...windowShas, ...windowCarriers, ...stranded.map((c) => c.sha)],
-          stable,
-        )
-      : new Map<string, string>(),
-    exists(upDev)
-      ? firstReleases(git, [...windowShas, ...incoming.map((c) => c.sha)], upDev)
-      : new Map<string, string>(),
-    exists(upStable)
-      ? firstReleases(git, [...windowShas, ...incoming.map((c) => c.sha)], upStable)
-      : new Map<string, string>(),
+      ? firstReleases(git, [...windowShas, ...carried, ...rel.stranded.map((c) => c.sha)], stable)
+      : none,
+    upDev ? firstReleases(git, upstreamShas, upDev) : none,
+    upStable ? firstReleases(git, upstreamShas, upStable) : none,
   ]);
+  return { dev: devMap, stable: stableMap, upDev: upDevMap, upStable: upStableMap };
+}
 
-  const presence = (
-    stream: string,
-    state: "shipped" | "landed" | "pending" | "absent",
-    via: string | null,
-    release: string | null = null,
-  ): ReleaseStreamPresence => ({
-    stream,
-    state: state === "landed" && release ? "shipped" : state,
-    via,
-    release,
-  });
+/** Where an upstream-made commit stands on upstream's own streams. */
+function upstreamPresence(sha: string, rel: Relations, releases: ReleaseMaps) {
+  const on = (set: Set<string>, stream: string, map: Map<string, string>) =>
+    set.has(sha)
+      ? presence(stream, "landed", "commit", map.get(sha) ?? null)
+      : presence(stream, "absent", null);
+  return [
+    on(rel.inUpStable, "upstream-stable", releases.upStable),
+    on(rel.inUpDev, "upstream-development", releases.upDev),
+  ];
+}
 
+function stablePresence(sha: string, rel: Relations, releases: ReleaseMaps) {
+  if (!rel.notInStable) return presence("stable", "pending", null);
+  if (!rel.notInStable.has(sha)) {
+    return presence("stable", "landed", "promotion", releases.stable.get(sha) ?? null);
+  }
+  if (rel.backported.has(sha)) {
+    const carrier = rel.carrierFor(sha);
+    const release = carrier ? (releases.stable.get(carrier.sha) ?? null) : null;
+    return presence("stable", "landed", "backport", release);
+  }
+  return presence("stable", "pending", null);
+}
+
+function buildChanges(
+  ctx: GraphContext,
+  rel: Relations,
+  releases: ReleaseMaps,
+): ReleaseStreamChange[] {
+  const upstreamId = ctx.follow?.id ?? "upstream-development";
   const changes: ReleaseStreamChange[] = [];
-  for (const commit of window) {
-    const forkMade = forkOnly ? forkOnly.has(commit.sha) : true;
-    const origin = forkMade ? "development" : (followId ?? "upstream-development");
+  for (const commit of rel.window) {
+    const forkMade = rel.forkOnly ? rel.forkOnly.has(commit.sha) : true;
     const entries: ReleaseStreamPresence[] = [];
-    if (config.upstream) {
-      if (forkMade) {
-        const contributed = upDevCherry?.equivalent.includes(commit.sha) ?? false;
-        entries.push(
-          presence("upstream-stable", "absent", null),
-          presence(
-            "upstream-development",
-            contributed ? "landed" : "absent",
-            contributed ? "contribution" : null,
-          ),
-        );
-      } else {
-        entries.push(
-          presence(
-            "upstream-stable",
-            inUpStable.has(commit.sha) ? "landed" : "absent",
-            inUpStable.has(commit.sha) ? "commit" : null,
-            upStableReleases.get(commit.sha) ?? null,
-          ),
-          presence(
-            "upstream-development",
-            inUpDev.has(commit.sha) ? "landed" : "absent",
-            inUpDev.has(commit.sha) ? "commit" : null,
-            upDevReleases.get(commit.sha) ?? null,
-          ),
-        );
-      }
-    }
-    if (!hasStable || !notInStable) {
-      entries.push(presence("stable", "pending", null));
-    } else if (!notInStable.has(commit.sha)) {
+    if (ctx.config.upstream && forkMade) {
+      const contributed = rel.contributed.has(commit.sha);
       entries.push(
-        presence("stable", "landed", "promotion", stableReleases.get(commit.sha) ?? null),
+        presence("upstream-stable", "absent", null),
+        contributed
+          ? presence("upstream-development", "landed", "contribution")
+          : presence("upstream-development", "absent", null),
       );
-    } else if (backported.has(commit.sha)) {
-      const carrier = carrierFor(commit.sha);
-      entries.push(
-        presence(
-          "stable",
-          "landed",
-          "backport",
-          carrier ? (stableReleases.get(carrier.sha) ?? null) : null,
-        ),
-      );
-    } else {
-      entries.push(presence("stable", "pending", null));
+    } else if (ctx.config.upstream) {
+      entries.push(...upstreamPresence(commit.sha, rel, releases));
     }
     entries.push(
+      stablePresence(commit.sha, rel, releases),
       presence(
         "development",
         "landed",
         forkMade ? "commit" : "sync",
-        devReleases.get(commit.sha) ?? null,
+        releases.dev.get(commit.sha) ?? null,
       ),
     );
-    changes.push({ ...commit, ...classify(commit.subject), origin, presence: entries });
-  }
-
-  for (const commit of incoming) {
     changes.push({
       ...commit,
       ...classify(commit.subject),
-      origin: follow!.id,
+      origin: forkMade ? "development" : upstreamId,
+      presence: entries,
+    });
+  }
+  for (const commit of rel.incoming) {
+    changes.push({
+      ...commit,
+      ...classify(commit.subject),
+      origin: upstreamId,
       presence: [
-        presence(
-          "upstream-stable",
-          inUpStable.has(commit.sha) ? "landed" : "absent",
-          inUpStable.has(commit.sha) ? "commit" : null,
-          upStableReleases.get(commit.sha) ?? null,
-        ),
-        presence(
-          "upstream-development",
-          inUpDev.has(commit.sha) ? "landed" : "absent",
-          inUpDev.has(commit.sha) ? "commit" : null,
-          upDevReleases.get(commit.sha) ?? null,
-        ),
+        ...upstreamPresence(commit.sha, rel, releases),
         presence("stable", "pending", null),
         presence("development", "pending", null),
       ],
     });
   }
-
-  for (const commit of stranded) {
+  const upstreamAbsent = ctx.config.upstream
+    ? [
+        presence("upstream-stable", "absent", null),
+        presence("upstream-development", "absent", null),
+      ]
+    : [];
+  for (const commit of rel.stranded) {
     changes.push({
       ...commit,
       ...classify(commit.subject),
       origin: "stable",
       presence: [
-        ...(config.upstream
-          ? [
-              presence("upstream-stable", "absent", null),
-              presence("upstream-development", "absent", null),
-            ]
-          : []),
-        presence("stable", "landed", "commit", stableReleases.get(commit.sha) ?? null),
+        ...upstreamAbsent,
+        presence("stable", "landed", "commit", releases.stable.get(commit.sha) ?? null),
         presence("development", "absent", null),
       ],
     });
   }
+  return changes;
+}
 
-  // Flows.
-  const flows: ReleaseStreamFlow[] = [];
-  const promotable = (toStable?.missing ?? []).length
-    ? window.filter((commit) => toStable!.missing.includes(commit.sha)).length
-    : 0;
-  flows.push({
-    from: "development",
-    to: "stable",
-    kind: "promote",
-    pending: hasStable ? promotable : window.length,
-    command: hasStable ? "npm run release:promote" : "npm run streams -- init",
-  });
-  if (stranded.length) {
+function buildFlows(ctx: GraphContext, rel: Relations): ReleaseStreamFlow[] {
+  const flows: ReleaseStreamFlow[] = [
+    {
+      from: "development",
+      to: "stable",
+      kind: "promote",
+      pending: ctx.hasStable
+        ? rel.window.filter((commit) => rel.promotable.has(commit.sha)).length
+        : rel.window.length,
+      command: ctx.hasStable ? "npm run release:promote" : "npm run streams -- init",
+    },
+  ];
+  if (rel.stranded.length) {
     flows.push({
       from: "stable",
       to: "development",
       kind: "forward-port",
-      pending: stranded.length,
-      command: `git cherry-pick -x ${stranded.map((c) => c.sha.slice(0, 9)).join(" ")}`,
+      pending: rel.stranded.length,
+      command: `git cherry-pick -x ${rel.stranded.map((c) => c.sha.slice(0, 9)).join(" ")}`,
     });
   }
-  if (follow && exists(follow)) {
+  if (ctx.follow) {
     flows.push({
-      from: follow.id,
+      from: ctx.follow.id,
       to: "development",
       kind: "sync",
-      pending: incoming.length,
+      pending: rel.incoming.length,
       command: "npm run release:sync-upstream",
     });
   }
-  if (upDevCherry && forkOnly) {
-    const candidates = window.filter(
-      (commit) => forkOnly.has(commit.sha) && upDevCherry.missing.includes(commit.sha),
-    );
+  if (ctx.upDev && rel.forkOnly) {
+    const forkOnly = rel.forkOnly;
     flows.push({
       from: "development",
       to: "upstream-development",
       kind: "contribute",
-      pending: candidates.length,
+      pending: rel.window.filter(
+        (commit) => forkOnly.has(commit.sha) && rel.uncontributed.has(commit.sha),
+      ).length,
       command: "npm run release:contribute -- <commit...>",
     });
   }
+  return flows;
+}
 
-  // Events for the graph's connectors.
-  const events: ReleaseStreamEvent[] = [];
-  if (hasStable) {
-    const merges = parseLog(
-      await tryGit(git, [
-        "log",
-        "--merges",
-        "--first-parent",
-        `--format=${LOG_FORMAT}`,
-        "-n",
-        "40",
-        stable.ref,
-      ]),
-    );
-    const promotions = merges.filter((commit) => PROMOTE.test(commit.subject));
-    const promotedTo = await firstReleases(
+async function recentMerges(git: StreamsGit, ref: string, pattern: RegExp): Promise<Commit[]> {
+  const log = await tryGit(git, [
+    "log",
+    "--merges",
+    "--first-parent",
+    `--format=${LOG_FORMAT}`,
+    "-n",
+    "40",
+    ref,
+  ]);
+  return parseLog(log).filter((commit) => pattern.test(commit.subject));
+}
+
+async function promotionAndBackportEvents(
+  ctx: GraphContext,
+  rel: Relations,
+): Promise<ReleaseStreamEvent[]> {
+  if (!ctx.hasStable) return [];
+  const { git, stable } = ctx;
+  const promotions = await recentMerges(git, stable.ref, PROMOTE);
+  const carriers = [...rel.carriers.values()];
+  const [promotedTo, carrierReleases] = await Promise.all([
+    firstReleases(
       git,
       promotions.map((c) => c.sha),
       stable,
-    );
-    for (const commit of promotions) {
-      events.push({
-        kind: "promote",
-        from: "development",
-        to: "stable",
-        fromRelease: PROMOTE.exec(commit.subject)?.[1] ?? null,
-        toRelease: promotedTo.get(commit.sha) ?? null,
-        sha: commit.sha,
-        date: commit.date,
-        count: 0,
-      });
-    }
-    const byRelease = new Map<string, ReleaseStreamEvent>();
-    const carriers = [...backportCarrier.values()];
-    const carrierReleases = await firstReleases(
+    ),
+    firstReleases(
       git,
       carriers.map((c) => c.sha),
       stable,
-    );
-    for (const carrier of carriers) {
-      const release = carrierReleases.get(carrier.sha) ?? null;
-      const key = release ?? "unreleased";
-      const existing = byRelease.get(key);
-      if (existing) existing.count += 1;
-      else {
-        byRelease.set(key, {
-          kind: "backport",
-          from: "development",
-          to: "stable",
-          fromRelease: null,
-          toRelease: release,
-          sha: carrier.sha,
-          date: carrier.date,
-          count: 1,
-        });
-      }
+    ),
+  ]);
+  const events: ReleaseStreamEvent[] = promotions.map((commit) => ({
+    kind: "promote",
+    from: "development",
+    to: "stable",
+    fromRelease: PROMOTE.exec(commit.subject)?.[1] ?? null,
+    toRelease: promotedTo.get(commit.sha) ?? null,
+    sha: commit.sha,
+    date: commit.date,
+    count: 0,
+  }));
+  // One connector per stable release, counting the fixes it carried.
+  const byRelease = new Map<string, ReleaseStreamEvent>();
+  for (const carrier of carriers) {
+    const release = carrierReleases.get(carrier.sha) ?? null;
+    const existing = byRelease.get(release ?? "unreleased");
+    if (existing) {
+      existing.count += 1;
+      continue;
     }
-    events.push(...byRelease.values());
+    byRelease.set(release ?? "unreleased", {
+      kind: "backport",
+      from: "development",
+      to: "stable",
+      fromRelease: null,
+      toRelease: release,
+      sha: carrier.sha,
+      date: carrier.date,
+      count: 1,
+    });
   }
-  if (follow && exists(follow)) {
-    const syncs = parseLog(
-      await tryGit(git, [
-        "log",
-        "--merges",
-        "--first-parent",
-        `--format=${LOG_FORMAT}`,
-        "-n",
-        "40",
-        dev.ref,
-      ]),
-    ).filter((commit) => SYNC.test(commit.subject));
+  return [...events, ...byRelease.values()];
+}
+
+async function upstreamEvents(
+  ctx: GraphContext,
+  rel: Relations,
+  releases: ReleaseMaps,
+): Promise<ReleaseStreamEvent[]> {
+  const events: ReleaseStreamEvent[] = [];
+  const { follow } = ctx;
+  if (follow) {
+    const syncs = await recentMerges(ctx.git, ctx.dev.ref, SYNC);
     const syncedInto = await firstReleases(
-      git,
+      ctx.git,
       syncs.map((c) => c.sha),
-      dev,
+      ctx.dev,
     );
     for (const commit of syncs) {
       const label = SYNC.exec(commit.subject)?.[1] ?? null;
@@ -670,23 +679,64 @@ export async function buildReleaseStreamsGraph(input: {
       });
     }
   }
-  if (upDevCherry) {
-    for (const commit of window) {
-      if (forkOnly?.has(commit.sha) && upDevCherry.equivalent.includes(commit.sha)) {
-        events.push({
-          kind: "contribute",
-          from: "development",
-          to: "upstream-development",
-          fromRelease: devReleases.get(commit.sha) ?? null,
-          toRelease: upDevReleases.get(commit.sha) ?? null,
-          sha: commit.sha,
-          date: commit.date,
-          count: 1,
-        });
-      }
-    }
+  for (const commit of rel.window) {
+    if (!rel.forkOnly?.has(commit.sha) || !rel.contributed.has(commit.sha)) continue;
+    events.push({
+      kind: "contribute",
+      from: "development",
+      to: "upstream-development",
+      fromRelease: releases.dev.get(commit.sha) ?? null,
+      toRelease: releases.upDev.get(commit.sha) ?? null,
+      sha: commit.sha,
+      date: commit.date,
+      count: 1,
+    });
   }
-  events.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+  return events;
+}
 
-  return { streams, flows, changes, events, truncated };
+export async function buildReleaseStreamsGraph(input: {
+  git: StreamsGit;
+  config: ReleaseStreamsConfig;
+}): Promise<ReleaseStreamsGraph> {
+  const { git, config } = input;
+  const known = new Set(
+    lines(await tryGit(git, ["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"])),
+  );
+  const refs = streamRefs(config, known);
+  const byId = new Map(refs.map((stream) => [stream.id, stream]));
+  const present = (id: string) => {
+    const stream = byId.get(id);
+    return stream && known.has(stream.ref) ? stream : null;
+  };
+  const upDev = present("upstream-development");
+  const upStable = present("upstream-stable");
+  const ctx: GraphContext = {
+    git,
+    config,
+    known,
+    dev: byId.get("development")!,
+    stable: byId.get("stable")!,
+    upDev,
+    upStable,
+    follow: config.upstream?.follow === "development" ? upDev : upStable,
+    hasStable: present("stable") !== null,
+  };
+  const hasDev = present("development") !== null;
+  const streams = await Promise.all(refs.map((stream) => readStream(ctx, stream, hasDev)));
+  if (!hasDev) return { streams, flows: [], changes: [], events: [], truncated: false };
+
+  const rel = await readRelations(ctx);
+  const releases = await readFirstReleases(ctx, rel);
+  const events = [
+    ...(await promotionAndBackportEvents(ctx, rel)),
+    ...(await upstreamEvents(ctx, rel, releases)),
+  ].sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+  return {
+    streams,
+    flows: buildFlows(ctx, rel),
+    changes: buildChanges(ctx, rel, releases),
+    events,
+    truncated: rel.truncated,
+  };
 }

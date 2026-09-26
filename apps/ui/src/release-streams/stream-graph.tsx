@@ -13,6 +13,8 @@ const GUTTER = 8;
 const TOP = 18;
 const RIGHT = 140;
 const NODE_RADIUS = 7;
+const ROW_STYLE = { flexDirection: "row" } as const;
+const FILL_STYLE = { flex: 1 } as const;
 
 export interface StreamGraphLabels {
   channel: (channel: string) => string;
@@ -102,15 +104,15 @@ function StreamGraphSvg({
   // Open on the newest end: the tips and what is waiting matter more than old releases.
   const scrollRef = useRef<ScrollView>(null);
   const scrollToNewest = useCallback(() => scrollRef.current?.scrollToEnd({ animated: false }), []);
-  const edgeColor = (kind: string) =>
-    kind === "promote"
-      ? palette.promote
-      : kind === "backport" || kind === "forward-port"
-        ? palette.backport
-        : palette.sync;
+  const edgeColor = (kind: string) => {
+    if (kind === "promote") return palette.promote;
+    if (kind === "backport" || kind === "forward-port") return palette.backport;
+    return palette.sync;
+  };
+  const contentStyle = useMemo(() => ({ minWidth: width }), [width]);
 
   return (
-    <View style={{ flexDirection: "row" }}>
+    <View style={ROW_STYLE}>
       <Svg width={LABEL_WIDTH} height={height}>
         {layout.lanes.map((lane) => {
           const laneY = y(lane.index);
@@ -128,12 +130,12 @@ function StreamGraphSvg({
         })}
       </Svg>
       <ScrollView
-        style={{ flex: 1 }}
+        style={FILL_STYLE}
         ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator
         onContentSizeChange={scrollToNewest}
-        contentContainerStyle={{ minWidth: width }}
+        contentContainerStyle={contentStyle}
       >
         <Svg width={width} height={height} accessibilityRole="image" testID="release-streams-graph">
           {layout.lanes.map((lane) => {

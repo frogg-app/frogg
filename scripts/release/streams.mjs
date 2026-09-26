@@ -14,7 +14,6 @@ import {
   upstreamFollowRef,
 } from "./streams-config.mjs";
 import {
-  assertStablePatch,
   isReleaseCutSubject,
   isVersionOwnedFile,
   nextBetaVersion,

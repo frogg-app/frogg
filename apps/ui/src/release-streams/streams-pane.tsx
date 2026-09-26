@@ -158,14 +158,12 @@ function StreamsContent({ data }: { data: StreamsGraphPayload }) {
       unreleased: (count) => t("releaseStreams.graph.unreleased", { count }),
       upToDate: t("releaseStreams.graph.upToDate"),
       missing: t("releaseStreams.graph.missing"),
-      edge: (kind, count) =>
-        kind === "backport"
-          ? t("releaseStreams.graph.backport", { count })
-          : kind === "promote"
-            ? t("releaseStreams.graph.promote")
-            : kind === "sync"
-              ? t("releaseStreams.graph.sync")
-              : t("releaseStreams.graph.contribute"),
+      edge: (kind, count) => {
+        if (kind === "backport") return t("releaseStreams.graph.backport", { count });
+        if (kind === "promote") return t("releaseStreams.graph.promote");
+        if (kind === "sync") return t("releaseStreams.graph.sync");
+        return t("releaseStreams.graph.contribute");
+      },
       waiting: (count) => t("releaseStreams.graph.waiting", { count }),
     }),
     [t],
@@ -213,7 +211,6 @@ function StreamsContent({ data }: { data: StreamsGraphPayload }) {
 
 function StreamCard({ stream }: { stream: ReleaseStream }) {
   const { t } = useTranslation();
-  const latest = stream.releases[0];
   const beta = stream.channel !== "stable";
   return (
     <View style={styles.card} testID={`release-stream-card-${stream.id}`}>
@@ -234,14 +231,7 @@ function StreamCard({ stream }: { stream: ReleaseStream }) {
       </Text>
       <Text style={styles.cardVersion}>{stream.version ?? "—"}</Text>
       <Text style={styles.muted} numberOfLines={1}>
-        {!stream.exists
-          ? t("releaseStreams.card.missing")
-          : latest
-            ? t("releaseStreams.card.latest", {
-                version: latest.version,
-                time: latest.date ? formatTimeAgo(new Date(latest.date)) : "",
-              })
-            : t("releaseStreams.card.noRelease")}
+        {describeLatest(t, stream)}
       </Text>
       {stream.exists && stream.unreleased > 0 ? (
         <Text style={styles.muted}>
@@ -250,6 +240,16 @@ function StreamCard({ stream }: { stream: ReleaseStream }) {
       ) : null}
     </View>
   );
+}
+
+function describeLatest(t: TFunction, stream: ReleaseStream): string {
+  if (!stream.exists) return t("releaseStreams.card.missing");
+  const latest = stream.releases[0];
+  if (!latest) return t("releaseStreams.card.noRelease");
+  return t("releaseStreams.card.latest", {
+    version: latest.version,
+    time: latest.date ? formatTimeAgo(new Date(latest.date)) : "",
+  });
 }
 
 function Legend() {
@@ -338,7 +338,7 @@ function CommandLine({ command }: { command: string }) {
   const copy = useCallback(() => {
     void copyToClipboard(command).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      return setTimeout(() => setCopied(false), 1500);
     });
   }, [command]);
   return (
@@ -410,12 +410,9 @@ function ChangeList({ data, streams }: { data: StreamsGraphPayload; streams: Rel
 
 function ChangeRow({ change, columns }: { change: ReleaseStreamChange; columns: ReleaseStream[] }) {
   const { t } = useTranslation();
-  const typeStyle =
-    change.type === "feat"
-      ? styles.typeFeat
-      : change.type === "fix" || change.type === "perf"
-        ? styles.typeFix
-        : styles.typeOther;
+  let typeStyle = styles.typeOther;
+  if (change.type === "feat") typeStyle = styles.typeFeat;
+  else if (change.type === "fix" || change.type === "perf") typeStyle = styles.typeFix;
   return (
     <View style={styles.changeRow} testID="release-streams-change">
       <View style={styles.changeHeader}>

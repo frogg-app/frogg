@@ -117,6 +117,14 @@ export function workspaceTabTargetsEqual(
   return secondaryWorkspaceTabTargetsEqual(left, right);
 }
 
+const SINGLETON_TARGET_KINDS: ReadonlySet<WorkspaceTabTarget["kind"]> = new Set([
+  "files",
+  "changes_tree",
+  "pull_request",
+  "ci_runs",
+  "release_streams",
+]);
+
 function secondaryWorkspaceTabTargetsEqual(
   left: WorkspaceTabTarget,
   right: WorkspaceTabTarget,
@@ -130,19 +138,8 @@ function secondaryWorkspaceTabTargetsEqual(
   if (left.kind === "working_diff" && right.kind === "working_diff") {
     return left.focusPath === right.focusPath && left.focusRequestId === right.focusRequestId;
   }
-  if (left.kind === "files" && right.kind === "files") {
-    return true;
-  }
-  if (left.kind === "changes_tree" && right.kind === "changes_tree") {
-    return true;
-  }
-  if (left.kind === "pull_request" && right.kind === "pull_request") {
-    return true;
-  }
-  if (left.kind === "ci_runs" && right.kind === "ci_runs") {
-    return true;
-  }
-  if (left.kind === "release_streams" && right.kind === "release_streams") {
+  // One per workspace: any two of the same kind are the same tab.
+  if (left.kind === right.kind && SINGLETON_TARGET_KINDS.has(left.kind)) {
     return true;
   }
   if (left.kind === "setup" && right.kind === "setup") {

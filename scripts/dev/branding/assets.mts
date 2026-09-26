@@ -49,7 +49,7 @@ export function betaBadgeSvg(size: number, safeZone = 0): Buffer {
   );
 }
 
-async function badge(source: string | Buffer, size: number, safeZone = 0): Promise<Buffer> {
+async function withBetaBadge(source: string | Buffer, size: number, safeZone = 0): Promise<Buffer> {
   const base = await sharp(source)
     .resize(size, size, { fit: "contain", background: "#00000000" })
     .png()
@@ -74,7 +74,7 @@ async function channelAssetFiles(build: BrandBuild): Promise<BrandBuild["assetFi
         ? await sharp(file).trim({ threshold: 1 }).png().toBuffer()
         : file;
     const target = path.join(directory, `${key}.png`);
-    await writeFile(target, await badge(source, 1024, key === "foreground" ? 0.2 : 0));
+    await writeFile(target, await withBetaBadge(source, 1024, key === "foreground" ? 0.2 : 0));
     files[key] = target;
   }
   return files;

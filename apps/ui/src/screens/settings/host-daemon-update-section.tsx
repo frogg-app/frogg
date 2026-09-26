@@ -265,25 +265,23 @@ function AutoUpdateRows({
   const { t } = useTranslation();
   const handleToggle = useCallback((next: boolean) => onPatch({ enabled: next }), [onPatch]);
   return (
-    <>
-      <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
-        <View style={settingsStyles.rowContent}>
-          <Text style={settingsStyles.rowTitle}>
-            {t("settings.host.daemon.selfUpdate.autoUpdate.title")}
-          </Text>
-          <Text style={settingsStyles.rowHint}>
-            {t("settings.host.daemon.selfUpdate.autoUpdate.hint")}
-          </Text>
-        </View>
-        <Switch
-          value={enabled}
-          onValueChange={handleToggle}
-          disabled={disabled}
-          accessibilityLabel={t("settings.host.daemon.selfUpdate.autoUpdate.title")}
-          testID="host-page-daemon-auto-update-switch"
-        />
+    <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+      <View style={settingsStyles.rowContent}>
+        <Text style={settingsStyles.rowTitle}>
+          {t("settings.host.daemon.selfUpdate.autoUpdate.title")}
+        </Text>
+        <Text style={settingsStyles.rowHint}>
+          {t("settings.host.daemon.selfUpdate.autoUpdate.hint")}
+        </Text>
       </View>
-    </>
+      <Switch
+        value={enabled}
+        onValueChange={handleToggle}
+        disabled={disabled}
+        accessibilityLabel={t("settings.host.daemon.selfUpdate.autoUpdate.title")}
+        testID="host-page-daemon-auto-update-switch"
+      />
+    </View>
   );
 }
 

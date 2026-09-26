@@ -148,7 +148,7 @@ export function layoutStreamGraph(input: {
   );
   const points: Array<Omit<GraphNode, "column">> = [];
   ordered.forEach((stream, lane) => {
-    const releases = stream.releases.slice(0, RELEASES_PER_LANE).reverse();
+    const releases = stream.releases.slice(0, RELEASES_PER_LANE).toReversed();
     for (const release of releases) {
       points.push({
         key: `${stream.id}:${release.tag}`,
