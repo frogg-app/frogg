@@ -2603,7 +2603,22 @@ export class Session {
   }
 
   /** Owner-only `daemon.*` reads about reaching and securing this daemon. */
+  private dispatchHostResourcesMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    switch (msg.type) {
+      case "daemon.host.get_metrics.request":
+        return this.daemonSession.handleHostGetMetricsRequest(msg);
+      case "daemon.storage.list.request":
+        return this.daemonSession.handleStorageListRequest(msg);
+      case "daemon.storage.clean.request":
+        return this.daemonSession.handleStorageCleanRequest(msg);
+      default:
+        return undefined;
+    }
+  }
+
   private dispatchDaemonAccessMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    const hostResources = this.dispatchHostResourcesMessage(msg);
+    if (hostResources) return hostResources;
     switch (msg.type) {
       case "daemon.get_pairing_offer.request":
         return this.daemonSession.handleGetPairingOfferRequest(msg);

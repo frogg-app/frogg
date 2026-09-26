@@ -33295,6 +33295,336 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.host.get_metrics.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "metrics": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "sampledAt": {
+                              "type": "string"
+                            },
+                            "hostname": {
+                              "type": "string"
+                            },
+                            "platform": {
+                              "type": "string"
+                            },
+                            "arch": {
+                              "type": "string"
+                            },
+                            "uptimeSeconds": {
+                              "type": "number"
+                            },
+                            "cpu": {
+                              "type": "object",
+                              "properties": {
+                                "cores": {
+                                  "type": "number"
+                                },
+                                "model": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "usagePercent": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                },
+                                "loadAverage": {
+                                  "anyOf": [
+                                    {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "number"
+                                      }
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "cores",
+                                "model",
+                                "usagePercent",
+                                "loadAverage"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "memory": {
+                              "type": "object",
+                              "properties": {
+                                "totalBytes": {
+                                  "type": "number"
+                                },
+                                "freeBytes": {
+                                  "type": "number"
+                                },
+                                "usedBytes": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "totalBytes",
+                                "freeBytes",
+                                "usedBytes"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "daemon": {
+                              "type": "object",
+                              "properties": {
+                                "pid": {
+                                  "type": "number"
+                                },
+                                "rssBytes": {
+                                  "type": "number"
+                                },
+                                "heapUsedBytes": {
+                                  "type": "number"
+                                },
+                                "cpuPercent": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                },
+                                "uptimeSeconds": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "pid",
+                                "rssBytes",
+                                "heapUsedBytes",
+                                "cpuPercent",
+                                "uptimeSeconds"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "disk": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "path": {
+                                      "type": "string"
+                                    },
+                                    "totalBytes": {
+                                      "type": "number"
+                                    },
+                                    "freeBytes": {
+                                      "type": "number"
+                                    },
+                                    "usedBytes": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "path",
+                                    "totalBytes",
+                                    "freeBytes",
+                                    "usedBytes"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "sampledAt",
+                            "hostname",
+                            "platform",
+                            "arch",
+                            "uptimeSeconds",
+                            "cpu",
+                            "memory",
+                            "daemon",
+                            "disk"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "metrics",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.storage.list.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "computedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "path": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "exists": {
+                            "type": "boolean"
+                          },
+                          "bytes": {
+                            "type": "number"
+                          },
+                          "entryCount": {
+                            "type": "number"
+                          },
+                          "truncated": {
+                            "type": "boolean"
+                          },
+                          "cleanable": {
+                            "type": "boolean"
+                          },
+                          "reclaimableBytes": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "path",
+                          "exists",
+                          "bytes",
+                          "entryCount",
+                          "truncated",
+                          "cleanable",
+                          "reclaimableBytes"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "computedAt",
+                    "categories",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.storage.clean.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "categoryId": {
+                      "type": "string"
+                    },
+                    "bytesFreed": {
+                      "type": "number"
+                    },
+                    "removedCount": {
+                      "type": "number"
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "categoryId",
+                    "bytesFreed",
+                    "removedCount",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "daemon.get_pairing_offer.response"
                 },
                 "payload": {

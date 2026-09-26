@@ -2,10 +2,9 @@ import { EventEmitter } from "node:events";
 import type pino from "pino";
 import { OpenAI, type ClientOptions } from "openai";
 import { writeFile, unlink } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
 import { v4 } from "uuid";
 import { inferAudioExtension } from "../../../agent/audio-utils.js";
+import { froggTempFilePath } from "../../../host/frogg-temp.js";
 import type {
   LogprobToken,
   SpeechToTextProvider,
@@ -198,7 +197,7 @@ export class OpenAISTT implements SpeechToTextProvider {
 
     try {
       const ext = inferAudioExtension(format);
-      tempFilePath = join(tmpdir(), `audio-${v4()}.${ext}`);
+      tempFilePath = froggTempFilePath("stt", `${v4()}.${ext}`);
       await writeFile(tempFilePath, audioBuffer);
 
       logger.debug({ tempFilePath, bytes: audioBuffer.length }, "Transcribing audio file");

@@ -22,6 +22,9 @@ deployment run, not more code.
 
 ## Features
 
+- [ ] **Host settings: metrics and storage.** Daemon RPCs are in (`features.hostResources`);
+      the client view is not. Orphaned-worktree cleanup is not offered: size only until the
+      daemon can prove a worktree has no workspace or agent.
 - [ ] **Schedules rewrite.** The old system was removed in 1.5.41.
 - [ ] **Provider agent folders.** Verify Codex/Copilot/OpenCode paths against real
       installs; add Cursor, Kiro, Kimi, Trae, Pi and OMP. "Open in editor" only works
@@ -58,6 +61,8 @@ deployment run, not more code.
 
 ## Acceptance (needs devices or live deployments)
 
+- [ ] Startup debris sweep and `daemon.storage.clean` on Windows and macOS (Linux covered by
+      tests): temp paths, ownership checks (skipped on Windows), statfs disk figures.
 - [ ] Electron on Windows/macOS/Linux: memory growth and lockups, update-install UI
       stalls, shutdown/relaunch under voice and streaming load, installers, updater handoff
       and rollback. Also the new inline app-update progress (1.5.41).

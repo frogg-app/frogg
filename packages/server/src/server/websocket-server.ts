@@ -1944,6 +1944,10 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
+  private hostResourcesFeature(): { hostResources?: true } {
+    return this.daemonRuntimeConfig?.hostResources ? { hostResources: true } : {};
+  }
+
   private securityPostureFeature(): { securityPosture?: true; securityAcknowledge?: true } {
     const runtime = this.daemonRuntimeConfig;
     return {
@@ -2000,6 +2004,8 @@ export class VoiceAssistantWebSocketServer {
         directorySync: true,
         // COMPAT(ciJobLogs): added in v1.5.37, remove gate after 2027-09-24.
         ciJobLogs: true,
+        // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
+        ...this.hostResourcesFeature(),
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.
         providerAgentDefinitions: true,
         // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.

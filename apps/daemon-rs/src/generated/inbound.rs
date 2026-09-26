@@ -219,6 +219,12 @@ pub enum SessionMessage {
     WaitForFinishRequest(WaitForFinishRequest),
     #[serde(rename = "daemon.get_status.request")]
     DaemonGetStatusRequest(DaemonGetStatusRequest),
+    #[serde(rename = "daemon.host.get_metrics.request")]
+    DaemonHostGetMetricsRequest(DaemonHostGetMetricsRequest),
+    #[serde(rename = "daemon.storage.list.request")]
+    DaemonStorageListRequest(DaemonStorageListRequest),
+    #[serde(rename = "daemon.storage.clean.request")]
+    DaemonStorageCleanRequest(DaemonStorageCleanRequest),
     #[serde(rename = "daemon.get_pairing_offer.request")]
     DaemonGetPairingOfferRequest(DaemonGetPairingOfferRequest),
     #[serde(rename = "daemon.get_security_posture.request")]
@@ -1519,6 +1525,28 @@ pub struct WaitForFinishRequest {
 pub struct DaemonGetStatusRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonHostGetMetricsRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageCleanRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "categoryId")]
+    pub category_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

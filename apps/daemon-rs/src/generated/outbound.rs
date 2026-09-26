@@ -224,6 +224,12 @@ pub enum SessionMessage {
     SetVoiceModeResponse(SetVoiceModeResponse),
     #[serde(rename = "daemon.get_status.response")]
     DaemonGetStatusResponse(DaemonGetStatusResponse),
+    #[serde(rename = "daemon.host.get_metrics.response")]
+    DaemonHostGetMetricsResponse(DaemonHostGetMetricsResponse),
+    #[serde(rename = "daemon.storage.list.response")]
+    DaemonStorageListResponse(DaemonStorageListResponse),
+    #[serde(rename = "daemon.storage.clean.response")]
+    DaemonStorageCleanResponse(DaemonStorageCleanResponse),
     #[serde(rename = "daemon.get_pairing_offer.response")]
     DaemonGetPairingOfferResponse(DaemonGetPairingOfferResponse),
     #[serde(rename = "daemon.get_security_posture.response")]
@@ -7121,6 +7127,70 @@ pub struct DaemonGetStatusResponsePayload {
 pub struct DaemonGetStatusResponsePayloadProvidersItem {
     pub provider: String,
     pub available: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonHostGetMetricsResponse {
+    pub payload: DaemonHostGetMetricsResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonHostGetMetricsResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub metrics: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageListResponse {
+    pub payload: DaemonStorageListResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageListResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "computedAt", skip_serializing_if = "Option::is_none")]
+    pub computed_at: Option<String>,
+    pub categories: Vec<DaemonStorageListResponsePayloadCategoriesItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageListResponsePayloadCategoriesItem {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    pub exists: bool,
+    pub bytes: f64,
+    #[serde(rename = "entryCount")]
+    pub entry_count: f64,
+    pub truncated: bool,
+    pub cleanable: bool,
+    #[serde(rename = "reclaimableBytes", skip_serializing_if = "Option::is_none")]
+    pub reclaimable_bytes: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageCleanResponse {
+    pub payload: DaemonStorageCleanResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageCleanResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "categoryId")]
+    pub category_id: String,
+    #[serde(rename = "bytesFreed")]
+    pub bytes_freed: f64,
+    #[serde(rename = "removedCount")]
+    pub removed_count: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }

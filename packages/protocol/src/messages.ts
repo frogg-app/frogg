@@ -1586,6 +1586,29 @@ export type DaemonSetSecurityFindingAcknowledgedRequest = z.infer<
   typeof DaemonSetSecurityFindingAcknowledgedRequestSchema
 >;
 
+/** Host CPU/memory/disk and daemon process load. Gated on `features.hostResources`. */
+export const DaemonHostGetMetricsRequestSchema = z.object({
+  type: z.literal("daemon.host.get_metrics.request"),
+  requestId: z.string(),
+});
+export type DaemonHostGetMetricsRequest = z.infer<typeof DaemonHostGetMetricsRequestSchema>;
+
+/** Sizes of the storage Frogg owns. Cached daemon-side; `refresh` forces a new walk. */
+export const DaemonStorageListRequestSchema = z.object({
+  type: z.literal("daemon.storage.list.request"),
+  requestId: z.string(),
+  refresh: z.boolean().optional(),
+});
+export type DaemonStorageListRequest = z.infer<typeof DaemonStorageListRequestSchema>;
+
+/** Remove the reclaimable contents of one cleanable storage category. */
+export const DaemonStorageCleanRequestSchema = z.object({
+  type: z.literal("daemon.storage.clean.request"),
+  requestId: z.string(),
+  categoryId: z.string().min(1).max(64),
+});
+export type DaemonStorageCleanRequest = z.infer<typeof DaemonStorageCleanRequestSchema>;
+
 export const DaemonGetPairingOfferRequestSchema = z.object({
   type: z.literal("daemon.get_pairing_offer.request"),
   requestId: z.string(),
@@ -3423,6 +3446,9 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   SendAgentMessageRequestSchema,
   WaitForFinishRequestSchema,
   DaemonGetStatusRequestSchema,
+  DaemonHostGetMetricsRequestSchema,
+  DaemonStorageListRequestSchema,
+  DaemonStorageCleanRequestSchema,
   DaemonGetPairingOfferRequestSchema,
   DaemonGetSecurityPostureRequestSchema,
   DaemonSetSecurityFindingAcknowledgedRequestSchema,
@@ -4138,6 +4164,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(ciJobLogs): added in v1.5.37, remove gate after 2027-09-24.
         // checkout.ci.download_job_log is available.
         ciJobLogs: z.boolean().optional(),
+        // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
+        // daemon.host.get_metrics, daemon.storage.list and daemon.storage.clean are available.
+        hostResources: z.boolean().optional(),
       })
       .optional(),
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
@@ -5263,6 +5292,90 @@ export const DaemonGetStatusResponseSchema = z.object({
       ),
     })
     .passthrough(),
+});
+
+export const HostMetricsSchema = z.object({
+  sampledAt: z.string(),
+  hostname: z.string(),
+  platform: z.string(),
+  arch: z.string(),
+  uptimeSeconds: z.number(),
+  cpu: z.object({
+    cores: z.number(),
+    model: z.string().nullable(),
+    /** 0-100 across all cores over the sample window. */
+    usagePercent: z.number().nullable(),
+    /** 1/5/15 minute load averages; null on Windows. */
+    loadAverage: z.array(z.number()).nullable(),
+  }),
+  memory: z.object({
+    totalBytes: z.number(),
+    freeBytes: z.number(),
+    usedBytes: z.number(),
+  }),
+  daemon: z.object({
+    pid: z.number(),
+    rssBytes: z.number(),
+    heapUsedBytes: z.number(),
+    /** 0-100 of one core; can exceed 100 on multi-threaded work. */
+    cpuPercent: z.number().nullable(),
+    uptimeSeconds: z.number(),
+  }),
+  /** Volume holding FROGG_HOME. */
+  disk: z
+    .object({
+      path: z.string(),
+      totalBytes: z.number(),
+      freeBytes: z.number(),
+      usedBytes: z.number(),
+    })
+    .nullable(),
+});
+export type HostMetrics = z.infer<typeof HostMetricsSchema>;
+
+export const DaemonHostGetMetricsResponseSchema = z.object({
+  type: z.literal("daemon.host.get_metrics.response"),
+  payload: z.object({
+    requestId: z.string(),
+    metrics: HostMetricsSchema.nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const OwnedStorageCategorySchema = z.object({
+  /** Stable id (logs, agents, projects, worktrees, uploads, project_import_staging, tts_cache, models, daemon_versions, temp); unknown ids may appear. */
+  id: z.string(),
+  path: z.string().nullable(),
+  exists: z.boolean(),
+  bytes: z.number(),
+  entryCount: z.number(),
+  /** The walk hit its entry cap; bytes is a lower bound. */
+  truncated: z.boolean(),
+  cleanable: z.boolean(),
+  /** What daemon.storage.clean would free now; null when not cleanable. */
+  reclaimableBytes: z.number().nullable(),
+});
+export type OwnedStorageCategory = z.infer<typeof OwnedStorageCategorySchema>;
+
+export const DaemonStorageListResponseSchema = z.object({
+  type: z.literal("daemon.storage.list.response"),
+  payload: z.object({
+    requestId: z.string(),
+    computedAt: z.string().nullable(),
+    categories: z.array(OwnedStorageCategorySchema),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonStorageCleanResponseSchema = z.object({
+  type: z.literal("daemon.storage.clean.response"),
+  payload: z.object({
+    requestId: z.string(),
+    categoryId: z.string(),
+    bytesFreed: z.number(),
+    removedCount: z.number(),
+    error: z.string().nullable(),
+  }),
 });
 
 export const HubRelationshipStatusSchema = z.object({
@@ -7379,6 +7492,9 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   SendAgentMessageResponseMessageSchema,
   SetVoiceModeResponseMessageSchema,
   DaemonGetStatusResponseSchema,
+  DaemonHostGetMetricsResponseSchema,
+  DaemonStorageListResponseSchema,
+  DaemonStorageCleanResponseSchema,
   DaemonGetPairingOfferResponseSchema,
   DaemonGetSecurityPostureResponseSchema,
   DaemonSetSecurityFindingAcknowledgedResponseSchema,
@@ -7672,6 +7788,9 @@ export type ListProviderFeaturesResponseMessage = z.infer<
 >;
 export type ListAvailableProvidersResponse = z.infer<typeof ListAvailableProvidersResponseSchema>;
 export type DaemonGetStatusResponse = z.infer<typeof DaemonGetStatusResponseSchema>;
+export type DaemonHostGetMetricsResponse = z.infer<typeof DaemonHostGetMetricsResponseSchema>;
+export type DaemonStorageListResponse = z.infer<typeof DaemonStorageListResponseSchema>;
+export type DaemonStorageCleanResponse = z.infer<typeof DaemonStorageCleanResponseSchema>;
 export type DaemonGetPairingOfferResponse = z.infer<typeof DaemonGetPairingOfferResponseSchema>;
 export type DaemonGetSecurityPostureResponse = z.infer<
   typeof DaemonGetSecurityPostureResponseSchema

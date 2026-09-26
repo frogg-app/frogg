@@ -257,6 +257,9 @@ import {
 } from "./session/daemon/daemon-auto-updater.js";
 import { describeDaemonInstall } from "./session/daemon/daemon-update-install.js";
 import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
+import { createHostResources } from "./host/host-resources.js";
+import { sweepFroggDebris } from "./host/debris-sweep.js";
+import { getActiveImageAttachmentDir } from "./agent/providers/provider-image-output.js";
 import type { DaemonAutoUpdateConfig } from "@frogg/protocol/messages";
 
 const MCP_DEBUG_BATCH_LIMIT = 10;
@@ -2162,6 +2165,29 @@ export async function createFroggDaemon(
               retainAcrossGatewayRestart: Boolean(config.executionService),
               logger,
             });
+            const runningVersionRoot = updateService.installInfo.runningRoot;
+            const hostResources = createHostResources({
+              froggHome: config.froggHome,
+              worktreesRoot: config.worktreesRoot,
+              versionsDir: runningVersionRoot ? path.dirname(runningVersionRoot) : null,
+              listStagingParents: async () =>
+                (await projectRegistry.list()).map((project) => path.dirname(project.rootPath)),
+              listProtectedPaths: () => {
+                const active = getActiveImageAttachmentDir();
+                return active ? [active] : [];
+              },
+              logger,
+            });
+            // Non-blocking: a slow or failing sweep never delays or breaks startup.
+            void (async () =>
+              sweepFroggDebris({
+                logger,
+                stagingParents: await hostResources.storage.listStagingParents().catch(() => []),
+                protectedPaths: [getActiveImageAttachmentDir()].filter(
+                  (p): p is string => p !== null,
+                ),
+              }))();
+
             autoUpdater = new DaemonAutoUpdater({
               service: updateService,
               getConfig: () => daemonConfigStore.get().autoUpdate,
@@ -2229,6 +2255,7 @@ export async function createFroggDaemon(
                 },
                 desktopManaged: config.desktopManaged === true,
                 update: updateService,
+                hostResources,
                 getSecurityPosture,
                 setSecurityFindingAcknowledged,
                 getRelayConfig: () =>

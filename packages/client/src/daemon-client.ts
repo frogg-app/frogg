@@ -142,6 +142,9 @@ import type {
   ProviderAccountSetAllowedModelsResponseMessage,
   ProviderAccountSetPreferencesResponseMessage,
   DaemonGetStatusResponse,
+  DaemonHostGetMetricsResponse,
+  DaemonStorageCleanResponse,
+  DaemonStorageListResponse,
   DaemonGetPairingOfferResponse,
   DaemonGetSecurityPostureResponse,
   DaemonSetSecurityFindingAcknowledgedResponse,
@@ -574,6 +577,9 @@ type ProviderAccountSetAllowedModelsPayload =
   ProviderAccountSetAllowedModelsResponseMessage["payload"];
 type ProviderAccountSetPreferencesPayload = ProviderAccountSetPreferencesResponseMessage["payload"];
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
+type DaemonHostMetricsPayload = DaemonHostGetMetricsResponse["payload"];
+type DaemonStorageListPayload = DaemonStorageListResponse["payload"];
+type DaemonStorageCleanPayload = DaemonStorageCleanResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DaemonSecurityPosturePayload = DaemonGetSecurityPostureResponse["payload"];
 type DaemonSecurityAcknowledgePayload = DaemonSetSecurityFindingAcknowledgedResponse["payload"];
@@ -5246,6 +5252,48 @@ export class DaemonClient {
         message: { type: "daemon.set_security_finding_acknowledged.request", ...input },
       },
     );
+  }
+
+  // --- host resources (features.hostResources) ------------------------------
+
+  /** Host CPU/memory/disk and daemon process load. Takes ~250ms on the first call. */
+  async getHostMetrics(options?: {
+    requestId?: string;
+    timeout?: number;
+  }): Promise<DaemonHostMetricsPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.host.get_metrics.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.host.get_metrics.request" },
+      timeout: options?.timeout,
+    });
+  }
+
+  /** Sizes of Frogg-owned storage; cached daemon-side unless `refresh`. */
+  async listOwnedStorage(options?: {
+    refresh?: boolean;
+    requestId?: string;
+    timeout?: number;
+  }): Promise<DaemonStorageListPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.storage.list.response">({
+      requestId: options?.requestId,
+      message: {
+        type: "daemon.storage.list.request",
+        ...(options?.refresh ? { refresh: true } : {}),
+      },
+      timeout: options?.timeout ?? 60_000,
+    });
+  }
+
+  /** Clean one cleanable storage category (owner/admin: daemon.manage). */
+  async cleanOwnedStorage(
+    categoryId: string,
+    options?: { requestId?: string; timeout?: number },
+  ): Promise<DaemonStorageCleanPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.storage.clean.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.storage.clean.request", categoryId },
+      timeout: options?.timeout ?? 120_000,
+    });
   }
 
   // --- device access (features.deviceAccess) --------------------------------

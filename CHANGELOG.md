@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+- **The daemon no longer litters.** All daemon scratch work goes to the system temp directory
+  under `frogg-<kind>-<pid>-…` names (image attachments, Pi MCP/extension files, OpenAI speech
+  uploads). On start it sweeps, in the background, temp debris from exited Frogg processes,
+  stale `.frogg-clone-*` staging beside projects and empty `~/frogg-classify-home-*`
+  directories: exact names only, no symlinks, no other users' entries, nothing live.
+- **Host metrics and owned storage.** New `daemon.host.get_metrics` (CPU, memory, disk holding
+  `FROGG_HOME`, daemon RSS/CPU), `daemon.storage.list` (cached sizes of each Frogg-owned area)
+  and `daemon.storage.clean` (rotated logs, spoken-alert cache, stale temp) RPCs, gated on
+  `features.hostResources`. The client Host settings view is not built yet.
+
 ## 1.6.0-beta.1 — 2026-09-26
 
 - **frogg beta installs beside frogg.** Betas are now their own build of the brand: app
