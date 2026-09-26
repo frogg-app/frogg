@@ -1,10 +1,24 @@
-import { mkdirSync, mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { classifyInvocation, isExistingDirectory, isPathLikeArg } from "./classify.js";
 
 const knownCommands = new Set(["ls", "run", "status"]);
+
+const createdDirs: string[] = [];
+
+function makeTempDir(prefix: string): string {
+  const dir = mkdtempSync(prefix);
+  createdDirs.push(dir);
+  return dir;
+}
+
+afterEach(() => {
+  for (const dir of createdDirs.splice(0)) {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 describe("classifyInvocation", () => {
   it("classifies no args as CLI mode", () => {
@@ -38,7 +52,7 @@ describe("classifyInvocation", () => {
   });
 
   it("classifies '.' as an open-project invocation", () => {
-    const projectDir = mkdtempSync(path.join(tmpdir(), "frogg-classify-dot-"));
+    const projectDir = makeTempDir(path.join(tmpdir(), "frogg-classify-dot-"));
 
     expect(
       classifyInvocation({
@@ -53,7 +67,7 @@ describe("classifyInvocation", () => {
   });
 
   it("classifies '..' as an open-project invocation", () => {
-    const parentDir = mkdtempSync(path.join(tmpdir(), "frogg-classify-parent-"));
+    const parentDir = makeTempDir(path.join(tmpdir(), "frogg-classify-parent-"));
     const childDir = path.join(parentDir, "child");
     mkdirSync(childDir);
 
@@ -70,7 +84,7 @@ describe("classifyInvocation", () => {
   });
 
   it("classifies './myproject' as an open-project invocation", () => {
-    const parentDir = mkdtempSync(path.join(tmpdir(), "frogg-classify-relative-"));
+    const parentDir = makeTempDir(path.join(tmpdir(), "frogg-classify-relative-"));
     const projectDir = path.join(parentDir, "myproject");
     mkdirSync(projectDir);
 
@@ -87,7 +101,7 @@ describe("classifyInvocation", () => {
   });
 
   it("classifies an absolute path as an open-project invocation", () => {
-    const projectDir = mkdtempSync(path.join(tmpdir(), "frogg-classify-absolute-"));
+    const projectDir = makeTempDir(path.join(tmpdir(), "frogg-classify-absolute-"));
 
     expect(
       classifyInvocation({
@@ -102,7 +116,7 @@ describe("classifyInvocation", () => {
   });
 
   it("classifies a home-relative path as an open-project invocation", () => {
-    const projectDir = mkdtempSync(path.join(homedir(), "frogg-classify-home-"));
+    const projectDir = makeTempDir(path.join(homedir(), "frogg-classify-home-"));
     const relativeToHome = `~/${path.basename(projectDir)}`;
 
     expect(
@@ -118,7 +132,7 @@ describe("classifyInvocation", () => {
   });
 
   it("classifies an existing directory name as an open-project invocation", () => {
-    const parentDir = mkdtempSync(path.join(tmpdir(), "frogg-classify-existing-"));
+    const parentDir = makeTempDir(path.join(tmpdir(), "frogg-classify-existing-"));
     const projectDir = path.join(parentDir, "myproject");
     mkdirSync(projectDir);
 
@@ -135,7 +149,7 @@ describe("classifyInvocation", () => {
   });
 
   it("keeps known commands in CLI mode even when a matching directory exists", () => {
-    const parentDir = mkdtempSync(path.join(tmpdir(), "frogg-classify-command-"));
+    const parentDir = makeTempDir(path.join(tmpdir(), "frogg-classify-command-"));
     mkdirSync(path.join(parentDir, "status"));
 
     expect(
@@ -178,7 +192,7 @@ describe("path helpers", () => {
   });
 
   it("detects existing directories relative to cwd", () => {
-    const parentDir = mkdtempSync(path.join(tmpdir(), "frogg-classify-helper-"));
+    const parentDir = makeTempDir(path.join(tmpdir(), "frogg-classify-helper-"));
     const projectDir = path.join(parentDir, "project");
     mkdirSync(projectDir);
 
