@@ -11,21 +11,36 @@ afterEach(cleanup);
 
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
-    t: (key: string, options?: Record<string, unknown>) =>
-      options && "name" in options ? `${key}:${String(options.name)}` : key,
+    t: (key: string, options?: Record<string, unknown>) => {
+      if (!options) return key;
+      const name = "name" in options ? `:${String(options.name)}` : "";
+      const second = "other" in options ? `+${String(options.other)}` : "";
+      const count = "count" in options ? `#${String(options.count)}` : "";
+      return `${key}${name}${second}${count}`;
+    },
   }),
 }));
 
 let presence: PresenceResult = { view: { kind: "hidden" }, warning: null };
 vi.mock("./use-presence", () => ({ usePresence: () => presence }));
+vi.mock("@/constants/layout", () => ({ MAX_CONTENT_WIDTH: 820 }));
+const nicknames: Record<string, string> = {};
+vi.mock("@/presence/identity-store", () => ({
+  usePresenceIdentityStore: (select: (state: { nicknames: Record<string, string> }) => unknown) =>
+    select({ nicknames }),
+  resolveParticipantName: (
+    input: { clientKey?: string | null; deviceName: string },
+    names: Record<string, string>,
+  ) => (input.clientKey ? names[input.clientKey] : undefined) || input.deviceName,
+}));
 
 const { PresenceBar } = await import("./presence-bar");
-const { PresenceComposerNotice } = await import("./composer-presence-notice");
 
 function other(overrides: Record<string, unknown> = {}) {
   return {
     participantId: "other",
     deviceName: "Ada's laptop",
+    clientKey: "key-ada",
     activity: "viewing" as const,
     activityAt: Date.now(),
     isExpired: false,
@@ -55,8 +70,43 @@ describe("PresenceBar", () => {
     expect(view.getByTestId("presence-participant").textContent).toBe(
       "presence.activity.typing:Ada's laptop",
     );
+    expect(view.getByTestId("presence-bar-live")).toBeTruthy();
     expect(view.queryByTestId("presence-bar-overflow")).toBeNull();
     expect(view.queryByTestId("presence-bar-stale")).toBeNull();
+  });
+
+  it("says who is here when nobody is writing, preferring this user's nickname", () => {
+    nicknames["key-ada"] = "Ada";
+    const both = [other(), other({ participantId: "b", clientKey: "key-bo", deviceName: "Bo" })];
+    presence = {
+      view: { kind: "list", others: both, visible: both, overflowCount: 0, isStale: false },
+      warning: null,
+    };
+    const view = render(<PresenceBar serverId="host" targetKind="agent" targetId="agent" />);
+    expect(view.getByTestId("presence-participant").textContent).toBe(
+      "presence.summary.two:Ada+Bo",
+    );
+    expect(view.queryByTestId("presence-bar-live")).toBeNull();
+    expect(view.getAllByTestId("presence-avatar")).toHaveLength(2);
+    delete nicknames["key-ada"];
+  });
+
+  it("falls back to a placeholder when nothing printable survived sanitizing", () => {
+    const unnamed = other({ deviceName: "", activity: "sending" });
+    presence = {
+      view: {
+        kind: "list",
+        others: [unnamed],
+        visible: [unnamed],
+        overflowCount: 0,
+        isStale: false,
+      },
+      warning: null,
+    };
+    const view = render(<PresenceBar serverId="host" targetKind="agent" targetId="agent" />);
+    expect(view.getByTestId("presence-participant").textContent).toBe(
+      "presence.activity.sending:presence.unknownDevice",
+    );
   });
 
   it("folds a crowd into an overflow count and marks a stale snapshot", () => {
@@ -88,33 +138,5 @@ describe("PresenceBar", () => {
     const node = view.getByTestId("presence-participant");
     expect(node.textContent?.includes("\n")).toBe(false);
     expect(node.textContent?.length).toBeLessThan(80);
-  });
-});
-
-const TYPING_WARNING = {
-  deviceName: "Ada's laptop",
-  activity: "typing",
-  additionalCount: 0,
-} as const;
-const UNNAMED_WARNING = { deviceName: "", activity: "typing", additionalCount: 0 } as const;
-
-describe("PresenceComposerNotice", () => {
-  it("renders nothing without a warning", () => {
-    const view = render(<PresenceComposerNotice warning={null} />);
-    expect(view.queryByTestId("composer-presence-warning")).toBeNull();
-  });
-
-  it("names the other person", () => {
-    const view = render(<PresenceComposerNotice warning={TYPING_WARNING} />);
-    expect(view.getByTestId("composer-presence-warning").textContent).toBe(
-      "presence.composer.warningOne:Ada's laptop",
-    );
-  });
-
-  it("falls back to a placeholder when nothing printable survived sanitizing", () => {
-    const view = render(<PresenceComposerNotice warning={UNNAMED_WARNING} />);
-    expect(view.getByTestId("composer-presence-warning").textContent).toBe(
-      "presence.composer.warningOne:presence.unknownDevice",
-    );
   });
 });

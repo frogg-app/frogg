@@ -46,6 +46,7 @@ import { useDaemonStatus } from "@/desktop/hooks/use-daemon-status";
 import { loadDesktopSettings, useDesktopSettings } from "@/desktop/settings/desktop-settings";
 import { PairDeviceModal } from "@/desktop/components/pair-device-modal";
 import { DevicesList } from "@/device-access/devices-list";
+import { ConnectedClients } from "@/device-access/connected-clients";
 import { PairingCodeCard } from "@/device-access/pairing-code-card";
 import { PairingRequestsCard } from "@/device-access/pairing-requests-card";
 import { RoleBadge } from "@/device-access/role-badge";
@@ -209,6 +210,13 @@ export function HostDevicesPage({ serverId }: { serverId: string }) {
           <PairingRequestsCard serverId={serverId} />
         </SettingsSection>
       ) : null}
+
+      <SettingsSection
+        title={t("deviceAccess.connections.title")}
+        testID="host-devices-connections"
+      >
+        <ConnectedClients serverId={serverId} />
+      </SettingsSection>
 
       <SettingsSection title={t("deviceAccess.devices.title")} testID="host-devices-list">
         <DevicesList serverId={serverId} />

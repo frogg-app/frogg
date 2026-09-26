@@ -1163,6 +1163,13 @@ export const en = {
     },
   },
   sidebar: {
+    hidden: {
+      show: "Show hidden ({{count}})",
+      stopShowing: "Stop showing hidden items",
+      projectHidden: "Project hidden from your sidebar",
+      workspaceHidden: "Workspace hidden from your sidebar",
+      undo: "Undo",
+    },
     workspaceDraft: "New session (draft)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Account: {{value}}",
@@ -1257,6 +1264,8 @@ export const en = {
     },
     project: {
       actions: {
+        hide: "Hide project",
+        unhide: "Unhide project",
         menu: "Project actions",
         openSettings: "Open project settings",
         showArchivedSessions: "Show archived sessions",
@@ -1299,6 +1308,8 @@ export const en = {
         pending: "Pending: {{count}}",
       },
       actions: {
+        hide: "Hide workspace",
+        unhide: "Unhide workspace",
         menu: "Session actions",
         newWorkspace: "New session",
         showMore: "Show more",
@@ -1817,6 +1828,28 @@ export const en = {
     },
   },
   deviceAccess: {
+    connections: {
+      title: "Connected now",
+      unsupported: "Update this host to see who else is connected.",
+      alone: "Nobody else is connected right now.",
+      unnamed: "Unnamed client",
+      you: "You",
+      paired: "Paired device",
+      unpaired: "Local network",
+      setNickname: "Set nickname",
+      nicknamePlaceholder: "Nickname",
+      goesBy: "Goes by {{name}}",
+      since: "since {{time}}",
+      terminal: "a terminal",
+      agent: "an agent",
+      notInSession: "Not in a session",
+      workingIn: "In {{where}}",
+    },
+    yourName: {
+      title: "Your name",
+      description:
+        "How you appear to others on this host. Nicknames you give others stay on this device.",
+    },
     devices: {
       title: "Paired devices",
     },
@@ -2017,12 +2050,8 @@ export const en = {
     },
   },
   presence: {
-    label: "Also here",
-    loading: "Checking who else is here…",
     unknownDevice: "Unknown device",
     accessibilityLabel: "Other people on this session",
-    overflow_one: "+{{count}} more",
-    overflow_other: "+{{count}} more",
     stale: "May be out of date",
     activity: {
       viewing: "{{name}} is viewing",
@@ -2031,10 +2060,13 @@ export const en = {
       input: "{{name}} is typing here",
       idle: "{{name}} is idle",
     },
-    composer: {
-      warningOne: "{{name}} is also working on this.",
-      warningMany_one: "{{name}} and {{count}} other are also working on this.",
-      warningMany_other: "{{name}} and {{count}} others are also working on this.",
+    summary: {
+      one: "{{name}} is here",
+      two: "{{name}} and {{other}} are here",
+      many_one: "{{name}} and {{count}} other are here",
+      many_other: "{{name}} and {{count}} others are here",
+      moreHere_one: "· {{count}} more here",
+      moreHere_other: "· {{count}} more here",
     },
   },
   pairing: {

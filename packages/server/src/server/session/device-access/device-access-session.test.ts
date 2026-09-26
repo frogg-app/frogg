@@ -176,4 +176,81 @@ describe("device access session", () => {
     expect((payload.snapshot as { participants: unknown[] }).participants).toEqual([]);
     expect(payload.error).toMatch(/not available/);
   });
+
+  test("presence.list_connections puts this connection first, then oldest first", async () => {
+    const connection = (participantId: string, connectedAt: string, isSelf: boolean) => ({
+      participantId,
+      clientKey: `key-${participantId}`,
+      deviceId: null,
+      deviceName: participantId,
+      paired: false,
+      role: null,
+      clientType: "mobile",
+      appVersion: null,
+      connectedAt,
+      targets: [],
+      isSelf,
+    });
+    const emitted: SessionOutboundMessage[] = [];
+    const session = new DeviceAccessSession({
+      host: { emit: (msg) => emitted.push(msg) },
+      deviceAccess: null,
+      presence: null,
+      caller: () => ({ device: null }),
+      presenceIdentity: () => ({
+        participantId: "b",
+        deviceId: null,
+        deviceName: "",
+        clientType: null,
+      }),
+      listConnections: () => [
+        connection("c", "2026-01-03T00:00:00.000Z", false),
+        connection("a", "2026-01-01T00:00:00.000Z", false),
+        connection("b", "2026-01-02T00:00:00.000Z", true),
+      ],
+      logger,
+    });
+    await session.handleListConnectionsRequest({
+      type: "presence.list_connections.request",
+      requestId: "r9",
+    });
+    const payload = payloadOf(emitted[0]);
+    expect(payload.error).toBeNull();
+    expect(
+      (payload.connections as { participantId: string }[]).map((c) => c.participantId),
+    ).toEqual(["b", "a", "c"]);
+  });
+
+  test("a presence report can rename the reporting client, stripped of control characters", async () => {
+    const names: string[] = [];
+    const session = new DeviceAccessSession({
+      host: { emit: () => undefined },
+      deviceAccess: null,
+      presence: createPresenceService(),
+      caller: () => ({ device: null }),
+      presenceIdentity: () => ({
+        participantId: "a",
+        deviceId: null,
+        deviceName: "",
+        clientType: null,
+      }),
+      onSelfName: (name) => names.push(name),
+      logger,
+    });
+    await session.handlePresenceReportRequest({
+      type: "presence.report.request",
+      requestId: "r10",
+      target: { kind: "agent", agentId: "agent-1" },
+      state: "viewing",
+      deviceName: "  Paz\n laptop ",
+    });
+    await session.handlePresenceReportRequest({
+      type: "presence.report.request",
+      requestId: "r11",
+      target: { kind: "agent", agentId: "agent-1" },
+      state: "viewing",
+      deviceName: "   ",
+    });
+    expect(names).toEqual(["Paz laptop"]);
+  });
 });

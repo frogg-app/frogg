@@ -13,6 +13,7 @@
 import type { PresenceReportState, PresenceTarget } from "@frogg/protocol/device-access";
 import { PRESENCE_REPORT_INTERVAL_MS } from "@/presence/snapshot";
 import { presenceTargetKey } from "@/presence/target";
+import { resolveSelfDisplayName } from "@/presence/identity-store";
 
 /** What a single surface claims. `null` means "not looking right now". */
 export type PresenceMemberState = "viewing" | "typing" | "idle" | null;
@@ -21,6 +22,7 @@ export interface PresenceReportTransport {
   reportPresence(input: {
     target: PresenceTarget;
     state: PresenceReportState;
+    deviceName?: string;
   }): Promise<{ error: string | null }>;
 }
 
@@ -139,7 +141,13 @@ export class PresenceReporter {
 
   private async send(state: PresenceReportState): Promise<void> {
     try {
-      const payload = await this.transport.reportPresence({ target: this.target, state });
+      const payload = await this.transport.reportPresence({
+        target: this.target,
+        state,
+        // Riding along on every report is what makes a rename take effect
+        // without a reconnect; daemons that predate it ignore the field.
+        deviceName: resolveSelfDisplayName(),
+      });
       if (payload.error) {
         this.noteFailure(payload.error);
         return;

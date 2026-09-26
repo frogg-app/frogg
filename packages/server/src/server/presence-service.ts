@@ -25,6 +25,8 @@ export interface PresenceIdentity {
   deviceId: string | null;
   deviceName: string;
   clientType: string | null;
+  /** Hash of the client install id; see `PresenceParticipant.clientKey`. */
+  clientKey?: string;
 }
 
 interface Entry extends PresenceIdentity {
@@ -46,6 +48,8 @@ export interface PresenceService {
   /** Drops every entry for a connection (disconnect, revocation). */
   leaveAll(participantId: string): void;
   snapshot(target: PresenceTarget, selfParticipantId: string | null): PresenceSnapshot;
+  /** Every live target a connection has presence on. */
+  targetsFor(participantId: string): PresenceTarget[];
   subscribe(listener: (target: PresenceTarget) => void): () => void;
 }
 
@@ -175,12 +179,22 @@ export function createPresenceService(
         deviceId: entry.deviceId,
         deviceName: entry.deviceName,
         clientType: entry.clientType,
+        clientKey: entry.clientKey,
         activity: visibleActivity(entry, current),
         activityAt: new Date(Math.max(entry.reportedAtMs, entry.derivedAtMs)).toISOString(),
         isSelf: entry.participantId === selfParticipantId,
       }));
       participants.sort((left, right) => left.deviceName.localeCompare(right.deviceName));
       return { target, participants };
+    },
+
+    targetsFor(participantId) {
+      const result: PresenceTarget[] = [];
+      for (const key of targets.keys()) {
+        prune(key);
+        if (targets.get(key)?.has(participantId)) result.push(parseTargetKey(key));
+      }
+      return result;
     },
 
     subscribe(listener) {

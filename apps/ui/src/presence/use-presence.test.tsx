@@ -11,6 +11,7 @@ import { useSessionStore, type DaemonServerInfo } from "@/stores/session-store";
 let mockClient: FakeClient | null = null;
 let mockIsConnected = true;
 
+vi.mock("@/presence/identity-store", () => ({ resolveSelfDisplayName: () => "Me" }));
 vi.mock("@/runtime/host-runtime", () => ({
   useHostRuntimeClient: () => mockClient,
   useHostRuntimeIsConnected: () => mockIsConnected,
@@ -132,6 +133,7 @@ describe("usePresence", () => {
     expect(mockClient.reportPresence).toHaveBeenCalledWith({
       target: { kind: "agent", agentId },
       state: "viewing",
+      deviceName: "Me",
     });
     expect(mockClient.on).toHaveBeenCalledWith("presence.update", expect.any(Function));
 
@@ -142,6 +144,7 @@ describe("usePresence", () => {
       expect(client.reportPresence).toHaveBeenCalledWith({
         target: { kind: "agent", agentId },
         state: "left",
+        deviceName: "Me",
       }),
     );
     useSessionStore.getState().clearSession(serverId);
@@ -220,6 +223,7 @@ describe("usePresence", () => {
       expect(client.reportPresence).toHaveBeenCalledWith({
         target: { kind: "agent", agentId },
         state: "viewing",
+        deviceName: "Me",
       }),
     );
     await waitFor(() => expect(client.getPresence).toHaveBeenCalled());
@@ -249,6 +253,7 @@ describe("usePresence", () => {
       expect(client.reportPresence).toHaveBeenCalledWith({
         target: { kind: "agent", agentId },
         state: "viewing",
+        deviceName: "Me",
       }),
     );
 
@@ -257,6 +262,7 @@ describe("usePresence", () => {
       expect(client.reportPresence).toHaveBeenCalledWith({
         target: { kind: "agent", agentId },
         state: "left",
+        deviceName: "Me",
       }),
     );
 
@@ -266,6 +272,7 @@ describe("usePresence", () => {
       expect(client.reportPresence).toHaveBeenCalledWith({
         target: { kind: "agent", agentId },
         state: "viewing",
+        deviceName: "Me",
       }),
     );
     useSessionStore.getState().clearSession(serverId);

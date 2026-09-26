@@ -125,6 +125,8 @@ pub enum SessionMessage {
     PresenceReportRequest(PresenceReportRequest),
     #[serde(rename = "presence.get.request")]
     PresenceGetRequest(PresenceGetRequest),
+    #[serde(rename = "presence.list_connections.request")]
+    PresenceListConnectionsRequest(PresenceListConnectionsRequest),
     #[serde(rename = "project.import.prepare.request")]
     ProjectImportPrepareRequest(ProjectImportPrepareRequest),
     #[serde(rename = "project.import.upload.request")]
@@ -644,6 +646,8 @@ pub struct PresenceReportRequest {
     pub request_id: String,
     pub target: serde_json::Value,
     pub state: PresenceReportRequestState,
+    #[serde(rename = "deviceName", skip_serializing_if = "Option::is_none")]
+    pub device_name: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -663,6 +667,12 @@ pub struct PresenceGetRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
     pub target: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PresenceListConnectionsRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

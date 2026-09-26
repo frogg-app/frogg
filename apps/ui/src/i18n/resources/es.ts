@@ -1186,6 +1186,13 @@ export const es: TranslationResources = {
     },
   },
   sidebar: {
+    hidden: {
+      show: "Mostrar ocultos ({{count}})",
+      stopShowing: "Dejar de mostrar ocultos",
+      projectHidden: "Proyecto oculto de tu barra lateral",
+      workspaceHidden: "Espacio de trabajo oculto de tu barra lateral",
+      undo: "Deshacer",
+    },
     workspaceDraft: "Nueva sesión (borrador)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Cuenta: {{value}}",
@@ -1280,6 +1287,8 @@ export const es: TranslationResources = {
     },
     project: {
       actions: {
+        hide: "Ocultar proyecto",
+        unhide: "Mostrar proyecto",
         menu: "Acciones del proyecto",
         openSettings: "Abrir la configuración del proyecto",
         showArchivedSessions: "Mostrar sesiones archivadas",
@@ -1322,6 +1331,8 @@ export const es: TranslationResources = {
         pending: "Pendientes: {{count}}",
       },
       actions: {
+        hide: "Ocultar espacio de trabajo",
+        unhide: "Mostrar espacio de trabajo",
         menu: "AccionesWorkspace",
         newWorkspace: "Nueva sesión",
         showMore: "Mostrar más",
@@ -1850,6 +1861,28 @@ export const es: TranslationResources = {
     },
   },
   deviceAccess: {
+    connections: {
+      title: "Conectados ahora",
+      unsupported: "Actualiza este host para ver quién más está conectado.",
+      alone: "Nadie más está conectado ahora.",
+      unnamed: "Cliente sin nombre",
+      you: "Tú",
+      paired: "Dispositivo vinculado",
+      unpaired: "Red local",
+      setNickname: "Poner apodo",
+      nicknamePlaceholder: "Apodo",
+      goesBy: "Se llama {{name}}",
+      since: "desde las {{time}}",
+      terminal: "una terminal",
+      agent: "un agente",
+      notInSession: "No está en una sesión",
+      workingIn: "En {{where}}",
+    },
+    yourName: {
+      title: "Tu nombre",
+      description:
+        "Cómo te ven los demás en este host. Los apodos que pongas a otros se quedan en este dispositivo.",
+    },
     devices: {
       title: "Dispositivos emparejados",
     },
@@ -2054,12 +2087,8 @@ export const es: TranslationResources = {
     },
   },
   presence: {
-    label: "También aquí",
-    loading: "Comprobando quién más está aquí…",
     unknownDevice: "Dispositivo desconocido",
     accessibilityLabel: "Otras personas en esta sesión",
-    overflow_one: "+{{count}} más",
-    overflow_other: "+{{count}} más",
     stale: "Puede no estar actualizado",
     activity: {
       viewing: "{{name}} está mirando",
@@ -2068,10 +2097,13 @@ export const es: TranslationResources = {
       input: "{{name}} está escribiendo aquí",
       idle: "{{name}} está inactivo",
     },
-    composer: {
-      warningOne: "{{name}} también está trabajando en esto.",
-      warningMany_one: "{{name}} y {{count}} más también están trabajando en esto.",
-      warningMany_other: "{{name}} y {{count}} más también están trabajando en esto.",
+    summary: {
+      one: "{{name}} está aquí",
+      two: "{{name}} y {{other}} están aquí",
+      many_one: "{{name}} y {{count}} persona más están aquí",
+      many_other: "{{name}} y {{count}} personas más están aquí",
+      moreHere_one: "· {{count}} más aquí",
+      moreHere_other: "· {{count}} más aquí",
     },
   },
   pairing: {

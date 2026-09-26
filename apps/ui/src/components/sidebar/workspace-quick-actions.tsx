@@ -1,8 +1,10 @@
-import { useMemo, type ReactElement } from "react";
+import { useCallback, useMemo, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Animated, Pressable, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { Archive, Hash, Pencil, Pin, PinOff, Tag } from "lucide-react-native";
+import { Archive, Eye, EyeOff, Hash, Pencil, Pin, PinOff, Tag } from "lucide-react-native";
+import { useSidebarHiddenStore } from "@/stores/sidebar-hidden-store";
+import { useSidebarHideToggles } from "@/stores/sidebar-hidden-store/use-hide-toggles";
 import { isWeb } from "@/constants/platform";
 import type { Theme } from "@/styles/theme";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -20,11 +22,11 @@ import {
 /**
  * The trailing 3-dot kebab, expanded.
  *
- * Holding Alt turns the kebab on the selected and hovered rows into this rail: the five
+ * Holding Ctrl turns the kebab on the selected and hovered rows into this rail: the six
  * things people do to a session in bulk, one press each, no menu to open and dismiss per
  * session. Archiving a run of finished sessions is the case it exists for.
  *
- * Icon-only by necessity — five labelled rows do not fit a sidebar — so every icon carries
+ * Icon-only by necessity — six labelled rows do not fit a sidebar — so every icon carries
  * the action's real name in a tooltip. The order matches the kebab's own so muscle memory
  * built in one transfers to the other.
  */
@@ -38,6 +40,8 @@ const ThemedPinOff = withUnistyles(PinOff);
 const ThemedTag = withUnistyles(Tag);
 const ThemedHash = withUnistyles(Hash);
 const ThemedArchive = withUnistyles(Archive);
+const ThemedEye = withUnistyles(Eye);
+const ThemedEyeOff = withUnistyles(EyeOff);
 
 type QuickActionIcon = typeof ThemedPencil;
 
@@ -45,7 +49,7 @@ const ICON_SIZE = 14;
 /** One button: the icon plus the 2px padding that gives it a hover chip. */
 const ACTION_WIDTH = ICON_SIZE + 4;
 const ACTION_GAP = 1;
-const ACTION_COUNT = 5;
+const ACTION_COUNT = 6;
 /**
  * The collapsed width, which is the kebab's own painted footprint. The rail grows out of the
  * dots and shrinks back into them rather than appearing beside them.
@@ -86,6 +90,12 @@ export function SidebarWorkspaceQuickActions({
   progress,
 }: SidebarWorkspaceQuickActionsProps): ReactElement {
   const { t } = useTranslation();
+  const isHidden = useSidebarHiddenStore((state) => state.hiddenWorkspaceKeys.has(workspaceKey));
+  const { toggleWorkspace } = useSidebarHideToggles();
+  const handleToggleHidden = useCallback(
+    () => toggleWorkspace(workspaceKey),
+    [toggleWorkspace, workspaceKey],
+  );
 
   const railStyle = useMemo(
     () => [
@@ -125,6 +135,14 @@ export function SidebarWorkspaceQuickActions({
         testID={`sidebar-workspace-quick-action-copy-session-id-${workspaceKey}`}
         onPress={onCopySessionId}
         Icon={ThemedHash}
+      />
+      <QuickAction
+        label={
+          isHidden ? t("sidebar.workspace.actions.unhide") : t("sidebar.workspace.actions.hide")
+        }
+        testID={`sidebar-workspace-quick-action-hide-${workspaceKey}`}
+        onPress={handleToggleHidden}
+        Icon={isHidden ? ThemedEye : ThemedEyeOff}
       />
       <QuickAction
         label={archiveLabel ?? t("sidebar.workspace.actions.archive")}

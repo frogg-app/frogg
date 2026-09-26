@@ -887,6 +887,9 @@
                                   "null"
                                 ]
                               },
+                              "clientKey": {
+                                "type": "string"
+                              },
                               "activity": {
                                 "type": "string",
                                 "enum": [
@@ -933,6 +936,156 @@
                   "required": [
                     "requestId",
                     "snapshot",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "presence.list_connections.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "connections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "participantId": {
+                            "type": "string"
+                          },
+                          "clientKey": {
+                            "type": "string"
+                          },
+                          "deviceId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "deviceName": {
+                            "type": "string"
+                          },
+                          "paired": {
+                            "type": "boolean"
+                          },
+                          "role": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "owner",
+                                  "operator",
+                                  "viewer"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "clientType": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "appVersion": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "connectedAt": {
+                            "type": "string"
+                          },
+                          "targets": {
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "agent"
+                                    },
+                                    "agentId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "agentId"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "const": "terminal"
+                                    },
+                                    "terminalId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "terminalId"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              ]
+                            }
+                          },
+                          "isSelf": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "participantId",
+                          "clientKey",
+                          "deviceId",
+                          "deviceName",
+                          "paired",
+                          "role",
+                          "clientType",
+                          "appVersion",
+                          "connectedAt",
+                          "targets",
+                          "isSelf"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "connections",
                     "error"
                   ],
                   "additionalProperties": false
@@ -1077,6 +1230,9 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "clientKey": {
+                            "type": "string"
                           },
                           "activity": {
                             "type": "string",

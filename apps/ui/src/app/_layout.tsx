@@ -25,6 +25,7 @@ import { CommandCenter } from "@/command-center/command-center";
 import { CommandCenterRootActions } from "@/command-center/root-registration";
 import { CommandCenterProvider } from "@/command-center/provider";
 import { CommandCenterWorkspaceActions } from "@/command-center/workspace-registration";
+import { CommandCenterHideActions } from "@/command-center/hide-registration";
 import { AddProjectFlowHost } from "@/components/add-project-flow-host";
 import { AppearanceStyleBoundary } from "@/components/appearance-style-boundary";
 import { WorktreeSetupCalloutSource } from "@/components/worktree-setup-callout-source";
@@ -626,6 +627,7 @@ function SidebarChrome({
     <SidebarModelProvider active={active}>
       {mounted ? <LeftSidebar active={active} /> : null}
       <WorkspaceShortcutTargetsSubscriber enabled={keyboardShortcutsEnabled} />
+      <CommandCenterHideActions />
     </SidebarModelProvider>
   );
 }

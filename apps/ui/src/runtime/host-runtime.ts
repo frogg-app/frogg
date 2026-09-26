@@ -1,4 +1,5 @@
 import { getSharedRuntime } from "./shared-runtime";
+import { resolveSelfDisplayName } from "@/presence/identity-store";
 import { describeHostConnectionError } from "./host-connection-error";
 import { isStaleCredentialError, withoutConnectionCredential } from "./stale-credential";
 import { brand, brandIdentity } from "@frogg/branding";
@@ -549,6 +550,7 @@ function createDefaultDeps(): HostRuntimeControllerDeps {
         suppressSendErrors: true,
         clientId,
         clientType: "mobile",
+        deviceName: resolveSelfDisplayName(),
         appVersion: resolveAppVersion() ?? undefined,
         runtimeGeneration,
         capabilities: appCapabilities,

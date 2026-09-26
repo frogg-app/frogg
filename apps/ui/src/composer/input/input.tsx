@@ -61,7 +61,6 @@ import { useComposerHeight } from "./height";
 import { isComposerBackgroundPress } from "./background-press";
 import { resolveComposerInputMode, type ComposerInputMode } from "@/composer/input-mode";
 import type { StaleContextWarning } from "@/composer/stale-context";
-import { PresenceComposerNotice } from "@/presence/composer-presence-notice";
 import type { PresenceWarning } from "@/presence/snapshot";
 import type { NativePastedFile } from "@/composer/native-pasted-image";
 import {
@@ -1862,7 +1861,6 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           pointerEvents={surfacePresentation.input.pointerEvents}
         >
           <StaleContextNotice warning={staleContextWarning} />
-          <PresenceComposerNotice warning={presenceWarning} />
           {attachmentSlot}
           {/* Text input */}
           <RenderProfile id="ComposerTextSurface">
@@ -1993,9 +1991,11 @@ const styles = StyleSheet.create((theme: Theme) => ({
   // "know this before you send", and either one alone paints the same border,
   // so a composer that is both stale and shared is outlined once and carries
   // two notice lines. The offline outline is listed after both and wins.
+  // Someone else is writing to this agent too. The presence row above names
+  // them; the composer only takes a quiet accent edge so it reads as shared,
+  // not as an error.
   inputWrapperPresence: {
-    borderColor: theme.colors.palette.amber[500],
-    ...(isWeb ? { boxShadow: `0 0 8px 0 ${theme.colors.palette.amber[500]}66` } : {}),
+    borderColor: `${theme.colors.accentBright}99`,
   },
   staleContextNotice: {
     // In flow, not floating: the composer grows by exactly one line for it, so

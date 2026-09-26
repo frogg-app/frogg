@@ -1151,6 +1151,13 @@ export const ar: TranslationResources = {
     },
   },
   sidebar: {
+    hidden: {
+      show: "عرض المخفي ({{count}})",
+      stopShowing: "إيقاف عرض العناصر المخفية",
+      projectHidden: "تم إخفاء المشروع من الشريط الجانبي",
+      workspaceHidden: "تم إخفاء مساحة العمل من الشريط الجانبي",
+      undo: "تراجع",
+    },
     workspaceDraft: "جلسة جديدة (مسودة)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "الحساب: {{value}}",
@@ -1245,6 +1252,8 @@ export const ar: TranslationResources = {
     },
     project: {
       actions: {
+        hide: "إخفاء المشروع",
+        unhide: "إظهار المشروع",
         menu: "إجراءات المشروع",
         openSettings: "افتح إعدادات المشروع",
         showArchivedSessions: "عرض الجلسات المؤرشفة",
@@ -1287,6 +1296,8 @@ export const ar: TranslationResources = {
         pending: "قيد الانتظار: {{count}}",
       },
       actions: {
+        hide: "إخفاء مساحة العمل",
+        unhide: "إظهار مساحة العمل",
         menu: "إجراءات Workspace",
         newWorkspace: "جلسة جديدة",
         showMore: "عرض المزيد",
@@ -1801,6 +1812,27 @@ export const ar: TranslationResources = {
     },
   },
   deviceAccess: {
+    connections: {
+      title: "المتصلون الآن",
+      unsupported: "حدّث هذا المضيف لترى من المتصل أيضًا.",
+      alone: "لا أحد غيرك متصل الآن.",
+      unnamed: "عميل بلا اسم",
+      you: "أنت",
+      paired: "جهاز مقترن",
+      unpaired: "شبكة محلية",
+      setNickname: "تعيين لقب",
+      nicknamePlaceholder: "اللقب",
+      goesBy: "يُعرف باسم {{name}}",
+      since: "منذ {{time}}",
+      terminal: "طرفية",
+      agent: "وكيل",
+      notInSession: "ليس في جلسة",
+      workingIn: "في {{where}}",
+    },
+    yourName: {
+      title: "اسمك",
+      description: "كيف تظهر للآخرين على هذا المضيف. الألقاب التي تمنحها للآخرين تبقى على هذا الجهاز.",
+    },
     devices: {
       title: "الأجهزة المقترنة",
     },
@@ -1996,12 +2028,8 @@ export const ar: TranslationResources = {
     },
   },
   presence: {
-    label: "حاضرون أيضًا",
-    loading: "جارٍ معرفة من يوجد هنا أيضًا…",
     unknownDevice: "جهاز غير معروف",
     accessibilityLabel: "أشخاص آخرون في هذه الجلسة",
-    overflow_one: "+{{count}} آخر",
-    overflow_other: "+{{count}} آخرون",
     stale: "قد يكون قديمًا",
     activity: {
       viewing: "{{name}} يشاهد",
@@ -2010,10 +2038,13 @@ export const ar: TranslationResources = {
       input: "{{name}} يكتب هنا",
       idle: "{{name}} خامل",
     },
-    composer: {
-      warningOne: "{{name}} يعمل على هذا أيضًا.",
-      warningMany_one: "{{name}} و{{count}} آخر يعملون على هذا أيضًا.",
-      warningMany_other: "{{name}} و{{count}} آخرون يعملون على هذا أيضًا.",
+    summary: {
+      one: "{{name}} هنا",
+      two: "{{name}} و{{other}} هنا",
+      many_one: "{{name}} و{{count}} آخر هنا",
+      many_other: "{{name}} و{{count}} آخرون هنا",
+      moreHere_one: "· {{count}} آخر هنا",
+      moreHere_other: "· {{count}} آخرون هنا",
     },
   },
   pairing: {

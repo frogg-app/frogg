@@ -1161,6 +1161,13 @@ export const ko: TranslationResources = {
     },
   },
   sidebar: {
+    hidden: {
+      show: "숨긴 항목 표시 ({{count}})",
+      stopShowing: "숨긴 항목 표시 중지",
+      projectHidden: "사이드바에서 프로젝트를 숨겼습니다",
+      workspaceHidden: "사이드바에서 워크스페이스를 숨겼습니다",
+      undo: "실행 취소",
+    },
     workspaceDraft: "새 작업 공간 (초안)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "계정: {{value}}",
@@ -1255,6 +1262,8 @@ export const ko: TranslationResources = {
     },
     project: {
       actions: {
+        hide: "프로젝트 숨기기",
+        unhide: "프로젝트 다시 표시",
         menu: "프로젝트 작업",
         openSettings: "프로젝트 설정 열기",
         showArchivedSessions: "보관된 세션 보기",
@@ -1297,6 +1306,8 @@ export const ko: TranslationResources = {
         pending: "대기 중: {{count}}개",
       },
       actions: {
+        hide: "워크스페이스 숨기기",
+        unhide: "워크스페이스 다시 표시",
         menu: "세션 작업",
         newWorkspace: "새 세션",
         showMore: "더 보기",
@@ -1817,6 +1828,28 @@ export const ko: TranslationResources = {
     },
   },
   deviceAccess: {
+    connections: {
+      title: "지금 연결됨",
+      unsupported: "다른 연결자를 보려면 이 호스트를 업데이트하세요.",
+      alone: "지금은 다른 연결자가 없습니다.",
+      unnamed: "이름 없는 클라이언트",
+      you: "나",
+      paired: "페어링된 기기",
+      unpaired: "로컬 네트워크",
+      setNickname: "별명 설정",
+      nicknamePlaceholder: "별명",
+      goesBy: "표시 이름: {{name}}",
+      since: "{{time}}부터",
+      terminal: "터미널",
+      agent: "에이전트",
+      notInSession: "세션에 없음",
+      workingIn: "{{where}}에서 작업 중",
+    },
+    yourName: {
+      title: "내 이름",
+      description:
+        "이 호스트에서 다른 사람에게 보이는 이름입니다. 다른 사람에게 붙인 별명은 이 기기에만 저장됩니다.",
+    },
     devices: {
       title: "페어링된 기기",
     },
@@ -2013,12 +2046,8 @@ export const ko: TranslationResources = {
     },
   },
   presence: {
-    label: "함께 있는 사람",
-    loading: "누가 더 있는지 확인하는 중…",
     unknownDevice: "알 수 없는 기기",
     accessibilityLabel: "이 세션의 다른 사람들",
-    overflow_one: "외 {{count}}명",
-    overflow_other: "외 {{count}}명",
     stale: "최신이 아닐 수 있음",
     activity: {
       viewing: "{{name}}이(가) 보는 중",
@@ -2027,10 +2056,13 @@ export const ko: TranslationResources = {
       input: "{{name}}이(가) 여기에 입력 중",
       idle: "{{name}}이(가) 대기 중",
     },
-    composer: {
-      warningOne: "{{name}}도 이 작업을 하고 있습니다.",
-      warningMany_one: "{{name}} 외 {{count}}명도 이 작업을 하고 있습니다.",
-      warningMany_other: "{{name}} 외 {{count}}명도 이 작업을 하고 있습니다.",
+    summary: {
+      one: "{{name}} 님이 있습니다",
+      two: "{{name}} 님과 {{other}} 님이 있습니다",
+      many_one: "{{name}} 님 외 {{count}}명이 있습니다",
+      many_other: "{{name}} 님 외 {{count}}명이 있습니다",
+      moreHere_one: "· 외 {{count}}명",
+      moreHere_other: "· 외 {{count}}명",
     },
   },
   pairing: {

@@ -1143,6 +1143,13 @@ export const zhCN: TranslationResources = {
     },
   },
   sidebar: {
+    hidden: {
+      show: "显示已隐藏项 ({{count}})",
+      stopShowing: "不再显示已隐藏项",
+      projectHidden: "已从侧边栏隐藏项目",
+      workspaceHidden: "已从侧边栏隐藏工作区",
+      undo: "撤销",
+    },
     workspaceDraft: "新建会话（草稿）",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "账号：{{value}}",
@@ -1236,6 +1243,8 @@ export const zhCN: TranslationResources = {
     },
     project: {
       actions: {
+        hide: "隐藏项目",
+        unhide: "取消隐藏项目",
         menu: "Project 操作",
         openSettings: "打开 project 设置",
         showArchivedSessions: "显示已归档的会话",
@@ -1277,6 +1286,8 @@ export const zhCN: TranslationResources = {
         pending: "等待中: {{count}}",
       },
       actions: {
+        hide: "隐藏工作区",
+        unhide: "取消隐藏工作区",
         menu: "会话操作",
         newWorkspace: "新建会话",
         showMore: "显示更多",
@@ -1782,6 +1793,27 @@ export const zhCN: TranslationResources = {
     },
   },
   deviceAccess: {
+    connections: {
+      title: "当前连接",
+      unsupported: "更新此主机以查看还有谁已连接。",
+      alone: "目前没有其他人连接。",
+      unnamed: "未命名客户端",
+      you: "你",
+      paired: "已配对设备",
+      unpaired: "本地网络",
+      setNickname: "设置昵称",
+      nicknamePlaceholder: "昵称",
+      goesBy: "显示名称：{{name}}",
+      since: "自 {{time}}",
+      terminal: "终端",
+      agent: "智能体",
+      notInSession: "不在会话中",
+      workingIn: "在 {{where}}",
+    },
+    yourName: {
+      title: "你的名字",
+      description: "你在此主机上向他人显示的名称。你给他人设置的昵称仅保存在此设备上。",
+    },
     devices: {
       title: "已配对设备",
     },
@@ -1971,12 +2003,8 @@ export const zhCN: TranslationResources = {
     },
   },
   presence: {
-    label: "同时在场",
-    loading: "正在查看还有谁在…",
     unknownDevice: "未知设备",
     accessibilityLabel: "此会话中的其他人",
-    overflow_one: "还有 {{count}} 人",
-    overflow_other: "还有 {{count}} 人",
     stale: "可能已过时",
     activity: {
       viewing: "{{name}} 正在查看",
@@ -1985,10 +2013,13 @@ export const zhCN: TranslationResources = {
       input: "{{name}} 正在此处输入",
       idle: "{{name}} 处于空闲",
     },
-    composer: {
-      warningOne: "{{name}} 也在处理这个。",
-      warningMany_one: "{{name}} 和另外 {{count}} 人也在处理这个。",
-      warningMany_other: "{{name}} 和另外 {{count}} 人也在处理这个。",
+    summary: {
+      one: "{{name}} 在这里",
+      two: "{{name}} 和 {{other}} 在这里",
+      many_one: "{{name}} 和另外 {{count}} 人在这里",
+      many_other: "{{name}} 和另外 {{count}} 人在这里",
+      moreHere_one: "· 另有 {{count}} 人",
+      moreHere_other: "· 另有 {{count}} 人",
     },
   },
   pairing: {

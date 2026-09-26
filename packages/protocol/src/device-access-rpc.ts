@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import {
   AuthSettingsSchema,
+  ConnectedClientSchema,
   DEVICE_NAME_MAX_LENGTH,
   DeviceCredentialSchema,
   DeviceRoleSchema,
@@ -186,6 +187,12 @@ export const PresenceReportRequestSchema = z.object({
   requestId: z.string(),
   target: PresenceTargetSchema,
   state: PresenceReportStateSchema,
+  /**
+   * COMPAT(connectedClients): added in v1.5.48. The name this client wants to
+   * be shown under, so renaming yourself does not need a reconnect. Ignored
+   * for paired devices, whose name belongs to the device record.
+   */
+  deviceName: z.string().max(120).optional(),
 });
 export const PresenceReportResponseSchema = z.object({
   type: z.literal("presence.report.response"),
@@ -212,6 +219,21 @@ export const PresenceUpdateMessageSchema = z.object({
   payload: PresenceSnapshotSchema,
 });
 
+/** Every client connected right now. Any session that may read workspaces may ask. */
+export const PresenceListConnectionsRequestSchema = z.object({
+  type: z.literal("presence.list_connections.request"),
+  requestId: z.string(),
+});
+export const PresenceListConnectionsResponseSchema = z.object({
+  type: z.literal("presence.list_connections.response"),
+  payload: z.object({
+    requestId: z.string(),
+    connections: z.array(ConnectedClientSchema),
+    error: ErrorField,
+  }),
+});
+
+export type PresenceListConnectionsResponse = z.infer<typeof PresenceListConnectionsResponseSchema>;
 export type AuthDeviceListResponse = z.infer<typeof AuthDeviceListResponseSchema>;
 export type AuthDeviceRenameResponse = z.infer<typeof AuthDeviceRenameResponseSchema>;
 export type AuthDeviceRevokeResponse = z.infer<typeof AuthDeviceRevokeResponseSchema>;

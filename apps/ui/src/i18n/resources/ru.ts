@@ -1169,6 +1169,13 @@ export const ru: TranslationResources = {
     },
   },
   sidebar: {
+    hidden: {
+      show: "Показать скрытые ({{count}})",
+      stopShowing: "Не показывать скрытые",
+      projectHidden: "Проект скрыт из боковой панели",
+      workspaceHidden: "Рабочее пространство скрыто из боковой панели",
+      undo: "Отменить",
+    },
     workspaceDraft: "Новая сессия (черновик)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Аккаунт: {{value}}",
@@ -1263,6 +1270,8 @@ export const ru: TranslationResources = {
     },
     project: {
       actions: {
+        hide: "Скрыть проект",
+        unhide: "Показать проект",
         menu: "Действия проекта",
         openSettings: "Открыть настройки проекта",
         showArchivedSessions: "Показать архивные сессии",
@@ -1305,6 +1314,8 @@ export const ru: TranslationResources = {
         pending: "Ожидают: {{count}}",
       },
       actions: {
+        hide: "Скрыть рабочее пространство",
+        unhide: "Показать рабочее пространство",
         menu: "Действия сессии",
         newWorkspace: "Новая сессия",
         showMore: "Показать ещё",
@@ -1832,6 +1843,28 @@ export const ru: TranslationResources = {
     },
   },
   deviceAccess: {
+    connections: {
+      title: "Сейчас подключены",
+      unsupported: "Обновите этот хост, чтобы видеть, кто ещё подключён.",
+      alone: "Сейчас больше никто не подключён.",
+      unnamed: "Клиент без имени",
+      you: "Вы",
+      paired: "Сопряжённое устройство",
+      unpaired: "Локальная сеть",
+      setNickname: "Задать прозвище",
+      nicknamePlaceholder: "Прозвище",
+      goesBy: "Представляется как {{name}}",
+      since: "с {{time}}",
+      terminal: "терминал",
+      agent: "агент",
+      notInSession: "Не в сессии",
+      workingIn: "В {{where}}",
+    },
+    yourName: {
+      title: "Ваше имя",
+      description:
+        "Как вас видят другие на этом хосте. Прозвища, которые вы даёте другим, остаются на этом устройстве.",
+    },
     devices: {
       title: "Сопряжённые устройства",
     },
@@ -2033,12 +2066,8 @@ export const ru: TranslationResources = {
     },
   },
   presence: {
-    label: "Тоже здесь",
-    loading: "Проверяем, кто ещё здесь…",
     unknownDevice: "Неизвестное устройство",
     accessibilityLabel: "Другие люди в этой сессии",
-    overflow_one: "+{{count}} ещё",
-    overflow_other: "+{{count}} ещё",
     stale: "Может быть неактуально",
     activity: {
       viewing: "{{name}} просматривает",
@@ -2047,10 +2076,13 @@ export const ru: TranslationResources = {
       input: "{{name}} печатает здесь",
       idle: "{{name}} бездействует",
     },
-    composer: {
-      warningOne: "{{name}} тоже работает над этим.",
-      warningMany_one: "{{name}} и ещё {{count}} участник тоже работают над этим.",
-      warningMany_other: "{{name}} и ещё {{count}} участников тоже работают над этим.",
+    summary: {
+      one: "{{name}} здесь",
+      two: "{{name}} и {{other}} здесь",
+      many_one: "{{name}} и ещё {{count}} здесь",
+      many_other: "{{name}} и ещё {{count}} здесь",
+      moreHere_one: "· ещё {{count}} здесь",
+      moreHere_other: "· ещё {{count}} здесь",
     },
   },
   pairing: {

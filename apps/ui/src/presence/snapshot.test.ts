@@ -138,7 +138,12 @@ describe("selectPresenceWarning", () => {
 
   it("names the other person who is typing", () => {
     const warning = warningFor([participant({ activity: "typing", deviceName: "Ada's laptop" })]);
-    expect(warning).toEqual({ deviceName: "Ada's laptop", activity: "typing", additionalCount: 0 });
+    expect(warning).toEqual({
+      deviceName: "Ada's laptop",
+      clientKey: null,
+      activity: "typing",
+      additionalCount: 0,
+    });
   });
 
   it("does not warn when nobody else is there", () => {

@@ -22,6 +22,7 @@ import {
   CircleDashed,
   Clock,
   Diff,
+  Eye,
   EyeOff,
   Folder,
   GitBranch,
@@ -46,6 +47,7 @@ import { HostStatusDot } from "@/components/host-status-dot";
 import { isWeb } from "@/constants/platform";
 import { useHosts } from "@/runtime/host-runtime";
 import { useSidebarModel } from "@/components/sidebar/sidebar-model";
+import { useSidebarHiddenStore } from "@/stores/sidebar-hidden-store";
 import { ProjectIconView } from "@/components/project-icon-view";
 import { useProjectIcons } from "@/projects/icons";
 import { resolveSidebarProjectIconTargets } from "@/utils/sidebar-project-row-model";
@@ -92,6 +94,8 @@ type OptionIcon = ComponentType<{
   size: number;
   uniProps: (theme: Theme) => { color: string };
 }>;
+
+const SHOW_HIDDEN_ICON: OptionIcon = withUnistyles(Eye);
 
 // Options carry icons; the root rows deliberately do not. The root is four labels with their
 // current values, and a column of icons there would be decoration competing with the values.
@@ -198,7 +202,13 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
   const hosts = useHosts();
   // `allProjects`, never `projects`: the model's `projects` is already filtered, so a picker fed
   // from it would lose the row that undoes the filter as soon as the filter narrowed to one.
-  const { allProjects, resolvedProjectFilters } = useSidebarModel();
+  const { allProjects, resolvedProjectFilters, hiddenCount } = useSidebarModel();
+  const showHidden = useSidebarHiddenStore((state) => state.showHidden);
+  const setShowHidden = useSidebarHiddenStore((state) => state.setShowHidden);
+  const handleToggleShowHidden = useCallback(
+    () => setShowHidden(!showHidden),
+    [setShowHidden, showHidden],
+  );
   const { labels } = useWorkspaceLabelProjection();
   const [managerOpen, setManagerOpen] = useState(false);
   const openManager = useCallback(() => setManagerOpen(true), []);
@@ -400,6 +410,22 @@ export function SidebarDisplayPreferencesMenu(): ReactElement {
               >
                 {t("workspaceLabels.title")}
               </MenuSubTrigger>
+            </>
+          ) : null}
+          {/* Absent until something is hidden: an empty "Show hidden" is a question with no
+            answer. Kept while it is on, so the view that revealed the rows can hide them again. */}
+          {hiddenCount > 0 || showHidden ? (
+            <>
+              <MenuSeparator />
+              <OptionItem
+                value="showHidden"
+                icon={SHOW_HIDDEN_ICON}
+                label={t("sidebar.hidden.show", { count: hiddenCount })}
+                selected={showHidden}
+                closeOnSelect={false}
+                onSelect={handleToggleShowHidden}
+                testID="sidebar-display-show-hidden"
+              />
             </>
           ) : null}
         </MenuSurface>

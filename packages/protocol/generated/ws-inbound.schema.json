@@ -423,6 +423,10 @@
                     "idle",
                     "left"
                   ]
+                },
+                "deviceName": {
+                  "type": "string",
+                  "maxLength": 120
                 }
               },
               "required": [
@@ -485,6 +489,22 @@
                 "type",
                 "requestId",
                 "target"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "presence.list_connections.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
               ]
             },
             {

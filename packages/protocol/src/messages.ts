@@ -27,6 +27,7 @@ import {
   AuthPasswordSetRequestSchema,
   PresenceReportRequestSchema,
   PresenceGetRequestSchema,
+  PresenceListConnectionsRequestSchema,
   AuthDeviceListResponseSchema,
   AuthDeviceRenameResponseSchema,
   AuthDeviceRevokeResponseSchema,
@@ -38,6 +39,7 @@ import {
   AuthPasswordSetResponseSchema,
   PresenceReportResponseSchema,
   PresenceGetResponseSchema,
+  PresenceListConnectionsResponseSchema,
   AuthPairingRequestUpdateMessageSchema,
   PresenceUpdateMessageSchema,
 } from "./device-access-rpc.js";
@@ -3357,6 +3359,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   AuthPasswordSetRequestSchema,
   PresenceReportRequestSchema,
   PresenceGetRequestSchema,
+  PresenceListConnectionsRequestSchema,
   ProjectImportPrepareRequestSchema,
   ProjectImportUploadRequestSchema,
   ProjectImportPreviewRequestSchema,
@@ -4095,6 +4098,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(sessionPresence): added in v1.6.0, remove gate after 2027-09-22.
         // presence.report / presence.get / presence.update.
         sessionPresence: z.boolean().optional(),
+        // COMPAT(connectedClients): added in v1.5.48, remove gate after 2027-09-26.
+        // presence.list_connections and PresenceParticipant.clientKey.
+        connectedClients: z.boolean().optional(),
         // COMPAT(securityPosture): added in v1.6.0, remove gate after 2027-09-24.
         // daemon.get_security_posture is available and owners receive
         // server_info.security.
@@ -7135,6 +7141,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   AuthPasswordSetResponseSchema,
   PresenceReportResponseSchema,
   PresenceGetResponseSchema,
+  PresenceListConnectionsResponseSchema,
   AuthPairingRequestUpdateMessageSchema,
   PresenceUpdateMessageSchema,
   ProjectImportPrepareResponseSchema,

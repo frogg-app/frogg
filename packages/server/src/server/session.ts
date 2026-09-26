@@ -3,6 +3,8 @@ import { createdAtFields, projectCreatedAtField } from "./workspace-created-at.j
 import { ProjectImportService } from "./project-import/service.js";
 import { dispatchProjectImport } from "./project-import/dispatch.js";
 import equal from "fast-deep-equal";
+import { createHash } from "node:crypto";
+import type { ConnectedClient } from "@frogg/protocol/device-access";
 import { v4 as uuidv4 } from "uuid";
 import { lstat, mkdir, mkdtemp, rename, rm, stat } from "node:fs/promises";
 import { basename, resolve, sep } from "path";
@@ -519,6 +521,8 @@ export interface SessionOptions {
   daemonVersion?: string;
   deviceAccess?: DeviceAccessService | null;
   presence?: PresenceService | null;
+  /** Every live connection on the daemon, this one included. */
+  listConnections?: () => Session[];
   /** The paired device this connection authenticated as, if any. */
   device?: CallerDevice | null;
   /** Name a credential-less client gave itself in its hello. */
@@ -752,6 +756,7 @@ export class Session {
   private device: CallerDevice | null = null;
   private clientType: string | null = null;
   private helloDeviceName: string | null = null;
+  private readonly connectedAt = new Date().toISOString();
   private readonly providerCatalogSession: ProviderCatalogSession;
   private readonly providerAccountSession: ProviderAccountSession;
   private readonly providerUpdateSession: ProviderUpdateSession;
@@ -2208,6 +2213,34 @@ export class Session {
     this.emit(message);
   }
 
+  /**
+   * A one-way hash of the install id. The raw client id doubles as the key a
+   * reconnect resumes this session under, so it must never reach another client.
+   */
+  private clientKey(): string {
+    return createHash("sha256").update(`frogg-client:${this.clientId}`).digest("hex").slice(0, 16);
+  }
+
+  /** This connection as another client sees it in `presence.list_connections`. */
+  describeConnection(
+    viewerSessionId: string,
+    targets: ConnectedClient["targets"],
+  ): ConnectedClient {
+    return {
+      participantId: this.sessionId,
+      clientKey: this.clientKey(),
+      deviceId: this.device?.id ?? null,
+      deviceName: this.device?.name ?? this.helloDeviceName ?? "",
+      paired: this.device !== null,
+      role: this.device ? this.authorization.getRole() : null,
+      clientType: this.clientType,
+      appVersion: this.appVersion,
+      connectedAt: this.connectedAt,
+      targets,
+      isSelf: this.sessionId === viewerSessionId,
+    };
+  }
+
   private createDeviceAccessSession(options: SessionOptions): DeviceAccessSession {
     this.device = options.device ?? null;
     this.clientType = options.clientType ?? null;
@@ -2220,9 +2253,21 @@ export class Session {
       presenceIdentity: () => ({
         participantId: this.sessionId,
         deviceId: this.device?.id ?? null,
-        deviceName: this.device?.name ?? this.helloDeviceName ?? this.clientId,
+        // Never fall back to the raw client id: it is a session-resume key.
+        deviceName: this.device?.name ?? this.helloDeviceName ?? "",
         clientType: this.clientType,
+        clientKey: this.clientKey(),
       }),
+      onSelfName: (name) => {
+        this.helloDeviceName = name;
+      },
+      listConnections: () =>
+        (options.listConnections?.() ?? [this]).map((session) =>
+          session.describeConnection(
+            this.sessionId,
+            options.presence?.targetsFor(session.sessionId) ?? [],
+          ),
+        ),
       logger: this.sessionLogger,
     });
   }
@@ -2290,6 +2335,8 @@ export class Session {
         return this.deviceAccessSession.handlePresenceReportRequest(msg);
       case "presence.get.request":
         return this.deviceAccessSession.handlePresenceGetRequest(msg);
+      case "presence.list_connections.request":
+        return this.deviceAccessSession.handleListConnectionsRequest(msg);
       default:
         return undefined;
     }

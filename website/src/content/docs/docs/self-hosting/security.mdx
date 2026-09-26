@@ -224,8 +224,14 @@ this way gives nobody access they did not already have.
 The daemon reports who else is on an agent or a terminal — device name and activity — to
 everyone else on the same session, gated on the `sessionPresence` feature. It is
 information, not a lock: two devices can write to the same agent at once, and the app
-outlines the composer as a warning. Device names come from the other device, so treat them
-as untrusted text. See
+gives the composer an accent edge as a cue. Device names come from the other device, so treat
+them as untrusted text.
+
+`presence.list_connections` (gated on `connectedClients`) lists every live connection to any
+session with `workspace.read`, viewers included: name, paired or not, role, client type, app
+version, connection time and the agents and terminals it has presence on. Clients are
+identified by a one-way hash of their install id (`clientKey`), never by the raw client id,
+which doubles as a session-resume key. See
 [shared sessions](/docs/using-frogg/shared-sessions/).
 
 ## Security posture

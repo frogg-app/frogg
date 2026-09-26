@@ -174,6 +174,21 @@ The display menu at the top of the sidebar controls how sessions are arranged.
 Grouping and sort are saved on the device. The sidebar starts on **Recent activity**, including
 after updating from a version without sorting; your saved drag order is kept for **Manual**.
 
+## Hide projects and sessions
+
+Several people can share one daemon, so each device can hide the projects and sessions it is
+not involved in. Hiding is local to the device: nothing changes on the daemon or for anyone
+else.
+
+- **Hide project** / **Hide workspace** are in the project's and the session's ⋯ menu, on the
+  hold-<kbd>Ctrl</kbd> quick-action rail of a session row, and in the command center
+  (<kbd>Ctrl</kbd>+<kbd>K</kbd>) for the open session and its project.
+- Hiding shows a toast with **Undo**. A hidden project takes all its sessions with it; a project
+  whose sessions are all hidden keeps its header.
+- Once something is hidden, the sidebar display menu gains **Show hidden (N)**, which reveals
+  hidden rows so they can be unhidden from the same menus. The command center offers the same
+  toggle.
+
 ## Labels and archiving
 
 - Sessions can be renamed (`frogg workspace rename`) and labelled in the app.
@@ -193,7 +208,7 @@ after updating from a version without sorting; your saved drag order is kept for
   card. Subagents have their own session IDs, which you can copy from their rows.
 - **Copy branch name** appears only for sessions that are on a git branch.
 - Hold <kbd>Ctrl</kbd> to turn the menu button on the selected and hovered
-  sessions into icon buttons: rename, pin to top, labels, copy session ID and archive. They
+  sessions into icon buttons: rename, pin to top, labels, copy session ID, hide and archive. They
   sit at the right edge of the row, in the same place on every row, and cover the row's diff
   stat and account while shown. Release <kbd>Ctrl</kbd> to hide them again. The numbered
   jump badges keep the right edge of the row and the icon buttons start to the left of them,

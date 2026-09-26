@@ -33,6 +33,10 @@ const ACTIVE_ACTIVITIES: ReadonlySet<PresenceActivity> = new Set<PresenceActivit
   "input",
 ]);
 
+export function isActivePresenceActivity(activity: PresenceActivity): boolean {
+  return ACTIVE_ACTIVITIES.has(activity);
+}
+
 export interface PresenceOther {
   participantId: string;
   /**
@@ -41,6 +45,8 @@ export interface PresenceOther {
    * rather than this module inventing English.
    */
   deviceName: string;
+  /** Stable per remote app install; keys this user's nickname for it. */
+  clientKey: string | null;
   activity: PresenceActivity;
   /** Epoch millis, or null when the daemon sent an unparseable timestamp. */
   activityAt: number | null;
@@ -81,6 +87,7 @@ function toOther(participant: PresenceParticipant, now: number): PresenceOther {
   return {
     participantId: participant.participantId,
     deviceName: sanitizeUntrustedText(participant.deviceName, { max: UNTRUSTED_NAME_DISPLAY_MAX }),
+    clientKey: participant.clientKey ?? null,
     activity: participant.activity,
     activityAt,
     isExpired: activityAt !== null && now - activityAt >= PRESENCE_ENTRY_TTL_MS,
@@ -136,6 +143,7 @@ export function resolvePresenceView(input: PresenceViewInput): PresenceView {
 export interface PresenceWarning {
   /** Sanitized; may be empty, in which case the renderer names it generically. */
   deviceName: string;
+  clientKey: string | null;
   activity: PresenceActivity;
   /** How many other active participants there are beyond the named one. */
   additionalCount: number;
@@ -155,6 +163,7 @@ export function selectPresenceWarning(view: PresenceView): PresenceWarning | nul
   if (!first) return null;
   return {
     deviceName: first.deviceName,
+    clientKey: first.clientKey,
     activity: first.activity,
     additionalCount: active.length - 1,
   };

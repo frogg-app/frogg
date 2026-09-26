@@ -37,7 +37,18 @@ import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop
 import { type GestureType } from "react-native-gesture-handler";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
 import { useWorkspaceClipboardActions } from "@/hooks/use-workspace-clipboard-actions";
-import { Archive, ExternalLink, Settings, MoreVertical, Plus, Trash2 } from "lucide-react-native";
+import {
+  Archive,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Settings,
+  MoreVertical,
+  Plus,
+  Trash2,
+} from "lucide-react-native";
+import { useSidebarHiddenStore } from "@/stores/sidebar-hidden-store";
+import { useSidebarHideToggles } from "@/stores/sidebar-hidden-store/use-hide-toggles";
 import { NestableScrollContainer } from "react-native-draggable-flatlist";
 import { DraggableList, type DraggableRenderItemInfo } from "./draggable-list";
 import type { DraggableListDragHandleProps } from "./draggable-list.types";
@@ -455,6 +466,10 @@ function ProjectRowTrailingActions({
 const trash2LeadingIcon = <ThemedTrash2 size={14} uniProps={foregroundMutedColorMapping} />;
 const archiveLeadingIcon = <ThemedArchive size={14} uniProps={foregroundMutedColorMapping} />;
 const settingsLeadingIcon = <ThemedSettings size={14} uniProps={foregroundMutedColorMapping} />;
+const ThemedEye = withUnistyles(Eye);
+const ThemedEyeOff = withUnistyles(EyeOff);
+const hideProjectLeadingIcon = <ThemedEyeOff size={14} uniProps={foregroundMutedColorMapping} />;
+const unhideProjectLeadingIcon = <ThemedEye size={14} uniProps={foregroundMutedColorMapping} />;
 const openInNewWindowLeadingIcon = (
   <ThemedExternalLink size={14} uniProps={foregroundMutedColorMapping} />
 );
@@ -558,6 +573,12 @@ function ProjectMenuItems({
       },
     });
   }, [archivedSessionsTarget]);
+  const isHidden = useSidebarHiddenStore((state) => state.hiddenProjectKeys.has(projectViewKey));
+  const { toggleProject } = useSidebarHideToggles();
+  const handleToggleHidden = useCallback(
+    () => toggleProject(projectViewKey),
+    [projectViewKey, toggleProject],
+  );
   const canOpenInNewWindow = getIsElectron() && projectPath.trim().length > 0;
   const handleOpenInNewWindow = useCallback(() => {
     const trimmedPath = projectPath.trim();
@@ -602,6 +623,14 @@ function ProjectMenuItems({
           {t("sidebar.project.actions.openNewWindow")}
         </ProjectMenuItem>
       ) : null}
+      <ProjectMenuItem
+        surface={surface}
+        testID={`sidebar-project-menu-hide-${projectViewKey}`}
+        leading={isHidden ? unhideProjectLeadingIcon : hideProjectLeadingIcon}
+        onSelect={handleToggleHidden}
+      >
+        {isHidden ? t("sidebar.project.actions.unhide") : t("sidebar.project.actions.hide")}
+      </ProjectMenuItem>
       <OpenInFileManagerMenuItem
         surface={surface}
         path={projectPath}

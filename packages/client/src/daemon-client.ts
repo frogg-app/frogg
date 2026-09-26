@@ -21,6 +21,7 @@ import type {
   AuthSettingsGetResponse,
   AuthSettingsUpdateResponse,
   PresenceGetResponse,
+  PresenceListConnectionsResponse,
   PresenceReportResponse,
 } from "@frogg/protocol/device-access-rpc";
 
@@ -36,6 +37,7 @@ type AuthSettingsUpdatePayload = AuthSettingsUpdateResponse["payload"];
 type AuthPasswordSetPayload = AuthPasswordSetResponse["payload"];
 type PresenceReportPayload = PresenceReportResponse["payload"];
 type PresenceGetPayload = PresenceGetResponse["payload"];
+type PresenceListConnectionsPayload = PresenceListConnectionsResponse["payload"];
 import {
   AgentCreateFailedStatusPayloadSchema,
   AgentCreatedStatusPayloadSchema,
@@ -5330,7 +5332,7 @@ export class DaemonClient {
   // --- presence (features.sessionPresence) ----------------------------------
 
   async reportPresence(
-    input: { target: PresenceTarget; state: PresenceReportState },
+    input: { target: PresenceTarget; state: PresenceReportState; deviceName?: string },
     requestId?: string,
   ): Promise<PresenceReportPayload> {
     return this.sendNamespacedCorrelatedSessionRequest<"presence.report.response">({
@@ -5343,6 +5345,14 @@ export class DaemonClient {
     return this.sendNamespacedCorrelatedSessionRequest<"presence.get.response">({
       requestId,
       message: { type: "presence.get.request", target },
+    });
+  }
+
+  /** `features.connectedClients`: every client connected to the daemon right now. */
+  async listConnections(requestId?: string): Promise<PresenceListConnectionsPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"presence.list_connections.response">({
+      requestId,
+      message: { type: "presence.list_connections.request" },
     });
   }
 

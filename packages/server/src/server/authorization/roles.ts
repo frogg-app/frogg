@@ -213,6 +213,7 @@ const INBOUND_ROLE = {
   "provider.usage.list.request": "viewer",
   provider_diagnostic_request: "operator",
   "presence.get.request": "viewer",
+  "presence.list_connections.request": "viewer",
   "presence.report.request": "viewer",
   pull_request_timeline_request: "viewer",
   "push.unregister.request": "viewer",

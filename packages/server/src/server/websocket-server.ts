@@ -1636,6 +1636,7 @@ export class VoiceAssistantWebSocketServer {
       clientType: options.clientType,
       deviceAccess: this.deviceAccess,
       presence: this.presence,
+      listConnections: () => this.listSessions(),
       role: options.role,
       localityTrusted: options.localityTrusted,
       isDaemonClaimed: () => this.auth?.access?.isClaimed() ?? false,
@@ -1931,7 +1932,7 @@ export class VoiceAssistantWebSocketServer {
       // and auth.pairing_* RPCs are what `frogg pair` and the client UI gate on.
       ...(this.deviceAccess ? { deviceAccess: true } : {}),
       // COMPAT(sessionPresence): added in v1.6.0, remove after 2027-09-22.
-      ...(this.presence ? { sessionPresence: true } : {}),
+      ...(this.presence ? { sessionPresence: true, connectedClients: true } : {}),
       // COMPAT(deviceRoles): added in v1.6.0, remove after 2027-09-22.
       deviceRoles: true,
       // COMPAT(deviceRoleManagement): added in v1.6.0, remove after 2027-09-22.

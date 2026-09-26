@@ -91,4 +91,16 @@ describe("presence service", () => {
     service.leaveAll("ghost");
     expect(notifications).toBe(0);
   });
+
+  test("lists every live target a connection is present on, and carries its client key", () => {
+    const { service, advance } = serviceWithClock();
+    service.report({ ...identity("a"), clientKey: "key-a" }, agent, "viewing");
+    service.report(identity("a"), terminal, "viewing");
+    service.report(identity("b"), agent, "viewing");
+
+    expect(service.targetsFor("a")).toEqual([agent, terminal]);
+    expect(service.snapshot(agent, null).participants[0]!.clientKey).toBe("key-a");
+    advance(PRESENCE_ENTRY_TTL_MS + 1);
+    expect(service.targetsFor("a")).toEqual([]);
+  });
 });

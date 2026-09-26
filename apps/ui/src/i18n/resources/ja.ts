@@ -1167,6 +1167,13 @@ export const ja: TranslationResources = {
     },
   },
   sidebar: {
+    hidden: {
+      show: "非表示の項目を表示 ({{count}})",
+      stopShowing: "非表示の項目を隠す",
+      projectHidden: "プロジェクトをサイドバーから非表示にしました",
+      workspaceHidden: "ワークスペースをサイドバーから非表示にしました",
+      undo: "元に戻す",
+    },
     workspaceDraft: "新しいセッション（下書き）",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "アカウント: {{value}}",
@@ -1261,6 +1268,8 @@ export const ja: TranslationResources = {
     },
     project: {
       actions: {
+        hide: "プロジェクトを非表示",
+        unhide: "プロジェクトを再表示",
         menu: "プロジェクトアクション",
         openSettings: "プロジェクト設定を開く",
         showArchivedSessions: "アーカイブ済みのセッションを表示",
@@ -1303,6 +1312,8 @@ export const ja: TranslationResources = {
         pending: "保留中: {{count}}",
       },
       actions: {
+        hide: "ワークスペースを非表示",
+        unhide: "ワークスペースを再表示",
         menu: "セッションアクション",
         newWorkspace: "新しいセッション",
         showMore: "さらに表示",
@@ -1825,6 +1836,28 @@ export const ja: TranslationResources = {
     },
   },
   deviceAccess: {
+    connections: {
+      title: "現在接続中",
+      unsupported: "他の接続者を確認するには、このホストを更新してください。",
+      alone: "現在ほかに接続している人はいません。",
+      unnamed: "名前のないクライアント",
+      you: "あなた",
+      paired: "ペアリング済みデバイス",
+      unpaired: "ローカルネットワーク",
+      setNickname: "ニックネームを設定",
+      nicknamePlaceholder: "ニックネーム",
+      goesBy: "表示名: {{name}}",
+      since: "{{time}} から",
+      terminal: "ターミナル",
+      agent: "エージェント",
+      notInSession: "セッション外",
+      workingIn: "{{where}} で作業中",
+    },
+    yourName: {
+      title: "あなたの名前",
+      description:
+        "このホストで他の人に表示される名前です。他の人に付けたニックネームはこのデバイスにのみ保存されます。",
+    },
     devices: {
       title: "ペアリング済みデバイス",
     },
@@ -2025,12 +2058,8 @@ export const ja: TranslationResources = {
     },
   },
   presence: {
-    label: "同席中",
-    loading: "ほかに誰がいるか確認中…",
     unknownDevice: "不明なデバイス",
     accessibilityLabel: "このセッションにいるほかの人",
-    overflow_one: "ほか +{{count}}",
-    overflow_other: "ほか +{{count}}",
     stale: "最新でない可能性があります",
     activity: {
       viewing: "{{name}} が閲覧中",
@@ -2039,10 +2068,13 @@ export const ja: TranslationResources = {
       input: "{{name}} がここに入力中",
       idle: "{{name}} は待機中",
     },
-    composer: {
-      warningOne: "{{name}} もこれに取り組んでいます。",
-      warningMany_one: "{{name}} ほか {{count}} 人もこれに取り組んでいます。",
-      warningMany_other: "{{name}} ほか {{count}} 人もこれに取り組んでいます。",
+    summary: {
+      one: "{{name}} がいます",
+      two: "{{name}} と {{other}} がいます",
+      many_one: "{{name}} ほか {{count}} 人がいます",
+      many_other: "{{name}} ほか {{count}} 人がいます",
+      moreHere_one: "· ほか {{count}} 人",
+      moreHere_other: "· ほか {{count}} 人",
     },
   },
   pairing: {

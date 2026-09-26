@@ -35,6 +35,9 @@ vi.mock("@/components/sidebar/workspace-account", async () => {
   };
 });
 vi.mock("@/components/sidebar/workspace-meta-row", () => ({ WorkspaceMetaRow: () => null }));
+vi.mock("@/stores/sidebar-hidden-store/use-hide-toggles", () => ({
+  useSidebarHideToggles: () => ({ toggleProject() {}, toggleWorkspace() {} }),
+}));
 // Reaches native-only modules that jsdom cannot parse; the row content under test does not use it.
 vi.mock("@/components/workspace-hover-card", () => ({ WorkspaceHoverCard: () => null }));
 vi.mock("expo-clipboard", () => ({ setStringAsync: async () => {} }));

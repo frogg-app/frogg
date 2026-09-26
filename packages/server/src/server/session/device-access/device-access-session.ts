@@ -1,5 +1,5 @@
 import type pino from "pino";
-import type { PresenceTarget } from "@frogg/protocol/device-access";
+import type { ConnectedClient, PresenceTarget } from "@frogg/protocol/device-access";
 
 import type { SessionInboundMessage, SessionOutboundMessage } from "../../messages.js";
 import type { DeviceAccessCaller, DeviceAccessService } from "../../device-access-service.js";
@@ -19,6 +19,10 @@ export interface DeviceAccessSessionOptions {
   /** The paired device this connection authenticated as, re-read per request. */
   caller: () => DeviceAccessCaller;
   presenceIdentity: () => PresenceIdentity;
+  /** Every live connection, described for this one. Absent: just this one. */
+  listConnections?: () => ConnectedClient[];
+  /** A client renamed itself through `presence.report`. */
+  onSelfName?: (name: string) => void;
   logger: pino.Logger;
 }
 
@@ -38,6 +42,8 @@ export class DeviceAccessSession {
   private readonly presence: PresenceService | null;
   private readonly caller: () => DeviceAccessCaller;
   private readonly presenceIdentity: () => PresenceIdentity;
+  private readonly listConnections: () => ConnectedClient[];
+  private readonly onSelfName: ((name: string) => void) | null;
   private readonly logger: pino.Logger;
   private readonly reportedTargets = new Set<string>();
   private unsubscribePresence: (() => void) | null = null;
@@ -48,6 +54,8 @@ export class DeviceAccessSession {
     this.presence = options.presence;
     this.caller = options.caller;
     this.presenceIdentity = options.presenceIdentity;
+    this.listConnections = options.listConnections ?? (() => []);
+    this.onSelfName = options.onSelfName ?? null;
     this.logger = options.logger;
     this.unsubscribePresence =
       options.presence?.subscribe((target) => this.publishPresence(target)) ?? null;
@@ -288,6 +296,12 @@ export class DeviceAccessSession {
       });
       return;
     }
+    if (msg.deviceName !== undefined) {
+      // Control characters would let a name forge extra lines in other clients.
+      // eslint-disable-next-line no-control-regex -- stripping them is the point
+      const name = msg.deviceName.replace(/[\u0000-\u001f\u007f]/g, "").trim();
+      if (name) this.onSelfName?.(name);
+    }
     const key = presenceTargetKey(msg.target);
     if (msg.state === "left") this.reportedTargets.delete(key);
     else this.reportedTargets.add(key);
@@ -311,6 +325,20 @@ export class DeviceAccessSession {
         snapshot,
         error: this.presence ? null : "Presence is not available on this daemon",
       },
+    });
+  }
+
+  async handleListConnectionsRequest(
+    msg: Extract<SessionInboundMessage, { type: "presence.list_connections.request" }>,
+  ): Promise<void> {
+    const connections = [...this.listConnections()].sort(
+      (left, right) =>
+        Number(right.isSelf) - Number(left.isSelf) ||
+        left.connectedAt.localeCompare(right.connectedAt),
+    );
+    this.host.emit({
+      type: "presence.list_connections.response",
+      payload: { requestId: msg.requestId, connections, error: null },
     });
   }
 

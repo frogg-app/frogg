@@ -1,4 +1,10 @@
-import { useMemo, type ComponentProps, type PropsWithChildren, type ReactNode } from "react";
+import {
+  useCallback,
+  useMemo,
+  type ComponentProps,
+  type PropsWithChildren,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -6,6 +12,8 @@ import {
   Archive,
   CircleCheck,
   Copy,
+  Eye,
+  EyeOff,
   Hash,
   MoreVertical,
   Pencil,
@@ -14,6 +22,8 @@ import {
   Tag,
 } from "lucide-react-native";
 import { isWeb } from "@/constants/platform";
+import { useSidebarHiddenStore } from "@/stores/sidebar-hidden-store";
+import { useSidebarHideToggles } from "@/stores/sidebar-hidden-store/use-hide-toggles";
 import { getForgePresentation, normalizeForge } from "@/git/forge";
 import type { SidebarWorkspaceEntry } from "@/hooks/use-sidebar-workspaces-list";
 import { useAppSettings } from "@/hooks/use-settings";
@@ -59,6 +69,10 @@ const ThemedPin = withUnistyles(Pin);
 const ThemedPinOff = withUnistyles(PinOff);
 const ThemedTag = withUnistyles(Tag);
 const ThemedHash = withUnistyles(Hash);
+const ThemedEye = withUnistyles(Eye);
+const ThemedEyeOff = withUnistyles(EyeOff);
+const hideLeadingIcon = <ThemedEyeOff size={14} uniProps={foregroundMutedColorMapping} />;
+const unhideLeadingIcon = <ThemedEye size={14} uniProps={foregroundMutedColorMapping} />;
 
 const copyLeadingIcon = <ThemedCopy size={14} uniProps={foregroundMutedColorMapping} />;
 const sessionIdLeadingIcon = <ThemedHash size={14} uniProps={foregroundMutedColorMapping} />;
@@ -153,6 +167,12 @@ function SidebarWorkspaceMenuItems({
     () => <ThemedTag size={14} uniProps={foregroundMutedColorMapping} />,
     [],
   );
+  const isHidden = useSidebarHiddenStore((state) => state.hiddenWorkspaceKeys.has(workspaceKey));
+  const { toggleWorkspace } = useSidebarHideToggles();
+  const handleToggleHidden = useCallback(
+    () => toggleWorkspace(workspaceKey),
+    [toggleWorkspace, workspaceKey],
+  );
 
   return (
     <>
@@ -215,6 +235,14 @@ function SidebarWorkspaceMenuItems({
           {t("workspaceLabels.title")}
         </DropdownMenuSubTrigger>
       ) : null}
+      <WorkspaceMenuItem
+        surface={surface}
+        testID={`sidebar-workspace-menu-hide-${workspaceKey}`}
+        leading={isHidden ? unhideLeadingIcon : hideLeadingIcon}
+        onSelect={handleToggleHidden}
+      >
+        {isHidden ? t("sidebar.workspace.actions.unhide") : t("sidebar.workspace.actions.hide")}
+      </WorkspaceMenuItem>
       <OpenInFileManagerMenuItem
         surface={surface}
         path={openInFileManagerPath}

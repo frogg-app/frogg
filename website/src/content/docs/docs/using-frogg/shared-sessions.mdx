@@ -1,12 +1,13 @@
 ---
 title: Shared sessions
-description: See who else is on an agent chat or a terminal, what they are doing, and what the composer warning means.
+description: See who else is connected to a host and on an agent chat or terminal, give them nicknames, and choose the name others see for you.
 sidebar:
   order: 7
 ---
 
 import { Screenshot } from "@/components/docs";
 import appSessionPresenceImg from "@/assets/docs/app/session-presence.png";
+import appConnectedClientsImg from "@/assets/docs/app/connected-clients.png";
 
 Several devices can be on the same agent or terminal at once — your laptop and your phone,
 or two people paired to the same daemon. Frogg shows who they are rather than locking
@@ -14,36 +15,49 @@ anyone out.
 
 ## Who else is here
 
-An agent chat and a terminal carry a row above the composer naming the other devices on
-that session and what each is doing.
+An agent chat and a terminal carry a row above the composer: a stack of avatars for the
+other devices on that session and one sentence about them. Whoever is actively writing
+leads it ("Paz is typing · 2 more here", with a live dot); otherwise it says who is there
+("Paz and Sam are here").
+
+<Screenshot src={appSessionPresenceImg} alt="Avatar stack above the composer with the line: Paz's laptop is typing, 1 more here" />
 
 | Shown as | Meaning |
 | -------- | ------- |
-| viewing | The device has the session open |
-| typing | There is text in its composer |
-| sending | The daemon saw it send a message to the agent |
-| typing here | The daemon saw it send keystrokes to the terminal |
-| idle | It is still there, but not doing anything |
+| is viewing / is here | The device has the session open |
+| is typing | There is text in its composer |
+| is sending | The daemon saw it send a message to the agent |
+| is typing here | The daemon saw it send keystrokes to the terminal |
+| is idle | It is still there, but not doing anything |
 
-Three names fit; the rest fold into a `+N`. `viewing`, `typing` and `idle` are what the
-other device reports about itself; `sending` and terminal input are what the daemon saw
-for itself.
+Three avatars fit; the rest fold into a `+N`. Each person keeps the same avatar colour
+everywhere. `viewing`, `typing` and `idle` are what the other device reports about itself;
+`sending` and terminal input are what the daemon saw for itself.
 
 The row disappears when nobody else is there, when the daemon does not support presence,
 or when the presence request fails — it is chrome, and never makes a session look broken.
 Devices re-report every 30 seconds and the daemon drops an entry it has not heard about
 for 90 seconds, so someone who closes a laptop lid stops showing up on their own.
 
-## The composer warning
+While someone else is writing to the same agent, the composer also takes a quiet accent
+edge. It is a cue, not a block: the composer stays fully usable and both messages reach the
+agent.
 
-When someone else is actively writing to the same agent, the composer outlines itself in
-amber and names them.
+## Everyone connected to a host
 
-<Screenshot src={appSessionPresenceImg} alt="Composer outlined in amber with a line saying another device is also working on this agent" />
+**Host settings → Devices → Connected now** lists every client connected to that host right
+now — paired devices and loopback or trusted-network connections alike — with the sessions
+each one is in and when it connected. Every role can see it; it grants nothing.
 
-It is a warning, not a block: the composer stays fully usable and both messages reach the
-agent. An offline composer says that instead — a composer that cannot reach its daemon has
-something more urgent to say.
+<Screenshot src={appConnectedClientsImg} alt="Connected now: your name field, then one row per connected client with its avatar, badges and the session it is in" />
+
+- **Your name** is how you appear to everyone else on the host. It defaults to the app and
+  device name, is stored on this device, and takes effect within one presence heartbeat —
+  no reconnect. A paired device keeps the name on its credential, which an owner can
+  rename under **Paired devices**.
+- **Nicknames**: the pencil on another client's row gives it a nickname only you see. It
+  replaces that client's own name in the presence row and in this list, follows that app
+  across reconnects, and never leaves your device.
 
 ## Device names are not trusted
 
@@ -52,12 +66,14 @@ never as part of its own chrome, so a name cannot dress itself up as an app mess
 same applies to the name on a pairing request waiting for approval.
 
 Names come from the paired device's credential, or — for a connection that carries no
-credential, such as loopback or a trusted LAN — from the name that client announced when
-it connected.
+credential, such as loopback or a trusted LAN — from the name that client chose under
+**Your name**. A client is never identified to others by its connection id; nicknames are
+keyed by a one-way hash of the other app's install id.
 
 ## Requirements
 
-Presence needs a daemon that advertises the `sessionPresence` feature. Against an older
-daemon the row and the composer warning simply do not appear. Nothing about presence
+Presence needs a daemon that advertises the `sessionPresence` feature; **Connected now**,
+live renaming and nicknames need `connectedClients`. Against an older daemon those parts
+simply do not appear. Nothing about presence
 changes what a device may do: that is its
 [role](/docs/self-hosting/security/#device-roles).

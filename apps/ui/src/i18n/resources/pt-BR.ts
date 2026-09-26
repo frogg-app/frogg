@@ -1177,6 +1177,13 @@ export const ptBR: TranslationResources = {
     },
   },
   sidebar: {
+    hidden: {
+      show: "Mostrar ocultos ({{count}})",
+      stopShowing: "Parar de mostrar ocultos",
+      projectHidden: "Projeto ocultado da sua barra lateral",
+      workspaceHidden: "Workspace ocultado da sua barra lateral",
+      undo: "Desfazer",
+    },
     workspaceDraft: "Novo espaço de trabalho (rascunho)",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Conta: {{value}}",
@@ -1271,6 +1278,8 @@ export const ptBR: TranslationResources = {
     },
     project: {
       actions: {
+        hide: "Ocultar projeto",
+        unhide: "Reexibir projeto",
         menu: "Ações do projeto",
         openSettings: "Abrir configurações do projeto",
         showArchivedSessions: "Mostrar sessões arquivadas",
@@ -1313,6 +1322,8 @@ export const ptBR: TranslationResources = {
         pending: "Pendentes: {{count}}",
       },
       actions: {
+        hide: "Ocultar workspace",
+        unhide: "Reexibir workspace",
         menu: "Ações da sessão",
         newWorkspace: "Nova sessão",
         showMore: "Mostrar mais",
@@ -1835,6 +1846,28 @@ export const ptBR: TranslationResources = {
     },
   },
   deviceAccess: {
+    connections: {
+      title: "Conectados agora",
+      unsupported: "Atualize este host para ver quem mais está conectado.",
+      alone: "Ninguém mais está conectado agora.",
+      unnamed: "Cliente sem nome",
+      you: "Você",
+      paired: "Dispositivo pareado",
+      unpaired: "Rede local",
+      setNickname: "Definir apelido",
+      nicknamePlaceholder: "Apelido",
+      goesBy: "Aparece como {{name}}",
+      since: "desde {{time}}",
+      terminal: "um terminal",
+      agent: "um agente",
+      notInSession: "Fora de uma sessão",
+      workingIn: "Em {{where}}",
+    },
+    yourName: {
+      title: "Seu nome",
+      description:
+        "Como você aparece para os outros neste host. Os apelidos que você dá ficam neste dispositivo.",
+    },
     devices: {
       title: "Dispositivos pareados",
     },
@@ -2038,12 +2071,8 @@ export const ptBR: TranslationResources = {
     },
   },
   presence: {
-    label: "Também aqui",
-    loading: "Verificando quem mais está aqui…",
     unknownDevice: "Dispositivo desconhecido",
     accessibilityLabel: "Outras pessoas nesta sessão",
-    overflow_one: "+{{count}} a mais",
-    overflow_other: "+{{count}} a mais",
     stale: "Pode estar desatualizado",
     activity: {
       viewing: "{{name}} está visualizando",
@@ -2052,10 +2081,13 @@ export const ptBR: TranslationResources = {
       input: "{{name}} está digitando aqui",
       idle: "{{name}} está ocioso",
     },
-    composer: {
-      warningOne: "{{name}} também está trabalhando nisto.",
-      warningMany_one: "{{name}} e mais {{count}} também estão trabalhando nisto.",
-      warningMany_other: "{{name}} e mais {{count}} também estão trabalhando nisto.",
+    summary: {
+      one: "{{name}} está aqui",
+      two: "{{name}} e {{other}} estão aqui",
+      many_one: "{{name}} e mais {{count}} pessoa estão aqui",
+      many_other: "{{name}} e mais {{count}} pessoas estão aqui",
+      moreHere_one: "· mais {{count}} aqui",
+      moreHere_other: "· mais {{count}} aqui",
     },
   },
   pairing: {

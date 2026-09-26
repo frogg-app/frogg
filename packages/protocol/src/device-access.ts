@@ -348,6 +348,12 @@ export const PresenceParticipantSchema = z.object({
   deviceId: z.string().nullable(),
   deviceName: z.string(),
   clientType: z.string().nullable(),
+  /**
+   * COMPAT(connectedClients): added in v1.5.48. A one-way hash of the client's
+   * install id: stable across reconnects, so a viewer can attach a nickname,
+   * but useless for resuming the other client's session.
+   */
+  clientKey: z.string().optional(),
   activity: PresenceActivitySchema,
   activityAt: z.string(),
   /** The recipient's own entry. */
@@ -360,3 +366,23 @@ export const PresenceSnapshotSchema = z.object({
   participants: z.array(PresenceParticipantSchema),
 });
 export type PresenceSnapshot = z.infer<typeof PresenceSnapshotSchema>;
+
+/** One live client connection to the daemon, paired or not. */
+export const ConnectedClientSchema = z.object({
+  /** Opaque, per connection session. Matches `PresenceParticipant.participantId`. */
+  participantId: z.string(),
+  /** See `PresenceParticipant.clientKey`. */
+  clientKey: z.string(),
+  deviceId: z.string().nullable(),
+  /** Paired device name, else the name the client gave itself; may be empty. */
+  deviceName: z.string(),
+  paired: z.boolean(),
+  role: DeviceRoleSchema.nullable(),
+  clientType: z.string().nullable(),
+  appVersion: z.string().nullable(),
+  connectedAt: z.string(),
+  /** Agents and terminals it currently has presence on. */
+  targets: z.array(PresenceTargetSchema),
+  isSelf: z.boolean(),
+});
+export type ConnectedClient = z.infer<typeof ConnectedClientSchema>;
