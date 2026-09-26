@@ -1,4 +1,5 @@
 import { brand } from "@frogg/branding";
+import { compareVersionStrings, isStableVersion } from "@frogg/protocol/release-version";
 import type { ReleaseChannel } from "@/hooks/use-settings";
 import type { AndroidInstallerInfo } from "@/mobile/updates/android-app-installer";
 
@@ -66,27 +67,9 @@ export function normalizeVersion(value: string | null | undefined): string | nul
   return trimmed ? trimmed : null;
 }
 
-function versionParts(version: string): { numbers: number[]; beta: number | null } {
-  const [core, beta] = version.split("-beta.");
-  return {
-    numbers: core.split(".").map((part) => Number.parseInt(part, 10) || 0),
-    beta: beta === undefined ? null : Number.parseInt(beta, 10) || 0,
-  };
-}
-
-/** Ordinary semver ordering for the versions this project publishes: 1.2.3 and 1.2.3-beta.4. */
+/** Release ordering shared with desktop and the daemon. */
 export function compareReleaseVersions(left: string, right: string): number {
-  const a = versionParts(left);
-  const b = versionParts(right);
-  for (let index = 0; index < Math.max(a.numbers.length, b.numbers.length); index++) {
-    const difference = (a.numbers[index] ?? 0) - (b.numbers[index] ?? 0);
-    if (difference !== 0) return difference > 0 ? 1 : -1;
-  }
-  if (a.beta === b.beta) return 0;
-  // A release outranks its own betas.
-  if (a.beta === null) return 1;
-  if (b.beta === null) return -1;
-  return a.beta > b.beta ? 1 : -1;
+  return Math.sign(compareVersionStrings(left, right));
 }
 
 export function isNewerVersion(candidate: string | null, current: string | null): boolean {
@@ -156,7 +139,7 @@ export function selectRelease(
     if (release.draft) continue;
     const version = normalizeVersion(release.tag_name);
     if (!version) continue;
-    const isPrerelease = release.prerelease === true || version.includes("-beta.");
+    const isPrerelease = release.prerelease === true || !isStableVersion(version);
     if (isPrerelease && channel !== "beta") continue;
     if (!best || compareReleaseVersions(version, best.version) > 0) {
       best = { release, version };

@@ -148,6 +148,7 @@ export function MobileUpdatesSection({ appVersion }: { appVersion: string | null
     isBusy,
     checkForUpdates,
     downloadAndInstall,
+    discardAvailableUpdate,
   } = useMobileAppUpdater();
 
   const refreshIcon = useMemo(() => <ThemedRefresh />, []);
@@ -160,9 +161,11 @@ export function MobileUpdatesSection({ appVersion }: { appVersion: string | null
   );
   const handleChannelChange = useCallback(
     (mobileUpdateChannel: Settings["mobileUpdateChannel"]) => {
+      // An offer found on the old channel must not survive the switch.
+      discardAvailableUpdate();
       void updateSettings({ mobileUpdateChannel });
     },
-    [updateSettings],
+    [discardAvailableUpdate, updateSettings],
   );
   const toggleAutoCheck = useCallback(() => {
     void updateSettings({ mobileUpdateAutoCheck: !settings.mobileUpdateAutoCheck });

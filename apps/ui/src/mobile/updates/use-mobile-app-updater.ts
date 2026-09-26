@@ -108,6 +108,8 @@ export interface UseMobileAppUpdaterReturn {
   isBusy: boolean;
   checkForUpdates: (options?: { silent?: boolean }) => Promise<MobileAppUpdateCheckResult | null>;
   downloadAndInstall: () => Promise<AndroidApkInstallResult | null>;
+  /** Drops the current offer; call before switching channel so it cannot linger. */
+  discardAvailableUpdate: () => void;
 }
 
 // One updater per app run: the settings section and the callout show the same
@@ -159,6 +161,8 @@ export function useMobileAppUpdater(): UseMobileAppUpdaterReturn {
     return updater.downloadAndInstall();
   }, [isSupported, updater]);
 
+  const discardAvailableUpdate = useCallback(() => updater.discardAvailableUpdate(), [updater]);
+
   useEffect(() => {
     if (!isSupported || !autoCheck) return;
     void checkForUpdates({ silent: true });
@@ -181,5 +185,6 @@ export function useMobileAppUpdater(): UseMobileAppUpdaterReturn {
     isBusy: snapshot.isBusy,
     checkForUpdates,
     downloadAndInstall,
+    discardAvailableUpdate,
   };
 }
