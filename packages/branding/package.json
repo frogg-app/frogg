@@ -1,6 +1,6 @@
 {
   "name": "@frogg/branding",
-  "version": "1.5.57",
+  "version": "1.6.0-beta.1",
   "description": "Build-time product identity for Frogg distributions",
   "license": "Apache-2.0",
   "files": [
