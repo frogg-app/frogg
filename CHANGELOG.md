@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.5.49 — 2026-09-26
+
+- A **viewer** device now only sees the work: sessions, timelines, terminal output, and
+  files inside registered workspaces. It no longer receives the daemon's configuration or
+  diagnostics (including the broadcast sent when configuration changes), and its directory
+  search must start inside a registered workspace instead of the daemon user's home
+  directory. Daemon configuration and diagnostics now need an operator.
+
 ## 1.5.46 — 2026-09-26
 
 - The desktop app now opens `<scheme>://pair/direct?…` links, from argv on a cold start,
