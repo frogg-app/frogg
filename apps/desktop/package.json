@@ -1,6 +1,6 @@
 {
   "name": "@frogg/desktop",
-  "version": "1.5.56",
+  "version": "1.5.57",
   "private": true,
   "description": "Frogg Electron desktop shell",
   "homepage": "https://frogg.app",

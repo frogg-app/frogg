@@ -261,7 +261,7 @@ dependencies = [
 
 [[package]]
 name = "frogg-daemon"
-version = "1.5.56"
+version = "1.5.57"
 dependencies = [
  "anyhow",
  "axum",
