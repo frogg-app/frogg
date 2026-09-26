@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.47 — 2026-09-26
+
+- **Beta channel:** a long-lived `beta` branch cuts `X.Y.0-beta.N` releases while `main` keeps
+  cutting stable patches. New `release:beta:minor`, `release:beta:next`, `release:sync-beta` and
+  `release:promote` scripts; the version scripts refuse to cut on the wrong branch, and a stable
+  minor or major refuses to reach an open beta line.
+- The release workflow fails a stable tag that is not on `main` or a beta tag not on `beta`, and
+  never moves GitHub Latest back to an older version when two runs finish out of order.
+- Desktop no longer offers an older build after switching from Beta to Stable; it says it is up
+  to date instead. The Apple Silicon download link now points at the real `-mac-arm64.dmg`.
+- Android uses the same version ordering as desktop and the daemon, keeps any flagged
+  prerelease off the Stable channel, and drops an update offer when you switch channel.
+- The install script's fallback (when `/releases/latest` does not resolve) picks the newest
+  stable release, never a beta or an old preview build.
+- Removes unused Paseo-era release scripts.
+
 ## 1.5.46 — 2026-09-26
 
 - The desktop app now opens `<scheme>://pair/direct?…` links, from argv on a cold start,
