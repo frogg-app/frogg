@@ -10,8 +10,8 @@
  * not advertise `features.sessionPresence`, or when the presence request
  * failed — presence is chrome and must never make a chat look broken.
  */
-import React, { memo } from "react";
-import { Text, View } from "react-native";
+import React, { memo, useEffect, useRef } from "react";
+import { Animated, Easing, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -28,6 +28,11 @@ interface PresenceBarProps {
   serverId: string;
   targetKind: PresenceTargetKind;
   targetId: string | null | undefined;
+  /**
+   * `rail` sits on the composer column above other content (terminals);
+   * `inline` is pinned inside the composer's own box, which grows for it.
+   */
+  variant?: "rail" | "inline";
 }
 
 export interface NamedPresenceOther extends PresenceOther {
@@ -69,6 +74,7 @@ export const PresenceBar = memo(function PresenceBar({
   serverId,
   targetKind,
   targetId,
+  variant = "rail",
 }: PresenceBarProps): React.ReactElement | null {
   const { t } = useTranslation();
   const { view } = usePresence({ serverId, targetKind, targetId });
@@ -86,14 +92,19 @@ export const PresenceBar = memo(function PresenceBar({
   }));
   const { lead, rest } = describePresence(named, t);
   const stacked = named.slice(0, view.visible.length);
-  const hasActive = named.some(
+  const active = named.find(
     (other) => !other.isExpired && isActivePresenceActivity(other.activity),
   );
+  const isTyping = active?.activity === "typing" || active?.activity === "input";
 
   return (
-    <View style={styles.rail} pointerEvents="box-none">
+    <View style={variant === "inline" ? styles.inline : styles.rail} pointerEvents="box-none">
       <View
-        style={[styles.row, view.isStale && styles.rowStale]}
+        style={[
+          styles.row,
+          variant === "inline" && styles.rowInline,
+          view.isStale && styles.rowStale,
+        ]}
         testID="presence-bar"
         accessibilityRole="text"
         accessibilityLabel={`${t("presence.accessibilityLabel")}: ${named
@@ -116,10 +127,11 @@ export const PresenceBar = memo(function PresenceBar({
             </View>
           ) : null}
         </View>
-        {hasActive ? <View style={styles.liveDot} testID="presence-bar-live" /> : null}
+        {active ? <View style={styles.liveDot} testID="presence-bar-live" /> : null}
         <Text style={styles.lead} numberOfLines={1} testID="presence-participant">
           {lead}
         </Text>
+        {isTyping ? <TypingDots /> : null}
         {rest ? (
           <Text style={styles.rest} numberOfLines={1}>
             {rest}
@@ -134,6 +146,42 @@ export const PresenceBar = memo(function PresenceBar({
     </View>
   );
 });
+
+const DOT_COUNT = 3;
+const DOT_CYCLE_MS = 1200;
+
+/** The chat-app "…" that pulses while someone is typing. */
+function TypingDots(): React.ReactElement {
+  const progress = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: DOT_CYCLE_MS,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [progress]);
+  return (
+    <View style={styles.dots} testID="presence-typing-dots">
+      {Array.from({ length: DOT_COUNT }, (_, index) => {
+        // Each dot brightens in turn across the first three quarters of the
+        // cycle; the last quarter is the pause before it repeats.
+        const step = 1 / (DOT_COUNT + 1);
+        const start = index * step;
+        const opacity = progress.interpolate({
+          inputRange: [start, start + step, start + 2 * step],
+          outputRange: [0.3, 1, 0.3],
+          extrapolate: "clamp",
+        });
+        return <Animated.View key={index} style={[styles.dot, { opacity }]} />;
+      })}
+    </View>
+  );
+}
 
 export const PresenceAvatar = memo(function PresenceAvatar({
   name,
@@ -184,6 +232,14 @@ const styles = StyleSheet.create((theme: Theme) => ({
     paddingHorizontal: theme.spacing[2],
     paddingBottom: theme.spacing[2],
     minWidth: 0,
+  },
+  inline: {
+    alignSelf: "stretch",
+  },
+  rowInline: {
+    maxWidth: undefined,
+    paddingHorizontal: 0,
+    paddingBottom: theme.spacing[1],
   },
   rowStale: {
     opacity: 0.6,
@@ -245,6 +301,18 @@ const styles = StyleSheet.create((theme: Theme) => ({
     flexShrink: 1,
     color: theme.colors.foreground,
     fontSize: theme.fontSize.sm,
+  },
+  dots: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    flexShrink: 0,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.foregroundMuted,
   },
   rest: {
     flexShrink: 0,

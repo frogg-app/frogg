@@ -16,6 +16,7 @@ import { pairingInbox } from "./pairing-inbox.js";
 import { clampWindowStateToWorkAreas, createWindowStateStore } from "./settings/window-state.js";
 import { installWindowSecurity } from "./window-security.js";
 import { windowChromeModeArgument } from "./window/chrome.js";
+import { deviceNameArgument } from "./system/device-name.js";
 import { setupDarwinCompositorWatchdog } from "./window/compositor-watchdog/index.js";
 import {
   applyDesktopWindowChromeMode,
@@ -224,7 +225,10 @@ export function createWindowRuntime({
       }),
       webPreferences: {
         preload: getPreloadPath(),
-        additionalArguments: [windowChromeModeArgument(DESKTOP_WINDOW_CHROME_MODE)],
+        additionalArguments: [
+          windowChromeModeArgument(DESKTOP_WINDOW_CHROME_MODE),
+          deviceNameArgument(),
+        ],
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,

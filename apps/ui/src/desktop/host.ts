@@ -200,6 +200,8 @@ export interface DesktopHostBridge {
   /** False for app-only shells; omitted by legacy shells that manage a daemon. */
   supportsLocalDaemon?: boolean;
   platform?: string;
+  /** Username (Windows/macOS) or hostname (Linux) of this machine. */
+  deviceName?: string | null;
   windowChromeMode?: string;
   invoke?: DesktopInvokeBridge["invoke"];
   getPendingOpenProject?: () => Promise<string | null>;

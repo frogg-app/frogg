@@ -189,6 +189,8 @@ export interface MessageInputProps {
    * actively writing to the same agent. Warns in amber; never disables.
    */
   presenceWarning?: PresenceWarning | null;
+  /** Who else is here, pinned at the top inside the input box. */
+  presenceSlot?: React.ReactNode;
   /** Command issued when application state must replace native-owned text. */
   textReplacement: TextReplacement;
   /** Replaces the submit icon with this label, still inside the composer's own toolbar row. */
@@ -1105,6 +1107,7 @@ interface ResolvedMessageInputProps {
   offline: boolean;
   staleContextWarning: StaleContextWarning | null;
   presenceWarning: PresenceWarning | null;
+  presenceSlot: React.ReactNode;
   textReplacement: TextReplacement;
   submitLabel: string | undefined;
 }
@@ -1161,6 +1164,7 @@ function resolveMessageInputProps(props: MessageInputProps): ResolvedMessageInpu
     // its daemon has a more urgent thing to say than who else is typing, and
     // resolving it here keeps the render paths from combining the two.
     presenceWarning: props.offline ? null : (props.presenceWarning ?? null),
+    presenceSlot: props.offline ? null : props.presenceSlot,
     textReplacement: props.textReplacement,
     submitLabel: props.submitLabel,
   };
@@ -1253,6 +1257,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       offline,
       staleContextWarning,
       presenceWarning,
+      presenceSlot,
       textReplacement,
       submitLabel,
     } = resolveMessageInputProps(props);
@@ -1860,6 +1865,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           style={inputWrapperCombinedStyle}
           pointerEvents={surfacePresentation.input.pointerEvents}
         >
+          {presenceSlot}
           <StaleContextNotice warning={staleContextWarning} />
           {attachmentSlot}
           {/* Text input */}
@@ -1991,8 +1997,8 @@ const styles = StyleSheet.create((theme: Theme) => ({
   // "know this before you send", and either one alone paints the same border,
   // so a composer that is both stale and shared is outlined once and carries
   // two notice lines. The offline outline is listed after both and wins.
-  // Someone else is writing to this agent too. The presence row above names
-  // them; the composer only takes a quiet accent edge so it reads as shared,
+  // Someone else is writing to this agent too. The presence row pinned at the
+  // top of the box names them; the composer only takes a quiet accent edge so it reads as shared,
   // not as an error.
   inputWrapperPresence: {
     borderColor: `${theme.colors.accentBright}99`,
