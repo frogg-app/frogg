@@ -168,6 +168,7 @@ const StoredAgentSnapshotSchema = z.strictObject({
   workspaceId: z.string().optional(),
   model: z.string().nullable(),
   thinkingOptionId: z.string().nullable().optional(),
+  providerAccountId: z.string().nullable().optional(),
   createdAt: IsoDateSchema,
   updatedAt: IsoDateSchema,
   lastUserMessageAt: IsoDateSchema.nullable(),
@@ -509,6 +510,31 @@ function serializeProjectPlacement(agent: Agent): StoredAgent["projectPlacement"
   return agent.projectPlacement ?? null;
 }
 
+function serializeCapabilities(
+  capabilities: Agent["capabilities"],
+): StoredAgent["snapshot"]["capabilities"] {
+  return {
+    supportsStreaming: capabilities.supportsStreaming,
+    supportsSessionPersistence: capabilities.supportsSessionPersistence,
+    ...(capabilities.supportsSessionListing !== undefined
+      ? { supportsSessionListing: capabilities.supportsSessionListing }
+      : {}),
+    supportsDynamicModes: capabilities.supportsDynamicModes,
+    supportsMcpServers: capabilities.supportsMcpServers,
+    supportsReasoningStream: capabilities.supportsReasoningStream,
+    supportsToolInvocations: capabilities.supportsToolInvocations,
+    ...(capabilities.supportsRewindConversation !== undefined
+      ? { supportsRewindConversation: capabilities.supportsRewindConversation }
+      : {}),
+    ...(capabilities.supportsRewindFiles !== undefined
+      ? { supportsRewindFiles: capabilities.supportsRewindFiles }
+      : {}),
+    ...(capabilities.supportsRewindBoth !== undefined
+      ? { supportsRewindBoth: capabilities.supportsRewindBoth }
+      : {}),
+  };
+}
+
 function serializeAgent(agent: Agent): StoredAgent {
   const snapshot = {
     id: agent.id,
@@ -517,6 +543,10 @@ function serializeAgent(agent: Agent): StoredAgent {
     ...(agent.workspaceId ? { workspaceId: agent.workspaceId } : {}),
     model: agent.model,
     thinkingOptionId: agent.thinkingOptionId ?? null,
+    // Presence-checked: `undefined` (active account) and `null` (Default) differ.
+    ...(agent.providerAccountId !== undefined
+      ? { providerAccountId: agent.providerAccountId }
+      : {}),
     createdAt: agent.createdAt.toISOString(),
     updatedAt: agent.updatedAt.toISOString(),
     lastUserMessageAt: agent.lastUserMessageAt?.toISOString() ?? null,
@@ -529,26 +559,7 @@ function serializeAgent(agent: Agent): StoredAgent {
           },
         }
       : {}),
-    capabilities: {
-      supportsStreaming: agent.capabilities.supportsStreaming,
-      supportsSessionPersistence: agent.capabilities.supportsSessionPersistence,
-      ...(agent.capabilities.supportsSessionListing !== undefined
-        ? { supportsSessionListing: agent.capabilities.supportsSessionListing }
-        : {}),
-      supportsDynamicModes: agent.capabilities.supportsDynamicModes,
-      supportsMcpServers: agent.capabilities.supportsMcpServers,
-      supportsReasoningStream: agent.capabilities.supportsReasoningStream,
-      supportsToolInvocations: agent.capabilities.supportsToolInvocations,
-      ...(agent.capabilities.supportsRewindConversation !== undefined
-        ? { supportsRewindConversation: agent.capabilities.supportsRewindConversation }
-        : {}),
-      ...(agent.capabilities.supportsRewindFiles !== undefined
-        ? { supportsRewindFiles: agent.capabilities.supportsRewindFiles }
-        : {}),
-      ...(agent.capabilities.supportsRewindBoth !== undefined
-        ? { supportsRewindBoth: agent.capabilities.supportsRewindBoth }
-        : {}),
-    },
+    capabilities: serializeCapabilities(agent.capabilities),
     currentModeId: agent.currentModeId,
     availableModes: [],
     pendingPermissions: [],

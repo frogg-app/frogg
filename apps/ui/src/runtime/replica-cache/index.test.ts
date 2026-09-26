@@ -229,6 +229,29 @@ describe("ReplicaCache", () => {
     expect(restoredTimeline).toEqual(timeline());
   });
 
+  it("round-trips each agent's provider account, keeping absent distinct from null", async () => {
+    const storage = new MemoryStorage();
+    const writer = createCache(storage);
+    const pinned = { ...agent("agent-1"), providerAccountId: "account-a" };
+    const explicitDefault = { ...agent("agent-2"), providerAccountId: null };
+    const absent = agent("agent-3");
+    writer.commitDirectory(SERVER_ID, {
+      ...directory(),
+      agents: new Map([
+        [pinned.id, pinned],
+        [explicitDefault.id, explicitDefault],
+        [absent.id, absent],
+      ]),
+    });
+    await writer.flush();
+
+    const restored = await createCache(storage).readDirectory(SERVER_ID);
+
+    expect(restored.agents.get("agent-1")?.providerAccountId).toBe("account-a");
+    expect(restored.agents.get("agent-2")?.providerAccountId).toBeNull();
+    expect(restored.agents.get("agent-3")?.providerAccountId).toBeUndefined();
+  });
+
   it("never reads directory rows older than an accepted deferred deletion", async () => {
     const storage = new MemoryStorage();
     const cache = createCache(storage);
