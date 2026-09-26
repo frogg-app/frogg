@@ -139,6 +139,8 @@ export interface WorkspaceDescriptor {
   title?: string | null;
   pinnedAt?: string | null;
   labels?: string[];
+  /** COMPAT(chats): a project-less chat; listed under Chats, not Projects. */
+  chat?: boolean;
   status: WorkspaceDescriptorPayload["status"];
   statusEnteredAt: Date | null;
   /** Daemon's last-activity timestamp (ISO). Optional: cached replicas and fixtures omit it. */
@@ -190,6 +192,7 @@ export function normalizeWorkspaceDescriptor(
     pinnedAt: payload.pinnedAt ?? null,
     // COMPAT(workspaceLabels): old daemons omit assignments.
     labels: payload.labels ?? [],
+    ...(payload.chat ? { chat: true } : {}),
     status: payload.status,
     statusEnteredAt,
     activityAt: payload.activityAt ?? null,
@@ -214,6 +217,8 @@ export interface ProjectDescriptor {
   projectIconRevision?: string;
   projectRootPath: string;
   projectKind: WorkspaceDescriptorPayload["projectKind"];
+  /** COMPAT(chats): the project that holds every chat; never listed as a project. */
+  chats?: boolean;
   projectCreatedAt?: string;
 }
 
@@ -229,6 +234,7 @@ export function normalizeProjectDescriptor(
     projectIconRevision: payload.projectIconRevision,
     projectRootPath: payload.projectRootPath,
     projectKind: payload.projectKind,
+    ...(payload.chats ? { chats: true } : {}),
     ...(payload.projectCreatedAt ? { projectCreatedAt: payload.projectCreatedAt } : {}),
   };
 }
@@ -341,6 +347,8 @@ export interface DaemonServerInfo {
    * connections only; absent on older daemons and for operators and viewers.
    */
   security?: ServerInfoStatusPayload["security"];
+  /** COMPAT(chats): providers that can run in a chat (`features.chats`). */
+  chatProviders?: ServerInfoStatusPayload["chatProviders"];
 }
 
 export interface AgentTimelineCursorState {
@@ -763,6 +771,7 @@ function isSessionServerInfoUnchanged(input: {
   nextServerId: string;
   nextBrand: ServerInfoStatusPayload["brand"];
   nextAccess: ServerAccessInfo;
+  nextChatProviders: DaemonServerInfo["chatProviders"];
 }): boolean {
   const {
     currentServerInfo,
@@ -782,8 +791,16 @@ function isSessionServerInfoUnchanged(input: {
     currentServerInfo?.desktopManaged === nextDesktopManaged &&
     areServerCapabilitiesEqual(currentServerInfo?.capabilities, nextCapabilities) &&
     areServerInfoFeaturesEqual(currentServerInfo?.features, nextFeatures) &&
-    isServerAccessUnchanged(currentServerInfo, input.nextAccess)
+    isServerAccessUnchanged(currentServerInfo, input.nextAccess) &&
+    areChatProvidersEqual(currentServerInfo, input.nextChatProviders)
   );
+}
+
+function areChatProvidersEqual(
+  current: SessionState["serverInfo"] | undefined,
+  next: DaemonServerInfo["chatProviders"],
+): boolean {
+  return equal(current?.chatProviders, next);
 }
 
 export const useSessionStore = create<SessionStore>()(
@@ -937,6 +954,7 @@ export const useSessionStore = create<SessionStore>()(
                 device: info.device,
                 security: info.security,
               },
+              nextChatProviders: info.chatProviders,
             })
           ) {
             return prev;
@@ -961,6 +979,7 @@ export const useSessionStore = create<SessionStore>()(
                   ...(info.callerRole ? { callerRole: info.callerRole } : {}),
                   ...(info.device ? { device: info.device } : {}),
                   ...(info.security ? { security: info.security } : {}),
+                  ...(info.chatProviders ? { chatProviders: info.chatProviders } : {}),
                 },
               },
             },

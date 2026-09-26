@@ -101,6 +101,8 @@ interface SplitContainerProps {
   layout: WorkspaceLayout;
   renderMainHeader?: () => ReactNode;
   renderExplorerSidebarHeaderAction?: () => ReactNode;
+  /** Chats have no files or git to explore, so the explorer dock never renders. */
+  explorerDisabled?: boolean;
   workspaceKey: string;
   normalizedServerId: string;
   normalizedWorkspaceId: string;
@@ -317,6 +319,7 @@ export function SplitContainer({
   layout,
   renderMainHeader,
   renderExplorerSidebarHeaderAction,
+  explorerDisabled = false,
   workspaceKey,
   normalizedServerId,
   normalizedWorkspaceId,
@@ -460,7 +463,7 @@ export function SplitContainer({
   // The app-wide flag decides, not this workspace's pane: the panel stays open across a jump
   // to another session even though each session keeps its own tree.
   const renderExplorerSidebarDock = Boolean(
-    !focusModeEnabled && explorerSidebarPane && explorerSidebarOpen,
+    !explorerDisabled && !focusModeEnabled && explorerSidebarPane && explorerSidebarOpen,
   );
   const mainColumnWindowChromeCorners = renderExplorerSidebarDock
     ? removeWindowChromeCorner(inheritedWindowChromeCorners, "top-right")

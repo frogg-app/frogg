@@ -152,6 +152,12 @@ import { withTimeout } from "../../../../utils/promise-timeout.js";
 import { terminateWithTreeKill } from "../../../../utils/tree-kill.js";
 import { execCommand } from "../../../../utils/spawn.js";
 import { composeSystemPromptParts } from "../../system-prompt.js";
+import { CHAT_WEB_ACCESS_FEATURE_ID, isChatWebAccessEnabled } from "../../chat-profile.js";
+import {
+  buildClaudeChatFeatures,
+  buildClaudeChatOptions,
+  resolveClaudeChatPermission,
+} from "./chat-options.js";
 
 const fsPromises = promises;
 const CLAUDE_SETTING_SOURCES: NonNullable<ClaudeOptions["settingSources"]> = [
@@ -319,6 +325,7 @@ const CLAUDE_CAPABILITIES: AgentCapabilityFlags = {
   supportsSessionListing: true,
   supportsDynamicModes: true,
   supportsMcpServers: true,
+  supportsChatProfile: true,
   supportsReasoningStream: true,
   supportsToolInvocations: true,
   supportsRewindConversation: true,
@@ -2242,7 +2249,8 @@ class ClaudeAgentSession implements AgentSession {
       );
     }
 
-    this.currentMode = isPermissionMode(config.modeId) ? config.modeId : "default";
+    // Chats always run in the default mode; their tool gate decides everything.
+    this.currentMode = !config.chat && isPermissionMode(config.modeId) ? config.modeId : "default";
     if (this.currentMode !== "plan") {
       this.planResumeMode = this.currentMode;
     }
@@ -2253,6 +2261,15 @@ class ClaudeAgentSession implements AgentSession {
   }
 
   get features(): AgentFeature[] {
+    if (this.config.chat) {
+      return [
+        ...buildClaudeChatFeatures(this.config),
+        ...buildClaudeFeatures({
+          modelId: this.config.model,
+          fastModeEnabled: this.config.featureValues?.fast_mode === true,
+        }),
+      ];
+    }
     return buildClaudeFeatures({
       modelId: this.config.model,
       fastModeEnabled: this.config.featureValues?.fast_mode === true,
@@ -2489,7 +2506,8 @@ class ClaudeAgentSession implements AgentSession {
   }
 
   async getAvailableModes(): Promise<AgentMode[]> {
-    return this.availableModes;
+    // Chats have no permission modes to switch between.
+    return this.config.chat ? [] : this.availableModes;
   }
 
   async getCurrentMode(): Promise<string | null> {
@@ -2497,6 +2515,9 @@ class ClaudeAgentSession implements AgentSession {
   }
 
   async setMode(modeId: string): Promise<void> {
+    if (this.config.chat) {
+      throw new Error("Chats do not have permission modes");
+    }
     // Validate mode
     if (!VALID_CLAUDE_MODES.has(modeId)) {
       const validModesList = Array.from(VALID_CLAUDE_MODES).join(", ");
@@ -2579,6 +2600,16 @@ class ClaudeAgentSession implements AgentSession {
   }
 
   async setFeature(featureId: string, value: unknown): Promise<void> {
+    if (this.config.chat && featureId === CHAT_WEB_ACCESS_FEATURE_ID) {
+      this.config.featureValues = {
+        ...this.config.featureValues,
+        [CHAT_WEB_ACCESS_FEATURE_ID]: Boolean(value),
+      };
+      // The tool list is fixed per query, so the next turn starts a new one.
+      this.queryRestartNeeded = true;
+      this.cachedRuntimeInfo = null;
+      return;
+    }
     if (featureId !== "fast_mode") {
       throw new Error(`Unknown Claude feature: ${featureId}`);
     }
@@ -3441,6 +3472,13 @@ class ClaudeAgentSession implements AgentSession {
         ...(base.disallowedTools ?? []),
         ...this.runtimeSettings.disallowedTools,
       ];
+    }
+    if (this.config.chat) {
+      return {
+        ...base,
+        ...buildClaudeChatOptions(this.config),
+        canUseTool: this.handleChatPermissionRequest,
+      };
     }
     return base;
   }
@@ -4732,6 +4770,16 @@ class ClaudeAgentSession implements AgentSession {
   private convertUsage(message: SDKResultMessage, modelUsage?: unknown): AgentUsage | undefined {
     return this.contextUsage.buildResultUsage(message, modelUsage);
   }
+
+  private handleChatPermissionRequest: CanUseTool = async (toolName, input, options) => {
+    const decision = resolveClaudeChatPermission({
+      toolName,
+      toolInput: input,
+      cwd: this.config.cwd,
+      webAccess: isChatWebAccessEnabled(this.config),
+    });
+    return decision ?? this.handlePermissionRequest(toolName, input, options);
+  };
 
   private handlePermissionRequest: CanUseTool = async (
     toolName,

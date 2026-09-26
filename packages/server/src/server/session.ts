@@ -1,4 +1,4 @@
-import { createRealpathAwarePathMatcher } from "../utils/path.js";
+import { areEquivalentPaths, createRealpathAwarePathMatcher } from "../utils/path.js";
 import { createdAtFields, projectCreatedAtField } from "./workspace-created-at.js";
 import { ProjectImportService } from "./project-import/service.js";
 import { dispatchProjectImport } from "./project-import/dispatch.js";
@@ -211,6 +211,8 @@ import {
   WorkspaceProvisioningError,
   type WorkspaceProvisioningService,
 } from "./session/workspace-provisioning/workspace-provisioning-service.js";
+import { createChatWorkspace } from "./session/chats/create-chat-workspace.js";
+import { resolveChatsRoot, isChatCwd } from "./agent/chat-profile.js";
 import {
   createWorkspaceRecoveryService,
   type WorkspaceRecoveryService,
@@ -4945,6 +4947,7 @@ export class Session {
       title: workspace.title,
       pinnedAt: workspace.pinnedAt,
       ...(workspace.labels && workspace.labels.length > 0 ? { labels: workspace.labels } : {}),
+      ...this.chatWorkspaceField(workspace.cwd),
       archivingAt: null,
       status: "done",
       statusEnteredAt: null,
@@ -4958,6 +4961,11 @@ export class Session {
           }
         : {}),
     };
+  }
+
+  // COMPAT(chats): only chats carry the field, so older clients see no change elsewhere.
+  private chatWorkspaceField(cwd: string): { chat?: true } {
+    return isChatCwd(resolveChatsRoot(this.froggHome), cwd) ? { chat: true } : {};
   }
 
   private buildWorkspaceGitRuntimePayload(
@@ -5207,6 +5215,9 @@ export class Session {
       projectIconRevision: icon.revision,
       projectRootPath: project.rootPath,
       projectKind: project.kind,
+      ...(areEquivalentPaths(project.rootPath, resolveChatsRoot(this.froggHome))
+        ? { chats: true }
+        : {}),
       ...projectCreatedAtField(project.createdAt),
     };
   }
@@ -5870,6 +5881,10 @@ export class Session {
         await this.handleWorkspaceCreateLocal(request);
         return;
       }
+      if (request.source.kind === "chat") {
+        await this.handleWorkspaceCreateChat(request);
+        return;
+      }
       await this.handleWorkspaceCreateWorktree(request);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create workspace";
@@ -5922,6 +5937,27 @@ export class Session {
       request.source.projectId,
       { expectsInitialAgent: Boolean(request.firstAgentContext) },
     );
+    await this.finishDirectoryWorkspaceCreate(request, workspace);
+  }
+
+  private async handleWorkspaceCreateChat(
+    request: Extract<SessionInboundMessage, { type: "workspace.create.request" }>,
+  ): Promise<void> {
+    const explicitTitle = request.title?.trim() || null;
+    const promptTitle = resolveFirstAgentPromptTitle(request.firstAgentContext);
+    const workspace = await createChatWorkspace({
+      chatsRoot: resolveChatsRoot(this.froggHome),
+      title: explicitTitle ?? promptTitle,
+      expectsInitialAgent: Boolean(request.firstAgentContext),
+      workspaceProvisioning: this.workspaceProvisioning,
+    });
+    await this.finishDirectoryWorkspaceCreate(request, workspace);
+  }
+
+  private async finishDirectoryWorkspaceCreate(
+    request: Extract<SessionInboundMessage, { type: "workspace.create.request" }>,
+    workspace: PersistedWorkspaceRecord,
+  ): Promise<void> {
     await this.syncWorkspaceGitObserverForWorkspace(workspace);
     const descriptor = await this.describeWorkspaceRecord(workspace);
     this.emit({

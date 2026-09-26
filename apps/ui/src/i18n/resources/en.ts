@@ -1251,9 +1251,23 @@ export const en = {
       settings: "Settings",
       closeSidebar: "Close sidebar",
     },
+    chats: {
+      newChat: "New chat",
+      search: "Search chats",
+      empty: "No chats yet",
+      noMatches: "No chats match your search",
+      delete: "Delete chat",
+      groups: {
+        today: "Today",
+        yesterday: "Yesterday",
+        previous7Days: "Previous 7 days",
+        older: "Older",
+      },
+    },
     sections: {
       sessions: "History",
       projects: "Projects",
+      chats: "Chats",
       search: "Search",
     },
     worktreeSetup: {
@@ -1345,6 +1359,31 @@ export const en = {
         hideFailed: "Failed to hide session",
         archiveFailed: "Failed to archive session",
       },
+    },
+  },
+  chats: {
+    sandbox: {
+      badge: "Read-only",
+      readAnywhere: "Can read files anywhere on this machine",
+      writeChatOnly: "Can only create or edit files in its own chat folder",
+      noShell: "No shell commands",
+      noSkills: "No skills, plugins or MCP servers",
+    },
+    web: {
+      label: "Web",
+      description: "Let this chat search and fetch web pages",
+      tooltip: "Toggle web access",
+    },
+  },
+  newChat: {
+    placeholder: "Ask anything…",
+    title: "What do you want to know?",
+    subtitle: "Not tied to a project. No skills or MCP servers, read-only file access.",
+    send: "Start chat",
+    errors: {
+      hostUnsupported: "This host can't run chats. Update its daemon.",
+      unsupportedProvider: "Chats can't use this provider yet. Pick a Claude model.",
+      createFailed: "Couldn't create the chat",
     },
   },
   newWorkspace: {

@@ -245,6 +245,7 @@ const StoredWorkspaceSchema = z.strictObject({
   // dropped them painted its row without its chips and stayed that way: the directory cursor is
   // current on reconnect, so the daemon has nothing newer to send back.
   labels: z.array(z.string()).optional(),
+  chat: z.boolean().optional(),
   status: z.enum(["needs_input", "failed", "running", "attention", "done"]),
   statusEnteredAt: IsoDateSchema.nullable(),
   activityAt: z.null(),
@@ -267,6 +268,7 @@ const StoredProjectSchema = z.strictObject({
   projectIconRevision: z.string().optional(),
   projectRootPath: z.string(),
   projectKind: z.enum(["git", "non_git", "directory"]),
+  chats: z.boolean().optional(),
   projectCreatedAt: z.string().optional(),
 });
 
@@ -603,6 +605,7 @@ function serializeWorkspace(workspace: WorkspaceDescriptor): StoredWorkspace {
     title: workspace.title ?? null,
     pinnedAt: workspace.pinnedAt ?? null,
     labels: workspace.labels,
+    ...(workspace.chat ? { chat: true } : {}),
     status: workspace.status,
     statusEnteredAt: workspace.statusEnteredAt?.toISOString() ?? null,
     activityAt: null,
@@ -639,6 +642,7 @@ function serializeProject(project: ProjectDescriptor): StoredProject {
     projectIconRevision: project.projectIconRevision,
     projectRootPath: project.projectRootPath,
     projectKind: project.projectKind,
+    ...(project.chats ? { chats: true } : {}),
     ...(project.projectCreatedAt ? { projectCreatedAt: project.projectCreatedAt } : {}),
   };
 }

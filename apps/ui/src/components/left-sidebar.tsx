@@ -58,6 +58,8 @@ import { HostsMenu } from "@/components/sidebar/hosts-menu";
 import { SidebarAgentListSkeleton } from "./sidebar-agent-list-skeleton";
 import { SidebarCalloutSlot } from "./sidebar-callout-slot";
 import { SidebarWorkspaceList } from "./sidebar-workspace-list";
+import { SidebarChatList } from "./sidebar/chats/sidebar-chat-list";
+import { SidebarSectionTabs, useEffectiveSidebarSection } from "./sidebar/chats/section-tabs";
 
 type SidebarTheme = ReturnType<typeof useUnistyles>["theme"];
 
@@ -311,6 +313,8 @@ function MobileSidebar({
   closeSidebar,
 }: MobileSidebarProps) {
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
+  const section = useEffectiveSidebarSection();
+  const showListSkeleton = isInitialLoad && !hasActiveHostFilter;
   const { gesture: closeGesture, gestureRef: closeGestureRef } = useCloseAgentListGesture();
 
   const handleWorkspacePress = useCallback(() => {
@@ -357,13 +361,15 @@ function MobileSidebar({
           </Pressable>
         </WindowChromeSafeArea>
 
-        <SidebarWorkspaceDrafts
-          onBeforeNavigate={closeSidebar}
-          projects={groupMode === "project" ? projects : undefined}
-        />
-        {isInitialLoad && !hasActiveHostFilter ? (
-          <SidebarAgentListSkeleton />
-        ) : (
+        {section === "chats" ? <SidebarChatList onBeforeNavigate={closeSidebar} /> : null}
+        {section === "projects" ? (
+          <SidebarWorkspaceDrafts
+            onBeforeNavigate={closeSidebar}
+            projects={groupMode === "project" ? projects : undefined}
+          />
+        ) : null}
+        {section === "projects" && showListSkeleton ? <SidebarAgentListSkeleton /> : null}
+        {section === "projects" && !showListSkeleton ? (
           <SidebarWorkspaceList
             collapsedProjectKeys={collapsedProjectKeys}
             onToggleProjectCollapsed={toggleProjectCollapsed}
@@ -384,7 +390,7 @@ function MobileSidebar({
             dragGestureHostActive={active}
             listHeaderComponent={workspacesSectionHeaderElement}
           />
-        )}
+        ) : null}
 
         <SidebarFooter
           handleOpenProject={handleOpenProject}
@@ -423,6 +429,8 @@ function DesktopSidebar({
 }: DesktopSidebarProps) {
   const ownsTopLeft = useOwnsWindowChromeCorner("top-left");
   const hasActiveHostFilter = useSidebarViewStore((state) => state.hostFilters.length > 0);
+  const section = useEffectiveSidebarSection();
+  const showListSkeleton = isInitialLoad && !hasActiveHostFilter;
   const sidebarWidth = usePanelStore((state) => state.sidebarWidth);
   const setSidebarWidth = usePanelStore((state) => state.setSidebarWidth);
   const { width: viewportWidth } = useWindowDimensions();
@@ -527,10 +535,12 @@ function DesktopSidebar({
           </View>
         </View>
 
-        <SidebarWorkspaceDrafts projects={groupMode === "project" ? projects : undefined} />
-        {isInitialLoad && !hasActiveHostFilter ? (
-          <SidebarAgentListSkeleton />
-        ) : (
+        {section === "chats" ? <SidebarChatList /> : null}
+        {section === "projects" ? (
+          <SidebarWorkspaceDrafts projects={groupMode === "project" ? projects : undefined} />
+        ) : null}
+        {section === "projects" && showListSkeleton ? <SidebarAgentListSkeleton /> : null}
+        {section === "projects" && !showListSkeleton ? (
           <SidebarWorkspaceList
             collapsedProjectKeys={collapsedProjectKeys}
             onToggleProjectCollapsed={toggleProjectCollapsed}
@@ -548,7 +558,7 @@ function DesktopSidebar({
             onAddProject={handleOpenProject}
             listHeaderComponent={workspacesSectionHeaderElement}
           />
-        )}
+        ) : null}
 
         <SidebarCalloutSlot />
 
@@ -571,10 +581,9 @@ function DesktopSidebar({
 }
 
 function WorkspacesSectionHeader() {
-  const { t } = useTranslation();
   return (
     <View style={styles.workspacesSectionHeader}>
-      <Text style={styles.workspacesSectionTitle}>{t("sidebar.sections.projects")}</Text>
+      <SidebarSectionTabs />
       <View style={styles.workspacesSectionActions}>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
@@ -628,11 +637,6 @@ const styles = StyleSheet.create((theme) => ({
     paddingRight: 4,
     paddingTop: theme.spacing[1],
     paddingBottom: theme.spacing[1],
-  },
-  workspacesSectionTitle: {
-    color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.normal,
   },
   workspacesSectionActions: {
     flexDirection: "row",

@@ -52,6 +52,8 @@ export function buildWorkspaceStructureProjects(input: {
 
   for (const session of input.sessions) {
     for (const project of session.projects) {
+      // Chats are listed on their own; their project is never a project to the user.
+      if (project.chats) continue;
       projectEntries.push({ serverId: session.serverId, project });
       const sharedKey = project.projectKey ?? null;
       if (sharedKey) {

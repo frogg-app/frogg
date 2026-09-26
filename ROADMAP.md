@@ -30,6 +30,10 @@ deployment run, not more code.
       sentence (never claiming unheard text). Word-level needs word timings the local
       speech engines do not report.
 - [ ] **iOS delivery.** Signing, distribution and device acceptance.
+- [ ] **Chats beyond Claude.** Chats enforce isolation only for Claude. Codex needs its
+      skill discovery and user `config.toml` MCP servers verifiably off (read-only sandbox
+      and web search are native); then add it to `CHAT_SUPPORTED_PROVIDERS`. Also: "Move to
+      project" for a chat.
 
 ## Distribution and ops
 

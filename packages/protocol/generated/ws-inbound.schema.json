@@ -7385,6 +7385,18 @@
                       "properties": {
                         "kind": {
                           "type": "string",
+                          "const": "chat"
+                        }
+                      },
+                      "required": [
+                        "kind"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
                           "const": "worktree"
                         },
                         "cwd": {

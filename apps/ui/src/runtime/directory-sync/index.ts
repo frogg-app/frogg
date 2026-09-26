@@ -874,6 +874,8 @@ function legacyProjectDescriptorFromWorkspace(workspace: WorkspaceDescriptor): P
     projectCustomName: workspace.projectCustomName ?? null,
     projectRootPath: workspace.projectRootPath,
     projectKind: workspace.projectKind,
+    // Every chat lives in the chats project.
+    ...(workspace.chat ? { chats: true } : {}),
   };
 }
 

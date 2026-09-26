@@ -1239,9 +1239,23 @@ export const ar: TranslationResources = {
       settings: "إعدادات",
       closeSidebar: "إغلاق الشريط الجانبي",
     },
+    chats: {
+      newChat: "محادثة جديدة",
+      search: "البحث في المحادثات",
+      empty: "لا توجد محادثات بعد",
+      noMatches: "لا توجد محادثات تطابق البحث",
+      delete: "حذف المحادثة",
+      groups: {
+        today: "اليوم",
+        yesterday: "أمس",
+        previous7Days: "آخر 7 أيام",
+        older: "أقدم",
+      },
+    },
     sections: {
       sessions: "السجل",
       projects: "المشاريع",
+      chats: "المحادثات",
       search: "بحث",
     },
     worktreeSetup: {
@@ -1333,6 +1347,31 @@ export const ar: TranslationResources = {
         hideFailed: "فشل في إخفاء الجلسة",
         archiveFailed: "فشل في أرشفة الجلسة",
       },
+    },
+  },
+  chats: {
+    sandbox: {
+      badge: "للقراءة فقط",
+      readAnywhere: "يمكنها قراءة الملفات في أي مكان على هذا الجهاز",
+      writeChatOnly: "لا يمكنها إنشاء الملفات أو تعديلها إلا في مجلد المحادثة الخاص بها",
+      noShell: "لا أوامر shell",
+      noSkills: "بلا مهارات أو إضافات أو خوادم MCP",
+    },
+    web: {
+      label: "الويب",
+      description: "السماح لهذه المحادثة بالبحث في صفحات الويب وجلبها",
+      tooltip: "تبديل الوصول إلى الويب",
+    },
+  },
+  newChat: {
+    placeholder: "اسأل عن أي شيء…",
+    title: "ماذا تريد أن تعرف؟",
+    subtitle: "غير مرتبطة بمشروع. بلا مهارات أو خوادم MCP، ووصول للملفات للقراءة فقط.",
+    send: "بدء المحادثة",
+    errors: {
+      hostUnsupported: "لا يمكن لهذا المضيف تشغيل المحادثات. حدّث البرنامج الخفي الخاص به.",
+      unsupportedProvider: "لا يمكن للمحادثات استخدام هذا المزوّد بعد. اختر نموذج Claude.",
+      createFailed: "تعذّر إنشاء المحادثة",
     },
   },
   newWorkspace: {

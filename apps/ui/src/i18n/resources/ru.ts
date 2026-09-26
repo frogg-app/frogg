@@ -1257,9 +1257,23 @@ export const ru: TranslationResources = {
       settings: "Настройки",
       closeSidebar: "Закрыть боковую панель",
     },
+    chats: {
+      newChat: "Новый чат",
+      search: "Поиск чатов",
+      empty: "Чатов пока нет",
+      noMatches: "Нет чатов, подходящих под запрос",
+      delete: "Удалить чат",
+      groups: {
+        today: "Сегодня",
+        yesterday: "Вчера",
+        previous7Days: "Последние 7 дней",
+        older: "Ранее",
+      },
+    },
     sections: {
       sessions: "История",
       projects: "Проекты",
+      chats: "Чаты",
       search: "Поиск",
     },
     worktreeSetup: {
@@ -1351,6 +1365,31 @@ export const ru: TranslationResources = {
         hideFailed: "Не удалось скрыть сессию",
         archiveFailed: "Не удалось архивировать сессию",
       },
+    },
+  },
+  chats: {
+    sandbox: {
+      badge: "Только чтение",
+      readAnywhere: "Может читать файлы в любом месте этой машины",
+      writeChatOnly: "Может создавать и изменять файлы только в папке своего чата",
+      noShell: "Без команд оболочки",
+      noSkills: "Без навыков, плагинов и MCP-серверов",
+    },
+    web: {
+      label: "Веб",
+      description: "Разрешить этому чату искать и загружать веб-страницы",
+      tooltip: "Включить или выключить доступ к вебу",
+    },
+  },
+  newChat: {
+    placeholder: "Спросите что угодно…",
+    title: "Что вы хотите узнать?",
+    subtitle: "Без привязки к проекту. Без навыков и MCP-серверов, файлы только для чтения.",
+    send: "Начать чат",
+    errors: {
+      hostUnsupported: "Этот хост не поддерживает чаты. Обновите его демон.",
+      unsupportedProvider: "Чаты пока не поддерживают этого провайдера. Выберите модель Claude.",
+      createFailed: "Не удалось создать чат",
     },
   },
   newWorkspace: {

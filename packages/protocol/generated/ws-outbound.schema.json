@@ -10957,6 +10957,9 @@
                                 "directory"
                               ]
                             },
+                            "chats": {
+                              "type": "boolean"
+                            },
                             "projectCreatedAt": {
                               "type": "string"
                             },
@@ -11449,6 +11452,9 @@
                                 "directory"
                               ]
                             },
+                            "chats": {
+                              "type": "boolean"
+                            },
                             "projectCreatedAt": {
                               "type": "string"
                             },
@@ -11567,6 +11573,9 @@
                               "non_git",
                               "directory"
                             ]
+                          },
+                          "chats": {
+                            "type": "boolean"
                           },
                           "projectCreatedAt": {
                             "type": "string"
@@ -19018,6 +19027,9 @@
                               "directory"
                             ]
                           },
+                          "chats": {
+                            "type": "boolean"
+                          },
                           "projectCreatedAt": {
                             "type": "string"
                           },
@@ -19188,6 +19200,9 @@
                                 "directory"
                               ]
                             },
+                            "chats": {
+                              "type": "boolean"
+                            },
                             "projectCreatedAt": {
                               "type": "string"
                             },
@@ -19303,6 +19318,9 @@
                                 "non_git",
                                 "directory"
                               ]
+                            },
+                            "chats": {
+                              "type": "boolean"
                             },
                             "projectCreatedAt": {
                               "type": "string"
@@ -19808,6 +19826,9 @@
                                 "non_git",
                                 "directory"
                               ]
+                            },
+                            "chats": {
+                              "type": "boolean"
                             },
                             "projectCreatedAt": {
                               "type": "string"

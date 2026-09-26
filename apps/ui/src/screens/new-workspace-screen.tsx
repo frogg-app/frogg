@@ -156,7 +156,7 @@ function isNewWorkspacePending(input: {
   return input.pendingAction !== null || input.isDraftHandoffActive;
 }
 
-function buildFirstAgentContext(input: {
+export function buildFirstAgentContext(input: {
   prompt: string;
   attachments: AgentAttachment[];
 }): { prompt?: string; attachments?: AgentAttachment[] } | undefined {
@@ -1045,7 +1045,7 @@ function resolveWorkspaceDraftSubmissionConfig(input: {
   };
 }
 
-function submitWorkspaceDraft(input: SubmitDraftInput): void {
+export function submitWorkspaceDraft(input: SubmitDraftInput): void {
   const {
     serverId,
     clearDraft,

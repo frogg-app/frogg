@@ -1274,9 +1274,23 @@ export const es: TranslationResources = {
       settings: "Ajustes",
       closeSidebar: "Cerrar barra lateral",
     },
+    chats: {
+      newChat: "Nuevo chat",
+      search: "Buscar chats",
+      empty: "Aún no hay chats",
+      noMatches: "Ningún chat coincide con tu búsqueda",
+      delete: "Eliminar chat",
+      groups: {
+        today: "Hoy",
+        yesterday: "Ayer",
+        previous7Days: "Últimos 7 días",
+        older: "Anteriores",
+      },
+    },
     sections: {
       sessions: "Historial",
       projects: "Proyectos",
+      chats: "Chats",
       search: "Buscar",
     },
     worktreeSetup: {
@@ -1368,6 +1382,33 @@ export const es: TranslationResources = {
         hideFailed: "No se pudo ocultar la sesión",
         archiveFailed: "No se pudo archivar la sesión",
       },
+    },
+  },
+  chats: {
+    sandbox: {
+      badge: "Solo lectura",
+      readAnywhere: "Puede leer archivos en cualquier parte de esta máquina",
+      writeChatOnly: "Solo puede crear o editar archivos en su propia carpeta de chat",
+      noShell: "Sin comandos de shell",
+      noSkills: "Sin skills, plugins ni servidores MCP",
+    },
+    web: {
+      label: "Web",
+      description: "Permite que este chat busque y cargue páginas web",
+      tooltip: "Activar o desactivar el acceso web",
+    },
+  },
+  newChat: {
+    placeholder: "Pregunta lo que quieras…",
+    title: "¿Qué quieres saber?",
+    subtitle:
+      "Sin proyecto asociado. Sin skills ni servidores MCP, acceso de solo lectura a archivos.",
+    send: "Iniciar chat",
+    errors: {
+      hostUnsupported: "Este host no puede ejecutar chats. Actualiza su daemon.",
+      unsupportedProvider:
+        "Los chats aún no pueden usar este proveedor. Elige un modelo de Claude.",
+      createFailed: "No se pudo crear el chat",
     },
   },
   newWorkspace: {

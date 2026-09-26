@@ -40,6 +40,7 @@ import { SplitContainer } from "@/components/split-container";
 import { RetainedPanel } from "@/components/retained-panel";
 import { WorkspaceActions } from "@/git/workspace-actions";
 import { WorkspaceOpenInEditorButton } from "@/workspace/open-in-editor/button";
+import { ChatSandboxBadge } from "@/components/chat-sandbox-badge";
 import { WorkspaceScriptsButton } from "@/screens/workspace/workspace-scripts-button";
 import { WorkspaceCiButton } from "@/screens/workspace/workspace-ci-button";
 import { ImportSessionSheet } from "@/components/import-session-sheet";
@@ -1404,6 +1405,10 @@ function paneLocalPlacement(paneId: string | null | undefined): WorkspaceTabPlac
   return paneId ? { mode: "pane", paneId } : FOCUSED_PANE_PLACEMENT;
 }
 
+function isChatWorkspace(workspace: { chat?: boolean } | null | undefined): boolean {
+  return workspace?.chat === true;
+}
+
 function canDetectPullRequest(
   isRouteFocused: boolean,
   isGitCheckout: boolean,
@@ -1569,6 +1574,8 @@ function WorkspaceScreenContent({
     [workspaceId],
   );
   const workspaceDescriptor = useWorkspace(normalizedServerId, normalizedWorkspaceId);
+  // A chat has no files, git, scripts or terminals to manage: only its conversation.
+  const isChat = isChatWorkspace(workspaceDescriptor);
   useEffect(() => {
     if (!normalizedServerId || !normalizedWorkspaceId || workspaceDescriptor) return;
     void getHostRuntimeStore()
@@ -3782,62 +3789,68 @@ function WorkspaceScreenContent({
   });
 
   const headerRight = useMemo(
-    () => (
-      <View style={styles.headerRight}>
-        {!isMobile && workspaceDescriptor && workspaceDescriptor.scripts.length > 0 ? (
-          <WorkspaceScriptsButton
-            serverId={normalizedServerId}
-            workspaceId={normalizedWorkspaceId}
-            scripts={workspaceDescriptor.scripts}
-            liveTerminalIds={liveTerminalIds}
-            onScriptTerminalStarted={handleScriptTerminalStarted}
-            onViewTerminal={handleViewScriptTerminal}
-            onOpenUrlInBrowserTab={handleOpenUrlInBrowserTab}
-            hideLabels
-          />
-        ) : null}
-        {!isMobile && workspaceDirectory ? (
-          <WorkspaceOpenInEditorButton
-            serverId={normalizedServerId}
-            cwd={workspaceDirectory}
-            activeFile={activeFileLocation}
-            hideLabels
-          />
-        ) : null}
-        {!isMobile && workspaceDirectory ? (
-          <>
-            <WorkspaceActions serverId={normalizedServerId} cwd={workspaceDirectory} />
-            <WorkspaceCiButton
-              workspaceDescriptor={workspaceDescriptor}
-              workspaceKey={persistenceKey}
-              isCompact={isMobile}
-              checkout={activeExplorerCheckout}
-              destination={pullRequestOpenLocation}
+    () =>
+      isChat ? (
+        <View style={styles.headerRight}>
+          <ChatSandboxBadge />
+        </View>
+      ) : (
+        <View style={styles.headerRight}>
+          {!isMobile && workspaceDescriptor && workspaceDescriptor.scripts.length > 0 ? (
+            <WorkspaceScriptsButton
+              serverId={normalizedServerId}
+              workspaceId={normalizedWorkspaceId}
+              scripts={workspaceDescriptor.scripts}
+              liveTerminalIds={liveTerminalIds}
+              onScriptTerminalStarted={handleScriptTerminalStarted}
+              onViewTerminal={handleViewScriptTerminal}
+              onOpenUrlInBrowserTab={handleOpenUrlInBrowserTab}
+              hideLabels
             />
-            <WorkspaceHeaderExplorerToggle
-              owner={explorerToggleOwner}
+          ) : null}
+          {!isMobile && workspaceDirectory ? (
+            <WorkspaceOpenInEditorButton
+              serverId={normalizedServerId}
+              cwd={workspaceDirectory}
+              activeFile={activeFileLocation}
+              hideLabels
+            />
+          ) : null}
+          {!isMobile && workspaceDirectory ? (
+            <>
+              <WorkspaceActions serverId={normalizedServerId} cwd={workspaceDirectory} />
+              <WorkspaceCiButton
+                workspaceDescriptor={workspaceDescriptor}
+                workspaceKey={persistenceKey}
+                isCompact={isMobile}
+                checkout={activeExplorerCheckout}
+                destination={pullRequestOpenLocation}
+              />
+              <WorkspaceHeaderExplorerToggle
+                owner={explorerToggleOwner}
+                onPress={handleToggleExplorerSidebar}
+                label={explorerSidebarToggleLabel}
+                tooltipLabel={t("workspace.tabs.explorerSidebar.toggle")}
+                tooltipKeys={EXPLORER_TOGGLE_KEYS}
+                style={styles.compactHeaderActionButton}
+                accessibilityState={explorerSidebarToggleAccessibilityState}
+              />
+            </>
+          ) : null}
+          {isMobile ? (
+            <WorkspaceExplorerToggle
               onPress={handleToggleExplorerSidebar}
               label={explorerSidebarToggleLabel}
               tooltipLabel={t("workspace.tabs.explorerSidebar.toggle")}
               tooltipKeys={EXPLORER_TOGGLE_KEYS}
-              style={styles.compactHeaderActionButton}
               accessibilityState={explorerSidebarToggleAccessibilityState}
+              mobile
             />
-          </>
-        ) : null}
-        {isMobile ? (
-          <WorkspaceExplorerToggle
-            onPress={handleToggleExplorerSidebar}
-            label={explorerSidebarToggleLabel}
-            tooltipLabel={t("workspace.tabs.explorerSidebar.toggle")}
-            tooltipKeys={EXPLORER_TOGGLE_KEYS}
-            accessibilityState={explorerSidebarToggleAccessibilityState}
-            mobile
-          />
-        ) : null}
-      </View>
-    ),
+          ) : null}
+        </View>
+      ),
     [
+      isChat,
       isMobile,
       workspaceDescriptor,
       normalizedServerId,
@@ -3905,16 +3918,17 @@ function WorkspaceScreenContent({
                 isLoading={isWorkspaceHeaderLoading}
                 title={workspaceHeaderTitle}
                 subtitle={workspaceHeaderSubtitle}
-                isSubtitleDistinct={isWorkspaceHeaderSubtitleDistinct}
+                // A chat's "project" is the chats folder, not something to show.
+                isSubtitleDistinct={isWorkspaceHeaderSubtitleDistinct && !isChat}
                 currentBranchName={currentBranchName}
                 normalizedServerId={normalizedServerId}
                 normalizedWorkspaceId={normalizedWorkspaceId}
                 workspaceScripts={workspaceScripts}
                 liveTerminalIds={liveTerminalIds}
-                showWorkspaceSetup={showWorkspaceSetup}
-                showCreateBrowserTab={showCreateBrowserTab}
+                showWorkspaceSetup={showWorkspaceSetup && !isChat}
+                showCreateBrowserTab={showCreateBrowserTab && !isChat}
                 isMobile={isMobile}
-                createTerminalDisabled={createTerminalDisabled}
+                createTerminalDisabled={createTerminalDisabled || isChat}
                 importAgentDisabled={!canOpenImportSheet}
                 copyPathDisabled={!workspaceDirectory}
                 onCreateDraftTab={handleCreateDraftTab}
@@ -3949,6 +3963,7 @@ function WorkspaceScreenContent({
       handleScriptTerminalStarted,
       handleViewScriptTerminal,
       headerRight,
+      isChat,
       isMobile,
       isWorkspaceHeaderLoading,
       liveTerminalIds,
@@ -3990,6 +4005,7 @@ function WorkspaceScreenContent({
     return (
       <SplitContainer
         layout={workspaceLayout}
+        explorerDisabled={isChat}
         renderMainHeader={renderWorkspaceScreenHeader}
         focusModeEnabled={desktopFocusModeEnabled}
         onExitFocusMode={toggleFocusMode}
@@ -4026,6 +4042,7 @@ function WorkspaceScreenContent({
     );
   }, [
     renderExplorerSidebarHeaderAction,
+    isChat,
     canRenderDesktopPaneSplits,
     workspaceLayout,
     renderWorkspaceScreenHeader,

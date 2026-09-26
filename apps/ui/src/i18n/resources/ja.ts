@@ -1255,9 +1255,23 @@ export const ja: TranslationResources = {
       settings: "設定",
       closeSidebar: "サイドバーを閉じる",
     },
+    chats: {
+      newChat: "新しいチャット",
+      search: "チャットを検索",
+      empty: "チャットはまだありません",
+      noMatches: "検索に一致するチャットはありません",
+      delete: "チャットを削除",
+      groups: {
+        today: "今日",
+        yesterday: "昨日",
+        previous7Days: "過去7日間",
+        older: "それ以前",
+      },
+    },
     sections: {
       sessions: "履歴",
       projects: "プロジェクト",
+      chats: "チャット",
       search: "検索",
     },
     worktreeSetup: {
@@ -1349,6 +1363,32 @@ export const ja: TranslationResources = {
         hideFailed: "セッションの非表示に失敗しました",
         archiveFailed: "セッションのアーカイブに失敗しました",
       },
+    },
+  },
+  chats: {
+    sandbox: {
+      badge: "読み取り専用",
+      readAnywhere: "このマシン上のどこのファイルも読み取れます",
+      writeChatOnly: "ファイルの作成・編集はこのチャットのフォルダー内のみ",
+      noShell: "シェルコマンドは使えません",
+      noSkills: "スキル、プラグイン、MCPサーバーは使いません",
+    },
+    web: {
+      label: "Web",
+      description: "このチャットでWebページの検索と取得を許可します",
+      tooltip: "Webアクセスを切り替え",
+    },
+  },
+  newChat: {
+    placeholder: "何でも聞いてください…",
+    title: "何を知りたいですか？",
+    subtitle: "プロジェクトに属しません。スキルやMCPサーバーは使わず、ファイルは読み取り専用です。",
+    send: "チャットを開始",
+    errors: {
+      hostUnsupported: "このホストではチャットを実行できません。デーモンを更新してください。",
+      unsupportedProvider:
+        "このプロバイダーはまだチャットで使えません。Claudeのモデルを選んでください。",
+      createFailed: "チャットを作成できませんでした",
     },
   },
   newWorkspace: {

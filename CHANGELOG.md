@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- **Chats**: a Projects | Chats switch at the top of the sidebar. A chat is a project-less
+  conversation stored in `$FROGG_HOME/chats/<id>`, listed by day with search, and started
+  from **New chat** with the usual model, thinking and account pickers. The daemon launches
+  every agent in a chat folder with no skills, plugins, subagents, `CLAUDE.md` or MCP
+  servers, no shell, reads anywhere, writes only inside its own folder, and a per-chat
+  **Web** toggle. Claude only for now. New `workspace.create` source `{ kind: "chat" }`,
+  `WorkspaceDescriptor.chat`, project descriptor `chats` and `server_info.chatProviders`,
+  gated on `features.chats`.
+
 ## 1.5.52 — 2026-09-26
 
 - **Connected now** (Host settings → Devices) lists every client connected to a host —

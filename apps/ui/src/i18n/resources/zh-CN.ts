@@ -1231,9 +1231,23 @@ export const zhCN: TranslationResources = {
       settings: "设置",
       closeSidebar: "关闭侧边栏",
     },
+    chats: {
+      newChat: "新对话",
+      search: "搜索对话",
+      empty: "还没有对话",
+      noMatches: "没有匹配的对话",
+      delete: "删除对话",
+      groups: {
+        today: "今天",
+        yesterday: "昨天",
+        previous7Days: "过去 7 天",
+        older: "更早",
+      },
+    },
     sections: {
       sessions: "历史",
       projects: "项目",
+      chats: "对话",
       search: "搜索",
     },
     worktreeSetup: {
@@ -1322,6 +1336,31 @@ export const zhCN: TranslationResources = {
         hideFailed: "隐藏会话失败",
         archiveFailed: "归档会话失败",
       },
+    },
+  },
+  chats: {
+    sandbox: {
+      badge: "只读",
+      readAnywhere: "可读取本机任意位置的文件",
+      writeChatOnly: "只能在自己的对话文件夹中创建或编辑文件",
+      noShell: "不能运行 shell 命令",
+      noSkills: "不加载技能、插件或 MCP 服务器",
+    },
+    web: {
+      label: "网络",
+      description: "允许此对话搜索和获取网页",
+      tooltip: "切换网络访问",
+    },
+  },
+  newChat: {
+    placeholder: "问点什么…",
+    title: "你想了解什么？",
+    subtitle: "不属于任何项目。不加载技能或 MCP 服务器，文件只读。",
+    send: "开始对话",
+    errors: {
+      hostUnsupported: "此主机无法运行对话。请更新其守护进程。",
+      unsupportedProvider: "对话暂不支持此提供方。请选择 Claude 模型。",
+      createFailed: "无法创建对话",
     },
   },
   newWorkspace: {

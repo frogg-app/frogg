@@ -1275,9 +1275,23 @@ export const fr: TranslationResources = {
       settings: "Paramètres",
       closeSidebar: "Fermer la barre latérale",
     },
+    chats: {
+      newChat: "Nouvelle discussion",
+      search: "Rechercher des discussions",
+      empty: "Aucune discussion pour l'instant",
+      noMatches: "Aucune discussion ne correspond à votre recherche",
+      delete: "Supprimer la discussion",
+      groups: {
+        today: "Aujourd'hui",
+        yesterday: "Hier",
+        previous7Days: "7 derniers jours",
+        older: "Plus anciennes",
+      },
+    },
     sections: {
       sessions: "Historique",
       projects: "Projets",
+      chats: "Discussions",
       search: "Rechercher",
     },
     worktreeSetup: {
@@ -1369,6 +1383,32 @@ export const fr: TranslationResources = {
         hideFailed: "Échec du masquage de la session",
         archiveFailed: "Échec de l'archivage de la session",
       },
+    },
+  },
+  chats: {
+    sandbox: {
+      badge: "Lecture seule",
+      readAnywhere: "Peut lire les fichiers partout sur cette machine",
+      writeChatOnly: "Ne peut créer ou modifier des fichiers que dans son propre dossier",
+      noShell: "Aucune commande shell",
+      noSkills: "Aucun skill, plugin ni serveur MCP",
+    },
+    web: {
+      label: "Web",
+      description: "Autoriser cette discussion à rechercher et charger des pages web",
+      tooltip: "Activer ou désactiver l'accès web",
+    },
+  },
+  newChat: {
+    placeholder: "Posez n'importe quelle question…",
+    title: "Que voulez-vous savoir ?",
+    subtitle: "Sans projet. Aucun skill ni serveur MCP, accès aux fichiers en lecture seule.",
+    send: "Démarrer la discussion",
+    errors: {
+      hostUnsupported: "Cet hôte ne peut pas exécuter de discussions. Mettez à jour son daemon.",
+      unsupportedProvider:
+        "Les discussions ne prennent pas encore en charge ce fournisseur. Choisissez un modèle Claude.",
+      createFailed: "Impossible de créer la discussion",
     },
   },
   newWorkspace: {

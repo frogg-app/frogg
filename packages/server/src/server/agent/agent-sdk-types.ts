@@ -198,6 +198,8 @@ export interface AgentCapabilityFlags {
   supportsDynamicModes: boolean;
   supportsMcpServers: boolean;
   supportsNativeFroggTools?: boolean;
+  /** The provider enforces the chat launch profile (see chat-profile.ts). */
+  supportsChatProfile?: boolean;
   supportsReasoningStream: boolean;
   supportsToolInvocations: boolean;
   supportsRewindConversation?: boolean;
@@ -642,6 +644,11 @@ export interface AgentSessionConfig {
    * They are used for ephemeral system tasks like commit/PR generation.
    */
   internal?: boolean;
+  /**
+   * Set by the daemon at launch for agents in a chat directory (see
+   * chat-profile.ts). Never persisted and never taken from a client.
+   */
+  chat?: boolean;
 }
 
 export interface AgentLaunchContext {

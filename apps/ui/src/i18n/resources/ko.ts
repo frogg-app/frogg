@@ -1249,9 +1249,23 @@ export const ko: TranslationResources = {
       settings: "설정",
       closeSidebar: "사이드바 닫기",
     },
+    chats: {
+      newChat: "새 채팅",
+      search: "채팅 검색",
+      empty: "아직 채팅이 없습니다",
+      noMatches: "검색과 일치하는 채팅이 없습니다",
+      delete: "채팅 삭제",
+      groups: {
+        today: "오늘",
+        yesterday: "어제",
+        previous7Days: "지난 7일",
+        older: "이전",
+      },
+    },
     sections: {
       sessions: "기록",
       projects: "프로젝트",
+      chats: "채팅",
       search: "검색",
     },
     worktreeSetup: {
@@ -1343,6 +1357,32 @@ export const ko: TranslationResources = {
         hideFailed: "세션을 숨기지 못했습니다",
         archiveFailed: "세션을 보관하지 못했습니다.",
       },
+    },
+  },
+  chats: {
+    sandbox: {
+      badge: "읽기 전용",
+      readAnywhere: "이 컴퓨터의 모든 파일을 읽을 수 있습니다",
+      writeChatOnly: "자체 채팅 폴더에서만 파일을 만들거나 편집할 수 있습니다",
+      noShell: "셸 명령 없음",
+      noSkills: "스킬, 플러그인, MCP 서버 없음",
+    },
+    web: {
+      label: "웹",
+      description: "이 채팅에서 웹 페이지 검색과 가져오기를 허용합니다",
+      tooltip: "웹 액세스 전환",
+    },
+  },
+  newChat: {
+    placeholder: "무엇이든 물어보세요…",
+    title: "무엇이 궁금하신가요?",
+    subtitle: "프로젝트에 속하지 않습니다. 스킬과 MCP 서버 없이 파일은 읽기 전용입니다.",
+    send: "채팅 시작",
+    errors: {
+      hostUnsupported: "이 호스트는 채팅을 실행할 수 없습니다. 데몬을 업데이트하세요.",
+      unsupportedProvider:
+        "이 제공자는 아직 채팅에서 사용할 수 없습니다. Claude 모델을 선택하세요.",
+      createFailed: "채팅을 만들 수 없습니다",
     },
   },
   newWorkspace: {

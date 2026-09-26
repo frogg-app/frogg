@@ -1,0 +1,57 @@
+---
+title: Chats
+description: Ask an agent a quick question without a project. Chats read files but cannot change them, run no shell commands, and load no skills or MCP servers.
+sidebar:
+  order: 8
+---
+
+import { Screenshot } from "@/components/docs";
+import appNewChatImg from "@/assets/docs/app/new-chat.png";
+import appChatSandboxImg from "@/assets/docs/app/chat-sandbox.png";
+
+A chat is a conversation that belongs to no project. Use one for a question, some research
+or a draft, where a project workspace would be overkill.
+
+Open **Chats** from the switch at the top of the sidebar, next to **Projects**. The list is
+grouped by day (Today, Yesterday, Previous 7 days, Older) and can be searched by title.
+Hover a chat to delete it.
+
+<Screenshot src={appNewChatImg} alt="The Chats tab in the sidebar and the new chat screen with a model and thinking picker" />
+
+## Starting a chat
+
+Select **New chat**. The composer has the same model, thinking level and account pickers as
+an agent in a project, but no permission modes. The first message names the chat.
+
+The chat is created on the host you are currently viewing, or on the first connected host
+that supports chats.
+
+## What a chat can do
+
+Every agent in a chat runs with the same restrictions. The daemon applies them each time
+the agent starts, including after a resume, so a client cannot turn them off.
+
+| | |
+| --- | --- |
+| Read files | Anywhere the daemon user can read |
+| Create or edit files | Only inside the chat's own folder |
+| Shell commands | None |
+| Skills, plugins, subagents, `CLAUDE.md`, MCP servers | None loaded |
+| Web search and fetch | On by default. Turn off with the **Web** toggle in the composer's features menu |
+
+The **Read-only** badge in the chat header lists these rules.
+
+<Screenshot src={appChatSandboxImg} alt="A chat that read a file, wrote notes.md in its own folder, and was refused a write to /tmp" />
+
+## Where chats live
+
+Each chat is a folder under `$FROGG_HOME/chats/` (by default `~/.frogg/chats/`). Files the
+agent writes go there. Chats do not appear under **Projects**, in project pickers, or in
+project settings.
+
+## Providers
+
+Chats run on Claude for now. Other providers stay out of the model picker until their
+isolation can be enforced.
+
+Older daemons do not support chats. The switch appears once a connected host does.

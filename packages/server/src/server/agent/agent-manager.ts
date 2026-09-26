@@ -74,6 +74,7 @@ import {
 import { invokeRewindCapability, type RewindMode } from "./rewind/rewind.js";
 import { isSystemInjectedEnvelope } from "./agent-prompt.js";
 import { stripInternalFroggMcpServer, withRuntimeFroggMcpServer } from "./runtime-mcp-config.js";
+import { applyChatLaunchConfig, isChatCwd, sanitizeChatSessionConfig } from "./chat-profile.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
 import type { FroggToolCatalogFactory } from "./tools/types.js";
 import {
@@ -329,6 +330,8 @@ export interface AgentManagerOptions {
   terminalManager?: TerminalManager | null;
   mcpBaseUrl?: string;
   mcpAuthToken?: string;
+  /** Root of the chat directories; agents inside it launch with the chat profile. */
+  chatsRoot?: string;
   froggToolsEnabled?: boolean;
   froggToolCatalogFactory?: FroggToolCatalogFactory;
   appendSystemPrompt?: string;
@@ -766,6 +769,7 @@ export class AgentManager {
   private readonly agentStreamCoalescer: AgentStreamCoalescer;
   private mcpBaseUrl: string | null;
   private readonly mcpAuthToken: string | null;
+  private readonly chatsRoot: string | undefined;
   private froggToolsEnabled = true;
   private froggToolCatalogFactory: FroggToolCatalogFactory | null = null;
   private appendSystemPrompt: string;
@@ -795,6 +799,7 @@ export class AgentManager {
     this.onWorkspaceFilesMayHaveChanged = options?.onWorkspaceFilesMayHaveChanged;
     this.mcpBaseUrl = options?.mcpBaseUrl ?? null;
     this.mcpAuthToken = options?.mcpAuthToken ?? null;
+    this.chatsRoot = options.chatsRoot;
     this.configureFroggTools(options);
     this.appendSystemPrompt = options.appendSystemPrompt ?? "";
     this.resolveProviderAccountSystemPrompt = options.resolveProviderAccountSystemPrompt;
@@ -5092,6 +5097,13 @@ export class AgentManager {
     agentId: string,
     env?: Record<string, string>,
   ): Promise<PreparedSessionConfig> {
+    if (isChatCwd(this.chatsRoot, config.cwd)) {
+      const storedConfig = await this.normalizeConfig(sanitizeChatSessionConfig(config), { env });
+      return {
+        storedConfig,
+        launchConfig: applyChatLaunchConfig(this.applyDaemonAppendSystemPrompt(storedConfig)),
+      };
+    }
     const storedConfig = await this.normalizeConfig(stripInternalFroggMcpServer(config), { env });
     const launchConfig = this.applyDaemonAppendSystemPrompt(
       withRuntimeFroggMcpServer({
@@ -5155,7 +5167,12 @@ export class AgentManager {
         FROGG_AGENT_CWD: cwd,
       },
     };
+    const chat = isChatCwd(this.chatsRoot, cwd);
+    if (chat && client.capabilities.supportsChatProfile !== true) {
+      throw new Error(`Provider '${config.provider}' is not available in chats`);
+    }
     if (
+      !chat &&
       this.froggToolsEnabled &&
       client.capabilities.supportsNativeFroggTools &&
       this.froggToolCatalogFactory

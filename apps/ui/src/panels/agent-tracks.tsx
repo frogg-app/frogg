@@ -8,6 +8,7 @@ import { supportsDesktopPaneSplits, useIsCompactFormFactor } from "@/constants/l
 import { usePaneContext } from "@/panels/pane-context";
 import { useSettings } from "@/hooks/use-settings";
 import { useSessionStore } from "@/stores/session-store";
+import { useWorkspace } from "@/stores/session-store-hooks";
 import {
   type ArchiveFinishedStatus,
   useArchiveSubagent,
@@ -53,6 +54,8 @@ export const AgentTracks = memo(function AgentTracks({
   const canSplit = supportsDesktopPaneSplits() && !isCompact;
   const openInSidePane = useSettings((settings) => settings.openInSidePane);
   const workspaceKey = buildWorkspaceTabPersistenceKey({ serverId, workspaceId });
+  // A chat's directory is not a checkout: its path, branch and diff say nothing useful.
+  const isChat = useWorkspace(serverId, workspaceId)?.chat === true;
   const canDetachSubagents = useSessionStore(
     (state) => state.sessions[serverId]?.serverInfo?.features?.agentDetach === true,
   );
@@ -112,7 +115,9 @@ export const AgentTracks = memo(function AgentTracks({
 
   return (
     <ComposerTrackBar>
-      <WorkspaceContextPills serverId={serverId} workspaceId={workspaceId} cwd={cwd} />
+      {isChat ? null : (
+        <WorkspaceContextPills serverId={serverId} workspaceId={workspaceId} cwd={cwd} />
+      )}
       <ProviderAccountPill serverId={serverId} agentId={agentId} />
       <AgentTaskList tasks={tasks} />
       <SubagentsTrack
@@ -124,11 +129,13 @@ export const AgentTracks = memo(function AgentTracks({
         archiveFinishedStatus={archiveFinishedStatus}
         onDetachSubagent={canDetachSubagents ? detachSubagent : undefined}
       />
-      <WorkspaceDiffStatPill
-        serverId={serverId}
-        workspaceId={workspaceId}
-        onPress={handleOpenChanges}
-      />
+      {isChat ? null : (
+        <WorkspaceDiffStatPill
+          serverId={serverId}
+          workspaceId={workspaceId}
+          onPress={handleOpenChanges}
+        />
+      )}
     </ComposerTrackBar>
   );
 });

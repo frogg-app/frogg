@@ -465,6 +465,15 @@ function buildNewWorkspaceSearch(options: NewWorkspaceRouteOptions): string {
   return params.toString();
 }
 
+/** The draft screen for a new project-less chat on one host. */
+export function buildNewChatRoute(serverId: string) {
+  const normalizedServerId = trimNonEmpty(serverId);
+  if (!normalizedServerId) {
+    return "/new-chat" as const;
+  }
+  return `/new-chat?${new URLSearchParams({ serverId: normalizedServerId }).toString()}` as const;
+}
+
 export function buildNewWorkspaceRoute(options: NewWorkspaceRouteOptions = {}) {
   const query = buildNewWorkspaceSearch(options);
   if (!query) {

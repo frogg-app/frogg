@@ -382,6 +382,7 @@ function SessionProviderInternal({ children, serverId, client }: SessionProvider
       ...(serverInfo.callerRole ? { callerRole: serverInfo.callerRole } : {}),
       ...(serverInfo.device ? { device: serverInfo.device } : {}),
       ...(serverInfo.security ? { security: serverInfo.security } : {}),
+      ...(serverInfo.chatProviders ? { chatProviders: serverInfo.chatProviders } : {}),
     });
   }, [client, serverId, updateSessionServerInfo]);
 
@@ -682,6 +683,7 @@ function SessionProviderInternal({ children, serverId, client }: SessionProvider
           ...(serverInfo.callerRole ? { callerRole: serverInfo.callerRole } : {}),
           ...(serverInfo.device ? { device: serverInfo.device } : {}),
           ...(serverInfo.security ? { security: serverInfo.security } : {}),
+          ...(serverInfo.chatProviders ? { chatProviders: serverInfo.chatProviders } : {}),
         });
         return;
       }

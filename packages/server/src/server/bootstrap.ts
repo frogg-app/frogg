@@ -106,6 +106,7 @@ import { CompanionMessageReceipts } from "./companion/message-receipts.js";
 import { CompanionDeferredJobs } from "./companion/deferred-jobs.js";
 import { watchCompanionAgent } from "./companion/watch-agent.js";
 import type { CompanionRuntime } from "./companion/session.js";
+import { resolveChatsRoot } from "./agent/chat-profile.js";
 import { AgentManager } from "./agent/agent-manager.js";
 import { AgentStorage } from "./agent/agent-storage.js";
 import {
@@ -1378,6 +1379,7 @@ export async function createFroggDaemon(
       workspaceGitService.onWorkspaceStateMayHaveChanged(cwd);
     },
     mcpAuthToken: agentMcpAuthToken,
+    chatsRoot: resolveChatsRoot(config.froggHome),
     logger,
   });
 
