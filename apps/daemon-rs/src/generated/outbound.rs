@@ -8361,6 +8361,8 @@ pub enum GetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
     Providers,
     #[serde(rename = "usage")]
     Usage,
+    #[serde(rename = "skills")]
+    Skills,
     #[serde(rename = "terminals")]
     Terminals,
     #[serde(rename = "host")]
@@ -8563,6 +8565,8 @@ pub enum SetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
     Providers,
     #[serde(rename = "usage")]
     Usage,
+    #[serde(rename = "skills")]
+    Skills,
     #[serde(rename = "terminals")]
     Terminals,
     #[serde(rename = "host")]

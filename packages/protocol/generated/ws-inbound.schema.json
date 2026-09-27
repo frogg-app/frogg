@@ -4422,6 +4422,7 @@
                               "agents",
                               "providers",
                               "usage",
+                              "skills",
                               "terminals",
                               "host"
                             ]

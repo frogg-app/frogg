@@ -345,6 +345,9 @@ export const HostSettingsSectionSchema = z.enum([
   "agents",
   "providers",
   "usage",
+  // COMPAT(skillsManagement): added in v1.6.6 with the <brand> skills section. Apps older
+  // than that reject a config that hides it.
+  "skills",
   "terminals",
   "host",
 ]);

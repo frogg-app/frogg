@@ -37452,6 +37452,7 @@
                                   "agents",
                                   "providers",
                                   "usage",
+                                  "skills",
                                   "terminals",
                                   "host"
                                 ]
@@ -37934,6 +37935,7 @@
                                   "agents",
                                   "providers",
                                   "usage",
+                                  "skills",
                                   "terminals",
                                   "host"
                                 ]
