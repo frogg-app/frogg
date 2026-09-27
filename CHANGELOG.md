@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- **Clean cut.** End an agent's provider conversation and continue in a fresh one, in the same
+  workspace, from a short summary written by the cheapest model on the same provider and
+  account. You keep the whole timeline, with a divider at the cut; the agent sees only the
+  summary. Start one from the **Clean cut** link in the stale-cache notice, **Clean cut to this
+  account** in the account sheet, or by picking another provider's model in the model picker,
+  which switches provider through a clean cut. The agent's idle Frogg subagents are cut too,
+  each from its own timeline. New `agent.clean_cut` RPC, gated on `features.agentCleanCut`.
+- **Automatic clean cut on a cold cache.** Before the daemon resumes an agent on its own (after
+  a usage limit resets, or after a restart), it makes a clean cut if the provider's prompt cache
+  has expired, instead of re-sending the whole context. Never while the cache is warm. On by
+  default; turn off with `daemon.autoCleanCutOnColdCache: false` (read at startup).
+- **The stale-cache warning covers Codex.** Claude and Codex both warn after an idle hour, from
+  one shared table of prompt-cache lifetimes.
+
 ## 1.6.1-beta.1 — 2026-09-27
 
 - **Update checks back off when GitHub rate-limits them.** After a 429 the app stops asking

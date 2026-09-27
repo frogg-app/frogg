@@ -43,6 +43,8 @@ Past that hour the conversation's prompt cache has lapsed, so the next message p
 input price for the whole context rather than continuing cheaply from the cache. Other
 providers don't show the warning: Copilot is subscription-billed, and OpenCode, Pi and OMP
 run whichever upstream model is selected, so Frogg can't know their cache lifetime.
+The notice offers a **Clean cut** link: it summarises the conversation into a fresh one and
+sends your message there instead. See [clean cuts](/docs/using-frogg/clean-cut/).
 
 From the CLI:
 
@@ -103,6 +105,9 @@ Children appear while the run is still in progress and keep updating until it fi
 Frogg reads them from the run's own directory, so reopening the session later rebuilds
 the same rows from history.
 
+A [clean cut](/docs/using-frogg/clean-cut/#subagents) of a parent also cuts its idle Frogg
+subagents, each from its own timeline.
+
 Make a subagent independent without stopping it. Detaching is not confirmed: nothing is lost,
 the agent keeps its history, and the app opens it and confirms with a toast.
 
@@ -114,6 +119,9 @@ frogg agent detach <child-id>
 
 Agents that were in the middle of a turn when the daemon stopped are resumed with a
 continuation prompt when it starts again, if the interruption was less than an hour ago.
+If the provider's prompt cache has expired by then, the daemon makes an
+[automatic clean cut](/docs/using-frogg/clean-cut/#automatic-clean-cut-on-a-cold-cache) first.
+The same applies when an agent resumes after its usage limit resets.
 
 To keep agent processes alive across daemon restarts entirely, opt in to independent
 execution with `FROGG_EXECUTION_SERVICE=1` on the daemon. It is off by default; check it
