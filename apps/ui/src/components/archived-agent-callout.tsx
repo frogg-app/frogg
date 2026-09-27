@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { themeOf } from "@/styles/design-theme";
 import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
@@ -72,7 +73,7 @@ export function ArchivedAgentCallout({ serverId, agentId }: ArchivedAgentCallout
   );
 }
 
-const styles = StyleSheet.create((theme: Theme) => ({
+const styles = StyleSheet.create((theme: Theme, rt) => ({
   container: {
     flexDirection: "column",
     position: "relative",
@@ -88,7 +89,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
   },
   inputAreaContent: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(theme),
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
   },
   callout: {
     flexDirection: "row",

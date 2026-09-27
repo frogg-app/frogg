@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState, type ReactElement, type ReactNode } from "react";
+import { themeOf } from "@/styles/design-theme";
 import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
@@ -331,7 +332,7 @@ function dotColorStyle(bucket: Exclude<SidebarStateBucket, "running">) {
   }
 }
 
-const styles = StyleSheet.create((theme) => {
+const styles = StyleSheet.create((theme, rt) => {
   // Colours come from the one bucket-to-colour map so the pill cannot drift from the status dots
   // everywhere else, and are baked into each variant so the style prop stays a stable object.
   const statusDot = (bucket: Exclude<SidebarStateBucket, "running">) => ({
@@ -358,7 +359,7 @@ const styles = StyleSheet.create((theme) => {
     // sits flush with the composer's left edge at every pane width.
     lane: {
       width: "100%",
-      maxWidth: readingColumnMaxWidth(theme) + theme.spacing[4] * 2,
+      maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)) + theme.spacing[4] * 2,
       paddingHorizontal: theme.spacing[4],
       alignItems: "flex-start",
     },
@@ -372,7 +373,7 @@ const styles = StyleSheet.create((theme) => {
     // row — including the empty space — because a ScrollView must own touches to support
     // drag-to-scroll and can't be box-none like the old View.
     trackScroll: {
-      maxWidth: readingColumnMaxWidth(theme),
+      maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
       flexShrink: 1,
       minWidth: 0,
       flexGrow: 0,

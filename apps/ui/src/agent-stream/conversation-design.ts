@@ -1,125 +1,116 @@
 import type { TextStyle, ViewStyle } from "react-native";
 import { MAX_CONTENT_WIDTH } from "@/constants/layout";
-import type { Theme } from "@/styles/theme";
+import type { themeOf } from "@/styles/design-theme";
 
 // Shape of the agent conversation (timeline, tool rows, composer) per design direction.
-// Every helper returns the shipping style for the `current` design, so callers can spread the
-// result unconditionally. Call them inside `StyleSheet.create((theme) => ...)` only.
+//
+// Every helper takes the REAL theme, `themeOf(rt.themeName)`: on web the `theme` argument of
+// `StyleSheet.create` holds CSS-variable strings and frozen numbers, so it cannot be branched on.
+// Reference `rt.themeName` inside each style value so the style recomputes on a design switch:
+//
+//   bubble: { ...base, ...userMessageSurfaceStyle(themeOf(rt.themeName)) },
+//
+// Helpers return overrides only; the `current` design gets `{}` (or the caller's value), so the
+// shipping look is untouched.
+type RealTheme = ReturnType<typeof themeOf>;
 
 /** Width of the centred reading column shared by the stream, turn footer and composer. */
-export function readingColumnMaxWidth(theme: Theme): number {
-  return theme.design.contentMaxWidth ?? MAX_CONTENT_WIDTH;
+export function readingColumnMaxWidth(t: RealTheme): number {
+  return t.design.contentMaxWidth ?? MAX_CONTENT_WIDTH;
 }
 
 /** Radius for a composer or toolbar control; `current` keeps the caller's shipping radius. */
-export function controlRadius(theme: Theme, currentRadius: number): number {
-  return theme.design.variant === "current" ? currentRadius : theme.design.controlRadius;
+export function controlRadius(t: RealTheme, currentRadius: number): number {
+  return t.design.variant === "current" ? currentRadius : t.design.controlRadius;
 }
 
 /** Face and size for metadata (timestamps, elapsed time) next to messages. */
-export function metaTextStyle(theme: Theme): TextStyle {
-  return theme.design.monoMeta ? { fontFamily: theme.fontFamily.mono, fontSize: 12 } : {};
+export function metaTextStyle(t: RealTheme): TextStyle {
+  return t.design.monoMeta ? { fontFamily: t.fontFamily.mono, fontSize: 12 } : {};
 }
 
 // ---------------------------------------------------------------------------
 // User message
 // ---------------------------------------------------------------------------
 
-export function userMessageRowStyle(theme: Theme): ViewStyle {
-  return {
-    flexDirection: "row",
-    justifyContent: theme.design.userMessage === "bubble" ? "flex-end" : "flex-start",
-  };
+export function userMessageRowStyle(t: RealTheme): ViewStyle {
+  return t.design.userMessage === "bubble" ? {} : { justifyContent: "flex-start" };
 }
 
-export function userMessageContentStyle(theme: Theme): ViewStyle {
-  if (theme.design.userMessage === "bubble") {
-    return { alignItems: "flex-end", maxWidth: "100%" };
-  }
-  return { alignItems: "stretch", flex: 1, minWidth: 0, maxWidth: "100%" };
+export function userMessageContentStyle(t: RealTheme): ViewStyle {
+  return t.design.userMessage === "bubble" ? {} : { alignItems: "stretch", flex: 1, minWidth: 0 };
 }
 
-export function userMessageSurfaceStyle(theme: Theme): ViewStyle {
-  const base: ViewStyle = { minWidth: 0, flexShrink: 1 };
-  switch (theme.design.userMessage) {
+export function userMessageSurfaceStyle(t: RealTheme): ViewStyle {
+  switch (t.design.userMessage) {
     case "plain":
       // Mono: no container. A stark rule in the gutter marks the speaker.
       return {
-        ...base,
+        backgroundColor: "transparent",
+        borderRadius: 0,
+        borderTopRightRadius: 0,
         borderLeftWidth: 2,
-        borderLeftColor: theme.colors.foreground,
-        paddingLeft: theme.spacing[3],
-        paddingVertical: theme.spacing[1],
+        borderLeftColor: t.colors.foreground,
+        paddingHorizontal: 0,
+        paddingLeft: t.spacing[3],
+        paddingVertical: t.spacing[1],
       };
     case "card":
       // Focus: a quiet full-width bordered card.
       return {
-        ...base,
-        backgroundColor: theme.colors.surface1,
-        borderWidth: theme.borderWidth[1],
-        borderColor: theme.colors.borderAccent,
-        borderRadius: theme.borderRadius.lg,
-        paddingHorizontal: theme.spacing[4],
-        paddingVertical: theme.spacing[3],
+        backgroundColor: t.colors.surface1,
+        borderWidth: t.borderWidth[1],
+        borderColor: t.colors.border,
+        borderRadius: t.borderRadius.lg,
+        borderTopRightRadius: t.borderRadius.lg,
+        paddingHorizontal: t.spacing[4],
+        paddingVertical: t.spacing[3],
       };
-    case "bubble":
-      return { ...base, ...bubbleShape(theme) };
+    default:
+      return bubbleShape(t);
   }
 }
 
-function bubbleShape(theme: Theme): ViewStyle {
-  switch (theme.design.variant) {
+function bubbleShape(t: RealTheme): ViewStyle {
+  switch (t.design.variant) {
     case "paper":
       return {
-        backgroundColor: theme.colors.surface3,
-        borderRadius: theme.borderRadius.xl,
-        paddingHorizontal: theme.spacing[4],
-        paddingVertical: theme.spacing[3],
+        backgroundColor: t.colors.surface3,
+        borderRadius: t.borderRadius.xl,
+        borderTopRightRadius: t.borderRadius.xl,
+        paddingVertical: t.spacing[3],
       };
     case "soft":
       return {
-        backgroundColor: theme.colors.surface2,
-        borderRadius: theme.borderRadius["2xl"],
-        paddingHorizontal: theme.spacing[4] + 2,
-        paddingVertical: theme.spacing[3],
+        backgroundColor: t.colors.surface2,
+        borderRadius: t.borderRadius["2xl"],
+        borderTopRightRadius: t.borderRadius["2xl"],
+        paddingHorizontal: t.spacing[4] + 2,
+        paddingVertical: t.spacing[3],
       };
     case "inset":
       return {
-        backgroundColor: theme.colors.surface2,
-        borderWidth: theme.borderWidth[1],
-        borderColor: theme.colors.border,
-        borderRadius: theme.borderRadius.lg,
-        paddingHorizontal: theme.spacing[3],
-        paddingVertical: theme.spacing[2],
+        backgroundColor: t.colors.surface2,
+        borderWidth: t.borderWidth[1],
+        borderColor: t.colors.border,
+        borderRadius: t.borderRadius.lg,
+        borderTopRightRadius: t.borderRadius.lg,
+        paddingHorizontal: t.spacing[3],
+        paddingVertical: t.spacing[2],
       };
     default:
-      return {
-        backgroundColor: theme.colors.surface3,
-        borderRadius: theme.borderRadius["2xl"],
-        borderTopRightRadius: theme.borderRadius.sm,
-        paddingHorizontal: theme.spacing[4],
-        paddingVertical: theme.spacing[4],
-      };
+      return {};
   }
 }
 
-export function userMessageTextStyle(theme: Theme): TextStyle {
-  if (theme.design.userMessage === "plain") {
-    return { fontWeight: theme.fontWeight.medium };
+export function userMessageTextStyle(t: RealTheme): TextStyle {
+  if (t.design.userMessage === "plain") {
+    return { fontWeight: t.fontWeight.medium };
   }
-  if (theme.design.variant === "inset") {
-    return { fontSize: theme.fontSize.base };
+  if (t.design.variant === "inset") {
+    return { fontSize: t.fontSize.base };
   }
   return {};
-}
-
-// ---------------------------------------------------------------------------
-// Assistant prose
-// ---------------------------------------------------------------------------
-
-/** True when assistant prose uses its own face (tag the container with DESIGN_FONT_DATASET). */
-export function hasContentFont(theme: Theme): boolean {
-  return theme.design.contentFontFamily !== null;
 }
 
 // ---------------------------------------------------------------------------
@@ -142,27 +133,27 @@ const NO_TOOL_ROW_DESIGN: ToolRowDesign = {
   label: {},
 };
 
-export function toolRowDesign(theme: Theme): ToolRowDesign {
-  switch (theme.design.variant) {
+export function toolRowDesign(t: RealTheme): ToolRowDesign {
+  switch (t.design.variant) {
     case "mono":
       // Dashboard rows: hairline box, mono label.
       return {
         container: { marginHorizontal: 0 },
         pressable: {
-          borderColor: theme.colors.border,
-          borderRadius: theme.borderRadius.base,
-          paddingVertical: theme.spacing[1] + 1,
+          borderColor: t.colors.border,
+          borderRadius: t.borderRadius.base,
+          paddingVertical: t.spacing[1] + 1,
         },
         pressableExpanded: {},
         labelRow: {},
-        label: { fontFamily: theme.fontFamily.mono, fontSize: theme.fontSize.sm },
+        label: { fontFamily: t.fontFamily.mono, fontSize: t.fontSize.sm },
       };
     case "focus":
-      // Quiet collapsed rows: smaller, lighter, no chrome until hovered.
+      // Quiet collapsed rows: smaller and lighter; chrome only on hover.
       return {
         ...NO_TOOL_ROW_DESIGN,
-        pressable: { paddingVertical: theme.spacing[0.5] },
-        label: { fontSize: theme.fontSize.sm },
+        pressable: { paddingVertical: t.spacing[0.5] },
+        label: { fontSize: 13 },
       };
     case "soft":
       // Rounded chips that hug their label; they widen into a card when expanded.
@@ -170,22 +161,19 @@ export function toolRowDesign(theme: Theme): ToolRowDesign {
         container: { marginHorizontal: 0, alignItems: "flex-start" },
         pressable: {
           maxWidth: "100%",
-          backgroundColor: theme.colors.surface2,
-          borderRadius: theme.design.controlRadius,
-          paddingHorizontal: theme.spacing[3],
-          paddingVertical: theme.spacing[1] + 1,
+          backgroundColor: t.colors.surface2,
+          borderRadius: t.design.controlRadius,
+          paddingHorizontal: t.spacing[3],
+          paddingVertical: t.spacing[1] + 1,
         },
-        pressableExpanded: {
-          alignSelf: "stretch",
-          borderRadius: theme.borderRadius.xl,
-        },
+        pressableExpanded: { alignSelf: "stretch", borderRadius: t.borderRadius.xl },
         labelRow: { flexGrow: 0, flexShrink: 1, flexBasis: "auto" },
         label: {},
       };
     case "inset":
       return {
         ...NO_TOOL_ROW_DESIGN,
-        pressable: { paddingVertical: theme.spacing[0.5] },
+        pressable: { paddingVertical: t.spacing[0.5], borderRadius: t.borderRadius.md },
         label: { fontSize: 13 },
       };
     default:
@@ -197,55 +185,56 @@ export function toolRowDesign(theme: Theme): ToolRowDesign {
 // Composer
 // ---------------------------------------------------------------------------
 
-export function composerSurfaceStyle(theme: Theme): ViewStyle {
-  switch (theme.design.composer) {
+export function composerSurfaceStyle(t: RealTheme): ViewStyle {
+  switch (t.design.composer) {
     case "floating":
       return {
-        backgroundColor: theme.colors.popover,
-        borderColor: theme.colors.borderAccent,
-        borderRadius: theme.borderRadius.xl,
-        ...theme.shadow.md,
+        backgroundColor: t.colors.popover,
+        borderColor: t.colors.borderAccent,
+        borderRadius: t.borderRadius.xl,
+        ...t.shadow.md,
       };
     case "pill":
       return {
-        backgroundColor: theme.colors.popover,
-        borderColor: theme.colors.borderAccent,
+        backgroundColor: t.colors.popover,
+        borderColor: t.colors.borderAccent,
         borderRadius: 28,
-        paddingHorizontal: theme.spacing[4] + 2,
-        ...theme.shadow.md,
+        paddingHorizontal: t.spacing[4] + 2,
+        ...t.shadow.md,
       };
-    case "box":
-      if (theme.design.variant === "mono") {
-        return { backgroundColor: theme.colors.surface0, borderColor: theme.colors.border };
+    default:
+      if (t.design.variant === "mono") {
+        return {
+          backgroundColor: t.colors.surface0,
+          borderColor: t.colors.border,
+          borderRadius: t.borderRadius.lg,
+        };
       }
-      if (theme.design.variant === "inset") {
-        return { borderColor: theme.colors.border, borderRadius: theme.borderRadius.xl };
+      if (t.design.variant === "inset") {
+        return { borderColor: t.colors.border, borderRadius: t.borderRadius.xl };
       }
       return {};
   }
 }
 
 /** Composer toolbar pills (model, provider, mode). */
-export function composerControlStyle(theme: Theme): ViewStyle {
-  switch (theme.design.variant) {
-    case "mono":
-      return {
-        borderWidth: theme.borderWidth[1],
-        borderColor: theme.colors.border,
-        borderRadius: theme.design.controlRadius,
-      };
-    case "soft":
-      return { backgroundColor: theme.colors.surface2, borderRadius: theme.design.controlRadius };
+export function composerControlStyle(t: RealTheme): ViewStyle {
+  switch (t.design.variant) {
     case "current":
       return {};
+    case "mono":
+      return {
+        borderWidth: t.borderWidth[1],
+        borderColor: t.colors.border,
+        borderRadius: t.design.controlRadius,
+      };
+    case "soft":
+      return { backgroundColor: t.colors.surface2, borderRadius: t.design.controlRadius };
     default:
-      return { borderRadius: theme.design.controlRadius };
+      return { borderRadius: t.design.controlRadius };
   }
 }
 
-export function composerControlTextStyle(theme: Theme): TextStyle {
-  if (theme.design.monoMeta) {
-    return { fontFamily: theme.fontFamily.mono, fontSize: theme.fontSize.sm };
-  }
-  return {};
+export function composerControlTextStyle(t: RealTheme): TextStyle {
+  return t.design.monoMeta ? { fontFamily: t.fontFamily.mono, fontSize: t.fontSize.sm } : {};
 }

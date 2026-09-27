@@ -1,4 +1,5 @@
 import { AttachmentSizeError, MAX_FILE_SIZE_BYTES } from "@/attachments/file-size";
+import { themeOf } from "@/styles/design-theme";
 import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { useCompanionStore } from "@/companion/store";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -2486,7 +2487,7 @@ const animatedStaticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme: Theme) => ({
+const styles = StyleSheet.create((theme: Theme, rt) => ({
   borderSeparator: {
     height: theme.borderWidth[1],
     backgroundColor: theme.colors.border,
@@ -2508,7 +2509,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
   inputAreaContent: {
     flexShrink: 1,
     width: "100%",
-    maxWidth: readingColumnMaxWidth(theme),
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
     gap: theme.spacing[3],
   },
   messageInputContainer: {

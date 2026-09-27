@@ -1,5 +1,7 @@
 import React, { memo, useCallback, useMemo, type ReactNode } from "react";
-import { readingColumnMaxWidth } from "./conversation-design";
+import { themeOf } from "@/styles/design-theme";
+import { metaTextStyle, readingColumnMaxWidth } from "./conversation-design";
+import { MonoMetaView } from "./design-scopes";
 import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { SPACING, type Theme } from "@/styles/theme";
@@ -122,7 +124,7 @@ const WorkingIndicator = memo(function WorkingIndicator({
 }) {
   const active = useRetainedPanelActive();
   return (
-    <View style={stylesheet.turnFooterContent}>
+    <MonoMetaView style={stylesheet.turnFooterContent}>
       <View style={stylesheet.workingLoader}>
         <ThemedSyncedLoader size={14} uniProps={workingIndicatorColorMapping} />
       </View>
@@ -136,7 +138,7 @@ const WorkingIndicator = memo(function WorkingIndicator({
           testID="turn-working-elapsed"
         />
       ) : null}
-    </View>
+    </MonoMetaView>
   );
 });
 
@@ -212,10 +214,10 @@ function TurnFooterRow({ children }: { children: ReactNode }) {
   return <View style={rowStyle}>{children}</View>;
 }
 
-const stylesheet = StyleSheet.create((theme) => ({
+const stylesheet = StyleSheet.create((theme, rt) => ({
   streamItemWrapper: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(theme),
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
     alignSelf: "center",
     paddingHorizontal: theme.spacing[2],
   },
@@ -240,6 +242,7 @@ const stylesheet = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: STREAM_METADATA_FONT_SIZE,
     fontVariant: ["tabular-nums"],
+    ...metaTextStyle(themeOf(rt.themeName)),
   },
   workingLoader: {
     marginLeft: -2,

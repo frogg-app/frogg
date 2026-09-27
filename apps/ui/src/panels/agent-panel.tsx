@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { themeOf } from "@/styles/design-theme";
 import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
@@ -1808,7 +1809,7 @@ const animatedStaticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -1830,7 +1831,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   timelineSyncCalloutContent: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(theme),
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
   },
   timelineSyncCallout: {
     flexDirection: "row",

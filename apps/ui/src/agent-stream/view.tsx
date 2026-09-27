@@ -1,4 +1,5 @@
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { themeOf } from "@/styles/design-theme";
 import { readingColumnMaxWidth } from "./conversation-design";
 import React, {
   forwardRef,
@@ -1582,14 +1583,14 @@ function PermissionRequestCard({
   );
 }
 
-const stylesheet = StyleSheet.create((theme) => ({
+const stylesheet = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
   },
   contentWrapper: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(theme),
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
     alignSelf: "center",
     paddingHorizontal: theme.spacing[2],
   },
@@ -1610,7 +1611,7 @@ const stylesheet = StyleSheet.create((theme) => ({
   },
   streamItemWrapper: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(theme),
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
     alignSelf: "center",
     paddingHorizontal: theme.spacing[2],
   },
@@ -1666,7 +1667,7 @@ const stylesheet = StyleSheet.create((theme) => ({
   },
 }));
 
-const permissionStyles = StyleSheet.create((theme) => ({
+const permissionStyles = StyleSheet.create((theme, rt) => ({
   container: {
     marginVertical: theme.spacing[3],
     padding: theme.spacing[3],

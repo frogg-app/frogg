@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { themeOf } from "@/styles/design-theme";
 import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
@@ -116,7 +117,7 @@ export function SpokenAlertBanner({ serverId, agentId, workspaceId }: SpokenAler
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   // Matches the composer: the same outer gutter and content cap, so the banner lines up with
   // the chat column instead of spanning the whole pane.
   wrapper: {
@@ -127,7 +128,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   container: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(theme),
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
     padding: theme.spacing[3],
     gap: theme.spacing[2],
     borderRadius: theme.borderRadius.xl,
