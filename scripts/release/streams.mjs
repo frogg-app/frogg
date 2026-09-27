@@ -222,6 +222,20 @@ function restamp(version) {
   }
 }
 
+/** Walk back past release cuts (and into a promotion's source) to the commit CI tested. */
+function testedSource(ref) {
+  let commit = gitOut(["rev-parse", `${ref}^{commit}`]);
+  for (;;) {
+    const subject = gitOut(["log", "-1", "--format=%s", commit]);
+    if (!isReleaseCutSubject(subject)) return commit;
+    const parents = gitOut(["log", "-1", "--format=%P", commit]).split(" ").filter(Boolean);
+    const promoted = subject.startsWith("chore(release): promote ") && parents[1];
+    const next = promoted ? parents[1] : parents[0];
+    if (!next) return commit;
+    commit = next;
+  }
+}
+
 const commands = {
   help() {
     process.stdout.write(`Release streams (frogg.json "streams"):
@@ -238,6 +252,8 @@ const commands = {
   init [--push]               create the stable branch from the newest stable tag
   assert-tag <tag>            CI: fail unless the tag is on its stream's branch
   channel-for-ref <branch>    CI: which brand channel a branch builds (stable or beta)
+  tested-source <ref>         CI: the commit whose CI run vouches for <ref>
+  needs-tests <ref>           CI: "true" unless <ref> only adds release cuts to tested main code
 
 Add --skip-check to beta/promote to skip release:check (CI has already run it).
 `);
@@ -599,6 +615,25 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
       );
     }
     process.stdout.write(`${tag} is on origin/${branch}.\n`);
+  },
+
+  // A release cut changes only versions, and a promotion copies main's tree, so neither needs
+  // its own CI run: the tests that count are those on the commit they were cut from.
+  "tested-source"(args) {
+    process.stdout.write(`${testedSource(args[0] ?? fail("usage: tested-source <ref>"))}\n`);
+  },
+
+  "needs-tests"(args) {
+    const ref = args[0] ?? fail("usage: needs-tests <ref>");
+    const config = loadStreamsConfig();
+    const source = testedSource(ref);
+    if (source === gitOut(["rev-parse", `${ref}^{commit}`])) {
+      return void process.stdout.write("true\n");
+    }
+    gitTry(["fetch", "--quiet", "origin", config.development]);
+    const onMain =
+      gitTry(["merge-base", "--is-ancestor", source, `origin/${config.development}`]) !== null;
+    process.stdout.write(`${onMain ? "false" : "true"}\n`);
   },
 
   "channel-for-ref"(args) {
