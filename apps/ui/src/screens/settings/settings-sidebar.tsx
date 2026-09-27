@@ -6,12 +6,11 @@ import { brand } from "@frogg/branding";
 import { useTranslation } from "react-i18next";
 import { isElectronRuntime } from "@/desktop/host";
 import { SETTINGS_DESKTOP_SIDEBAR_WIDTH } from "@/constants/layout";
-import { isWeb } from "@/constants/platform";
 import { useKeyboardShortcutsAvailable } from "@/keyboard/availability";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 import { resolveSettingsScope, type SettingsView } from "@/navigation/settings-navigation";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
-import { SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
+import { visibleSettingsSections } from "@/screens/settings/section-items";
 import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visibility";
 import { useHosts } from "@/runtime/host-runtime";
 import type { SecuritySeverity } from "@/security/posture";
@@ -201,12 +200,7 @@ export function SettingsSidebar({
     );
   } else {
     const selectedSectionId = view.kind === "section" ? view.section : null;
-    const items = SIDEBAR_SECTION_ITEMS.filter(
-      (item) =>
-        (!item.desktopOnly || isDesktopApp) &&
-        (!item.webOnly || isWeb) &&
-        (!item.requiresKeyboardShortcuts || shortcutsAvailable),
-    );
+    const items = visibleSettingsSections({ isDesktopApp, shortcutsAvailable });
     sidebarBody = (
       <View style={sidebarStyles.list}>
         {items.map((item) => (

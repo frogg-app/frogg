@@ -1803,12 +1803,6 @@ export const en = {
         failed: "Failed to send notification.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "Unable to check CLI install status.",
-        installFailed: "Unable to install the {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3087,55 +3081,10 @@ export const en = {
     sections: {
       general: "General",
       appearance: "Appearance",
-      layout: "Layout",
-      editor: "Editor",
       shortcuts: "Shortcuts",
-      integrations: "Integrations",
       notifications: "Notifications",
       permissions: "Permissions",
-      diagnostics: "Diagnostics",
       about: "About",
-    },
-    layout: {
-      openInSidePane: {
-        title: "Open location",
-        destinations: {
-          main: "Main panel",
-          side: "On the side",
-          explorer: "Explorer sidebar",
-        },
-        sources: {
-          explorerFiles: {
-            label: "Selecting a file in Explorer",
-            description: "Open files selected in the Explorer sidebar beside your work",
-          },
-          diffs: {
-            label: "Opening a diff",
-            description: "Open diffs from Explorer and agent conversations beside your work",
-          },
-          chatFiles: {
-            label: "Opening a file from an agent chat",
-            description: "Open file links and tool-call files beside the conversation",
-          },
-          diffFiles: {
-            label: "Opening a file from Changes",
-            description: "Open source files selected from a diff beside it",
-          },
-          subagents: {
-            label: "Opening a subagent",
-            description: "Open subagents beside their parent agent",
-          },
-          pullRequests: {
-            label: "Opening a pull request from Changes",
-            description: "Open pull request details beside Changes",
-          },
-        },
-      },
-    },
-    editor: {
-      title: "Editor",
-      vimKeybindings: "Vim keybindings",
-      vimHint: "Applies to source files on web and desktop.",
     },
     notifications: {
       title: "Notifications",
@@ -3540,24 +3489,6 @@ export const en = {
       },
       helpNotes: {
         showKeyboardShortcuts: "Available when focus is not in a text field or terminal.",
-      },
-    },
-    integrations: {
-      title: "Integrations",
-      docs: {
-        cli: "CLI docs",
-        openCli: "Open CLI documentation",
-      },
-      commandLine: {
-        installedPath:
-          "Installed at {{path}}. Add its directory to PATH if needed, then open a new terminal.",
-        title: "Command line",
-        description: "Control and script agents from your terminal",
-      },
-      actions: {
-        install: "Install",
-        installing: "Installing...",
-        installed: "Installed",
       },
     },
     permissions: {

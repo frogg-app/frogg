@@ -1,5 +1,5 @@
 import { projectImportCopies } from "./project-import";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
   releaseStreams: {
@@ -1841,12 +1841,6 @@ export const fr: TranslationResources = {
         failed: "Échec de l'envoi de la notification.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "Impossible de vérifier l'état de l'installation deCLI.",
-        installFailed: "Impossible d'installer le {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3139,20 +3133,10 @@ export const fr: TranslationResources = {
     sections: {
       general: "Général",
       appearance: "Apparence",
-      layout: en.settings.sections.layout,
-      editor: "Éditeur",
       shortcuts: "Raccourcis",
-      integrations: "Intégrations",
       notifications: "Notifications",
       permissions: "Autorisations",
-      diagnostics: "Diagnostic",
       about: "À propos",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "Éditeur",
-      vimKeybindings: "Raccourcis Vim",
-      vimHint: "S’applique aux fichiers source sur le web et le bureau.",
     },
     notifications: {
       title: "Notifications",
@@ -3566,24 +3550,6 @@ export const fr: TranslationResources = {
       helpNotes: {
         showKeyboardShortcuts:
           "Disponible lorsque le focus n’est pas dans un champ de texte ou un terminal.",
-      },
-    },
-    integrations: {
-      title: "Intégrations",
-      docs: {
-        cli: "DocumentsCLI",
-        openCli: "Ouvrir la documentationCLI",
-      },
-      commandLine: {
-        installedPath:
-          "Installé dans {{path}}. Ajoutez son dossier au PATH si nécessaire, puis ouvrez un nouveau terminal.",
-        title: "Ligne de commande",
-        description: "Agents de contrôle et de script depuis votre terminal",
-      },
-      actions: {
-        install: "Installer",
-        installing: "Installation...",
-        installed: "Installé",
       },
     },
     permissions: {

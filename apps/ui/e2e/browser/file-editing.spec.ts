@@ -656,33 +656,4 @@ test.describe("CodeMirror workspace file editing", () => {
     await expect(preview.document.getByText("Storage blocked", { exact: true })).toBeVisible();
     await expect(preview.document.getByText("Cookies blocked", { exact: true })).toBeVisible();
   });
-
-  test("persists Vim keybindings and reports Vim mode with cursor position", async ({
-    page,
-    withWorkspace,
-  }) => {
-    test.setTimeout(90_000);
-    const workspace = await withWorkspace({ prefix: "file-editing-vim-" });
-    await writeFile(path.join(workspace.repoPath, "vim.ts"), "const vim = true;\n", "utf8");
-
-    await page.goto("/settings/editor");
-    const toggle = page.getByRole("switch", { name: "Vim keybindings" });
-    await expect(toggle).toBeVisible();
-    await toggle.click();
-    await expect(toggle).toBeChecked();
-    // The modal steps off the /settings route once open, so a plain reload
-    // would land on the workspace; re-open the deep link on a fresh load.
-    await page.goto("/settings/editor");
-    await expect(page.getByRole("switch", { name: "Vim keybindings" })).toBeChecked();
-
-    await workspace.navigateTo();
-    await openWorkspaceFile(page, "vim.ts");
-    await expect(page.getByLabel("Vim mode NORMAL")).toBeVisible();
-    await expect(page.getByLabel("Line 1, column 1")).toBeVisible();
-    await editor(page).click();
-    await editor(page).press("i");
-    await expect(page.getByLabel("Vim mode INSERT")).toBeVisible();
-    await editor(page).press("Escape");
-    await expect(page.getByLabel("Vim mode NORMAL")).toBeVisible();
-  });
 });

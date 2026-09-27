@@ -1,5 +1,5 @@
 import { projectImportCopies } from "./project-import";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
   releaseStreams: {
@@ -1766,12 +1766,6 @@ export const zhCN: TranslationResources = {
         failed: "发送通知失败。",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "无法检查 CLI 安装状态。",
-        installFailed: "无法安装 {{brandName}} CLI。",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3010,20 +3004,10 @@ export const zhCN: TranslationResources = {
     sections: {
       general: "通用",
       appearance: "外观",
-      layout: en.settings.sections.layout,
-      editor: "编辑器",
       shortcuts: "快捷键",
-      integrations: "集成",
       notifications: "通知",
       permissions: "权限",
-      diagnostics: "诊断",
       about: "关于",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "编辑器",
-      vimKeybindings: "Vim 键位",
-      vimHint: "适用于网页和桌面端的源文件。",
     },
     notifications: {
       title: "通知",
@@ -3421,23 +3405,6 @@ export const zhCN: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "焦点不在文本输入框或终端内时可用。",
-      },
-    },
-    integrations: {
-      title: "集成",
-      docs: {
-        cli: "CLI 文档",
-        openCli: "打开 CLI 文档",
-      },
-      commandLine: {
-        installedPath: "已安装到 {{path}}。如有需要，请将其目录添加到 PATH，然后打开新终端。",
-        title: "命令行",
-        description: "从终端控制 Agent 并运行脚本",
-      },
-      actions: {
-        install: "安装",
-        installing: "正在安装...",
-        installed: "已安装",
       },
     },
     permissions: {

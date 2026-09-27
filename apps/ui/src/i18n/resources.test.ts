@@ -272,7 +272,6 @@ describe("translation resources", () => {
     expect(en.settings.appearance.theme.title).toBe("Theme");
     expect(en.settings.appearance.fonts.interfaceFont).toBe("Interface font");
     expect(en.settings.shortcuts.actions.rebind).toBe("Rebind");
-    expect(en.settings.integrations.commandLine.title).toBe("Command line");
     expect(en.settings.notifications.playSound).toBe("Play sound");
     expect(en.settings.notifications.permission).toBe("Notification permission");
     expect(en.settings.notifications.sentTitle).toBe("Test notification sent");
@@ -699,9 +698,6 @@ describe("translation resources", () => {
       "Failed to fetch daemon status: {{message}}",
     );
     expect(en.desktop.daemon.loadFailed).toBe("Unable to load desktop daemon status.");
-    expect(en.desktop.integrations.cli.installFailed).toBe(
-      "Unable to install the {{brandName}} CLI.",
-    );
   });
 
   it("includes remaining utility chrome keys for the Batch 4T migration", () => {

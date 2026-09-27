@@ -1,5 +1,5 @@
 import { projectImportCopies } from "./project-import";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const es: TranslationResources = {
   releaseStreams: {
@@ -1836,12 +1836,6 @@ export const es: TranslationResources = {
         failed: "No se pudo enviar la notificación.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "No se puede verificar el estado de instalación deCLI.",
-        installFailed: "No se puede instalar el {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3132,20 +3126,10 @@ export const es: TranslationResources = {
     sections: {
       general: "General",
       appearance: "Apariencia",
-      layout: en.settings.sections.layout,
-      editor: "Editor",
       shortcuts: "Atajos",
-      integrations: "Integraciones",
       notifications: "Notificaciones",
       permissions: "Permisos",
-      diagnostics: "Diagnóstico",
       about: "Acerca de",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "Editor",
-      vimKeybindings: "Atajos de Vim",
-      vimHint: "Se aplica a archivos fuente en web y escritorio.",
     },
     notifications: {
       title: "Notificaciones",
@@ -3559,24 +3543,6 @@ export const es: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "Disponible cuando el foco no está en un campo de texto o terminal.",
-      },
-    },
-    integrations: {
-      title: "Integraciones",
-      docs: {
-        cli: "DocumentosCLI",
-        openCli: "Abrir la documentación deCLI",
-      },
-      commandLine: {
-        installedPath:
-          "Instalado en {{path}}. Añade su directorio a PATH si es necesario y abre una terminal nueva.",
-        title: "línea de comando",
-        description: "Agentes de control y script desde tu terminal",
-      },
-      actions: {
-        install: "Instalar",
-        installing: "Instalando...",
-        installed: "Instalado",
       },
     },
     permissions: {

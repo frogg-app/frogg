@@ -1,5 +1,5 @@
 import { projectImportCopies } from "./project-import";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
   releaseStreams: {
@@ -1803,12 +1803,6 @@ export const ko: TranslationResources = {
         failed: "알림을 보내지 못했습니다.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "CLI 설치 상태를 확인할 수 없습니다.",
-        installFailed: "{{brandName}} CLI를 설치할 수 없습니다.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3080,20 +3074,10 @@ export const ko: TranslationResources = {
     sections: {
       general: "일반",
       appearance: "모양",
-      layout: en.settings.sections.layout,
-      editor: "편집기",
       shortcuts: "단축키",
-      integrations: "통합",
       notifications: "알림",
       permissions: "권한",
-      diagnostics: "진단",
       about: "정보",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "편집기",
-      vimKeybindings: "Vim 키 바인딩",
-      vimHint: "웹 및 데스크톱의 소스 파일에 적용됩니다.",
     },
     notifications: {
       title: "알림",
@@ -3499,24 +3483,6 @@ export const ko: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "포커스가 텍스트 필드나 터미널에 있지 않을 때 사용할 수 있습니다.",
-      },
-    },
-    integrations: {
-      title: "통합",
-      docs: {
-        cli: "CLI 문서",
-        openCli: "CLI 문서 열기",
-      },
-      commandLine: {
-        installedPath:
-          "{{path}}에 설치되었습니다. 필요하면 디렉터리를 PATH에 추가한 후 새 터미널을 여세요.",
-        title: "명령줄",
-        description: "터미널에서 에이전트를 제어하고 스크립팅합니다",
-      },
-      actions: {
-        install: "설치",
-        installing: "설치 중...",
-        installed: "설치됨",
       },
     },
     permissions: {

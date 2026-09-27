@@ -3,6 +3,12 @@
 ## Unreleased
 
 - **Configurable automatic clean cut.** `daemon.cleanCut` and **Settings → Host → Clean cut** set each trigger (usage-limit resume, daemon-restart resume) on or off, a global and per-provider idle threshold (default: the provider's cache lifetime, also used by the composer's stale-cache warning) and a global and per-provider summary model. Changes apply live. Every automatic cut decision is logged with its outcome and reason. `autoCleanCutOnColdCache: false` still disables both triggers. Fixed a usage-limit reschedule without a reset time overwriting a known reset.
+- **Leaner app Settings.** The app settings sidebar is General, Appearance, Shortcuts,
+  Notifications, Permissions and About. Companion and Diagnostics are now groups inside
+  General. The Layout (open-location preferences), Editor (Vim keybindings) and Integrations
+  (install the CLI) sections are removed; their saved preferences keep working with the values
+  already stored or the defaults. Old `/settings/<section>` links open General. A unit test pins
+  the section list.
 - **Project to-dos (daemon and protocol).** Each project has a daemon-owned to-do list stored
   in its main checkout under `.frogg/todos/` (self-ignored by git): items with category,
   priority, a kanban-style status, a markdown plan and an append-only progress log. Agents use
