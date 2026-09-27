@@ -1,6 +1,6 @@
 import { useDesignPreviewStore } from "@/design/design-preview-store";
 import { getDesignVariant } from "@/styles/design-variants";
-import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
+import { CODE_SURFACE_DATASET, DESIGN_FONT_DATASET } from "@/styles/code-surface";
 
 /**
  * Web dataSet for metadata text styled with `panelMetaText`. When the active direction renders
@@ -12,4 +12,13 @@ export function usePanelMetaDataSet(): typeof CODE_SURFACE_DATASET | undefined {
     (state) => getDesignVariant(state.variant)?.design.monoMeta ?? false,
   );
   return monoMeta ? CODE_SURFACE_DATASET : undefined;
+}
+
+/** Web dataSet for a panel section title drawn in the direction's display face (`panelSectionTitle`). */
+export function usePanelHeadingDataSet(): typeof DESIGN_FONT_DATASET | undefined {
+  const distinctFace = useDesignPreviewStore((state) => {
+    const design = getDesignVariant(state.variant)?.design;
+    return design ? design.headingFontFamily !== design.uiFontFamily : false;
+  });
+  return distinctFace ? DESIGN_FONT_DATASET : undefined;
 }

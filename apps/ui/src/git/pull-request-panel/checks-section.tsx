@@ -12,6 +12,7 @@ import { summarizeChecks, type ChecksGroup } from "./checks-summary";
 import { canAddPullRequestCheckLogsToChat } from "./context-attachment";
 import type { PrPaneCheck } from "./data";
 import { foregroundMutedColorMapping, sectionKitStyles } from "./section-kit";
+import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 import { useCheckGroupState } from "./check-group-state";
 
 const ThemedChevronDown = withUnistyles(ChevronDown);
@@ -192,6 +193,7 @@ function CheckRow({
     },
     [check, onAddLogsToChat],
   );
+  const metaDataSet = usePanelMetaDataSet();
   return (
     <Pressable onPress={handlePress} style={rowPressableStyle} testID="pr-pane-check-row">
       <CheckPresentationIcon presentation={classifyCheck(check)} size={14} />
@@ -216,7 +218,11 @@ function CheckRow({
             {isAddingLogsToChat ? "Adding..." : "Add to chat"}
           </Button>
         ) : null}
-        {check.timing && <Text style={sectionKitStyles.checkDuration}>{check.timing}</Text>}
+        {check.timing && (
+          <Text style={sectionKitStyles.checkDuration} dataSet={metaDataSet}>
+            {check.timing}
+          </Text>
+        )}
       </View>
     </Pressable>
   );

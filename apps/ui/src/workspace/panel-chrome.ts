@@ -34,6 +34,32 @@ export function panelMetaText(theme: Theme): TextStyle {
   return theme.design.monoMeta ? { fontFamily: theme.fontFamily.mono, letterSpacing: -0.2 } : {};
 }
 
+/**
+ * Section title inside a panel (PR sections, CI groups). Paper sets it in its serif display face,
+ * Soft makes it bolder; pair with `usePanelHeadingDataSet` on web.
+ */
+export function panelSectionTitle(theme: Theme): TextStyle {
+  const design = theme.design;
+  const face =
+    design.headingFontFamily !== design.uiFontFamily ? { fontFamily: design.headingFontFamily } : {};
+  switch (design.variant) {
+    case "paper":
+      return {
+        ...face,
+        fontSize: theme.fontSize.base,
+        fontWeight: design.headingWeight,
+        color: theme.colors.foreground,
+        letterSpacing: design.headingLetterSpacing,
+      };
+    case "soft":
+      return { ...face, fontWeight: theme.fontWeight.semibold, color: theme.colors.foreground };
+    case "mono":
+      return { ...face, color: theme.colors.foreground, letterSpacing: -0.1 };
+    default:
+      return face;
+  }
+}
+
 interface TabChrome {
   tab: ViewStyle;
   hovered: ViewStyle;
