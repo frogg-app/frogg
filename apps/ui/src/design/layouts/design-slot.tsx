@@ -5,7 +5,7 @@ import { focusLayout } from "./focus";
 import { insetLayout } from "./inset";
 import { monoLayout } from "./mono";
 import { paperLayout } from "./paper";
-import type { DesignLayout, DesignSlotName, DesignSlotProps } from "./slots";
+import type { DesignChrome, DesignLayout, DesignSlotName, DesignSlotProps } from "./slots";
 import { softLayout } from "./soft";
 
 const LAYOUTS: Record<DesignVariantId, DesignLayout> = {
@@ -16,6 +16,14 @@ const LAYOUTS: Record<DesignVariantId, DesignLayout> = {
   focus: focusLayout,
   soft: softLayout,
 };
+
+const NO_CHROME: DesignChrome = {};
+
+/** Which shipping chrome the active direction takes over. */
+export function useDesignChrome(): DesignChrome {
+  const variant = useDesignPreviewStore((state) => state.variant);
+  return LAYOUTS[variant].chrome ?? NO_CHROME;
+}
 
 /** Whether the active direction replaces a region, for callers that must also drop a sibling. */
 export function useDesignSlotOverride(name: DesignSlotName): boolean {

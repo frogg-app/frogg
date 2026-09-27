@@ -20,6 +20,15 @@ export interface DesignSlotProps {
 
 export type DesignSlotName = keyof DesignSlotProps;
 
+/** Shipping chrome a direction takes over, so it isn't drawn twice. Desktop only. */
+export interface DesignChrome {
+  /** The direction's sidebar has its own collapse control: hide the header's sidebar toggle
+   * while the sidebar is open (it still shows when collapsed, to reopen it). */
+  ownsSidebarToggle?: boolean;
+  /** The direction's `conversationTop` shows the chat title: drop the workspace header's. */
+  hidesWorkspaceTitle?: boolean;
+}
+
 export type DesignLayout = {
   [Name in DesignSlotName]?: ComponentType<DesignSlotProps[Name]>;
-};
+} & { chrome?: DesignChrome };

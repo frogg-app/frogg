@@ -7,6 +7,7 @@ import { SoftSidebar } from "./soft-sidebar";
 // Layout regions the soft direction replaces. Owned by the soft direction; see ../slots.ts.
 // Reference products: Perplexity, ChatGPT, Notion and Luma on iOS.
 export const softLayout: DesignLayout = {
+  chrome: { hidesWorkspaceTitle: true },
   sidebar: SoftSidebar,
   home: SoftHome,
   mobileNav: SoftMobileNav,
