@@ -165,11 +165,13 @@ const dot = { width: 6, height: 6, borderRadius: 3 } as const;
 const styles = StyleSheet.create((theme) => ({
   strip: {
     width: "100%",
-    alignItems: "center",
     paddingTop: theme.spacing[3],
     paddingBottom: theme.spacing[1],
   },
   row: {
+    // Centred while the cards fit; scrolls from the left edge once they overflow.
+    flexGrow: 1,
+    justifyContent: "center",
     gap: theme.spacing[2],
     paddingHorizontal: theme.spacing[4],
   },
