@@ -35,6 +35,31 @@ function variantLabel(id: DesignVariantId): string {
   return getDesignVariant(id)?.label ?? "Current";
 }
 
+/** `?design=<id>&scheme=<auto|light|dark>&switcher=0` selects a direction from a link, which
+ * also lets `npm run shot -- "/route?design=paper"` capture each one. Applied after the
+ * persisted state hydrates so the link wins. */
+function useDesignUrlParams(): void {
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const apply = () => {
+      const store = useDesignPreviewStore.getState();
+      const design = params.get("design");
+      const scheme = params.get("scheme");
+      const match = DESIGN_VARIANT_IDS.find((id) => id === design);
+      if (match) store.setVariant(match);
+      const schemeMatch = SCHEME_ORDER.find((value) => value === scheme);
+      if (schemeMatch) store.setScheme(schemeMatch);
+      if (params.get("switcher") === "0") store.setSwitcherVisible(false);
+    };
+    if (useDesignPreviewStore.persist.hasHydrated()) {
+      apply();
+      return;
+    }
+    return useDesignPreviewStore.persist.onFinishHydration(apply);
+  }, []);
+}
+
 function useDesignKeyboardShortcuts(): void {
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
@@ -69,6 +94,7 @@ function useDesignKeyboardShortcuts(): void {
 
 export function DesignSwitcher() {
   useDesignKeyboardShortcuts();
+  useDesignUrlParams();
   const variant = useDesignPreviewStore((state) => state.variant);
   const scheme = useDesignPreviewStore((state) => state.scheme);
   const visible = useDesignPreviewStore((state) => state.switcherVisible);
