@@ -1,7 +1,18 @@
 import { useCallback, useEffect } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { ChevronLeft, ChevronRight, Monitor, Moon, Palette, Sun, X } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import {
+  ChevronLeft,
+  ChevronRight,
+  MessageSquare,
+  Monitor,
+  Moon,
+  Palette,
+  Sun,
+  X,
+} from "lucide-react-native";
+import { useDemoChatRoute } from "./use-demo-chat-route";
 import { DESIGN_VARIANT_IDS, getDesignVariant } from "@/styles/design-variants";
 import type { DesignVariantId, Theme } from "@/styles/theme";
 import { useDesignPreviewStore, type DesignSchemePreference } from "./design-preview-store";
@@ -20,6 +31,7 @@ const ThemedChevronLeft = withUnistyles(ChevronLeft);
 const ThemedChevronRight = withUnistyles(ChevronRight);
 const ThemedPalette = withUnistyles(Palette);
 const ThemedX = withUnistyles(X);
+const ThemedMessageSquare = withUnistyles(MessageSquare);
 const ThemedSchemeIcons = {
   auto: withUnistyles(SCHEME_ICON.auto),
   light: withUnistyles(SCHEME_ICON.light),
@@ -120,6 +132,11 @@ export function DesignSwitcher() {
     const index = SCHEME_ORDER.indexOf(scheme);
     setScheme(SCHEME_ORDER[(index + 1) % SCHEME_ORDER.length] ?? "auto");
   }, [scheme, setScheme]);
+  const router = useRouter();
+  const demoChatRoute = useDemoChatRoute();
+  const openDemoChat = useCallback(() => {
+    if (demoChatRoute) router.navigate(demoChatRoute as never);
+  }, [demoChatRoute, router]);
   const show = useCallback(() => setVisible(true), [setVisible]);
   const hide = useCallback(() => setVisible(false), [setVisible]);
 
@@ -167,6 +184,18 @@ export function DesignSwitcher() {
           <ThemedChevronRight size={16} uniProps={mutedMapping} />
         </Pressable>
         <View style={styles.divider} />
+        <Pressable
+          onPress={openDemoChat}
+          style={styles.demoButton}
+          accessibilityLabel="Open the demo chat"
+          disabled={!demoChatRoute}
+        >
+          <ThemedMessageSquare
+            size={14}
+            uniProps={demoChatRoute ? mutedMapping : disabledMapping}
+          />
+          <Text style={styles.chipLabel}>Demo chat</Text>
+        </Pressable>
         <Pressable
           onPress={cycleScheme}
           style={styles.iconButton}
@@ -277,6 +306,14 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
+  },
+  demoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    height: 28,
+    borderRadius: 999,
   },
   divider: {
     width: 1,
