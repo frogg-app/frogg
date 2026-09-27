@@ -16,7 +16,7 @@ import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-
 import type { SplitPane } from "@/stores/workspace-layout-store";
 import type { WorkspaceTab } from "@/workspace-tabs/model";
 import type { Theme } from "@/styles/theme";
-import { panelHeaderEdge } from "@/workspace/panel-chrome";
+import { panelHeaderEdge, panelTheme } from "@/workspace/panel-chrome";
 import { WindowChromeRegion, WindowChromeSafeArea } from "@/utils/desktop-window";
 
 interface ExplorerSidebarDockProps {
