@@ -1,3 +1,4 @@
+import { DesignSlot } from "@/design/layouts/design-slot";
 import { Button } from "@/components/ui/button";
 import { themeOf } from "@/styles/design-theme";
 import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
@@ -756,17 +757,25 @@ function AgentPanelBody({
   }
 
   return (
-    <ChatAgentContent
-      serverId={serverId}
-      workspaceId={workspaceId}
-      agentId={agentId}
-      isPaneFocused={isPaneFocused}
-      client={client}
-      isConnected={isConnected}
-      connectionStatus={connectionStatus}
-      onOpenWorkspaceFile={onOpenWorkspaceFile}
-    />
+    <View style={styles.container}>
+      <ConversationTopSlot serverId={serverId} agentId={agent.id} />
+      <ChatAgentContent
+        serverId={serverId}
+        workspaceId={workspaceId}
+        agentId={agentId}
+        isPaneFocused={isPaneFocused}
+        client={client}
+        isConnected={isConnected}
+        connectionStatus={connectionStatus}
+        onOpenWorkspaceFile={onOpenWorkspaceFile}
+      />
+    </View>
   );
+}
+
+function ConversationTopSlot({ serverId, agentId }: { serverId: string; agentId: string }) {
+  const props = useMemo(() => ({ serverId, agentId }), [serverId, agentId]);
+  return <DesignSlot name="conversationTop" props={props} />;
 }
 
 function ChatAgentContent({

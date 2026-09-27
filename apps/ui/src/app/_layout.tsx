@@ -31,6 +31,7 @@ import { AppearanceStyleBoundary } from "@/components/appearance-style-boundary"
 import { WorktreeSetupCalloutSource } from "@/components/worktree-setup-callout-source";
 import { DownloadToast } from "@/components/download-toast";
 import { DesignSwitcher } from "@/design/design-switcher";
+import { DesignSlot } from "@/design/layouts/design-slot";
 import { QuittingOverlay } from "@/components/quitting-overlay";
 import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
 import { CompanionHost } from "@/companion/host";
@@ -442,6 +443,27 @@ function QueryProvider({ children }: { children: ReactNode }) {
 }
 
 const flexStyle = { flex: 1 } as const;
+const EMPTY_SLOT_PROPS = {} as const;
+
+function SidebarSlot({ active }: { active: boolean }) {
+  const props = useMemo(() => ({ active }), [active]);
+  return (
+    <DesignSlot name="sidebar" props={props}>
+      <LeftSidebar active={active} />
+    </DesignSlot>
+  );
+}
+
+/** Stacks a direction's top bar and mobile tab bar around the app's sidebar and content. */
+function DesignFrameColumn({ compact, children }: { compact: boolean; children: ReactNode }) {
+  return (
+    <View style={flexStyle}>
+      <DesignSlot name="topBar" props={EMPTY_SLOT_PROPS} />
+      {children}
+      {compact ? <DesignSlot name="mobileNav" props={EMPTY_SLOT_PROPS} /> : null}
+    </View>
+  );
+}
 const MOBILE_WEB_GESTURE_TOUCH_ACTION = isWeb ? "auto" : "pan-y";
 
 interface AppContainerProps {
@@ -562,13 +584,14 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
           <AppFrameContent enabled={!isCompactLayout}>{children}</AppFrameContent>
         </WindowChromeRegion>
       )}
+      {!isCompactLayout ? <DesignSlot name="aside" props={EMPTY_SLOT_PROPS} /> : null}
     </AppFrameRow>
   );
 
   const surface = (
     <View style={isCompactLayout ? layoutStyles.surfaceFill : layoutStyles.appSurfaceFramed}>
       <WindowTitlebarDragStrip />
-      {workspaceChrome}
+      <DesignFrameColumn compact={isCompactLayout}>{workspaceChrome}</DesignFrameColumn>
       {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
         <WindowChromeRegion corners="top-left">
           <WindowChromeSafeArea
@@ -633,7 +656,7 @@ function SidebarChrome({
   const active = visible && (isCompactLayout ? isMobileActive : isDesktopOpen);
   return (
     <SidebarModelProvider active={active}>
-      {mounted ? <LeftSidebar active={active} /> : null}
+      {mounted ? <SidebarSlot active={active} /> : null}
       <WorkspaceShortcutTargetsSubscriber enabled={keyboardShortcutsEnabled} />
       <CommandCenterHideActions />
     </SidebarModelProvider>

@@ -21,6 +21,7 @@ import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { newReviewKey, startReviewGate } from "./design-review-gate.mts";
+import { seedDesignReviewChats } from "./design-review-seed.mts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const seededHome = path.join(root, ".dev/preview/home");
@@ -173,6 +174,11 @@ async function main(): Promise<void> {
   });
   await writeFile(urlFile, `${tunnelUrl}\n`);
   await waitForPort(120_000);
+  log("seeding demo chats…");
+  await seedDesignReviewChats({
+    port,
+    statePath: path.join(root, ".dev/preview/state.json"),
+  }).catch((error: unknown) => log(`chat seeding failed: ${String(error)}`));
   printAccess(tunnelUrl, key);
 }
 
