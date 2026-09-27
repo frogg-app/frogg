@@ -79,6 +79,8 @@ import {
 import { DirectorySyncService } from "./directory-sync/index.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import { WorkspaceLabelsSession } from "./session/workspace-labels/workspace-labels-session.js";
+import { PluginsSession } from "./session/plugins/plugins-session.js";
+import type { PluginService } from "./plugins/plugin-service.js";
 import { AgentLifecycleSession } from "./session/agent-lifecycle/agent-lifecycle-session.js";
 import { WorkspaceMetadataSession } from "./session/workspace-metadata/workspace-metadata-session.js";
 
@@ -471,6 +473,7 @@ export interface SessionOptions {
   workspaceRegistry: WorkspaceRegistry;
   directorySync?: DirectorySyncService;
   workspaceLabelService?: WorkspaceLabelService;
+  pluginService?: PluginService | null;
   filesystem?: SessionFileSystem;
   checkoutDiffManager: CheckoutDiffManager;
   github?: ForgeService;
@@ -726,6 +729,7 @@ export class Session {
   private workspaceUpdatesSubscription: WorkspaceUpdatesSubscriptionState | null = null;
   private readonly workspaceLabelService: WorkspaceLabelService | null;
   private readonly workspaceLabels: WorkspaceLabelsSession;
+  private readonly plugins: PluginsSession;
   private readonly workspaceMetadata: WorkspaceMetadataSession;
   private projectSyncEnabled = false;
   private readonly workspaceUpdateTails = new Map<string, Promise<void>>();
@@ -798,6 +802,7 @@ export class Session {
       workspaceRegistry,
       directorySync,
       workspaceLabelService,
+      pluginService,
       filesystem,
       checkoutDiffManager,
       github,
@@ -888,6 +893,11 @@ export class Session {
     });
     this.workspaceLabels = new WorkspaceLabelsSession({
       service: this.workspaceLabelService,
+      emit: (message) => this.emit(message),
+    });
+    this.plugins = new PluginsSession({
+      service: pluginService,
+      clientId,
       emit: (message) => this.emit(message),
     });
     this.filesystem = filesystem ?? nodeSessionFileSystem;
@@ -2368,6 +2378,7 @@ export class Session {
       this.dispatchCheckoutMessage(msg) ??
       this.dispatchWorkspaceRecoveryMessage(msg) ??
       this.workspaceLabels.dispatch(msg) ??
+      this.plugins.dispatch(msg) ??
       this.dispatchWorkspaceAndProjectMessage(msg) ??
       this.dispatchWorkspaceFileMessage(msg, source) ??
       this.dispatchProviderMessage(msg) ??

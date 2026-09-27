@@ -626,6 +626,12 @@
                                       "string",
                                       "null"
                                     ]
+                                  },
+                                  "tarball": {
+                                    "type": "string"
+                                  },
+                                  "sha256": {
+                                    "type": "string"
                                   }
                                 },
                                 "required": [
@@ -671,6 +677,12 @@
                                     "string",
                                     "null"
                                   ]
+                                },
+                                "tarball": {
+                                  "type": "string"
+                                },
+                                "sha256": {
+                                  "type": "string"
                                 }
                               },
                               "required": [

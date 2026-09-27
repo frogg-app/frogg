@@ -152,6 +152,8 @@ import { setupAutoArchiveOnMerge } from "./auto-archive-on-merge/index.js";
 import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
 import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./agent/auto-clean-cut.js";
 import { sendPromptToAgent } from "./agent/agent-prompt.js";
+import { PluginService } from "./plugins/plugin-service.js";
+import { createPluginAgentBridge } from "./plugins/agent-bridge.js";
 import { wrapSessionMessage, type SessionOutboundMessage } from "./messages.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
 import { createConfiguredTerminalManager } from "../terminal/terminal-manager-factory.js";
@@ -1565,6 +1567,13 @@ export async function createFroggDaemon(
     if (value === false) usageLimitAutoResume.cancelAll();
   });
 
+  const pluginService = new PluginService({
+    froggHome: config.froggHome,
+    logger,
+    policy: brand.plugins,
+    agents: createPluginAgentBridge({ agentManager, agentStorage, logger }),
+  });
+
   setupAutoArchiveOnMerge({
     froggHome: config.froggHome,
     froggWorktreesBaseRoot: config.worktreesRoot,
@@ -2294,7 +2303,11 @@ export async function createFroggDaemon(
               presence: presenceService,
             });
             wsServer.setDeviceRoleStore(deviceRoleStoreFrom(claimStore));
+            wsServer.setPluginService(pluginService);
             wsServer.beginAcceptingConnections();
+            void pluginService
+              .start()
+              .catch((err) => logger.error({ err }, "Plugin system failed to start"));
             {
               const server = wsServer;
               updateService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
@@ -2376,6 +2389,7 @@ export async function createFroggDaemon(
 
   const stop = async () => {
     autoUpdater?.stop();
+    await pluginService.stop().catch(() => undefined);
     await hubRelationships.stop();
     workspaceReconciliation.dispose();
     scriptHealthMonitor.stop();

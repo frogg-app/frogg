@@ -100,6 +100,9 @@ export const PluginCatalogVersionSchema = z.object({
   capabilities: z.array(z.string()),
   compatible: z.boolean(),
   publishedAt: z.string().nullable(),
+  /** Tarball URL and sha256, so a client can fetch and verify a client/hybrid half itself. */
+  tarball: z.string().optional(),
+  sha256: z.string().optional(),
 });
 
 export const PluginCatalogEntrySchema = z.object({

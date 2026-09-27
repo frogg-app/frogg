@@ -178,3 +178,10 @@ export function isPluginIdAllowed(
   if (!policy.allow || policy.allow.length === 0) return true;
   return policy.allow.some((g) => pluginIdMatchesGlob(id, g));
 }
+
+/** Frogg's official repository (frogg-app/frogg-plugins). Only the public key is compiled in. */
+export const OFFICIAL_PLUGIN_REPO = {
+  name: "Frogg plugins",
+  url: "https://frogg-app.github.io/frogg-plugins/index.json",
+  publicKey: "6NkzNDGG54fvBJE/dDlQGmPD2ZZRiA9bKo6alMU+2H4=",
+} as const;

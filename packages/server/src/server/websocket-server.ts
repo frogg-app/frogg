@@ -124,6 +124,7 @@ import type { CallerDevice, DeviceAccessService } from "./device-access-service.
 import type { DeviceRole } from "@frogg/protocol/device-access";
 import type { PresenceService } from "./presence-service.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
+import type { PluginService } from "./plugins/plugin-service.js";
 import {
   APPLICATION_SOCKET_LEASE_CHECK_INTERVAL_MS,
   ApplicationSocketLease,
@@ -630,6 +631,8 @@ export class VoiceAssistantWebSocketServer {
   private readonly projectRegistry: ProjectRegistry;
   private readonly workspaceRegistry: WorkspaceRegistry;
   private readonly workspaceLabelService: WorkspaceLabelService | null;
+  private pluginService: PluginService | null = null;
+  private unsubscribePluginEvents: (() => void) | null = null;
   private readonly checkoutDiffManager: CheckoutDiffManager;
   private readonly github: ForgeService;
   private readonly workspaceGitService: WorkspaceGitService;
@@ -1073,6 +1076,21 @@ export class VoiceAssistantWebSocketServer {
    * Bootstrap hands these over once the device store exists; the daemon only
    * advertises `deviceAccess` / `sessionPresence` while it actually has them.
    */
+  /** Plugin system; advertises `features.plugins` and relays plugin push events to every session. */
+  public setPluginService(service: PluginService | null): void {
+    this.unsubscribePluginEvents?.();
+    this.pluginService = service;
+    this.unsubscribePluginEvents =
+      service?.onEvent((message) => this.broadcast({ type: "session", message })) ?? null;
+    for (const connection of this.allConnections()) {
+      this.sendToConnection(connection, this.createServerInfoMessage(connection.session));
+    }
+  }
+
+  private pluginFeatureFlags(): { plugins?: true } {
+    return this.pluginService?.enabled ? { plugins: true } : {};
+  }
+
   public setDeviceAccessServices(services: {
     deviceAccess?: DeviceAccessService | null;
     presence?: PresenceService | null;
@@ -1668,6 +1686,7 @@ export class VoiceAssistantWebSocketServer {
       projectRegistry: this.projectRegistry,
       workspaceRegistry: this.workspaceRegistry,
       workspaceLabelService: this.workspaceLabelService ?? undefined,
+      pluginService: this.pluginService,
       directorySync: this.directorySync,
       checkoutDiffManager: this.checkoutDiffManager,
       github: this.github,
@@ -2027,6 +2046,8 @@ export class VoiceAssistantWebSocketServer {
         ...(this.providerAccountsEnabled ? { agentProviderAccountTransfer: true } : {}),
         // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         agentCleanCut: true,
+        // COMPAT(plugins): added in v1.6.2, remove gate after 2027-09-27.
+        ...this.pluginFeatureFlags(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
