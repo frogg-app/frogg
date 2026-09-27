@@ -22,9 +22,14 @@ export interface PreviewState {
 
 export async function readState(): Promise<PreviewState> {
   try {
-    return JSON.parse(await readFile(path.join(root, ".dev/preview/state.json"), "utf8"));
+    // --live (or FROGG_PREVIEW_LIVE=1) targets `npm run dev:live` instead of the mock preview.
+    const live = process.argv.includes("--live") || process.env.FROGG_PREVIEW_LIVE === "1";
+    const dir = live ? ".dev/live" : ".dev/preview";
+    return JSON.parse(await readFile(path.join(root, dir, "state.json"), "utf8"));
   } catch {
-    throw new Error("No running preview found. Start one with: npm run preview");
+    throw new Error(
+      "No running preview found. Start one with: npm run preview (or npm run dev:live)",
+    );
   }
 }
 

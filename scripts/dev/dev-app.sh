@@ -16,7 +16,7 @@ DEV_BUILD_LABEL="$(git -C "$ROOT_DIR" branch --show-current 2>/dev/null || true)
 echo "══════════════════════════════════════════════════════"
 echo "  ${FROGG_DEV_PRODUCT_NAME} App Dev"
 echo "══════════════════════════════════════════════════════"
-echo "  Metro:   http://localhost:${EXPO_PORT}"
+echo "  Metro:   http://$(dev_lan_ip):${EXPO_PORT}"
 echo "  Daemon:  ${DAEMON_ENDPOINT}"
 echo "  Home:    ${FROGG_HOME}"
 echo "══════════════════════════════════════════════════════"

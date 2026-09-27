@@ -22,6 +22,7 @@
     "dev:ui": "npm run dev:app",
     "dev:desktop": "npm run dev --workspace=@frogg/desktop --",
     "preview": "node --import tsx scripts/dev/branded-run.mts -- node --import tsx scripts/dev/preview.mts",
+    "dev:live": "node --import tsx scripts/dev/branded-run.mts -- node --import tsx scripts/dev/preview.mts --live",
     "shot": "node --import tsx scripts/dev/shot.mts",
     "probe": "node --import tsx scripts/dev/probe.mts",
     "postinstall": "node scripts/ci/postinstall-patches.mjs && npm run brand:prepare",

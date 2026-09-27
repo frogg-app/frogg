@@ -106,6 +106,17 @@ promotions and backports. See [docs/release-streams.md](docs/release-streams.md)
   for isolated dev state and build prerequisites.
 - This VM is headless and shared: bind services to `0.0.0.0`, use the VM LAN IP
   for user-facing URLs, and leave others' processes and worktrees alone.
+- **Test locally before shipping a beta.** A beta is for release validation, not the first time
+  a change runs. Pick the cheapest rung that exercises the change (skill: `frogg-live-dev`):
+
+  | Change touches                       | Test it with                                                               |
+  | ------------------------------------ | -------------------------------------------------------------------------- |
+  | UI layout, copy, styling             | `npm run preview`, then `npm run shot` / `npm run probe`                   |
+  | A feature end to end, real providers | `npm run dev:live`, open the printed URL or add it as a host               |
+  | Daemon behaviour behind an app build | `npm run dev:live`, add its daemon endpoint as a host in the installed app |
+  | Electron shell, native bridge        | `npm run dev:desktop` on a machine with a display                          |
+  | Packaging, installers, auto-update   | a beta build; nothing local covers these                                   |
+
 - Run checks appropriate to the change; run full `npm run typecheck` before
   merging. Lefthook formats/lints staged files and typechecks affected workspaces.
 - Root `package.json` owns the version. Use `npm run version:sync-internal` to
