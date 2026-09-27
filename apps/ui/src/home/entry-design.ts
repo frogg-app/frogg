@@ -155,3 +155,13 @@ export function entrySectionTitle(theme: Theme): TextFragment {
   const size = theme.design.variant === "inset" ? theme.fontSize.base : theme.fontSize.lg;
   return { ...designHeading(theme), fontSize: size };
 }
+
+/** The project/host/branch chips above the new-workspace composer: Soft tints them as pills. */
+export function entryMetaChip(theme: Theme): ViewFragment {
+  if (theme.design.variant !== "soft") return {};
+  return {
+    backgroundColor: theme.colors.surface1,
+    borderRadius: theme.borderRadius.full,
+    paddingHorizontal: theme.spacing[3],
+  };
+}

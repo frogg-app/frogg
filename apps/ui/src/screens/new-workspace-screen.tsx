@@ -9,7 +9,7 @@ import ReanimatedAnimated from "react-native-reanimated";
 import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
 import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { themeOf } from "@/styles/design-theme";
-import { entryPageTitle, entryTitleBlock } from "@/home/entry-design";
+import { entryMetaChip, entryPageTitle, entryTitleBlock } from "@/home/entry-design";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { createNameId } from "mnemonic-id";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1384,6 +1384,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
   const badgePressableStyle = useCallback(
     ({ pressed, hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.badge,
+      styles.badgeDesign,
       Boolean(hovered) && !isPending && styles.badgeHovered,
       pressed && !isPending && styles.badgePressed,
       isPending && styles.badgeDisabled,
@@ -2514,6 +2515,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius["2xl"],
     gap: theme.spacing[1],
+  },
+  badgeDesign: {
+    ...entryMetaChip(themeOf(rt.themeName)),
   },
   badgeHovered: {
     backgroundColor: theme.colors.surface2,

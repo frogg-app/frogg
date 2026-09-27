@@ -610,7 +610,7 @@ export function AgentList({
 const SECTION_TITLE = {
   current: { size: "base", weight: "500", transform: "none", spacing: 0 },
   inset: { size: "sm", weight: "500", transform: "none", spacing: 0 },
-  mono: { size: "xs", weight: "500", transform: "uppercase", spacing: 0.8 },
+  mono: { size: "sm", weight: "500", transform: "uppercase", spacing: 0.8 },
   paper: { size: "xl", weight: "500", transform: "none", spacing: -0.2 },
   focus: { size: "sm", weight: "500", transform: "none", spacing: 0 },
   soft: { size: "lg", weight: "700", transform: "none", spacing: -0.2 },
