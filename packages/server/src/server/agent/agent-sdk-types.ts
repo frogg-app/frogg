@@ -1,4 +1,5 @@
 import type { ProviderAccountPreferences } from "@frogg/protocol/provider-accounts";
+import type { SkillLaunchPolicy } from "../skills/catalog.js";
 import type {
   AgentProviderNotice,
   CleanCutMarker,
@@ -664,6 +665,11 @@ export interface AgentLaunchContext {
    * AgentSessionConfig; providers may adapt it to their native tool surface.
    */
   froggTools?: FroggToolCatalog;
+  /**
+   * Runtime-only: the host's skill choices (built-ins to add, skills to hide). Absent for
+   * chats and for providers that do not load skills.
+   */
+  skills?: SkillLaunchPolicy;
 }
 
 export interface AgentCreateSessionOptions {

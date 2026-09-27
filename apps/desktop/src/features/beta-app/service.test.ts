@@ -98,7 +98,10 @@ describe("BetaAppService", () => {
       installPath: target,
     });
     expect(await fs.readFile(target)).toEqual(PAYLOAD);
-    expect((await fs.stat(target)).mode & 0o111).not.toBe(0);
+    // Windows has no executable mode bits; the AppImage only ever runs on Linux.
+    if (process.platform !== "win32") {
+      expect((await fs.stat(target)).mode & 0o111).not.toBe(0);
+    }
     expect(spawned).toEqual([[target]]);
     expect(events.map((event) => event.phase)).toContain("downloading");
     expect(events.at(-1)).toMatchObject({

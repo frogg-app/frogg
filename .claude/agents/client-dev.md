@@ -24,7 +24,7 @@ Docs live in `website/src/content/docs/docs/`. Start with `contributing/architec
 i18n and branding literals). Then select the relevant pages and skills:
 
 - Workflows: `using-frogg/*.mdx`, `getting-started/connect-and-pair.mdx`.
-- UI copy: the `frogg-i18n` skill. Wire changes: the `frogg-rpc` skill.
+- UI copy: the `frogg-localisation` skill. Wire changes: the `frogg-daemon-rpc` skill.
 - CLI: `desktop-mobile-cli/cli.mdx`.
 - Voice: `using-frogg/voice-and-companion.mdx`.
 

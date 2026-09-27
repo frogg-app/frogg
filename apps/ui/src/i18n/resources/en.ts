@@ -3111,6 +3111,7 @@ export const en = {
       agents: "Agents",
       workspaces: "Sessions",
       providers: "Providers",
+      skills: "{{brandFullName}} skills",
       usage: "Usage",
       terminals: "Terminals",
       host: "Overview",
@@ -3588,6 +3589,22 @@ export const en = {
       },
     },
     host: {
+      skills: {
+        title: "{{brandFullName}} skills",
+        info: "Skills built into {{brandFullName}} that teach agents to work in it: splitting work across agents, setting projects up. Agents see only each skill's name and description until a task calls for it. Switching a skill off hides it from agents started afterwards; reload a running agent to apply it. Skills you or your projects install for Claude Code or Codex are managed there, not here.",
+        unsupported:
+          "This daemon has no {{brandFullName}} skills. Update it to see and switch them here.",
+        loading: "Loading skills…",
+        loadFailed: "Could not load skills",
+        toggleFailed: "Could not change the skill",
+        contentUnavailable: "The daemon returned no content for this skill",
+        view: "View {{name}}",
+        toggle: "Use {{name}}",
+        providers: {
+          claude: "Claude",
+          codex: "Codex",
+        },
+      },
       resources: {
         title: "Resources",
         info: "Live host load and the size of the storage this daemon owns. Metrics refresh every few seconds while this page is open.",

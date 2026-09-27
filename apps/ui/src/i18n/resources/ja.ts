@@ -3126,6 +3126,7 @@ export const ja: TranslationResources = {
       agents: "エージェント",
       workspaces: "セッション",
       providers: "プロバイダー",
+      skills: "{{brandFullName}} スキル",
       usage: "使用状況",
       terminals: "ターミナル",
       host: "概要",
@@ -3607,6 +3608,22 @@ export const ja: TranslationResources = {
       },
     },
     host: {
+      skills: {
+        title: "{{brandFullName}} スキル",
+        info: "エージェントに {{brandFullName}} での作業方法を教える組み込みスキルです（複数エージェントへの作業分担、プロジェクトの設定など）。タスクで必要になるまで、エージェントには各スキルの名前と説明しか見えません。スキルをオフにすると、その後に起動するエージェントから隠されます。実行中のエージェントに反映するには再読み込みしてください。あなたやプロジェクトが Claude Code や Codex 用にインストールしたスキルは、ここではなくそれぞれのツールで管理します。",
+        unsupported:
+          "このデーモンはスキルを管理しません。ここでスキルを確認・切り替えるにはアップデートしてください。",
+        loading: "スキルを読み込み中…",
+        loadFailed: "スキルを読み込めませんでした",
+        toggleFailed: "スキルを変更できませんでした",
+        contentUnavailable: "デーモンはこのスキルの内容を返しませんでした",
+        view: "{{name}} を表示",
+        toggle: "{{name}} を使用",
+        providers: {
+          claude: "Claude",
+          codex: "Codex",
+        },
+      },
       resources: {
         title: "リソース",
         info: "ホストのリアルタイム負荷と、このデーモンが管理するストレージのサイズ。このページを開いている間、メトリクスは数秒ごとに更新されます。",

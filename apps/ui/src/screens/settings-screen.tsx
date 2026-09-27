@@ -64,6 +64,7 @@ import {
   HostProvidersPage,
   HostTerminalsPage,
 } from "@/screens/settings/host-page";
+import { HostSkillsSection } from "@/screens/settings/skills-section";
 import ProjectsScreen from "@/screens/projects-screen";
 import ProjectSettingsScreen from "@/screens/project-settings-screen";
 import { useIsCompactFormFactor } from "@/constants/layout";
@@ -110,6 +111,8 @@ function renderHostSettingsContent(
       return <HostAgentsPage serverId={view.serverId} />;
     case "providers":
       return <HostProvidersPage serverId={view.serverId} />;
+    case "skills":
+      return <HostSkillsSection serverId={view.serverId} />;
     case "terminals":
       return <HostTerminalsPage serverId={view.serverId} />;
     case "host":

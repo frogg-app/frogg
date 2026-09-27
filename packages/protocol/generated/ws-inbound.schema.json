@@ -3613,6 +3613,70 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.skills.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.skills.set_enabled.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "skillId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "skillId",
+                "enabled"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.skills.get_content.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "skillId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "skillId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "daemon.get_pairing_offer.request"
                 },
                 "requestId": {
@@ -4358,6 +4422,7 @@
                               "agents",
                               "providers",
                               "usage",
+                              "skills",
                               "terminals",
                               "host"
                             ]

@@ -130,7 +130,7 @@ describe("runCleanCut", () => {
     const { deps, runner, startFreshAgentSession, appendTimelineItem } = makeDeps({}, conversation);
     await runCleanCut(deps, {
       agentId: "agent-1",
-      target: { provider: "codex", model: "gpt" },
+      target: { providerAccountId: "acct-2" },
     });
 
     const firstCall = runner.mock.calls[0] as unknown as [
@@ -145,11 +145,10 @@ describe("runCleanCut", () => {
     expect(firstCall[0].agentConfig).toMatchObject({
       provider: "claude",
       model: "haiku",
-      providerAccountId: "acct-1",
+      providerAccountId: "acct-2",
     });
     expect(startFreshAgentSession).toHaveBeenCalledWith("agent-1", {
-      provider: "codex",
-      model: "gpt",
+      providerAccountId: "acct-2",
     });
     expect(appendTimelineItem).toHaveBeenCalledWith("agent-1", {
       type: "compaction",
@@ -166,6 +165,20 @@ describe("runCleanCut", () => {
         reason: "manual",
       },
     });
+  });
+
+  it("summarises on the target provider's default account when moving provider", async () => {
+    const { deps, runner } = makeDeps({}, conversation);
+    await runCleanCut(deps, {
+      agentId: "agent-1",
+      target: { provider: "codex", model: "gpt" },
+    });
+    const configs = runner.mock.calls.map(
+      (call) => (call as unknown as [{ agentConfig: Record<string, unknown> }])[0].agentConfig,
+    );
+    expect(configs).toHaveLength(1);
+    expect(configs[0]).toMatchObject({ provider: "codex", model: "gpt" });
+    expect(configs[0]).not.toHaveProperty("providerAccountId");
   });
 
   it("refuses while the agent is running", async () => {
@@ -206,7 +219,7 @@ describe("runCleanCut", () => {
     );
   });
 
-  it("tries only the agent's own provider and account, then fails with the reason", async () => {
+  it("tries only the destination provider and account, then fails with the reason", async () => {
     const { deps, runner, startFreshAgentSession } = makeDeps({}, conversation);
     runner.mockImplementation(async () => {
       throw new Error("usage limit reached");
@@ -318,7 +331,13 @@ describe("resolveCleanCutSummaryCandidates", () => {
         ...settings,
       }),
     } as unknown as CleanCutDeps;
-    return { warn, candidates: resolveCleanCutSummaryCandidates(deps, agent) };
+    return {
+      warn,
+      candidates: resolveCleanCutSummaryCandidates(deps, agent, {
+        provider: "claude",
+        model: "opus",
+      }),
+    };
   };
 
   it("tries the provider override, then the global model, then the defaults, then the agent's model", async () => {

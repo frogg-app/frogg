@@ -345,6 +345,9 @@ export const HostSettingsSectionSchema = z.enum([
   "agents",
   "providers",
   "usage",
+  // COMPAT(skillsManagement): added in v1.6.6 with the <brand> skills section. Apps older
+  // than that reject a config that hides it.
+  "skills",
   "terminals",
   "host",
 ]);
@@ -1748,6 +1751,30 @@ export const DaemonStorageCleanRequestSchema = z.object({
   categoryId: z.string().min(1).max(64),
 });
 export type DaemonStorageCleanRequest = z.infer<typeof DaemonStorageCleanRequestSchema>;
+
+/** The skills built into the product (not the user's or a project's), with whether each is on. */
+export const DaemonSkillsListRequestSchema = z.object({
+  type: z.literal("daemon.skills.list.request"),
+  requestId: z.string(),
+});
+export type DaemonSkillsListRequest = z.infer<typeof DaemonSkillsListRequestSchema>;
+
+/** Switch a skill on or off for agents started from now on. */
+export const DaemonSkillsSetEnabledRequestSchema = z.object({
+  type: z.literal("daemon.skills.set_enabled.request"),
+  requestId: z.string(),
+  skillId: z.string().min(1).max(256),
+  enabled: z.boolean(),
+});
+export type DaemonSkillsSetEnabledRequest = z.infer<typeof DaemonSkillsSetEnabledRequestSchema>;
+
+/** The full SKILL.md text of one listed skill. */
+export const DaemonSkillsGetContentRequestSchema = z.object({
+  type: z.literal("daemon.skills.get_content.request"),
+  requestId: z.string(),
+  skillId: z.string().min(1).max(256),
+});
+export type DaemonSkillsGetContentRequest = z.infer<typeof DaemonSkillsGetContentRequestSchema>;
 
 export const DaemonGetPairingOfferRequestSchema = z.object({
   type: z.literal("daemon.get_pairing_offer.request"),
@@ -3685,6 +3712,9 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   DaemonHostGetMetricsRequestSchema,
   DaemonStorageListRequestSchema,
   DaemonStorageCleanRequestSchema,
+  DaemonSkillsListRequestSchema,
+  DaemonSkillsSetEnabledRequestSchema,
+  DaemonSkillsGetContentRequestSchema,
   DaemonGetPairingOfferRequestSchema,
   DaemonGetSecurityPostureRequestSchema,
   DaemonSetSecurityFindingAcknowledgedRequestSchema,
@@ -4428,6 +4458,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
         // daemon.host.get_metrics, daemon.storage.list and daemon.storage.clean are available.
         hostResources: z.boolean().optional(),
+        // COMPAT(skillsManagement): added in v1.6.6, remove gate after 2027-09-27.
+        // daemon.skills.list, daemon.skills.set_enabled and daemon.skills.get_content are available.
+        skillsManagement: z.boolean().optional(),
       })
       .optional(),
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
@@ -5639,6 +5672,55 @@ export const DaemonStorageCleanResponseSchema = z.object({
     categoryId: z.string(),
     bytesFreed: z.number(),
     removedCount: z.number(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const SkillLocationSchema = z.object({
+  /** built_in today; kept open so other sources can be added without a wire change. */
+  scope: z.string(),
+  path: z.string(),
+  /** Providers that load this copy (claude, codex); unknown ids may appear. */
+  providers: z.array(z.string()),
+});
+export type SkillLocation = z.infer<typeof SkillLocationSchema>;
+
+export const SkillEntrySchema = z.object({
+  /** Stable key for set_enabled/get_content: the skill's short name, e.g. `delegate`. */
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  /** built_in today. */
+  scope: z.string(),
+  locations: z.array(SkillLocationSchema),
+});
+export type SkillEntry = z.infer<typeof SkillEntrySchema>;
+
+export const DaemonSkillsListResponseSchema = z.object({
+  type: z.literal("daemon.skills.list.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skills: z.array(SkillEntrySchema),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonSkillsSetEnabledResponseSchema = z.object({
+  type: z.literal("daemon.skills.set_enabled.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skill: SkillEntrySchema.nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonSkillsGetContentResponseSchema = z.object({
+  type: z.literal("daemon.skills.get_content.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skillId: z.string(),
+    content: z.string().nullable(),
     error: z.string().nullable(),
   }),
 });
@@ -7885,6 +7967,9 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   DaemonHostGetMetricsResponseSchema,
   DaemonStorageListResponseSchema,
   DaemonStorageCleanResponseSchema,
+  DaemonSkillsListResponseSchema,
+  DaemonSkillsSetEnabledResponseSchema,
+  DaemonSkillsGetContentResponseSchema,
   DaemonGetPairingOfferResponseSchema,
   DaemonGetSecurityPostureResponseSchema,
   DaemonSetSecurityFindingAcknowledgedResponseSchema,
@@ -8199,6 +8284,9 @@ export type DaemonGetStatusResponse = z.infer<typeof DaemonGetStatusResponseSche
 export type DaemonHostGetMetricsResponse = z.infer<typeof DaemonHostGetMetricsResponseSchema>;
 export type DaemonStorageListResponse = z.infer<typeof DaemonStorageListResponseSchema>;
 export type DaemonStorageCleanResponse = z.infer<typeof DaemonStorageCleanResponseSchema>;
+export type DaemonSkillsListResponse = z.infer<typeof DaemonSkillsListResponseSchema>;
+export type DaemonSkillsSetEnabledResponse = z.infer<typeof DaemonSkillsSetEnabledResponseSchema>;
+export type DaemonSkillsGetContentResponse = z.infer<typeof DaemonSkillsGetContentResponseSchema>;
 export type DaemonGetPairingOfferResponse = z.infer<typeof DaemonGetPairingOfferResponseSchema>;
 export type DaemonGetSecurityPostureResponse = z.infer<
   typeof DaemonGetSecurityPostureResponseSchema
