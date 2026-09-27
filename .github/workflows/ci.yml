@@ -55,9 +55,6 @@ jobs:
       - name: Lint
         run: npx oxlint .
 
-      - name: Script tests
-        run: npm run test:scripts
-
       # Workspaces typecheck against each other's dist/ output, so the server stack
       # (protocol, client, highlight, relay, server, cli) is built first.
       - name: Build server stack
@@ -68,6 +65,10 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      # After the build: some script tests import built workspace output (protocol's dist).
+      - name: Script tests
+        run: npm run test:scripts
 
   tests:
     name: unit tests (libraries, cli)
