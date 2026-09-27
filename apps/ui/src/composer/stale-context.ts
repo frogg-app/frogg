@@ -13,14 +13,19 @@
  * tab — so the warning keeps meaning something when it does appear.
  */
 
-import { getPromptCacheTtlMs, isPromptCacheCold, PROMPT_CACHE_TTL_MS } from "@frogg/protocol/prompt-cache";
+import {
+  getPromptCacheTtlMs,
+  isPromptCacheCold,
+  PROMPT_CACHE_TTL_MS,
+} from "@frogg/protocol/prompt-cache";
 
 /**
  * How long each provider's prompt cache is assumed to outlive an idle
  * conversation. Lives in `@frogg/protocol/prompt-cache`, shared with the
  * daemon's automatic clean cut.
  */
-export const STALE_CONTEXT_TTL_MS_BY_PROVIDER: Readonly<Record<string, number>> = PROMPT_CACHE_TTL_MS;
+export const STALE_CONTEXT_TTL_MS_BY_PROVIDER: Readonly<Record<string, number>> =
+  PROMPT_CACHE_TTL_MS;
 
 /** The cache window for a provider, or null when the rule does not apply to it. */
 export function staleContextTtlMs(provider: string | null): number | null {

@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import type { ChildProcess } from "node:child_process";
+import { brand } from "@frogg/branding";
 import pino from "pino";
 import { afterEach, describe, expect, test } from "vitest";
 import type { SessionOutboundMessage } from "../../messages.js";
@@ -181,7 +182,7 @@ describe("DaemonUpdateService", () => {
     const result = await pending;
     expect(result).toMatchObject({
       updatable: true,
-      channel: "beta",
+      channel: brand.channel,
       latestVersion: "0.1.14",
       updateAvailable: true,
       releaseUrl: "https://r",
@@ -198,7 +199,7 @@ describe("DaemonUpdateService", () => {
       installDir,
       "--check",
       "--channel",
-      "beta",
+      brand.channel,
     ]);
     expect(calls[0]?.env).toMatchObject({
       FROGG_HOME: path.join(installDir, "home"),
