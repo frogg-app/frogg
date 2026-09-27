@@ -32,7 +32,8 @@ import {
   formatUsage,
   isKnownStorageCategoryId,
   sortStorageCategories,
-  splitUptime,
+  uptimeUnits,
+  type UptimeUnit,
   totalStorageBytes,
   usageFraction,
 } from "./host-resources-view";
@@ -101,10 +102,18 @@ function HostMetricsCard({ serverId }: { serverId: string }) {
   return <MetricsRows metrics={query.data} stale={Boolean(query.error)} />;
 }
 
+const UPTIME_UNIT_KEYS = {
+  days: "settings.host.resources.uptimeDays",
+  hours: "settings.host.resources.uptimeHours",
+  minutes: "settings.host.resources.uptimeMinutes",
+} as const satisfies Record<UptimeUnit, string>;
+
 function MetricsRows({ metrics, stale }: { metrics: HostMetrics; stale: boolean }) {
   const { t } = useTranslation();
   const uptime = (seconds: number) =>
-    t("settings.host.resources.uptimeValue", { ...splitUptime(seconds) });
+    uptimeUnits(seconds)
+      .map(({ unit, count }) => t(UPTIME_UNIT_KEYS[unit], { count }))
+      .join(" ");
   const cpuPercent = formatPercent(metrics.cpu.usagePercent);
   const load = formatLoadAverage(metrics.cpu.loadAverage);
   const cpuHint = [

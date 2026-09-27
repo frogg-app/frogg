@@ -9,6 +9,7 @@ import {
   isKnownStorageCategoryId,
   sortStorageCategories,
   splitUptime,
+  uptimeUnits,
   totalStorageBytes,
   usageFraction,
 } from "./host-resources-view";
@@ -50,6 +51,15 @@ describe("host resources view", () => {
   it("splits uptime", () => {
     expect(splitUptime(90_061)).toEqual({ days: 1, hours: 1, minutes: 1 });
     expect(splitUptime(-5)).toEqual({ days: 0, hours: 0, minutes: 0 });
+  });
+
+  it("drops zero uptime units but always shows minutes when empty", () => {
+    expect(uptimeUnits(60)).toEqual([{ unit: "minutes", count: 1 }]);
+    expect(uptimeUnits(0)).toEqual([{ unit: "minutes", count: 0 }]);
+    expect(uptimeUnits(86_400 + 120)).toEqual([
+      { unit: "days", count: 1 },
+      { unit: "minutes", count: 2 },
+    ]);
   });
 
   it("formats load average or null", () => {

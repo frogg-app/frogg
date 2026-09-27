@@ -66,6 +66,20 @@ export function splitUptime(seconds: number): UptimeParts {
   };
 }
 
+export type UptimeUnit = "days" | "hours" | "minutes";
+
+/** Non-zero units from the largest down; minutes always shown when nothing else is. */
+export function uptimeUnits(seconds: number): { unit: UptimeUnit; count: number }[] {
+  const parts = splitUptime(seconds);
+  const units: { unit: UptimeUnit; count: number }[] = [];
+  if (parts.days > 0) units.push({ unit: "days", count: parts.days });
+  if (parts.hours > 0) units.push({ unit: "hours", count: parts.hours });
+  if (parts.minutes > 0 || units.length === 0) {
+    units.push({ unit: "minutes", count: parts.minutes });
+  }
+  return units;
+}
+
 export function formatLoadAverage(load: readonly number[] | null): string | null {
   if (!load || load.length === 0) return null;
   return load.map((value) => value.toFixed(2)).join(" · ");
