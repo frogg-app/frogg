@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.6.0-beta.2 — 2026-09-27
 
 - **The daemon no longer litters.** All daemon scratch work goes to the system temp directory
   under `frogg-<kind>-<pid>-…` names (image attachments, Pi MCP/extension files, OpenAI speech
