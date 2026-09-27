@@ -56,10 +56,7 @@ export function InsetNavRow({
       testID={testID}
     >
       {leading ? <View style={styles.leading}>{leading}</View> : null}
-      <Text
-        style={active ? styles.labelActive : muted ? styles.labelMuted : styles.label}
-        numberOfLines={1}
-      >
+      <Text style={labelStyle(active, muted)} numberOfLines={1}>
         {label}
       </Text>
       {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
@@ -68,6 +65,11 @@ export function InsetNavRow({
 }
 
 const SELECTED = { selected: true } as const;
+
+function labelStyle(active: boolean, muted: boolean) {
+  if (active) return styles.labelActive;
+  return muted ? styles.labelMuted : styles.label;
+}
 
 /** A count or timestamp at a row's right edge. */
 export function InsetNavMeta({ children }: { children: ReactNode }) {

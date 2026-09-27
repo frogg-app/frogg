@@ -10,11 +10,8 @@ export function useScopedHostLabel(): string {
   const { t } = useTranslation();
   const hosts = useHosts();
   const hostFilters = useSidebarViewStore((state) => state.hostFilters);
-  const scoped =
-    hostFilters.length === 1
-      ? hosts.find((host) => host.serverId === hostFilters[0])
-      : hosts.length === 1
-        ? hosts[0]
-        : undefined;
+  let scoped =
+    hostFilters.length === 1 ? hosts.find((host) => host.serverId === hostFilters[0]) : undefined;
+  if (hostFilters.length !== 1 && hosts.length === 1) scoped = hosts[0];
   return scoped ? scoped.label?.trim() || scoped.serverId : t("sidebar.display.hostFilter.all");
 }

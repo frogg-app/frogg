@@ -47,6 +47,11 @@ const ThemedDown = withUnistyles(ChevronDown);
 const ThemedRight = withUnistyles(ChevronRight);
 const ThemedPlus = withUnistyles(Plus);
 
+const PROJECT_ICON = <ThemedBox size={14} uniProps={accentMapping} />;
+const CHAT_ICON = <ThemedChat size={13} uniProps={mutedMapping} />;
+const COLLAPSED_ICON = <ThemedRight size={12} uniProps={mutedMapping} />;
+const EXPANDED_ICON = <ThemedDown size={12} uniProps={mutedMapping} />;
+
 const NAV_ITEMS: ReadonlyArray<{ view: InsetView; icon: React.ReactElement }> = [
   { view: "inbox", icon: <ThemedInbox size={14} uniProps={mutedMapping} /> },
   { view: "running", icon: <ThemedCircleDot size={14} uniProps={mutedMapping} /> },
@@ -99,11 +104,15 @@ function NavItem({
   onOpen: (view: InsetView) => void;
 }) {
   const handlePress = useCallback(() => onOpen(view), [onOpen, view]);
+  const trailing = useMemo(
+    () => (count > 0 ? <InsetNavMeta>{count}</InsetNavMeta> : null),
+    [count],
+  );
   return (
     <InsetNavRow
       leading={icon}
       label={VIEW_LABELS[view]}
-      trailing={count > 0 ? <InsetNavMeta>{count}</InsetNavMeta> : null}
+      trailing={trailing}
       active={active}
       onPress={handlePress}
       testID={`inset-nav-${view}`}
@@ -226,15 +235,9 @@ const ProjectBlock = memo(function ProjectBlock({
   return (
     <View>
       <InsetNavRow
-        leading={<ThemedBox size={14} uniProps={accentMapping} />}
+        leading={PROJECT_ICON}
         label={project.projectName}
-        trailing={
-          collapsed ? (
-            <ThemedRight size={12} uniProps={mutedMapping} />
-          ) : (
-            <ThemedDown size={12} uniProps={mutedMapping} />
-          )
-        }
+        trailing={collapsed ? COLLAPSED_ICON : EXPANDED_ICON}
         onPress={handleToggle}
         testID={`inset-project-${project.viewKey}`}
       />
@@ -265,12 +268,15 @@ function SessionItem({
     () => onOpen(row.serverId, row.workspaceId),
     [onOpen, row.serverId, row.workspaceId],
   );
+  const leading = useMemo(() => <InsetStatusGlyph bucket={row.bucket} size={13} />, [row.bucket]);
+  const time = row.at ? formatCompactTimeAgo(row.at) : null;
+  const trailing = useMemo(() => (time ? <InsetNavMeta>{time}</InsetNavMeta> : null), [time]);
   return (
     <InsetNavRow
       indented
-      leading={<InsetStatusGlyph bucket={row.bucket} size={13} />}
+      leading={leading}
       label={row.title}
-      trailing={row.at ? <InsetNavMeta>{formatCompactTimeAgo(row.at)}</InsetNavMeta> : null}
+      trailing={trailing}
       active={active}
       onPress={handlePress}
       testID={`inset-session-${row.key}`}
@@ -321,12 +327,10 @@ function ChatItem({
     () => onOpen(row.serverId, row.workspaceId),
     [onOpen, row.serverId, row.workspaceId],
   );
-  const leading =
-    row.bucket === "done" ? (
-      <ThemedChat size={13} uniProps={mutedMapping} />
-    ) : (
-      <InsetStatusGlyph bucket={row.bucket} size={13} />
-    );
+  const leading = useMemo(
+    () => (row.bucket === "done" ? CHAT_ICON : <InsetStatusGlyph bucket={row.bucket} size={13} />),
+    [row.bucket],
+  );
   return (
     <InsetNavRow
       leading={leading}

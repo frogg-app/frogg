@@ -61,6 +61,48 @@ export function InsetHome() {
   const rows = useInsetRows(entries);
   const groups = useMemo(() => groupRows(filterRows(rows, view)), [rows, view]);
 
+  const headerLeft = useMemo(
+    () => (
+      <View style={styles.crumbs}>
+        <SidebarMenuToggle />
+        <Text style={styles.crumbMuted} numberOfLines={1}>
+          {hostLabel}
+        </Text>
+        {CRUMB_ICON}
+        <Text style={styles.crumb} numberOfLines={1}>
+          {VIEW_LABELS[view]}
+        </Text>
+      </View>
+    ),
+    [hostLabel, view],
+  );
+  const headerRight = useMemo(
+    () => (
+      <View style={styles.headerActions}>
+        <Pressable
+          onPress={actions.search}
+          style={iconButtonStyle}
+          accessibilityRole="button"
+          accessibilityLabel={t("sidebar.sections.search")}
+        >
+          {SEARCH_ICON}
+        </Pressable>
+        <Pressable
+          onPress={actions.newSession}
+          style={primaryStyle}
+          accessibilityRole="button"
+          testID="inset-home-new-session"
+        >
+          {PLUS_ICON}
+          {compact ? null : (
+            <Text style={styles.primaryText}>{t("sidebar.actions.newWorkspace")}</Text>
+          )}
+        </Pressable>
+      </View>
+    ),
+    [actions.newSession, actions.search, compact, t],
+  );
+
   let body: React.ReactNode;
   if (groups.length > 0) {
     body = (
@@ -88,43 +130,7 @@ export function InsetHome() {
 
   return (
     <View style={styles.screen} testID="inset-home">
-      <ScreenHeader
-        left={
-          <View style={styles.crumbs}>
-            <SidebarMenuToggle />
-            <Text style={styles.crumbMuted} numberOfLines={1}>
-              {hostLabel}
-            </Text>
-            {CRUMB_ICON}
-            <Text style={styles.crumb} numberOfLines={1}>
-              {VIEW_LABELS[view]}
-            </Text>
-          </View>
-        }
-        right={
-          <View style={styles.headerActions}>
-            <Pressable
-              onPress={actions.search}
-              style={iconButtonStyle}
-              accessibilityRole="button"
-              accessibilityLabel={t("sidebar.sections.search")}
-            >
-              {SEARCH_ICON}
-            </Pressable>
-            <Pressable
-              onPress={actions.newSession}
-              style={primaryStyle}
-              accessibilityRole="button"
-              testID="inset-home-new-session"
-            >
-              {PLUS_ICON}
-              {compact ? null : (
-                <Text style={styles.primaryText}>{t("sidebar.actions.newWorkspace")}</Text>
-              )}
-            </Pressable>
-          </View>
-        }
-      />
+      <ScreenHeader left={headerLeft} right={headerRight} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

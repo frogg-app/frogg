@@ -6,6 +6,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { STATUS_BUCKET_LABELS } from "@/hooks/sidebar-status-view-model";
 import { providerAccountLabel } from "@/provider-accounts/provider-labels";
 import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
+import type { WorkspaceDescriptor } from "@/stores/session-store";
 import { useWorkspace } from "@/stores/session-store-hooks";
 import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
 import type { Theme } from "@/styles/theme";
@@ -51,63 +52,13 @@ function WorkspaceProperties({ serverId, workspaceId }: { serverId: string; work
     [serverId, workspaceId],
   );
   if (!workspace) return null;
-  const primary = agents[0] ?? null;
-  const branch = workspace.gitRuntime?.currentBranch?.trim() || null;
-  const diff = workspace.diffStat;
-  const hasDiff = diff !== null && (diff.additions > 0 || diff.deletions > 0);
-  const lastActive = workspace.activityAt ? new Date(workspace.activityAt) : null;
-
   return (
     <ScrollView
       style={styles.aside}
       contentContainerStyle={styles.asideContent}
       testID="inset-aside"
     >
-      <Section title={INSET_COPY.properties}>
-        <Property label={INSET_COPY.status}>
-          <View style={styles.inline}>
-            <InsetStatusGlyph bucket={workspace.status} />
-            <Text style={styles.value}>{STATUS_BUCKET_LABELS[workspace.status]}</Text>
-          </View>
-        </Property>
-        <Property label={INSET_COPY.model}>
-          <Text style={primary?.model ? styles.value : styles.valueMuted} numberOfLines={1}>
-            {primary?.model ?? INSET_COPY.none}
-          </Text>
-        </Property>
-        <Property label={INSET_COPY.provider}>
-          <Text style={primary ? styles.value : styles.valueMuted} numberOfLines={1}>
-            {primary ? providerAccountLabel(primary.provider) : INSET_COPY.none}
-          </Text>
-        </Property>
-        <Property label={INSET_COPY.branch}>
-          <Text
-            style={branch ? styles.valueMono : styles.valueMuted}
-            numberOfLines={1}
-            dataSet={CODE_SURFACE_DATASET}
-          >
-            {branch ?? INSET_COPY.none}
-          </Text>
-        </Property>
-        <Property label={INSET_COPY.changes}>
-          {hasDiff ? (
-            <View style={styles.inline}>
-              <Text style={styles.diffAdd}>+{diff.additions}</Text>
-              <Text style={styles.diffDel}>−{diff.deletions}</Text>
-            </View>
-          ) : (
-            <Text style={styles.valueMuted}>{INSET_COPY.noChanges}</Text>
-          )}
-        </Property>
-        <Property label={INSET_COPY.created}>
-          <Text style={styles.value}>{formatDate(workspace.createdAt) ?? INSET_COPY.none}</Text>
-        </Property>
-        {lastActive && Number.isFinite(lastActive.getTime()) ? (
-          <Property label={INSET_COPY.lastActive}>
-            <Text style={styles.value}>{formatTimeAgo(lastActive)}</Text>
-          </Property>
-        ) : null}
-      </Section>
+      <PropertiesSection workspace={workspace} primary={agents[0] ?? null} />
       {workspace.chat ? null : (
         <Section title={INSET_COPY.project}>
           <Property label={INSET_COPY.project}>
@@ -130,6 +81,72 @@ function WorkspaceProperties({ serverId, workspaceId }: { serverId: string; work
         </Section>
       ) : null}
     </ScrollView>
+  );
+}
+
+function PropertiesSection({
+  workspace,
+  primary,
+}: {
+  workspace: WorkspaceDescriptor;
+  primary: InsetAgentSummary | null;
+}) {
+  const branch = workspace.gitRuntime?.currentBranch?.trim() || null;
+  const lastActive = workspace.activityAt ? new Date(workspace.activityAt) : null;
+  return (
+    <Section title={INSET_COPY.properties}>
+      <Property label={INSET_COPY.status}>
+        <View style={styles.inline}>
+          <InsetStatusGlyph bucket={workspace.status} />
+          <Text style={styles.value}>{STATUS_BUCKET_LABELS[workspace.status]}</Text>
+        </View>
+      </Property>
+      <Property label={INSET_COPY.model}>
+        <OptionalValue value={primary?.model ?? null} />
+      </Property>
+      <Property label={INSET_COPY.provider}>
+        <OptionalValue value={primary ? providerAccountLabel(primary.provider) : null} />
+      </Property>
+      <Property label={INSET_COPY.branch}>
+        <OptionalValue value={branch} mono />
+      </Property>
+      <Property label={INSET_COPY.changes}>
+        <Changes diffStat={workspace.diffStat} />
+      </Property>
+      <Property label={INSET_COPY.created}>
+        <OptionalValue value={formatDate(workspace.createdAt)} />
+      </Property>
+      {lastActive && Number.isFinite(lastActive.getTime()) ? (
+        <Property label={INSET_COPY.lastActive}>
+          <Text style={styles.value}>{formatTimeAgo(lastActive)}</Text>
+        </Property>
+      ) : null}
+    </Section>
+  );
+}
+
+function OptionalValue({ value, mono = false }: { value: string | null; mono?: boolean }) {
+  if (!value) return <Text style={styles.valueMuted}>{INSET_COPY.none}</Text>;
+  return (
+    <Text
+      style={mono ? styles.valueMono : styles.value}
+      numberOfLines={1}
+      dataSet={mono ? CODE_SURFACE_DATASET : undefined}
+    >
+      {value}
+    </Text>
+  );
+}
+
+function Changes({ diffStat }: { diffStat: WorkspaceDescriptor["diffStat"] }) {
+  if (!diffStat || (diffStat.additions === 0 && diffStat.deletions === 0)) {
+    return <Text style={styles.valueMuted}>{INSET_COPY.noChanges}</Text>;
+  }
+  return (
+    <View style={styles.inline}>
+      <Text style={styles.diffAdd}>+{diffStat.additions}</Text>
+      <Text style={styles.diffDel}>−{diffStat.deletions}</Text>
+    </View>
   );
 }
 
