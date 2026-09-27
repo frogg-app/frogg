@@ -16,6 +16,7 @@ import { useFetchQuery } from "@/data/query";
 import { i18n } from "@/i18n/i18next";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import { openExternalUrl } from "@/utils/open-external-url";
+import { callPluginMethod } from "./client-runtime/route";
 import { describePluginError } from "./errors";
 import { usePluginMutation } from "./queries";
 import { pluginsQueryKeys } from "./query-keys";
@@ -33,7 +34,7 @@ export async function fetchPanelContent(
   pluginId: string,
   panelId: string,
 ): Promise<PluginPanelContent> {
-  const { result } = await client.pluginsRpcCall({
+  const { result } = await callPluginMethod(client, {
     pluginId,
     method: `panel.${panelId}.render`,
     params: {},
@@ -157,7 +158,7 @@ function PanelList({
 }
 
 const runAction = (client: DaemonClient, input: { pluginId: string; action: PanelAction }) =>
-  client.pluginsRpcCall({
+  callPluginMethod(client, {
     pluginId: input.pluginId,
     method: input.action.method,
     params: input.action.params ?? {},
@@ -217,7 +218,11 @@ function PanelForm({
   const queryClient = useQueryClient();
   const submitForm = useCallback(
     (client: DaemonClient, values: FieldValues) =>
-      client.pluginsRpcCall({ pluginId, method: `panel.${panelId}.submit`, params: { values } }),
+      callPluginMethod(client, {
+        pluginId,
+        method: `panel.${panelId}.submit`,
+        params: { values },
+      }),
     [panelId, pluginId],
   );
   const submitter = usePluginMutation(serverId, submitForm);

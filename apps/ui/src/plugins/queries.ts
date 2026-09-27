@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { useFetchQuery } from "@/data/query";
 import { i18n } from "@/i18n/i18next";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
+import { useClientContributionSets } from "./client-runtime/contributions";
 import { pluginsQueryKeys } from "./query-keys";
 
 const LIST_STALE_MS = 30_000;
@@ -62,6 +64,21 @@ export function usePluginContributions(serverId: string) {
     staleTimeMs: LIST_STALE_MS,
     retry: false,
   });
+}
+
+/**
+ * Host contributions plus this device's client-scope plugins, for the surfaces that render them
+ * (session actions, panels). Host sets win on an id clash.
+ */
+export function useMergedPluginContributions(serverId: string) {
+  const host = usePluginContributions(serverId);
+  const local = useClientContributionSets();
+  const contributions = useMemo(() => {
+    const hostSets = host.data?.contributions ?? [];
+    const hostIds = new Set(hostSets.map((set) => set.pluginId));
+    return [...hostSets, ...local.filter((set) => !hostIds.has(set.pluginId))];
+  }, [host.data, local]);
+  return { contributions, isPending: host.isPending && local.length === 0 };
 }
 
 export function usePluginSettings(serverId: string, pluginId: string) {

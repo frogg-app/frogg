@@ -1,3 +1,4 @@
+import { isClientPluginRuntimeSupported } from "./client-runtime/storage";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Puzzle } from "lucide-react-native";
@@ -10,10 +11,12 @@ import { useCommandCenterActions } from "@/command-center/provider";
 import { useToast } from "@/contexts/toast-context";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { clearCommandCenterFocusRestoreElement } from "@/utils/command-center-focus-restore";
+import { callPluginMethod } from "./client-runtime/route";
 import { describePluginError } from "./errors";
 import { isPluginsEnabledByBrand, useHostLabel, usePluginHostIds } from "./hosts";
 import { openPluginsModal } from "./modal-store";
 import { usePluginContributions } from "./queries";
+import { useClientContributionSets } from "./client-runtime/contributions";
 
 const ThemedPuzzle = withUnistyles(Puzzle, (theme) => ({ color: theme.colors.foregroundMuted }));
 
@@ -24,10 +27,12 @@ function PluginIcon({ size }: CommandCenterIconProps) {
 /** "Plugins" (opens the manager) plus every plugin `commands` contribution on every host. */
 export function PluginCommandCenterActions() {
   const serverIds = usePluginHostIds();
-  const enabled = isPluginsEnabledByBrand() && serverIds.length > 0;
+  const enabled =
+    isPluginsEnabledByBrand() && (serverIds.length > 0 || isClientPluginRuntimeSupported());
   return (
     <>
       <OpenPluginsAction enabled={enabled} />
+      {isPluginsEnabledByBrand() ? <ClientPluginCommands /> : null}
       {enabled
         ? serverIds.map((serverId) => (
             <HostPluginCommands
@@ -87,9 +92,12 @@ function HostPluginCommands({ serverId, showHost }: { serverId: string; showHost
         visibility: "query" as const,
         run: async () => {
           const client = getHostRuntimeStore().getClient(serverId);
-          if (!client) return;
           try {
-            await client.pluginsRpcCall({ pluginId: set.pluginId, method: command.id, params: {} });
+            await callPluginMethod(client, {
+              pluginId: set.pluginId,
+              method: command.id,
+              params: {},
+            });
           } catch (error) {
             toast.error(describePluginError(error));
           }
@@ -105,5 +113,46 @@ function HostPluginCommands({ serverId, showHost }: { serverId: string; showHost
     );
   }, [contributions.data, hostLabel, serverId, showHost, t, toast]);
   useCommandCenterActions({ sourceId: `plugins:${serverId}`, enabled: true, actions });
+  return null;
+}
+
+/** Commands from client-scope plugins running on this device; they need no host. */
+function ClientPluginCommands() {
+  const { t } = useTranslation();
+  const toast = useToast();
+  const sets = useClientContributionSets();
+  const actions = useMemo<CommandCenterContribution[]>(
+    () =>
+      sets.flatMap((set) =>
+        set.commands.map((command, index) => ({
+          id: `plugin:client:${set.pluginId}:${command.id}`,
+          group: "plugins",
+          groupRank: 5,
+          rank: index,
+          keywords: [set.pluginName, set.pluginId, command.title],
+          visibility: "query" as const,
+          run: async () => {
+            try {
+              await callPluginMethod(null, {
+                pluginId: set.pluginId,
+                method: command.id,
+                params: {},
+              });
+            } catch (error) {
+              toast.error(describePluginError(error));
+            }
+          },
+          presentation: {
+            kind: "action" as const,
+            title: command.title,
+            subtitle: `${set.pluginName} · ${t("plugins.target.client")}`,
+            sectionTitle: t("plugins.commandCenter.section"),
+            icon: PluginIcon,
+          },
+        })),
+      ),
+    [sets, t, toast],
+  );
+  useCommandCenterActions({ sourceId: "plugins:client", enabled: actions.length > 0, actions });
   return null;
 }

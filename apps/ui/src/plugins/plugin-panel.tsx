@@ -6,7 +6,7 @@ import invariant from "tiny-invariant";
 import { usePaneContext } from "@/panels/pane-context";
 import { definePanel, type PanelDescriptor } from "@/panels/panel-registry";
 import { PluginPanelBody } from "./panel-content";
-import { usePluginContributions } from "./queries";
+import { useMergedPluginContributions } from "./queries";
 
 const ThemedPuzzle = withUnistyles(Puzzle);
 
@@ -15,9 +15,9 @@ function usePluginPanelDescriptor(
   context: { serverId: string },
 ): PanelDescriptor {
   const { t } = useTranslation();
-  const contributions = usePluginContributions(context.serverId);
+  const contributions = useMergedPluginContributions(context.serverId);
   return useMemo(() => {
-    const set = contributions.data?.contributions.find((c) => c.pluginId === target.pluginId);
+    const set = contributions.contributions.find((c) => c.pluginId === target.pluginId);
     const panel = set?.panels.find((p) => p.id === target.panelId);
     const label = panel?.title ?? target.panelId;
     const subtitle = set?.pluginName ?? target.pluginId;
@@ -29,7 +29,7 @@ function usePluginPanelDescriptor(
       icon: ThemedPuzzle,
       statusBucket: null,
     };
-  }, [contributions.data, contributions.isPending, t, target.panelId, target.pluginId]);
+  }, [contributions.contributions, contributions.isPending, t, target.panelId, target.pluginId]);
 }
 
 function PluginPanel(): ReactElement {

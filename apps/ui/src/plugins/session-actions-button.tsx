@@ -2,7 +2,7 @@ import { useCallback, useMemo, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Puzzle } from "lucide-react-native";
 import { withUnistyles } from "react-native-unistyles";
-import type { DaemonClient } from "@frogg/client/internal/daemon-client";
+import type { DaemonClient, PluginContributionSet } from "@frogg/client/internal/daemon-client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,11 +17,11 @@ import {
   iconButtonChromeStyle,
 } from "@/components/ui/icon-button-chrome";
 import { useToast } from "@/contexts/toast-context";
-import { useSessionStore } from "@/stores/session-store";
 import { useWorkspaceLayoutStore } from "@/stores/workspace-layout-store";
+import { callPluginMethod } from "./client-runtime/route";
 import { describePluginError } from "./errors";
 import { isPluginsEnabledByBrand } from "./hosts";
-import { usePluginContributions, usePluginMutation } from "./queries";
+import { useMergedPluginContributions, usePluginMutation } from "./queries";
 
 const ThemedPuzzle = withUnistyles(Puzzle);
 
@@ -37,7 +37,7 @@ interface ActionInput {
 }
 
 const invoke = (client: DaemonClient, input: ActionInput) =>
-  client.pluginsRpcCall({
+  callPluginMethod(client, {
     pluginId: input.pluginId,
     method: input.method,
     params: { agentId: input.agentId, cwd: input.cwd },
@@ -59,10 +59,9 @@ export function PluginSessionActionsButton({
   agentId: string | null;
   workspaceKey: string | null;
 }): ReactElement | null {
-  const supported = useSessionStore(
-    (state) => state.sessions[serverId]?.serverInfo?.features?.plugins === true,
-  );
-  if (!supported || !isPluginsEnabledByBrand()) return null;
+  // Client-scope plugins contribute here even when the host has no plugin feature; the menu
+  // renders nothing when neither side contributes.
+  if (!isPluginsEnabledByBrand()) return null;
   return (
     <SessionActionsMenu
       serverId={serverId}
@@ -86,14 +85,14 @@ function SessionActionsMenu({
 }): ReactElement | null {
   const { t } = useTranslation();
   const toast = useToast();
-  const contributions = usePluginContributions(serverId);
+  const contributions = useMergedPluginContributions(serverId);
   const runner = usePluginMutation(serverId, invoke);
   const sets = useMemo(
     () =>
-      (contributions.data?.contributions ?? []).filter(
+      contributions.contributions.filter(
         (set) => set.sessionActions.length > 0 || set.panels.length > 0,
       ),
-    [contributions.data],
+    [contributions.contributions],
   );
   const run = useCallback(
     (pluginId: string, method: string) => {
@@ -145,9 +144,7 @@ function SessionActionsMenu({
   );
 }
 
-type ContributionSet = NonNullable<
-  ReturnType<typeof usePluginContributions>["data"]
->["contributions"][number];
+type ContributionSet = PluginContributionSet;
 
 function PluginMenuSection({
   first,

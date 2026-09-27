@@ -1,3 +1,4 @@
+import { isClientPluginRuntimeSupported } from "./client-runtime/storage";
 import { useCallback, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { Puzzle } from "lucide-react-native";
@@ -28,7 +29,8 @@ export function usePluginsEntryVisible(): boolean {
       retry: false,
     })),
   );
-  if (!isPluginsEnabledByBrand() || serverIds.length === 0) return false;
+  if (!isPluginsEnabledByBrand()) return false;
+  if (serverIds.length === 0 && !isClientPluginRuntimeSupported()) return false;
   // Unknown (loading/failed) counts as usable so the entry doesn't flicker in and out.
   return results.some((result) => result.data?.policy.enabled !== false);
 }
