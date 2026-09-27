@@ -3156,6 +3156,7 @@ export const es: TranslationResources = {
       agents: "Agents",
       workspaces: "Workspaces",
       providers: "Proveedores",
+      skills: "Habilidades de {{brandFullName}}",
       usage: "Uso",
       terminals: "Terminals",
       host: "Resumen",
@@ -3643,6 +3644,22 @@ export const es: TranslationResources = {
       },
     },
     host: {
+      skills: {
+        title: "Habilidades de {{brandFullName}}",
+        info: "Habilidades integradas en {{brandFullName}} que enseñan a los agentes a trabajar en él: repartir el trabajo entre agentes y configurar proyectos. Los agentes solo ven el nombre y la descripción de cada habilidad hasta que una tarea la necesita. Desactivar una habilidad la oculta a los agentes que se inicien después; recarga un agente en ejecución para aplicarlo. Las habilidades que tú o tus proyectos instaláis para Claude Code o Codex se gestionan allí, no aquí.",
+        unsupported:
+          "Este daemon no gestiona habilidades. Actualízalo para verlas y activarlas aquí.",
+        loading: "Cargando habilidades…",
+        loadFailed: "No se pudieron cargar las habilidades",
+        toggleFailed: "No se pudo cambiar la habilidad",
+        contentUnavailable: "El daemon no devolvió contenido para esta habilidad",
+        view: "Ver {{name}}",
+        toggle: "Usar {{name}}",
+        providers: {
+          claude: "Claude",
+          codex: "Codex",
+        },
+      },
       resources: {
         title: "Recursos",
         info: "Carga del host en vivo y el tamaño del almacenamiento de este daemon. Las métricas se actualizan cada pocos segundos mientras esta página está abierta.",

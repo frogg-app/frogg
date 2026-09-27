@@ -3163,6 +3163,7 @@ export const fr: TranslationResources = {
       agents: "Agents",
       workspaces: "Workspaces",
       providers: "Fournisseurs",
+      skills: "Compétences {{brandFullName}}",
       usage: "Utilisation",
       terminals: "Terminals",
       host: "Aperçu",
@@ -3650,6 +3651,22 @@ export const fr: TranslationResources = {
       },
     },
     host: {
+      skills: {
+        title: "Compétences {{brandFullName}}",
+        info: "Des compétences intégrées à {{brandFullName}} qui apprennent aux agents à y travailler : répartir le travail entre agents, configurer les projets. Les agents ne voient que le nom et la description de chaque compétence jusqu'à ce qu'une tâche en ait besoin. Désactiver une compétence la masque aux agents démarrés ensuite ; rechargez un agent en cours pour l'appliquer. Les compétences que vous ou vos projets installez pour Claude Code ou Codex se gèrent là-bas, pas ici.",
+        unsupported:
+          "Ce daemon ne gère pas les compétences. Mettez-le à jour pour les voir et les activer ici.",
+        loading: "Chargement des compétences…",
+        loadFailed: "Impossible de charger les compétences",
+        toggleFailed: "Impossible de modifier la compétence",
+        contentUnavailable: "Le daemon n'a renvoyé aucun contenu pour cette compétence",
+        view: "Voir {{name}}",
+        toggle: "Utiliser {{name}}",
+        providers: {
+          claude: "Claude",
+          codex: "Codex",
+        },
+      },
       resources: {
         title: "Ressources",
         info: "Charge de l'hôte en direct et taille du stockage géré par ce daemon. Les métriques s'actualisent toutes les quelques secondes tant que cette page est ouverte.",

@@ -3104,6 +3104,7 @@ export const ko: TranslationResources = {
       agents: "에이전트",
       workspaces: "세션",
       providers: "프로바이더",
+      skills: "{{brandFullName}} 스킬",
       usage: "사용량",
       terminals: "터미널",
       host: "개요",
@@ -3582,6 +3583,22 @@ export const ko: TranslationResources = {
       },
     },
     host: {
+      skills: {
+        title: "{{brandFullName}} 스킬",
+        info: "에이전트에게 {{brandFullName}}에서 일하는 방법을 가르치는 내장 스킬입니다: 여러 에이전트에 작업 나누기, 프로젝트 설정하기. 작업에 필요해지기 전까지 에이전트는 각 스킬의 이름과 설명만 봅니다. 스킬을 끄면 이후에 시작되는 에이전트에서 숨겨집니다. 실행 중인 에이전트에 적용하려면 다시 불러오세요. 사용자나 프로젝트가 Claude Code 또는 Codex용으로 설치한 스킬은 여기가 아니라 해당 도구에서 관리합니다.",
+        unsupported:
+          "이 데몬은 스킬을 관리하지 않습니다. 여기에서 스킬을 보고 전환하려면 업데이트하세요.",
+        loading: "스킬을 불러오는 중…",
+        loadFailed: "스킬을 불러오지 못했습니다",
+        toggleFailed: "스킬을 변경하지 못했습니다",
+        contentUnavailable: "데몬이 이 스킬의 내용을 반환하지 않았습니다",
+        view: "{{name}} 보기",
+        toggle: "{{name}} 사용",
+        providers: {
+          claude: "Claude",
+          codex: "Codex",
+        },
+      },
       resources: {
         title: "리소스",
         info: "호스트의 실시간 부하와 이 데몬이 관리하는 저장소 크기입니다. 이 페이지가 열려 있는 동안 몇 초마다 지표가 갱신됩니다.",

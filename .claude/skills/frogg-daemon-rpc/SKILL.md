@@ -1,5 +1,5 @@
 ---
-name: frogg-rpc
+name: frogg-daemon-rpc
 description: Add or change a WebSocket session RPC between the Frogg daemon and its clients. Use when adding a new request/response message, wiring a daemon handler, exposing a new daemon capability to the app, gating a feature on `server_info.features`, or when a protocol change fails typecheck, the authorization exhaustiveness test. Covers the exact ordered file list and the traps.
 ---
 

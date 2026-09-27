@@ -2706,6 +2706,12 @@ export class Session {
         return this.daemonSession.handleStorageListRequest(msg);
       case "daemon.storage.clean.request":
         return this.daemonSession.handleStorageCleanRequest(msg);
+      case "daemon.skills.list.request":
+        return this.daemonSession.handleSkillsListRequest(msg);
+      case "daemon.skills.set_enabled.request":
+        return this.daemonSession.handleSkillsSetEnabledRequest(msg);
+      case "daemon.skills.get_content.request":
+        return this.daemonSession.handleSkillsGetContentRequest(msg);
       case "daemon.beta_channel.get_status.request":
         return this.daemonSession.handleBetaChannelGetStatusRequest(msg);
       case "daemon.beta_channel.install.request":

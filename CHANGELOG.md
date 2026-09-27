@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **Frogg skills.** The daemon ships two skills of its own, written for Frogg: `delegate` (split a
+  task across parallel agents in worktrees, then review and merge) and `project-config` (write or
+  fix `frogg.json`). Each Claude Code and Codex agent the daemon starts gets them as a
+  per-session plugin (`frogg:<name>`) or extra skill root (`frogg-<name>`); nothing is written
+  into the user's skill folders, and agents see only descriptions until a skill is used.
+  **Host settings → Frogg skills** lists them with a switch each and shows their full text;
+  choices are stored in `~/.frogg/skills.json` and apply to agents started afterwards. Branded
+  builds get the skills under their own id, CLI name and docs links. New `daemon.skills.list`,
+  `daemon.skills.set_enabled` and `daemon.skills.get_content` RPCs behind
+  `features.skillsManagement`. The repo's own dev skills are renamed `frogg-localisation` (was
+  `frogg-i18n`) and `frogg-daemon-rpc` (was `frogg-rpc`), and the Paseo-derived `frogg`,
+  `frogg-advisor`, `frogg-committee`, `frogg-handoff` and `frogg-help` skills are removed.
 - **Developer options in Settings.** A **Developer options** switch at the bottom of
   **Settings → About** (off by default, stored per app install) shows a **Developer** section
   above About. Its **Beta app** card installs or updates frogg beta beside the desktop app with

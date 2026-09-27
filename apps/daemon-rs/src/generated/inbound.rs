@@ -257,6 +257,12 @@ pub enum SessionMessage {
     DaemonStorageListRequest(DaemonStorageListRequest),
     #[serde(rename = "daemon.storage.clean.request")]
     DaemonStorageCleanRequest(DaemonStorageCleanRequest),
+    #[serde(rename = "daemon.skills.list.request")]
+    DaemonSkillsListRequest(DaemonSkillsListRequest),
+    #[serde(rename = "daemon.skills.set_enabled.request")]
+    DaemonSkillsSetEnabledRequest(DaemonSkillsSetEnabledRequest),
+    #[serde(rename = "daemon.skills.get_content.request")]
+    DaemonSkillsGetContentRequest(DaemonSkillsGetContentRequest),
     #[serde(rename = "daemon.get_pairing_offer.request")]
     DaemonGetPairingOfferRequest(DaemonGetPairingOfferRequest),
     #[serde(rename = "daemon.get_security_posture.request")]
@@ -1738,6 +1744,29 @@ pub struct DaemonStorageCleanRequest {
     pub request_id: String,
     #[serde(rename = "categoryId")]
     pub category_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsSetEnabledRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsGetContentRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -3080,6 +3080,7 @@ export const ar: TranslationResources = {
       agents: "Agents",
       workspaces: "Workspaces",
       providers: "مقدمي الخدمات",
+      skills: "مهارات {{brandFullName}}",
       usage: "الاستخدام",
       terminals: "Terminals",
       host: "نظرة عامة",
@@ -3558,6 +3559,21 @@ export const ar: TranslationResources = {
       },
     },
     host: {
+      skills: {
+        title: "مهارات {{brandFullName}}",
+        info: "مهارات مدمجة في {{brandFullName}} تعلّم الوكلاء العمل داخله: توزيع العمل على عدة وكلاء وإعداد المشاريع. لا يرى الوكلاء سوى اسم كل مهارة ووصفها حتى تحتاجها مهمة. إيقاف مهارة يخفيها عن الوكلاء الذين يبدأون بعد ذلك؛ أعد تحميل الوكيل قيد التشغيل لتطبيق التغيير. المهارات التي تثبّتها أنت أو مشاريعك لـ Claude Code أو Codex تُدار هناك، لا هنا.",
+        unsupported: "هذا الخادم لا يحتوي على مهارات {{brandFullName}}. حدّثه لعرضها وتبديلها هنا.",
+        loading: "جارٍ تحميل المهارات…",
+        loadFailed: "تعذّر تحميل المهارات",
+        toggleFailed: "تعذّر تغيير المهارة",
+        contentUnavailable: "لم يُرجع الخادم أي محتوى لهذه المهارة",
+        view: "عرض {{name}}",
+        toggle: "استخدام {{name}}",
+        providers: {
+          claude: "Claude",
+          codex: "Codex",
+        },
+      },
       resources: {
         title: "الموارد",
         info: "الحمل الحالي على المضيف وحجم التخزين الذي يملكه هذا الخادم. تُحدَّث المقاييس كل بضع ثوانٍ طالما هذه الصفحة مفتوحة.",

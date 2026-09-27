@@ -3034,6 +3034,7 @@ export const zhCN: TranslationResources = {
       agents: "Agents",
       workspaces: "会话",
       providers: "Providers",
+      skills: "{{brandFullName}} 技能",
       usage: "使用情况",
       terminals: "Terminals",
       host: "概览",
@@ -3503,6 +3504,21 @@ export const zhCN: TranslationResources = {
       },
     },
     host: {
+      skills: {
+        title: "{{brandFullName}} 技能",
+        info: "{{brandFullName}} 内置的技能，教智能体如何在其中工作：在多个智能体之间拆分工作、配置项目。在任务需要之前，智能体只能看到每个技能的名称和描述。关闭某个技能后，之后启动的智能体将看不到它；重新加载正在运行的智能体即可应用。你或项目为 Claude Code 或 Codex 安装的技能在那里管理，而不是在这里。",
+        unsupported: "此守护进程没有 {{brandFullName}} 技能。请更新后在此查看和切换。",
+        loading: "正在加载技能…",
+        loadFailed: "无法加载技能",
+        toggleFailed: "无法更改该技能",
+        contentUnavailable: "守护进程未返回此技能的内容",
+        view: "查看 {{name}}",
+        toggle: "使用 {{name}}",
+        providers: {
+          claude: "Claude",
+          codex: "Codex",
+        },
+      },
       resources: {
         title: "资源",
         info: "主机实时负载以及此守护进程管理的存储大小。页面打开时，指标每隔几秒刷新一次。",

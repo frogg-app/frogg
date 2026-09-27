@@ -266,6 +266,12 @@ pub enum SessionMessage {
     DaemonStorageListResponse(DaemonStorageListResponse),
     #[serde(rename = "daemon.storage.clean.response")]
     DaemonStorageCleanResponse(DaemonStorageCleanResponse),
+    #[serde(rename = "daemon.skills.list.response")]
+    DaemonSkillsListResponse(DaemonSkillsListResponse),
+    #[serde(rename = "daemon.skills.set_enabled.response")]
+    DaemonSkillsSetEnabledResponse(DaemonSkillsSetEnabledResponse),
+    #[serde(rename = "daemon.skills.get_content.response")]
+    DaemonSkillsGetContentResponse(DaemonSkillsGetContentResponse),
     #[serde(rename = "daemon.get_pairing_offer.response")]
     DaemonGetPairingOfferResponse(DaemonGetPairingOfferResponse),
     #[serde(rename = "daemon.get_security_posture.response")]
@@ -7746,6 +7752,68 @@ pub struct DaemonStorageCleanResponsePayload {
     pub bytes_freed: f64,
     #[serde(rename = "removedCount")]
     pub removed_count: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsListResponse {
+    pub payload: DaemonSkillsListResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsListResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub skills: Vec<DaemonSkillsListResponsePayloadSkillsItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsListResponsePayloadSkillsItem {
+    pub id: String,
+    pub name: String,
+    pub description: String,
+    pub enabled: bool,
+    pub scope: String,
+    pub locations: Vec<DaemonSkillsListResponsePayloadSkillsItemLocationsItem>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsListResponsePayloadSkillsItemLocationsItem {
+    pub scope: String,
+    pub path: String,
+    pub providers: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsSetEnabledResponse {
+    pub payload: DaemonSkillsSetEnabledResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsSetEnabledResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub skill: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsGetContentResponse {
+    pub payload: DaemonSkillsGetContentResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsGetContentResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
