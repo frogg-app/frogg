@@ -1,15 +1,16 @@
 import { ArrowUp } from "lucide-react-native";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { EditingTextInput } from "@/components/ui/text-input";
 import type { Theme } from "@/styles/theme";
 import { useSoftStartChat } from "./use-soft-start-chat";
 import { softEdge, softRaised, SOFT_PILL } from "./soft-surface";
 
 const ThemedArrow = withUnistyles(ArrowUp);
 const ThemedSpinner = withUnistyles(ActivityIndicator);
-const ThemedInput = withUnistyles(TextInput);
+const ThemedInput = withUnistyles(EditingTextInput);
 const onAccentMapping = (theme: Theme) => ({ color: theme.colors.accentForeground });
 const placeholderMapping = (theme: Theme) => ({
   placeholderTextColor: theme.colors.foregroundExtraMuted,

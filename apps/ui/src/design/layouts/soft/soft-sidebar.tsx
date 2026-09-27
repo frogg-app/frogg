@@ -47,7 +47,6 @@ const SoftDesktopSidebar = memo(function SoftDesktopSidebar({ active }: { active
     <View
       style={active ? styles.root : hiddenRootStyle()}
       accessibilityElementsHidden={!active}
-      importantForAccessibility={active ? "auto" : "no-hide-descendants"}
       testID="soft-sidebar"
     >
       <SoftRail />
