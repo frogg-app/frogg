@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet } from "react-native-unistyles";
 import { SettingsInfoTip } from "@/screens/settings/settings-info-tip";
 import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
@@ -51,7 +52,7 @@ export function SettingsGroup({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   group: {
     marginBottom: theme.spacing[8],
   },
@@ -71,6 +72,6 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foreground,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
-    ...settingsTreatment(theme).groupTitle,
+    ...settingsTreatment(designThemeOf(theme, rt.themeName)).groupTitle,
   },
 }));

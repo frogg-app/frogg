@@ -10,6 +10,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { ChevronDown } from "lucide-react-native";
+import { radiusOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { extraMutedIconColorMapping } from "@/components/ui/icon-button-chrome";
 
@@ -77,7 +78,7 @@ export const ToolbarLabelSelectTrigger = forwardRef<View, ToolbarLabelSelectTrig
   },
 );
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   trigger: {
     flexDirection: "row",
     alignItems: "center",
@@ -85,7 +86,7 @@ const styles = StyleSheet.create((theme) => ({
     minWidth: 0,
     paddingVertical: theme.spacing[1],
     paddingHorizontal: theme.spacing[1],
-    borderRadius: theme.borderRadius.md,
+    borderRadius: radiusOf(rt.themeName, "md"),
     flexShrink: 1,
   },
   highlighted: {

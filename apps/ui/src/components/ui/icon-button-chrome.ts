@@ -1,6 +1,7 @@
 import type { StyleProp, ViewStyle } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { HEADER_CONTROL_HEIGHT } from "@/components/ui/control-geometry";
+import { designThemeOf } from "@/components/ui/design-surface";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
 
 export { extraMutedIconColorMapping, mutedIconColorMapping } from "@/components/ui/icon-color";
@@ -71,7 +72,7 @@ function iconButtonRadius(theme: Theme): number {
 
 const PILL_RADIUS = 999;
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   large: {
     width: {
       xs: 32,
@@ -82,7 +83,7 @@ const styles = StyleSheet.create((theme) => ({
       md: HEADER_CONTROL_HEIGHT,
     },
     padding: 0,
-    borderRadius: iconButtonRadius(theme),
+    borderRadius: iconButtonRadius(designThemeOf(theme, rt.themeName)),
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -93,7 +94,7 @@ const styles = StyleSheet.create((theme) => ({
     width: SMALL_ICON_BUTTON_SIZE,
     height: SMALL_ICON_BUTTON_SIZE,
     padding: 0,
-    borderRadius: iconButtonRadius(theme),
+    borderRadius: iconButtonRadius(designThemeOf(theme, rt.themeName)),
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
@@ -104,7 +105,7 @@ const styles = StyleSheet.create((theme) => ({
     width: COMPACT_SMALL_ICON_BUTTON_SIZE,
     height: COMPACT_SMALL_ICON_BUTTON_SIZE,
     padding: 0,
-    borderRadius: iconButtonRadius(theme),
+    borderRadius: iconButtonRadius(designThemeOf(theme, rt.themeName)),
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,

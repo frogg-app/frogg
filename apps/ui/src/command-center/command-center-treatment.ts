@@ -7,6 +7,7 @@ import type { Theme } from "@/styles/theme";
  * horizontal inset and the header. `current` is empty: the shipping palette is untouched.
  */
 export interface CommandCenterTreatment {
+  overlay: ViewFragment;
   backdrop: ViewFragment;
   panel: ViewFragment;
   header: ViewFragment;
@@ -14,9 +15,11 @@ export interface CommandCenterTreatment {
   sectionLabel: TextFragment;
   row: ViewFragment;
   activeRow: ViewFragment;
+  divider: ViewFragment;
 }
 
 const EMPTY: CommandCenterTreatment = {
+  overlay: {},
   backdrop: {},
   panel: {},
   header: {},
@@ -24,7 +27,11 @@ const EMPTY: CommandCenterTreatment = {
   sectionLabel: {},
   row: {},
   activeRow: {},
+  divider: {},
 };
+
+/** Borderless directions separate sections by space; the divider keeps its height for layout. */
+const QUIET_DIVIDER: ViewFragment = { backgroundColor: "transparent" };
 
 /** An inset, rounded highlight instead of a full-bleed band. */
 function insetRow(theme: Theme, radius: number, backgroundColor: string) {
@@ -38,6 +45,7 @@ export function commandCenterTreatment(theme: Theme): CommandCenterTreatment {
   const c = theme.colors;
   const r = theme.borderRadius;
   const lgInput = { fontSize: theme.fontSize.lg };
+  const dark = theme.colorScheme === "dark";
   switch (theme.design.variant) {
     case "current":
       return EMPTY;
@@ -46,7 +54,8 @@ export function commandCenterTreatment(theme: Theme): CommandCenterTreatment {
       return {
         ...EMPTY,
         panel: { borderRadius: r.xl, borderColor: c.borderAccent },
-        input: lgInput,
+        header: { paddingVertical: theme.spacing[2] },
+        input: { fontSize: theme.fontSize.base },
         sectionLabel: { fontWeight: theme.fontWeight.medium },
         ...insetRow(theme, r.md, c.surface2),
       };
@@ -55,12 +64,13 @@ export function commandCenterTreatment(theme: Theme): CommandCenterTreatment {
       return {
         ...EMPTY,
         backdrop: { backgroundColor: "rgba(0, 0, 0, 0.35)" },
-        panel: { borderRadius: r.xl, borderColor: c.borderAccent },
+        panel: { borderRadius: r.xl, borderColor: dark ? c.borderAccent : c.surface4 },
         input: lgInput,
         sectionLabel: {
           fontSize: theme.fontSize.sm - 1,
           textTransform: "uppercase",
           letterSpacing: 0.8,
+          fontFamily: theme.fontFamily.mono,
         },
         ...insetRow(theme, r.md, c.surface2),
       };
@@ -68,10 +78,12 @@ export function commandCenterTreatment(theme: Theme): CommandCenterTreatment {
       return {
         ...EMPTY,
         backdrop: { backgroundColor: "rgba(41, 38, 27, 0.28)" },
-        panel: { borderRadius: r["2xl"], borderWidth: 0 },
-        header: { borderBottomColor: c.surface2, paddingVertical: theme.spacing[4] },
+        overlay: { paddingTop: theme.spacing[16] },
+        panel: { borderRadius: r["2xl"], borderWidth: 0, backgroundColor: c.surface1 },
+        header: { borderBottomColor: c.surface3, paddingVertical: theme.spacing[4] },
         input: lgInput,
-        ...insetRow(theme, r.lg, c.surface2),
+        ...insetRow(theme, r.lg, c.surface3),
+        divider: QUIET_DIVIDER,
       };
     case "focus":
       // A quiet floating card: no lines, a large input, soft selection.
@@ -79,19 +91,27 @@ export function commandCenterTreatment(theme: Theme): CommandCenterTreatment {
         ...EMPTY,
         backdrop: { backgroundColor: "rgba(0, 0, 0, 0.2)" },
         panel: { borderRadius: r["2xl"], borderWidth: 0 },
+        overlay: { paddingTop: theme.spacing[24] },
         header: { borderBottomWidth: 0, paddingVertical: theme.spacing[4] },
         input: { fontSize: theme.fontSize.xl },
         ...insetRow(theme, r.lg, c.surface1),
+        divider: QUIET_DIVIDER,
       };
     case "soft":
       return {
         ...EMPTY,
+        overlay: { paddingTop: theme.spacing[16] },
         backdrop: { backgroundColor: "rgba(0, 0, 0, 0.3)" },
-        panel: { borderRadius: r["2xl"], borderWidth: 0 },
+        panel: {
+          borderRadius: r["2xl"],
+          borderWidth: 0,
+          backgroundColor: dark ? c.surface2 : c.palette.white,
+        },
         header: { borderBottomWidth: 0, paddingVertical: theme.spacing[4] },
         input: lgInput,
         sectionLabel: { fontWeight: theme.fontWeight.semibold },
-        ...insetRow(theme, 999, c.surface2),
+        ...insetRow(theme, 999, dark ? c.surface4 : c.surface2),
+        divider: QUIET_DIVIDER,
       };
   }
 }

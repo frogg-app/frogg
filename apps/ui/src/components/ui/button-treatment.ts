@@ -1,5 +1,6 @@
 import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import type { Theme } from "@/styles/theme";
+import { designThemeOf } from "@/components/ui/design-surface";
 
 interface Fill {
   backgroundColor: string;
@@ -94,4 +95,21 @@ export function buttonTreatment(theme: Theme): ButtonTreatment {
         fontSizeDelta: 0,
       };
   }
+}
+
+/**
+ * Button label type for `themeName`: the direction's weight plus the Inset size step. `base` is
+ * the regular label, `xs` the extra-small one.
+ */
+export function buttonText(
+  theme: Theme,
+  themeName: string | undefined,
+  size: "base" | "xs",
+): TextFragment {
+  const treatment = buttonTreatment(designThemeOf(theme, themeName));
+  if (size === "xs") return { fontSize: theme.fontSize.sm + treatment.fontSizeDelta };
+  return {
+    fontSize: theme.fontSize.base + treatment.fontSizeDelta,
+    fontWeight: treatment.textWeight,
+  };
 }

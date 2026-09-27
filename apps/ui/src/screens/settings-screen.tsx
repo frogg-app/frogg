@@ -3,6 +3,7 @@ import type { ComponentType, ReactNode } from "react";
 import { ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
 import { EditingTextInput as TextInput } from "@/components/ui/text-input";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -957,7 +958,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
 // Styles
 // ---------------------------------------------------------------------------
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   loadingContainer: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -971,7 +972,7 @@ const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
-    ...settingsTreatment(theme).page,
+    ...settingsTreatment(designThemeOf(theme, rt.themeName)).page,
   },
   scrollView: {
     flex: 1,
@@ -982,7 +983,7 @@ const styles = StyleSheet.create((theme) => ({
     width: "100%",
     maxWidth: 720,
     alignSelf: "center",
-    ...settingsTreatment(theme).content,
+    ...settingsTreatment(designThemeOf(theme, rt.themeName)).content,
   },
   themeTrigger: {
     flexDirection: "row",
@@ -1023,7 +1024,7 @@ const styles = StyleSheet.create((theme) => ({
   },
 }));
 
-const desktopStyles = StyleSheet.create((theme) => ({
+const desktopStyles = StyleSheet.create((theme, rt) => ({
   row: {
     flex: 1,
     flexDirection: "row",
@@ -1047,7 +1048,7 @@ const desktopStyles = StyleSheet.create((theme) => ({
   },
   // Kept apart from `pageTitle` so its breakpoint weight keeps Unistyles' narrowed style type.
   pageTitleDesign: {
-    ...settingsTreatment(theme).pageTitle,
+    ...settingsTreatment(designThemeOf(theme, rt.themeName)).pageTitle,
   },
 }));
 
