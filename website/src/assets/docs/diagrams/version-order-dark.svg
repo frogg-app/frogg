@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="350" viewBox="0 0 1180 350" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="arrow-stable" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4cc38a"/></marker>
+<marker id="arrow-beta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f5a524"/></marker>
+<marker id="arrow-upstream" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker>
+<marker id="arrow-backport" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#e0a95b"/></marker>
+<marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a3adab"/></marker>
+<marker id="arrow-danger" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f87171"/></marker>
+</defs>
+<rect width="1180" height="350" rx="16" fill="#181b1a"/>
+<text x="40" y="44" font-size="18.9" font-weight="600" fill="#f4f7f6" text-anchor="start">Channel part first, build counter second. Every updater orders versions this way, oldest to newest.</text>
+<text x="40" y="66" font-size="17.6" font-weight="400" fill="#a3adab" text-anchor="start">A suffix that starts with a channel name (beta, rc) is a beta; any other suffix is a rebuild of a release.</text>
+<line x1="50" y1="175" x2="1140" y2="175" stroke="#5b6462" stroke-width="2" marker-end="url(#arrow-muted)"/>
+<circle cx="100" cy="175" r="8" fill="#f5a524" stroke="#181b1a" stroke-width="2"/>
+<text x="100" y="153" font-size="16.2" font-weight="600" fill="#f4f7f6" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-beta.3</text>
+<text x="100" y="205" font-size="15.5" font-weight="400" fill="#a3adab" text-anchor="middle">upstream beta</text>
+<text x="100" y="223" font-size="15.5" font-weight="600" fill="#f5a524" text-anchor="middle">beta app</text>
+<circle cx="262" cy="175" r="8" fill="#f5a524" stroke="#181b1a" stroke-width="2"/>
+<line x1="262" y1="165" x2="262" y2="127" stroke="#5b6462" stroke-width="1"/>
+<text x="262" y="121" font-size="16.2" font-weight="600" fill="#f4f7f6" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-beta.3.acme.1</text>
+<text x="262" y="205" font-size="15.5" font-weight="400" fill="#a3adab" text-anchor="middle">fork build of it</text>
+<text x="262" y="223" font-size="15.5" font-weight="600" fill="#f5a524" text-anchor="middle">beta app</text>
+<circle cx="424" cy="175" r="8" fill="#f5a524" stroke="#181b1a" stroke-width="2"/>
+<text x="424" y="153" font-size="16.2" font-weight="600" fill="#f4f7f6" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-rc.1.acme.1</text>
+<text x="424" y="205" font-size="15.5" font-weight="400" fill="#a3adab" text-anchor="middle">fork candidate</text>
+<text x="424" y="223" font-size="15.5" font-weight="600" fill="#f5a524" text-anchor="middle">beta app</text>
+<circle cx="586" cy="175" r="8" fill="#4cc38a" stroke="#181b1a" stroke-width="2"/>
+<line x1="586" y1="165" x2="586" y2="127" stroke="#5b6462" stroke-width="1"/>
+<text x="586" y="121" font-size="16.2" font-weight="600" fill="#f4f7f6" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0</text>
+<text x="586" y="205" font-size="15.5" font-weight="400" fill="#a3adab" text-anchor="middle">upstream release</text>
+<text x="586" y="223" font-size="15.5" font-weight="600" fill="#4cc38a" text-anchor="middle">stable app</text>
+<circle cx="748" cy="175" r="8" fill="#4cc38a" stroke="#181b1a" stroke-width="2"/>
+<text x="748" y="153" font-size="16.2" font-weight="600" fill="#f4f7f6" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-acme.1</text>
+<text x="748" y="205" font-size="15.5" font-weight="400" fill="#a3adab" text-anchor="middle">fork release</text>
+<text x="748" y="223" font-size="15.5" font-weight="600" fill="#4cc38a" text-anchor="middle">stable app</text>
+<circle cx="910" cy="175" r="8" fill="#4cc38a" stroke="#181b1a" stroke-width="2"/>
+<line x1="910" y1="165" x2="910" y2="127" stroke="#5b6462" stroke-width="1"/>
+<text x="910" y="121" font-size="16.2" font-weight="600" fill="#f4f7f6" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-acme.2</text>
+<text x="910" y="205" font-size="15.5" font-weight="400" fill="#a3adab" text-anchor="middle">fork fix</text>
+<text x="910" y="223" font-size="15.5" font-weight="600" fill="#4cc38a" text-anchor="middle">stable app</text>
+<circle cx="1072" cy="175" r="8" fill="#f5a524" stroke="#181b1a" stroke-width="2"/>
+<text x="1072" y="153" font-size="16.2" font-weight="600" fill="#f4f7f6" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.9.0-beta.1</text>
+<text x="1072" y="205" font-size="15.5" font-weight="400" fill="#a3adab" text-anchor="middle">next beta line</text>
+<text x="1072" y="223" font-size="15.5" font-weight="600" fill="#f5a524" text-anchor="middle">beta app</text>
+<rect x="40" y="272" width="1100" height="50" rx="10" fill="#f87171" fill-opacity="0.08" stroke="#f87171" stroke-opacity="0.5"/>
+<text x="60" y="302" font-size="17.6" font-weight="700" fill="#f87171" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">✗  1.8.0-acme.1-beta.1</text>
+<text x="315" y="302" font-size="16.9" font-weight="400" fill="#f4f7f6" text-anchor="start">reads as a rebuild of 1.8.0 and sorts above it. Put the channel part first: 1.8.0-beta.1.acme.1</text>
+</svg>

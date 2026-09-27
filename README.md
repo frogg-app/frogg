@@ -33,6 +33,9 @@ Then open `http://<that-machine>:9999/`, or install a client:
 
 Windows daemons, Docker and Nix: see [Install](https://frogg.app/docs/getting-started/install/).
 
+Betas ship as **frogg beta**, a separate app and daemon that installs beside frogg: see
+[release streams](docs/release-streams.md).
+
 ## Features
 
 - **Agents on your own hardware.** Claude Code, Codex, Copilot, OpenCode, Pi and any ACP
@@ -48,7 +51,9 @@ Windows daemons, Docker and Nix: see [Install](https://frogg.app/docs/getting-st
 ## Fork and rebrand
 
 Ship your own branded Frogg from a fork: `npm run brand:init`, set one repository variable,
-tag a release. See [Fork and rebrand](https://frogg.app/docs/fork-and-rebrand/).
+tag a release. See [Fork and rebrand](https://frogg.app/docs/fork-and-rebrand/). Pull
+upstream releases into your own beta, test them, then roll them out: see
+[release streams](docs/release-streams.md#forks).
 
 ## Documentation
 

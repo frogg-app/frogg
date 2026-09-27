@@ -212,7 +212,7 @@ npm run release:push                     # tags HEAD as v0.6.20-beta.1 and pushe
 ```
 
 The Release workflow creates a draft **Acme Studio 0.6.20-beta.1** prerelease, builds
-every platform, uploads `acme-...` assets and the generated installers, then publishes.
+every platform as the beta channel, uploads `acme-beta-...` assets and the generated installers, then publishes.
 
 Install the daemon from it on a test host, and the desktop app from the release page:
 
@@ -221,9 +221,11 @@ curl -fsSL https://github.com/acme-corp/frogg/releases/download/v0.6.20-beta.1/i
 acme status
 ```
 
-Ship a second beta the same way and confirm the desktop app (on the beta channel) and
-`acme update --channel beta` both move to it. Then release stable with
-`npm run version:all:promote` and `npm run release:push`.
+This installs **Acme Studio Beta** (`acme-beta`, port 10098, `~/.acme-beta`) beside any
+stable install. Ship a second beta with `npm run release:beta` on `main` and confirm the beta
+desktop app and `acme-beta update` both move to it. Then promote it to stable from your
+`stable` branch with `npm run release:promote` (create the branch once with
+`npm run streams -- init --push`). See [release streams](/docs/contributing/release-streams/).
 
 ## 7. Keep going
 

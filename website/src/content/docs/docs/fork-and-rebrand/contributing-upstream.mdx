@@ -84,6 +84,23 @@ your main ─────────●──●(brand)──●(merge upstream
 
 </Steps>
 
+### Already made it on your fork?
+
+When a change started on your fork's development branch, send those commits back without
+rebuilding them by hand. With `streams.upstream` in `frogg.json`
+([release streams](/docs/contributing/release-streams/#forks)):
+
+```sh
+npm run streams                        # lists your commits upstream does not have
+npm run release:contribute -- <commit> [<commit>...] --branch contrib/timeline-filter
+```
+
+It cherry-picks the commits onto `upstream/main` in a scratch worktree (your checkout is left
+alone), pushes the branch to your fork, and prints the `gh pr create` command for upstream;
+`--open-pr` runs it. It refuses commits that touch your `brands/` directory. Run steps 2–4
+above on the branch before you open the pull request. The Release streams tab shows the same
+candidates under **Waiting to move**, and marks them contributed once upstream has them.
+
 ## Keep brand changes out
 
 A pull request to upstream must not contain:

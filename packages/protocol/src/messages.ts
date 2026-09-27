@@ -2471,6 +2471,18 @@ export const CheckoutCiListRunsRequestSchema = z.object({
   requestId: z.string(),
 });
 
+/**
+ * The checkout's release streams (frogg.json "streams") as a graph: each stream's releases, what
+ * has and has not propagated between them, and every recent change with the streams it has
+ * reached. `fetch` refreshes origin and upstream first.
+ */
+export const CheckoutStreamsGetGraphRequestSchema = z.object({
+  type: z.literal("checkout.streams.get_graph.request"),
+  cwd: z.string(),
+  fetch: z.boolean().optional(),
+  requestId: z.string(),
+});
+
 // COMPAT(githubAutoMergeRpc): legacy RPC retained when
 // checkout.forge.set_auto_merge.* shipped in v0.2.0-beta.1. Stop serving and
 // consuming it after 2027-01-17 once client and daemon floors are >= v0.2.0.
@@ -3491,6 +3503,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   CheckoutPrMergeRequestSchema,
   CheckoutForgeSetAutoMergeRequestSchema,
   CheckoutCiListRunsRequestSchema,
+  CheckoutStreamsGetGraphRequestSchema,
   CheckoutCiDownloadJobLogRequestSchema,
   CheckoutGithubSetAutoMergeRequestSchema,
   CheckoutCommitsListRequestSchema,
@@ -3982,6 +3995,8 @@ export const ServerInfoStatusPayloadSchema = z
         forgeCheckDetails: z.boolean().optional(),
         // COMPAT(ciRuns): added in v1.5.8, remove gate after 2027-09-19.
         ciRuns: z.boolean().optional(),
+        // COMPAT(releaseStreams): added in v1.6.0, remove gate after 2027-10-01.
+        releaseStreams: z.boolean().optional(),
         // COMPAT(forgeSearch): added in v0.2.0-beta.1. Remove the feature gate
         // and github_search fallback after 2027-01-17 once the supported daemon
         // floor is >= v0.2.0.
@@ -5961,6 +5976,120 @@ export const CheckoutCiListRunsResponseSchema = z.object({
   }),
 });
 
+/** A release tag on a stream. */
+export const ReleaseStreamReleaseSchema = z.object({
+  tag: z.string(),
+  version: z.string(),
+  sha: z.string(),
+  date: z.string().nullable(),
+});
+
+/**
+ * One stream. `id` is "development", "stable", "upstream-development" or "upstream-stable";
+ * kinds and channels are open strings so a newer daemon can add streams.
+ */
+export const ReleaseStreamSchema = z.object({
+  id: z.string(),
+  kind: z.string(),
+  /** Display name of the ref: "main", "stable", "upstream/main". */
+  label: z.string(),
+  ref: z.string(),
+  /** "beta" or "stable": which app its releases ship as. */
+  channel: z.string(),
+  exists: z.boolean(),
+  head: z.string().nullable(),
+  headDate: z.string().nullable(),
+  version: z.string().nullable(),
+  /** Commits on the stream since its newest release. */
+  unreleased: z.number(),
+  /** Newest first. */
+  releases: z.array(ReleaseStreamReleaseSchema),
+});
+
+/**
+ * Where a change stands on one stream: "shipped" (in a release), "landed" (on the branch, not yet
+ * released), "pending" (expected to arrive by a flow that has not run), or "absent".
+ */
+export const ReleaseStreamPresenceSchema = z.object({
+  stream: z.string(),
+  state: z.string(),
+  /** How it got there: "commit", "promotion", "backport", "sync" or "contribution". */
+  via: z.string().nullable(),
+  release: z.string().nullable(),
+});
+
+export const ReleaseStreamChangeSchema = z.object({
+  sha: z.string(),
+  subject: z.string(),
+  /** Conventional commit type: "feat", "fix", "perf", ... or "other". */
+  type: z.string(),
+  scope: z.string().nullable(),
+  breaking: z.boolean(),
+  author: z.string(),
+  date: z.string().nullable(),
+  /** The stream the change was made on. */
+  origin: z.string(),
+  presence: z.array(ReleaseStreamPresenceSchema),
+});
+
+/** A path changes travel along, and how many are waiting on it. */
+export const ReleaseStreamFlowSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  /** "promote", "backport", "forward-port", "sync" or "contribute". */
+  kind: z.string(),
+  pending: z.number(),
+  /** The command that moves them, e.g. "npm run release:promote". */
+  command: z.string().nullable(),
+});
+
+/** Something that moved changes between streams, for drawing the graph's connectors. */
+export const ReleaseStreamEventSchema = z.object({
+  kind: z.string(),
+  from: z.string(),
+  to: z.string(),
+  fromRelease: z.string().nullable(),
+  toRelease: z.string().nullable(),
+  sha: z.string(),
+  date: z.string().nullable(),
+  count: z.number(),
+});
+
+export const ReleaseStreamsConfigSchema = z.object({
+  development: z.string(),
+  stable: z.string(),
+  upstream: z
+    .object({
+      remote: z.string(),
+      repository: z.string().nullable(),
+      development: z.string(),
+      stable: z.string(),
+      follow: z.string(),
+    })
+    .nullable(),
+  /** Whether frogg.json declares the streams or they are the defaults. */
+  declared: z.boolean(),
+});
+
+export const CheckoutStreamsGetGraphResponseSchema = z.object({
+  type: z.literal("checkout.streams.get_graph.response"),
+  payload: z.object({
+    cwd: z.string(),
+    config: ReleaseStreamsConfigSchema.nullable(),
+    streams: z.array(ReleaseStreamSchema),
+    flows: z.array(ReleaseStreamFlowSchema),
+    changes: z.array(ReleaseStreamChangeSchema),
+    events: z.array(ReleaseStreamEventSchema),
+    /** More changes exist than the window holds. */
+    truncated: z.boolean(),
+    /** When origin/upstream were last fetched for this graph; null when not fetched. */
+    fetchedAt: z.string().nullable(),
+    fetchError: z.string().nullable(),
+    error: CheckoutErrorSchema.nullable(),
+    requestId: z.string(),
+  }),
+});
+
 // COMPAT(githubAutoMergeRpc): legacy RPC retained when
 // checkout.forge.set_auto_merge.* shipped in v0.2.0-beta.1. Stop serving and
 // consuming it after 2027-01-17 once client and daemon floors are >= v0.2.0.
@@ -7302,6 +7431,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   CheckoutPrMergeResponseSchema,
   CheckoutForgeSetAutoMergeResponseSchema,
   CheckoutCiListRunsResponseSchema,
+  CheckoutStreamsGetGraphResponseSchema,
   CheckoutCiDownloadJobLogResponseSchema,
   CheckoutGithubSetAutoMergeResponseSchema,
   CheckoutCommitsListResponseSchema,
@@ -7786,6 +7916,15 @@ export type CheckoutPrMergeResponse = z.infer<typeof CheckoutPrMergeResponseSche
 export type CheckoutPrMergeMethod = z.infer<typeof CheckoutPrMergeRequestSchema>["mergeMethod"];
 export type CheckoutCiListRunsRequest = z.infer<typeof CheckoutCiListRunsRequestSchema>;
 export type CheckoutCiListRunsResponse = z.infer<typeof CheckoutCiListRunsResponseSchema>;
+export type CheckoutStreamsGetGraphRequest = z.infer<typeof CheckoutStreamsGetGraphRequestSchema>;
+export type CheckoutStreamsGetGraphResponse = z.infer<typeof CheckoutStreamsGetGraphResponseSchema>;
+export type ReleaseStream = z.infer<typeof ReleaseStreamSchema>;
+export type ReleaseStreamRelease = z.infer<typeof ReleaseStreamReleaseSchema>;
+export type ReleaseStreamPresence = z.infer<typeof ReleaseStreamPresenceSchema>;
+export type ReleaseStreamChange = z.infer<typeof ReleaseStreamChangeSchema>;
+export type ReleaseStreamFlow = z.infer<typeof ReleaseStreamFlowSchema>;
+export type ReleaseStreamEvent = z.infer<typeof ReleaseStreamEventSchema>;
+export type ReleaseStreamsConfig = z.infer<typeof ReleaseStreamsConfigSchema>;
 export type CheckoutCiDownloadJobLogResponse = z.infer<
   typeof CheckoutCiDownloadJobLogResponseSchema
 >;

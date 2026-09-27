@@ -147,7 +147,10 @@ test("branded normalization rejects the legacy FROGG namespace", () => {
     FROGG_LISTEN: "127.0.0.1:1",
   };
   normalizeBrandEnvironment(brand, env);
-  assert.equal(env.FROGG_LISTEN, undefined);
+  assert.equal(env.FROGG_LISTEN, "0.0.0.0:1234");
+  const unset: Record<string, string | undefined> = { FROGG_LISTEN: "127.0.0.1:1" };
+  normalizeBrandEnvironment(brand, unset);
+  assert.equal(unset.FROGG_LISTEN, undefined);
 });
 test("management accepts legacy metadata only for Frogg and rejects other products", () => {
   const brand = resolveBrandManifest(minimal);
@@ -327,4 +330,98 @@ test("provider policy locks providers and keeps OpenCode's hosted models off for
     true,
   );
   assert.throws(() => resolveBrandManifest({ ...minimal, providers: { allowed: [] } }), /allowed/);
+});
+
+test("the beta channel installs beside stable under its own identity", () => {
+  const official = {
+    ...minimal,
+    id: "frogg",
+    name: "frogg",
+    applicationId: "app.frogg.frogg",
+    daemonPort: 9999,
+    distribution: { repository: "frogg-app/frogg", iosStoreId: "123" },
+  };
+  const stable = resolveBrandManifest(official);
+  const beta = resolveBrandManifest(official, { channel: "beta" });
+  assert.equal(stable.channel, "stable");
+  assert.equal(beta.channel, "beta");
+  assert.equal(beta.id, "frogg-beta");
+  assert.equal(beta.name, "frogg beta");
+  assert.equal(beta.applicationId, "app.frogg.frogg.beta");
+  assert.equal(beta.daemonPort, 9998);
+  assert.equal(beta.cliName, "frogg-beta");
+  assert.equal(beta.desktopBinaryName, "frogg-beta");
+  assert.equal(beta.homeDir, ".frogg-beta");
+  assert.equal(beta.envPrefix, "FROGG_BETA");
+  assert.equal(beta.scheme, "frogg-beta");
+  assert.equal(beta.serviceName, "frogg-beta-daemon");
+  assert.equal(beta.launchdLabel, "app.frogg.frogg.beta-daemon");
+  assert.equal(beta.artifactPrefix, "frogg-beta");
+  assert.equal(beta.legacyFrogg, false);
+  assert.equal(beta.distribution.iosStoreId, null);
+  assert.equal(beta.distribution.repository, "frogg-app/frogg");
+  // Behaviour follows the product: frogg beta keeps frogg's open defaults and theme.
+  assert.equal(beta.stockFrogg, true);
+  assert.equal(beta.daemon.bind, stable.daemon.bind);
+  assert.equal(beta.daemon.trustLan, stable.daemon.trustLan);
+  assert.equal(beta.channelBadge, true);
+  assert.equal(stable.channelBadge, false);
+  // Both builds know each other's identity.
+  assert.deepEqual(stable.channels, beta.channels);
+  assert.equal(stable.channels.beta.cliName, "frogg-beta");
+  assert.equal(beta.channels.stable.daemonPort, 9999);
+  for (const key of [
+    "applicationId",
+    "daemonPort",
+    "cliName",
+    "homeDir",
+    "envPrefix",
+    "scheme",
+    "serviceName",
+    "launchdLabel",
+    "artifactPrefix",
+    "desktopBinaryName",
+  ] as const) {
+    assert.notEqual(beta[key], stable[key], key);
+  }
+});
+
+test("a brand can rename its beta channel and keeps its casing", () => {
+  const beta = resolveBrandManifest(
+    {
+      ...minimal,
+      channels: { beta: { name: "Acme Preview", daemonPort: 10200, badge: false } },
+    },
+    { channel: "beta" },
+  );
+  assert.equal(beta.name, "Acme Preview");
+  assert.equal(beta.daemonPort, 10200);
+  assert.equal(beta.channelBadge, false);
+  assert.equal(beta.stockFrogg, false);
+  assert.equal(beta.daemon.bind, "loopback");
+  assert.equal(resolveBrandManifest(minimal, { channel: "beta" }).name, "Acme Studio Beta");
+  assert.throws(
+    () =>
+      resolveBrandManifest(
+        { ...minimal, channels: { beta: { daemonPort: minimal.daemonPort } } },
+        { channel: "beta" },
+      ),
+    /must differ/,
+  );
+});
+
+test("a beta build ignores the stable build's inherited environment", () => {
+  const beta = resolveBrandManifest(
+    { ...minimal, id: "frogg", applicationId: "app.frogg.frogg", daemonPort: 9999 },
+    { channel: "beta" },
+  );
+  const env: Record<string, string | undefined> = {
+    FROGG_HOME: "/home/me/.frogg",
+    FROGG_BETA_HOME: "/home/me/.frogg-beta",
+    FROGG_LISTEN: "0.0.0.0:9999",
+  };
+  normalizeBrandEnvironment(beta, env);
+  assert.equal(env.FROGG_HOME, "/home/me/.frogg-beta");
+  assert.equal(env.FROGG_LISTEN, undefined);
+  assert.equal(brandEnv(beta, { FROGG_HOME: "/stable" }, "HOME"), undefined);
 });

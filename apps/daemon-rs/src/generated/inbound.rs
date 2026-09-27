@@ -379,6 +379,8 @@ pub enum SessionMessage {
     CheckoutForgeSetAutoMergeRequest(CheckoutForgeSetAutoMergeRequest),
     #[serde(rename = "checkout.ci.list_runs.request")]
     CheckoutCiListRunsRequest(CheckoutCiListRunsRequest),
+    #[serde(rename = "checkout.streams.get_graph.request")]
+    CheckoutStreamsGetGraphRequest(CheckoutStreamsGetGraphRequest),
     #[serde(rename = "checkout.ci.download_job_log.request")]
     CheckoutCiDownloadJobLogRequest(CheckoutCiDownloadJobLogRequest),
     #[serde(rename = "checkout.github.set_auto_merge.request")]
@@ -1891,6 +1893,8 @@ pub struct WriteProjectConfigRequestConfig {
     pub metadata_generation: Option<WriteProjectConfigRequestConfigMetadataGeneration>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ci: Option<WriteProjectConfigRequestConfigCi>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub streams: Option<WriteProjectConfigRequestConfigStreams>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1963,6 +1967,40 @@ pub struct WriteProjectConfigRequestConfigCiJenkins {
     pub job: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multibranch: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WriteProjectConfigRequestConfigStreams {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub development: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stable: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub upstream: Option<WriteProjectConfigRequestConfigStreamsUpstream>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct WriteProjectConfigRequestConfigStreamsUpstream {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub remote: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repository: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub development: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stable: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub follow: Option<WriteProjectConfigRequestConfigStreamsUpstreamFollow>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub suffix: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum WriteProjectConfigRequestConfigStreamsUpstreamFollow {
+    #[serde(rename = "stable")]
+    Stable,
+    #[serde(rename = "development")]
+    Development,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2882,6 +2920,15 @@ pub enum CheckoutForgeSetAutoMergeRequestMergeMethod {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct CheckoutCiListRunsRequest {
     pub cwd: String,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CheckoutStreamsGetGraphRequest {
+    pub cwd: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fetch: Option<bool>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

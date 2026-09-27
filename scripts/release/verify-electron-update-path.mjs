@@ -1,3 +1,4 @@
+import { channelOfVersion } from "./release-channel.mjs";
 import { createReadStream } from "node:fs";
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -11,7 +12,8 @@ export function verifyElectronUpdatePath({ version, update, manifests, assets })
     !gte(descriptor.version, descriptor.minimumClientVersion)
   )
     throw new Error("Invalid minimum client version");
-  const channel = descriptor.version.includes("-") ? "electron-beta" : "electron-latest";
+  const channel =
+    channelOfVersion(descriptor.version) === "beta" ? "electron-beta" : "electron-latest";
   if (descriptor.channel !== channel) throw new Error("Release channel mismatch");
 
   for (const [platform, count] of [

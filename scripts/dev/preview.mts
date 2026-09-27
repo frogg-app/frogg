@@ -96,12 +96,66 @@ async function createDemoRepo(): Promise<void> {
   await writeFile(path.join(repo, "src/app.ts"), 'export const greeting = "hello";\n');
   git("add -A");
   git('commit -m "Initial commit"');
+  await seedReleaseStreams();
   git("checkout -b feature/preview");
   // Uncommitted edits so the diff-stat pill and the changes pane have something to show.
   await writeFile(
     path.join(repo, "src/app.ts"),
     'export const greeting = "hello, preview";\nexport const answer = 42;\n',
   );
+}
+
+/**
+ * Release-stream history for the Release streams tab: betas on main, a backport and a promotion
+ * on stable, work waiting on both, pushed to a local bare "origin" the daemon reads.
+ */
+async function seedReleaseStreams(): Promise<void> {
+  const origin = path.join(previewDir, "demo-origin.git");
+  await rm(origin, { recursive: true, force: true });
+  execSync(`git init -q --bare -b main "${origin}"`, { stdio: "ignore" });
+  git(`remote add origin "${origin}"`);
+  const at = (day: number) => {
+    const date = new Date(Date.now() - (30 - day) * 86_400_000).toISOString();
+    return { GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date };
+  };
+  const run = (args: string, day: number) =>
+    execSync(`git ${args}`, { cwd: repo, stdio: "ignore", env: { ...process.env, ...at(day) } });
+  const commit = async (file: string, subject: string, day: number, version?: string) => {
+    await writeFile(path.join(repo, file), `${subject}\n`);
+    if (version) await writeFile(path.join(repo, "package.json"), `{"version":"${version}"}\n`);
+    run("add -A", day);
+    run(`commit -q -m "${subject}"`, day);
+  };
+  const release = async (version: string, day: number) => {
+    await commit("VERSION", `chore(release): cut ${version}`, day, version);
+    run(`tag -a v${version} -m v${version}`, day);
+  };
+  await release("1.5.0", 1);
+  git("branch stable");
+  await commit("graph.ts", "feat(ui): stream graph for release channels", 3);
+  await commit("crash.ts", "fix(server): daemon crash when a project has no remote", 4);
+  const fix = execSync("git rev-parse HEAD", { cwd: repo, encoding: "utf8" }).trim();
+  await release("1.6.0-beta.1", 5);
+  git("checkout -q stable");
+  run(`cherry-pick -x ${fix}`, 6);
+  await release("1.5.1", 6);
+  git("checkout -q main");
+  await commit("beta.ts", "feat(desktop): install frogg beta beside frogg", 8);
+  await commit("cache.ts", "perf(git): cache branch snapshots", 9);
+  await release("1.6.0-beta.2", 10);
+  git("checkout -q stable");
+  run("merge -q --no-ff --no-commit -s ours main", 12);
+  run("read-tree -u --reset main", 12);
+  run('commit -q -m "chore(release): promote main 1.6.0-beta.2 to stable"', 12);
+  await release("1.6.0", 12);
+  await commit("install.sh", "fix(install): resolve the newest stable release only", 22);
+  git("checkout -q main");
+  await commit("streams.ts", "feat(streams): backport and promote commands", 15);
+  await release("1.7.0-beta.1", 16);
+  await commit("pill.ts", "fix(ui): channel pill contrast in light mode", 20);
+  await commit("cli.ts", "feat(cli): frogg-beta self-update", 24);
+  git("push -q origin main stable --tags");
+  git("fetch -q origin");
 }
 
 async function seed(): Promise<Record<string, unknown>> {

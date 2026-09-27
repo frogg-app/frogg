@@ -14,6 +14,7 @@ import { terminalPanelRegistration } from "@/panels/terminal-panel";
 import { providerSubagentPanelRegistration } from "@/panels/provider-subagent-panel";
 import { pullRequestPanelRegistration } from "@/panels/pull-request-panel";
 import { ciRunsPanelRegistration } from "@/ci-monitor/ci-runs-panel";
+import { releaseStreamsPanelRegistration } from "@/release-streams/release-streams-panel";
 import { newTabPanelRegistration } from "@/panels/new-tab-panel";
 
 let panelsRegistered = false;
@@ -33,6 +34,7 @@ export function ensurePanelsRegistered(): void {
   registerPanel(filesPanelRegistration);
   registerPanel(pullRequestPanelRegistration);
   registerPanel(ciRunsPanelRegistration);
+  registerPanel(releaseStreamsPanelRegistration);
   registerPanel(commitDiffPanelRegistration);
   registerPanel(workingDiffPanelRegistration);
   registerPanel(changesTreePanelRegistration);

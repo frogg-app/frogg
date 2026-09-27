@@ -81,12 +81,54 @@ const modelPolicy = z.strictObject({
   deny: z.array(idPattern).optional(),
 });
 
+const applicationId = z.string().regex(/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}$/);
+const daemonPort = z.number().int().min(1024).max(65535);
+
+/** The release channels a distribution ships. Each one installs beside the others. */
+export const RELEASE_CHANNELS = ["stable", "beta"] as const;
+export type ReleaseChannel = (typeof RELEASE_CHANNELS)[number];
+
+/**
+ * Identity overrides for the beta channel build. Every field is optional: by default the beta
+ * build derives a separate identity from the stable one (`<id>-beta`, `<applicationId>.beta`,
+ * the next port down, `~/.<id>-beta`, ...) so both install side by side on one machine, and its
+ * icons carry a "beta" badge.
+ */
+const channelOverrides = z.strictObject({
+  name: text.optional(),
+  fullName: text.optional(),
+  applicationId: applicationId.optional(),
+  daemonPort: daemonPort.optional(),
+  cliName: slug.optional(),
+  desktopBinaryName: slug.optional(),
+  homeDir: z
+    .string()
+    .regex(/^\.[a-z][a-z0-9-]*$/)
+    .optional(),
+  envPrefix: z
+    .string()
+    .regex(/^[A-Z][A-Z0-9_]*$/)
+    .optional(),
+  scheme: slug.optional(),
+  serviceName: slug.optional(),
+  launchdLabel: z
+    .string()
+    .regex(/^[a-z][a-z0-9.-]*$/)
+    .optional(),
+  artifactPrefix: z
+    .string()
+    .regex(/^[a-zA-Z][a-zA-Z0-9-]*$/)
+    .optional(),
+  /** Overlay a "beta" badge on the generated icons. Default true. */
+  badge: z.boolean().optional(),
+});
+
 export const BrandManifestSchema = z.strictObject({
   schemaVersion: z.literal(1),
   id: slug,
   name: text,
-  applicationId: z.string().regex(/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}$/),
-  daemonPort: z.number().int().min(1024).max(65535),
+  applicationId,
+  daemonPort,
   fullName: text.optional(),
   description: text.optional(),
   publisher: text.optional(),
@@ -201,11 +243,22 @@ export const BrandManifestSchema = z.strictObject({
     })
     .optional(),
   mobile: z.strictObject({ enabled: z.boolean().optional() }).optional(),
+  channels: z.strictObject({ beta: channelOverrides.optional() }).optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
 
-export function resolveBrandManifest(input: unknown) {
-  const manifest = BrandManifestSchema.parse(input);
+export interface ResolveBrandOptions {
+  /** Which build of the distribution to resolve. Default "stable". */
+  channel?: ReleaseChannel;
+}
+
+export function resolveBrandManifest(input: unknown, options: ResolveBrandOptions = {}) {
+  const base = BrandManifestSchema.parse(input);
+  const channel = options.channel ?? "stable";
+  // Behaviour follows the product, identity follows the channel: frogg beta keeps upstream
+  // frogg's open defaults and theme, but installs under its own names beside frogg.
+  const stock = base.id === "frogg";
+  const manifest = channel === "beta" ? betaManifest(base) : base;
   const distribution = resolveDistribution(manifest);
   const repository = distribution.repository;
   const light = manifest.colors?.light ?? {
@@ -240,13 +293,86 @@ export function resolveBrandManifest(input: unknown) {
     pairing: resolvePairing(manifest),
     projects: resolveProjects(manifest),
     hostSettings: resolveHostSettings(manifest),
-    daemon: resolveDaemonDefaults(manifest),
-    providers: resolveProviders(manifest),
+    daemon: resolveDaemonDefaults(manifest, stock),
+    providers: resolveProviders(manifest, stock),
     // "Does this brand ship a mobile app". Today the only consumer is the CLI,
     // which stops printing a pairing QR nobody could scan; nothing else in the
     // daemon or the apps reads it.
     mobile: { enabled: manifest.mobile?.enabled ?? true },
+    channel,
+    /** Built from the upstream frogg brand, whichever channel. Selects frogg's own theme. */
+    stockFrogg: stock,
+    /** Overlay the beta badge on generated icons. */
+    channelBadge: channel === "beta" && (base.channels?.beta?.badge ?? true),
+    /** Every channel's install identity, so each build can point at its siblings. */
+    channels: {
+      stable: channelSummary(base),
+      beta: channelSummary(betaManifest(base)),
+    },
   };
+}
+
+function channelSummary(manifest: BrandManifest) {
+  const identity = resolveIdentity(manifest);
+  return {
+    id: identity.id,
+    name: identity.name,
+    applicationId: identity.applicationId,
+    cliName: identity.cliName,
+    scheme: identity.scheme,
+    daemonPort: identity.daemonPort,
+    homeDir: identity.homeDir,
+    serviceName: identity.serviceName,
+  };
+}
+
+/** "frogg" → "frogg beta", "Acme Studio" → "Acme Studio Beta": follow the name's own casing. */
+function betaName(name: string): string {
+  return /[A-Z]/.test(name) ? `${name} Beta` : `${name} beta`;
+}
+
+/**
+ * The beta build's manifest: the stable manifest with every install identity moved aside, so a
+ * beta daemon, CLI, desktop app and mobile app install next to the stable ones without sharing a
+ * port, state directory, service, URL scheme, environment namespace or application id.
+ */
+function betaManifest(base: BrandManifest): BrandManifest {
+  const overrides = base.channels?.beta ?? {};
+  const stable = resolveIdentity(base);
+  const id = `${base.id}-beta`;
+  const appId = overrides.applicationId ?? `${base.applicationId}.beta`;
+  const derived = {
+    ...base,
+    id,
+    name: overrides.name ?? betaName(base.name),
+    fullName: overrides.fullName ?? (base.fullName ? betaName(base.fullName) : undefined),
+    applicationId: appId,
+    daemonPort: overrides.daemonPort ?? (base.daemonPort > 1024 ? base.daemonPort - 1 : 1025),
+    cliName: overrides.cliName ?? `${stable.cliName}-beta`,
+    desktopBinaryName: overrides.desktopBinaryName ?? `${stable.desktopBinaryName}-beta`,
+    homeDir: overrides.homeDir ?? `${stable.homeDir}-beta`,
+    envPrefix: overrides.envPrefix ?? `${stable.envPrefix}_BETA`,
+    scheme: overrides.scheme ?? `${stable.scheme}-beta`,
+    serviceName: overrides.serviceName ?? `${id}-daemon`,
+    launchdLabel: overrides.launchdLabel ?? `${appId}-daemon`,
+    artifactPrefix: overrides.artifactPrefix ?? `${stable.artifactPrefix}-beta`,
+    distribution: base.distribution
+      ? // A store listing belongs to one application id; the beta app has its own.
+        { ...base.distribution, iosStoreId: undefined }
+      : undefined,
+  };
+  const parsed = BrandManifestSchema.safeParse(derived);
+  if (!parsed.success) {
+    throw new Error(
+      `The beta channel identity derived from "${base.id}" is invalid; set it under channels.beta: ${parsed.error.issues
+        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+        .join("; ")}`,
+    );
+  }
+  if (parsed.data.daemonPort === base.daemonPort) {
+    throw new Error("channels.beta.daemonPort must differ from the stable daemonPort");
+  }
+  return parsed.data;
 }
 
 /**
@@ -256,8 +382,7 @@ export function resolveBrandManifest(input: unknown) {
  * manifest says otherwise. All are defaults only: the matching env var and
  * config.json key (`daemon.listen`, `daemon.auth.*`, `providerUpdates.checkEnabled`) win.
  */
-function resolveDaemonDefaults(manifest: BrandManifest) {
-  const upstream = manifest.id === "frogg";
+function resolveDaemonDefaults(manifest: BrandManifest, upstream: boolean) {
   const bind = manifest.daemon?.bind ?? (upstream ? "all" : "loopback");
   // Workspace services default to loopback for every brand, upstream included:
   // a dev server is reached through the daemon's authenticated service proxy,
@@ -290,8 +415,7 @@ const BRANDED_DEFAULT_MODEL_POLICIES: Record<string, { allow: string[]; deny: st
  * this is a lock: config.json cannot add a provider outside `allowed` or select
  * a model the policy rejects, and the client leaves them out entirely.
  */
-function resolveProviders(manifest: BrandManifest) {
-  const upstream = manifest.id === "frogg";
+function resolveProviders(manifest: BrandManifest, upstream: boolean) {
   const models: Record<string, { allow: string[]; deny: string[] }> = upstream
     ? {}
     : { ...BRANDED_DEFAULT_MODEL_POLICIES };

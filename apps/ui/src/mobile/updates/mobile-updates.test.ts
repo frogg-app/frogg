@@ -45,6 +45,17 @@ describe("compareReleaseVersions", () => {
     expect(compareReleaseVersions("1.6.0-beta.2", "1.6.0-beta.10")).toBe(-1);
     expect(compareReleaseVersions("1.6.0", "1.6.0")).toBe(0);
   });
+
+  it("orders betas below their release", () => {
+    expect(compareReleaseVersions("1.6.0-beta.2", "1.6.0")).toBe(-1);
+    expect(compareReleaseVersions("1.6.0", "1.5.99")).toBe(1);
+    expect(compareReleaseVersions("1.6.0-beta.2", "1.6.0-beta.10")).toBe(-1);
+  });
+
+  it("orders non-beta prereleases like the desktop and daemon do", () => {
+    expect(compareReleaseVersions("1.6.0-rc.1", "1.6.0")).toBe(-1);
+    expect(compareReleaseVersions("1.6.0-rc.1", "1.5.99")).toBe(1);
+  });
 });
 
 describe("parseApkAssetName", () => {
@@ -118,6 +129,16 @@ describe("selectRelease", () => {
 
   it("offers the newest build on the beta channel", () => {
     expect(selectRelease(releases, "beta")?.tag_name).toBe("v1.6.0-beta.1");
+  });
+
+  it("skips a flagged prerelease on stable even without -beta in the tag", () => {
+    const flagged = [{ ...release("1.6.0-rc.1"), prerelease: true }, release("1.5.45")];
+    expect(selectRelease(flagged, "stable")?.tag_name).toBe("v1.5.45");
+  });
+
+  it("skips an unflagged prerelease tag on stable", () => {
+    const unflagged = [{ ...release("1.6.0-rc.1"), prerelease: false }, release("1.5.45")];
+    expect(selectRelease(unflagged, "stable")?.tag_name).toBe("v1.5.45");
   });
 
   it("ignores drafts", () => {

@@ -89,6 +89,9 @@ Use [frogg-release](.claude/skills/frogg-release/SKILL.md) for builds, benchmark
 changes, packaging migrations and publication. It preserves the installed-client
 update contract across local and CI artifact production.
 
+Work lands on `main`, which ships betas (frogg beta); `stable` ships releases and only takes
+promotions and backports. See [docs/release-streams.md](docs/release-streams.md).
+
 ## Working here
 
 - Install JS workspaces with root `npm ci`. Run `npm run dev:server` and

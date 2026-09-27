@@ -1,3 +1,4 @@
+import { i18n } from "@/i18n/i18next";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import React, {
   useCallback,
@@ -563,6 +564,9 @@ function getFallbackTabLabel(
   }
   if (tab.target.kind === "ci_runs") {
     return "CI";
+  }
+  if (tab.target.kind === "release_streams") {
+    return i18n.t("releaseStreams.label");
   }
   return labels.agent;
 }

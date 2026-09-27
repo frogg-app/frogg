@@ -1,3 +1,5 @@
+import { brand } from "@frogg/branding";
+
 const FROGG_NODE_ENV = "FROGG_NODE_ENV";
 const ELECTRON_RUN_AS_NODE = "ELECTRON_RUN_AS_NODE";
 
@@ -18,11 +20,35 @@ function buildInternalProcessEnv<T extends ProcessEnvRecord>(baseEnv: T): T {
   return { ...baseEnv };
 }
 
+/**
+ * A branded daemon (frogg beta, a fork) maps its own `<PREFIX>_*` settings onto the internal
+ * `FROGG_*` names at startup. Those internal copies describe this install, so a command it
+ * launches must not inherit them: stock `frogg` run from a frogg beta agent's shell would read
+ * frogg beta's FROGG_HOME and talk to the wrong daemon. The `<PREFIX>_*` originals stay, so this
+ * product's own CLI still finds its settings. Values a caller passes as an overlay are kept.
+ */
+export function withoutInternalBrandEnv(
+  baseEnv: ProcessEnvRecord,
+  envPrefix: string = brand.envPrefix,
+): ProcessEnvRecord {
+  const prefix = envPrefix.replace(/_+$/, "");
+  if (!prefix || prefix === "FROGG") return baseEnv;
+  const marker = `${prefix}_`;
+  const result: ProcessEnvRecord = {};
+  for (const [key, value] of Object.entries(baseEnv)) {
+    if (key.startsWith("FROGG_") && !key.startsWith(marker)) continue;
+    result[key] = value;
+  }
+  return result;
+}
+
 function buildExternalProcessEnv(
   baseEnv: ProcessEnvRecord,
   overlays: ProcessEnvRecord[],
+  options: { dropInternalBrandEnv?: boolean } = {},
 ): ExternalProcessEnv {
-  const sanitized = Object.assign({}, baseEnv, ...overlays);
+  const base = options.dropInternalBrandEnv ? withoutInternalBrandEnv(baseEnv) : baseEnv;
+  const sanitized = Object.assign({}, base, ...overlays);
   for (const key of RUNTIME_CONTROL_ENV_KEYS) {
     delete sanitized[key];
   }
@@ -42,7 +68,7 @@ export function createExternalProcessEnv(
   baseEnv: ProcessEnvRecord,
   ...overlays: ProcessEnvRecord[]
 ): ExternalProcessEnv {
-  return buildExternalProcessEnv(baseEnv, overlays);
+  return buildExternalProcessEnv(baseEnv, overlays, { dropInternalBrandEnv: true });
 }
 
 export function createExternalCommandProcessEnv(
@@ -51,7 +77,7 @@ export function createExternalCommandProcessEnv(
   ...overlays: ProcessEnvRecord[]
 ): ExternalProcessEnv {
   // Deprecated command parameter: retained while callers migrate to createExternalProcessEnv.
-  return buildExternalProcessEnv(baseEnv, overlays);
+  return buildExternalProcessEnv(baseEnv, overlays, { dropInternalBrandEnv: true });
 }
 
 export function buildSelfNodeCommand(

@@ -1,6 +1,6 @@
 {
   "name": "@frogg/relay",
-  "version": "1.5.57",
+  "version": "1.6.0-beta.1",
   "description": "Frogg relay for bridging daemon and client connections",
   "files": [
     "dist",

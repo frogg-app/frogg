@@ -23,6 +23,7 @@ import {
 } from "@/panels/panel-registry";
 import { ensurePanelsRegistered } from "@/panels/register-panels";
 import { getTerminalProfileIcon, resolveTerminalProfiles } from "@frogg/protocol/terminal-profiles";
+import { useSessionStore } from "@/stores/session-store";
 import { getBuiltInLaunchOrder, type BuiltInLaunchItemId } from "./internal/catalog";
 
 export type WorkspaceTabLaunchPurpose = "primary" | "supporting";
@@ -77,6 +78,7 @@ const BUILT_IN_SELECTIONS: Record<BuiltInLaunchItemId, NewTabSelection> = {
   files: { kind: "target", target: { kind: "files" } },
   browser: { kind: "browser" },
   pullRequest: { kind: "target", target: { kind: "pull_request" } },
+  releaseStreams: { kind: "target", target: { kind: "release_streams" } },
 };
 
 function getLaunchPresentation(kind: WorkspaceTabTarget["kind"]): PanelPresentation {
@@ -96,6 +98,9 @@ export function useWorkspaceTabLaunchCatalog(input: {
   const launcher = useContext(NewTabLauncherContext);
   invariant(launcher, "NewTabLauncherProvider is required");
   const { config } = useDaemonConfig(serverId);
+  const releaseStreamsSupported = useSessionStore(
+    (state) => state.sessions[serverId]?.serverInfo?.features?.releaseStreams === true,
+  );
   ensurePanelsRegistered();
 
   const launchSelection = useCallback(
@@ -113,6 +118,7 @@ export function useWorkspaceTabLaunchCatalog(input: {
     const diffPresentation = getLaunchPresentation("working_diff");
     const filesPresentation = getLaunchPresentation("files");
     const pullRequestPresentation = getLaunchPresentation("pull_request");
+    const releaseStreamsPresentation = getLaunchPresentation("release_streams");
     const builtIns: Record<BuiltInLaunchItemId, WorkspaceTabLaunchItem & { hidden?: boolean }> = {
       agent: {
         id: "agent",
@@ -179,6 +185,15 @@ export function useWorkspaceTabLaunchCatalog(input: {
         hidden: !launcher.showPullRequest,
         launch: launchSelection(BUILT_IN_SELECTIONS.pullRequest),
       },
+      releaseStreams: {
+        id: "release-streams",
+        label: releaseStreamsPresentation.label(t),
+        Icon: releaseStreamsPresentation.icon,
+        disabled: false,
+        panelKind: "release_streams",
+        hidden: !releaseStreamsSupported,
+        launch: launchSelection(BUILT_IN_SELECTIONS.releaseStreams),
+      },
     };
     const tabItems = getBuiltInLaunchOrder(purpose).flatMap((id) => {
       const item = builtIns[id];
@@ -207,7 +222,16 @@ export function useWorkspaceTabLaunchCatalog(input: {
       });
     }
     return groups;
-  }, [config?.terminalProfiles, editTerminalProfiles, launchSelection, launcher, purpose, host, t]);
+  }, [
+    config?.terminalProfiles,
+    editTerminalProfiles,
+    launchSelection,
+    launcher,
+    purpose,
+    host,
+    releaseStreamsSupported,
+    t,
+  ]);
 }
 
 export { getBuiltInLaunchOrder } from "./internal/catalog";

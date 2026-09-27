@@ -90,7 +90,7 @@ See [security and access](/docs/self-hosting/security/) for how these combine.
 | Key                                  | Type                    | Default    | Meaning |
 | ------------------------------------ | ----------------------- | ---------- | ------- |
 | `daemon.autoUpdate.enabled`          | boolean                 | `false`    | Let the daemon update itself |
-| `daemon.autoUpdate.channel`          | `stable` or `beta`      | `stable`   | Release channel |
+| `daemon.autoUpdate.channel`          | `stable` or `beta`      | `stable`   | Ignored: a daemon updates within its own build's channel (`frogg` stable, `frogg-beta` beta). Still accepted so older files parse |
 | `daemon.autoUpdate.checkIntervalHours` | number                | `24`       | Hours between checks. The first check is 5 minutes after start |
 | `daemon.autoUpdate.quietHours`       | `[start, end]` or null  | `null`     | Local hours (0-23) when updates wait. The window may wrap midnight |
 

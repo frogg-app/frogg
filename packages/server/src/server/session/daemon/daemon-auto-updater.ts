@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import type pino from "pino";
@@ -210,7 +211,7 @@ export class DaemonAutoUpdater {
     this.options.logger.info(
       {
         outcome,
-        channel: config.channel,
+        channel: brand.channel,
         nextCheckAt: this.lastCheckRecord.nextCheckAt,
       },
       "auto-update checked",

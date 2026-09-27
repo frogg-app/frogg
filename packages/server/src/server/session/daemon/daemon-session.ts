@@ -373,7 +373,8 @@ export class DaemonSession {
       ? await update.check({ channel: msg.channel })
       : {
           ...this.updateUnavailable(),
-          channel: msg.channel ?? ("stable" as const),
+          // Each build updates on its own channel; see DaemonUpdateService.check.
+          channel: brand.channel,
           latestVersion: null,
           updateAvailable: false,
           releaseUrl: null,

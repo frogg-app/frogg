@@ -56,6 +56,7 @@ import { runGitCommand } from "../../../utils/run-git-command.js";
 import { expandTilde } from "../../../utils/path.js";
 import type { GitMetadataGenerator } from "./git-metadata-generator.js";
 import { listCiRuns } from "../../../services/ci/ci-service.js";
+import { getReleaseStreams } from "../../../services/release-streams/release-streams-service.js";
 import {
   fetchGitHubActionsJobLog,
   parseGitHubActionsJobId,
@@ -1364,6 +1365,56 @@ export class CheckoutSession {
             message: error instanceof Error ? error.message : String(error),
           },
           requestId,
+        },
+      });
+    }
+  }
+
+  /**
+   * The checkout's release streams as a graph: each stream's releases and which changes have
+   * reached which stream. Read-only apart from the optional fetch of origin and upstream.
+   */
+  async handleCheckoutStreamsGetGraphRequest(
+    msg: Extract<SessionInboundMessage, { type: "checkout.streams.get_graph.request" }>,
+  ): Promise<void> {
+    const { cwd, requestId } = msg;
+    const responseType = "checkout.streams.get_graph.response" as const;
+    const empty = {
+      cwd,
+      config: null,
+      streams: [],
+      flows: [],
+      changes: [],
+      events: [],
+      truncated: false,
+      fetchedAt: null,
+      fetchError: null,
+      requestId,
+    };
+    try {
+      const snapshot = await this.workspaceGitService.getSnapshot(expandTilde(cwd));
+      const repoRoot = snapshot.git.repoRoot;
+      if (!repoRoot) {
+        this.host.emit({
+          type: responseType,
+          payload: { ...empty, error: { code: "NOT_GIT_REPO", message: "Not a git repository" } },
+        });
+        return;
+      }
+      const result = await getReleaseStreams({ repoRoot, fetch: msg.fetch === true });
+      this.host.emit({
+        type: responseType,
+        payload: { cwd, ...result, error: null, requestId },
+      });
+    } catch (error) {
+      this.host.emit({
+        type: responseType,
+        payload: {
+          ...empty,
+          error: {
+            code: "UNKNOWN",
+            message: error instanceof Error ? error.message : String(error),
+          },
         },
       });
     }

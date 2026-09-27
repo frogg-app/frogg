@@ -13,15 +13,17 @@ export function normalizeBrandEnvironment(
   const prefix = brand.envPrefix.replace(/_+$/, "");
   if (!prefix || prefix === "FROGG") return;
   const marker = `${prefix}_`;
-  const legacyKeys = Object.keys(env).filter((key) => key.startsWith("FROGG_"));
-  for (const [key, value] of Object.entries(env)) {
-    if (key.startsWith(marker)) {
-      const internal = `FROGG_${key.slice(marker.length)}`;
-      if (env[internal] === undefined) env[internal] = value;
-    }
+  const branded = Object.entries(env).filter(([key]) => key.startsWith(marker));
+  // Branded builds intentionally stop accepting the upstream namespace. That includes a value
+  // inherited from another install on the same machine (a beta daemon started from a shell the
+  // stable daemon spawned carries its FROGG_HOME): drop it first, so it can neither leak in nor
+  // shadow this build's own setting.
+  for (const key of Object.keys(env)) {
+    if (key.startsWith("FROGG_") && !key.startsWith(marker)) delete env[key];
   }
-  // Branded builds intentionally stop accepting the upstream namespace.
-  for (const key of legacyKeys) delete env[key];
+  for (const [key, value] of branded) {
+    env[`FROGG_${key.slice(marker.length)}`] = value;
+  }
 }
 export function matchesBrand(expected: BrandIdentity, actual: unknown): boolean {
   if (actual === null || actual === undefined) return expected.id === "frogg";

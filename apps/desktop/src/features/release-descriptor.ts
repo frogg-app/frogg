@@ -1,3 +1,4 @@
+import { isStableVersion } from "@frogg/protocol/release-version";
 import { valid } from "semver";
 
 export interface ReleaseDescriptor {
@@ -33,7 +34,8 @@ export function parseReleaseDescriptor(value: unknown): ReleaseDescriptor {
   ) {
     throw new Error("Unsupported release descriptor schema, version, channel or update paths.");
   }
-  if (value.channel !== (value.version.includes("-") ? "beta" : "stable"))
+  // A fork rebuild (1.8.0-acme.2) is a stable release; only a channel part makes a beta.
+  if (value.channel !== (isStableVersion(value.version) ? "stable" : "beta"))
     throw new Error("Release channel does not match its version.");
   return {
     schemaVersion: 1,

@@ -63,6 +63,11 @@ const manifests = {
     supportedHosts: ["explorer"],
     resourceKey: () => "ci_runs",
   },
+  release_streams: {
+    kind: "release_streams",
+    supportedHosts: ["main", "explorer"],
+    resourceKey: () => "release_streams",
+  },
   file: {
     kind: "file",
     supportedHosts: ["main", "explorer"],

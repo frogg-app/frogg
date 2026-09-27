@@ -1,6 +1,6 @@
 ---
 title: Updates
-description: Update daemons installed with install.sh, Docker or Nix, choose release channels, enable automatic updates and roll back.
+description: Update daemons installed with install.sh, Docker or Nix, run a beta daemon beside the stable one, enable automatic updates and roll back.
 sidebar:
   order: 5
 ---
@@ -13,14 +13,18 @@ Clients and daemons update separately. Keep them close: from 0.6, apps require d
 ```sh
 frogg update --check
 frogg update
-frogg update --channel beta
 frogg update --to 0.6.18        # pin a version, including older ones
 ```
 
+Each install updates within its own channel. `frogg` takes stable releases only; betas are
+a separate install, `frogg-beta` (service `frogg-beta-daemon`, port 9998, state in
+`~/.frogg-beta`), which takes `-beta.N` releases only. Run both on one host if you like;
+install the beta with the `install.sh` attached to any beta release. `--channel` is kept
+for scripts, but naming the other channel is an error that points you at the other install.
+
 How it works:
 
-1. Finds the release on GitHub (`frogg-app/frogg`) for the channel. **Stable** ignores
-   prereleases (`-beta.N`); **beta** includes them.
+1. Finds the newest release on GitHub (`frogg-app/frogg`) for this install's channel.
 2. Downloads the daemon bundle, verifies its `.sha256`, and unpacks it to
    `~/.local/share/frogg/versions/<version>`.
 3. Switches the `current` link, restarts the service (from a transient `systemd-run` unit
@@ -47,7 +51,7 @@ The same update runs from the app: **host settings → Overview → Daemon updat
 ```json title="~/.frogg/config.json"
 {
   "daemon": {
-    "autoUpdate": { "enabled": true, "channel": "stable", "checkIntervalHours": 24, "quietHours": [9, 18] }
+    "autoUpdate": { "enabled": true, "checkIntervalHours": 24, "quietHours": [9, 18] }
   }
 }
 ```

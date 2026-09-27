@@ -26,48 +26,51 @@ Give every release a `CHANGELOG.md` section headed `## <version>`, for example
 `## 0.6.19 — 2026-09-13`. The workflow uses that section as the release notes. Without it, the
 notes only say that no changelog entry exists.
 
-## Cut a stable release
+## Cut a release
 
-<Steps>
+Betas ship from `main` and stable releases from `stable`. The day-to-day flow (betas,
+backports, promotion) is in [Release streams](/docs/contributing/release-streams/); this is
+what each command does.
 
-1. Add the changelog section for the next version and merge your work.
+| Command                   | Branch   | Cuts                                                        |
+| ------------------------- | -------- | ----------------------------------------------------------- |
+| `npm run release:beta`    | `main`   | The next `X.Y.0-beta.N`                                     |
+| `npm run release:patch`   | `stable` | The next `X.Y.Z` (backported fixes)                         |
+| `npm run release:promote` | `stable` | `X.Y.0` from `main`'s open beta line                        |
 
-2. From a clean checkout of the release branch, run one of:
+Each cut runs three steps:
 
-   ```bash
-   npm run release:patch
-   npm run release:minor
-   npm run release:major
-   ```
+- `release:check`: `npm install`, typechecks and clean builds of the library, server and CLI
+  workspaces, then `npm pack --dry-run` for each publishable package. `release:beta` and
+  `release:promote` accept `-- --skip-check`.
+- `set-release-version.mjs`: runs `npm version <next> --include-workspace-root` with the
+  message `chore(release): cut <version>`. npm's `version` hook syncs workspace versions,
+  reinstalls, refreshes the Nix dependency hash (`nix:hash`, since the reinstall rewrites
+  `package-lock.json`), and stages the result. This step needs either Nix or Docker on the
+  machine cutting the release; without one the cut stops before it commits.
+- `release:push`: creates the annotated tag `v<version>` if it is missing, pushes `HEAD` to
+  the current branch (or `--branch <name>`), then pushes the tag.
 
-   Each one runs three steps:
-
-   - `release:check`: `npm install`, typechecks and clean builds of the library, server and CLI
-     workspaces, then `npm pack --dry-run` for each publishable package.
-   - `version:all:<mode>`: runs `npm version <next> --include-workspace-root` with the message
-     `chore(release): cut <version>`. npm's `version` hook syncs workspace versions, reinstalls,
-     refreshes the Nix dependency hash (`nix:hash`, since the reinstall rewrites
-     `package-lock.json`), and stages the result. This step needs either Nix or Docker on the
-     machine cutting the release; without one the cut stops before it commits.
-   - `release:push`: creates the annotated tag `v<version>` if it is missing, pushes `HEAD` to
-     the current branch (or `--branch <name>`), then pushes the tag.
-
-3. Watch the **Release** workflow the tag starts. It publishes only when every required job
-   passes.
-
-</Steps>
+Watch the **Release** workflow the tag starts. It publishes only when every required job
+passes.
 
 `release:push` refuses to continue when the local tag is not on `HEAD`, or when the remote tag
 points at a different commit. It never moves an existing tag.
 
 ## Version modes
 
-`scripts/release/set-release-version.mjs` computes the next version. Preview it without changing
-anything:
+`scripts/release/set-release-version.mjs` computes the next version, or takes one with
+`--version`. Preview it without changing anything:
 
 ```bash
-node scripts/release/set-release-version.mjs --mode beta-patch --print
+node scripts/release/set-release-version.mjs --mode patch --print
+npm run release:beta -- --print
 ```
+
+Outside `--print` it enforces the streams in `frogg.json`: a beta version must be cut on the
+development branch and a stable one on the stable branch; a stable `minor` or `major` is
+refused (it arrives by promotion); a stable `patch` must stay below the open beta line on
+`origin/main`. `FROGG_RELEASE_SKIP_STREAM_CHECK=1` turns the check off for a one-off repair.
 
 | Mode         | npm script                      | From `0.6.19`   | From `0.6.20-beta.1` |
 | ------------ | ------------------------------- | --------------- | -------------------- |
@@ -80,9 +83,9 @@ node scripts/release/set-release-version.mjs --mode beta-patch --print
 | `beta-next`  | `version:all:beta:next`         | error           | `0.6.20-beta.2`      |
 | `promote`    | `version:all:promote`           | error           | `0.6.20`             |
 
-Only `-beta.N` prereleases are accepted. There are no `release:beta` or `release:promote`
-scripts. For a beta, run `npm run release:check`, the `version:all:beta:*` script, then
-`npm run release:push`.
+Only `-beta.N` prereleases are accepted. `release:beta` picks between `beta-minor` and
+`beta-next` for you from the stable version, and in a fork from the upstream version it last
+merged (`scripts/release/streams-core.mjs`).
 
 ## The release workflow
 
@@ -90,7 +93,7 @@ scripts. For a beta, run `npm run release:check`, the `version:all:beta:*` scrip
 
 | Job                | What it does                                                                                     |
 | ------------------ | ------------------------------------------------------------------------------------------------ |
-| `meta`             | Fails unless the tag matches `package.json`. Marks `-*` versions as prerelease. Detects optional secrets, picks the platform matrix, extracts release notes from `CHANGELOG.md`, creates a **draft** release, uploads the install and uninstall scripts |
+| `meta`             | Fails unless the tag matches `package.json` and is on its stream's branch (`streams.mjs assert-tag`: betas on `main`, stable on `stable`). Marks `-*` versions as prerelease. Detects optional secrets, picks the platform matrix, extracts release notes from `CHANGELOG.md`, creates a **draft** release, uploads the install and uninstall scripts |
 | `ui`               | Exports the web UI once (`npm run build:ui`)                                                     |
 | `desktop`          | Matrix: Windows x64, Linux x64 (`ubuntu-22.04`), macOS arm64 and x64. Runs `npm run build:desktop -- --target <target>` and uploads installers. Runs the Electron smoke test on the packaged Linux build |
 | `daemon-build`     | Builds the server stack and bundles the shared web UI into the daemon                            |
@@ -99,6 +102,12 @@ scripts. For a beta, run `npm run release:check`, the `version:all:beta:*` scrip
 | `updater-manifest` | Full builds only. Generates `release.json`, the Electron channel manifests and `SHA256SUMS-desktop` from the uploaded binaries, then runs `verify-release-assets.mjs` |
 | `docker`           | Only with Docker Hub credentials. Builds `deploy/docker/base/Dockerfile` for `linux/amd64` and pushes it |
 | `publish`          | Clears the draft flag only if `meta`, `desktop`, `daemon-bundle`, `android` and `updater-manifest` succeeded, `docker` succeeded or was skipped, and the run built all platforms |
+
+A `-beta.N` tag builds every job with `FROGG_BRAND_CHANNEL=beta`: frogg beta's application id,
+names, port, icons and `frogg-beta-*` asset names (see
+[Release streams](/docs/contributing/release-streams/#frogg-beta-installs-beside-frogg)).
+`publish` marks a beta as a prerelease and never Latest, and never moves Latest to an older
+version when two runs finish out of order.
 
 Manual dispatch inputs:
 
@@ -117,7 +126,8 @@ the release may overwrite (`--clobber`) its own assets.
 
 `.github/workflows/build-selected.yml` builds workflow artifacts, not a release. Run it manually
 with `target` set to `all`, `windows`, `daemon` or `android`. CI also calls it on every push to
-`main`. It produces the Windows x64 client (after the desktop unit tests), the Linux x64 daemon
+`main`. Builds of `stable` are frogg; builds of any other branch are frogg beta, so a tester
+installs them beside the stable app. It produces the Windows x64 client (after the desktop unit tests), the Linux x64 daemon
 bundle, and a debug-signed arm64 APK. Artifacts are kept for 14 days.
 
 ## Release assets

@@ -88,6 +88,7 @@ import type {
   CheckoutPrMergeMethod,
   CheckoutForgeSetAutoMergeResponse,
   CheckoutCiListRunsResponse,
+  CheckoutStreamsGetGraphResponse,
   CheckoutCiDownloadJobLogResponse,
   CheckoutGithubSetAutoMergeResponse,
   CheckoutForgeGetCheckDetailsResponse,
@@ -502,6 +503,7 @@ type CheckoutPrCreatePayload = CheckoutPrCreateResponse["payload"];
 type CheckoutPrMergePayload = CheckoutPrMergeResponse["payload"];
 type CheckoutForgeSetAutoMergePayload = CheckoutForgeSetAutoMergeResponse["payload"];
 export type CheckoutCiListRunsPayload = CheckoutCiListRunsResponse["payload"];
+export type CheckoutStreamsGetGraphPayload = CheckoutStreamsGetGraphResponse["payload"];
 type CheckoutGithubSetAutoMergePayload = CheckoutGithubSetAutoMergeResponse["payload"];
 type CheckoutForgeGetCheckDetailsPayload = CheckoutForgeGetCheckDetailsResponse["payload"];
 type CheckoutGithubGetCheckDetailsPayload = CheckoutGithubGetCheckDetailsResponse["payload"];
@@ -4309,6 +4311,23 @@ export class DaemonClient {
         cwd,
       },
       timeout: 45000,
+    });
+  }
+
+  async checkoutStreamsGetGraph(
+    cwd: string,
+    options: { fetch?: boolean } = {},
+    requestId?: string,
+  ): Promise<CheckoutStreamsGetGraphPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"checkout.streams.get_graph.response">({
+      requestId,
+      message: {
+        type: "checkout.streams.get_graph.request",
+        cwd,
+        ...(options.fetch ? { fetch: true } : {}),
+      },
+      // A fetch of origin and upstream can take a while on a slow link.
+      timeout: 120_000,
     });
   }
 

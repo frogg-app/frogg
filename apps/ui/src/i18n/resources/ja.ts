@@ -2,6 +2,113 @@ import { projectImportCopies } from "./project-import";
 import { en, type TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
+  releaseStreams: {
+    label: "リリースストリーム",
+    subtitle: "ベータ、安定版、アップストリームと、各ストリームに届いた変更",
+    refresh: "リリースストリームを更新",
+    toolbarSummary_one: "{{development}} → {{stable}}: {{count}} 件の変更が待機中",
+    toolbarSummary_other: "{{development}} → {{stable}}: {{count}} 件の変更が待機中",
+    unsupportedTitle: "デーモンを更新してください",
+    unsupportedDescription: "このホストのデーモンは古いため、リリースストリームを表示できません。",
+    errorTitle: "リリースストリームを読み込めませんでした",
+    fetchFailed:
+      "リモートから取得できませんでした（{{message}}）。このチェックアウトにある情報を表示しています。",
+    stream: {
+      development: "開発",
+      stable: "安定版",
+      upstreamDevelopment: "アップストリームのベータ",
+      upstreamStable: "アップストリームの安定版",
+    },
+    channel: {
+      stable: "安定版",
+      beta: "ベータ",
+    },
+    card: {
+      missing: "ブランチ未作成",
+      noRelease: "リリースなし",
+      latest: "最新 {{version}}、{{time}}",
+      unreleased_one: "未リリースのコミット {{count}} 件",
+      unreleased_other: "未リリースのコミット {{count}} 件",
+    },
+    graph: {
+      unreleased: "+{{count}} 未リリース",
+      upToDate: "リリース済み",
+      missing: "未作成",
+      promote: "昇格",
+      backport_one: "バックポート {{count}} 件",
+      backport_other: "バックポート {{count}} 件",
+      sync: "同期",
+      contribute: "貢献",
+      waiting: "{{count}} 件待機中",
+    },
+    legend: {
+      release: "リリース",
+      tip: "ブランチの先端",
+      promote: "昇格",
+      backport: "バックポート",
+      sync: "アップストリーム同期",
+      waiting: "移動待ち",
+    },
+    setup: {
+      title: "リリースストリームを設定",
+      description:
+        "ベータは {{development}} から、安定版は {{stable}} からリリースしますが、そのブランチはまだありません。最新の安定版から作成してください：",
+    },
+    flows: {
+      title: "移動待ち",
+      none: "すべての変更が、向かうべきストリームに届いています。",
+      pending_one: "{{count}} 件の変更",
+      pending_other: "{{count}} 件の変更",
+      counts: "機能: {{features}} · 修正: {{fixes}} · その他: {{other}}",
+      runOn: "{{branch}} で実行：",
+      copy: "コマンドをコピー",
+      copied: "コピーしました",
+      promote: {
+        title: "{{from}} → {{to}}：昇格",
+        description: "開いているベータ系列を次の安定版としてリリースします。",
+      },
+      forwardPort: {
+        title: "{{from}} → {{to}}：前方移植",
+        description:
+          "安定版だけで行われた修正です。開発にチェリーピックしないと、昇格時に失われます。",
+      },
+      sync: {
+        title: "{{from}} → {{to}}：アップストリームをマージ",
+        description:
+          "開発ブランチにまだマージしていないアップストリームの変更です。安定版ユーザーに届く前にベータ版で検証できます。",
+      },
+      contribute: {
+        title: "{{from}} → {{to}}：貢献",
+        description:
+          "アップストリームにないあなたの変更です。製品の変更は還元すれば、自分で抱え続ける必要がなくなります。",
+      },
+    },
+    changes: {
+      title: "変更",
+      filter: {
+        all: "すべて",
+        features: "機能",
+        fixes: "修正",
+        waiting: "待機中",
+      },
+      search: "テキスト、スコープ、コミットで絞り込み",
+      empty: "一致する変更はありません。",
+      truncated: "最新の {{count}} 件の変更を表示しています。",
+      origin: "{{stream}} で作成",
+    },
+    presence: {
+      released: "リリース済み",
+      landed: "未リリース",
+      pending: "待機中",
+      absent: "—",
+      via: {
+        promotion: "昇格",
+        backport: "バックポート",
+        sync: "同期",
+        contribution: "貢献",
+      },
+    },
+  },
   ciMonitor: {
     label: "CI",
     subtitle: "このプロジェクトの GitHub Actions と Jenkins の実行",
@@ -3042,7 +3149,8 @@ export const ja: TranslationResources = {
       versionDiffers: "このデバイスとバージョンが異なります",
       releaseChannel: {
         label: "リリースチャンネル",
-        description: "ベータに切り替えると早期に更新を取得してフィードバックを提供できます",
+        stableHint: "ベータ版は別アプリ {{beta}} として、このアプリと並べてインストールされます",
+        betaHint: "このベータ版は {{stable}} と並べてインストールされ、ベータ版にのみ更新されます",
         stable: "安定版",
         beta: "ベータ",
       },
@@ -3651,9 +3759,6 @@ export const ja: TranslationResources = {
           autoUpdate: {
             title: "自動的に更新",
             hint: "チャンネルを毎日確認し、エージェントが実行されていないときに更新します。ロールバックは起動しないデーモンから守るもので、アプリに同梱されるUIの不具合には対応しません。",
-            channelLabel: "リリースチャンネル",
-            stable: "安定版",
-            beta: "ベータ",
           },
         },
         update: {

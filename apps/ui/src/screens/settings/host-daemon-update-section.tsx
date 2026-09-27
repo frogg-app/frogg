@@ -37,7 +37,8 @@ import { useDaemonUpdateCheck, type CheckState, type RunState } from "./host-dae
  * Daemon self-update for any host whose daemon is a versioned install:
  * check the release channel, update with progress, and show the supervisor's
  * outcome (applied or rolled back) once the daemon is back. Also the opt-in
- * auto-update toggle and channel, stored in the daemon's config.json.
+ * auto-update toggle, stored in the daemon's config.json. The channel is the daemon build's own:
+ * a beta daemon is a separate install and only updates to betas.
  */
 type StatusPayload = DaemonUpdateGetStatusResponse["payload"];
 
@@ -254,66 +255,33 @@ function VersionRow({
 
 function AutoUpdateRows({
   enabled,
-  channel,
   disabled,
   onPatch,
 }: {
   enabled: boolean;
-  channel: DaemonUpdateChannel;
   disabled: boolean;
   onPatch: (patch: { enabled?: boolean; channel?: DaemonUpdateChannel }) => void;
 }) {
   const { t } = useTranslation();
   const handleToggle = useCallback((next: boolean) => onPatch({ enabled: next }), [onPatch]);
-  const chooseStable = useCallback(() => onPatch({ channel: "stable" }), [onPatch]);
-  const chooseBeta = useCallback(() => onPatch({ channel: "beta" }), [onPatch]);
   return (
-    <>
-      <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
-        <View style={settingsStyles.rowContent}>
-          <Text style={settingsStyles.rowTitle}>
-            {t("settings.host.daemon.selfUpdate.autoUpdate.title")}
-          </Text>
-          <Text style={settingsStyles.rowHint}>
-            {t("settings.host.daemon.selfUpdate.autoUpdate.hint")}
-          </Text>
-        </View>
-        <Switch
-          value={enabled}
-          onValueChange={handleToggle}
-          disabled={disabled}
-          accessibilityLabel={t("settings.host.daemon.selfUpdate.autoUpdate.title")}
-          testID="host-page-daemon-auto-update-switch"
-        />
+    <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+      <View style={settingsStyles.rowContent}>
+        <Text style={settingsStyles.rowTitle}>
+          {t("settings.host.daemon.selfUpdate.autoUpdate.title")}
+        </Text>
+        <Text style={settingsStyles.rowHint}>
+          {t("settings.host.daemon.selfUpdate.autoUpdate.hint")}
+        </Text>
       </View>
-      <View style={settingsStyles.row}>
-        <View style={settingsStyles.rowContent}>
-          <Text style={settingsStyles.rowTitle}>
-            {t("settings.host.daemon.selfUpdate.autoUpdate.channelLabel")}
-          </Text>
-        </View>
-        <View style={styles.channelRow}>
-          <Button
-            variant={channel === "stable" ? "default" : "outline"}
-            size="sm"
-            onPress={chooseStable}
-            disabled={disabled}
-            testID="host-page-daemon-update-channel-stable"
-          >
-            {t("settings.host.daemon.selfUpdate.autoUpdate.stable")}
-          </Button>
-          <Button
-            variant={channel === "beta" ? "default" : "outline"}
-            size="sm"
-            onPress={chooseBeta}
-            disabled={disabled}
-            testID="host-page-daemon-update-channel-beta"
-          >
-            {t("settings.host.daemon.selfUpdate.autoUpdate.beta")}
-          </Button>
-        </View>
-      </View>
-    </>
+      <Switch
+        value={enabled}
+        onValueChange={handleToggle}
+        disabled={disabled}
+        accessibilityLabel={t("settings.host.daemon.selfUpdate.autoUpdate.title")}
+        testID="host-page-daemon-auto-update-switch"
+      />
+    </View>
   );
 }
 
@@ -495,7 +463,6 @@ export function HostDaemonUpdateSection({ host }: { host: HostProfile }) {
         <RunAlerts run={run} status={status} />
         <AutoUpdateRows
           enabled={config?.autoUpdate?.enabled === true}
-          channel={channel}
           disabled={!isConnected || !(status?.updatable ?? false) || busy}
           onPatch={handleAutoUpdatePatch}
         />
@@ -538,9 +505,5 @@ const styles = StyleSheet.create((theme) => ({
     height: "100%",
     borderRadius: 3,
     backgroundColor: theme.colors.accent,
-  },
-  channelRow: {
-    flexDirection: "row",
-    gap: theme.spacing[2],
   },
 }));

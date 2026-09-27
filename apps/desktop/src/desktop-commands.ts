@@ -39,12 +39,11 @@ function unsupportedLocalServerCommand(): never {
   );
 }
 
+/** Each build updates within its own channel; see daemon-manager's resolveRequestedReleaseChannel. */
 async function resolveRequestedReleaseChannel(
-  args: Record<string, unknown> | undefined,
+  _args?: Record<string, unknown>,
 ): Promise<AppReleaseChannel> {
-  if (args?.releaseChannel === "beta" || args?.releaseChannel === "stable")
-    return args.releaseChannel;
-  return (await getDesktopSettingsStore().get()).releaseChannel;
+  return brand.channel;
 }
 
 export function createDesktopCommandHandlers(): Record<string, DesktopCommandHandler> {

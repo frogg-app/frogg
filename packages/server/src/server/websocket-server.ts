@@ -2047,6 +2047,8 @@ export class VoiceAssistantWebSocketServer {
         forgeCheckDetails: true,
         // COMPAT(ciRuns): added in v1.5.8, remove gate after 2027-09-19.
         ciRuns: true,
+        // COMPAT(releaseStreams): added in v1.6.0, remove gate after 2027-10-01.
+        releaseStreams: true,
         // COMPAT(forgeSearch): added in v0.2.0-beta.1. Remove the feature gate
         // and legacy fallback after 2027-01-17 once the supported daemon floor
         // is >= v0.2.0.
