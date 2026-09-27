@@ -7,7 +7,7 @@ const NOW = 10 * HOUR;
 describe("prompt cache warmth", () => {
   it("knows Claude's hour and nothing else", () => {
     expect(getPromptCacheTtlMs("claude")).toBe(HOUR);
-    expect(getPromptCacheTtlMs("codex")).toBeNull();
+    expect(getPromptCacheTtlMs("copilot")).toBeNull();
     expect(getPromptCacheTtlMs("toString")).toBeNull();
     expect(getPromptCacheTtlMs(null)).toBeNull();
   });
@@ -21,7 +21,7 @@ describe("prompt cache warmth", () => {
   });
 
   it("is unknown without a TTL or a last-turn time", () => {
-    expect(isPromptCacheCold({ provider: "codex", lastTurnAt: 0, now: NOW })).toBeNull();
+    expect(isPromptCacheCold({ provider: "copilot", lastTurnAt: 0, now: NOW })).toBeNull();
     expect(isPromptCacheCold({ provider: "claude", lastTurnAt: null, now: NOW })).toBeNull();
   });
 });

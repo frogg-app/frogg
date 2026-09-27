@@ -3,12 +3,21 @@
  * client (the composer's stale-context warning) and the daemon (automatic
  * clean cuts) so both agree on when a conversation has gone cold.
  *
- * Only providers whose cache lifetime is known are listed. Claude Code's
- * prompt cache holds a conversation for an hour; pretending to know another
- * provider's lifetime would be inventing a number to act on.
+ * Only per-token-billed providers with a documented cache lifetime are listed;
+ * guessing one would be inventing a number to act on. Left out on purpose:
+ * - `copilot`: subscription-billed, so a cold cache costs nothing visible.
+ * - `opencode`, `pi`, `omp`: the cache belongs to whichever upstream model is
+ *   selected, which this rule cannot see.
+ * - `mock` and custom provider ids: no known cache.
+ *
+ * - `claude`: Claude Code writes its prompt cache with the one-hour TTL.
+ * - `codex`: OpenAI evicts its in-memory cache after 5-10 idle minutes and
+ *   never keeps it past an hour. The hour is the upper bound, so neither the
+ *   warning nor an automatic cut fires while the cache could still be warm.
  */
 export const PROMPT_CACHE_TTL_MS: Readonly<Record<string, number>> = {
   claude: 60 * 60 * 1000,
+  codex: 60 * 60 * 1000,
 };
 
 /** The provider's prompt cache lifetime, or null when it is not known. */
