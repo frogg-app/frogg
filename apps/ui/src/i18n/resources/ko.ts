@@ -418,6 +418,9 @@ export const ko: TranslationResources = {
           "이 대화를 다른 계정으로 옮기면 전체 컨텍스트가 새 입력으로 다시 전송되며 전체 가격(캐시 없음)으로 청구됩니다.",
         confirm: "대화 옮기기",
         cleanCut: "이 계정으로 클린 컷",
+        inUse: "사용 중",
+        providerLabel: "또는 공급자 전환",
+        providerPlaceholder: "공급자 선택",
         cleanCutHint:
           "또는 클린 컷: 전체 컨텍스트를 다시 보내는 대신 저렴한 요약으로 새 계정에서 새 대화를 시작합니다.",
         moving: "옮기는 중...",

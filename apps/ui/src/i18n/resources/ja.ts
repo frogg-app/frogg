@@ -420,6 +420,9 @@ export const ja: TranslationResources = {
           "この会話を別のアカウントに移動すると、コンテキスト全体が新しい入力として再送信され、フル価格（キャッシュなし）で課金されます。",
         confirm: "会話を移動",
         cleanCut: "このアカウントへクリーンカット",
+        inUse: "使用中",
+        providerLabel: "またはプロバイダーを切り替え",
+        providerPlaceholder: "プロバイダーを選択",
         cleanCutHint:
           "またはクリーンカット: コンテキスト全体を再送する代わりに、安価な要約で新しいアカウントに新しい会話を始めます。",
         moving: "移動中...",

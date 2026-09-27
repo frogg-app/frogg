@@ -419,6 +419,9 @@ export const en = {
           "Moving this conversation to another account re-sends its whole context as fresh input, billed at full (uncached) price.",
         confirm: "Move conversation",
         cleanCut: "Clean cut to this account",
+        inUse: "In use",
+        providerLabel: "Or switch provider",
+        providerPlaceholder: "Choose a provider",
         cleanCutHint:
           "Or make a clean cut: a cheap summary starts a fresh conversation on the new account instead of re-sending the whole context.",
         moving: "Moving...",

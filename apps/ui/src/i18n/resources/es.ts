@@ -421,6 +421,9 @@ export const es: TranslationResources = {
           "Mover esta conversación a otra cuenta reenvía todo su contexto como entrada nueva, facturada a precio completo (sin caché).",
         confirm: "Mover conversación",
         cleanCut: "Corte limpio a esta cuenta",
+        inUse: "En uso",
+        providerLabel: "O cambia de proveedor",
+        providerPlaceholder: "Elige un proveedor",
         cleanCutHint:
           "O haz un corte limpio: un resumen económico inicia una conversación nueva en la otra cuenta en lugar de reenviar todo el contexto.",
         moving: "Moviendo...",

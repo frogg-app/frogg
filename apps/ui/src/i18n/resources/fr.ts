@@ -423,6 +423,9 @@ export const fr: TranslationResources = {
           "Déplacer cette conversation vers un autre compte renvoie tout son contexte comme nouvelle entrée, facturée au prix plein (sans cache).",
         confirm: "Déplacer la conversation",
         cleanCut: "Coupure nette vers ce compte",
+        inUse: "Utilisé",
+        providerLabel: "Ou changer de fournisseur",
+        providerPlaceholder: "Choisir un fournisseur",
         cleanCutHint:
           "Ou faites une coupure nette : un résumé économique démarre une nouvelle conversation sur l'autre compte au lieu de renvoyer tout le contexte.",
         moving: "Déplacement...",

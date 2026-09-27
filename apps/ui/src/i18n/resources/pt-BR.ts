@@ -420,6 +420,9 @@ export const ptBR: TranslationResources = {
           "Mover esta conversa para outra conta reenvia todo o contexto como entrada nova, cobrada pelo preço cheio (sem cache).",
         confirm: "Mover conversa",
         cleanCut: "Corte limpo para esta conta",
+        inUse: "Em uso",
+        providerLabel: "Ou troque de provedor",
+        providerPlaceholder: "Escolha um provedor",
         cleanCutHint:
           "Ou faça um corte limpo: um resumo barato inicia uma nova conversa na outra conta em vez de reenviar todo o contexto.",
         moving: "Movendo...",
