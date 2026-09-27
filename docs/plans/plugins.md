@@ -239,6 +239,21 @@ existing conventions.
   `~x.y`, `x`/`x.y`, `*`/`latest`. Prereleases only match an exact version.
 - **Allow/deny**: `*` globs over plugin ids; deny wins; an empty `allow` allows everything.
 
+- **Packing**: a tarball holds the manifest, `package.json` (so Node sees `type: module`),
+  top-level README/LICENSE/CHANGELOG/NOTICE, the top-level folder of each entry (usually
+  `dist/`) and `assets/`. Tarballs are deterministic ustar+gzip; extraction accepts regular
+  files only and rejects links and escaping paths.
+- **`index sign`** also writes `index.json.pub`, which is what user-repo TOFU fetches.
+- **Host scope**: the daemon rejects installing `client`- and `build`-scope plugins.
+- **Uninstall** removes `plugins/<id>/` and the plugin's data dir `plugins/data/<id>/`.
+- **Dev links** must not collide with an installed id; dev-linked plugins get every capability
+  they request. Added `frogg plugins dev-mode [on|off]` for CLI-only hosts.
+- **Preinstalled** plugins resolve from brand repos first, then official; brand policy stands
+  in for user consent. They can be disabled, not uninstalled, and auto-update within their range.
+- **Official repo**: `https://frogg-app.github.io/frogg-plugins/index.json`, public key
+  `6NkzNDGG54fvBJE/dDlQGmPD2ZZRiA9bKo6alMU+2H4=` (`OFFICIAL_PLUGIN_REPO` in
+  `packages/protocol/src/plugins/repo-index.ts`). The private key is not in the repo.
+
 ## RPC contract (v1)
 
 Schemas: `packages/protocol/src/plugins/rpc-schemas.ts` (re-exported from
