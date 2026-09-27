@@ -55,6 +55,7 @@ import { useCloseAgentListGesture } from "@/mobile-panels/gestures";
 import { MobilePanelOverlay } from "@/mobile-panels/presentation";
 import { buildSettingsRoute } from "@/utils/host-routes";
 import { HostsMenu } from "@/components/sidebar/hosts-menu";
+import { PluginsSidebarEntry } from "@/plugins/sidebar-entry";
 import { SidebarAgentListSkeleton } from "./sidebar-agent-list-skeleton";
 import { SidebarCalloutSlot } from "./sidebar-callout-slot";
 import { SidebarWorkspaceList } from "./sidebar-workspace-list";
@@ -277,6 +278,7 @@ function SidebarFooter({
         nativeID="sidebar-add-project"
         variant="compact"
       />
+      <PluginsSidebarEntry onBeforeAction={handleBeforeHostsAction} />
       <HostsMenu onBeforeAction={handleBeforeHostsAction} />
       <SidebarHeaderRow
         icon={Settings}

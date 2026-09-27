@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 export const en = {
   releaseStreams: {
     label: "Release streams",
@@ -156,6 +157,7 @@ export const en = {
     noPendingLink: "Open a host link to add a daemon, or use Add a host.",
   },
   projectImport: projectImportCopies["en"],
+  plugins: pluginsCopies["en"],
   directoryBrowser: {
     pathLabel: "Current directory",
     pathPlaceholder: "Type or paste a path, then press Enter",

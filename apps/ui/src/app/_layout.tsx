@@ -36,6 +36,9 @@ import { CompanionHost } from "@/companion/host";
 import { SettingsModalHost } from "@/settings-modal/host";
 import { AppDiagnosticHost } from "@/components/app-diagnostic-host";
 import { ConfirmDialogHost } from "@/components/confirm-dialog-host";
+import { PluginCommandCenterActions } from "@/plugins/command-center-actions";
+import { PluginEventsHost } from "@/plugins/events-host";
+import { PluginsModalHost } from "@/plugins/plugins-modal";
 import { LeftSidebar } from "@/components/left-sidebar";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { DesktopWindowControls } from "@/components/desktop/window-controls";
@@ -596,6 +599,9 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
       <CompanionHost />
       <KeyboardShortcutsDialog />
       <AppDiagnosticHost />
+      <PluginsModalHost />
+      <PluginEventsHost />
+      <PluginCommandCenterActions />
       <ConfirmDialogHost />
       <QuittingOverlay />
     </View>
