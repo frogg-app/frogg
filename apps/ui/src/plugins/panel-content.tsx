@@ -7,6 +7,7 @@ import {
   type PluginPanelContent,
 } from "@frogg/protocol/plugins/manifest";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
+import { StyleSheet } from "react-native-unistyles";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
 import { Button } from "@/components/ui/button";
 import { PluginSpinner } from "./spinner";
@@ -75,14 +76,14 @@ export function PluginPanelBody({
 
   if (content.isPending) {
     return (
-      <View style={styles.list}>
+      <View style={panelStyles.content}>
         <PluginSpinner />
       </View>
     );
   }
   if (content.isError) {
     return (
-      <View style={styles.list} testID="plugin-panel-error">
+      <View style={panelStyles.content} testID="plugin-panel-error">
         <Text style={styles.error}>{describePluginError(content.error)}</Text>
         <View style={styles.actions}>
           <Button variant="secondary" size="sm" onPress={reload}>
@@ -93,7 +94,7 @@ export function PluginPanelBody({
     );
   }
   return (
-    <ScrollView contentContainerStyle={styles.list} testID="plugin-panel">
+    <ScrollView contentContainerStyle={panelStyles.content} testID="plugin-panel">
       <PanelContent
         serverId={serverId}
         pluginId={pluginId}
@@ -245,3 +246,10 @@ function PanelForm({
     </>
   );
 }
+
+const panelStyles = StyleSheet.create((theme) => ({
+  content: {
+    gap: theme.spacing[2],
+    padding: theme.spacing[4],
+  },
+}));
