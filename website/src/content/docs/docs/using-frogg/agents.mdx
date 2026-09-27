@@ -37,10 +37,12 @@ Mention files with `@`, use `/` for provider commands and skills, and attach ima
 files with **+** or drag and drop. Each file can be at most 50 MB; larger files are
 rejected with an error before Frogg reads them.
 
-Returning to a Claude conversation that has been sitting for more than an hour outlines the
+Returning to a Claude or Codex conversation that has been sitting for more than an hour outlines the
 composer in amber and notes, in its corner, how many input tokens the next message re-sends.
 Past that hour the conversation's prompt cache has lapsed, so the next message pays full
-input price for the whole context rather than continuing cheaply from the cache.
+input price for the whole context rather than continuing cheaply from the cache. Other
+providers don't show the warning: Copilot is subscription-billed, and OpenCode, Pi and OMP
+run whichever upstream model is selected, so Frogg can't know their cache lifetime.
 
 From the CLI:
 
