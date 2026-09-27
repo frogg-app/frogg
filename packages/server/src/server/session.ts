@@ -79,6 +79,8 @@ import {
 import { DirectorySyncService } from "./directory-sync/index.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import { WorkspaceLabelsSession } from "./session/workspace-labels/workspace-labels-session.js";
+import { PluginsSession } from "./session/plugins/plugins-session.js";
+import type { PluginService } from "./plugins/plugin-service.js";
 import { ProjectTodosSession } from "./session/project-todos/project-todos-session.js";
 import type { ProjectTodoService } from "./project-todos/service.js";
 import { AgentLifecycleSession } from "./session/agent-lifecycle/agent-lifecycle-session.js";
@@ -473,6 +475,7 @@ export interface SessionOptions {
   workspaceRegistry: WorkspaceRegistry;
   directorySync?: DirectorySyncService;
   workspaceLabelService?: WorkspaceLabelService;
+  pluginService?: PluginService | null;
   projectTodoService?: ProjectTodoService | null;
   filesystem?: SessionFileSystem;
   checkoutDiffManager: CheckoutDiffManager;
@@ -729,6 +732,7 @@ export class Session {
   private workspaceUpdatesSubscription: WorkspaceUpdatesSubscriptionState | null = null;
   private readonly workspaceLabelService: WorkspaceLabelService | null;
   private readonly workspaceLabels: WorkspaceLabelsSession;
+  private readonly plugins: PluginsSession;
   private readonly projectTodos: ProjectTodosSession;
   private readonly workspaceMetadata: WorkspaceMetadataSession;
   private projectSyncEnabled = false;
@@ -802,6 +806,7 @@ export class Session {
       workspaceRegistry,
       directorySync,
       workspaceLabelService,
+      pluginService,
       projectTodoService,
       filesystem,
       checkoutDiffManager,
@@ -893,6 +898,11 @@ export class Session {
     });
     this.workspaceLabels = new WorkspaceLabelsSession({
       service: this.workspaceLabelService,
+      emit: (message) => this.emit(message),
+    });
+    this.plugins = new PluginsSession({
+      service: pluginService,
+      clientId,
       emit: (message) => this.emit(message),
     });
     this.projectTodos = new ProjectTodosSession({
@@ -2363,6 +2373,15 @@ export class Session {
     }
   }
 
+  /** Messages owned by self-contained sub-sessions. */
+  private dispatchDelegatedSessionMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    return (
+      this.workspaceLabels.dispatch(msg) ??
+      this.plugins.dispatch(msg) ??
+      this.projectTodos.dispatch(msg)
+    );
+  }
+
   private async dispatchInboundMessage(msg: SessionInboundMessage, source?: object): Promise<void> {
     this.noteInboundPresenceActivity(msg);
     const promise =
@@ -2377,8 +2396,7 @@ export class Session {
       this.dispatchAgentCleanCutMessage(msg) ??
       this.dispatchCheckoutMessage(msg) ??
       this.dispatchWorkspaceRecoveryMessage(msg) ??
-      this.workspaceLabels.dispatch(msg) ??
-      this.projectTodos.dispatch(msg) ??
+      this.dispatchDelegatedSessionMessage(msg) ??
       this.dispatchWorkspaceAndProjectMessage(msg) ??
       this.dispatchWorkspaceFileMessage(msg, source) ??
       this.dispatchProviderMessage(msg) ??

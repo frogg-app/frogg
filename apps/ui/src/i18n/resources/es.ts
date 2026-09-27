@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const es: TranslationResources = {
@@ -160,6 +161,7 @@ export const es: TranslationResources = {
     noPendingLink: "Abre un enlace de host para añadir un daemon, o usa Añadir un host.",
   },
   projectImport: projectImportCopies["es"],
+  plugins: pluginsCopies["es"],
   directoryBrowser: {
     pathLabel: "Directorio actual",
     pathPlaceholder: "Escribe o pega una ruta y pulsa Intro",

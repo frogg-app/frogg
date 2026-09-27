@@ -55,6 +55,16 @@ import {
   type ServerInfoStatusPayload,
 } from "@frogg/protocol/messages";
 import type { AuthDeviceSetRoleResponse } from "@frogg/protocol/messages";
+import type {
+  PluginCatalogEntry,
+  PluginContributionSet,
+  PluginError,
+  PluginInstalled,
+  PluginPolicy,
+  PluginRepo,
+  PluginsChangedMessage,
+  PluginsNotifyMessage,
+} from "@frogg/protocol/messages";
 import type { AgentCleanCutSubagentResult } from "@frogg/protocol/messages";
 import { validateWSOutboundMessage } from "@frogg/protocol/validation/ws-outbound";
 import type {
@@ -514,6 +524,38 @@ type CheckoutRefreshPayload = CheckoutRefreshResponse["payload"];
 type CheckoutPrCreatePayload = CheckoutPrCreateResponse["payload"];
 type CheckoutPrMergePayload = CheckoutPrMergeResponse["payload"];
 type CheckoutForgeSetAutoMergePayload = CheckoutForgeSetAutoMergeResponse["payload"];
+
+/** A plugins.* RPC that answered with `payload.error`. `code` is one of the contract codes. */
+export class PluginRequestError extends Error {
+  readonly code: string;
+  readonly capabilities: string[] | undefined;
+  constructor(error: PluginError) {
+    super(error.message);
+    this.name = "PluginRequestError";
+    this.code = error.code;
+    this.capabilities = error.capabilities;
+  }
+}
+
+function unwrapPluginPayload<T extends { requestId: string; error: PluginError | null }>(
+  payload: T,
+): Omit<T, "requestId" | "error"> {
+  if (payload.error) {
+    throw new PluginRequestError(payload.error);
+  }
+  const { requestId: _requestId, error: _error, ...rest } = payload;
+  return rest;
+}
+
+export type PluginsChangedEvent = PluginsChangedMessage["payload"];
+export type PluginsNotifyEvent = PluginsNotifyMessage["payload"];
+export type {
+  PluginCatalogEntry,
+  PluginContributionSet,
+  PluginInstalled,
+  PluginPolicy,
+  PluginRepo,
+};
 export type CheckoutCiListRunsPayload = CheckoutCiListRunsResponse["payload"];
 export type CheckoutStreamsGetGraphPayload = CheckoutStreamsGetGraphResponse["payload"];
 type CheckoutGithubSetAutoMergePayload = CheckoutGithubSetAutoMergeResponse["payload"];
@@ -1158,7 +1200,10 @@ export class DaemonClient {
   private connectReject: ((error: Error) => void) | null = null;
   private lastErrorValue: string | null = null;
   /** Paired with the exact `lastErrorValue` it describes; stale once that changes. */
-  private lastErrorInfoValue: { message: string; info: DaemonClientErrorInfo } | null = null;
+  private lastErrorInfoValue: {
+    message: string;
+    info: DaemonClientErrorInfo;
+  } | null = null;
   private connectionState: ConnectionState = { status: "idle" };
   private checkoutDiffSubscriptions = new Map<
     string,
@@ -2456,7 +2501,11 @@ export class DaemonClient {
     const requestId = crypto.randomUUID();
     return this.sendNamespacedCorrelatedSessionRequest<"project.import.prepare.response">({
       requestId,
-      message: { type: "project.import.prepare.request", requestId, ...input },
+      message: {
+        type: "project.import.prepare.request",
+        requestId,
+        ...input,
+      },
       timeout: 120_000,
     });
   }
@@ -2481,7 +2530,11 @@ export class DaemonClient {
     const requestId = crypto.randomUUID();
     return this.sendNamespacedCorrelatedSessionRequest<"project.import.preview.response">({
       requestId,
-      message: { type: "project.import.preview.request", requestId, importId },
+      message: {
+        type: "project.import.preview.request",
+        requestId,
+        importId,
+      },
       timeout: 120_000,
     });
   }
@@ -2490,7 +2543,12 @@ export class DaemonClient {
     const requestId = crypto.randomUUID();
     return this.sendNamespacedCorrelatedSessionRequest<"project.import.commit.response">({
       requestId,
-      message: { type: "project.import.commit.request", requestId, importId, sessionIds },
+      message: {
+        type: "project.import.commit.request",
+        requestId,
+        importId,
+        sessionIds,
+      },
       timeout: 120_000,
     });
   }
@@ -2517,7 +2575,13 @@ export class DaemonClient {
     const requestId = crypto.randomUUID();
     return this.sendNamespacedCorrelatedSessionRequest<"project.import.read.response">({
       requestId,
-      message: { type: "project.import.read.request", requestId, projectId, id, offset },
+      message: {
+        type: "project.import.read.request",
+        requestId,
+        projectId,
+        id,
+        offset,
+      },
       timeout: 120_000,
     });
   }
@@ -4490,6 +4554,213 @@ export class DaemonClient {
     });
   }
 
+  // ============================================================================
+  // Plugins (gated on server_info.features.plugins; callers check supportsPlugins())
+  // Every method throws PluginRequestError when the daemon answers with an error.
+  // ============================================================================
+
+  supportsPlugins(): boolean {
+    return this.lastServerInfoMessage?.features?.plugins === true;
+  }
+
+  async pluginsList(): Promise<{
+    plugins: PluginInstalled[];
+    policy: PluginPolicy;
+  }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.list.response">({
+        message: { type: "plugins.list.request" },
+      }),
+    );
+  }
+
+  async pluginsReposList(): Promise<{ repos: PluginRepo[] }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.repos.list.response">({
+        message: { type: "plugins.repos.list.request" },
+      }),
+    );
+  }
+
+  async pluginsReposAdd(input: {
+    url: string;
+    publicKey?: string;
+    name?: string;
+  }): Promise<{ repo: PluginRepo | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.repos.add.response">({
+        message: {
+          type: "plugins.repos.add.request",
+          url: input.url,
+          ...(input.publicKey ? { publicKey: input.publicKey } : {}),
+          ...(input.name ? { name: input.name } : {}),
+        },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsReposRemove(url: string): Promise<{ success: boolean }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.repos.remove.response">({
+        message: { type: "plugins.repos.remove.request", url },
+      }),
+    );
+  }
+
+  async pluginsGetCatalog(
+    options: { refresh?: boolean } = {},
+  ): Promise<{ plugins: PluginCatalogEntry[]; repos: PluginRepo[] }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.get_catalog.response">({
+        message: {
+          type: "plugins.get_catalog.request",
+          ...(options.refresh ? { refresh: true } : {}),
+        },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsInstall(input: {
+    id: string;
+    version?: string;
+    repoUrl: string;
+    grantedCapabilities: string[];
+  }): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.install.response">({
+        message: {
+          type: "plugins.install.request",
+          id: input.id,
+          repoUrl: input.repoUrl,
+          grantedCapabilities: input.grantedCapabilities,
+          ...(input.version ? { version: input.version } : {}),
+        },
+        timeout: 120_000,
+      }),
+    );
+  }
+
+  async pluginsUninstall(id: string): Promise<{ success: boolean }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.uninstall.response">({
+        message: { type: "plugins.uninstall.request", id },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsSetEnabled(
+    id: string,
+    enabled: boolean,
+  ): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.set_enabled.response">({
+        message: { type: "plugins.set_enabled.request", id, enabled },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsUpdate(input: {
+    id: string;
+    version?: string;
+    grantedCapabilities?: string[];
+  }): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.update.response">({
+        message: {
+          type: "plugins.update.request",
+          id: input.id,
+          ...(input.version ? { version: input.version } : {}),
+          ...(input.grantedCapabilities ? { grantedCapabilities: input.grantedCapabilities } : {}),
+        },
+        timeout: 120_000,
+      }),
+    );
+  }
+
+  async pluginsDevLink(path: string): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.dev.link.response">({
+        message: { type: "plugins.dev.link.request", path },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsDevUnlink(id: string): Promise<{ success: boolean }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.dev.unlink.response">({
+        message: { type: "plugins.dev.unlink.request", id },
+      }),
+    );
+  }
+
+  async pluginsDevSetEnabled(enabled: boolean): Promise<{ policy: PluginPolicy }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.dev.set_enabled.response">({
+        message: { type: "plugins.dev.set_enabled.request", enabled },
+      }),
+    );
+  }
+
+  async pluginsRpcCall(input: {
+    pluginId: string;
+    method: string;
+    params?: unknown;
+  }): Promise<{ result?: unknown }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.rpc.call.response">({
+        message: {
+          type: "plugins.rpc.call.request",
+          pluginId: input.pluginId,
+          method: input.method,
+          ...(input.params === undefined ? {} : { params: input.params }),
+        },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsGetContributions(): Promise<{
+    contributions: PluginContributionSet[];
+  }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.get_contributions.response">({
+        message: { type: "plugins.get_contributions.request" },
+      }),
+    );
+  }
+
+  async pluginsSettingsGet(id: string) {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.settings.get.response">({
+        message: { type: "plugins.settings.get.request", id },
+      }),
+    );
+  }
+
+  async pluginsSettingsSet(
+    id: string,
+    values: Record<string, unknown>,
+  ): Promise<{ success: boolean }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.settings.set.response">({
+        message: { type: "plugins.settings.set.request", id, values },
+      }),
+    );
+  }
+
+  onPluginsChanged(handler: (event: PluginsChangedEvent) => void): () => void {
+    return this.on("plugins.changed", (message) => handler(message.payload));
+  }
+
+  onPluginsNotify(handler: (event: PluginsNotifyEvent) => void): () => void {
+    return this.on("plugins.notify", (message) => handler(message.payload));
+  }
+
   async checkoutForgeSetAutoMerge(
     cwd: string,
     input: { enabled: true; method: CheckoutPrMergeMethod } | { enabled: false },
@@ -5443,7 +5714,10 @@ export class DaemonClient {
     return this.sendNamespacedCorrelatedSessionRequest<"daemon.set_security_finding_acknowledged.response">(
       {
         requestId,
-        message: { type: "daemon.set_security_finding_acknowledged.request", ...input },
+        message: {
+          type: "daemon.set_security_finding_acknowledged.request",
+          ...input,
+        },
       },
     );
   }
@@ -5593,7 +5867,11 @@ export class DaemonClient {
   // --- presence (features.sessionPresence) ----------------------------------
 
   async reportPresence(
-    input: { target: PresenceTarget; state: PresenceReportState; deviceName?: string },
+    input: {
+      target: PresenceTarget;
+      state: PresenceReportState;
+      deviceName?: string;
+    },
     requestId?: string,
   ): Promise<PresenceReportPayload> {
     return this.sendNamespacedCorrelatedSessionRequest<"presence.report.response">({

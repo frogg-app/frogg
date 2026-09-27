@@ -26,6 +26,10 @@ const palette = z.strictObject({
   accentBright: color.optional(),
 });
 const assetPath = z.string().min(1);
+const pluginPublicKey = z
+  .string()
+  .regex(/^[A-Za-z0-9+/]{43}=$/, "expected base64 ed25519 public key");
+const pluginIdGlob = z.string().regex(/^[a-z0-9.*-]+$/);
 /** Windows installer copy: `{name}` expands to the brand name. */
 const installerCopy = text.max(80);
 const installer = z.strictObject({
@@ -243,6 +247,38 @@ export const BrandManifestSchema = z.strictObject({
     })
     .optional(),
   mobile: z.strictObject({ enabled: z.boolean().optional() }).optional(),
+  plugins: z
+    .strictObject({
+      enabled: z.boolean().optional(),
+      // Frogg's official repository (frogg-plugins).
+      officialRepo: z.boolean().optional(),
+      repos: z
+        .array(
+          z.strictObject({
+            name: text,
+            url,
+            // base64 of the repo's raw 32-byte ed25519 public key.
+            publicKey: pluginPublicKey,
+          }),
+        )
+        .optional(),
+      allowUserRepos: z.boolean().optional(),
+      developerMode: z.enum(["allowed", "forbidden"]).optional(),
+      // Plugin id globs; `*` matches any run of characters. Deny wins.
+      allow: z.array(pluginIdGlob).optional(),
+      deny: z.array(pluginIdGlob).optional(),
+      preinstalled: z
+        .array(
+          z.strictObject({
+            id: z.string().regex(/^[a-z0-9]+(\.[a-z0-9-]+)+$/),
+            // Exact version or range (^1, ~1.2, *). Default newest.
+            version: z.string().min(1).optional(),
+          }),
+        )
+        .optional(),
+      autoUpdate: z.enum(["off", "brand-repos", "all"]).optional(),
+    })
+    .optional(),
   channels: z.strictObject({ beta: channelOverrides.optional() }).optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
@@ -299,6 +335,7 @@ export function resolveBrandManifest(input: unknown, options: ResolveBrandOption
     // which stops printing a pairing QR nobody could scan; nothing else in the
     // daemon or the apps reads it.
     mobile: { enabled: manifest.mobile?.enabled ?? true },
+    plugins: resolvePlugins(manifest),
     channel,
     /** Built from the upstream frogg brand, whichever channel. Selects frogg's own theme. */
     stockFrogg: stock,
@@ -548,6 +585,26 @@ function resolveDistribution(manifest: BrandManifest) {
  */
 function resolvePairing(manifest: BrandManifest) {
   return { autoConfirmLocal: manifest.pairing?.autoConfirmLocal ?? false };
+}
+
+/**
+ * Plugin distribution policy. Defaults: enabled, official repo on, no user repos,
+ * developer mode allowed, auto-update from brand repos. `build`-scope entries in
+ * `preinstalled` are applied by the brand build pipeline, not by the daemon.
+ */
+function resolvePlugins(manifest: BrandManifest) {
+  const p = manifest.plugins ?? {};
+  return {
+    enabled: p.enabled ?? true,
+    officialRepo: p.officialRepo ?? true,
+    repos: (p.repos ?? []).map((r) => ({ name: r.name, url: r.url, publicKey: r.publicKey })),
+    allowUserRepos: p.allowUserRepos ?? false,
+    developerMode: p.developerMode ?? ("allowed" as "allowed" | "forbidden"),
+    allow: p.allow ?? [],
+    deny: p.deny ?? [],
+    preinstalled: (p.preinstalled ?? []).map((e) => ({ id: e.id, version: e.version ?? null })),
+    autoUpdate: p.autoUpdate ?? ("brand-repos" as "off" | "brand-repos" | "all"),
+  };
 }
 
 function resolveIdentity(manifest: BrandManifest) {

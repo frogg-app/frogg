@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
@@ -158,6 +159,7 @@ export const ru: TranslationResources = {
     noPendingLink: "Откройте ссылку хоста, чтобы добавить демон, или используйте «Добавить хост».",
   },
   projectImport: projectImportCopies["ru"],
+  plugins: pluginsCopies["ru"],
   directoryBrowser: {
     pathLabel: "Текущий каталог",
     pathPlaceholder: "Введите или вставьте путь и нажмите Enter",

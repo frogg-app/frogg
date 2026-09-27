@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ptBR: TranslationResources = {
@@ -159,6 +160,7 @@ export const ptBR: TranslationResources = {
     noPendingLink: "Abra um link de host para adicionar um daemon ou use Adicionar um host.",
   },
   projectImport: projectImportCopies["pt-BR"],
+  plugins: pluginsCopies["pt-BR"],
   directoryBrowser: {
     pathLabel: "Diretório atual",
     pathPlaceholder: "Digite ou cole um caminho e pressione Enter",

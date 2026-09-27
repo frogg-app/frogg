@@ -103,6 +103,38 @@ pub struct Session {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum SessionMessage {
+    #[serde(rename = "plugins.list.request")]
+    PluginsListRequest(PluginsListRequest),
+    #[serde(rename = "plugins.repos.list.request")]
+    PluginsReposListRequest(PluginsReposListRequest),
+    #[serde(rename = "plugins.repos.add.request")]
+    PluginsReposAddRequest(PluginsReposAddRequest),
+    #[serde(rename = "plugins.repos.remove.request")]
+    PluginsReposRemoveRequest(PluginsReposRemoveRequest),
+    #[serde(rename = "plugins.get_catalog.request")]
+    PluginsGetCatalogRequest(PluginsGetCatalogRequest),
+    #[serde(rename = "plugins.install.request")]
+    PluginsInstallRequest(PluginsInstallRequest),
+    #[serde(rename = "plugins.uninstall.request")]
+    PluginsUninstallRequest(PluginsUninstallRequest),
+    #[serde(rename = "plugins.set_enabled.request")]
+    PluginsSetEnabledRequest(PluginsSetEnabledRequest),
+    #[serde(rename = "plugins.update.request")]
+    PluginsUpdateRequest(PluginsUpdateRequest),
+    #[serde(rename = "plugins.dev.link.request")]
+    PluginsDevLinkRequest(PluginsDevLinkRequest),
+    #[serde(rename = "plugins.dev.unlink.request")]
+    PluginsDevUnlinkRequest(PluginsDevUnlinkRequest),
+    #[serde(rename = "plugins.dev.set_enabled.request")]
+    PluginsDevSetEnabledRequest(PluginsDevSetEnabledRequest),
+    #[serde(rename = "plugins.rpc.call.request")]
+    PluginsRpcCallRequest(PluginsRpcCallRequest),
+    #[serde(rename = "plugins.get_contributions.request")]
+    PluginsGetContributionsRequest(PluginsGetContributionsRequest),
+    #[serde(rename = "plugins.settings.get.request")]
+    PluginsSettingsGetRequest(PluginsSettingsGetRequest),
+    #[serde(rename = "plugins.settings.set.request")]
+    PluginsSettingsSetRequest(PluginsSettingsSetRequest),
     #[serde(rename = "auth.device.list.request")]
     AuthDeviceListRequest(AuthDeviceListRequest),
     #[serde(rename = "auth.device.rename.request")]
@@ -569,6 +601,139 @@ pub enum SessionMessage {
     LoopLogs(LoopLogs),
     #[serde(rename = "loop/stop")]
     LoopStop(LoopStop),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsReposListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsReposAddRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub url: String,
+    #[serde(rename = "publicKey", skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsReposRemoveRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub url: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsGetCatalogRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsInstallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(rename = "repoUrl")]
+    pub repo_url: String,
+    #[serde(rename = "grantedCapabilities")]
+    pub granted_capabilities: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsUninstallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSetEnabledRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsUpdateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(
+        rename = "grantedCapabilities",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub granted_capabilities: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsDevLinkRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub path: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsDevUnlinkRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsDevSetEnabledRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsRpcCallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "pluginId")]
+    pub plugin_id: String,
+    pub method: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsGetContributionsRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSettingsGetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSettingsSetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    pub values: serde_json::Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

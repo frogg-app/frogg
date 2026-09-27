@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
@@ -157,6 +158,7 @@ export const ko: TranslationResources = {
     noPendingLink: "데몬을 추가하려면 호스트 링크를 열거나 호스트 추가를 사용하세요.",
   },
   projectImport: projectImportCopies["ko"],
+  plugins: pluginsCopies["ko"],
   directoryBrowser: {
     pathLabel: "현재 디렉터리",
     pathPlaceholder: "경로를 입력하거나 붙여넣고 Enter를 누르세요",

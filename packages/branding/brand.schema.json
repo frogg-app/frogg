@@ -451,6 +451,84 @@
       },
       "additionalProperties": false
     },
+    "plugins": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "officialRepo": {
+          "type": "boolean"
+        },
+        "repos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "publicKey": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9+/]{43}=$"
+              }
+            },
+            "required": ["name", "url", "publicKey"],
+            "additionalProperties": false
+          }
+        },
+        "allowUserRepos": {
+          "type": "boolean"
+        },
+        "developerMode": {
+          "type": "string",
+          "enum": ["allowed", "forbidden"]
+        },
+        "allow": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9.*-]+$"
+          }
+        },
+        "deny": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9.*-]+$"
+          }
+        },
+        "preinstalled": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$"
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["id"],
+            "additionalProperties": false
+          }
+        },
+        "autoUpdate": {
+          "type": "string",
+          "enum": ["off", "brand-repos", "all"]
+        }
+      },
+      "additionalProperties": false
+    },
     "channels": {
       "type": "object",
       "properties": {

@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
@@ -154,6 +155,7 @@ export const zhCN: TranslationResources = {
     noPendingLink: "打开主机链接以添加守护进程，或使用“添加主机”。",
   },
   projectImport: projectImportCopies["zh-CN"],
+  plugins: pluginsCopies["zh-CN"],
   directoryBrowser: {
     pathLabel: "当前目录",
     pathPlaceholder: "输入或粘贴路径，然后按 Enter",

@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
@@ -157,6 +158,7 @@ export const ar: TranslationResources = {
     noPendingLink: "افتح رابط مضيف لإضافة خفي، أو استخدم إضافة مضيف.",
   },
   projectImport: projectImportCopies["ar"],
+  plugins: pluginsCopies["ar"],
   directoryBrowser: {
     pathLabel: "المجلد الحالي",
     pathPlaceholder: "اكتب مسارًا أو الصقه ثم اضغط Enter",

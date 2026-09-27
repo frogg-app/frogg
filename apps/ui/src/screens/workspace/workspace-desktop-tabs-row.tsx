@@ -568,6 +568,9 @@ function getFallbackTabLabel(
   if (tab.target.kind === "release_streams") {
     return i18n.t("releaseStreams.label");
   }
+  if (tab.target.kind === "plugin_panel") {
+    return tab.target.panelId;
+  }
   return labels.agent;
 }
 

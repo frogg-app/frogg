@@ -111,3 +111,18 @@ export type {
 
 export { getExecutionServiceStatus, stopExecutionService } from "./execution-service/client.js";
 export type { ExecutionServiceStatus } from "./execution-service/protocol.js";
+export {
+  generatePluginRepoKeyPair,
+  publicKeyFromPrivateKey,
+  sha256Hex as pluginSha256Hex,
+  verifyPluginIndexSignature,
+} from "./plugins/signing.js";
+export {
+  PluginToolingError,
+  buildPluginIndex,
+  packPlugin,
+  readPluginManifest,
+  serializePluginIndex,
+  signPluginIndexFile,
+  verifyPluginIndexFile,
+} from "./plugins/tooling.js";

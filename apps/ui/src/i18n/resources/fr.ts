@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
@@ -159,6 +160,7 @@ export const fr: TranslationResources = {
     noPendingLink: "Ouvrez un lien d'hôte pour ajouter un démon, ou utilisez Ajouter un hôte.",
   },
   projectImport: projectImportCopies["fr"],
+  plugins: pluginsCopies["fr"],
   directoryBrowser: {
     pathLabel: "Dossier actuel",
     pathPlaceholder: "Saisissez ou collez un chemin, puis appuyez sur Entrée",

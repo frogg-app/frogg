@@ -18,6 +18,8 @@ import {
   downloadAndInstallUpdate,
 } from "./features/auto-updater.js";
 import { getReleaseBuildStatus } from "./features/release-build-status.js";
+import { createClientPluginStore, readClientPluginFolder } from "./features/client-plugins.js";
+import path from "node:path";
 import {
   openLocalTransportSession,
   sendLocalTransportMessage,
@@ -47,6 +49,9 @@ async function resolveRequestedReleaseChannel(
 }
 
 export function createDesktopCommandHandlers(): Record<string, DesktopCommandHandler> {
+  const clientPlugins = createClientPluginStore(
+    path.join(app.getPath("userData"), "client-plugins"),
+  );
   return {
     ...createSshDeployCommandHandlers(),
     local_daemon_bundle_status: unsupportedLocalServerCommand,
@@ -107,6 +112,10 @@ export function createDesktopCommandHandlers(): Record<string, DesktopCommandHan
         releaseChannel: await resolveRequestedReleaseChannel(args),
       });
     },
+    client_plugins_list: () => clientPlugins.list(),
+    client_plugins_put: (args) => clientPlugins.put(args),
+    client_plugins_remove: (args) => clientPlugins.remove(args),
+    client_plugins_read_folder: (args) => readClientPluginFolder(args),
     get_release_build_status: (args) => getReleaseBuildStatus(args?.version),
     get_local_daemon_version: unsupportedLocalServerCommand,
   };

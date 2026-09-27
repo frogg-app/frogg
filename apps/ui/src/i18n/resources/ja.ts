@@ -1,4 +1,5 @@
 import { projectImportCopies } from "./project-import";
+import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
@@ -158,6 +159,7 @@ export const ja: TranslationResources = {
     noPendingLink: "デーモンを追加するにはホストリンクを開くか、ホストを追加を使用してください。",
   },
   projectImport: projectImportCopies["ja"],
+  plugins: pluginsCopies["ja"],
   directoryBrowser: {
     pathLabel: "現在のディレクトリ",
     pathPlaceholder: "パスを入力または貼り付けて Enter を押してください",
