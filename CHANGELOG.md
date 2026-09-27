@@ -9,6 +9,15 @@
   (install the CLI) sections are removed; their saved preferences keep working with the values
   already stored or the defaults. Old `/settings/<section>` links open General. A unit test pins
   the section list.
+- **Beta daemon management (daemon, protocol, client).** A stable daemon installs, updates
+  and removes the side-by-side `frogg-beta` daemon on its host for an owner client: new
+  `daemon.beta_channel.get_status`, `.install` and `.uninstall` RPCs, with
+  `daemon.beta_channel.run.progress` / `.run.completed` events, gated on
+  `features.betaChannelManagement`. It runs the beta release's own `install.sh` /
+  `uninstall.sh` after checking GitHub's sha256 digest and the script's brand header, with
+  the stable daemon's environment removed. Status includes the newest published beta release.
+  Refused on the beta daemon itself, Windows, Docker and Nix. Client methods
+  `getBetaChannelStatus`, `installBetaChannel`, `uninstallBetaChannel`.
 - **Project to-dos (daemon and protocol).** Each project has a daemon-owned to-do list stored
   in its main checkout under `.frogg/todos/` (self-ignored by git): items with category,
   priority, a kanban-style status, a markdown plan and an append-only progress log. Agents use

@@ -14,6 +14,7 @@ import type { PersistedProjectRecord, PersistedWorkspaceRecord } from "../../wor
 import type { HubRelationshipManagement } from "../../hub/relationship-controller.js";
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import type { DaemonUpdateService } from "./daemon-update-service.js";
+import type { BetaChannelService, BetaChannelStartResult } from "./beta-channel-service.js";
 import type { SecurityPosture } from "@frogg/protocol/messages";
 import type { HostResources } from "../../host/host-resources.js";
 
@@ -24,6 +25,8 @@ export interface DaemonRuntimeConfig {
   desktopManaged?: boolean;
   /** Versioned-install self-update; absent on daemons started without bootstrap wiring. */
   update?: DaemonUpdateService;
+  /** Side-by-side beta daemon install/uninstall; absent without bootstrap wiring. */
+  betaChannel?: BetaChannelService;
   /** Live security findings (security-posture.ts); absent without bootstrap wiring. */
   getSecurityPosture?(): SecurityPosture;
   /** Host metrics and owned-storage sizes/cleanup; absent without bootstrap wiring. */
@@ -496,6 +499,63 @@ export class DaemonSession {
     });
   }
 
+  async handleBetaChannelGetStatusRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.get_status.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.betaChannel;
+    if (!service) {
+      this.host.emit({
+        type: "rpc_error",
+        payload: {
+          requestId: msg.requestId,
+          requestType: msg.type,
+          error: "Beta channel management is not available on this daemon.",
+          code: "unsupported",
+        },
+      });
+      return;
+    }
+    try {
+      const status = await service.status();
+      this.host.emit({
+        type: "daemon.beta_channel.get_status.response",
+        payload: { requestId: msg.requestId, ...status, error: null },
+      });
+    } catch (error) {
+      this.logger.warn({ err: error }, "beta channel status failed");
+      this.host.emit({
+        type: "rpc_error",
+        payload: {
+          requestId: msg.requestId,
+          requestType: msg.type,
+          error: errorMessage(error),
+        },
+      });
+    }
+  }
+
+  async handleBetaChannelInstallRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.install.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.betaChannel;
+    const result = service ? service.install({ version: msg.version }) : BETA_CHANNEL_UNAVAILABLE;
+    this.host.emit({
+      type: "daemon.beta_channel.install.response",
+      payload: { requestId: msg.requestId, ...result },
+    });
+  }
+
+  async handleBetaChannelUninstallRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.uninstall.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.betaChannel;
+    const result = service ? service.uninstall({ purge: msg.purge }) : BETA_CHANNEL_UNAVAILABLE;
+    this.host.emit({
+      type: "daemon.beta_channel.uninstall.response",
+      payload: { requestId: msg.requestId, ...result },
+    });
+  }
+
   private updateUnavailable(): { updatable: false; reason: string; currentVersion: string } {
     return {
       updatable: false,
@@ -504,6 +564,13 @@ export class DaemonSession {
     };
   }
 }
+
+const BETA_CHANNEL_UNAVAILABLE: BetaChannelStartResult = {
+  accepted: false,
+  runId: null,
+  targetVersion: null,
+  error: "Beta channel management is not available on this daemon.",
+};
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

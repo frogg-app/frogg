@@ -7,6 +7,7 @@ import { open, rm } from "fs/promises";
 import { randomUUID } from "node:crypto";
 import { hostname as getHostname } from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Logger } from "pino";
 import { z } from "zod";
@@ -258,6 +259,7 @@ import {
   DEFAULT_AUTO_UPDATE_CONFIG,
 } from "./session/daemon/daemon-auto-updater.js";
 import { describeDaemonInstall } from "./session/daemon/daemon-update-install.js";
+import { BetaChannelService } from "./session/daemon/beta-channel-service.js";
 import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
 import { createHostResources } from "./host/host-resources.js";
 import { sweepFroggDebris } from "./host/debris-sweep.js";
@@ -2206,6 +2208,10 @@ export async function createFroggDaemon(
               retainAcrossGatewayRestart: Boolean(config.executionService),
               logger,
             });
+            const betaChannelService = new BetaChannelService({
+              logger,
+              modulePath: fileURLToPath(import.meta.url),
+            });
             const runningVersionRoot = updateService.installInfo.runningRoot;
             const hostResources = createHostResources({
               froggHome: config.froggHome,
@@ -2296,6 +2302,7 @@ export async function createFroggDaemon(
                 },
                 desktopManaged: config.desktopManaged === true,
                 update: updateService,
+                betaChannel: betaChannelService,
                 hostResources,
                 getSecurityPosture,
                 setSecurityFindingAcknowledged,
@@ -2326,6 +2333,7 @@ export async function createFroggDaemon(
             {
               const server = wsServer;
               updateService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
+              betaChannelService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
             }
             autoUpdater.start();
             // Fire-and-forget: continue agents a previous daemon stop cut off mid-turn.
