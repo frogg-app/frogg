@@ -233,6 +233,32 @@ export function panelListItemChrome(theme: Theme): ViewStyle {
   }
 }
 
+/** A bordered summary card inside a panel (release stream cards, setup callouts). */
+export function panelCardChrome(theme: Theme): ViewStyle {
+  switch (variantOf(theme)) {
+    case "mono":
+      return {
+        borderRadius: theme.borderRadius.md,
+        borderColor: theme.colors.border,
+        backgroundColor: theme.colors.surface0,
+      };
+    case "inset":
+      return { borderRadius: theme.borderRadius.md };
+    case "paper":
+      return { borderRadius: theme.borderRadius.xl, borderColor: "transparent" };
+    case "focus":
+      return { borderRadius: theme.borderRadius.lg, borderColor: "transparent" };
+    case "soft":
+      return {
+        borderRadius: theme.borderRadius["2xl"],
+        borderColor: "transparent",
+        ...theme.shadow.sm,
+      };
+    default:
+      return {};
+  }
+}
+
 /** A key or small control on a panel surface (terminal key row, retry buttons). */
 export function panelKeyChrome(theme: Theme, baseRadius: number): ViewStyle {
   if (variantOf(theme) === "current") return {};
