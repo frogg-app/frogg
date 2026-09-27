@@ -5,12 +5,47 @@ sidebar:
   order: 9
 ---
 
+import { Screenshot } from "@/components/docs";
+import projectTodosImg from "@/assets/docs/app/project-todos.png";
+import projectTodoDetailImg from "@/assets/docs/app/project-todo-detail.png";
+
 Each project has a to-do list owned by the daemon. Agents working in any of the project's
 workspaces, including worktrees, see the same list: they pick an item, claim it so no other
 agent starts the same work, keep a markdown plan and a progress log on it, and mark it done.
 
-The app does not show the list yet. Agents use it through the [Frogg MCP
-tools](/docs/agents-and-providers/mcp/#tools), and clients can use the session RPCs below.
+You manage the list in the app, agents use it through the [Frogg MCP
+tools](/docs/agents-and-providers/mcp/#tools), and other clients can use the session RPCs below.
+
+## In the app
+
+Open a project's menu in the sidebar (the kebab button on its row, or right-click it) and choose
+**To-dos**. The entry only appears when the host's daemon supports to-dos.
+
+<Screenshot src={projectTodosImg} alt="A project's to-do list grouped by category" />
+
+- Items are grouped by category, uncategorized last, and sorted by priority. The filter above
+  the list shows **Open** items (everything except `done`) by default; pick **All** or a single
+  status to narrow it.
+- Each row shows the status, priority, a **Parallel** marker when several agents may claim it,
+  and a badge per claim with the agent's name and branch. Select a claim badge to open that
+  agent. A claim whose agent is no longer running is marked **stale**.
+- The list updates live as agents and other clients change it. While the host is offline the
+  last loaded list stays on screen with a notice, and it reloads on reconnect.
+- **New to-do** creates an item with a title, description, category, priority and the
+  parallel-claims switch.
+
+Select an item to open its detail.
+
+<Screenshot src={projectTodoDetailImg} alt="A to-do's detail with status, claims and progress log" />
+
+- The status menu moves the item to any column. Setting `done` releases every claim.
+- **Edit** changes the fields; **Edit plan** edits the markdown plan, which is shown rendered.
+- **Release claims** force-releases every claim on the item and **Delete** removes the item and
+  its plan. Both ask for confirmation.
+- The progress log lists notes newest first.
+
+Viewing needs the viewer role and changes need the operator role; a failed change shows the
+daemon's error and keeps what you typed.
 
 ## Items
 

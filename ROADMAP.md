@@ -22,8 +22,10 @@ deployment run, not more code.
 
 ## Features
 
-- [ ] **Project to-dos UI.** Daemon store, `todo_*` MCP tools and `project.todo.*` RPCs are
-      in; the app list/kanban view (gated on `features.projectTodos`) is pending.
+- [x] **Project to-dos UI.** Daemon store, `todo_*` MCP tools, `project.todo.*` RPCs and the
+      app list/detail view (gated on `features.projectTodos`) are in. Verified in the web
+      preview; native iOS/Android and Electron not yet checked by hand. A kanban board view
+      is not built.
 - [ ] **Host settings: metrics and storage.** Daemon RPCs and the Host → Resources view are
       in; native (desktop/mobile) rendering and an owner-run clean are not yet validated. Orphaned-worktree cleanup is not offered: size only until the
       daemon can prove a worktree has no workspace or agent.

@@ -80,7 +80,10 @@ const terminalShots = {
  * link carrying that daemon's live key fingerprint, and `app/session-presence`
  * needs a second connection reporting presence on the same agent. Recapture
  * them with `npm run preview` and `npm run shot` (see the pairing and presence
- * sections of the docs for the exact URLs).
+ * sections of the docs for the exact URLs). `app/project-todos` and
+ * `app/project-todo-detail` need seeded to-dos with claims and progress, which only an agent
+ * can create; capture them from `npm run preview` at
+ * `/h/<serverId>/projects/<projectId>/todos` with `npm run shot`.
  */
 const webShots = {
   "app/home": { path: "/" },
