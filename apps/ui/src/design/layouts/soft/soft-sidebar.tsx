@@ -3,7 +3,8 @@ import { History, House, Search, Settings, SquarePen, type LucideIcon } from "lu
 import { memo, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
-import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { StyleSheet } from "react-native-unistyles";
+import { themedIcon } from "./soft-icon";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import { BrandLogo } from "@/components/icons/brand-logo";
 import { LeftSidebar } from "@/components/left-sidebar";
@@ -29,15 +30,6 @@ type HoverState = PressableStateCallbackType & { hovered?: boolean };
 const activeMapping = (theme: Theme) => ({ color: theme.colors.accent });
 const idleMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const onAccentMapping = (theme: Theme) => ({ color: theme.colors.accentForeground });
-const themedIcons = new Map<LucideIcon, ReturnType<typeof withUnistyles<LucideIcon>>>();
-function themedIcon(icon: LucideIcon) {
-  let themed = themedIcons.get(icon);
-  if (!themed) {
-    themed = withUnistyles(icon);
-    themedIcons.set(icon, themed);
-  }
-  return themed;
-}
 
 /**
  * The soft sidebar. Desktop: an icon rail on the frame (Notion/Arc style) beside a floating,

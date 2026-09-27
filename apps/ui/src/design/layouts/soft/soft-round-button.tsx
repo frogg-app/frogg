@@ -1,7 +1,8 @@
 import type { LucideIcon } from "lucide-react-native";
 import { useMemo } from "react";
 import { Pressable, type PressableStateCallbackType } from "react-native";
-import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { StyleSheet } from "react-native-unistyles";
+import { themedIcon } from "./soft-icon";
 import type { Theme } from "@/styles/theme";
 import { softEdge, softRaised, SOFT_PILL, SOFT_ROUND_BUTTON } from "./soft-surface";
 
@@ -9,16 +10,6 @@ type HoverState = PressableStateCallbackType & { hovered?: boolean };
 
 const foregroundMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 
-// One themed wrapper per icon, shared by every button that shows it.
-const themedIcons = new Map<LucideIcon, ReturnType<typeof withUnistyles<LucideIcon>>>();
-function themedIcon(icon: LucideIcon) {
-  let themed = themedIcons.get(icon);
-  if (!themed) {
-    themed = withUnistyles(icon);
-    themedIcons.set(icon, themed);
-  }
-  return themed;
-}
 
 /** A floating round icon button with a soft shadow (ChatGPT/Perplexity iOS header buttons). */
 export function SoftRoundButton({

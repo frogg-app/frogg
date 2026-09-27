@@ -1,10 +1,11 @@
 import { router, usePathname, type Href } from "expo-router";
-import { House, MessagesSquare, Plus, Settings, type LucideIcon } from "lucide-react-native";
+import { House, MessagesSquare, Plus, Settings } from "lucide-react-native";
 import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { StyleSheet } from "react-native-unistyles";
+import { themedIcon, type ThemedIcon } from "./soft-icon";
 import type { Theme } from "@/styles/theme";
 import {
   buildNewChatRoute,
@@ -19,11 +20,11 @@ import { softEdge, softRaised, SOFT_PILL } from "./soft-surface";
 
 type TabId = "home" | "chats" | "new" | "settings";
 
-const ThemedIcons: Record<TabId, ReturnType<typeof withUnistyles<LucideIcon>>> = {
-  home: withUnistyles(House),
-  chats: withUnistyles(MessagesSquare),
-  new: withUnistyles(Plus),
-  settings: withUnistyles(Settings),
+const ThemedIcons: Record<TabId, ThemedIcon> = {
+  home: themedIcon(House),
+  chats: themedIcon(MessagesSquare),
+  new: themedIcon(Plus),
+  settings: themedIcon(Settings),
 };
 const activeMapping = (theme: Theme) => ({ color: theme.colors.accent });
 const idleMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });

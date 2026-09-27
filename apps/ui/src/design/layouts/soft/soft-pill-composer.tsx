@@ -96,7 +96,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: 16,
     fontFamily: theme.fontFamily.ui,
     color: theme.colors.foreground,
-    outlineStyle: "none",
+    outlineWidth: 0,
   },
   send: {
     width: 40,
