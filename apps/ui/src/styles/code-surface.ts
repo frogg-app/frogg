@@ -5,3 +5,7 @@
 // and is harmless. Use a shared stable reference so it doesn't trip the react-perf
 // "new object as prop" rule.
 export const CODE_SURFACE_DATASET = { pmono: "" } as const;
+
+// Text drawn in a design variant's display or prose face (see `theme.design.headingFontFamily`)
+// carries this so the web UI-font rule leaves its own `fontFamily` in place.
+export const DESIGN_FONT_DATASET = { pfont: "" } as const;

@@ -30,6 +30,7 @@ import { AddProjectFlowHost } from "@/components/add-project-flow-host";
 import { AppearanceStyleBoundary } from "@/components/appearance-style-boundary";
 import { WorktreeSetupCalloutSource } from "@/components/worktree-setup-callout-source";
 import { DownloadToast } from "@/components/download-toast";
+import { DesignSwitcher } from "@/design/design-switcher";
 import { QuittingOverlay } from "@/components/quitting-overlay";
 import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
 import { CompanionHost } from "@/companion/host";
@@ -578,6 +579,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
       <FloatingPanelPortalHost />
       {isCompactLayout ? sidebarChrome : null}
       <DownloadToast />
+      <DesignSwitcher />
       <RosettaCalloutSource />
       <UpdateCalloutSource />
       <MobileUpdateCalloutSource />
