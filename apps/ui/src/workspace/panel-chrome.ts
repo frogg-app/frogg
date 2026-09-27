@@ -1,7 +1,7 @@
 import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import { themeOf } from "@/styles/design-theme";
 import type { Theme } from "@/styles/theme";
-import { hexColorWithAlpha } from "@/utils/color";
+import { hexColorWithAlpha, parseHexColor } from "@/utils/color";
 
 // Design-direction chrome for the workspace tool panels (explorer, changes, terminal, CI, PR).
 // Every helper returns the shipping values for the `current` design, so a panel that spreads
@@ -21,16 +21,26 @@ function variantOf(theme: Theme): Variant {
  */
 export function panelTheme(theme: Theme, themeName: string | undefined): Theme {
   const registered: Theme = themeOf(themeName);
-  // The shipping design keeps the CSS-variable colours so it renders exactly as before; only its
-  // design tokens (frozen at first compute on web) come from the registered theme.
+  // The shipping design keeps the CSS-variable colours so it renders exactly as before (they track
+  // runtime appearance updates); only its design tokens, frozen at first compute on web, come from
+  // the registered theme. Colour maths must therefore go through `panelAlpha`, never assume hex.
   return registered.design.variant === "current"
     ? { ...theme, design: registered.design }
     : registered;
 }
 
+/**
+ * `color` at `alpha` opacity. Hex colours mix directly; a web CSS variable (the shipping design's
+ * colours) mixes in CSS, so no caller can crash on a `var(--…)` value.
+ */
+export function panelAlpha(color: string, alpha: number): string {
+  if (parseHexColor(color)) return hexColorWithAlpha(color, alpha);
+  return `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;
+}
+
 /** Soft accent wash used for a selected row or pill in the Inset and Soft directions. */
 export function panelAccentWash(theme: Theme, alpha = 0.12): string {
-  return hexColorWithAlpha(theme.colors.accent, alpha);
+  return panelAlpha(theme.colors.accent, alpha);
 }
 
 /** Bottom edge of a panel toolbar or tab track: hairline, or nothing in borderless directions. */
@@ -277,11 +287,15 @@ export function panelCardChrome(theme: Theme): ViewFragment {
   }
 }
 
+type StatusDotTone = "statusDotSuccess" | "statusDotWarning" | "statusDotDanger";
+
 /**
- * A status dot of `size` px filled with `color`. Mono makes it prominent: larger, with a soft halo
- * ring in the same hue (Vercel deployment dots).
+ * A status dot of `size` px in a status tone. Mono makes it prominent: larger, with a soft halo
+ * ring in the same hue (Vercel deployment dots). The colour is read from `theme` (a `panelTheme`)
+ * so the halo's alpha mixing sees a real hex value on web, not a CSS variable.
  */
-export function panelStatusDot(theme: Theme, color: string, size: number): ViewFragment {
+export function panelStatusDot(theme: Theme, tone: StatusDotTone, size: number): ViewFragment {
+  const color = theme.colors[tone];
   if (variantOf(theme) !== "mono") {
     return { width: size, height: size, borderRadius: size / 2, backgroundColor: color };
   }
@@ -291,7 +305,7 @@ export function panelStatusDot(theme: Theme, color: string, size: number): ViewF
     height: prominent,
     borderRadius: prominent / 2,
     backgroundColor: color,
-    boxShadow: `0 0 0 3px ${hexColorWithAlpha(color, 0.22)}`,
+    boxShadow: `0 0 0 3px ${panelAlpha(color, 0.22)}`,
   };
 }
 
