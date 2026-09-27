@@ -42,7 +42,7 @@ import {
 } from "./model";
 import { useCiNow, useCiRuns, type CiRunsState } from "./use-ci-runs";
 import { useCiJobLogToChat, type CiJobLogToChat } from "./use-ci-job-log-to-chat";
-import { panelListItemChrome, panelMetaText } from "@/workspace/panel-chrome";
+import { panelListItemChrome, panelMetaText, panelStatusDot } from "@/workspace/panel-chrome";
 import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 /** How a job row attaches its log to the focused chat; null where that is not possible. */
@@ -529,7 +529,7 @@ function jobRowStyle({ hovered }: { hovered?: boolean }) {
   return [sectionKitStyles.checkRow, Boolean(hovered) && styles.hover];
 }
 
-const RUNNER_DOT = { width: 6, height: 6, borderRadius: 3 } as const;
+const RUNNER_DOT_SIZE = 6;
 
 const styles = StyleSheet.create((theme) => ({
   toolbar: {
@@ -686,14 +686,8 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     minWidth: 0,
   },
-  runnerDotBusy: {
-    ...RUNNER_DOT,
-    backgroundColor: theme.colors.statusDotWarning,
-  },
-  runnerDotIdle: {
-    ...RUNNER_DOT,
-    backgroundColor: theme.colors.statusDotSuccess,
-  },
+  runnerDotBusy: panelStatusDot(theme, theme.colors.statusDotWarning, RUNNER_DOT_SIZE),
+  runnerDotIdle: panelStatusDot(theme, theme.colors.statusDotSuccess, RUNNER_DOT_SIZE),
   hover: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

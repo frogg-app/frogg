@@ -259,6 +259,24 @@ export function panelCardChrome(theme: Theme): ViewStyle {
   }
 }
 
+/**
+ * A status dot of `size` px filled with `color`. Mono makes it prominent: larger, with a soft halo
+ * ring in the same hue (Vercel deployment dots).
+ */
+export function panelStatusDot(theme: Theme, color: string, size: number): ViewStyle {
+  if (variantOf(theme) !== "mono") {
+    return { width: size, height: size, borderRadius: size / 2, backgroundColor: color };
+  }
+  const prominent = size + 2;
+  return {
+    width: prominent,
+    height: prominent,
+    borderRadius: prominent / 2,
+    backgroundColor: color,
+    boxShadow: `0 0 0 3px ${hexColorWithAlpha(color, 0.22)}`,
+  };
+}
+
 /** A key or small control on a panel surface (terminal key row, retry buttons). */
 export function panelKeyChrome(theme: Theme, baseRadius: number): ViewStyle {
   if (variantOf(theme) === "current") return {};
