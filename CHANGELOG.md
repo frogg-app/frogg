@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.4 — 2026-09-27
+
+- **Android release build fixed.** 1.6.3 still failed to package the APK.
+
 ## 1.6.3 — 2026-09-27
 
 - **Android release build fixed.** 1.6.2 never published: the APK failed to package.
