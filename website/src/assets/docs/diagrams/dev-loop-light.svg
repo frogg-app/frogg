@@ -40,7 +40,7 @@
 <text x="918" y="424" font-size="14.9" font-weight="400" fill="#5b6462">docs page and screenshots</text>
 <text x="918" y="445" font-size="14.9" font-weight="400" fill="#5b6462">UI copy in nine locales</text>
 <text x="918" y="477" font-size="14.9" font-weight="600" fill="#6d28d9">frogg-docs</text>
-<text x="918" y="496" font-size="14.9" font-weight="600" fill="#6d28d9">frogg-i18n</text>
+<text x="918" y="496" font-size="14.9" font-weight="600" fill="#6d28d9">frogg-localisation</text>
 <rect x="610" y="364" width="250" height="146" rx="12" fill="#f6f7f7" fill-opacity="1" stroke="#dfe3e2"/>
 <rect x="610" y="364" width="250" height="6" rx="3" fill="#c77700"/>
 <text x="628" y="398" font-size="18.9" font-weight="700" fill="#c77700" text-anchor="start">Land on main</text>

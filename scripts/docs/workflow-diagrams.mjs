@@ -299,7 +299,7 @@ function devLoop(t) {
     card(xs[3], row2, {
       title: "Docs and strings",
       lines: ["docs page and screenshots", "UI copy in nine locales"],
-      skills: ["frogg-docs", "frogg-i18n"],
+      skills: ["frogg-docs", "frogg-localisation"],
     }),
     card(xs[2], row2, {
       title: "Land on main",
