@@ -151,6 +151,13 @@ export function useMonoChatRow(serverId: string, agentId: string): MonoChatRow |
   }, [agent, hosts, serverId, workspace]);
 }
 
+/** Whether any host has sent its agent list, so an empty table means "no chats", not "loading". */
+export function useAgentsHydrated(): boolean {
+  return useSessionStore((state) =>
+    Object.values(state.sessions).some((session) => session.hasHydratedAgents),
+  );
+}
+
 /** Wall clock that ticks once a second while `live`, so running durations count up. */
 export function useNow(live: boolean): number {
   const [now, setNow] = useState(() => Date.now());
