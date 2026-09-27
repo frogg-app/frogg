@@ -651,14 +651,14 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.spacing[3],
     gap: 0,
   },
-  tabActive: tabChrome(panelTheme(theme, rt.themeName)).active,
+  tabActive: { ...tabChrome(panelTheme(theme, rt.themeName)).active },
   tabText: {
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foregroundMuted,
     ...tabChrome(panelTheme(theme, rt.themeName)).label,
   },
-  tabTextActive: tabChrome(panelTheme(theme, rt.themeName)).labelActive,
+  tabTextActive: { ...tabChrome(panelTheme(theme, rt.themeName)).labelActive },
   tabTextMuted: {
     opacity: 0.8,
   },

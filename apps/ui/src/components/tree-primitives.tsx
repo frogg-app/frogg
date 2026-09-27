@@ -61,7 +61,7 @@ export const workspaceTreeRowStyles = StyleSheet.create((theme: Theme, rt) => ({
     paddingRight: WORKSPACE_PANE_TRAILING_GLYPH_RAIL,
     ...treeRowChrome(panelTheme(theme, rt.themeName)).row,
   },
-  active: treeRowChrome(panelTheme(theme, rt.themeName)).active,
+  active: { ...treeRowChrome(panelTheme(theme, rt.themeName)).active },
   name: { color: theme.colors.foreground, opacity: 0.76 },
   nameHovered: { opacity: 1 },
 }));
