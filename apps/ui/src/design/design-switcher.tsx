@@ -51,6 +51,10 @@ function useDesignUrlParams(): void {
       const schemeMatch = SCHEME_ORDER.find((value) => value === scheme);
       if (schemeMatch) store.setScheme(schemeMatch);
       if (params.get("switcher") === "0") store.setSwitcherVisible(false);
+      // Drop the params once applied so they don't pin the direction on later reloads.
+      const url = new URL(window.location.href);
+      for (const key of ["design", "scheme", "switcher"]) url.searchParams.delete(key);
+      window.history.replaceState(window.history.state, "", url.toString());
     };
     if (useDesignPreviewStore.persist.hasHydrated()) {
       apply();
