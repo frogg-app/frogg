@@ -270,15 +270,59 @@ function treeRowChromeFor(
 
 /** Terminal output well: flush by default, an inset rounded card in Paper and Soft. */
 export function panelTerminalFrame(theme: Theme): ViewFragment {
-  return { margin: 0, borderRadius: 0, overflow: "visible", ...terminalFrameFor(theme) };
+  const neutral: ViewFragment = {
+    margin: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: "transparent",
+    overflow: "visible",
+    ...NO_SHADOW,
+  };
+  return { ...neutral, ...terminalFrameFor(theme) };
 }
 
+function terminalInset(horizontal: number, vertical: number): ViewFragment {
+  return {
+    paddingTop: vertical,
+    paddingBottom: vertical,
+    paddingLeft: horizontal,
+    paddingRight: horizontal,
+  };
+}
+
+// The refresh directions give the output a gutter so glyphs never sit on the pane edge (or under a
+// rounded corner); the well takes the emulator's own background so the gutter reads as terminal.
 function terminalFrameFor(theme: Theme): ViewFragment {
+  const well = { backgroundColor: theme.colors.terminal.background };
   switch (variantOf(theme)) {
+    case "inset":
+    case "mono":
+      return { ...well, ...terminalInset(8, 6) };
+    case "focus":
+      return { ...well, ...terminalInset(14, 10) };
     case "paper":
-      return { margin: 6, borderRadius: theme.borderRadius.lg, overflow: "hidden" };
+      return {
+        ...well,
+        ...terminalInset(10, 8),
+        margin: 8,
+        borderRadius: theme.borderRadius.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.borderAccent,
+        overflow: "hidden",
+      };
     case "soft":
-      return { margin: 8, borderRadius: theme.borderRadius.xl, overflow: "hidden" };
+      return {
+        ...well,
+        ...terminalInset(12, 10),
+        margin: 8,
+        borderRadius: theme.borderRadius.xl,
+        overflow: "hidden",
+        ...theme.shadow.sm,
+      };
     default:
       return {};
   }
