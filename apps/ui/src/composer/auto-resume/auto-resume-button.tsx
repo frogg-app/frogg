@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, type PressableStateCallbackType } from "react-native";
+import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { AlarmClock, X } from "lucide-react-native";
 import { useToast } from "@/contexts/toast-api-context";
@@ -92,16 +92,28 @@ export function ComposerAutoResumeButton({
       onHoverOut={handleHoverOut}
       style={pressableStyle}
       accessibilityRole="button"
-      accessibilityLabel={t("composer.autoResume.accessibilityLabel", { countdown })}
+      accessibilityLabel={t("composer.autoResume.accessibilityLabel", {
+        countdown,
+      })}
       testID="composer-auto-resume"
     >
       <Icon size={14} color={color} />
-      <Text
-        style={[styles.label, hovered ? styles.cancelColor : styles.mutedColor]}
-        numberOfLines={1}
-      >
-        {hovered ? t("composer.autoResume.cancel") : countdown}
-      </Text>
+      {/* Both labels stay mounted so the pill is sized by the wider one and never shifts on hover. */}
+      <View style={styles.labelStack}>
+        <Text
+          style={[styles.label, styles.mutedColor, hovered && styles.hiddenLabel]}
+          numberOfLines={1}
+        >
+          {countdown}
+        </Text>
+        <Text
+          style={[styles.label, styles.cancelColor, !hovered && styles.hiddenLabel]}
+          numberOfLines={1}
+          aria-hidden={!hovered}
+        >
+          {t("composer.autoResume.cancel")}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -126,6 +138,15 @@ const styles = StyleSheet.create((theme) => ({
   },
   cancelColor: {
     color: theme.colors.destructive,
+  },
+  labelStack: {
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  hiddenLabel: {
+    height: 0,
+    opacity: 0,
+    overflow: "hidden",
   },
   label: {
     fontSize: theme.fontSize.sm,

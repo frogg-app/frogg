@@ -141,7 +141,17 @@ export function setupUsageLimitAutoResume(
     agentId: string,
     event: Extract<AgentStreamEvent, { type: "turn_completed" | "turn_failed" }>,
   ): Promise<UsageLimitSignal | null> {
-    if (event.usageLimit) return event.usageLimit;
+    if (event.usageLimit?.resetsAt) return event.usageLimit;
+    // A structured signal without a reset time still leaves the notice text to read one from.
+    const fromText = await detectFromText(agentId, event);
+    if (fromText?.resetsAt) return fromText;
+    return event.usageLimit ?? fromText;
+  }
+
+  async function detectFromText(
+    agentId: string,
+    event: Extract<AgentStreamEvent, { type: "turn_completed" | "turn_failed" }>,
+  ): Promise<UsageLimitSignal | null> {
     if (event.type === "turn_failed") {
       return (
         detectUsageLimitFromText(event.error, now()) ??
