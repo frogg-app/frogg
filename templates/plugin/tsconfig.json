@@ -6,7 +6,10 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": []
+    "types": [],
+    "paths": {
+      "@frogg/plugin-api": ["./types/frogg-plugin-api.d.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "types"]
 }

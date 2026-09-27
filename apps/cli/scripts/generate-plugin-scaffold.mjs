@@ -1,4 +1,4 @@
-// Embeds templates/plugin/ into the CLI so `frogg plugins new` works from an installed CLI.
+// Embeds templates/plugin/ (plus the plugin API types) into the CLI so `frogg plugins new` works from an installed CLI.
 // `--check` fails when the embedded copy is stale.
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
@@ -22,7 +22,12 @@ function walk(dir, rel = "") {
     });
 }
 
-const files = Object.fromEntries(walk(root));
+// Ship the API types with each scaffold: @frogg/plugin-api is not published to npm.
+const apiTypes = fileURLToPath(new URL("../../../packages/plugin-api/index.d.ts", import.meta.url));
+const files = Object.fromEntries([
+  ...walk(root),
+  ["types/frogg-plugin-api.d.ts", readFileSync(apiTypes, "utf8")],
+]);
 const next =
   "// GENERATED from templates/plugin/ by apps/cli/scripts/generate-plugin-scaffold.mjs. Do not edit.\n" +
   "// Placeholders: {{id}}, {{name}}.\n" +
