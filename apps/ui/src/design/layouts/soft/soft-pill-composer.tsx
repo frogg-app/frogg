@@ -1,5 +1,5 @@
 import { ArrowUp } from "lucide-react-native";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
@@ -9,7 +9,7 @@ import {
   type TextInputKeyPressEventData,
 } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { EditingTextInput } from "@/components/ui/text-input";
+import { EditingTextInput, type EditingTextInputHandle } from "@/components/ui/text-input";
 import { isWeb } from "@/constants/platform";
 import type { Theme } from "@/styles/theme";
 import { useSoftStartChat } from "./use-soft-start-chat";
@@ -30,6 +30,13 @@ const placeholderMapping = (theme: Theme) => ({
 export function SoftPillComposer({ serverId }: { serverId: string | null }) {
   const { t } = useTranslation();
   const { text, setText, submit, isPending } = useSoftStartChat(serverId);
+  const inputRef = useRef<EditingTextInputHandle | null>(null);
+  // The field is uncontrolled (IME safety); mirror draft changes made elsewhere into it: the
+  // draft hydrating after mount, or being cleared once a chat starts.
+  useEffect(() => {
+    const input = inputRef.current;
+    if (input && input.getText() !== text) input.replaceText(text);
+  }, [text]);
   const canSend = Boolean(submit) && text.trim().length > 0 && !isPending;
   const send = useCallback(() => {
     if (canSend) submit?.();
@@ -49,7 +56,8 @@ export function SoftPillComposer({ serverId }: { serverId: string | null }) {
     <View style={styles.pill} testID="soft-home-composer">
       <ThemedInput
         style={styles.input}
-        value={text}
+        ref={inputRef}
+        initialValue={text}
         onChangeText={setText}
         onSubmitEditing={isWeb ? undefined : send}
         onKeyPress={isWeb ? handleKeyPress : undefined}

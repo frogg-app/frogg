@@ -90,7 +90,12 @@ function SoftRail() {
       >
         <RailGlyph icon={SquarePen} mapping={onAccentMapping} />
       </Pressable>
-      <RailButton icon={House} label={t("sidebar.actions.home")} selected={onHome} onPress={goHome} />
+      <RailButton
+        icon={House}
+        label={t("sidebar.actions.home")}
+        selected={onHome}
+        onPress={goHome}
+      />
       <RailButton icon={Search} label={t("sidebar.sections.search")} onPress={openSearch} />
       <RailButton
         icon={History}
@@ -140,7 +145,12 @@ function RailButton({
     [selected],
   );
   return (
-    <Pressable onPress={onPress} style={style} accessibilityRole="button" accessibilityLabel={label}>
+    <Pressable
+      onPress={onPress}
+      style={style}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
       <RailGlyph icon={icon} mapping={selected ? activeMapping : idleMapping} />
     </Pressable>
   );

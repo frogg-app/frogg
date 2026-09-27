@@ -10,7 +10,6 @@ type HoverState = PressableStateCallbackType & { hovered?: boolean };
 
 const foregroundMapping = (theme: Theme) => ({ color: theme.colors.foreground });
 
-
 /** A floating round icon button with a soft shadow (ChatGPT/Perplexity iOS header buttons). */
 export function SoftRoundButton({
   icon,

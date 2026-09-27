@@ -80,7 +80,8 @@ function useWorkspaceAgents(serverId: string, agentId: string) {
       siblings.sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
       return { workspaceId: self.workspaceId ?? null, agents: siblings.map(summarize) };
     },
-    (left, right) => left.workspaceId === right.workspaceId && sameSummaries(left.agents, right.agents),
+    (left, right) =>
+      left.workspaceId === right.workspaceId && sameSummaries(left.agents, right.agents),
   );
 }
 
@@ -104,10 +105,7 @@ export function SoftConversationTop({ serverId, agentId }: { serverId: string; a
     else router.navigate(buildOpenProjectRoute());
   }, []);
   const openSearch = useCallback(() => setCommandCenterOpen(true), [setCommandCenterOpen]);
-  const newChat = useCallback(
-    () => router.push(buildNewChatRoute(serverId) as Href),
-    [serverId],
-  );
+  const newChat = useCallback(() => router.push(buildNewChatRoute(serverId) as Href), [serverId]);
   const pick = useCallback(
     (id: string) => {
       setOpen(false);
@@ -131,7 +129,11 @@ export function SoftConversationTop({ serverId, agentId }: { serverId: string; a
       <View style={styles.bar}>
         <View style={compact ? styles.sideCompact : styles.side}>
           {compact ? (
-            <SoftRoundButton icon={ChevronLeft} label={t("sidebar.actions.home")} onPress={goBack} />
+            <SoftRoundButton
+              icon={ChevronLeft}
+              label={t("sidebar.actions.home")}
+              onPress={goBack}
+            />
           ) : null}
         </View>
         <Pressable
@@ -157,7 +159,11 @@ export function SoftConversationTop({ serverId, agentId }: { serverId: string; a
         </Pressable>
         <View style={compact ? styles.sideCompact : styles.actionsSide}>
           {compact ? null : (
-            <SoftRoundButton icon={Search} label={t("sidebar.sections.search")} onPress={openSearch} />
+            <SoftRoundButton
+              icon={Search}
+              label={t("sidebar.sections.search")}
+              onPress={openSearch}
+            />
           )}
           <SoftRoundButton icon={SquarePen} label={t("sidebar.chats.newChat")} onPress={newChat} />
         </View>
@@ -182,7 +188,12 @@ function AgentMenu({
   return (
     <View style={styles.menu} testID="soft-conversation-menu">
       {agents.map((agent) => (
-        <AgentMenuRow key={agent.id} agent={agent} current={agent.id === currentId} onPick={onPick} />
+        <AgentMenuRow
+          key={agent.id}
+          agent={agent}
+          current={agent.id === currentId}
+          onPick={onPick}
+        />
       ))}
     </View>
   );

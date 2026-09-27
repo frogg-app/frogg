@@ -16,6 +16,10 @@ function recent(key: string, sortTime: number): SoftRecent {
   };
 }
 
+function summarizeGroup(group: ReturnType<typeof groupByDay>[number]) {
+  return [group.key, group.items.map((item) => item.key)];
+}
+
 describe("mostUrgentStatus", () => {
   it("puts work that needs the user ahead of work still running", () => {
     expect(mostUrgentStatus(["done", "running", "needs_input"])).toBe("needs_input");
@@ -33,10 +37,16 @@ describe("groupByDay", () => {
 
   it("buckets by local calendar day and keeps order within a bucket", () => {
     const groups = groupByDay(
-      [recent("a", at(0, 14)), recent("b", at(0, 1)), recent("c", at(1)), recent("d", at(3)), recent("e", at(30))],
+      [
+        recent("a", at(0, 14)),
+        recent("b", at(0, 1)),
+        recent("c", at(1)),
+        recent("d", at(3)),
+        recent("e", at(30)),
+      ],
       now,
     );
-    expect(groups.map((group) => [group.key, group.items.map((item) => item.key)])).toEqual([
+    expect(groups.map(summarizeGroup)).toEqual([
       ["today", ["a", "b"]],
       ["yesterday", ["c"]],
       ["previous7Days", ["d"]],

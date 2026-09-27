@@ -140,7 +140,11 @@ function SoftTab({
       accessibilityState={a11yState}
       testID={`soft-tab-${id}`}
     >
-      <Icon size={20} strokeWidth={selected ? 2.3 : 2} uniProps={selected ? activeMapping : idleMapping} />
+      <Icon
+        size={20}
+        strokeWidth={selected ? 2.3 : 2}
+        uniProps={selected ? activeMapping : idleMapping}
+      />
       <Text style={selected ? styles.labelSelected : styles.label} numberOfLines={1}>
         {label}
       </Text>

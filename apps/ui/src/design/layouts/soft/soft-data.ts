@@ -110,7 +110,10 @@ export type SoftDayGroup = "today" | "yesterday" | "previous7Days" | "older";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** Newest-first recents bucketed by local calendar day relative to `now`; empty buckets dropped. */
-export function groupByDay(recents: SoftRecent[], now: Date): { key: SoftDayGroup; items: SoftRecent[] }[] {
+export function groupByDay(
+  recents: SoftRecent[],
+  now: Date,
+): { key: SoftDayGroup; items: SoftRecent[] }[] {
   const start = new Date(now);
   start.setHours(0, 0, 0, 0);
   const today = start.getTime();

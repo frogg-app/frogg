@@ -1,4 +1,10 @@
-import { Check, CircleAlert, LoaderCircle, MessageCircleQuestion, Sparkles } from "lucide-react-native";
+import {
+  Check,
+  CircleAlert,
+  LoaderCircle,
+  MessageCircleQuestion,
+  Sparkles,
+} from "lucide-react-native";
 import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { mixColor } from "@/styles/color-mix";

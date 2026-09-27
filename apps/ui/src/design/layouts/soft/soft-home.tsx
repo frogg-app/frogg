@@ -31,7 +31,11 @@ export function useSoftSegmentOptions(scope: string): SegmentedControlOption<Sof
   return useMemo(
     () => [
       { value: "chats", label: t("sidebar.sections.chats"), testID: `soft-${scope}-chats` },
-      { value: "projects", label: t("sidebar.sections.projects"), testID: `soft-${scope}-projects` },
+      {
+        value: "projects",
+        label: t("sidebar.sections.projects"),
+        testID: `soft-${scope}-projects`,
+      },
     ],
     [scope, t],
   );
@@ -81,9 +85,22 @@ export function SoftHome() {
     return (
       <View style={styles.screen} testID="soft-home">
         <View style={[styles.topBar, topBarInset]}>
-          <SoftRoundButton icon={Menu} label={t("shell.menu.open")} onPress={toggleMobileAgentList} />
-          <SegmentedControl options={options} value={segment} onValueChange={setSegment} size="md" />
-          <SoftRoundButton icon={Search} label={t("sidebar.sections.search")} onPress={openSearch} />
+          <SoftRoundButton
+            icon={Menu}
+            label={t("shell.menu.open")}
+            onPress={toggleMobileAgentList}
+          />
+          <SegmentedControl
+            options={options}
+            value={segment}
+            onValueChange={setSegment}
+            size="md"
+          />
+          <SoftRoundButton
+            icon={Search}
+            label={t("sidebar.sections.search")}
+            onPress={openSearch}
+          />
         </View>
         <ScrollView style={styles.scroll} contentContainerStyle={styles.compactList}>
           {list}
@@ -105,8 +122,17 @@ export function SoftHome() {
           </Text>
           <SoftPillComposer serverId={chatServerId} />
           <View style={styles.wideSegmentRow}>
-            <SegmentedControl options={options} value={segment} onValueChange={setSegment} size="md" />
-            <SoftRoundButton icon={Search} label={t("sidebar.sections.search")} onPress={openSearch} />
+            <SegmentedControl
+              options={options}
+              value={segment}
+              onValueChange={setSegment}
+              size="md"
+            />
+            <SoftRoundButton
+              icon={Search}
+              label={t("sidebar.sections.search")}
+              onPress={openSearch}
+            />
           </View>
           {segment === "chats" ? <SoftRecentCards recents={wideRecents} /> : null}
           {segment === "projects" && projects.length > 0 ? (
