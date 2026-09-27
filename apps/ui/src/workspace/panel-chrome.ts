@@ -1,11 +1,16 @@
 import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import { themeOf } from "@/styles/design-theme";
 import type { Theme } from "@/styles/theme";
-import { hexColorWithAlpha } from "@/utils/color";
+import { hexColorWithAlpha, parseHexColor } from "@/utils/color";
 
 // Design-direction chrome for the workspace tool panels (explorer, changes, terminal, CI, PR).
 // Every helper returns the shipping values for the `current` design, so a panel that spreads
 // them renders exactly as before unless a UI-refresh direction is selected.
+//
+// Live switches on web: Unistyles never deletes a CSS property when a style recomputes; it only
+// overwrites the ones the new value names. So every branch of a helper emits the same keys, with
+// neutral values where a direction doesn't use one, unless the caller's base style already sets
+// that key (it then comes back from the base).
 
 type Variant = Theme["design"]["variant"];
 
@@ -21,16 +26,26 @@ function variantOf(theme: Theme): Variant {
  */
 export function panelTheme(theme: Theme, themeName: string | undefined): Theme {
   const registered: Theme = themeOf(themeName);
-  // The shipping design keeps the CSS-variable colours so it renders exactly as before; only its
-  // design tokens (frozen at first compute on web) come from the registered theme.
+  // The shipping design keeps the CSS-variable colours so it renders exactly as before (they track
+  // runtime appearance updates); only its design tokens, frozen at first compute on web, come from
+  // the registered theme. Colour maths must therefore go through `panelAlpha`, never assume hex.
   return registered.design.variant === "current"
     ? { ...theme, design: registered.design }
     : registered;
 }
 
+/**
+ * `color` at `alpha` opacity. Hex colours mix directly; a web CSS variable (the shipping design's
+ * colours) mixes in CSS, so no caller can crash on a `var(--…)` value.
+ */
+export function panelAlpha(color: string, alpha: number): string {
+  if (parseHexColor(color)) return hexColorWithAlpha(color, alpha);
+  return `color-mix(in srgb, ${color} ${Math.round(alpha * 100)}%, transparent)`;
+}
+
 /** Soft accent wash used for a selected row or pill in the Inset and Soft directions. */
 export function panelAccentWash(theme: Theme, alpha = 0.12): string {
-  return hexColorWithAlpha(theme.colors.accent, alpha);
+  return panelAlpha(theme.colors.accent, alpha);
 }
 
 /** Bottom edge of a panel toolbar or tab track: hairline, or nothing in borderless directions. */
@@ -47,7 +62,11 @@ export function panelHeaderEdge(theme: Theme): ViewFragment {
 
 /** Metadata text (paths, counts, ids, timestamps): mono in the Mono direction. */
 export function panelMetaText(theme: Theme): TextFragment {
-  return theme.design.monoMeta ? { fontFamily: theme.fontFamily.mono, letterSpacing: -0.2 } : {};
+  // fontFamily needs no neutral: outside Mono the text drops the dataSet and the web UI-font rule
+  // wins again.
+  return theme.design.monoMeta
+    ? { fontFamily: theme.fontFamily.mono, letterSpacing: -0.2 }
+    : { letterSpacing: 0 };
 }
 
 /**
@@ -58,8 +77,8 @@ export function panelSectionTitle(theme: Theme): TextFragment {
   const design = theme.design;
   const face =
     design.headingFontFamily !== design.uiFontFamily
-      ? { fontFamily: design.headingFontFamily }
-      : {};
+      ? { fontFamily: design.headingFontFamily, letterSpacing: 0 }
+      : { letterSpacing: 0 };
   switch (design.variant) {
     case "paper":
       return {
@@ -92,6 +111,28 @@ interface TabChrome {
  * so the current design passes through untouched.
  */
 export function panelTabChrome(
+  theme: Theme,
+  base: { radius: number; hovered: string; active: string; activeUnfocused: string },
+): TabChrome {
+  const chrome = tabChromeFor(theme, base);
+  const noRule = { borderBottomColor: "transparent" };
+  return {
+    tab: {
+      borderBottomWidth: 0,
+      borderBottomColor: "transparent",
+      borderTopWidth: 0,
+      borderTopColor: "transparent",
+      ...chrome.tab,
+    },
+    hovered: { ...noRule, ...chrome.hovered },
+    active: { ...noRule, ...chrome.active },
+    activeUnfocused: { ...noRule, ...chrome.activeUnfocused },
+    label: { letterSpacing: 0, ...chrome.label },
+    labelActive: chrome.labelActive,
+  };
+}
+
+function tabChromeFor(
   theme: Theme,
   base: { radius: number; hovered: string; active: string; activeUnfocused: string },
 ): TabChrome {
@@ -171,6 +212,23 @@ export function panelTreeRowChrome(
   theme: Theme,
   base: { paddingVertical: number; active: string },
 ): TreeRowChrome {
+  const chrome = treeRowChromeFor(theme, base);
+  return {
+    row: {
+      marginHorizontal: 0,
+      borderRadius: 0,
+      borderLeftWidth: 0,
+      borderLeftColor: "transparent",
+      ...chrome.row,
+    },
+    active: { borderLeftColor: "transparent", ...chrome.active },
+  };
+}
+
+function treeRowChromeFor(
+  theme: Theme,
+  base: { paddingVertical: number; active: string },
+): TreeRowChrome {
   const inset = (margin: number, radius: number, paddingVertical: number): TreeRowChrome => ({
     row: { marginHorizontal: margin, borderRadius: radius, paddingVertical },
     active: { backgroundColor: base.active },
@@ -212,11 +270,59 @@ export function panelTreeRowChrome(
 
 /** Terminal output well: flush by default, an inset rounded card in Paper and Soft. */
 export function panelTerminalFrame(theme: Theme): ViewFragment {
+  const neutral: ViewFragment = {
+    margin: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderColor: "transparent",
+    overflow: "visible",
+    ...NO_SHADOW,
+  };
+  return { ...neutral, ...terminalFrameFor(theme) };
+}
+
+function terminalInset(horizontal: number, vertical: number): ViewFragment {
+  return {
+    paddingTop: vertical,
+    paddingBottom: vertical,
+    paddingLeft: horizontal,
+    paddingRight: horizontal,
+  };
+}
+
+// The refresh directions give the output a gutter so glyphs never sit on the pane edge (or under a
+// rounded corner); the well takes the emulator's own background so the gutter reads as terminal.
+function terminalFrameFor(theme: Theme): ViewFragment {
+  const well = { backgroundColor: theme.colors.terminal.background };
   switch (variantOf(theme)) {
+    case "inset":
+    case "mono":
+      return { ...well, ...terminalInset(8, 6) };
+    case "focus":
+      return { ...well, ...terminalInset(14, 10) };
     case "paper":
-      return { margin: 6, borderRadius: theme.borderRadius.lg, overflow: "hidden" };
+      return {
+        ...well,
+        ...terminalInset(10, 8),
+        margin: 8,
+        borderRadius: theme.borderRadius.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.borderAccent,
+        overflow: "hidden",
+      };
     case "soft":
-      return { margin: 8, borderRadius: theme.borderRadius.xl, overflow: "hidden" };
+      return {
+        ...well,
+        ...terminalInset(12, 10),
+        margin: 8,
+        borderRadius: theme.borderRadius.xl,
+        overflow: "hidden",
+        ...theme.shadow.sm,
+      };
     default:
       return {};
   }
@@ -227,6 +333,16 @@ export function panelTerminalFrame(theme: Theme): ViewFragment {
  * directions, a soft card in Paper and Soft, and plain spacing in Focus.
  */
 export function panelListItemChrome(theme: Theme): ViewFragment {
+  const neutral: ViewFragment = {
+    marginHorizontal: 0,
+    marginTop: 0,
+    borderRadius: 0,
+    backgroundColor: "transparent",
+  };
+  return { ...neutral, ...listItemChromeFor(theme) };
+}
+
+function listItemChromeFor(theme: Theme): ViewFragment {
   switch (variantOf(theme)) {
     case "paper":
       return {
@@ -251,15 +367,25 @@ export function panelListItemChrome(theme: Theme): ViewFragment {
   }
 }
 
-/** A bordered summary card inside a panel (release stream cards, setup callouts). */
+const NO_SHADOW: ViewFragment = {
+  shadowColor: "transparent",
+  shadowOffset: { width: 0, height: 0 },
+  shadowRadius: 0,
+  elevation: 0,
+};
+
+/**
+ * A bordered summary card inside a panel (release stream cards, setup callouts). Radius and border
+ * colour always come from the caller's base style, so only the shadow needs a neutral.
+ */
 export function panelCardChrome(theme: Theme): ViewFragment {
+  return { ...NO_SHADOW, ...cardChromeFor(theme) };
+}
+
+function cardChromeFor(theme: Theme): ViewFragment {
   switch (variantOf(theme)) {
     case "mono":
-      return {
-        borderRadius: theme.borderRadius.md,
-        borderColor: theme.colors.border,
-        backgroundColor: theme.colors.surface0,
-      };
+      return { borderRadius: theme.borderRadius.md, borderColor: theme.colors.border };
     case "inset":
       return { borderRadius: theme.borderRadius.md };
     case "paper":
@@ -277,13 +403,23 @@ export function panelCardChrome(theme: Theme): ViewFragment {
   }
 }
 
+type StatusDotTone = "statusDotSuccess" | "statusDotWarning" | "statusDotDanger";
+
 /**
- * A status dot of `size` px filled with `color`. Mono makes it prominent: larger, with a soft halo
- * ring in the same hue (Vercel deployment dots).
+ * A status dot of `size` px in a status tone. Mono makes it prominent: larger, with a soft halo
+ * ring in the same hue (Vercel deployment dots). The colour is read from `theme` (a `panelTheme`)
+ * so the halo's alpha mixing sees a real hex value on web, not a CSS variable.
  */
-export function panelStatusDot(theme: Theme, color: string, size: number): ViewFragment {
+export function panelStatusDot(theme: Theme, tone: StatusDotTone, size: number): ViewFragment {
+  const color = theme.colors[tone];
   if (variantOf(theme) !== "mono") {
-    return { width: size, height: size, borderRadius: size / 2, backgroundColor: color };
+    return {
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      backgroundColor: color,
+      boxShadow: "0 0 0 0px transparent",
+    };
   }
   const prominent = size + 2;
   return {
@@ -291,7 +427,7 @@ export function panelStatusDot(theme: Theme, color: string, size: number): ViewF
     height: prominent,
     borderRadius: prominent / 2,
     backgroundColor: color,
-    boxShadow: `0 0 0 3px ${hexColorWithAlpha(color, 0.22)}`,
+    boxShadow: `0 0 0 3px ${panelAlpha(color, 0.22)}`,
   };
 }
 

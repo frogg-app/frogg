@@ -1538,9 +1538,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     userSelect: "none",
     ...tabChrome(panelTheme(theme, rt.themeName)).tab,
   },
-  tabHovered: tabChrome(panelTheme(theme, rt.themeName)).hovered,
-  tabActive: tabChrome(panelTheme(theme, rt.themeName)).active,
-  tabActiveUnfocused: tabChrome(panelTheme(theme, rt.themeName)).activeUnfocused,
+  tabHovered: { ...tabChrome(panelTheme(theme, rt.themeName)).hovered },
+  tabActive: { ...tabChrome(panelTheme(theme, rt.themeName)).active },
+  tabActiveUnfocused: { ...tabChrome(panelTheme(theme, rt.themeName)).activeUnfocused },
   tabHoverFrame: {
     position: "relative",
   },
@@ -1612,7 +1612,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.surface3,
     opacity: 0.9,
   },
-  tabLabelActive: tabChrome(panelTheme(theme, rt.themeName)).labelActive,
+  tabLabelActive: { ...tabChrome(panelTheme(theme, rt.themeName)).labelActive },
   tabTrailingOverlay: {
     position: "absolute",
     top: 0,

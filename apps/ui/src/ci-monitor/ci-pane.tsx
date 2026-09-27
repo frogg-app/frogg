@@ -692,16 +692,12 @@ const styles = StyleSheet.create((theme, rt) => ({
     flex: 1,
     minWidth: 0,
   },
-  runnerDotBusy: panelStatusDot(
-    panelTheme(theme, rt.themeName),
-    theme.colors.statusDotWarning,
-    RUNNER_DOT_SIZE,
-  ),
-  runnerDotIdle: panelStatusDot(
-    panelTheme(theme, rt.themeName),
-    theme.colors.statusDotSuccess,
-    RUNNER_DOT_SIZE,
-  ),
+  runnerDotBusy: {
+    ...panelStatusDot(panelTheme(theme, rt.themeName), "statusDotWarning", RUNNER_DOT_SIZE),
+  },
+  runnerDotIdle: {
+    ...panelStatusDot(panelTheme(theme, rt.themeName), "statusDotSuccess", RUNNER_DOT_SIZE),
+  },
   hover: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

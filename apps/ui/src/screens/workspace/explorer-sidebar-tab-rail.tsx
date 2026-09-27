@@ -568,8 +568,8 @@ const styles = StyleSheet.create((theme, rt) => ({
     overflow: "hidden",
     justifyContent: "center",
   },
-  tabHovered: tabChrome(panelTheme(theme, rt.themeName)).hovered,
-  tabActive: tabChrome(panelTheme(theme, rt.themeName)).active,
+  tabHovered: { ...tabChrome(panelTheme(theme, rt.themeName)).hovered },
+  tabActive: { ...tabChrome(panelTheme(theme, rt.themeName)).active },
   tabLabel: {
     // Absolute so the label keeps its natural width while the slot around it animates.
     position: "absolute",
@@ -581,7 +581,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     userSelect: "none",
     ...tabChrome(panelTheme(theme, rt.themeName)).label,
   },
-  tabLabelActive: tabChrome(panelTheme(theme, rt.themeName)).labelActive,
+  tabLabelActive: { ...tabChrome(panelTheme(theme, rt.themeName)).labelActive },
   tabDragging: {
     opacity: 0.3,
   },

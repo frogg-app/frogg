@@ -2,30 +2,75 @@ import type { Theme } from "@/styles/theme";
 import { hexColorWithAlpha } from "@/utils/color";
 import type { DiffCell, DiffPalette } from "./types";
 
-/** File and hunk header band: a tinted strip in the refresh directions, flush in Focus. */
-function diffHeaderSurface(theme: Theme): string {
+// `theme` here comes from a `withUnistyles` mapping, which receives the concrete theme (hex colours
+// and the real `design.variant`) on web too, so branching and alpha mixing are safe.
+
+interface DiffChrome {
+  headerSurface: string;
+  headerActiveSurface: string;
+  headerBorder: string;
+  emptyBackground: string;
+  additionAlpha: number;
+  deletionAlpha: number;
+}
+
+/**
+ * Header bands, empty split cells and change tints per design direction. The refresh surfaces sit
+ * closer together than the shipping ones, so bands use `surface2`, and dark schemes get stronger
+ * add/delete tints so a change stays legible on near-black grounds.
+ */
+function diffChrome(theme: Theme): DiffChrome {
+  const colors = theme.colors;
   const variant = theme.design.variant;
-  return variant === "current" || variant === "focus"
-    ? theme.colors.surface0
-    : theme.colors.surface1;
+  if (variant === "current") {
+    return {
+      headerSurface: colors.surface0,
+      headerActiveSurface: colors.surface1,
+      headerBorder: colors.borderAccent,
+      emptyBackground: colors.surface0,
+      additionAlpha: 0.15,
+      deletionAlpha: 0.1,
+    };
+  }
+  const dark = theme.colorScheme === "dark";
+  const tints = dark
+    ? { additionAlpha: 0.2, deletionAlpha: 0.17 }
+    : { additionAlpha: 0.14, deletionAlpha: 0.11 };
+  // Focus keeps its near-zero chrome: flush header bands and no separating rule.
+  if (variant === "focus") {
+    return {
+      headerSurface: colors.surface0,
+      headerActiveSurface: colors.surface1,
+      headerBorder: colors.border,
+      emptyBackground: colors.surface1,
+      ...tints,
+    };
+  }
+  return {
+    headerSurface: colors.surface2,
+    headerActiveSurface: colors.border,
+    headerBorder: variant === "mono" ? colors.border : colors.borderAccent,
+    emptyBackground: colors.surface1,
+    ...tints,
+  };
 }
 
 export function createDiffPalette(theme: Theme): DiffPalette {
+  const chrome = diffChrome(theme);
   return {
     surface: theme.colors.surface0,
-    headerSurface: diffHeaderSurface(theme),
+    headerSurface: chrome.headerSurface,
     border: theme.colors.border,
     foreground: theme.colors.foreground,
     foregroundMuted: theme.colors.foregroundMuted,
     addition: theme.colors.statusSuccess,
     deletion: theme.colors.statusDanger,
-    additionBackground: hexColorWithAlpha(theme.colors.statusSuccess, 0.15),
-    deletionBackground: hexColorWithAlpha(theme.colors.statusDanger, 0.1),
-    emptyBackground: theme.colors.surface0,
+    additionBackground: hexColorWithAlpha(theme.colors.statusSuccess, chrome.additionAlpha),
+    deletionBackground: hexColorWithAlpha(theme.colors.statusDanger, chrome.deletionAlpha),
+    emptyBackground: chrome.emptyBackground,
     selection: theme.colors.terminal.blue,
-    headerActiveSurface:
-      theme.design.variant === "current" ? theme.colors.surface1 : theme.colors.surface2,
-    headerBorder: theme.colors.borderAccent,
+    headerActiveSurface: chrome.headerActiveSurface,
+    headerBorder: chrome.headerBorder,
     statusSuccess: theme.colors.statusSuccess,
     statusDanger: theme.colors.statusDanger,
     statusWarning: theme.colors.statusWarning,
