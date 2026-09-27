@@ -745,6 +745,8 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
   let content: ReactNode;
   if (view.kind === "section" && view.section === "layout") {
     content = isDesktopApp ? <LayoutSection /> : null;
+  } else if (view.kind === "section" && view.section === "developer") {
+    content = settings.developerOptions ? <DeveloperSection /> : null;
   } else {
     content = (() => {
       if (view.kind === "host") {
@@ -807,8 +809,6 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
                 handlePlaybackTest={handlePlaybackTest}
               />
             );
-          case "developer":
-            return settings.developerOptions ? <DeveloperSection /> : null;
           case "about":
             return (
               <AboutSection
