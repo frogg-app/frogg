@@ -1,3 +1,5 @@
+import type { Theme } from "@/styles/theme";
+import { panelHeaderEdge, panelTabChrome } from "@/workspace/panel-chrome";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Pressable, type LayoutChangeEvent } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
@@ -581,6 +583,15 @@ function FilesPane({
 
 const PrTabContent = PullRequestContent;
 
+function tabChrome(theme: Theme) {
+  return panelTabChrome(theme, {
+    radius: theme.borderRadius.md,
+    hovered: theme.colors.surfaceSidebarHover,
+    active: theme.colors.surfaceSidebarHover,
+    activeUnfocused: theme.colors.surfaceSidebarHover,
+  });
+}
+
 const styles = StyleSheet.create((theme) => ({
   nativeDock: {
     position: "relative",
@@ -610,6 +621,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    ...panelHeaderEdge(theme),
   },
   // Takes the header's spare width rather than its own content's, so the strip can be
   // measured against the room it actually has. `minWidth: 0` lets it shrink below the tabs'
@@ -629,23 +641,21 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[3],
     borderRadius: theme.borderRadius.md,
+    ...tabChrome(theme).tab,
   },
   // No label to sit beside, so the icon keeps only its own padding and the tab stays square.
   tabIconOnly: {
     paddingHorizontal: theme.spacing[3],
     gap: 0,
   },
-  tabActive: {
-    backgroundColor: theme.colors.surfaceSidebarHover,
-  },
+  tabActive: tabChrome(theme).active,
   tabText: {
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foregroundMuted,
+    ...tabChrome(theme).label,
   },
-  tabTextActive: {
-    color: theme.colors.foreground,
-  },
+  tabTextActive: tabChrome(theme).labelActive,
   tabTextMuted: {
     opacity: 0.8,
   },
