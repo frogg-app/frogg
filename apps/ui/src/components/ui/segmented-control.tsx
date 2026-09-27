@@ -1,6 +1,7 @@
 import { useCallback, useMemo, type ReactNode } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import type { StyleProp, TextStyle, ViewStyle } from "react-native";
+import type { ViewFragment } from "@/styles/style-fragment";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import {
   createControlGeometry,
@@ -42,9 +43,9 @@ function SegmentIcon({ icon, iconSize, iconColor }: SegmentIconProps) {
 const ThemedSegmentIcon = withUnistyles(SegmentIcon);
 
 interface SegmentedTreatment {
-  track: ViewStyle;
-  selected: ViewStyle;
-  hover: ViewStyle;
+  track: ViewFragment;
+  selected: ViewFragment;
+  hover: ViewFragment;
 }
 
 /**

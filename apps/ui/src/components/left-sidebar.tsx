@@ -605,7 +605,9 @@ function WorkspacesSectionHeader() {
   if (useAnyHostSupportsChats()) return null;
   return (
     <View style={styles.workspacesSectionHeader}>
-      <Text style={styles.workspacesSectionTitle} dataSet={DESIGN_FONT_DATASET}>{t("sidebar.sections.projects")}</Text>
+      <Text style={styles.workspacesSectionTitle} dataSet={DESIGN_FONT_DATASET}>
+        {t("sidebar.sections.projects")}
+      </Text>
       <View style={styles.workspacesSectionActions}>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>

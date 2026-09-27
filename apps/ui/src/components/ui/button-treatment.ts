@@ -1,4 +1,4 @@
-import type { TextStyle, ViewStyle } from "react-native";
+import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import type { Theme } from "@/styles/theme";
 
 interface Fill {
@@ -12,8 +12,8 @@ export interface ButtonTreatment {
   outline: Fill;
   destructive: Fill;
   /** Ghost buttons stay transparent at rest; a direction may give them a hover wash. */
-  ghostHovered: ViewStyle;
-  textWeight: TextStyle["fontWeight"];
+  ghostHovered: ViewFragment;
+  textWeight: TextFragment["fontWeight"];
   /** Inset reads a step smaller than the rest of the app's controls. */
   fontSizeDelta: number;
 }

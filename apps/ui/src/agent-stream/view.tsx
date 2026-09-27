@@ -1667,7 +1667,7 @@ const stylesheet = StyleSheet.create((theme, rt) => ({
   },
 }));
 
-const permissionStyles = StyleSheet.create((theme, rt) => ({
+const permissionStyles = StyleSheet.create((theme) => ({
   container: {
     marginVertical: theme.spacing[3],
     padding: theme.spacing[3],

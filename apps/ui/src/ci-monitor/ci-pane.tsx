@@ -42,7 +42,12 @@ import {
 } from "./model";
 import { useCiNow, useCiRuns, type CiRunsState } from "./use-ci-runs";
 import { useCiJobLogToChat, type CiJobLogToChat } from "./use-ci-job-log-to-chat";
-import { panelListItemChrome, panelMetaText, panelStatusDot, panelTheme } from "@/workspace/panel-chrome";
+import {
+  panelListItemChrome,
+  panelMetaText,
+  panelStatusDot,
+  panelTheme,
+} from "@/workspace/panel-chrome";
 import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 /** How a job row attaches its log to the focused chat; null where that is not possible. */
@@ -298,7 +303,8 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
             {run.pipeline}
             {run.number !== null ? (
               <Text style={styles.runNumber} dataSet={metaDataSet}>
-                {" "}#{run.number}
+                {" "}
+                #{run.number}
               </Text>
             ) : null}
           </Text>
@@ -686,8 +692,16 @@ const styles = StyleSheet.create((theme, rt) => ({
     flex: 1,
     minWidth: 0,
   },
-  runnerDotBusy: panelStatusDot(panelTheme(theme, rt.themeName), theme.colors.statusDotWarning, RUNNER_DOT_SIZE),
-  runnerDotIdle: panelStatusDot(panelTheme(theme, rt.themeName), theme.colors.statusDotSuccess, RUNNER_DOT_SIZE),
+  runnerDotBusy: panelStatusDot(
+    panelTheme(theme, rt.themeName),
+    theme.colors.statusDotWarning,
+    RUNNER_DOT_SIZE,
+  ),
+  runnerDotIdle: panelStatusDot(
+    panelTheme(theme, rt.themeName),
+    theme.colors.statusDotSuccess,
+    RUNNER_DOT_SIZE,
+  ),
   hover: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

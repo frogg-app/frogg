@@ -1,4 +1,4 @@
-import type { TextStyle, ViewStyle } from "react-native";
+import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import type { Theme } from "@/styles/theme";
 
 /**
@@ -7,13 +7,13 @@ import type { Theme } from "@/styles/theme";
  * horizontal inset and the header. `current` is empty: the shipping palette is untouched.
  */
 export interface CommandCenterTreatment {
-  backdrop: ViewStyle;
-  panel: ViewStyle;
-  header: ViewStyle;
-  input: TextStyle;
-  sectionLabel: TextStyle;
-  row: ViewStyle;
-  activeRow: ViewStyle;
+  backdrop: ViewFragment;
+  panel: ViewFragment;
+  header: ViewFragment;
+  input: TextFragment;
+  sectionLabel: TextFragment;
+  row: ViewFragment;
+  activeRow: ViewFragment;
 }
 
 const EMPTY: CommandCenterTreatment = {

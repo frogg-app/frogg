@@ -2027,20 +2027,20 @@ export const AssistantMessage = memo(function AssistantMessage({
     <View testID="assistant-message" dataSet={revealDataSet} style={assistantContainerStyle}>
       <ProseFontScope>
         {keyedBlocks.map(({ key, block }, index) => (
-        <AssistantMessageBlockContainer
-          key={key}
-          block={block}
-          marginBottom={index < keyedBlocks.length - 1 ? 12 : 0}
-        >
-          <MemoizedMarkdownBlock
-            text={block}
-            rules={markdownRules}
-            parser={markdownParser}
-            onLinkPress={handleMarkdownLinkPress}
-            prose
-          />
-        </AssistantMessageBlockContainer>
-      ))}
+          <AssistantMessageBlockContainer
+            key={key}
+            block={block}
+            marginBottom={index < keyedBlocks.length - 1 ? 12 : 0}
+          >
+            <MemoizedMarkdownBlock
+              text={block}
+              rules={markdownRules}
+              parser={markdownParser}
+              onLinkPress={handleMarkdownLinkPress}
+              prose
+            />
+          </AssistantMessageBlockContainer>
+        ))}
       </ProseFontScope>
       {fullMessageByteLength !== null ? (
         <Text

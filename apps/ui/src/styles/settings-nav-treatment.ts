@@ -1,4 +1,4 @@
-import type { TextStyle, ViewStyle } from "react-native";
+import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import type { Theme } from "@/styles/theme";
 
 /**
@@ -6,13 +6,13 @@ import type { Theme } from "@/styles/theme";
  * merged over the shipping ones; `current` is empty so the default design is untouched.
  */
 export interface SettingsNavTreatment {
-  desktopContainer: ViewStyle;
-  list: ViewStyle;
-  mobileList: ViewStyle;
-  item: ViewStyle;
-  itemSelected: ViewStyle;
-  label: TextStyle;
-  labelSelected: TextStyle;
+  desktopContainer: ViewFragment;
+  list: ViewFragment;
+  mobileList: ViewFragment;
+  item: ViewFragment;
+  itemSelected: ViewFragment;
+  label: TextFragment;
+  labelSelected: TextFragment;
 }
 
 const EMPTY_NAV: SettingsNavTreatment = {

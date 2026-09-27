@@ -1,4 +1,4 @@
-import type { TextStyle, ViewStyle } from "react-native";
+import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import { themeOf } from "@/styles/design-theme";
 import type { Theme } from "@/styles/theme";
 
@@ -12,28 +12,28 @@ import type { Theme } from "@/styles/theme";
  */
 export interface ShellDesign {
   /** Sidebar row box (project, workspace, nav and footer rows). */
-  row: Pick<ViewStyle, "minHeight" | "paddingVertical" | "borderRadius">;
+  row: Pick<ViewFragment, "minHeight" | "paddingVertical" | "borderRadius">;
   /** Horizontal inset of a row's content inside its highlight. */
   rowPaddingHorizontal: number;
   /** Primary row label. */
-  rowText: Pick<TextStyle, "fontSize" | "fontWeight" | "letterSpacing">;
+  rowText: Pick<TextFragment, "fontSize" | "fontWeight" | "letterSpacing">;
   rowTextLineHeight: number;
   /**
    * A selected row. The fill is always the `surfaceSidebarSelected` token (badge knockouts and
    * trailing-action scrims match it by name); directions differ by edge and elevation.
    */
-  selected: ViewStyle;
+  selected: ViewFragment;
   /** Rows carry a 1px edge (transparent unless selected) when the direction outlines selection. */
   rowBorderWidth: number;
   /** Project (group header) rows. */
-  projectText: Pick<TextStyle, "fontSize" | "fontWeight" | "letterSpacing" | "color"> & {
+  projectText: Pick<TextFragment, "fontSize" | "fontWeight" | "letterSpacing" | "color"> & {
     fontFamily?: string;
-    textTransform?: TextStyle["textTransform"];
+    textTransform?: TextFragment["textTransform"];
   };
   /** Small section labels ("Pinned", status groups, "Projects"). */
-  sectionLabel: Pick<TextStyle, "fontSize" | "fontWeight" | "letterSpacing" | "color"> & {
+  sectionLabel: Pick<TextFragment, "fontSize" | "fontWeight" | "letterSpacing" | "color"> & {
     fontFamily?: string;
-    textTransform?: TextStyle["textTransform"];
+    textTransform?: TextFragment["textTransform"];
   };
   /** Metadata under a row (branch, diff counts, ids). */
   metaFontFamily: string | undefined;
@@ -43,19 +43,19 @@ export interface ShellDesign {
   sidebarEdge: boolean;
   /** Content header bar under the window's top edge. */
   headerBorder: boolean;
-  headerTitle: Pick<TextStyle, "fontSize" | "letterSpacing"> & {
-    fontWeight: TextStyle["fontWeight"];
+  headerTitle: Pick<TextFragment, "fontSize" | "letterSpacing"> & {
+    fontWeight: TextFragment["fontWeight"];
     fontFamily?: string;
   };
 }
 
 type RealTheme = ReturnType<typeof themeOf>;
 
-function monoSelected(theme: Theme): ViewStyle {
+function monoSelected(theme: Theme): ViewFragment {
   return { backgroundColor: theme.colors.surfaceSidebarSelected, borderColor: theme.colors.border };
 }
 
-function softSelected(theme: Theme, real: RealTheme): ViewStyle {
+function softSelected(theme: Theme, real: RealTheme): ViewFragment {
   // A raised card inside the sidebar card: the tactile "pressed pill" of the iOS references.
   return { backgroundColor: theme.colors.surfaceSidebarSelected, ...real.shadow.sm };
 }
@@ -202,7 +202,7 @@ function resolveShellDesignBase(theme: Theme, real: RealTheme): ShellDesign {
  * A sidebar row's box: height, padding, radius, and the transparent edge a direction that
  * outlines selection needs on every row. Spread after a row's own geometry.
  */
-export function sidebarRowBox(theme: Theme, themeName: string | undefined): ViewStyle {
+export function sidebarRowBox(theme: Theme, themeName: string | undefined): ViewFragment {
   const shell = resolveShellDesign(theme, themeName);
   return {
     ...shell.row,
@@ -215,23 +215,21 @@ export function sidebarRowBox(theme: Theme, themeName: string | undefined): View
 }
 
 /** A row's primary label. */
-export function sidebarRowText(theme: Theme, themeName: string | undefined): TextStyle {
+export function sidebarRowText(theme: Theme, themeName: string | undefined): TextFragment {
   const shell = resolveShellDesign(theme, themeName);
   return { ...shell.rowText, lineHeight: shell.rowTextLineHeight };
 }
 
 /** Hairlines between the sidebar's brand row, list and footer, or transparent without them. */
 export function sidebarDividerColor(theme: Theme, themeName: string | undefined): string {
-  return resolveShellDesign(theme, themeName).sidebarDividers
-    ? theme.colors.border
-    : "transparent";
+  return resolveShellDesign(theme, themeName).sidebarDividers ? theme.colors.border : "transparent";
 }
 
 /**
  * The desktop sidebar's own surface for the frame: an edge on a flat frame, nothing on an inset
  * frame (it sits on the frame itself), and a raised rounded card on a floating frame.
  */
-export function desktopSidebarSurface(theme: Theme, themeName: string | undefined): ViewStyle {
+export function desktopSidebarSurface(theme: Theme, themeName: string | undefined): ViewFragment {
   const real = themeOf(themeName);
   const surface = { backgroundColor: theme.colors.surfaceSidebar };
   if (real.design.frame === "floating") {

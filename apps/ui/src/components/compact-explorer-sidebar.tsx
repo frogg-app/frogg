@@ -396,7 +396,7 @@ function ExplorerSidebarContent({
       <WindowChromeSafeArea
         placement="inline"
         horizontalPadding={theme.spacing[2]}
-        style={styles.header}
+        style={headerStyle}
         dataSet={TITLEBAR_DRAG_SURFACE_DATASET}
         testID="explorer-header"
       >
@@ -621,6 +621,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+  },
+  // Kept apart from `header` so its breakpoint height keeps Unistyles' narrowed style type.
+  headerEdge: {
     ...panelHeaderEdge(panelTheme(theme, rt.themeName)),
   },
   // Takes the header's spare width rather than its own content's, so the strip can be
@@ -678,3 +681,5 @@ const styles = StyleSheet.create((theme, rt) => ({
     minHeight: 0,
   },
 }));
+
+const headerStyle = [styles.header, styles.headerEdge];

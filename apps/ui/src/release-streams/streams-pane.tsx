@@ -618,7 +618,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     ...panelCardChrome(panelTheme(theme, rt.themeName)),
-    ...(panelTheme(theme, rt.themeName).design.borderless ? { backgroundColor: theme.colors.surface1 } : null),
+    ...(panelTheme(theme, rt.themeName).design.borderless
+      ? { backgroundColor: theme.colors.surface1 }
+      : null),
   },
   flowCardWarn: { borderColor: theme.colors.statusWarning },
   flowHeader: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
@@ -661,7 +663,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingVertical: theme.spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    ...(panelTheme(theme, rt.themeName).design.borderless ? { borderBottomColor: theme.colors.borderAccent } : null),
+    ...(panelTheme(theme, rt.themeName).design.borderless
+      ? { borderBottomColor: theme.colors.borderAccent }
+      : null),
   },
   changeHeader: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
   changeSubject: { flex: 1, fontSize: theme.fontSize.base, color: theme.colors.foreground },

@@ -1,4 +1,5 @@
-import { Platform, type TextStyle, type ViewStyle } from "react-native";
+import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
+import { Platform } from "react-native";
 import type { Theme } from "@/styles/theme";
 
 /**
@@ -12,18 +13,18 @@ import type { Theme } from "@/styles/theme";
  * - Soft: rounded raised cards on a tinted page, like iOS grouped settings.
  */
 export interface SettingsTreatment {
-  page: ViewStyle;
-  content: ViewStyle;
-  section: ViewStyle;
-  sectionHeader: ViewStyle;
-  sectionHeaderTitle: TextStyle;
-  groupTitle: TextStyle;
-  pageTitle: TextStyle;
-  card: ViewStyle;
-  row: ViewStyle;
-  rowBorder: ViewStyle;
-  rowTitle: TextStyle;
-  rowHint: TextStyle;
+  page: ViewFragment;
+  content: ViewFragment;
+  section: ViewFragment;
+  sectionHeader: ViewFragment;
+  sectionHeaderTitle: TextFragment;
+  groupTitle: TextFragment;
+  pageTitle: TextFragment;
+  card: ViewFragment;
+  row: ViewFragment;
+  rowBorder: ViewFragment;
+  rowTitle: TextFragment;
+  rowHint: TextFragment;
 }
 
 const EMPTY: SettingsTreatment = {
@@ -45,7 +46,7 @@ const EMPTY: SettingsTreatment = {
  * Font for Text tagged with `DESIGN_FONT_DATASET`. The tag opts the Text out of the web UI-font
  * rule, so `current` points back at that rule's variable to keep the user's chosen font.
  */
-export function designTextFont(theme: Theme, family: string): TextStyle {
+export function designTextFont(theme: Theme, family: string): TextFragment {
   if (theme.design.variant === "current") {
     return Platform.OS === "web" ? { fontFamily: "var(--frogg-ui-font)" } : {};
   }
@@ -53,7 +54,7 @@ export function designTextFont(theme: Theme, family: string): TextStyle {
 }
 
 /** Display type for page titles and group headings in the active direction. */
-export function designHeading(theme: Theme): TextStyle {
+export function designHeading(theme: Theme): TextFragment {
   if (theme.design.variant === "current") return designTextFont(theme, "");
   return {
     ...designTextFont(theme, theme.design.headingFontFamily),

@@ -838,7 +838,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
         testID="settings-detail-header-title"
         dataSet={DESIGN_FONT_DATASET}
         numberOfLines={1}
-        style={desktopStyles.pageTitle}
+        style={desktopPageTitleStyle}
       >
         {detailHeader.title}
       </Text>
@@ -1044,6 +1044,11 @@ const desktopStyles = StyleSheet.create((theme) => ({
       md: "300",
     },
     color: theme.colors.foreground,
+  },
+  // Kept apart from `pageTitle` so its breakpoint weight keeps Unistyles' narrowed style type.
+  pageTitleDesign: {
     ...settingsTreatment(theme).pageTitle,
   },
 }));
+
+const desktopPageTitleStyle = [desktopStyles.pageTitle, desktopStyles.pageTitleDesign];

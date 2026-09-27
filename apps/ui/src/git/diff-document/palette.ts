@@ -5,7 +5,9 @@ import type { DiffCell, DiffPalette } from "./types";
 /** File and hunk header band: a tinted strip in the refresh directions, flush in Focus. */
 function diffHeaderSurface(theme: Theme): string {
   const variant = theme.design.variant;
-  return variant === "current" || variant === "focus" ? theme.colors.surface0 : theme.colors.surface1;
+  return variant === "current" || variant === "focus"
+    ? theme.colors.surface0
+    : theme.colors.surface1;
 }
 
 export function createDiffPalette(theme: Theme): DiffPalette {

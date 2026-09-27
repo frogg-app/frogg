@@ -57,7 +57,7 @@ export function FilePanelBar({
             {lineCount !== undefined ? (
               <Text
                 style={styles.whisper}
-              dataSet={metaDataSet}
+                dataSet={metaDataSet}
                 accessibilityLabel={t("panels.file.editor.lines", { count: lineCount })}
               >
                 {t("panels.file.editor.lines", { count: lineCount })}
@@ -98,7 +98,7 @@ export function FilePanelBar({
             {cursor ? (
               <Text
                 style={styles.whisper}
-              dataSet={metaDataSet}
+                dataSet={metaDataSet}
                 accessibilityLabel={t("panels.file.editor.cursor", cursor)}
               >
                 Ln {cursor.line}, Col {cursor.column}

@@ -215,7 +215,10 @@ const tileStyles = StyleSheet.create((theme) => {
   } as const;
   return {
     tiles: {
-      marginTop: current ? { xs: theme.spacing[6], md: theme.spacing[12] } : theme.spacing[8],
+      marginTop: {
+        xs: current ? theme.spacing[6] : theme.spacing[8],
+        md: current ? theme.spacing[12] : theme.spacing[8],
+      },
       width: "100%",
       maxWidth: spec.width * 2 + theme.spacing[spec.gap],
       flexDirection: "row",

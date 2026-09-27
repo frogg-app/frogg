@@ -1,4 +1,4 @@
-import type { TextStyle, ViewStyle } from "react-native";
+import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import { MAX_CONTENT_WIDTH } from "@/constants/layout";
 import type { themeOf } from "@/styles/design-theme";
 
@@ -25,7 +25,7 @@ export function controlRadius(t: RealTheme, currentRadius: number): number {
 }
 
 /** Face and size for metadata (timestamps, elapsed time) next to messages. */
-export function metaTextStyle(t: RealTheme): TextStyle {
+export function metaTextStyle(t: RealTheme): TextFragment {
   return t.design.monoMeta ? { fontFamily: t.fontFamily.mono, fontSize: 12 } : {};
 }
 
@@ -33,15 +33,15 @@ export function metaTextStyle(t: RealTheme): TextStyle {
 // User message
 // ---------------------------------------------------------------------------
 
-export function userMessageRowStyle(t: RealTheme): ViewStyle {
+export function userMessageRowStyle(t: RealTheme): ViewFragment {
   return t.design.userMessage === "bubble" ? {} : { justifyContent: "flex-start" };
 }
 
-export function userMessageContentStyle(t: RealTheme): ViewStyle {
+export function userMessageContentStyle(t: RealTheme): ViewFragment {
   return t.design.userMessage === "bubble" ? {} : { alignItems: "stretch", flex: 1, minWidth: 0 };
 }
 
-export function userMessageSurfaceStyle(t: RealTheme): ViewStyle {
+export function userMessageSurfaceStyle(t: RealTheme): ViewFragment {
   switch (t.design.userMessage) {
     case "plain":
       // Mono: no container. A stark rule in the gutter marks the speaker.
@@ -71,7 +71,7 @@ export function userMessageSurfaceStyle(t: RealTheme): ViewStyle {
   }
 }
 
-function bubbleShape(t: RealTheme): ViewStyle {
+function bubbleShape(t: RealTheme): ViewFragment {
   switch (t.design.variant) {
     case "paper":
       return {
@@ -103,7 +103,7 @@ function bubbleShape(t: RealTheme): ViewStyle {
   }
 }
 
-export function userMessageTextStyle(t: RealTheme): TextStyle {
+export function userMessageTextStyle(t: RealTheme): TextFragment {
   if (t.design.userMessage === "plain") {
     return { fontWeight: t.fontWeight.medium };
   }
@@ -118,11 +118,11 @@ export function userMessageTextStyle(t: RealTheme): TextStyle {
 // ---------------------------------------------------------------------------
 
 export interface ToolRowDesign {
-  container: ViewStyle;
-  pressable: ViewStyle;
-  pressableExpanded: ViewStyle;
-  labelRow: ViewStyle;
-  label: TextStyle;
+  container: ViewFragment;
+  pressable: ViewFragment;
+  pressableExpanded: ViewFragment;
+  labelRow: ViewFragment;
+  label: TextFragment;
 }
 
 const NO_TOOL_ROW_DESIGN: ToolRowDesign = {
@@ -185,7 +185,7 @@ export function toolRowDesign(t: RealTheme): ToolRowDesign {
 // Composer
 // ---------------------------------------------------------------------------
 
-export function composerSurfaceStyle(t: RealTheme): ViewStyle {
+export function composerSurfaceStyle(t: RealTheme): ViewFragment {
   switch (t.design.composer) {
     case "floating":
       return {
@@ -218,7 +218,7 @@ export function composerSurfaceStyle(t: RealTheme): ViewStyle {
 }
 
 /** Composer toolbar pills (model, provider, mode). */
-export function composerControlStyle(t: RealTheme): ViewStyle {
+export function composerControlStyle(t: RealTheme): ViewFragment {
   switch (t.design.variant) {
     case "current":
       return {};
@@ -235,6 +235,6 @@ export function composerControlStyle(t: RealTheme): ViewStyle {
   }
 }
 
-export function composerControlTextStyle(t: RealTheme): TextStyle {
+export function composerControlTextStyle(t: RealTheme): TextFragment {
   return t.design.monoMeta ? { fontFamily: t.fontFamily.mono, fontSize: t.fontSize.sm } : {};
 }

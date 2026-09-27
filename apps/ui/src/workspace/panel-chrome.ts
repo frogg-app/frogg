@@ -1,4 +1,4 @@
-import type { TextStyle, ViewStyle } from "react-native";
+import type { ViewFragment, TextFragment } from "@/styles/style-fragment";
 import { themeOf } from "@/styles/design-theme";
 import type { Theme } from "@/styles/theme";
 import { hexColorWithAlpha } from "@/utils/color";
@@ -34,7 +34,7 @@ export function panelAccentWash(theme: Theme, alpha = 0.12): string {
 }
 
 /** Bottom edge of a panel toolbar or tab track: hairline, or nothing in borderless directions. */
-export function panelHeaderEdge(theme: Theme): ViewStyle {
+export function panelHeaderEdge(theme: Theme): ViewFragment {
   if (!theme.design.borderless) {
     return { borderBottomWidth: 1, borderBottomColor: theme.colors.border };
   }
@@ -46,7 +46,7 @@ export function panelHeaderEdge(theme: Theme): ViewStyle {
 }
 
 /** Metadata text (paths, counts, ids, timestamps): mono in the Mono direction. */
-export function panelMetaText(theme: Theme): TextStyle {
+export function panelMetaText(theme: Theme): TextFragment {
   return theme.design.monoMeta ? { fontFamily: theme.fontFamily.mono, letterSpacing: -0.2 } : {};
 }
 
@@ -54,10 +54,12 @@ export function panelMetaText(theme: Theme): TextStyle {
  * Section title inside a panel (PR sections, CI groups). Paper sets it in its serif display face,
  * Soft makes it bolder; pair with `usePanelHeadingDataSet` on web.
  */
-export function panelSectionTitle(theme: Theme): TextStyle {
+export function panelSectionTitle(theme: Theme): TextFragment {
   const design = theme.design;
   const face =
-    design.headingFontFamily !== design.uiFontFamily ? { fontFamily: design.headingFontFamily } : {};
+    design.headingFontFamily !== design.uiFontFamily
+      ? { fontFamily: design.headingFontFamily }
+      : {};
   switch (design.variant) {
     case "paper":
       return {
@@ -77,12 +79,12 @@ export function panelSectionTitle(theme: Theme): TextStyle {
 }
 
 interface TabChrome {
-  tab: ViewStyle;
-  hovered: ViewStyle;
-  active: ViewStyle;
-  activeUnfocused: ViewStyle;
-  label: TextStyle;
-  labelActive: TextStyle;
+  tab: ViewFragment;
+  hovered: ViewFragment;
+  active: ViewFragment;
+  activeUnfocused: ViewFragment;
+  label: TextFragment;
+  labelActive: TextFragment;
 }
 
 /**
@@ -160,8 +162,8 @@ export function panelTabChrome(
 }
 
 interface TreeRowChrome {
-  row: ViewStyle;
-  active: ViewStyle;
+  row: ViewFragment;
+  active: ViewFragment;
 }
 
 /** Row rhythm and selection for the Files and Changes trees. */
@@ -209,7 +211,7 @@ export function panelTreeRowChrome(
 }
 
 /** Terminal output well: flush by default, an inset rounded card in Paper and Soft. */
-export function panelTerminalFrame(theme: Theme): ViewStyle {
+export function panelTerminalFrame(theme: Theme): ViewFragment {
   switch (variantOf(theme)) {
     case "paper":
       return { margin: 6, borderRadius: theme.borderRadius.lg, overflow: "hidden" };
@@ -224,7 +226,7 @@ export function panelTerminalFrame(theme: Theme): ViewStyle {
  * A repeated list item in a panel (CI run, check, stream): a hairline-divided row in the lined
  * directions, a soft card in Paper and Soft, and plain spacing in Focus.
  */
-export function panelListItemChrome(theme: Theme): ViewStyle {
+export function panelListItemChrome(theme: Theme): ViewFragment {
   switch (variantOf(theme)) {
     case "paper":
       return {
@@ -250,7 +252,7 @@ export function panelListItemChrome(theme: Theme): ViewStyle {
 }
 
 /** A bordered summary card inside a panel (release stream cards, setup callouts). */
-export function panelCardChrome(theme: Theme): ViewStyle {
+export function panelCardChrome(theme: Theme): ViewFragment {
   switch (variantOf(theme)) {
     case "mono":
       return {
@@ -279,7 +281,7 @@ export function panelCardChrome(theme: Theme): ViewStyle {
  * A status dot of `size` px filled with `color`. Mono makes it prominent: larger, with a soft halo
  * ring in the same hue (Vercel deployment dots).
  */
-export function panelStatusDot(theme: Theme, color: string, size: number): ViewStyle {
+export function panelStatusDot(theme: Theme, color: string, size: number): ViewFragment {
   if (variantOf(theme) !== "mono") {
     return { width: size, height: size, borderRadius: size / 2, backgroundColor: color };
   }
@@ -294,7 +296,7 @@ export function panelStatusDot(theme: Theme, color: string, size: number): ViewS
 }
 
 /** A key or small control on a panel surface (terminal key row, retry buttons). */
-export function panelKeyChrome(theme: Theme, baseRadius: number): ViewStyle {
+export function panelKeyChrome(theme: Theme, baseRadius: number): ViewFragment {
   if (variantOf(theme) === "current") return {};
   return theme.design.borderless
     ? { borderRadius: theme.design.controlRadius, borderColor: "transparent" }

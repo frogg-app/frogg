@@ -171,11 +171,7 @@ export function createControlGeometry(theme: Theme) {
   const fieldControlMd = {
     minHeight: heights.field,
     paddingHorizontal: theme.spacing[4],
-    paddingVertical: fieldVerticalPadding(
-      heights.field,
-      fieldTextMdLineHeight,
-      controlBorderWidth,
-    ),
+    paddingVertical: fieldVerticalPadding(heights.field, fieldTextMdLineHeight, controlBorderWidth),
     borderRadius: radius(theme.borderRadius.lg),
   };
   const fieldTextSm = {
