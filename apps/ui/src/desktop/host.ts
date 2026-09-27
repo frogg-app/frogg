@@ -194,6 +194,67 @@ export interface DesktopNetworkBridge {
   cancelProbe?: (requestId: string) => Promise<void>;
 }
 
+// Mirrors apps/desktop/src/features/beta-app/service.ts; keep the two in step.
+export type DesktopBetaAppUnsupportedReason =
+  | "running-beta"
+  | "unsupported-platform"
+  | "no-release-repository";
+
+export interface DesktopBetaAppStatus {
+  supported: boolean;
+  unsupportedReason: DesktopBetaAppUnsupportedReason | null;
+  /** Display name of the beta app, e.g. "frogg beta". */
+  betaName: string;
+  installed: boolean;
+  installedVersion: string | null;
+  installPath: string | null;
+  /** True while an install started by this app is in flight. */
+  installing: boolean;
+}
+
+export interface DesktopBetaAppLatestRelease {
+  version: string;
+  tag: string;
+  assetName: string;
+  assetSize: number | null;
+  kind: string;
+}
+
+export type DesktopBetaAppInstallPhase =
+  | "resolving"
+  | "downloading"
+  | "verifying"
+  | "installing"
+  | "launched"
+  | "failed"
+  | "cancelled";
+
+export interface DesktopBetaAppInstallProgress {
+  phase: DesktopBetaAppInstallPhase;
+  version: string | null;
+  assetName: string | null;
+  receivedBytes: number;
+  totalBytes: number | null;
+  error: string | null;
+}
+
+export interface DesktopBetaAppInstallResult {
+  version: string;
+  assetName: string;
+  sha256: string;
+  installPath: string | null;
+}
+
+/** Installs and opens the beta desktop app beside this one. Presence is the capability. */
+export interface DesktopBetaAppBridge {
+  getStatus: () => Promise<DesktopBetaAppStatus>;
+  resolveLatest: () => Promise<DesktopBetaAppLatestRelease>;
+  install: () => Promise<DesktopBetaAppInstallResult>;
+  cancelInstall: () => Promise<boolean>;
+  open: () => Promise<void>;
+  onProgress: (handler: (progress: DesktopBetaAppInstallProgress) => void) => () => void;
+}
+
 export interface DesktopInvokeBridge {
   invoke?: (command: string, args?: Record<string, unknown>) => Promise<unknown>;
 }
@@ -218,6 +279,7 @@ export interface DesktopHostBridge {
   menu?: DesktopMenuBridge;
   browser?: DesktopBrowserBridge;
   network?: DesktopNetworkBridge;
+  betaApp?: DesktopBetaAppBridge;
 }
 
 declare global {

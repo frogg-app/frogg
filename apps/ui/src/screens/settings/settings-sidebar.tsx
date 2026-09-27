@@ -14,6 +14,7 @@ import { ICON_SIZE, type Theme } from "@/styles/theme";
 import { SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
 import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visibility";
 import { useHosts } from "@/runtime/host-runtime";
+import { useSettings } from "@/hooks/use-settings";
 import type { SecuritySeverity } from "@/security/posture";
 import { SecurityDot } from "@/security/security-dot";
 import { useSecurityPosture } from "@/security/use-security-posture";
@@ -158,6 +159,7 @@ export function SettingsSidebar({
   const { t } = useTranslation();
   const isDesktopApp = isElectronRuntime();
   const shortcutsAvailable = useKeyboardShortcutsAvailable();
+  const developerOptions = useSettings((settings) => settings.developerOptions);
   const scope = resolveSettingsScope(view);
   const isDesktop = layout === "desktop";
   // A host decides which of its own sections this app offers, so the list is
@@ -205,7 +207,8 @@ export function SettingsSidebar({
       (item) =>
         (!item.desktopOnly || isDesktopApp) &&
         (!item.webOnly || isWeb) &&
-        (!item.requiresKeyboardShortcuts || shortcutsAvailable),
+        (!item.requiresKeyboardShortcuts || shortcutsAvailable) &&
+        (!item.requiresDeveloperOptions || developerOptions),
     );
     sidebarBody = (
       <View style={sidebarStyles.list}>

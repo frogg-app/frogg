@@ -33,6 +33,7 @@ import { PairWithCodeModal } from "@/device-access/pair-with-code-modal";
 import { KeyboardShortcutsSection } from "@/screens/settings/keyboard-shortcuts-section";
 import { EditorSection } from "@/screens/settings/editor-section";
 import { AboutSection } from "@/screens/settings/about-section";
+import { DeveloperSection } from "@/screens/settings/developer/developer-section";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -806,6 +807,8 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
                 handlePlaybackTest={handlePlaybackTest}
               />
             );
+          case "developer":
+            return settings.developerOptions ? <DeveloperSection /> : null;
           case "about":
             return (
               <AboutSection

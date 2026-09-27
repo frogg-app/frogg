@@ -20,6 +20,7 @@ import {
   PanelsTopLeft,
   AudioLines,
   ShieldCheck,
+  Wrench,
 } from "lucide-react-native";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 
@@ -30,6 +31,8 @@ export interface SidebarSectionItem {
   desktopOnly?: boolean;
   webOnly?: boolean;
   requiresKeyboardShortcuts?: boolean;
+  /** Shown only with About's "Developer options" switch on. */
+  requiresDeveloperOptions?: boolean;
 }
 
 export const SIDEBAR_SECTION_ITEMS: SidebarSectionItem[] = [
@@ -76,6 +79,12 @@ export const SIDEBAR_SECTION_ITEMS: SidebarSectionItem[] = [
     id: "diagnostics",
     labelKey: "settings.sections.diagnostics",
     icon: Stethoscope,
+  },
+  {
+    id: "developer",
+    labelKey: "settings.sections.developer",
+    icon: Wrench,
+    requiresDeveloperOptions: true,
   },
   { id: "about", labelKey: "settings.sections.about", icon: Info },
 ];

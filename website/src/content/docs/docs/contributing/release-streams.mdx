@@ -82,7 +82,9 @@ commands frogg beta's agents run do not see frogg beta's internal settings.
 
    The beta installer puts `frogg-beta` next to `frogg` and registers `frogg-beta-daemon`
    on port 9998. With no `FROGG_BETA_VERSION` set, it installs the newest `-beta.N` release.
-   Install the frogg beta desktop app or APK from the same release.
+   Install the frogg beta desktop app or APK from the same release. With
+   [developer options](/docs/using-frogg/developer-options/) on, **Settings → Developer** does
+   both the app and each host's beta daemon from inside frogg.
 3. For work that is not released yet, use a worktree dev daemon
    ([development setup](/docs/contributing/development-setup/)). It uses its own home and
    port, so it does not touch either install.

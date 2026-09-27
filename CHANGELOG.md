@@ -1,12 +1,17 @@
 # Changelog
 
-## 1.6.4 — 2026-09-27
+## Unreleased
 
-- **Android release build fixed.** 1.6.3 still failed to package the APK.
-
-## 1.6.3 — 2026-09-27
-
-- **Android release build fixed.** 1.6.2 never published: the APK failed to package.
+- **Developer options in Settings.** A **Developer options** switch at the bottom of
+  **Settings → About** (off by default, stored per app install) shows a **Developer** section
+  above About. Its **Beta app** card installs or updates frogg beta beside the desktop app with
+  a progress bar and cancel, and opens it; web and mobile link to the releases page. **Beta
+  daemon on hosts** lists every host with its beta daemon status (installed version, running
+  and port, latest beta, or why it is unavailable), installs, updates and uninstalls it
+  (confirmed, optionally deleting its data), and streams the run's phase and installer log.
+  Hosts without `features.betaChannelManagement` ask to be updated.
+- **Stable patches may reach the beta line's version.** Betas open the next patch line above
+  stable by default (`release:beta -- --minor` / `--major` are explicit).
 - **Beta daemon management (daemon, protocol, client).** A stable daemon installs, updates
   and removes the side-by-side `frogg-beta` daemon on its host for an owner client: new
   `daemon.beta_channel.get_status`, `.install` and `.uninstall` RPCs, with
@@ -21,20 +26,15 @@
   progress events, verifies it against the release's SHA-256 checksums, and installs it
   beside the stable app (Windows NSIS, macOS `.dmg` to `/Applications`, Linux AppImage to
   `~/Applications`). It also reports whether frogg beta is installed, with its version, and
-  opens it. The Settings entry point comes separately.
-- **Project to-dos (daemon and protocol).** Each project has a daemon-owned to-do list stored
-  in its main checkout under `.frogg/todos/` (self-ignored by git): items with category,
-  priority, a kanban-style status, a markdown plan and an append-only progress log. Agents use
-  new `todo_*` MCP tools; claims are compare-and-set, report the current claimant on conflict,
-  show as stale when the agent is no longer running, and are released on done, release or
-  agent archive. New `project.todo.*` session RPCs and the `project.todo.changed` event, gated
-  on `features.projectTodos`.
-- **Project to-dos in the app.** A project's sidebar menu has **To-dos** on hosts that support
-  them: a live list grouped by category with a status filter, priority, parallel marker and
-  claim badges that link to the claiming agent and mark stale claims. The detail view renders
-  the plan as markdown, shows the progress log and claims, and edits fields, plan and status,
-  force-releases claims and deletes items (both confirmed). New items can be created from the
-  list. Strings are translated in all nine locales.
+  opens it.
+
+## 1.6.4 — 2026-09-27
+
+- **Android release build fixed.** 1.6.3 still failed to package the APK.
+
+## 1.6.3 — 2026-09-27
+
+- **Android release build fixed.** 1.6.2 never published: the APK failed to package.
 
 ## 1.6.2-beta.1 — 2026-09-27
 
