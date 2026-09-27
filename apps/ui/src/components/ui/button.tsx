@@ -23,6 +23,7 @@ import {
   createControlGeometry,
   type ButtonControlSize,
 } from "@/components/ui/control-geometry";
+import { buttonTreatment } from "@/components/ui/button-treatment";
 import type { Theme } from "@/styles/theme";
 
 type ButtonVariant = "default" | "secondary" | "outline" | "ghost" | "destructive";
@@ -87,6 +88,7 @@ const destructiveForegroundIconMapping = (theme: Theme) => ({
 
 const styles = StyleSheet.create((theme) => {
   const geometry = createControlGeometry(theme);
+  const treatment = buttonTreatment(theme);
 
   return {
     base: {
@@ -94,7 +96,7 @@ const styles = StyleSheet.create((theme) => {
       alignItems: "center",
       justifyContent: "center",
       gap: theme.spacing[2],
-      borderRadius: theme.borderRadius.lg,
+      borderRadius: geometry.buttonMd.borderRadius,
       borderWidth: 1,
       borderColor: "transparent",
     },
@@ -110,26 +112,15 @@ const styles = StyleSheet.create((theme) => {
     lg: {
       ...geometry.buttonLg,
     },
-    default: {
-      backgroundColor: theme.colors.accent,
-      borderColor: theme.colors.accent,
-    },
-    secondary: {
-      backgroundColor: theme.colors.surface3,
-      borderColor: theme.colors.surface3,
-    },
-    outline: {
-      backgroundColor: "transparent",
-      borderColor: theme.colors.borderAccent,
-    },
+    default: treatment.default,
+    secondary: treatment.secondary,
+    outline: treatment.outline,
     ghost: {
       backgroundColor: "transparent",
       borderColor: "transparent",
     },
-    destructive: {
-      backgroundColor: theme.colors.destructive,
-      borderColor: theme.colors.destructive,
-    },
+    destructive: treatment.destructive,
+    ghostHovered: treatment.ghostHovered,
     pressed: {
       opacity: 0.85,
     },
@@ -139,10 +130,12 @@ const styles = StyleSheet.create((theme) => {
     text: {
       color: theme.colors.foreground,
       ...geometry.buttonText,
-      fontWeight: theme.fontWeight.normal,
+      fontSize: geometry.buttonText.fontSize + treatment.fontSizeDelta,
+      fontWeight: treatment.textWeight,
     },
     textXs: {
       ...geometry.buttonTextXs,
+      fontSize: geometry.buttonTextXs.fontSize + treatment.fontSizeDelta,
     },
     textDefault: {
       color: theme.colors.accentForeground,
@@ -219,11 +212,12 @@ export function Button({
       styles.base,
       sizeStyle,
       variantStyle,
+      isGhostHovered ? styles.ghostHovered : null,
       pressed ? styles.pressed : null,
       isDisabled ? styles.disabled : null,
       style,
     ],
-    [sizeStyle, variantStyle, isDisabled, style],
+    [sizeStyle, variantStyle, isGhostHovered, isDisabled, style],
   );
 
   const resolvedTextStyle = useMemo(

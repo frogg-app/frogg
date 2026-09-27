@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, type ReactElement } from "react";
 import { Pressable, View } from "react-native";
 import { Search, X } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { designControlRadius } from "@/components/ui/control-geometry";
 import type { Theme } from "@/styles/theme";
 import {
   EditingTextInput as TextInput,
@@ -98,7 +99,7 @@ const styles = StyleSheet.create((theme) => ({
     maxWidth: SEARCH_FIELD_MAX_WIDTH,
     paddingVertical: theme.spacing[1.5],
     paddingHorizontal: theme.spacing[3],
-    borderRadius: theme.borderRadius.md,
+    borderRadius: designControlRadius(theme, theme.borderRadius.md),
     backgroundColor: theme.colors.surface1,
     borderWidth: theme.borderWidth[1],
     borderColor: theme.colors.border,

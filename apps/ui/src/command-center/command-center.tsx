@@ -14,6 +14,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronRight, Folder, X } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { commandCenterTreatment } from "@/command-center/command-center-treatment";
 import {
   BottomSheetBackdrop,
   BottomSheetFlatList,
@@ -850,14 +851,20 @@ function ScopeChip({ label, onRemove }: { label: string; onRemove(): void }) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme) => {
+  const design = commandCenterTreatment(theme);
+  return {
   overlay: {
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
     paddingTop: theme.spacing[12],
   },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0, 0, 0, 0.5)" },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    ...design.backdrop,
+  },
   panel: {
     width: 640,
     height: 560,
@@ -869,12 +876,14 @@ const styles = StyleSheet.create((theme) => ({
     overflow: "hidden",
     backgroundColor: theme.colors.surface0,
     ...theme.shadow.lg,
+    ...design.panel,
   },
   header: {
     paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[3],
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    ...design.header,
   },
   bottomSheetHeader: {
     paddingHorizontal: theme.spacing[4],
@@ -887,6 +896,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[1],
     color: theme.colors.foreground,
     outlineWidth: 0,
+    ...design.input,
   },
   growingInput: { flex: 1, minWidth: 0 },
   searchRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
@@ -916,6 +926,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingBottom: theme.spacing[2],
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
+    ...design.sectionLabel,
   },
   sectionDivider: {
     height: 1,
@@ -923,9 +934,14 @@ const styles = StyleSheet.create((theme) => ({
     marginBottom: theme.spacing[2],
     backgroundColor: theme.colors.border,
   },
-  row: { height: 36, paddingHorizontal: theme.spacing[4], paddingVertical: theme.spacing[2] },
+  row: {
+    height: 36,
+    paddingHorizontal: theme.spacing[4],
+    paddingVertical: theme.spacing[2],
+    ...design.row,
+  },
   tallRow: { height: 56 },
-  activeRow: { backgroundColor: theme.colors.surface1 },
+  activeRow: { backgroundColor: theme.colors.surface1, ...design.activeRow },
   rowContent: {
     flexDirection: "row",
     alignItems: "center",
@@ -991,4 +1007,5 @@ const styles = StyleSheet.create((theme) => ({
   titledSection: { height: 32, justifyContent: "flex-end" },
   dividedSection: { height: 49, justifyContent: "flex-end" },
   dividerSection: { height: 17, justifyContent: "flex-end" },
-}));
+};
+});

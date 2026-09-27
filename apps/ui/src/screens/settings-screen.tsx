@@ -9,7 +9,6 @@ import type { TFunction } from "i18next";
 import { Buffer } from "buffer";
 import { FolderGit2 } from "lucide-react-native";
 import { DropdownTrigger } from "@/components/ui/dropdown-trigger";
-import { ScreenTitle } from "@/components/headers/screen-title";
 import { HeaderIconBadge } from "@/components/headers/header-icon-badge";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { AppearanceSection } from "@/screens/settings/appearance/appearance-section";
@@ -47,7 +46,9 @@ import { isElectronRuntime } from "@/desktop/host";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { resolveAppVersion } from "@/utils/app-version";
 import { useAppDiagnosticStore } from "@/diagnostics/store";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { settingsStyles } from "@/styles/settings";
+import { settingsTreatment } from "@/styles/settings-treatment";
 import { THINKING_TONE_NATIVE_PCM_BASE64 } from "@/utils/thinking-tone.native-pcm";
 import { useVoiceAudioEngineOptional } from "@/contexts/voice-context";
 import {
@@ -833,7 +834,14 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
       <HeaderIconBadge>
         <detailHeader.Icon size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
       </HeaderIconBadge>
-      <ScreenTitle testID="settings-detail-header-title">{detailHeader.title}</ScreenTitle>
+      <Text
+        testID="settings-detail-header-title"
+        dataSet={DESIGN_FONT_DATASET}
+        numberOfLines={1}
+        style={desktopStyles.pageTitle}
+      >
+        {detailHeader.title}
+      </Text>
       {detailHeader.titleAccessory}
     </>
   ) : null;
@@ -963,6 +971,7 @@ const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
+    ...settingsTreatment(theme).page,
   },
   scrollView: {
     flex: 1,
@@ -973,6 +982,7 @@ const styles = StyleSheet.create((theme) => ({
     width: "100%",
     maxWidth: 720,
     alignSelf: "center",
+    ...settingsTreatment(theme).content,
   },
   themeTrigger: {
     flexDirection: "row",
@@ -1023,5 +1033,17 @@ const desktopStyles = StyleSheet.create((theme) => ({
   },
   detailLeft: {
     gap: theme.spacing[2],
+  },
+  // ScreenTitle's typography, plus the direction's display face (hence the font dataset tag).
+  pageTitle: {
+    flexShrink: 1,
+    minWidth: 0,
+    fontSize: theme.fontSize.base,
+    fontWeight: {
+      xs: "400",
+      md: "300",
+    },
+    color: theme.colors.foreground,
+    ...settingsTreatment(theme).pageTitle,
   },
 }));
