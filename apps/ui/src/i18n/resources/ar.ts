@@ -2239,6 +2239,11 @@ export const ar: TranslationResources = {
         sshPort: "منفذ SSH",
         identityFile: "ملف المفتاح",
         identityFileHint: "اتركه فارغًا لاستخدام ssh-agent و‎~/.ssh/config.",
+        password: "كلمة المرور",
+        privateKey: "المفتاح الخاص",
+        privateKeyHint:
+          "اختياري. الصق مفتاحًا خاصًا بصيغة OpenSSH أو PEM؛ يُستخدم لهذا النشر فقط ولا يُحفظ.",
+        passphrase: "عبارة مرور المفتاح",
         daemonPort: "منفذ البرنامج الخفي",
       },
       network: {
@@ -2273,6 +2278,7 @@ export const ar: TranslationResources = {
         invalidSshPort: "أدخل منفذ SSH بين 1 و65535.",
         invalidDaemonPort: "أدخل منفذ البرنامج الخفي بين 1 و65535.",
         invalidKeyFile: "أدخل مسارًا مطلقًا أو مسارًا يبدأ بـ ~/.",
+        userRequired: "أدخل مستخدم SSH.",
       },
       errors: {
         ssh_failed: "تعذّر الاتصال عبر SSH. {{detail}}",

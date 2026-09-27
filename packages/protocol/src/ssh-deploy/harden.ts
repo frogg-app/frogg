@@ -1,4 +1,4 @@
-import type { Brand } from "@frogg/branding/schema";
+import { findLastIndex } from "./lines.js";
 
 /**
  * Locks down a freshly deployed daemon over the same SSH session that
@@ -26,7 +26,11 @@ export interface HardenResult {
   unsupported: boolean;
 }
 
-export type HardenBrand = Pick<Brand, "id" | "envPrefix" | "cliName">;
+export interface HardenBrand {
+  id: string;
+  envPrefix: string;
+  cliName: string;
+}
 
 const BEGIN = "FROGG_HARDEN_BEGIN";
 const END = "FROGG_HARDEN_END";
@@ -53,7 +57,7 @@ export function parseHardenOutput(stdout: string): HardenResult {
   if (lines.some((line) => line.trim() === UNSUPPORTED)) {
     return { trustLan: true, applied: "unsupported", unsupported: true };
   }
-  const begin = lines.findLastIndex((line) => line.trim() === BEGIN);
+  const begin = findLastIndex(lines, (line) => line.trim() === BEGIN);
   const end = lines.findIndex((line, index) => index > begin && line.trim() === END);
   if (begin < 0 || end < 0) throw new Error("The daemon did not report its LAN trust setting.");
   let raw: unknown;

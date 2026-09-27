@@ -185,7 +185,8 @@ export type DeployFormError =
   | "invalidHost"
   | "invalidSshPort"
   | "invalidDaemonPort"
-  | "invalidKeyFile";
+  | "invalidKeyFile"
+  | "userRequired";
 
 function parsePortText(text: string, fallback: number | undefined): number | undefined | null {
   const trimmed = text.trim();
@@ -214,6 +215,11 @@ export function resolveDeployTarget(input: {
   daemonPortText: string;
   network: DeployNetwork;
   defaultDaemonPort: number;
+  /**
+   * Credentials typed into the form, for the mobile app's SSH client, which
+   * has no agent, key files or local user name to fall back to.
+   */
+  credentials?: { password: string; privateKey: string; passphrase: string };
 }):
   | { ok: true; target: SshDeployTarget; daemonPort: number }
   | { ok: false; error: DeployFormError } {
@@ -227,6 +233,7 @@ export function resolveDeployTarget(input: {
   const host = input.host.trim();
   const user = input.user.trim();
   if (!host) return { ok: false, error: "hostRequired" };
+  if (input.credentials && !user) return { ok: false, error: "userRequired" };
   if (!HOST_PATTERN.test(host) || (user && !HOST_PATTERN.test(user)))
     return { ok: false, error: "invalidHost" };
   const sshPort = parsePortText(input.sshPortText, undefined);
@@ -241,8 +248,23 @@ export function resolveDeployTarget(input: {
       host: user ? `${user}@${host}` : host,
       ...(sshPort !== undefined ? { sshPort } : {}),
       ...(identityFile ? { identityFile } : {}),
+      ...credentialFields(input.credentials),
     },
     daemonPort,
+  };
+}
+
+function credentialFields(
+  credentials: { password: string; privateKey: string; passphrase: string } | undefined,
+): Pick<SshDeployTarget, "sshPassword" | "privateKey" | "privateKeyPassphrase"> {
+  if (!credentials) return {};
+  const privateKey = credentials.privateKey.trim();
+  return {
+    ...(credentials.password ? { sshPassword: credentials.password } : {}),
+    ...(privateKey ? { privateKey } : {}),
+    ...(privateKey && credentials.passphrase
+      ? { privateKeyPassphrase: credentials.passphrase }
+      : {}),
   };
 }
 

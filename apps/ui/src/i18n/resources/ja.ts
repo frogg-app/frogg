@@ -2273,6 +2273,11 @@ export const ja: TranslationResources = {
         sshPort: "SSH ポート",
         identityFile: "鍵ファイル",
         identityFileHint: "空欄の場合は ssh-agent と ~/.ssh/config を使います。",
+        password: "パスワード",
+        privateKey: "秘密鍵",
+        privateKeyHint:
+          "任意。OpenSSH または PEM 形式の秘密鍵を貼り付けてください。このデプロイにのみ使用され、保存されません。",
+        passphrase: "鍵のパスフレーズ",
         daemonPort: "デーモンのポート",
       },
       network: {
@@ -2308,6 +2313,7 @@ export const ja: TranslationResources = {
         invalidSshPort: "SSH ポートは 1〜65535 で入力してください。",
         invalidDaemonPort: "デーモンのポートは 1〜65535 で入力してください。",
         invalidKeyFile: "絶対パスか ~/ で始まるパスを入力してください。",
+        userRequired: "SSH ユーザーを入力してください。",
       },
       errors: {
         ssh_failed: "SSH で接続できませんでした。{{detail}}",

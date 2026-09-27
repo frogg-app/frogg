@@ -33,6 +33,7 @@ import {
   closeSshDeployForward,
   describeSshDeployPlatform,
   fetchSshDeployPairCode,
+  isSshDeployInApp,
   hardenSshDeploy,
   openSshDeployForward,
   probeSshDeploy,
@@ -43,6 +44,19 @@ import {
 const FLEX_ONE_STYLE = { flex: 1 } as const;
 const FLEX_TWO_STYLE = { flex: 2 } as const;
 const MAX_LOG_LINES = 500;
+/** The app's own SSH client: no SSH config or tunnel, credentials typed in. */
+const IN_APP = isSshDeployInApp();
+const DEFAULT_NETWORK: DeployNetwork = IN_APP ? "lan" : "tunnel";
+const EMPTY_FIELDS: DeployFields = {
+  host: "",
+  user: "",
+  sshPort: "",
+  identityFile: "",
+  daemonPort: "",
+  password: "",
+  privateKey: "",
+  passphrase: "",
+};
 const ThemedRocket = withUnistyles(Rocket);
 const ThemedActivityIndicator = withUnistyles(ActivityIndicator);
 const ThemedCheck = withUnistyles(Check);
@@ -138,20 +152,15 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
   const isCompact = useIsCompactFormFactor();
   const size = isCompact ? "md" : "sm";
 
-  const fields = useRef<DeployFields>({
-    host: "",
-    user: "",
-    sshPort: "",
-    identityFile: "",
-    daemonPort: "",
-  });
+  const fields = useRef<DeployFields>({ ...EMPTY_FIELDS });
   const [chosenMode, setChosenMode] = useState<"config" | "manual" | null>(null);
   const [alias, setAlias] = useState<string | null>(null);
-  const [network, setNetwork] = useState<DeployNetwork>("tunnel");
+  const [network, setNetwork] = useState<DeployNetwork>(DEFAULT_NETWORK);
   const run = useDeployRun();
 
-  const mode =
-    chosenMode ?? (configHosts === undefined || configHosts.length > 0 ? "config" : "manual");
+  const mode = IN_APP
+    ? "manual"
+    : (chosenMode ?? (configHosts === undefined || configHosts.length > 0 ? "config" : "manual"));
   const header = useMemo<SheetHeader>(() => ({ title: t("pairing.deployHost.title") }), [t]);
   const modeOptions = useMemo<SegmentedControlOption<"config" | "manual">[]>(
     () => [
@@ -185,16 +194,10 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
   );
 
   const resetForm = useCallback(() => {
-    fields.current = {
-      host: "",
-      user: "",
-      sshPort: "",
-      identityFile: "",
-      daemonPort: "",
-    };
+    fields.current = { ...EMPTY_FIELDS };
     setChosenMode(null);
     setAlias(null);
-    setNetwork("tunnel");
+    setNetwork(DEFAULT_NETWORK);
     run.reset();
   }, [run]);
 
@@ -235,6 +238,9 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
   const onSshPort = useMemo(() => setField("sshPort"), [setField]);
   const onKey = useMemo(() => setField("identityFile"), [setField]);
   const onDaemonPort = useMemo(() => setField("daemonPort"), [setField]);
+  const onPassword = useMemo(() => setField("password"), [setField]);
+  const onPrivateKey = useMemo(() => setField("privateKey"), [setField]);
+  const onPassphrase = useMemo(() => setField("passphrase"), [setField]);
 
   const {
     steps,
@@ -281,6 +287,9 @@ export function DeployToHostModal({ visible, onClose, onCancel, onSaved }: Deplo
           onSshPort={onSshPort}
           onDaemonPort={onDaemonPort}
           onKey={onKey}
+          onPassword={onPassword}
+          onPrivateKey={onPrivateKey}
+          onPassphrase={onPassphrase}
           onSubmit={handleStart}
         />
       ) : (
@@ -329,6 +338,9 @@ interface DeployFormProps {
   onSshPort: (value: string) => void;
   onDaemonPort: (value: string) => void;
   onKey: (value: string) => void;
+  onPassword: (value: string) => void;
+  onPrivateKey: (value: string) => void;
+  onPassphrase: (value: string) => void;
   onSubmit: () => void;
 }
 
@@ -338,14 +350,16 @@ function DeployForm(props: DeployFormProps) {
   const { size, mode, fields, formError, formErrorText, network } = props;
   return (
     <>
-      <SegmentedControl
-        options={props.modeOptions}
-        value={mode}
-        onValueChange={props.onModeChange}
-        size={size}
-        style={styles.tabs}
-        testID="deploy-host-tabs"
-      />
+      {IN_APP ? null : (
+        <SegmentedControl
+          options={props.modeOptions}
+          value={mode}
+          onValueChange={props.onModeChange}
+          size={size}
+          style={styles.tabs}
+          testID="deploy-host-tabs"
+        />
+      )}
       {mode === "config" && props.configHosts !== undefined ? (
         <SshConfigHostPicker
           hosts={props.configHosts}
@@ -370,6 +384,9 @@ function DeployForm(props: DeployFormProps) {
           onSshPort={props.onSshPort}
           onDaemonPort={props.onDaemonPort}
           onKey={props.onKey}
+          onPassword={props.onPassword}
+          onPrivateKey={props.onPrivateKey}
+          onPassphrase={props.onPassphrase}
           onSubmit={props.onSubmit}
         />
       ) : null}
@@ -384,13 +401,15 @@ function DeployForm(props: DeployFormProps) {
         }
         testID="deploy-host-network"
       >
-        <SegmentedControl
-          options={props.networkOptions}
-          value={network}
-          onValueChange={props.onNetworkChange}
-          size={size}
-          style={styles.tabs}
-        />
+        {IN_APP ? null : (
+          <SegmentedControl
+            options={props.networkOptions}
+            value={network}
+            onValueChange={props.onNetworkChange}
+            size={size}
+            style={styles.tabs}
+          />
+        )}
       </Field>
     </>
   );
@@ -514,6 +533,9 @@ interface ManualFieldsProps {
     sshPort: string;
     identityFile: string;
     daemonPort: string;
+    password: string;
+    privateKey: string;
+    passphrase: string;
   };
   formError: DeployFormError | null;
   formErrorText: string | undefined;
@@ -522,6 +544,9 @@ interface ManualFieldsProps {
   onSshPort: (value: string) => void;
   onDaemonPort: (value: string) => void;
   onKey: (value: string) => void;
+  onPassword: (value: string) => void;
+  onPrivateKey: (value: string) => void;
+  onPassphrase: (value: string) => void;
   onSubmit: () => void;
 }
 
@@ -536,6 +561,9 @@ function ManualFields({
   onSshPort,
   onDaemonPort,
   onKey,
+  onPassword,
+  onPrivateKey,
+  onPassphrase,
   onSubmit,
 }: ManualFieldsProps) {
   const { t } = useTranslation();
@@ -543,7 +571,11 @@ function ManualFields({
     <>
       <View style={styles.row}>
         <View style={FLEX_ONE_STYLE}>
-          <Field label={t("pairing.deployHost.fields.user")} testID="deploy-host-user">
+          <Field
+            label={t("pairing.deployHost.fields.user")}
+            error={formError === "userRequired" ? formErrorText : undefined}
+            testID="deploy-host-user"
+          >
             <FormTextInput
               size={size}
               accessibilityLabel={t("pairing.deployHost.fields.user")}
@@ -612,21 +644,95 @@ function ManualFields({
           </Field>
         </View>
       </View>
+      {IN_APP ? (
+        <CredentialFields
+          size={size}
+          fields={fields}
+          onPassword={onPassword}
+          onPrivateKey={onPrivateKey}
+          onPassphrase={onPassphrase}
+        />
+      ) : (
+        <Field
+          label={t("pairing.deployHost.fields.identityFile")}
+          hint={t("pairing.deployHost.fields.identityFileHint")}
+          error={formError === "invalidKeyFile" ? formErrorText : undefined}
+          testID="deploy-host-key"
+        >
+          <FormTextInput
+            size={size}
+            accessibilityLabel={t("pairing.deployHost.fields.identityFile")}
+            initialValue={fields.identityFile}
+            onChangeText={onKey}
+            placeholder="~/.ssh/id_ed25519"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onSubmitEditing={onSubmit}
+          />
+        </Field>
+      )}
+    </>
+  );
+}
+
+/**
+ * The in-app SSH client's credentials: a password, a pasted private key, or
+ * both. Held for this deploy only; nothing is saved.
+ */
+function CredentialFields({
+  size,
+  fields,
+  onPassword,
+  onPrivateKey,
+  onPassphrase,
+}: {
+  size: "sm" | "md";
+  fields: { password: string; privateKey: string; passphrase: string };
+  onPassword: (value: string) => void;
+  onPrivateKey: (value: string) => void;
+  onPassphrase: (value: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <Field label={t("pairing.deployHost.fields.password")} testID="deploy-host-password">
+        <FormTextInput
+          size={size}
+          accessibilityLabel={t("pairing.deployHost.fields.password")}
+          initialValue={fields.password}
+          onChangeText={onPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          testID="deploy-host-password-input"
+        />
+      </Field>
       <Field
-        label={t("pairing.deployHost.fields.identityFile")}
-        hint={t("pairing.deployHost.fields.identityFileHint")}
-        error={formError === "invalidKeyFile" ? formErrorText : undefined}
-        testID="deploy-host-key"
+        label={t("pairing.deployHost.fields.privateKey")}
+        hint={t("pairing.deployHost.fields.privateKeyHint")}
+        testID="deploy-host-private-key"
       >
         <FormTextInput
           size={size}
-          accessibilityLabel={t("pairing.deployHost.fields.identityFile")}
-          initialValue={fields.identityFile}
-          onChangeText={onKey}
-          placeholder="~/.ssh/id_ed25519"
+          accessibilityLabel={t("pairing.deployHost.fields.privateKey")}
+          initialValue={fields.privateKey}
+          onChangeText={onPrivateKey}
+          placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+          multiline
           autoCapitalize="none"
           autoCorrect={false}
-          onSubmitEditing={onSubmit}
+          testID="deploy-host-private-key-input"
+        />
+      </Field>
+      <Field label={t("pairing.deployHost.fields.passphrase")} testID="deploy-host-passphrase">
+        <FormTextInput
+          size={size}
+          accessibilityLabel={t("pairing.deployHost.fields.passphrase")}
+          initialValue={fields.passphrase}
+          onChangeText={onPassphrase}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
         />
       </Field>
     </>
@@ -842,6 +948,9 @@ export interface DeployFields {
   sshPort: string;
   identityFile: string;
   daemonPort: string;
+  password: string;
+  privateKey: string;
+  passphrase: string;
 }
 
 type DeploySavedResult = Parameters<NonNullable<DeployToHostModalProps["onSaved"]>>[0];
@@ -891,6 +1000,15 @@ function useDeployRun() {
         daemonPortText: form.fields.daemonPort,
         network: form.network,
         defaultDaemonPort: DEFAULT_SSH_DAEMON_PORT,
+        ...(IN_APP
+          ? {
+              credentials: {
+                password: form.fields.password,
+                privateKey: form.fields.privateKey,
+                passphrase: form.fields.passphrase,
+              },
+            }
+          : {}),
       });
       if (!resolved.ok) {
         setFormError(resolved.error);

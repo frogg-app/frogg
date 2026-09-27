@@ -2308,6 +2308,11 @@ export const fr: TranslationResources = {
         sshPort: "Port SSH",
         identityFile: "Fichier de clé",
         identityFileHint: "Laissez vide pour utiliser ssh-agent et ~/.ssh/config.",
+        password: "Mot de passe",
+        privateKey: "Clé privée",
+        privateKeyHint:
+          "Facultatif. Collez une clé privée OpenSSH ou PEM ; elle ne sert qu'à ce déploiement et n'est pas enregistrée.",
+        passphrase: "Phrase secrète de la clé",
         daemonPort: "Port du daemon",
       },
       network: {
@@ -2343,6 +2348,7 @@ export const fr: TranslationResources = {
         invalidSshPort: "Saisissez un port SSH entre 1 et 65535.",
         invalidDaemonPort: "Saisissez un port de daemon entre 1 et 65535.",
         invalidKeyFile: "Saisissez un chemin absolu ou commençant par ~/.",
+        userRequired: "Saisissez l'utilisateur SSH.",
       },
       errors: {
         ssh_failed: "Connexion SSH impossible. {{detail}}",

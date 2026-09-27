@@ -6,6 +6,7 @@ import { ClipboardPaste, Link2, QrCode, Rocket, Server, Terminal } from "lucide-
 import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
 import { MenuItem, MenuLabel, MenuRoot, MenuSeparator, MenuSurface } from "@/components/ui/menu";
 import {
+  isDeployAddHostAvailable,
   isRemoteSshAddHostAvailable,
   isScanQrAddHostAvailable,
 } from "@/components/add-host-method-modal";
@@ -131,7 +132,7 @@ export function HostsMenu({ onBeforeAction }: HostsMenuProps): ReactElement {
             {t("pairing.connectionMethods.remoteSsh.title")}
           </MenuItem>
         ) : null}
-        {isRemoteSshAddHostAvailable() ? (
+        {isDeployAddHostAvailable() ? (
           <MenuItem leading={DEPLOY_ICON} onSelect={handleDeploy} testID="sidebar-hosts-deploy">
             {t("pairing.connectionMethods.deploy.title")}
           </MenuItem>

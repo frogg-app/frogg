@@ -3,9 +3,10 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildSshArgs, parseTarget } from "./args.js";
-import { DeployManager } from "./manager.js";
-import { buildPairCodeScript, parsePairCodeOutput } from "./pair-code.js";
+import { parseTarget } from "@frogg/protocol/ssh-deploy/args";
+import { DeployManager } from "@frogg/protocol/ssh-deploy/manager";
+import { buildPairCodeScript, parsePairCodeOutput } from "@frogg/protocol/ssh-deploy/pair-code";
+import { buildSshArgs } from "./ssh-args.js";
 
 const distribution = {
   envPrefix: "CUSTOM",

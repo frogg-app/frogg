@@ -2211,6 +2211,10 @@ export const zhCN: TranslationResources = {
         sshPort: "SSH 端口",
         identityFile: "密钥文件",
         identityFileHint: "留空则使用 ssh-agent 和 ~/.ssh/config。",
+        password: "密码",
+        privateKey: "私钥",
+        privateKeyHint: "可选。粘贴 OpenSSH 或 PEM 格式的私钥；仅用于本次部署，不会保存。",
+        passphrase: "密钥口令",
         daemonPort: "守护进程端口",
       },
       network: {
@@ -2243,6 +2247,7 @@ export const zhCN: TranslationResources = {
         invalidSshPort: "请输入 1 到 65535 之间的 SSH 端口。",
         invalidDaemonPort: "请输入 1 到 65535 之间的守护进程端口。",
         invalidKeyFile: "请输入绝对路径或以 ~/ 开头的路径。",
+        userRequired: "请输入 SSH 用户。",
       },
       errors: {
         ssh_failed: "无法通过 SSH 连接。{{detail}}",

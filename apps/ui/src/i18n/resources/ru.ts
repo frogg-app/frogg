@@ -2278,6 +2278,11 @@ export const ru: TranslationResources = {
         sshPort: "Порт SSH",
         identityFile: "Файл ключа",
         identityFileHint: "Оставьте пустым, чтобы использовать ssh-agent и ~/.ssh/config.",
+        password: "Пароль",
+        privateKey: "Закрытый ключ",
+        privateKeyHint:
+          "Необязательно. Вставьте закрытый ключ OpenSSH или PEM; он используется только для этого развёртывания и не сохраняется.",
+        passphrase: "Парольная фраза ключа",
         daemonPort: "Порт демона",
       },
       network: {
@@ -2312,6 +2317,7 @@ export const ru: TranslationResources = {
         invalidSshPort: "Введите порт SSH от 1 до 65535.",
         invalidDaemonPort: "Введите порт демона от 1 до 65535.",
         invalidKeyFile: "Введите абсолютный путь или путь, начинающийся с ~/.",
+        userRequired: "Укажите пользователя SSH.",
       },
       errors: {
         ssh_failed: "Не удалось подключиться по SSH. {{detail}}",

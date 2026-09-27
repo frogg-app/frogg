@@ -15,6 +15,18 @@
   load (polled every 5 seconds while settings is open), the size of each Frogg-owned storage
   area with **Refresh**, and a confirmed **Clean** for logs, speech cache and temp (owners).
   Hidden for daemons without `features.hostResources`.
+- **Deploy to host on Android.** The Hosts menu and the add-host sheet now offer
+  **Deploy to host** on Android, not just the desktop. The app ships its own SSH client
+  (JSch with Bouncy Castle, both FOSS, so F-Droid builds include it too). Enter `user@host`,
+  then a password, a pasted OpenSSH/PEM private key (with passphrase), or both. Credentials
+  are used for that deploy only and never saved. Mobile deploys pair over the network; the
+  SSH-tunnel option, SSH config entries and ssh-agent stay desktop-only. Host keys are
+  trusted on first use, and a later key change is refused.
+- The deploy engine (probe, install, lock-down, pairing-code steps) moved from the desktop
+  shell to `@frogg/protocol/ssh-deploy`, so desktop and mobile run the same code. Desktop
+  behaviour is unchanged.
+- React Native's `AbortSignal` gains `throwIfAborted`, which the deploy flow and project
+  import call.
 
 ## 1.6.0-beta.1 — 2026-09-26
 

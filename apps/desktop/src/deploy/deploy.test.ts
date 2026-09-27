@@ -4,14 +4,18 @@ import { describe, expect, it } from "vitest";
 import { brand } from "@frogg/branding";
 import {
   buildInstallCommand,
-  buildSshArgs,
   parseRequest,
   parseTarget,
   shellQuote,
-} from "./args.js";
+} from "@frogg/protocol/ssh-deploy/args";
+import { DeployManager, type DeployEvent } from "@frogg/protocol/ssh-deploy/manager";
+import {
+  buildProbeScript,
+  parseProbeOutput,
+  PROBE_TEMPLATE,
+} from "@frogg/protocol/ssh-deploy/probe";
 import { createScriptExecutor, type ExecutionInput } from "./executor.js";
-import { DeployManager, type DeployEvent } from "./manager.js";
-import { buildProbeScript, parseProbeOutput, PROBE_TEMPLATE } from "./probe.js";
+import { buildSshArgs } from "./ssh-args.js";
 import { deployScript } from "./scripts.js";
 
 const distribution = {
@@ -19,7 +23,8 @@ const distribution = {
   daemonPort: 9999,
   releaseBase: "https://example.com/releases",
 };
-const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
+// The manager defers each job with a zero timeout; a later one runs after it.
+const tick = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 describe("SSH deployment validation and scripts", () => {
   it("quotes remote variables and never puts the password in argv", () => {

@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import { spawn } from "node:child_process";
 import { createServer, type Server } from "node:net";
 import { buildSshTunnelArgs } from "@frogg/protocol/ssh-transport";
-import type { SshTarget } from "./args.js";
+import type { SshTarget } from "@frogg/protocol/ssh-deploy/args";
+import type { SshForward, SshForwards } from "@frogg/protocol/ssh-deploy/execute";
 
 /**
  * A short-lived loopback forward to a deployed daemon, used to pair with a
@@ -21,11 +22,7 @@ import type { SshTarget } from "./args.js";
  * Each accepted connection gets its own `ssh -W` child, so the forward serves
  * the claim request and any retry, and is closed as soon as pairing is done.
  */
-export interface SshForward {
-  forwardId: string;
-  /** `127.0.0.1:<port>` on this machine, forwarded to the daemon's own port. */
-  endpoint: string;
-}
+export type { SshForward };
 
 interface OpenForward {
   server: Server;
@@ -44,7 +41,7 @@ export interface SshChild {
   on(event: "error" | "exit", handler: (...args: unknown[]) => void): void;
 }
 
-export class SshForwardManager {
+export class SshForwardManager implements SshForwards {
   private forwards = new Map<string, OpenForward>();
 
   constructor(

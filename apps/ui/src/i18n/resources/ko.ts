@@ -2258,6 +2258,11 @@ export const ko: TranslationResources = {
         sshPort: "SSH 포트",
         identityFile: "키 파일",
         identityFileHint: "비워 두면 ssh-agent와 ~/.ssh/config를 사용합니다.",
+        password: "비밀번호",
+        privateKey: "개인 키",
+        privateKeyHint:
+          "선택 사항. OpenSSH 또는 PEM 개인 키를 붙여넣으세요. 이번 배포에만 사용되며 저장되지 않습니다.",
+        passphrase: "키 암호",
         daemonPort: "데몬 포트",
       },
       network: {
@@ -2291,6 +2296,7 @@ export const ko: TranslationResources = {
         invalidSshPort: "SSH 포트는 1에서 65535 사이로 입력하세요.",
         invalidDaemonPort: "데몬 포트는 1에서 65535 사이로 입력하세요.",
         invalidKeyFile: "절대 경로나 ~/로 시작하는 경로를 입력하세요.",
+        userRequired: "SSH 사용자를 입력하세요.",
       },
       errors: {
         ssh_failed: "SSH로 연결하지 못했습니다. {{detail}}",

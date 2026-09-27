@@ -2286,6 +2286,11 @@ export const ptBR: TranslationResources = {
         sshPort: "Porta SSH",
         identityFile: "Arquivo de chave",
         identityFileHint: "Deixe vazio para usar o ssh-agent e o ~/.ssh/config.",
+        password: "Senha",
+        privateKey: "Chave privada",
+        privateKeyHint:
+          "Opcional. Cole uma chave privada OpenSSH ou PEM; ela é usada apenas nesta implantação e não é salva.",
+        passphrase: "Senha da chave",
         daemonPort: "Porta do daemon",
       },
       network: {
@@ -2321,6 +2326,7 @@ export const ptBR: TranslationResources = {
         invalidSshPort: "Digite uma porta SSH entre 1 e 65535.",
         invalidDaemonPort: "Digite uma porta do daemon entre 1 e 65535.",
         invalidKeyFile: "Digite um caminho absoluto ou iniciado por ~/.",
+        userRequired: "Informe o usuário SSH.",
       },
       errors: {
         ssh_failed: "Não foi possível conectar por SSH. {{detail}}",

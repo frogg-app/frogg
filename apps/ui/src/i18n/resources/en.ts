@@ -2262,6 +2262,11 @@ export const en = {
         sshPort: "SSH port",
         identityFile: "Key file",
         identityFileHint: "Leave empty to use ssh-agent and ~/.ssh/config.",
+        password: "Password",
+        privateKey: "Private key",
+        privateKeyHint:
+          "Optional. Paste an OpenSSH or PEM private key; it is used for this deploy only and not saved.",
+        passphrase: "Key passphrase",
         daemonPort: "Daemon port",
       },
       network: {
@@ -2297,6 +2302,7 @@ export const en = {
         invalidSshPort: "Enter an SSH port between 1 and 65535.",
         invalidDaemonPort: "Enter a daemon port between 1 and 65535.",
         invalidKeyFile: "Enter an absolute path or one starting with ~/.",
+        userRequired: "Enter the SSH user.",
       },
       errors: {
         ssh_failed: "Could not connect over SSH. {{detail}}",
