@@ -1588,7 +1588,7 @@ export const ko: TranslationResources = {
     },
     launch: {
       title: "What to launch",
-      chat: "Chat",
+      chat: "에이전트",
       terminal: "Terminal",
       manageProfiles: "Manage profiles",
       submit: "Launch",

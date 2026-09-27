@@ -1562,7 +1562,7 @@ export const zhCN: TranslationResources = {
     },
     launch: {
       title: "What to launch",
-      chat: "Chat",
+      chat: "Agent",
       terminal: "Terminal",
       manageProfiles: "Manage profiles",
       submit: "Launch",

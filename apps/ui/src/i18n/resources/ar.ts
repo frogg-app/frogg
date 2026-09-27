@@ -1577,7 +1577,7 @@ export const ar: TranslationResources = {
     },
     launch: {
       title: "What to launch",
-      chat: "Chat",
+      chat: "وكيل",
       terminal: "Terminal",
       manageProfiles: "Manage profiles",
       submit: "Launch",
