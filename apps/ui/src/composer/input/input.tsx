@@ -1,4 +1,5 @@
 import { formatTokenCount } from "@/components/context-window-meter.utils";
+import { composerSurfaceStyle, controlRadius } from "@/agent-stream/conversation-design";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   View,
@@ -2030,6 +2031,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
       xs: theme.spacing[3],
       md: theme.spacing[4],
     },
+    ...composerSurfaceStyle(theme),
     ...(isWeb
       ? {
           transitionProperty: "border-color",
@@ -2125,7 +2127,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
   sendButton: {
     width: 28,
     height: 28,
-    borderRadius: theme.borderRadius.full,
+    borderRadius: controlRadius(theme, theme.borderRadius.full),
     backgroundColor: theme.colors.accent,
     alignItems: "center",
     justifyContent: "center",
@@ -2135,7 +2137,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     width: "auto",
     minWidth: 28,
     paddingHorizontal: theme.spacing[3],
-    borderRadius: theme.borderRadius.full,
+    borderRadius: controlRadius(theme, theme.borderRadius.full),
   },
   sendButtonLabel: {
     fontSize: theme.fontSize.base,

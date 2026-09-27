@@ -11,11 +11,11 @@
  * failed — presence is chrome and must never make a chat look broken.
  */
 import React, { memo, useEffect, useRef } from "react";
+import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { Animated, Easing, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { MAX_CONTENT_WIDTH } from "@/constants/layout";
 import type { Theme } from "@/styles/theme";
 import { usePresence } from "@/presence/use-presence";
 import { presenceActivityLabelKey } from "@/presence/labels";
@@ -225,7 +225,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
   },
   row: {
     width: "100%",
-    maxWidth: MAX_CONTENT_WIDTH,
+    maxWidth: readingColumnMaxWidth(theme),
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],

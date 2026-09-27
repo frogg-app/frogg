@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import type { TFunction } from "i18next";
@@ -43,7 +44,6 @@ import type { WorkspaceComposerAttachment } from "@/attachments/types";
 import { useWorkspaceAttachmentScopeKey } from "@/attachments/workspace-attachments-store";
 import {
   COMPACT_FORM_FACTOR_WIDTH,
-  MAX_CONTENT_WIDTH,
   useIsCompactFormFactor,
 } from "@/constants/layout";
 import { isNative, isWeb } from "@/constants/platform";
@@ -1830,7 +1830,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   timelineSyncCalloutContent: {
     width: "100%",
-    maxWidth: MAX_CONTENT_WIDTH,
+    maxWidth: readingColumnMaxWidth(theme),
   },
   timelineSyncCallout: {
     flexDirection: "row",

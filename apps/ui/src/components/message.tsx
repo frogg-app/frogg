@@ -108,6 +108,15 @@ import {
 import { AttachmentLightbox, type ImageLightboxSource } from "@/components/attachment-lightbox";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { isWeb, isNative } from "@/constants/platform";
+import {
+  metaTextStyle,
+  toolRowDesign,
+  userMessageContentStyle,
+  userMessageRowStyle,
+  userMessageSurfaceStyle,
+  userMessageTextStyle,
+} from "@/agent-stream/conversation-design";
+import { ProseFontScope } from "@/agent-stream/prose-font-scope";
 import type { AgentCapabilityFlags } from "@frogg/protocol/agent-types";
 import { RewindMenu, type RewindMode } from "@/components/rewind/rewind-menu";
 import { useRewindAgentMutation } from "@/components/rewind/use-rewind-agent-mutation";
@@ -336,13 +345,11 @@ function shouldStopDetailWheelPropagation(detailRoot: HTMLElement, event: WheelE
 
 const userMessageStylesheet = StyleSheet.create((theme) => ({
   container: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
+    ...userMessageRowStyle(theme),
     ...(isWeb ? { userSelect: "text" as const } : {}),
   },
   content: {
-    alignItems: "flex-end",
-    maxWidth: "100%",
+    ...userMessageContentStyle(theme),
     cursor: "auto",
   },
   containerSpacing: {
@@ -354,15 +361,7 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
   containerLastInGroup: {
     marginBottom: theme.spacing[4],
   },
-  bubble: {
-    backgroundColor: theme.colors.surface3,
-    borderRadius: theme.borderRadius["2xl"],
-    borderTopRightRadius: theme.borderRadius.sm,
-    paddingHorizontal: theme.spacing[4],
-    paddingVertical: theme.spacing[4],
-    minWidth: 0,
-    flexShrink: 1,
-  },
+  bubble: userMessageSurfaceStyle(theme),
   text: {
     color: theme.colors.foreground,
     fontSize: theme.fontSize.content,
@@ -372,6 +371,7 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
           overflowWrap: "anywhere" as const,
         }
       : {}),
+    ...userMessageTextStyle(theme),
   },
   imagePreviewContainer: {
     flexDirection: "row",
@@ -410,6 +410,7 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
   timestampText: {
     color: theme.colors.foregroundMuted,
     fontSize: STREAM_METADATA_FONT_SIZE,
+    ...metaTextStyle(theme),
   },
 }));
 
@@ -1109,6 +1110,7 @@ export const TurnCopyButton = memo(function TurnCopyButton({
 const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
   container: {
     marginHorizontal: -13,
+    ...toolRowDesign(theme).container,
   },
   containerSpacing: {
     marginBottom: theme.spacing[1],
@@ -1123,6 +1125,7 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing[2],
     paddingVertical: theme.spacing[1],
     overflow: "hidden",
+    ...toolRowDesign(theme).pressable,
   },
   pressablePressed: {
     opacity: 0.9,
@@ -1136,6 +1139,7 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
+    ...toolRowDesign(theme).labelRow,
   },
   iconBadge: {
     width: 22,
@@ -1151,6 +1155,7 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     flexShrink: 0,
+    ...toolRowDesign(theme).label,
   },
   labelActive: {
     color: theme.colors.foreground,
@@ -1166,6 +1171,7 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     marginLeft: theme.spacing[2],
+    ...toolRowDesign(theme).label,
   },
   secondaryLabelActive: {
     color: theme.colors.foreground,
@@ -1174,6 +1180,7 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
     color: "transparent",
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
+    ...toolRowDesign(theme).label,
   },
   spacer: {
     flex: 1,
@@ -1206,6 +1213,7 @@ const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
   },
   pressableExpanded: {
     backgroundColor: theme.colors.surface1,
+    ...toolRowDesign(theme).pressableExpanded,
   },
   pressableExpandedAttached: {
     borderColor: theme.colors.border,
@@ -1400,6 +1408,7 @@ interface MemoizedMarkdownBlockProps {
   rules: RenderRules;
   parser: MarkdownIt;
   onLinkPress: (url: string) => boolean;
+  prose?: boolean;
 }
 
 const MemoizedMarkdownBlock = React.memo(function MemoizedMarkdownBlock({
@@ -1407,10 +1416,12 @@ const MemoizedMarkdownBlock = React.memo(function MemoizedMarkdownBlock({
   rules,
   parser,
   onLinkPress,
+  prose,
 }: MemoizedMarkdownBlockProps) {
   return (
     <MarkdownRenderer
       text={text}
+      prose={prose}
       enableHtmlish={false}
       rules={rules}
       markdownit={parser}
@@ -1995,7 +2006,8 @@ export const AssistantMessage = memo(function AssistantMessage({
 
   return (
     <View testID="assistant-message" dataSet={revealDataSet} style={assistantContainerStyle}>
-      {keyedBlocks.map(({ key, block }, index) => (
+      <ProseFontScope>
+        {keyedBlocks.map(({ key, block }, index) => (
         <AssistantMessageBlockContainer
           key={key}
           block={block}
@@ -2006,9 +2018,11 @@ export const AssistantMessage = memo(function AssistantMessage({
             rules={markdownRules}
             parser={markdownParser}
             onLinkPress={handleMarkdownLinkPress}
+            prose
           />
         </AssistantMessageBlockContainer>
       ))}
+      </ProseFontScope>
       {fullMessageByteLength !== null ? (
         <Text
           testID="assistant-message-capped-notice"

@@ -358,6 +358,24 @@ export function createMarkdownStyles(theme: Theme) {
 }
 
 /**
+ * Draws prose in a design's content face (`theme.design.contentFontFamily`). Styles that already
+ * name a face (inline code, fences) keep it; `null` returns the styles unchanged.
+ */
+export function withProseFont<T extends Record<string, object>>(
+  styles: T,
+  fontFamily: string | null,
+): T {
+  if (fontFamily === null) {
+    return styles;
+  }
+  const next: Record<string, object> = {};
+  for (const [key, style] of Object.entries(styles)) {
+    next[key] = "fontFamily" in style ? style : { ...style, fontFamily };
+  }
+  return next as T;
+}
+
+/**
  * Creates a smaller variant of markdown styles for compact UI elements
  * like thought bubbles, tooltips, or side panels.
  */

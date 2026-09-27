@@ -1,4 +1,5 @@
 import { forwardRef, useCallback, type ComponentProps } from "react";
+import { composerControlStyle, composerControlTextStyle } from "@/agent-stream/conversation-design";
 import { Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { ComboboxTrigger } from "@/components/ui/combobox-trigger";
@@ -105,6 +106,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius["2xl"],
     backgroundColor: "transparent",
+    ...composerControlStyle(theme),
   },
   toolbarIconOnly: {
     width: 28,
@@ -118,6 +120,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
+    ...composerControlTextStyle(theme),
   },
   sheetRow: {
     minHeight: 44,
