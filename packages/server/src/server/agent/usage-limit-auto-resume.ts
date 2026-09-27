@@ -28,7 +28,15 @@ export interface UsageLimitAutoResumeOptions {
     "subscribe" | "getAgent" | "setAgentAutoResume" | "getLastAssistantMessage"
   >;
   isEnabled: () => boolean;
-  resume: (agentId: string, prompt: string) => Promise<void>;
+  /**
+   * `limitDetectedAt` is when the refused turn was seen: the latest the
+   * provider can have last served this conversation, so its prompt cache age.
+   */
+  resume: (
+    agentId: string,
+    prompt: string,
+    context: { limitDetectedAt: Date | null },
+  ) => Promise<void>;
   logger: Logger;
   now?: () => Date;
   timers?: Timers;
@@ -120,10 +128,11 @@ export function setupUsageLimitAutoResume(
   function fire(agentId: string): void {
     pending.delete(agentId);
     const agent = options.agentManager.getAgent(agentId);
+    const limitDetectedAt = agent?.autoResume?.detectedAt ?? null;
     options.agentManager.setAgentAutoResume(agentId, null);
     if (!agent || agent.lifecycle === "closed" || agent.lifecycle === "running") return;
     if (!options.isEnabled()) return;
-    options.resume(agentId, AUTO_RESUME_PROMPT).catch((error: unknown) => {
+    options.resume(agentId, AUTO_RESUME_PROMPT, { limitDetectedAt }).catch((error: unknown) => {
       log.warn({ err: error, agentId }, "Auto-resume prompt failed");
     });
   }

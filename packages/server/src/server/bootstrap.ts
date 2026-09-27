@@ -150,6 +150,7 @@ import {
 } from "./workspace-archive-service.js";
 import { setupAutoArchiveOnMerge } from "./auto-archive-on-merge/index.js";
 import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
+import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./agent/auto-clean-cut.js";
 import { sendPromptToAgent } from "./agent/agent-prompt.js";
 import { wrapSessionMessage, type SessionOutboundMessage } from "./messages.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
@@ -468,6 +469,8 @@ export interface FroggDaemonConfig {
   };
   autoArchiveAfterMerge?: boolean;
   autoResumeOnUsageLimit?: boolean;
+  /** COMPAT(agentCleanCut): clean-cut before an automatic resume when the prompt cache is cold. */
+  autoCleanCutOnColdCache?: boolean;
   /** `features.companion.model`; null means the backend default. */
   companionModel?: string | null;
   hostSettingsHiddenSections?: readonly HostSettingsSection[];
@@ -1532,10 +1535,22 @@ export async function createFroggDaemon(
     logger,
   });
 
+  const autoCleanCutDeps: AutoCleanCutDeps = {
+    agentManager,
+    providerSnapshotManager,
+    readDaemonConfig: () => ({ metadataGeneration: daemonConfigStore.get().metadataGeneration }),
+    isEnabled: () => config.autoCleanCutOnColdCache !== false,
+    logger,
+  };
   const usageLimitAutoResume = setupUsageLimitAutoResume({
     agentManager,
     isEnabled: () => daemonConfigStore.get().autoResumeOnUsageLimit !== false,
-    resume: async (agentId, prompt) => {
+    resume: async (agentId, prompt, { limitDetectedAt }) => {
+      await maybeAutoCleanCut(autoCleanCutDeps, {
+        agentId,
+        lastProviderTurnAt: limitDetectedAt,
+        trigger: "usage_limit",
+      });
       await sendPromptToAgent({
         agentManager,
         agentStorage,
@@ -2287,9 +2302,18 @@ export async function createFroggDaemon(
             }
             autoUpdater.start();
             // Fire-and-forget: continue agents a previous daemon stop cut off mid-turn.
-            void resumeInterruptedAgents({ agentManager, agentStorage, logger }).catch((err) =>
-              logger.error({ err }, "Interrupted-turn resume failed"),
-            );
+            void resumeInterruptedAgents({
+              agentManager,
+              agentStorage,
+              logger,
+              beforeResume: async (agentId, interruptedAt) => {
+                await maybeAutoCleanCut(autoCleanCutDeps, {
+                  agentId,
+                  lastProviderTurnAt: interruptedAt,
+                  trigger: "daemon_restart",
+                });
+              },
+            }).catch((err) => logger.error({ err }, "Interrupted-turn resume failed"));
             relayRuntime = createRelayRuntime({
               config: {
                 enabled: relayEnabled,

@@ -2,6 +2,7 @@ import { brand } from "@frogg/branding";
 import type { Logger } from "pino";
 import type { AgentManager, ManagedAgent } from "./agent-manager.js";
 import type { AgentStorage, StoredAgentRecord } from "./agent-storage.js";
+import { ensureAgentLoaded } from "./agent-loading.js";
 import { sendPromptToAgent } from "./agent-prompt.js";
 
 export const DAEMON_RESTART_INTERRUPT_REASON = "daemon_restart";
@@ -41,6 +42,12 @@ export interface ResumeInterruptedAgentsDeps {
   logger: Logger;
   now?: () => number;
   sendPrompt?: typeof sendPromptToAgent;
+  /**
+   * Runs once the agent is loaded and before the continuation prompt, with the
+   * time the turn was cut off (the automatic clean cut hooks in here). Must not
+   * throw; a rejection is logged and the resume goes ahead.
+   */
+  beforeResume?: (agentId: string, interruptedAt: Date) => Promise<void>;
 }
 
 /**
@@ -75,6 +82,18 @@ export async function resumeInterruptedAgents(
     }
     if (!resumable) {
       continue;
+    }
+    if (deps.beforeResume) {
+      try {
+        await ensureAgentLoaded(record.id, {
+          agentManager: deps.agentManager,
+          agentStorage: deps.agentStorage,
+          logger,
+        });
+        await deps.beforeResume(record.id, new Date(Date.parse(record.interruptedTurn.at)));
+      } catch (error) {
+        logger.warn({ err: error, agentId: record.id }, "Pre-resume step failed; resuming anyway");
+      }
     }
     try {
       await sendPrompt({

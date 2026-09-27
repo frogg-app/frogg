@@ -12,15 +12,17 @@
  * tab — so the warning keeps meaning something when it does appear.
  */
 
-/** How long a conversation can sit before its prompt cache is assumed gone. */
-export const STALE_CONTEXT_IDLE_MS = 60 * 60 * 1000;
+import { getPromptCacheTtlMs, isPromptCacheCold } from "@frogg/protocol/prompt-cache";
 
 /**
- * The provider this applies to. Cache lifetimes are a provider's own business,
- * and an hour is Claude's; pretending to know another provider's would be
- * inventing a number to warn about.
+ * The provider this applies to. Cache lifetimes are a provider's own business
+ * and live in `@frogg/protocol/prompt-cache`, shared with the daemon's
+ * automatic clean cut.
  */
 export const STALE_CONTEXT_PROVIDER = "claude";
+
+/** How long a conversation can sit before its prompt cache is assumed gone. */
+export const STALE_CONTEXT_IDLE_MS = getPromptCacheTtlMs(STALE_CONTEXT_PROVIDER) ?? 60 * 60 * 1000;
 
 export interface StaleContextInput {
   /** The agent's provider, or null when the composer has no agent yet. */
@@ -66,10 +68,14 @@ export function resolveStaleContextWarning(input: StaleContextInput): StaleConte
   if (input.contextTokens === null && !input.hasConversation) return null;
   if (!input.lastActivityAt) return null;
 
-  const idleMs = input.now - input.lastActivityAt.getTime();
   // A last-activity stamp in the future (clock skew between daemon and client)
-  // is not an idle conversation; treat it as fresh rather than as very stale.
-  if (!Number.isFinite(idleMs) || idleMs <= STALE_CONTEXT_IDLE_MS) return null;
+  // is not an idle conversation; the shared rule treats it as warm.
+  const cold = isPromptCacheCold({
+    provider: input.provider,
+    lastTurnAt: input.lastActivityAt,
+    now: input.now,
+  });
+  if (cold !== true) return null;
 
   return { tokens: input.contextTokens };
 }

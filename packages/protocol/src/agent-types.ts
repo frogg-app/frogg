@@ -367,7 +367,15 @@ export interface CleanCutMarker {
   provider?: string;
   model?: string;
   summaryModel?: string;
+  /**
+   * Why the cut was made. Absent on cuts recorded before this field existed,
+   * which were all manual. Other strings may appear from newer daemons.
+   */
+  reason?: CleanCutReason | (string & {});
 }
+
+/** `cold-cache`: the daemon cut automatically because the prompt cache had expired. */
+export type CleanCutReason = "manual" | "cold-cache";
 
 // COMPAT(pluginTimelineItems): plugins were removed after v0.7.0. Older daemons can still send
 // these items; clients parse and ignore them. Remove after 2027-09-13.

@@ -148,6 +148,7 @@ describe("runCleanCut", () => {
         provider: "codex",
         model: "gpt",
         summaryModel: "haiku",
+        reason: "manual",
       },
     });
   });
