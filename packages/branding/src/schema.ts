@@ -323,6 +323,8 @@ function channelSummary(manifest: BrandManifest) {
     daemonPort: identity.daemonPort,
     homeDir: identity.homeDir,
     serviceName: identity.serviceName,
+    /** Desktop installer file prefix, so a build can find its sibling's release assets. */
+    artifactPrefix: identity.artifactPrefix,
   };
 }
 

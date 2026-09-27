@@ -1,6 +1,12 @@
 import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type { BrowserKeyboardPolicy } from "./features/browser-keyboard/index.js";
 import type { DesktopWindowChromeMode } from "./window/chrome.js";
+import type {
+  BetaAppInstallProgress,
+  BetaAppInstallResult,
+  BetaAppLatestRelease,
+  BetaAppStatus,
+} from "./features/beta-app/service.js";
 
 // This preload runs in Electron's sandbox and is tsc-compiled (not bundled), so it MUST
 // NOT emit any runtime module load other than "electron" — a require() of a local or
@@ -122,6 +128,25 @@ contextBridge.exposeInMainWorld("froggDesktop", {
       line?: number;
       column?: number;
     }) => ipcRenderer.invoke("frogg:editor:openTarget", input),
+  },
+  // Developer menu: install/open the beta desktop app beside this one. Presence of this
+  // object is the capability; getStatus().supported says whether this build can use it.
+  betaApp: {
+    getStatus: () => ipcRenderer.invoke("frogg:beta-app:status") as Promise<BetaAppStatus>,
+    resolveLatest: () =>
+      ipcRenderer.invoke("frogg:beta-app:resolveLatest") as Promise<BetaAppLatestRelease>,
+    install: () => ipcRenderer.invoke("frogg:beta-app:install") as Promise<BetaAppInstallResult>,
+    cancelInstall: () => ipcRenderer.invoke("frogg:beta-app:cancelInstall") as Promise<boolean>,
+    open: () => ipcRenderer.invoke("frogg:beta-app:open") as Promise<void>,
+    onProgress: (handler: (progress: BetaAppInstallProgress) => void): (() => void) => {
+      const listener = (_ipcEvent: Electron.IpcRendererEvent, payload: unknown) => {
+        handler(payload as BetaAppInstallProgress);
+      };
+      ipcRenderer.on("frogg:event:beta-app-install-progress", listener);
+      return () => {
+        ipcRenderer.removeListener("frogg:event:beta-app-install-progress", listener);
+      };
+    },
   },
   webUtils: {
     getPathForFile: (file: File) => webUtils.getPathForFile(file),

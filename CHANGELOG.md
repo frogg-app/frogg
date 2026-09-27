@@ -18,6 +18,12 @@
   the stable daemon's environment removed. Status includes the newest published beta release.
   Refused on the beta daemon itself, Windows, Docker and Nix. Client methods
   `getBetaChannelStatus`, `installBetaChannel`, `uninstallBetaChannel`.
+- **Install frogg beta from the desktop app (native bridge).** `froggDesktop.betaApp` resolves
+  the newest published beta for this OS and architecture, downloads its installer with
+  progress events, verifies it against the release's SHA-256 checksums, and installs it
+  beside the stable app (Windows NSIS, macOS `.dmg` to `/Applications`, Linux AppImage to
+  `~/Applications`). It also reports whether frogg beta is installed, with its version, and
+  opens it. The Settings entry point comes separately.
 - **Project to-dos (daemon and protocol).** Each project has a daemon-owned to-do list stored
   in its main checkout under `.frogg/todos/` (self-ignored by git): items with category,
   priority, a kanban-style status, a markdown plan and an append-only progress log. Agents use
