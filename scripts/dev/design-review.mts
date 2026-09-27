@@ -175,10 +175,9 @@ async function main(): Promise<void> {
   await writeFile(urlFile, `${tunnelUrl}\n`);
   await waitForPort(120_000);
   log("seeding demo chats…");
-  await seedDesignReviewChats({
-    port,
-    statePath: path.join(root, ".dev/preview/state.json"),
-  }).catch((error: unknown) => log(`chat seeding failed: ${String(error)}`));
+  await seedDesignReviewChats({ port }).catch((error: unknown) =>
+    log(`chat seeding failed: ${String(error)}`),
+  );
   printAccess(tunnelUrl, key);
 }
 
