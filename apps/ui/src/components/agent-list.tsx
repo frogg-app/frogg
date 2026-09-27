@@ -25,6 +25,8 @@ import { HighlightedText } from "@/components/ui/highlighted-text";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import type { AgentSearchMatch } from "@frogg/protocol/messages";
 import type { MatchRange } from "@frogg/protocol/search/text-match";
+import { CODE_SURFACE_DATASET, DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import type { Theme } from "@/styles/theme";
 
 interface AgentListProps {
   agents: AggregatedAgent[];
@@ -337,11 +339,14 @@ function SessionRow({
         ) : null}
       </View>
       {!isMobile ? (
-        <View style={styles.rowColumns}>
+        <View
+          style={styles.rowColumns}
+          dataSet={theme.design.monoMeta ? CODE_SURFACE_DATASET : undefined}
+        >
           <HighlightedText
             text={projectName}
             ranges={rangesFor("project")}
-            style={styles.columnMeta}
+            style={styles.columnMetaProject}
             numberOfLines={1}
             testID={`agent-row-project-${agent.serverId}-${agent.id}`}
           />
@@ -353,7 +358,7 @@ function SessionRow({
           <HighlightedText
             text={branch}
             ranges={rangesFor("branch")}
-            style={styles.columnMeta}
+            style={styles.columnMetaBranch}
             numberOfLines={1}
             testID={`agent-row-branch-${agent.serverId}-${agent.id}`}
           />
@@ -484,7 +489,9 @@ export function AgentList({
       if (item.type === "header") {
         return (
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle}>{formatDateSectionLabel(t, item.section)}</Text>
+            <Text style={styles.sectionTitle} dataSet={DESIGN_FONT_DATASET}>
+              {formatDateSectionLabel(t, item.section)}
+            </Text>
           </View>
         );
       }
@@ -594,199 +601,268 @@ export function AgentList({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
-  list: {
-    flex: 1,
-    minHeight: 0,
-  },
-  listContent: {
-    paddingHorizontal: {
-      xs: theme.spacing[3],
-      md: theme.spacing[6],
+const SECTION_TITLE = {
+  current: { size: "base", weight: "500", transform: "none", spacing: 0 },
+  inset: { size: "sm", weight: "500", transform: "none", spacing: 0 },
+  mono: { size: "sm", weight: "500", transform: "uppercase", spacing: 0.6 },
+  paper: { size: "xl", weight: "500", transform: "none", spacing: -0.2 },
+  focus: { size: "sm", weight: "500", transform: "none", spacing: 0 },
+  soft: { size: "lg", weight: "700", transform: "none", spacing: -0.2 },
+} as const;
+
+const ROW_PADDING = {
+  current: 2,
+  inset: 1.5,
+  mono: 3,
+  paper: 3,
+  focus: 3,
+  soft: 3,
+} as const;
+
+function rowShape(theme: Theme) {
+  const variant = theme.design.variant;
+  if (variant === "mono") {
+    // A dashboard table: square rows on hairline dividers.
+    return {
+      borderRadius: 0,
+      marginBottom: 0,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border,
+    };
+  }
+  if (variant === "soft") {
+    return {
+      borderRadius: theme.borderRadius.xl,
+      marginBottom: theme.spacing[1],
+      backgroundColor: { xs: theme.colors.surface1, md: "transparent" },
+    };
+  }
+  if (variant === "current") {
+    return {
+      borderRadius: { xs: theme.borderRadius.lg, md: 0 },
+      marginBottom: { xs: theme.spacing[1], md: 0 },
+    };
+  }
+  return { borderRadius: theme.borderRadius.lg, marginBottom: 0 };
+}
+
+function metaFont(theme: Theme, size: number) {
+  return theme.design.monoMeta
+    ? { fontFamily: theme.design.monoFontFamily, fontSize: theme.fontSize.sm }
+    : { fontSize: size };
+}
+
+const styles = StyleSheet.create((theme) => {
+  const section = SECTION_TITLE[theme.design.variant] ?? SECTION_TITLE.current;
+  const inset = theme.design.variant === "inset";
+  const rowText = inset ? 13 : theme.fontSize.base;
+  return {
+    list: {
+      flex: 1,
+      minHeight: 0,
     },
-    paddingTop: theme.spacing[4],
-    paddingBottom: theme.spacing[6],
-    gap: theme.spacing[1],
-  },
-  sectionHeading: {
-    marginTop: theme.spacing[2],
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing[3],
-    paddingHorizontal: theme.spacing[3],
-    marginBottom: theme.spacing[2],
-  },
-  sectionTitle: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.medium,
-    color: theme.colors.foregroundMuted,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: theme.spacing[2],
-    paddingHorizontal: theme.spacing[3],
-    borderRadius: {
-      xs: theme.borderRadius.lg,
-      md: 0,
+    listContent: {
+      width: "100%",
+      maxWidth: theme.design.contentMaxWidth ?? undefined,
+      alignSelf: "center",
+      paddingHorizontal: {
+        xs: theme.spacing[3],
+        md: theme.spacing[6],
+      },
+      paddingTop: theme.spacing[4],
+      paddingBottom: theme.spacing[6],
+      gap: theme.design.variant === "mono" ? 0 : theme.spacing[1],
     },
-    marginBottom: {
-      xs: theme.spacing[1],
-      md: 0,
+    sectionHeading: {
+      marginTop: theme.design.variant === "current" ? theme.spacing[2] : theme.spacing[4],
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing[3],
+      paddingHorizontal: theme.spacing[3],
+      marginBottom: theme.spacing[2],
     },
-  },
-  rowContent: {
-    flex: 1,
-    minWidth: 0,
-    overflow: "hidden",
-  },
-  rowTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "nowrap",
-    gap: theme.spacing[2],
-    overflow: "hidden",
-  },
-  providerIconWrap: {
-    width: theme.iconSize.md,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  workspaceTitleText: {
-    flexShrink: 0,
-    maxWidth: 220,
-    fontSize: theme.fontSize.base,
-    color: theme.colors.foregroundMuted,
-  },
-  rowMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: theme.spacing[1],
-    marginTop: 2,
-  },
-  rowTrailing: {
-    marginLeft: theme.spacing[2],
-  },
-  rowSelected: {
-    backgroundColor: theme.colors.surface2,
-  },
-  rowHovered: {
-    backgroundColor: theme.colors.surface1,
-  },
-  rowPressed: {
-    backgroundColor: theme.colors.surface2,
-  },
-  sessionTitle: {
-    flexShrink: 1,
-    minWidth: 0,
-    fontSize: theme.fontSize.base,
-    fontWeight: "400",
-    color: theme.colors.foreground,
-    opacity: 0.86,
-  },
-  sessionTitleHighlighted: {
-    opacity: 1,
-  },
-  sessionMetaText: {
-    maxWidth: "100%",
-    fontSize: theme.fontSize.base,
-    color: theme.colors.foregroundMuted,
-  },
-  sessionMetaSeparator: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.foregroundMuted,
-    opacity: 0.7,
-  },
-  rowColumns: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexShrink: 0,
-    gap: theme.spacing[3],
-  },
-  columnMeta: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.foregroundMuted,
-    flexShrink: 0,
-    width: 132,
-  },
-  columnMetaFixed: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.foregroundMuted,
-    flexShrink: 0,
-    width: 72,
-    textAlign: "right" as const,
-  },
-  columnMetaHost: {
-    fontSize: theme.fontSize.base,
-    color: theme.colors.foregroundMuted,
-    flexShrink: 0,
-    width: 120,
-    marginLeft: theme.spacing[4],
-    textAlign: "right" as const,
-  },
-  sheetOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  sheetBackdrop: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: "rgba(0,0,0,0.35)",
-  },
-  sheetContainer: {
-    backgroundColor: theme.colors.surface2,
-    borderTopLeftRadius: theme.borderRadius["2xl"],
-    borderTopRightRadius: theme.borderRadius["2xl"],
-    paddingHorizontal: theme.spacing[6],
-    paddingTop: theme.spacing[4],
-    gap: theme.spacing[4],
-  },
-  sheetHandle: {
-    alignSelf: "center",
-    width: 40,
-    height: 4,
-    borderRadius: theme.borderRadius.full,
-    backgroundColor: theme.colors.foregroundMuted,
-    opacity: 0.3,
-  },
-  sheetTitle: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.semibold,
-    color: theme.colors.foreground,
-    textAlign: "center",
-  },
-  sheetButtonRow: {
-    flexDirection: "row",
-    gap: theme.spacing[3],
-  },
-  sheetButton: {
-    flex: 1,
-    borderRadius: theme.borderRadius.lg,
-    paddingVertical: theme.spacing[4],
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  sheetArchiveButton: {
-    backgroundColor: theme.colors.primary,
-  },
-  sheetArchiveText: {
-    color: theme.colors.primaryForeground,
-    fontWeight: theme.fontWeight.semibold,
-    fontSize: theme.fontSize.base,
-  },
-  sheetArchiveTextDisabled: {
-    opacity: 0.5,
-  },
-  sheetCancelButton: {
-    backgroundColor: theme.colors.surface1,
-  },
-  sheetCancelText: {
-    color: theme.colors.foreground,
-    fontWeight: theme.fontWeight.semibold,
-    fontSize: theme.fontSize.base,
-  },
-}));
+    sectionTitle: {
+      fontSize: theme.fontSize[section.size],
+      fontWeight: section.weight,
+      textTransform: section.transform,
+      letterSpacing: section.spacing,
+      fontFamily:
+        theme.design.variant === "mono"
+          ? theme.design.monoFontFamily
+          : theme.design.headingFontFamily,
+      color:
+        theme.design.variant === "paper" || theme.design.variant === "soft"
+          ? theme.colors.foreground
+          : theme.colors.foregroundMuted,
+    },
+    row: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: theme.spacing[ROW_PADDING[theme.design.variant] ?? ROW_PADDING.current],
+      paddingHorizontal: theme.spacing[3],
+      ...rowShape(theme),
+    },
+    rowContent: {
+      flex: 1,
+      minWidth: 0,
+      overflow: "hidden",
+    },
+    rowTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "nowrap",
+      gap: theme.spacing[2],
+      overflow: "hidden",
+    },
+    providerIconWrap: {
+      width: theme.iconSize.md,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    workspaceTitleText: {
+      flexShrink: 0,
+      maxWidth: 220,
+      fontSize: theme.fontSize.base,
+      color: theme.colors.foregroundMuted,
+    },
+    rowMetaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: theme.spacing[1],
+      marginTop: 2,
+    },
+    rowTrailing: {
+      marginLeft: theme.spacing[2],
+    },
+    rowSelected: {
+      backgroundColor: theme.colors.surface2,
+    },
+    rowHovered: {
+      backgroundColor: theme.colors.surface1,
+    },
+    rowPressed: {
+      backgroundColor: theme.colors.surface2,
+    },
+    sessionTitle: {
+      flexShrink: 1,
+      minWidth: 0,
+      fontSize: rowText,
+      fontWeight: "400",
+      color: theme.colors.foreground,
+      opacity: 0.86,
+    },
+    sessionTitleHighlighted: {
+      opacity: 1,
+    },
+    sessionMetaText: {
+      maxWidth: "100%",
+      fontSize: rowText,
+      color: theme.colors.foregroundMuted,
+    },
+    sessionMetaSeparator: {
+      fontSize: theme.fontSize.base,
+      color: theme.colors.foregroundMuted,
+      opacity: 0.7,
+    },
+    rowColumns: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexShrink: 0,
+      gap: theme.spacing[3],
+    },
+    columnMetaProject: {
+      fontSize: rowText,
+      // Inside the mono-tagged columns the web UI-font rule no longer reaches the project name.
+      fontFamily: theme.design.monoMeta ? theme.design.uiFontFamily : undefined,
+      color: theme.colors.foregroundMuted,
+      flexShrink: 0,
+      width: 132,
+    },
+    columnMetaBranch: {
+      ...metaFont(theme, rowText),
+      color: theme.colors.foregroundMuted,
+      flexShrink: 0,
+      width: 132,
+    },
+    columnMetaFixed: {
+      ...metaFont(theme, rowText),
+      color: theme.colors.foregroundMuted,
+      flexShrink: 0,
+      width: 72,
+      textAlign: "right" as const,
+    },
+    columnMetaHost: {
+      ...metaFont(theme, rowText),
+      color: theme.colors.foregroundMuted,
+      flexShrink: 0,
+      width: 120,
+      marginLeft: theme.spacing[4],
+      textAlign: "right" as const,
+    },
+    sheetOverlay: {
+      flex: 1,
+      justifyContent: "flex-end",
+    },
+    sheetBackdrop: {
+      position: "absolute",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+      backgroundColor: "rgba(0,0,0,0.35)",
+    },
+    sheetContainer: {
+      backgroundColor: theme.colors.surface2,
+      borderTopLeftRadius: theme.borderRadius["2xl"],
+      borderTopRightRadius: theme.borderRadius["2xl"],
+      paddingHorizontal: theme.spacing[6],
+      paddingTop: theme.spacing[4],
+      gap: theme.spacing[4],
+    },
+    sheetHandle: {
+      alignSelf: "center",
+      width: 40,
+      height: 4,
+      borderRadius: theme.borderRadius.full,
+      backgroundColor: theme.colors.foregroundMuted,
+      opacity: 0.3,
+    },
+    sheetTitle: {
+      fontSize: theme.fontSize.base,
+      fontWeight: theme.fontWeight.semibold,
+      color: theme.colors.foreground,
+      textAlign: "center",
+    },
+    sheetButtonRow: {
+      flexDirection: "row",
+      gap: theme.spacing[3],
+    },
+    sheetButton: {
+      flex: 1,
+      borderRadius: theme.borderRadius.lg,
+      paddingVertical: theme.spacing[4],
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    sheetArchiveButton: {
+      backgroundColor: theme.colors.primary,
+    },
+    sheetArchiveText: {
+      color: theme.colors.primaryForeground,
+      fontWeight: theme.fontWeight.semibold,
+      fontSize: theme.fontSize.base,
+    },
+    sheetArchiveTextDisabled: {
+      opacity: 0.5,
+    },
+    sheetCancelButton: {
+      backgroundColor: theme.colors.surface1,
+    },
+    sheetCancelText: {
+      color: theme.colors.foreground,
+      fontWeight: theme.fontWeight.semibold,
+      fontSize: theme.fontSize.base,
+    },
+  };
+});

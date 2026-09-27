@@ -187,7 +187,14 @@ export function HomeActions({ actions, layout }: { actions: HomeAction[]; layout
 }
 
 const TILE_SPEC = {
-  current: { width: 220, minHeight: 132, radius: "xl", gap: 3, titleSize: "base", weight: "normal" },
+  current: {
+    width: 220,
+    minHeight: 132,
+    radius: "xl",
+    gap: 3,
+    titleSize: "base",
+    weight: "normal",
+  },
   paper: { width: 220, minHeight: 132, radius: "xl", gap: 3, titleSize: "base", weight: "500" },
   soft: { width: 230, minHeight: 156, radius: "2xl", gap: 4, titleSize: "lg", weight: "600" },
   focus: { width: 220, minHeight: 132, radius: "xl", gap: 3, titleSize: "base", weight: "500" },
@@ -196,7 +203,7 @@ const TILE_SPEC = {
 } as const;
 
 const tileStyles = StyleSheet.create((theme) => {
-  const spec = TILE_SPEC[theme.design.variant];
+  const spec = TILE_SPEC[theme.design.variant] ?? TILE_SPEC.current;
   const soft = theme.design.variant === "soft";
   const current = theme.design.variant === "current";
   const well = {

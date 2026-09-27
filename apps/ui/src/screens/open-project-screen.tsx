@@ -128,7 +128,14 @@ export function OpenProjectScreen() {
       });
     }
     return list;
-  }, [handleOpenImportSession, handleOpenPairDevice, handleOpenPicker, handleOpenProviders, localServerId, t]);
+  }, [
+    handleOpenImportSession,
+    handleOpenPairDevice,
+    handleOpenPicker,
+    handleOpenProviders,
+    localServerId,
+    t,
+  ]);
 
   return (
     <View style={styles.container}>

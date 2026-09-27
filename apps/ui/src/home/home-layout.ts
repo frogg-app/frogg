@@ -26,5 +26,5 @@ const PRESENTATION: Record<DesignVariantId, HomePresentation> = {
 };
 
 export function resolveHomePresentation(variant: DesignVariantId): HomePresentation {
-  return PRESENTATION[variant];
+  return PRESENTATION[variant] ?? PRESENTATION.current;
 }
