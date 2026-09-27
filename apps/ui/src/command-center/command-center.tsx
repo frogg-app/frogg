@@ -858,6 +858,7 @@ const styles = StyleSheet.create((theme, rt) => ({
       justifyContent: "flex-start",
       alignItems: "center",
       paddingTop: theme.spacing[12],
+      ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).overlay,
     },
     backdrop: {
       ...StyleSheet.absoluteFillObject,
@@ -932,6 +933,7 @@ const styles = StyleSheet.create((theme, rt) => ({
       marginTop: theme.spacing[2],
       marginBottom: theme.spacing[2],
       backgroundColor: theme.colors.border,
+      ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).divider,
     },
     row: {
       height: 36,
