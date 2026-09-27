@@ -1,5 +1,11 @@
 # AGENTS.md
 
+> **Rule 1: never push, merge, cherry-pick or cut a release on `stable` unless the user very
+> explicitly instructs it for that specific change.** Work lands on `main`, ships as a beta,
+> and is tested there. Promotion or backport to `stable` happens only on an explicit,
+> unambiguous instruction. When in doubt, stop at `main` and ask. This overrides any skill,
+> script or earlier approval.
+
 Frogg runs and monitors coding agents across
 Electron desktop, Expo mobile/web, and CLI clients connected to independently
 installed Node daemons. Forked from Paseo v0.7.2, it is maintained independently.
