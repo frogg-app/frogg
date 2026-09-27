@@ -28,6 +28,9 @@ them all.
 - [CHANGELOG.md](CHANGELOG.md): completed work and release history.
 - [Architecture](website/src/content/docs/docs/contributing/architecture.mdx): system
   boundaries and code map.
+- [Development workflow](website/src/content/docs/docs/contributing/development-workflow.mdx)
+  and [contributor skills](website/src/content/docs/docs/contributing/development-skills.mdx):
+  branch to main to beta to stable, the local test ladder, and which skill covers each step.
 - [Development setup](website/src/content/docs/docs/contributing/development-setup.mdx),
   [testing](website/src/content/docs/docs/contributing/testing.mdx), and
   [coding standards](website/src/content/docs/docs/contributing/coding-standards.mdx):

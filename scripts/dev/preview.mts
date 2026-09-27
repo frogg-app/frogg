@@ -84,6 +84,21 @@ const daemonEnv: NodeJS.ProcessEnv = {
   FROGG_NODE_INSPECT: "--inspect=0",
   NODE_ENV: "development",
 };
+// A custom brand's daemon drops inherited FROGG_* settings and reads its own prefix (ACME_HOME),
+// so hand it the same settings under that prefix. branded-run has prepared the brand already.
+const brandPrefix = (() => {
+  try {
+    const file = path.join(root, ".generated/branding/brand.json");
+    return String(JSON.parse(readFileSync(file, "utf8")).envPrefix ?? "FROGG");
+  } catch {
+    return "FROGG";
+  }
+})();
+if (brandPrefix !== "FROGG") {
+  for (const [key, value] of Object.entries({ ...daemonEnv })) {
+    if (key.startsWith("FROGG_")) daemonEnv[`${brandPrefix}_${key.slice("FROGG_".length)}`] = value;
+  }
+}
 let daemon: ChildProcess | undefined;
 function startDaemon(): void {
   daemon = start("daemon", "npm", ["run", "dev", "--workspace=@frogg/server"], daemonEnv);

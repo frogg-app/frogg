@@ -1,0 +1,131 @@
+---
+title: Development workflow
+description: How a change travels from a feature branch through local testing to main, a beta and stable, and the inner loop for testing it locally first.
+sidebar:
+  order: 2
+---
+
+import { Screenshot, Steps } from "@/components/docs";
+import flowDark from "@/assets/docs/diagrams/dev-flow-dark.svg";
+import flowLight from "@/assets/docs/diagrams/dev-flow-light.svg";
+import ladderDark from "@/assets/docs/diagrams/test-ladder-dark.svg";
+import ladderLight from "@/assets/docs/diagrams/test-ladder-light.svg";
+import loopDark from "@/assets/docs/diagrams/dev-loop-dark.svg";
+import loopLight from "@/assets/docs/diagrams/dev-loop-light.svg";
+
+A change is tested on your machine first. Then it lands on `main`, and CI ships it to
+testers as a beta. It reaches stable users only when a maintainer promotes the beta line or
+backports the fix.
+
+<Screenshot
+  src={flowDark}
+  lightSrc={flowLight}
+  variant="bare"
+  alt="Three lanes. A feature branch in a worktree is tested with preview, dev:live, the installed app as a host, dev:desktop and verify --changed, then lands on main. Main ships 1.6.6-beta.1 and 1.6.6-beta.2, tested in frogg beta. A backport carries a fix to stable 1.6.5; a promotion ships 1.6.6 to stable."
+/>
+
+## The flow
+
+<Steps>
+
+1. **Branch.** Work on a feature branch in its own worktree, so its dev daemon, ports and
+   `.dev/` state stay apart from other work. Inside Frogg, the repository's `frogg.json` sets up
+   each new worktree for you ([working on Frogg inside Frogg](/docs/contributing/development-setup/#working-on-frogg-inside-frogg)).
+
+2. **Test locally**, on the cheapest rung that exercises the change
+   ([below](#test-locally-before-a-beta)). A beta is not the first time a change runs.
+
+3. **Verify** what your diff can break, and update docs and UI strings in the same change:
+
+   ```sh
+   node scripts/ci/verify.mjs --changed
+   ```
+
+4. **Land on `main`.** Merge or push. CI runs format, lint, typecheck and the test suites.
+
+5. **Beta.** When the `main` run is green, CI's `beta` job cuts the next `X.Y.Z-beta.N`
+   (`node scripts/release/streams.mjs beta`), pushes the tag and starts the release build for
+   every platform. Install the beta as **frogg beta**, beside your stable frogg, and test it
+   there ([frogg beta installs beside frogg](/docs/contributing/release-streams/#frogg-beta-installs-beside-frogg)).
+   A push that only cuts a release does not cut another beta.
+
+6. **Stable.** Stable moves only on an explicit decision: `npm run release:promote` on
+   `stable` ships the beta line, and `npm run release:backport` plus `npm run release:patch`
+   ship a single fix early. Nothing merges from `stable` back into `main`.
+
+</Steps>
+
+:::caution[Stable is never a default]
+Do not push, merge, cherry-pick or cut a release on `stable` without an explicit
+instruction for that change. When in doubt, stop at `main`. This rule also binds AI agents
+working in the repository (`AGENTS.md`).
+:::
+
+[Release streams](/docs/contributing/release-streams/) has every release command and option.
+
+## Test locally before a beta
+
+<Screenshot
+  src={ladderDark}
+  lightSrc={ladderLight}
+  variant="bare"
+  alt="Five rungs from cheapest to most complete: npm run preview for UI, npm run dev:live for a feature end to end, dev:live added as a host in the installed app for daemon behaviour, npm run dev:desktop for the Electron shell, and a beta build for packaging, installers and auto-update."
+/>
+
+| Rung                          | Command                                                     | Covers                                         |
+| ----------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| 1. Preview                    | `npm run preview`, then `npm run shot` / `npm run probe`    | UI layout, copy, styling                       |
+| 2. Live                       | `npm run dev:live`, open the printed URL                    | A feature end to end with real providers       |
+| 3. Live, from the real app    | `npm run dev:live`, add its daemon endpoint as a host       | Daemon behaviour behind an installed app build |
+| 4. Desktop                    | `npm run dev:desktop` on a machine with a display           | Electron shell, native bridge                  |
+| 5. Beta                       | A green push to `main`                                      | Packaging, installers, auto-update             |
+
+- **Preview** starts an isolated daemon with a mock provider and a seeded demo project, plus
+  the web app with hot reload. Nothing it does reaches your real providers.
+- **Live** runs this checkout's daemon against your real provider logins, with a persistent
+  home in `.dev/live/home`. UI edits hot-reload; server edits restart the daemon.
+- **From the real app**: in an installed Frogg, add the daemon endpoint `dev:live` prints as a
+  host. The installed app's own UI is unchanged, so check UI changes in the web URL.
+- **Desktop** needs a display; on a headless machine stop at rung 3.
+
+Ports, state and options for each are in
+[development setup](/docs/contributing/development-setup/#preview-ui-changes).
+
+## The inner loop
+
+<Screenshot
+  src={loopDark}
+  lightSrc={loopLight}
+  variant="bare"
+  alt="Edit, Run (npm run preview or dev:live), Check (npm run shot or probe) loop back to Edit until the change works. Then Verify (verify.mjs --changed), Docs and strings, Land on main, Beta, and Stable by explicit promotion. Each step is labelled with the contributor skill that guides it."
+/>
+
+Keep one stack running and edit against it:
+
+```sh
+npm run preview          # or: npm run dev:live
+```
+
+Then check each edit without leaving the terminal:
+
+```sh
+npm run shot -- settings/general            # screenshot a route to .dev/shots/
+npm run shot -- chat --mobile               # phone viewport
+npm run probe -- --help                     # scripted text probes: layout, visibility, animation
+npm run shot -- host/providers --live       # the same against dev:live
+```
+
+- `preview` and `dev:live` write their URLs to `.dev/preview/state.json` and
+  `.dev/live/state.json`; `shot` and `probe` read them, so they need no arguments.
+- A protocol or client change needs `npm run build:client`. `dev:live` restarts its daemon
+  when the rebuilt output changes; reload the page too.
+- Once it works, leave the loop: `verify --changed`, docs, UI copy in every locale, then
+  land on `main`.
+
+The [contributor skills](/docs/contributing/development-skills/) encode each step for AI
+agents, and humans can read them as checklists.
+
+## Branded distributions
+
+A fork runs the same flow on its own `main` and `stable`, with upstream as a third stream.
+See [develop a branded distribution](/docs/fork-and-rebrand/branded-development/).

@@ -1,0 +1,78 @@
+---
+title: Contributor skills and agents
+description: The development skills and agent roles in .claude/ that guide work on the Frogg repository, what each is for, and how the local-development skills fit together.
+sidebar:
+  order: 4
+---
+
+The repository carries instructions for AI coding agents: **contributor skills** in
+`.claude/skills/` and **agent roles** in `.claude/agents/`. They encode the repository's
+workflows, so an agent follows the same steps a maintainer would. Humans can read them as
+checklists.
+
+These are development skills for working on this repository. They are not the Frogg skills
+the daemon gives its own agents.
+
+## Skills
+
+| Skill                 | Use it to                                                                                                                     |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `frogg-dev`           | Build, run and test the monorepo: workspace build order, dev daemon and app, `FROGG_HOME` dev state, `verify --changed`       |
+| `frogg-live-dev`      | Run a feature branch end to end with real providers (`npm run dev:live`) before it ships as a beta                            |
+| `frogg-web-debug`     | Check UI changes in the preview with scripted screenshots and probes (`npm run shot`, `npm run probe`)                        |
+| `frogg-docs`          | Update the docs site when a change is visible to users: page map, style, screenshots, build and link check                    |
+| `frogg-i18n`          | Add or change UI copy in all nine locales and satisfy the resource parity test                                                |
+| `frogg-rpc`           | Add a WebSocket session RPC between daemon and clients: the ordered file list, capability gating, authorization              |
+| `frogg-release`       | Build, publish and verify desktop, Android and daemon distributions without breaking the update path                          |
+| `frogg-build-monitor` | Watch CI after a push in a background agent, diagnose failures and retry single targets                                        |
+
+`.claude/skills/` also holds `frogg`, `frogg-help`, `frogg-advisor`, `frogg-committee` and
+`frogg-handoff`. Those drive Frogg itself (projects, agents, hand-offs) rather than develop
+it.
+
+## Agent roles
+
+Load the one role a task needs. Each names the paths it owns and the checks it runs.
+
+| Role            | Owns                                                                                           |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| `daemon-dev`    | Server behaviour, providers, protocol, persistence, MCP, daemon-facing CLI commands            |
+| `client-dev`    | Shared Expo UI, the client library, user-facing CLI workflows                                  |
+| `desktop-dev`   | Electron shell, native bridge, SSH transports and deployment, desktop packaging                |
+| `dev-tooling`   | Development scripts, skills, build and test tooling, CI                                        |
+| `docs-writer`   | Audits a change against the docs and updates pages and screenshots                             |
+| `build-monitor` | Watches CI after pushes, fixes build failures, retries or places single target builds          |
+
+For parallel work, give each agent its own branch and worktree, a bounded outcome, the paths
+it owns and its acceptance checks, and separate dev ports and state. One session integrates
+the branches and runs the full typecheck.
+
+## How the local-development skills fit together
+
+The [inner loop](/docs/contributing/development-workflow/#the-inner-loop) uses three skills
+in turn:
+
+1. **`frogg-dev`** gets the worktree ready: `npm ci`, the build order
+   (`npm run build:server`, `npm run build:client` after protocol changes), and which checks
+   to run.
+2. **`frogg-web-debug`** covers UI work in `npm run preview`: a mock provider and seeded demo
+   data, and `shot` / `probe` to see the result without a person looking at the screen.
+3. **`frogg-live-dev`** covers anything that needs a real agent run or the installed app:
+   `npm run dev:live`, adding its daemon as a host, and `shot` / `probe --live`.
+
+Before the change leaves the machine, `frogg-dev` runs `verify --changed`, `frogg-docs` and
+`frogg-i18n` cover docs and UI strings, and `frogg-rpc` covers the protocol
+steps if the change adds an RPC. After it lands, `frogg-release` covers the beta and any
+packaging work.
+
+## Where they live
+
+```text
+.claude/
+  agents/<role>.md          agent roles, with frontmatter naming when to use each
+  skills/<skill>/SKILL.md   contributor skills
+AGENTS.md                   repository rules every agent follows, including the stable rule
+```
+
+Change a skill in the same pull request as the workflow it describes. The `dev-tooling`
+role owns skills and scripts.

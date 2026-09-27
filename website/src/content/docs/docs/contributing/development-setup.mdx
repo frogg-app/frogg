@@ -2,7 +2,7 @@
 title: Development setup
 description: Install dependencies, build the workspaces in order, run the dev daemon and clients, and check a change before you push.
 sidebar:
-  order: 2
+  order: 3
 ---
 
 import { Steps } from "@/components/docs";
@@ -93,6 +93,8 @@ npm run dev:app      # Expo (Metro) on port 8081, pointed at the dev daemon
   daemon watcher and Metro together in one PowerShell terminal.
 
 The dev daemon and Expo bind `0.0.0.0` so they are reachable from other machines on the LAN.
+To run any of these under a custom brand, use `npm run brand:dev`
+([run the brand locally](/docs/fork-and-rebrand/branded-development/#run-the-brand-locally)).
 
 Ports 6768 and 8081 are the defaults for the official brand. A custom brand selected with
 `FROGG_BRAND_DIR` uses its `daemonPort` and `daemonPort + 1` instead. Port 9999 is the default
@@ -144,7 +146,8 @@ npm run dev:live
   seconds, and so does rebuilding `packages/protocol` or `packages/client` (`npm run build:client`).
 - `npm run shot -- --live` and `npm run probe -- --live` target it instead of the preview.
 
-Which rung to use:
+Which rung to use (the [development workflow](/docs/contributing/development-workflow/#test-locally-before-a-beta)
+shows the whole ladder):
 
 | Change touches                       | Test it with                                                   |
 | ------------------------------------ | -------------------------------------------------------------- |
@@ -211,14 +214,9 @@ The repo's own `frogg.json` configures worktrees created by a Frogg daemon. See
 | --------------- | ------- | ------------------------------------------------------------------------- |
 | `daemon`        | service | `scripts/dev/dev-daemon.sh` on `FROGG_PORT`, skipping the deps build        |
 | `app`           | service | `scripts/dev/dev-app.sh` with Metro on `FROGG_PORT`, pointed at the `daemon` service |
-| `desktop`       | service | `./packages/desktop/scripts/dev.sh`                                       |
+| `desktop`       | service | `npm run dev:desktop` against the `daemon` service                        |
 | `ios-simulator` | service | `scripts/mobile/frogg-ios-simulator-service.sh` (macOS only)                |
 | `typecheck`     | script  | `npm run typecheck`                                                       |
-
-:::caution
-The `desktop` service points at `packages/desktop/scripts/dev.sh`, which does not exist in the
-repo. Use `npm run dev:desktop` instead until the entry is fixed.
-:::
 
 ## Check a change
 

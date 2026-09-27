@@ -2,7 +2,7 @@
 title: Release streams
 description: Develop on a beta stream without disturbing stable users, install frogg beta beside frogg, promote and backport, and run the same flow in a fork that follows upstream.
 sidebar:
-  order: 7
+  order: 9
 ---
 
 import { Screenshot, Steps } from "@/components/docs";
@@ -97,16 +97,20 @@ one window on both.
 
 <Steps>
 
-1. **Land work on `main`** as usual. CI builds frogg beta test artifacts on every push.
+1. **Land work on `main`** as usual, after testing it locally
+   ([development workflow](/docs/contributing/development-workflow/)).
 
-2. **Cut a beta** when you want testers on it:
+2. **CI cuts the beta.** When the CI run for a push to `main` is green, its `beta` job runs
+   `node scripts/release/streams.mjs beta --skip-check`, pushes the tag and starts the release
+   workflow for every platform. It skips a push that only cuts a release, and a run that
+   `main` has already moved past. To cut one by hand, for example to open a new minor line:
 
    ```sh
    git switch main && git pull
    npm run release:beta
    ```
 
-   It opens the next patch line above stable (`1.6.5-beta.1` after `1.6.4`), or continues
+   A beta opens the next patch line above stable (`1.6.5-beta.1` after `1.6.4`), or continues
    the open one (`1.6.5-beta.4`). `npm run release:beta -- --minor` opens the next minor
    line and `-- --major` the next major; bump those deliberately, never by default.
    `-- --print` shows the version without cutting it.

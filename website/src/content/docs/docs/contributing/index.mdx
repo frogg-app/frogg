@@ -14,10 +14,14 @@ the `LICENSE`, `NOTICE` and existing license headers intact.
 
 ## Workflow
 
+The [development workflow](/docs/contributing/development-workflow/) shows how a change
+travels from a branch to `main`, a beta and stable, with diagrams.
+
 1. Fork the repository and create a branch from `main`.
 2. Set up the monorepo: [development setup](/docs/contributing/development-setup/).
 3. Make the change with tests: [testing](/docs/contributing/testing/),
-   [coding standards](/docs/contributing/coding-standards/).
+   [coding standards](/docs/contributing/coding-standards/). Run it locally before it ships:
+   [test locally before a beta](/docs/contributing/development-workflow/#test-locally-before-a-beta).
 4. Update the docs in the same pull request if users will notice the change:
    [writing docs](/docs/contributing/writing-docs/).
 5. Check your change:
@@ -45,10 +49,13 @@ The template asks for:
 ## Agent roles
 
 The repository includes role instructions for AI coding agents in `.claude/agents/`
-(`daemon-dev`, `client-dev`, `desktop-dev`, `dev-tooling`, `docs-writer`, `build-monitor`) and task skills in
-`.claude/skills/`. Human contributors can read them as checklists for each area.
+(`daemon-dev`, `client-dev`, `desktop-dev`, `dev-tooling`, `docs-writer`, `build-monitor`) and
+contributor skills in `.claude/skills/`. Human contributors can read them as checklists for
+each area: [contributor skills and agents](/docs/contributing/development-skills/).
 
 <CardGrid>
+  <LinkCard title="Development workflow" href="/docs/contributing/development-workflow/" description="Branch, local test ladder, main, beta and stable, with diagrams." />
+  <LinkCard title="Contributor skills and agents" href="/docs/contributing/development-skills/" description="The .claude skills and roles, and how the local-development skills fit together." />
   <LinkCard title="Development setup" href="/docs/contributing/development-setup/" description="Build order, dev daemon and app, worktrees." />
   <LinkCard title="Architecture" href="/docs/contributing/architecture/" description="Daemon, clients, protocol and code map." />
   <LinkCard title="Testing" href="/docs/contributing/testing/" description="Test categories and what CI runs." />

@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="540" viewBox="0 0 1180 540" font-family="Inter, 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif">
+<defs>
+<marker id="arrow-stable" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4cc38a"/></marker>
+<marker id="arrow-beta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f5a524"/></marker>
+<marker id="arrow-upstream" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker>
+<marker id="arrow-backport" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#e0a95b"/></marker>
+<marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a3adab"/></marker>
+<marker id="arrow-danger" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f87171"/></marker>
+</defs>
+<rect width="1180" height="540" rx="16" fill="#181b1a"/>
+<text x="32" y="38" font-size="18.9" font-weight="600" fill="#f4f7f6" text-anchor="start">The inner loop runs on your machine. Only a change that works leaves it.</text>
+<text x="32" y="60" font-size="16.9" font-weight="400" fill="#a3adab" text-anchor="start">Purple: the contributor skill (.claude/skills) or agent role that guides each step.</text>
+<rect x="30" y="140" width="250" height="146" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
+<rect x="30" y="140" width="250" height="6" rx="3" fill="#f4f7f6"/>
+<text x="48" y="174" font-size="18.9" font-weight="700" fill="#f4f7f6" text-anchor="start">Edit</text>
+<text x="48" y="200" font-size="14.9" font-weight="400" fill="#a3adab">on a feature branch,</text>
+<text x="48" y="221" font-size="14.9" font-weight="400" fill="#a3adab">in its own worktree</text>
+<text x="48" y="272" font-size="14.9" font-weight="600" fill="#a78bfa" textLength="214" lengthAdjust="spacingAndGlyphs">client-dev · daemon-dev roles</text>
+<rect x="320" y="140" width="250" height="146" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
+<rect x="320" y="140" width="250" height="6" rx="3" fill="#f4f7f6"/>
+<text x="338" y="174" font-size="18.9" font-weight="700" fill="#f4f7f6" text-anchor="start">Run</text>
+<text x="338" y="200" font-size="14.9" font-weight="400" fill="#f4f7f6" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run preview</text>
+<text x="338" y="221" font-size="14.9" font-weight="400" fill="#f4f7f6" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run dev:live</text>
+<text x="338" y="272" font-size="14.9" font-weight="600" fill="#a78bfa">frogg-live-dev</text>
+<rect x="610" y="140" width="250" height="146" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
+<rect x="610" y="140" width="250" height="6" rx="3" fill="#f4f7f6"/>
+<text x="628" y="174" font-size="18.9" font-weight="700" fill="#f4f7f6" text-anchor="start">Check</text>
+<text x="628" y="200" font-size="14.9" font-weight="400" fill="#f4f7f6" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run shot / probe</text>
+<text x="628" y="221" font-size="14.9" font-weight="400" fill="#a3adab" textLength="214" lengthAdjust="spacingAndGlyphs">or use it in a browser or app</text>
+<text x="628" y="272" font-size="14.9" font-weight="600" fill="#a78bfa">frogg-web-debug</text>
+<rect x="900" y="140" width="250" height="146" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
+<rect x="900" y="140" width="250" height="6" rx="3" fill="#4cc38a"/>
+<text x="918" y="174" font-size="18.9" font-weight="700" fill="#4cc38a" text-anchor="start">Verify</text>
+<text x="918" y="200" font-size="14.9" font-weight="400" fill="#f4f7f6" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">verify.mjs --changed</text>
+<text x="918" y="221" font-size="14.9" font-weight="400" fill="#a3adab">format, lint, types, tests</text>
+<text x="918" y="272" font-size="14.9" font-weight="600" fill="#a78bfa">frogg-dev</text>
+<rect x="900" y="364" width="250" height="146" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
+<rect x="900" y="364" width="250" height="6" rx="3" fill="#f4f7f6"/>
+<text x="918" y="398" font-size="18.9" font-weight="700" fill="#f4f7f6" text-anchor="start">Docs and strings</text>
+<text x="918" y="424" font-size="14.9" font-weight="400" fill="#a3adab">docs page and screenshots</text>
+<text x="918" y="445" font-size="14.9" font-weight="400" fill="#a3adab">UI copy in nine locales</text>
+<text x="918" y="477" font-size="14.9" font-weight="600" fill="#a78bfa">frogg-docs</text>
+<text x="918" y="496" font-size="14.9" font-weight="600" fill="#a78bfa">frogg-i18n</text>
+<rect x="610" y="364" width="250" height="146" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
+<rect x="610" y="364" width="250" height="6" rx="3" fill="#f5a524"/>
+<text x="628" y="398" font-size="18.9" font-weight="700" fill="#f5a524" text-anchor="start">Land on main</text>
+<text x="628" y="424" font-size="14.9" font-weight="400" fill="#a3adab">merge and push main</text>
+<text x="628" y="445" font-size="14.9" font-weight="400" fill="#a3adab">CI runs the full suite</text>
+<text x="628" y="496" font-size="14.9" font-weight="600" fill="#a78bfa">frogg-build-monitor</text>
+<rect x="320" y="364" width="250" height="146" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
+<rect x="320" y="364" width="250" height="6" rx="3" fill="#f5a524"/>
+<text x="338" y="398" font-size="18.9" font-weight="700" fill="#f5a524" text-anchor="start">Beta</text>
+<text x="338" y="424" font-size="14.9" font-weight="400" fill="#f4f7f6" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">X.Y.Z-beta.N</text>
+<text x="338" y="445" font-size="14.9" font-weight="400" fill="#a3adab" textLength="214" lengthAdjust="spacingAndGlyphs">CI cuts it; test in frogg beta</text>
+<text x="338" y="496" font-size="14.9" font-weight="600" fill="#a78bfa">frogg-release</text>
+<rect x="30" y="364" width="250" height="146" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
+<rect x="30" y="364" width="250" height="6" rx="3" fill="#4cc38a"/>
+<text x="48" y="398" font-size="18.9" font-weight="700" fill="#4cc38a" text-anchor="start">Stable</text>
+<text x="48" y="424" font-size="14.9" font-weight="400" fill="#f4f7f6" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">release:promote</text>
+<text x="48" y="445" font-size="14.9" font-weight="400" fill="#a3adab">explicit instruction only</text>
+<text x="48" y="496" font-size="14.9" font-weight="600" fill="#a78bfa">frogg-release</text>
+<path d="M 284 208 L 314 208" fill="none" stroke="#a3adab" stroke-width="2" marker-end="url(#arrow-muted)"/>
+<path d="M 574 208 L 604 208" fill="none" stroke="#a3adab" stroke-width="2" marker-end="url(#arrow-muted)"/>
+<path d="M 864 208 L 894 208" fill="none" stroke="#a3adab" stroke-width="2" marker-end="url(#arrow-muted)"/>
+<path d="M 1025 290 L 1025 358" fill="none" stroke="#4cc38a" stroke-width="2" marker-end="url(#arrow-stable)"/>
+<path d="M 896 432 L 866 432" fill="none" stroke="#a3adab" stroke-width="2" marker-end="url(#arrow-muted)"/>
+<path d="M 606 432 L 576 432" fill="none" stroke="#a3adab" stroke-width="2" marker-end="url(#arrow-muted)"/>
+<path d="M 316 432 L 286 432" fill="none" stroke="#a3adab" stroke-width="2" marker-end="url(#arrow-muted)"/>
+<path d="M 735 136 C 735 98, 155 98, 155 132" fill="none" stroke="#e0a95b" stroke-width="2" stroke-dasharray="7 5" marker-end="url(#arrow-backport)"/>
+<text x="445" y="94" font-size="15.5" font-weight="600" fill="#e0a95b" text-anchor="middle">not right yet: edit again</text>
+<text x="1037" y="330" font-size="15.5" font-weight="600" fill="#4cc38a" text-anchor="start">works</text>
+</svg>

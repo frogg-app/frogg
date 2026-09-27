@@ -56,6 +56,12 @@ Docs change when the diff touches any of these. Otherwise tick "not needed" in t
 | `scripts/ci/branding-contribution.mjs`, contribution rules                                                                                                                                | `fork-and-rebrand/contributing-upstream.mdx`, `contributing/coding-standards.mdx`  |
 | Build scripts, dev scripts, workspaces                                                                                                                                                    | `contributing/development-setup.mdx`, `contributing/architecture.mdx`              |
 | Test tooling, CI jobs                                                                                                                                                                     | `contributing/testing.mdx`                                                         |
+| Branch/beta/stable flow, local test ladder, `ci.yml` beta job, `.claude/skills`, `.claude/agents`                                                                                         | `contributing/development-workflow.mdx`, `contributing/development-skills.mdx`     |
+| `scripts/dev/fork-setup.mjs`, `scripts/dev/brand-dev.mjs`, `streams.upstream`                                                                                                             | `fork-and-rebrand/branded-development.mdx`, `contributing/release-streams.mdx`     |
+
+Diagrams are SVGs drawn by `scripts/docs/stream-diagrams.mjs` and `workflow-diagrams.mjs`
+(dark and light, in `website/src/assets/docs/diagrams/`). Edit the code and run
+`node scripts/docs/stream-diagrams.mjs`; embed with `<Screenshot src lightSrc variant="bare">`.
 
 Page paths are also a URL contract. The app and CLI link to `<brand links.docs>/` plus:
 `using-frogg/projects-and-sessions/`, `reference/project-config/#metadatageneration`,

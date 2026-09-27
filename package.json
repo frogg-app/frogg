@@ -104,6 +104,8 @@
     "dev:app:prepared": "./scripts/dev/dev-app.sh",
     "brand:eas": "node --import tsx scripts/dev/branded-eas.mts",
     "brand:stage": "node --import tsx scripts/dev/brand.mts stage",
+    "brand:dev": "node scripts/dev/brand-dev.mjs",
+    "fork:setup": "node scripts/dev/fork-setup.mjs",
     "dev:desktop:electron": "npm run dev --workspace=@frogg/desktop --",
     "build:desktop:electron": "npm run build --workspace=@frogg/desktop --"
   },
