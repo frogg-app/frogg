@@ -30,7 +30,7 @@ Then select the relevant pages:
 - Config and access: `reference/configuration.mdx`, `reference/environment-variables.mdx`,
   `self-hosting/security.mdx`, `using-frogg/permissions.mdx`.
 - Wire changes: the protocol section of `contributing/coding-standards.mdx` and the
-  `frogg-rpc` skill.
+  `frogg-daemon-rpc` skill.
 - Voice: `using-frogg/voice-and-companion.mdx`.
 
 ## Implementation and verification

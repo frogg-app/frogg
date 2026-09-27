@@ -135,6 +135,7 @@ import { CheckoutDiffManager } from "./checkout-diff-manager.js";
 import { DaemonConfigStore, type MutableDaemonConfig } from "./daemon-config-store.js";
 import { createFroggWorktreeCommand } from "./worktree/commands.js";
 import { removeRetiredSkills } from "./retired-skills.js";
+import { SkillCatalog } from "./skills/catalog.js";
 import {
   resolveConfigFromPersisted,
   resolvePairingBaseUrl,
@@ -1372,7 +1373,21 @@ export async function createFroggDaemon(
     if (git) configureGitProcessPolicy(git);
   });
   const initialAgentManagerState = providerSnapshotManager.getAgentManagerProviderState();
+  const skillCatalog = new SkillCatalog({
+    froggHome: config.froggHome,
+    brand: {
+      id: brand.id,
+      fullName: brand.fullName,
+      cliName: brand.cliName,
+      envPrefix: brand.envPrefix,
+      docsUrl: brand.links.docs ?? brand.links.website ?? "",
+    },
+    logger,
+  });
+  await skillCatalog.initialize();
+
   const agentManager = new AgentManager({
+    resolveSkillLaunchPolicy: () => skillCatalog.launchPolicy(),
     clients: initialAgentManagerState.clients,
     providerDefinitions: initialAgentManagerState.providerDefinitions,
     registry: agentStorage,
@@ -2313,6 +2328,7 @@ export async function createFroggDaemon(
                 update: updateService,
                 betaChannel: betaChannelService,
                 hostResources,
+                skills: skillCatalog,
                 getSecurityPosture,
                 setSecurityFindingAcknowledged,
                 getRelayConfig: () =>

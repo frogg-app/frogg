@@ -38,6 +38,7 @@ import {
   type ProviderRefreshContext,
   type ResolveAgentDefaultModeInput,
 } from "../agent-sdk-types.js";
+import type { SkillLaunchPolicy } from "../../skills/catalog.js";
 import { importSessionFromPersistence } from "../provider-session-import.js";
 import { runProviderRefreshActivity } from "../provider-refresh-deadline.js";
 import type { Logger } from "pino";
@@ -259,6 +260,8 @@ interface CodexAppServerAgentDeps {
     extends: string;
   };
   customCodexConfig?: Record<string, unknown> | null;
+  /** The host's skill choices for this launch; set per session, not per client. */
+  skills?: SkillLaunchPolicy;
   _createCodexClient?: (
     child: ChildProcessWithoutNullStreams,
     logger: Logger,
@@ -548,6 +551,17 @@ async function checkCodexLaunchAvailable(launch: ResolvedProviderLaunch) {
     command: "codex",
     resolvePath: findDefaultCodexBinary,
   });
+}
+
+/** `-c` override hiding the host's switched-off skills, e.g. `skills.config=[{name="x",enabled=false}]`. */
+export function buildCodexDisabledSkillsConfig(
+  skills: SkillLaunchPolicy | undefined,
+): string | null {
+  if (!skills || skills.codexDisabled.length === 0) return null;
+  const entries = skills.codexDisabled.map(
+    (name) => `{name=${JSON.stringify(name)},enabled=false}`,
+  );
+  return `skills.config=[${entries.join(",")}]`;
 }
 
 function resolveCodexHomeDir(): string {
@@ -3465,6 +3479,7 @@ export class CodexAppServerAgentSession implements AgentSession {
       await client.request("initialize", buildCodexAppServerInitializeParams());
       client.notify("initialized", {});
 
+      await this.registerBuiltInSkills();
       await this.loadResolvedWorkspaceWrite();
       await this.loadCollaborationModes();
       await this.loadSkills();
@@ -3580,6 +3595,17 @@ export class CodexAppServerAgentSession implements AgentSession {
       this.collaborationModes = [];
     }
     this.refreshResolvedCollaborationMode();
+  }
+
+  /** Adds the daemon's built-in skills as an extra root; older Codex builds lack the RPC. */
+  private async registerBuiltInSkills(): Promise<void> {
+    const root = this.deps.skills?.codexRoot;
+    if (!this.client || !root) return;
+    try {
+      await this.client.request("skills/extraRoots/set", { extraRoots: [root] });
+    } catch (error) {
+      this.logger.debug({ err: error }, "provider.codex.skills.extra_roots_unsupported");
+    }
   }
 
   private async loadSkills(): Promise<void> {
@@ -6902,12 +6928,16 @@ export class CodexAppServerAgentClient implements AgentClient {
 
   private async spawnAppServer(
     launchEnv?: Record<string, string>,
-    options?: { goalsEnabled?: boolean; agentId?: string },
+    options?: { goalsEnabled?: boolean; agentId?: string; skills?: SkillLaunchPolicy },
   ): Promise<ChildProcessWithoutNullStreams> {
     const launchPrefix = await resolveCodexLaunchPrefix(this.runtimeSettings);
     const args = [...launchPrefix.args, "app-server"];
     if (options?.goalsEnabled) {
       args.push("--enable", "goals");
+    }
+    const skillsConfig = buildCodexDisabledSkillsConfig(options?.skills);
+    if (skillsConfig) {
+      args.push("-c", skillsConfig);
     }
     this.logger.trace(
       {
@@ -6950,8 +6980,12 @@ export class CodexAppServerAgentClient implements AgentClient {
       null,
       this.logger,
       () =>
-        this.spawnAppServer(launchContext?.env, { goalsEnabled, agentId: launchContext?.agentId }),
-      this.sessionDeps(),
+        this.spawnAppServer(launchContext?.env, {
+          goalsEnabled,
+          agentId: launchContext?.agentId,
+          skills: launchContext?.skills,
+        }),
+      { ...this.sessionDeps(), skills: launchContext?.skills },
       options?.persistSession === false,
       goalsEnabled,
       autoReviewEnabled,
@@ -6981,8 +7015,12 @@ export class CodexAppServerAgentClient implements AgentClient {
       handle,
       this.logger,
       () =>
-        this.spawnAppServer(launchContext?.env, { goalsEnabled, agentId: launchContext?.agentId }),
-      this.sessionDeps(),
+        this.spawnAppServer(launchContext?.env, {
+          goalsEnabled,
+          agentId: launchContext?.agentId,
+          skills: launchContext?.skills,
+        }),
+      { ...this.sessionDeps(), skills: launchContext?.skills },
       false,
       goalsEnabled,
       autoReviewEnabled,

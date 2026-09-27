@@ -16,6 +16,7 @@ import {
   Rocket,
   ShieldCheck,
   Wrench,
+  Sparkles,
 } from "lucide-react-native";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 
@@ -111,6 +112,7 @@ export const HOST_SECTION_ITEMS: HostSectionItem[] = [
   },
   { id: "agents", labelKey: "settings.hostSections.agents", icon: Bot },
   { id: "providers", labelKey: "settings.hostSections.providers", icon: Boxes },
+  { id: "skills", labelKey: "settings.hostSections.skills", icon: Sparkles },
   {
     id: "terminals",
     labelKey: "settings.hostSections.terminals",

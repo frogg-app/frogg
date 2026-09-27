@@ -59,10 +59,9 @@ Docs change when the diff touches any of these. Otherwise tick "not needed" in t
 
 Page paths are also a URL contract. The app and CLI link to `<brand links.docs>/` plus:
 `using-frogg/projects-and-sessions/`, `reference/project-config/#metadatageneration`,
-`agents-and-providers/skills/`, `desktop-mobile-cli/cli/`, `reference/configuration/`,
+`desktop-mobile-cli/cli/`, `reference/configuration/`,
 `self-hosting/security/#relay`, `getting-started/connect-and-pair/#direct-connection`
-(`rg -n 'brandDocsUrl|DOCS_BASE' apps`), and the `frogg-help` skill fetches
-`self-hosting/troubleshooting.md`. Moving or renaming those pages or headings
+(`rg -n 'brandDocsUrl|DOCS_BASE' apps`). Moving or renaming those pages or headings
 means updating the links in the same PR.
 
 Also check: section `index.mdx` overview tables, `README.md` feature bullets and downloads,
@@ -139,7 +138,7 @@ npm run build && npm run linkcheck
 ```
 
 A clean build and link check are required before committing docs. The site also generates
-`/llms.txt` and a Markdown copy of every page, which the `frogg-help` skill reads.
+`/llms.txt` and a Markdown copy of every page for agents to read.
 
 ## Checklist
 

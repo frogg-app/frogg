@@ -17,6 +17,7 @@ import type { DaemonUpdateService } from "./daemon-update-service.js";
 import type { BetaChannelService, BetaChannelStartResult } from "./beta-channel-service.js";
 import type { SecurityPosture } from "@frogg/protocol/messages";
 import type { HostResources } from "../../host/host-resources.js";
+import type { SkillCatalog } from "../../skills/catalog.js";
 
 export interface DaemonRuntimeConfig {
   listen: string | null;
@@ -31,6 +32,8 @@ export interface DaemonRuntimeConfig {
   getSecurityPosture?(): SecurityPosture;
   /** Host metrics and owned-storage sizes/cleanup; absent without bootstrap wiring. */
   hostResources?: HostResources;
+  /** Skills the host's agents see and which are switched off; absent without bootstrap wiring. */
+  skills?: SkillCatalog;
   /** Persist a warning as intended (or undo it); throws for a critical finding. */
   setSecurityFindingAcknowledged?(findingId: string, acknowledged: boolean): SecurityPosture;
   getRelayConfig(): {
@@ -200,6 +203,72 @@ export class DaemonSession {
       this.host.emit({
         type: "daemon.host.get_metrics.response",
         payload: { requestId: msg.requestId, metrics: null, error: errorMessage(error) },
+      });
+    }
+  }
+
+  async handleSkillsListRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.skills.list.request" }>,
+  ): Promise<void> {
+    const catalog = this.daemonRuntimeConfig?.skills;
+    try {
+      if (!catalog) throw new Error("Skills are not available on this daemon");
+      const skills = await catalog.list();
+      this.host.emit({
+        type: "daemon.skills.list.response",
+        payload: { requestId: msg.requestId, skills, error: null },
+      });
+    } catch (error) {
+      this.logger.warn({ err: error }, "Failed to list skills");
+      this.host.emit({
+        type: "daemon.skills.list.response",
+        payload: { requestId: msg.requestId, skills: [], error: errorMessage(error) },
+      });
+    }
+  }
+
+  async handleSkillsSetEnabledRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.skills.set_enabled.request" }>,
+  ): Promise<void> {
+    const catalog = this.daemonRuntimeConfig?.skills;
+    try {
+      if (!catalog) throw new Error("Skills are not available on this daemon");
+      const skill = await catalog.setEnabled(msg.skillId, msg.enabled);
+      if (!skill) throw new Error(`Unknown skill: ${msg.skillId}`);
+      this.host.emit({
+        type: "daemon.skills.set_enabled.response",
+        payload: { requestId: msg.requestId, skill, error: null },
+      });
+    } catch (error) {
+      this.logger.warn({ err: error, skillId: msg.skillId }, "Failed to switch skill");
+      this.host.emit({
+        type: "daemon.skills.set_enabled.response",
+        payload: { requestId: msg.requestId, skill: null, error: errorMessage(error) },
+      });
+    }
+  }
+
+  async handleSkillsGetContentRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.skills.get_content.request" }>,
+  ): Promise<void> {
+    const catalog = this.daemonRuntimeConfig?.skills;
+    try {
+      if (!catalog) throw new Error("Skills are not available on this daemon");
+      const content = await catalog.readContent(msg.skillId);
+      if (content === null) throw new Error(`Unknown skill: ${msg.skillId}`);
+      this.host.emit({
+        type: "daemon.skills.get_content.response",
+        payload: { requestId: msg.requestId, skillId: msg.skillId, content, error: null },
+      });
+    } catch (error) {
+      this.host.emit({
+        type: "daemon.skills.get_content.response",
+        payload: {
+          requestId: msg.requestId,
+          skillId: msg.skillId,
+          content: null,
+          error: errorMessage(error),
+        },
       });
     }
   }

@@ -1971,6 +1971,10 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
+  private skillsManagementFeature(): { skillsManagement?: true } {
+    return this.daemonRuntimeConfig?.skills ? { skillsManagement: true } : {};
+  }
+
   private hostResourcesFeature(): { hostResources?: true } {
     return this.daemonRuntimeConfig?.hostResources ? { hostResources: true } : {};
   }
@@ -2037,6 +2041,8 @@ export class VoiceAssistantWebSocketServer {
         ciJobLogs: true,
         // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
         ...this.hostResourcesFeature(),
+        // COMPAT(skillsManagement): added in v1.6.6, remove gate after 2027-09-27.
+        ...this.skillsManagementFeature(),
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.
         providerAgentDefinitions: true,
         // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.

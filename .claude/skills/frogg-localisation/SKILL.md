@@ -1,5 +1,5 @@
 ---
-name: frogg-i18n
+name: frogg-localisation
 description: Add, change, or translate user-facing UI copy in the Frogg Expo client. Use when writing any new visible string in apps/ui, when the i18n resource parity test fails, when a locale file fails typecheck with a missing property, or when adding forge-variant (pull request / merge request) wording. Covers the nine locales, the type gate, and every invariant resources.test.ts enforces.
 ---
 

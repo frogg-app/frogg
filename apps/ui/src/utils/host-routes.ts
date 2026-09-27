@@ -526,6 +526,7 @@ export const HOST_SECTION_SLUGS = [
   "security",
   "agents",
   "providers",
+  "skills",
   "terminals",
   "host",
 ] as const;

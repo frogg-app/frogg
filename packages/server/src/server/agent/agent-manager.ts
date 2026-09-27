@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { SkillLaunchPolicy } from "../skills/catalog.js";
 import { resolve } from "node:path";
 import { stat } from "node:fs/promises";
 import {
@@ -334,6 +335,8 @@ export interface AgentManagerOptions {
   /** Root of the chat directories; agents inside it launch with the chat profile. */
   chatsRoot?: string;
   froggToolsEnabled?: boolean;
+  /** The host's current skill choices, read at every launch. */
+  resolveSkillLaunchPolicy?: () => SkillLaunchPolicy;
   froggToolCatalogFactory?: FroggToolCatalogFactory;
   appendSystemPrompt?: string;
   agentStreamCoalesceWindowMs?: number;
@@ -772,6 +775,7 @@ export class AgentManager {
   private readonly mcpAuthToken: string | null;
   private readonly chatsRoot: string | undefined;
   private froggToolsEnabled = true;
+  private resolveSkillLaunchPolicy?: () => SkillLaunchPolicy;
   private froggToolCatalogFactory: FroggToolCatalogFactory | null = null;
   private appendSystemPrompt: string;
   private readonly resolveProviderAccountSystemPrompt?: (
@@ -831,6 +835,7 @@ export class AgentManager {
 
   private configureFroggTools(options: AgentManagerOptions): void {
     this.froggToolsEnabled = options.froggToolsEnabled ?? true;
+    this.resolveSkillLaunchPolicy = options.resolveSkillLaunchPolicy;
     this.froggToolCatalogFactory = options.froggToolCatalogFactory ?? null;
   }
 
@@ -5237,6 +5242,9 @@ export class AgentManager {
     const chat = isChatCwd(this.chatsRoot, cwd);
     if (chat && client.capabilities.supportsChatProfile !== true) {
       throw new Error(`Provider '${config.provider}' is not available in chats`);
+    }
+    if (!chat && this.resolveSkillLaunchPolicy) {
+      context.skills = this.resolveSkillLaunchPolicy();
     }
     if (
       !chat &&

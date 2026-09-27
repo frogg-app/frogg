@@ -71,6 +71,7 @@ export const HOST_SETTINGS_SECTIONS = [
   // Retired: folded into Providers. Still accepted so existing brand.json and
   // config.json files parse; the app ignores it.
   "usage",
+  "skills",
   "terminals",
   "host",
 ] as const;

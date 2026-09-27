@@ -156,6 +156,9 @@ import type {
   DaemonHostGetMetricsResponse,
   DaemonStorageCleanResponse,
   DaemonStorageListResponse,
+  DaemonSkillsListResponse,
+  DaemonSkillsSetEnabledResponse,
+  DaemonSkillsGetContentResponse,
   DaemonGetPairingOfferResponse,
   DaemonGetSecurityPostureResponse,
   DaemonSetSecurityFindingAcknowledgedResponse,
@@ -630,6 +633,9 @@ type ProviderAccountSetPreferencesPayload = ProviderAccountSetPreferencesRespons
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
 type DaemonHostMetricsPayload = DaemonHostGetMetricsResponse["payload"];
 type DaemonStorageListPayload = DaemonStorageListResponse["payload"];
+type DaemonSkillsListPayload = DaemonSkillsListResponse["payload"];
+type DaemonSkillsSetEnabledPayload = DaemonSkillsSetEnabledResponse["payload"];
+type DaemonSkillsGetContentPayload = DaemonSkillsGetContentResponse["payload"];
 type DaemonStorageCleanPayload = DaemonStorageCleanResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DaemonSecurityPosturePayload = DaemonGetSecurityPostureResponse["payload"];
@@ -5761,6 +5767,45 @@ export class DaemonClient {
       requestId: options?.requestId,
       message: { type: "daemon.storage.clean.request", categoryId },
       timeout: options?.timeout ?? 120_000,
+    });
+  }
+
+  // --- skills (features.skillsManagement) ----------------------------------
+
+  /** Every skill the host's agents can see, with whether it is switched on. */
+  async listSkills(options?: {
+    requestId?: string;
+    timeout?: number;
+  }): Promise<DaemonSkillsListPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.skills.list.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.skills.list.request" },
+      timeout: options?.timeout ?? 30_000,
+    });
+  }
+
+  /** Switch a skill on or off for agents started from now on (owner: daemon.manage). */
+  async setSkillEnabled(
+    skillId: string,
+    enabled: boolean,
+    options?: { requestId?: string; timeout?: number },
+  ): Promise<DaemonSkillsSetEnabledPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.skills.set_enabled.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.skills.set_enabled.request", skillId, enabled },
+      timeout: options?.timeout ?? 30_000,
+    });
+  }
+
+  /** The full SKILL.md text of one listed skill. */
+  async getSkillContent(
+    skillId: string,
+    options?: { requestId?: string; timeout?: number },
+  ): Promise<DaemonSkillsGetContentPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.skills.get_content.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.skills.get_content.request", skillId },
+      timeout: options?.timeout ?? 30_000,
     });
   }
 
