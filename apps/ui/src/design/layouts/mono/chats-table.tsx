@@ -1,11 +1,11 @@
-import { GitBranch, GitCommitHorizontal } from "lucide-react-native";
+import { Folder, GitBranch, GitCommitHorizontal } from "lucide-react-native";
 import { memo, useCallback } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
 import { navigateToAgent } from "@/utils/navigate-to-agent";
 import { formatCompactTimeAgo, formatDuration } from "@/utils/time";
-import { turnDurationMs, type MonoChatRow } from "./mono-data";
+import { shortPath, turnDurationMs, type MonoChatRow } from "./mono-data";
 import { DiffStat, MonoText, StatusDot, StatusLabel } from "./mono-parts";
 
 // Mono's chats table, laid out like Vercel's deployments list: id and model, status and
@@ -14,11 +14,13 @@ import { DiffStat, MonoText, StatusDot, StatusLabel } from "./mono-parts";
 const mutedIcon = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const ThemedBranch = withUnistyles(GitBranch);
 const ThemedCommit = withUnistyles(GitCommitHorizontal);
+const ThemedFolder = withUnistyles(Folder);
+const FOLDER_ICON = <ThemedFolder size={13} uniProps={mutedIcon} />;
 const BRANCH_ICON = <ThemedBranch size={13} uniProps={mutedIcon} />;
 const COMMIT_ICON = <ThemedCommit size={13} uniProps={mutedIcon} />;
 
 // preview copy
-const COPY = { noProject: "Chat", noBranch: "no branch", by: "on" };
+const COPY = { noProject: "Chat" };
 
 type PressState = PressableStateCallbackType & { hovered?: boolean };
 
@@ -78,23 +80,26 @@ export const ChatsTableRow = memo(function ChatsTableRow({ row, now, first }: Ro
       </View>
       <View style={styles.colSource}>
         <View style={styles.inline}>
-          {BRANCH_ICON}
+          {row.branch ? BRANCH_ICON : FOLDER_ICON}
           <MonoText tone="strong" numberOfLines={1}>
-            {row.branch ?? COPY.noBranch}
+            {row.branch ?? row.workspaceName ?? shortPath(row.cwd)}
           </MonoText>
         </View>
         <View style={styles.inline}>
           {COMMIT_ICON}
           <DiffStat stat={row.diffStat} />
           <MonoText tone="muted" numberOfLines={1}>
-            {row.workspaceName ?? row.cwd}
+            {shortPath(row.cwd)}
           </MonoText>
         </View>
       </View>
       <View style={styles.colTime}>
         <Text style={styles.sub} numberOfLines={1}>
-          {formatCompactTimeAgo(row.lastActivityAt, new Date(now))} {COPY.by} {row.hostLabel}
+          {formatCompactTimeAgo(row.lastActivityAt, new Date(now))}
         </Text>
+        <MonoText tone="faint" numberOfLines={1}>
+          {row.hostLabel}
+        </MonoText>
       </View>
     </Pressable>
   );
@@ -116,7 +121,7 @@ export const ChatsListRow = memo(function ChatsListRow({ row, now, first }: RowP
         </View>
         <View style={styles.indentRow}>
           <MonoText tone="muted" numberOfLines={1}>
-            {[row.shortId, row.branch ?? row.projectName ?? COPY.noProject, duration]
+            {[row.shortId, row.branch ?? row.workspaceName ?? COPY.noProject, duration]
               .filter(Boolean)
               .join("  ·  ")}
           </MonoText>
@@ -148,7 +153,7 @@ const styles = StyleSheet.create((theme) => ({
   colStatus: { width: 130, gap: 4 },
   colChat: { flex: 1, minWidth: 0, gap: 4 },
   colSource: { flex: 1.2, minWidth: 0, gap: 4 },
-  colTime: { width: 160, alignItems: "flex-end" },
+  colTime: { width: 120, alignItems: "flex-end", gap: 4 },
   indent: { paddingLeft: 16 },
   inline: {
     flexDirection: "row",

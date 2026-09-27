@@ -79,6 +79,13 @@ export function bucketOf(agent: Agent): SidebarStateBucket {
   });
 }
 
+/** The last two segments of a path, `~/`-style short enough for a table cell. */
+export function shortPath(path: string): string {
+  const parts = path.split(/[\\/]/).filter(Boolean);
+  if (parts.length <= 2) return path;
+  return `…/${parts.slice(-2).join("/")}`;
+}
+
 export function shortIdOf(agentId: string): string {
   return agentId.replace(/-/g, "").slice(0, 9);
 }
