@@ -10,14 +10,20 @@ import { BrandLogo } from "@/components/icons/brand-logo";
 import { Shortcut } from "@/components/ui/shortcut";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { useShortcutKeys } from "@/hooks/use-shortcut-keys";
-import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import { usePanelStore } from "@/stores/panel-store";
 import type { Theme } from "@/styles/theme";
 import { buildOpenProjectRoute, buildSessionsRoute, buildSettingsRoute } from "@/utils/host-routes";
 import { WindowChromeSafeArea } from "@/utils/desktop-window";
 import { projectNameOf } from "./mono-data";
 import { CrumbSlash, HostCrumb, ProjectCrumb, WorkspaceCrumb } from "./top-bar-crumbs";
-import { openFind, useMonoNewChat, useMonoRoute, type MonoRoute, type MonoTab } from "./use-mono-route";
+import {
+  openFind,
+  useMonoNewChat,
+  useMonoRoute,
+  useOpenChanges,
+  type MonoRoute,
+  type MonoTab,
+} from "./use-mono-route";
 
 // Mono's header, after Vercel's dashboard: logo, then host / project / branch selectors, with
 // Find… and the primary action on the right, and underline tabs beneath that navigate.
@@ -155,11 +161,7 @@ function NewChatButton({ route }: { route: MonoRoute }) {
 function Tabs({ route }: { route: MonoRoute }) {
   const { t } = useTranslation();
   const workspace = route.workspace;
-  const serverId = route.serverId;
-  const openChanges = useCallback(() => {
-    if (!serverId || !workspace) return;
-    navigateToWorkspace({ serverId, workspaceId: workspace.id, target: { kind: "changes_tree" } });
-  }, [serverId, workspace]);
+  const openChanges = useOpenChanges();
   const tabs = useMemo(
     () =>
       [

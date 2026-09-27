@@ -3,11 +3,11 @@ import { useCallback, useState, type ReactNode } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { MAX_CONTENT_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
-import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import type { Theme } from "@/styles/theme";
 import { formatDuration, formatTimeAgo } from "@/utils/time";
 import { turnDurationMs, useMonoChatRow, useNow, type MonoChatRow } from "./mono-data";
 import { DiffStat, MonoText, StatusLabel } from "./mono-parts";
+import { useOpenChanges } from "./use-mono-route";
 
 // Mono's strip above a conversation: Vercel's "Deployment Details" card for the chat. A header
 // with the short id and a changes action, then a grid of labelled facts. Collapses to its
@@ -80,14 +80,7 @@ function Header({
   onToggle: () => void;
   compact: boolean;
 }) {
-  const openChanges = useCallback(() => {
-    if (!row.workspaceId) return;
-    navigateToWorkspace({
-      serverId: row.serverId,
-      workspaceId: row.workspaceId,
-      target: { kind: "changes_tree" },
-    });
-  }, [row.serverId, row.workspaceId]);
+  const openChanges = useOpenChanges();
   return (
     <View style={styles.header}>
       <Pressable

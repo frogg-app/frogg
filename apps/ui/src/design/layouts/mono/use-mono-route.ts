@@ -43,6 +43,22 @@ export function useMonoRoute(): MonoRoute {
   return { tab: tabOf(pathname, workspace !== null), serverId, workspace };
 }
 
+/**
+ * Opens the workspace's Changes view (the explorer's changes panel), the same action the
+ * command center's "Open Changes" runs. Only meaningful while a workspace screen is mounted.
+ */
+export function useOpenChanges(): () => void {
+  const dispatcher = useKeyboardActionDispatcher();
+  return useCallback(() => {
+    dispatcher.dispatch({
+      id: "workspace.tab.open",
+      scope: "workspace",
+      target: "changes",
+      placement: "supporting",
+    });
+  }, [dispatcher]);
+}
+
 export function openFind(): void {
   useKeyboardShortcutsStore.getState().setCommandCenterOpen(true);
 }
