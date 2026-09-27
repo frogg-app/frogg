@@ -29,11 +29,12 @@ export function inheritedThresholdMinutes(
   provider: string | null,
   settings: Pick<MutableCleanCutConfig, "idleThresholdMinutes"> | null | undefined,
 ): number | null {
-  const ms = resolveIdleThresholdMs(provider, {
-    ...(settings?.idleThresholdMinutes !== undefined
+  const ms = resolveIdleThresholdMs(
+    provider,
+    settings?.idleThresholdMinutes !== undefined
       ? { idleThresholdMinutes: settings.idleThresholdMinutes }
-      : {}),
-  });
+      : {},
+  );
   return ms === null ? null : Math.round(ms / 60_000);
 }
 
