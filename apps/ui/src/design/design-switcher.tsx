@@ -50,9 +50,14 @@ function variantLabel(id: DesignVariantId): string {
 /** `?design=<id>&scheme=<auto|light|dark>&switcher=0` selects a direction from a link, which
  * also lets `npm run shot -- "/route?design=paper"` capture each one. Applied after the
  * persisted state hydrates so the link wins. */
+// Once per page load: the router can restore the query on navigation and the switcher can
+// remount, and re-applying the params then would pin the direction against the user's switches.
+let urlParamsApplied = false;
+
 function useDesignUrlParams(): void {
   useEffect(() => {
-    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    if (Platform.OS !== "web" || typeof window === "undefined" || urlParamsApplied) return;
+    urlParamsApplied = true;
     const params = new URLSearchParams(window.location.search);
     const apply = () => {
       const store = useDesignPreviewStore.getState();
