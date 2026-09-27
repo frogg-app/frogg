@@ -1795,6 +1795,7 @@ export const zhCN: TranslationResources = {
     },
   },
   openProject: {
+    greeting: "我们要做些什么？",
     chooseHost: {
       importSession: "从主机导入",
       setupProviders: "选择主机",

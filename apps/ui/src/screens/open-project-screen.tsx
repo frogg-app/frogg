@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View, Text, Pressable } from "react-native";
-import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { View, Text } from "react-native";
+import { StyleSheet } from "react-native-unistyles";
 import { useRouter } from "expo-router";
-import { FolderOpen, Inbox, Plug, Smartphone } from "lucide-react-native";
 import { BrandLogo } from "@/components/icons/brand-logo";
 import { MenuHeader } from "@/components/headers/menu-header";
 import { useOpenAddProject } from "@/hooks/use-open-add-project";
@@ -23,6 +22,10 @@ import { ImportSessionSheet } from "@/components/import-session-sheet";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import { useOpenProject } from "@/hooks/use-open-project";
 import type { Href } from "expo-router";
+import { HomeActions, type HomeAction } from "@/home/home-actions";
+import { resolveHomePresentation } from "@/home/home-layout";
+import { useDesignPreviewStore } from "@/design/design-preview-store";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 
 export function OpenProjectScreen() {
   const { t } = useTranslation();
@@ -38,6 +41,7 @@ export function OpenProjectScreen() {
   const [isImportSheetOpen, setIsImportSheetOpen] = useState(false);
 
   const isCompactLayout = useIsCompactFormFactor();
+  const presentation = resolveHomePresentation(useDesignPreviewStore((s) => s.variant));
 
   useEffect(() => {
     if (!isCompactLayout) {
@@ -85,47 +89,65 @@ export function OpenProjectScreen() {
     });
   }, [chooseHost, router, t]);
 
+  const actions = useMemo<HomeAction[]>(() => {
+    const list: HomeAction[] = [
+      {
+        key: "add-project",
+        icon: "folder",
+        title: t("openProject.tiles.addProject.title"),
+        description: t("openProject.tiles.addProject.description"),
+        onPress: handleOpenPicker,
+        testID: "open-project-submit",
+        accent: true,
+      },
+      {
+        key: "import-session",
+        icon: "inbox",
+        title: t("openProject.tiles.importSession.title"),
+        description: t("openProject.tiles.importSession.description"),
+        onPress: handleOpenImportSession,
+        testID: "open-project-import-session",
+      },
+      {
+        key: "setup-providers",
+        icon: "plug",
+        title: t("openProject.tiles.setupProviders.title"),
+        description: t("openProject.tiles.setupProviders.description"),
+        onPress: handleOpenProviders,
+        testID: "open-project-setup-providers",
+      },
+    ];
+    if (localServerId) {
+      list.push({
+        key: "pair-device",
+        icon: "phone",
+        title: t("openProject.tiles.pairDevice.title"),
+        description: t("openProject.tiles.pairDevice.description"),
+        onPress: handleOpenPairDevice,
+        testID: "open-project-pair-device",
+      });
+    }
+    return list;
+  }, [handleOpenImportSession, handleOpenPairDevice, handleOpenPicker, handleOpenProviders, localServerId, t]);
+
   return (
     <View style={styles.container}>
       <MenuHeader borderless />
       <View style={styles.content}>
         <TitlebarDragRegion />
-        <View style={styles.logo}>
-          <BrandLogo size={130} />
-        </View>
-        <View style={styles.tiles}>
-          <HomeTile
-            icon={FolderOpen}
-            title={t("openProject.tiles.addProject.title")}
-            description={t("openProject.tiles.addProject.description")}
-            onPress={handleOpenPicker}
-            testID="open-project-submit"
-            accent
-          />
-          <HomeTile
-            icon={Inbox}
-            title={t("openProject.tiles.importSession.title")}
-            description={t("openProject.tiles.importSession.description")}
-            onPress={handleOpenImportSession}
-            testID="open-project-import-session"
-          />
-          <HomeTile
-            icon={Plug}
-            title={t("openProject.tiles.setupProviders.title")}
-            description={t("openProject.tiles.setupProviders.description")}
-            onPress={handleOpenProviders}
-            testID="open-project-setup-providers"
-          />
-          {localServerId ? (
-            <HomeTile
-              icon={Smartphone}
-              title={t("openProject.tiles.pairDevice.title")}
-              description={t("openProject.tiles.pairDevice.description")}
-              onPress={handleOpenPairDevice}
-              testID="open-project-pair-device"
-            />
+        <View style={presentation.alignStart ? styles.headerStart : styles.header}>
+          <BrandLogo size={presentation.logoSize} />
+          {presentation.greeting ? (
+            <Text
+              style={presentation.alignStart ? styles.greetingStart : styles.greeting}
+              dataSet={DESIGN_FONT_DATASET}
+              accessibilityRole="header"
+            >
+              {t("openProject.greeting")}
+            </Text>
           ) : null}
         </View>
+        <HomeActions actions={actions} layout={presentation.layout} />
       </View>
       <PairDeviceModal
         serverId={localServerId ?? ""}
@@ -141,50 +163,6 @@ export function OpenProjectScreen() {
         onImported={handleImported}
       />
     </View>
-  );
-}
-
-interface HomeTileProps {
-  icon: ComponentType<{ size: number; color: string }>;
-  title: string;
-  description: string;
-  onPress: () => void;
-  testID?: string;
-  accent?: boolean;
-}
-
-function HomeTile({ icon: Icon, title, description, onPress, testID, accent }: HomeTileProps) {
-  // useUnistyles is acceptable here: leaf component, off the hot path (home screen renders once).
-  const { theme } = useUnistyles();
-  const [hovered, setHovered] = useState(false);
-  const handleHoverIn = useCallback(() => setHovered(true), []);
-  const handleHoverOut = useCallback(() => setHovered(false), []);
-
-  const iconColor = accent ? theme.colors.accent : theme.colors.foregroundMuted;
-
-  const pressableStyle = useCallback(
-    ({ pressed }: { pressed: boolean }) => [
-      styles.tile,
-      hovered && styles.tileHovered,
-      pressed && styles.tilePressed,
-    ],
-    [hovered],
-  );
-
-  return (
-    <Pressable
-      onPress={onPress}
-      onHoverIn={handleHoverIn}
-      onHoverOut={handleHoverOut}
-      testID={testID}
-      style={pressableStyle}
-    >
-      <Icon size={20} color={iconColor} />
-      <View style={styles.tileText}>
-        <Text style={styles.tileTitle}>{title}</Text>
-        <Text style={styles.tileDescription}>{description}</Text>
-      </View>
-    </Pressable>
   );
 }
 
@@ -207,46 +185,34 @@ const styles = StyleSheet.create((theme) => ({
       md: HEADER_INNER_HEIGHT + theme.spacing[6],
     },
   },
-  logo: {
-    marginBottom: theme.spacing[8],
-  },
-  tiles: {
-    marginTop: { xs: theme.spacing[6], md: theme.spacing[12] },
+  header: {
     width: "100%",
-    maxWidth: 452,
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
-    gap: theme.spacing[3],
+    maxWidth: 640,
+    alignItems: "center",
+    gap: theme.spacing[6],
+    marginBottom: theme.design.variant === "current" ? theme.spacing[8] : 0,
   },
-  tile: {
-    width: { xs: "100%", md: 220 },
-    minHeight: { xs: 0, md: 132 },
-    padding: theme.spacing[4],
-    backgroundColor: theme.colors.surface1,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.xl,
-    gap: theme.spacing[3],
+  headerStart: {
+    width: "100%",
+    maxWidth: theme.design.variant === "mono" ? 560 : 440,
+    alignItems: "flex-start",
+    gap: theme.design.variant === "mono" ? theme.spacing[6] : theme.spacing[4],
   },
-  tileHovered: {
-    backgroundColor: theme.colors.surface2,
-    borderColor: theme.colors.borderAccent,
-  },
-  tilePressed: {
-    opacity: 0.85,
-  },
-  tileText: {
-    gap: theme.spacing[1],
-  },
-  tileTitle: {
+  greeting: {
     color: theme.colors.foreground,
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.normal,
+    fontFamily: theme.design.headingFontFamily,
+    fontWeight: theme.design.headingWeight,
+    letterSpacing: theme.design.headingLetterSpacing,
+    fontSize: { xs: 26, md: theme.design.variant === "focus" ? 34 : 32 },
+    lineHeight: { xs: 32, md: 42 },
+    textAlign: "center",
   },
-  tileDescription: {
-    color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.base,
-    lineHeight: 18,
+  greetingStart: {
+    color: theme.colors.foreground,
+    fontFamily: theme.design.headingFontFamily,
+    fontWeight: theme.design.headingWeight,
+    letterSpacing: theme.design.headingLetterSpacing,
+    fontSize: theme.design.variant === "mono" ? 28 : 17,
+    lineHeight: theme.design.variant === "mono" ? 34 : 24,
   },
 }));

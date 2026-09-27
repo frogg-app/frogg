@@ -1873,6 +1873,7 @@ export const fr: TranslationResources = {
     },
   },
   openProject: {
+    greeting: "Sur quoi travaillons-nous ?",
     chooseHost: {
       importSession: "Importer depuis l'hôte",
       setupProviders: "Choisir l'hôte",
