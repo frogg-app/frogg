@@ -1,4 +1,5 @@
 import type { DesignLayout } from "../slots";
+import { PaperConversationTop } from "./paper-conversation-top";
 import { PaperHome } from "./paper-home";
 import { PaperSidebar } from "./paper-sidebar";
 
@@ -6,4 +7,5 @@ import { PaperSidebar } from "./paper-sidebar";
 export const paperLayout: DesignLayout = {
   sidebar: PaperSidebar,
   home: PaperHome,
+  conversationTop: PaperConversationTop,
 };
