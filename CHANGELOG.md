@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.6.2-beta.1 — 2026-09-27
 
 - **Clean cut.** End an agent's provider conversation and continue in a fresh one, in the same
   workspace, from a short summary written by the cheapest model on the same provider and
