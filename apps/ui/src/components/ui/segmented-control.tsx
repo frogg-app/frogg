@@ -41,6 +41,53 @@ function SegmentIcon({ icon, iconSize, iconColor }: SegmentIconProps) {
 
 const ThemedSegmentIcon = withUnistyles(SegmentIcon);
 
+interface SegmentedTreatment {
+  track: ViewStyle;
+  selected: ViewStyle;
+  hover: ViewStyle;
+}
+
+/**
+ * Directions draw the control as a track holding a raised selected segment; `current` keeps the
+ * bare row of segments. The track padding equals the segment inset, so heights are unchanged.
+ */
+function segmentedTreatment(theme: Theme): SegmentedTreatment {
+  const c = theme.colors;
+  const dark = theme.colorScheme === "dark";
+  const radius = theme.design.controlRadius;
+  const raised = dark ? c.surface4 : c.surface0;
+  switch (theme.design.variant) {
+    case "current":
+      return {
+        track: {},
+        selected: { backgroundColor: c.surface3 },
+        hover: { backgroundColor: c.surface2 },
+      };
+    case "mono":
+    case "inset":
+      return {
+        track: {
+          padding: 2,
+          borderRadius: radius,
+          borderWidth: 1,
+          borderColor: c.border,
+          backgroundColor: theme.design.variant === "inset" ? c.surface1 : c.surface0,
+          gap: 2,
+        },
+        selected: { backgroundColor: c.surface3 },
+        hover: { backgroundColor: c.surface2 },
+      };
+    case "soft":
+    case "paper":
+    case "focus":
+      return {
+        track: { padding: 2, borderRadius: radius, backgroundColor: c.surface2, gap: 2 },
+        selected: { backgroundColor: raised, ...theme.shadow.sm },
+        hover: { backgroundColor: c.surface3 },
+      };
+  }
+}
+
 const selectedIconMapping = (theme: Theme) => ({ iconColor: theme.colors.foreground });
 const mutedIconMapping = (theme: Theme) => ({ iconColor: theme.colors.foregroundMuted });
 
@@ -64,7 +111,7 @@ export function SegmentedControl<T extends string>({
   const iconSize = segmentedIconSize[size];
 
   const containerStyle = useMemo(
-    () => [styles.container, containerSizeStyle, style],
+    () => [styles.container, containerSizeStyle, styles.track, style],
     [containerSizeStyle, style],
   );
 
@@ -162,6 +209,7 @@ function SegmentItem<T extends string>({
 
 const styles = StyleSheet.create((theme) => {
   const geometry = createControlGeometry(theme);
+  const treatment = segmentedTreatment(theme);
 
   return {
     container: {
@@ -195,12 +243,9 @@ const styles = StyleSheet.create((theme) => {
     segmentMd: {
       ...geometry.segmentedSegmentMd,
     },
-    segmentSelected: {
-      backgroundColor: theme.colors.surface3,
-    },
-    segmentHover: {
-      backgroundColor: theme.colors.surface2,
-    },
+    track: treatment.track,
+    segmentSelected: treatment.selected,
+    segmentHover: treatment.hover,
     segmentPressed: {
       backgroundColor: theme.colors.surface3,
     },

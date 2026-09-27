@@ -12,6 +12,7 @@ import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 import { resolveSettingsScope, type SettingsView } from "@/navigation/settings-navigation";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
 import { SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
+import { settingsNavTreatment } from "@/styles/settings-nav-treatment";
 import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visibility";
 import { useHosts } from "@/runtime/host-runtime";
 import type { SecuritySeverity } from "@/security/posture";
@@ -181,7 +182,7 @@ export function SettingsSidebar({
     if (view.kind === "host") selectedHostSection = view.section;
     if (view.kind === "project") selectedHostSection = "projects";
     sidebarBody = (
-      <View style={sidebarStyles.list}>
+      <View style={isDesktop ? sidebarStyles.list : sidebarStyles.mobileList}>
         {hostSectionItems
           .filter((item) => item.id !== "deploy" || hostHasRemoteSsh)
           // Only an owner on a daemon that reports its posture has anything to see here.
@@ -208,7 +209,7 @@ export function SettingsSidebar({
         (!item.requiresKeyboardShortcuts || shortcutsAvailable),
     );
     sidebarBody = (
-      <View style={sidebarStyles.list}>
+      <View style={isDesktop ? sidebarStyles.list : sidebarStyles.mobileList}>
         {items.map((item) => (
           <SidebarSectionButton
             key={item.id}
@@ -261,12 +262,15 @@ function SettingsSidebarFooter() {
   );
 }
 
-const sidebarStyles = StyleSheet.create((theme) => ({
+const sidebarStyles = StyleSheet.create((theme) => {
+  const nav = settingsNavTreatment(theme);
+  return {
   desktopContainer: {
     width: SETTINGS_DESKTOP_SIDEBAR_WIDTH,
     borderRightWidth: 1,
     borderRightColor: theme.colors.border,
     backgroundColor: theme.colors.surfaceSidebar,
+    ...nav.desktopContainer,
   },
   scrollBody: {
     flex: 1,
@@ -279,6 +283,13 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[2],
     gap: theme.spacing[1],
+    ...nav.list,
+  },
+  mobileList: {
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
+    gap: theme.spacing[1],
+    ...nav.mobileList,
   },
   item: {
     flexDirection: "row",
@@ -288,18 +299,21 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.lg,
+    ...nav.item,
   },
   itemHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
   itemSelected: {
     backgroundColor: theme.colors.surfaceSidebarHover,
+    ...nav.itemSelected,
   },
   label: {
     fontSize: theme.fontSize.base,
     color: theme.colors.foregroundMuted,
     fontWeight: theme.fontWeight.normal,
     flex: 1,
+    ...nav.label,
   },
   footer: {
     flexDirection: "row",
@@ -320,5 +334,7 @@ const sidebarStyles = StyleSheet.create((theme) => ({
   },
   labelSelected: {
     color: theme.colors.foreground,
+    ...nav.labelSelected,
   },
-}));
+};
+});
