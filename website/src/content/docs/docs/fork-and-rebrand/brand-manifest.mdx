@@ -404,6 +404,13 @@ Controls where plugins come from and what users may do with them. The daemon enf
 | `preinstalled`   | array of `{ id, version? }` | `[]` | Installed on daemon start from brand repositories first, then the official one. `version` is exact or a range (`^1`, `~1.2`). Users cannot uninstall them. `build`-scope entries are for the brand build pipeline |
 | `autoUpdate`     | `off` \| `brand-repos` \| `all` | `brand-repos` | Background updates. Never applied when an update adds capabilities |
 
+To host a brand repository, copy `templates/plugin-repo/` from the Frogg repo into a new
+GitHub repository; its README covers keys, Pages and publishing. Its CI does not use npm
+for Frogg packages: the repository variable `FROGG_VERSION` pins a Frogg release whose
+daemon bundle supplies the `frogg` CLI (sha256-checked) and whose tag supplies the plugin
+API types. Without `FROGG_VERSION`, `FROGG_REF` names a branch, tag or commit of
+`frogg-app/frogg` to build the CLI from source.
+
 ## Channels
 
 Every brand builds twice: the **stable** build and a **beta** build that installs beside it
