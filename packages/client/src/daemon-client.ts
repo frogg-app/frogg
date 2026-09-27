@@ -55,6 +55,7 @@ import {
   type ServerInfoStatusPayload,
 } from "@frogg/protocol/messages";
 import type { AuthDeviceSetRoleResponse } from "@frogg/protocol/messages";
+import type { AgentCleanCutSubagentResult } from "@frogg/protocol/messages";
 import { validateWSOutboundMessage } from "@frogg/protocol/validation/ws-outbound";
 import type {
   CompanionNotebook,
@@ -3548,7 +3549,7 @@ export class DaemonClient {
       model?: string | null;
       thinkingOptionId?: string | null;
     } = {},
-  ): Promise<void> {
+  ): Promise<{ subagents: AgentCleanCutSubagentResult[] }> {
     const requestId = this.createRequestId();
     const message = SessionInboundMessageSchema.parse({
       type: "agent.clean_cut.request",
@@ -3574,6 +3575,8 @@ export class DaemonClient {
     if (!payload.accepted) {
       throw new Error(payload.error ?? "cleanCutAgent rejected");
     }
+    // COMPAT(agentCleanCutSubagents): older daemons omit the list.
+    return { subagents: payload.subagents ?? [] };
   }
 
   async restartServer(reason?: string, requestId?: string): Promise<RestartRequestedStatusPayload> {

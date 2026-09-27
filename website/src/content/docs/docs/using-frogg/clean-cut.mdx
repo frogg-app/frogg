@@ -94,6 +94,10 @@ are:
 A child that fails to cut does not undo the parent's cut. Only children loaded in the daemon
 are covered.
 
+After the cut, a toast reports what happened to them, for example
+`Also cut 2 subagents · 1 skipped (running)`. Failures are listed by name with the error, and
+the toast stays up longer. No toast appears when the agent has no subagents.
+
 Provider-native subagents, such as Claude Code tasks, live inside the parent's conversation.
 They end with it and need no cut of their own.
 
@@ -114,8 +118,9 @@ cuts subagents, and skips agents that are running, closed or have no provider se
 the summary fails, the daemon logs a warning and resumes the old conversation as it would
 have anyway.
 
-The divider looks the same as a manual cut. The timeline item records why the cut was made
-in `cleanCut.reason`: `manual` or `cold-cache`.
+The divider reads **Clean cut: cache expired, new conversation** instead of the manual title.
+The timeline item records why the cut was made in `cleanCut.reason`: `manual` or `cold-cache`.
+Cuts recorded before the reason existed show the manual title.
 
 Turn it off in [`config.json`](/docs/reference/configuration/#agents-and-tools), then restart the daemon;
 the setting is read at startup:

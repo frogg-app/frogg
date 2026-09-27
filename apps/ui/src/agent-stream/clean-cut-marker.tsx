@@ -5,7 +5,8 @@
  * to a provider conversation that has ended: the user can still read it, the
  * agent cannot. Below the line sits the summary the new conversation started
  * from, collapsed by default, and the old conversation's id for when it needs
- * to be looked up.
+ * to be looked up. A cut the daemon made itself because the prompt cache had
+ * expired says so; one without a reason (older daemons) reads as manual.
  */
 import { memo, useCallback, useMemo, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
@@ -58,7 +59,11 @@ export const CleanCutMarker = memo(function CleanCutMarker({
         <View style={styles.line} />
         <View style={styles.label}>
           <ThemedScissors size={13} uniProps={accentColor} />
-          <Text style={styles.title}>{t("agentStream.cleanCut.title")}</Text>
+          <Text style={styles.title} testID="clean-cut-title">
+            {cleanCut.reason === "cold-cache"
+              ? t("agentStream.cleanCut.automatic")
+              : t("agentStream.cleanCut.title")}
+          </Text>
         </View>
         <View style={styles.line} />
       </View>
