@@ -2128,7 +2128,7 @@ const styles = StyleSheet.create((theme: Theme, rt) => ({
   sendButton: {
     width: 28,
     height: 28,
-    borderRadius: controlRadius(themeOf(rt.themeName), theme.borderRadius.full),
+    borderRadius: controlRadius(themeOf(rt.themeName), "full"),
     backgroundColor: theme.colors.accent,
     alignItems: "center",
     justifyContent: "center",
@@ -2138,7 +2138,7 @@ const styles = StyleSheet.create((theme: Theme, rt) => ({
     width: "auto",
     minWidth: 28,
     paddingHorizontal: theme.spacing[3],
-    borderRadius: controlRadius(themeOf(rt.themeName), theme.borderRadius.full),
+    borderRadius: controlRadius(themeOf(rt.themeName), "full"),
   },
   sendButtonLabel: {
     fontSize: theme.fontSize.base,
