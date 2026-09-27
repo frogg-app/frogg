@@ -367,7 +367,7 @@ function SummaryModelField({
           isRetryingProvider={picker.isRetryingProvider}
           disabled={disabled}
           serverId={serverId}
-          desktopPlacement="bottom-end"
+          desktopPlacement="bottom-start"
           desktopMinWidth={360}
         />
       </View>

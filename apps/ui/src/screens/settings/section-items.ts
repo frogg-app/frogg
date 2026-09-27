@@ -15,6 +15,7 @@ import {
   MonitorSmartphone,
   Rocket,
   ShieldCheck,
+  Wrench,
 } from "lucide-react-native";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 
@@ -22,6 +23,8 @@ import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 export interface SettingsSectionContext {
   isDesktopApp: boolean;
   shortcutsAvailable: boolean;
+  /** The About screen's "Developer options" switch. */
+  developerOptions: boolean;
 }
 
 export interface SidebarSectionItem {
@@ -34,7 +37,8 @@ export interface SidebarSectionItem {
 
 // The app settings sections, in order. Companion and Diagnostics live inside
 // General; Layout, Editor and Integrations were removed. `section-items.test.ts`
-// pins this list so a merge cannot quietly bring a section back. About stays last.
+// pins this list so a merge cannot quietly bring a section back. Developer only
+// shows with About's "Developer options" switch on. About stays last.
 export const SIDEBAR_SECTION_ITEMS: SidebarSectionItem[] = [
   { id: "general", labelKey: "settings.sections.general", icon: Settings },
   { id: "appearance", labelKey: "settings.sections.appearance", icon: Palette },
@@ -55,6 +59,12 @@ export const SIDEBAR_SECTION_ITEMS: SidebarSectionItem[] = [
     labelKey: "settings.sections.permissions",
     icon: Shield,
     isVisible: (context) => context.isDesktopApp,
+  },
+  {
+    id: "developer",
+    labelKey: "settings.sections.developer",
+    icon: Wrench,
+    isVisible: (context) => context.developerOptions,
   },
   { id: "about", labelKey: "settings.sections.about", icon: Info },
 ];

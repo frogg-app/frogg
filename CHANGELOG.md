@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Developer options in Settings.** A **Developer options** switch at the bottom of
+  **Settings → About** (off by default, stored per app install) shows a **Developer** section
+  above About. Its **Beta app** card installs or updates frogg beta beside the desktop app with
+  a progress bar and cancel, and opens it; web and mobile link to the releases page. **Beta
+  daemon on hosts** lists every host with its beta daemon status (installed version, running
+  and port, latest beta, or why it is unavailable), installs, updates and uninstalls it
+  (confirmed, optionally deleting its data), and streams the run's phase and installer log.
+  Hosts without `features.betaChannelManagement` ask to be updated. Strings are translated in
+  all nine locales. The unused desktop `install_cli` / `get_cli_install_status` commands and
+  their CLI installer code are removed.
 - **Configurable automatic clean cut.** `daemon.cleanCut` and **Settings → Host → Clean cut** set each trigger (usage-limit resume, daemon-restart resume) on or off, a global and per-provider idle threshold (default: the provider's cache lifetime, also used by the composer's stale-cache warning) and a global and per-provider summary model. Changes apply live. Every automatic cut decision is logged with its outcome and reason. `autoCleanCutOnColdCache: false` still disables both triggers. Fixed a usage-limit reschedule without a reset time overwriting a known reset.
 - **Leaner app Settings.** The app settings sidebar is General, Appearance, Shortcuts,
   Notifications, Permissions and About. Companion and Diagnostics are now groups inside

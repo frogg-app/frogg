@@ -31,6 +31,7 @@ import { PairLinkModal } from "@/components/pair-link-modal";
 import { PairWithCodeModal } from "@/device-access/pair-with-code-modal";
 import { KeyboardShortcutsSection } from "@/screens/settings/keyboard-shortcuts-section";
 import { AboutSection } from "@/screens/settings/about-section";
+import { DeveloperSection } from "@/screens/settings/developer/developer-section";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -791,6 +792,8 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
           return isDesktopApp ? <DesktopNotificationsSection /> : null;
         case "permissions":
           return isDesktopApp ? <DesktopPermissionsSection /> : null;
+        case "developer":
+          return settings.developerOptions ? <DeveloperSection /> : null;
         case "about":
           return (
             <AboutSection
