@@ -4,6 +4,15 @@ import { Pressable, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import { themeOf } from "@/styles/design-theme";
+import {
+  entryCard,
+  entryColumn,
+  entrySectionTitle,
+  entrySolidButton,
+  entrySolidButtonText,
+} from "@/home/entry-design";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import type { BarcodeScanningResult, BarcodeSettings } from "expo-camera";
 import { hasPairingCode } from "@frogg/protocol/connection-offer";
@@ -13,7 +22,7 @@ import { isWeb } from "@/constants/platform";
 import { BackHeader } from "@/components/headers/back-header";
 import { ClaimOfferPanel } from "@/components/claim-offer-panel";
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -21,6 +30,9 @@ const styles = StyleSheet.create((theme) => ({
   body: {
     flex: 1,
     paddingHorizontal: theme.spacing[6],
+  },
+  bodyDesign: {
+    ...entryColumn(themeOf(rt.themeName)),
   },
   cameraWrap: {
     flex: 1,
@@ -87,10 +99,16 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surface2,
     gap: theme.spacing[4],
   },
+  permissionCardDesign: {
+    ...entryCard(themeOf(rt.themeName)),
+  },
   permissionTitle: {
     color: theme.colors.foreground,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.semibold,
+  },
+  permissionTitleDesign: {
+    ...entrySectionTitle(themeOf(rt.themeName)),
   },
   permissionBody: {
     color: theme.colors.foregroundMuted,
@@ -103,9 +121,15 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.palette.blue[500],
   },
+  permissionButtonDesign: {
+    ...entrySolidButton(themeOf(rt.themeName)),
+  },
   permissionButtonText: {
     color: theme.colors.palette.white,
     fontWeight: theme.fontWeight.semibold,
+  },
+  permissionButtonTextDesign: {
+    ...entrySolidButtonText(themeOf(rt.themeName)),
   },
 }));
 
@@ -192,7 +216,7 @@ export default function PairScanScreen() {
   }, [requestPermission]);
 
   const bodyStyle = useMemo(
-    () => [styles.body, { paddingBottom: insets.bottom + theme.spacing[6] }],
+    () => [styles.body, styles.bodyDesign, { paddingBottom: insets.bottom + theme.spacing[6] }],
     [insets.bottom, theme.spacing],
   );
   const helperTextStyle = useMemo(
@@ -205,11 +229,13 @@ export default function PairScanScreen() {
       <View style={styles.container}>
         <BackHeader title={t("pairing.scan.title")} onBack={handleRouterBack} />
         <View style={bodyStyle}>
-          <View style={styles.permissionCard}>
-            <Text style={styles.permissionTitle}>{t("pairing.scan.webUnavailableTitle")}</Text>
+          <View style={permissionCardStyle}>
+            <Text style={permissionTitleStyle} dataSet={DESIGN_FONT_DATASET}>
+              {t("pairing.scan.webUnavailableTitle")}
+            </Text>
             <Text style={styles.permissionBody}>{t("pairing.scan.webUnavailableBody")}</Text>
-            <Pressable style={styles.permissionButton} onPress={closeToSource}>
-              <Text style={styles.permissionButtonText}>{t("pairing.scan.backToSettings")}</Text>
+            <Pressable style={permissionButtonStyle} onPress={closeToSource}>
+              <Text style={permissionButtonTextStyle}>{t("pairing.scan.backToSettings")}</Text>
             </Pressable>
           </View>
         </View>
@@ -222,17 +248,19 @@ export default function PairScanScreen() {
   let body;
   if (!granted) {
     body = (
-      <View style={styles.permissionCard}>
-        <Text style={styles.permissionTitle}>{t("pairing.scan.cameraPermissionTitle")}</Text>
+      <View style={permissionCardStyle}>
+        <Text style={permissionTitleStyle} dataSet={DESIGN_FONT_DATASET}>
+          {t("pairing.scan.cameraPermissionTitle")}
+        </Text>
         <Text style={styles.permissionBody}>{t("pairing.scan.cameraPermissionBody")}</Text>
-        <Pressable style={styles.permissionButton} onPress={handleRequestPermission}>
-          <Text style={styles.permissionButtonText}>{t("pairing.scan.grantPermission")}</Text>
+        <Pressable style={permissionButtonStyle} onPress={handleRequestPermission}>
+          <Text style={permissionButtonTextStyle}>{t("pairing.scan.grantPermission")}</Text>
         </Pressable>
       </View>
     );
   } else if (state.status !== "idle") {
     body = (
-      <View style={styles.permissionCard}>
+      <View style={permissionCardStyle}>
         <ClaimOfferPanel
           state={state}
           onRetryWithEndpoint={handleRetry}
@@ -274,3 +302,8 @@ export default function PairScanScreen() {
 }
 
 const BARCODE_SCANNER_SETTINGS: BarcodeSettings = { barcodeTypes: ["qr"] };
+
+const permissionCardStyle = [styles.permissionCard, styles.permissionCardDesign];
+const permissionTitleStyle = [styles.permissionTitle, styles.permissionTitleDesign];
+const permissionButtonStyle = [styles.permissionButton, styles.permissionButtonDesign];
+const permissionButtonTextStyle = [styles.permissionButtonText, styles.permissionButtonTextDesign];

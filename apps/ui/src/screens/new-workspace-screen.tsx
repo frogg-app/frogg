@@ -7,6 +7,9 @@ import { Pressable, StyleSheet as RNStyleSheet, Text, View } from "react-native"
 import type { PressableStateCallbackType } from "react-native";
 import ReanimatedAnimated from "react-native-reanimated";
 import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import { themeOf } from "@/styles/design-theme";
+import { entryMetaChip, entryPageTitle, entryTitleBlock } from "@/home/entry-design";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { createNameId } from "mnemonic-id";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -1381,6 +1384,7 @@ function useNewWorkspaceFormStack(input: NewWorkspaceFormStackInput): ReactEleme
   const badgePressableStyle = useCallback(
     ({ pressed, hovered }: PressableStateCallbackType & { hovered?: boolean }) => [
       styles.badge,
+      styles.badgeDesign,
       Boolean(hovered) && !isPending && styles.badgeHovered,
       pressed && !isPending && styles.badgePressed,
       isPending && styles.badgeDisabled,
@@ -2347,8 +2351,14 @@ function NewWorkspaceForm({
       <View style={contentStyle}>
         <TitlebarDragRegion />
         <ReanimatedAnimated.View style={centeredStyle}>
-          <View style={styles.composerTitleContainer}>
-            <Text style={styles.composerTitle}>{t("newWorkspace.title")}</Text>
+          <View style={composerTitleContainerStyle}>
+            <Text
+              style={composerTitleStyle}
+              dataSet={DESIGN_FONT_DATASET}
+              accessibilityRole="header"
+            >
+              {t("newWorkspace.title")}
+            </Text>
           </View>
           {formStack}
           {isTerminalLaunch ? (
@@ -2425,7 +2435,7 @@ const animatedStaticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -2452,6 +2462,12 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize["2xl"],
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foreground,
+  },
+  composerTitleDesign: {
+    ...entryPageTitle(themeOf(rt.themeName)),
+  },
+  composerTitleContainerDesign: {
+    ...entryTitleBlock(themeOf(rt.themeName)),
   },
   errorText: {
     fontSize: theme.fontSize.base,
@@ -2506,6 +2522,9 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.borderRadius["2xl"],
     gap: theme.spacing[1],
   },
+  badgeDesign: {
+    ...entryMetaChip(themeOf(rt.themeName)),
+  },
   badgeHovered: {
     backgroundColor: theme.colors.surface2,
   },
@@ -2559,3 +2578,9 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: 4,
   },
 }));
+
+const composerTitleContainerStyle = [
+  styles.composerTitleContainer,
+  styles.composerTitleContainerDesign,
+];
+const composerTitleStyle = [styles.composerTitle, styles.composerTitleDesign];

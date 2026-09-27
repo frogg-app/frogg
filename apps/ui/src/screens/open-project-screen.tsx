@@ -26,6 +26,11 @@ import { HomeActions, type HomeAction } from "@/home/home-actions";
 import { resolveHomePresentation } from "@/home/home-layout";
 import { useDesignPreviewStore } from "@/design/design-preview-store";
 import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import { themeOf } from "@/styles/design-theme";
+import { designHeading } from "@/styles/settings-treatment";
+import type { TextFragment } from "@/styles/style-fragment";
+import type { Theme } from "@/styles/theme";
+import { entryPageTitle } from "@/home/entry-design";
 
 export function OpenProjectScreen() {
   const { t } = useTranslation();
@@ -146,7 +151,7 @@ export function OpenProjectScreen() {
           <BrandLogo size={presentation.logoSize} />
           {presentation.greeting ? (
             <Text
-              style={presentation.alignStart ? styles.greetingStart : styles.greeting}
+              style={presentation.alignStart ? styles.greetingStart : greetingStyle}
               dataSet={DESIGN_FONT_DATASET}
               accessibilityRole="header"
             >
@@ -173,7 +178,7 @@ export function OpenProjectScreen() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -194,32 +199,51 @@ const styles = StyleSheet.create((theme) => ({
   },
   header: {
     width: "100%",
-    maxWidth: 640,
+    maxWidth: 680,
     alignItems: "center",
     gap: theme.spacing[6],
-    marginBottom: theme.design.variant === "current" ? theme.spacing[8] : 0,
+    marginBottom: variantOf(rt.themeName) === "current" ? theme.spacing[8] : 0,
   },
   headerStart: {
     width: "100%",
-    maxWidth: theme.design.variant === "mono" ? 560 : 440,
+    maxWidth: variantOf(rt.themeName) === "mono" ? 600 : 480,
     alignItems: "flex-start",
-    gap: theme.design.variant === "mono" ? theme.spacing[6] : theme.spacing[4],
+    gap: variantOf(rt.themeName) === "mono" ? theme.spacing[6] : theme.spacing[3],
   },
   greeting: {
     color: theme.colors.foreground,
-    fontFamily: theme.design.headingFontFamily,
-    fontWeight: theme.design.headingWeight,
-    letterSpacing: theme.design.headingLetterSpacing,
-    fontSize: { xs: 26, md: theme.design.variant === "focus" ? 34 : 32 },
+    fontSize: { xs: 26, md: 32 },
     lineHeight: { xs: 32, md: 42 },
     textAlign: "center",
   },
+  greetingDesign: {
+    ...greetingFragment(themeOf(rt.themeName)),
+  },
+  greetingSize: {
+    fontSize: { xs: 26, md: wideGreeting(rt.themeName) ? 36 : 32 },
+    lineHeight: { xs: 32, md: wideGreeting(rt.themeName) ? 44 : 42 },
+  },
   greetingStart: {
     color: theme.colors.foreground,
-    fontFamily: theme.design.headingFontFamily,
-    fontWeight: theme.design.headingWeight,
-    letterSpacing: theme.design.headingLetterSpacing,
-    fontSize: theme.design.variant === "mono" ? 28 : 17,
-    lineHeight: theme.design.variant === "mono" ? 34 : 24,
+    ...entryPageTitle(themeOf(rt.themeName)),
   },
 }));
+
+function variantOf(themeName: string | undefined) {
+  return themeOf(themeName).design.variant;
+}
+
+// The centred greeting in the direction's display face (Soft runs it bold).
+function greetingFragment(theme: Theme): TextFragment {
+  const heading = designHeading(theme);
+  if (theme.design.variant === "soft") return { ...heading, fontWeight: "700" };
+  return heading;
+}
+
+// Paper's serif and Focus's display type run a size up on wide screens.
+function wideGreeting(themeName: string | undefined): boolean {
+  const variant = variantOf(themeName);
+  return variant === "focus" || variant === "paper";
+}
+
+const greetingStyle = [styles.greeting, styles.greetingDesign, styles.greetingSize];

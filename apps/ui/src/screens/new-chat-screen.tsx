@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet as RNStyleSheet, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import { themeOf } from "@/styles/design-theme";
+import { entryPageTitle, entryTitleBlock } from "@/home/entry-design";
 import { Composer } from "@/composer";
 import type { MessagePayload } from "@/composer/types";
 import {
@@ -219,8 +222,10 @@ export function NewChatScreen({ serverId }: { serverId: string }) {
       <View style={[styles.content, isCompact ? styles.contentCompact : styles.contentCentered]}>
         <TitlebarDragRegion />
         <View style={staticStyles.centered}>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>{t(`newChat.titles.${titleKey}`)}</Text>
+          <View style={titleContainerStyle}>
+            <Text style={titleStyle} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">
+              {t(`newChat.titles.${titleKey}`)}
+            </Text>
           </View>
           <Composer
             externalKeyboardShift
@@ -257,7 +262,7 @@ const staticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -285,4 +290,13 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foreground,
   },
+  titleDesign: {
+    ...entryPageTitle(themeOf(rt.themeName)),
+  },
+  titleContainerDesign: {
+    ...entryTitleBlock(themeOf(rt.themeName)),
+  },
 }));
+
+const titleContainerStyle = [styles.titleContainer, styles.titleContainerDesign];
+const titleStyle = [styles.title, styles.titleDesign];
