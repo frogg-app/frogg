@@ -3,22 +3,24 @@
 // daemon runs on a copy of the preview's seeded home, so the demo project and chats are there and
 // nothing touches the preview itself.
 //
-// Access is the daemon's own pairing: visitors from the tunnel are remote, so they see the
-// pairing page until they open a pairing link. Each link is single-use and expires after 10
-// minutes; the first one claims the daemon.
+// Access is a key gate (design-review-gate.mts): the tunnel reaches the gate, which admits a
+// browser that opened the key link once and forwards it to the daemon as a LAN client, so no
+// pairing is needed. The key persists in .dev/design-review/key across restarts.
 //
 //   npm run build:web --workspace=@frogg/app            # rebuild after UI changes (no hot reload)
-//   node --import tsx scripts/dev/design-review.mts      # start; prints the URL and a pairing link
-//   node --import tsx scripts/dev/design-review.mts pair # another link, for another device
+//   node --import tsx scripts/dev/design-review.mts      # start; prints the key link
+//   node --import tsx scripts/dev/design-review.mts pair # a pairing link instead (claims the daemon)
 //
 // Needs `npm run preview` to have run once (for .dev/preview/home) and `cloudflared` on PATH.
-// Port: DESIGN_REVIEW_PORT (default 7881), bound to 127.0.0.1 only; the tunnel is the way in.
+// Ports: DESIGN_REVIEW_PORT (daemon, default 7881) and +1 (gate), both on 127.0.0.1 only.
 import { execFileSync, spawn, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { mkdir } from "node:fs/promises";
 import { cp, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { newReviewKey, startReviewGate } from "./design-review-gate.mts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const seededHome = path.join(root, ".dev/preview/home");
@@ -26,7 +28,9 @@ const reviewDir = path.join(root, ".dev/design-review");
 const home = path.join(reviewDir, "home");
 const urlFile = path.join(reviewDir, "url.txt");
 const distDir = path.join(root, "apps/ui/dist");
+const keyFile = path.join(reviewDir, "key");
 const port = Number(process.env.DESIGN_REVIEW_PORT ?? 7881);
+const gatePort = port + 1;
 const children: ChildProcess[] = [];
 
 function log(message: string): void {
@@ -88,15 +92,21 @@ function pairingLink(tunnelUrl: string): string {
   return `${tunnelUrl}/?design=inset#offer=${rewritten}`;
 }
 
-function printAccess(tunnelUrl: string): void {
+async function reviewKey(): Promise<string> {
+  if (existsSync(keyFile)) return readFileSync(keyFile, "utf8").trim();
+  const key = newReviewKey();
+  await mkdir(reviewDir, { recursive: true });
+  await writeFile(keyFile, `${key}\n`, { mode: 0o600 });
+  return key;
+}
+
+function printAccess(tunnelUrl: string, key: string): void {
   console.log(
     [
       "",
       "══════════════════════════════════════════════════════",
-      `  Design review:  ${tunnelUrl}/?design=inset`,
-      `  Pairing link (single-use, 10 min):`,
-      `  ${pairingLink(tunnelUrl)}`,
-      "  Another device: node --import tsx scripts/dev/design-review.mts pair",
+      `  Design review (open once per browser; treat it like a password):`,
+      `  ${tunnelUrl}/?key=${key}`,
       "  Switch: bottom bar, or Alt+Shift+←/→, Alt+Shift+1…6, Alt+Shift+L",
       "══════════════════════════════════════════════════════",
       "",
@@ -131,6 +141,8 @@ async function main(): Promise<void> {
     NODE_ENV: "development",
   });
   daemon.stderr?.pipe(process.stderr);
+  const key = await reviewKey();
+  startReviewGate({ port: gatePort, daemonPort: port, key });
 
   // An empty config keeps cloudflared from reading ~/.cloudflared/config.yml, whose ingress
   // rules (for other tunnels on this machine) would otherwise 404 every quick-tunnel request.
@@ -140,7 +152,14 @@ async function main(): Promise<void> {
   const tunnel = start(
     "tunnel",
     "cloudflared",
-    ["tunnel", "--config", tunnelConfig, "--no-autoupdate", "--url", `http://127.0.0.1:${port}`],
+    [
+      "tunnel",
+      "--config",
+      tunnelConfig,
+      "--no-autoupdate",
+      "--url",
+      `http://127.0.0.1:${gatePort}`,
+    ],
     {},
   );
   const tunnelUrl = await new Promise<string>((resolve) => {
@@ -154,7 +173,7 @@ async function main(): Promise<void> {
   });
   await writeFile(urlFile, `${tunnelUrl}\n`);
   await waitForPort(120_000);
-  printAccess(tunnelUrl);
+  printAccess(tunnelUrl, key);
 }
 
 process.on("SIGINT", () => shutdown(0));
