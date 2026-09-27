@@ -16,7 +16,7 @@ host, inside the daemon process, so you install them per host and every client c
 that host sees what they add.
 
 Open **Plugins** in the sidebar, between **Add project** and **Hosts**. The entry is hidden when
-no connected host supports plugins, or when your build's brand turns plugins off. You can also
+your build's brand turns plugins off, and on mobile when no connected host supports plugins. You can also
 open it from the Command Center by searching for "Plugins".
 
 <Screenshot src={pluginsInstalledImg} alt="Plugins window, Installed tab, with a developer-linked plugin" />
@@ -27,11 +27,45 @@ open it from the Command Center by searching for "Plugins".
 
 - **A host.** Plugins that run in the daemon (`daemon` scope) and the host half of `hybrid`
   plugins are installed here.
-- **This client.** Plugins that run inside the app itself (`client` scope). The client plugin
-  runtime is not part of this version yet, so this target only explains that.
+- **This client.** Plugins that run inside the app on this device (`client` scope), and the
+  client half of `hybrid` plugins. Available in the desktop and web apps; the mobile app does not
+  run client plugins and does not show this target.
 
-A `hybrid` plugin installed on a host shows **Needs client component**: its host half works,
-but the part meant to run in the app cannot load yet.
+## This client
+
+Client plugins are installed per device: each desktop app or browser keeps its own. The desktop
+app stores them in its app data folder; the web app stores them in the browser (IndexedDB), so
+clearing site data removes them.
+
+**Browse** lists `client`-scope plugins from the official repository, your brand's
+repositories and any user repositories added on a connected host. The app fetches each
+repository index itself and checks its signature against the pinned key (official and brand keys
+are built into the app; user repository keys are the ones the host pinned). **Install** shows
+the permissions the plugin asks for, then downloads the plugin, checks its checksum against the
+signed index and checks that its manifest matches, before anything runs. A plugin that fails any
+check is not installed and the reason is shown.
+
+Each client plugin runs in its own sandbox with no access to the app's windows, storage or
+other plugins. It can only use what its permissions allow: device-local settings
+(`settings.store`), toasts (`ui.contribute`), answering its own commands, session actions and
+panels, and calling its host half (`rpc`), and network requests only with `network`. Commands,
+session actions and panels from client plugins appear alongside those from hosts.
+
+The **Installed** list shows each plugin's status (Starting, Active, Error, Disabled, Blocked),
+source and a switch. **Uninstall** asks for confirmation. Your brand's allow and deny lists
+apply here too.
+
+On desktop, when your brand allows developer mode, **Add local folder** links a plugin folder on
+this computer. Linked plugins skip integrity checks and carry a **DEV** badge; **Reload** reads
+the folder again after you rebuild.
+
+### Hybrid plugins
+
+A `hybrid` plugin installed on a host lists its client component on the host's Installed tab.
+Choose **Install on this device** to fetch that plugin version's client half from the same
+repository and verify it the same way. Once installed, it shows **Client component installed on
+this device**, and its actions run through the client half, which can call the host half. Install
+it on each device where you want it; without it, the host half still works on its own.
 
 ## Installed
 
@@ -95,7 +129,8 @@ that host. Enter the absolute path of the plugin folder **on the host** and choo
 **Link folder**. Linked plugins skip signature and checksum checks, reload when their files
 change and carry a **DEV** badge. **Unlink** removes the link without touching the folder.
 
-Brands can forbid developer mode, in which case the option is hidden.
+Brands can forbid developer mode, in which case the option is hidden, on hosts and in the
+desktop app alike.
 
 ## What plugins add
 

@@ -254,6 +254,66 @@ existing conventions.
   `6NkzNDGG54fvBJE/dDlQGmPD2ZZRiA9bKo6alMU+2H4=` (`OFFICIAL_PLUGIN_REPO` in
   `packages/protocol/src/plugins/repo-index.ts`). The private key is not in the repo.
 
+## Client plugin runtime
+
+Client-scope plugins and the client halves of hybrid plugins, on desktop (Electron) and web.
+Code: `apps/ui/src/plugins/client-runtime/`, desktop storage in
+`apps/desktop/src/features/client-plugins.ts`, API types in `api-v1.ts` (`ClientPluginContext`).
+
+Client API v1 (`activate(ctx)`; members exist only with the capability):
+
+- `ctx.log`, `ctx.plugin` (id, version, dev, capabilities) — always
+- `ctx.settings.get/set/delete/all` — device-local JSON store (`settings.store`)
+- `ctx.rpc.handle(method, fn)` — answer a contribution method in the app (`rpc`)
+- `ctx.rpc.call(method, params)` — the plugin's daemon half via the host's `plugins.rpc.call`
+  (`rpc`; hybrid only)
+- `ctx.ui.notify(message, level)` — toast in this app (`ui.contribute`)
+
+Decisions:
+
+- **Trust anchors without a protocol change.** The device fetches `index.json` + `.sig` itself
+  and verifies with WebCrypto ed25519. Keys: official and brand keys compiled into the app always
+  win; user repos use the key the host pinned (`plugins.repos.list`), only when the brand allows
+  user repos. A host can add a user repo but cannot replace an official or brand key. Tarball
+  URL and sha256 come from the verified index, never from the host's catalog response. Repos must
+  serve CORS for the web app (GitHub Pages, which the repo template deploys to, does).
+- **Checks** mirror the daemon: signature, sha256 (WebCrypto), strict tarball reader (regular
+  files only, no escaping paths, size caps, `DecompressionStream`), manifest id/version/scope/
+  capabilities equal to the index entry, supported `apiVersion`, manifest schema-valid.
+- **Entry format**: `entry.client` is one self-contained ES module (no relative imports), loaded
+  from a blob URL inside the sandbox.
+- **Sandbox**: one hidden `<iframe sandbox="allow-scripts">` per plugin (opaque origin: no app
+  DOM, cookies, localStorage or IndexedDB) with its own CSP; `connect-src 'none'` unless the
+  plugin has `network`. The app hands it a private `MessagePort` after the iframe's boot message
+  (checked by `event.source`); all traffic uses that port. The app side
+  (`bridge.ts`) enforces capabilities on every call, bounds sizes and accepts JSON only.
+  Activation and invokes time out (10 s / 15 s).
+- **Routing**: every contribution invocation goes through `callPluginMethod`: if this device's
+  client half registered the method with `ctx.rpc.handle`, it runs in the sandbox; otherwise it
+  goes to the host as before. So a hybrid client half can intercept an action, call its daemon
+  half and toast.
+- **Contributions**: client-scope plugins' manifest `contributes` merge into the Command Center
+  (once, not per host), the session actions menu and panels of every workspace. Hybrid
+  contributions keep coming from the host. Settings pages for client plugins are not rendered yet.
+- **`ctx.rpc.call` host choice**: the first connected plugin host where the call does not fail
+  with not_found / not_active / forbidden.
+- **Hybrid client halves are installed explicitly per device** ("Install on this device" on the
+  host's Installed row), at the host's installed version, from the host's repo, with the
+  capabilities granted on the host. Not auto-fetched: running code on a device stays a per-device
+  action. A newer host version shows the install button again (it replaces the old half).
+- **Consent** for client-scope installs is all-or-nothing, same as hosts.
+- **Storage**: desktop writes one JSON record per plugin (manifest, verified entry source,
+  settings) to `<userData>/client-plugins/<id>.json` via `client_plugins_*` desktop commands; web
+  uses IndexedDB `frogg-client-plugins`. Mobile: no runtime, the "This client" target is hidden.
+- **Brand policy**: `enabled: false` stops the runtime; allow/deny is checked on install, link and
+  every start (status `blocked`). `developerMode: forbidden` hides "Add local folder".
+- **Dev mode on client**: desktop only, gated by brand, not by a host setting. "Add local folder"
+  uses the native folder picker; the folder is re-read on every start and on **Reload** (no file
+  watching). Dev links get every capability they request and cannot shadow a repo install.
+- **Deferred**: hot reload of client dev links; client plugin settings pages; `ctx.ui.setBadge`
+  and `refreshPanel` on the client; update notifications for client plugins; https-only enforcement
+  on device (integrity rests on the signature); a host relay for repos without CORS.
+
 ## RPC contract (v1)
 
 Schemas: `packages/protocol/src/plugins/rpc-schemas.ts` (re-exported from
