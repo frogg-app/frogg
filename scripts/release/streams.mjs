@@ -241,7 +241,7 @@ const commands = {
     process.stdout.write(`Release streams (frogg.json "streams"):
 
   status                      where each stream is and what has not propagated yet
-  beta [--major] [--print]    cut the next beta from the development branch
+  beta [--minor|--major] [--print]  cut the next beta (a new line opens the next patch)
   patch [--print]             cut the next stable patch (backported fixes) on the stable branch
   promote [--print]           ship the development branch's beta line as stable (on the stable branch)
   backport <commit...>        cherry-pick fixes from development onto stable (then release:patch)
@@ -316,6 +316,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     const print = flag(args, "--print");
     const skipCheck = flag(args, "--skip-check");
     const major = flag(args, "--major");
+    const minor = flag(args, "--minor");
     if (!print) {
       assertOnBranch(config.development, "release:beta");
       assertClean();
@@ -331,7 +332,8 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
     if (suffix && !upstreamVersion) {
       fail(`No merge with ${follow} yet. Run \`npm run release:sync-upstream\` first.`);
     }
-    if (suffix && major) fail("A fork's version follows upstream's; --major does not apply.");
+    if (suffix && (major || minor))
+      fail("A fork's version follows upstream's; --major/--minor do not apply.");
     const version = suffix
       ? nextForkBetaVersion({ developmentVersion: readVersion("HEAD"), upstreamVersion, suffix })
       : nextBetaVersion({
@@ -339,6 +341,7 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
           stableVersion: stableVersionOf(config),
           upstreamVersion,
           major,
+          minor,
         });
     if (print) return void process.stdout.write(`${version}\n`);
     cut(version, { skipCheck });
