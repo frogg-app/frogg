@@ -5,6 +5,7 @@ import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { MenuItem, MenuRoot, MenuSeparator, MenuSurface, MenuTrigger } from "@/components/ui/menu";
 import type { MenuTriggerState } from "@/components/ui/menu";
+import { useIsCompactFormFactor } from "@/constants/layout";
 import { useToast } from "@/contexts/toast-context";
 import { useSidebarWorkspacePinController } from "@/hooks/use-sidebar-workspace-pin";
 import { useKeyboardActionDispatcher } from "@/keyboard/keyboard-action-dispatcher-context";
@@ -34,7 +35,13 @@ function triggerStyle({ hovered, open }: MenuTriggerState) {
  * Claude's conversation header: the chat's title centred above the thread, with a chevron that
  * opens Star, Rename and Delete. Here those are the session's pin, rename and archive.
  */
-export function PaperConversationTop({ serverId, agentId }: { serverId: string; agentId: string }) {
+export function PaperConversationTop(props: { serverId: string; agentId: string }) {
+  // Compact layouts already title the conversation in the screen header, as Claude iOS does.
+  if (useIsCompactFormFactor()) return null;
+  return <PaperConversationTitle {...props} />;
+}
+
+function PaperConversationTitle({ serverId, agentId }: { serverId: string; agentId: string }) {
   const { t } = useTranslation();
   const toast = useToast();
   const dispatcher = useKeyboardActionDispatcher();
@@ -109,7 +116,11 @@ export function PaperConversationTop({ serverId, agentId }: { serverId: string; 
             </MenuItem>
           ) : null}
           {workspace ? (
-            <MenuItem leading={renameIcon} onSelect={handleRename} testID="paper-conversation-rename">
+            <MenuItem
+              leading={renameIcon}
+              onSelect={handleRename}
+              testID="paper-conversation-rename"
+            >
               {t("sidebar.workspace.actions.rename")}
             </MenuItem>
           ) : null}

@@ -1,7 +1,7 @@
 import { useRouter, type Href } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
+import { Pressable, ScrollView, Text, type PressableStateCallbackType } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { ImportSessionSheet } from "@/components/import-session-sheet";
 import { PairDeviceModal } from "@/desktop/components/pair-device-modal";
@@ -31,7 +31,7 @@ function chipStyle({ hovered, pressed }: HoverState) {
  * Claude's suggestion chips under the composer, carrying the home screen's real starting points:
  * add a project, import a CLI conversation, set up providers, pair a phone.
  */
-export function PaperHomeChips() {
+export function PaperHomeChips({ scroll = false }: { scroll?: boolean }) {
   const { t } = useTranslation();
   const router = useRouter();
   const openProjectPicker = useOpenAddProject();
@@ -111,7 +111,13 @@ export function PaperHomeChips() {
 
   return (
     <>
-      <View style={styles.row}>
+      <ScrollView
+        horizontal
+        scrollEnabled={scroll}
+        showsHorizontalScrollIndicator={false}
+        style={styles.scroller}
+        contentContainerStyle={scroll ? styles.rowScroll : styles.row}
+      >
         {chips.map((chip) => {
           const Icon = PaperIcon[chip.icon];
           return (
@@ -127,7 +133,7 @@ export function PaperHomeChips() {
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
       <PairDeviceModal
         serverId={localServerId ?? ""}
         visible={isPairOpen}
@@ -146,11 +152,20 @@ export function PaperHomeChips() {
 }
 
 const styles = StyleSheet.create((theme) => ({
+  scroller: {
+    flexGrow: 0,
+  },
   row: {
+    flexGrow: 1,
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
     gap: 8,
+  },
+  rowScroll: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 16,
   },
   chip: {
     flexDirection: "row",

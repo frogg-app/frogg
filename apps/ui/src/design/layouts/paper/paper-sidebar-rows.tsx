@@ -51,7 +51,11 @@ export function PaperNavRow({
       <Icon size={14} strokeWidth={2} uniProps={paperForeground} />
     </View>
   ) : (
-    <Icon size={large ? 20 : 16} strokeWidth={1.6} uniProps={active ? paperForeground : paperMuted} />
+    <Icon
+      size={large ? 20 : 16}
+      strokeWidth={1.6}
+      uniProps={active ? paperForeground : paperMuted}
+    />
   );
   const row = (
     <Pressable
@@ -142,7 +146,9 @@ export const PaperRecentRow = memo(function PaperRecentRow({
         ]}
       >
         {item.title}
-        {item.projectName ? <Text style={styles.recentProject}>{`  ${item.projectName}`}</Text> : null}
+        {item.projectName ? (
+          <Text style={styles.recentProject}>{`  ${item.projectName}`}</Text>
+        ) : null}
       </Text>
       {dot ? <View style={[styles.dot, dot]} /> : null}
     </Pressable>
@@ -181,7 +187,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
   },
   navRowHovered: {
-    backgroundColor: theme.colors.surface2,
+    backgroundColor: theme.colors.surface3,
   },
   navRowActive: {
     backgroundColor: theme.colors.surface3,
@@ -201,7 +207,7 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: 11,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: theme.colors.surface3,
+    backgroundColor: theme.colors.surface4,
   },
   navLabel: {
     flex: 1,

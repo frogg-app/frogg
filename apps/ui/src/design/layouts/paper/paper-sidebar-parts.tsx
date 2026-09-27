@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
@@ -81,10 +81,13 @@ export function PaperAccountFooter({
     hosts.length > 1
       ? `${hosts.length} hosts` /* preview copy */
       : t(`common.connectionStatus.${status}`);
-  const rowStyle = ({ hovered }: HoverState) => [
-    collapsed ? styles.footerRail : styles.footer,
-    Boolean(hovered) && styles.footerHovered,
-  ];
+  const rowStyle = useCallback(
+    ({ hovered }: HoverState) => [
+      collapsed ? styles.footerRail : styles.footer,
+      Boolean(hovered) && styles.footerHovered,
+    ],
+    [collapsed],
+  );
   return (
     <Pressable
       onPress={onPress}

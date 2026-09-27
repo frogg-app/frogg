@@ -60,7 +60,7 @@ export function PaperHome() {
       <View style={isCompact ? styles.bodyCompact : styles.body}>
         {isCompact ? <View style={styles.compactHero}>{heading}</View> : heading}
         <View style={styles.column}>
-          {isCompact ? <PaperHomeChips /> : null}
+          {isCompact ? <PaperHomeChips scroll /> : null}
           {serverId ? (
             <PaperHomeComposer key={serverId} serverId={serverId} />
           ) : (
