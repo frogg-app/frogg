@@ -4,6 +4,7 @@ import { getErrorMessage, getErrorMessageOr } from "@frogg/protocol/error-utils"
 import type { AgentConfigApply } from "@frogg/protocol/messages";
 import type { AgentProviderNotice } from "../../agent/agent-sdk-types.js";
 import type { SessionInboundMessage, SessionOutboundMessage } from "../../messages.js";
+import type { CleanCutTarget } from "../../agent/clean-cut.js";
 
 /**
  * The agent-config response messages share one payload shape; deriving the type
@@ -39,6 +40,12 @@ export interface AgentConfigOperations {
    * all. `null` is the provider's implicit default account.
    */
   transferProviderAccount(agentId: string, providerAccountId: string | null): Promise<void>;
+  /**
+   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+   * Summarises the conversation and restarts it fresh, optionally on another
+   * provider, account or model.
+   */
+  cleanCut(agentId: string, target: CleanCutTarget): Promise<void>;
 }
 
 export interface AgentConfigSessionOptions {
@@ -165,6 +172,36 @@ export class AgentConfigSession {
       },
       emitResponse: (payload) =>
         this.host.emit({ type: "agent.provider_account.transfer.response", payload }),
+    });
+  }
+
+  /**
+   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+   *
+   * Replaces the provider session like a transfer does, so it shares the same
+   * envelope. The response waits for the summary, which is the slow part.
+   */
+  handleAgentCleanCutRequest(
+    msg: Extract<SessionInboundMessage, { type: "agent.clean_cut.request" }>,
+  ): Promise<void> {
+    const { agentId, provider, providerAccountId, model, thinkingOptionId, requestId } = msg;
+    const target: CleanCutTarget = {
+      ...(provider !== undefined ? { provider } : {}),
+      ...(providerAccountId !== undefined ? { providerAccountId } : {}),
+      ...(model !== undefined ? { model } : {}),
+      ...(thinkingOptionId !== undefined ? { thinkingOptionId } : {}),
+    };
+    return this.applyConfigChange({
+      agentId,
+      requestId,
+      logLabel: "agent.clean_cut.request",
+      logFields: { agentId, requestId, target },
+      failureText: "Failed to make a clean cut",
+      run: async () => {
+        await this.operations.cleanCut(agentId, target);
+        return undefined;
+      },
+      emitResponse: (payload) => this.host.emit({ type: "agent.clean_cut.response", payload }),
     });
   }
 

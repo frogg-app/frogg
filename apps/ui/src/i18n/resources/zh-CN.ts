@@ -273,6 +273,13 @@ export const zhCN: TranslationResources = {
       warning: "缓存已过期：发送将重新计费 {{tokens}} 个输入 token",
       warningUnknown: "缓存已过期：发送将重新发送整个对话",
     },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      action: "干净切换",
+      pending: "正在总结...",
+      failed: "无法完成干净切换",
+      hint: "结束此对话并开始新对话。同一提供商的低价模型会总结聊天内容（消息和工具调用，不含其输出），并在你的消息之前发送。工作区更改会保留，旧对话对你仍然可见，但对代理不可见。",
+    },
     input: {
       accessibilityLabel: "给 Agent 发消息...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -392,9 +399,18 @@ export const zhCN: TranslationResources = {
         costUnknownTokens:
           "将此对话移动到其他账号会把整个上下文作为新输入重新发送，并按全价（无缓存）计费。",
         confirm: "转移对话",
+        cleanCut: "干净切换到此账户",
+        cleanCutHint: "或进行干净切换：用低价摘要在新账户上开始新对话，而不是重新发送全部上下文。",
         moving: "正在转移...",
         failed: "无法转移该对话",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCutProvider: {
+      title: "切换提供商",
+      body: "通过干净切换将此对话从 {{from}} 移到 {{to}}（{{model}}）？",
+      hint: "提供商无法读取其他提供商的历史，因此低价模型会总结此对话，并在新提供商上开始新对话。工作区更改会保留；旧对话对你仍然可见。",
+      confirm: "干净切换并更换",
     },
     hints: {
       thinking: "Thinking mode",
@@ -405,6 +421,15 @@ export const zhCN: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      title: "干净切换：新对话",
+      copyId: "复制上一个对话 ID",
+      idCopied: "已复制对话 ID",
+      summary: "已发送给代理的摘要",
+      summaryBy: "已发送给代理的摘要（{{model}}）",
+      switched: "{{from}} → {{to}}",
+    },
     empty: "开始和这个 Agent 对话...",
     scrollToBottom: "滚动到底部",
     historyLoadFailed: "无法加载智能体历史记录",

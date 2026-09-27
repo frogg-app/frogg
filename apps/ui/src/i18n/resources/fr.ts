@@ -280,6 +280,13 @@ export const fr: TranslationResources = {
       warning: "Cache expiré : l'envoi refacture {{tokens}} jetons d'entrée",
       warningUnknown: "Cache expiré : l'envoi renvoie toute la conversation",
     },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      action: "Coupure nette",
+      pending: "Résumé en cours...",
+      failed: "Impossible de faire la coupure nette",
+      hint: "Termine cette conversation et en démarre une nouvelle. Un modèle économique du même fournisseur résume le chat (messages et appels d'outils, sans leur sortie) et l'envoie avant votre message. Les modifications de l'espace de travail sont conservées et l'ancienne conversation reste visible pour vous, mais pas pour l'agent.",
+    },
     input: {
       accessibilityLabel: "Agent de messagerie...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -400,9 +407,19 @@ export const fr: TranslationResources = {
         costUnknownTokens:
           "Déplacer cette conversation vers un autre compte renvoie tout son contexte comme nouvelle entrée, facturée au prix plein (sans cache).",
         confirm: "Déplacer la conversation",
+        cleanCut: "Coupure nette vers ce compte",
+        cleanCutHint:
+          "Ou faites une coupure nette : un résumé économique démarre une nouvelle conversation sur l'autre compte au lieu de renvoyer tout le contexte.",
         moving: "Déplacement...",
         failed: "Impossible de déplacer la conversation",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCutProvider: {
+      title: "Changer de fournisseur",
+      body: "Déplacer cette conversation de {{from}} vers {{to}} ({{model}}) avec une coupure nette ?",
+      hint: "Un fournisseur ne peut pas lire l'historique d'un autre : un modèle économique résume donc cette conversation et une nouvelle démarre sur le nouveau fournisseur. Les modifications de l'espace de travail sont conservées ; l'ancienne conversation reste visible pour vous.",
+      confirm: "Coupure nette et changer",
     },
     hints: {
       thinking: "Mode réflexion",
@@ -413,6 +430,15 @@ export const fr: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      title: "Coupure nette : nouvelle conversation",
+      copyId: "Copier l'ID de la conversation précédente",
+      idCopied: "ID de conversation copié",
+      summary: "Résumé envoyé à l'agent",
+      summaryBy: "Résumé envoyé à l'agent ({{model}})",
+      switched: "{{from}} → {{to}}",
+    },
     empty: "Commencez à discuter avec cet agent...",
     scrollToBottom: "Faire défiler vers le bas",
     historyLoadFailed: "Impossible de charger l’historique de l’agent",

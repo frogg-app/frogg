@@ -1,3 +1,8 @@
+import { useCleanCut } from "@/composer/clean-cut";
+import {
+  CleanCutProviderModal,
+  useCleanCutProviderSwitch,
+} from "@/composer/agent-controls/clean-cut-provider-modal";
 import {
   memo,
   useCallback,
@@ -1560,7 +1565,14 @@ export const AgentControls = memo(function AgentControls({
     () => buildAgentProviderModels(agent?.provider, models),
     [agent?.provider, models],
   );
+  // COMPAT(agentCleanCut): added in v1.7.0. A daemon that can make a clean cut
+  // can move this conversation to any enabled provider, so the picker lists
+  // them all; picking another provider's model asks before cutting.
+  const canCleanCutProvider = useCleanCut(serverId, agentId).available;
   const agentModelSelectorProviders = useMemo(() => {
+    if (canCleanCutProvider && snapshotEntries && snapshotEntries.length > 1) {
+      return buildSelectableProviderSelectorProviders(snapshotEntries);
+    }
     if (snapshotSelectedEntry) {
       return buildSelectableProviderSelectorProviders([snapshotSelectedEntry]);
     }
@@ -1568,7 +1580,13 @@ export const AgentControls = memo(function AgentControls({
       providerDefinitions: agentProviderDefinitions,
       modelsByProvider: agentProviderModels,
     });
-  }, [agentProviderDefinitions, agentProviderModels, snapshotSelectedEntry]);
+  }, [
+    agentProviderDefinitions,
+    agentProviderModels,
+    canCleanCutProvider,
+    snapshotEntries,
+    snapshotSelectedEntry,
+  ]);
 
   const modelSelection = resolveAgentModelSelection({
     models,
@@ -1612,10 +1630,14 @@ export const AgentControls = memo(function AgentControls({
     },
     [agentId, agentProvider, client, toast, updatePreferences],
   );
-  const handleSelectCommandCenterModel = useCallback(
-    (_provider: AgentProvider, modelId: string) => handleSelectModel(modelId),
-    [handleSelectModel],
-  );
+  const providerSwitch = useCleanCutProviderSwitch({
+    serverId,
+    agentId,
+    agentProvider,
+    snapshotEntries,
+    onSelectSameProviderModel: handleSelectModel,
+  });
+  const handleSelectCommandCenterModel = providerSwitch.selectAny;
 
   const handleSelectThinkingOption = useCallback(
     (thinkingOptionId: string) => {
@@ -1752,6 +1774,7 @@ export const AgentControls = memo(function AgentControls({
         modelOptions={modelOptions}
         selectedModelId={modelSelection.activeModelId ?? undefined}
         onSelectModel={handleSelectModel}
+        onSelectProviderAndModel={providerSwitch.selectProviderAndModel}
         thinkingOptions={thinkingOptions.length > 1 ? thinkingOptions : undefined}
         selectedThinkingOptionId={modelSelection.selectedThinkingId ?? undefined}
         onSelectThinkingOption={handleSelectThinkingOption}
@@ -1767,6 +1790,14 @@ export const AgentControls = memo(function AgentControls({
         providerAccountControl={providerAccountControl}
         modelSelectorServerId={serverId}
         isCompactLayout={isCompactLayout}
+      />
+      <CleanCutProviderModal
+        target={providerSwitch.target}
+        fromProviderLabel={providerSwitch.fromProviderLabel}
+        isPending={providerSwitch.pending}
+        error={providerSwitch.error}
+        onClose={providerSwitch.close}
+        onConfirm={providerSwitch.confirm}
       />
     </>
   );

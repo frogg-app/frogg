@@ -115,6 +115,7 @@ import {
   type TimelineProjectionMode,
 } from "./agent/timeline-projection.js";
 import { buildAgentForkContextAttachment } from "./agent/activity-curator.js";
+import { runCleanCut, type CleanCutTarget } from "./agent/clean-cut.js";
 import { buildAgentPrompt } from "./agent/prompt-attachments.js";
 import type { StructuredGenerationDaemonConfig } from "./agent/structured-generation-providers.js";
 import {
@@ -1056,6 +1057,19 @@ export class Session {
           this.assertTransferableProviderAccount(agentId, providerAccountId);
           await agentManager.transferAgentProviderAccount(agentId, providerAccountId);
         },
+        // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+        cleanCut: async (agentId, target) => {
+          this.assertCleanCutTarget(agentId, target);
+          await runCleanCut(
+            {
+              agentManager,
+              providerSnapshotManager,
+              readDaemonConfig: () => this.readStructuredGenerationDaemonConfig(),
+              logger: this.sessionLogger,
+            },
+            { agentId, target },
+          );
+        },
       },
       logger: this.sessionLogger,
     });
@@ -1946,6 +1960,31 @@ export class Session {
    * provider. `null` needs none of those checks beyond the capability — it is
    * the provider's primary config directory, which always exists.
    */
+  /**
+   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27. A clean cut
+   * may land on another provider, so a named account is checked against the
+   * provider the agent is moving to, not the one it runs on today.
+   */
+  private assertCleanCutTarget(agentId: string, target: CleanCutTarget): void {
+    const agent = this.agentManager.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Unknown agent "${agentId}".`);
+    }
+    const provider = target.provider ?? agent.provider;
+    if (!this.providerSnapshotManager.listRegisteredProviderIds().includes(provider)) {
+      throw new Error(`Unknown provider "${provider}".`);
+    }
+    if (typeof target.providerAccountId !== "string") {
+      return;
+    }
+    const account = this.providerAccountStore.findAccount(target.providerAccountId);
+    if (!account || account.provider !== provider) {
+      throw new Error(
+        `Unknown provider account "${target.providerAccountId}" for provider "${provider}".`,
+      );
+    }
+  }
+
   private assertTransferableProviderAccount(agentId: string, accountId: string | null): void {
     const agent = this.agentManager.getAgent(agentId);
     if (!agent) {
@@ -2299,6 +2338,7 @@ export class Session {
       this.dispatchHubExecutionMessage(msg) ??
       this.dispatchAgentLifecycleMessage(msg) ??
       this.dispatchAgentConfigMessage(msg) ??
+      this.dispatchAgentCleanCutMessage(msg) ??
       this.dispatchCheckoutMessage(msg) ??
       this.dispatchWorkspaceRecoveryMessage(msg) ??
       this.workspaceLabels.dispatch(msg) ??
@@ -2629,6 +2669,13 @@ export class Session {
       default:
         return undefined;
     }
+  }
+
+  // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+  private dispatchAgentCleanCutMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    return msg.type === "agent.clean_cut.request"
+      ? this.agentConfigSession.handleAgentCleanCutRequest(msg)
+      : undefined;
   }
 
   private dispatchAgentConfigMessage(msg: SessionInboundMessage): Promise<void> | undefined {

@@ -350,6 +350,23 @@ export interface CompactionTimelineItem {
   status: "loading" | "completed";
   trigger?: "auto" | "manual";
   preTokens?: number;
+  /** COMPAT(agentCleanCut): added in v1.7.0. Set when this marker is a clean cut. */
+  cleanCut?: CleanCutMarker;
+}
+
+/**
+ * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27. The
+ * provider conversation before this marker was ended and a fresh one started,
+ * primed with `summary` instead of the full history.
+ */
+export interface CleanCutMarker {
+  summary: string;
+  previousSessionId?: string;
+  previousProvider?: string;
+  previousModel?: string;
+  provider?: string;
+  model?: string;
+  summaryModel?: string;
 }
 
 // COMPAT(pluginTimelineItems): plugins were removed after v0.7.0. Older daemons can still send

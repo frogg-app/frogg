@@ -277,6 +277,13 @@ export const ja: TranslationResources = {
       warning: "キャッシュ期限切れ: 送信すると入力 {{tokens}} トークンが再課金されます",
       warningUnknown: "キャッシュ期限切れ: 送信すると会話全体が再送されます",
     },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      action: "クリーンカット",
+      pending: "要約中...",
+      failed: "クリーンカットできませんでした",
+      hint: "この会話を終了して新しい会話を始めます。同じプロバイダーの安価なモデルがチャット（メッセージとツール呼び出し。出力は含まない）を要約し、あなたのメッセージの前に送信します。ワークスペースの変更は保持され、以前の会話はあなたには表示されたままですが、エージェントには見えません。",
+    },
     input: {
       accessibilityLabel: "エージェントにメッセージ...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -397,9 +404,19 @@ export const ja: TranslationResources = {
         costUnknownTokens:
           "この会話を別のアカウントに移動すると、コンテキスト全体が新しい入力として再送信され、フル価格（キャッシュなし）で課金されます。",
         confirm: "会話を移動",
+        cleanCut: "このアカウントへクリーンカット",
+        cleanCutHint:
+          "またはクリーンカット: コンテキスト全体を再送する代わりに、安価な要約で新しいアカウントに新しい会話を始めます。",
         moving: "移動中...",
         failed: "会話を移動できませんでした",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCutProvider: {
+      title: "プロバイダーを切り替え",
+      body: "クリーンカットでこの会話を {{from}} から {{to}}（{{model}}）へ移動しますか？",
+      hint: "プロバイダーは他のプロバイダーの履歴を読めないため、安価なモデルがこの会話を要約し、新しいプロバイダーで新しい会話を始めます。ワークスペースの変更は保持され、以前の会話はあなたには表示されたままです。",
+      confirm: "クリーンカットして切り替え",
     },
     hints: {
       thinking: "思考モード",
@@ -410,6 +427,15 @@ export const ja: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      title: "クリーンカット: 新しい会話",
+      copyId: "以前の会話IDをコピー",
+      idCopied: "会話IDをコピーしました",
+      summary: "エージェントに送信した要約",
+      summaryBy: "エージェントに送信した要約（{{model}}）",
+      switched: "{{from}} → {{to}}",
+    },
     empty: "このエージェントとチャットを始めましょう...",
     scrollToBottom: "下にスクロール",
     historyLoadFailed: "エージェントの履歴を読み込めませんでした",

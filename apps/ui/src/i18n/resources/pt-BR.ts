@@ -278,6 +278,13 @@ export const ptBR: TranslationResources = {
       warning: "Cache expirado: enviar recobra {{tokens}} tokens de entrada",
       warningUnknown: "Cache expirado: enviar reenvia toda a conversa",
     },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      action: "Corte limpo",
+      pending: "Resumindo...",
+      failed: "Não foi possível fazer o corte limpo",
+      hint: "Encerra esta conversa e inicia uma nova. Um modelo barato do mesmo provedor resume o chat (mensagens e chamadas de ferramentas, sem a saída delas) e o envia antes da sua mensagem. As alterações do workspace são mantidas e a conversa anterior continua visível para você, mas não para o agente.",
+    },
     input: {
       accessibilityLabel: "Enviar mensagem ao agente...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -397,9 +404,19 @@ export const ptBR: TranslationResources = {
         costUnknownTokens:
           "Mover esta conversa para outra conta reenvia todo o contexto como entrada nova, cobrada pelo preço cheio (sem cache).",
         confirm: "Mover conversa",
+        cleanCut: "Corte limpo para esta conta",
+        cleanCutHint:
+          "Ou faça um corte limpo: um resumo barato inicia uma nova conversa na outra conta em vez de reenviar todo o contexto.",
         moving: "Movendo...",
         failed: "Não foi possível mover a conversa",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCutProvider: {
+      title: "Trocar de provedor",
+      body: "Mover esta conversa de {{from}} para {{to}} ({{model}}) com um corte limpo?",
+      hint: "Um provedor não consegue ler o histórico de outro, então um modelo barato resume esta conversa e uma nova começa no novo provedor. As alterações do workspace são mantidas; a conversa anterior continua visível para você.",
+      confirm: "Corte limpo e trocar",
     },
     hints: {
       thinking: "Modo de raciocínio",
@@ -410,6 +427,15 @@ export const ptBR: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      title: "Corte limpo: nova conversa",
+      copyId: "Copiar ID da conversa anterior",
+      idCopied: "ID da conversa copiado",
+      summary: "Resumo enviado ao agente",
+      summaryBy: "Resumo enviado ao agente ({{model}})",
+      switched: "{{from}} → {{to}}",
+    },
     empty: "Comece a conversar com este agente...",
     scrollToBottom: "Rolar para o fim",
     historyLoadFailed: "Não foi possível carregar o histórico do agente",

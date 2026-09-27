@@ -952,6 +952,8 @@ const DEFAULT_RECONNECT_BASE_DELAY_MS = 1500;
 const DEFAULT_RECONNECT_MAX_DELAY_MS = 30000;
 const DEFAULT_SESSION_RPC_TIMEOUT_MS = 60_000;
 const PUSH_TOKEN_REVOCATION_TIMEOUT_MS = 2_000;
+/** A clean cut waits for a model to write the summary before it answers. */
+const CLEAN_CUT_TIMEOUT_MS = 5 * 60_000;
 // Synthesis may still be running when the app asks; the daemon waits up to 30s for it.
 const NOTIFICATION_AUDIO_TIMEOUT_MS = 45_000;
 const DEFAULT_CONNECT_TIMEOUT_MS = 15_000;
@@ -3527,6 +3529,51 @@ export class DaemonClient {
       throw new Error(payload.error ?? "transferAgentProviderAccount rejected");
     }
     return payload.notice ?? null;
+  }
+
+  /**
+   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+   *
+   * Ends the agent's provider conversation and starts a fresh one primed with a
+   * cheap summary of it. Omitted target fields keep the agent's current value,
+   * so the same call is a same-account cut, an account move or a provider
+   * switch. Waits for the summary, hence the long timeout. Gated on
+   * `server_info.features.agentCleanCut`.
+   */
+  async cleanCutAgent(
+    agentId: string,
+    target: {
+      provider?: string;
+      providerAccountId?: string | null;
+      model?: string | null;
+      thinkingOptionId?: string | null;
+    } = {},
+  ): Promise<void> {
+    const requestId = this.createRequestId();
+    const message = SessionInboundMessageSchema.parse({
+      type: "agent.clean_cut.request",
+      agentId,
+      ...target,
+      requestId,
+    });
+    const payload = await this.sendRequest({
+      requestId,
+      message,
+      timeout: CLEAN_CUT_TIMEOUT_MS,
+      options: { skipQueue: true },
+      select: (msg) => {
+        if (msg.type !== "agent.clean_cut.response") {
+          return null;
+        }
+        if (msg.payload.requestId !== requestId) {
+          return null;
+        }
+        return msg.payload;
+      },
+    });
+    if (!payload.accepted) {
+      throw new Error(payload.error ?? "cleanCutAgent rejected");
+    }
   }
 
   async restartServer(reason?: string, requestId?: string): Promise<RestartRequestedStatusPayload> {

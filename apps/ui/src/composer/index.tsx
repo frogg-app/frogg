@@ -101,6 +101,7 @@ import {
 } from "@/attachments/service";
 import type { AgentUsage } from "@frogg/protocol/agent-types";
 import { resolveStaleContextWarning, type StaleContextWarning } from "@/composer/stale-context";
+import { useCleanCut } from "@/composer/clean-cut";
 import { useComposerPresenceWarning } from "@/presence/composer-presence";
 import { PresenceBar } from "@/presence/presence-bar";
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
@@ -1665,6 +1666,21 @@ function ComposerContentImpl({
     ],
   );
 
+  // COMPAT(agentCleanCut): added in v1.7.0. Cut to a fresh conversation, then
+  // send what was typed into it: the daemon puts the summary ahead of it.
+  const cleanCut = useCleanCut(serverId, agentId);
+  const runCleanCut = cleanCut.run;
+  const handleCleanCut = useCallback(() => {
+    void (async () => {
+      const error = await runCleanCut();
+      if (error === null) {
+        messageInputRef.current?.submit();
+      } else {
+        toastErrorRef.current(error);
+      }
+    })();
+  }, [runCleanCut]);
+
   const handleSubmit = useCallback(
     (payload: MessagePayload) => {
       const outgoingAttachments = buildOutgoingAttachments(attachments);
@@ -2438,6 +2454,8 @@ function ComposerContentImpl({
                   inputWrapperStyle={inputWrapperStyle}
                   offline={showOfflineComposer}
                   staleContextWarning={staleContextWarning}
+                  onCleanCut={cleanCut.available ? handleCleanCut : null}
+                  cleanCutPending={cleanCut.pending}
                   presenceWarning={presenceWarning}
                   presenceSlot={presenceSlot}
                   attachmentSlot={attachmentTray}

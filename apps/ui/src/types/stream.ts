@@ -1,4 +1,4 @@
-import type { AgentProvider, ToolCallDetail } from "@frogg/protocol/agent-types";
+import type { AgentProvider, CleanCutMarker, ToolCallDetail } from "@frogg/protocol/agent-types";
 import type { AgentAttachment, AgentStreamEventPayload } from "@frogg/protocol/messages";
 import type { AttachmentMetadata } from "@/attachments/types";
 import { extractTaskEntriesFromToolCall } from "../utils/tool-call-parsers";
@@ -769,7 +769,11 @@ export interface CompactionItem {
   status: "loading" | "completed";
   trigger?: "auto" | "manual";
   preTokens?: number;
+  /** COMPAT(agentCleanCut): added in v1.7.0. Set when this marker is a clean cut. */
+  cleanCut?: CleanCutMarker;
 }
+
+export type { CleanCutMarker };
 
 export interface TodoEntry {
   text: string;
@@ -1399,6 +1403,7 @@ function reduceTimelineCompaction(
     status: item.status,
     trigger: item.trigger,
     preTokens: item.preTokens,
+    ...(item.cleanCut ? { cleanCut: item.cleanCut } : {}),
   };
   return [...state, compaction];
 }

@@ -6958,6 +6958,36 @@
                                     },
                                     "preTokens": {
                                       "type": "number"
+                                    },
+                                    "cleanCut": {
+                                      "type": "object",
+                                      "properties": {
+                                        "summary": {
+                                          "type": "string"
+                                        },
+                                        "previousSessionId": {
+                                          "type": "string"
+                                        },
+                                        "previousProvider": {
+                                          "type": "string"
+                                        },
+                                        "previousModel": {
+                                          "type": "string"
+                                        },
+                                        "provider": {
+                                          "type": "string"
+                                        },
+                                        "model": {
+                                          "type": "string"
+                                        },
+                                        "summaryModel": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "summary"
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   },
                                   "required": [
@@ -14413,6 +14443,36 @@
                                     },
                                     "preTokens": {
                                       "type": "number"
+                                    },
+                                    "cleanCut": {
+                                      "type": "object",
+                                      "properties": {
+                                        "summary": {
+                                          "type": "string"
+                                        },
+                                        "previousSessionId": {
+                                          "type": "string"
+                                        },
+                                        "previousProvider": {
+                                          "type": "string"
+                                        },
+                                        "previousModel": {
+                                          "type": "string"
+                                        },
+                                        "provider": {
+                                          "type": "string"
+                                        },
+                                        "model": {
+                                          "type": "string"
+                                        },
+                                        "summaryModel": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "required": [
+                                        "summary"
+                                      ],
+                                      "additionalProperties": false
                                     }
                                   },
                                   "required": [
@@ -25347,6 +25407,36 @@
                                   },
                                   "preTokens": {
                                     "type": "number"
+                                  },
+                                  "cleanCut": {
+                                    "type": "object",
+                                    "properties": {
+                                      "summary": {
+                                        "type": "string"
+                                      },
+                                      "previousSessionId": {
+                                        "type": "string"
+                                      },
+                                      "previousProvider": {
+                                        "type": "string"
+                                      },
+                                      "previousModel": {
+                                        "type": "string"
+                                      },
+                                      "provider": {
+                                        "type": "string"
+                                      },
+                                      "model": {
+                                        "type": "string"
+                                      },
+                                      "summaryModel": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "summary"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "required": [
@@ -27975,6 +28065,36 @@
                                   },
                                   "preTokens": {
                                     "type": "number"
+                                  },
+                                  "cleanCut": {
+                                    "type": "object",
+                                    "properties": {
+                                      "summary": {
+                                        "type": "string"
+                                      },
+                                      "previousSessionId": {
+                                        "type": "string"
+                                      },
+                                      "previousProvider": {
+                                        "type": "string"
+                                      },
+                                      "previousModel": {
+                                        "type": "string"
+                                      },
+                                      "provider": {
+                                        "type": "string"
+                                      },
+                                      "model": {
+                                        "type": "string"
+                                      },
+                                      "summaryModel": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "summary"
+                                    ],
+                                    "additionalProperties": false
                                   }
                                 },
                                 "required": [
@@ -30373,6 +30493,36 @@
                                 },
                                 "preTokens": {
                                   "type": "number"
+                                },
+                                "cleanCut": {
+                                  "type": "object",
+                                  "properties": {
+                                    "summary": {
+                                      "type": "string"
+                                    },
+                                    "previousSessionId": {
+                                      "type": "string"
+                                    },
+                                    "previousProvider": {
+                                      "type": "string"
+                                    },
+                                    "previousModel": {
+                                      "type": "string"
+                                    },
+                                    "provider": {
+                                      "type": "string"
+                                    },
+                                    "model": {
+                                      "type": "string"
+                                    },
+                                    "summaryModel": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "summary"
+                                  ],
+                                  "additionalProperties": false
                                 }
                               },
                               "required": [
@@ -36360,6 +36510,109 @@
                 "type": {
                   "type": "string",
                   "const": "agent.provider_account.transfer.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "agentId": {
+                      "type": "string"
+                    },
+                    "accepted": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "notice": {
+                      "anyOf": [
+                        {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "info"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "message"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "warning"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "message"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "const": "error"
+                                },
+                                "message": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "type",
+                                "message"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "agentId",
+                    "accepted",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "agent.clean_cut.response"
                 },
                 "payload": {
                   "type": "object",

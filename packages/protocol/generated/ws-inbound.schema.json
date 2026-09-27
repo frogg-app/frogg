@@ -6024,6 +6024,47 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "agent.clean_cut.request"
+                },
+                "agentId": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "providerAccountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "model": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "thinkingOptionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "agentId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "agent.detach.request"
                 },
                 "agentId": {

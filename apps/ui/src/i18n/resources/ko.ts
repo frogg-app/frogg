@@ -276,6 +276,13 @@ export const ko: TranslationResources = {
       warning: "캐시 만료: 전송하면 입력 토큰 {{tokens}}개가 다시 청구됩니다",
       warningUnknown: "캐시 만료: 전송하면 대화 전체가 다시 전송됩니다",
     },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      action: "클린 컷",
+      pending: "요약 중...",
+      failed: "클린 컷을 하지 못했습니다",
+      hint: "이 대화를 끝내고 새 대화를 시작합니다. 같은 제공자의 저렴한 모델이 채팅(메시지와 도구 호출, 출력 제외)을 요약해 메시지 앞에 보냅니다. 워크스페이스 변경 사항은 유지되며, 이전 대화는 나에게는 계속 보이지만 에이전트에게는 보이지 않습니다.",
+    },
     input: {
       accessibilityLabel: "에이전트에게 메시지...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -395,9 +402,19 @@ export const ko: TranslationResources = {
         costUnknownTokens:
           "이 대화를 다른 계정으로 옮기면 전체 컨텍스트가 새 입력으로 다시 전송되며 전체 가격(캐시 없음)으로 청구됩니다.",
         confirm: "대화 옮기기",
+        cleanCut: "이 계정으로 클린 컷",
+        cleanCutHint:
+          "또는 클린 컷: 전체 컨텍스트를 다시 보내는 대신 저렴한 요약으로 새 계정에서 새 대화를 시작합니다.",
         moving: "옮기는 중...",
         failed: "대화를 옮기지 못했습니다",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCutProvider: {
+      title: "제공자 전환",
+      body: "클린 컷으로 이 대화를 {{from}}에서 {{to}}({{model}})(으)로 옮길까요?",
+      hint: "제공자는 다른 제공자의 기록을 읽을 수 없으므로, 저렴한 모델이 이 대화를 요약하고 새 제공자에서 새 대화를 시작합니다. 워크스페이스 변경 사항은 유지되며 이전 대화는 계속 보입니다.",
+      confirm: "클린 컷 후 전환",
     },
     hints: {
       thinking: "사고 모드",
@@ -408,6 +425,15 @@ export const ko: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      title: "클린 컷: 새 대화",
+      copyId: "이전 대화 ID 복사",
+      idCopied: "대화 ID를 복사했습니다",
+      summary: "에이전트에 보낸 요약",
+      summaryBy: "에이전트에 보낸 요약 ({{model}})",
+      switched: "{{from}} → {{to}}",
+    },
     empty: "이 에이전트와 대화를 시작하세요...",
     scrollToBottom: "맨 아래로 스크롤",
     historyLoadFailed: "에이전트 기록을 로드할 수 없습니다.",

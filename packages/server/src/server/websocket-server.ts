@@ -2025,6 +2025,8 @@ export class VoiceAssistantWebSocketServer {
         // agent's own provider can carry its history across is a per-provider
         // question the transfer answers when it is asked.
         ...(this.providerAccountsEnabled ? { agentProviderAccountTransfer: true } : {}),
+        // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+        agentCleanCut: true,
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.

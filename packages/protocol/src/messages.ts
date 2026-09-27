@@ -803,6 +803,20 @@ export const AgentTimelineItemPayloadSchema: z.ZodType<AgentTimelineItem, unknow
     status: z.enum(["loading", "completed"]),
     trigger: z.enum(["auto", "manual"]).optional(),
     preTokens: z.number().optional(),
+    // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27. Present when
+    // this marker is a clean cut rather than a provider compaction; older clients
+    // strip it and render an ordinary compaction marker.
+    cleanCut: z
+      .object({
+        summary: z.string(),
+        previousSessionId: z.string().optional(),
+        previousProvider: z.string().optional(),
+        previousModel: z.string().optional(),
+        provider: z.string().optional(),
+        model: z.string().optional(),
+        summaryModel: z.string().optional(),
+      })
+      .optional(),
   }),
   // COMPAT(pluginTimelineItems): plugins were removed after v0.7.0, but older daemons can still
   // hold these rows. Keep parsing them so a timeline page or stream frame containing one is not
@@ -2198,6 +2212,35 @@ export const AgentProviderAccountTransferResponseMessageSchema = z.object({
   payload: AgentActionResponsePayloadSchema,
 });
 
+/**
+ * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+ *
+ * Ends the agent's provider conversation and starts a fresh one in the same
+ * workspace. A cheap model on the current provider summarises the chat side of
+ * the old conversation (messages and tool calls, never tool output); the daemon
+ * records that summary in the timeline and sends it ahead of the next user
+ * message. The old conversation stays in the timeline for the user but is not
+ * re-sent to the provider.
+ *
+ * Every target field is optional and an omitted one keeps the agent's current
+ * value, so the same request is a same-account cut, an account move, or a
+ * provider switch. `providerAccountId: null` is the provider's default account.
+ */
+export const AgentCleanCutRequestMessageSchema = z.object({
+  type: z.literal("agent.clean_cut.request"),
+  agentId: z.string(),
+  provider: z.string().optional(),
+  providerAccountId: z.string().nullable().optional(),
+  model: z.string().nullable().optional(),
+  thinkingOptionId: z.string().nullable().optional(),
+  requestId: z.string(),
+});
+
+export const AgentCleanCutResponseMessageSchema = z.object({
+  type: z.literal("agent.clean_cut.response"),
+  payload: AgentActionResponsePayloadSchema,
+});
+
 export const AgentDetachRequestMessageSchema = z.object({
   type: z.literal("agent.detach.request"),
   agentId: z.string(),
@@ -3511,6 +3554,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   SetAgentFeatureRequestMessageSchema,
   AgentConfigApplyRequestMessageSchema,
   AgentProviderAccountTransferRequestMessageSchema,
+  AgentCleanCutRequestMessageSchema,
   AgentDetachRequestMessageSchema,
   AgentCancelAutoResumeRequestMessageSchema,
   AgentRewindRequestMessageSchema,
@@ -4001,6 +4045,9 @@ export const ServerInfoStatusPayloadSchema = z
         // agent.provider_account.transfer is available and this daemon's build of
         // the agent's provider can relocate a session between config directories.
         agentProviderAccountTransfer: z.boolean().optional(),
+        // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+        // agent.clean_cut is available.
+        agentCleanCut: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the
@@ -7515,6 +7562,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   SetAgentFeatureResponseMessageSchema,
   AgentConfigApplyResponseMessageSchema,
   AgentProviderAccountTransferResponseMessageSchema,
+  AgentCleanCutResponseMessageSchema,
   AgentDetachResponseMessageSchema,
   AgentCancelAutoResumeResponseMessageSchema,
   AgentRewindResponseMessageSchema,
@@ -7747,6 +7795,7 @@ export type AgentConfigApplyResponseMessage = z.infer<typeof AgentConfigApplyRes
 export type AgentProviderAccountTransferResponseMessage = z.infer<
   typeof AgentProviderAccountTransferResponseMessageSchema
 >;
+export type AgentCleanCutResponseMessage = z.infer<typeof AgentCleanCutResponseMessageSchema>;
 export type AgentDetachResponseMessage = z.infer<typeof AgentDetachResponseMessageSchema>;
 export type AgentCancelAutoResumeResponseMessage = z.infer<
   typeof AgentCancelAutoResumeResponseMessageSchema
@@ -7995,6 +8044,7 @@ export type AgentConfigApplyRequestMessage = z.infer<typeof AgentConfigApplyRequ
 export type AgentProviderAccountTransferRequestMessage = z.infer<
   typeof AgentProviderAccountTransferRequestMessageSchema
 >;
+export type AgentCleanCutRequestMessage = z.infer<typeof AgentCleanCutRequestMessageSchema>;
 export type AgentDetachRequestMessage = z.infer<typeof AgentDetachRequestMessageSchema>;
 export type AgentCancelAutoResumeRequestMessage = z.infer<
   typeof AgentCancelAutoResumeRequestMessageSchema

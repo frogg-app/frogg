@@ -279,6 +279,13 @@ export const es: TranslationResources = {
       warning: "Caché caducada: enviar vuelve a cobrar {{tokens}} tokens de entrada",
       warningUnknown: "Caché caducada: enviar reenvía toda la conversación",
     },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      action: "Corte limpio",
+      pending: "Resumiendo...",
+      failed: "No se pudo hacer el corte limpio",
+      hint: "Termina esta conversación y empieza una nueva. Un modelo económico del mismo proveedor resume el chat (mensajes y llamadas a herramientas, sin su salida) y lo envía antes de tu mensaje. Los cambios del espacio de trabajo se conservan y la conversación anterior sigue visible para ti, pero no para el agente.",
+    },
     input: {
       accessibilityLabel: "Agente de mensajes...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -398,9 +405,19 @@ export const es: TranslationResources = {
         costUnknownTokens:
           "Mover esta conversación a otra cuenta reenvía todo su contexto como entrada nueva, facturada a precio completo (sin caché).",
         confirm: "Mover conversación",
+        cleanCut: "Corte limpio a esta cuenta",
+        cleanCutHint:
+          "O haz un corte limpio: un resumen económico inicia una conversación nueva en la otra cuenta en lugar de reenviar todo el contexto.",
         moving: "Moviendo...",
         failed: "No se pudo mover la conversación",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCutProvider: {
+      title: "Cambiar de proveedor",
+      body: "¿Mover esta conversación de {{from}} a {{to}} ({{model}}) con un corte limpio?",
+      hint: "Un proveedor no puede leer el historial de otro, así que un modelo económico resume esta conversación y se inicia una nueva en el nuevo proveedor. Los cambios del espacio de trabajo se conservan; la conversación anterior sigue visible para ti.",
+      confirm: "Corte limpio y cambiar",
     },
     hints: {
       thinking: "Modo de pensamiento",
@@ -411,6 +428,15 @@ export const es: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.7.0.
+    cleanCut: {
+      title: "Corte limpio: nueva conversación",
+      copyId: "Copiar ID de la conversación anterior",
+      idCopied: "ID de conversación copiado",
+      summary: "Resumen enviado al agente",
+      summaryBy: "Resumen enviado al agente ({{model}})",
+      switched: "{{from}} → {{to}}",
+    },
     empty: "Comience a chatear con este agente...",
     scrollToBottom: "Desplazarse hacia abajo",
     historyLoadFailed: "No se pudo cargar el historial del agente",
