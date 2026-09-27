@@ -187,10 +187,10 @@ export default {
             kotlinVersion: "2.1.20",
             // Allow HTTP connections for local network hosts in release builds
             usesCleartextTraffic: true,
-            // jsch and bcprov (frogg-ssh) both ship this OSGi manifest; release
-            // packaging fails on the duplicate.
+            // jsch and Bouncy Castle (frogg-ssh) ship per-Java-version OSGi manifests; release
+            // packaging fails on the duplicates.
             packagingOptions: {
-              exclude: ["META-INF/versions/15/OSGI-INF/MANIFEST.MF"],
+              exclude: ["META-INF/versions/*/OSGI-INF/MANIFEST.MF"],
             },
           },
         },

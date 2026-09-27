@@ -11,6 +11,7 @@ import {
 import type { DaemonWebSocketRuntimeDiagnosticSnapshot } from "./diagnostics.js";
 import type { ProviderAvailability } from "../../agent/agent-manager.js";
 import type { HubRelationshipManagement } from "../../hub/relationship-controller.js";
+import { brand } from "@frogg/branding";
 import type { SessionOutboundMessage } from "../../messages.js";
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import { createHostResources } from "../../host/host-resources.js";
@@ -627,7 +628,7 @@ describe("DaemonSession self-update RPCs", () => {
           updatable: false,
           reason: "Self-update is not available on this daemon.",
           currentVersion: "0.1.13",
-          channel: "beta",
+          channel: brand.channel,
           latestVersion: null,
           updateAvailable: false,
           releaseUrl: null,

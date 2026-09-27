@@ -1,24 +1,27 @@
 import { mkdtemp, mkdir, open, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { brand } from "@frogg/branding";
 import { afterEach, describe, expect, it } from "vitest";
 import { copyAttachmentFileToManagedStorage, readManagedFileBase64 } from "./attachments";
 
-const originalFroggHome = process.env.FROGG_HOME;
+// The build's own home variable: FROGG_BETA_HOME in a beta build, FROGG_HOME otherwise.
+const HOME_ENV = `${brand.envPrefix.replace(/_+$/, "")}_HOME`;
+const originalFroggHome = process.env[HOME_ENV];
 let testHome: string | null = null;
 
 async function useTempFroggHome(): Promise<string> {
   testHome = await mkdtemp(path.join(os.tmpdir(), "frogg-desktop-attachments-"));
-  process.env.FROGG_HOME = testHome;
+  process.env[HOME_ENV] = testHome;
   return testHome;
 }
 
 describe("desktop attachment files", () => {
   afterEach(async () => {
     if (originalFroggHome === undefined) {
-      delete process.env.FROGG_HOME;
+      delete process.env[HOME_ENV];
     } else {
-      process.env.FROGG_HOME = originalFroggHome;
+      process.env[HOME_ENV] = originalFroggHome;
     }
 
     if (testHome) {
