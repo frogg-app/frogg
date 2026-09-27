@@ -112,7 +112,11 @@ export function useFocusStartChat({
         await composerState.persistFormPreferences();
         const { attachments: reviewAttachments } = splitComposerAttachmentsForSubmit(
           payload.attachments,
-          { format: resolveComposerAttachmentSubmitFormat({ supportsForgeAttachments: supportsForgeSearch }) },
+          {
+            format: resolveComposerAttachmentSubmitFormat({
+              supportsForgeAttachments: supportsForgeSearch,
+            }),
+          },
         );
         const firstAgentContext = buildFirstAgentContext({
           prompt: payload.text,
@@ -128,7 +132,9 @@ export function useFocusStartChat({
           throw new Error(created.error ?? t("newChat.errors.createFailed"));
         }
         const workspace = normalizeWorkspaceDescriptor(created.workspace);
-        mergeWorkspaces(serverId, [{ ...workspace, status: "running", statusEnteredAt: new Date() }]);
+        mergeWorkspaces(serverId, [
+          { ...workspace, status: "running", statusEnteredAt: new Date() },
+        ]);
         submitWorkspaceDraft({
           serverId,
           clearDraft: draft.clear,

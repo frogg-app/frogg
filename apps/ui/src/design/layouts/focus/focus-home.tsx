@@ -20,7 +20,12 @@ import {
   buildProjectSettingsRoute,
   buildProjectsSettingsRoute,
 } from "@/utils/host-routes";
-import { useFocusAgents, useFocusProjects, useFocusServerId, useFocusWorkspaces } from "./focus-data";
+import {
+  useFocusAgents,
+  useFocusProjects,
+  useFocusServerId,
+  useFocusWorkspaces,
+} from "./focus-data";
 import { FocusChecklist } from "./focus-checklist";
 import {
   buildFocusChecklist,
@@ -75,8 +80,7 @@ function FocusHomeComposer({ serverId }: { serverId: string }) {
   const workspaces = useFocusWorkspaces(serverId);
   const projects = useMemo(() => selectFocusProjects(projectsById.values()), [projectsById]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const project: ProjectDescriptor | null =
-    (selectedId && projectsById.get(selectedId)) || null;
+  const project: ProjectDescriptor | null = (selectedId && projectsById.get(selectedId)) || null;
   const branch = useMemo(
     () => (project ? resolveProjectBranch(project, workspaces.values()) : null),
     [project, workspaces],
@@ -108,7 +112,11 @@ function FocusHomeComposer({ serverId }: { serverId: string }) {
       <Composer
         externalKeyboardShift
         agentId={FOCUS_COMPOSER_ID}
-        placeholder={project ? `Ask about ${projectLabel(project)}, or describe a change` : t("newChat.placeholder")}
+        placeholder={
+          project
+            ? `Ask about ${projectLabel(project)}, or describe a change`
+            : t("newChat.placeholder")
+        }
         serverId={serverId}
         isPaneFocused={true}
         onSubmitMessage={submit}

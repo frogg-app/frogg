@@ -3,7 +3,14 @@ import { Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { ChevronDown, Plus, Settings2 } from "lucide-react-native";
 import { HostStatusDot } from "@/components/host-status-dot";
-import { MenuItem, MenuLabel, MenuRoot, MenuSeparator, MenuSurface, MenuTrigger } from "@/components/ui/menu";
+import {
+  MenuItem,
+  MenuLabel,
+  MenuRoot,
+  MenuSeparator,
+  MenuSurface,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import type { MenuTriggerState } from "@/components/ui/menu";
 import { openAddHostFlow } from "@/hosts/add-host-flow";
 import { openHostSettings } from "@/navigation/settings-navigation";

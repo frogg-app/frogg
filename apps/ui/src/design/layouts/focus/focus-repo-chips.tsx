@@ -1,8 +1,22 @@
 import { useCallback } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { ArrowRight, ChevronDown, Folder, FolderPlus, GitBranch, MessageSquare } from "lucide-react-native";
-import { MenuItem, MenuLabel, MenuRoot, MenuSeparator, MenuSurface, MenuTrigger } from "@/components/ui/menu";
+import {
+  ArrowRight,
+  ChevronDown,
+  Folder,
+  FolderPlus,
+  GitBranch,
+  MessageSquare,
+} from "lucide-react-native";
+import {
+  MenuItem,
+  MenuLabel,
+  MenuRoot,
+  MenuSeparator,
+  MenuSurface,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import type { MenuTriggerState } from "@/components/ui/menu";
 import type { ProjectDescriptor } from "@/stores/session-store";
 import type { Theme } from "@/styles/theme";
@@ -128,6 +142,7 @@ function ProjectItem({
       description={project.projectRootPath}
       selected={selected}
       onSelect={handleSelect}
+      testID={`focus-project-option-${project.projectId}`}
     >
       {projectLabel(project)}
     </MenuItem>

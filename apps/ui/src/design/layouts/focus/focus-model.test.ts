@@ -42,7 +42,10 @@ describe("describeFocusStatus", () => {
 
   it("puts a pending permission ahead of running", () => {
     const pending = [{}] as Agent["pendingPermissions"];
-    const line = describeFocusStatus(agent({ status: "running", pendingPermissions: pending }), null);
+    const line = describeFocusStatus(
+      agent({ status: "running", pendingPermissions: pending }),
+      null,
+    );
     expect(line).toMatchObject({ tone: "warning", label: "Needs input" });
   });
 

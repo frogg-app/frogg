@@ -119,7 +119,11 @@ const UNSELECTED = { selected: false } as const;
 function StatusText({ agent, status }: { agent: Agent; status: FocusStatusLine }) {
   if (status.tone === "running") {
     const startedAt = agent.activeTurn?.startedAt ?? null;
-    return startedAt ? <WorkingFor startedAt={startedAt} /> : <Text style={styles.status}>Working…</Text>;
+    return startedAt ? (
+      <WorkingFor startedAt={startedAt} />
+    ) : (
+      <Text style={styles.status}>Working…</Text>
+    );
   }
   if (status.tone === "success") return <Text style={styles.status}>Task completed</Text>;
   if (status.label) return <Text style={styles.status}>{status.label}</Text>;

@@ -25,9 +25,7 @@ type StatusAgent = Pick<
   "status" | "pendingPermissions" | "requiresAttention" | "attentionReason"
 >;
 
-function nonEmptyDiff(
-  diff: WorkspaceDescriptor["diffStat"] | undefined,
-): FocusStatusLine["diff"] {
+function nonEmptyDiff(diff: WorkspaceDescriptor["diffStat"] | undefined): FocusStatusLine["diff"] {
   if (!diff || diff.additions + diff.deletions === 0) return null;
   return diff;
 }
@@ -58,10 +56,7 @@ export function describeFocusStatus(
 }
 
 /** Top-level, unarchived chats, most recently active first. */
-export function selectRecentAgents(
-  agents: Iterable<Agent>,
-  limit: number,
-): Agent[] {
+export function selectRecentAgents(agents: Iterable<Agent>, limit: number): Agent[] {
   const list: Agent[] = [];
   for (const agent of agents) {
     if (agent.parentAgentId || agent.archivedAt) continue;

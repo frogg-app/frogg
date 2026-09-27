@@ -13,6 +13,7 @@ import {
   Server,
   Settings,
   SquarePen,
+  X,
 } from "lucide-react-native";
 import { HostStatusDot } from "@/components/host-status-dot";
 import { useIsCompactFormFactor } from "@/constants/layout";
@@ -55,6 +56,7 @@ const I = {
   server: withUnistyles(Server),
   settings: withUnistyles(Settings),
   squarePen: withUnistyles(SquarePen),
+  x: withUnistyles(X),
 };
 type IconComponent = (typeof I)[keyof typeof I];
 
@@ -63,7 +65,14 @@ type IconComponent = (typeof I)[keyof typeof I];
  * flat Recent list of chats with coloured status sub-lines, and a quiet footer.
  * preview copy
  */
-export function FocusSidebarContent({ onBeforeNavigate }: { onBeforeNavigate?: () => void }) {
+export function FocusSidebarContent({
+  onBeforeNavigate,
+  onClose,
+}: {
+  onBeforeNavigate?: () => void;
+  /** Compact only: closes the drawer, which otherwise covers the whole screen. */
+  onClose?: () => void;
+}) {
   const { t } = useTranslation();
   const serverId = useFocusServerId();
   const pathname = usePathname();
@@ -108,7 +117,12 @@ export function FocusSidebarContent({ onBeforeNavigate }: { onBeforeNavigate?: (
         label: "Projects",
         href: serverId ? buildProjectsSettingsRoute(serverId) : null,
       },
-      { key: "settings", icon: I.settings, label: t("sidebar.actions.settings"), href: buildSettingsRoute() },
+      {
+        key: "settings",
+        icon: I.settings,
+        label: t("sidebar.actions.settings"),
+        href: buildSettingsRoute(),
+      },
     ],
     [serverId, t],
   );
@@ -119,8 +133,15 @@ export function FocusSidebarContent({ onBeforeNavigate }: { onBeforeNavigate?: (
         <FocusHostSwitcher serverId={serverId} onBeforeAction={onBeforeNavigate} />
         <View style={styles.headerIcons}>
           <IconButton icon={I.search} label="Search" onPress={handleSearch} />
+          {isCompact && onClose ? (
+            <IconButton icon={I.x} label={t("sidebar.actions.closeSidebar")} onPress={onClose} />
+          ) : null}
           {isCompact ? null : (
-            <IconButton icon={I.panelLeft} label="Collapse sidebar" onPress={toggleDesktopSidebar} />
+            <IconButton
+              icon={I.panelLeft}
+              label="Collapse sidebar"
+              onPress={toggleDesktopSidebar}
+            />
           )}
         </View>
       </View>
@@ -142,12 +163,24 @@ export function FocusSidebarContent({ onBeforeNavigate }: { onBeforeNavigate?: (
         <Text style={styles.sectionTitle}>Recent</Text>
         <IconButton icon={I.plus} label="New chat" onPress={handleNewChat} small />
       </View>
-      <FocusRecentList serverId={serverId} pathname={pathname} onBeforeNavigate={onBeforeNavigate} />
+      <FocusRecentList
+        serverId={serverId}
+        pathname={pathname}
+        onBeforeNavigate={onBeforeNavigate}
+      />
       <View style={styles.footer}>
         <FooterStatus serverId={serverId} />
         <View style={styles.headerIcons}>
-          <IconButton icon={I.folderPlus} label={t("sidebar.actions.addProject")} onPress={handleAddProject} />
-          <IconButton icon={I.server} label={t("sidebar.hostsMenu.trigger")} onPress={handleHosts} />
+          <IconButton
+            icon={I.folderPlus}
+            label={t("sidebar.actions.addProject")}
+            onPress={handleAddProject}
+          />
+          <IconButton
+            icon={I.server}
+            label={t("sidebar.hostsMenu.trigger")}
+            onPress={handleHosts}
+          />
         </View>
       </View>
     </View>
@@ -314,7 +347,7 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],
-    height: 30,
+    height: { xs: 40, md: 30 },
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.md,
   },
@@ -375,8 +408,8 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.sm,
   },
   iconButton: {
-    width: 26,
-    height: 26,
+    width: { xs: 36, md: 26 },
+    height: { xs: 36, md: 26 },
     alignItems: "center",
     justifyContent: "center",
     borderRadius: theme.borderRadius.md,

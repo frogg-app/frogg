@@ -30,11 +30,7 @@ function FocusDesktopSidebar({ active }: { active: boolean }) {
   const ownsTopLeft = useOwnsWindowChromeCorner("top-left");
   const width = resolveDesktopSidebarWidth({ requestedWidth: sidebarWidth, viewportWidth });
   const frameStyle = useMemo(
-    () => [
-      styles.desktop,
-      { width, paddingTop: insets.top },
-      !active && staticStyles.hidden,
-    ],
+    () => [styles.desktop, { width, paddingTop: insets.top }, !active && staticStyles.hidden],
     [active, insets.top, width],
   );
   return (
@@ -63,7 +59,7 @@ function FocusMobileSidebar() {
     <MobilePanelOverlay panel="agent-list" closeGesture={gesture}>
       <View style={surfaceStyle} testID="focus-sidebar">
         <WindowChromeSafeArea placement="below" />
-        <FocusSidebarContent onBeforeNavigate={close} />
+        <FocusSidebarContent onBeforeNavigate={close} onClose={close} />
       </View>
     </MobilePanelOverlay>
   );

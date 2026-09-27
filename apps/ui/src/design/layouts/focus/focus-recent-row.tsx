@@ -91,7 +91,7 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: theme.spacing[2],
     paddingHorizontal: theme.spacing[2],
-    paddingVertical: 5,
+    paddingVertical: { xs: 8, md: 5 },
     borderRadius: theme.borderRadius.md,
   },
   rowActive: {
