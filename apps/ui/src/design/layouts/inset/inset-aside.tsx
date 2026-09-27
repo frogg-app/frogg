@@ -220,11 +220,11 @@ const styles = StyleSheet.create((theme) => ({
     flexGrow: 0,
     flexShrink: 0,
   },
+  // The frame row already holds the column off the window edges; only the gap to the content
+  // card is ours.
   asideContent: {
     gap: 8,
-    paddingTop: 8,
-    paddingRight: 8,
-    paddingBottom: 8,
+    paddingLeft: 6,
   },
   card: {
     borderRadius: 8,

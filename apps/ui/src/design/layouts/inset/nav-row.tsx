@@ -82,7 +82,7 @@ export function InsetNavMeta({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create((theme) => ({
   row: {
-    height: INSET_ROW_HEIGHT,
+    height: { xs: 36, md: INSET_ROW_HEIGHT },
     flexDirection: "row",
     alignItems: "center",
     gap: 8,

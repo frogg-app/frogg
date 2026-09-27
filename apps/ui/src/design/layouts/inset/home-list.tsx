@@ -123,7 +123,8 @@ const ListRow = memo(function ListRow({
   );
   const time = row.at ? formatCompactTimeAgo(row.at) : null;
   if (compact) {
-    const subtitle = [row.projectName, row.branch].filter(Boolean).join(" · ");
+    const branch = row.branch !== row.title ? row.branch : null;
+    const subtitle = [row.projectName, branch].filter(Boolean).join(" · ");
     return (
       <Pressable
         onPress={handlePress}
@@ -164,7 +165,7 @@ const ListRow = memo(function ListRow({
       </Text>
       <View style={styles.trailing}>
         <DiffStat diffStat={row.diffStat} />
-        {row.branch ? (
+        {row.branch && row.branch !== row.title ? (
           <View style={styles.chip}>
             {BRANCH_ICON}
             <Text style={styles.chipMono} numberOfLines={1} dataSet={CODE_SURFACE_DATASET}>
