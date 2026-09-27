@@ -36693,6 +36693,44 @@
                           "type": "null"
                         }
                       ]
+                    },
+                    "subagents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "agentId": {
+                            "type": "string"
+                          },
+                          "parentAgentId": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "cut",
+                              "skipped",
+                              "failed"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "agentId",
+                          "parentAgentId",
+                          "title",
+                          "status"
+                        ],
+                        "additionalProperties": false
+                      }
                     }
                   },
                   "required": [

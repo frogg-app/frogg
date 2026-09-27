@@ -2233,12 +2233,35 @@ export const AgentCleanCutRequestMessageSchema = z.object({
   providerAccountId: z.string().nullable().optional(),
   model: z.string().nullable().optional(),
   thinkingOptionId: z.string().nullable().optional(),
+  /**
+   * COMPAT(agentCleanCutSubagents): added in v1.7.0. Also cut the agent's idle
+   * Frogg child agents (recursively), each from its own timeline and on its
+   * own provider and model. Omitted means true; false cuts only this agent.
+   */
+  includeSubagents: z.boolean().optional(),
   requestId: z.string(),
+});
+
+/**
+ * COMPAT(agentCleanCutSubagents): added in v1.7.0. One child agent's outcome.
+ * `skipped` covers a running child, a closed one, or one with nothing new to
+ * summarise; `failed` carries the error. Neither fails the parent's cut.
+ */
+export const AgentCleanCutSubagentResultSchema = z.object({
+  agentId: z.string(),
+  parentAgentId: z.string(),
+  title: z.string().nullable(),
+  status: z.enum(["cut", "skipped", "failed"]),
+  reason: z.string().optional(),
 });
 
 export const AgentCleanCutResponseMessageSchema = z.object({
   type: z.literal("agent.clean_cut.response"),
-  payload: AgentActionResponsePayloadSchema,
+  payload: AgentActionResponsePayloadSchema.extend({
+    // COMPAT(agentCleanCutSubagents): added in v1.7.0. Present when the
+    // parent's cut succeeded and its child agents were considered.
+    subagents: z.array(AgentCleanCutSubagentResultSchema).optional(),
+  }),
 });
 
 export const AgentDetachRequestMessageSchema = z.object({
@@ -7796,6 +7819,7 @@ export type AgentProviderAccountTransferResponseMessage = z.infer<
   typeof AgentProviderAccountTransferResponseMessageSchema
 >;
 export type AgentCleanCutResponseMessage = z.infer<typeof AgentCleanCutResponseMessageSchema>;
+export type AgentCleanCutSubagentResult = z.infer<typeof AgentCleanCutSubagentResultSchema>;
 export type AgentDetachResponseMessage = z.infer<typeof AgentDetachResponseMessageSchema>;
 export type AgentCancelAutoResumeResponseMessage = z.infer<
   typeof AgentCancelAutoResumeResponseMessageSchema

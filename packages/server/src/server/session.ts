@@ -116,6 +116,7 @@ import {
 } from "./agent/timeline-projection.js";
 import { buildAgentForkContextAttachment } from "./agent/activity-curator.js";
 import { runCleanCut, type CleanCutTarget } from "./agent/clean-cut.js";
+import { runCleanCutForSubagents } from "./agent/clean-cut-subagents.js";
 import { buildAgentPrompt } from "./agent/prompt-attachments.js";
 import type { StructuredGenerationDaemonConfig } from "./agent/structured-generation-providers.js";
 import {
@@ -1058,17 +1059,17 @@ export class Session {
           await agentManager.transferAgentProviderAccount(agentId, providerAccountId);
         },
         // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
-        cleanCut: async (agentId, target) => {
+        cleanCut: async (agentId, target, { includeSubagents }) => {
           this.assertCleanCutTarget(agentId, target);
-          await runCleanCut(
-            {
-              agentManager,
-              providerSnapshotManager,
-              readDaemonConfig: () => this.readStructuredGenerationDaemonConfig(),
-              logger: this.sessionLogger,
-            },
-            { agentId, target },
-          );
+          const deps = {
+            agentManager,
+            providerSnapshotManager,
+            readDaemonConfig: () => this.readStructuredGenerationDaemonConfig(),
+            logger: this.sessionLogger,
+          };
+          await runCleanCut(deps, { agentId, target });
+          // COMPAT(agentCleanCutSubagents): added in v1.7.0, remove after 2027-09-27.
+          return includeSubagents ? runCleanCutForSubagents(deps, agentId) : undefined;
         },
       },
       logger: this.sessionLogger,

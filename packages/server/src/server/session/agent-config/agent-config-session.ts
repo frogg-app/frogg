@@ -5,6 +5,7 @@ import type { AgentConfigApply } from "@frogg/protocol/messages";
 import type { AgentProviderNotice } from "../../agent/agent-sdk-types.js";
 import type { SessionInboundMessage, SessionOutboundMessage } from "../../messages.js";
 import type { CleanCutTarget } from "../../agent/clean-cut.js";
+import type { CleanCutSubagentResult } from "../../agent/clean-cut-subagents.js";
 
 /**
  * The agent-config response messages share one payload shape; deriving the type
@@ -45,7 +46,11 @@ export interface AgentConfigOperations {
    * Summarises the conversation and restarts it fresh, optionally on another
    * provider, account or model.
    */
-  cleanCut(agentId: string, target: CleanCutTarget): Promise<void>;
+  cleanCut(
+    agentId: string,
+    target: CleanCutTarget,
+    options: { includeSubagents: boolean },
+  ): Promise<CleanCutSubagentResult[] | undefined>;
 }
 
 export interface AgentConfigSessionOptions {
@@ -185,6 +190,8 @@ export class AgentConfigSession {
     msg: Extract<SessionInboundMessage, { type: "agent.clean_cut.request" }>,
   ): Promise<void> {
     const { agentId, provider, providerAccountId, model, thinkingOptionId, requestId } = msg;
+    const includeSubagents = msg.includeSubagents ?? true;
+    let subagents: CleanCutSubagentResult[] | undefined;
     const target: CleanCutTarget = {
       ...(provider !== undefined ? { provider } : {}),
       ...(providerAccountId !== undefined ? { providerAccountId } : {}),
@@ -195,13 +202,17 @@ export class AgentConfigSession {
       agentId,
       requestId,
       logLabel: "agent.clean_cut.request",
-      logFields: { agentId, requestId, target },
+      logFields: { agentId, requestId, target, includeSubagents },
       failureText: "Failed to make a clean cut",
       run: async () => {
-        await this.operations.cleanCut(agentId, target);
+        subagents = await this.operations.cleanCut(agentId, target, { includeSubagents });
         return undefined;
       },
-      emitResponse: (payload) => this.host.emit({ type: "agent.clean_cut.response", payload }),
+      emitResponse: (payload) =>
+        this.host.emit({
+          type: "agent.clean_cut.response",
+          payload: payload.accepted && subagents ? { ...payload, subagents } : payload,
+        }),
     });
   }
 

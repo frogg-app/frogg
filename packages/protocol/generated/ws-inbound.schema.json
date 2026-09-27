@@ -6050,6 +6050,9 @@
                     "null"
                   ]
                 },
+                "includeSubagents": {
+                  "type": "boolean"
+                },
                 "requestId": {
                   "type": "string"
                 }

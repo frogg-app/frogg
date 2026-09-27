@@ -8,6 +8,8 @@ import {
   selectCleanCutItems,
   type CleanCutDeps,
 } from "./clean-cut.js";
+import { runCleanCutForSubagents } from "./clean-cut-subagents.js";
+import { PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
 
 const toolCall: AgentTimelineItem = {
   type: "tool_call",
@@ -184,5 +186,103 @@ describe("runCleanCut", () => {
     await expect(runCleanCut(deps, { agentId: "agent-1", target: {} })).rejects.toThrow(
       /no conversation/,
     );
+  });
+});
+
+describe("runCleanCutForSubagents", () => {
+  function child(id: string, parent: string, extra: Partial<ManagedAgent> = {}) {
+    return {
+      id,
+      provider: "claude",
+      cwd: `/worktrees/${id}`,
+      lifecycle: "idle",
+      createdAt: new Date(id.length),
+      labels: { [PARENT_AGENT_ID_LABEL]: parent },
+      config: { provider: "claude", cwd: `/worktrees/${id}`, model: "opus", title: id },
+      persistence: { provider: "claude", sessionId: `${id}-session` },
+      ...extra,
+    } as unknown as ManagedAgent;
+  }
+
+  function makeTree(agents: ManagedAgent[], timelines: Record<string, AgentTimelineItem[]>) {
+    const byId = new Map(agents.map((agent) => [agent.id, agent]));
+    const startFreshAgentSession = vi.fn(async (id: string) => {
+      if (id === "broken") throw new Error("provider down");
+      return byId.get(id);
+    });
+    const appendTimelineItem = vi.fn(async () => ({ seq: 1, epoch: "e" }));
+    const runner = vi.fn(async () => ({ summary: "child summary" }));
+    const deps: CleanCutDeps = {
+      agentManager: {
+        listAgents: () => agents,
+        getAgent: (id: string) => byId.get(id) ?? null,
+        getTimeline: (id: string) => timelines[id] ?? [],
+        getProviderAvailability: async () => ({ available: true, error: null }),
+        startFreshAgentSession,
+        appendTimelineItem,
+      } as unknown as AgentManager,
+      providerSnapshotManager: {
+        listProviders: async () => [
+          { provider: "claude", enabled: true, models: [{ id: "haiku", label: "Haiku" }] },
+        ],
+      } as unknown as CleanCutDeps["providerSnapshotManager"],
+      readDaemonConfig: () => null,
+      logger: { info: () => {}, warn: () => {} },
+      runner: runner as unknown as CleanCutDeps["runner"],
+    };
+    return { deps, startFreshAgentSession, appendTimelineItem, runner };
+  }
+
+  it("cuts idle descendants on their own provider, skips running ones, reports failures", async () => {
+    const agents = [
+      child("idle", "root"),
+      child("busy", "root", { lifecycle: "running" }),
+      child("grandchild", "busy"),
+      child("empty", "root"),
+      child("broken", "root"),
+      child("stranger", "other-root"),
+    ];
+    const timelines = {
+      idle: conversation,
+      busy: conversation,
+      grandchild: conversation,
+      broken: conversation,
+      stranger: conversation,
+    };
+    const { deps, startFreshAgentSession, appendTimelineItem } = makeTree(agents, timelines);
+    const results = await runCleanCutForSubagents(deps, "root");
+
+    expect(results.map(({ agentId, status, reason }) => ({ agentId, status, reason }))).toEqual([
+      { agentId: "idle", status: "cut", reason: undefined },
+      { agentId: "busy", status: "skipped", reason: "running" },
+      { agentId: "empty", status: "skipped", reason: "nothing to summarise" },
+      { agentId: "broken", status: "failed", reason: "provider down" },
+      { agentId: "grandchild", status: "cut", reason: undefined },
+    ]);
+    const cutIds = startFreshAgentSession.mock.calls.map((call) => call[0]);
+    expect(cutIds).not.toContain("busy");
+    expect(cutIds).not.toContain("stranger");
+    // Children keep their own provider and model: the parent's target is not applied.
+    expect(startFreshAgentSession).toHaveBeenCalledWith("idle", {});
+    expect(appendTimelineItem).toHaveBeenCalledWith(
+      "grandchild",
+      expect.objectContaining({
+        cleanCut: expect.objectContaining({
+          summary: "child summary",
+          previousSessionId: "grandchild-session",
+        }),
+      }),
+    );
+  });
+
+  it("summarises each child from its own timeline", async () => {
+    const { deps, runner } = makeTree([child("a", "root")], {
+      a: [{ type: "user_message", text: "child-only request" }],
+      root: [{ type: "user_message", text: "parent request" }],
+    });
+    await runCleanCutForSubagents(deps, "root");
+    const prompt = (runner.mock.calls[0] as unknown as [{ prompt: string }])[0].prompt;
+    expect(prompt).toContain("child-only request");
+    expect(prompt).not.toContain("parent request");
   });
 });

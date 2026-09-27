@@ -8020,6 +8020,31 @@ pub struct AgentCleanCutResponsePayload {
     pub error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notice: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subagents: Option<Vec<AgentCleanCutResponsePayloadSubagentsItem>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCleanCutResponsePayloadSubagentsItem {
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    #[serde(rename = "parentAgentId")]
+    pub parent_agent_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    pub status: AgentCleanCutResponsePayloadSubagentsItemStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AgentCleanCutResponsePayloadSubagentsItemStatus {
+    #[serde(rename = "cut")]
+    Cut,
+    #[serde(rename = "skipped")]
+    Skipped,
+    #[serde(rename = "failed")]
+    Failed,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

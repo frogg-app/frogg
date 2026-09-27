@@ -2749,6 +2749,8 @@ pub struct AgentCleanCutRequest {
     pub model: Option<String>,
     #[serde(rename = "thinkingOptionId", skip_serializing_if = "Option::is_none")]
     pub thinking_option_id: Option<String>,
+    #[serde(rename = "includeSubagents", skip_serializing_if = "Option::is_none")]
+    pub include_subagents: Option<bool>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }
