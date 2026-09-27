@@ -56899,6 +56899,407 @@
                 "payload"
               ],
               "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.beta_channel.get_status.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "supported": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "selfIsBeta": {
+                      "type": "boolean"
+                    },
+                    "platform": {
+                      "type": "string"
+                    },
+                    "installed": {
+                      "type": "boolean"
+                    },
+                    "installedVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "installDir": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "running": {
+                      "type": "boolean"
+                    },
+                    "runningVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "port": {
+                      "type": "number"
+                    },
+                    "serviceName": {
+                      "type": "string"
+                    },
+                    "cliName": {
+                      "type": "string"
+                    },
+                    "homeDir": {
+                      "type": "string"
+                    },
+                    "latestVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "latestReleaseUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "latestPublishedAt": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "latestError": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "run": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "runId": {
+                              "type": "string"
+                            },
+                            "action": {
+                              "type": "string"
+                            },
+                            "targetVersion": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "phase": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "startedAt": {
+                              "type": "string"
+                            },
+                            "at": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "runId",
+                            "action",
+                            "targetVersion",
+                            "phase",
+                            "message",
+                            "startedAt",
+                            "at"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "supported",
+                    "reason",
+                    "selfIsBeta",
+                    "platform",
+                    "installed",
+                    "installedVersion",
+                    "installDir",
+                    "running",
+                    "runningVersion",
+                    "port",
+                    "serviceName",
+                    "cliName",
+                    "homeDir",
+                    "latestVersion",
+                    "latestReleaseUrl",
+                    "latestPublishedAt",
+                    "latestError",
+                    "run",
+                    "requestId",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.beta_channel.install.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "accepted": {
+                      "type": "boolean"
+                    },
+                    "runId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "targetVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "accepted",
+                    "runId",
+                    "targetVersion",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.beta_channel.uninstall.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "accepted": {
+                      "type": "boolean"
+                    },
+                    "runId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "targetVersion": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "accepted",
+                    "runId",
+                    "targetVersion",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.beta_channel.run.progress"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "run": {
+                      "type": "object",
+                      "properties": {
+                        "runId": {
+                          "type": "string"
+                        },
+                        "action": {
+                          "type": "string"
+                        },
+                        "targetVersion": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "phase": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "startedAt": {
+                          "type": "string"
+                        },
+                        "at": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "runId",
+                        "action",
+                        "targetVersion",
+                        "phase",
+                        "message",
+                        "startedAt",
+                        "at"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "logLine": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "run"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.beta_channel.run.completed"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "runId": {
+                      "type": "string"
+                    },
+                    "action": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "succeeded",
+                        "failed"
+                      ]
+                    },
+                    "version": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "at": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "runId",
+                    "action",
+                    "status",
+                    "version",
+                    "error",
+                    "at"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
             }
           ]
         }
