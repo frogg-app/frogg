@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { AdaptiveModalSheet, type SheetHeader } from "@/components/adaptive-modal-sheet";
 import { SegmentedControl, type SegmentedControlOption } from "@/components/ui/segmented-control";
@@ -14,6 +14,7 @@ import { usePluginsList } from "./queries";
 import { PluginSettingsView } from "./plugin-settings-view";
 import { RepositoriesTab } from "./repositories-tab";
 import { TargetSelect } from "./target-select";
+import { ClientTargetBody } from "./client-target";
 
 /**
  * The plugins manager: pick a target (this client or a host), then Installed / Browse /
@@ -117,7 +118,7 @@ function PluginsModal(): ReactElement {
               <PluginsTabBody serverId={serverId} tab={effectiveTab} />
             </>
           ) : (
-            <ClientTargetPlaceholder />
+            <ClientTargetBody tab={effectiveTab} onTabChange={setTab} />
           )}
         </View>
       ) : null}
@@ -136,35 +137,8 @@ function PluginsTabBody({ serverId, tab }: { serverId: string; tab: PluginsTab }
   return <InstalledTab serverId={serverId} />;
 }
 
-/**
- * Client-scope plugins run inside this app, and the client plugin runtime has not shipped, so
- * there is nothing to list or install here yet. Said plainly rather than an empty list.
- */
-function ClientTargetPlaceholder() {
-  const { t } = useTranslation();
-  return (
-    <View style={styles.placeholder} testID="plugins-client-placeholder">
-      <Text style={styles.placeholderTitle}>{t("plugins.client.title")}</Text>
-      <Text style={styles.muted}>{t("plugins.client.body")}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create((theme) => ({
   body: {
     gap: theme.spacing[3],
-  },
-  placeholder: {
-    gap: theme.spacing[1],
-    paddingVertical: theme.spacing[4],
-  },
-  placeholderTitle: {
-    color: theme.colors.foreground,
-    fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.medium,
-  },
-  muted: {
-    color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.sm,
   },
 }));

@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/select-field";
 import { useHosts } from "@/runtime/host-runtime";
 import { usePluginHostIds } from "./hosts";
+import { isClientPluginRuntimeSupported } from "./client-runtime/storage";
 import { usePluginsModalStore, type PluginsTarget } from "./modal-store";
 
 const CLIENT_VALUE = "__client__";
@@ -29,6 +30,7 @@ export function TargetSelect({ target }: { target: PluginsTarget }): ReactElemen
         testID: `plugins-target-${serverId}`,
       };
     });
+    if (!isClientPluginRuntimeSupported()) return hostOptions;
     return [
       {
         id: CLIENT_VALUE,

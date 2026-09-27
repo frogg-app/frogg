@@ -11,8 +11,8 @@ import { openPluginsModal } from "./modal-store";
 import { pluginsQueryKeys } from "./query-keys";
 
 /**
- * True while at least one host could use plugins: the brand allows them, a connected host
- * advertises the feature, and not every such host reports its plugin policy as disabled.
+ * True while plugins are usable: the brand allows them and either this device runs client
+ * plugins (desktop, web) or a connected host advertises the feature with plugins not disabled.
  */
 export function usePluginsEntryVisible(): boolean {
   const serverIds = usePluginHostIds();
@@ -30,7 +30,8 @@ export function usePluginsEntryVisible(): boolean {
     })),
   );
   if (!isPluginsEnabledByBrand()) return false;
-  if (serverIds.length === 0 && !isClientPluginRuntimeSupported()) return false;
+  // Desktop and web can always manage this device's own client plugins.
+  if (isClientPluginRuntimeSupported()) return true;
   // Unknown (loading/failed) counts as usable so the entry doesn't flicker in and out.
   return results.some((result) => result.data?.policy.enabled !== false);
 }

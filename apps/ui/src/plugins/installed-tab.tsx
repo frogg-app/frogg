@@ -17,6 +17,7 @@ import { usePluginsModalStore } from "./modal-store";
 import { usePluginContributions, usePluginMutation, usePluginsList } from "./queries";
 import { PluginRequestError } from "@frogg/client/internal/daemon-client";
 import { pluginStyles as styles } from "./shared-styles";
+import { HybridClientComponent } from "./hybrid-client";
 
 export function InstalledTab({ serverId }: { serverId: string }): ReactElement {
   const { t } = useTranslation();
@@ -240,11 +241,7 @@ function InstalledRowDetails({ plugin }: { plugin: PluginInstalled }): ReactElem
         ) : null}
       </View>
       {plugin.description ? <Text style={styles.body}>{plugin.description}</Text> : null}
-      {plugin.scope === "hybrid" ? (
-        <Text style={styles.meta} testID={`plugins-needs-client-${plugin.id}`}>
-          {t("plugins.installed.needsClientComponent")}
-        </Text>
-      ) : null}
+      {plugin.scope === "hybrid" ? <HybridClientComponent plugin={plugin} /> : null}
       {isDev && plugin.devPath ? <Text style={styles.meta}>{plugin.devPath}</Text> : null}
       {plugin.error ? <Text style={styles.error}>{plugin.error}</Text> : null}
     </>
