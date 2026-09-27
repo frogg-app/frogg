@@ -11,11 +11,15 @@ import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
 import { usePanelStore } from "@/stores/panel-store";
 import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { useSoftChatServerId, useSoftProjects, useSoftRecents } from "./soft-data";
+import { SoftProjectCards, SoftRecentCards } from "./soft-cards";
 import { SoftChatList, SoftProjectList } from "./soft-lists";
 import { SoftPillComposer } from "./soft-pill-composer";
 import { SoftRoundButton } from "./soft-round-button";
 
 export type SoftSegment = "chats" | "projects";
+
+// The wide home shows the latest few as cards; the sidebar card lists everything.
+const WIDE_RECENT_LIMIT = 6;
 
 // preview copy
 const GREETING = "What are we building today?";
@@ -34,7 +38,8 @@ export function useSoftSegmentOptions(): SegmentedControlOption<SoftSegment>[] {
 /**
  * The soft home. Compact (Perplexity/ChatGPT iOS): round menu and search buttons either side of
  * a pill segmented control, the recent list, and a floating pill composer pinned above the tab bar.
- * Wide: the same pieces as a centred column that leads with a bold prompt and the composer.
+ * Wide: a centred column that leads with a bold prompt and the composer, then the latest chats
+ * (or projects) as Notion-style cards.
  */
 export function SoftHome() {
   const { t } = useTranslation();
@@ -57,15 +62,15 @@ export function SoftHome() {
   // The top bar clears the status bar itself: the soft home has no shipping header above it.
   const topBarInset = useMemo(() => ({ paddingTop: insets.top + 10 }), [insets.top]);
   const openSearch = useCallback(() => setCommandCenterOpen(true), [setCommandCenterOpen]);
-
-  const list =
-    segment === "chats" ? (
-      <SoftChatList recents={recents} />
-    ) : (
-      <SoftProjectList projects={projects} />
-    );
+  const wideRecents = useMemo(() => recents.slice(0, WIDE_RECENT_LIMIT), [recents]);
 
   if (compact) {
+    const list =
+      segment === "chats" ? (
+        <SoftChatList recents={recents} />
+      ) : (
+        <SoftProjectList projects={projects} />
+      );
     return (
       <View style={styles.screen} testID="soft-home">
         <View style={[styles.topBar, topBarInset]}>
@@ -96,7 +101,13 @@ export function SoftHome() {
             <SegmentedControl options={options} value={segment} onValueChange={setSegment} size="md" />
             <SoftRoundButton icon={Search} label={t("sidebar.sections.search")} onPress={openSearch} />
           </View>
-          {list}
+          {segment === "chats" ? <SoftRecentCards recents={wideRecents} /> : null}
+          {segment === "projects" && projects.length > 0 ? (
+            <SoftProjectCards projects={projects} />
+          ) : null}
+          {segment === "projects" && projects.length === 0 ? (
+            <SoftProjectList projects={projects} />
+          ) : null}
         </View>
       </ScrollView>
     </View>
