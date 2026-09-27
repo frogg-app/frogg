@@ -47,7 +47,7 @@ export function ChatsFilterBar({ rows, compact }: { rows: readonly MonoChatRow[]
   );
   return (
     <View style={styles.bar}>
-      <View style={styles.search}>
+      <View style={compact ? styles.search : styles.searchWide}>
         {SEARCH_ICON}
         <ThemedTextInput
           value={query}
@@ -59,7 +59,12 @@ export function ChatsFilterBar({ rows, compact }: { rows: readonly MonoChatRow[]
         />
       </View>
       {compact ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pickers}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.pickerScroll}
+          contentContainerStyle={styles.pickers}
+        >
           {pickers}
         </ScrollView>
       ) : (
@@ -221,7 +226,6 @@ const styles = StyleSheet.create((theme) => ({
     gap: 8,
   },
   search: {
-    flex: { xs: 0, md: 1 },
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -231,6 +235,21 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface0,
+  },
+  searchWide: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    height: 36,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    backgroundColor: theme.colors.surface0,
+  },
+  pickerScroll: {
+    flexGrow: 0,
   },
   searchInput: {
     flex: 1,

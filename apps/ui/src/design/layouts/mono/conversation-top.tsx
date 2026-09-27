@@ -5,7 +5,7 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import type { Theme } from "@/styles/theme";
-import { formatCompactTimeAgo, formatDuration } from "@/utils/time";
+import { formatDuration, formatTimeAgo } from "@/utils/time";
 import { turnDurationMs, useMonoChatRow, useNow, type MonoChatRow } from "./mono-data";
 import { DiffStat, MonoText, StatusLabel } from "./mono-parts";
 
@@ -123,7 +123,7 @@ function Details({ row }: { row: MonoChatRow }) {
       </Field>
       <Field label={COPY.duration}>
         <MonoText tone="strong">{duration === null ? "—" : formatDuration(duration)}</MonoText>
-        <Text style={styles.muted}>{formatCompactTimeAgo(row.lastActivityAt, new Date(now))}</Text>
+        <Text style={styles.muted}>{formatTimeAgo(row.lastActivityAt, new Date(now))}</Text>
       </Field>
       <Field label={COPY.model}>
         <MonoText tone="strong" numberOfLines={1}>
@@ -132,7 +132,7 @@ function Details({ row }: { row: MonoChatRow }) {
         <Text style={styles.muted}>{row.provider}</Text>
       </Field>
       <Field label={COPY.created}>
-        <Text style={styles.strong}>{formatCompactTimeAgo(row.createdAt, new Date(now))}</Text>
+        <Text style={styles.strong}>{formatTimeAgo(row.createdAt, new Date(now))}</Text>
         <Text style={styles.muted}>{row.hostLabel}</Text>
       </Field>
       <Field label={COPY.source}>

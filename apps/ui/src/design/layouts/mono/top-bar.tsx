@@ -71,6 +71,14 @@ function Crumbs({ route }: { route: MonoRoute }) {
   );
 }
 
+/** Phones have room for one selector: the chat's branch inside a workspace, else the project. */
+function CompactCrumb({ route }: { route: MonoRoute }) {
+  if (route.workspace && route.serverId) {
+    return <WorkspaceCrumb serverId={route.serverId} workspace={route.workspace} />;
+  }
+  return <ProjectCrumb activeProject={null} />;
+}
+
 function DesktopHeader({ route }: { route: MonoRoute }) {
   return (
     <WindowChromeSafeArea placement="inline" horizontalPadding={16} style={styles.header}>
@@ -92,7 +100,9 @@ function CompactHeader({ route }: { route: MonoRoute }) {
     <View style={styles.header}>
       <Logo />
       <CrumbSlash />
-      <Crumbs route={route} />
+      <View style={styles.crumbs}>
+        <CompactCrumb route={route} />
+      </View>
       <View style={styles.spacer} />
       <Pressable onPress={openFind} style={styles.iconButton} accessibilityLabel={COPY.find}>
         {SEARCH_ICON}
