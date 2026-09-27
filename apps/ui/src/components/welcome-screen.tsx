@@ -4,6 +4,17 @@ import { useTranslation } from "react-i18next";
 import { Pressable, Text, View, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import { themeOf } from "@/styles/design-theme";
+import type { TextFragment } from "@/styles/style-fragment";
+import type { Theme } from "@/styles/theme";
+import {
+  entryActionButton,
+  entryActionPrimary,
+  entryActionPrimaryText,
+  entryCard,
+  entryPageTitle,
+} from "@/home/entry-design";
 import {
   QrCode,
   Link2,
@@ -48,7 +59,7 @@ interface WelcomeAction {
   onPress: () => void;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -82,6 +93,9 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: theme.fontWeight.medium,
     textAlign: "center",
   },
+  titleDesign: {
+    ...welcomeTitle(themeOf(rt.themeName)),
+  },
   subtitle: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
@@ -108,9 +122,15 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
+  actionButtonDesign: {
+    ...entryActionButton(themeOf(rt.themeName)),
+  },
   actionButtonPrimary: {
     backgroundColor: theme.colors.accent,
     borderColor: theme.colors.accent,
+  },
+  actionButtonPrimaryDesign: {
+    ...entryActionPrimary(themeOf(rt.themeName)),
   },
   actionText: {
     color: theme.colors.foreground,
@@ -119,6 +139,9 @@ const styles = StyleSheet.create((theme) => ({
   },
   actionTextPrimary: {
     color: theme.colors.accentForeground,
+  },
+  actionTextPrimaryDesign: {
+    ...entryActionPrimaryText(themeOf(rt.themeName)),
   },
   setupLink: {
     flexDirection: "row",
@@ -151,6 +174,9 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surface2,
     borderWidth: 1,
     borderColor: theme.colors.border,
+  },
+  modeCardDesign: {
+    ...entryCard(themeOf(rt.themeName)),
   },
   modeCardPrimary: {
     borderColor: theme.colors.accent,
@@ -185,6 +211,15 @@ const styles = StyleSheet.create((theme) => ({
 }));
 
 type WelcomeMode = "choose" | "remote" | "local";
+
+const titleStyle = [styles.title, styles.titleDesign];
+
+// The onboarding headline: today's quiet medium line, or the direction's display title.
+function welcomeTitle(theme: Theme): TextFragment {
+  // `current` gets only the UI-font pointer back (the design-font tag opts out of the global rule).
+  if (theme.design.variant === "current") return entryPageTitle(theme);
+  return { ...entryPageTitle(theme), textAlign: "center" };
+}
 
 const ThemedLaptop = withUnistyles(Laptop, (theme) => ({ size: 22, color: theme.colors.accent }));
 const ThemedServer = withUnistyles(Server, (theme) => ({
@@ -383,7 +418,9 @@ export function WelcomeScreen({ onHostAdded }: WelcomeScreenProps) {
         <View style={styles.content}>
           <BrandLogo size={96} />
           <View style={styles.copyBlock}>
-            <Text style={styles.title}>{t("onboarding.title")}</Text>
+            <Text style={titleStyle} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">
+              {t("onboarding.title")}
+            </Text>
             <Text style={styles.subtitle}>{t("onboarding.subtitle")}</Text>
             {isNative && brand.distribution.releaseBase ? (
               <Pressable style={styles.setupLink} onPress={handleOpenProjectSite}>
@@ -508,7 +545,7 @@ function WelcomeModeCard({
   onPress,
 }: WelcomeModeCardProps) {
   const cardStyle = useMemo(
-    () => [styles.modeCard, primary ? styles.modeCardPrimary : null],
+    () => [styles.modeCard, styles.modeCardDesign, primary ? styles.modeCardPrimary : null],
     [primary],
   );
   return (
@@ -530,11 +567,20 @@ function WelcomeActionButton({ action }: WelcomeActionButtonProps) {
   const { theme } = useUnistyles();
   const Icon = action.icon;
   const buttonStyle = useMemo(
-    () => [styles.actionButton, action.primary ? styles.actionButtonPrimary : null],
+    () => [
+      styles.actionButton,
+      styles.actionButtonDesign,
+      action.primary ? styles.actionButtonPrimary : null,
+      action.primary ? styles.actionButtonPrimaryDesign : null,
+    ],
     [action.primary],
   );
   const textStyle = useMemo(
-    () => [styles.actionText, action.primary ? styles.actionTextPrimary : null],
+    () => [
+      styles.actionText,
+      action.primary ? styles.actionTextPrimary : null,
+      action.primary ? styles.actionTextPrimaryDesign : null,
+    ],
     [action.primary],
   );
   return (

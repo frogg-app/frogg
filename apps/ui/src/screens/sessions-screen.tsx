@@ -3,6 +3,8 @@ import { View, Text } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { router } from "expo-router";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { themeOf } from "@/styles/design-theme";
+import { EntryPageTitle, useShowsEntryPageTitle } from "@/home/entry-page-title";
 import { ChevronLeft } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
@@ -244,6 +246,8 @@ function SessionsScreenContent({ projectKey = null, serverId = null }: SessionsS
     ...(historyFilter ? { filter: historyFilter } : {}),
   });
   const isSearching = isSearchSupported && search.length > 0;
+  const showsPageTitle = useShowsEntryPageTitle();
+  const title = resolveTitle(t, projectLabel);
 
   useEffect(() => {
     if (!isProjectScoped && isStaleHostSelection(selectedHost, hosts)) {
@@ -303,7 +307,8 @@ function SessionsScreenContent({ projectKey = null, serverId = null }: SessionsS
 
   return (
     <View style={styles.container}>
-      <MenuHeader title={resolveTitle(t, projectLabel)} />
+      <MenuHeader title={showsPageTitle ? undefined : title} />
+      {showsPageTitle ? <EntryPageTitle title={title} testID="sessions-page-title" /> : null}
       {showFilterRow ? (
         <SessionsFilterRow
           showSearch={isSearchSupported}
@@ -356,14 +361,14 @@ function SessionsScreenContent({ projectKey = null, serverId = null }: SessionsS
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
   },
   filterContainer: {
     width: "100%",
-    maxWidth: theme.design.contentMaxWidth ?? undefined,
+    maxWidth: themeOf(rt.themeName).design.contentMaxWidth ?? undefined,
     alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
@@ -400,7 +405,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   errorsBannerWrap: {
     width: "100%",
-    maxWidth: theme.design.contentMaxWidth ?? undefined,
+    maxWidth: themeOf(rt.themeName).design.contentMaxWidth ?? undefined,
     alignSelf: "center",
     paddingHorizontal: {
       xs: theme.spacing[3],

@@ -132,3 +132,26 @@ export function entryCard(theme: Theme): ViewFragment {
       return {};
   }
 }
+
+/** A compact solid call-to-action (camera permission, retry): accent fill, Mono's black/white. */
+export function entrySolidButton(theme: Theme): ViewFragment {
+  if (theme.design.variant === "current") return {};
+  const mono = theme.design.variant === "mono";
+  return {
+    backgroundColor: mono ? theme.colors.primary : theme.colors.accent,
+    borderRadius: Math.min(theme.design.controlRadius, theme.borderRadius.full),
+  };
+}
+
+export function entrySolidButtonText(theme: Theme): TextFragment {
+  if (theme.design.variant === "current") return {};
+  const mono = theme.design.variant === "mono";
+  return { color: mono ? theme.colors.primaryForeground : theme.colors.accentForeground };
+}
+
+/** A card or section heading on the entry screens, a step below the page title. */
+export function entrySectionTitle(theme: Theme): TextFragment {
+  if (theme.design.variant === "current") return designHeading(theme);
+  const size = theme.design.variant === "inset" ? theme.fontSize.base : theme.fontSize.lg;
+  return { ...designHeading(theme), fontSize: size };
+}
