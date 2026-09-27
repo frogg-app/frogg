@@ -7,17 +7,25 @@
  * full input price; a clean cut sends a short summary instead. While the cache
  * is warm, resuming is cheaper, so nothing happens.
  *
- * Warmth is judged by the shared rule in `@frogg/protocol/prompt-cache`, the
- * same one the composer's stale-context warning uses. Providers without a
- * known cache lifetime are never cut. Any failure (no conversation, the
+ * Each trigger has its own switch in the `cleanCut` daemon config, read live.
+ * Coldness is judged by the shared rule in `@frogg/protocol/prompt-cache`, the
+ * same one the composer's stale-context warning uses: idle longer than the
+ * provider's threshold (the owner's setting, else the provider's cache TTL).
+ * Providers with neither are never cut. Any failure (no conversation, the
  * summariser failing on every candidate) is logged and the caller resumes the
  * old conversation as it would have anyway.
+ *
+ * Every decision is logged with its outcome and reason, so a resume that went
+ * ahead without a cut can be explained from the daemon log alone.
  */
-import { isPromptCacheCold } from "@frogg/protocol/prompt-cache";
+import type { MutableCleanCutConfig } from "@frogg/protocol/messages";
+import { isPromptCacheCold, resolveIdleThresholdMs } from "@frogg/protocol/prompt-cache";
 import { runCleanCut, type CleanCutDeps } from "./clean-cut.js";
 
+export type AutoCleanCutTrigger = "usage_limit" | "daemon_restart";
+
 export interface AutoCleanCutDeps extends CleanCutDeps {
-  isEnabled: () => boolean;
+  getCleanCutSettings: () => MutableCleanCutConfig | undefined;
   now?: () => number;
   /** Test seam for the cut itself. */
   cleanCut?: typeof runCleanCut;
@@ -33,50 +41,95 @@ export type AutoCleanCutOutcome =
   | "skipped"
   | "failed";
 
+const MINUTE_MS = 60_000;
+
+function isTriggerEnabled(
+  settings: MutableCleanCutConfig | undefined,
+  trigger: AutoCleanCutTrigger,
+): boolean {
+  const auto = settings?.auto;
+  return trigger === "usage_limit" ? auto?.usageLimit !== false : auto?.daemonRestart !== false;
+}
+
+function toMinutes(ms: number | null): number | null {
+  return ms === null ? null : Math.round(ms / MINUTE_MS);
+}
+
 export async function maybeAutoCleanCut(
   deps: AutoCleanCutDeps,
   input: {
     agentId: string;
     /** When the agent last reached its provider, or null when not known. */
     lastProviderTurnAt: Date | null;
-    /** Log context: which resume path asked. */
-    trigger: "usage_limit" | "daemon_restart";
+    /** Which resume path asked. */
+    trigger: AutoCleanCutTrigger;
   },
 ): Promise<AutoCleanCutOutcome> {
   const { agentId, trigger } = input;
-  if (!deps.isEnabled()) return "disabled";
-  const agent = deps.agentManager.getAgent(agentId);
-  if (!agent || agent.internal || agent.lifecycle === "closed" || agent.lifecycle === "running") {
-    return "skipped";
+  const log = (
+    outcome: AutoCleanCutOutcome,
+    reason: string,
+    details: Record<string, unknown> = {},
+  ): AutoCleanCutOutcome => {
+    const fields = { agentId, trigger, outcome, reason, ...details };
+    if (outcome === "failed") {
+      deps.logger.warn(fields, "Automatic clean cut failed; resuming the existing conversation");
+    } else {
+      deps.logger.info(fields, `Automatic clean cut: ${outcome}`);
+    }
+    return outcome;
+  };
+
+  const settings = deps.getCleanCutSettings();
+  if (!isTriggerEnabled(settings, trigger)) {
+    return log(
+      "disabled",
+      `cleanCut.auto.${trigger === "usage_limit" ? "usageLimit" : "daemonRestart"} is off`,
+    );
   }
-  if (!agent.persistence?.sessionId) return "skipped";
+  const agent = deps.agentManager.getAgent(agentId);
+  if (!agent) return log("skipped", "agent_not_loaded");
+  if (agent.internal) return log("skipped", "internal_agent");
+  if (agent.lifecycle === "closed" || agent.lifecycle === "running") {
+    return log("skipped", `lifecycle_${agent.lifecycle}`);
+  }
+  if (!agent.persistence?.sessionId) return log("skipped", "no_provider_session");
+
+  const now = (deps.now ?? Date.now)();
+  const thresholdMs = resolveIdleThresholdMs(agent.provider, settings);
+  const idleMs = input.lastProviderTurnAt ? now - input.lastProviderTurnAt.getTime() : null;
+  const context = {
+    provider: agent.provider,
+    lastProviderTurnAt: input.lastProviderTurnAt?.toISOString() ?? null,
+    idleMinutes: toMinutes(idleMs),
+    thresholdMinutes: toMinutes(thresholdMs),
+  };
   const cold = isPromptCacheCold({
     provider: agent.provider,
     lastTurnAt: input.lastProviderTurnAt,
-    now: (deps.now ?? Date.now)(),
+    now,
+    settings,
   });
-  if (cold === null) return "unknown";
-  if (!cold) return "warm";
+  if (cold === null) {
+    return log(
+      "unknown",
+      thresholdMs === null ? "no_threshold_for_provider" : "last_turn_time_unknown",
+      context,
+    );
+  }
+  if (!cold) return log("warm", "idle_within_threshold", context);
   try {
     const outcome = await (deps.cleanCut ?? runCleanCut)(deps, {
       agentId,
       target: {},
       reason: "cold-cache",
     });
-    if (outcome === "unchanged") {
-      deps.logger.info(
-        { agentId, trigger },
-        "Cold cache, but nothing new since the previous clean cut; resuming as is",
-      );
-      return "unchanged";
-    }
-    deps.logger.info({ agentId, trigger }, "Automatic clean cut before resume (cold cache)");
-    return "cut";
+    if (outcome === "unchanged") return log("unchanged", "nothing_new_since_last_cut", context);
+    return log("cut", "idle_past_threshold", context);
   } catch (error) {
-    deps.logger.warn(
-      { err: error, agentId, trigger },
-      "Automatic clean cut failed; resuming the existing conversation",
-    );
-    return "failed";
+    return log("failed", error instanceof Error ? error.message : String(error), {
+      ...context,
+      err: error,
+    });
   }
 }

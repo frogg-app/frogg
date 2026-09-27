@@ -3062,6 +3062,40 @@ export const zhCN: TranslationResources = {
       docs: "文档",
       saveError: "无法更新元数据生成设置",
     },
+    cleanCut: {
+      title: "干净切换",
+      description: "在恢复闲置过久的对话之前，基于简短摘要开启新对话，而不是重新发送全部上下文",
+      docs: "文档",
+      saveError: "无法更新干净切换设置",
+      auto: {
+        usageLimit: "用量限制后恢复前先切换",
+        usageLimitHint: "用量限制重置且对话已冷却时，在发送恢复提示前先对其进行摘要",
+        daemonRestart: "重启后恢复前先切换",
+        daemonRestartHint: "守护进程重启中断了某个回合且对话已冷却时，在继续之前先对其进行摘要",
+      },
+      threshold: {
+        title: "闲置阈值",
+        hint: "对话闲置多久后被视为已冷却。留空则使用各提供方的提示缓存有效期（Claude 和 Codex 为 1 小时）",
+        providerDefault: "默认",
+        off: "关闭",
+        unit: "分钟",
+        invalid: "请输入 1 到 {{max}} 之间的整数分钟，或留空",
+      },
+      summaryModel: {
+        title: "摘要模型",
+        hint: "用于撰写摘要。自动会选择智能体所属提供方中已知最便宜的模型",
+        automatic: "使用自动",
+      },
+      providers: {
+        title: "按提供方",
+        hint: "提供方自己的设置优先于上方设置。缓存有效期未知的提供方只有在设置了自己的阈值后才会被切换",
+        threshold: "{{provider}} 闲置阈值",
+        inherited: "默认：{{minutes}} 分钟",
+        notCutByDefault: "未设置阈值时不切换",
+        summaryModel: "{{provider}} 摘要模型",
+        summaryModelHint: "不可用时使用上方的摘要模型",
+      },
+    },
     voiceAlerts: {
       title: "语音提醒",
       autoPlay: {

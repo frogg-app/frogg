@@ -72,6 +72,7 @@ import { HostAppearanceSection } from "@/screens/settings/host-appearance-sectio
 import { HostDaemonUpdateSection } from "@/screens/settings/host-daemon-update-section";
 import { HostSshDeploySection } from "@/screens/settings/host-ssh-deploy-section";
 import { HostResourcesSection } from "@/screens/settings/host-resources-section";
+import { CleanCutSection } from "@/screens/settings/clean-cut-section";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
@@ -267,11 +268,14 @@ export function HostAgentsPage({ serverId }: { serverId: string }) {
     <View>
       <ProviderAgentDefinitionsSection serverId={serverId} />
       {isConnected ? (
-        <SettingsSection title={t("settings.hostSections.agents")}>
-          <InjectFroggToolsCard serverId={serverId} />
-          <BrowserToolsOptInCard serverId={serverId} />
-          <AppendSystemPromptCard serverId={serverId} />
-        </SettingsSection>
+        <>
+          <SettingsSection title={t("settings.hostSections.agents")}>
+            <InjectFroggToolsCard serverId={serverId} />
+            <BrowserToolsOptInCard serverId={serverId} />
+            <AppendSystemPromptCard serverId={serverId} />
+          </SettingsSection>
+          <CleanCutSection serverId={serverId} />
+        </>
       ) : (
         <View style={[settingsStyles.card, styles.emptyCard]}>
           <Text style={styles.emptyText}>{t("settings.host.agents.unavailable")}</Text>

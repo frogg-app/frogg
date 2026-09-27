@@ -8,7 +8,7 @@ import {
   MutableDaemonConfigSchema,
   MutableDaemonConfigPatchSchema,
 } from "@frogg/protocol/messages";
-import type { HostSettingsSection } from "@frogg/protocol/messages";
+import type { HostSettingsSection, MutableCleanCutConfigPatch } from "@frogg/protocol/messages";
 
 export type { MutableDaemonConfig, MutableDaemonConfigPatch } from "@frogg/protocol/messages";
 
@@ -26,6 +26,7 @@ interface SupportedMutableConfigPatch {
   autoArchiveAfterMerge?: boolean;
   autoResumeOnUsageLimit?: boolean;
   companionModel?: string | null;
+  cleanCut?: MutableCleanCutConfigPatch;
   hostSettings?: { hiddenSections?: HostSettingsSection[] };
   autoUpdate?: Partial<NonNullable<MutableDaemonConfig["autoUpdate"]>>;
   enableTerminalAgentHooks?: boolean;
@@ -119,7 +120,9 @@ function omitProvidersFromConfig<T extends { providers?: Record<string, unknown>
 }
 
 function omitMetadataGenerationProvidersFromConfig<
-  T extends { metadataGeneration?: { providers?: Array<{ provider?: unknown }> } },
+  T extends {
+    metadataGeneration?: { providers?: Array<{ provider?: unknown }> };
+  },
 >(config: T, providers: readonly string[]): T {
   if (providers.length === 0 || !config.metadataGeneration?.providers) {
     return config;
@@ -184,6 +187,8 @@ const RELOADABLE_PATHS = [
   "daemon.git.maxProcessConcurrency",
   "daemon.autoArchiveAfterMerge",
   "daemon.autoResumeOnUsageLimit",
+  "daemon.autoCleanCutOnColdCache",
+  "daemon.cleanCut",
   "features.companion.model",
   "daemon.hostSettings.hiddenSections",
   "daemon.autoUpdate",
@@ -213,6 +218,8 @@ const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
   ["daemon.git.maxProcessConcurrency", "git.maxProcessConcurrency"],
   ["daemon.autoArchiveAfterMerge", "autoArchiveAfterMerge"],
   ["daemon.autoResumeOnUsageLimit", "autoResumeOnUsageLimit"],
+  ["daemon.autoCleanCutOnColdCache", "cleanCut"],
+  ["daemon.cleanCut", "cleanCut"],
   ["features.companion.model", "companionModel"],
   ["daemon.hostSettings.hiddenSections", "hostSettings.hiddenSections"],
   ["daemon.autoUpdate", "autoUpdate"],
@@ -283,7 +290,9 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
     ...(patch.providers !== undefined ? { providers: patch.providers } : {}),
     ...(patch.removeProviders !== undefined ? { removeProviders: patch.removeProviders } : {}),
     ...(patch.metadataGeneration?.providers !== undefined
-      ? { metadataGeneration: { providers: patch.metadataGeneration.providers } }
+      ? {
+          metadataGeneration: { providers: patch.metadataGeneration.providers },
+        }
       : {}),
     ...(patch.hostSettings?.hiddenSections !== undefined
       ? { hostSettings: { hiddenSections: patch.hostSettings.hiddenSections } }
@@ -295,6 +304,7 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
       ? { autoResumeOnUsageLimit: patch.autoResumeOnUsageLimit }
       : {}),
     ...(patch.companionModel !== undefined ? { companionModel: patch.companionModel } : {}),
+    ...(patch.cleanCut !== undefined ? { cleanCut: patch.cleanCut } : {}),
     ...(patch.autoUpdate !== undefined ? { autoUpdate: patch.autoUpdate } : {}),
     ...(patch.enableTerminalAgentHooks !== undefined
       ? { enableTerminalAgentHooks: patch.enableTerminalAgentHooks }
@@ -304,6 +314,63 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
       : {}),
     ...(patch.terminalProfiles !== undefined ? { terminalProfiles: patch.terminalProfiles } : {}),
   };
+}
+
+interface CleanCutShape {
+  auto?: { usageLimit?: boolean; daemonRestart?: boolean };
+  idleThresholdMinutes?: number;
+  summaryModel?: MutableCleanCutConfigPatch["summaryModel"] & object;
+  providers?: Record<string, Omit<CleanCutShape, "auto" | "providers">>;
+}
+
+/** Sets or, for `null`, removes one clean cut value. */
+function applyCleanCutValue(
+  target: Omit<CleanCutShape, "auto" | "providers">,
+  patch: Pick<MutableCleanCutConfigPatch, "idleThresholdMinutes" | "summaryModel">,
+): void {
+  if (patch.idleThresholdMinutes === null) delete target.idleThresholdMinutes;
+  else if (patch.idleThresholdMinutes !== undefined) {
+    target.idleThresholdMinutes = patch.idleThresholdMinutes;
+  }
+  if (patch.summaryModel === null) delete target.summaryModel;
+  else if (patch.summaryModel !== undefined) target.summaryModel = patch.summaryModel;
+}
+
+/**
+ * Applies a clean cut patch to the mutable or the persisted shape. `null`
+ * clears a value; a provider left with no overrides is dropped rather than
+ * kept as an empty object.
+ */
+export function mergeCleanCutPatch<T extends CleanCutShape>(
+  current: T | undefined,
+  patch: MutableCleanCutConfigPatch,
+): T {
+  const next = { ...current } as T;
+  if (patch.auto) {
+    next.auto = {
+      ...current?.auto,
+      ...(patch.auto.usageLimit !== undefined ? { usageLimit: patch.auto.usageLimit } : {}),
+      ...(patch.auto.daemonRestart !== undefined
+        ? { daemonRestart: patch.auto.daemonRestart }
+        : {}),
+    };
+  }
+  applyCleanCutValue(next, patch);
+  if (patch.providers) {
+    const providers = { ...current?.providers };
+    for (const [providerId, providerPatch] of Object.entries(patch.providers)) {
+      if (providerPatch === null) {
+        delete providers[providerId];
+        continue;
+      }
+      const entry = { ...providers[providerId] };
+      applyCleanCutValue(entry, providerPatch);
+      if (Object.keys(entry).length > 0) providers[providerId] = entry;
+      else delete providers[providerId];
+    }
+    next.providers = providers;
+  }
+  return next;
 }
 
 export function applyMutableProviderConfigToOverrides(
@@ -385,9 +452,26 @@ export class DaemonConfigStore {
         "Relay endpoint is controlled by a daemon launch override. Remove FROGG_RELAY_ENDPOINT, FROGG_RELAY_USE_TLS, or the relay TLS CLI flag before changing it here.",
       );
     }
-    const { removeProviders = [], ...configPatch } = parsedPatch;
+    const { removeProviders = [], cleanCut: cleanCutPatch, ...otherPatch } = parsedPatch;
     const removedProviders = Array.from(new Set(removeProviders));
-    const merged = deepMerge(this.current, configPatch);
+    // The persisted file gets both triggers whenever either is set, so the
+    // legacy switch it replaces stops applying to the other one.
+    const configPatch: Omit<SupportedMutableConfigPatch, "removeProviders"> = cleanCutPatch
+      ? {
+          ...otherPatch,
+          cleanCut: cleanCutPatch.auto
+            ? {
+                ...cleanCutPatch,
+                auto: {
+                  ...this.current.cleanCut?.auto,
+                  ...cleanCutPatch.auto,
+                },
+              }
+            : cleanCutPatch,
+        }
+      : otherPatch;
+    const merged = deepMerge(this.current, otherPatch);
+    if (cleanCutPatch) merged.cleanCut = mergeCleanCutPatch(this.current.cleanCut, cleanCutPatch);
     const next = MutableDaemonConfigSchema.parse(
       omitMetadataGenerationProvidersFromConfig(
         omitProvidersFromConfig(merged, removedProviders),
@@ -609,7 +693,9 @@ function mergeMutablePatchIntoPersistedConfig(params: {
     ...(daemon ? { daemon } : { daemon: undefined }),
     ...(agents ? { agents } : { agents: undefined }),
     ...(patch.companionModel !== undefined
-      ? { features: withCompanionModel(persisted.features, patch.companionModel) }
+      ? {
+          features: withCompanionModel(persisted.features, patch.companionModel),
+        }
       : {}),
   } as PersistedConfig;
 }
@@ -652,7 +738,9 @@ function mergeMutableAgentPatch(
   else delete next["providers"];
 
   if (patch.metadataGeneration?.providers !== undefined) {
-    next["metadataGeneration"] = { providers: patch.metadataGeneration.providers };
+    next["metadataGeneration"] = {
+      providers: patch.metadataGeneration.providers,
+    };
   } else if (removeProviders.length > 0 && persistedAgents?.metadataGeneration?.providers) {
     const removed = new Set(removeProviders);
     next["metadataGeneration"] = {
@@ -668,7 +756,10 @@ function mergeMutableAgentPatch(
 function mergeMutableRelayPatch(
   persistedRelay: NonNullable<PersistedConfig["daemon"]>["relay"],
   patch: SupportedMutableConfigPatch["relay"],
-  relayPersistence: { persistRelayEnabled: boolean; persistRelayEndpoint: boolean },
+  relayPersistence: {
+    persistRelayEnabled: boolean;
+    persistRelayEndpoint: boolean;
+  },
 ): NonNullable<PersistedConfig["daemon"]>["relay"] {
   const updates: Record<string, unknown> = {};
   if (relayPersistence.persistRelayEnabled && patch?.enabled !== undefined) {
@@ -686,7 +777,10 @@ function mergeMutableRelayPatch(
 function mergeMutableDaemonPatch(
   persistedDaemon: PersistedConfig["daemon"],
   patch: Omit<SupportedMutableConfigPatch, "removeProviders">,
-  relayPersistence: { persistRelayEnabled: boolean; persistRelayEndpoint: boolean },
+  relayPersistence: {
+    persistRelayEnabled: boolean;
+    persistRelayEndpoint: boolean;
+  },
 ): PersistedConfig["daemon"] {
   const next = { ...persistedDaemon } as NonNullable<PersistedConfig["daemon"]>;
   const relay = mergeMutableRelayPatch(next.relay, patch.relay, relayPersistence);
@@ -695,7 +789,10 @@ function mergeMutableDaemonPatch(
     next.mcp = { ...next.mcp, injectIntoAgents: patch.mcp.injectIntoAgents };
   }
   if (patch.browserTools?.enabled !== undefined) {
-    next.browserTools = { ...next.browserTools, enabled: patch.browserTools.enabled };
+    next.browserTools = {
+      ...next.browserTools,
+      enabled: patch.browserTools.enabled,
+    };
   }
   if (patch.hostSettings?.hiddenSections !== undefined) {
     next.hostSettings = { hiddenSections: patch.hostSettings.hiddenSections };
@@ -705,6 +802,16 @@ function mergeMutableDaemonPatch(
   }
   if (patch.autoResumeOnUsageLimit !== undefined) {
     next.autoResumeOnUsageLimit = patch.autoResumeOnUsageLimit;
+  }
+  if (patch.cleanCut !== undefined) {
+    next.cleanCut = mergeCleanCutPatch(next.cleanCut, patch.cleanCut);
+    // COMPAT(cleanCutSettings): the explicit triggers replace the v1.6.2 switch.
+    if (
+      next.cleanCut.auto?.usageLimit !== undefined &&
+      next.cleanCut.auto.daemonRestart !== undefined
+    ) {
+      delete next.autoCleanCutOnColdCache;
+    }
   }
   if (patch.autoUpdate !== undefined) {
     next.autoUpdate = { ...next.autoUpdate, ...patch.autoUpdate };

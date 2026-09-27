@@ -3175,6 +3175,43 @@ export const en = {
       docs: "Docs",
       saveError: "Unable to update metadata generation",
     },
+    cleanCut: {
+      title: "Clean cut",
+      description:
+        "Before resuming a conversation that has sat idle too long, start a fresh one from a short summary instead of re-sending the whole context",
+      docs: "Docs",
+      saveError: "Unable to update clean cut settings",
+      auto: {
+        usageLimit: "Cut before resuming after a usage limit",
+        usageLimitHint:
+          "When a usage limit resets and the conversation has gone cold, summarise it before sending the resume prompt",
+        daemonRestart: "Cut before resuming after a restart",
+        daemonRestartHint:
+          "When a daemon restart interrupted a turn and the conversation has gone cold, summarise it before continuing",
+      },
+      threshold: {
+        title: "Idle threshold",
+        hint: "How long a conversation can sit idle before it counts as cold. Empty uses each provider's prompt cache lifetime (1 hour for Claude and Codex)",
+        providerDefault: "Default",
+        off: "Off",
+        unit: "min",
+        invalid: "Enter whole minutes from 1 to {{max}}, or leave it empty",
+      },
+      summaryModel: {
+        title: "Summary model",
+        hint: "Writes the summary. Automatic picks the cheapest known model on the agent's own provider",
+        automatic: "Use automatic",
+      },
+      providers: {
+        title: "Per provider",
+        hint: "A provider's own settings win over the ones above. A provider without a known cache lifetime is only cut once it has its own threshold",
+        threshold: "{{provider}} idle threshold",
+        inherited: "Default: {{minutes}} min",
+        notCutByDefault: "Not cut unless you set a threshold",
+        summaryModel: "{{provider}} summary model",
+        summaryModelHint: "Falls back to the summary model above when unavailable",
+      },
+    },
     voiceAlerts: {
       title: "Voice alerts",
       autoPlay: {

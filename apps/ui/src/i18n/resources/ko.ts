@@ -3133,6 +3133,42 @@ export const ko: TranslationResources = {
       docs: "문서",
       saveError: "메타데이터 생성을 업데이트할 수 없습니다",
     },
+    cleanCut: {
+      title: "클린 컷",
+      description:
+        "너무 오래 유휴 상태였던 대화를 재개하기 전에 전체 컨텍스트를 다시 보내는 대신 짧은 요약으로 새 대화를 시작합니다",
+      docs: "문서",
+      saveError: "클린 컷 설정을 업데이트할 수 없습니다",
+      auto: {
+        usageLimit: "사용 한도 후 재개 전에 컷",
+        usageLimitHint:
+          "사용 한도가 초기화되고 대화가 식었으면 재개 프롬프트를 보내기 전에 요약합니다",
+        daemonRestart: "재시작 후 재개 전에 컷",
+        daemonRestartHint: "데몬 재시작으로 턴이 중단되고 대화가 식었으면 계속하기 전에 요약합니다",
+      },
+      threshold: {
+        title: "유휴 임계값",
+        hint: "대화가 식은 것으로 간주되기까지의 유휴 시간입니다. 비워 두면 각 제공자의 프롬프트 캐시 수명을 사용합니다(Claude와 Codex는 1시간)",
+        providerDefault: "기본값",
+        off: "끔",
+        unit: "분",
+        invalid: "1에서 {{max}} 사이의 정수(분)를 입력하거나 비워 두세요",
+      },
+      summaryModel: {
+        title: "요약 모델",
+        hint: "요약을 작성합니다. 자동은 에이전트 자체 제공자에서 가장 저렴한 알려진 모델을 고릅니다",
+        automatic: "자동 사용",
+      },
+      providers: {
+        title: "제공자별",
+        hint: "제공자별 설정이 위 설정보다 우선합니다. 캐시 수명이 알려지지 않은 제공자는 자체 임계값이 있을 때만 컷됩니다",
+        threshold: "{{provider}} 유휴 임계값",
+        inherited: "기본값: {{minutes}}분",
+        notCutByDefault: "임계값을 설정하지 않으면 컷하지 않음",
+        summaryModel: "{{provider}} 요약 모델",
+        summaryModelHint: "사용할 수 없으면 위의 요약 모델을 사용합니다",
+      },
+    },
     voiceAlerts: {
       title: "음성 알림",
       autoPlay: {
