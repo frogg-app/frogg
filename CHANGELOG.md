@@ -1,7 +1,10 @@
 # Changelog
 
-## 1.7.0-beta.1 — 2026-09-27
+## 1.6.1-beta.1 — 2026-09-27
 
+- **Update checks back off when GitHub rate-limits them.** After a 429 the app stops asking
+  GitHub for 5 minutes, doubling on each repeat up to an hour, instead of every retry extending
+  the limit. Clients on 1.5.x stuck on "Too many requests" should install 1.6 manually once.
 - **The daemon no longer litters.** All daemon scratch work goes to the system temp directory
   under `frogg-<kind>-<pid>-…` names (image attachments, Pi MCP/extension files, OpenAI speech
   uploads). On start it sweeps, in the background, temp debris from exited Frogg processes,
