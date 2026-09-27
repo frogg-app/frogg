@@ -4,7 +4,8 @@
  * A clean cut ends an agent's provider conversation and starts a fresh one in
  * the same workspace, primed with a short summary instead of the full history.
  * The summary is written by the owner's configured summary model, else the
- * cheapest model available on the agent's own provider and account, reading
+ * cheapest model available on the cut's target provider and account (the
+ * source is often the one that just hit its usage limit), reading
  * only the chat side of the conversation: user
  * and assistant messages plus tool call names and short arguments, never tool
  * output. That transcript is a fraction of the context it stands for, which is
@@ -199,12 +200,41 @@ export function prependCleanCutSummary(
 }
 
 /**
+ * Where the conversation lands after the cut. The summary is written here: a
+ * cut is often made because the source account hit its usage limit, and the
+ * cost then lands on the account the conversation will bill to next.
+ */
+export interface CleanCutDestination {
+  provider: string;
+  /** `undefined` is the provider's default account. */
+  providerAccountId?: string;
+  model?: string;
+}
+
+export function resolveCleanCutDestination(
+  agent: Pick<ManagedAgent, "provider" | "config">,
+  target: CleanCutTarget,
+): CleanCutDestination {
+  const provider = target.provider ?? agent.provider;
+  // Moving provider starts on its default account and model unless named.
+  const kept: { providerAccountId?: string | null; model?: string | null } =
+    provider === agent.provider ? agent.config : {};
+  const providerAccountId =
+    target.providerAccountId === undefined ? kept.providerAccountId : target.providerAccountId;
+  const model = target.model === undefined ? kept.model : target.model;
+  return {
+    provider,
+    ...(providerAccountId ? { providerAccountId } : {}),
+    ...(model ? { model } : {}),
+  };
+}
+
+/**
  * The summariser candidates, in order:
- * 1. the summary model configured for the agent's provider,
+ * 1. the summary model configured for the destination provider,
  * 2. the global summary model,
- * 3. the cheapest known model on the agent's own provider, so the cost lands
- *    on the account the conversation already bills to,
- * 4. the agent's current model: dearer, but still reading the stripped
+ * 3. the cheapest known model on the destination provider,
+ * 4. the destination model: dearer, but still reading the stripped
  *    transcript rather than the whole context.
  *
  * A configured model the provider does not currently offer (provider missing,
@@ -213,7 +243,8 @@ export function prependCleanCutSummary(
  */
 export async function resolveCleanCutSummaryCandidates(
   deps: CleanCutDeps,
-  agent: Pick<ManagedAgent, "id" | "cwd" | "provider" | "config">,
+  agent: Pick<ManagedAgent, "id" | "cwd">,
+  destination: CleanCutDestination,
 ): Promise<StructuredGenerationProvider[]> {
   const entries = await deps.providerSnapshotManager.listProviders({
     cwd: agent.cwd,
@@ -221,7 +252,7 @@ export async function resolveCleanCutSummaryCandidates(
   });
   const settings = deps.getCleanCutSettings?.();
   const configured = [
-    { source: "provider", wanted: settings?.providers?.[agent.provider]?.summaryModel },
+    { source: "provider", wanted: settings?.providers?.[destination.provider]?.summaryModel },
     { source: "global", wanted: settings?.summaryModel },
   ];
   const candidates: StructuredGenerationProvider[] = [];
@@ -243,10 +274,10 @@ export async function resolveCleanCutSummaryCandidates(
       candidates.push(resolved);
     }
   }
-  candidates.push(...resolveDefaultSummaryModels(entries, agent.provider));
+  candidates.push(...resolveDefaultSummaryModels(entries, destination.provider));
   candidates.push({
-    provider: agent.provider,
-    ...(agent.config.model ? { model: agent.config.model } : {}),
+    provider: destination.provider,
+    ...(destination.model ? { model: destination.model } : {}),
   });
   const seen = new Set<string>();
   return candidates.filter((candidate) => {
@@ -304,6 +335,7 @@ function resolveDefaultSummaryModels(
 async function generateCleanCutSummary(
   deps: CleanCutDeps,
   agent: ManagedAgent,
+  destination: CleanCutDestination,
   transcript: string,
 ): Promise<{ summary: string; summaryModel: string | undefined }> {
   const prompt = buildCleanCutSummaryPrompt({ transcript, cwd: agent.cwd });
@@ -316,10 +348,10 @@ async function generateCleanCutSummary(
   const runOne = deps.runner ?? runSummariserAgent;
   const runner: SummariserRunner = async (options) => {
     // A summary model configured on another provider runs on that provider's
-    // default account: the agent's account belongs to the agent's provider.
-    const { providerAccountId: _agentAccount, ...defaultAccountConfig } = options.agentConfig;
+    // default account: the destination account belongs to its own provider.
+    const { providerAccountId: _destinationAccount, ...defaultAccountConfig } = options.agentConfig;
     const result = await runOne(
-      options.agentConfig.provider === agent.provider
+      options.agentConfig.provider === destination.provider
         ? options
         : { ...options, agentConfig: defaultAccountConfig },
     );
@@ -344,26 +376,26 @@ async function generateCleanCutSummary(
       runner,
     });
 
-  const candidates = await resolveCleanCutSummaryCandidates(deps, agent);
+  const candidates = await resolveCleanCutSummaryCandidates(deps, agent, destination);
   try {
     const result = await generate(candidates, {
       ...baseOverrides,
-      ...(agent.config.providerAccountId !== undefined
-        ? { providerAccountId: agent.config.providerAccountId }
+      ...(destination.providerAccountId !== undefined
+        ? { providerAccountId: destination.providerAccountId }
         : {}),
     });
     return { summary: result.summary.trim(), summaryModel };
   } catch (error) {
-    // Unless the owner configured a summary model elsewhere, only the agent's
-    // own provider and account are tried: summarising on another would bill
-    // an account the conversation never used.
+    // Unless the owner configured a summary model elsewhere, only the
+    // destination provider and account are tried: summarising on another would
+    // bill an account the conversation is not moving to.
     const detail = error instanceof Error ? error.message : String(error);
     deps.logger.warn(
-      { err: error, agentId: agent.id, provider: agent.provider },
+      { err: error, agentId: agent.id, provider: destination.provider },
       "Clean cut summary failed on every candidate",
     );
     throw new Error(
-      `Could not write the clean cut summary on ${agent.provider} ` +
+      `Could not write the clean cut summary on ${destination.provider} ` +
         `(tried ${candidates
           .map((candidate) => candidate.model ?? "default model")
           .join(", ")}): ${detail}`,
@@ -414,7 +446,12 @@ export async function runCleanCut(
   if (selected.some((item) => item.type === "user_message")) {
     const transcript = buildCleanCutTranscript(items);
     transcriptChars = transcript.length;
-    ({ summary, summaryModel } = await generateCleanCutSummary(deps, agent, transcript));
+    ({ summary, summaryModel } = await generateCleanCutSummary(
+      deps,
+      agent,
+      resolveCleanCutDestination(agent, target),
+      transcript,
+    ));
   } else if (previousCut) {
     // Nothing new since the last cut: its summary still stands, and a cut is
     // only worth making to move somewhere else.
