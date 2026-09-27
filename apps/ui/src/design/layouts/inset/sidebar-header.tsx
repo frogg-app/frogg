@@ -15,6 +15,7 @@ import {
 import { useHosts } from "@/runtime/host-runtime";
 import { useSidebarViewStore } from "@/stores/sidebar-view-store";
 import type { Theme } from "@/styles/theme";
+import { useScopedHostLabel } from "./use-scoped-host-label";
 
 type HoverState = PressableStateCallbackType & { hovered?: boolean };
 
@@ -48,15 +49,7 @@ export function InsetSidebarHeader({
   const toggleHostFilter = useSidebarViewStore((state) => state.toggleHostFilter);
   const clearHostFilters = useSidebarViewStore((state) => state.clearHostFilters);
 
-  const scopedHost =
-    hostFilters.length === 1
-      ? hosts.find((host) => host.serverId === hostFilters[0])
-      : hosts.length === 1
-        ? hosts[0]
-        : undefined;
-  const label = scopedHost
-    ? scopedHost.label?.trim() || scopedHost.serverId
-    : t("sidebar.display.hostFilter.all");
+  const label = useScopedHostLabel();
   const initial = label.trim().charAt(0).toUpperCase() || "·";
 
   const selectAll = useCallback(() => clearHostFilters(), [clearHostFilters]);
