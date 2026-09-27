@@ -362,6 +362,9 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surface0,
   },
   filterContainer: {
+    width: "100%",
+    maxWidth: theme.design.contentMaxWidth ?? undefined,
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],
@@ -396,6 +399,9 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
   },
   errorsBannerWrap: {
+    width: "100%",
+    maxWidth: theme.design.contentMaxWidth ?? undefined,
+    alignSelf: "center",
     paddingHorizontal: {
       xs: theme.spacing[3],
       md: theme.spacing[6],

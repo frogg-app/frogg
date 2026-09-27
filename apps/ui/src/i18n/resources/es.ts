@@ -1868,6 +1868,7 @@ export const es: TranslationResources = {
     },
   },
   openProject: {
+    greeting: "¿En qué trabajamos hoy?",
     chooseHost: {
       importSession: "Importar desde el host",
       setupProviders: "Elegir host",

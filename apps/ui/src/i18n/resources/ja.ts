@@ -1841,6 +1841,7 @@ export const ja: TranslationResources = {
     },
   },
   openProject: {
+    greeting: "何に取り組みますか？",
     chooseHost: {
       importSession: "ホストからインポート",
       setupProviders: "ホストを選択",
