@@ -535,6 +535,24 @@ pub enum SessionMessage {
     ChatRead(ChatRead),
     #[serde(rename = "chat/wait")]
     ChatWait(ChatWait),
+    #[serde(rename = "project.todo.list.request")]
+    ProjectTodoListRequest(ProjectTodoListRequest),
+    #[serde(rename = "project.todo.get.request")]
+    ProjectTodoGetRequest(ProjectTodoGetRequest),
+    #[serde(rename = "project.todo.create.request")]
+    ProjectTodoCreateRequest(ProjectTodoCreateRequest),
+    #[serde(rename = "project.todo.update.request")]
+    ProjectTodoUpdateRequest(ProjectTodoUpdateRequest),
+    #[serde(rename = "project.todo.update_plan.request")]
+    ProjectTodoUpdatePlanRequest(ProjectTodoUpdatePlanRequest),
+    #[serde(rename = "project.todo.set_status.request")]
+    ProjectTodoSetStatusRequest(ProjectTodoSetStatusRequest),
+    #[serde(rename = "project.todo.release.request")]
+    ProjectTodoReleaseRequest(ProjectTodoReleaseRequest),
+    #[serde(rename = "project.todo.delete.request")]
+    ProjectTodoDeleteRequest(ProjectTodoDeleteRequest),
+    #[serde(rename = "project.todo.unsubscribe.request")]
+    ProjectTodoUnsubscribeRequest(ProjectTodoUnsubscribeRequest),
     #[serde(rename = "loop/run")]
     LoopRun(LoopRun),
     #[serde(rename = "loop/list")]
@@ -3953,6 +3971,201 @@ pub struct ChatWait {
     pub after_message_id: Option<String>,
     #[serde(rename = "timeoutMs", skip_serializing_if = "Option::is_none")]
     pub timeout_ms: Option<i64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub statuses: Option<Vec<ProjectTodoListRequestStatusesItem>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subscribe: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoListRequestStatusesItem {
+    #[serde(rename = "backlog")]
+    Backlog,
+    #[serde(rename = "ready")]
+    Ready,
+    #[serde(rename = "claimed")]
+    Claimed,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "review")]
+    Review,
+    #[serde(rename = "done")]
+    Done,
+    #[serde(rename = "blocked")]
+    Blocked,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoGetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoCreateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority: Option<ProjectTodoCreateRequestPriority>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<ProjectTodoCreateRequestStatus>,
+    #[serde(rename = "allowParallel", skip_serializing_if = "Option::is_none")]
+    pub allow_parallel: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plan: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoCreateRequestPriority {
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "urgent")]
+    Urgent,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoCreateRequestStatus {
+    #[serde(rename = "backlog")]
+    Backlog,
+    #[serde(rename = "ready")]
+    Ready,
+    #[serde(rename = "claimed")]
+    Claimed,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "review")]
+    Review,
+    #[serde(rename = "done")]
+    Done,
+    #[serde(rename = "blocked")]
+    Blocked,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUpdateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority: Option<ProjectTodoUpdateRequestPriority>,
+    #[serde(rename = "allowParallel", skip_serializing_if = "Option::is_none")]
+    pub allow_parallel: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoUpdateRequestPriority {
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "urgent")]
+    Urgent,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUpdatePlanRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    pub plan: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoSetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    pub status: ProjectTodoSetStatusRequestStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoSetStatusRequestStatus {
+    #[serde(rename = "backlog")]
+    Backlog,
+    #[serde(rename = "ready")]
+    Ready,
+    #[serde(rename = "claimed")]
+    Claimed,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "review")]
+    Review,
+    #[serde(rename = "done")]
+    Done,
+    #[serde(rename = "blocked")]
+    Blocked,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoReleaseRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    #[serde(rename = "agentId", skip_serializing_if = "Option::is_none")]
+    pub agent_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoDeleteRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUnsubscribeRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

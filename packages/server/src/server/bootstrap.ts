@@ -76,6 +76,7 @@ export async function fanOutReconciledWorkspaceUpdates(input: {
 import { VoiceAssistantWebSocketServer } from "./websocket-server.js";
 import { WorkspaceSetupRuntime } from "./workspace-setup-runtime.js";
 import { createWorkspaceLabelService } from "./workspace-labels/index.js";
+import { ProjectTodoService } from "./project-todos/service.js";
 import { createGitHubService } from "../services/github-service.js";
 import { createFroggWorktree as createRegisteredFroggWorktree } from "./frogg-worktree-service.js";
 import { createWorkspaceProvisioningService } from "./session/workspace-provisioning/workspace-provisioning-service.js";
@@ -1407,6 +1408,25 @@ export async function createFroggDaemon(
   });
   await workspaceLabelService.initialize();
   logger.info({ elapsed: elapsed() }, "Workspace registries bootstrapped");
+  const todoWorkspaceRegistry = workspaceRegistry;
+  const projectTodoService = new ProjectTodoService({
+    projectRegistry,
+    workspaceRegistry: todoWorkspaceRegistry,
+    isAgentRunning: (agentId) => {
+      const agent = agentManager.getAgent(agentId);
+      return agent !== null && agent.lifecycle !== "closed";
+    },
+    resolveAgentProjectIds: async (agentId) => {
+      const workspaceId =
+        agentManager.getAgent(agentId)?.workspaceId ??
+        (await agentStorage.get(agentId))?.workspaceId;
+      const workspace = workspaceId ? await todoWorkspaceRegistry.get(workspaceId) : null;
+      return workspace ? [workspace.projectId] : [];
+    },
+    logger: logger.child({ module: "project-todos" }),
+  });
+  // Archiving an agent releases every to-do claim it holds.
+  agentManager.setAgentArchivedCallback((agentId) => projectTodoService.releaseAgent(agentId));
   const teardownArchivedWorkspaceRuntime = (workspaceId: string): void => {
     scriptRuntimeStore.removeForWorkspace(workspaceId);
     releaseWorkspaceServicePortPlan(workspaceId);
@@ -1801,6 +1821,7 @@ export async function createFroggDaemon(
     createFroggWorktree: createAgentCommandDependencies.createFroggWorktree,
     browserToolsEnabled: browserToolsPolicy.isEnabled(),
     browserToolsBroker,
+    projectTodos: projectTodoService,
     froggHome: config.froggHome,
     worktreesRoot: config.worktreesRoot,
     callerAgentId: runtime.callerAgentId,
@@ -2289,6 +2310,7 @@ export async function createFroggDaemon(
               spokenAlerts,
               companion,
             );
+            wsServer.setProjectTodoService(projectTodoService);
             wsServer.setDeviceAccessServices({
               deviceAccess: deviceAccessService,
               presence: presenceService,

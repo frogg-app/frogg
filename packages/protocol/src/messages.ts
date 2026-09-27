@@ -58,6 +58,27 @@ import {
 import { TOOL_CALL_ICON_NAMES } from "./agent-types.js";
 import { WORKSPACE_LABEL_COLORS } from "./workspace-labels.js";
 import {
+  ProjectTodoListRequestSchema,
+  ProjectTodoGetRequestSchema,
+  ProjectTodoCreateRequestSchema,
+  ProjectTodoUpdateRequestSchema,
+  ProjectTodoUpdatePlanRequestSchema,
+  ProjectTodoSetStatusRequestSchema,
+  ProjectTodoReleaseRequestSchema,
+  ProjectTodoDeleteRequestSchema,
+  ProjectTodoUnsubscribeRequestSchema,
+  ProjectTodoListResponseSchema,
+  ProjectTodoGetResponseSchema,
+  ProjectTodoCreateResponseSchema,
+  ProjectTodoUpdateResponseSchema,
+  ProjectTodoUpdatePlanResponseSchema,
+  ProjectTodoSetStatusResponseSchema,
+  ProjectTodoReleaseResponseSchema,
+  ProjectTodoDeleteResponseSchema,
+  ProjectTodoUnsubscribeResponseSchema,
+  ProjectTodoChangedMessageSchema,
+} from "./todos/rpc-schemas.js";
+import {
   ChatCreateRequestSchema,
   ChatListRequestSchema,
   ChatInspectRequestSchema,
@@ -3674,6 +3695,15 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ChatPostRequestSchema,
   ChatReadRequestSchema,
   ChatWaitRequestSchema,
+  ProjectTodoListRequestSchema,
+  ProjectTodoGetRequestSchema,
+  ProjectTodoCreateRequestSchema,
+  ProjectTodoUpdateRequestSchema,
+  ProjectTodoUpdatePlanRequestSchema,
+  ProjectTodoSetStatusRequestSchema,
+  ProjectTodoReleaseRequestSchema,
+  ProjectTodoDeleteRequestSchema,
+  ProjectTodoUnsubscribeRequestSchema,
   LoopRunRequestSchema,
   LoopListRequestSchema,
   LoopInspectRequestSchema,
@@ -4048,6 +4078,9 @@ export const ServerInfoStatusPayloadSchema = z
         directorySync: z.boolean().optional(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         workspaceLabels: z.boolean().optional(),
+        // COMPAT(projectTodos): added in v1.6.2, remove after 2027-09-27.
+        // project.todo.* RPCs and the project.todo.changed push event.
+        projectTodos: z.boolean().optional(),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
         // Workspace and project descriptors carry createdAt / projectCreatedAt.
         workspaceCreatedAt: z.boolean().optional(),
@@ -7697,6 +7730,16 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ChatPostResponseSchema,
   ChatReadResponseSchema,
   ChatWaitResponseSchema,
+  ProjectTodoListResponseSchema,
+  ProjectTodoGetResponseSchema,
+  ProjectTodoCreateResponseSchema,
+  ProjectTodoUpdateResponseSchema,
+  ProjectTodoUpdatePlanResponseSchema,
+  ProjectTodoSetStatusResponseSchema,
+  ProjectTodoReleaseResponseSchema,
+  ProjectTodoDeleteResponseSchema,
+  ProjectTodoUnsubscribeResponseSchema,
+  ProjectTodoChangedMessageSchema,
   LoopRunResponseSchema,
   LoopListResponseSchema,
   LoopInspectResponseSchema,
@@ -8404,3 +8447,4 @@ export function parseServerInfoStatusPayload(payload: unknown): ServerInfoStatus
 }
 
 export * from "./device-access-rpc.js";
+export * from "./todos/rpc-schemas.js";
