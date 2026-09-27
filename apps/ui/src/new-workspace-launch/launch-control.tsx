@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState, type ReactElement } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "expo-router";
-import { ChevronDown, MessageCircle, SquareTerminal } from "lucide-react-native";
+import { ChevronDown, Bot, SquareTerminal } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import {
   DropdownMenu,
@@ -32,14 +32,14 @@ import {
   type LaunchTarget,
 } from "./target";
 
-const ThemedMessageCircle = withUnistyles(MessageCircle);
+const ThemedBot = withUnistyles(Bot);
 const ThemedSquareTerminal = withUnistyles(SquareTerminal);
 const ThemedChevronDown = withUnistyles(ChevronDown);
 
 const mutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 const extraMutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundExtraMuted });
 
-const chatIcon = <ThemedMessageCircle size={ICON_SIZE.sm} uniProps={mutedColorMapping} />;
+const chatIcon = <ThemedBot size={ICON_SIZE.sm} uniProps={mutedColorMapping} />;
 const blankTerminalIcon = <ThemedSquareTerminal size={ICON_SIZE.sm} uniProps={mutedColorMapping} />;
 
 /** Owns its own leading icon and select callback so neither is rebuilt per render of the menu. */
@@ -99,7 +99,7 @@ function TriggerIcon({
   profile: TerminalProfile | null;
 }): ReactElement {
   if (target.kind === "chat") {
-    return <ThemedMessageCircle size={ICON_SIZE.sm} uniProps={mutedColorMapping} />;
+    return <ThemedBot size={ICON_SIZE.sm} uniProps={mutedColorMapping} />;
   }
   if (profile) {
     return <TerminalProfileIcon iconKey={getTerminalProfileIcon(profile)} />;

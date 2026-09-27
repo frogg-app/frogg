@@ -1548,7 +1548,7 @@ export const ru: TranslationResources = {
     },
     launch: {
       title: "Что запустить",
-      chat: "Чат",
+      chat: "Агент",
       terminal: "Терминал",
       manageProfiles: "Управление профилями терминала",
       submit: "Запустить",

@@ -1547,7 +1547,7 @@ export const ja: TranslationResources = {
     },
     launch: {
       title: "What to launch",
-      chat: "Chat",
+      chat: "エージェント",
       terminal: "Terminal",
       manageProfiles: "Manage profiles",
       submit: "Launch",

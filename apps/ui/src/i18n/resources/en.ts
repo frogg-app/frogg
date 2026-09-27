@@ -1542,7 +1542,7 @@ export const en = {
     },
     launch: {
       title: "What to launch",
-      chat: "Chat",
+      chat: "Agent",
       terminal: "Terminal",
       manageProfiles: "Manage profiles",
       submit: "Launch",
