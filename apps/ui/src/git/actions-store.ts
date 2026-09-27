@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { queryClient as appQueryClient } from "@/data/query-client";
 import { useSessionStore } from "@/stores/session-store";
 import { invalidateCheckoutGitQueriesForClient } from "@/git/query-keys";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 const SUCCESS_DISPLAY_MS = 1000;
 

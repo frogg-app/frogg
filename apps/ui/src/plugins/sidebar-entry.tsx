@@ -5,7 +5,7 @@ import { Puzzle } from "lucide-react-native";
 import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
 import { useFetchQueries } from "@/data/query";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { isPluginsEnabledByBrand, usePluginHostIds } from "./hosts";
 import { openPluginsModal } from "./modal-store";
 import { pluginsQueryKeys } from "./query-keys";

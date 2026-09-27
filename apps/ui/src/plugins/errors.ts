@@ -1,5 +1,5 @@
 import { PluginRequestError } from "@frogg/client/internal/daemon-client";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { ClientPluginError } from "./client-runtime/errors";
 
 /**

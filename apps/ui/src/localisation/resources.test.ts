@@ -88,7 +88,7 @@ function collectSourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "i18n") {
+      if (entry.name === "localisation") {
         return [];
       }
       return collectSourceFiles(path);

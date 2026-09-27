@@ -104,7 +104,7 @@ import { brand } from "@frogg/branding";
 const title = `${brand.name} settings`;
 ```
 
-In UI copy, use the interpolation variables that `apps/ui/src/i18n/i18next.ts` injects:
+In UI copy, use the interpolation variables that `apps/ui/src/localisation/i18next.ts` injects:
 `{{brandName}}`, `{{brandFullName}}` and `{{cliName}}`.
 
 Add an entry to `branding-literals.json` only for an exact compatibility or attribution string,
@@ -114,7 +114,7 @@ with a `reason`. Run the check locally with `node scripts/ci/branding-contributi
 
 The `frogg-localisation` skill (`.claude/skills/frogg-localisation/SKILL.md`) is the full procedure. The rules:
 
-- Client copy lives in `apps/ui/src/i18n/resources/`: `en.ts` plus `ar`, `es`, `fr`, `ja`, `ko`,
+- Client copy lives in `apps/ui/src/localisation/resources/`: `en.ts` plus `ar`, `es`, `fr`, `ja`, `ko`,
   `pt-BR`, `ru` and `zh-CN`. Keys are nested by product surface.
 - Every locale is typed as `TranslationResources`, derived from `en.ts`. Add a key to all nine
   locales in the same change, translated. Do not paste English.
@@ -124,12 +124,12 @@ The `frogg-localisation` skill (`.claude/skills/frogg-localisation/SKILL.md`) is
 - Keys that differ by forge use i18next context: a base key plus an `_mr` sibling. Indeclinable
   tokens such as `PR`/`MR` are interpolated instead.
 
-`apps/ui/src/i18n/resources.test.ts` enforces key parity, matching `{{placeholder}}` names,
+`apps/ui/src/localisation/resources.test.ts` enforces key parity, matching `{{placeholder}}` names,
 under 25% of strings identical to English per locale, and a blocklist of hard-coded English
 phrases. It also pins some existing strings, so rewording one means updating its assertion.
 
 ```bash
-npx vitest run apps/ui/src/i18n/resources.test.ts --bail=1
+npx vitest run apps/ui/src/localisation/resources.test.ts --bail=1
 npm run typecheck --workspace=@frogg/app
 ```
 

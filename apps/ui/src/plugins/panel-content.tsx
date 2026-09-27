@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { PluginSpinner } from "./spinner";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { useFetchQuery } from "@/data/query";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import { openExternalUrl } from "@/utils/open-external-url";
 import { callPluginMethod } from "./client-runtime/route";

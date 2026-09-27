@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import type { FroggSubagentRow, ProviderSubagentRow, SubagentRow } from "./select";
 import {
   buildSubagentPillPresentation,

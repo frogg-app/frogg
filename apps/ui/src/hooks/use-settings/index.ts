@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import AsyncStorage from "@/storage/brand-storage";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { queryClient as appQueryClient } from "@/data/query-client";
-import type { AppLanguage } from "@/i18n/locales";
+import type { AppLanguage } from "@/localisation/locales";
 import {
   DEFAULT_DESKTOP_SETTINGS,
   loadDesktopSettings,

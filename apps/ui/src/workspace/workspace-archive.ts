@@ -4,7 +4,7 @@ import {
 } from "@/contexts/session-workspace-upserts";
 import { useSessionStore, type WorkspaceDescriptor } from "@/stores/session-store";
 import { resolveWorkspaceMapKeyByIdentity } from "@/utils/workspace-identity";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export interface WorkspaceArchiveTarget {
   serverId: string;

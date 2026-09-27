@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { I18nextProvider } from "react-i18next";
 import { createInstance } from "i18next";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
-import { en } from "@/i18n/resources/en";
+import { en } from "@/localisation/resources/en";
 
 const runtime = vi.hoisted(() => ({
   client: null as Record<string, ReturnType<typeof vi.fn>> | null,

@@ -5,7 +5,7 @@ description: Add, change, or translate user-facing UI copy in the Frogg Expo cli
 
 # Adding UI strings
 
-Client copy lives in `apps/ui/src/i18n/resources/`: `en.ts` plus `ar`, `es`, `fr`, `ja`, `ko`,
+Client copy lives in `apps/ui/src/localisation/resources/`: `en.ts` plus `ar`, `es`, `fr`, `ja`, `ko`,
 `pt-BR`, `ru`, `zh-CN`. Resources are deeply nested objects grouped by product surface
 (`common.actions.cancel`), not flat dotted keys.
 
@@ -41,7 +41,7 @@ Group keys by product surface, not by component mechanics.
 5. Verify:
 
 ```bash
-npx vitest run apps/ui/src/i18n/resources.test.ts --bail=1
+npx vitest run apps/ui/src/localisation/resources.test.ts --bail=1
 npm run typecheck --workspace=@frogg/app
 ```
 
@@ -59,7 +59,7 @@ it every time, not at the end.
 - **Specific keys must be localized.** The pull-request empty state title and description are
   asserted to differ from English in every locale.
 - **No hardcoded blocklisted English.** The test greps every non-test `.ts`/`.tsx` under
-  `apps/ui/src` (outside `i18n/`) for a list of connection and load-failure phrases such as
+  `apps/ui/src` (outside `localisation/`) for a list of connection and load-failure phrases such as
   `"Daemon unavailable"` and `"Host is not connected"`. Writing one of those as a literal fails
   the test; use the resource key.
 - **Per-batch value snapshots.** Roughly thirty assertions pin exact strings for previously
@@ -88,12 +88,12 @@ must exist in all nine locales or key parity fails.
 Much heavier than adding a string, and easy to half-do. Beyond a full resource file, the code
 must be listed in: the `SupportedLocale` union, `LANGUAGE_OPTIONS`, `SUPPORTED_LANGUAGES`,
 `LANGUAGE_NATIVE_NAMES`, and the N×N `LANGUAGE_NAMES_BY_LOCALE` matrix (every existing locale
-needs a name for the new one) — all in `apps/ui/src/i18n/locales.ts`, plus
+needs a name for the new one) — all in `apps/ui/src/localisation/locales.ts`, plus
 `REGIONAL_LANGUAGE_LOCALES` and any special case in `resolveSupportedLocale`; the `resources`
-map in `apps/ui/src/i18n/i18next.ts`; the persisted `language` zod enum in
+map in `apps/ui/src/localisation/i18next.ts`; the persisted `language` zod enum in
 `apps/ui/src/hooks/use-settings/storage.ts`; the `settings.general.language.options.*` label
 keys in every resource; and the expectations in
-`apps/ui/src/i18n/locales.test.ts`.
+`apps/ui/src/localisation/locales.test.ts`.
 
 See the UI copy section of `website/src/content/docs/docs/contributing/coding-standards.mdx` for the
 short version of these rules.

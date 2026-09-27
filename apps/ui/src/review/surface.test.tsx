@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import "@/test/window-local-storage";
-import { i18n as testI18n } from "@/i18n/i18next";
+import { i18n as testI18n } from "@/localisation/i18next";
 import { act, fireEvent, render, renderHook, cleanup } from "@testing-library/react";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

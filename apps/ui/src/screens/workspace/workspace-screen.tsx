@@ -1,4 +1,4 @@
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { describeHostConnectionError } from "@/runtime/host-connection-error";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { JsonValue } from "@frogg/protocol/agent-types";

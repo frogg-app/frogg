@@ -1,5 +1,5 @@
 import { confirmDialog } from "@/utils/confirm-dialog";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export interface WorktreeArchiveRisk {
   isDirty?: boolean | null;

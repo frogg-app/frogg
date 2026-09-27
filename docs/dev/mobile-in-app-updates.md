@@ -58,7 +58,7 @@ failure. The state machine treats "cancelled" as returning to the offer, not as 
 | Ports: GitHub fetch, `expo-file-system` download, installer call             | `apps/ui/src/mobile/updates/use-mobile-app-updater.ts`                                                    |
 | Settings card and startup callout                                            | `mobile-updates-section.tsx`, `mobile-update-callout-source.tsx`                                          |
 | Preferences `mobileUpdateAutoCheck`, `mobileUpdateChannel`                   | `apps/ui/src/hooks/use-settings/storage.ts`                                                               |
-| Strings under `mobile.updates.*` in all nine locales                         | `apps/ui/src/i18n/resources/`                                                                             |
+| Strings under `mobile.updates.*` in all nine locales                         | `apps/ui/src/localisation/resources/`                                                                     |
 
 ## Verified
 

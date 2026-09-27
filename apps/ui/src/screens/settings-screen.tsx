@@ -54,7 +54,7 @@ import {
   parseAppLanguage,
   type AppLanguage,
   type SupportedLocale,
-} from "@/i18n/locales";
+} from "@/localisation/locales";
 import {
   HostPairDevicePage,
   HostDevicesPage,

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { useFetchQuery } from "@/data/query";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import { useClientContributionSets } from "./client-runtime/contributions";
 import { pluginsQueryKeys } from "./query-keys";

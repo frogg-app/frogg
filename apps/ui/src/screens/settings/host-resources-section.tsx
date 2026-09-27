@@ -16,7 +16,7 @@ import type { HostMetrics, OwnedStorageCategory } from "@frogg/protocol/messages
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useFetchQuery } from "@/data/query";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { SettingsSection } from "@/screens/settings/settings-section";

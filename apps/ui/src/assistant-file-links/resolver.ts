@@ -4,7 +4,7 @@ import {
   type AssistantFileLinkClassification,
   type InlinePathTarget,
 } from "./parse";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export interface AssistantFileLinkSource {
   href: string;

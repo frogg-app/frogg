@@ -1,5 +1,5 @@
 import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-types";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { encodeFilePathForPathSegment, encodeWorkspaceIdForPathSegment } from "@/utils/host-routes";
 import { buildDeterministicWorkspaceTabId } from "@/workspace-tabs/identity";
 

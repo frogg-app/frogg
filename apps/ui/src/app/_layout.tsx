@@ -107,7 +107,7 @@ import { useAppSettings } from "@/hooks/use-settings";
 import { useStableEvent } from "@/hooks/use-stable-event";
 import { useOpenAgentListGesture } from "@/mobile-panels/gestures";
 import { MobilePanelsProvider, useIsMobilePanelActive } from "@/mobile-panels/provider";
-import { I18nProvider } from "@/i18n/provider";
+import { I18nProvider } from "@/localisation/provider";
 import {
   KeyboardActionDispatcherProvider,
   useKeyboardActionDispatcher,
