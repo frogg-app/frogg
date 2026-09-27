@@ -117,7 +117,7 @@ export function settingsTreatment(theme: Theme): SettingsTreatment {
     case "paper":
       return {
         ...EMPTY,
-        content: { paddingTop: s[8], paddingHorizontal: s[6], maxWidth: 680 },
+        content: { paddingTop: s[8], paddingHorizontal: s[4], maxWidth: 680 },
         section: { marginBottom: s[8] },
         sectionHeader: { marginBottom: s[3], marginLeft: s[1] },
         sectionHeaderTitle: {
@@ -156,7 +156,7 @@ export function settingsTreatment(theme: Theme): SettingsTreatment {
       return {
         ...EMPTY,
         page: { backgroundColor: dark ? c.surface0 : c.surface2 },
-        content: { paddingTop: s[6], paddingHorizontal: 20, maxWidth: 680 },
+        content: { paddingTop: s[6], paddingHorizontal: s[4], maxWidth: 680 },
         section: { marginBottom: s[6] },
         sectionHeader: { marginBottom: s[2], marginLeft: s[4] },
         sectionHeaderTitle: {
