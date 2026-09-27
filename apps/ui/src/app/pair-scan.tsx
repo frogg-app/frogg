@@ -229,13 +229,13 @@ export default function PairScanScreen() {
       <View style={styles.container}>
         <BackHeader title={t("pairing.scan.title")} onBack={handleRouterBack} />
         <View style={bodyStyle}>
-          <View style={permissionCardStyle}>
-            <Text style={permissionTitleStyle} dataSet={DESIGN_FONT_DATASET}>
+          <View style={permissionCardStyle()}>
+            <Text style={permissionTitleStyle()} dataSet={DESIGN_FONT_DATASET}>
               {t("pairing.scan.webUnavailableTitle")}
             </Text>
             <Text style={styles.permissionBody}>{t("pairing.scan.webUnavailableBody")}</Text>
-            <Pressable style={permissionButtonStyle} onPress={closeToSource}>
-              <Text style={permissionButtonTextStyle}>{t("pairing.scan.backToSettings")}</Text>
+            <Pressable style={permissionButtonStyle()} onPress={closeToSource}>
+              <Text style={permissionButtonTextStyle()}>{t("pairing.scan.backToSettings")}</Text>
             </Pressable>
           </View>
         </View>
@@ -248,19 +248,19 @@ export default function PairScanScreen() {
   let body;
   if (!granted) {
     body = (
-      <View style={permissionCardStyle}>
-        <Text style={permissionTitleStyle} dataSet={DESIGN_FONT_DATASET}>
+      <View style={permissionCardStyle()}>
+        <Text style={permissionTitleStyle()} dataSet={DESIGN_FONT_DATASET}>
           {t("pairing.scan.cameraPermissionTitle")}
         </Text>
         <Text style={styles.permissionBody}>{t("pairing.scan.cameraPermissionBody")}</Text>
-        <Pressable style={permissionButtonStyle} onPress={handleRequestPermission}>
-          <Text style={permissionButtonTextStyle}>{t("pairing.scan.grantPermission")}</Text>
+        <Pressable style={permissionButtonStyle()} onPress={handleRequestPermission}>
+          <Text style={permissionButtonTextStyle()}>{t("pairing.scan.grantPermission")}</Text>
         </Pressable>
       </View>
     );
   } else if (state.status !== "idle") {
     body = (
-      <View style={permissionCardStyle}>
+      <View style={permissionCardStyle()}>
         <ClaimOfferPanel
           state={state}
           onRetryWithEndpoint={handleRetry}
@@ -303,7 +303,14 @@ export default function PairScanScreen() {
 
 const BARCODE_SCANNER_SETTINGS: BarcodeSettings = { barcodeTypes: ["qr"] };
 
-const permissionCardStyle = [styles.permissionCard, styles.permissionCardDesign];
-const permissionTitleStyle = [styles.permissionTitle, styles.permissionTitleDesign];
-const permissionButtonStyle = [styles.permissionButton, styles.permissionButtonDesign];
-const permissionButtonTextStyle = [styles.permissionButtonText, styles.permissionButtonTextDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const permissionCardStyle = () => [styles.permissionCard, styles.permissionCardDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const permissionTitleStyle = () => [styles.permissionTitle, styles.permissionTitleDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const permissionButtonStyle = () => [styles.permissionButton, styles.permissionButtonDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const permissionButtonTextStyle = () => [
+  styles.permissionButtonText,
+  styles.permissionButtonTextDesign,
+];

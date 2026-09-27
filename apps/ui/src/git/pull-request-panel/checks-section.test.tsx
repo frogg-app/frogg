@@ -26,10 +26,15 @@ vi.mock("react-native", () => ({
   // file guards against, so it renders as something the assertions can find.
   ScrollView: ({ children, ...props }: React.PropsWithChildren<Record<string, unknown>>) =>
     React.createElement("div", { ...toDomProps(props), "data-nested-scroll": "true" }, children),
+  // The design-variant themes resolve their font stacks with Platform.select.
+  Platform: { OS: "web", select: <T,>(spec: { web?: T; default?: T }) => spec.web ?? spec.default },
 }));
 
 vi.mock("react-native-unistyles", () => ({
-  StyleSheet: { create: (factory: (theme: unknown) => unknown) => factory(themeStub) },
+  StyleSheet: {
+    create: (factory: (theme: unknown, rt: unknown) => unknown) =>
+      factory(themeStub, { themeName: "light" }),
+  },
   withUnistyles: (Component: React.ComponentType<Record<string, unknown>>) =>
     function Themed({ uniProps: _uniProps, ...props }: Record<string, unknown>) {
       return React.createElement(Component, props);
@@ -42,7 +47,10 @@ vi.mock("lucide-react-native", () => ({
   MessageSquarePlus: () => React.createElement("span"),
 }));
 
-vi.mock("@/styles/theme", () => ({ ICON_SIZE: { xs: 12, sm: 14, md: 16, lg: 20 } }));
+vi.mock("@/styles/theme", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/styles/theme")>()),
+  ICON_SIZE: { xs: 12, sm: 14, md: 16, lg: 20 },
+}));
 vi.mock("@/components/ui/control-geometry", () => ({ CONTROL_HEIGHTS: { compact: 28 } }));
 vi.mock("@/components/ui/button", () => ({ Button: () => React.createElement("span") }));
 vi.mock("@/git/check-presentation.view", () => ({

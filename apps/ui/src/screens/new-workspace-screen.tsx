@@ -2351,9 +2351,9 @@ function NewWorkspaceForm({
       <View style={contentStyle}>
         <TitlebarDragRegion />
         <ReanimatedAnimated.View style={centeredStyle}>
-          <View style={composerTitleContainerStyle}>
+          <View style={composerTitleContainerStyle()}>
             <Text
-              style={composerTitleStyle}
+              style={composerTitleStyle()}
               dataSet={DESIGN_FONT_DATASET}
               accessibilityRole="header"
             >
@@ -2579,8 +2579,10 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
 }));
 
-const composerTitleContainerStyle = [
+// Composed at render: reading style proxies at module scope is not allowed.
+const composerTitleContainerStyle = () => [
   styles.composerTitleContainer,
   styles.composerTitleContainerDesign,
 ];
-const composerTitleStyle = [styles.composerTitle, styles.composerTitleDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const composerTitleStyle = () => [styles.composerTitle, styles.composerTitleDesign];

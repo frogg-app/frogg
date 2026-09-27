@@ -839,7 +839,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
         testID="settings-detail-header-title"
         dataSet={DESIGN_FONT_DATASET}
         numberOfLines={1}
-        style={desktopPageTitleStyle}
+        style={desktopPageTitleStyle()}
       >
         {detailHeader.title}
       </Text>
@@ -1052,4 +1052,5 @@ const desktopStyles = StyleSheet.create((theme, rt) => ({
   },
 }));
 
-const desktopPageTitleStyle = [desktopStyles.pageTitle, desktopStyles.pageTitleDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const desktopPageTitleStyle = () => [desktopStyles.pageTitle, desktopStyles.pageTitleDesign];

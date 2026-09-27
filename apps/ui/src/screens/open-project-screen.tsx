@@ -151,7 +151,7 @@ export function OpenProjectScreen() {
           <BrandLogo size={presentation.logoSize} />
           {presentation.greeting ? (
             <Text
-              style={presentation.alignStart ? styles.greetingStart : greetingStyle}
+              style={presentation.alignStart ? styles.greetingStart : greetingStyle()}
               dataSet={DESIGN_FONT_DATASET}
               accessibilityRole="header"
             >
@@ -246,4 +246,5 @@ function wideGreeting(themeName: string | undefined): boolean {
   return variant === "focus" || variant === "paper";
 }
 
-const greetingStyle = [styles.greeting, styles.greetingDesign, styles.greetingSize];
+// Composed at render: reading style proxies at module scope is not allowed.
+const greetingStyle = () => [styles.greeting, styles.greetingDesign, styles.greetingSize];

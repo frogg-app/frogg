@@ -222,8 +222,8 @@ export function NewChatScreen({ serverId }: { serverId: string }) {
       <View style={[styles.content, isCompact ? styles.contentCompact : styles.contentCentered]}>
         <TitlebarDragRegion />
         <View style={staticStyles.centered}>
-          <View style={titleContainerStyle}>
-            <Text style={titleStyle} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">
+          <View style={titleContainerStyle()}>
+            <Text style={titleStyle()} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">
               {t(`newChat.titles.${titleKey}`)}
             </Text>
           </View>
@@ -298,5 +298,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
 }));
 
-const titleContainerStyle = [styles.titleContainer, styles.titleContainerDesign];
-const titleStyle = [styles.title, styles.titleDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const titleContainerStyle = () => [styles.titleContainer, styles.titleContainerDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const titleStyle = () => [styles.title, styles.titleDesign];

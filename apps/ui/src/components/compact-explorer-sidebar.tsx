@@ -396,7 +396,7 @@ function ExplorerSidebarContent({
       <WindowChromeSafeArea
         placement="inline"
         horizontalPadding={theme.spacing[2]}
-        style={headerStyle}
+        style={headerStyle()}
         dataSet={TITLEBAR_DRAG_SURFACE_DATASET}
         testID="explorer-header"
       >
@@ -682,4 +682,5 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
 }));
 
-const headerStyle = [styles.header, styles.headerEdge];
+// Composed at render: reading style proxies at module scope is not allowed.
+const headerStyle = () => [styles.header, styles.headerEdge];

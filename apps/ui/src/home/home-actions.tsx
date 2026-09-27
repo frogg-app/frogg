@@ -38,7 +38,8 @@ const listPrimaryIconColor = (theme: Theme) => ({
       ? theme.colors.primaryForeground
       : theme.colors.accentForeground,
 });
-const tilesStyle = [tileStyles.tiles, tileStyles.tilesDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const tilesStyle = () => [tileStyles.tiles, tileStyles.tilesDesign];
 
 type HoverState = PressableStateCallbackType & { hovered?: boolean };
 
@@ -190,7 +191,7 @@ export function HomeActions({ actions, layout }: { actions: HomeAction[]; layout
     );
   }
   return (
-    <View style={tilesStyle}>
+    <View style={tilesStyle()}>
       {actions.map((action) => (
         <HomeTile key={action.key} action={action} />
       ))}

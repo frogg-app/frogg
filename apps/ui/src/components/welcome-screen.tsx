@@ -218,8 +218,10 @@ const styles = StyleSheet.create((theme, rt) => ({
 
 type WelcomeMode = "choose" | "remote" | "local";
 
-const titleStyle = [styles.title, styles.titleDesign];
-const versionLabelStyle = [styles.versionLabel, styles.versionLabelDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const titleStyle = () => [styles.title, styles.titleDesign];
+// Composed at render: reading style proxies at module scope is not allowed.
+const versionLabelStyle = () => [styles.versionLabel, styles.versionLabelDesign];
 
 // The onboarding headline: today's quiet medium line, or the direction's display title.
 function welcomeTitle(theme: Theme): TextFragment {
@@ -426,7 +428,7 @@ export function WelcomeScreen({ onHostAdded }: WelcomeScreenProps) {
         <View style={styles.content}>
           <BrandLogo size={96} />
           <View style={styles.copyBlock}>
-            <Text style={titleStyle} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">
+            <Text style={titleStyle()} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">
               {t("onboarding.title")}
             </Text>
             <Text style={styles.subtitle}>{t("onboarding.subtitle")}</Text>
@@ -511,7 +513,7 @@ export function WelcomeScreen({ onHostAdded }: WelcomeScreenProps) {
             {t("onboarding.actions.settings")}
           </Button>
         </View>
-        <Text style={versionLabelStyle} dataSet={metaDataSet}>
+        <Text style={versionLabelStyle()} dataSet={metaDataSet}>
           {appVersionText}
         </Text>
 
