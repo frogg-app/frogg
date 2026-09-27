@@ -205,3 +205,72 @@ how brands run an internal repo.
 3. `brand.json` `plugins` block and enforcement. (S/M)
 4. Repo template, scaffold, pack/index/sign tooling, docs. (S/M)
 5. Declarative UI contributions rendered in the app. (M)
+
+## Implementation decisions
+
+Judgement calls made while implementing, where the design above was silent or had to bend to
+existing conventions.
+
+- **RPC names follow the protocol conventions** (`<ns>.<verb>.request` / `.response`, verb as the
+  operation segment). So `plugins.catalog` is `plugins.get_catalog`, `plugins.contributions` is
+  `plugins.get_contributions`, `plugins.rpc` is `plugins.rpc.call`, `plugins.setEnabled` is
+  `plugins.set_enabled`. Push events carry no direction suffix (`plugins.changed`).
+- **Added RPCs**: `plugins.dev.set_enabled` (the developer-mode setting lives on the host, since
+  linking is a host operation), `plugins.settings.get` / `plugins.settings.set` (the plugin
+  settings page), and a `plugins.notify` push event for `ctx.ui.notify()`.
+- **Contribution → RPC method**: command and session-action ids _are_ the RPC method invoked
+  (so ids may contain dots and are conventionally prefixed with the plugin id). Session actions
+  receive `{ agentId, cwd }`. Panels call `panel.<id>.render` and forms submit to
+  `panel.<id>.submit` with `{ values }`. Panel content is validated by `PluginPanelContentSchema`.
+- **Settings fields** use `title` (not `label`) for the display name; the store holds any JSON
+  value, settings-page fields are string/secret/number/boolean/select.
+- **Consent is all-or-nothing**: `grantedCapabilities` must cover every capability the version
+  requests; install fails with `forbidden` otherwise. An update adding capabilities fails with
+  `consent_required` (listing them) unless the new set is granted.
+- **TOFU for user repos**: if `plugins.repos.add` omits `publicKey`, the daemon fetches
+  `<index url>.pub` (base64 raw key), verifies the index with it, pins it and returns it for
+  display. Repo CI should publish `index.json.pub` next to `index.json.sig`.
+- **Wire enums are open strings** (status, source, tier, scope, capabilities) so older clients
+  parse newer daemons; manifests and indexes themselves are validated strictly.
+- **`@frogg/plugin-api`** lives in `packages/plugin-api`; its `index.d.ts` is generated from
+  `packages/protocol/src/plugins/api-v1.ts`, and the daemon implements `PluginContext` against
+  that file so drift fails typecheck.
+- **Version ranges** (`preinstalled[].version`, install `version`): exact, `^x[.y[.z]]`,
+  `~x.y`, `x`/`x.y`, `*`/`latest`. Prereleases only match an exact version.
+- **Allow/deny**: `*` globs over plugin ids; deny wins; an empty `allow` allows everything.
+
+## RPC contract (v1)
+
+Schemas: `packages/protocol/src/plugins/rpc-schemas.ts` (re-exported from
+`@frogg/protocol/messages`). Gate: `server_info.features.plugins === true`. Every request has
+`requestId`; every response payload has `requestId` and `error: { code, message,
+capabilities? } | null`. Error codes: `not_found`, `invalid_request`, `forbidden`,
+`consent_required`, `signature_invalid`, `hash_mismatch`, `manifest_mismatch`, `fetch_failed`,
+`incompatible`, `already_installed`, `plugin_error`, `not_active`, `timeout`, `internal`.
+
+| Request (`.request`)        | Params                                             | Response payload                         | Permission / role          |
+| --------------------------- | -------------------------------------------------- | ---------------------------------------- | -------------------------- |
+| `plugins.list`              | —                                                  | `plugins: PluginInstalled[]`, `policy`   | daemon.read / viewer       |
+| `plugins.repos.list`        | —                                                  | `repos: PluginRepo[]`                    | daemon.read / viewer       |
+| `plugins.repos.add`         | `url`, `publicKey?`, `name?`                       | `repo: PluginRepo \| null`               | daemon.manage / owner      |
+| `plugins.repos.remove`      | `url`                                              | `success`                                | daemon.manage / owner      |
+| `plugins.get_catalog`       | `refresh?`                                         | `plugins: PluginCatalogEntry[]`, `repos` | daemon.read / viewer       |
+| `plugins.install`           | `id`, `version?`, `repoUrl`, `grantedCapabilities` | `plugin: PluginInstalled \| null`        | daemon.manage / owner      |
+| `plugins.uninstall`         | `id`                                               | `success`                                | daemon.manage / owner      |
+| `plugins.set_enabled`       | `id`, `enabled`                                    | `plugin`                                 | daemon.manage / owner      |
+| `plugins.update`            | `id`, `version?`, `grantedCapabilities?`           | `plugin`                                 | daemon.manage / owner      |
+| `plugins.dev.link`          | `path` (absolute, on the host)                     | `plugin`                                 | daemon.manage / owner      |
+| `plugins.dev.unlink`        | `id`                                               | `success`                                | daemon.manage / owner      |
+| `plugins.dev.set_enabled`   | `enabled`                                          | `policy`                                 | daemon.manage / owner      |
+| `plugins.rpc.call`          | `pluginId`, `method`, `params?`                    | `result?`                                | workspace.write / operator |
+| `plugins.get_contributions` | —                                                  | `contributions: PluginContributionSet[]` | daemon.read / viewer       |
+| `plugins.settings.get`      | `id`                                               | `fields`, `values`                       | daemon.read / viewer       |
+| `plugins.settings.set`      | `id`, `values` (null deletes)                      | `success`                                | daemon.manage / owner      |
+
+Push events (daemon.read): `plugins.changed { pluginId | null, reason }` — refetch list /
+contributions; `plugins.notify { pluginId, message, level }` — toast.
+
+`policy`: `{ enabled, allowUserRepos, developerMode: "allowed"|"forbidden",
+developerModeEnabled, apiVersions }`. `PluginInstalled.status`: `active`, `disabled`, `error`,
+`incompatible`, `blocked`, `inactive` (client/build scope — nothing runs on the daemon).
+`source`: `official`, `brand`, `user`, `dev`.

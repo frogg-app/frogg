@@ -86,6 +86,42 @@ import {
   LoopStopResponseSchema,
 } from "./loop/rpc-schemas.js";
 import {
+  PluginsListRequestSchema,
+  PluginsReposListRequestSchema,
+  PluginsReposAddRequestSchema,
+  PluginsReposRemoveRequestSchema,
+  PluginsGetCatalogRequestSchema,
+  PluginsInstallRequestSchema,
+  PluginsUninstallRequestSchema,
+  PluginsSetEnabledRequestSchema,
+  PluginsUpdateRequestSchema,
+  PluginsDevLinkRequestSchema,
+  PluginsDevUnlinkRequestSchema,
+  PluginsDevSetEnabledRequestSchema,
+  PluginsRpcCallRequestSchema,
+  PluginsGetContributionsRequestSchema,
+  PluginsSettingsGetRequestSchema,
+  PluginsSettingsSetRequestSchema,
+  PluginsListResponseSchema,
+  PluginsReposListResponseSchema,
+  PluginsReposAddResponseSchema,
+  PluginsReposRemoveResponseSchema,
+  PluginsGetCatalogResponseSchema,
+  PluginsInstallResponseSchema,
+  PluginsUninstallResponseSchema,
+  PluginsSetEnabledResponseSchema,
+  PluginsUpdateResponseSchema,
+  PluginsDevLinkResponseSchema,
+  PluginsDevUnlinkResponseSchema,
+  PluginsDevSetEnabledResponseSchema,
+  PluginsRpcCallResponseSchema,
+  PluginsGetContributionsResponseSchema,
+  PluginsSettingsGetResponseSchema,
+  PluginsSettingsSetResponseSchema,
+  PluginsChangedMessageSchema,
+  PluginsNotifyMessageSchema,
+} from "./plugins/rpc-schemas.js";
+import {
   BrowserAutomationExecuteRequestSchema,
   BrowserAutomationExecuteResponseSchema,
 } from "./browser-automation/rpc-schemas.js";
@@ -3458,6 +3494,22 @@ export const HubExecutionControlRequestSchema = z.object({
 export type HubExecutionControlRequest = z.infer<typeof HubExecutionControlRequestSchema>;
 
 export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
+  PluginsListRequestSchema,
+  PluginsReposListRequestSchema,
+  PluginsReposAddRequestSchema,
+  PluginsReposRemoveRequestSchema,
+  PluginsGetCatalogRequestSchema,
+  PluginsInstallRequestSchema,
+  PluginsUninstallRequestSchema,
+  PluginsSetEnabledRequestSchema,
+  PluginsUpdateRequestSchema,
+  PluginsDevLinkRequestSchema,
+  PluginsDevUnlinkRequestSchema,
+  PluginsDevSetEnabledRequestSchema,
+  PluginsRpcCallRequestSchema,
+  PluginsGetContributionsRequestSchema,
+  PluginsSettingsGetRequestSchema,
+  PluginsSettingsSetRequestSchema,
   AuthDeviceListRequestSchema,
   AuthDeviceRenameRequestSchema,
   AuthDeviceRevokeRequestSchema,
@@ -4072,6 +4124,9 @@ export const ServerInfoStatusPayloadSchema = z
         // agent.provider_account.transfer is available and this daemon's build of
         // the agent's provider can relocate a session between config directories.
         agentProviderAccountTransfer: z.boolean().optional(),
+        // COMPAT(plugins): added in v1.6.2, remove gate after 2027-09-27.
+        // plugins.* session RPCs, plugins.changed and plugins.notify are available.
+        plugins: z.boolean().optional(),
         // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         // agent.clean_cut is available.
         agentCleanCut: z.boolean().optional(),
@@ -7465,6 +7520,24 @@ export function parseHubExecutionOutboundMessage(value: unknown): HubExecutionOu
 export type DaemonUpdateProgressMessage = z.infer<typeof DaemonUpdateProgressMessageSchema>;
 
 export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
+  PluginsListResponseSchema,
+  PluginsReposListResponseSchema,
+  PluginsReposAddResponseSchema,
+  PluginsReposRemoveResponseSchema,
+  PluginsGetCatalogResponseSchema,
+  PluginsInstallResponseSchema,
+  PluginsUninstallResponseSchema,
+  PluginsSetEnabledResponseSchema,
+  PluginsUpdateResponseSchema,
+  PluginsDevLinkResponseSchema,
+  PluginsDevUnlinkResponseSchema,
+  PluginsDevSetEnabledResponseSchema,
+  PluginsRpcCallResponseSchema,
+  PluginsGetContributionsResponseSchema,
+  PluginsSettingsGetResponseSchema,
+  PluginsSettingsSetResponseSchema,
+  PluginsChangedMessageSchema,
+  PluginsNotifyMessageSchema,
   AuthDeviceListResponseSchema,
   AuthDeviceRenameResponseSchema,
   AuthDeviceRevokeResponseSchema,
@@ -8404,3 +8477,4 @@ export function parseServerInfoStatusPayload(payload: unknown): ServerInfoStatus
 }
 
 export * from "./device-access-rpc.js";
+export * from "./plugins/rpc-schemas.js";
