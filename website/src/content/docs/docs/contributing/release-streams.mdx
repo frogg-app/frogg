@@ -104,8 +104,9 @@ one window on both.
    npm run release:beta
    ```
 
-   It opens the next minor line above stable (`1.6.0-beta.1`), or continues the open one
-   (`1.6.0-beta.4`). `npm run release:beta -- --major` opens the next major line.
+   It opens the next patch line above stable (`1.6.5-beta.1` after `1.6.4`), or continues
+   the open one (`1.6.5-beta.4`). `npm run release:beta -- --minor` opens the next minor
+   line and `-- --major` the next major; bump those deliberately, never by default.
    `-- --print` shows the version without cutting it.
 
 3. **Backport a fix** that stable users need now. Land it on `main` first, then:
@@ -118,7 +119,8 @@ one window on both.
    ```
 
    Backports use `git cherry-pick -x`, so the graph and the change list can tell a fix is
-   already on stable. A stable patch must stay below the open beta line.
+   already on stable. A stable patch may reach the open beta line's version but not pass it;
+   the next `release:beta` then opens the patch after it.
 
 4. **Promote** the beta line when it is ready:
 
@@ -127,10 +129,11 @@ one window on both.
    npm run release:promote
    ```
 
-   This copies `main` onto `stable` exactly (a merge whose tree is `main`'s), cuts `X.Y.0`,
+   This copies `main` onto `stable` exactly (a merge whose tree is `main`'s), cuts the beta
+   line's version (`1.6.5-beta.4` ships as `1.6.5`),
    tags and pushes it. It refuses when `stable` has a fix `main` lacks, because the copy would
    drop it: cherry-pick those onto `main` first, or pass `--allow-drop` if they are obsolete.
-   The next `release:beta` opens the following minor.
+   The next `release:beta` opens the following patch.
 
 </Steps>
 

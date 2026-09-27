@@ -2037,7 +2037,7 @@ export class VoiceAssistantWebSocketServer {
         agentCleanCut: true,
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
-        // COMPAT(projectTodos): added in v1.6.2, remove after 2027-09-27.
+        // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
         projectTodos: this.projectTodoService !== null,
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
         workspaceCreatedAt: true,
