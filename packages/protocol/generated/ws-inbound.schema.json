@@ -4086,6 +4086,127 @@
                         }
                       ]
                     },
+                    "cleanCut": {
+                      "type": "object",
+                      "properties": {
+                        "auto": {
+                          "type": "object",
+                          "properties": {
+                            "usageLimit": {
+                              "type": "boolean"
+                            },
+                            "daemonRestart": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "idleThresholdMinutes": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 43200
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "summaryModel": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "provider": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 100
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "thinkingOptionId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 100
+                                }
+                              },
+                              "required": [
+                                "provider",
+                                "model"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "providers": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "idleThresholdMinutes": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 43200
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "summaryModel": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "provider": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 100
+                                          },
+                                          "model": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 200
+                                          },
+                                          "thinkingOptionId": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 100
+                                          }
+                                        },
+                                        "required": [
+                                          "provider",
+                                          "model"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
                     "enableTerminalAgentHooks": {
                       "type": "boolean"
                     },

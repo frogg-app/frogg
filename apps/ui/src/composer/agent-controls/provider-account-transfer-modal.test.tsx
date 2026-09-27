@@ -14,8 +14,15 @@ void i18n;
 const { theme } = vi.hoisted(() => ({
   theme: {
     spacing: { 2: 8, 3: 12 },
-    fontSize: { base: 15 },
-    colors: { palette: { red: { 300: "#f87171" } } },
+    fontSize: { base: 15, sm: 13 },
+    borderRadius: { lg: 8 },
+    colors: {
+      palette: { red: { 300: "#f87171" } },
+      foreground: "#fff",
+      foregroundMuted: "#aaa",
+      statusWarning: "#f59e0b",
+      border: "#333",
+    },
   },
 }));
 
@@ -38,6 +45,32 @@ vi.mock("@/components/adaptive-modal-sheet", async () => {
       children: React.ReactNode;
       testID?: string;
     }) => (visible ? ReactModule.createElement("div", { "data-testid": testID }, children) : null),
+  };
+});
+
+vi.mock("@/composer/agent-controls/provider-account-control", async () => {
+  const ReactModule = await import("react");
+  return {
+    ProviderAccountComboboxOption: ({
+      option,
+      account,
+      unauthenticatedLabel,
+      onPress,
+    }: {
+      option: { id: string; label: string };
+      account: { authenticated: boolean } | undefined;
+      unauthenticatedLabel: string;
+      onPress: () => void;
+    }) =>
+      ReactModule.createElement(
+        "button",
+        {
+          type: "button",
+          "data-testid": `provider-account-transfer-option-${option.id}`,
+          onClick: onPress,
+        },
+        account?.authenticated === false ? `${option.label} ${unauthenticatedLabel}` : option.label,
+      ),
   };
 });
 

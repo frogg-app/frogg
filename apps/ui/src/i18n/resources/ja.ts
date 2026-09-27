@@ -422,6 +422,9 @@ export const ja: TranslationResources = {
           "この会話を別のアカウントに移動すると、コンテキスト全体が新しい入力として再送信され、フル価格（キャッシュなし）で課金されます。",
         confirm: "会話を移動",
         cleanCut: "このアカウントへクリーンカット",
+        inUse: "使用中",
+        providerLabel: "またはプロバイダーを切り替え",
+        providerPlaceholder: "プロバイダーを選択",
         cleanCutHint:
           "またはクリーンカット: コンテキスト全体を再送する代わりに、安価な要約で新しいアカウントに新しい会話を始めます。",
         moving: "移動中...",
@@ -3156,6 +3159,43 @@ export const ja: TranslationResources = {
       fallbackHint: "利用できない場合、{{brandName}} は別の利用可能なモデルを使用します",
       docs: "ドキュメント",
       saveError: "メタデータ生成を更新できません",
+    },
+    cleanCut: {
+      title: "クリーンカット",
+      description:
+        "長時間アイドル状態だった会話を再開する前に、全コンテキストを再送信する代わりに短い要約から新しい会話を始めます",
+      docs: "ドキュメント",
+      saveError: "クリーンカットの設定を更新できません",
+      auto: {
+        usageLimit: "使用量上限の後、再開前にカット",
+        usageLimitHint:
+          "使用量上限がリセットされ会話がコールドになっている場合、再開プロンプトを送る前に要約します",
+        daemonRestart: "再起動の後、再開前にカット",
+        daemonRestartHint:
+          "デーモンの再起動でターンが中断され会話がコールドになっている場合、続行する前に要約します",
+      },
+      threshold: {
+        title: "アイドルしきい値",
+        hint: "会話がコールドとみなされるまでのアイドル時間。空欄の場合は各プロバイダーのプロンプトキャッシュの有効期間を使用します（Claude と Codex は 1 時間）",
+        providerDefault: "デフォルト",
+        off: "オフ",
+        unit: "分",
+        invalid: "1〜{{max}} の整数（分）を入力するか、空欄にしてください",
+      },
+      summaryModel: {
+        title: "要約モデル",
+        hint: "要約を作成します。自動の場合、エージェント自身のプロバイダーで最も安価な既知のモデルを選びます",
+        automatic: "自動を使用",
+      },
+      providers: {
+        title: "プロバイダー別",
+        hint: "プロバイダー固有の設定は上の設定より優先されます。キャッシュ有効期間が不明なプロバイダーは、独自のしきい値を設定した場合のみカットされます",
+        threshold: "{{provider}} のアイドルしきい値",
+        inherited: "デフォルト: {{minutes}} 分",
+        notCutByDefault: "しきい値を設定しない限りカットされません",
+        summaryModel: "{{provider}} の要約モデル",
+        summaryModelHint: "利用できない場合は上の要約モデルを使用します",
+      },
     },
     voiceAlerts: {
       title: "音声アラート",

@@ -1084,6 +1084,7 @@ export class Session {
             agentManager,
             providerSnapshotManager,
             logger: this.sessionLogger,
+            getCleanCutSettings: () => this.daemonConfigStore.get().cleanCut,
           };
           await runCleanCut(deps, { agentId, target });
           // COMPAT(agentCleanCutSubagents): added in v1.6.2, remove after 2027-09-27.

@@ -425,6 +425,9 @@ export const fr: TranslationResources = {
           "Déplacer cette conversation vers un autre compte renvoie tout son contexte comme nouvelle entrée, facturée au prix plein (sans cache).",
         confirm: "Déplacer la conversation",
         cleanCut: "Coupure nette vers ce compte",
+        inUse: "Utilisé",
+        providerLabel: "Ou changer de fournisseur",
+        providerPlaceholder: "Choisir un fournisseur",
         cleanCutHint:
           "Ou faites une coupure nette : un résumé économique démarre une nouvelle conversation sur l'autre compte au lieu de renvoyer tout le contexte.",
         moving: "Déplacement...",
@@ -3193,6 +3196,43 @@ export const fr: TranslationResources = {
       fallbackHint: "S’il est indisponible, {{brandName}} utilise un autre modèle disponible",
       docs: "Documentation",
       saveError: "Impossible de mettre à jour la génération de métadonnées",
+    },
+    cleanCut: {
+      title: "Coupure nette",
+      description:
+        "Avant de reprendre une conversation restée inactive trop longtemps, en démarrer une nouvelle à partir d'un court résumé au lieu de renvoyer tout le contexte",
+      docs: "Documentation",
+      saveError: "Impossible de mettre à jour les réglages de coupure nette",
+      auto: {
+        usageLimit: "Couper avant de reprendre après une limite d'utilisation",
+        usageLimitHint:
+          "Quand une limite d'utilisation se réinitialise et que la conversation a refroidi, la résumer avant d'envoyer le message de reprise",
+        daemonRestart: "Couper avant de reprendre après un redémarrage",
+        daemonRestartHint:
+          "Quand un redémarrage du daemon a interrompu un tour et que la conversation a refroidi, la résumer avant de continuer",
+      },
+      threshold: {
+        title: "Seuil d'inactivité",
+        hint: "Durée d'inactivité au-delà de laquelle une conversation est considérée comme froide. Vide utilise la durée du cache de prompts de chaque fournisseur (1 heure pour Claude et Codex)",
+        providerDefault: "Par défaut",
+        off: "Désactivé",
+        unit: "min",
+        invalid: "Saisissez un nombre entier de minutes entre 1 et {{max}}, ou laissez vide",
+      },
+      summaryModel: {
+        title: "Modèle de résumé",
+        hint: "Rédige le résumé. Automatique choisit le modèle connu le moins cher du fournisseur de l'agent",
+        automatic: "Utiliser l'automatique",
+      },
+      providers: {
+        title: "Par fournisseur",
+        hint: "Les réglages propres à un fournisseur priment sur ceux ci-dessus. Un fournisseur sans durée de cache connue n'est coupé qu'avec son propre seuil",
+        threshold: "Seuil d'inactivité de {{provider}}",
+        inherited: "Par défaut : {{minutes}} min",
+        notCutByDefault: "Pas de coupure sans seuil défini",
+        summaryModel: "Modèle de résumé de {{provider}}",
+        summaryModelHint: "Utilise le modèle de résumé ci-dessus s'il est indisponible",
+      },
     },
     voiceAlerts: {
       title: "Alertes vocales",

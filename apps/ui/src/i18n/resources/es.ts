@@ -423,6 +423,9 @@ export const es: TranslationResources = {
           "Mover esta conversación a otra cuenta reenvía todo su contexto como entrada nueva, facturada a precio completo (sin caché).",
         confirm: "Mover conversación",
         cleanCut: "Corte limpio a esta cuenta",
+        inUse: "En uso",
+        providerLabel: "O cambia de proveedor",
+        providerPlaceholder: "Elige un proveedor",
         cleanCutHint:
           "O haz un corte limpio: un resumen económico inicia una conversación nueva en la otra cuenta en lugar de reenviar todo el contexto.",
         moving: "Moviendo...",
@@ -3186,6 +3189,43 @@ export const es: TranslationResources = {
       fallbackHint: "Si no está disponible, {{brandName}} usa otro modelo disponible",
       docs: "Documentación",
       saveError: "No se pudo actualizar la generación de metadatos",
+    },
+    cleanCut: {
+      title: "Corte limpio",
+      description:
+        "Antes de reanudar una conversación que lleva demasiado tiempo inactiva, empieza una nueva a partir de un breve resumen en lugar de reenviar todo el contexto",
+      docs: "Documentación",
+      saveError: "No se pudo actualizar la configuración de corte limpio",
+      auto: {
+        usageLimit: "Cortar antes de reanudar tras un límite de uso",
+        usageLimitHint:
+          "Cuando se restablece un límite de uso y la conversación se ha enfriado, resúmela antes de enviar el mensaje de reanudación",
+        daemonRestart: "Cortar antes de reanudar tras un reinicio",
+        daemonRestartHint:
+          "Cuando un reinicio del daemon interrumpió un turno y la conversación se ha enfriado, resúmela antes de continuar",
+      },
+      threshold: {
+        title: "Umbral de inactividad",
+        hint: "Cuánto tiempo puede estar inactiva una conversación antes de considerarse fría. Vacío usa la duración de la caché de prompts de cada proveedor (1 hora para Claude y Codex)",
+        providerDefault: "Predeterminado",
+        off: "Desactivado",
+        unit: "min",
+        invalid: "Introduce minutos enteros de 1 a {{max}}, o déjalo vacío",
+      },
+      summaryModel: {
+        title: "Modelo de resumen",
+        hint: "Escribe el resumen. Automático elige el modelo conocido más barato del propio proveedor del agente",
+        automatic: "Usar automático",
+      },
+      providers: {
+        title: "Por proveedor",
+        hint: "La configuración propia de un proveedor prevalece sobre la anterior. Un proveedor sin duración de caché conocida solo se corta cuando tiene su propio umbral",
+        threshold: "Umbral de inactividad de {{provider}}",
+        inherited: "Predeterminado: {{minutes}} min",
+        notCutByDefault: "No se corta salvo que definas un umbral",
+        summaryModel: "Modelo de resumen de {{provider}}",
+        summaryModelHint: "Si no está disponible, se usa el modelo de resumen anterior",
+      },
     },
     voiceAlerts: {
       title: "Alertas de voz",

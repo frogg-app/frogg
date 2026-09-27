@@ -422,6 +422,9 @@ export const ptBR: TranslationResources = {
           "Mover esta conversa para outra conta reenvia todo o contexto como entrada nova, cobrada pelo preço cheio (sem cache).",
         confirm: "Mover conversa",
         cleanCut: "Corte limpo para esta conta",
+        inUse: "Em uso",
+        providerLabel: "Ou troque de provedor",
+        providerPlaceholder: "Escolha um provedor",
         cleanCutHint:
           "Ou faça um corte limpo: um resumo barato inicia uma nova conversa na outra conta em vez de reenviar todo o contexto.",
         moving: "Movendo...",
@@ -3169,6 +3172,43 @@ export const ptBR: TranslationResources = {
       fallbackHint: "Se ele não estiver disponível, o {{brandName}} usa outro modelo disponível",
       docs: "Documentação",
       saveError: "Não foi possível atualizar a geração de metadados",
+    },
+    cleanCut: {
+      title: "Corte limpo",
+      description:
+        "Antes de retomar uma conversa que ficou ociosa por tempo demais, começa uma nova a partir de um resumo curto em vez de reenviar todo o contexto",
+      docs: "Documentação",
+      saveError: "Não foi possível atualizar as configurações de corte limpo",
+      auto: {
+        usageLimit: "Cortar antes de retomar após um limite de uso",
+        usageLimitHint:
+          "Quando um limite de uso é redefinido e a conversa esfriou, resume-a antes de enviar o prompt de retomada",
+        daemonRestart: "Cortar antes de retomar após uma reinicialização",
+        daemonRestartHint:
+          "Quando uma reinicialização do daemon interrompeu um turno e a conversa esfriou, resume-a antes de continuar",
+      },
+      threshold: {
+        title: "Limite de inatividade",
+        hint: "Quanto tempo uma conversa pode ficar ociosa antes de ser considerada fria. Vazio usa a duração do cache de prompts de cada provedor (1 hora para Claude e Codex)",
+        providerDefault: "Padrão",
+        off: "Desativado",
+        unit: "min",
+        invalid: "Informe minutos inteiros de 1 a {{max}}, ou deixe vazio",
+      },
+      summaryModel: {
+        title: "Modelo de resumo",
+        hint: "Escreve o resumo. Automático escolhe o modelo conhecido mais barato do próprio provedor do agente",
+        automatic: "Usar automático",
+      },
+      providers: {
+        title: "Por provedor",
+        hint: "As configurações de um provedor prevalecem sobre as de cima. Um provedor sem duração de cache conhecida só é cortado quando tem seu próprio limite",
+        threshold: "Limite de inatividade de {{provider}}",
+        inherited: "Padrão: {{minutes}} min",
+        notCutByDefault: "Não é cortado sem um limite definido",
+        summaryModel: "Modelo de resumo de {{provider}}",
+        summaryModelHint: "Se indisponível, usa o modelo de resumo acima",
+      },
     },
     voiceAlerts: {
       title: "Alertas de voz",

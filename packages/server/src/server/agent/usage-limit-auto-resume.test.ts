@@ -13,7 +13,12 @@ const NOW = new Date("2026-09-24T10:00:00.000Z");
 
 function harness(options: { enabled?: boolean; lastReply?: string | null } = {}) {
   let subscriber: ((event: AgentManagerEvent) => void) | null = null;
-  const agent = { id: "a1", internal: false, lifecycle: "idle", autoResume: null as unknown };
+  const agent = {
+    id: "a1",
+    internal: false,
+    lifecycle: "idle",
+    autoResume: null as unknown,
+  };
   const timers: Array<{ callback: () => void; ms: number; cleared: boolean }> = [];
   const resume = vi.fn(async () => undefined);
   const setAgentAutoResume = vi.fn((_id: string, value: AgentAutoResumeState | null) => {
@@ -46,7 +51,11 @@ function harness(options: { enabled?: boolean; lastReply?: string | null } = {})
     },
   });
   const stream = (event: unknown) =>
-    subscriber?.({ type: "agent_stream", agentId: "a1", event: event as never });
+    subscriber?.({
+      type: "agent_stream",
+      agentId: "a1",
+      event: event as never,
+    });
   return { agent, timers, resume, setAgentAutoResume, service, stream };
 }
 
@@ -74,9 +83,30 @@ describe("setupUsageLimitAutoResume", () => {
     expect(h.agent.autoResume).toBeNull();
   });
 
+  it("keeps a known reset when the limit repeats without one", async () => {
+    const h = harness({ lastReply: "You've hit your session limit" });
+    const resetsAt = new Date(NOW.getTime() + 20 * 60_000);
+    h.stream({
+      type: "turn_completed",
+      provider: "claude",
+      usageLimit: { resetsAt: resetsAt.toISOString() },
+    });
+    await flush();
+    // A background task finishing straight after is refused with the notice alone.
+    h.stream({ type: "turn_completed", provider: "claude" });
+    await flush();
+    expect(h.timers).toHaveLength(1);
+    expect(h.timers[0].cleared).toBe(false);
+    expect(h.agent.autoResume).toMatchObject({ resetsAt });
+  });
+
   it("falls back to a fixed wait when the reset is unknown", async () => {
     const h = harness();
-    h.stream({ type: "turn_failed", provider: "codex", error: "You've hit your usage limit." });
+    h.stream({
+      type: "turn_failed",
+      provider: "codex",
+      error: "You've hit your usage limit.",
+    });
     await flush();
     expect(h.timers[0].ms).toBe(AUTO_RESUME_UNKNOWN_RESET_MS + AUTO_RESUME_GRACE_MS);
   });
@@ -90,14 +120,22 @@ describe("setupUsageLimitAutoResume", () => {
 
   it("does nothing when disabled", async () => {
     const h = harness({ enabled: false });
-    h.stream({ type: "turn_failed", provider: "codex", error: "usage limit reached" });
+    h.stream({
+      type: "turn_failed",
+      provider: "codex",
+      error: "usage limit reached",
+    });
     await flush();
     expect(h.timers).toHaveLength(0);
   });
 
   it("drops the timer when the user starts a turn or cancels", async () => {
     const h = harness();
-    h.stream({ type: "turn_failed", provider: "codex", error: "usage limit reached" });
+    h.stream({
+      type: "turn_failed",
+      provider: "codex",
+      error: "usage limit reached",
+    });
     await flush();
     h.stream({ type: "turn_started", provider: "codex" });
     expect(h.timers[0].cleared).toBe(true);
@@ -107,7 +145,11 @@ describe("setupUsageLimitAutoResume", () => {
   it("gives up after repeated immediate limits", async () => {
     const h = harness();
     for (let i = 0; i < AUTO_RESUME_MAX_ATTEMPTS + 1; i += 1) {
-      h.stream({ type: "turn_failed", provider: "codex", error: "usage limit reached" });
+      h.stream({
+        type: "turn_failed",
+        provider: "codex",
+        error: "usage limit reached",
+      });
       await flush();
     }
     expect(h.timers).toHaveLength(AUTO_RESUME_MAX_ATTEMPTS);
