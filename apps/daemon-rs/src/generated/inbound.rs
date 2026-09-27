@@ -1801,6 +1801,8 @@ pub struct SetDaemonConfigRequestConfig {
     pub auto_resume_on_usage_limit: Option<bool>,
     #[serde(rename = "companionModel", skip_serializing_if = "Option::is_none")]
     pub companion_model: Option<serde_json::Value>,
+    #[serde(rename = "cleanCut", skip_serializing_if = "Option::is_none")]
+    pub clean_cut: Option<SetDaemonConfigRequestConfigCleanCut>,
     #[serde(
         rename = "enableTerminalAgentHooks",
         skip_serializing_if = "Option::is_none"
@@ -1853,6 +1855,29 @@ pub struct SetDaemonConfigRequestConfigMetadataGenerationProvidersItem {
     pub model: Option<String>,
     #[serde(rename = "thinkingOptionId", skip_serializing_if = "Option::is_none")]
     pub thinking_option_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDaemonConfigRequestConfigCleanCut {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto: Option<SetDaemonConfigRequestConfigCleanCutAuto>,
+    #[serde(
+        rename = "idleThresholdMinutes",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub idle_threshold_minutes: Option<serde_json::Value>,
+    #[serde(rename = "summaryModel", skip_serializing_if = "Option::is_none")]
+    pub summary_model: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub providers: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDaemonConfigRequestConfigCleanCutAuto {
+    #[serde(rename = "usageLimit", skip_serializing_if = "Option::is_none")]
+    pub usage_limit: Option<bool>,
+    #[serde(rename = "daemonRestart", skip_serializing_if = "Option::is_none")]
+    pub daemon_restart: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

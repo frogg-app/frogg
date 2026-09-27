@@ -262,7 +262,7 @@ import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
 import { createHostResources } from "./host/host-resources.js";
 import { sweepFroggDebris } from "./host/debris-sweep.js";
 import { getActiveImageAttachmentDir } from "./agent/providers/provider-image-output.js";
-import type { DaemonAutoUpdateConfig } from "@frogg/protocol/messages";
+import type { DaemonAutoUpdateConfig, MutableCleanCutConfig } from "@frogg/protocol/messages";
 
 const MCP_DEBUG_BATCH_LIMIT = 10;
 const MCP_DEBUG_SECRET = "[redacted]";
@@ -470,8 +470,8 @@ export interface FroggDaemonConfig {
   };
   autoArchiveAfterMerge?: boolean;
   autoResumeOnUsageLimit?: boolean;
-  /** COMPAT(agentCleanCut): clean-cut before an automatic resume when the prompt cache is cold. */
-  autoCleanCutOnColdCache?: boolean;
+  /** Clean cut settings: automatic triggers, idle thresholds and summariser models. */
+  cleanCut?: MutableCleanCutConfig;
   /** `features.companion.model`; null means the backend default. */
   companionModel?: string | null;
   hostSettingsHiddenSections?: readonly HostSettingsSection[];
@@ -742,6 +742,7 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
     },
     autoArchiveAfterMerge: config.autoArchiveAfterMerge ?? false,
     autoResumeOnUsageLimit: config.autoResumeOnUsageLimit ?? true,
+    cleanCut: resolveInitialCleanCut(config),
     companionModel: config.companionModel ?? null,
     hostSettings: {
       hiddenSections: [...(config.hostSettingsHiddenSections ?? brand.hostSettings.hiddenSections)],
@@ -756,6 +757,11 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
   }
 
   return initialConfig;
+}
+
+/** Both automatic triggers on and no overrides when the launcher resolved none. */
+function resolveInitialCleanCut(config: FroggDaemonConfig): MutableCleanCutConfig {
+  return config.cleanCut ?? { auto: { usageLimit: true, daemonRestart: true }, providers: {} };
 }
 
 export async function createFroggDaemon(
@@ -1558,7 +1564,7 @@ export async function createFroggDaemon(
   const autoCleanCutDeps: AutoCleanCutDeps = {
     agentManager,
     providerSnapshotManager,
-    isEnabled: () => config.autoCleanCutOnColdCache !== false,
+    getCleanCutSettings: () => daemonConfigStore.get().cleanCut,
     logger,
   };
   const usageLimitAutoResume = setupUsageLimitAutoResume({

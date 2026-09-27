@@ -126,12 +126,36 @@ The divider reads **Clean cut: cache expired, new conversation** instead of the 
 The timeline item records why the cut was made in `cleanCut.reason`: `manual` or `cold-cache`.
 Cuts recorded before the reason existed show the manual title.
 
-Turn it off in [`config.json`](/docs/reference/configuration/#agents-and-tools), then restart the daemon;
-the setting is read at startup:
+### Settings
+
+Configure automatic clean cuts in **Settings → Host → Clean cut**, or under `daemon.cleanCut` in
+[`config.json`](/docs/reference/configuration/#agents-and-tools). Changes apply live; no restart is needed.
+
+- **Triggers.** `auto.usageLimit` and `auto.daemonRestart` turn each trigger on or off (both on by default).
+- **Idle threshold.** How long an agent must be idle before a cut. A per-provider value wins over the
+  global `idleThresholdMinutes`, which wins over the provider's cache lifetime. The composer's
+  stale-cache warning uses the same threshold. Setting a threshold enables the cut for providers
+  with no known cache lifetime.
+- **Summary model.** A per-provider `summaryModel` wins over the global one, then the built-in
+  choice, then the agent's own model. A model that is not available is skipped and logged.
 
 ```json
-{ "daemon": { "autoCleanCutOnColdCache": false } }
+{
+  "daemon": {
+    "cleanCut": {
+      "auto": { "usageLimit": true, "daemonRestart": false },
+      "idleThresholdMinutes": 45,
+      "summaryModel": { "provider": "claude", "model": "haiku" },
+      "providers": { "codex": { "idleThresholdMinutes": 30 } }
+    }
+  }
+}
 ```
+
+The legacy `daemon.autoCleanCutOnColdCache: false` still turns off both triggers.
+
+The daemon logs the outcome and reason of every automatic cut decision (cut, skipped, failed),
+so a cut that did not happen can be diagnosed from the daemon log.
 
 ## Which providers have a known cache lifetime
 

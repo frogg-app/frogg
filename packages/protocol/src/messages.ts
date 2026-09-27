@@ -189,6 +189,68 @@ const MutableMetadataGenerationConfigSchema = z
   })
   .passthrough();
 
+/**
+ * COMPAT(cleanCutSettings): added in v1.6.5, remove after 2027-09-27.
+ * Clean cut settings. Idle thresholds are whole minutes; a provider override
+ * wins over the global value, which wins over the provider's prompt cache TTL.
+ */
+export const CLEAN_CUT_IDLE_THRESHOLD_MAX_MINUTES = 30 * 24 * 60;
+const CleanCutIdleThresholdMinutesSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(CLEAN_CUT_IDLE_THRESHOLD_MAX_MINUTES);
+
+export const CleanCutSummaryModelSchema = z.object({
+  provider: z.string().min(1).max(100),
+  model: z.string().min(1).max(200),
+  thinkingOptionId: z.string().min(1).max(100).optional(),
+});
+export type CleanCutSummaryModel = z.infer<typeof CleanCutSummaryModelSchema>;
+
+export const CleanCutProviderSettingsSchema = z.object({
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.optional(),
+  summaryModel: CleanCutSummaryModelSchema.optional(),
+});
+export type CleanCutProviderSettings = z.infer<typeof CleanCutProviderSettingsSchema>;
+
+export const MutableCleanCutConfigSchema = z.object({
+  auto: z.object({
+    /** Cut before the resume the daemon sends once a usage limit resets. */
+    usageLimit: z.boolean(),
+    /** Cut before resuming a turn a daemon restart interrupted. */
+    daemonRestart: z.boolean(),
+  }),
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.optional(),
+  summaryModel: CleanCutSummaryModelSchema.optional(),
+  providers: z.record(z.string(), CleanCutProviderSettingsSchema).default({}),
+});
+export type MutableCleanCutConfig = z.infer<typeof MutableCleanCutConfigSchema>;
+
+/** `null` clears a value back to its default; a provider set to `null` drops all its overrides. */
+export const MutableCleanCutConfigPatchSchema = z.object({
+  auto: z
+    .object({
+      usageLimit: z.boolean().optional(),
+      daemonRestart: z.boolean().optional(),
+    })
+    .optional(),
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.nullable().optional(),
+  summaryModel: CleanCutSummaryModelSchema.nullable().optional(),
+  providers: z
+    .record(
+      z.string().min(1),
+      z
+        .object({
+          idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.nullable().optional(),
+          summaryModel: CleanCutSummaryModelSchema.nullable().optional(),
+        })
+        .nullable(),
+    )
+    .optional(),
+});
+export type MutableCleanCutConfigPatch = z.infer<typeof MutableCleanCutConfigPatchSchema>;
+
 export const TerminalProfileSchema = z
   .object({
     id: z.string(),
@@ -294,6 +356,8 @@ export const MutableDaemonConfigSchema = z
     // COMPAT(companionModel): added in v1.5.43; absent means an older daemon without the picker.
     // null is "the backend's default model".
     companionModel: z.string().nullable().optional(),
+    // COMPAT(cleanCutSettings): added in v1.6.5; absent means an older daemon without the settings.
+    cleanCut: MutableCleanCutConfigSchema.optional(),
     enableTerminalAgentHooks: z.boolean().default(false),
     appendSystemPrompt: z.string().default(""),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -318,6 +382,7 @@ export const MutableDaemonConfigPatchSchema = z
     autoArchiveAfterMerge: z.boolean().optional(),
     autoResumeOnUsageLimit: z.boolean().optional(),
     companionModel: z.string().trim().min(1).max(200).nullable().optional(),
+    cleanCut: MutableCleanCutConfigPatchSchema.optional(),
     enableTerminalAgentHooks: z.boolean().optional(),
     appendSystemPrompt: z.string().optional(),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -4282,7 +4347,11 @@ export const ServerInfoStatusPayloadSchema = z
     // COMPAT(deviceAccess): added in v1.6.0. The paired device this connection
     // authenticated as; absent for credential-less (loopback / trusted LAN) connections.
     device: z
-      .object({ id: z.string(), name: z.string(), role: z.enum(["owner", "operator", "viewer"]) })
+      .object({
+        id: z.string(),
+        name: z.string(),
+        role: z.enum(["owner", "operator", "viewer"]),
+      })
       .optional(),
   })
   .passthrough()

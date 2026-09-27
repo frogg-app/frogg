@@ -3,8 +3,9 @@
  *
  * A clean cut ends an agent's provider conversation and starts a fresh one in
  * the same workspace, primed with a short summary instead of the full history.
- * The summary is written by the cheapest model available on the agent's own
- * provider and account, reading only the chat side of the conversation: user
+ * The summary is written by the owner's configured summary model, else the
+ * cheapest model available on the agent's own provider and account, reading
+ * only the chat side of the conversation: user
  * and assistant messages plus tool call names and short arguments, never tool
  * output. That transcript is a fraction of the context it stands for, which is
  * where the saving comes from when the prompt cache has expired.
@@ -19,12 +20,14 @@ import {
 } from "./agent-response-loop.js";
 import type { AgentManager, ManagedAgent } from "./agent-manager.js";
 import type {
+  AgentModelDefinition,
   AgentPromptInput,
   AgentSessionConfig,
   AgentTimelineItem,
   CleanCutMarker,
 } from "./agent-sdk-types.js";
 import type { ProviderSnapshotManager } from "./provider-snapshot-manager.js";
+import type { CleanCutSummaryModel, MutableCleanCutConfig } from "@frogg/protocol/messages";
 import { DEFAULT_STRUCTURED_GENERATION_PROVIDERS } from "./structured-generation-providers.js";
 
 /** Head kept when a transcript is too long: the opening request frames the rest. */
@@ -45,9 +48,14 @@ export interface CleanCutTarget {
 export interface CleanCutDeps {
   agentManager: AgentManager;
   providerSnapshotManager: Pick<ProviderSnapshotManager, "listProviders">;
-  logger: { info: (obj: object, msg?: string) => void; warn: (obj: object, msg?: string) => void };
+  logger: {
+    info: (obj: object, msg?: string) => void;
+    warn: (obj: object, msg?: string) => void;
+  };
   /** Test seam: runs one summariser candidate. Defaults to a real internal agent. */
   runner?: SummariserRunner;
+  /** The daemon's clean cut settings, read at cut time so a change applies at once. */
+  getCleanCutSettings?: () => MutableCleanCutConfig | undefined;
 }
 
 type SummariserRunner = <T>(options: StructuredAgentGenerationOptions<T>) => Promise<T>;
@@ -89,7 +97,13 @@ export const runSummariserAgent: SummariserRunner = async (options) => {
       );
     });
     return await Promise.race([
-      getStructuredAgentResponse({ caller, prompt, schema, maxRetries, schemaName }),
+      getStructuredAgentResponse({
+        caller,
+        prompt,
+        schema,
+        maxRetries,
+        schemaName,
+      }),
       timeout,
     ]);
   } finally {
@@ -185,45 +199,106 @@ export function prependCleanCutSummary(
 }
 
 /**
- * The summariser candidates, cheapest first, all on the agent's own provider so
- * the cost lands on the account the conversation already bills to. The agent's
- * current model is the last resort: dearer, but still reading the stripped
- * transcript rather than the whole context.
+ * The summariser candidates, in order:
+ * 1. the summary model configured for the agent's provider,
+ * 2. the global summary model,
+ * 3. the cheapest known model on the agent's own provider, so the cost lands
+ *    on the account the conversation already bills to,
+ * 4. the agent's current model: dearer, but still reading the stripped
+ *    transcript rather than the whole context.
+ *
+ * A configured model the provider does not currently offer (provider missing,
+ * disabled, or model not in its list) is skipped with a log line rather than
+ * tried and failed, so the next candidate answers without a wasted attempt.
  */
-async function resolveSameProviderCandidates(
+export async function resolveCleanCutSummaryCandidates(
   deps: CleanCutDeps,
-  agent: ManagedAgent,
+  agent: Pick<ManagedAgent, "id" | "cwd" | "provider" | "config">,
 ): Promise<StructuredGenerationProvider[]> {
   const entries = await deps.providerSnapshotManager.listProviders({
     cwd: agent.cwd,
     wait: true,
   });
-  const entry = entries.find((candidate) => candidate.provider === agent.provider);
-  const models = entry?.enabled ? (entry.models ?? []) : [];
+  const settings = deps.getCleanCutSettings?.();
+  const configured = [
+    { source: "provider", wanted: settings?.providers?.[agent.provider]?.summaryModel },
+    { source: "global", wanted: settings?.summaryModel },
+  ];
   const candidates: StructuredGenerationProvider[] = [];
-  for (const identifier of DEFAULT_STRUCTURED_GENERATION_PROVIDERS) {
-    const needle = identifier.modelSubstring.toLowerCase();
-    const model = models.find((candidate) =>
-      [candidate.id, candidate.label].some((value) => value.toLowerCase().includes(needle)),
-    );
-    if (model) {
-      const thinkingOptionId = model.thinkingOptions?.some(
-        (option) => option.id === identifier.thinkingOptionId,
-      )
-        ? identifier.thinkingOptionId
-        : model.defaultThinkingOptionId;
-      candidates.push({
-        provider: agent.provider,
-        model: model.id,
-        ...(thinkingOptionId ? { thinkingOptionId } : {}),
-      });
+  for (const { source, wanted } of configured) {
+    if (!wanted) continue;
+    const resolved = resolveConfiguredSummaryModel(entries, wanted);
+    if ("unavailable" in resolved) {
+      deps.logger.warn(
+        {
+          agentId: agent.id,
+          source,
+          summaryProvider: wanted.provider,
+          summaryModel: wanted.model,
+          reason: resolved.unavailable,
+        },
+        "Configured clean cut summary model is unavailable; trying the next candidate",
+      );
+    } else {
+      candidates.push(resolved);
     }
   }
+  candidates.push(...resolveDefaultSummaryModels(entries, agent.provider));
   candidates.push({
     provider: agent.provider,
     ...(agent.config.model ? { model: agent.config.model } : {}),
   });
-  return candidates;
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const key = `${candidate.provider}\0${candidate.model ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+type ProviderEntries = Awaited<
+  ReturnType<CleanCutDeps["providerSnapshotManager"]["listProviders"]>
+>;
+
+function withThinking(
+  provider: string,
+  model: AgentModelDefinition,
+  preferred: string | undefined,
+): StructuredGenerationProvider {
+  const thinkingOptionId =
+    preferred && model.thinkingOptions?.some((option) => option.id === preferred)
+      ? preferred
+      : model.defaultThinkingOptionId;
+  return { provider, model: model.id, ...(thinkingOptionId ? { thinkingOptionId } : {}) };
+}
+
+function resolveConfiguredSummaryModel(
+  entries: ProviderEntries,
+  wanted: CleanCutSummaryModel,
+): StructuredGenerationProvider | { unavailable: string } {
+  const entry = entries.find((candidate) => candidate.provider === wanted.provider);
+  if (!entry) return { unavailable: "provider_missing" };
+  if (!entry.enabled) return { unavailable: "provider_disabled" };
+  const model = entry.models?.find((candidate) => candidate.id === wanted.model);
+  if (!model) return { unavailable: "model_missing" };
+  return withThinking(wanted.provider, model, wanted.thinkingOptionId);
+}
+
+/** The cheapest known models on the agent's own provider, by name. */
+function resolveDefaultSummaryModels(
+  entries: ProviderEntries,
+  provider: string,
+): StructuredGenerationProvider[] {
+  const entry = entries.find((candidate) => candidate.provider === provider);
+  const models = entry?.enabled ? (entry.models ?? []) : [];
+  return DEFAULT_STRUCTURED_GENERATION_PROVIDERS.flatMap((identifier) => {
+    const needle = identifier.modelSubstring.toLowerCase();
+    const model = models.find((candidate) =>
+      [candidate.id, candidate.label].some((value) => value.toLowerCase().includes(needle)),
+    );
+    return model ? [withThinking(provider, model, identifier.thinkingOptionId)] : [];
+  });
 }
 
 async function generateCleanCutSummary(
@@ -240,7 +315,14 @@ async function generateCleanCutSummary(
   let summaryModel: string | undefined;
   const runOne = deps.runner ?? runSummariserAgent;
   const runner: SummariserRunner = async (options) => {
-    const result = await runOne(options);
+    // A summary model configured on another provider runs on that provider's
+    // default account: the agent's account belongs to the agent's provider.
+    const { providerAccountId: _agentAccount, ...defaultAccountConfig } = options.agentConfig;
+    const result = await runOne(
+      options.agentConfig.provider === agent.provider
+        ? options
+        : { ...options, agentConfig: defaultAccountConfig },
+    );
     summaryModel = options.agentConfig.model;
     return result;
   };
@@ -262,7 +344,7 @@ async function generateCleanCutSummary(
       runner,
     });
 
-  const candidates = await resolveSameProviderCandidates(deps, agent);
+  const candidates = await resolveCleanCutSummaryCandidates(deps, agent);
   try {
     const result = await generate(candidates, {
       ...baseOverrides,
@@ -272,12 +354,13 @@ async function generateCleanCutSummary(
     });
     return { summary: result.summary.trim(), summaryModel };
   } catch (error) {
-    // Only the agent's own provider and account are tried: summarising on
-    // another would bill an account the conversation never used.
+    // Unless the owner configured a summary model elsewhere, only the agent's
+    // own provider and account are tried: summarising on another would bill
+    // an account the conversation never used.
     const detail = error instanceof Error ? error.message : String(error);
     deps.logger.warn(
       { err: error, agentId: agent.id, provider: agent.provider },
-      "Clean cut summary failed on every candidate of the agent's provider",
+      "Clean cut summary failed on every candidate",
     );
     throw new Error(
       `Could not write the clean cut summary on ${agent.provider} ` +
@@ -308,7 +391,11 @@ export type CleanCutOutcome = "cut" | "unchanged";
  */
 export async function runCleanCut(
   deps: CleanCutDeps,
-  input: { agentId: string; target: CleanCutTarget; reason?: CleanCutMarker["reason"] },
+  input: {
+    agentId: string;
+    target: CleanCutTarget;
+    reason?: CleanCutMarker["reason"];
+  },
 ): Promise<CleanCutOutcome> {
   const agent = deps.agentManager.getAgent(input.agentId);
   if (!agent) {
