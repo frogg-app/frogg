@@ -2835,7 +2835,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     zIndex: 3,
     ...theme.shadow.md,
   },
-  sidebarRowSelected: resolveShellDesign(theme, rt.themeName).selected,
+  sidebarRowSelected: { ...resolveShellDesign(theme, rt.themeName).selected },
   workspaceRowContainer: {
     position: "relative",
   },

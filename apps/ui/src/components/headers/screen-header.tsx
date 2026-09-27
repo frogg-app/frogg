@@ -15,6 +15,7 @@ import {
   TitlebarDragRegion,
   titlebarDragSurfaceStyle,
 } from "@/components/desktop/titlebar-drag-region";
+import { resolveShellDesign } from "@/components/sidebar/shell-design";
 
 interface ScreenHeaderProps {
   left?: ReactNode;
@@ -64,6 +65,7 @@ export function ScreenHeader({
   const rowStyle = useMemo(
     () => [
       styles.row,
+      styles.rowDesign,
       borderless && styles.borderless,
       isWindowChromeHeader && (titlebarDragSurfaceStyle as ViewStyle),
     ],
@@ -91,7 +93,7 @@ export function ScreenHeader({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   header: {
     backgroundColor: theme.colors.surface0,
   },
@@ -108,6 +110,12 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: theme.borderWidth[1],
     borderBottomColor: theme.colors.border,
     userSelect: "none",
+  },
+  // The direction's header edge; a sibling of `row` because `row` has breakpoints.
+  rowDesign: {
+    borderBottomColor: resolveShellDesign(theme, rt.themeName).headerBorder
+      ? theme.colors.border
+      : "transparent",
   },
   left: {
     flex: 1,

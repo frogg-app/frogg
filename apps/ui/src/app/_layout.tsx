@@ -44,9 +44,11 @@ import { WindowTitlebarDragStrip } from "@/components/desktop/titlebar-drag-regi
 import {
   AppFrameContent,
   AppFrameRow,
-  resolveAppFrameBackground,
+  appFrameSidebarOffset,
+  appSurfaceStyle,
 } from "@/components/desktop/app-frame";
 import { SidebarModelProvider } from "@/components/sidebar/sidebar-model";
+import { themeOf } from "@/styles/design-theme";
 import { WorkspacePinShortcutHandler } from "@/components/workspace-pin-shortcut-handler";
 import { WorkspaceRenameHost } from "@/components/workspace-rename-host";
 import { CompactExplorerSidebarHost } from "@/components/compact-explorer-sidebar-host";
@@ -564,7 +566,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
   );
 
   const surface = (
-    <View style={layoutStyles.appSurface(!isCompactLayout)}>
+    <View style={isCompactLayout ? layoutStyles.surfaceFill : layoutStyles.appSurfaceFramed}>
       <WindowTitlebarDragStrip />
       {workspaceChrome}
       {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
@@ -960,20 +962,18 @@ export default function RootLayout() {
   );
 }
 
-const layoutStyles = StyleSheet.create((theme) => ({
+const layoutStyles = StyleSheet.create((theme, rt) => ({
   surfaceFill: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
   },
   // Behind a framed layout (inset/floating) the window itself is the frame colour.
-  appSurface: (framed: boolean) => ({
-    flex: 1,
-    backgroundColor: framed ? resolveAppFrameBackground(theme) : theme.colors.surface0,
-  }),
+  appSurfaceFramed: { ...appSurfaceStyle(theme, themeOf(rt.themeName)) },
+  // Desktop only; follows the sidebar's brand row when a frame insets the sidebar.
   windowSidebarToggle: {
     position: "absolute",
-    top: 1,
-    left: 0,
+    top: 1 + appFrameSidebarOffset(themeOf(rt.themeName)).top,
+    left: appFrameSidebarOffset(themeOf(rt.themeName)).left,
     zIndex: 20,
     height: HEADER_INNER_HEIGHT,
     flexDirection: "row",
