@@ -6982,6 +6982,9 @@
                                         },
                                         "summaryModel": {
                                           "type": "string"
+                                        },
+                                        "reason": {
+                                          "type": "string"
                                         }
                                       },
                                       "required": [
@@ -14466,6 +14469,9 @@
                                           "type": "string"
                                         },
                                         "summaryModel": {
+                                          "type": "string"
+                                        },
+                                        "reason": {
                                           "type": "string"
                                         }
                                       },
@@ -25431,6 +25437,9 @@
                                       },
                                       "summaryModel": {
                                         "type": "string"
+                                      },
+                                      "reason": {
+                                        "type": "string"
                                       }
                                     },
                                     "required": [
@@ -28089,6 +28098,9 @@
                                       },
                                       "summaryModel": {
                                         "type": "string"
+                                      },
+                                      "reason": {
+                                        "type": "string"
                                       }
                                     },
                                     "required": [
@@ -30516,6 +30528,9 @@
                                       "type": "string"
                                     },
                                     "summaryModel": {
+                                      "type": "string"
+                                    },
+                                    "reason": {
                                       "type": "string"
                                     }
                                   },

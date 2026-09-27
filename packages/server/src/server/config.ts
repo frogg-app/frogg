@@ -825,6 +825,9 @@ export function resolveConfigFromPersisted(
     hostSettingsHiddenSections,
     autoUpdate,
     enableTerminalAgentHooks: persisted.daemon?.enableTerminalAgentHooks ?? false,
+    // On by default: it only acts on providers with a known prompt-cache TTL
+    // and only once that cache has expired, where a summary is the cheaper resume.
+    autoCleanCutOnColdCache: persisted.daemon?.autoCleanCutOnColdCache !== false,
     appendSystemPrompt,
     terminalProfiles,
     mcpDebug: env.MCP_DEBUG === "1",

@@ -114,4 +114,31 @@ describe("interrupted turn persistence and resume", () => {
       expect(agent.interruptedTurn ?? null).toBeNull();
     }
   });
+
+  test("runs the pre-resume step with the interruption time and resumes even if it fails", async () => {
+    const at = "2026-09-13T11:59:00.000Z";
+    await storage.upsert(record("a", { interruptedTurn: { at, reason: "daemon_restart" } }));
+    const order: string[] = [];
+    const beforeResume = vi.fn(async (agentId: string) => {
+      order.push(`before:${agentId}`);
+      throw new Error("summariser down");
+    });
+    const sendPrompt = vi.fn(async (params: { agentId: string }) => {
+      order.push(`send:${params.agentId}`);
+      return { disposition: "turn_started" as const };
+    });
+
+    const resumed = await resumeInterruptedAgents({
+      agentManager: { getAgent: (id: string) => ({ id }) } as unknown as AgentManager,
+      agentStorage: storage,
+      logger: createTestLogger(),
+      now: () => NOW,
+      sendPrompt: sendPrompt as never,
+      beforeResume,
+    });
+
+    expect(resumed).toEqual(["a"]);
+    expect(beforeResume).toHaveBeenCalledWith("a", new Date(at));
+    expect(order).toEqual(["before:a", "send:a"]);
+  });
 });

@@ -307,7 +307,7 @@ function movesAgent(agent: ManagedAgent, target: CleanCutTarget): boolean {
  */
 export async function runCleanCut(
   deps: CleanCutDeps,
-  input: { agentId: string; target: CleanCutTarget },
+  input: { agentId: string; target: CleanCutTarget; reason?: CleanCutMarker["reason"] },
 ): Promise<void> {
   const agent = deps.agentManager.getAgent(input.agentId);
   if (!agent) {
@@ -362,6 +362,7 @@ export async function runCleanCut(
     provider: next.provider,
     ...(next.config.model ? { model: next.config.model } : {}),
     ...(summaryModel ? { summaryModel } : {}),
+    reason: input.reason ?? "manual",
   };
   await deps.agentManager.appendTimelineItem(input.agentId, {
     type: "compaction",
@@ -377,6 +378,7 @@ export async function runCleanCut(
       transcriptChars,
       summaryChars: summary.length,
       summaryModel,
+      reason: marker.reason,
     },
     "Clean cut completed",
   );
