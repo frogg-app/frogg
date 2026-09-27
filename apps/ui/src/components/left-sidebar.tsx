@@ -24,6 +24,7 @@ import {
   SIDEBAR_RESIZE_FAIL_OFFSET,
 } from "@/components/sidebar-resize-handle-layout";
 import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
+import { APP_FRAME_GAP } from "@/components/desktop/app-frame";
 import { SidebarDisplayPreferencesMenu } from "@/components/sidebar/display-preferences/menu";
 import { SidebarWorkspaceDrafts } from "@/components/sidebar/sidebar-workspace-drafts";
 import { SidebarBrandHeader } from "@/components/sidebar/sidebar-brand-header";
@@ -297,6 +298,37 @@ function SidebarFooter({
   );
 }
 
+const MOBILE_FLOATING_DRAWER_PEEK = 48;
+
+/**
+ * A floating frame (Soft) draws the mobile drawer as a rounded card held off the screen edges and
+ * the safe area by the frame gap, leaving a strip of the dimmed page visible on the right as the
+ * tap-to-close target. Overrides the overlay panel's full-bleed geometry; its slide transform is
+ * unchanged.
+ */
+function mobileFloatingDrawerStyle({
+  insetsTop,
+  insetsBottom,
+  windowWidth,
+  radius,
+  backgroundColor,
+}: {
+  insetsTop: number;
+  insetsBottom: number;
+  windowWidth: number;
+  radius: number;
+  backgroundColor: string;
+}) {
+  return {
+    top: insetsTop + APP_FRAME_GAP,
+    bottom: insetsBottom + APP_FRAME_GAP,
+    left: APP_FRAME_GAP,
+    width: windowWidth - APP_FRAME_GAP - MOBILE_FLOATING_DRAWER_PEEK,
+    borderRadius: radius,
+    backgroundColor,
+  };
+}
+
 function MobileSidebar({
   active,
   theme,
@@ -333,13 +365,25 @@ function MobileSidebar({
     closeSidebar();
   }, [closeSidebar]);
 
+  const { width: windowWidth } = useWindowDimensions();
+  const floating = theme.design.frame === "floating";
+  const floatingRadius = theme.borderRadius["2xl"];
   const mobileSidebarInsetStyle = useMemo(
-    () => ({
-      paddingTop: insetsTop,
-      paddingBottom: insetsBottom,
-      backgroundColor: theme.colors.surfaceSidebar,
-    }),
-    [insetsTop, insetsBottom, theme.colors.surfaceSidebar],
+    () =>
+      floating
+        ? mobileFloatingDrawerStyle({
+            insetsTop,
+            insetsBottom,
+            windowWidth,
+            radius: floatingRadius,
+            backgroundColor: theme.colors.surfaceSidebar,
+          })
+        : {
+            paddingTop: insetsTop,
+            paddingBottom: insetsBottom,
+            backgroundColor: theme.colors.surfaceSidebar,
+          },
+    [floating, floatingRadius, insetsTop, insetsBottom, theme.colors.surfaceSidebar, windowWidth],
   );
 
   return (
@@ -697,7 +741,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.surfaceSidebar,
   },
-  desktopSidebarBorder: desktopSidebarSurface(theme, rt.themeName),
+  desktopSidebarBorder: { ...desktopSidebarSurface(theme, rt.themeName) },
   sidebarDragArea: {
     position: "relative",
   },

@@ -85,7 +85,7 @@ function resolveShellDesignBase(theme: Theme, real: RealTheme): ShellDesign {
   const { colors, fontSize, spacing } = theme;
   const { design, borderRadius } = real;
   const base: ShellDesign = {
-    row: { minHeight: 36, paddingVertical: spacing[2], borderRadius: theme.borderRadius.lg },
+    row: { minHeight: 36, paddingVertical: spacing[2], borderRadius: borderRadius.lg },
     rowPaddingHorizontal: spacing[2],
     rowText: { fontSize: fontSize.base, fontWeight: "400" },
     rowTextLineHeight: 20,
