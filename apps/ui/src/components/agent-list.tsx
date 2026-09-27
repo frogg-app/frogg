@@ -25,8 +25,11 @@ import { HighlightedText } from "@/components/ui/highlighted-text";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import type { AgentSearchMatch } from "@frogg/protocol/messages";
 import type { MatchRange } from "@frogg/protocol/search/text-match";
-import { CODE_SURFACE_DATASET, DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import type { Theme } from "@/styles/theme";
+import { themeOf } from "@/styles/design-theme";
+import { designTextFont } from "@/styles/settings-treatment";
+import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 interface AgentListProps {
   agents: AggregatedAgent[];
@@ -227,6 +230,7 @@ function SessionRow({
   onLongPress: (agent: AggregatedAgent) => void;
 }) {
   const { theme } = useUnistyles();
+  const metaDataSet = usePanelMetaDataSet();
   const { t } = useTranslation();
   const timeAgo = formatTimeAgo(agent.lastActivityAt);
   const agentKey = `${agent.serverId}:${agent.id}`;
@@ -326,7 +330,9 @@ function SessionRow({
               testID={`agent-row-workspace-${agent.serverId}-${agent.id}`}
             />
             <Text style={styles.sessionMetaSeparator}>·</Text>
-            <Text style={styles.sessionMetaText}>{timeAgo}</Text>
+            <Text style={styles.sessionMetaTime} dataSet={metaDataSet}>
+              {timeAgo}
+            </Text>
             {showHostColumn && agent.serverLabel ? (
               <>
                 <Text style={styles.sessionMetaSeparator}>·</Text>
@@ -341,7 +347,7 @@ function SessionRow({
       {!isMobile ? (
         <View
           style={styles.rowColumns}
-          dataSet={theme.design.monoMeta ? CODE_SURFACE_DATASET : undefined}
+          dataSet={metaDataSet}
         >
           <HighlightedText
             text={projectName}
@@ -604,7 +610,7 @@ export function AgentList({
 const SECTION_TITLE = {
   current: { size: "base", weight: "500", transform: "none", spacing: 0 },
   inset: { size: "sm", weight: "500", transform: "none", spacing: 0 },
-  mono: { size: "sm", weight: "500", transform: "uppercase", spacing: 0.6 },
+  mono: { size: "xs", weight: "500", transform: "uppercase", spacing: 0.8 },
   paper: { size: "xl", weight: "500", transform: "none", spacing: -0.2 },
   focus: { size: "sm", weight: "500", transform: "none", spacing: 0 },
   soft: { size: "lg", weight: "700", transform: "none", spacing: -0.2 },
@@ -618,6 +624,9 @@ const ROW_PADDING = {
   focus: 3,
   soft: 3,
 } as const;
+
+// Every direction-dependent value below reads the REAL theme (`themeOf(rt.themeName)`, referenced
+// inside the style value) so a live direction switch on web recomputes it.
 
 function rowShape(theme: Theme) {
   const variant = theme.design.variant;
@@ -652,10 +661,30 @@ function metaFont(theme: Theme, size: number) {
     : { fontSize: size };
 }
 
-const styles = StyleSheet.create((theme) => {
-  const section = SECTION_TITLE[theme.design.variant] ?? SECTION_TITLE.current;
-  const inset = theme.design.variant === "inset";
-  const rowText = inset ? 13 : theme.fontSize.base;
+function sectionTitleFont(theme: Theme) {
+  const spec = SECTION_TITLE[theme.design.variant] ?? SECTION_TITLE.current;
+  const face =
+    theme.design.variant === "mono"
+      ? designTextFont(theme, theme.design.monoFontFamily)
+      : designTextFont(theme, theme.design.headingFontFamily);
+  return {
+    ...face,
+    fontSize: theme.fontSize[spec.size],
+    fontWeight: spec.weight,
+    textTransform: spec.transform,
+    letterSpacing: spec.spacing,
+    color:
+      theme.design.variant === "paper" || theme.design.variant === "soft"
+        ? theme.colors.foreground
+        : theme.colors.foregroundMuted,
+  };
+}
+
+function rowTextSize(theme: Theme): number {
+  return theme.design.variant === "inset" ? 13 : theme.fontSize.base;
+}
+
+const styles = StyleSheet.create((theme, rt) => {
   return {
     list: {
       flex: 1,
@@ -663,7 +692,7 @@ const styles = StyleSheet.create((theme) => {
     },
     listContent: {
       width: "100%",
-      maxWidth: theme.design.contentMaxWidth ?? undefined,
+      maxWidth: themeOf(rt.themeName).design.contentMaxWidth ?? undefined,
       alignSelf: "center",
       paddingHorizontal: {
         xs: theme.spacing[3],
@@ -671,10 +700,11 @@ const styles = StyleSheet.create((theme) => {
       },
       paddingTop: theme.spacing[4],
       paddingBottom: theme.spacing[6],
-      gap: theme.design.variant === "mono" ? 0 : theme.spacing[1],
+      gap: themeOf(rt.themeName).design.variant === "mono" ? 0 : theme.spacing[1],
     },
     sectionHeading: {
-      marginTop: theme.design.variant === "current" ? theme.spacing[2] : theme.spacing[4],
+      marginTop:
+        themeOf(rt.themeName).design.variant === "current" ? theme.spacing[2] : theme.spacing[4],
       flexDirection: "row",
       alignItems: "center",
       gap: theme.spacing[3],
@@ -682,25 +712,17 @@ const styles = StyleSheet.create((theme) => {
       marginBottom: theme.spacing[2],
     },
     sectionTitle: {
-      fontSize: theme.fontSize[section.size],
-      fontWeight: section.weight,
-      textTransform: section.transform,
-      letterSpacing: section.spacing,
-      fontFamily:
-        theme.design.variant === "mono"
-          ? theme.design.monoFontFamily
-          : theme.design.headingFontFamily,
-      color:
-        theme.design.variant === "paper" || theme.design.variant === "soft"
-          ? theme.colors.foreground
-          : theme.colors.foregroundMuted,
+      ...sectionTitleFont(themeOf(rt.themeName)),
     },
     row: {
       flexDirection: "row",
       alignItems: "center",
-      paddingVertical: theme.spacing[ROW_PADDING[theme.design.variant] ?? ROW_PADDING.current],
+      paddingVertical:
+        theme.spacing[
+          ROW_PADDING[themeOf(rt.themeName).design.variant] ?? ROW_PADDING.current
+        ],
       paddingHorizontal: theme.spacing[3],
-      ...rowShape(theme),
+      ...rowShape(themeOf(rt.themeName)),
     },
     rowContent: {
       flex: 1,
@@ -747,7 +769,7 @@ const styles = StyleSheet.create((theme) => {
     sessionTitle: {
       flexShrink: 1,
       minWidth: 0,
-      fontSize: rowText,
+      fontSize: rowTextSize(themeOf(rt.themeName)),
       fontWeight: "400",
       color: theme.colors.foreground,
       opacity: 0.86,
@@ -757,8 +779,12 @@ const styles = StyleSheet.create((theme) => {
     },
     sessionMetaText: {
       maxWidth: "100%",
-      fontSize: rowText,
+      fontSize: rowTextSize(themeOf(rt.themeName)),
       color: theme.colors.foregroundMuted,
+    },
+    sessionMetaTime: {
+      color: theme.colors.foregroundMuted,
+      ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
     },
     sessionMetaSeparator: {
       fontSize: theme.fontSize.base,
@@ -772,28 +798,30 @@ const styles = StyleSheet.create((theme) => {
       gap: theme.spacing[3],
     },
     columnMetaProject: {
-      fontSize: rowText,
+      fontSize: rowTextSize(themeOf(rt.themeName)),
       // Inside the mono-tagged columns the web UI-font rule no longer reaches the project name.
-      fontFamily: theme.design.monoMeta ? theme.design.uiFontFamily : undefined,
+      fontFamily: themeOf(rt.themeName).design.monoMeta
+        ? themeOf(rt.themeName).design.uiFontFamily
+        : undefined,
       color: theme.colors.foregroundMuted,
       flexShrink: 0,
       width: 132,
     },
     columnMetaBranch: {
-      ...metaFont(theme, rowText),
+      ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
       color: theme.colors.foregroundMuted,
       flexShrink: 0,
       width: 132,
     },
     columnMetaFixed: {
-      ...metaFont(theme, rowText),
+      ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
       color: theme.colors.foregroundMuted,
       flexShrink: 0,
       width: 72,
       textAlign: "right" as const,
     },
     columnMetaHost: {
-      ...metaFont(theme, rowText),
+      ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
       color: theme.colors.foregroundMuted,
       flexShrink: 0,
       width: 120,

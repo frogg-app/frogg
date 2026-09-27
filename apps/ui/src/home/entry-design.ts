@@ -45,12 +45,13 @@ export function entryTitleBlock(theme: Theme): ViewFragment {
   return { alignItems: "center", paddingLeft: 0, paddingRight: 0 };
 }
 
+const COLUMN_WIDTH = { inset: 520, mono: 600, paper: 560, focus: 560, soft: 560 } as const;
+
 /** Column width for the form-like entry screens (pairing, host add, welcome actions). */
 export function entryColumn(theme: Theme): ViewFragment {
   const variant = theme.design.variant;
   if (variant === "current") return {};
-  const maxWidth = variant === "inset" ? 520 : variant === "mono" ? 600 : 560;
-  return { width: "100%", maxWidth, alignSelf: "center" };
+  return { width: "100%", maxWidth: COLUMN_WIDTH[variant], alignSelf: "center" };
 }
 
 /**
