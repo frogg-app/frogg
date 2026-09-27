@@ -1,14 +1,7 @@
 import { ArrowUp } from "lucide-react-native";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  ActivityIndicator,
-  Pressable,
-  TextInput,
-  View,
-  type NativeSyntheticEvent,
-  type TextInputKeyPressEventData,
-} from "react-native";
+import { ActivityIndicator, Pressable, TextInput, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
 import { useSoftStartChat } from "./use-soft-start-chat";
@@ -33,25 +26,18 @@ export function SoftPillComposer({ serverId }: { serverId: string | null }) {
   const send = useCallback(() => {
     if (canSend) submit?.();
   }, [canSend, submit]);
-  // Enter sends on web/desktop; Shift+Enter keeps a newline.
-  const handleKeyPress = useCallback(
-    (event: NativeSyntheticEvent<TextInputKeyPressEventData & { shiftKey?: boolean }>) => {
-      if (event.nativeEvent.key !== "Enter" || event.nativeEvent.shiftKey) return;
-      event.preventDefault();
-      send();
-    },
-    [send],
-  );
+  const sendState = useMemo(() => ({ disabled: !canSend, busy: isPending }), [canSend, isPending]);
   return (
     <View style={styles.pill} testID="soft-home-composer">
       <ThemedInput
         style={styles.input}
         value={text}
         onChangeText={setText}
-        onKeyPress={handleKeyPress}
+        onSubmitEditing={send}
+        returnKeyType="send"
+        submitBehavior="submit"
         placeholder={t("newChat.placeholder")}
         uniProps={placeholderMapping}
-        multiline
         editable={!isPending}
         accessibilityLabel={t("newChat.placeholder")}
         testID="soft-home-composer-input"
@@ -62,7 +48,7 @@ export function SoftPillComposer({ serverId }: { serverId: string | null }) {
         style={canSend ? styles.send : sendDisabledStyle()}
         accessibilityRole="button"
         accessibilityLabel={t("newChat.send")}
-        accessibilityState={{ disabled: !canSend, busy: isPending }}
+        accessibilityState={sendState}
         testID="soft-home-composer-send"
       >
         {isPending ? (
@@ -78,21 +64,18 @@ export function SoftPillComposer({ serverId }: { serverId: string | null }) {
 const styles = StyleSheet.create((theme, rt) => ({
   pill: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: 8,
     paddingLeft: 20,
     paddingRight: 6,
     paddingVertical: 6,
     borderRadius: 28,
-    ...softRaised(rt.themeName, "lg"),
+    ...softRaised(rt.themeName, "md"),
     ...softEdge(rt.themeName),
   },
   input: {
     flex: 1,
-    minHeight: 40,
-    maxHeight: 140,
-    paddingTop: 10,
-    paddingBottom: 10,
+    height: 40,
     fontSize: 16,
     fontFamily: theme.fontFamily.ui,
     color: theme.colors.foreground,

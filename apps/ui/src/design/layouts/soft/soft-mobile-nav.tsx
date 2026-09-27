@@ -149,8 +149,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   wrap: {
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: 6,
-    backgroundColor: theme.colors.surface0,
+    paddingTop: 2,
   },
   bar: {
     flexDirection: "row",

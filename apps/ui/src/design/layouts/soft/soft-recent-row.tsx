@@ -13,10 +13,10 @@ type HoverState = PressableStateCallbackType & { hovered?: boolean };
 const VIEW_CHAT = "View chat";
 
 function subtitleOf(recent: SoftRecent): string {
-  const place = recent.projectName
-    ? [recent.projectName, recent.branch].filter(Boolean).join(" · ")
-    : "Chat"; // preview copy
-  return place;
+  if (!recent.projectName) return "Chat"; // preview copy
+  // A session is often titled by its branch; do not say it twice.
+  const branch = recent.branch && recent.branch !== recent.title ? recent.branch : null;
+  return branch ? `${recent.projectName} · ${branch}` : recent.projectName;
 }
 
 /**

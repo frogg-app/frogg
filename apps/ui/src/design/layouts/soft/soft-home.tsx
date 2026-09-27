@@ -1,17 +1,15 @@
-import { Search, Settings } from "lucide-react-native";
+import { Menu, Search } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet } from "react-native-unistyles";
-import { router } from "expo-router";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import { SegmentedControl, type SegmentedControlOption } from "@/components/ui/segmented-control";
 import { useIsCompactFormFactor } from "@/constants/layout";
 import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
 import { usePanelStore } from "@/stores/panel-store";
 import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
-import { buildSettingsRoute } from "@/utils/host-routes";
 import { useSoftChatServerId, useSoftProjects, useSoftRecents } from "./soft-data";
 import { SoftChatList, SoftProjectList } from "./soft-lists";
 import { SoftPillComposer } from "./soft-pill-composer";
@@ -34,8 +32,8 @@ export function useSoftSegmentOptions(): SegmentedControlOption<SoftSegment>[] {
 }
 
 /**
- * The soft home. Compact (Perplexity/ChatGPT iOS): round buttons either side of a pill
- * segmented control, the recent list, and a floating pill composer pinned above the tab bar.
+ * The soft home. Compact (Perplexity/ChatGPT iOS): round menu and search buttons either side of
+ * a pill segmented control, the recent list, and a floating pill composer pinned above the tab bar.
  * Wide: the same pieces as a centred column that leads with a bold prompt and the composer.
  */
 export function SoftHome() {
@@ -49,6 +47,7 @@ export function SoftHome() {
   const chatServerId = useSoftChatServerId();
   const setCommandCenterOpen = useKeyboardShortcutsStore((state) => state.setCommandCenterOpen);
   const openDesktopAgentList = usePanelStore((state) => state.openDesktopAgentList);
+  const toggleMobileAgentList = usePanelStore((state) => state.toggleMobileAgentList);
 
   // Like the shipping home: arriving here on desktop brings the sidebar back.
   useEffect(() => {
@@ -58,7 +57,6 @@ export function SoftHome() {
   // The top bar clears the status bar itself: the soft home has no shipping header above it.
   const topBarInset = useMemo(() => ({ paddingTop: insets.top + 10 }), [insets.top]);
   const openSearch = useCallback(() => setCommandCenterOpen(true), [setCommandCenterOpen]);
-  const openSettings = useCallback(() => router.push(buildSettingsRoute()), []);
 
   const list =
     segment === "chats" ? (
@@ -71,7 +69,7 @@ export function SoftHome() {
     return (
       <View style={styles.screen} testID="soft-home">
         <View style={[styles.topBar, topBarInset]}>
-          <SoftRoundButton icon={Settings} label={t("sidebar.actions.settings")} onPress={openSettings} />
+          <SoftRoundButton icon={Menu} label={t("shell.menu.open")} onPress={toggleMobileAgentList} />
           <SegmentedControl options={options} value={segment} onValueChange={setSegment} size="md" />
           <SoftRoundButton icon={Search} label={t("sidebar.sections.search")} onPress={openSearch} />
         </View>
