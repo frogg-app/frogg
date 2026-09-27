@@ -35,9 +35,17 @@ const COPY = {
   noProject: "No project",
 };
 
-export function ChatsFilterBar({ rows, compact }: { rows: readonly MonoChatRow[]; compact: boolean }) {
+export function ChatsFilterBar({
+  rows,
+  compact,
+}: {
+  rows: readonly MonoChatRow[];
+  compact: boolean;
+}) {
   const query = useMonoScope((state) => state.query);
   const setQuery = useMonoScope((state) => state.setQuery);
+  // The field is uncontrolled; "Clear filters" bumps the token to remount it empty.
+  const resetToken = useMonoScope((state) => state.resetToken);
   const pickers = (
     <>
       <StatusPicker rows={rows} />
@@ -50,7 +58,10 @@ export function ChatsFilterBar({ rows, compact }: { rows: readonly MonoChatRow[]
       <View style={compact ? styles.search : styles.searchWide}>
         {SEARCH_ICON}
         <ThemedTextInput
-          value={query}
+          key={resetToken}
+          initialValue={query}
+          autoCapitalize="none"
+          autoCorrect={false}
           onChangeText={setQuery}
           placeholder={COPY.search}
           accessibilityLabel={COPY.search}
@@ -128,7 +139,11 @@ function StatusPicker({ rows }: { rows: readonly MonoChatRow[] }) {
   );
   const clear = useCallback(() => setStatus(null), [setStatus]);
   return (
-    <Picker label={status ? MONO_STATUS_LABEL[status] : COPY.allStatuses} leading={leading} testID="mono-filter-status">
+    <Picker
+      label={status ? MONO_STATUS_LABEL[status] : COPY.allStatuses}
+      leading={leading}
+      testID="mono-filter-status"
+    >
       <MenuItem selected={status === null} showSelectedCheck onSelect={clear}>
         {COPY.allStatuses}
       </MenuItem>
@@ -160,7 +175,13 @@ function StatusOption({
   const leading = useMemo(() => <StatusDot bucket={bucket} />, [bucket]);
   const trailing = useMemo(() => <MonoText tone="faint">{count}</MonoText>, [count]);
   return (
-    <MenuItem selected={selected} showSelectedCheck leading={leading} trailing={trailing} onSelect={handle}>
+    <MenuItem
+      selected={selected}
+      showSelectedCheck
+      leading={leading}
+      trailing={trailing}
+      onSelect={handle}
+    >
       {MONO_STATUS_LABEL[bucket]}
     </MenuItem>
   );
@@ -197,9 +218,20 @@ function ProjectPicker({ rows }: { rows: readonly MonoChatRow[] }) {
   const names = useMemo(() => distinct(rows.map((row) => row.projectName)), [rows]);
   return (
     <Picker label={projectName ?? COPY.allProjects} testID="mono-filter-project">
-      <ValueOption value={null} label={COPY.allProjects} selected={projectName === null} onSelect={setProjectName} />
+      <ValueOption
+        value={null}
+        label={COPY.allProjects}
+        selected={projectName === null}
+        onSelect={setProjectName}
+      />
       {names.map((name) => (
-        <ValueOption key={name} value={name} label={name} selected={projectName === name} onSelect={setProjectName} />
+        <ValueOption
+          key={name}
+          value={name}
+          label={name}
+          selected={projectName === name}
+          onSelect={setProjectName}
+        />
       ))}
     </Picker>
   );
@@ -211,9 +243,20 @@ function BranchPicker({ rows }: { rows: readonly MonoChatRow[] }) {
   const branches = useMemo(() => distinct(rows.map((row) => row.branch)), [rows]);
   return (
     <Picker label={branch ?? COPY.allBranches} leading={BRANCH_ICON} testID="mono-filter-branch">
-      <ValueOption value={null} label={COPY.allBranches} selected={branch === null} onSelect={setBranch} />
+      <ValueOption
+        value={null}
+        label={COPY.allBranches}
+        selected={branch === null}
+        onSelect={setBranch}
+      />
       {branches.map((name) => (
-        <ValueOption key={name} value={name} label={name} selected={branch === name} onSelect={setBranch} />
+        <ValueOption
+          key={name}
+          value={name}
+          label={name}
+          selected={branch === name}
+          onSelect={setBranch}
+        />
       ))}
     </Picker>
   );
@@ -256,7 +299,7 @@ const styles = StyleSheet.create((theme) => ({
     height: 34,
     fontSize: 13,
     color: theme.colors.foreground,
-    outlineStyle: "none",
+    outlineWidth: 0,
   },
   pickers: {
     flexDirection: "row",

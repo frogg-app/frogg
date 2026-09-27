@@ -5,7 +5,14 @@ import { useTranslation } from "react-i18next";
 import { Text } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { HostStatusDot } from "@/components/host-status-dot";
-import { MenuItem, MenuLabel, MenuRoot, MenuSeparator, MenuSurface, MenuTrigger } from "@/components/ui/menu";
+import {
+  MenuItem,
+  MenuLabel,
+  MenuRoot,
+  MenuSeparator,
+  MenuSurface,
+  MenuTrigger,
+} from "@/components/ui/menu";
 import type { MenuTriggerState } from "@/components/ui/menu/menu-root";
 import { useOpenAddProject } from "@/hooks/use-open-add-project";
 import { openHostSettings } from "@/navigation/settings-navigation";
@@ -116,7 +123,15 @@ export function HostCrumb({ activeServerId }: { activeServerId: string | null })
   );
 }
 
-function HostItem({ serverId, label, selected }: { serverId: string; label: string; selected: boolean }) {
+function HostItem({
+  serverId,
+  label,
+  selected,
+}: {
+  serverId: string;
+  label: string;
+  selected: boolean;
+}) {
   const setServerId = useMonoScope((state) => state.setServerId);
   const onSelect = useCallback(() => {
     setServerId(serverId);
@@ -124,12 +139,7 @@ function HostItem({ serverId, label, selected }: { serverId: string; label: stri
   }, [serverId, setServerId]);
   const trailing = useMemo(() => <HostStatusDot serverId={serverId} />, [serverId]);
   return (
-    <MenuItem
-      selected={selected}
-      showSelectedCheck
-      trailing={trailing}
-      onSelect={onSelect}
-    >
+    <MenuItem selected={selected} showSelectedCheck trailing={trailing} onSelect={onSelect}>
       {label}
     </MenuItem>
   );
@@ -185,11 +195,7 @@ function ProjectItem({ project, selected }: { project: MonoProject; selected: bo
     router.push(buildOpenProjectRoute());
   }, [project.name, setProjectName]);
   const trailing = useMemo(
-    () => (
-      <MonoText tone="faint">
-        {project.workspaces.length}
-      </MonoText>
-    ),
+    () => <MonoText tone="faint">{project.workspaces.length}</MonoText>,
     [project.workspaces.length],
   );
   return (

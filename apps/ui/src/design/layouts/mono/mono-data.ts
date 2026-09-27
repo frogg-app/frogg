@@ -14,7 +14,10 @@ interface SessionSource {
 }
 
 function selectSources(state: {
-  sessions: Record<string, { agents: Map<string, Agent>; workspaces: Map<string, WorkspaceDescriptor> }>;
+  sessions: Record<
+    string,
+    { agents: Map<string, Agent>; workspaces: Map<string, WorkspaceDescriptor> }
+  >;
 }): SessionSource[] {
   return Object.entries(state.sessions).map(([serverId, session]) => ({
     serverId,

@@ -10,6 +10,7 @@ interface MonoScopeState {
   status: SidebarStateBucket | null;
   branch: string | null;
   query: string;
+  resetToken: number;
   setServerId: (serverId: string | null) => void;
   setProjectName: (projectName: string | null) => void;
   setStatus: (status: SidebarStateBucket | null) => void;
@@ -24,10 +25,18 @@ export const useMonoScope = create<MonoScopeState>()((set) => ({
   status: null,
   branch: null,
   query: "",
+  resetToken: 0,
   setServerId: (serverId) => set({ serverId, projectName: null, branch: null }),
   setProjectName: (projectName) => set({ projectName, branch: null }),
   setStatus: (status) => set({ status }),
   setBranch: (branch) => set({ branch }),
   setQuery: (query) => set({ query }),
-  clearFilters: () => set({ projectName: null, status: null, branch: null, query: "" }),
+  clearFilters: () =>
+    set((state) => ({
+      projectName: null,
+      status: null,
+      branch: null,
+      query: "",
+      resetToken: state.resetToken + 1,
+    })),
 }));

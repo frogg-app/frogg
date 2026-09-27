@@ -65,7 +65,10 @@ function MonoChatsDashboard({ rows, loading }: { rows: MonoChatRow[]; loading: b
     [filters.serverId, rows],
   );
   const visible = useMemo(() => scoped.filter((row) => matches(row, filters)), [filters, scoped]);
-  const runningCount = useMemo(() => scoped.filter((row) => row.bucket === "running").length, [scoped]);
+  const runningCount = useMemo(
+    () => scoped.filter((row) => row.bucket === "running").length,
+    [scoped],
+  );
   const now = useNow(runningCount > 0);
   const Row = compact ? ChatsListRow : ChatsTableRow;
 

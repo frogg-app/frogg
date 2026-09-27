@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronRight, FileDiff, GitBranch } from "lucide-react-native";
+import { ChevronDown, ChevronRight, FileDiff, Folder, GitBranch } from "lucide-react-native";
 import { useCallback, useState, type ReactNode } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -18,10 +18,12 @@ const ThemedDown = withUnistyles(ChevronDown);
 const ThemedRight = withUnistyles(ChevronRight);
 const ThemedBranch = withUnistyles(GitBranch);
 const ThemedDiff = withUnistyles(FileDiff);
+const ThemedFolder = withUnistyles(Folder);
 const DOWN_ICON = <ThemedDown size={14} uniProps={mutedIcon} />;
 const RIGHT_ICON = <ThemedRight size={14} uniProps={mutedIcon} />;
 const BRANCH_ICON = <ThemedBranch size={13} uniProps={mutedIcon} />;
 const DIFF_ICON = <ThemedDiff size={14} uniProps={mutedIcon} />;
+const FOLDER_ICON = <ThemedFolder size={13} uniProps={mutedIcon} />;
 
 // preview copy
 const COPY = {
@@ -31,7 +33,6 @@ const COPY = {
   created: "Created",
   source: "Source",
   model: "Model",
-  directory: "Directory",
   host: "Host",
   changes: "Changes",
   noBranch: "no branch",
@@ -138,17 +139,23 @@ function Details({ row }: { row: MonoChatRow }) {
         <Text style={styles.strong}>{formatTimeAgo(row.createdAt, new Date(now))}</Text>
         <Text style={styles.muted}>{row.hostLabel}</Text>
       </Field>
-      <Field label={COPY.source}>
-        {BRANCH_ICON}
-        <MonoText tone="strong" numberOfLines={1}>
-          {row.branch ?? row.workspaceName ?? COPY.noBranch}
-        </MonoText>
-      </Field>
       <View style={styles.fieldWide}>
-        <Text style={styles.label}>{COPY.directory}</Text>
-        <MonoText tone="muted" numberOfLines={1} selectable>
-          {row.cwd}
-        </MonoText>
+        <Text style={styles.label}>{COPY.source}</Text>
+        <View style={styles.value}>
+          {BRANCH_ICON}
+          <MonoText tone="strong" numberOfLines={1}>
+            {row.branch ?? row.workspaceName ?? COPY.noBranch}
+          </MonoText>
+          <DiffStat stat={row.diffStat} />
+        </View>
+        <View style={styles.value}>
+          {FOLDER_ICON}
+          <View style={styles.shrink}>
+            <MonoText tone="muted" numberOfLines={1} selectable>
+              {row.cwd}
+            </MonoText>
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -229,6 +236,10 @@ const styles = StyleSheet.create((theme) => ({
     minWidth: { xs: 130, md: 150 },
     flexGrow: 1,
     flexBasis: { xs: "40%", md: 0 },
+  },
+  shrink: {
+    flexShrink: 1,
+    minWidth: 0,
   },
   fieldWide: {
     gap: 6,

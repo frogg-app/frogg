@@ -41,7 +41,12 @@ interface RowProps {
 
 function useOpen(row: MonoChatRow) {
   return useCallback(
-    () => navigateToAgent({ serverId: row.serverId, agentId: row.agentId, workspaceId: row.workspaceId }),
+    () =>
+      navigateToAgent({
+        serverId: row.serverId,
+        agentId: row.agentId,
+        workspaceId: row.workspaceId,
+      }),
     [row.agentId, row.serverId, row.workspaceId],
   );
 }
@@ -55,7 +60,11 @@ export const ChatsTableRow = memo(function ChatsTableRow({ row, now, first }: Ro
   const open = useOpen(row);
   const duration = durationLabel(row, now);
   return (
-    <Pressable onPress={open} style={first ? firstRowStyle : rowStyle} testID={`mono-chat-row-${row.agentId}`}>
+    <Pressable
+      onPress={open}
+      style={first ? firstRowStyle : rowStyle}
+      testID={`mono-chat-row-${row.agentId}`}
+    >
       <View style={styles.colId}>
         <MonoText tone="strong" numberOfLines={1}>
           {row.shortId}
@@ -110,7 +119,11 @@ export const ChatsListRow = memo(function ChatsListRow({ row, now, first }: RowP
   const open = useOpen(row);
   const duration = durationLabel(row, now);
   return (
-    <Pressable onPress={open} style={first ? firstRowStyle : rowStyle} testID={`mono-chat-row-${row.agentId}`}>
+    <Pressable
+      onPress={open}
+      style={first ? firstRowStyle : rowStyle}
+      testID={`mono-chat-row-${row.agentId}`}
+    >
       <View style={styles.stack}>
         <View style={styles.inline}>
           <StatusDot bucket={row.bucket} />

@@ -25,7 +25,13 @@ export const MONO_STATUS_ORDER: readonly SidebarStateBucket[] = [
   "done",
 ];
 
-export function StatusDot({ bucket, size = "sm" }: { bucket: SidebarStateBucket; size?: "sm" | "lg" }) {
+export function StatusDot({
+  bucket,
+  size = "sm",
+}: {
+  bucket: SidebarStateBucket;
+  size?: "sm" | "lg";
+}) {
   styles.useVariants({ bucket, size });
   return <View style={styles.dot} />;
 }

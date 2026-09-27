@@ -57,14 +57,20 @@ export function MonoTopBar() {
 function Logo() {
   const goHome = useCallback(() => router.push(buildOpenProjectRoute()), []);
   return (
-    <Pressable onPress={goHome} accessibilityRole="link" accessibilityLabel={brand.name} style={styles.logo}>
+    <Pressable
+      onPress={goHome}
+      accessibilityRole="link"
+      accessibilityLabel={brand.name}
+      style={styles.logo}
+    >
       <BrandLogo size={28} />
     </Pressable>
   );
 }
 
 function Crumbs({ route }: { route: MonoRoute }) {
-  const activeProject = route.workspace && !route.workspace.chat ? projectNameOf(route.workspace) : null;
+  const activeProject =
+    route.workspace && !route.workspace.chat ? projectNameOf(route.workspace) : null;
   return (
     <View style={styles.crumbs}>
       <HostCrumb activeServerId={route.serverId} />
@@ -135,7 +141,12 @@ function findStyle({ hovered }: PressableStateCallbackType & { hovered?: boolean
 function FindButton() {
   const keys = useShortcutKeys("toggle-command-center");
   return (
-    <Pressable onPress={openFind} style={findStyle} testID="mono-find" accessibilityLabel={COPY.find}>
+    <Pressable
+      onPress={openFind}
+      style={findStyle}
+      testID="mono-find"
+      accessibilityLabel={COPY.find}
+    >
       {SEARCH_ICON}
       <Text style={styles.findText}>{COPY.find}</Text>
       {keys ? <Shortcut chord={keys} /> : null}
@@ -158,24 +169,53 @@ function NewChatButton({ route }: { route: MonoRoute }) {
   );
 }
 
+interface MonoTabItem {
+  id: MonoTab;
+  label: string;
+  onPress: () => void;
+}
+
 function Tabs({ route }: { route: MonoRoute }) {
   const { t } = useTranslation();
   const workspace = route.workspace;
   const openChanges = useOpenChanges();
   const tabs = useMemo(
-    () =>
-      [
-        { id: "overview", label: COPY.overview, onPress: () => router.push(buildOpenProjectRoute()) },
-        { id: "chats", label: t("sidebar.sections.chats"), onPress: () => router.push(buildSessionsRoute()) },
-        ...(workspace && !workspace.chat ? [{ id: "changes", label: COPY.changes, onPress: openChanges }] : []),
-        { id: "settings", label: t("sidebar.actions.settings"), onPress: () => router.push(buildSettingsRoute()) },
-      ] satisfies { id: MonoTab; label: string; onPress: () => void }[],
+    (): MonoTabItem[] => [
+      {
+        id: "overview",
+        label: COPY.overview,
+        onPress: () => router.push(buildOpenProjectRoute()),
+      },
+      {
+        id: "chats",
+        label: t("sidebar.sections.chats"),
+        onPress: () => router.push(buildSessionsRoute()),
+      },
+      ...(workspace && !workspace.chat
+        ? [{ id: "changes" as const, label: COPY.changes, onPress: openChanges }]
+        : []),
+      {
+        id: "settings",
+        label: t("sidebar.actions.settings"),
+        onPress: () => router.push(buildSettingsRoute()),
+      },
+    ],
     [openChanges, t, workspace],
   );
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabs}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.tabs}
+    >
       {tabs.map((tab) => (
-        <Tab key={tab.id} label={tab.label} active={route.tab === tab.id} onPress={tab.onPress} id={tab.id} />
+        <Tab
+          key={tab.id}
+          label={tab.label}
+          active={route.tab === tab.id}
+          onPress={tab.onPress}
+          id={tab.id}
+        />
       ))}
     </ScrollView>
   );
@@ -185,7 +225,17 @@ function tabStyle({ hovered }: PressableStateCallbackType & { hovered?: boolean 
   return [styles.tab, hovered && styles.tabHovered];
 }
 
-function Tab({ id, label, active, onPress }: { id: MonoTab; label: string; active: boolean; onPress: () => void }) {
+function Tab({
+  id,
+  label,
+  active,
+  onPress,
+}: {
+  id: MonoTab;
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}) {
   styles.useVariants({ active });
   return (
     <Pressable onPress={onPress} style={tabStyle} testID={`mono-tab-${id}`} accessibilityRole="tab">
