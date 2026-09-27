@@ -143,3 +143,62 @@ export interface PluginModule {
   activate?: PluginActivate;
   deactivate?: PluginDeactivate;
 }
+
+// ---------------------------------------------------------------------------
+// Client half (scope `client`, or the client half of a `hybrid` plugin). Runs in a sandboxed
+// iframe inside the desktop or web app with no access to the app's DOM or storage; every call
+// below crosses a message channel to the app, which enforces the granted capabilities.
+
+export interface ClientPluginInfo {
+  id: string;
+  version: string;
+  /** True for a dev-linked plugin folder. */
+  dev: boolean;
+  /** Capabilities the user granted on this device. */
+  capabilities: readonly PluginCapabilityName[];
+}
+
+/** Device-local key/value store (`settings.store`). Values are JSON. */
+export interface ClientPluginSettingsStore {
+  get<T = unknown>(key: string): Promise<T | undefined>;
+  set(key: string, value: unknown): Promise<void>;
+  delete(key: string): Promise<void>;
+  all(): Promise<Record<string, unknown>>;
+}
+
+export type ClientPluginRpcHandler = (params: unknown) => unknown | Promise<unknown>;
+
+export interface ClientPluginRpcApi {
+  /**
+   * Answers a contribution method in the app (a command or session action id,
+   * `panel.<id>.render`, `panel.<id>.submit`). A method the client half handles never reaches
+   * the daemon half.
+   */
+  handle(method: string, handler: ClientPluginRpcHandler): PluginDisposable;
+  /** Calls the plugin's daemon half (hybrid plugins) through the host's plugins.rpc.call. */
+  call(method: string, params?: unknown): Promise<unknown>;
+}
+
+export interface ClientPluginUiApi {
+  /** Toast in this app. */
+  notify(message: string, level?: PluginNotifyLevel): void;
+}
+
+export interface ClientPluginContext {
+  apiVersion: PluginApiVersion;
+  log: PluginLogger;
+  plugin: ClientPluginInfo;
+  /** `settings.store` */
+  settings: ClientPluginSettingsStore;
+  /** `rpc` */
+  rpc: ClientPluginRpcApi;
+  /** `ui.contribute` */
+  ui: ClientPluginUiApi;
+}
+
+export type ClientPluginActivate = (ctx: ClientPluginContext) => void | Promise<void>;
+
+export interface ClientPluginModule {
+  default?: ClientPluginActivate;
+  activate?: ClientPluginActivate;
+}
