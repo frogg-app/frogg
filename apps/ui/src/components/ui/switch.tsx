@@ -12,8 +12,9 @@ import Animated, {
   useDerivedValue,
   withTiming,
 } from "react-native-reanimated";
+import { controlGeometryOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { createControlGeometry, switchGeometry } from "@/components/ui/control-geometry";
+import { switchGeometry } from "@/components/ui/control-geometry";
 import type { Theme } from "@/styles/theme";
 
 interface SwitchProps {
@@ -113,12 +114,9 @@ export function Switch({
   );
 }
 
-const styles = StyleSheet.create((theme) => {
-  const geometry = createControlGeometry(theme);
-
-  return {
+const styles = StyleSheet.create((theme, rt) => ({
     switchControl: {
-      ...geometry.switchControl,
+      ...controlGeometryOf(theme, rt.themeName).switchControl,
     },
     switchTrack: {
       width: switchGeometry.trackWidth,
@@ -142,5 +140,4 @@ const styles = StyleSheet.create((theme) => {
     disabled: {
       opacity: theme.opacity[50],
     },
-  };
-});
+}));

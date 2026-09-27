@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native-unistyles";
+import { designThemeOf } from "@/components/ui/design-surface";
 import { settingsTreatment } from "@/styles/settings-treatment";
 
 /**
@@ -9,12 +10,10 @@ import { settingsTreatment } from "@/styles/settings-treatment";
  */
 export const SETTINGS_ROW_LABEL_MIN_WIDTH = 220;
 
-export const settingsStyles = StyleSheet.create((theme) => {
-  const t = settingsTreatment(theme);
-  return {
+export const settingsStyles = StyleSheet.create((theme, rt) => ({
     section: {
       marginBottom: theme.spacing[6],
-      ...t.section,
+      ...settingsTreatment(designThemeOf(theme, rt.themeName)).section,
     },
     sectionHeader: {
       alignItems: "center",
@@ -22,13 +21,13 @@ export const settingsStyles = StyleSheet.create((theme) => {
       justifyContent: "space-between",
       marginBottom: theme.spacing[3],
       marginLeft: theme.spacing[1],
-      ...t.sectionHeader,
+      ...settingsTreatment(designThemeOf(theme, rt.themeName)).sectionHeader,
     },
     sectionHeaderTitle: {
       color: theme.colors.foregroundMuted,
       fontSize: theme.fontSize.sm,
       fontWeight: theme.fontWeight.normal,
-      ...t.sectionHeaderTitle,
+      ...settingsTreatment(designThemeOf(theme, rt.themeName)).sectionHeaderTitle,
     },
     sectionHeaderLink: {
       alignItems: "center",
@@ -45,7 +44,7 @@ export const settingsStyles = StyleSheet.create((theme) => {
       borderWidth: 1,
       borderColor: theme.colors.border,
       overflow: "hidden",
-      ...t.card,
+      ...settingsTreatment(designThemeOf(theme, rt.themeName)).card,
     },
     // A settings row is a label and its controls side by side, and it wraps rather than squeezing:
     // the controls keep their intrinsic width, so without a wrap a narrow panel takes the width out
@@ -60,12 +59,12 @@ export const settingsStyles = StyleSheet.create((theme) => {
       rowGap: theme.spacing[3],
       paddingVertical: theme.spacing[4],
       paddingHorizontal: theme.spacing[4],
-      ...t.row,
+      ...settingsTreatment(designThemeOf(theme, rt.themeName)).row,
     },
     rowBorder: {
       borderTopWidth: 1,
       borderTopColor: theme.colors.border,
-      ...t.rowBorder,
+      ...settingsTreatment(designThemeOf(theme, rt.themeName)).rowBorder,
     },
     rowContent: {
       flex: 1,
@@ -75,18 +74,17 @@ export const settingsStyles = StyleSheet.create((theme) => {
     rowTitle: {
       color: theme.colors.foreground,
       fontSize: theme.fontSize.base,
-      ...t.rowTitle,
+      ...settingsTreatment(designThemeOf(theme, rt.themeName)).rowTitle,
     },
     rowHint: {
       color: theme.colors.foregroundMuted,
       fontSize: theme.fontSize.sm,
       marginTop: theme.spacing[1],
-      ...t.rowHint,
+      ...settingsTreatment(designThemeOf(theme, rt.themeName)).rowHint,
     },
     rowError: {
       color: theme.colors.statusDanger,
       fontSize: theme.fontSize.sm,
       marginTop: theme.spacing[1],
     },
-  };
-});
+}));

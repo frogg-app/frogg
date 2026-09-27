@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { Pressable, ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
+import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { brand } from "@frogg/branding";
 import { useTranslation } from "react-i18next";
@@ -262,15 +263,13 @@ function SettingsSidebarFooter() {
   );
 }
 
-const sidebarStyles = StyleSheet.create((theme) => {
-  const nav = settingsNavTreatment(theme);
-  return {
+const sidebarStyles = StyleSheet.create((theme, rt) => ({
     desktopContainer: {
       width: SETTINGS_DESKTOP_SIDEBAR_WIDTH,
       borderRightWidth: 1,
       borderRightColor: theme.colors.border,
       backgroundColor: theme.colors.surfaceSidebar,
-      ...nav.desktopContainer,
+      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).desktopContainer,
     },
     scrollBody: {
       flex: 1,
@@ -283,13 +282,13 @@ const sidebarStyles = StyleSheet.create((theme) => {
       paddingVertical: theme.spacing[2],
       paddingHorizontal: theme.spacing[2],
       gap: theme.spacing[1],
-      ...nav.list,
+      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).list,
     },
     mobileList: {
       paddingVertical: theme.spacing[2],
       paddingHorizontal: theme.spacing[2],
       gap: theme.spacing[1],
-      ...nav.mobileList,
+      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).mobileList,
     },
     item: {
       flexDirection: "row",
@@ -299,21 +298,21 @@ const sidebarStyles = StyleSheet.create((theme) => {
       paddingVertical: theme.spacing[2],
       paddingHorizontal: theme.spacing[2],
       borderRadius: theme.borderRadius.lg,
-      ...nav.item,
+      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).item,
     },
     itemHovered: {
       backgroundColor: theme.colors.surfaceSidebarHover,
     },
     itemSelected: {
       backgroundColor: theme.colors.surfaceSidebarHover,
-      ...nav.itemSelected,
+      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).itemSelected,
     },
     label: {
       fontSize: theme.fontSize.base,
       color: theme.colors.foregroundMuted,
       fontWeight: theme.fontWeight.normal,
       flex: 1,
-      ...nav.label,
+      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).label,
     },
     footer: {
       flexDirection: "row",
@@ -334,7 +333,6 @@ const sidebarStyles = StyleSheet.create((theme) => {
     },
     labelSelected: {
       color: theme.colors.foreground,
-      ...nav.labelSelected,
+      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).labelSelected,
     },
-  };
-});
+}));

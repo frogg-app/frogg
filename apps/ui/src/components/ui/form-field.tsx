@@ -15,11 +15,11 @@ import {
   type TextStyle,
   type ViewStyle,
 } from "react-native";
+import { controlGeometryOf } from "@/components/ui/design-surface";
 import { StyleSheet } from "react-native-unistyles";
 import { AdaptiveTextInput, type AdaptiveTextInputProps } from "@/components/adaptive-modal-sheet";
 import type { EditingTextInputHandle } from "@/components/ui/text-input";
 import {
-  createControlGeometry,
   resolveControlInteractionStyles,
   type FieldControlSize,
 } from "@/components/ui/control-geometry";
@@ -243,30 +243,27 @@ const styles = StyleSheet.create((theme) => ({
   },
 }));
 
-const formInputStyles = StyleSheet.create((theme) => {
-  const geometry = createControlGeometry(theme);
-
-  return {
+const formInputStyles = StyleSheet.create((theme, rt) => ({
     chrome: {
-      ...geometry.fieldSurface,
+      ...controlGeometryOf(theme, rt.themeName).fieldSurface,
     },
     chromeSm: {
-      ...geometry.fieldControlSm,
+      ...controlGeometryOf(theme, rt.themeName).fieldControlSm,
     },
     chromeMd: {
-      ...geometry.fieldControlMd,
+      ...controlGeometryOf(theme, rt.themeName).fieldControlMd,
     },
     controlRest: {
-      ...geometry.controlRest,
+      ...controlGeometryOf(theme, rt.themeName).controlRest,
     },
     controlHover: {
-      ...geometry.controlHover,
+      ...controlGeometryOf(theme, rt.themeName).controlHover,
     },
     controlActive: {
-      ...geometry.controlActive,
+      ...controlGeometryOf(theme, rt.themeName).controlActive,
     },
     controlDisabled: {
-      ...geometry.controlDisabled,
+      ...controlGeometryOf(theme, rt.themeName).controlDisabled,
     },
     input: {
       flex: 1,
@@ -278,10 +275,9 @@ const formInputStyles = StyleSheet.create((theme) => {
       outlineWidth: 0,
     },
     inputSm: {
-      ...geometry.fieldTextSm,
+      ...controlGeometryOf(theme, rt.themeName).fieldTextSm,
     },
     inputMd: {
-      ...geometry.fieldTextMd,
+      ...controlGeometryOf(theme, rt.themeName).fieldTextMd,
     },
-  };
-});
+}));

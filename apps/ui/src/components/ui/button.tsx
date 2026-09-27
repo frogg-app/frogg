@@ -20,10 +20,10 @@ import type {
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import {
   buttonIconSize,
-  createControlGeometry,
   type ButtonControlSize,
 } from "@/components/ui/control-geometry";
-import { buttonTreatment } from "@/components/ui/button-treatment";
+import { buttonText, buttonTreatment } from "@/components/ui/button-treatment";
+import { controlGeometryOf, designThemeOf } from "@/components/ui/design-surface";
 import type { Theme } from "@/styles/theme";
 
 type ButtonVariant = "default" | "secondary" | "outline" | "ghost" | "destructive";
@@ -86,71 +86,73 @@ const destructiveForegroundIconMapping = (theme: Theme) => ({
   iconColor: theme.colors.destructiveForeground,
 });
 
-const styles = StyleSheet.create((theme) => {
-  const geometry = createControlGeometry(theme);
-  const treatment = buttonTreatment(theme);
-
-  return {
-    base: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: theme.spacing[2],
-      borderRadius: geometry.buttonMd.borderRadius,
-      borderWidth: 1,
-      borderColor: "transparent",
-    },
-    md: {
-      ...geometry.buttonMd,
-    },
-    xs: {
-      ...geometry.buttonXs,
-    },
-    sm: {
-      ...geometry.buttonSm,
-    },
-    lg: {
-      ...geometry.buttonLg,
-    },
-    default: treatment.default,
-    secondary: treatment.secondary,
-    outline: treatment.outline,
-    ghost: {
-      backgroundColor: "transparent",
-      borderColor: "transparent",
-    },
-    destructive: treatment.destructive,
-    ghostHovered: treatment.ghostHovered,
-    pressed: {
-      opacity: 0.85,
-    },
-    disabled: {
-      opacity: theme.opacity[50],
-    },
-    text: {
-      color: theme.colors.foreground,
-      ...geometry.buttonText,
-      fontSize: geometry.buttonText.fontSize + treatment.fontSizeDelta,
-      fontWeight: treatment.textWeight,
-    },
-    textXs: {
-      ...geometry.buttonTextXs,
-      fontSize: geometry.buttonTextXs.fontSize + treatment.fontSizeDelta,
-    },
-    textDefault: {
-      color: theme.colors.accentForeground,
-    },
-    textDestructive: {
-      color: theme.colors.destructiveForeground,
-    },
-    textGhost: {
-      color: theme.colors.foregroundMuted,
-    },
-    textGhostHovered: {
-      color: theme.colors.foreground,
-    },
-  };
-});
+const styles = StyleSheet.create((theme, rt) => ({
+  base: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: theme.spacing[2],
+    borderRadius: controlGeometryOf(theme, rt.themeName).buttonMd.borderRadius,
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  md: {
+    ...controlGeometryOf(theme, rt.themeName).buttonMd,
+  },
+  xs: {
+    ...controlGeometryOf(theme, rt.themeName).buttonXs,
+  },
+  sm: {
+    ...controlGeometryOf(theme, rt.themeName).buttonSm,
+  },
+  lg: {
+    ...controlGeometryOf(theme, rt.themeName).buttonLg,
+  },
+  default: {
+    ...buttonTreatment(designThemeOf(theme, rt.themeName)).default,
+  },
+  secondary: {
+    ...buttonTreatment(designThemeOf(theme, rt.themeName)).secondary,
+  },
+  outline: {
+    ...buttonTreatment(designThemeOf(theme, rt.themeName)).outline,
+  },
+  ghost: {
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+  },
+  destructive: {
+    ...buttonTreatment(designThemeOf(theme, rt.themeName)).destructive,
+  },
+  ghostHovered: {
+    ...buttonTreatment(designThemeOf(theme, rt.themeName)).ghostHovered,
+  },
+  pressed: {
+    opacity: 0.85,
+  },
+  disabled: {
+    opacity: theme.opacity[50],
+  },
+  text: {
+    color: theme.colors.foreground,
+    ...buttonText(theme, rt.themeName, "base"),
+  },
+  textXs: {
+    ...buttonText(theme, rt.themeName, "xs"),
+  },
+  textDefault: {
+    color: theme.colors.accentForeground,
+  },
+  textDestructive: {
+    color: theme.colors.destructiveForeground,
+  },
+  textGhost: {
+    color: theme.colors.foregroundMuted,
+  },
+  textGhostHovered: {
+    color: theme.colors.foreground,
+  },
+}));
 
 export function Button({
   children,

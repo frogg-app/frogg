@@ -8,10 +8,10 @@ import {
   type TargetedEvent,
 } from "react-native";
 import { ChevronDown } from "lucide-react-native";
+import { controlGeometryOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Combobox, ComboboxItem, type ComboboxOption } from "@/components/ui/combobox";
 import {
-  createControlGeometry,
   resolveControlInteractionStyles,
   type FieldControlSize,
 } from "@/components/ui/control-geometry";
@@ -341,33 +341,30 @@ export function SelectField<TValue>({
   );
 }
 
-const styles = StyleSheet.create((theme) => {
-  const geometry = createControlGeometry(theme);
-
-  return {
+const styles = StyleSheet.create((theme, rt) => ({
     trigger: {
       flexDirection: "row",
       alignItems: "center",
       gap: theme.spacing[2],
-      ...geometry.fieldSurface,
+      ...controlGeometryOf(theme, rt.themeName).fieldSurface,
     },
     triggerSm: {
-      ...geometry.fieldControlSm,
+      ...controlGeometryOf(theme, rt.themeName).fieldControlSm,
     },
     triggerMd: {
-      ...geometry.fieldControlMd,
+      ...controlGeometryOf(theme, rt.themeName).fieldControlMd,
     },
     controlRest: {
-      ...geometry.controlRest,
+      ...controlGeometryOf(theme, rt.themeName).controlRest,
     },
     controlHover: {
-      ...geometry.controlHover,
+      ...controlGeometryOf(theme, rt.themeName).controlHover,
     },
     controlActive: {
-      ...geometry.controlActive,
+      ...controlGeometryOf(theme, rt.themeName).controlActive,
     },
     controlDisabled: {
-      ...geometry.controlDisabled,
+      ...controlGeometryOf(theme, rt.themeName).controlDisabled,
     },
     triggerText: {
       flex: 1,
@@ -380,15 +377,14 @@ const styles = StyleSheet.create((theme) => {
       color: theme.colors.foregroundMuted,
     },
     triggerTextSm: {
-      ...geometry.fieldTextSm,
+      ...controlGeometryOf(theme, rt.themeName).fieldTextSm,
     },
     triggerTextMd: {
-      ...geometry.fieldTextMd,
+      ...controlGeometryOf(theme, rt.themeName).fieldTextMd,
     },
     spinnerSlot: {
       flexShrink: 0,
       width: ICON_SIZE.md,
       alignItems: "center",
     },
-  };
-});
+}));
