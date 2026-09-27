@@ -41,6 +41,11 @@ import { LeftSidebar } from "@/components/left-sidebar";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { DesktopWindowControls } from "@/components/desktop/window-controls";
 import { WindowTitlebarDragStrip } from "@/components/desktop/titlebar-drag-region";
+import {
+  AppFrameContent,
+  AppFrameRow,
+  resolveAppFrameBackground,
+} from "@/components/desktop/app-frame";
 import { SidebarModelProvider } from "@/components/sidebar/sidebar-model";
 import { WorkspacePinShortcutHandler } from "@/components/workspace-pin-shortcut-handler";
 import { WorkspaceRenameHost } from "@/components/workspace-rename-host";
@@ -434,7 +439,6 @@ function QueryProvider({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
-const rowStyle = { flex: 1, flexDirection: "row" } as const;
 const flexStyle = { flex: 1 } as const;
 const MOBILE_WEB_GESTURE_TOUCH_ACTION = isWeb ? "auto" : "pan-y";
 
@@ -536,7 +540,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     />
   );
   const workspaceChrome = (
-    <View style={rowStyle}>
+    <AppFrameRow enabled={!isCompactLayout}>
       {!isCompactLayout ? (
         <WindowChromeRegion corners={appChromeLayout.sidebarCorners}>
           {sidebarChrome}
@@ -553,14 +557,14 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
         </CompactExplorerSidebarHost>
       ) : (
         <WindowChromeRegion corners={appChromeLayout.contentCorners}>
-          <View style={flexStyle}>{children}</View>
+          <AppFrameContent enabled={!isCompactLayout}>{children}</AppFrameContent>
         </WindowChromeRegion>
       )}
-    </View>
+    </AppFrameRow>
   );
 
   const surface = (
-    <View style={layoutStyles.surfaceFill}>
+    <View style={layoutStyles.appSurface(!isCompactLayout)}>
       <WindowTitlebarDragStrip />
       {workspaceChrome}
       {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
@@ -961,6 +965,11 @@ const layoutStyles = StyleSheet.create((theme) => ({
     flex: 1,
     backgroundColor: theme.colors.surface0,
   },
+  // Behind a framed layout (inset/floating) the window itself is the frame colour.
+  appSurface: (framed: boolean) => ({
+    flex: 1,
+    backgroundColor: framed ? resolveAppFrameBackground(theme) : theme.colors.surface0,
+  }),
   windowSidebarToggle: {
     position: "absolute",
     top: 1,

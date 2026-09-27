@@ -34,6 +34,12 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { Theme } from "@/styles/theme";
 import type { SidebarSurfaceBackdrop } from "@/styles/surface-backdrop";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import {
+  resolveShellDesign,
+  sidebarRowBox,
+  sidebarRowText,
+} from "@/components/sidebar/shell-design";
 import { type GestureType } from "react-native-gesture-handler";
 import { WorkspaceRenameModal } from "@/components/workspace-rename-modal";
 import { useWorkspaceClipboardActions } from "@/hooks/use-workspace-clipboard-actions";
@@ -986,7 +992,7 @@ function ProjectHeaderRow({
         />
 
         <View style={styles.projectTitleGroup}>
-          <Text style={styles.projectTitle} numberOfLines={1}>
+          <Text style={styles.projectTitle} numberOfLines={1} dataSet={DESIGN_FONT_DATASET}>
             {displayName}
           </Text>
         </View>
@@ -2579,7 +2585,7 @@ function ProjectModeList({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
   },
@@ -2627,6 +2633,8 @@ const styles = StyleSheet.create((theme) => ({
     alignItems: "center",
     gap: theme.spacing[2],
     userSelect: "none",
+    ...sidebarRowBox(theme, rt.themeName),
+    paddingLeft: resolveShellDesign(theme, rt.themeName).rowPaddingHorizontal + theme.spacing[2],
   },
   newWorkspaceGhostRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
@@ -2645,12 +2653,12 @@ const styles = StyleSheet.create((theme) => ({
   },
   newWorkspaceGhostText: {
     color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.base,
+    fontSize: resolveShellDesign(theme, rt.themeName).rowText.fontSize,
     minWidth: 0,
     flexShrink: 1,
   },
   newWorkspaceGhostTextHovered: {
-    fontSize: theme.fontSize.base,
+    fontSize: resolveShellDesign(theme, rt.themeName).rowText.fontSize,
     minWidth: 0,
     flexShrink: 1,
     color: theme.colors.foreground,
@@ -2667,6 +2675,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "space-between",
     gap: theme.spacing[2],
     userSelect: "none",
+    ...sidebarRowBox(theme, rt.themeName),
   },
   projectRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
@@ -2702,6 +2711,7 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: "400",
     minWidth: 0,
     flexShrink: 1,
+    ...resolveShellDesign(theme, rt.themeName).projectText,
   },
   projectActionButton: {
     flexDirection: "row",
@@ -2790,6 +2800,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     gap: theme.spacing[1],
     userSelect: "none",
+    ...sidebarRowBox(theme, rt.themeName),
   },
   workspaceRowMain: {
     flexDirection: "row",
@@ -2825,9 +2836,7 @@ const styles = StyleSheet.create((theme) => ({
     zIndex: 3,
     ...theme.shadow.md,
   },
-  sidebarRowSelected: {
-    backgroundColor: theme.colors.surfaceSidebarSelected,
-  },
+  sidebarRowSelected: resolveShellDesign(theme, rt.themeName).selected,
   workspaceRowContainer: {
     position: "relative",
   },
@@ -2863,6 +2872,7 @@ const styles = StyleSheet.create((theme) => ({
     opacity: 0.76,
     flex: 1,
     minWidth: 0,
+    ...sidebarRowText(theme, rt.themeName),
   },
   workspaceBranchTextCreating: {
     opacity: 0.92,

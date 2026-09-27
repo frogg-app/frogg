@@ -59,6 +59,12 @@ import { SidebarAgentListSkeleton } from "./sidebar-agent-list-skeleton";
 import { SidebarCalloutSlot } from "./sidebar-callout-slot";
 import { SidebarWorkspaceList } from "./sidebar-workspace-list";
 import { SidebarChatList } from "./sidebar/chats/sidebar-chat-list";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import {
+  desktopSidebarSurface,
+  resolveShellDesign,
+  sidebarDividerColor,
+} from "./sidebar/shell-design";
 import {
   SidebarSectionBar,
   SidebarSectionTransition,
@@ -599,7 +605,7 @@ function WorkspacesSectionHeader() {
   if (useAnyHostSupportsChats()) return null;
   return (
     <View style={styles.workspacesSectionHeader}>
-      <Text style={styles.workspacesSectionTitle}>{t("sidebar.sections.projects")}</Text>
+      <Text style={styles.workspacesSectionTitle} dataSet={DESIGN_FONT_DATASET}>{t("sidebar.sections.projects")}</Text>
       <View style={styles.workspacesSectionActions}>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
@@ -632,14 +638,14 @@ const staticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   mobileBrandRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: sidebarDividerColor(theme, rt.themeName),
   },
   workspacesSectionHeader: {
     flexDirection: "row",
@@ -658,6 +664,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.normal,
+    ...resolveShellDesign(theme, rt.themeName).sectionLabel,
   },
   workspacesSectionActions: {
     flexDirection: "row",
@@ -688,11 +695,7 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.surfaceSidebar,
   },
-  desktopSidebarBorder: {
-    borderRightWidth: 1,
-    borderRightColor: theme.colors.border,
-    backgroundColor: theme.colors.surfaceSidebar,
-  },
+  desktopSidebarBorder: desktopSidebarSurface(theme, rt.themeName),
   sidebarDragArea: {
     position: "relative",
   },
@@ -707,7 +710,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     paddingHorizontal: theme.spacing[4],
     borderBottomWidth: theme.borderWidth[1],
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: sidebarDividerColor(theme, rt.themeName),
   },
   desktopChromeRowBelowLights: {
     paddingLeft: DESKTOP_TRAFFIC_LIGHT_WIDTH,
@@ -733,7 +736,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: 2,
     paddingVertical: theme.spacing[2],
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: sidebarDividerColor(theme, rt.themeName),
   },
   tooltipRow: {
     flexDirection: "row",
