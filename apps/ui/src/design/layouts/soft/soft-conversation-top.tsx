@@ -129,12 +129,14 @@ export function SoftConversationTop({ serverId, agentId }: { serverId: string; a
   return (
     <View style={styles.wrap} testID="soft-conversation-top">
       <View style={styles.bar}>
-        {compact ? (
-          <SoftRoundButton icon={ChevronLeft} label={t("sidebar.actions.home")} onPress={goBack} />
-        ) : null}
+        <View style={compact ? styles.sideCompact : styles.side}>
+          {compact ? (
+            <SoftRoundButton icon={ChevronLeft} label={t("sidebar.actions.home")} onPress={goBack} />
+          ) : null}
+        </View>
         <Pressable
           onPress={toggle}
-          style={styles.titlePill}
+          style={compact ? titlePillCompactStyle() : styles.titlePill}
           accessibilityRole="button"
           accessibilityState={open ? EXPANDED : COLLAPSED}
           accessibilityLabel={self.title}
@@ -153,8 +155,10 @@ export function SoftConversationTop({ serverId, agentId }: { serverId: string; a
             </Text>
           </View>
         </Pressable>
-        <View style={styles.actions}>
-          <SoftRoundButton icon={Search} label={t("sidebar.sections.search")} onPress={openSearch} />
+        <View style={compact ? styles.sideCompact : styles.actionsSide}>
+          {compact ? null : (
+            <SoftRoundButton icon={Search} label={t("sidebar.sections.search")} onPress={openSearch} />
+          )}
           <SoftRoundButton icon={SquarePen} label={t("sidebar.chats.newChat")} onPress={newChat} />
         </View>
       </View>
@@ -219,12 +223,14 @@ function AgentMenuRow({
 const styles = StyleSheet.create((theme, rt) => ({
   wrap: {
     position: "relative",
+    alignItems: "center",
     zIndex: 20,
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 4,
   },
   bar: {
+    alignSelf: "stretch",
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
@@ -261,15 +267,28 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: 12,
     color: theme.colors.foregroundMuted,
   },
-  actions: {
+  side: {
+    flex: 1,
     flexDirection: "row",
+  },
+  // Compact: the title takes the room between one round button on each side.
+  sideCompact: {
+    flexDirection: "row",
+  },
+  titlePillCompact: {
+    flex: 1,
+    maxWidth: undefined,
+  },
+  actionsSide: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "flex-end",
     gap: 8,
-    marginLeft: "auto",
   },
   menu: {
     position: "absolute",
     top: 62,
-    left: 12,
+    alignSelf: "center",
     width: 320,
     padding: 6,
     gap: 2,
@@ -296,4 +315,5 @@ const styles = StyleSheet.create((theme, rt) => ({
 }));
 
 // Composed at render: reading style proxies at module scope is not allowed.
+const titlePillCompactStyle = () => [styles.titlePill, styles.titlePillCompact];
 const menuRowCurrentStyle = () => [styles.menuRow, styles.menuRowCurrent];
