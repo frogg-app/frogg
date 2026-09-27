@@ -137,6 +137,19 @@ const TOOL_SPECS: Readonly<Record<string, ToolDetailSpec>> = {
   browser_scroll: { inputOrder: BROWSER_FIELDS },
   browser_resize: { inputOrder: BROWSER_FIELDS },
   browser_close_tab: { inputOrder: BROWSER_FIELDS },
+  todo_list: { inputOrder: ["status", "category"] },
+  todo_get: { inputOrder: ["todoId"] },
+  todo_create: {
+    inputOrder: ["title", "category", "priority", "status", "allowParallel", "description"],
+  },
+  todo_update: {
+    inputOrder: ["todoId", "title", "category", "priority", "allowParallel", "description"],
+  },
+  todo_update_plan: { inputOrder: ["todoId"] },
+  todo_claim: { inputOrder: ["todoId", "takeover"] },
+  todo_release: { inputOrder: ["todoId"] },
+  todo_progress: { promptField: "note", inputOrder: ["todoId"] },
+  todo_set_status: { inputOrder: ["todoId", "status", "note"] },
 };
 
 const FIELD_LABELS: Readonly<Record<string, string>> = {
@@ -176,6 +189,7 @@ const FIELD_LABELS: Readonly<Record<string, string>> = {
   terminalId: "Terminal",
   thinkingOptionId: "Thinking",
   timeoutMs: "Timeout (ms)",
+  todoId: "To-do",
   updateCount: "Updates",
   workspaceId: "Workspace",
   worktreeSlug: "Worktree",

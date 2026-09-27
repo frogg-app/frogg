@@ -9207,6 +9207,315 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "project.todo.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "statuses": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "backlog",
+                      "ready",
+                      "claimed",
+                      "in_progress",
+                      "review",
+                      "done",
+                      "blocked"
+                    ]
+                  }
+                },
+                "category": {
+                  "type": "string"
+                },
+                "subscribe": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.get.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.create.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "backlog",
+                    "ready",
+                    "claimed",
+                    "in_progress",
+                    "review",
+                    "done",
+                    "blocked"
+                  ]
+                },
+                "allowParallel": {
+                  "type": "boolean"
+                },
+                "plan": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "title"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.update.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "allowParallel": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.update_plan.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                },
+                "plan": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId",
+                "plan"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.set_status.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "backlog",
+                    "ready",
+                    "claimed",
+                    "in_progress",
+                    "review",
+                    "done",
+                    "blocked"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId",
+                "status"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.release.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                },
+                "agentId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.delete.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.unsubscribe.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "loop/run"
                 },
                 "requestId": {

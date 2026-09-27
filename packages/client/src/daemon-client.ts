@@ -836,6 +836,33 @@ export type WorkspaceLabelDeleteInspectPayload = Extract<
   SessionOutboundMessage,
   { type: "workspace.label.delete.inspect.response" }
 >["payload"];
+type ProjectTodoOperation =
+  | "list"
+  | "get"
+  | "create"
+  | "update"
+  | "update_plan"
+  | "set_status"
+  | "release"
+  | "delete"
+  | "unsubscribe";
+type ProjectTodoRequest<T extends `project.todo.${string}.request`> = Omit<
+  Extract<SessionInboundMessage, { type: T }>,
+  "type" | "requestId"
+> & { requestId?: string };
+type ProjectTodoResponsePayload<T extends `project.todo.${string}.response`> = Extract<
+  SessionOutboundMessage,
+  { type: T }
+>["payload"];
+export type ProjectTodoListPayload = ProjectTodoResponsePayload<"project.todo.list.response">;
+export type ProjectTodoItemPayload = ProjectTodoResponsePayload<"project.todo.get.response">;
+export type ProjectTodoDeletePayload = ProjectTodoResponsePayload<"project.todo.delete.response">;
+export type ProjectTodoUnsubscribePayload =
+  ProjectTodoResponsePayload<"project.todo.unsubscribe.response">;
+export type ProjectTodoChangedPayload = Extract<
+  SessionOutboundMessage,
+  { type: "project.todo.changed" }
+>["payload"];
 export type ProjectListPayload = Extract<
   SessionOutboundMessage,
   { type: "project.list.response" }
@@ -2344,6 +2371,74 @@ export class DaemonClient {
       requestId: options.requestId,
       message: { type: "workspace.label.delete.request", name: options.name },
     });
+  }
+
+  // Project to-dos. Gate callers on `serverInfo.features.projectTodos`.
+  private sendProjectTodoRequest<TOp extends ProjectTodoOperation>(
+    op: TOp,
+    options: ProjectTodoRequest<`project.todo.${TOp}.request`>,
+  ): Promise<CorrelatedResponsePayload<`project.todo.${TOp}.response` & CorrelatedResponseType>> {
+    const { requestId, ...fields } = options;
+    return this.sendNamespacedCorrelatedSessionRequest<
+      `project.todo.${TOp}.response` & CorrelatedResponseType
+    >({
+      requestId,
+      message: { ...(fields as Record<string, unknown>), type: `project.todo.${op}.request` },
+    });
+  }
+
+  listProjectTodos(
+    options: ProjectTodoRequest<"project.todo.list.request">,
+  ): Promise<ProjectTodoListPayload> {
+    return this.sendProjectTodoRequest("list", options);
+  }
+
+  getProjectTodo(
+    options: ProjectTodoRequest<"project.todo.get.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("get", options);
+  }
+
+  createProjectTodo(
+    options: ProjectTodoRequest<"project.todo.create.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("create", options);
+  }
+
+  updateProjectTodo(
+    options: ProjectTodoRequest<"project.todo.update.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("update", options);
+  }
+
+  updateProjectTodoPlan(
+    options: ProjectTodoRequest<"project.todo.update_plan.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("update_plan", options);
+  }
+
+  setProjectTodoStatus(
+    options: ProjectTodoRequest<"project.todo.set_status.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("set_status", options);
+  }
+
+  releaseProjectTodo(
+    options: ProjectTodoRequest<"project.todo.release.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("release", options);
+  }
+
+  deleteProjectTodo(
+    options: ProjectTodoRequest<"project.todo.delete.request">,
+  ): Promise<ProjectTodoDeletePayload> {
+    return this.sendProjectTodoRequest("delete", options);
+  }
+
+  unsubscribeProjectTodos(
+    options: ProjectTodoRequest<"project.todo.unsubscribe.request">,
+  ): Promise<ProjectTodoUnsubscribePayload> {
+    return this.sendProjectTodoRequest("unsubscribe", options);
   }
 
   inspectWorkspaceLabelDelete(options: {

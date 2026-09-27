@@ -1,0 +1,126 @@
+---
+title: Project to-dos
+description: A per-project to-do list that agents claim, plan and report progress on, stored by the daemon beside the project.
+sidebar:
+  order: 9
+---
+
+import { Screenshot } from "@/components/docs";
+import projectTodosImg from "@/assets/docs/app/project-todos.png";
+import projectTodoDetailImg from "@/assets/docs/app/project-todo-detail.png";
+
+Each project has a to-do list owned by the daemon. Agents working in any of the project's
+workspaces, including worktrees, see the same list: they pick an item, claim it so no other
+agent starts the same work, keep a markdown plan and a progress log on it, and mark it done.
+
+You manage the list in the app, agents use it through the [Frogg MCP
+tools](/docs/agents-and-providers/mcp/#tools), and other clients can use the session RPCs below.
+
+## In the app
+
+Open a project's menu in the sidebar (the kebab button on its row, or right-click it) and choose
+**To-dos**. The entry only appears when the host's daemon supports to-dos.
+
+<Screenshot src={projectTodosImg} alt="A project's to-do list grouped by category" />
+
+- Items are grouped by category, uncategorized last, and sorted by priority. The filter above
+  the list shows **Open** items (everything except `done`) by default; pick **All** or a single
+  status to narrow it.
+- Each row shows the status, priority, a **Parallel** marker when several agents may claim it,
+  and a badge per claim with the agent's name and branch. Select a claim badge to open that
+  agent. A claim whose agent is no longer running is marked **stale**.
+- The list updates live as agents and other clients change it. While the host is offline the
+  last loaded list stays on screen with a notice, and it reloads on reconnect.
+- **New to-do** creates an item with a title, description, category, priority and the
+  parallel-claims switch.
+
+Select an item to open its detail.
+
+<Screenshot src={projectTodoDetailImg} alt="A to-do's detail with status, claims and progress log" />
+
+- The status menu moves the item to any column. Setting `done` releases every claim.
+- **Edit** changes the fields; **Edit plan** edits the markdown plan, which is shown rendered.
+- **Release claims** force-releases every claim on the item and **Delete** removes the item and
+  its plan. Both ask for confirmation.
+- The progress log lists notes newest first.
+
+Viewing needs the viewer role and changes need the operator role; a failed change shows the
+daemon's error and keeps what you typed.
+
+## Items
+
+| Field           | Meaning |
+| --------------- | ------- |
+| `title`, `description` | What needs doing. |
+| `category`      | Free text. Listing returns every category in use so agents reuse them. |
+| `priority`      | `low`, `medium` (default), `high` or `urgent`. |
+| `status`        | `backlog`, `ready`, `claimed`, `in_progress`, `review`, `done` or `blocked`. |
+| `allowParallel` | When true, several agents may claim the item at once. Default false. |
+| `claims`        | Who holds the item: agent, provider session, workspace, branch, claim time and last heartbeat. |
+| `progress`      | Append-only log of timestamped notes. |
+| plan            | One markdown document per item. |
+
+## Claims
+
+- Claiming is compare-and-set. If another agent holds the item and it does not allow
+  parallel work, the claim fails with `claim_conflict` and lists the current claimants'
+  agent, session and workspace, so the caller knows where to look for progress.
+- Claiming an item you already hold refreshes its heartbeat, as does recording progress.
+- Claiming a `backlog` or `ready` item moves it to `claimed`.
+- A claim is released when the item is set to `done`, when the agent releases it, when a user
+  force-releases it, or when the agent is archived. An item left without claims in `claimed`
+  or `in_progress` returns to `ready`.
+- If the claiming agent is no longer running, the claim is shown as `stale` but is not
+  released automatically. Another agent can claim with `takeover: true`, which only succeeds
+  when every existing claim is stale, and records the takeover in the progress log.
+
+## Storage
+
+The list lives in the project's main checkout, never in a worktree:
+
+```
+<main checkout>/.frogg/todos/
+  .gitignore      # "*": the directory stays out of git
+  index.json      # every item
+  plans/<id>.md   # one plan per item
+```
+
+For a git project this is the main repository root that its worktrees belong to; otherwise it
+is the checkout root. The daemon is the only writer. It serializes changes per project,
+re-reads the index before each change and writes files atomically. Editing these files by hand
+while the daemon is running can be overwritten by the next change.
+
+## Agent tools
+
+| Tool               | Does |
+| ------------------ | ---- |
+| `todo_list`        | List items, optionally filtered by `status` and `category`, plus the categories in use. |
+| `todo_get`         | One item with its plan, progress log and claims. |
+| `todo_create`      | Create an item, optionally with a plan. |
+| `todo_update`      | Change title, description, category, priority or `allowParallel`. |
+| `todo_update_plan` | Replace the plan. |
+| `todo_claim`       | Claim the item (`takeover: true` replaces stale claims). |
+| `todo_release`     | Release your claim. |
+| `todo_progress`    | Append a progress note. |
+| `todo_set_status`  | Move the item, with an optional note. `done` releases every claim. |
+
+The project and the caller's identity come from the calling agent's workspace; the tools take
+no project or agent arguments. They are only available to agents running in a Frogg
+workspace. Failures return a structured `error` with a `code`.
+
+## Session RPCs
+
+Daemons that support to-dos advertise `server_info.features.projectTodos`. Requests carry a
+`projectId`; responses carry a nullable `error` with the same codes as the tools.
+
+| Request | Does |
+| ------- | ---- |
+| `project.todo.list.request` | List with optional `statuses` and `category` filters. `subscribe: true` also streams `project.todo.changed` events for the project. |
+| `project.todo.get.request` | One item with plan and progress. |
+| `project.todo.create.request`, `project.todo.update.request`, `project.todo.update_plan.request`, `project.todo.set_status.request` | Edit items. |
+| `project.todo.release.request` | Force-release one agent's claim (`agentId`) or all claims. |
+| `project.todo.delete.request` | Delete an item and its plan. |
+| `project.todo.unsubscribe.request` | Stop change events for the project. |
+
+Listing and reading need the `workspace.read` permission (viewer role); changes need
+`workspace.manage` (operator role).

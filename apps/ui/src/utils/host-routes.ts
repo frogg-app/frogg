@@ -600,6 +600,13 @@ export function buildProjectSettingsRoute(serverId: string, projectId: string) {
   return `/settings/hosts/${encodeSegment(serverId)}/projects/${encodeSegment(projectId)}` as const;
 }
 
+export function buildProjectTodosRoute(serverId: string, projectId: string) {
+  if (!serverId.trim() || !projectId.trim()) {
+    throw new Error("buildProjectTodosRoute requires a serverId and projectId");
+  }
+  return `/h/${encodeSegment(serverId)}/projects/${encodeSegment(projectId)}/todos` as const;
+}
+
 export function normalizeProjectSettingsRouteId(value: string | string[] | undefined): string {
   const id = Array.isArray(value) ? value[0] : value;
   return typeof id === "string" ? id : "";

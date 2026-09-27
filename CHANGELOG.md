@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- **Project to-dos (daemon and protocol).** Each project has a daemon-owned to-do list stored
+  in its main checkout under `.frogg/todos/` (self-ignored by git): items with category,
+  priority, a kanban-style status, a markdown plan and an append-only progress log. Agents use
+  new `todo_*` MCP tools; claims are compare-and-set, report the current claimant on conflict,
+  show as stale when the agent is no longer running, and are released on done, release or
+  agent archive. New `project.todo.*` session RPCs and the `project.todo.changed` event, gated
+  on `features.projectTodos`.
+- **Project to-dos in the app.** A project's sidebar menu has **To-dos** on hosts that support
+  them: a live list grouped by category with a status filter, priority, parallel marker and
+  claim badges that link to the claiming agent and mark stale claims. The detail view renders
+  the plan as markdown, shows the progress log and claims, and edits fields, plan and status,
+  force-releases claims and deletes items (both confirmed). New items can be created from the
+  list. Strings are translated in all nine locales.
+
 ## 1.6.2-beta.1 — 2026-09-27
 
 - **Clean cut.** End an agent's provider conversation and continue in a fresh one, in the same

@@ -522,6 +522,26 @@ pub enum SessionMessage {
     ChatReadResponse(ChatReadResponse),
     #[serde(rename = "chat/wait/response")]
     ChatWaitResponse(ChatWaitResponse),
+    #[serde(rename = "project.todo.list.response")]
+    ProjectTodoListResponse(ProjectTodoListResponse),
+    #[serde(rename = "project.todo.get.response")]
+    ProjectTodoGetResponse(ProjectTodoGetResponse),
+    #[serde(rename = "project.todo.create.response")]
+    ProjectTodoCreateResponse(ProjectTodoCreateResponse),
+    #[serde(rename = "project.todo.update.response")]
+    ProjectTodoUpdateResponse(ProjectTodoUpdateResponse),
+    #[serde(rename = "project.todo.update_plan.response")]
+    ProjectTodoUpdatePlanResponse(ProjectTodoUpdatePlanResponse),
+    #[serde(rename = "project.todo.set_status.response")]
+    ProjectTodoSetStatusResponse(ProjectTodoSetStatusResponse),
+    #[serde(rename = "project.todo.release.response")]
+    ProjectTodoReleaseResponse(ProjectTodoReleaseResponse),
+    #[serde(rename = "project.todo.delete.response")]
+    ProjectTodoDeleteResponse(ProjectTodoDeleteResponse),
+    #[serde(rename = "project.todo.unsubscribe.response")]
+    ProjectTodoUnsubscribeResponse(ProjectTodoUnsubscribeResponse),
+    #[serde(rename = "project.todo.changed")]
+    ProjectTodoChanged(ProjectTodoChanged),
     #[serde(rename = "loop/run/response")]
     LoopRunResponse(LoopRunResponse),
     #[serde(rename = "loop/list/response")]
@@ -12649,6 +12669,219 @@ pub struct ChatWaitResponsePayloadMessagesItem {
     pub mention_agent_ids: Vec<String>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoListResponse {
+    pub payload: ProjectTodoListResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoListResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub items: Vec<ProjectTodoListResponsePayloadItemsItem>,
+    pub categories: Vec<String>,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoListResponsePayloadItemsItem {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    pub priority: ProjectTodoListResponsePayloadItemsItemPriority,
+    pub status: ProjectTodoListResponsePayloadItemsItemStatus,
+    #[serde(rename = "allowParallel")]
+    pub allow_parallel: bool,
+    pub claims: Vec<ProjectTodoListResponsePayloadItemsItemClaimsItem>,
+    #[serde(rename = "progressCount")]
+    pub progress_count: i64,
+    #[serde(rename = "lastProgress")]
+    pub last_progress: serde_json::Value,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+    #[serde(rename = "updatedAt")]
+    pub updated_at: String,
+    #[serde(rename = "planUpdatedAt", skip_serializing_if = "Option::is_none")]
+    pub plan_updated_at: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoListResponsePayloadItemsItemPriority {
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "urgent")]
+    Urgent,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoListResponsePayloadItemsItemStatus {
+    #[serde(rename = "backlog")]
+    Backlog,
+    #[serde(rename = "ready")]
+    Ready,
+    #[serde(rename = "claimed")]
+    Claimed,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "review")]
+    Review,
+    #[serde(rename = "done")]
+    Done,
+    #[serde(rename = "blocked")]
+    Blocked,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoListResponsePayloadItemsItemClaimsItem {
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    #[serde(rename = "sessionId", skip_serializing_if = "Option::is_none")]
+    pub session_id: Option<String>,
+    #[serde(rename = "workspaceId", skip_serializing_if = "Option::is_none")]
+    pub workspace_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    #[serde(rename = "claimedAt")]
+    pub claimed_at: String,
+    #[serde(rename = "lastHeartbeat")]
+    pub last_heartbeat: String,
+    pub stale: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoGetResponse {
+    pub payload: ProjectTodoGetResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoGetResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub item: serde_json::Value,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoCreateResponse {
+    pub payload: ProjectTodoCreateResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoCreateResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub item: serde_json::Value,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUpdateResponse {
+    pub payload: ProjectTodoUpdateResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUpdateResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub item: serde_json::Value,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUpdatePlanResponse {
+    pub payload: ProjectTodoUpdatePlanResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUpdatePlanResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub item: serde_json::Value,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoSetStatusResponse {
+    pub payload: ProjectTodoSetStatusResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoSetStatusResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub item: serde_json::Value,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoReleaseResponse {
+    pub payload: ProjectTodoReleaseResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoReleaseResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub item: serde_json::Value,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoDeleteResponse {
+    pub payload: ProjectTodoDeleteResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoDeleteResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    pub deleted: bool,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUnsubscribeResponse {
+    pub payload: ProjectTodoUnsubscribeResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUnsubscribeResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub error: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoChanged {
+    pub payload: serde_json::Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

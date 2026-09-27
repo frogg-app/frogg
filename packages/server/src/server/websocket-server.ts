@@ -125,6 +125,7 @@ import type { DeviceRole } from "@frogg/protocol/device-access";
 import type { PresenceService } from "./presence-service.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import type { PluginService } from "./plugins/plugin-service.js";
+import type { ProjectTodoService } from "./project-todos/service.js";
 import {
   APPLICATION_SOCKET_LEASE_CHECK_INTERVAL_MS,
   ApplicationSocketLease,
@@ -633,6 +634,7 @@ export class VoiceAssistantWebSocketServer {
   private readonly workspaceLabelService: WorkspaceLabelService | null;
   private pluginService: PluginService | null = null;
   private unsubscribePluginEvents: (() => void) | null = null;
+  private projectTodoService: ProjectTodoService | null = null;
   private readonly checkoutDiffManager: CheckoutDiffManager;
   private readonly github: ForgeService;
   private readonly workspaceGitService: WorkspaceGitService;
@@ -1232,6 +1234,11 @@ export class VoiceAssistantWebSocketServer {
   }
 
   /** Wire the persisted credential-role store; enables auth.device.set_role. */
+  /** Installs the project to-do service before connections are accepted. */
+  public setProjectTodoService(service: ProjectTodoService | null): void {
+    this.projectTodoService = service;
+  }
+
   public setDeviceRoleStore(store: DeviceRoleStore | null): void {
     this.deviceRoleStore = store;
     this.broadcastCapabilitiesUpdate();
@@ -1687,6 +1694,7 @@ export class VoiceAssistantWebSocketServer {
       workspaceRegistry: this.workspaceRegistry,
       workspaceLabelService: this.workspaceLabelService ?? undefined,
       pluginService: this.pluginService,
+      projectTodoService: this.projectTodoService,
       directorySync: this.directorySync,
       checkoutDiffManager: this.checkoutDiffManager,
       github: this.github,
@@ -2050,6 +2058,8 @@ export class VoiceAssistantWebSocketServer {
         ...this.pluginFeatureFlags(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
+        // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
+        projectTodos: this.projectTodoService !== null,
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
         workspaceCreatedAt: true,
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.

@@ -101,7 +101,7 @@ test("betas on main, backports and promotion on stable", { timeout: 120_000 }, (
     assert.match(streams(work, "init", "--push"), /Created stable at v1\.5\.0/);
 
     commit(work, "feature.txt", "feature\n", "feat: a feature");
-    streams(work, "beta", "--skip-check");
+    streams(work, "beta", "--minor", "--skip-check");
     assert.equal(version(work), "1.6.0-beta.1");
     assert.match(streams(work, "assert-tag", "v1.6.0-beta.1"), /on origin\/main/);
     git(work, "tag", "v1.5.9");
@@ -150,7 +150,7 @@ test("betas on main, backports and promotion on stable", { timeout: 120_000 }, (
 
     git(work, "switch", "-q", "main");
     git(work, "pull", "-q", "--ff-only");
-    assert.equal(streams(work, "beta", "--print"), "1.7.0-beta.1");
+    assert.equal(streams(work, "beta", "--print"), "1.6.1-beta.1");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -177,7 +177,7 @@ test("a fork syncs upstream releases and contributes changes back", { timeout: 1
 
     // Upstream ships 1.6.0 through its own streams.
     commit(upstream.work, "upstream.txt", "new\n", "feat: upstream feature");
-    streams(upstream.work, "beta", "--skip-check");
+    streams(upstream.work, "beta", "--minor", "--skip-check");
     git(upstream.work, "switch", "-q", "stable");
     streams(upstream.work, "promote", "--skip-check");
 
@@ -229,7 +229,7 @@ test(
 
       // Upstream ships 1.6.0.
       commit(upstream.work, "upstream.txt", "new\n", "feat: upstream feature");
-      streams(upstream.work, "beta", "--skip-check");
+      streams(upstream.work, "beta", "--minor", "--skip-check");
       git(upstream.work, "switch", "-q", "stable");
       streams(upstream.work, "promote", "--skip-check");
 

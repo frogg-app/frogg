@@ -54327,6 +54327,2436 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "project.todo.list.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "category": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "priority": {
+                            "type": "string",
+                            "enum": [
+                              "low",
+                              "medium",
+                              "high",
+                              "urgent"
+                            ]
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "backlog",
+                              "ready",
+                              "claimed",
+                              "in_progress",
+                              "review",
+                              "done",
+                              "blocked"
+                            ]
+                          },
+                          "allowParallel": {
+                            "type": "boolean"
+                          },
+                          "claims": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "agentId": {
+                                  "type": "string"
+                                },
+                                "sessionId": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "workspaceId": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "branch": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "claimedAt": {
+                                  "type": "string"
+                                },
+                                "lastHeartbeat": {
+                                  "type": "string"
+                                },
+                                "stale": {
+                                  "type": "boolean"
+                                }
+                              },
+                              "required": [
+                                "agentId",
+                                "sessionId",
+                                "workspaceId",
+                                "branch",
+                                "claimedAt",
+                                "lastHeartbeat",
+                                "stale"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "progressCount": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "lastProgress": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string"
+                                  },
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string"
+                          },
+                          "planUpdatedAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "title",
+                          "description",
+                          "category",
+                          "priority",
+                          "status",
+                          "allowParallel",
+                          "claims",
+                          "progressCount",
+                          "lastProgress",
+                          "createdAt",
+                          "updatedAt",
+                          "planUpdatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "categories": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "items",
+                    "categories",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.get.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "item": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "priority": {
+                              "type": "string",
+                              "enum": [
+                                "low",
+                                "medium",
+                                "high",
+                                "urgent"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "ready",
+                                "claimed",
+                                "in_progress",
+                                "review",
+                                "done",
+                                "blocked"
+                              ]
+                            },
+                            "allowParallel": {
+                              "type": "boolean"
+                            },
+                            "claims": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "progressCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "lastProgress": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "at": {
+                                      "type": "string"
+                                    },
+                                    "agentId": {
+                                      "type": "string"
+                                    },
+                                    "note": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "at",
+                                    "note"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "planUpdatedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "progress": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string"
+                                  },
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "plan": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "description",
+                            "category",
+                            "priority",
+                            "status",
+                            "allowParallel",
+                            "claims",
+                            "progressCount",
+                            "lastProgress",
+                            "createdAt",
+                            "updatedAt",
+                            "planUpdatedAt",
+                            "progress",
+                            "plan"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "item",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.create.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "item": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "priority": {
+                              "type": "string",
+                              "enum": [
+                                "low",
+                                "medium",
+                                "high",
+                                "urgent"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "ready",
+                                "claimed",
+                                "in_progress",
+                                "review",
+                                "done",
+                                "blocked"
+                              ]
+                            },
+                            "allowParallel": {
+                              "type": "boolean"
+                            },
+                            "claims": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "progressCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "lastProgress": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "at": {
+                                      "type": "string"
+                                    },
+                                    "agentId": {
+                                      "type": "string"
+                                    },
+                                    "note": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "at",
+                                    "note"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "planUpdatedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "progress": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string"
+                                  },
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "plan": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "description",
+                            "category",
+                            "priority",
+                            "status",
+                            "allowParallel",
+                            "claims",
+                            "progressCount",
+                            "lastProgress",
+                            "createdAt",
+                            "updatedAt",
+                            "planUpdatedAt",
+                            "progress",
+                            "plan"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "item",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.update.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "item": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "priority": {
+                              "type": "string",
+                              "enum": [
+                                "low",
+                                "medium",
+                                "high",
+                                "urgent"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "ready",
+                                "claimed",
+                                "in_progress",
+                                "review",
+                                "done",
+                                "blocked"
+                              ]
+                            },
+                            "allowParallel": {
+                              "type": "boolean"
+                            },
+                            "claims": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "progressCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "lastProgress": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "at": {
+                                      "type": "string"
+                                    },
+                                    "agentId": {
+                                      "type": "string"
+                                    },
+                                    "note": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "at",
+                                    "note"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "planUpdatedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "progress": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string"
+                                  },
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "plan": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "description",
+                            "category",
+                            "priority",
+                            "status",
+                            "allowParallel",
+                            "claims",
+                            "progressCount",
+                            "lastProgress",
+                            "createdAt",
+                            "updatedAt",
+                            "planUpdatedAt",
+                            "progress",
+                            "plan"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "item",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.update_plan.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "item": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "priority": {
+                              "type": "string",
+                              "enum": [
+                                "low",
+                                "medium",
+                                "high",
+                                "urgent"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "ready",
+                                "claimed",
+                                "in_progress",
+                                "review",
+                                "done",
+                                "blocked"
+                              ]
+                            },
+                            "allowParallel": {
+                              "type": "boolean"
+                            },
+                            "claims": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "progressCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "lastProgress": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "at": {
+                                      "type": "string"
+                                    },
+                                    "agentId": {
+                                      "type": "string"
+                                    },
+                                    "note": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "at",
+                                    "note"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "planUpdatedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "progress": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string"
+                                  },
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "plan": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "description",
+                            "category",
+                            "priority",
+                            "status",
+                            "allowParallel",
+                            "claims",
+                            "progressCount",
+                            "lastProgress",
+                            "createdAt",
+                            "updatedAt",
+                            "planUpdatedAt",
+                            "progress",
+                            "plan"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "item",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.set_status.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "item": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "priority": {
+                              "type": "string",
+                              "enum": [
+                                "low",
+                                "medium",
+                                "high",
+                                "urgent"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "ready",
+                                "claimed",
+                                "in_progress",
+                                "review",
+                                "done",
+                                "blocked"
+                              ]
+                            },
+                            "allowParallel": {
+                              "type": "boolean"
+                            },
+                            "claims": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "progressCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "lastProgress": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "at": {
+                                      "type": "string"
+                                    },
+                                    "agentId": {
+                                      "type": "string"
+                                    },
+                                    "note": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "at",
+                                    "note"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "planUpdatedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "progress": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string"
+                                  },
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "plan": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "description",
+                            "category",
+                            "priority",
+                            "status",
+                            "allowParallel",
+                            "claims",
+                            "progressCount",
+                            "lastProgress",
+                            "createdAt",
+                            "updatedAt",
+                            "planUpdatedAt",
+                            "progress",
+                            "plan"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "item",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.release.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "item": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "priority": {
+                              "type": "string",
+                              "enum": [
+                                "low",
+                                "medium",
+                                "high",
+                                "urgent"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "ready",
+                                "claimed",
+                                "in_progress",
+                                "review",
+                                "done",
+                                "blocked"
+                              ]
+                            },
+                            "allowParallel": {
+                              "type": "boolean"
+                            },
+                            "claims": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "progressCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "lastProgress": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "at": {
+                                      "type": "string"
+                                    },
+                                    "agentId": {
+                                      "type": "string"
+                                    },
+                                    "note": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "at",
+                                    "note"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "planUpdatedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "progress": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "at": {
+                                    "type": "string"
+                                  },
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "note": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "at",
+                                  "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "plan": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "description",
+                            "category",
+                            "priority",
+                            "status",
+                            "allowParallel",
+                            "claims",
+                            "progressCount",
+                            "lastProgress",
+                            "createdAt",
+                            "updatedAt",
+                            "planUpdatedAt",
+                            "progress",
+                            "plan"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "item",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.delete.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "todoId": {
+                      "type": "string"
+                    },
+                    "deleted": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "todoId",
+                    "deleted",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.unsubscribe.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "projectId": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "claimants": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "projectId",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.changed"
+                },
+                "payload": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "upsert"
+                        },
+                        "projectId": {
+                          "type": "string"
+                        },
+                        "item": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "category": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "priority": {
+                              "type": "string",
+                              "enum": [
+                                "low",
+                                "medium",
+                                "high",
+                                "urgent"
+                              ]
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "ready",
+                                "claimed",
+                                "in_progress",
+                                "review",
+                                "done",
+                                "blocked"
+                              ]
+                            },
+                            "allowParallel": {
+                              "type": "boolean"
+                            },
+                            "claims": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "agentId": {
+                                    "type": "string"
+                                  },
+                                  "sessionId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "workspaceId": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "branch": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "claimedAt": {
+                                    "type": "string"
+                                  },
+                                  "lastHeartbeat": {
+                                    "type": "string"
+                                  },
+                                  "stale": {
+                                    "type": "boolean"
+                                  }
+                                },
+                                "required": [
+                                  "agentId",
+                                  "sessionId",
+                                  "workspaceId",
+                                  "branch",
+                                  "claimedAt",
+                                  "lastHeartbeat",
+                                  "stale"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "progressCount": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 9007199254740991
+                            },
+                            "lastProgress": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "at": {
+                                      "type": "string"
+                                    },
+                                    "agentId": {
+                                      "type": "string"
+                                    },
+                                    "note": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "at",
+                                    "note"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "createdAt": {
+                              "type": "string"
+                            },
+                            "updatedAt": {
+                              "type": "string"
+                            },
+                            "planUpdatedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "title",
+                            "description",
+                            "category",
+                            "priority",
+                            "status",
+                            "allowParallel",
+                            "claims",
+                            "progressCount",
+                            "lastProgress",
+                            "createdAt",
+                            "updatedAt",
+                            "planUpdatedAt"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "projectId",
+                        "item"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "remove"
+                        },
+                        "projectId": {
+                          "type": "string"
+                        },
+                        "todoId": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "projectId",
+                        "todoId"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "loop/run/response"
                 },
                 "payload": {
