@@ -32,7 +32,7 @@ import { createMarkdownParser } from "@/utils/markdown-parser";
 import {
   createCompactMarkdownStyles,
   createMarkdownStyles,
-  withProseFont,
+  withDesignProse,
 } from "@/styles/markdown-styles";
 import type { Theme } from "@/styles/theme";
 import { openExternalUrl } from "@/utils/open-external-url";
@@ -67,7 +67,7 @@ function markdownStyleMapping(theme: Theme): Partial<MarkdownWithStableRendererP
 }
 
 function proseMarkdownStyleMapping(theme: Theme): Partial<MarkdownWithStableRendererProps> {
-  return { style: withProseFont(createMarkdownStyles(theme), theme.design.contentFontFamily) };
+  return { style: withDesignProse(createMarkdownStyles(theme), theme) };
 }
 
 function compactMarkdownStyleMapping(theme: Theme): Partial<MarkdownWithStableRendererProps> {

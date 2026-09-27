@@ -1,6 +1,6 @@
 import React, { memo, useCallback, useMemo, type ReactNode } from "react";
 import { themeOf } from "@/styles/design-theme";
-import { metaTextStyle, readingColumnMaxWidth } from "./conversation-design";
+import { metaTextStyle, readingColumnMaxWidth, workingIndicatorColor } from "./conversation-design";
 import { MonoMetaView } from "./design-scopes";
 import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -24,7 +24,7 @@ import { SyncedLoader } from "@/components/synced-loader";
 import { useRetainedPanelActive } from "@/components/retained-panel";
 
 const ThemedSyncedLoader = withUnistyles(SyncedLoader);
-const workingIndicatorColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
+const workingIndicatorColorMapping = (theme: Theme) => ({ color: workingIndicatorColor(theme) });
 export const TURN_FOOTER_BOTTOM_SPACING = SPACING[8];
 
 export type TurnContentStrategy = StreamStrategy;

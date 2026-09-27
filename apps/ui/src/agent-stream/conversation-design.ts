@@ -10,18 +10,21 @@ import type { themeOf } from "@/styles/design-theme";
 //
 //   bubble: { ...base, ...userMessageSurfaceStyle(themeOf(rt.themeName)) },
 //
-// Helpers return overrides only; the `current` design gets `{}` (or the caller's value), so the
-// shipping look is untouched.
+// Helpers return overrides. The `current` design gets its shipping values back, spelled out from
+// the real theme wherever the stylesheet default reads a per-design token (radii): on web those
+// stylesheet numbers freeze at the first compute, so a live switch back to `current` would
+// otherwise keep the previous design's radii.
 type RealTheme = ReturnType<typeof themeOf>;
+type RadiusKey = keyof RealTheme["borderRadius"];
 
 /** Width of the centred reading column shared by the stream, turn footer and composer. */
 export function readingColumnMaxWidth(t: RealTheme): number {
   return t.design.contentMaxWidth ?? MAX_CONTENT_WIDTH;
 }
 
-/** Radius for a composer or toolbar control; `current` keeps the caller's shipping radius. */
-export function controlRadius(t: RealTheme, currentRadius: number): number {
-  return t.design.variant === "current" ? currentRadius : t.design.controlRadius;
+/** Radius for a composer or toolbar control; `current` keeps its shipping radius. */
+export function controlRadius(t: RealTheme, currentRadius: RadiusKey): number {
+  return t.design.variant === "current" ? t.borderRadius[currentRadius] : t.design.controlRadius;
 }
 
 /** Face and size for metadata (timestamps, elapsed time) next to messages. */
@@ -99,7 +102,7 @@ function bubbleShape(t: RealTheme): ViewFragment {
         paddingVertical: t.spacing[2],
       };
     default:
-      return {};
+      return { borderRadius: t.borderRadius["2xl"], borderTopRightRadius: t.borderRadius.sm };
   }
 }
 
@@ -152,7 +155,7 @@ export function toolRowDesign(t: RealTheme): ToolRowDesign {
       // Quiet collapsed rows: smaller and lighter; chrome only on hover.
       return {
         ...NO_TOOL_ROW_DESIGN,
-        pressable: { paddingVertical: t.spacing[0.5] },
+        pressable: { paddingVertical: t.spacing[0.5], borderRadius: t.borderRadius.lg },
         label: { fontSize: 13 },
       };
     case "soft":
@@ -177,7 +180,7 @@ export function toolRowDesign(t: RealTheme): ToolRowDesign {
         label: { fontSize: 13 },
       };
     default:
-      return NO_TOOL_ROW_DESIGN;
+      return { ...NO_TOOL_ROW_DESIGN, pressable: { borderRadius: t.borderRadius.lg } };
   }
 }
 
@@ -188,11 +191,12 @@ export function toolRowDesign(t: RealTheme): ToolRowDesign {
 export function composerSurfaceStyle(t: RealTheme): ViewFragment {
   switch (t.design.composer) {
     case "floating":
+      // Paper, Focus: a raised card that floats over the reading column.
       return {
         backgroundColor: t.colors.popover,
         borderColor: t.colors.borderAccent,
         borderRadius: t.borderRadius.xl,
-        ...t.shadow.md,
+        ...t.shadow.lg,
       };
     case "pill":
       return {
@@ -213,7 +217,7 @@ export function composerSurfaceStyle(t: RealTheme): ViewFragment {
       if (t.design.variant === "inset") {
         return { borderColor: t.colors.border, borderRadius: t.borderRadius.xl };
       }
-      return {};
+      return { borderRadius: t.borderRadius["2xl"] };
   }
 }
 
@@ -221,7 +225,7 @@ export function composerSurfaceStyle(t: RealTheme): ViewFragment {
 export function composerControlStyle(t: RealTheme): ViewFragment {
   switch (t.design.variant) {
     case "current":
-      return {};
+      return { borderRadius: t.borderRadius["2xl"] };
     case "mono":
       return {
         borderWidth: t.borderWidth[1],
@@ -237,4 +241,19 @@ export function composerControlStyle(t: RealTheme): ViewFragment {
 
 export function composerControlTextStyle(t: RealTheme): TextFragment {
   return t.design.monoMeta ? { fontFamily: t.fontFamily.mono, fontSize: t.fontSize.sm } : {};
+}
+
+// ---------------------------------------------------------------------------
+// Working indicator
+// ---------------------------------------------------------------------------
+
+/** Loader colour while a turn runs: the shipping foreground, or the design's accent. */
+export function workingIndicatorColor(t: RealTheme): string {
+  switch (t.design.variant) {
+    case "current":
+    case "mono":
+      return t.colors.foreground;
+    default:
+      return t.colors.accent;
+  }
 }
