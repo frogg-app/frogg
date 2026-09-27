@@ -20,6 +20,9 @@ import { softEdge, softRaised, SOFT_PILL } from "./soft-surface";
 
 type TabId = "home" | "chats" | "new" | "settings";
 
+/** Height the floating tab bar covers above the bottom safe-area inset, for pages to clear. */
+export const SOFT_TAB_BAR_CLEARANCE = 72;
+
 const ThemedIcons: Record<TabId, ThemedIcon> = {
   home: themedIcon(House),
   chats: themedIcon(MessagesSquare),
@@ -146,7 +149,12 @@ function SoftTab({
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
+  // Floats over the bottom of the page (Luma/Notion iOS) instead of taking a strip of its own.
   wrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 2,

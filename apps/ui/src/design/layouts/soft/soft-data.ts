@@ -105,6 +105,32 @@ export function useSoftRecents(): SoftRecent[] {
   );
 }
 
+export type SoftDayGroup = "today" | "yesterday" | "previous7Days" | "older";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Newest-first recents bucketed by local calendar day relative to `now`; empty buckets dropped. */
+export function groupByDay(recents: SoftRecent[], now: Date): { key: SoftDayGroup; items: SoftRecent[] }[] {
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+  const today = start.getTime();
+  const buckets: Record<SoftDayGroup, SoftRecent[]> = {
+    today: [],
+    yesterday: [],
+    previous7Days: [],
+    older: [],
+  };
+  for (const recent of recents) {
+    if (recent.sortTime >= today) buckets.today.push(recent);
+    else if (recent.sortTime >= today - DAY_MS) buckets.yesterday.push(recent);
+    else if (recent.sortTime >= today - 7 * DAY_MS) buckets.previous7Days.push(recent);
+    else buckets.older.push(recent);
+  }
+  return (Object.keys(buckets) as SoftDayGroup[])
+    .filter((key) => buckets[key].length > 0)
+    .map((key) => ({ key, items: buckets[key] }));
+}
+
 // Anything the user has to act on outranks work still moving on its own; done is last.
 const STATUS_PRIORITY: readonly SoftStatus[] = [
   "needs_input",

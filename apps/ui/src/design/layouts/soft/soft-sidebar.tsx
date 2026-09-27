@@ -149,7 +149,7 @@ function RailButton({
 function SoftListCard() {
   const { t } = useTranslation();
   const [segment, setSegment] = useState<SoftSegment>("chats");
-  const options = useSoftSegmentOptions();
+  const options = useSoftSegmentOptions("sidebar");
   const recents = useSoftRecents();
   const projects = useSoftProjects(recents);
   const selection = useActiveWorkspaceSelection();

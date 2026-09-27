@@ -6,41 +6,23 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useOpenAddProject } from "@/hooks/use-open-add-project";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import type { Theme } from "@/styles/theme";
-import { mostUrgentStatus, softStatusLabel, type SoftProject, type SoftRecent } from "./soft-data";
+import {
+  groupByDay,
+  mostUrgentStatus,
+  softStatusLabel,
+  type SoftProject,
+  type SoftRecent,
+} from "./soft-data";
 import { SoftRecentRow } from "./soft-recent-row";
 import { SoftStatusIcon } from "./soft-status-icon";
 import { SOFT_ROW_RADIUS } from "./soft-surface";
 
 type HoverState = PressableStateCallbackType & { hovered?: boolean };
-type GroupKey = "today" | "yesterday" | "previous7Days" | "older";
 
 const ThemedChevron = withUnistyles(ChevronRight);
 const ThemedFolderPlus = withUnistyles(FolderPlus);
 const extraMutedMapping = (theme: Theme) => ({ color: theme.colors.foregroundExtraMuted });
 const accentMapping = (theme: Theme) => ({ color: theme.colors.accent });
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function groupByDay(recents: SoftRecent[], now: Date): { key: GroupKey; items: SoftRecent[] }[] {
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  const today = start.getTime();
-  const buckets: Record<GroupKey, SoftRecent[]> = {
-    today: [],
-    yesterday: [],
-    previous7Days: [],
-    older: [],
-  };
-  for (const recent of recents) {
-    if (recent.sortTime >= today) buckets.today.push(recent);
-    else if (recent.sortTime >= today - DAY_MS) buckets.yesterday.push(recent);
-    else if (recent.sortTime >= today - 7 * DAY_MS) buckets.previous7Days.push(recent);
-    else buckets.older.push(recent);
-  }
-  return (Object.keys(buckets) as GroupKey[])
-    .filter((key) => buckets[key].length > 0)
-    .map((key) => ({ key, items: buckets[key] }));
-}
 
 /** Recent conversations grouped Today / Yesterday / Previous 7 days / Older. */
 export function SoftChatList({

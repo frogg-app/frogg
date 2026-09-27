@@ -13,6 +13,7 @@ import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { useSoftChatServerId, useSoftProjects, useSoftRecents } from "./soft-data";
 import { SoftProjectCards, SoftRecentCards } from "./soft-cards";
 import { SoftChatList, SoftProjectList } from "./soft-lists";
+import { SOFT_TAB_BAR_CLEARANCE } from "./soft-mobile-nav";
 import { SoftPillComposer } from "./soft-pill-composer";
 import { SoftRoundButton } from "./soft-round-button";
 
@@ -24,14 +25,15 @@ const WIDE_RECENT_LIMIT = 6;
 // preview copy
 const GREETING = "What are we building today?";
 
-export function useSoftSegmentOptions(): SegmentedControlOption<SoftSegment>[] {
+/** The Chats | Projects pill options; `scope` keeps test IDs apart between home and sidebar. */
+export function useSoftSegmentOptions(scope: string): SegmentedControlOption<SoftSegment>[] {
   const { t } = useTranslation();
   return useMemo(
     () => [
-      { value: "chats", label: t("sidebar.sections.chats"), testID: "soft-segment-chats" },
-      { value: "projects", label: t("sidebar.sections.projects"), testID: "soft-segment-projects" },
+      { value: "chats", label: t("sidebar.sections.chats"), testID: `soft-${scope}-chats` },
+      { value: "projects", label: t("sidebar.sections.projects"), testID: `soft-${scope}-projects` },
     ],
-    [t],
+    [scope, t],
   );
 }
 
@@ -46,7 +48,7 @@ export function SoftHome() {
   const compact = useIsCompactFormFactor();
   const insets = useSafeAreaInsets();
   const [segment, setSegment] = useState<SoftSegment>("chats");
-  const options = useSoftSegmentOptions();
+  const options = useSoftSegmentOptions("home");
   const recents = useSoftRecents();
   const projects = useSoftProjects(recents);
   const chatServerId = useSoftChatServerId();
@@ -61,6 +63,11 @@ export function SoftHome() {
 
   // The top bar clears the status bar itself: the soft home has no shipping header above it.
   const topBarInset = useMemo(() => ({ paddingTop: insets.top + 10 }), [insets.top]);
+  // The composer sits just above the floating tab bar.
+  const composerInset = useMemo(
+    () => ({ paddingBottom: SOFT_TAB_BAR_CLEARANCE + Math.max(insets.bottom, 10) + 4 }),
+    [insets.bottom],
+  );
   const openSearch = useCallback(() => setCommandCenterOpen(true), [setCommandCenterOpen]);
   const wideRecents = useMemo(() => recents.slice(0, WIDE_RECENT_LIMIT), [recents]);
 
@@ -81,7 +88,7 @@ export function SoftHome() {
         <ScrollView style={styles.scroll} contentContainerStyle={styles.compactList}>
           {list}
         </ScrollView>
-        <View style={styles.compactComposer}>
+        <View style={[styles.compactComposer, composerInset]}>
           <SoftPillComposer serverId={chatServerId} />
         </View>
       </View>
