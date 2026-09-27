@@ -4,10 +4,10 @@ import os from "node:os";
 import path from "node:path";
 import { once } from "node:events";
 import express from "express";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, test } from "vitest";
 import pino from "pino";
 
-import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
+import { createWebUiMiddleware, withDefaultPort, type WebUiGate } from "./web-ui.js";
 
 const logger = pino({ level: "silent" });
 
@@ -329,5 +329,18 @@ describe("daemon web UI route module", () => {
     const afterClaim = await request(app, "GET", "/", { "x-test-remote": "1" });
     expect(afterClaim.body).toContain("app");
     expect(afterClaim.body).not.toContain("Claim this");
+  });
+});
+
+describe("withDefaultPort", () => {
+  it("spells out the scheme's default port a Host header omits", () => {
+    expect(withDefaultPort("review.example.com", true)).toBe("review.example.com:443");
+    expect(withDefaultPort("review.example.com", false)).toBe("review.example.com:80");
+    expect(withDefaultPort("[::1]", true)).toBe("[::1]:443");
+  });
+
+  it("keeps an explicit port", () => {
+    expect(withDefaultPort("127.0.0.1:6767", false)).toBe("127.0.0.1:6767");
+    expect(withDefaultPort("[::1]:6767", true)).toBe("[::1]:6767");
   });
 });
