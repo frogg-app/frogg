@@ -35,7 +35,7 @@ import {
 } from "./model";
 import { StreamGraph, type StreamGraphLabels } from "./stream-graph";
 import { useReleaseStreams } from "./use-release-streams";
-import { panelCardChrome, panelSectionTitle } from "@/workspace/panel-chrome";
+import { panelCardChrome, panelSectionTitle, panelTheme } from "@/workspace/panel-chrome";
 import { usePanelHeadingDataSet } from "@/workspace/use-panel-meta-dataset";
 
 const ThemedRotateCw = withUnistyles(RotateCw);
@@ -491,7 +491,7 @@ function iconButtonStyle({ hovered }: { hovered?: boolean }) {
 const SWATCH = { width: 10, height: 10, borderRadius: 5 } as const;
 const LINE_SWATCH = { width: 14, height: 0, borderTopWidth: 2 } as const;
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   scroll: { flex: 1 },
   content: { flexGrow: 1, paddingBottom: theme.spacing[6] },
   toolbar: {
@@ -523,7 +523,7 @@ const styles = StyleSheet.create((theme) => ({
     fontWeight: theme.fontWeight.semibold,
     color: theme.colors.foreground,
     marginTop: theme.spacing[2],
-    ...panelSectionTitle(theme),
+    ...panelSectionTitle(panelTheme(theme, rt.themeName)),
   },
   setup: {
     gap: theme.spacing[2],
@@ -532,7 +532,7 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.borderAccent,
     backgroundColor: theme.colors.surface1,
-    ...panelCardChrome(theme),
+    ...panelCardChrome(panelTheme(theme, rt.themeName)),
   },
   setupTitle: {
     fontSize: theme.fontSize.base,
@@ -550,7 +550,7 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface1,
-    ...panelCardChrome(theme),
+    ...panelCardChrome(panelTheme(theme, rt.themeName)),
   },
   cardHeader: {
     flexDirection: "row",
@@ -586,7 +586,7 @@ const styles = StyleSheet.create((theme) => ({
     borderColor: theme.colors.border,
     paddingVertical: theme.spacing[2],
     gap: theme.spacing[2],
-    ...panelCardChrome(theme),
+    ...panelCardChrome(panelTheme(theme, rt.themeName)),
   },
   legend: {
     flexDirection: "row",
@@ -617,8 +617,8 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.borderRadius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    ...panelCardChrome(theme),
-    ...(theme.design.borderless ? { backgroundColor: theme.colors.surface1 } : null),
+    ...panelCardChrome(panelTheme(theme, rt.themeName)),
+    ...(panelTheme(theme, rt.themeName).design.borderless ? { backgroundColor: theme.colors.surface1 } : null),
   },
   flowCardWarn: { borderColor: theme.colors.statusWarning },
   flowHeader: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
@@ -661,7 +661,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    ...(theme.design.borderless ? { borderBottomColor: theme.colors.borderAccent } : null),
+    ...(panelTheme(theme, rt.themeName).design.borderless ? { borderBottomColor: theme.colors.borderAccent } : null),
   },
   changeHeader: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
   changeSubject: { flex: 1, fontSize: theme.fontSize.base, color: theme.colors.foreground },

@@ -42,7 +42,7 @@ import {
 } from "./model";
 import { useCiNow, useCiRuns, type CiRunsState } from "./use-ci-runs";
 import { useCiJobLogToChat, type CiJobLogToChat } from "./use-ci-job-log-to-chat";
-import { panelListItemChrome, panelMetaText, panelStatusDot } from "@/workspace/panel-chrome";
+import { panelListItemChrome, panelMetaText, panelStatusDot, panelTheme } from "@/workspace/panel-chrome";
 import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 /** How a job row attaches its log to the focused chat; null where that is not possible. */
@@ -531,7 +531,7 @@ function jobRowStyle({ hovered }: { hovered?: boolean }) {
 
 const RUNNER_DOT_SIZE = 6;
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   toolbar: {
     flexDirection: "row",
     alignItems: "center",
@@ -584,7 +584,7 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     paddingBottom: theme.spacing[2],
-    ...panelListItemChrome(theme),
+    ...panelListItemChrome(panelTheme(theme, rt.themeName)),
   },
   runHeader: {
     flexDirection: "row",
@@ -607,7 +607,7 @@ const styles = StyleSheet.create((theme) => ({
   runNumber: {
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foregroundMuted,
-    ...panelMetaText(theme),
+    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   runMeta: {
     flexDirection: "row",
@@ -624,13 +624,13 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
     fontVariant: ["tabular-nums"],
-    ...panelMetaText(theme),
+    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   runMetaText: {
     flexShrink: 1,
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
-    ...panelMetaText(theme),
+    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   runBar: {
     paddingHorizontal: theme.spacing[3],
@@ -686,8 +686,8 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     minWidth: 0,
   },
-  runnerDotBusy: panelStatusDot(theme, theme.colors.statusDotWarning, RUNNER_DOT_SIZE),
-  runnerDotIdle: panelStatusDot(theme, theme.colors.statusDotSuccess, RUNNER_DOT_SIZE),
+  runnerDotBusy: panelStatusDot(panelTheme(theme, rt.themeName), theme.colors.statusDotWarning, RUNNER_DOT_SIZE),
+  runnerDotIdle: panelStatusDot(panelTheme(theme, rt.themeName), theme.colors.statusDotSuccess, RUNNER_DOT_SIZE),
   hover: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },

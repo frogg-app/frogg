@@ -1,4 +1,5 @@
 import type { TextStyle, ViewStyle } from "react-native";
+import { themeOf } from "@/styles/design-theme";
 import type { Theme } from "@/styles/theme";
 import { hexColorWithAlpha } from "@/utils/color";
 
@@ -10,6 +11,21 @@ type Variant = Theme["design"]["variant"];
 
 function variantOf(theme: Theme): Variant {
   return theme.design.variant;
+}
+
+/**
+ * The concrete theme for a Unistyles theme name. On web, Unistyles hands stylesheets a theme whose
+ * string leaves are CSS variables, so `theme.design.variant` and colour maths never see real
+ * values there. Call this with `rt.themeName` written inside each style's value: that registers a
+ * theme-name dependency (the style recomputes on a design switch) and yields real tokens.
+ */
+export function panelTheme(theme: Theme, themeName: string | undefined): Theme {
+  const registered: Theme = themeOf(themeName);
+  // The shipping design keeps the CSS-variable colours so it renders exactly as before; only its
+  // design tokens (frozen at first compute on web) come from the registered theme.
+  return registered.design.variant === "current"
+    ? { ...theme, design: registered.design }
+    : registered;
 }
 
 /** Soft accent wash used for a selected row or pill in the Inset and Soft directions. */

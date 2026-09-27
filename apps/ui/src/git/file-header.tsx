@@ -30,7 +30,7 @@ import {
 } from "@/git/file-header-presentation";
 import type { ParsedDiffFile } from "@/git/use-diff-query";
 import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
-import { panelMetaText } from "@/workspace/panel-chrome";
+import { panelMetaText, panelTheme } from "@/workspace/panel-chrome";
 import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 export interface FileHeaderProps {
@@ -362,7 +362,7 @@ export const FileHeader = memo(function FileHeader({
   );
 });
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: { width: "100%", overflow: "hidden", userSelect: "none" },
   documentContainer: {
     height: 30,
@@ -448,7 +448,7 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     minWidth: 0,
     userSelect: "none",
-    ...panelMetaText(theme),
+    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   directorySpacer: { flex: 1, minWidth: 0 },
   tooltip: { color: theme.colors.popoverForeground, fontSize: theme.fontSize.base },

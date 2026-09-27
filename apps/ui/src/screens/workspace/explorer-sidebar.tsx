@@ -166,7 +166,7 @@ function explorerDividerChrome(theme: Theme) {
   return edge.borderBottomWidth === 0 ? { height: 0 } : { backgroundColor: edge.borderBottomColor };
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   dock: {
     flex: 1,
     minWidth: 0,
@@ -185,7 +185,7 @@ const styles = StyleSheet.create((theme) => ({
     left: 0,
     height: theme.borderWidth[1],
     backgroundColor: theme.colors.border,
-    ...explorerDividerChrome(theme),
+    ...explorerDividerChrome(panelTheme(theme, rt.themeName)),
   },
   content: {
     flex: 1,

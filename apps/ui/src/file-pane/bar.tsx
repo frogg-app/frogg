@@ -1,4 +1,4 @@
-import { panelMetaText } from "@/workspace/panel-chrome";
+import { panelMetaText, panelTheme } from "@/workspace/panel-chrome";
 import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 import { Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -127,7 +127,7 @@ function formatFileSize(size: number): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   chrome: {
     flexShrink: 0,
   },
@@ -149,7 +149,7 @@ const styles = StyleSheet.create((theme) => ({
   whisper: {
     color: theme.colors.foregroundExtraMuted,
     fontSize: theme.fontSize.sm,
-    ...panelMetaText(theme),
+    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   error: { color: theme.colors.palette.red[300], fontSize: theme.fontSize.sm },
   dirtyDot: {

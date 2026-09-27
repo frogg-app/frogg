@@ -10,7 +10,7 @@ import {
 } from "@/git/check-presentation.view";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
 import type { Theme } from "@/styles/theme";
-import { panelMetaText, panelSectionTitle } from "@/workspace/panel-chrome";
+import { panelMetaText, panelSectionTitle, panelTheme } from "@/workspace/panel-chrome";
 import { usePanelHeadingDataSet } from "@/workspace/use-panel-meta-dataset";
 
 const ThemedChevronDown = withUnistyles(ChevronDown);
@@ -110,7 +110,7 @@ export function CheckPresentationSummaryPill({
   );
 }
 
-export const sectionKitStyles = StyleSheet.create((theme) => ({
+export const sectionKitStyles = StyleSheet.create((theme, rt) => ({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -122,7 +122,7 @@ export const sectionKitStyles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.medium,
     color: theme.colors.foregroundMuted,
-    ...panelSectionTitle(theme),
+    ...panelSectionTitle(panelTheme(theme, rt.themeName)),
   },
   sectionBody: {
     paddingBottom: theme.spacing[3],
@@ -195,6 +195,6 @@ export const sectionKitStyles = StyleSheet.create((theme) => ({
   checkDuration: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
-    ...panelMetaText(theme),
+    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
 }));

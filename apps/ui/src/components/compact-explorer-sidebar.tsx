@@ -1,5 +1,5 @@
 import type { Theme } from "@/styles/theme";
-import { panelHeaderEdge, panelTabChrome } from "@/workspace/panel-chrome";
+import { panelHeaderEdge, panelTabChrome, panelTheme } from "@/workspace/panel-chrome";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Pressable, type LayoutChangeEvent } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
@@ -592,7 +592,7 @@ function tabChrome(theme: Theme) {
   });
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   nativeDock: {
     position: "relative",
     height: "100%",
@@ -621,7 +621,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "space-between",
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    ...panelHeaderEdge(theme),
+    ...panelHeaderEdge(panelTheme(theme, rt.themeName)),
   },
   // Takes the header's spare width rather than its own content's, so the strip can be
   // measured against the room it actually has. `minWidth: 0` lets it shrink below the tabs'
@@ -641,21 +641,21 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[3],
     borderRadius: theme.borderRadius.md,
-    ...tabChrome(theme).tab,
+    ...tabChrome(panelTheme(theme, rt.themeName)).tab,
   },
   // No label to sit beside, so the icon keeps only its own padding and the tab stays square.
   tabIconOnly: {
     paddingHorizontal: theme.spacing[3],
     gap: 0,
   },
-  tabActive: tabChrome(theme).active,
+  tabActive: tabChrome(panelTheme(theme, rt.themeName)).active,
   tabText: {
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foregroundMuted,
-    ...tabChrome(theme).label,
+    ...tabChrome(panelTheme(theme, rt.themeName)).label,
   },
-  tabTextActive: tabChrome(theme).labelActive,
+  tabTextActive: tabChrome(panelTheme(theme, rt.themeName)).labelActive,
   tabTextMuted: {
     opacity: 0.8,
   },

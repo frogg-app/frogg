@@ -49,7 +49,7 @@ import {
 import { panelSupportsHost } from "@/panels/panel-manifest";
 import type { PanelIconProps } from "@/panels/panel-registry";
 import { SPACING, type Theme } from "@/styles/theme";
-import { panelTabChrome } from "@/workspace/panel-chrome";
+import { panelTabChrome, panelTheme } from "@/workspace/panel-chrome";
 import type { SurfaceBackdrop } from "@/styles/surface-backdrop";
 import {
   HorizontalScrollBoundaryShades,
@@ -529,7 +529,7 @@ function tabChrome(theme: Theme) {
   });
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   track: {
     minWidth: 0,
     height: WORKSPACE_SECONDARY_HEADER_HEIGHT,
@@ -561,15 +561,15 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     userSelect: "none",
-    ...tabChrome(theme).tab,
+    ...tabChrome(panelTheme(theme, rt.themeName)).tab,
   },
   labelSlot: {
     alignSelf: "stretch",
     overflow: "hidden",
     justifyContent: "center",
   },
-  tabHovered: tabChrome(theme).hovered,
-  tabActive: tabChrome(theme).active,
+  tabHovered: tabChrome(panelTheme(theme, rt.themeName)).hovered,
+  tabActive: tabChrome(panelTheme(theme, rt.themeName)).active,
   tabLabel: {
     // Absolute so the label keeps its natural width while the slot around it animates.
     position: "absolute",
@@ -579,9 +579,9 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     userSelect: "none",
-    ...tabChrome(theme).label,
+    ...tabChrome(panelTheme(theme, rt.themeName)).label,
   },
-  tabLabelActive: tabChrome(theme).labelActive,
+  tabLabelActive: tabChrome(panelTheme(theme, rt.themeName)).labelActive,
   tabDragging: {
     opacity: 0.3,
   },

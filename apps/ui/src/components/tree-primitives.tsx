@@ -2,7 +2,7 @@ import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { ChevronRight } from "lucide-react-native";
 import { SPACING, type Theme } from "@/styles/theme";
-import { panelTreeRowChrome } from "@/workspace/panel-chrome";
+import { panelTheme, panelTreeRowChrome } from "@/workspace/panel-chrome";
 
 // Shared presentation primitives for the app's directory trees. Both the Files
 // explorer (server-loaded listings) and the Changes view (client-built from diff
@@ -52,16 +52,16 @@ function treeRowChrome(theme: Theme) {
   });
 }
 
-export const workspaceTreeRowStyles = StyleSheet.create((theme: Theme) => ({
+export const workspaceTreeRowStyles = StyleSheet.create((theme: Theme, rt) => ({
   row: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingVertical: WORKSPACE_FILE_ROW_VERTICAL_PADDING,
     paddingRight: WORKSPACE_PANE_TRAILING_GLYPH_RAIL,
-    ...treeRowChrome(theme).row,
+    ...treeRowChrome(panelTheme(theme, rt.themeName)).row,
   },
-  active: treeRowChrome(theme).active,
+  active: treeRowChrome(panelTheme(theme, rt.themeName)).active,
   name: { color: theme.colors.foreground, opacity: 0.76 },
   nameHovered: { opacity: 1 },
 }));
