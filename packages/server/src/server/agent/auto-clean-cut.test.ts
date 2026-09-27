@@ -51,7 +51,7 @@ describe("maybeAutoCleanCut", () => {
   });
 
   it("does not cut providers without a known cache TTL", async () => {
-    const { deps, cleanCut } = setup({ agent: { provider: "codex" } });
+    const { deps, cleanCut } = setup({ agent: { provider: "copilot" } });
     await expect(run(deps, new Date(NOW - 10 * HOUR))).resolves.toBe("unknown");
     expect(cleanCut).not.toHaveBeenCalled();
   });
