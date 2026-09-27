@@ -10,6 +10,8 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
+import { summarizeCleanCutSubagents } from "@/composer/clean-cut-summary";
+import { useToast } from "@/contexts/toast-context";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
 
@@ -52,6 +54,7 @@ export interface CleanCutControl {
 
 export function useCleanCut(serverId: string, agentId: string | null | undefined): CleanCutControl {
   const { t } = useTranslation();
+  const toast = useToast();
   const client = useHostRuntimeClient(serverId);
   const supported = useHostFeature(serverId, "agentCleanCut");
   const key = entryKey(serverId, agentId ?? "");
@@ -64,8 +67,18 @@ export function useCleanCut(serverId: string, agentId: string | null | undefined
       if (useCleanCutStore.getState().entries[key]?.pending) return t("composer.cleanCut.pending");
       setEntry(key, { pending: true, error: null });
       try {
-        await client.cleanCutAgent(agentId, target);
+        const result = await client.cleanCutAgent(agentId, target);
         setEntry(key, IDLE);
+        // Every entry point closes or moves on after a cut, so the subagent
+        // outcome is reported here, once, in a toast that outlives it.
+        const summary = summarizeCleanCutSubagents(t, result?.subagents ?? []);
+        if (summary) {
+          toast.show(summary.text, {
+            variant: summary.hasFailures ? "warning" : "success",
+            durationMs: summary.hasFailures ? 8000 : 4000,
+            testID: "clean-cut-subagents-toast",
+          });
+        }
         return null;
       } catch (cause: unknown) {
         const error =
@@ -74,7 +87,7 @@ export function useCleanCut(serverId: string, agentId: string | null | undefined
         return error;
       }
     },
-    [agentId, client, key, setEntry, t],
+    [agentId, client, key, setEntry, t, toast],
   );
 
   return {
