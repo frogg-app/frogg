@@ -1805,12 +1805,6 @@ export const en = {
         failed: "Failed to send notification.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "Unable to check CLI install status.",
-        installFailed: "Unable to install the {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3089,55 +3083,11 @@ export const en = {
     sections: {
       general: "General",
       appearance: "Appearance",
-      layout: "Layout",
-      editor: "Editor",
       shortcuts: "Shortcuts",
-      integrations: "Integrations",
       notifications: "Notifications",
       permissions: "Permissions",
-      diagnostics: "Diagnostics",
+      developer: "Developer",
       about: "About",
-    },
-    layout: {
-      openInSidePane: {
-        title: "Open location",
-        destinations: {
-          main: "Main panel",
-          side: "On the side",
-          explorer: "Explorer sidebar",
-        },
-        sources: {
-          explorerFiles: {
-            label: "Selecting a file in Explorer",
-            description: "Open files selected in the Explorer sidebar beside your work",
-          },
-          diffs: {
-            label: "Opening a diff",
-            description: "Open diffs from Explorer and agent conversations beside your work",
-          },
-          chatFiles: {
-            label: "Opening a file from an agent chat",
-            description: "Open file links and tool-call files beside the conversation",
-          },
-          diffFiles: {
-            label: "Opening a file from Changes",
-            description: "Open source files selected from a diff beside it",
-          },
-          subagents: {
-            label: "Opening a subagent",
-            description: "Open subagents beside their parent agent",
-          },
-          pullRequests: {
-            label: "Opening a pull request from Changes",
-            description: "Open pull request details beside Changes",
-          },
-        },
-      },
-    },
-    editor: {
-      title: "Editor",
-      vimKeybindings: "Vim keybindings",
-      vimHint: "Applies to source files on web and desktop.",
     },
     notifications: {
       title: "Notifications",
@@ -3348,7 +3298,88 @@ export const en = {
         },
       },
     },
+    developer: {
+      loading: "Loading…",
+      retry: "Retry",
+      cancel: "Cancel",
+      upToDate: "Up to date",
+      installVersion: "Install {{version}}",
+      updateVersion: "Update to {{version}}",
+      betaApp: {
+        title: "Beta app",
+        info: "Install {{name}} beside this app. It keeps its own settings and data.",
+        webHint: "Beta builds of the app are published on the releases page.",
+        openReleases: "Open releases",
+        installed: "Installed",
+        notInstalled: "Not installed",
+        installedVersion: "Installed: {{version}}",
+        statusFailed: "Couldn't read the beta app status: {{error}}",
+        latest: "Latest beta",
+        latestFailed: "Couldn't check for the latest beta: {{error}}",
+        open: "Open beta app",
+        openFailed: "Couldn't open the beta app: {{error}}",
+        downloaded: "{{received}} of {{total}}",
+        failed: "Install failed: {{error}}",
+        phases: {
+          resolving: "Finding the latest beta…",
+          downloading: "Downloading {{version}}…",
+          verifying: "Verifying the checksum…",
+          installing: "Installing {{version}}…",
+          launched: "Installed {{version}}",
+          failed: "Install failed",
+          cancelled: "Install cancelled",
+        },
+        unsupported: {
+          "running-beta": "This is already the beta app.",
+          "unsupported-platform": "The beta app can't be installed on this platform.",
+          "no-release-repository": "This build has no release repository to install from.",
+        },
+      },
+      betaDaemon: {
+        title: "Beta daemon on hosts",
+        info: "A host can run a beta daemon beside its stable one, on its own port and with its own data. Installing and removing it needs the owner role.",
+        noHosts: "No hosts added.",
+        offline: "Offline",
+        needsUpdate: "Update this host to manage betas.",
+        loadFailed: "Couldn't load beta status: {{error}}",
+        unsupported: "Not available on this host: {{reason}}",
+        selfIsBeta: "This host's daemon is the beta.",
+        installed: "Beta {{version}} installed",
+        notInstalled: "Beta not installed",
+        running: "Running on port {{port}}",
+        stopped: "Not running (port {{port}})",
+        latest: "Latest beta: {{version}}",
+        latestFailed: "Couldn't check for the latest beta: {{error}}",
+        install: "Install beta",
+        uninstall: "Uninstall",
+        purge: "Also delete beta data",
+        uninstallConfirmTitle: "Uninstall the beta daemon?",
+        uninstallConfirmMessage:
+          "This removes the beta daemon from {{host}}. The stable daemon is not affected.",
+        uninstallConfirmPurgeMessage:
+          "This removes the beta daemon and its data from {{host}}. The stable daemon is not affected.",
+        starting: "Starting…",
+        installSucceeded: "Beta {{version}} installed.",
+        uninstallSucceeded: "Beta daemon removed.",
+        failed: "Failed: {{error}}",
+        showLog: "Show log",
+        hideLog: "Hide log",
+        phases: {
+          resolve: "Finding the release…",
+          download: "Downloading…",
+          verify: "Verifying…",
+          install: "Installing…",
+          uninstall: "Uninstalling…",
+          done: "Done",
+          failed: "Failed",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "Developer options",
+        hint: "Show the Developer section, for installing beta builds.",
+      },
       attribution: "{{brandFullName}} is based on <upstream>frogg</upstream>.",
       attributionUpstream: "frogg is based on <upstream>Paseo</upstream>.",
       title: "About",
@@ -3542,24 +3573,6 @@ export const en = {
       },
       helpNotes: {
         showKeyboardShortcuts: "Available when focus is not in a text field or terminal.",
-      },
-    },
-    integrations: {
-      title: "Integrations",
-      docs: {
-        cli: "CLI docs",
-        openCli: "Open CLI documentation",
-      },
-      commandLine: {
-        installedPath:
-          "Installed at {{path}}. Add its directory to PATH if needed, then open a new terminal.",
-        title: "Command line",
-        description: "Control and script agents from your terminal",
-      },
-      actions: {
-        install: "Install",
-        installing: "Installing...",
-        installed: "Installed",
       },
     },
     permissions: {

@@ -1,6 +1,6 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ptBR: TranslationResources = {
   releaseStreams: {
@@ -1823,12 +1823,6 @@ export const ptBR: TranslationResources = {
         failed: "Falha ao enviar notificação.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "Não foi possível verificar o status de instalação da CLI.",
-        installFailed: "Não foi possível instalar a CLI do {{brandName}}.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3117,20 +3111,11 @@ export const ptBR: TranslationResources = {
     sections: {
       general: "Geral",
       appearance: "Aparência",
-      layout: en.settings.sections.layout,
-      editor: "Editor",
       shortcuts: "Atalhos",
-      integrations: "Integrações",
       notifications: "Notificações",
       permissions: "Permissões",
-      diagnostics: "Diagnósticos",
+      developer: "Desenvolvedor",
       about: "Sobre",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "Editor",
-      vimKeybindings: "Atalhos do Vim",
-      vimHint: "Aplica-se a arquivos-fonte na web e no desktop.",
     },
     notifications: {
       title: "Notificações",
@@ -3345,7 +3330,88 @@ export const ptBR: TranslationResources = {
         },
       },
     },
+    developer: {
+      loading: "Carregando…",
+      retry: "Tentar novamente",
+      cancel: "Cancelar",
+      upToDate: "Atualizado",
+      installVersion: "Instalar {{version}}",
+      updateVersion: "Atualizar para {{version}}",
+      betaApp: {
+        title: "App beta",
+        info: "Instale {{name}} ao lado deste app. Ele mantém suas próprias configurações e dados.",
+        webHint: "As versões beta do app são publicadas na página de versões.",
+        openReleases: "Abrir versões",
+        installed: "Instalado",
+        notInstalled: "Não instalado",
+        installedVersion: "Instalado: {{version}}",
+        statusFailed: "Não foi possível ler o status do app beta: {{error}}",
+        latest: "Beta mais recente",
+        latestFailed: "Não foi possível verificar a beta mais recente: {{error}}",
+        open: "Abrir app beta",
+        openFailed: "Não foi possível abrir o app beta: {{error}}",
+        downloaded: "{{received}} de {{total}}",
+        failed: "Falha na instalação: {{error}}",
+        phases: {
+          resolving: "Procurando a beta mais recente…",
+          downloading: "Baixando {{version}}…",
+          verifying: "Verificando o checksum…",
+          installing: "Instalando {{version}}…",
+          launched: "{{version}} instalado",
+          failed: "Falha na instalação",
+          cancelled: "Instalação cancelada",
+        },
+        unsupported: {
+          "running-beta": "Este já é o app beta.",
+          "unsupported-platform": "O app beta não pode ser instalado nesta plataforma.",
+          "no-release-repository": "Esta build não tem um repositório de versões para instalar.",
+        },
+      },
+      betaDaemon: {
+        title: "Daemon beta nos hosts",
+        info: "Um host pode executar um daemon beta ao lado do estável, em sua própria porta e com seus próprios dados. Instalar e remover exige a função de proprietário.",
+        noHosts: "Nenhum host adicionado.",
+        offline: "Offline",
+        needsUpdate: "Atualize este host para gerenciar betas.",
+        loadFailed: "Não foi possível carregar o status beta: {{error}}",
+        unsupported: "Indisponível neste host: {{reason}}",
+        selfIsBeta: "O daemon deste host é a beta.",
+        installed: "Beta {{version}} instalada",
+        notInstalled: "Beta não instalada",
+        running: "Em execução na porta {{port}}",
+        stopped: "Parado (porta {{port}})",
+        latest: "Beta mais recente: {{version}}",
+        latestFailed: "Não foi possível verificar a beta mais recente: {{error}}",
+        install: "Instalar beta",
+        uninstall: "Desinstalar",
+        purge: "Excluir também os dados beta",
+        uninstallConfirmTitle: "Desinstalar o daemon beta?",
+        uninstallConfirmMessage:
+          "Isso remove o daemon beta de {{host}}. O daemon estável não é afetado.",
+        uninstallConfirmPurgeMessage:
+          "Isso remove o daemon beta e seus dados de {{host}}. O daemon estável não é afetado.",
+        starting: "Iniciando…",
+        installSucceeded: "Beta {{version}} instalada.",
+        uninstallSucceeded: "Daemon beta removido.",
+        failed: "Falhou: {{error}}",
+        showLog: "Mostrar log",
+        hideLog: "Ocultar log",
+        phases: {
+          resolve: "Procurando a versão…",
+          download: "Baixando…",
+          verify: "Verificando…",
+          install: "Instalando…",
+          uninstall: "Desinstalando…",
+          done: "Concluído",
+          failed: "Falhou",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "Opções de desenvolvedor",
+        hint: "Mostra a seção Desenvolvedor para instalar versões beta.",
+      },
       attribution: "O {{brandFullName}} é baseado no <upstream>frogg</upstream>.",
       attributionUpstream: "O frogg é baseado no <upstream>Paseo</upstream>.",
       title: "Sobre",
@@ -3541,24 +3607,6 @@ export const ptBR: TranslationResources = {
       helpNotes: {
         showKeyboardShortcuts:
           "Disponível quando o foco não está em um campo de texto ou terminal.",
-      },
-    },
-    integrations: {
-      title: "Integrações",
-      docs: {
-        cli: "Docs da CLI",
-        openCli: "Abrir documentação da CLI",
-      },
-      commandLine: {
-        installedPath:
-          "Instalado em {{path}}. Adicione o diretório ao PATH se necessário e abra um novo terminal.",
-        title: "Linha de comando",
-        description: "Controle agentes e execute scripts pelo terminal",
-      },
-      actions: {
-        install: "Instalar",
-        installing: "Instalando...",
-        installed: "Instalado",
       },
     },
     permissions: {

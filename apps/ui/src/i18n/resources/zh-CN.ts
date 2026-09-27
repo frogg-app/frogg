@@ -1,6 +1,6 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
   releaseStreams: {
@@ -1768,12 +1768,6 @@ export const zhCN: TranslationResources = {
         failed: "发送通知失败。",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "无法检查 CLI 安装状态。",
-        installFailed: "无法安装 {{brandName}} CLI。",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3012,20 +3006,11 @@ export const zhCN: TranslationResources = {
     sections: {
       general: "通用",
       appearance: "外观",
-      layout: en.settings.sections.layout,
-      editor: "编辑器",
       shortcuts: "快捷键",
-      integrations: "集成",
       notifications: "通知",
       permissions: "权限",
-      diagnostics: "诊断",
+      developer: "开发者",
       about: "关于",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "编辑器",
-      vimKeybindings: "Vim 键位",
-      vimHint: "适用于网页和桌面端的源文件。",
     },
     notifications: {
       title: "通知",
@@ -3230,7 +3215,87 @@ export const zhCN: TranslationResources = {
         },
       },
     },
+    developer: {
+      loading: "正在加载…",
+      retry: "重试",
+      cancel: "取消",
+      upToDate: "已是最新",
+      installVersion: "安装 {{version}}",
+      updateVersion: "更新到 {{version}}",
+      betaApp: {
+        title: "测试版应用",
+        info: "在此应用旁安装 {{name}}。它有自己的设置和数据。",
+        webHint: "应用的测试版发布在版本发布页面上。",
+        openReleases: "打开发布页面",
+        installed: "已安装",
+        notInstalled: "未安装",
+        installedVersion: "已安装：{{version}}",
+        statusFailed: "无法读取测试版应用状态：{{error}}",
+        latest: "最新测试版",
+        latestFailed: "无法检查最新测试版：{{error}}",
+        open: "打开测试版应用",
+        openFailed: "无法打开测试版应用：{{error}}",
+        downloaded: "{{received}} / {{total}}",
+        failed: "安装失败：{{error}}",
+        phases: {
+          resolving: "正在查找最新测试版…",
+          downloading: "正在下载 {{version}}…",
+          verifying: "正在校验校验和…",
+          installing: "正在安装 {{version}}…",
+          launched: "已安装 {{version}}",
+          failed: "安装失败",
+          cancelled: "安装已取消",
+        },
+        unsupported: {
+          "running-beta": "这已经是测试版应用。",
+          "unsupported-platform": "无法在此平台上安装测试版应用。",
+          "no-release-repository": "此版本没有可供安装的发布仓库。",
+        },
+      },
+      betaDaemon: {
+        title: "主机上的测试版守护进程",
+        info: "主机可以在稳定版旁运行测试版守护进程，使用独立的端口和数据。安装和移除需要所有者角色。",
+        noHosts: "尚未添加主机。",
+        offline: "离线",
+        needsUpdate: "更新此主机以管理测试版。",
+        loadFailed: "无法加载测试版状态：{{error}}",
+        unsupported: "此主机不可用：{{reason}}",
+        selfIsBeta: "此主机的守护进程就是测试版。",
+        installed: "已安装测试版 {{version}}",
+        notInstalled: "未安装测试版",
+        running: "正在端口 {{port}} 上运行",
+        stopped: "未运行（端口 {{port}}）",
+        latest: "最新测试版：{{version}}",
+        latestFailed: "无法检查最新测试版：{{error}}",
+        install: "安装测试版",
+        uninstall: "卸载",
+        purge: "同时删除测试版数据",
+        uninstallConfirmTitle: "卸载测试版守护进程？",
+        uninstallConfirmMessage: "这会从 {{host}} 移除测试版守护进程。稳定版守护进程不受影响。",
+        uninstallConfirmPurgeMessage:
+          "这会从 {{host}} 移除测试版守护进程及其数据。稳定版守护进程不受影响。",
+        starting: "正在开始…",
+        installSucceeded: "已安装测试版 {{version}}。",
+        uninstallSucceeded: "已移除测试版守护进程。",
+        failed: "失败：{{error}}",
+        showLog: "显示日志",
+        hideLog: "隐藏日志",
+        phases: {
+          resolve: "正在查找版本…",
+          download: "正在下载…",
+          verify: "正在校验…",
+          install: "正在安装…",
+          uninstall: "正在卸载…",
+          done: "完成",
+          failed: "失败",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "开发者选项",
+        hint: "显示“开发者”部分，用于安装测试版。",
+      },
       attribution: "{{brandFullName}} 基于 <upstream>frogg</upstream> 构建。",
       attributionUpstream: "frogg 基于 <upstream>Paseo</upstream> 构建。",
       title: "关于",
@@ -3423,23 +3488,6 @@ export const zhCN: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "焦点不在文本输入框或终端内时可用。",
-      },
-    },
-    integrations: {
-      title: "集成",
-      docs: {
-        cli: "CLI 文档",
-        openCli: "打开 CLI 文档",
-      },
-      commandLine: {
-        installedPath: "已安装到 {{path}}。如有需要，请将其目录添加到 PATH，然后打开新终端。",
-        title: "命令行",
-        description: "从终端控制 Agent 并运行脚本",
-      },
-      actions: {
-        install: "安装",
-        installing: "正在安装...",
-        installed: "已安装",
       },
     },
     permissions: {

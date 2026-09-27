@@ -1786,6 +1786,34 @@ export const DaemonUpdateGetStatusRequestSchema = z.object({
   requestId: z.string(),
 });
 
+// Beta channel management: the stable daemon installs, updates and removes the
+// side-by-side beta daemon on its own host (self-hosting/updates.mdx).
+export const DaemonBetaChannelGetStatusRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.get_status.request"),
+  requestId: z.string(),
+});
+
+export const DaemonBetaChannelInstallRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.install.request"),
+  requestId: z.string(),
+  /** Exact beta version to install; the newest published beta when absent. */
+  version: z.string().optional(),
+});
+
+export const DaemonBetaChannelUninstallRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.uninstall.request"),
+  requestId: z.string(),
+  /** Also delete the beta daemon's state directory. */
+  purge: z.boolean().optional(),
+});
+export type DaemonBetaChannelGetStatusRequest = z.infer<
+  typeof DaemonBetaChannelGetStatusRequestSchema
+>;
+export type DaemonBetaChannelInstallRequest = z.infer<typeof DaemonBetaChannelInstallRequestSchema>;
+export type DaemonBetaChannelUninstallRequest = z.infer<
+  typeof DaemonBetaChannelUninstallRequestSchema
+>;
+
 export const HubManagementDaemonConnectRequestSchema = z.object({
   type: z.literal("hub.management.daemon.connect.request"),
   requestId: z.string(),
@@ -3665,6 +3693,9 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   DaemonUpdateCheckRequestSchema,
   DaemonUpdateStartRequestSchema,
   DaemonUpdateGetStatusRequestSchema,
+  DaemonBetaChannelGetStatusRequestSchema,
+  DaemonBetaChannelInstallRequestSchema,
+  DaemonBetaChannelUninstallRequestSchema,
   HubManagementDaemonConnectRequestSchema,
   HubManagementDaemonGetStatusRequestSchema,
   HubManagementDaemonDisconnectRequestSchema,
@@ -4315,6 +4346,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(daemonUpdateProgressBytes): added in v1.5.11 (Frogg), remove gate after
         // 2027-09-20. Daemon reports download byte counts on daemon.update.run.progress.
         daemonUpdateProgressBytes: z.boolean().optional(),
+        // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
+        // daemon.beta_channel.* install/uninstall/status for the side-by-side beta daemon.
+        betaChannelManagement: z.boolean().optional(),
         // COMPAT(agentForkContext): added in v0.1.102, remove gate after 2026-12-28.
         agentForkContext: z.boolean().optional(),
         // COMPAT(agentForkContextCursor): added in v0.1.108, remove gate after 2027-01-14.
@@ -5797,6 +5831,113 @@ export const DaemonUpdateRunProgressMessageSchema = z.object({
   payload: DaemonUpdateRunSchema,
 });
 export type DaemonUpdateRunProgressMessage = z.infer<typeof DaemonUpdateRunProgressMessageSchema>;
+
+/**
+ * A beta channel install or uninstall run. `action` and `phase` stay plain
+ * strings so a later daemon can add values without breaking older apps.
+ * Current actions: install, uninstall. Current phases: resolve, download,
+ * verify, install, uninstall, done, failed.
+ */
+export const DaemonBetaChannelRunSchema = z.object({
+  runId: z.string(),
+  action: z.string(),
+  targetVersion: z.string().nullable(),
+  phase: z.string(),
+  message: z.string().nullable(),
+  startedAt: z.string(),
+  at: z.string(),
+});
+export type DaemonBetaChannelRun = z.infer<typeof DaemonBetaChannelRunSchema>;
+
+export const DaemonBetaChannelStatusSchema = z.object({
+  /** Install/uninstall can run on this host; `reason` says why not when false. */
+  supported: z.boolean(),
+  reason: z.string().nullable(),
+  /** This daemon is itself the beta build. */
+  selfIsBeta: z.boolean(),
+  platform: z.string(),
+  installed: z.boolean(),
+  installedVersion: z.string().nullable(),
+  installDir: z.string().nullable(),
+  running: z.boolean(),
+  runningVersion: z.string().nullable(),
+  port: z.number(),
+  serviceName: z.string(),
+  cliName: z.string(),
+  homeDir: z.string(),
+  /** Newest published beta release; null when the lookup failed (`latestError`). */
+  latestVersion: z.string().nullable(),
+  latestReleaseUrl: z.string().nullable(),
+  latestPublishedAt: z.string().nullable(),
+  latestError: z.string().nullable(),
+  run: DaemonBetaChannelRunSchema.nullable(),
+});
+export type DaemonBetaChannelStatus = z.infer<typeof DaemonBetaChannelStatusSchema>;
+
+export const DaemonBetaChannelGetStatusResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.get_status.response"),
+  payload: DaemonBetaChannelStatusSchema.extend({
+    requestId: z.string(),
+    error: z.string().nullable(),
+  }),
+});
+export type DaemonBetaChannelGetStatusResponse = z.infer<
+  typeof DaemonBetaChannelGetStatusResponseSchema
+>;
+
+const DaemonBetaChannelRunStartPayloadSchema = z.object({
+  requestId: z.string(),
+  accepted: z.boolean(),
+  runId: z.string().nullable(),
+  targetVersion: z.string().nullable(),
+  error: z.string().nullable(),
+});
+
+export const DaemonBetaChannelInstallResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.install.response"),
+  payload: DaemonBetaChannelRunStartPayloadSchema,
+});
+export type DaemonBetaChannelInstallResponse = z.infer<
+  typeof DaemonBetaChannelInstallResponseSchema
+>;
+
+export const DaemonBetaChannelUninstallResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.uninstall.response"),
+  payload: DaemonBetaChannelRunStartPayloadSchema,
+});
+export type DaemonBetaChannelUninstallResponse = z.infer<
+  typeof DaemonBetaChannelUninstallResponseSchema
+>;
+
+// Broadcast to every owner session while a beta channel run is in flight; not correlated.
+export const DaemonBetaChannelRunProgressMessageSchema = z.object({
+  type: z.literal("daemon.beta_channel.run.progress"),
+  payload: z.object({
+    run: DaemonBetaChannelRunSchema,
+    /** One line of installer output, when this event carries one. */
+    logLine: z.string().optional(),
+  }),
+});
+export type DaemonBetaChannelRunProgressMessage = z.infer<
+  typeof DaemonBetaChannelRunProgressMessageSchema
+>;
+
+// Final event of a beta channel run.
+export const DaemonBetaChannelRunCompletedMessageSchema = z.object({
+  type: z.literal("daemon.beta_channel.run.completed"),
+  payload: z.object({
+    runId: z.string(),
+    action: z.string(),
+    status: z.enum(["succeeded", "failed"]),
+    /** Installed beta version after an install; null after uninstall or failure. */
+    version: z.string().nullable(),
+    error: z.string().nullable(),
+    at: z.string(),
+  }),
+});
+export type DaemonBetaChannelRunCompletedMessage = z.infer<
+  typeof DaemonBetaChannelRunCompletedMessageSchema
+>;
 
 export const DiagnosticsResponseSchema = z.object({
   type: z.literal("diagnostics.response"),
@@ -7893,6 +8034,11 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   DaemonUpdateStartResponseSchema,
   DaemonUpdateGetStatusResponseSchema,
   DaemonUpdateRunProgressMessageSchema,
+  DaemonBetaChannelGetStatusResponseSchema,
+  DaemonBetaChannelInstallResponseSchema,
+  DaemonBetaChannelUninstallResponseSchema,
+  DaemonBetaChannelRunProgressMessageSchema,
+  DaemonBetaChannelRunCompletedMessageSchema,
 ]);
 
 export type SessionOutboundMessage = z.infer<typeof SessionOutboundMessageSchema>;

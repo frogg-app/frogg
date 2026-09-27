@@ -1,6 +1,6 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
   releaseStreams: {
@@ -1843,12 +1843,6 @@ export const fr: TranslationResources = {
         failed: "Échec de l'envoi de la notification.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "Impossible de vérifier l'état de l'installation deCLI.",
-        installFailed: "Impossible d'installer le {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3141,20 +3135,11 @@ export const fr: TranslationResources = {
     sections: {
       general: "Général",
       appearance: "Apparence",
-      layout: en.settings.sections.layout,
-      editor: "Éditeur",
       shortcuts: "Raccourcis",
-      integrations: "Intégrations",
       notifications: "Notifications",
       permissions: "Autorisations",
-      diagnostics: "Diagnostic",
+      developer: "Développeur",
       about: "À propos",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "Éditeur",
-      vimKeybindings: "Raccourcis Vim",
-      vimHint: "S’applique aux fichiers source sur le web et le bureau.",
     },
     notifications: {
       title: "Notifications",
@@ -3370,7 +3355,89 @@ export const fr: TranslationResources = {
         },
       },
     },
+    developer: {
+      loading: "Chargement…",
+      retry: "Réessayer",
+      cancel: "Annuler",
+      upToDate: "À jour",
+      installVersion: "Installer {{version}}",
+      updateVersion: "Mettre à jour vers {{version}}",
+      betaApp: {
+        title: "App bêta",
+        info: "Installez {{name}} à côté de cette app. Elle garde ses propres réglages et données.",
+        webHint: "Les versions bêta de l'app sont publiées sur la page des versions.",
+        openReleases: "Ouvrir les versions",
+        installed: "Installée",
+        notInstalled: "Non installée",
+        installedVersion: "Installée : {{version}}",
+        statusFailed: "Impossible de lire l'état de l'app bêta : {{error}}",
+        latest: "Dernière bêta",
+        latestFailed: "Impossible de vérifier la dernière bêta : {{error}}",
+        open: "Ouvrir l'app bêta",
+        openFailed: "Impossible d'ouvrir l'app bêta : {{error}}",
+        downloaded: "{{received}} sur {{total}}",
+        failed: "Échec de l'installation : {{error}}",
+        phases: {
+          resolving: "Recherche de la dernière bêta…",
+          downloading: "Téléchargement de {{version}}…",
+          verifying: "Vérification de la somme de contrôle…",
+          installing: "Installation de {{version}}…",
+          launched: "{{version}} installée",
+          failed: "Échec de l'installation",
+          cancelled: "Installation annulée",
+        },
+        unsupported: {
+          "running-beta": "Ceci est déjà l'app bêta.",
+          "unsupported-platform": "L'app bêta ne peut pas être installée sur cette plateforme.",
+          "no-release-repository":
+            "Cette version n'a pas de dépôt de versions à partir duquel installer.",
+        },
+      },
+      betaDaemon: {
+        title: "Daemon bêta sur les hôtes",
+        info: "Un hôte peut exécuter un daemon bêta à côté du daemon stable, sur son propre port et avec ses propres données. L'installer et le retirer nécessite le rôle de propriétaire.",
+        noHosts: "Aucun hôte ajouté.",
+        offline: "Hors ligne",
+        needsUpdate: "Mettez à jour cet hôte pour gérer les bêtas.",
+        loadFailed: "Impossible de charger l'état bêta : {{error}}",
+        unsupported: "Indisponible sur cet hôte : {{reason}}",
+        selfIsBeta: "Le daemon de cet hôte est la bêta.",
+        installed: "Bêta {{version}} installée",
+        notInstalled: "Bêta non installée",
+        running: "En cours d'exécution sur le port {{port}}",
+        stopped: "Arrêté (port {{port}})",
+        latest: "Dernière bêta : {{version}}",
+        latestFailed: "Impossible de vérifier la dernière bêta : {{error}}",
+        install: "Installer la bêta",
+        uninstall: "Désinstaller",
+        purge: "Supprimer aussi les données bêta",
+        uninstallConfirmTitle: "Désinstaller le daemon bêta ?",
+        uninstallConfirmMessage:
+          "Cela retire le daemon bêta de {{host}}. Le daemon stable n'est pas affecté.",
+        uninstallConfirmPurgeMessage:
+          "Cela retire le daemon bêta et ses données de {{host}}. Le daemon stable n'est pas affecté.",
+        starting: "Démarrage…",
+        installSucceeded: "Bêta {{version}} installée.",
+        uninstallSucceeded: "Daemon bêta retiré.",
+        failed: "Échec : {{error}}",
+        showLog: "Afficher le journal",
+        hideLog: "Masquer le journal",
+        phases: {
+          resolve: "Recherche de la version…",
+          download: "Téléchargement…",
+          verify: "Vérification…",
+          install: "Installation…",
+          uninstall: "Désinstallation…",
+          done: "Terminé",
+          failed: "Échec",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "Options pour les développeurs",
+        hint: "Affiche la section Développeur pour installer des versions bêta.",
+      },
       attribution: "{{brandFullName}} est basé sur <upstream>frogg</upstream>.",
       attributionUpstream: "frogg est basé sur <upstream>Paseo</upstream>.",
       title: "À propos",
@@ -3568,24 +3635,6 @@ export const fr: TranslationResources = {
       helpNotes: {
         showKeyboardShortcuts:
           "Disponible lorsque le focus n’est pas dans un champ de texte ou un terminal.",
-      },
-    },
-    integrations: {
-      title: "Intégrations",
-      docs: {
-        cli: "DocumentsCLI",
-        openCli: "Ouvrir la documentationCLI",
-      },
-      commandLine: {
-        installedPath:
-          "Installé dans {{path}}. Ajoutez son dossier au PATH si nécessaire, puis ouvrez un nouveau terminal.",
-        title: "Ligne de commande",
-        description: "Agents de contrôle et de script depuis votre terminal",
-      },
-      actions: {
-        install: "Installer",
-        installing: "Installation...",
-        installed: "Installé",
       },
     },
     permissions: {

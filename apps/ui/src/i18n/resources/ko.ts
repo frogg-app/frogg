@@ -1,6 +1,6 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
   releaseStreams: {
@@ -1805,12 +1805,6 @@ export const ko: TranslationResources = {
         failed: "알림을 보내지 못했습니다.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "CLI 설치 상태를 확인할 수 없습니다.",
-        installFailed: "{{brandName}} CLI를 설치할 수 없습니다.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3082,20 +3076,11 @@ export const ko: TranslationResources = {
     sections: {
       general: "일반",
       appearance: "모양",
-      layout: en.settings.sections.layout,
-      editor: "편집기",
       shortcuts: "단축키",
-      integrations: "통합",
       notifications: "알림",
       permissions: "권한",
-      diagnostics: "진단",
+      developer: "개발자",
       about: "정보",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "편집기",
-      vimKeybindings: "Vim 키 바인딩",
-      vimHint: "웹 및 데스크톱의 소스 파일에 적용됩니다.",
     },
     notifications: {
       title: "알림",
@@ -3307,7 +3292,88 @@ export const ko: TranslationResources = {
         },
       },
     },
+    developer: {
+      loading: "불러오는 중…",
+      retry: "다시 시도",
+      cancel: "취소",
+      upToDate: "최신 상태",
+      installVersion: "{{version}} 설치",
+      updateVersion: "{{version}}(으)로 업데이트",
+      betaApp: {
+        title: "베타 앱",
+        info: "{{name}}을(를) 이 앱과 나란히 설치합니다. 설정과 데이터는 따로 유지됩니다.",
+        webHint: "앱의 베타 빌드는 릴리스 페이지에 게시됩니다.",
+        openReleases: "릴리스 열기",
+        installed: "설치됨",
+        notInstalled: "설치되지 않음",
+        installedVersion: "설치됨: {{version}}",
+        statusFailed: "베타 앱 상태를 읽을 수 없습니다: {{error}}",
+        latest: "최신 베타",
+        latestFailed: "최신 베타를 확인할 수 없습니다: {{error}}",
+        open: "베타 앱 열기",
+        openFailed: "베타 앱을 열 수 없습니다: {{error}}",
+        downloaded: "{{received}} / {{total}}",
+        failed: "설치 실패: {{error}}",
+        phases: {
+          resolving: "최신 베타를 찾는 중…",
+          downloading: "{{version}} 다운로드 중…",
+          verifying: "체크섬 확인 중…",
+          installing: "{{version}} 설치 중…",
+          launched: "{{version}} 설치 완료",
+          failed: "설치 실패",
+          cancelled: "설치 취소됨",
+        },
+        unsupported: {
+          "running-beta": "이미 베타 앱입니다.",
+          "unsupported-platform": "이 플랫폼에는 베타 앱을 설치할 수 없습니다.",
+          "no-release-repository": "이 빌드에는 설치할 릴리스 저장소가 없습니다.",
+        },
+      },
+      betaDaemon: {
+        title: "호스트의 베타 데몬",
+        info: "호스트는 안정 버전 옆에서 별도 포트와 별도 데이터로 베타 데몬을 실행할 수 있습니다. 설치와 제거에는 소유자 역할이 필요합니다.",
+        noHosts: "추가된 호스트가 없습니다.",
+        offline: "오프라인",
+        needsUpdate: "베타를 관리하려면 이 호스트를 업데이트하세요.",
+        loadFailed: "베타 상태를 불러올 수 없습니다: {{error}}",
+        unsupported: "이 호스트에서는 사용할 수 없습니다: {{reason}}",
+        selfIsBeta: "이 호스트의 데몬은 베타입니다.",
+        installed: "베타 {{version}} 설치됨",
+        notInstalled: "베타가 설치되지 않음",
+        running: "포트 {{port}}에서 실행 중",
+        stopped: "실행 중 아님 (포트 {{port}})",
+        latest: "최신 베타: {{version}}",
+        latestFailed: "최신 베타를 확인할 수 없습니다: {{error}}",
+        install: "베타 설치",
+        uninstall: "제거",
+        purge: "베타 데이터도 삭제",
+        uninstallConfirmTitle: "베타 데몬을 제거할까요?",
+        uninstallConfirmMessage:
+          "{{host}}에서 베타 데몬을 제거합니다. 안정 버전 데몬은 영향을 받지 않습니다.",
+        uninstallConfirmPurgeMessage:
+          "{{host}}에서 베타 데몬과 데이터를 제거합니다. 안정 버전 데몬은 영향을 받지 않습니다.",
+        starting: "시작하는 중…",
+        installSucceeded: "베타 {{version}}을(를) 설치했습니다.",
+        uninstallSucceeded: "베타 데몬을 제거했습니다.",
+        failed: "실패: {{error}}",
+        showLog: "로그 보기",
+        hideLog: "로그 숨기기",
+        phases: {
+          resolve: "릴리스를 찾는 중…",
+          download: "다운로드 중…",
+          verify: "확인 중…",
+          install: "설치 중…",
+          uninstall: "제거 중…",
+          done: "완료",
+          failed: "실패",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "개발자 옵션",
+        hint: "베타 빌드를 설치할 수 있는 개발자 섹션을 표시합니다.",
+      },
       attribution: "{{brandFullName}}는 <upstream>frogg</upstream>를 기반으로 합니다.",
       attributionUpstream: "frogg는 <upstream>Paseo</upstream>를 기반으로 합니다.",
       title: "정보",
@@ -3501,24 +3567,6 @@ export const ko: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "포커스가 텍스트 필드나 터미널에 있지 않을 때 사용할 수 있습니다.",
-      },
-    },
-    integrations: {
-      title: "통합",
-      docs: {
-        cli: "CLI 문서",
-        openCli: "CLI 문서 열기",
-      },
-      commandLine: {
-        installedPath:
-          "{{path}}에 설치되었습니다. 필요하면 디렉터리를 PATH에 추가한 후 새 터미널을 여세요.",
-        title: "명령줄",
-        description: "터미널에서 에이전트를 제어하고 스크립팅합니다",
-      },
-      actions: {
-        install: "설치",
-        installing: "설치 중...",
-        installed: "설치됨",
       },
     },
     permissions: {

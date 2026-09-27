@@ -6,14 +6,14 @@ import { brand } from "@frogg/branding";
 import { useTranslation } from "react-i18next";
 import { isElectronRuntime } from "@/desktop/host";
 import { SETTINGS_DESKTOP_SIDEBAR_WIDTH } from "@/constants/layout";
-import { isWeb } from "@/constants/platform";
 import { useKeyboardShortcutsAvailable } from "@/keyboard/availability";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 import { resolveSettingsScope, type SettingsView } from "@/navigation/settings-navigation";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
-import { SIDEBAR_SECTION_ITEMS } from "@/screens/settings/section-items";
+import { visibleSettingsSections } from "@/screens/settings/section-items";
 import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visibility";
 import { useHosts } from "@/runtime/host-runtime";
+import { useSettings } from "@/hooks/use-settings";
 import type { SecuritySeverity } from "@/security/posture";
 import { SecurityDot } from "@/security/security-dot";
 import { useSecurityPosture } from "@/security/use-security-posture";
@@ -158,6 +158,7 @@ export function SettingsSidebar({
   const { t } = useTranslation();
   const isDesktopApp = isElectronRuntime();
   const shortcutsAvailable = useKeyboardShortcutsAvailable();
+  const developerOptions = useSettings((settings) => settings.developerOptions);
   const scope = resolveSettingsScope(view);
   const isDesktop = layout === "desktop";
   // A host decides which of its own sections this app offers, so the list is
@@ -201,12 +202,11 @@ export function SettingsSidebar({
     );
   } else {
     const selectedSectionId = view.kind === "section" ? view.section : null;
-    const items = SIDEBAR_SECTION_ITEMS.filter(
-      (item) =>
-        (!item.desktopOnly || isDesktopApp) &&
-        (!item.webOnly || isWeb) &&
-        (!item.requiresKeyboardShortcuts || shortcutsAvailable),
-    );
+    const items = visibleSettingsSections({
+      isDesktopApp,
+      shortcutsAvailable,
+      developerOptions,
+    });
     sidebarBody = (
       <View style={sidebarStyles.list}>
         {items.map((item) => (

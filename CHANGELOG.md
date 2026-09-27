@@ -2,7 +2,38 @@
 
 ## Unreleased
 
+- **Developer options in Settings.** A **Developer options** switch at the bottom of
+  **Settings → About** (off by default, stored per app install) shows a **Developer** section
+  above About. Its **Beta app** card installs or updates frogg beta beside the desktop app with
+  a progress bar and cancel, and opens it; web and mobile link to the releases page. **Beta
+  daemon on hosts** lists every host with its beta daemon status (installed version, running
+  and port, latest beta, or why it is unavailable), installs, updates and uninstalls it
+  (confirmed, optionally deleting its data), and streams the run's phase and installer log.
+  Hosts without `features.betaChannelManagement` ask to be updated. Strings are translated in
+  all nine locales. The unused desktop `install_cli` / `get_cli_install_status` commands and
+  their CLI installer code are removed.
 - **Configurable automatic clean cut.** `daemon.cleanCut` and **Settings → Host → Clean cut** set each trigger (usage-limit resume, daemon-restart resume) on or off, a global and per-provider idle threshold (default: the provider's cache lifetime, also used by the composer's stale-cache warning) and a global and per-provider summary model. Changes apply live. Every automatic cut decision is logged with its outcome and reason. `autoCleanCutOnColdCache: false` still disables both triggers. Fixed a usage-limit reschedule without a reset time overwriting a known reset.
+- **Leaner app Settings.** The app settings sidebar is General, Appearance, Shortcuts,
+  Notifications, Permissions and About. Companion and Diagnostics are now groups inside
+  General. The Layout (open-location preferences), Editor (Vim keybindings) and Integrations
+  (install the CLI) sections are removed; their saved preferences keep working with the values
+  already stored or the defaults. Old `/settings/<section>` links open General. A unit test pins
+  the section list.
+- **Beta daemon management (daemon, protocol, client).** A stable daemon installs, updates
+  and removes the side-by-side `frogg-beta` daemon on its host for an owner client: new
+  `daemon.beta_channel.get_status`, `.install` and `.uninstall` RPCs, with
+  `daemon.beta_channel.run.progress` / `.run.completed` events, gated on
+  `features.betaChannelManagement`. It runs the beta release's own `install.sh` /
+  `uninstall.sh` after checking GitHub's sha256 digest and the script's brand header, with
+  the stable daemon's environment removed. Status includes the newest published beta release.
+  Refused on the beta daemon itself, Windows, Docker and Nix. Client methods
+  `getBetaChannelStatus`, `installBetaChannel`, `uninstallBetaChannel`.
+- **Install frogg beta from the desktop app (native bridge).** `froggDesktop.betaApp` resolves
+  the newest published beta for this OS and architecture, downloads its installer with
+  progress events, verifies it against the release's SHA-256 checksums, and installs it
+  beside the stable app (Windows NSIS, macOS `.dmg` to `/Applications`, Linux AppImage to
+  `~/Applications`). It also reports whether frogg beta is installed, with its version, and
+  opens it. The Settings entry point comes separately.
 - **Project to-dos (daemon and protocol).** Each project has a daemon-owned to-do list stored
   in its main checkout under `.frogg/todos/` (self-ignored by git): items with category,
   priority, a kanban-style status, a markdown plan and an append-only progress log. Agents use

@@ -13,7 +13,6 @@ import { ScreenTitle } from "@/components/headers/screen-title";
 import { HeaderIconBadge } from "@/components/headers/header-icon-badge";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { AppearanceSection } from "@/screens/settings/appearance/appearance-section";
-import { LayoutSection } from "@/screens/settings/layout/layout-section";
 import {
   useAppSettings,
   parseTerminalScrollbackLines,
@@ -31,8 +30,8 @@ import { DeployToHostModal } from "@/components/ssh-deploy/deploy-to-host-modal"
 import { PairLinkModal } from "@/components/pair-link-modal";
 import { PairWithCodeModal } from "@/device-access/pair-with-code-modal";
 import { KeyboardShortcutsSection } from "@/screens/settings/keyboard-shortcuts-section";
-import { EditorSection } from "@/screens/settings/editor-section";
 import { AboutSection } from "@/screens/settings/about-section";
+import { DeveloperSection } from "@/screens/settings/developer/developer-section";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -42,7 +41,6 @@ import { DesktopNotificationsSection } from "@/desktop/components/desktop-notifi
 import { CompanionSection } from "@/screens/settings/companion-section";
 import { VoiceAlertsSection } from "@/screens/settings/voice-alerts-section";
 import { BrowserDataSection } from "@/desktop/browser/settings/browser-data-section";
-import { IntegrationsSection } from "@/desktop/components/integrations-section";
 import { isElectronRuntime } from "@/desktop/host";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { resolveAppVersion } from "@/utils/app-version";
@@ -87,7 +85,7 @@ import {
   useHiddenHostSections,
   useVisibleHostSectionItems,
 } from "@/screens/settings/host-section-visibility";
-import { isNative, isWeb } from "@/constants/platform";
+import { isNative } from "@/constants/platform";
 
 // ---------------------------------------------------------------------------
 // View model
@@ -741,62 +739,41 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
     return null;
   })();
 
-  let content: ReactNode;
-  if (view.kind === "section" && view.section === "layout") {
-    content = isDesktopApp ? <LayoutSection /> : null;
-  } else {
-    content = (() => {
-      if (view.kind === "host") {
-        return renderHostSettingsContent(view, handleHostRemoved);
-      }
-      if (view.kind === "project") {
-        return (
-          <ProjectSettingsScreen
-            serverId={view.serverId}
-            projectId={view.projectId}
-            onBackToProjects={handleBackFromDetail}
-            showBackToProjects={!isCompactLayout}
-          />
-        );
-      }
-      if (view.kind === "section") {
-        switch (view.section) {
-          case "general":
-            return (
-              <>
-                <GeneralSection
-                  settings={settings}
-                  isDesktopApp={isDesktopApp}
-                  handleSendBehaviorChange={handleSendBehaviorChange}
-                  handleServiceUrlBehaviorChange={handleServiceUrlBehaviorChange}
-                  handleLanguageChange={handleLanguageChange}
-                  handleTerminalScrollbackLinesChange={handleTerminalScrollbackLinesChange}
-                />
-                <VoiceAlertsSection />
-                {isDesktopApp ? (
-                  <>
-                    <DesktopDownloadsSection />
-                    <BrowserDataSection />
-                  </>
-                ) : null}
-              </>
-            );
-          case "companion":
-            return <CompanionSection />;
-          case "appearance":
-            return <AppearanceSection />;
-          case "editor":
-            return isWeb ? <EditorSection /> : null;
-          case "shortcuts":
-            return shortcutsAvailable ? <KeyboardShortcutsSection /> : null;
-          case "integrations":
-            return isDesktopApp ? <IntegrationsSection /> : null;
-          case "notifications":
-            return isDesktopApp ? <DesktopNotificationsSection /> : null;
-          case "permissions":
-            return isDesktopApp ? <DesktopPermissionsSection /> : null;
-          case "diagnostics":
-            return (
+  const content: ReactNode = (() => {
+    if (view.kind === "host") {
+      return renderHostSettingsContent(view, handleHostRemoved);
+    }
+    if (view.kind === "project") {
+      return (
+        <ProjectSettingsScreen
+          serverId={view.serverId}
+          projectId={view.projectId}
+          onBackToProjects={handleBackFromDetail}
+          showBackToProjects={!isCompactLayout}
+        />
+      );
+    }
+    if (view.kind === "section") {
+      switch (view.section) {
+        case "general":
+          return (
+            <>
+              <GeneralSection
+                settings={settings}
+                isDesktopApp={isDesktopApp}
+                handleSendBehaviorChange={handleSendBehaviorChange}
+                handleServiceUrlBehaviorChange={handleServiceUrlBehaviorChange}
+                handleLanguageChange={handleLanguageChange}
+                handleTerminalScrollbackLinesChange={handleTerminalScrollbackLinesChange}
+              />
+              <VoiceAlertsSection />
+              <CompanionSection />
+              {isDesktopApp ? (
+                <>
+                  <DesktopDownloadsSection />
+                  <BrowserDataSection />
+                </>
+              ) : null}
               <DiagnosticsSection
                 useLegacyTerminalRenderer={settings.useLegacyTerminalRenderer}
                 onUseLegacyTerminalRendererChange={handleUseLegacyTerminalRendererChange}
@@ -805,20 +782,30 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
                 playbackTestResult={playbackTestResult}
                 handlePlaybackTest={handlePlaybackTest}
               />
-            );
-          case "about":
-            return (
-              <AboutSection
-                appVersion={appVersion}
-                appVersionText={appVersionText}
-                isDesktopApp={isDesktopApp}
-              />
-            );
-        }
+            </>
+          );
+        case "appearance":
+          return <AppearanceSection />;
+        case "shortcuts":
+          return shortcutsAvailable ? <KeyboardShortcutsSection /> : null;
+        case "notifications":
+          return isDesktopApp ? <DesktopNotificationsSection /> : null;
+        case "permissions":
+          return isDesktopApp ? <DesktopPermissionsSection /> : null;
+        case "developer":
+          return settings.developerOptions ? <DeveloperSection /> : null;
+        case "about":
+          return (
+            <AboutSection
+              appVersion={appVersion}
+              appVersionText={appVersionText}
+              isDesktopApp={isDesktopApp}
+            />
+          );
       }
-      return null;
-    })();
-  }
+    }
+    return null;
+  })();
 
   if (settingsLoading) {
     return (

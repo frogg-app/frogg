@@ -3782,6 +3782,60 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.beta_channel.get_status.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.beta_channel.install.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.beta_channel.uninstall.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "purge": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "hub.management.daemon.connect.request"
                 },
                 "requestId": {

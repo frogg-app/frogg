@@ -1,6 +1,6 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
   releaseStreams: {
@@ -1819,12 +1819,6 @@ export const ru: TranslationResources = {
         failed: "Не удалось отправить уведомление.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "Не удалось проверить состояние установки CLI.",
-        installFailed: "Не удалось установить {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3109,20 +3103,11 @@ export const ru: TranslationResources = {
     sections: {
       general: "Основные",
       appearance: "Оформление",
-      layout: en.settings.sections.layout,
-      editor: "Редактор",
       shortcuts: "Сочетания клавиш",
-      integrations: "Интеграции",
       notifications: "Уведомления",
       permissions: "Разрешения",
-      diagnostics: "Диагностика",
+      developer: "Разработчик",
       about: "О приложении",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "Редактор",
-      vimKeybindings: "Сочетания клавиш Vim",
-      vimHint: "Применяется к исходным файлам в веб- и настольной версии.",
     },
     notifications: {
       title: "Уведомления",
@@ -3340,7 +3325,88 @@ export const ru: TranslationResources = {
         },
       },
     },
+    developer: {
+      loading: "Загрузка…",
+      retry: "Повторить",
+      cancel: "Отмена",
+      upToDate: "Актуальная версия",
+      installVersion: "Установить {{version}}",
+      updateVersion: "Обновить до {{version}}",
+      betaApp: {
+        title: "Бета-приложение",
+        info: "Установите {{name}} рядом с этим приложением. У него свои настройки и данные.",
+        webHint: "Бета-сборки приложения публикуются на странице релизов.",
+        openReleases: "Открыть релизы",
+        installed: "Установлено",
+        notInstalled: "Не установлено",
+        installedVersion: "Установлено: {{version}}",
+        statusFailed: "Не удалось получить состояние бета-приложения: {{error}}",
+        latest: "Последняя бета",
+        latestFailed: "Не удалось проверить последнюю бету: {{error}}",
+        open: "Открыть бета-приложение",
+        openFailed: "Не удалось открыть бета-приложение: {{error}}",
+        downloaded: "{{received}} из {{total}}",
+        failed: "Ошибка установки: {{error}}",
+        phases: {
+          resolving: "Поиск последней беты…",
+          downloading: "Загрузка {{version}}…",
+          verifying: "Проверка контрольной суммы…",
+          installing: "Установка {{version}}…",
+          launched: "{{version}} установлена",
+          failed: "Ошибка установки",
+          cancelled: "Установка отменена",
+        },
+        unsupported: {
+          "running-beta": "Это уже бета-приложение.",
+          "unsupported-platform": "Бета-приложение нельзя установить на этой платформе.",
+          "no-release-repository": "У этой сборки нет репозитория релизов для установки.",
+        },
+      },
+      betaDaemon: {
+        title: "Бета-демон на хостах",
+        info: "Хост может запускать бета-демон рядом со стабильным, на своём порту и со своими данными. Для установки и удаления нужна роль владельца.",
+        noHosts: "Хосты не добавлены.",
+        offline: "Не в сети",
+        needsUpdate: "Обновите этот хост, чтобы управлять бетами.",
+        loadFailed: "Не удалось загрузить состояние беты: {{error}}",
+        unsupported: "Недоступно на этом хосте: {{reason}}",
+        selfIsBeta: "Демон этого хоста — бета.",
+        installed: "Установлена бета {{version}}",
+        notInstalled: "Бета не установлена",
+        running: "Работает на порту {{port}}",
+        stopped: "Не запущен (порт {{port}})",
+        latest: "Последняя бета: {{version}}",
+        latestFailed: "Не удалось проверить последнюю бету: {{error}}",
+        install: "Установить бету",
+        uninstall: "Удалить",
+        purge: "Также удалить данные беты",
+        uninstallConfirmTitle: "Удалить бета-демон?",
+        uninstallConfirmMessage:
+          "Бета-демон будет удалён с {{host}}. Стабильный демон не затрагивается.",
+        uninstallConfirmPurgeMessage:
+          "Бета-демон и его данные будут удалены с {{host}}. Стабильный демон не затрагивается.",
+        starting: "Запуск…",
+        installSucceeded: "Бета {{version}} установлена.",
+        uninstallSucceeded: "Бета-демон удалён.",
+        failed: "Ошибка: {{error}}",
+        showLog: "Показать журнал",
+        hideLog: "Скрыть журнал",
+        phases: {
+          resolve: "Поиск релиза…",
+          download: "Загрузка…",
+          verify: "Проверка…",
+          install: "Установка…",
+          uninstall: "Удаление…",
+          done: "Готово",
+          failed: "Ошибка",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "Параметры разработчика",
+        hint: "Показывать раздел «Разработчик» для установки бета-сборок.",
+      },
       attribution: "{{brandFullName}} основан на <upstream>frogg</upstream>.",
       attributionUpstream: "frogg основан на <upstream>Paseo</upstream>.",
       title: "О приложении",
@@ -3539,24 +3605,6 @@ export const ru: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "Доступно, когда фокус находится не в текстовом поле или терминале.",
-      },
-    },
-    integrations: {
-      title: "Интеграции",
-      docs: {
-        cli: "Документация CLI",
-        openCli: "Открыть документацию CLI",
-      },
-      commandLine: {
-        installedPath:
-          "Установлено в {{path}}. При необходимости добавьте каталог в PATH и откройте новый терминал.",
-        title: "Командная строка",
-        description: "Управляйте агентами и автоматизируйте их работу из терминала",
-      },
-      actions: {
-        install: "Установить",
-        installing: "Установка...",
-        installed: "Установлено",
       },
     },
     permissions: {

@@ -118,8 +118,6 @@ export function createDesktopCommandHandlers(): Record<string, DesktopCommandHan
     client_plugins_read_folder: (args) => readClientPluginFolder(args),
     get_release_build_status: (args) => getReleaseBuildStatus(args?.version),
     get_local_daemon_version: unsupportedLocalServerCommand,
-    install_cli: unsupportedLocalServerCommand,
-    get_cli_install_status: unsupportedLocalServerCommand,
   };
 }
 

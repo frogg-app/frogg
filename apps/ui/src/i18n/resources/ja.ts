@@ -1,6 +1,6 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
   releaseStreams: {
@@ -1812,12 +1812,6 @@ export const ja: TranslationResources = {
         failed: "通知の送信に失敗しました。",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "CLIのインストール状態を確認できません。",
-        installFailed: "{{brandName}} CLIをインストールできません。",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3104,20 +3098,11 @@ export const ja: TranslationResources = {
     sections: {
       general: "一般",
       appearance: "外観",
-      layout: en.settings.sections.layout,
-      editor: "エディター",
       shortcuts: "ショートカット",
-      integrations: "連携",
       notifications: "通知",
       permissions: "権限",
-      diagnostics: "診断",
+      developer: "開発者",
       about: "アプリ情報",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "エディター",
-      vimKeybindings: "Vim キーバインド",
-      vimHint: "Web とデスクトップのソースファイルに適用されます。",
     },
     notifications: {
       title: "通知",
@@ -3328,7 +3313,89 @@ export const ja: TranslationResources = {
         },
       },
     },
+    developer: {
+      loading: "読み込み中…",
+      retry: "再試行",
+      cancel: "キャンセル",
+      upToDate: "最新です",
+      installVersion: "{{version}} をインストール",
+      updateVersion: "{{version}} に更新",
+      betaApp: {
+        title: "ベータ版アプリ",
+        info: "{{name}} をこのアプリと並べてインストールします。設定とデータは別々に保持されます。",
+        webHint: "アプリのベータ版はリリースページで公開されています。",
+        openReleases: "リリースを開く",
+        installed: "インストール済み",
+        notInstalled: "未インストール",
+        installedVersion: "インストール済み: {{version}}",
+        statusFailed: "ベータ版アプリの状態を取得できませんでした: {{error}}",
+        latest: "最新ベータ",
+        latestFailed: "最新ベータを確認できませんでした: {{error}}",
+        open: "ベータ版アプリを開く",
+        openFailed: "ベータ版アプリを開けませんでした: {{error}}",
+        downloaded: "{{received}} / {{total}}",
+        failed: "インストールに失敗しました: {{error}}",
+        phases: {
+          resolving: "最新ベータを検索中…",
+          downloading: "{{version}} をダウンロード中…",
+          verifying: "チェックサムを検証中…",
+          installing: "{{version}} をインストール中…",
+          launched: "{{version}} をインストールしました",
+          failed: "インストールに失敗しました",
+          cancelled: "インストールをキャンセルしました",
+        },
+        unsupported: {
+          "running-beta": "これはすでにベータ版アプリです。",
+          "unsupported-platform":
+            "このプラットフォームにはベータ版アプリをインストールできません。",
+          "no-release-repository": "このビルドにはインストール元のリリースリポジトリがありません。",
+        },
+      },
+      betaDaemon: {
+        title: "ホストのベータ版デーモン",
+        info: "ホストでは安定版の横でベータ版デーモンを、別のポートと別のデータで実行できます。インストールと削除にはオーナー権限が必要です。",
+        noHosts: "ホストが追加されていません。",
+        offline: "オフライン",
+        needsUpdate: "ベータを管理するにはこのホストを更新してください。",
+        loadFailed: "ベータの状態を読み込めませんでした: {{error}}",
+        unsupported: "このホストでは利用できません: {{reason}}",
+        selfIsBeta: "このホストのデーモンはベータ版です。",
+        installed: "ベータ {{version}} インストール済み",
+        notInstalled: "ベータは未インストール",
+        running: "ポート {{port}} で実行中",
+        stopped: "停止中 (ポート {{port}})",
+        latest: "最新ベータ: {{version}}",
+        latestFailed: "最新ベータを確認できませんでした: {{error}}",
+        install: "ベータをインストール",
+        uninstall: "アンインストール",
+        purge: "ベータのデータも削除",
+        uninstallConfirmTitle: "ベータ版デーモンをアンインストールしますか?",
+        uninstallConfirmMessage:
+          "{{host}} からベータ版デーモンを削除します。安定版デーモンには影響しません。",
+        uninstallConfirmPurgeMessage:
+          "{{host}} からベータ版デーモンとそのデータを削除します。安定版デーモンには影響しません。",
+        starting: "開始中…",
+        installSucceeded: "ベータ {{version}} をインストールしました。",
+        uninstallSucceeded: "ベータ版デーモンを削除しました。",
+        failed: "失敗しました: {{error}}",
+        showLog: "ログを表示",
+        hideLog: "ログを隠す",
+        phases: {
+          resolve: "リリースを検索中…",
+          download: "ダウンロード中…",
+          verify: "検証中…",
+          install: "インストール中…",
+          uninstall: "アンインストール中…",
+          done: "完了",
+          failed: "失敗",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "開発者オプション",
+        hint: "ベータ版をインストールするための「開発者」セクションを表示します。",
+      },
       attribution: "{{brandFullName}} は <upstream>frogg</upstream> をベースにしています。",
       attributionUpstream: "frogg は <upstream>Paseo</upstream> をベースにしています。",
       title: "アプリ情報",
@@ -3525,24 +3592,6 @@ export const ja: TranslationResources = {
       helpNotes: {
         showKeyboardShortcuts:
           "テキストフィールドまたはターミナルにフォーカスがない場合に利用できます。",
-      },
-    },
-    integrations: {
-      title: "連携",
-      docs: {
-        cli: "CLIドキュメント",
-        openCli: "CLIドキュメントを開く",
-      },
-      commandLine: {
-        installedPath:
-          "{{path}} にインストール済み。必要に応じてディレクトリを PATH に追加し、新しいターミナルを開いてください。",
-        title: "コマンドライン",
-        description: "ターミナルからエージェントを制御し、スクリプトで操作",
-      },
-      actions: {
-        install: "インストール",
-        installing: "インストール中...",
-        installed: "インストール済み",
       },
     },
     permissions: {

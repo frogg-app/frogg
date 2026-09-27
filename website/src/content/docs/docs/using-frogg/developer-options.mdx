@@ -1,0 +1,75 @@
+---
+title: Developer options
+description: Turn on the hidden Developer section to install frogg beta beside the app and manage beta daemons on your hosts.
+sidebar:
+  order: 10
+---
+
+import { Screenshot } from "@/components/docs";
+import developerOptions from "@/assets/docs/app/developer-options.png";
+
+The **Developer** settings section installs and updates beta builds from inside the app: the
+frogg beta desktop app on this machine, and the frogg beta daemon on each host. Beta builds
+install beside the stable ones with their own name, port and data; see
+[release streams](/docs/contributing/release-streams/#frogg-beta-installs-beside-frogg).
+
+## Turn it on
+
+Open **Settings → About** and switch on **Developer options** at the bottom of the page. A
+**Developer** section appears in the settings sidebar, just above **About**. The switch is a
+preference of this app install; it is off by default and does not sync to other devices.
+Switch it off to hide the section again. Installed betas stay installed.
+
+<Screenshot
+  src={developerOptions}
+  alt="Settings → Developer in the web app: the Beta app card linking to the releases page, and Beta daemon on hosts with one host's beta status and an Install beta button."
+/>
+
+## Beta app
+
+In the desktop app, the **Beta app** card shows:
+
+- whether frogg beta is installed on this machine, and its version;
+- the newest published beta for this operating system and architecture.
+
+**Install** (or **Update to** the newer version) downloads the installer with a progress bar,
+checks it against the release's SHA-256 checksums and installs it beside the app:
+
+| OS      | Installed as                                        |
+| ------- | --------------------------------------------------- |
+| Windows | NSIS installer, which picks its own install folder  |
+| macOS   | `.dmg`, copied to `/Applications`                   |
+| Linux   | AppImage, placed in `~/Applications`                |
+
+**Cancel** stops a download in progress. **Open beta app** starts the installed beta. The
+card says so when this build cannot install a beta: when it already is frogg beta, when the
+platform is not supported, or when the build has no release repository.
+
+On the web app and mobile, the card links to the releases page instead, where the beta
+desktop app and APK are published.
+
+## Beta daemon on hosts
+
+**Beta daemon on hosts** lists every host you have added. For each connected host whose
+daemon supports it (`features.betaChannelManagement`), it shows:
+
+- whether the beta daemon is installed, and its version;
+- whether it is running, and its port;
+- the newest published beta release;
+- why it cannot be managed on this host, if it cannot.
+
+**Install** or **Update to** runs the beta release's own installer on that host, after the
+stable daemon checks its checksum. **Uninstall** asks for confirmation; turn on **Also delete
+beta data** first to remove the beta daemon's state directory as well. While a run is going,
+the host shows its current phase, and **Show log** opens the installer's output. The outcome
+stays on screen when the run finishes.
+
+Hosts without that feature show "Update this host to manage betas." Offline hosts show as
+offline.
+
+Managing the beta daemon needs the **owner** role on the host; other roles see the daemon's
+error. The stable daemon refuses these requests when it is itself the beta daemon, and on
+Windows, Docker and Nix installs, where it reports the reason instead.
+
+The beta daemon is a separate host. To use it from this app, add it as a host (for example
+`localhost:9998` on the same machine).

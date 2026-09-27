@@ -504,15 +504,11 @@ export function resolveKnownHostRoute(input: {
 
 export const SETTINGS_SECTION_SLUGS = [
   "general",
-  "companion",
   "appearance",
-  "layout",
-  "editor",
   "shortcuts",
-  "integrations",
   "notifications",
   "permissions",
-  "diagnostics",
+  "developer",
   "about",
 ] as const;
 

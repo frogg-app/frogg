@@ -1,6 +1,6 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const es: TranslationResources = {
   releaseStreams: {
@@ -1838,12 +1838,6 @@ export const es: TranslationResources = {
         failed: "No se pudo enviar la notificación.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "No se puede verificar el estado de instalación deCLI.",
-        installFailed: "No se puede instalar el {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3134,20 +3128,11 @@ export const es: TranslationResources = {
     sections: {
       general: "General",
       appearance: "Apariencia",
-      layout: en.settings.sections.layout,
-      editor: "Editor",
       shortcuts: "Atajos",
-      integrations: "Integraciones",
       notifications: "Notificaciones",
       permissions: "Permisos",
-      diagnostics: "Diagnóstico",
+      developer: "Desarrollador",
       about: "Acerca de",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "Editor",
-      vimKeybindings: "Atajos de Vim",
-      vimHint: "Se aplica a archivos fuente en web y escritorio.",
     },
     notifications: {
       title: "Notificaciones",
@@ -3364,7 +3349,89 @@ export const es: TranslationResources = {
         },
       },
     },
+    developer: {
+      loading: "Cargando…",
+      retry: "Reintentar",
+      cancel: "Cancelar",
+      upToDate: "Actualizado",
+      installVersion: "Instalar {{version}}",
+      updateVersion: "Actualizar a {{version}}",
+      betaApp: {
+        title: "App beta",
+        info: "Instala {{name}} junto a esta app. Tiene su propia configuración y sus propios datos.",
+        webHint: "Las versiones beta de la app se publican en la página de versiones.",
+        openReleases: "Abrir versiones",
+        installed: "Instalada",
+        notInstalled: "No instalada",
+        installedVersion: "Instalada: {{version}}",
+        statusFailed: "No se pudo leer el estado de la app beta: {{error}}",
+        latest: "Última beta",
+        latestFailed: "No se pudo buscar la última beta: {{error}}",
+        open: "Abrir app beta",
+        openFailed: "No se pudo abrir la app beta: {{error}}",
+        downloaded: "{{received}} de {{total}}",
+        failed: "Error de instalación: {{error}}",
+        phases: {
+          resolving: "Buscando la última beta…",
+          downloading: "Descargando {{version}}…",
+          verifying: "Verificando la suma de comprobación…",
+          installing: "Instalando {{version}}…",
+          launched: "{{version}} instalada",
+          failed: "Error de instalación",
+          cancelled: "Instalación cancelada",
+        },
+        unsupported: {
+          "running-beta": "Esta ya es la app beta.",
+          "unsupported-platform": "La app beta no se puede instalar en esta plataforma.",
+          "no-release-repository":
+            "Esta compilación no tiene un repositorio de versiones desde el que instalar.",
+        },
+      },
+      betaDaemon: {
+        title: "Daemon beta en los hosts",
+        info: "Un host puede ejecutar un daemon beta junto al estable, en su propio puerto y con sus propios datos. Instalarlo y quitarlo requiere el rol de propietario.",
+        noHosts: "No hay hosts añadidos.",
+        offline: "Sin conexión",
+        needsUpdate: "Actualiza este host para gestionar betas.",
+        loadFailed: "No se pudo cargar el estado beta: {{error}}",
+        unsupported: "No disponible en este host: {{reason}}",
+        selfIsBeta: "El daemon de este host es la beta.",
+        installed: "Beta {{version}} instalada",
+        notInstalled: "Beta no instalada",
+        running: "En ejecución en el puerto {{port}}",
+        stopped: "Detenido (puerto {{port}})",
+        latest: "Última beta: {{version}}",
+        latestFailed: "No se pudo buscar la última beta: {{error}}",
+        install: "Instalar beta",
+        uninstall: "Desinstalar",
+        purge: "Eliminar también los datos beta",
+        uninstallConfirmTitle: "¿Desinstalar el daemon beta?",
+        uninstallConfirmMessage:
+          "Esto quita el daemon beta de {{host}}. El daemon estable no se ve afectado.",
+        uninstallConfirmPurgeMessage:
+          "Esto quita el daemon beta y sus datos de {{host}}. El daemon estable no se ve afectado.",
+        starting: "Iniciando…",
+        installSucceeded: "Beta {{version}} instalada.",
+        uninstallSucceeded: "Daemon beta eliminado.",
+        failed: "Error: {{error}}",
+        showLog: "Mostrar registro",
+        hideLog: "Ocultar registro",
+        phases: {
+          resolve: "Buscando la versión…",
+          download: "Descargando…",
+          verify: "Verificando…",
+          install: "Instalando…",
+          uninstall: "Desinstalando…",
+          done: "Listo",
+          failed: "Error",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "Opciones de desarrollador",
+        hint: "Muestra la sección Desarrollador para instalar versiones beta.",
+      },
       attribution: "{{brandFullName}} está basado en <upstream>frogg</upstream>.",
       attributionUpstream: "frogg está basado en <upstream>Paseo</upstream>.",
       title: "Acerca de",
@@ -3561,24 +3628,6 @@ export const es: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "Disponible cuando el foco no está en un campo de texto o terminal.",
-      },
-    },
-    integrations: {
-      title: "Integraciones",
-      docs: {
-        cli: "DocumentosCLI",
-        openCli: "Abrir la documentación deCLI",
-      },
-      commandLine: {
-        installedPath:
-          "Instalado en {{path}}. Añade su directorio a PATH si es necesario y abre una terminal nueva.",
-        title: "línea de comando",
-        description: "Agentes de control y script desde tu terminal",
-      },
-      actions: {
-        install: "Instalar",
-        installing: "Instalando...",
-        installed: "Instalado",
       },
     },
     permissions: {

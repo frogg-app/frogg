@@ -75,6 +75,14 @@ export function CleanCutSection({ serverId }: { serverId: string }) {
     (daemonRestart: boolean) => void save({ auto: { daemonRestart } }),
     [save],
   );
+  const saveThreshold = useCallback(
+    (minutes: number | null) => save({ idleThresholdMinutes: minutes }),
+    [save],
+  );
+  const saveSummaryModel = useCallback(
+    (summaryModel: CleanCutSummaryModel | null) => save({ summaryModel }),
+    [save],
+  );
   const modelPicker = useMemo(
     () => ({
       providers,
@@ -124,14 +132,14 @@ export function CleanCutSection({ serverId }: { serverId: string }) {
           hint={t("settings.cleanCut.threshold.hint")}
           value={cleanCut.idleThresholdMinutes ?? null}
           placeholder={t("settings.cleanCut.threshold.providerDefault")}
-          onSave={(minutes) => save({ idleThresholdMinutes: minutes })}
+          onSave={saveThreshold}
           testID="clean-cut-threshold"
         />
         <SummaryModelField
           title={t("settings.cleanCut.summaryModel.title")}
           hint={t("settings.cleanCut.summaryModel.hint")}
           value={cleanCut.summaryModel ?? null}
-          onSave={(summaryModel) => save({ summaryModel })}
+          onSave={saveSummaryModel}
           picker={modelPicker}
           disabled={isSaving}
           serverId={serverId}
@@ -147,49 +155,79 @@ export function CleanCutSection({ serverId }: { serverId: string }) {
               <Text style={settingsStyles.rowHint}>{t("settings.cleanCut.providers.hint")}</Text>
             </View>
           </View>
-          {overrideProviders.map((provider) => {
-            const override = cleanCut.providers[provider.id];
-            const inherited = inheritedThresholdMinutes(provider.id, cleanCut);
-            return (
-              <View key={provider.id} style={[styles.providerBlock, settingsStyles.rowBorder]}>
-                <ThresholdField
-                  title={t("settings.cleanCut.providers.threshold", { provider: provider.label })}
-                  hint={
-                    inherited === null
-                      ? t("settings.cleanCut.providers.notCutByDefault")
-                      : t("settings.cleanCut.providers.inherited", { minutes: inherited })
-                  }
-                  value={override?.idleThresholdMinutes ?? null}
-                  placeholder={
-                    inherited === null ? t("settings.cleanCut.threshold.off") : String(inherited)
-                  }
-                  onSave={(minutes) =>
-                    save({ providers: { [provider.id]: { idleThresholdMinutes: minutes } } })
-                  }
-                  compact
-                  testID={`clean-cut-provider-${provider.id}-threshold`}
-                />
-                <SummaryModelField
-                  title={t("settings.cleanCut.providers.summaryModel", {
-                    provider: provider.label,
-                  })}
-                  hint={t("settings.cleanCut.providers.summaryModelHint")}
-                  value={override?.summaryModel ?? null}
-                  onSave={(summaryModel) =>
-                    save({ providers: { [provider.id]: { summaryModel } } })
-                  }
-                  picker={modelPicker}
-                  disabled={isSaving}
-                  serverId={serverId}
-                  compact
-                  testID={`clean-cut-provider-${provider.id}-summary-model`}
-                />
-              </View>
-            );
-          })}
+          {overrideProviders.map((provider) => (
+            <ProviderOverrideRow
+              key={provider.id}
+              provider={provider}
+              override={cleanCut.providers[provider.id]}
+              inherited={inheritedThresholdMinutes(provider.id, cleanCut)}
+              save={save}
+              picker={modelPicker}
+              disabled={isSaving}
+              serverId={serverId}
+            />
+          ))}
         </View>
       ) : null}
     </SettingsSection>
+  );
+}
+
+function ProviderOverrideRow({
+  provider,
+  override,
+  inherited,
+  save,
+  picker,
+  disabled,
+  serverId,
+}: {
+  provider: { id: string; label: string };
+  override: { idleThresholdMinutes?: number; summaryModel?: CleanCutSummaryModel } | undefined;
+  inherited: number | null;
+  save: SaveCleanCut;
+  picker: ModelPicker;
+  disabled: boolean;
+  serverId: string;
+}) {
+  const { t } = useTranslation();
+  const saveThreshold = useCallback(
+    (minutes: number | null) =>
+      save({ providers: { [provider.id]: { idleThresholdMinutes: minutes } } }),
+    [save, provider.id],
+  );
+  const saveSummaryModel = useCallback(
+    (summaryModel: CleanCutSummaryModel | null) =>
+      save({ providers: { [provider.id]: { summaryModel } } }),
+    [save, provider.id],
+  );
+  return (
+    <View style={[styles.providerBlock, settingsStyles.rowBorder]}>
+      <ThresholdField
+        title={t("settings.cleanCut.providers.threshold", { provider: provider.label })}
+        hint={
+          inherited === null
+            ? t("settings.cleanCut.providers.notCutByDefault")
+            : t("settings.cleanCut.providers.inherited", { minutes: inherited })
+        }
+        value={override?.idleThresholdMinutes ?? null}
+        placeholder={inherited === null ? t("settings.cleanCut.threshold.off") : String(inherited)}
+        onSave={saveThreshold}
+        compact
+        testID={`clean-cut-provider-${provider.id}-threshold`}
+      />
+      <SummaryModelField
+        title={t("settings.cleanCut.providers.summaryModel", { provider: provider.label })}
+        hint={t("settings.cleanCut.providers.summaryModelHint")}
+        value={override?.summaryModel ?? null}
+        onSave={saveSummaryModel}
+        picker={picker}
+        disabled={disabled}
+        serverId={serverId}
+        compact
+        testID={`clean-cut-provider-${provider.id}-summary-model`}
+      />
+    </View>
   );
 }
 
@@ -367,7 +405,7 @@ function SummaryModelField({
           isRetryingProvider={picker.isRetryingProvider}
           disabled={disabled}
           serverId={serverId}
-          desktopPlacement="bottom-end"
+          desktopPlacement="bottom-start"
           desktopMinWidth={360}
         />
       </View>

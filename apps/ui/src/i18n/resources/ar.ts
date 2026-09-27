@@ -1,6 +1,6 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
   releaseStreams: {
@@ -1789,12 +1789,6 @@ export const ar: TranslationResources = {
         failed: "فشل في إرسال الإخطار.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "غير قادر على التحقق من حالة تثبيت CLI.",
-        installFailed: "غير قادر على تثبيت {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3058,20 +3052,11 @@ export const ar: TranslationResources = {
     sections: {
       general: "عام",
       appearance: "مظهر",
-      layout: en.settings.sections.layout,
-      editor: "المحرر",
       shortcuts: "الاختصارات",
-      integrations: "التكامل",
       notifications: "الإشعارات",
       permissions: "الأذونات",
-      diagnostics: "التشخيص",
+      developer: "المطوّر",
       about: "عن",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "المحرر",
-      vimKeybindings: "اختصارات Vim",
-      vimHint: "تنطبق على ملفات المصدر في الويب وسطح المكتب.",
     },
     notifications: {
       title: "الإشعارات",
@@ -3282,7 +3267,88 @@ export const ar: TranslationResources = {
         },
       },
     },
+    developer: {
+      loading: "جارٍ التحميل…",
+      retry: "إعادة المحاولة",
+      cancel: "إلغاء",
+      upToDate: "محدَّث",
+      installVersion: "تثبيت {{version}}",
+      updateVersion: "التحديث إلى {{version}}",
+      betaApp: {
+        title: "التطبيق التجريبي",
+        info: "ثبّت {{name}} بجانب هذا التطبيق. يحتفظ بإعداداته وبياناته الخاصة.",
+        webHint: "تُنشر الإصدارات التجريبية من التطبيق في صفحة الإصدارات.",
+        openReleases: "فتح الإصدارات",
+        installed: "مثبّت",
+        notInstalled: "غير مثبّت",
+        installedVersion: "المثبّت: {{version}}",
+        statusFailed: "تعذّرت قراءة حالة التطبيق التجريبي: {{error}}",
+        latest: "أحدث إصدار تجريبي",
+        latestFailed: "تعذّر التحقق من أحدث إصدار تجريبي: {{error}}",
+        open: "فتح التطبيق التجريبي",
+        openFailed: "تعذّر فتح التطبيق التجريبي: {{error}}",
+        downloaded: "{{received}} من {{total}}",
+        failed: "فشل التثبيت: {{error}}",
+        phases: {
+          resolving: "جارٍ البحث عن أحدث إصدار تجريبي…",
+          downloading: "جارٍ تنزيل {{version}}…",
+          verifying: "جارٍ التحقق من المجموع الاختباري…",
+          installing: "جارٍ تثبيت {{version}}…",
+          launched: "تم تثبيت {{version}}",
+          failed: "فشل التثبيت",
+          cancelled: "أُلغي التثبيت",
+        },
+        unsupported: {
+          "running-beta": "هذا هو التطبيق التجريبي بالفعل.",
+          "unsupported-platform": "لا يمكن تثبيت التطبيق التجريبي على هذا النظام.",
+          "no-release-repository": "لا يحتوي هذا الإصدار على مستودع إصدارات للتثبيت منه.",
+        },
+      },
+      betaDaemon: {
+        title: "الخادم التجريبي على المضيفين",
+        info: "يمكن للمضيف تشغيل خادم تجريبي بجانب الخادم المستقر، على منفذه الخاص وببياناته الخاصة. يتطلب تثبيته وإزالته دور المالك.",
+        noHosts: "لم تتم إضافة أي مضيف.",
+        offline: "غير متصل",
+        needsUpdate: "حدّث هذا المضيف لإدارة الإصدارات التجريبية.",
+        loadFailed: "تعذّر تحميل حالة الإصدار التجريبي: {{error}}",
+        unsupported: "غير متاح على هذا المضيف: {{reason}}",
+        selfIsBeta: "خادم هذا المضيف هو الإصدار التجريبي.",
+        installed: "الإصدار التجريبي {{version}} مثبّت",
+        notInstalled: "الإصدار التجريبي غير مثبّت",
+        running: "يعمل على المنفذ {{port}}",
+        stopped: "متوقف (المنفذ {{port}})",
+        latest: "أحدث إصدار تجريبي: {{version}}",
+        latestFailed: "تعذّر التحقق من أحدث إصدار تجريبي: {{error}}",
+        install: "تثبيت الإصدار التجريبي",
+        uninstall: "إلغاء التثبيت",
+        purge: "حذف بيانات الإصدار التجريبي أيضًا",
+        uninstallConfirmTitle: "إلغاء تثبيت الخادم التجريبي؟",
+        uninstallConfirmMessage:
+          "سيؤدي هذا إلى إزالة الخادم التجريبي من {{host}}. لن يتأثر الخادم المستقر.",
+        uninstallConfirmPurgeMessage:
+          "سيؤدي هذا إلى إزالة الخادم التجريبي وبياناته من {{host}}. لن يتأثر الخادم المستقر.",
+        starting: "جارٍ البدء…",
+        installSucceeded: "تم تثبيت الإصدار التجريبي {{version}}.",
+        uninstallSucceeded: "تمت إزالة الخادم التجريبي.",
+        failed: "فشل: {{error}}",
+        showLog: "إظهار السجل",
+        hideLog: "إخفاء السجل",
+        phases: {
+          resolve: "جارٍ البحث عن الإصدار…",
+          download: "جارٍ التنزيل…",
+          verify: "جارٍ التحقق…",
+          install: "جارٍ التثبيت…",
+          uninstall: "جارٍ إلغاء التثبيت…",
+          done: "تم",
+          failed: "فشل",
+        },
+      },
+    },
     about: {
+      developerOptions: {
+        title: "خيارات المطوّر",
+        hint: "إظهار قسم المطوّر لتثبيت الإصدارات التجريبية.",
+      },
       attribution: "{{brandFullName}} مبني على <upstream>frogg</upstream>.",
       attributionUpstream: "frogg مبني على <upstream>Paseo</upstream>.",
       title: "عن",
@@ -3477,24 +3543,6 @@ export const ar: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "متاح عندما لا يكون التركيز في حقل نص أو محطة طرفية.",
-      },
-    },
-    integrations: {
-      title: "التكامل",
-      docs: {
-        cli: "مستندات CLI",
-        openCli: "افتح وثائق CLI",
-      },
-      commandLine: {
-        installedPath:
-          "تم التثبيت في {{path}}. أضف المجلد إلى PATH عند الحاجة، ثم افتح نافذة طرفية جديدة.",
-        title: "سطر الأوامر",
-        description: "وكلاء التحكم والبرنامج النصي من المحطة الطرفية الخاصة بك",
-      },
-      actions: {
-        install: "ثَبَّتَ",
-        installing: "جارٍ التثبيت...",
-        installed: "تم التثبيت",
       },
     },
     permissions: {
