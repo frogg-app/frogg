@@ -1,4 +1,7 @@
 import { forwardRef, useCallback, type ComponentProps } from "react";
+import { MonoMetaText } from "@/agent-stream/design-scopes";
+import { themeOf } from "@/styles/design-theme";
+import { composerControlStyle, composerControlTextStyle } from "@/agent-stream/conversation-design";
 import { Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { ComboboxTrigger } from "@/components/ui/combobox-trigger";
@@ -46,6 +49,7 @@ export const AgentControlTrigger = forwardRef<View, AgentControlTriggerProps>(
     const resolvedGlyphSize = isSheet ? 16 : glyphSize;
     const resolvedIconColor = iconColor ?? styles.iconColor.color;
     const showValue = isSheet || showToolbarLabel;
+    const ValueText = isSheet ? Text : MonoMetaText;
     const triggerStyle = useCallback(
       ({ pressed, hovered }: PressableStateCallbackType) => [
         isSheet ? styles.sheetRow : styles.toolbarControl,
@@ -85,16 +89,16 @@ export const AgentControlTrigger = forwardRef<View, AgentControlTriggerProps>(
           </Text>
         ) : null}
         {showValue ? (
-          <Text style={isSheet ? styles.sheetValue : styles.toolbarValue} numberOfLines={1}>
+          <ValueText style={isSheet ? styles.sheetValue : styles.toolbarValue} numberOfLines={1}>
             {value ?? label}
-          </Text>
+          </ValueText>
         ) : null}
       </ComboboxTrigger>
     );
   },
 );
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   toolbarControl: {
     height: 28,
     minWidth: 0,
@@ -105,6 +109,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius["2xl"],
     backgroundColor: "transparent",
+    ...composerControlStyle(themeOf(rt.themeName)),
   },
   toolbarIconOnly: {
     width: 28,
@@ -118,6 +123,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
+    ...composerControlTextStyle(themeOf(rt.themeName)),
   },
   sheetRow: {
     minHeight: 44,

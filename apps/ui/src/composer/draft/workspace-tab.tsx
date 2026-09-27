@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
+import { themeOf } from "@/styles/design-theme";
+import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { Keyboard, ScrollView, StyleSheet as RNStyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import ReanimatedAnimated from "react-native-reanimated";
@@ -45,7 +47,6 @@ import {
 import type { UserMessageImageAttachment } from "@/types/stream";
 import {
   COMPACT_FORM_FACTOR_WIDTH,
-  MAX_CONTENT_WIDTH,
   useIsCompactFormFactor,
 } from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
@@ -744,7 +745,7 @@ const animatedStaticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     width: "100%",
@@ -782,7 +783,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   importPillContent: {
     width: "100%",
-    maxWidth: MAX_CONTENT_WIDTH,
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
     flexDirection: "row",
   },
   errorContainer: {
