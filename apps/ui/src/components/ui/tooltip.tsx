@@ -25,6 +25,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { FadeIn, FadeOut } from "react-native-reanimated";
+import { radiusOf } from "@/components/ui/design-surface";
 import { StyleSheet } from "react-native-unistyles";
 import { useIsCompactInteraction } from "@/constants/layout";
 import { FloatingSurface } from "@/components/ui/floating";
@@ -560,7 +561,7 @@ export function TooltipContent({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   overlay: { flex: 1 },
   portalOverlay: {
     position: "absolute",
@@ -573,7 +574,7 @@ const styles = StyleSheet.create((theme) => ({
   content: {
     paddingVertical: theme.spacing[1],
     paddingHorizontal: theme.spacing[2],
-    borderRadius: theme.borderRadius.xl,
+    borderRadius: radiusOf(rt.themeName, "xl"),
     backgroundColor: theme.colors.popover,
     borderWidth: theme.borderWidth[1],
     borderColor: theme.colors.borderAccent,

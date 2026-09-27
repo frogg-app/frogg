@@ -13,6 +13,7 @@ import {
   type PressableStateCallbackType,
   type ViewStyle,
 } from "react-native";
+import { radiusOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Check, CheckCircle } from "lucide-react-native";
 import { AdaptiveTextInput } from "@/components/adaptive-modal-sheet";
@@ -381,7 +382,7 @@ export function MenuItem({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   page: {
     paddingVertical: theme.spacing[1],
     gap: MENU_ROW_GAP,
@@ -449,7 +450,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[1],
     borderWidth: theme.borderWidth[1],
     borderColor: "transparent",
-    borderRadius: theme.borderRadius.md,
+    borderRadius: radiusOf(rt.themeName, "md"),
     outlineWidth: 0,
     outlineColor: "transparent",
   },
@@ -464,7 +465,7 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[1],
     borderWidth: theme.borderWidth[1],
     borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: radiusOf(rt.themeName, "md"),
     backgroundColor: theme.colors.surface2,
   },
   fieldFocused: {

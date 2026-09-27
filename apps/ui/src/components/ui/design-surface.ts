@@ -38,6 +38,18 @@ export function realThemeOf(themeName: string | undefined): Theme {
   return themeOf(themeName);
 }
 
+/**
+ * A corner from the active direction's radius ramp. Radii are not user-patched, so the registered
+ * theme is exact, and reading it through `themeName` keeps menus and dialogs in step with a live
+ * switch (the stylesheet's own numbers only refresh when something else recomputes the style).
+ */
+export function radiusOf(
+  themeName: string | undefined,
+  size: keyof Theme["borderRadius"],
+): number {
+  return themeOf(themeName).borderRadius[size];
+}
+
 /** Control geometry (heights, radii, field chrome) for the active design direction. */
 export function controlGeometryOf(theme: Theme, themeName: string | undefined) {
   const designTheme = designThemeOf(theme, themeName);
