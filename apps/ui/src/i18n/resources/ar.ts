@@ -1,5 +1,5 @@
 import { projectImportCopies } from "./project-import";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
   releaseStreams: {
@@ -1784,12 +1784,6 @@ export const ar: TranslationResources = {
         failed: "فشل في إرسال الإخطار.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "غير قادر على التحقق من حالة تثبيت CLI.",
-        installFailed: "غير قادر على تثبيت {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3053,20 +3047,10 @@ export const ar: TranslationResources = {
     sections: {
       general: "عام",
       appearance: "مظهر",
-      layout: en.settings.sections.layout,
-      editor: "المحرر",
       shortcuts: "الاختصارات",
-      integrations: "التكامل",
       notifications: "الإشعارات",
       permissions: "الأذونات",
-      diagnostics: "التشخيص",
       about: "عن",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "المحرر",
-      vimKeybindings: "اختصارات Vim",
-      vimHint: "تنطبق على ملفات المصدر في الويب وسطح المكتب.",
     },
     notifications: {
       title: "الإشعارات",
@@ -3436,24 +3420,6 @@ export const ar: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "متاح عندما لا يكون التركيز في حقل نص أو محطة طرفية.",
-      },
-    },
-    integrations: {
-      title: "التكامل",
-      docs: {
-        cli: "مستندات CLI",
-        openCli: "افتح وثائق CLI",
-      },
-      commandLine: {
-        installedPath:
-          "تم التثبيت في {{path}}. أضف المجلد إلى PATH عند الحاجة، ثم افتح نافذة طرفية جديدة.",
-        title: "سطر الأوامر",
-        description: "وكلاء التحكم والبرنامج النصي من المحطة الطرفية الخاصة بك",
-      },
-      actions: {
-        install: "ثَبَّتَ",
-        installing: "جارٍ التثبيت...",
-        installed: "تم التثبيت",
       },
     },
     permissions: {

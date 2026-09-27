@@ -108,6 +108,10 @@ promotions and backports. See [docs/release-streams.md](docs/release-streams.md)
 - Update ROADMAP.md items with implementation, record completed work in the
   changelog, and distinguish implementation from
   platform validation.
+- The app Settings section list is pinned by
+  `apps/ui/src/screens/settings/section-items.test.ts`. When porting Paseo code or merging
+  long-lived branches, do not restore removed sections (Layout, Editor, Integrations) or
+  re-promote General's groups (Companion, Diagnostics); change that test only on purpose.
 - Preserve inherited Apache-2.0 headers and `NOTICE`. Use the Frogg wire/env/deep-link
   namespace; coordinate breaking upgrades across clients and daemons.
 

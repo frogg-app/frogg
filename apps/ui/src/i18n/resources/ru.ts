@@ -1,5 +1,5 @@
 import { projectImportCopies } from "./project-import";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
   releaseStreams: {
@@ -1814,12 +1814,6 @@ export const ru: TranslationResources = {
         failed: "Не удалось отправить уведомление.",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "Не удалось проверить состояние установки CLI.",
-        installFailed: "Не удалось установить {{brandName}} CLI.",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3104,20 +3098,10 @@ export const ru: TranslationResources = {
     sections: {
       general: "Основные",
       appearance: "Оформление",
-      layout: en.settings.sections.layout,
-      editor: "Редактор",
       shortcuts: "Сочетания клавиш",
-      integrations: "Интеграции",
       notifications: "Уведомления",
       permissions: "Разрешения",
-      diagnostics: "Диагностика",
       about: "О приложении",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "Редактор",
-      vimKeybindings: "Сочетания клавиш Vim",
-      vimHint: "Применяется к исходным файлам в веб- и настольной версии.",
     },
     notifications: {
       title: "Уведомления",
@@ -3497,24 +3481,6 @@ export const ru: TranslationResources = {
       },
       helpNotes: {
         showKeyboardShortcuts: "Доступно, когда фокус находится не в текстовом поле или терминале.",
-      },
-    },
-    integrations: {
-      title: "Интеграции",
-      docs: {
-        cli: "Документация CLI",
-        openCli: "Открыть документацию CLI",
-      },
-      commandLine: {
-        installedPath:
-          "Установлено в {{path}}. При необходимости добавьте каталог в PATH и откройте новый терминал.",
-        title: "Командная строка",
-        description: "Управляйте агентами и автоматизируйте их работу из терминала",
-      },
-      actions: {
-        install: "Установить",
-        installing: "Установка...",
-        installed: "Установлено",
       },
     },
     permissions: {

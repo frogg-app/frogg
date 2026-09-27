@@ -1,5 +1,5 @@
 import { projectImportCopies } from "./project-import";
-import { en, type TranslationResources } from "./en";
+import type { TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
   releaseStreams: {
@@ -1807,12 +1807,6 @@ export const ja: TranslationResources = {
         failed: "通知の送信に失敗しました。",
       },
     },
-    integrations: {
-      cli: {
-        statusFailed: "CLIのインストール状態を確認できません。",
-        installFailed: "{{brandName}} CLIをインストールできません。",
-      },
-    },
   },
   mobile: {
     updates: {
@@ -3099,20 +3093,10 @@ export const ja: TranslationResources = {
     sections: {
       general: "一般",
       appearance: "外観",
-      layout: en.settings.sections.layout,
-      editor: "エディター",
       shortcuts: "ショートカット",
-      integrations: "連携",
       notifications: "通知",
       permissions: "権限",
-      diagnostics: "診断",
       about: "アプリ情報",
-    },
-    layout: en.settings.layout,
-    editor: {
-      title: "エディター",
-      vimKeybindings: "Vim キーバインド",
-      vimHint: "Web とデスクトップのソースファイルに適用されます。",
     },
     notifications: {
       title: "通知",
@@ -3483,24 +3467,6 @@ export const ja: TranslationResources = {
       helpNotes: {
         showKeyboardShortcuts:
           "テキストフィールドまたはターミナルにフォーカスがない場合に利用できます。",
-      },
-    },
-    integrations: {
-      title: "連携",
-      docs: {
-        cli: "CLIドキュメント",
-        openCli: "CLIドキュメントを開く",
-      },
-      commandLine: {
-        installedPath:
-          "{{path}} にインストール済み。必要に応じてディレクトリを PATH に追加し、新しいターミナルを開いてください。",
-        title: "コマンドライン",
-        description: "ターミナルからエージェントを制御し、スクリプトで操作",
-      },
-      actions: {
-        install: "インストール",
-        installing: "インストール中...",
-        installed: "インストール済み",
       },
     },
     permissions: {
