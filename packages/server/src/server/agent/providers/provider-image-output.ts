@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import * as fsSync from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
+import { createFroggTempDirSync } from "../../host/frogg-temp.js";
 import type { AgentTimelineItem } from "../agent-sdk-types.js";
 
 export interface ProviderImageOutput {
@@ -18,7 +18,6 @@ export interface MaterializedProviderImage {
 }
 
 const PROVIDER_IMAGE_ATTACHMENT_DIR = "frogg-attachments";
-const PROVIDER_IMAGE_ATTACHMENT_DIR_PREFIX = `${PROVIDER_IMAGE_ATTACHMENT_DIR}-`;
 const PRIVATE_ATTACHMENT_DIR_MODE = 0o700;
 const MATERIALIZED_IMAGE_FILE_MODE = 0o600;
 
@@ -37,6 +36,11 @@ function canReuseMaterializedImageAttachmentDir(dir: string): boolean {
   }
 }
 
+/** This process's attachment directory, if created; the debris sweep must not touch it. */
+export function getActiveImageAttachmentDir(): string | null {
+  return materializedImageAttachmentDir;
+}
+
 function getMaterializedImageAttachmentDir(): string {
   if (
     materializedImageAttachmentDir &&
@@ -45,9 +49,7 @@ function getMaterializedImageAttachmentDir(): string {
     return materializedImageAttachmentDir;
   }
 
-  materializedImageAttachmentDir = fsSync.mkdtempSync(
-    path.join(os.tmpdir(), PROVIDER_IMAGE_ATTACHMENT_DIR_PREFIX),
-  );
+  materializedImageAttachmentDir = createFroggTempDirSync("attachments");
   fsSync.chmodSync(materializedImageAttachmentDir, PRIVATE_ATTACHMENT_DIR_MODE);
   return materializedImageAttachmentDir;
 }

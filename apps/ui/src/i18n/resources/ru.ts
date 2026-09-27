@@ -277,6 +277,28 @@ export const ru: TranslationResources = {
       warning: "Кэш истёк: отправка снова оплатит {{tokens}} входных токенов",
       warningUnknown: "Кэш истёк: отправка заново отправит весь разговор",
     },
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: {
+      action: "Чистый срез",
+      pending: "Составляем сводку...",
+      failed: "Не удалось сделать чистый срез",
+      hint: "Завершает этот разговор и начинает новый. Дешёвая модель того же провайдера кратко излагает чат (сообщения и вызовы инструментов, без их вывода) и отправляет сводку перед вашим сообщением. Изменения в рабочей области сохраняются, а прежний разговор остаётся видимым для вас, но не для агента.",
+      subagents: {
+        cut_one: "Также обрезано субагентов: {{count}}",
+        cut_other: "Также обрезано субагентов: {{count}}",
+        noneCut: "Субагенты не обрезаны",
+        skipped: "Пропущено: {{count}} ({{reasons}})",
+        failed: "С ошибкой: {{count}}: {{names}}",
+        failedItem: "{{title}} ({{reason}})",
+        untitled: "Субагент без названия",
+        reasons: {
+          running: "выполняется",
+          closed: "закрыт",
+          empty: "нет нового",
+          unknown: "неизвестная причина",
+        },
+      },
+    },
     input: {
       accessibilityLabel: "Написать агенту...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -397,9 +419,19 @@ export const ru: TranslationResources = {
         costUnknownTokens:
           "При переносе этого разговора в другой аккаунт весь его контекст отправляется заново как новый ввод и оплачивается по полной цене (без кэша).",
         confirm: "Перенести разговор",
+        cleanCut: "Чистый срез в этот аккаунт",
+        cleanCutHint:
+          "Или сделайте чистый срез: дешёвая сводка начинает новый разговор в другом аккаунте вместо повторной отправки всего контекста.",
         moving: "Перенос...",
         failed: "Не удалось перенести разговор",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCutProvider: {
+      title: "Сменить провайдера",
+      body: "Перенести этот разговор из {{from}} в {{to}} ({{model}}) через чистый срез?",
+      hint: "Провайдер не может читать историю другого провайдера, поэтому дешёвая модель кратко излагает этот разговор, и новый начинается у нового провайдера. Изменения в рабочей области сохраняются; прежний разговор остаётся видимым для вас.",
+      confirm: "Срез и переключение",
     },
     hints: {
       thinking: "Режим рассуждений",
@@ -410,6 +442,16 @@ export const ru: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: {
+      title: "Чистый срез: новый разговор",
+      copyId: "Копировать ID прежнего разговора",
+      idCopied: "ID разговора скопирован",
+      summary: "Сводка, отправленная агенту",
+      summaryBy: "Сводка, отправленная агенту ({{model}})",
+      switched: "{{from}} → {{to}}",
+      automatic: "Чистый разрез: кэш истёк, новый разговор",
+    },
     empty: "Начните общаться с этим агентом...",
     scrollToBottom: "Прокрутить вниз",
     historyLoadFailed: "Не удалось загрузить историю агента",
@@ -2278,6 +2320,11 @@ export const ru: TranslationResources = {
         sshPort: "Порт SSH",
         identityFile: "Файл ключа",
         identityFileHint: "Оставьте пустым, чтобы использовать ssh-agent и ~/.ssh/config.",
+        password: "Пароль",
+        privateKey: "Закрытый ключ",
+        privateKeyHint:
+          "Необязательно. Вставьте закрытый ключ OpenSSH или PEM; он используется только для этого развёртывания и не сохраняется.",
+        passphrase: "Парольная фраза ключа",
         daemonPort: "Порт демона",
       },
       network: {
@@ -2312,6 +2359,7 @@ export const ru: TranslationResources = {
         invalidSshPort: "Введите порт SSH от 1 до 65535.",
         invalidDaemonPort: "Введите порт демона от 1 до 65535.",
         invalidKeyFile: "Введите абсолютный путь или путь, начинающийся с ~/.",
+        userRequired: "Укажите пользователя SSH.",
       },
       errors: {
         ssh_failed: "Не удалось подключиться по SSH. {{detail}}",
@@ -3381,6 +3429,56 @@ export const ru: TranslationResources = {
       },
     },
     host: {
+      resources: {
+        title: "Ресурсы",
+        info: "Текущая нагрузка на хост и объём хранилища этого демона. Метрики обновляются каждые несколько секунд, пока страница открыта.",
+        loading: "Загрузка метрик хоста…",
+        metricsFailed: "Не удалось загрузить метрики хоста",
+        metricsUnavailable: "Демон не вернул метрики",
+        stale: "Показан последний замер; последнее обновление не удалось.",
+        notAvailable: "н/д",
+        cpu: "ЦП",
+        memory: "Память",
+        disk: "Диск",
+        diskHint: "{{path}} · свободно {{free}}",
+        cores: "ядер: {{count}}",
+        load: "нагрузка {{value}}",
+        uptime: "работает {{value}}",
+        uptimeDays: "{{count}} д",
+        uptimeHours: "{{count}} ч",
+        uptimeMinutes: "{{count}} мин",
+        daemon: "Процесс демона",
+        daemonPid: "PID {{pid}}",
+        daemonMemory: "RSS {{rss}}, куча {{heap}}",
+        daemonCpu: "ЦП {{value}}",
+        storageTitle: "Собственное хранилище: {{size}}",
+        storageHint: "Размеры кешируются демоном на несколько минут.",
+        storageLoading: "Измерение хранилища…",
+        storageUnavailable: "Сведения о хранилище недоступны",
+        computedAt: "Измерено в {{time}}",
+        refresh: "Обновить",
+        entries_one: "записей: {{count}}",
+        entries_other: "записей: {{count}}",
+        missing: "Отсутствует",
+        clean: "Очистить",
+        cleanConfirmTitle: "Очистить «{{category}}»?",
+        cleanConfirmMessage:
+          "Будет безвозвратно удалено около {{size}} из «{{category}}» на хосте.",
+        cleanSuccess: "«{{category}}» очищено: освобождено {{size}} (удалено объектов: {{count}}).",
+        cleanFailed: "Не удалось очистить «{{category}}»",
+        categories: {
+          logs: "Журналы",
+          agents: "Состояние агентов",
+          projects: "Проекты",
+          worktrees: "Рабочие деревья",
+          uploads: "Загрузки",
+          project_import_staging: "Подготовка импорта проектов",
+          tts_cache: "Кеш речи",
+          models: "Модели",
+          daemon_versions: "Версии демона",
+          temp: "Временные файлы",
+        },
+      },
       connectionErrors: {
         remoteSsh: "Сбой SSH-туннеля: {{detail}}",
         credentialRejected:

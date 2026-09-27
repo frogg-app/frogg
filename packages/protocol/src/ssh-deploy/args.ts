@@ -4,6 +4,12 @@ export interface SshTarget {
   sshPassword?: string;
   /** A key file for this session only; ssh-agent and ~/.ssh/config apply otherwise. */
   identityFile?: string;
+  /**
+   * Private key text (OpenSSH or PEM), for an SSH client with no key files of
+   * its own to read: the mobile app. The desktop reads `identityFile` instead.
+   */
+  privateKey?: string;
+  privateKeyPassphrase?: string;
 }
 export type DeployMethod = "native" | "docker";
 export interface DeployRequest {
@@ -65,9 +71,20 @@ export function parseTarget(input: unknown): SshTarget {
     host,
     ...(sshPort == null ? {} : { sshPort: sshPort as number }),
     ...(identityFile ? { identityFile } : {}),
-    ...(typeof args.sshPassword === "string" && args.sshPassword
-      ? { sshPassword: args.sshPassword }
-      : {}),
+    ...parseCredentials(args),
+  };
+}
+function parseCredentials(
+  args: Record<string, unknown>,
+): Pick<SshTarget, "sshPassword" | "privateKey" | "privateKeyPassphrase"> {
+  const secret = (value: unknown) => (typeof value === "string" && value.trim() ? value : "");
+  const sshPassword = secret(args.sshPassword);
+  const privateKey = secret(args.privateKey);
+  const privateKeyPassphrase = secret(args.privateKeyPassphrase);
+  return {
+    ...(sshPassword ? { sshPassword } : {}),
+    ...(privateKey ? { privateKey } : {}),
+    ...(privateKeyPassphrase ? { privateKeyPassphrase } : {}),
   };
 }
 export function parseMethod(input: unknown): DeployMethod {
@@ -136,23 +153,4 @@ export function buildInstallCommand(request: DeployRequest, brand: DeployBrand):
   return `${Object.entries(values)
     .map(([key, value]) => `${brand.envPrefix}_${key}=${shellQuote(value)}`)
     .join(" ")} bash -s`;
-}
-export function buildSshArgs(target: SshTarget, command: string): string[] {
-  return [
-    "-T",
-    "-o",
-    ...(target.sshPassword
-      ? [
-          "NumberOfPasswordPrompts=1",
-          "-o",
-          "PreferredAuthentications=publickey,keyboard-interactive,password",
-        ]
-      : ["BatchMode=yes"]),
-    "-o",
-    "ConnectTimeout=10",
-    ...(target.sshPort ? ["-p", String(target.sshPort)] : []),
-    ...(target.identityFile ? ["-i", target.identityFile, "-o", "IdentitiesOnly=yes"] : []),
-    target.host,
-    command,
-  ];
 }

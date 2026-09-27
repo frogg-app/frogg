@@ -1,4 +1,4 @@
-import type { Brand } from "@frogg/branding/schema";
+import { findLastIndex } from "./lines.js";
 
 /**
  * Obtains a pairing code from a deployed daemon by running its CLI over the
@@ -35,7 +35,11 @@ export interface PairCodeAdapter {
   parse(stdout: string): PairCodeResult;
 }
 
-export type PairCodeBrand = Pick<Brand, "id" | "envPrefix" | "cliName">;
+export interface PairCodeBrand {
+  id: string;
+  envPrefix: string;
+  cliName: string;
+}
 
 const BEGIN = "FROGG_PAIR_BEGIN";
 const END = "FROGG_PAIR_END";
@@ -64,7 +68,7 @@ function optionalText(value: unknown): string | undefined {
 
 export function parsePairCodeOutput(stdout: string): PairCodeResult {
   const lines = stdout.split(/\r?\n/u);
-  const begin = lines.findLastIndex((line) => line.startsWith(`${BEGIN} `));
+  const begin = findLastIndex(lines, (line) => line.startsWith(`${BEGIN} `));
   const end = lines.findIndex((line, index) => index > begin && line.trim() === END);
   if (begin < 0 || end < 0) throw new Error("The daemon printed no pairing code.");
   const source = lines[begin]!.slice(BEGIN.length + 1).trim();

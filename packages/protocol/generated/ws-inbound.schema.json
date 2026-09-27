@@ -3203,6 +3203,63 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.host.get_metrics.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.storage.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "refresh": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.storage.clean.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "categoryId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "categoryId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "daemon.get_pairing_offer.request"
                 },
                 "requestId": {
@@ -5959,6 +6016,50 @@
                 "type",
                 "agentId",
                 "providerAccountId",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "agent.clean_cut.request"
+                },
+                "agentId": {
+                  "type": "string"
+                },
+                "provider": {
+                  "type": "string"
+                },
+                "providerAccountId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "model": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "thinkingOptionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "includeSubagents": {
+                  "type": "boolean"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "agentId",
                 "requestId"
               ]
             },

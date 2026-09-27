@@ -15,6 +15,7 @@ import type { HubRelationshipManagement } from "../../hub/relationship-controlle
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import type { DaemonUpdateService } from "./daemon-update-service.js";
 import type { SecurityPosture } from "@frogg/protocol/messages";
+import type { HostResources } from "../../host/host-resources.js";
 
 export interface DaemonRuntimeConfig {
   listen: string | null;
@@ -25,6 +26,8 @@ export interface DaemonRuntimeConfig {
   update?: DaemonUpdateService;
   /** Live security findings (security-posture.ts); absent without bootstrap wiring. */
   getSecurityPosture?(): SecurityPosture;
+  /** Host metrics and owned-storage sizes/cleanup; absent without bootstrap wiring. */
+  hostResources?: HostResources;
   /** Persist a warning as intended (or undo it); throws for a critical finding. */
   setSecurityFindingAcknowledged?(findingId: string, acknowledged: boolean): SecurityPosture;
   getRelayConfig(): {
@@ -173,6 +176,82 @@ export class DaemonSession {
           requestType: msg.type,
           error: error instanceof Error ? error.message : String(error),
           code: "handler_error",
+        },
+      });
+    }
+  }
+
+  async handleHostGetMetricsRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.host.get_metrics.request" }>,
+  ): Promise<void> {
+    const host = this.daemonRuntimeConfig?.hostResources;
+    try {
+      if (!host) throw new Error("Host metrics are not available on this daemon");
+      const metrics = await host.metrics.sample();
+      this.host.emit({
+        type: "daemon.host.get_metrics.response",
+        payload: { requestId: msg.requestId, metrics, error: null },
+      });
+    } catch (error) {
+      this.logger.warn({ err: error }, "Failed to sample host metrics");
+      this.host.emit({
+        type: "daemon.host.get_metrics.response",
+        payload: { requestId: msg.requestId, metrics: null, error: errorMessage(error) },
+      });
+    }
+  }
+
+  async handleStorageListRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.storage.list.request" }>,
+  ): Promise<void> {
+    const host = this.daemonRuntimeConfig?.hostResources;
+    try {
+      if (!host) throw new Error("Storage reporting is not available on this daemon");
+      const report = await host.storage.list({ refresh: msg.refresh === true });
+      this.host.emit({
+        type: "daemon.storage.list.response",
+        payload: {
+          requestId: msg.requestId,
+          computedAt: report.computedAt,
+          categories: report.categories,
+          error: null,
+        },
+      });
+    } catch (error) {
+      this.logger.warn({ err: error }, "Failed to measure owned storage");
+      this.host.emit({
+        type: "daemon.storage.list.response",
+        payload: {
+          requestId: msg.requestId,
+          computedAt: null,
+          categories: [],
+          error: errorMessage(error),
+        },
+      });
+    }
+  }
+
+  async handleStorageCleanRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.storage.clean.request" }>,
+  ): Promise<void> {
+    const host = this.daemonRuntimeConfig?.hostResources;
+    try {
+      if (!host) throw new Error("Storage cleanup is not available on this daemon");
+      const result = await host.storage.cleanup(msg.categoryId);
+      this.host.emit({
+        type: "daemon.storage.clean.response",
+        payload: { requestId: msg.requestId, ...result, error: null },
+      });
+    } catch (error) {
+      this.logger.warn({ err: error, categoryId: msg.categoryId }, "Storage cleanup failed");
+      this.host.emit({
+        type: "daemon.storage.clean.response",
+        payload: {
+          requestId: msg.requestId,
+          categoryId: msg.categoryId,
+          bytesFreed: 0,
+          removedCount: 0,
+          error: errorMessage(error),
         },
       });
     }
@@ -424,4 +503,8 @@ export class DaemonSession {
       currentVersion: this.daemonVersion ?? "unknown",
     };
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

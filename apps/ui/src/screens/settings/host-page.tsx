@@ -71,6 +71,7 @@ import { withDefaultAccount } from "@/screens/settings/provider-settings-modal/a
 import { HostAppearanceSection } from "@/screens/settings/host-appearance-section";
 import { HostDaemonUpdateSection } from "@/screens/settings/host-daemon-update-section";
 import { HostSshDeploySection } from "@/screens/settings/host-ssh-deploy-section";
+import { HostResourcesSection } from "@/screens/settings/host-resources-section";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
@@ -365,6 +366,8 @@ export function HostSettingsPage({
 
       <DaemonConflictWarning serverId={serverId} />
       <ConnectionsSection host={host} />
+
+      <HostResourcesSection serverId={serverId} />
 
       {isConnected ? (
         <SettingsSection title={t("settings.hostSections.workspaces")}>

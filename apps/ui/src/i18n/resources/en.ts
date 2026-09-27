@@ -276,6 +276,28 @@ export const en = {
       warning: "Cache expired: sending re-bills {{tokens}} input tokens",
       warningUnknown: "Cache expired: sending re-sends the whole conversation",
     },
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: {
+      action: "Clean cut",
+      pending: "Summarising...",
+      failed: "Couldn't make a clean cut",
+      hint: "End this conversation and start a fresh one. A cheap model on the same provider summarises the chat (messages and tool calls, not their output) and sends it ahead of your message. Your workspace changes are kept, and the old conversation stays visible to you but not to the agent.",
+      subagents: {
+        cut_one: "Also cut {{count}} subagent",
+        cut_other: "Also cut {{count}} subagents",
+        noneCut: "No subagents cut",
+        skipped: "{{count}} skipped ({{reasons}})",
+        failed: "{{count}} failed: {{names}}",
+        failedItem: "{{title}} ({{reason}})",
+        untitled: "Untitled subagent",
+        reasons: {
+          running: "running",
+          closed: "closed",
+          empty: "nothing new",
+          unknown: "unknown reason",
+        },
+      },
+    },
     input: {
       accessibilityLabel: "Message agent...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -396,9 +418,19 @@ export const en = {
         costUnknownTokens:
           "Moving this conversation to another account re-sends its whole context as fresh input, billed at full (uncached) price.",
         confirm: "Move conversation",
+        cleanCut: "Clean cut to this account",
+        cleanCutHint:
+          "Or make a clean cut: a cheap summary starts a fresh conversation on the new account instead of re-sending the whole context.",
         moving: "Moving...",
         failed: "Couldn't move the conversation",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCutProvider: {
+      title: "Switch provider",
+      body: "Move this conversation from {{from}} to {{to}} ({{model}}) with a clean cut?",
+      hint: "A provider can't read another provider's history, so a cheap model summarises this conversation and a fresh one starts on the new provider. Workspace changes are kept; the old conversation stays visible to you.",
+      confirm: "Clean cut and switch",
     },
     hints: {
       thinking: "Thinking mode",
@@ -409,6 +441,16 @@ export const en = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: {
+      title: "Clean cut: new conversation",
+      copyId: "Copy previous conversation ID",
+      idCopied: "Conversation ID copied",
+      summary: "Summary sent to the agent",
+      summaryBy: "Summary sent to the agent ({{model}})",
+      switched: "{{from}} → {{to}}",
+      automatic: "Clean cut: cache expired, new conversation",
+    },
     empty: "Start chatting with this agent...",
     scrollToBottom: "Scroll to bottom",
     historyLoadFailed: "Couldn't load agent history",
@@ -2262,6 +2304,11 @@ export const en = {
         sshPort: "SSH port",
         identityFile: "Key file",
         identityFileHint: "Leave empty to use ssh-agent and ~/.ssh/config.",
+        password: "Password",
+        privateKey: "Private key",
+        privateKeyHint:
+          "Optional. Paste an OpenSSH or PEM private key; it is used for this deploy only and not saved.",
+        passphrase: "Key passphrase",
         daemonPort: "Daemon port",
       },
       network: {
@@ -2297,6 +2344,7 @@ export const en = {
         invalidSshPort: "Enter an SSH port between 1 and 65535.",
         invalidDaemonPort: "Enter a daemon port between 1 and 65535.",
         invalidKeyFile: "Enter an absolute path or one starting with ~/.",
+        userRequired: "Enter the SSH user.",
       },
       errors: {
         ssh_failed: "Could not connect over SSH. {{detail}}",
@@ -3384,6 +3432,56 @@ export const en = {
       },
     },
     host: {
+      resources: {
+        title: "Resources",
+        info: "Live host load and the size of the storage this daemon owns. Metrics refresh every few seconds while this page is open.",
+        loading: "Loading host metrics…",
+        metricsFailed: "Could not load host metrics",
+        metricsUnavailable: "The daemon returned no metrics",
+        stale: "Showing the last sample; the latest refresh failed.",
+        notAvailable: "n/a",
+        cpu: "CPU",
+        memory: "Memory",
+        disk: "Disk",
+        diskHint: "{{path}} · {{free}} free",
+        cores: "{{count}} cores",
+        load: "load {{value}}",
+        uptime: "up {{value}}",
+        uptimeDays: "{{count}}d",
+        uptimeHours: "{{count}}h",
+        uptimeMinutes: "{{count}}m",
+        daemon: "Daemon process",
+        daemonPid: "PID {{pid}}",
+        daemonMemory: "RSS {{rss}}, heap {{heap}}",
+        daemonCpu: "CPU {{value}}",
+        storageTitle: "Owned storage: {{size}}",
+        storageHint: "Sizes are cached on the daemon for a few minutes.",
+        storageLoading: "Measuring storage…",
+        storageUnavailable: "Storage details unavailable",
+        computedAt: "Measured at {{time}}",
+        refresh: "Refresh",
+        entries_one: "{{count}} entry",
+        entries_other: "{{count}} entries",
+        missing: "Not present",
+        clean: "Clean",
+        cleanConfirmTitle: "Clean {{category}}?",
+        cleanConfirmMessage:
+          "This permanently deletes about {{size}} from {{category}} on the host.",
+        cleanSuccess: "Cleaned {{category}}: freed {{size}} ({{count}} items removed).",
+        cleanFailed: "Could not clean {{category}}",
+        categories: {
+          logs: "Logs",
+          agents: "Agent state",
+          projects: "Projects",
+          worktrees: "Worktrees",
+          uploads: "Uploads",
+          project_import_staging: "Project import staging",
+          tts_cache: "Speech cache",
+          models: "Models",
+          daemon_versions: "Daemon versions",
+          temp: "Temporary files",
+        },
+      },
       connectionErrors: {
         remoteSsh: "SSH tunnel failed: {{detail}}",
         credentialRejected:

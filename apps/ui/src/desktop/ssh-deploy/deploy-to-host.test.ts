@@ -374,6 +374,22 @@ describe("deploy to host", () => {
       },
       daemonPort: 9999,
     });
+    const credentials = { password: "pw", privateKey: " KEY \n", passphrase: "pp" };
+    expect(resolveDeployTarget({ ...base, credentials })).toEqual({
+      ok: true,
+      target: {
+        host: "alice@box.lan",
+        sshPort: 2222,
+        sshPassword: "pw",
+        privateKey: "KEY",
+        privateKeyPassphrase: "pp",
+      },
+      daemonPort: 9999,
+    });
+    expect(resolveDeployTarget({ ...base, user: "", credentials })).toEqual({
+      ok: false,
+      error: "userRequired",
+    });
     const errors = [
       [{ mode: "config" as const }, "hostRequired"],
       [{ host: "" }, "hostRequired"],

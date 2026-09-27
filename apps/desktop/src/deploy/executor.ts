@@ -1,22 +1,14 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import path from "node:path";
 import { StringDecoder } from "node:string_decoder";
-import { buildSshArgs, type SshTarget } from "./args.js";
+import type {
+  ExecuteScript,
+  ExecutionInput,
+  ExecutionResult,
+} from "@frogg/protocol/ssh-deploy/execute";
+import { buildSshArgs } from "./ssh-args.js";
 
-export interface ExecutionInput {
-  target: SshTarget;
-  command: string;
-  script: string;
-  signal: AbortSignal;
-  timeoutMs: number;
-  onLine?(stream: "stdout" | "stderr", text: string): void;
-}
-export interface ExecutionResult {
-  stdout: string;
-  stderr: string;
-  code: number | null;
-}
-export type ExecuteScript = (input: ExecutionInput) => Promise<ExecutionResult>;
+export type { ExecuteScript, ExecutionInput, ExecutionResult };
 export interface PasswordEnvironment {
   env: NodeJS.ProcessEnv;
   cleanup(): void;

@@ -1,7 +1,8 @@
 /**
  * COMPAT(staleContextWarning): added in v1.5.7.
  *
- * Claude Code's prompt cache holds a conversation for an hour. Come back after
+ * A provider's prompt cache holds a conversation for a limited time (an hour
+ * for Claude Code). Come back after
  * that and the next message is not a cheap continuation: the whole context is
  * re-sent as fresh input, billed in full, before the model reads a word of what
  * was just typed. Nothing in the UI used to say so, and the cost only showed up
@@ -12,15 +13,25 @@
  * tab — so the warning keeps meaning something when it does appear.
  */
 
-/** How long a conversation can sit before its prompt cache is assumed gone. */
-export const STALE_CONTEXT_IDLE_MS = 60 * 60 * 1000;
+import { getPromptCacheTtlMs, isPromptCacheCold, PROMPT_CACHE_TTL_MS } from "@frogg/protocol/prompt-cache";
 
 /**
- * The provider this applies to. Cache lifetimes are a provider's own business,
- * and an hour is Claude's; pretending to know another provider's would be
- * inventing a number to warn about.
+ * How long each provider's prompt cache is assumed to outlive an idle
+ * conversation. Lives in `@frogg/protocol/prompt-cache`, shared with the
+ * daemon's automatic clean cut.
  */
-export const STALE_CONTEXT_PROVIDER = "claude";
+export const STALE_CONTEXT_TTL_MS_BY_PROVIDER: Readonly<Record<string, number>> = PROMPT_CACHE_TTL_MS;
+
+/** The cache window for a provider, or null when the rule does not apply to it. */
+export function staleContextTtlMs(provider: string | null): number | null {
+  return getPromptCacheTtlMs(provider);
+}
+
+/**
+ * Claude's cache window.
+ * @deprecated Use `staleContextTtlMs(provider)`; windows are per provider.
+ */
+export const STALE_CONTEXT_IDLE_MS = getPromptCacheTtlMs("claude") ?? 60 * 60 * 1000;
 
 export interface StaleContextInput {
   /** The agent's provider, or null when the composer has no agent yet. */
@@ -52,7 +63,7 @@ export interface StaleContextWarning {
 /**
  * The warning to show, or null for silence.
  *
- * Every condition has to hold: it is a Claude conversation, it has a context
+ * Every condition has to hold: its provider has a known cache window, it has a context
  * worth re-sending, it has been idle past the cache window, and the user is
  * mid-sentence rather than merely looking at the screen. A brand-new agent with
  * nothing behind it is the ordinary first-message case, which costs what it
@@ -60,16 +71,20 @@ export interface StaleContextWarning {
  * unreported still warns, without a number.
  */
 export function resolveStaleContextWarning(input: StaleContextInput): StaleContextWarning | null {
-  if (input.provider !== STALE_CONTEXT_PROVIDER) return null;
+  if (staleContextTtlMs(input.provider) === null) return null;
   if (!input.isComposing) return null;
   if (input.contextTokens !== null && input.contextTokens <= 0) return null;
   if (input.contextTokens === null && !input.hasConversation) return null;
   if (!input.lastActivityAt) return null;
 
-  const idleMs = input.now - input.lastActivityAt.getTime();
   // A last-activity stamp in the future (clock skew between daemon and client)
-  // is not an idle conversation; treat it as fresh rather than as very stale.
-  if (!Number.isFinite(idleMs) || idleMs <= STALE_CONTEXT_IDLE_MS) return null;
+  // is not an idle conversation; the shared rule treats it as warm.
+  const cold = isPromptCacheCold({
+    provider: input.provider,
+    lastTurnAt: input.lastActivityAt,
+    now: input.now,
+  });
+  if (cold !== true) return null;
 
   return { tokens: input.contextTokens };
 }

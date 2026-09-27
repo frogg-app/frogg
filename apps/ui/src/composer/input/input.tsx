@@ -2,6 +2,7 @@ import { formatTokenCount } from "@/components/context-window-meter.utils";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   View,
+  Pressable,
   Text,
   useWindowDimensions,
   NativeSyntheticEvent,
@@ -185,6 +186,13 @@ export interface MessageInputProps {
    */
   staleContextWarning?: StaleContextWarning | null;
   /**
+   * COMPAT(agentCleanCut): added in v1.6.2. Offered beside the stale-context
+   * warning: summarise the conversation into a fresh one, then send this
+   * message there instead of re-sending the whole context. Null hides it.
+   */
+  onCleanCut?: (() => void) | null;
+  cleanCutPending?: boolean;
+  /**
    * COMPAT(sessionPresence): added in v1.6.0. Set when somebody else is
    * actively writing to the same agent. Warns in amber; never disables.
    */
@@ -204,6 +212,8 @@ export interface MessageInputRef {
   getInputSnapshot: () => ComposerInputSnapshot;
   replaceText: (text: string, selection?: { start: number; end: number }) => void;
   runKeyboardAction: (action: MessageInputKeyboardActionKind) => boolean;
+  /** Sends what is in the composer, exactly as the send button would. */
+  submit: () => void;
   /**
    * Web-only: return the underlying DOM element for focus assertions/retries.
    * May return null if not mounted or on native.
@@ -1106,6 +1116,8 @@ interface ResolvedMessageInputProps {
   readOnly: boolean;
   offline: boolean;
   staleContextWarning: StaleContextWarning | null;
+  onCleanCut: (() => void) | null;
+  cleanCutPending: boolean;
   presenceWarning: PresenceWarning | null;
   presenceSlot: React.ReactNode;
   textReplacement: TextReplacement;
@@ -1160,6 +1172,8 @@ function resolveMessageInputProps(props: MessageInputProps): ResolvedMessageInpu
     // the notice and its outline are resolved away before any of the render
     // paths have to think about the two states together.
     staleContextWarning: props.offline ? null : (props.staleContextWarning ?? null),
+    onCleanCut: props.onCleanCut ?? null,
+    cleanCutPending: props.cleanCutPending ?? false,
     // Offline wins over every advisory outline: a composer that cannot reach
     // its daemon has a more urgent thing to say than who else is typing, and
     // resolving it here keeps the render paths from combining the two.
@@ -1186,15 +1200,19 @@ function extractErrorMessage(error: unknown): string | null {
  */
 const StaleContextNotice = memo(function StaleContextNotice({
   warning,
+  onCleanCut,
+  cleanCutPending,
 }: {
   warning: StaleContextWarning | null;
+  onCleanCut: (() => void) | null;
+  cleanCutPending: boolean;
 }): React.ReactElement | null {
   const { t } = useTranslation();
   if (warning === null) {
     return null;
   }
   return (
-    <View style={styles.staleContextNotice} pointerEvents="none">
+    <View style={styles.staleContextNotice} pointerEvents="box-none">
       <Text
         style={styles.staleContextText}
         numberOfLines={1}
@@ -1206,6 +1224,33 @@ const StaleContextNotice = memo(function StaleContextNotice({
               tokens: formatTokenCount(warning.tokens),
             })}
       </Text>
+      {onCleanCut ? (
+        <Tooltip delayDuration={300} enabledOnDesktop enabledOnMobile={false}>
+          <TooltipTrigger asChild disabled={cleanCutPending}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("composer.cleanCut.action")}
+              accessibilityHint={t("composer.cleanCut.hint")}
+              onPress={onCleanCut}
+              disabled={cleanCutPending}
+              hitSlop={6}
+              testID="composer-clean-cut"
+            >
+              {({ hovered }) => (
+                <Text
+                  style={[styles.cleanCutLink, hovered && styles.cleanCutLinkHovered]}
+                  numberOfLines={1}
+                >
+                  {cleanCutPending ? t("composer.cleanCut.pending") : t("composer.cleanCut.action")}
+                </Text>
+              )}
+            </Pressable>
+          </TooltipTrigger>
+          <TooltipContent side="top" align="end" offset={8}>
+            <Text style={styles.cleanCutTooltip}>{t("composer.cleanCut.hint")}</Text>
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
     </View>
   );
 });
@@ -1256,6 +1301,8 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       readOnly,
       offline,
       staleContextWarning,
+      onCleanCut,
+      cleanCutPending,
       presenceWarning,
       presenceSlot,
       textReplacement,
@@ -1324,7 +1371,10 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       [onChangeText, updateComposerHeightForText, updateLiveTextPresence],
     );
 
+    // Assigned once the send handler exists below; the handle reads it lazily.
+    const sendMessageRef = useRef<(() => void) | null>(null);
     useImperativeHandle(ref, () => ({
+      submit: () => sendMessageRef.current?.(),
       focus: () => {
         textInputRef.current?.focus();
       },
@@ -1586,6 +1636,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       preserveHeightOnSubmit,
       updateLiveTextPresence,
     ]);
+    sendMessageRef.current = handleSendMessage;
 
     const handleQueueMessage = useCallback(
       () =>
@@ -1866,7 +1917,11 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
           pointerEvents={surfacePresentation.input.pointerEvents}
         >
           {presenceSlot}
-          <StaleContextNotice warning={staleContextWarning} />
+          <StaleContextNotice
+            warning={staleContextWarning}
+            onCleanCut={onCleanCut}
+            cleanCutPending={cleanCutPending}
+          />
           {attachmentSlot}
           {/* Text input */}
           <RenderProfile id="ComposerTextSurface">
@@ -2008,9 +2063,31 @@ const styles = StyleSheet.create((theme: Theme) => ({
     // the warning never overlaps the message and the composer's measured height
     // stays put while the user types.
     alignSelf: "stretch",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[3],
   },
   staleContextText: {
+    flexShrink: 1,
     color: theme.colors.palette.amber[500],
+    fontSize: theme.fontSize.sm,
+    lineHeight: theme.fontSize.sm * 1.4,
+  },
+  // COMPAT(agentCleanCut): added in v1.6.2. A link, not a button: the amber
+  // line already says why it is there.
+  cleanCutLink: {
+    color: theme.colors.palette.amber[500],
+    fontSize: theme.fontSize.sm,
+    lineHeight: theme.fontSize.sm * 1.4,
+    fontWeight: theme.fontWeight.semibold,
+    textDecorationLine: "underline",
+  },
+  cleanCutLinkHovered: {
+    opacity: 0.8,
+  },
+  cleanCutTooltip: {
+    maxWidth: 320,
+    color: theme.colors.popoverForeground,
     fontSize: theme.fontSize.sm,
     lineHeight: theme.fontSize.sm * 1.4,
   },

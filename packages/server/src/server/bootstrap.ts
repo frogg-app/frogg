@@ -150,6 +150,7 @@ import {
 } from "./workspace-archive-service.js";
 import { setupAutoArchiveOnMerge } from "./auto-archive-on-merge/index.js";
 import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
+import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./agent/auto-clean-cut.js";
 import { sendPromptToAgent } from "./agent/agent-prompt.js";
 import { wrapSessionMessage, type SessionOutboundMessage } from "./messages.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
@@ -257,6 +258,9 @@ import {
 } from "./session/daemon/daemon-auto-updater.js";
 import { describeDaemonInstall } from "./session/daemon/daemon-update-install.js";
 import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
+import { createHostResources } from "./host/host-resources.js";
+import { sweepFroggDebris } from "./host/debris-sweep.js";
+import { getActiveImageAttachmentDir } from "./agent/providers/provider-image-output.js";
 import type { DaemonAutoUpdateConfig } from "@frogg/protocol/messages";
 
 const MCP_DEBUG_BATCH_LIMIT = 10;
@@ -465,6 +469,8 @@ export interface FroggDaemonConfig {
   };
   autoArchiveAfterMerge?: boolean;
   autoResumeOnUsageLimit?: boolean;
+  /** COMPAT(agentCleanCut): clean-cut before an automatic resume when the prompt cache is cold. */
+  autoCleanCutOnColdCache?: boolean;
   /** `features.companion.model`; null means the backend default. */
   companionModel?: string | null;
   hostSettingsHiddenSections?: readonly HostSettingsSection[];
@@ -1529,10 +1535,21 @@ export async function createFroggDaemon(
     logger,
   });
 
+  const autoCleanCutDeps: AutoCleanCutDeps = {
+    agentManager,
+    providerSnapshotManager,
+    isEnabled: () => config.autoCleanCutOnColdCache !== false,
+    logger,
+  };
   const usageLimitAutoResume = setupUsageLimitAutoResume({
     agentManager,
     isEnabled: () => daemonConfigStore.get().autoResumeOnUsageLimit !== false,
-    resume: async (agentId, prompt) => {
+    resume: async (agentId, prompt, { limitDetectedAt }) => {
+      await maybeAutoCleanCut(autoCleanCutDeps, {
+        agentId,
+        lastProviderTurnAt: limitDetectedAt,
+        trigger: "usage_limit",
+      });
       await sendPromptToAgent({
         agentManager,
         agentStorage,
@@ -2162,6 +2179,29 @@ export async function createFroggDaemon(
               retainAcrossGatewayRestart: Boolean(config.executionService),
               logger,
             });
+            const runningVersionRoot = updateService.installInfo.runningRoot;
+            const hostResources = createHostResources({
+              froggHome: config.froggHome,
+              worktreesRoot: config.worktreesRoot,
+              versionsDir: runningVersionRoot ? path.dirname(runningVersionRoot) : null,
+              listStagingParents: async () =>
+                (await projectRegistry.list()).map((project) => path.dirname(project.rootPath)),
+              listProtectedPaths: () => {
+                const active = getActiveImageAttachmentDir();
+                return active ? [active] : [];
+              },
+              logger,
+            });
+            // Non-blocking: a slow or failing sweep never delays or breaks startup.
+            void (async () =>
+              sweepFroggDebris({
+                logger,
+                stagingParents: await hostResources.storage.listStagingParents().catch(() => []),
+                protectedPaths: [getActiveImageAttachmentDir()].filter(
+                  (p): p is string => p !== null,
+                ),
+              }))();
+
             autoUpdater = new DaemonAutoUpdater({
               service: updateService,
               getConfig: () => daemonConfigStore.get().autoUpdate,
@@ -2229,6 +2269,7 @@ export async function createFroggDaemon(
                 },
                 desktopManaged: config.desktopManaged === true,
                 update: updateService,
+                hostResources,
                 getSecurityPosture,
                 setSecurityFindingAcknowledged,
                 getRelayConfig: () =>
@@ -2260,9 +2301,18 @@ export async function createFroggDaemon(
             }
             autoUpdater.start();
             // Fire-and-forget: continue agents a previous daemon stop cut off mid-turn.
-            void resumeInterruptedAgents({ agentManager, agentStorage, logger }).catch((err) =>
-              logger.error({ err }, "Interrupted-turn resume failed"),
-            );
+            void resumeInterruptedAgents({
+              agentManager,
+              agentStorage,
+              logger,
+              beforeResume: async (agentId, interruptedAt) => {
+                await maybeAutoCleanCut(autoCleanCutDeps, {
+                  agentId,
+                  lastProviderTurnAt: interruptedAt,
+                  trigger: "daemon_restart",
+                });
+              },
+            }).catch((err) => logger.error({ err }, "Interrupted-turn resume failed"));
             relayRuntime = createRelayRuntime({
               config: {
                 enabled: relayEnabled,

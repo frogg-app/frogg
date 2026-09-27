@@ -7,11 +7,20 @@ import { AdaptiveModalSheet, type SheetHeader } from "./adaptive-modal-sheet";
 import { isFdroidBuild } from "@/constants/build-profile";
 import { isNative } from "@/constants/platform";
 import { isElectronRuntime } from "@/desktop/host";
+import { isSshDeployAvailable } from "@/desktop/ssh-deploy/ssh-deploy-bridge";
 import type { Theme } from "@/styles/theme";
 
 /** Remote SSH hosts are provisioned by the desktop shell, so only Electron can offer it. */
 export function isRemoteSshAddHostAvailable(): boolean {
   return isElectronRuntime();
+}
+
+/**
+ * Deploying installs the daemon over SSH: the desktop shell spawns `ssh`, the
+ * Android app uses its own SSH client.
+ */
+export function isDeployAddHostAvailable(): boolean {
+  return isSshDeployAvailable();
 }
 
 /** QR pairing needs a camera scanner, which only native (non-F-Droid) builds ship. */
@@ -64,7 +73,7 @@ export interface AddHostMethodModalProps {
   onPasteLink: () => void;
   /** Type a pairing code an owner read out, against a host and port. */
   onPairCode: () => void;
-  /** Desktop only: install the daemon on an SSH host, then add it. */
+  /** Install the daemon on an SSH host, then add it; see `isDeployAddHostAvailable`. */
   onDeploy?: () => void;
 }
 
@@ -142,7 +151,7 @@ export function AddHostMethodModal({
         </Pressable>
       ) : null}
 
-      {onDeploy && isRemoteSshAddHostAvailable() ? (
+      {onDeploy && isDeployAddHostAvailable() ? (
         <Pressable
           style={styles.option}
           onPress={onDeploy}

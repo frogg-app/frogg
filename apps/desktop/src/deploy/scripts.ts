@@ -1,9 +1,6 @@
 import { installers } from "@frogg/branding/installers";
-import type { DeployMethod } from "./args.js";
+import type { DeployMethod } from "@frogg/protocol/ssh-deploy/args";
+import { selectDeployScript } from "@frogg/protocol/ssh-deploy/scripts";
 export function deployScript(method: DeployMethod, uninstall = false): string {
-  const name = `/${uninstall ? "uninstall" : "install"}${method === "docker" ? "-docker" : ""}.sh`;
-  const script = installers[name];
-  if (!script?.startsWith("#!/usr/bin/env bash\n"))
-    throw new Error(`Missing branded deployment script: ${name}`);
-  return script;
+  return selectDeployScript(installers, method, uninstall);
 }

@@ -280,6 +280,28 @@ export const fr: TranslationResources = {
       warning: "Cache expiré : l'envoi refacture {{tokens}} jetons d'entrée",
       warningUnknown: "Cache expiré : l'envoi renvoie toute la conversation",
     },
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: {
+      action: "Coupure nette",
+      pending: "Résumé en cours...",
+      failed: "Impossible de faire la coupure nette",
+      hint: "Termine cette conversation et en démarre une nouvelle. Un modèle économique du même fournisseur résume le chat (messages et appels d'outils, sans leur sortie) et l'envoie avant votre message. Les modifications de l'espace de travail sont conservées et l'ancienne conversation reste visible pour vous, mais pas pour l'agent.",
+      subagents: {
+        cut_one: "{{count}} sous-agent également coupé",
+        cut_other: "{{count}} sous-agents également coupés",
+        noneCut: "Aucun sous-agent coupé",
+        skipped: "{{count}} ignorés ({{reasons}})",
+        failed: "{{count}} en échec : {{names}}",
+        failedItem: "{{title}} ({{reason}})",
+        untitled: "Sous-agent sans titre",
+        reasons: {
+          running: "en cours",
+          closed: "fermé",
+          empty: "rien de nouveau",
+          unknown: "raison inconnue",
+        },
+      },
+    },
     input: {
       accessibilityLabel: "Agent de messagerie...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -400,9 +422,19 @@ export const fr: TranslationResources = {
         costUnknownTokens:
           "Déplacer cette conversation vers un autre compte renvoie tout son contexte comme nouvelle entrée, facturée au prix plein (sans cache).",
         confirm: "Déplacer la conversation",
+        cleanCut: "Coupure nette vers ce compte",
+        cleanCutHint:
+          "Ou faites une coupure nette : un résumé économique démarre une nouvelle conversation sur l'autre compte au lieu de renvoyer tout le contexte.",
         moving: "Déplacement...",
         failed: "Impossible de déplacer la conversation",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCutProvider: {
+      title: "Changer de fournisseur",
+      body: "Déplacer cette conversation de {{from}} vers {{to}} ({{model}}) avec une coupure nette ?",
+      hint: "Un fournisseur ne peut pas lire l'historique d'un autre : un modèle économique résume donc cette conversation et une nouvelle démarre sur le nouveau fournisseur. Les modifications de l'espace de travail sont conservées ; l'ancienne conversation reste visible pour vous.",
+      confirm: "Coupure nette et changer",
     },
     hints: {
       thinking: "Mode réflexion",
@@ -413,6 +445,16 @@ export const fr: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: {
+      title: "Coupure nette : nouvelle conversation",
+      copyId: "Copier l'ID de la conversation précédente",
+      idCopied: "ID de conversation copié",
+      summary: "Résumé envoyé à l'agent",
+      summaryBy: "Résumé envoyé à l'agent ({{model}})",
+      switched: "{{from}} → {{to}}",
+      automatic: "Coupure nette : cache expiré, nouvelle conversation",
+    },
     empty: "Commencez à discuter avec cet agent...",
     scrollToBottom: "Faire défiler vers le bas",
     historyLoadFailed: "Impossible de charger l’historique de l’agent",
@@ -2308,6 +2350,11 @@ export const fr: TranslationResources = {
         sshPort: "Port SSH",
         identityFile: "Fichier de clé",
         identityFileHint: "Laissez vide pour utiliser ssh-agent et ~/.ssh/config.",
+        password: "Mot de passe",
+        privateKey: "Clé privée",
+        privateKeyHint:
+          "Facultatif. Collez une clé privée OpenSSH ou PEM ; elle ne sert qu'à ce déploiement et n'est pas enregistrée.",
+        passphrase: "Phrase secrète de la clé",
         daemonPort: "Port du daemon",
       },
       network: {
@@ -2343,6 +2390,7 @@ export const fr: TranslationResources = {
         invalidSshPort: "Saisissez un port SSH entre 1 et 65535.",
         invalidDaemonPort: "Saisissez un port de daemon entre 1 et 65535.",
         invalidKeyFile: "Saisissez un chemin absolu ou commençant par ~/.",
+        userRequired: "Saisissez l'utilisateur SSH.",
       },
       errors: {
         ssh_failed: "Connexion SSH impossible. {{detail}}",
@@ -3410,6 +3458,56 @@ export const fr: TranslationResources = {
       },
     },
     host: {
+      resources: {
+        title: "Ressources",
+        info: "Charge de l'hôte en direct et taille du stockage géré par ce daemon. Les métriques s'actualisent toutes les quelques secondes tant que cette page est ouverte.",
+        loading: "Chargement des métriques de l'hôte…",
+        metricsFailed: "Impossible de charger les métriques de l'hôte",
+        metricsUnavailable: "Le daemon n'a renvoyé aucune métrique",
+        stale: "Dernier échantillon affiché ; la dernière actualisation a échoué.",
+        notAvailable: "n/d",
+        cpu: "Processeur",
+        memory: "Mémoire",
+        disk: "Disque",
+        diskHint: "{{path}} · {{free}} libres",
+        cores: "{{count}} cœurs",
+        load: "charge {{value}}",
+        uptime: "actif depuis {{value}}",
+        uptimeDays: "{{count}} j",
+        uptimeHours: "{{count}} h",
+        uptimeMinutes: "{{count}} min",
+        daemon: "Processus du daemon",
+        daemonPid: "PID {{pid}}",
+        daemonMemory: "RSS {{rss}}, tas {{heap}}",
+        daemonCpu: "CPU {{value}}",
+        storageTitle: "Stockage géré : {{size}}",
+        storageHint: "Les tailles sont mises en cache sur le daemon pendant quelques minutes.",
+        storageLoading: "Mesure du stockage…",
+        storageUnavailable: "Détails du stockage indisponibles",
+        computedAt: "Mesuré à {{time}}",
+        refresh: "Actualiser",
+        entries_one: "{{count}} entrée",
+        entries_other: "{{count}} entrées",
+        missing: "Absent",
+        clean: "Nettoyer",
+        cleanConfirmTitle: "Nettoyer {{category}} ?",
+        cleanConfirmMessage:
+          "Cela supprime définitivement environ {{size}} de {{category}} sur l'hôte.",
+        cleanSuccess: "{{category}} nettoyé : {{size}} libérés ({{count}} éléments supprimés).",
+        cleanFailed: "Impossible de nettoyer {{category}}",
+        categories: {
+          logs: "Journaux",
+          agents: "État des agents",
+          projects: "Projets",
+          worktrees: "Worktrees",
+          uploads: "Téléversements",
+          project_import_staging: "Préparation d'import de projets",
+          tts_cache: "Cache vocal",
+          models: "Modèles",
+          daemon_versions: "Versions du daemon",
+          temp: "Fichiers temporaires",
+        },
+      },
       connectionErrors: {
         remoteSsh: "Échec du tunnel SSH : {{detail}}",
         credentialRejected:

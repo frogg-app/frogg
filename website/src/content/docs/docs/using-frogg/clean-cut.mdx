@@ -1,0 +1,148 @@
+---
+title: Clean cuts
+description: End an agent's provider conversation and continue in a fresh one from a cheap summary, on the same account, another account or another provider.
+sidebar:
+  order: 5
+---
+
+A clean cut ends an agent's provider conversation and starts a fresh provider session for the
+same agent, in the same workspace. The new conversation starts from a short summary of the old
+one instead of the whole context. Use it when the prompt cache has expired and the next message
+would re-send everything at full input price, or to move a conversation to another account or
+provider.
+
+What stays and what goes:
+
+- **You** still see the whole timeline. A divider marks where the cut happened.
+- **The agent** sees only the summary, sent ahead of your next message. It cannot read
+  anything above the divider.
+- **The workspace** is untouched. Files, the branch and the worktree keep every change the agent
+  made; the summary tells the new conversation to read the files rather than assume their
+  contents.
+
+A clean cut needs a daemon that reports `features.agentCleanCut`. On older daemons the entry
+points below are not shown.
+
+## Make a clean cut
+
+The agent must be idle; a running agent refuses with "Wait for the agent to finish its turn
+before making a clean cut." There are three entry points:
+
+| Where | What happens |
+| ----- | ------------ |
+| **Clean cut** link in the amber [stale-cache notice](/docs/using-frogg/agents/#start-an-agent) above the composer | Cuts on the same provider, account and model, then sends what you typed into the fresh conversation |
+| Account pill above the composer → **Clean cut to this account** | Cuts onto the selected account of the same provider, instead of **Move conversation**, which copies the whole transcript over |
+| Model picker → a model from another provider | Asks **Switch provider** first; **Clean cut and switch** cuts onto that provider and model |
+
+While the summary is being written the button reads **Summarising...**. A failure is shown in
+the sheet or as a toast, and the agent stays on its old conversation.
+
+If nothing new was said since the last clean cut, a same-place cut does nothing. Moving to
+another account, provider or model still goes ahead, reusing the previous summary.
+
+### Switching provider
+
+A provider cannot resume another provider's transcript, so a clean cut is the only way to move
+a live conversation across. When a daemon supports clean cuts and more than one provider is
+enabled, the agent's model picker lists every enabled provider. Picking a model on the agent's
+own provider changes the model in place, as before. Picking one on another provider opens the
+confirmation.
+
+The mode, thinking level, provider features and account belong to the old provider, so they
+reset to the new provider's defaults.
+
+## How the summary is made
+
+- **Input.** The chat side of the conversation since the last clean cut: user and assistant
+  messages, tool call names with short arguments, todos, errors, and the previous cut's summary.
+  Tool output is never included. A very long transcript keeps its opening and its most recent
+  part and drops the middle.
+- **Model.** The cheapest model available on the agent's own provider and account (for example
+  Haiku on Claude, `gpt-5.4-mini` on Codex), then the agent's current model. No other provider
+  or account is tried, so the summary always bills the account the conversation already uses.
+  If every candidate fails, the clean cut fails and the error names the provider, the models
+  tried and the last failure; the agent keeps its conversation.
+- **Shape.** A Markdown note of up to about 600 words: goal, user decisions and constraints, what
+  is done, what is in progress, next steps.
+
+The summariser runs as a hidden agent with no tool access. Each attempt is abandoned after
+150 seconds and the next candidate is tried. The summary costs one small request on the
+provider, which is the saving: the old context is not re-sent.
+
+## The divider
+
+The cut leaves a **Clean cut: new conversation** divider in the timeline. Under it:
+
+- **Summary sent to the agent**, with the model that wrote it, collapsed by default. Expand it
+  to read exactly what the agent was given.
+- **Copy previous conversation ID**, the provider session ID of the old conversation, for when
+  you need to find it in the provider's own history.
+- The provider change, for example `claude → codex`, when the cut switched provider.
+
+Clients that predate clean cuts show the divider as an ordinary compaction marker.
+
+## Subagents
+
+A manual clean cut also cuts the agent's Frogg subagents: agents it started with
+`frogg agent run` or `create_agent`, and their children in turn. Each child is summarised
+from its own timeline and stays on its own provider and model. Children are skipped when they
+are:
+
+- running a turn,
+- closed,
+- empty, with no user message since their last cut.
+
+A child that fails to cut does not undo the parent's cut. Children saved on disk but not
+loaded in the daemon are loaded for the cut and unloaded again afterwards. Archived children
+are left alone.
+
+After the cut, a toast reports what happened to them, for example
+`Also cut 2 subagents · 1 skipped (running)`. Failures are listed by name with the error, and
+the toast stays up longer. No toast appears when the agent has no subagents.
+
+Provider-native subagents, such as Claude Code tasks, live inside the parent's conversation.
+They end with it and need no cut of their own.
+
+## Automatic clean cut on a cold cache
+
+When the daemon resumes an agent on its own, it makes a clean cut first if the provider's
+prompt cache has expired. This applies to:
+
+- **Usage-limit auto-resume** ([`daemon.autoResumeOnUsageLimit`](/docs/reference/configuration/#agents-and-tools)).
+  The cache age is measured from when the limit was hit, so a limit that resets more than an
+  hour later resumes from a summary instead of re-sending the whole context.
+- **Resume after a daemon restart.** Turns interrupted up to 24 hours ago are resumed. One
+  interrupted more than the provider's cache lifetime ago is cut first; a recent one resumes
+  its cached conversation.
+
+It never cuts while the cache is warm, since resuming the cached conversation is cheaper. It
+only acts on providers with a known cache lifetime (Claude and Codex, one hour each), never
+cuts subagents, and skips agents that are running, closed or have no provider session yet. An
+agent with nothing new since its last clean cut is resumed as is, since that cut's summary
+still stands. If the summary fails, the daemon logs a warning and resumes the old conversation
+as it would have anyway.
+
+The divider reads **Clean cut: cache expired, new conversation** instead of the manual title.
+The timeline item records why the cut was made in `cleanCut.reason`: `manual` or `cold-cache`.
+Cuts recorded before the reason existed show the manual title.
+
+Turn it off in [`config.json`](/docs/reference/configuration/#agents-and-tools), then restart the daemon;
+the setting is read at startup:
+
+```json
+{ "daemon": { "autoCleanCutOnColdCache": false } }
+```
+
+## Which providers have a known cache lifetime
+
+Frogg keeps one table of prompt-cache lifetimes, shared by the composer's stale-cache warning
+and the automatic cut:
+
+| Provider | Cache lifetime Frogg assumes |
+| -------- | ---------------------------- |
+| Claude   | One hour. Claude Code writes its prompt cache with Anthropic's one-hour TTL. |
+| Codex    | One hour. Codex CLI sets no cache retention, so OpenAI's default applies: a 30-minute TTL on current models, and on older ones in-memory caches that last 5 to 10 idle minutes (an hour at most) or extended caches that typically last about 30 minutes. An hour is past the typical lifetime under every policy. |
+
+Other providers get no warning and no automatic cut. Copilot is subscription-billed, and
+OpenCode, Pi and OMP run whichever upstream model is selected, so Frogg cannot know their
+cache lifetime. A manual clean cut works on any provider.

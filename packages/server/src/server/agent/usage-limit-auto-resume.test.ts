@@ -68,7 +68,9 @@ describe("setupUsageLimitAutoResume", () => {
 
     h.timers[0].callback();
     await flush();
-    expect(h.resume).toHaveBeenCalledWith("a1", AUTO_RESUME_PROMPT);
+    expect(h.resume).toHaveBeenCalledWith("a1", AUTO_RESUME_PROMPT, {
+      limitDetectedAt: expect.any(Date),
+    });
     expect(h.agent.autoResume).toBeNull();
   });
 

@@ -15,6 +15,7 @@ import {
   ProviderAccountTransferModal,
   type ProviderAccountTransferOption,
 } from "@/composer/agent-controls/provider-account-transfer-modal";
+import { useCleanCut } from "@/composer/clean-cut";
 import { useProvidersSnapshot } from "@/hooks/use-providers-snapshot";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
@@ -179,12 +180,34 @@ export function ProviderAccountPill({
     [agentId, client, t],
   );
 
+  // COMPAT(agentCleanCut): added in v1.6.2. The cheap way to move: a summary
+  // instead of the whole context.
+  const cleanCut = useCleanCut(serverId, agentId);
+  const runCleanCut = cleanCut.run;
+  const handleCleanCut = useCallback(
+    (optionId: string) => {
+      setError(null);
+      void (async () => {
+        const failure = await runCleanCut({
+          providerAccountId: toProviderAccountSelection(optionId),
+        });
+        if (failure === null) {
+          setIsOpen(false);
+        } else {
+          setError(failure);
+        }
+      })();
+    },
+    [runCleanCut],
+  );
+
   if (!model) {
     return null;
   }
 
   const label = t("agentControls.account.pillLabel", { value: model.label });
-  const isPressable = canTransfer && client !== null && model.transferOptions.length > 0;
+  const isPressable =
+    (canTransfer || cleanCut.available) && client !== null && model.transferOptions.length > 0;
   const body = (
     <>
       <ThemedUserRound size={14} uniProps={iconColor} />
@@ -226,6 +249,8 @@ export function ProviderAccountPill({
         error={error}
         onClose={handleClose}
         onConfirm={handleConfirm}
+        onCleanCut={cleanCut.available ? handleCleanCut : undefined}
+        cleanCutPending={cleanCut.pending}
       />
     </>
   );

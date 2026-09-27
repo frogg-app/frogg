@@ -1,7 +1,8 @@
 import { brand } from "@frogg/branding";
-import { open, statfs } from "node:fs/promises";
+import { open } from "node:fs/promises";
 import { cpus, freemem, loadavg, platform, release, totalmem, type } from "node:os";
 import path from "node:path";
+import { readDiskUsage } from "../../host/host-metrics.js";
 
 import type pino from "pino";
 
@@ -157,9 +158,7 @@ function collectSystemEntries(): DiagnosticEntry[] {
 }
 
 async function collectDiskEntries(options: DaemonDiagnosticsOptions): Promise<DiagnosticEntry[]> {
-  const stats = await statfs(options.froggHome);
-  const freeBytes = stats.bavail * stats.bsize;
-  const totalBytes = stats.blocks * stats.bsize;
+  const { freeBytes, totalBytes } = await readDiskUsage(options.froggHome);
   return [
     { label: "Path", value: options.froggHome },
     { label: "Free", value: `${formatBytes(freeBytes)} / ${formatBytes(totalBytes)}` },

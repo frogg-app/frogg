@@ -50,6 +50,14 @@ GitHub releases, downloads the APK for your device and hands it to the Android i
 - **Scan QR code**: run `frogg auth pair` on the daemon host and scan the code.
 - **Paste pairing link**: open or paste the `https://pair.frogg.app/code/...` link.
 - **Direct connection**: enter the daemon's LAN, VPN or Tailscale address and port.
+- **Deploy to host**: install a daemon on a Linux or macOS machine over SSH, then pair with it.
+  The app has its own SSH client: enter `user@host`, then a password, a pasted private key
+  (OpenSSH or PEM, with its passphrase if any), or both. Credentials are used for that deploy
+  only and are not saved. The daemon listens on the network and the deploy pairs over it; the
+  SSH-tunnel option, SSH config entries and ssh-agent are desktop only. The first host key a
+  machine presents is remembered, and a later connection presenting a different key is
+  refused. The steps match
+  [deploying from the desktop](/docs/desktop-mobile-cli/desktop/#deploy-a-daemon-over-ssh).
 
 A phone off your home network needs a route to the daemon: a VPN such as Tailscale, or a
 relay you operate. Frogg does not provide a public relay. See

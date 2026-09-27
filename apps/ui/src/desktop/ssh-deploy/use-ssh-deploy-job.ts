@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { DesktopEventUnlisten } from "@/desktop/electron/events";
 import {
   cancelSshDeploy,
   listenToSshDeployEvents,
@@ -35,7 +34,7 @@ export function useSshDeployJob(onFinished?: (action: SshDeployAction) => void):
   const [lines, setLines] = useState<string[]>([]);
   const jobIdRef = useRef<string | null>(null);
   const pendingRef = useRef<SshDeployEvent[]>([]);
-  const unlistenRef = useRef<DesktopEventUnlisten | null>(null);
+  const unlistenRef = useRef<(() => void) | null>(null);
   const finishedRef = useRef(onFinished);
   finishedRef.current = onFinished;
 

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   resolveStaleContextWarning,
   STALE_CONTEXT_IDLE_MS,
+  STALE_CONTEXT_TTL_MS_BY_PROVIDER,
+  staleContextTtlMs,
   type StaleContextInput,
 } from "./stale-context";
 
@@ -39,8 +41,28 @@ describe("resolveStaleContextWarning", () => {
   });
 
   it("stays quiet for providers whose cache lifetime this rule does not describe", () => {
-    expect(resolveStaleContextWarning(input({ provider: "codex" }))).toBeNull();
+    for (const provider of ["copilot", "opencode", "pi", "omp", "mock", "work-claude"]) {
+      expect(resolveStaleContextWarning(input({ provider }))).toBeNull();
+    }
     expect(resolveStaleContextWarning(input({ provider: null }))).toBeNull();
+  });
+
+  it("warns for every provider in the TTL map, each past its own window", () => {
+    for (const [provider, ttlMs] of Object.entries(STALE_CONTEXT_TTL_MS_BY_PROVIDER)) {
+      expect(staleContextTtlMs(provider)).toBe(ttlMs);
+      expect(
+        resolveStaleContextWarning(input({ provider, lastActivityAt: new Date(NOW - ttlMs) })),
+      ).toBeNull();
+      expect(
+        resolveStaleContextWarning(input({ provider, lastActivityAt: new Date(NOW - ttlMs - 1) })),
+      ).toEqual({ tokens: 42_000 });
+    }
+    expect(Object.keys(STALE_CONTEXT_TTL_MS_BY_PROVIDER).sort()).toEqual(["claude", "codex"]);
+  });
+
+  it("does not treat inherited object keys as providers", () => {
+    expect(staleContextTtlMs("toString")).toBeNull();
+    expect(staleContextTtlMs(null)).toBeNull();
   });
 
   it("stays quiet when there is no context to re-send", () => {

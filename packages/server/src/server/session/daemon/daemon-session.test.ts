@@ -13,6 +13,7 @@ import type { ProviderAvailability } from "../../agent/agent-manager.js";
 import type { HubRelationshipManagement } from "../../hub/relationship-controller.js";
 import type { SessionOutboundMessage } from "../../messages.js";
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
+import { createHostResources } from "../../host/host-resources.js";
 
 const tempDirs: string[] = [];
 
@@ -76,6 +77,50 @@ function makeSubsystem(overrides: {
   });
   return { subsystem, emitted, froggHome, restartIntents };
 }
+
+describe("DaemonSession host resources", () => {
+  test("reports an error payload when host resources are not wired", async () => {
+    const { subsystem, emitted } = makeSubsystem({});
+    await subsystem.handleStorageCleanRequest({
+      type: "daemon.storage.clean.request",
+      requestId: "r1",
+      categoryId: "logs",
+    });
+    expect(emitted[0]).toMatchObject({
+      type: "daemon.storage.clean.response",
+      payload: { requestId: "r1", categoryId: "logs", bytesFreed: 0, error: expect.any(String) },
+    });
+  });
+
+  test("lists storage and refuses to clean a size-only category", async () => {
+    const froggHome = makeHome();
+    const hostResources = createHostResources({
+      froggHome,
+      tmpRoot: froggHome,
+      logger: pino({ level: "silent" }),
+    });
+    const { subsystem, emitted } = makeSubsystem({
+      daemonRuntimeConfig: { listen: null, getRelayConfig: () => null, hostResources },
+    });
+    await subsystem.handleStorageListRequest({
+      type: "daemon.storage.list.request",
+      requestId: "r1",
+    });
+    await subsystem.handleStorageCleanRequest({
+      type: "daemon.storage.clean.request",
+      requestId: "r2",
+      categoryId: "agents",
+    });
+    const list = emitted.find((m) => m.type === "daemon.storage.list.response");
+    expect(list?.type === "daemon.storage.list.response" && list.payload.error).toBeNull();
+    expect(
+      list?.type === "daemon.storage.list.response" && list.payload.categories.map((c) => c.id),
+    ).toContain("worktrees");
+    expect(emitted.find((m) => m.type === "daemon.storage.clean.response")).toMatchObject({
+      payload: { requestId: "r2", error: expect.stringMatching(/not cleanable/) },
+    });
+  });
+});
 
 describe("DaemonSession", () => {
   test("security posture returns the live findings", () => {

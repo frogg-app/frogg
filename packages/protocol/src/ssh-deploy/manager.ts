@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import {
   buildInstallCommand,
   parseMethod,
@@ -10,10 +9,9 @@ import {
   type SshTarget,
 } from "./args.js";
 import { parseProbeOutput } from "./probe.js";
-import type { ExecuteScript } from "./executor.js";
+import type { ExecuteScript, SshForward, SshForwards } from "./execute.js";
 import type { PairCodeResult } from "./pair-code.js";
 import type { HardenResult } from "./harden.js";
-import type { SshForward, SshForwardManager } from "./forward.js";
 
 export type DeployEvent =
   | { jobId: string; kind: "log"; text: string; stream: "stdout" | "stderr" }
@@ -42,7 +40,15 @@ interface ManagerOptions {
   /** The lock-down script (already branded) and its output parser; see `harden.ts`. */
   harden?: { script: string; parse(stdout: string): HardenResult };
   /** Opens short-lived loopback forwards so a tunnel deploy can pair; see `forward.ts`. */
-  forwards?: SshForwardManager;
+  forwards?: SshForwards;
+  /** Job ids only need to be unique within this manager. */
+  createJobId?: () => string;
+}
+
+let jobCounter = 0;
+function defaultJobId(): string {
+  jobCounter += 1;
+  return `deploy-${Date.now().toString(36)}-${jobCounter}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export class DeployManager {
@@ -169,11 +175,11 @@ export class DeployManager {
   }
 
   private launch(target: SshTarget, command: string, script: string): { jobId: string } {
-    const jobId = `deploy-${randomUUID()}`;
+    const jobId = (this.options.createJobId ?? defaultJobId)();
     const controller = new AbortController();
     this.jobs.set(jobId, controller);
     // Defer until the invoke result containing jobId can reach the renderer.
-    setImmediate(() => void this.run(jobId, target, command, script, controller));
+    setTimeout(() => void this.run(jobId, target, command, script, controller), 0);
     return { jobId };
   }
   private async run(

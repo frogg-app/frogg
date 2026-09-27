@@ -803,6 +803,24 @@ export const AgentTimelineItemPayloadSchema: z.ZodType<AgentTimelineItem, unknow
     status: z.enum(["loading", "completed"]),
     trigger: z.enum(["auto", "manual"]).optional(),
     preTokens: z.number().optional(),
+    // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27. Present when
+    // this marker is a clean cut rather than a provider compaction; older clients
+    // strip it and render an ordinary compaction marker.
+    cleanCut: z
+      .object({
+        summary: z.string(),
+        previousSessionId: z.string().optional(),
+        previousProvider: z.string().optional(),
+        previousModel: z.string().optional(),
+        provider: z.string().optional(),
+        model: z.string().optional(),
+        summaryModel: z.string().optional(),
+        // Why the cut was made: "manual" (the user asked) or "cold-cache" (the
+        // daemon cut automatically because the prompt cache had expired). A
+        // string rather than an enum so a future reason cannot fail the item.
+        reason: z.string().optional(),
+      })
+      .optional(),
   }),
   // COMPAT(pluginTimelineItems): plugins were removed after v0.7.0, but older daemons can still
   // hold these rows. Keep parsing them so a timeline page or stream frame containing one is not
@@ -1586,6 +1604,29 @@ export type DaemonSetSecurityFindingAcknowledgedRequest = z.infer<
   typeof DaemonSetSecurityFindingAcknowledgedRequestSchema
 >;
 
+/** Host CPU/memory/disk and daemon process load. Gated on `features.hostResources`. */
+export const DaemonHostGetMetricsRequestSchema = z.object({
+  type: z.literal("daemon.host.get_metrics.request"),
+  requestId: z.string(),
+});
+export type DaemonHostGetMetricsRequest = z.infer<typeof DaemonHostGetMetricsRequestSchema>;
+
+/** Sizes of the storage Frogg owns. Cached daemon-side; `refresh` forces a new walk. */
+export const DaemonStorageListRequestSchema = z.object({
+  type: z.literal("daemon.storage.list.request"),
+  requestId: z.string(),
+  refresh: z.boolean().optional(),
+});
+export type DaemonStorageListRequest = z.infer<typeof DaemonStorageListRequestSchema>;
+
+/** Remove the reclaimable contents of one cleanable storage category. */
+export const DaemonStorageCleanRequestSchema = z.object({
+  type: z.literal("daemon.storage.clean.request"),
+  requestId: z.string(),
+  categoryId: z.string().min(1).max(64),
+});
+export type DaemonStorageCleanRequest = z.infer<typeof DaemonStorageCleanRequestSchema>;
+
 export const DaemonGetPairingOfferRequestSchema = z.object({
   type: z.literal("daemon.get_pairing_offer.request"),
   requestId: z.string(),
@@ -2173,6 +2214,58 @@ export const AgentProviderAccountTransferRequestMessageSchema = z.object({
 export const AgentProviderAccountTransferResponseMessageSchema = z.object({
   type: z.literal("agent.provider_account.transfer.response"),
   payload: AgentActionResponsePayloadSchema,
+});
+
+/**
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+ *
+ * Ends the agent's provider conversation and starts a fresh one in the same
+ * workspace. A cheap model on the current provider summarises the chat side of
+ * the old conversation (messages and tool calls, never tool output); the daemon
+ * records that summary in the timeline and sends it ahead of the next user
+ * message. The old conversation stays in the timeline for the user but is not
+ * re-sent to the provider.
+ *
+ * Every target field is optional and an omitted one keeps the agent's current
+ * value, so the same request is a same-account cut, an account move, or a
+ * provider switch. `providerAccountId: null` is the provider's default account.
+ */
+export const AgentCleanCutRequestMessageSchema = z.object({
+  type: z.literal("agent.clean_cut.request"),
+  agentId: z.string(),
+  provider: z.string().optional(),
+  providerAccountId: z.string().nullable().optional(),
+  model: z.string().nullable().optional(),
+  thinkingOptionId: z.string().nullable().optional(),
+  /**
+   * COMPAT(agentCleanCutSubagents): added in v1.6.2. Also cut the agent's idle
+   * Frogg child agents (recursively), each from its own timeline and on its
+   * own provider and model. Omitted means true; false cuts only this agent.
+   */
+  includeSubagents: z.boolean().optional(),
+  requestId: z.string(),
+});
+
+/**
+ * COMPAT(agentCleanCutSubagents): added in v1.6.2. One child agent's outcome.
+ * `skipped` covers a running child, a closed one, or one with nothing new to
+ * summarise; `failed` carries the error. Neither fails the parent's cut.
+ */
+export const AgentCleanCutSubagentResultSchema = z.object({
+  agentId: z.string(),
+  parentAgentId: z.string(),
+  title: z.string().nullable(),
+  status: z.enum(["cut", "skipped", "failed"]),
+  reason: z.string().optional(),
+});
+
+export const AgentCleanCutResponseMessageSchema = z.object({
+  type: z.literal("agent.clean_cut.response"),
+  payload: AgentActionResponsePayloadSchema.extend({
+    // COMPAT(agentCleanCutSubagents): added in v1.6.2. Present when the
+    // parent's cut succeeded and its child agents were considered.
+    subagents: z.array(AgentCleanCutSubagentResultSchema).optional(),
+  }),
 });
 
 export const AgentDetachRequestMessageSchema = z.object({
@@ -3423,6 +3516,9 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   SendAgentMessageRequestSchema,
   WaitForFinishRequestSchema,
   DaemonGetStatusRequestSchema,
+  DaemonHostGetMetricsRequestSchema,
+  DaemonStorageListRequestSchema,
+  DaemonStorageCleanRequestSchema,
   DaemonGetPairingOfferRequestSchema,
   DaemonGetSecurityPostureRequestSchema,
   DaemonSetSecurityFindingAcknowledgedRequestSchema,
@@ -3485,6 +3581,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   SetAgentFeatureRequestMessageSchema,
   AgentConfigApplyRequestMessageSchema,
   AgentProviderAccountTransferRequestMessageSchema,
+  AgentCleanCutRequestMessageSchema,
   AgentDetachRequestMessageSchema,
   AgentCancelAutoResumeRequestMessageSchema,
   AgentRewindRequestMessageSchema,
@@ -3975,6 +4072,9 @@ export const ServerInfoStatusPayloadSchema = z
         // agent.provider_account.transfer is available and this daemon's build of
         // the agent's provider can relocate a session between config directories.
         agentProviderAccountTransfer: z.boolean().optional(),
+        // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+        // agent.clean_cut is available.
+        agentCleanCut: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the
@@ -4138,6 +4238,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(ciJobLogs): added in v1.5.37, remove gate after 2027-09-24.
         // checkout.ci.download_job_log is available.
         ciJobLogs: z.boolean().optional(),
+        // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
+        // daemon.host.get_metrics, daemon.storage.list and daemon.storage.clean are available.
+        hostResources: z.boolean().optional(),
       })
       .optional(),
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
@@ -5263,6 +5366,90 @@ export const DaemonGetStatusResponseSchema = z.object({
       ),
     })
     .passthrough(),
+});
+
+export const HostMetricsSchema = z.object({
+  sampledAt: z.string(),
+  hostname: z.string(),
+  platform: z.string(),
+  arch: z.string(),
+  uptimeSeconds: z.number(),
+  cpu: z.object({
+    cores: z.number(),
+    model: z.string().nullable(),
+    /** 0-100 across all cores over the sample window. */
+    usagePercent: z.number().nullable(),
+    /** 1/5/15 minute load averages; null on Windows. */
+    loadAverage: z.array(z.number()).nullable(),
+  }),
+  memory: z.object({
+    totalBytes: z.number(),
+    freeBytes: z.number(),
+    usedBytes: z.number(),
+  }),
+  daemon: z.object({
+    pid: z.number(),
+    rssBytes: z.number(),
+    heapUsedBytes: z.number(),
+    /** 0-100 of one core; can exceed 100 on multi-threaded work. */
+    cpuPercent: z.number().nullable(),
+    uptimeSeconds: z.number(),
+  }),
+  /** Volume holding FROGG_HOME. */
+  disk: z
+    .object({
+      path: z.string(),
+      totalBytes: z.number(),
+      freeBytes: z.number(),
+      usedBytes: z.number(),
+    })
+    .nullable(),
+});
+export type HostMetrics = z.infer<typeof HostMetricsSchema>;
+
+export const DaemonHostGetMetricsResponseSchema = z.object({
+  type: z.literal("daemon.host.get_metrics.response"),
+  payload: z.object({
+    requestId: z.string(),
+    metrics: HostMetricsSchema.nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const OwnedStorageCategorySchema = z.object({
+  /** Stable id (logs, agents, projects, worktrees, uploads, project_import_staging, tts_cache, models, daemon_versions, temp); unknown ids may appear. */
+  id: z.string(),
+  path: z.string().nullable(),
+  exists: z.boolean(),
+  bytes: z.number(),
+  entryCount: z.number(),
+  /** The walk hit its entry cap; bytes is a lower bound. */
+  truncated: z.boolean(),
+  cleanable: z.boolean(),
+  /** What daemon.storage.clean would free now; null when not cleanable. */
+  reclaimableBytes: z.number().nullable(),
+});
+export type OwnedStorageCategory = z.infer<typeof OwnedStorageCategorySchema>;
+
+export const DaemonStorageListResponseSchema = z.object({
+  type: z.literal("daemon.storage.list.response"),
+  payload: z.object({
+    requestId: z.string(),
+    computedAt: z.string().nullable(),
+    categories: z.array(OwnedStorageCategorySchema),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonStorageCleanResponseSchema = z.object({
+  type: z.literal("daemon.storage.clean.response"),
+  payload: z.object({
+    requestId: z.string(),
+    categoryId: z.string(),
+    bytesFreed: z.number(),
+    removedCount: z.number(),
+    error: z.string().nullable(),
+  }),
 });
 
 export const HubRelationshipStatusSchema = z.object({
@@ -7379,6 +7566,9 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   SendAgentMessageResponseMessageSchema,
   SetVoiceModeResponseMessageSchema,
   DaemonGetStatusResponseSchema,
+  DaemonHostGetMetricsResponseSchema,
+  DaemonStorageListResponseSchema,
+  DaemonStorageCleanResponseSchema,
   DaemonGetPairingOfferResponseSchema,
   DaemonGetSecurityPostureResponseSchema,
   DaemonSetSecurityFindingAcknowledgedResponseSchema,
@@ -7399,6 +7589,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   SetAgentFeatureResponseMessageSchema,
   AgentConfigApplyResponseMessageSchema,
   AgentProviderAccountTransferResponseMessageSchema,
+  AgentCleanCutResponseMessageSchema,
   AgentDetachResponseMessageSchema,
   AgentCancelAutoResumeResponseMessageSchema,
   AgentRewindResponseMessageSchema,
@@ -7631,6 +7822,8 @@ export type AgentConfigApplyResponseMessage = z.infer<typeof AgentConfigApplyRes
 export type AgentProviderAccountTransferResponseMessage = z.infer<
   typeof AgentProviderAccountTransferResponseMessageSchema
 >;
+export type AgentCleanCutResponseMessage = z.infer<typeof AgentCleanCutResponseMessageSchema>;
+export type AgentCleanCutSubagentResult = z.infer<typeof AgentCleanCutSubagentResultSchema>;
 export type AgentDetachResponseMessage = z.infer<typeof AgentDetachResponseMessageSchema>;
 export type AgentCancelAutoResumeResponseMessage = z.infer<
   typeof AgentCancelAutoResumeResponseMessageSchema
@@ -7672,6 +7865,9 @@ export type ListProviderFeaturesResponseMessage = z.infer<
 >;
 export type ListAvailableProvidersResponse = z.infer<typeof ListAvailableProvidersResponseSchema>;
 export type DaemonGetStatusResponse = z.infer<typeof DaemonGetStatusResponseSchema>;
+export type DaemonHostGetMetricsResponse = z.infer<typeof DaemonHostGetMetricsResponseSchema>;
+export type DaemonStorageListResponse = z.infer<typeof DaemonStorageListResponseSchema>;
+export type DaemonStorageCleanResponse = z.infer<typeof DaemonStorageCleanResponseSchema>;
 export type DaemonGetPairingOfferResponse = z.infer<typeof DaemonGetPairingOfferResponseSchema>;
 export type DaemonGetSecurityPostureResponse = z.infer<
   typeof DaemonGetSecurityPostureResponseSchema
@@ -7876,6 +8072,7 @@ export type AgentConfigApplyRequestMessage = z.infer<typeof AgentConfigApplyRequ
 export type AgentProviderAccountTransferRequestMessage = z.infer<
   typeof AgentProviderAccountTransferRequestMessageSchema
 >;
+export type AgentCleanCutRequestMessage = z.infer<typeof AgentCleanCutRequestMessageSchema>;
 export type AgentDetachRequestMessage = z.infer<typeof AgentDetachRequestMessageSchema>;
 export type AgentCancelAutoResumeRequestMessage = z.infer<
   typeof AgentCancelAutoResumeRequestMessageSchema

@@ -1,10 +1,8 @@
 import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
-import { listenToDesktopEvent, type DesktopEventUnlisten } from "@/desktop/electron/events";
-import { invokeDesktopCommand } from "@/desktop/electron/invoke";
 import { getSessionSshPassword } from "@/desktop/daemon/ssh-session-passwords";
+import { invokeSshDeploy, listenToSshDeploy } from "./ssh-deploy-bridge";
 
-/** Desktop bridge event name (`frogg:event:` is added by the shell). */
-export const SSH_DEPLOY_EVENT = "ssh-deploy-event";
+export { isSshDeployAvailable, isSshDeployInApp, SSH_DEPLOY_EVENT } from "./ssh-deploy-bridge";
 export const DEFAULT_SSH_DEPLOY_LISTEN_HOST = "0.0.0.0";
 /** The service manager returns before the daemon binds its port; wait this long before reconnecting. */
 export const SSH_DEPLOY_RECONNECT_GRACE_MS = 2000;
@@ -16,6 +14,11 @@ export interface SshDeployTarget {
   sshPort?: number;
   /** Key file for deploy sessions only; otherwise ssh-agent and ~/.ssh/config apply. */
   identityFile?: string;
+  /** Private key text, for the mobile app's SSH client, which has no key files. */
+  privateKey?: string;
+  privateKeyPassphrase?: string;
+  /** Typed into the deploy form; otherwise the session password, if any. */
+  sshPassword?: string;
 }
 
 /** What `ssh_deploy_pair_code` reports; see apps/desktop/src/deploy/pair-code.ts. */
@@ -158,6 +161,7 @@ export function sshDeployPrimaryAction(
  * tunnel does. In memory only; see `ssh-session-passwords.ts`.
  */
 function withSessionSshPassword<T extends SshDeployTarget>(target: T): T {
+  if (target.sshPassword) return target;
   const sshPassword = getSessionSshPassword({
     host: target.host,
     ...(target.sshPort !== undefined ? { sshPort: target.sshPort } : {}),
@@ -170,12 +174,15 @@ function targetArgs(target: SshDeployTarget): Record<string, unknown> {
     host: target.host,
     ...(target.sshPort !== undefined ? { sshPort: target.sshPort } : {}),
     ...(target.identityFile ? { identityFile: target.identityFile } : {}),
+    ...(target.privateKey ? { privateKey: target.privateKey } : {}),
+    ...(target.privateKeyPassphrase ? { privateKeyPassphrase: target.privateKeyPassphrase } : {}),
+    ...(target.sshPassword ? { sshPassword: target.sshPassword } : {}),
   });
 }
 
 export async function probeSshDeploy(target: SshDeployTarget): Promise<SshDeployProbe> {
   return parseSshDeployProbe(
-    await invokeDesktopCommand<unknown>("ssh_deploy_probe", targetArgs(target)),
+    await invokeSshDeploy<unknown>("ssh_deploy_probe", targetArgs(target)),
   );
 }
 
@@ -211,7 +218,7 @@ export function parseSshDeployHardenResult(raw: unknown): SshDeployHardenResult 
  */
 export async function hardenSshDeploy(target: SshDeployTarget): Promise<SshDeployHardenResult> {
   return parseSshDeployHardenResult(
-    await invokeDesktopCommand<unknown>("ssh_deploy_harden", targetArgs(target)),
+    await invokeSshDeploy<unknown>("ssh_deploy_harden", targetArgs(target)),
   );
 }
 
@@ -230,7 +237,7 @@ export async function openSshDeployForward(
   target: SshDeployTarget,
   daemonPort: number,
 ): Promise<SshDeployForward> {
-  const raw = await invokeDesktopCommand<unknown>("ssh_deploy_open_forward", {
+  const raw = await invokeSshDeploy<unknown>("ssh_deploy_open_forward", {
     ...targetArgs(target),
     daemonPort,
   });
@@ -241,13 +248,13 @@ export async function openSshDeployForward(
 }
 
 export async function closeSshDeployForward(forwardId: string): Promise<void> {
-  await invokeDesktopCommand<unknown>("ssh_deploy_close_forward", { forwardId });
+  await invokeSshDeploy<unknown>("ssh_deploy_close_forward", { forwardId });
 }
 
 /** Runs the daemon's pairing command over SSH and returns what it printed. */
 export async function fetchSshDeployPairCode(target: SshDeployTarget): Promise<SshDeployPairCode> {
   return parseSshDeployPairCode(
-    await invokeDesktopCommand<unknown>("ssh_deploy_pair_code", targetArgs(target)),
+    await invokeSshDeploy<unknown>("ssh_deploy_pair_code", targetArgs(target)),
   );
 }
 
@@ -310,7 +317,7 @@ function jobIdOf(raw: unknown): string {
 
 export async function startSshDeploy(input: SshDeployStartInput): Promise<string> {
   return jobIdOf(
-    await invokeDesktopCommand<unknown>("ssh_deploy_start", withSessionSshPassword({ ...input })),
+    await invokeSshDeploy<unknown>("ssh_deploy_start", withSessionSshPassword({ ...input })),
   );
 }
 
@@ -318,21 +325,18 @@ export async function uninstallSshDeploy(
   input: SshDeployTarget & { method: SshDeployMethod },
 ): Promise<string> {
   return jobIdOf(
-    await invokeDesktopCommand<unknown>(
-      "ssh_deploy_uninstall",
-      withSessionSshPassword({ ...input }),
-    ),
+    await invokeSshDeploy<unknown>("ssh_deploy_uninstall", withSessionSshPassword({ ...input })),
   );
 }
 
 export async function cancelSshDeploy(jobId: string): Promise<void> {
-  await invokeDesktopCommand<unknown>("ssh_deploy_cancel", { jobId });
+  await invokeSshDeploy<unknown>("ssh_deploy_cancel", { jobId });
 }
 
 export function listenToSshDeployEvents(
   handler: (event: SshDeployEvent) => void,
-): Promise<DesktopEventUnlisten> {
-  return listenToDesktopEvent<unknown>(SSH_DEPLOY_EVENT, (raw) => {
+): Promise<() => void> {
+  return listenToSshDeploy((raw) => {
     const event = parseSshDeployEvent(raw);
     if (event) handler(event);
   });

@@ -219,6 +219,12 @@ pub enum SessionMessage {
     WaitForFinishRequest(WaitForFinishRequest),
     #[serde(rename = "daemon.get_status.request")]
     DaemonGetStatusRequest(DaemonGetStatusRequest),
+    #[serde(rename = "daemon.host.get_metrics.request")]
+    DaemonHostGetMetricsRequest(DaemonHostGetMetricsRequest),
+    #[serde(rename = "daemon.storage.list.request")]
+    DaemonStorageListRequest(DaemonStorageListRequest),
+    #[serde(rename = "daemon.storage.clean.request")]
+    DaemonStorageCleanRequest(DaemonStorageCleanRequest),
     #[serde(rename = "daemon.get_pairing_offer.request")]
     DaemonGetPairingOfferRequest(DaemonGetPairingOfferRequest),
     #[serde(rename = "daemon.get_security_posture.request")]
@@ -343,6 +349,8 @@ pub enum SessionMessage {
     AgentConfigApplyRequest(AgentConfigApplyRequest),
     #[serde(rename = "agent.provider_account.transfer.request")]
     AgentProviderAccountTransferRequest(AgentProviderAccountTransferRequest),
+    #[serde(rename = "agent.clean_cut.request")]
+    AgentCleanCutRequest(AgentCleanCutRequest),
     #[serde(rename = "agent.detach.request")]
     AgentDetachRequest(AgentDetachRequest),
     #[serde(rename = "agent.cancel_auto_resume.request")]
@@ -1519,6 +1527,28 @@ pub struct WaitForFinishRequest {
 pub struct DaemonGetStatusRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonHostGetMetricsRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageCleanRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "categoryId")]
+    pub category_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2703,6 +2733,24 @@ pub struct AgentProviderAccountTransferRequest {
     pub agent_id: String,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCleanCutRequest {
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(rename = "thinkingOptionId", skip_serializing_if = "Option::is_none")]
+    pub thinking_option_id: Option<String>,
+    #[serde(rename = "includeSubagents", skip_serializing_if = "Option::is_none")]
+    pub include_subagents: Option<bool>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

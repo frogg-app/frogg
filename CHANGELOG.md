@@ -1,5 +1,52 @@
 # Changelog
 
+## 1.6.2-beta.1 — 2026-09-27
+
+- **Clean cut.** End an agent's provider conversation and continue in a fresh one, in the same
+  workspace, from a short summary written by the cheapest model on the same provider and
+  account. You keep the whole timeline, with a divider at the cut; the agent sees only the
+  summary. Start one from the **Clean cut** link in the stale-cache notice, **Clean cut to this
+  account** in the account sheet, or by picking another provider's model in the model picker,
+  which switches provider through a clean cut. The agent's idle Frogg subagents are cut too,
+  each from its own timeline. New `agent.clean_cut` RPC, gated on `features.agentCleanCut`.
+- **Automatic clean cut on a cold cache.** Before the daemon resumes an agent on its own (after
+  a usage limit resets, or after a restart), it makes a clean cut if the provider's prompt cache
+  has expired, instead of re-sending the whole context. Never while the cache is warm. On by
+  default; turn off with `daemon.autoCleanCutOnColdCache: false` (read at startup).
+- **The stale-cache warning covers Codex.** Claude and Codex both warn after an idle hour, from
+  one shared table of prompt-cache lifetimes.
+
+## 1.6.1-beta.1 — 2026-09-27
+
+- **Update checks back off when GitHub rate-limits them.** After a 429 the app stops asking
+  GitHub for 5 minutes, doubling on each repeat up to an hour, instead of every retry extending
+  the limit. Clients on 1.5.x stuck on "Too many requests" should install 1.6 manually once.
+- **The daemon no longer litters.** All daemon scratch work goes to the system temp directory
+  under `frogg-<kind>-<pid>-…` names (image attachments, Pi MCP/extension files, OpenAI speech
+  uploads). On start it sweeps, in the background, temp debris from exited Frogg processes,
+  stale `.frogg-clone-*` staging beside projects and empty `~/frogg-classify-home-*`
+  directories: exact names only, no symlinks, no other users' entries, nothing live.
+- **Host metrics and owned storage.** New `daemon.host.get_metrics` (CPU, memory, disk holding
+  `FROGG_HOME`, daemon RSS/CPU), `daemon.storage.list` (cached sizes of each Frogg-owned area)
+  and `daemon.storage.clean` (rotated logs, spoken-alert cache, stale temp) RPCs, gated on
+  `features.hostResources`.
+- **Host settings → Resources.** Live CPU, memory and disk usage bars plus daemon process
+  load (polled every 5 seconds while settings is open), the size of each Frogg-owned storage
+  area with **Refresh**, and a confirmed **Clean** for logs, speech cache and temp (owners).
+  Hidden for daemons without `features.hostResources`.
+- **Deploy to host on Android.** The Hosts menu and the add-host sheet now offer
+  **Deploy to host** on Android, not just the desktop. The app ships its own SSH client
+  (JSch with Bouncy Castle, both FOSS, so F-Droid builds include it too). Enter `user@host`,
+  then a password, a pasted OpenSSH/PEM private key (with passphrase), or both. Credentials
+  are used for that deploy only and never saved. Mobile deploys pair over the network; the
+  SSH-tunnel option, SSH config entries and ssh-agent stay desktop-only. Host keys are
+  trusted on first use, and a later key change is refused.
+- The deploy engine (probe, install, lock-down, pairing-code steps) moved from the desktop
+  shell to `@frogg/protocol/ssh-deploy`, so desktop and mobile run the same code. Desktop
+  behaviour is unchanged.
+- React Native's `AbortSignal` gains `throwIfAborted`, which the deploy flow and project
+  import call.
+
 ## 1.6.0-beta.1 — 2026-09-26
 
 - **frogg beta installs beside frogg.** Betas are now their own build of the brand: app

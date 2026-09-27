@@ -336,6 +336,7 @@ export const PersistedConfigSchema = z
           .optional(),
         autoArchiveAfterMerge: z.boolean().optional(),
         autoResumeOnUsageLimit: z.boolean().optional(),
+        autoCleanCutOnColdCache: z.boolean().optional(),
         hostSettings: z
           .object({ hiddenSections: z.array(HostSettingsSectionSchema).optional() })
           .strict()
@@ -463,6 +464,7 @@ const DEFAULT_PERSISTED_CONFIG = PersistedConfigSchema.parse({
     git: DEFAULT_GIT_PROCESS_POLICY,
     autoArchiveAfterMerge: false,
     autoResumeOnUsageLimit: true,
+    autoCleanCutOnColdCache: true,
     // The brand decides which host settings sections a fresh install offers;
     // the admin of this host owns the value from here on.
     hostSettings: { hiddenSections: brand.hostSettings.hiddenSections },

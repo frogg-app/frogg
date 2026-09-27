@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
 import { join, resolve as resolvePath } from "node:path";
 import type { Logger } from "pino";
 import stripAnsi from "strip-ansi";
@@ -79,6 +79,7 @@ import type {
   PiThinkingLevel,
 } from "./rpc-types.js";
 import { PiUsagePoller, type PiUsagePollScheduler } from "./usage-poller.js";
+import { createFroggTempDirSync } from "../../../host/frogg-temp.js";
 import {
   mapToolDetail,
   parseToolArgs,
@@ -600,7 +601,7 @@ function createPiMcpConfigFile(
     mcpServers[name] = toPiMcpConfig(serverConfig);
   }
 
-  const dir = mkdtempSync(join(tmpdir(), "frogg-pi-mcp-"));
+  const dir = createFroggTempDirSync("pi-mcp");
   const filePath = join(dir, "mcp.json");
   const mergedConfig: Record<string, unknown> = { ...globalConfig, mcpServers };
   delete mergedConfig["mcp-servers"];
@@ -615,7 +616,7 @@ function createPiMcpConfigFile(
 }
 
 function createPiFroggExtensionFile(systemPrompt?: string): PiTempFile {
-  const dir = mkdtempSync(join(tmpdir(), "frogg-pi-extension-"));
+  const dir = createFroggTempDirSync("pi-extension");
   const filePath = join(dir, "frogg-integration.mjs");
   writeFileSync(
     filePath,

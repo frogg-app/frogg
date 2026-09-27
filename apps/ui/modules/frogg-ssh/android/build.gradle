@@ -1,0 +1,22 @@
+apply plugin: 'com.android.library'
+
+group = 'sh.frogg.ssh'
+version = '0.1.0'
+
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useExpoPublishing()
+useDefaultAndroidSdkVersions()
+
+android {
+  namespace "sh.frogg.ssh"
+}
+
+dependencies {
+  // Pure-Java SSH client (BSD). Its Ed25519 and Curve25519 support comes from
+  // Bouncy Castle (MIT) on Android, which has neither in the platform.
+  implementation 'com.github.mwiede:jsch:2.28.7'
+  implementation 'org.bouncycastle:bcprov-jdk18on:1.86'
+}

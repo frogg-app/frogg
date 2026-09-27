@@ -279,6 +279,28 @@ export const es: TranslationResources = {
       warning: "Caché caducada: enviar vuelve a cobrar {{tokens}} tokens de entrada",
       warningUnknown: "Caché caducada: enviar reenvía toda la conversación",
     },
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: {
+      action: "Corte limpio",
+      pending: "Resumiendo...",
+      failed: "No se pudo hacer el corte limpio",
+      hint: "Termina esta conversación y empieza una nueva. Un modelo económico del mismo proveedor resume el chat (mensajes y llamadas a herramientas, sin su salida) y lo envía antes de tu mensaje. Los cambios del espacio de trabajo se conservan y la conversación anterior sigue visible para ti, pero no para el agente.",
+      subagents: {
+        cut_one: "También se cortó {{count}} subagente",
+        cut_other: "También se cortaron {{count}} subagentes",
+        noneCut: "No se cortó ningún subagente",
+        skipped: "{{count}} omitidos ({{reasons}})",
+        failed: "{{count}} con error: {{names}}",
+        failedItem: "{{title}} ({{reason}})",
+        untitled: "Subagente sin título",
+        reasons: {
+          running: "en ejecución",
+          closed: "cerrado",
+          empty: "nada nuevo",
+          unknown: "motivo desconocido",
+        },
+      },
+    },
     input: {
       accessibilityLabel: "Agente de mensajes...",
       terminalAccessibilityLabel: "Terminal prompt",
@@ -398,9 +420,19 @@ export const es: TranslationResources = {
         costUnknownTokens:
           "Mover esta conversación a otra cuenta reenvía todo su contexto como entrada nueva, facturada a precio completo (sin caché).",
         confirm: "Mover conversación",
+        cleanCut: "Corte limpio a esta cuenta",
+        cleanCutHint:
+          "O haz un corte limpio: un resumen económico inicia una conversación nueva en la otra cuenta en lugar de reenviar todo el contexto.",
         moving: "Moviendo...",
         failed: "No se pudo mover la conversación",
       },
+    },
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCutProvider: {
+      title: "Cambiar de proveedor",
+      body: "¿Mover esta conversación de {{from}} a {{to}} ({{model}}) con un corte limpio?",
+      hint: "Un proveedor no puede leer el historial de otro, así que un modelo económico resume esta conversación y se inicia una nueva en el nuevo proveedor. Los cambios del espacio de trabajo se conservan; la conversación anterior sigue visible para ti.",
+      confirm: "Corte limpio y cambiar",
     },
     hints: {
       thinking: "Modo de pensamiento",
@@ -411,6 +443,16 @@ export const es: TranslationResources = {
     },
   },
   agentStream: {
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: {
+      title: "Corte limpio: nueva conversación",
+      copyId: "Copiar ID de la conversación anterior",
+      idCopied: "ID de conversación copiado",
+      summary: "Resumen enviado al agente",
+      summaryBy: "Resumen enviado al agente ({{model}})",
+      switched: "{{from}} → {{to}}",
+      automatic: "Corte limpio: caché caducada, nueva conversación",
+    },
     empty: "Comience a chatear con este agente...",
     scrollToBottom: "Desplazarse hacia abajo",
     historyLoadFailed: "No se pudo cargar el historial del agente",
@@ -2303,6 +2345,11 @@ export const es: TranslationResources = {
         sshPort: "Puerto SSH",
         identityFile: "Archivo de clave",
         identityFileHint: "Déjalo vacío para usar ssh-agent y ~/.ssh/config.",
+        password: "Contraseña",
+        privateKey: "Clave privada",
+        privateKeyHint:
+          "Opcional. Pega una clave privada OpenSSH o PEM; solo se usa para este despliegue y no se guarda.",
+        passphrase: "Frase de contraseña de la clave",
         daemonPort: "Puerto del daemon",
       },
       network: {
@@ -2338,6 +2385,7 @@ export const es: TranslationResources = {
         invalidSshPort: "Escribe un puerto SSH entre 1 y 65535.",
         invalidDaemonPort: "Escribe un puerto del daemon entre 1 y 65535.",
         invalidKeyFile: "Escribe una ruta absoluta o que empiece por ~/.",
+        userRequired: "Introduce el usuario SSH.",
       },
       errors: {
         ssh_failed: "No se pudo conectar por SSH. {{detail}}",
@@ -3403,6 +3451,56 @@ export const es: TranslationResources = {
       },
     },
     host: {
+      resources: {
+        title: "Recursos",
+        info: "Carga del host en vivo y el tamaño del almacenamiento de este daemon. Las métricas se actualizan cada pocos segundos mientras esta página está abierta.",
+        loading: "Cargando métricas del host…",
+        metricsFailed: "No se pudieron cargar las métricas del host",
+        metricsUnavailable: "El daemon no devolvió métricas",
+        stale: "Se muestra la última muestra; la actualización más reciente falló.",
+        notAvailable: "n/d",
+        cpu: "CPU",
+        memory: "Memoria",
+        disk: "Disco",
+        diskHint: "{{path}} · {{free}} libres",
+        cores: "{{count}} núcleos",
+        load: "carga {{value}}",
+        uptime: "activo {{value}}",
+        uptimeDays: "{{count}} d",
+        uptimeHours: "{{count}} h",
+        uptimeMinutes: "{{count}} min",
+        daemon: "Proceso del daemon",
+        daemonPid: "PID {{pid}}",
+        daemonMemory: "RSS {{rss}}, heap {{heap}}",
+        daemonCpu: "CPU {{value}}",
+        storageTitle: "Almacenamiento propio: {{size}}",
+        storageHint: "Los tamaños se guardan en caché en el daemon durante unos minutos.",
+        storageLoading: "Midiendo almacenamiento…",
+        storageUnavailable: "Detalles de almacenamiento no disponibles",
+        computedAt: "Medido a las {{time}}",
+        refresh: "Actualizar",
+        entries_one: "{{count}} entrada",
+        entries_other: "{{count}} entradas",
+        missing: "No existe",
+        clean: "Limpiar",
+        cleanConfirmTitle: "¿Limpiar {{category}}?",
+        cleanConfirmMessage:
+          "Esto elimina de forma permanente unos {{size}} de {{category}} en el host.",
+        cleanSuccess: "{{category}} limpiado: {{size}} liberados ({{count}} elementos eliminados).",
+        cleanFailed: "No se pudo limpiar {{category}}",
+        categories: {
+          logs: "Registros",
+          agents: "Estado de agentes",
+          projects: "Proyectos",
+          worktrees: "Worktrees",
+          uploads: "Subidas",
+          project_import_staging: "Preparación de importación de proyectos",
+          tts_cache: "Caché de voz",
+          models: "Modelos",
+          daemon_versions: "Versiones del daemon",
+          temp: "Archivos temporales",
+        },
+      },
       connectionErrors: {
         remoteSsh: "Falló el túnel SSH: {{detail}}",
         credentialRejected:

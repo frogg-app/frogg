@@ -55,6 +55,7 @@ import {
   type ServerInfoStatusPayload,
 } from "@frogg/protocol/messages";
 import type { AuthDeviceSetRoleResponse } from "@frogg/protocol/messages";
+import type { AgentCleanCutSubagentResult } from "@frogg/protocol/messages";
 import { validateWSOutboundMessage } from "@frogg/protocol/validation/ws-outbound";
 import type {
   CompanionNotebook,
@@ -142,6 +143,9 @@ import type {
   ProviderAccountSetAllowedModelsResponseMessage,
   ProviderAccountSetPreferencesResponseMessage,
   DaemonGetStatusResponse,
+  DaemonHostGetMetricsResponse,
+  DaemonStorageCleanResponse,
+  DaemonStorageListResponse,
   DaemonGetPairingOfferResponse,
   DaemonGetSecurityPostureResponse,
   DaemonSetSecurityFindingAcknowledgedResponse,
@@ -574,6 +578,9 @@ type ProviderAccountSetAllowedModelsPayload =
   ProviderAccountSetAllowedModelsResponseMessage["payload"];
 type ProviderAccountSetPreferencesPayload = ProviderAccountSetPreferencesResponseMessage["payload"];
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
+type DaemonHostMetricsPayload = DaemonHostGetMetricsResponse["payload"];
+type DaemonStorageListPayload = DaemonStorageListResponse["payload"];
+type DaemonStorageCleanPayload = DaemonStorageCleanResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DaemonSecurityPosturePayload = DaemonGetSecurityPostureResponse["payload"];
 type DaemonSecurityAcknowledgePayload = DaemonSetSecurityFindingAcknowledgedResponse["payload"];
@@ -946,6 +953,8 @@ const DEFAULT_RECONNECT_BASE_DELAY_MS = 1500;
 const DEFAULT_RECONNECT_MAX_DELAY_MS = 30000;
 const DEFAULT_SESSION_RPC_TIMEOUT_MS = 60_000;
 const PUSH_TOKEN_REVOCATION_TIMEOUT_MS = 2_000;
+/** A clean cut waits for a model to write the summary before it answers. */
+const CLEAN_CUT_TIMEOUT_MS = 5 * 60_000;
 // Synthesis may still be running when the app asks; the daemon waits up to 30s for it.
 const NOTIFICATION_AUDIO_TIMEOUT_MS = 45_000;
 const DEFAULT_CONNECT_TIMEOUT_MS = 15_000;
@@ -3523,6 +3532,53 @@ export class DaemonClient {
     return payload.notice ?? null;
   }
 
+  /**
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+   *
+   * Ends the agent's provider conversation and starts a fresh one primed with a
+   * cheap summary of it. Omitted target fields keep the agent's current value,
+   * so the same call is a same-account cut, an account move or a provider
+   * switch. Waits for the summary, hence the long timeout. Gated on
+   * `server_info.features.agentCleanCut`.
+   */
+  async cleanCutAgent(
+    agentId: string,
+    target: {
+      provider?: string;
+      providerAccountId?: string | null;
+      model?: string | null;
+      thinkingOptionId?: string | null;
+    } = {},
+  ): Promise<{ subagents: AgentCleanCutSubagentResult[] }> {
+    const requestId = this.createRequestId();
+    const message = SessionInboundMessageSchema.parse({
+      type: "agent.clean_cut.request",
+      agentId,
+      ...target,
+      requestId,
+    });
+    const payload = await this.sendRequest({
+      requestId,
+      message,
+      timeout: CLEAN_CUT_TIMEOUT_MS,
+      options: { skipQueue: true },
+      select: (msg) => {
+        if (msg.type !== "agent.clean_cut.response") {
+          return null;
+        }
+        if (msg.payload.requestId !== requestId) {
+          return null;
+        }
+        return msg.payload;
+      },
+    });
+    if (!payload.accepted) {
+      throw new Error(payload.error ?? "cleanCutAgent rejected");
+    }
+    // COMPAT(agentCleanCutSubagents): older daemons omit the list.
+    return { subagents: payload.subagents ?? [] };
+  }
+
   async restartServer(reason?: string, requestId?: string): Promise<RestartRequestedStatusPayload> {
     const resolvedRequestId = this.createRequestId(requestId);
     const message = SessionInboundMessageSchema.parse({
@@ -5246,6 +5302,48 @@ export class DaemonClient {
         message: { type: "daemon.set_security_finding_acknowledged.request", ...input },
       },
     );
+  }
+
+  // --- host resources (features.hostResources) ------------------------------
+
+  /** Host CPU/memory/disk and daemon process load. Takes ~250ms on the first call. */
+  async getHostMetrics(options?: {
+    requestId?: string;
+    timeout?: number;
+  }): Promise<DaemonHostMetricsPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.host.get_metrics.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.host.get_metrics.request" },
+      timeout: options?.timeout,
+    });
+  }
+
+  /** Sizes of Frogg-owned storage; cached daemon-side unless `refresh`. */
+  async listOwnedStorage(options?: {
+    refresh?: boolean;
+    requestId?: string;
+    timeout?: number;
+  }): Promise<DaemonStorageListPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.storage.list.response">({
+      requestId: options?.requestId,
+      message: {
+        type: "daemon.storage.list.request",
+        ...(options?.refresh ? { refresh: true } : {}),
+      },
+      timeout: options?.timeout ?? 60_000,
+    });
+  }
+
+  /** Clean one cleanable storage category (owner/admin: daemon.manage). */
+  async cleanOwnedStorage(
+    categoryId: string,
+    options?: { requestId?: string; timeout?: number },
+  ): Promise<DaemonStorageCleanPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.storage.clean.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.storage.clean.request", categoryId },
+      timeout: options?.timeout ?? 120_000,
+    });
   }
 
   // --- device access (features.deviceAccess) --------------------------------

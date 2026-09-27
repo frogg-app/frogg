@@ -224,6 +224,12 @@ pub enum SessionMessage {
     SetVoiceModeResponse(SetVoiceModeResponse),
     #[serde(rename = "daemon.get_status.response")]
     DaemonGetStatusResponse(DaemonGetStatusResponse),
+    #[serde(rename = "daemon.host.get_metrics.response")]
+    DaemonHostGetMetricsResponse(DaemonHostGetMetricsResponse),
+    #[serde(rename = "daemon.storage.list.response")]
+    DaemonStorageListResponse(DaemonStorageListResponse),
+    #[serde(rename = "daemon.storage.clean.response")]
+    DaemonStorageCleanResponse(DaemonStorageCleanResponse),
     #[serde(rename = "daemon.get_pairing_offer.response")]
     DaemonGetPairingOfferResponse(DaemonGetPairingOfferResponse),
     #[serde(rename = "daemon.get_security_posture.response")]
@@ -264,6 +270,8 @@ pub enum SessionMessage {
     AgentConfigApplyResponse(AgentConfigApplyResponse),
     #[serde(rename = "agent.provider_account.transfer.response")]
     AgentProviderAccountTransferResponse(AgentProviderAccountTransferResponse),
+    #[serde(rename = "agent.clean_cut.response")]
+    AgentCleanCutResponse(AgentCleanCutResponse),
     #[serde(rename = "agent.detach.response")]
     AgentDetachResponse(AgentDetachResponse),
     #[serde(rename = "agent.cancel_auto_resume.response")]
@@ -7126,6 +7134,70 @@ pub struct DaemonGetStatusResponsePayloadProvidersItem {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonHostGetMetricsResponse {
+    pub payload: DaemonHostGetMetricsResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonHostGetMetricsResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub metrics: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageListResponse {
+    pub payload: DaemonStorageListResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageListResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "computedAt", skip_serializing_if = "Option::is_none")]
+    pub computed_at: Option<String>,
+    pub categories: Vec<DaemonStorageListResponsePayloadCategoriesItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageListResponsePayloadCategoriesItem {
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub path: Option<String>,
+    pub exists: bool,
+    pub bytes: f64,
+    #[serde(rename = "entryCount")]
+    pub entry_count: f64,
+    pub truncated: bool,
+    pub cleanable: bool,
+    #[serde(rename = "reclaimableBytes", skip_serializing_if = "Option::is_none")]
+    pub reclaimable_bytes: Option<f64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageCleanResponse {
+    pub payload: DaemonStorageCleanResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonStorageCleanResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "categoryId")]
+    pub category_id: String,
+    #[serde(rename = "bytesFreed")]
+    pub bytes_freed: f64,
+    #[serde(rename = "removedCount")]
+    pub removed_count: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DaemonGetPairingOfferResponse {
     pub payload: DaemonGetPairingOfferResponsePayload,
 }
@@ -7930,6 +8002,49 @@ pub struct AgentProviderAccountTransferResponsePayload {
     pub error: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub notice: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCleanCutResponse {
+    pub payload: AgentCleanCutResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCleanCutResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    pub accepted: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub notice: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subagents: Option<Vec<AgentCleanCutResponsePayloadSubagentsItem>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCleanCutResponsePayloadSubagentsItem {
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    #[serde(rename = "parentAgentId")]
+    pub parent_agent_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    pub status: AgentCleanCutResponsePayloadSubagentsItemStatus,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AgentCleanCutResponsePayloadSubagentsItemStatus {
+    #[serde(rename = "cut")]
+    Cut,
+    #[serde(rename = "skipped")]
+    Skipped,
+    #[serde(rename = "failed")]
+    Failed,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

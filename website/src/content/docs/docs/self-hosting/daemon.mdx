@@ -58,6 +58,44 @@ Everything lives in `FROGG_HOME` (`~/.frogg`): `config.json`, agents, projects, 
 worktrees, paired devices, logs and speech models. Back it up to keep history and
 pairings. See [configuration](/docs/reference/configuration/#other-files-in-frogg_home).
 
+## Scratch files and cleanup
+
+The daemon keeps its scratch work in the system temp directory (`os.tmpdir()`), never in
+your home folder. Each entry is named `frogg-<kind>-<pid>-…` (image attachments, Pi MCP and
+extension files, speech uploads), so its owner is identifiable. The only scratch space
+outside temp is a `.frogg-clone-*` directory next to a GitHub clone's target, which the
+clone renames into place and removes on failure.
+
+On start, the daemon removes debris earlier processes left behind, in the background:
+
+- temp entries whose owning process has exited (after a 10-minute grace period), and
+  older unnumbered `frogg-<kind>-XXXXXX` entries after 24 hours;
+- `.frogg-clone-*` directories older than 24 hours beside registered projects;
+- empty `~/frogg-classify-home-*` directories left by old test runs.
+
+It matches exact names only, skips symlinks, entries owned by another user and anything a
+live process holds, and logs what it removed. A sweep failure never stops the daemon.
+
+### Resources in the app
+
+Host settings → **Host** has a **Resources** section when the daemon supports it
+(`features.hostResources`; older daemons hide it):
+
+- **Live load.** Host CPU (with core count and load average where the OS reports one),
+  memory, and the disk holding `FROGG_HOME`, as usage bars that refresh every 5 seconds
+  while settings is open. The daemon process row shows its PID, RSS and heap, CPU as a
+  share of one core (it can exceed 100%), and uptime.
+- **Owned storage.** The size and entry count of each area Frogg owns: logs, agent state,
+  projects, worktrees, uploads, project import staging, speech cache, models, daemon
+  versions and temp. Sizes are cached on the daemon for 5 minutes; **Refresh** remeasures.
+  A size prefixed with `≥` is a lower bound, because the walk stopped at its entry cap.
+- **Clean.** Owners can clean three areas after a confirmation: rotated logs (never the live
+  `daemon.log`), the spoken alert cache (`tts-cache`), and stale temp debris. The result
+  shows what was freed, then the list remeasures. Other areas are shown for size only.
+
+Viewers see metrics only; storage sizes need the operator role and cleaning needs owner. See
+[device roles](/docs/getting-started/connect-and-pair/#device-roles).
+
 ## Logs
 
 ```sh

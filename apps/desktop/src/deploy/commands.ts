@@ -1,13 +1,14 @@
+import { randomUUID } from "node:crypto";
 import { app, BrowserWindow } from "electron";
 import { brand } from "@frogg/branding";
 import { createSshPasswordEnvironment } from "../daemon/ssh-password.js";
 import type { DesktopCommandHandler } from "../settings/desktop-settings-commands.js";
 import { createScriptExecutor } from "./executor.js";
-import { DeployManager } from "./manager.js";
-import { buildProbeScript } from "./probe.js";
+import { DeployManager } from "@frogg/protocol/ssh-deploy/manager";
+import { buildProbeScript } from "@frogg/protocol/ssh-deploy/probe";
+import { cliPairCodeAdapter } from "@frogg/protocol/ssh-deploy/pair-code";
+import { cliHardenAdapter } from "@frogg/protocol/ssh-deploy/harden";
 import { deployScript } from "./scripts.js";
-import { cliPairCodeAdapter } from "./pair-code.js";
-import { cliHardenAdapter } from "./harden.js";
 import { SshForwardManager } from "./forward.js";
 
 export const DEPLOY_EVENT = "frogg:event:ssh-deploy-event";
@@ -37,6 +38,7 @@ export function createSshDeployCommandHandlers(): Record<string, DesktopCommandH
       forwards: new SshForwardManager({
         passwordEnvironment: createSshPasswordEnvironment,
       }),
+      createJobId: () => `deploy-${randomUUID()}`,
       emit(event) {
         for (const window of BrowserWindow.getAllWindows()) {
           if (!window.isDestroyed() && !window.webContents.isDestroyed())
