@@ -1,5 +1,6 @@
 import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
+import { MenuHeader } from "@/components/headers/menu-header";
 import { useDesignPreviewStore } from "@/design/design-preview-store";
 import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { themeOf } from "@/styles/design-theme";
@@ -11,6 +12,20 @@ import { entryPageTitle } from "./entry-design";
  */
 export function useShowsEntryPageTitle(): boolean {
   return useDesignPreviewStore((state) => state.variant !== "current" && state.variant !== "inset");
+}
+
+/**
+ * A list screen's header: today's menu header carrying the title, or, where the direction leads
+ * with a large in-page title, a bare menu header followed by that title.
+ */
+export function EntryPageHeader({ title, testID }: { title: string; testID?: string }) {
+  const showsPageTitle = useShowsEntryPageTitle();
+  return (
+    <>
+      <MenuHeader title={showsPageTitle ? undefined : title} />
+      {showsPageTitle ? <EntryPageTitle title={title} testID={testID} /> : null}
+    </>
+  );
 }
 
 /** The large in-page title of a list screen (History), aligned with the list column below. */

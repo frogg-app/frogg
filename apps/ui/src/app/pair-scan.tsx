@@ -230,7 +230,9 @@ export default function PairScanScreen() {
         <BackHeader title={t("pairing.scan.title")} onBack={handleRouterBack} />
         <View style={bodyStyle}>
           <View style={permissionCardStyle}>
-            <Text style={permissionTitleStyle} dataSet={DESIGN_FONT_DATASET}>{t("pairing.scan.webUnavailableTitle")}</Text>
+            <Text style={permissionTitleStyle} dataSet={DESIGN_FONT_DATASET}>
+              {t("pairing.scan.webUnavailableTitle")}
+            </Text>
             <Text style={styles.permissionBody}>{t("pairing.scan.webUnavailableBody")}</Text>
             <Pressable style={permissionButtonStyle} onPress={closeToSource}>
               <Text style={permissionButtonTextStyle}>{t("pairing.scan.backToSettings")}</Text>
@@ -247,7 +249,9 @@ export default function PairScanScreen() {
   if (!granted) {
     body = (
       <View style={permissionCardStyle}>
-        <Text style={permissionTitleStyle} dataSet={DESIGN_FONT_DATASET}>{t("pairing.scan.cameraPermissionTitle")}</Text>
+        <Text style={permissionTitleStyle} dataSet={DESIGN_FONT_DATASET}>
+          {t("pairing.scan.cameraPermissionTitle")}
+        </Text>
         <Text style={styles.permissionBody}>{t("pairing.scan.cameraPermissionBody")}</Text>
         <Pressable style={permissionButtonStyle} onPress={handleRequestPermission}>
           <Text style={permissionButtonTextStyle}>{t("pairing.scan.grantPermission")}</Text>

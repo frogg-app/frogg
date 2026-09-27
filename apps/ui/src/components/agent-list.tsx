@@ -345,10 +345,7 @@ function SessionRow({
         ) : null}
       </View>
       {!isMobile ? (
-        <View
-          style={styles.rowColumns}
-          dataSet={metaDataSet}
-        >
+        <View style={styles.rowColumns} dataSet={metaDataSet}>
           <HighlightedText
             text={projectName}
             ranges={rangesFor("project")}
@@ -680,6 +677,11 @@ function sectionTitleFont(theme: Theme) {
   };
 }
 
+// Project and branch columns narrow inside a capped reading column so titles keep their room.
+function metaColumnWidth(theme: Theme): number {
+  return theme.design.contentMaxWidth ? 112 : 132;
+}
+
 function rowTextSize(theme: Theme): number {
   return theme.design.variant === "inset" ? 13 : theme.fontSize.base;
 }
@@ -718,9 +720,7 @@ const styles = StyleSheet.create((theme, rt) => {
       flexDirection: "row",
       alignItems: "center",
       paddingVertical:
-        theme.spacing[
-          ROW_PADDING[themeOf(rt.themeName).design.variant] ?? ROW_PADDING.current
-        ],
+        theme.spacing[ROW_PADDING[themeOf(rt.themeName).design.variant] ?? ROW_PADDING.current],
       paddingHorizontal: theme.spacing[3],
       ...rowShape(themeOf(rt.themeName)),
     },
@@ -805,13 +805,13 @@ const styles = StyleSheet.create((theme, rt) => {
         : undefined,
       color: theme.colors.foregroundMuted,
       flexShrink: 0,
-      width: 132,
+      width: metaColumnWidth(themeOf(rt.themeName)),
     },
     columnMetaBranch: {
       ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
       color: theme.colors.foregroundMuted,
       flexShrink: 0,
-      width: 132,
+      width: metaColumnWidth(themeOf(rt.themeName)),
     },
     columnMetaFixed: {
       ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
@@ -824,6 +824,8 @@ const styles = StyleSheet.create((theme, rt) => {
       ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
       color: theme.colors.foregroundMuted,
       flexShrink: 0,
+      // A capped reading column (Paper, Focus, Soft) has no room for the host column.
+      display: themeOf(rt.themeName).design.contentMaxWidth ? "none" : "flex",
       width: 120,
       marginLeft: theme.spacing[4],
       textAlign: "right" as const,

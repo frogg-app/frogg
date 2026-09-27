@@ -2352,7 +2352,13 @@ function NewWorkspaceForm({
         <TitlebarDragRegion />
         <ReanimatedAnimated.View style={centeredStyle}>
           <View style={composerTitleContainerStyle}>
-            <Text style={composerTitleStyle} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">{t("newWorkspace.title")}</Text>
+            <Text
+              style={composerTitleStyle}
+              dataSet={DESIGN_FONT_DATASET}
+              accessibilityRole="header"
+            >
+              {t("newWorkspace.title")}
+            </Text>
           </View>
           {formStack}
           {isTerminalLaunch ? (
@@ -2573,5 +2579,8 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
 }));
 
-const composerTitleContainerStyle = [styles.composerTitleContainer, styles.composerTitleContainerDesign];
+const composerTitleContainerStyle = [
+  styles.composerTitleContainer,
+  styles.composerTitleContainerDesign,
+];
 const composerTitleStyle = [styles.composerTitle, styles.composerTitleDesign];

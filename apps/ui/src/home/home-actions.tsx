@@ -34,7 +34,9 @@ const onAccentColor = (theme: Theme) => ({ color: theme.colors.accentForeground 
 // Mono's list arrow sits on the solid primary; Inset's on the indigo accent.
 const listPrimaryIconColor = (theme: Theme) => ({
   color:
-    theme.design.variant === "mono" ? theme.colors.primaryForeground : theme.colors.accentForeground,
+    theme.design.variant === "mono"
+      ? theme.colors.primaryForeground
+      : theme.colors.accentForeground,
 });
 const tilesStyle = [tileStyles.tiles, tileStyles.tilesDesign];
 
@@ -61,10 +63,7 @@ function HomeTile({ action }: { action: HomeAction }) {
   return (
     <Pressable onPress={action.onPress} testID={action.testID} style={style}>
       <View style={action.accent ? tileStyles.iconWellAccent : tileStyles.iconWell}>
-        <Icon
-          size={20}
-          uniProps={action.accent ? tileAccentIconColor : mutedColor}
-        />
+        <Icon size={20} uniProps={action.accent ? tileAccentIconColor : mutedColor} />
       </View>
       <View style={tileStyles.text}>
         <Text style={tileStyles.title} dataSet={DESIGN_FONT_DATASET}>

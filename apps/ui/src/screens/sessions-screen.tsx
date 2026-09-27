@@ -4,11 +4,10 @@ import { useIsFocused } from "@react-navigation/native";
 import { router } from "expo-router";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { themeOf } from "@/styles/design-theme";
-import { EntryPageTitle, useShowsEntryPageTitle } from "@/home/entry-page-title";
+import { EntryPageHeader } from "@/home/entry-page-title";
 import { ChevronLeft } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { MenuHeader } from "@/components/headers/menu-header";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AgentList } from "@/components/agent-list";
@@ -246,8 +245,6 @@ function SessionsScreenContent({ projectKey = null, serverId = null }: SessionsS
     ...(historyFilter ? { filter: historyFilter } : {}),
   });
   const isSearching = isSearchSupported && search.length > 0;
-  const showsPageTitle = useShowsEntryPageTitle();
-  const title = resolveTitle(t, projectLabel);
 
   useEffect(() => {
     if (!isProjectScoped && isStaleHostSelection(selectedHost, hosts)) {
@@ -307,8 +304,7 @@ function SessionsScreenContent({ projectKey = null, serverId = null }: SessionsS
 
   return (
     <View style={styles.container}>
-      <MenuHeader title={showsPageTitle ? undefined : title} />
-      {showsPageTitle ? <EntryPageTitle title={title} testID="sessions-page-title" /> : null}
+      <EntryPageHeader title={resolveTitle(t, projectLabel)} testID="sessions-page-title" />
       {showFilterRow ? (
         <SessionsFilterRow
           showSearch={isSearchSupported}

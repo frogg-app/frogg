@@ -6,6 +6,7 @@ import { useRouter } from "expo-router";
 import { StyleSheet, useUnistyles, withUnistyles } from "react-native-unistyles";
 import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { themeOf } from "@/styles/design-theme";
+import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 import type { TextFragment } from "@/styles/style-fragment";
 import type { Theme } from "@/styles/theme";
 import {
@@ -160,6 +161,11 @@ const styles = StyleSheet.create((theme, rt) => ({
     textAlign: "center",
     marginTop: theme.spacing[6],
   },
+  versionLabelDesign: {
+    fontFamily: themeOf(rt.themeName).design.monoMeta
+      ? themeOf(rt.themeName).design.monoFontFamily
+      : undefined,
+  },
   settingsButton: {
     alignSelf: "center",
     marginTop: theme.spacing[6],
@@ -213,6 +219,7 @@ const styles = StyleSheet.create((theme, rt) => ({
 type WelcomeMode = "choose" | "remote" | "local";
 
 const titleStyle = [styles.title, styles.titleDesign];
+const versionLabelStyle = [styles.versionLabel, styles.versionLabelDesign];
 
 // The onboarding headline: today's quiet medium line, or the direction's display title.
 function welcomeTitle(theme: Theme): TextFragment {
@@ -274,6 +281,7 @@ export function WelcomeScreen({ onHostAdded }: WelcomeScreenProps) {
   const { theme } = useUnistyles();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
+  const metaDataSet = usePanelMetaDataSet();
   const router = useRouter();
   const appVersion = resolveAppVersion();
   const appVersionText = formatVersionWithPrefix(appVersion);
@@ -503,7 +511,9 @@ export function WelcomeScreen({ onHostAdded }: WelcomeScreenProps) {
             {t("onboarding.actions.settings")}
           </Button>
         </View>
-        <Text style={styles.versionLabel}>{appVersionText}</Text>
+        <Text style={versionLabelStyle} dataSet={metaDataSet}>
+          {appVersionText}
+        </Text>
 
         <AddHostModal
           visible={isDirectOpen}

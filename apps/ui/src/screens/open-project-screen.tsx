@@ -219,6 +219,10 @@ const styles = StyleSheet.create((theme, rt) => ({
   greetingDesign: {
     ...greetingFragment(themeOf(rt.themeName)),
   },
+  greetingSize: {
+    fontSize: { xs: 26, md: wideGreeting(rt.themeName) ? 36 : 32 },
+    lineHeight: { xs: 32, md: wideGreeting(rt.themeName) ? 44 : 42 },
+  },
   greetingStart: {
     color: theme.colors.foreground,
     ...entryPageTitle(themeOf(rt.themeName)),
@@ -229,14 +233,17 @@ function variantOf(themeName: string | undefined) {
   return themeOf(themeName).design.variant;
 }
 
-// The centred greeting: Paper's serif and Focus's display type run a size up on wide screens.
+// The centred greeting in the direction's display face (Soft runs it bold).
 function greetingFragment(theme: Theme): TextFragment {
   const heading = designHeading(theme);
-  const variant = theme.design.variant;
-  if (variant === "focus") return { ...heading, fontSize: 36, lineHeight: 44 };
-  if (variant === "paper") return { ...heading, fontSize: 36, lineHeight: 44 };
-  if (variant === "soft") return { ...heading, fontWeight: "700" };
+  if (theme.design.variant === "soft") return { ...heading, fontWeight: "700" };
   return heading;
 }
 
-const greetingStyle = [styles.greeting, styles.greetingDesign];
+// Paper's serif and Focus's display type run a size up on wide screens.
+function wideGreeting(themeName: string | undefined): boolean {
+  const variant = variantOf(themeName);
+  return variant === "focus" || variant === "paper";
+}
+
+const greetingStyle = [styles.greeting, styles.greetingDesign, styles.greetingSize];

@@ -120,7 +120,10 @@ export default function HostAddScreen() {
   }, [add]);
 
   // The safe-area inset is runtime-only, so it rides on margin; the theme padding stays in the sheet.
-  const bodyStyle = useMemo(() => [styles.body, styles.bodyDesign, { marginBottom: insets.bottom }], [insets.bottom]);
+  const bodyStyle = useMemo(
+    () => [styles.body, styles.bodyDesign, { marginBottom: insets.bottom }],
+    [insets.bottom],
+  );
 
   return (
     <View style={styles.container} testID="host-add-screen">

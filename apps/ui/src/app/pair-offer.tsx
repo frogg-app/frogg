@@ -118,7 +118,10 @@ export default function PairOfferScreen() {
   );
 
   // The safe-area inset is runtime-only, so it rides on margin; the theme padding stays in the sheet.
-  const bodyStyle = useMemo(() => [styles.body, styles.bodyDesign, { marginBottom: insets.bottom }], [insets.bottom]);
+  const bodyStyle = useMemo(
+    () => [styles.body, styles.bodyDesign, { marginBottom: insets.bottom }],
+    [insets.bottom],
+  );
 
   let content;
   if (!target) {

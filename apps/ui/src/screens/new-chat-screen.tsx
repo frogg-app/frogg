@@ -223,7 +223,9 @@ export function NewChatScreen({ serverId }: { serverId: string }) {
         <TitlebarDragRegion />
         <View style={staticStyles.centered}>
           <View style={titleContainerStyle}>
-            <Text style={titleStyle} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">{t(`newChat.titles.${titleKey}`)}</Text>
+            <Text style={titleStyle} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">
+              {t(`newChat.titles.${titleKey}`)}
+            </Text>
           </View>
           <Composer
             externalKeyboardShift
