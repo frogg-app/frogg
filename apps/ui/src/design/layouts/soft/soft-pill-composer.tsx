@@ -1,9 +1,16 @@
 import { ArrowUp } from "lucide-react-native";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  View,
+  type NativeSyntheticEvent,
+  type TextInputKeyPressEventData,
+} from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { EditingTextInput } from "@/components/ui/text-input";
+import { isWeb } from "@/constants/platform";
 import type { Theme } from "@/styles/theme";
 import { useSoftStartChat } from "./use-soft-start-chat";
 import { softEdge, softRaised, SOFT_PILL } from "./soft-surface";
@@ -27,6 +34,16 @@ export function SoftPillComposer({ serverId }: { serverId: string | null }) {
   const send = useCallback(() => {
     if (canSend) submit?.();
   }, [canSend, submit]);
+  // Web: Enter sends from the key event (the input's submit event does not fire reliably there);
+  // native: the keyboard's send key.
+  const handleKeyPress = useCallback(
+    (event: NativeSyntheticEvent<TextInputKeyPressEventData>) => {
+      if (event.nativeEvent.key !== "Enter") return;
+      event.preventDefault();
+      send();
+    },
+    [send],
+  );
   const sendState = useMemo(() => ({ disabled: !canSend, busy: isPending }), [canSend, isPending]);
   return (
     <View style={styles.pill} testID="soft-home-composer">
@@ -34,7 +51,8 @@ export function SoftPillComposer({ serverId }: { serverId: string | null }) {
         style={styles.input}
         value={text}
         onChangeText={setText}
-        onSubmitEditing={send}
+        onSubmitEditing={isWeb ? undefined : send}
+        onKeyPress={isWeb ? handleKeyPress : undefined}
         returnKeyType="send"
         submitBehavior="submit"
         placeholder={t("newChat.placeholder")}
