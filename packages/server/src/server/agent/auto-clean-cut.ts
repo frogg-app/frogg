@@ -23,7 +23,15 @@ export interface AutoCleanCutDeps extends CleanCutDeps {
   cleanCut?: typeof runCleanCut;
 }
 
-export type AutoCleanCutOutcome = "cut" | "warm" | "unknown" | "disabled" | "skipped" | "failed";
+/** `unchanged`: the cache was cold but nothing was new since the previous cut, so none was made. */
+export type AutoCleanCutOutcome =
+  | "cut"
+  | "unchanged"
+  | "warm"
+  | "unknown"
+  | "disabled"
+  | "skipped"
+  | "failed";
 
 export async function maybeAutoCleanCut(
   deps: AutoCleanCutDeps,
@@ -50,7 +58,18 @@ export async function maybeAutoCleanCut(
   if (cold === null) return "unknown";
   if (!cold) return "warm";
   try {
-    await (deps.cleanCut ?? runCleanCut)(deps, { agentId, target: {}, reason: "cold-cache" });
+    const outcome = await (deps.cleanCut ?? runCleanCut)(deps, {
+      agentId,
+      target: {},
+      reason: "cold-cache",
+    });
+    if (outcome === "unchanged") {
+      deps.logger.info(
+        { agentId, trigger },
+        "Cold cache, but nothing new since the previous clean cut; resuming as is",
+      );
+      return "unchanged";
+    }
     deps.logger.info({ agentId, trigger }, "Automatic clean cut before resume (cold cache)");
     return "cut";
   } catch (error) {

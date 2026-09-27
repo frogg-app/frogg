@@ -1538,7 +1538,6 @@ export async function createFroggDaemon(
   const autoCleanCutDeps: AutoCleanCutDeps = {
     agentManager,
     providerSnapshotManager,
-    readDaemonConfig: () => ({ metadataGeneration: daemonConfigStore.get().metadataGeneration }),
     isEnabled: () => config.autoCleanCutOnColdCache !== false,
     logger,
   };

@@ -82,7 +82,13 @@ describe("interrupted turn persistence and resume", () => {
     const interruptedTurn = { at: "2026-09-13T11:59:00.000Z", reason: "daemon_restart" };
     await storage.upsert(record("fresh", { interruptedTurn }));
     await storage.upsert(
-      record("stale", { interruptedTurn: { ...interruptedTurn, at: "2026-09-13T10:00:00.000Z" } }),
+      record("stale", { interruptedTurn: { ...interruptedTurn, at: "2026-09-12T11:00:00.000Z" } }),
+    );
+    // Past every provider's cache lifetime but inside the resume window.
+    await storage.upsert(
+      record("hours-old", {
+        interruptedTurn: { ...interruptedTurn, at: "2026-09-13T06:00:00.000Z" },
+      }),
     );
     await storage.upsert(
       record("archived", { interruptedTurn, archivedAt: "2026-09-13T11:59:30.000Z" }),
@@ -107,8 +113,12 @@ describe("interrupted turn persistence and resume", () => {
       sendPrompt: sendPrompt as never,
     });
 
-    expect(resumed).toEqual(["fresh"]);
-    expect(sendPrompt.mock.calls.map(([p]) => p.agentId).sort()).toEqual(["failing", "fresh"]);
+    expect(resumed.sort()).toEqual(["fresh", "hours-old"]);
+    expect(sendPrompt.mock.calls.map(([p]) => p.agentId).sort()).toEqual([
+      "failing",
+      "fresh",
+      "hours-old",
+    ]);
     expect(sendPrompt.mock.calls[0]?.[0].prompt).toBe(INTERRUPTED_TURN_CONTINUATION_PROMPT);
     for (const agent of await storage.list()) {
       expect(agent.interruptedTurn ?? null).toBeNull();

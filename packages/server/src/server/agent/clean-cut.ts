@@ -25,11 +25,7 @@ import type {
   CleanCutMarker,
 } from "./agent-sdk-types.js";
 import type { ProviderSnapshotManager } from "./provider-snapshot-manager.js";
-import {
-  DEFAULT_STRUCTURED_GENERATION_PROVIDERS,
-  resolveStructuredGenerationProviders,
-  type StructuredGenerationDaemonConfig,
-} from "./structured-generation-providers.js";
+import { DEFAULT_STRUCTURED_GENERATION_PROVIDERS } from "./structured-generation-providers.js";
 
 /** Head kept when a transcript is too long: the opening request frames the rest. */
 const TRANSCRIPT_HEAD_CHARS = 20_000;
@@ -49,7 +45,6 @@ export interface CleanCutTarget {
 export interface CleanCutDeps {
   agentManager: AgentManager;
   providerSnapshotManager: Pick<ProviderSnapshotManager, "listProviders">;
-  readDaemonConfig: () => StructuredGenerationDaemonConfig | null;
   logger: { info: (obj: object, msg?: string) => void; warn: (obj: object, msg?: string) => void };
   /** Test seam: runs one summariser candidate. Defaults to a real internal agent. */
   runner?: SummariserRunner;
@@ -267,8 +262,9 @@ async function generateCleanCutSummary(
       runner,
     });
 
+  const candidates = await resolveSameProviderCandidates(deps, agent);
   try {
-    const result = await generate(await resolveSameProviderCandidates(deps, agent), {
+    const result = await generate(candidates, {
       ...baseOverrides,
       ...(agent.config.providerAccountId !== undefined
         ? { providerAccountId: agent.config.providerAccountId }
@@ -276,19 +272,21 @@ async function generateCleanCutSummary(
     });
     return { summary: result.summary.trim(), summaryModel };
   } catch (error) {
+    // Only the agent's own provider and account are tried: summarising on
+    // another would bill an account the conversation never used.
+    const detail = error instanceof Error ? error.message : String(error);
     deps.logger.warn(
       { err: error, agentId: agent.id, provider: agent.provider },
-      "Clean cut summary failed on the agent's provider; trying other providers",
+      "Clean cut summary failed on every candidate of the agent's provider",
+    );
+    throw new Error(
+      `Could not write the clean cut summary on ${agent.provider} ` +
+        `(tried ${candidates
+          .map((candidate) => candidate.model ?? "default model")
+          .join(", ")}): ${detail}`,
+      { cause: error },
     );
   }
-
-  const fallback = await resolveStructuredGenerationProviders({
-    cwd: agent.cwd,
-    providerSnapshotManager: deps.providerSnapshotManager,
-    daemonConfig: deps.readDaemonConfig(),
-  });
-  const result = await generate(fallback, baseOverrides);
-  return { summary: result.summary.trim(), summaryModel };
 }
 
 function movesAgent(agent: ManagedAgent, target: CleanCutTarget): boolean {
@@ -300,6 +298,9 @@ function movesAgent(agent: ManagedAgent, target: CleanCutTarget): boolean {
   );
 }
 
+/** `unchanged`: nothing new since the previous cut and no move, so nothing was done. */
+export type CleanCutOutcome = "cut" | "unchanged";
+
 /**
  * Summarise, start the fresh provider session, then record the cut in the
  * timeline. The marker goes in last: it is what primes the next message, so it
@@ -308,7 +309,7 @@ function movesAgent(agent: ManagedAgent, target: CleanCutTarget): boolean {
 export async function runCleanCut(
   deps: CleanCutDeps,
   input: { agentId: string; target: CleanCutTarget; reason?: CleanCutMarker["reason"] },
-): Promise<void> {
+): Promise<CleanCutOutcome> {
   const agent = deps.agentManager.getAgent(input.agentId);
   if (!agent) {
     throw new Error(`Unknown agent "${input.agentId}".`);
@@ -330,7 +331,7 @@ export async function runCleanCut(
   } else if (previousCut) {
     // Nothing new since the last cut: its summary still stands, and a cut is
     // only worth making to move somewhere else.
-    if (!movesAgent(agent, target)) return;
+    if (!movesAgent(agent, target)) return "unchanged";
     summary = previousCut.summary;
     summaryModel = previousCut.summaryModel;
   } else {
@@ -382,4 +383,5 @@ export async function runCleanCut(
     },
     "Clean cut completed",
   );
+  return "cut";
 }

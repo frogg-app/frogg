@@ -58,9 +58,10 @@ reset to the new provider's defaults.
   Tool output is never included. A very long transcript keeps its opening and its most recent
   part and drops the middle.
 - **Model.** The cheapest model available on the agent's own provider and account (for example
-  Haiku on Claude, `gpt-5.4-mini` on Codex), then the agent's current model. If all of those fail,
-  Frogg tries the [metadata generation providers](/docs/reference/project-config/#metadatageneration)
-  on other providers.
+  Haiku on Claude, `gpt-5.4-mini` on Codex), then the agent's current model. No other provider
+  or account is tried, so the summary always bills the account the conversation already uses.
+  If every candidate fails, the clean cut fails and the error names the provider, the models
+  tried and the last failure; the agent keeps its conversation.
 - **Shape.** A Markdown note of up to about 600 words: goal, user decisions and constraints, what
   is done, what is in progress, next steps.
 
@@ -91,8 +92,9 @@ are:
 - closed,
 - empty, with no user message since their last cut.
 
-A child that fails to cut does not undo the parent's cut. Only children loaded in the daemon
-are covered.
+A child that fails to cut does not undo the parent's cut. Children saved on disk but not
+loaded in the daemon are loaded for the cut and unloaded again afterwards. Archived children
+are left alone.
 
 Provider-native subagents, such as Claude Code tasks, live inside the parent's conversation.
 They end with it and need no cut of their own.
@@ -105,14 +107,16 @@ prompt cache has expired. This applies to:
 - **Usage-limit auto-resume** ([`daemon.autoResumeOnUsageLimit`](/docs/reference/configuration/#agents-and-tools)).
   The cache age is measured from when the limit was hit, so a limit that resets more than an
   hour later resumes from a summary instead of re-sending the whole context.
-- **Resume after a daemon restart**, which is checked too. In practice it rarely cuts: only
-  turns interrupted less than an hour ago are resumed, and the cache is usually still warm.
+- **Resume after a daemon restart.** Turns interrupted up to 24 hours ago are resumed. One
+  interrupted more than the provider's cache lifetime ago is cut first; a recent one resumes
+  its cached conversation.
 
 It never cuts while the cache is warm, since resuming the cached conversation is cheaper. It
 only acts on providers with a known cache lifetime (Claude and Codex, one hour each), never
-cuts subagents, and skips agents that are running, closed or have no provider session yet. If
-the summary fails, the daemon logs a warning and resumes the old conversation as it would
-have anyway.
+cuts subagents, and skips agents that are running, closed or have no provider session yet. An
+agent with nothing new since its last clean cut is resumed as is, since that cut's summary
+still stands. If the summary fails, the daemon logs a warning and resumes the old conversation
+as it would have anyway.
 
 The divider looks the same as a manual cut. The timeline item records why the cut was made
 in `cleanCut.reason`: `manual` or `cold-cache`.
@@ -131,8 +135,8 @@ and the automatic cut:
 
 | Provider | Cache lifetime Frogg assumes |
 | -------- | ---------------------------- |
-| Claude   | One hour (Claude Code writes its cache with the one-hour TTL) |
-| Codex    | One hour (OpenAI evicts idle caches sooner, but never keeps them past an hour; the hour is the upper bound, so nothing fires while the cache could still be warm) |
+| Claude   | One hour. Claude Code writes its prompt cache with Anthropic's one-hour TTL. |
+| Codex    | One hour. Codex CLI sets no cache retention, so OpenAI's default applies: a 30-minute TTL on current models, and on older ones in-memory caches that last 5 to 10 idle minutes (an hour at most) or extended caches that typically last about 30 minutes. An hour is past the typical lifetime under every policy. |
 
 Other providers get no warning and no automatic cut. Copilot is subscription-billed, and
 OpenCode, Pi and OMP run whichever upstream model is selected, so Frogg cannot know their

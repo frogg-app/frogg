@@ -109,7 +109,6 @@ function makeDeps(agent: Partial<ManagedAgent>, timeline: AgentTimelineItem[]) {
         },
       ],
     } as unknown as CleanCutDeps["providerSnapshotManager"],
-    readDaemonConfig: () => null,
     logger: { info: () => {}, warn: () => {} },
     runner: runner as unknown as CleanCutDeps["runner"],
   };
@@ -119,10 +118,7 @@ function makeDeps(agent: Partial<ManagedAgent>, timeline: AgentTimelineItem[]) {
 describe("runCleanCut", () => {
   it("summarises on the cheapest same-provider model, restarts, then records the marker", async () => {
     const { deps, runner, startFreshAgentSession, appendTimelineItem } = makeDeps({}, conversation);
-    await runCleanCut(deps, {
-      agentId: "agent-1",
-      target: { provider: "codex", model: "gpt" },
-    });
+    await runCleanCut(deps, { agentId: "agent-1", target: { provider: "codex", model: "gpt" } });
 
     const firstCall = runner.mock.calls[0] as unknown as [
       { agentConfig: { provider: string; model: string; providerAccountId: string } },
@@ -165,7 +161,7 @@ describe("runCleanCut", () => {
     const { deps, runner, startFreshAgentSession } = makeDeps({}, [
       { type: "compaction", status: "completed", cleanCut: { summary: "s" } },
     ]);
-    await runCleanCut(deps, { agentId: "agent-1", target: {} });
+    await expect(runCleanCut(deps, { agentId: "agent-1", target: {} })).resolves.toBe("unchanged");
     expect(runner).not.toHaveBeenCalled();
     expect(startFreshAgentSession).not.toHaveBeenCalled();
   });
@@ -180,6 +176,35 @@ describe("runCleanCut", () => {
       "agent-1",
       expect.objectContaining({ cleanCut: expect.objectContaining({ summary: "kept summary" }) }),
     );
+  });
+
+  it("tries only the agent's own provider and account, then fails with the reason", async () => {
+    const { deps, runner, startFreshAgentSession } = makeDeps({}, conversation);
+    runner.mockImplementation(async () => {
+      throw new Error("usage limit reached");
+    });
+    await expect(runCleanCut(deps, { agentId: "agent-1", target: {} })).rejects.toThrow(
+      /clean cut summary on claude \(tried haiku, opus\): .*usage limit reached/,
+    );
+    const configs = runner.mock.calls.map(
+      (call) =>
+        (
+          call as unknown as [
+            {
+              agentConfig: {
+                provider: string;
+                model?: string;
+                providerAccountId?: string;
+              };
+            },
+          ]
+        )[0].agentConfig,
+    );
+    expect(configs.map((config) => config.model)).toEqual(["haiku", "opus"]);
+    for (const config of configs) {
+      expect(config).toMatchObject({ provider: "claude", providerAccountId: "acct-1" });
+    }
+    expect(startFreshAgentSession).not.toHaveBeenCalled();
   });
 
   it("refuses when there is no conversation at all", async () => {
@@ -227,7 +252,6 @@ describe("runCleanCutForSubagents", () => {
           { provider: "claude", enabled: true, models: [{ id: "haiku", label: "Haiku" }] },
         ],
       } as unknown as CleanCutDeps["providerSnapshotManager"],
-      readDaemonConfig: () => null,
       logger: { info: () => {}, warn: () => {} },
       runner: runner as unknown as CleanCutDeps["runner"],
     };
@@ -285,5 +309,53 @@ describe("runCleanCutForSubagents", () => {
     const prompt = (runner.mock.calls[0] as unknown as [{ prompt: string }])[0].prompt;
     expect(prompt).toContain("child-only request");
     expect(prompt).not.toContain("parent request");
+  });
+
+  it("loads, cuts and unloads children stored on disk but not in memory", async () => {
+    const loaded = child("loaded", "root");
+    const onDisk = child("on-disk", "root");
+    const deeper = child("deeper", "on-disk");
+    const { deps, startFreshAgentSession } = makeTree([loaded, onDisk, deeper], {
+      loaded: conversation,
+      "on-disk": conversation,
+      deeper: [],
+    });
+    const inMemory = new Map<string, ManagedAgent>([["loaded", loaded]]);
+    deps.agentManager.listAgents = (() => [...inMemory.values()]) as never;
+    deps.agentManager.getAgent = ((id: string) => inMemory.get(id) ?? null) as never;
+    const stored: Record<string, ManagedAgent[]> = {
+      root: [onDisk],
+      "on-disk": [deeper],
+    };
+    const unloadAgent = vi.fn(async (id: string) => {
+      inMemory.delete(id);
+    });
+    const results = await runCleanCutForSubagents(
+      {
+        ...deps,
+        listStoredChildren: async (parent) =>
+          (stored[parent] ?? []).map((agent) => ({
+            id: agent.id,
+            title: agent.id,
+            createdAt: agent.createdAt,
+          })),
+        loadAgent: async (id) => {
+          const agent = [onDisk, deeper].find((candidate) => candidate.id === id)!;
+          inMemory.set(id, agent);
+          return agent;
+        },
+        unloadAgent,
+      },
+      "root",
+    );
+    expect(results.map(({ agentId, status }) => ({ agentId, status }))).toEqual([
+      { agentId: "loaded", status: "cut" },
+      { agentId: "on-disk", status: "cut" },
+      { agentId: "deeper", status: "skipped" },
+    ]);
+    expect(startFreshAgentSession.mock.calls.map((call) => call[0])).toEqual(["loaded", "on-disk"]);
+    // Only the children loaded for the cut are unloaded again.
+    expect(unloadAgent.mock.calls.map((call) => call[0])).toEqual(["on-disk", "deeper"]);
+    expect([...inMemory.keys()]).toEqual(["loaded"]);
   });
 });

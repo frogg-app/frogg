@@ -10,10 +10,18 @@
  *   selected, which this rule cannot see.
  * - `mock` and custom provider ids: no known cache.
  *
- * - `claude`: Claude Code writes its prompt cache with the one-hour TTL.
- * - `codex`: OpenAI evicts its in-memory cache after 5-10 idle minutes and
- *   never keeps it past an hour. The hour is the upper bound, so neither the
- *   warning nor an automatic cut fires while the cache could still be warm.
+ * Each value is the point past which the cache is best assumed gone, never
+ * earlier than it could plausibly still be warm:
+ * - `claude`: Claude Code writes its prompt cache with Anthropic's one-hour
+ *   TTL (Anthropic prompt caching docs: `ttl: "1h"`, refreshed on each hit).
+ * - `codex`: Codex CLI sends only `prompt_cache_key` (codex-rs/core/src/client.rs),
+ *   never `prompt_cache_retention` or `prompt_cache_options`, so the model's
+ *   default applies (OpenAI prompt caching guide). GPT-5.6 and later: a
+ *   30-minute TTL, "may retain longer". GPT-5.5 and earlier: in-memory
+ *   entries last 5-10 idle minutes and at most an hour; the 24h default for
+ *   non-ZDR organisations "typically" keeps them around 30 minutes. An hour
+ *   is past the typical life under every policy, so a cut there is almost
+ *   never premature, while 24h would mean never cutting at all.
  */
 export const PROMPT_CACHE_TTL_MS: Readonly<Record<string, number>> = {
   claude: 60 * 60 * 1000,

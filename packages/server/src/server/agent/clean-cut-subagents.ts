@@ -15,6 +15,11 @@
  * mid-turn is skipped, as the parent would have been; a child with nothing new
  * to summarise is skipped; a child whose cut throws is reported as failed. None
  * of these fail the parent's cut.
+ *
+ * Children persisted on disk but not loaded in memory (the daemon loads agents
+ * lazily) are found through storage, loaded for the cut, and unloaded again
+ * afterwards so they end in the state they started in. Archived children are
+ * left alone.
  */
 import { PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
 import type { ManagedAgent } from "./agent-manager.js";
@@ -29,6 +34,63 @@ export interface CleanCutSubagentResult {
   status: CleanCutSubagentStatus;
   /** Why a child was skipped or failed; absent when it was cut. */
   reason?: string;
+}
+
+/** A child persisted on disk and not loaded in memory. */
+export interface StoredCleanCutChild {
+  id: string;
+  title: string | null;
+  createdAt: Date;
+}
+
+export interface CleanCutSubagentsDeps extends CleanCutDeps {
+  /** Unloaded, unarchived, non-internal children of an agent on disk. */
+  listStoredChildren?: (parentAgentId: string) => Promise<StoredCleanCutChild[]>;
+  /** Loads a stored agent into memory. */
+  loadAgent?: (agentId: string) => Promise<ManagedAgent>;
+  /** Unloads an agent loaded only for its cut. */
+  unloadAgent?: (agentId: string) => Promise<void>;
+}
+
+interface ChildRef {
+  id: string;
+  title: string | null;
+  createdAt: Date;
+  loaded: boolean;
+}
+
+async function listChildren(
+  deps: CleanCutSubagentsDeps,
+  parentAgentId: string,
+): Promise<ChildRef[]> {
+  const loaded: ChildRef[] = listCleanCutChildren(deps.agentManager, parentAgentId).map(
+    (agent) => ({
+      id: agent.id,
+      title: agent.config.title ?? null,
+      createdAt: agent.createdAt,
+      loaded: true,
+    }),
+  );
+  let stored: StoredCleanCutChild[] = [];
+  if (deps.listStoredChildren) {
+    try {
+      stored = await deps.listStoredChildren(parentAgentId);
+    } catch (error) {
+      deps.logger.warn({ err: error, parentAgentId }, "Could not list stored subagents");
+    }
+  }
+  const seen = new Set(loaded.map((child) => child.id));
+  const unloaded = stored
+    .filter((child) => !seen.has(child.id) && !deps.agentManager.getAgent(child.id))
+    .map(
+      (child): ChildRef => ({
+        id: child.id,
+        title: child.title,
+        createdAt: child.createdAt,
+        loaded: false,
+      }),
+    );
+  return [...loaded, ...unloaded].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 }
 
 /** The loaded, visible Frogg children of an agent, oldest first. */
@@ -56,12 +118,55 @@ function skipReason(deps: CleanCutDeps, agent: ManagedAgent): string | null {
   return null;
 }
 
+/** Cuts one child, loading it first when only stored, and unloading it again. */
+async function cutChild(
+  deps: CleanCutSubagentsDeps,
+  ref: ChildRef,
+  base: Omit<CleanCutSubagentResult, "status" | "reason">,
+): Promise<CleanCutSubagentResult> {
+  let loadedHere = false;
+  try {
+    let child = deps.agentManager.getAgent(ref.id);
+    if (!child) {
+      if (ref.loaded || !deps.loadAgent) {
+        return { ...base, status: "skipped", reason: "not loaded" };
+      }
+      child = await deps.loadAgent(ref.id);
+      loadedHere = true;
+    }
+    const reason = skipReason(deps, child);
+    if (reason) {
+      return { ...base, status: "skipped", reason };
+    }
+    const outcome = await runCleanCut(deps, { agentId: ref.id, target: {} });
+    return outcome === "cut"
+      ? { ...base, status: "cut" }
+      : { ...base, status: "skipped", reason: "nothing to summarise" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    deps.logger.warn(
+      { err: error, agentId: ref.id, parentAgentId: base.parentAgentId },
+      "Clean cut of a subagent failed",
+    );
+    return { ...base, status: "failed", reason: message };
+  } finally {
+    if (loadedHere && deps.unloadAgent) {
+      await deps.unloadAgent(ref.id).catch((error: unknown) => {
+        deps.logger.warn(
+          { err: error, agentId: ref.id },
+          "Could not unload subagent after its clean cut",
+        );
+      });
+    }
+  }
+}
+
 /**
  * Cuts every descendant of `rootAgentId`, parents before their children, one
  * at a time so summarisers do not pile up on the same account. Never throws.
  */
 export async function runCleanCutForSubagents(
-  deps: CleanCutDeps,
+  deps: CleanCutSubagentsDeps,
   rootAgentId: string,
 ): Promise<CleanCutSubagentResult[]> {
   const results: CleanCutSubagentResult[] = [];
@@ -69,28 +174,12 @@ export async function runCleanCutForSubagents(
   const queue: string[] = [rootAgentId];
   while (queue.length > 0) {
     const parentAgentId = queue.shift()!;
-    for (const child of listCleanCutChildren(deps.agentManager, parentAgentId)) {
-      if (visited.has(child.id)) continue;
-      visited.add(child.id);
+    for (const ref of await listChildren(deps, parentAgentId)) {
+      if (visited.has(ref.id)) continue;
+      visited.add(ref.id);
       // A running child's own children may be idle; still visit them.
-      queue.push(child.id);
-      const base = { agentId: child.id, parentAgentId, title: child.config.title ?? null };
-      const reason = skipReason(deps, child);
-      if (reason) {
-        results.push({ ...base, status: "skipped", reason });
-        continue;
-      }
-      try {
-        await runCleanCut(deps, { agentId: child.id, target: {} });
-        results.push({ ...base, status: "cut" });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
-        deps.logger.warn(
-          { err: error, agentId: child.id, parentAgentId },
-          "Clean cut of a subagent failed",
-        );
-        results.push({ ...base, status: "failed", reason: message });
-      }
+      queue.push(ref.id);
+      results.push(await cutChild(deps, ref, { agentId: ref.id, parentAgentId, title: ref.title }));
     }
   }
   return results;

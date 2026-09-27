@@ -69,7 +69,7 @@ import { loadPersistedConfig } from "./persisted-config.js";
 import { releaseWorkspaceServicePortPlan } from "./workspace-service-port-registry.js";
 import { getErrorMessage, getErrorMessageOr } from "@frogg/protocol/error-utils";
 import { getAgentStatusPriority } from "@frogg/protocol/agent-state-bucket";
-import { getParentAgentIdFromLabels } from "@frogg/protocol/agent-labels";
+import { getParentAgentIdFromLabels, PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
 import type { WorkspaceGitRuntimeSnapshot, WorkspaceGitService } from "./workspace-git-service.js";
 import type { ProjectUpdate } from "./workspace-reconciliation-service.js";
 import {
@@ -1064,12 +1064,37 @@ export class Session {
           const deps = {
             agentManager,
             providerSnapshotManager,
-            readDaemonConfig: () => this.readStructuredGenerationDaemonConfig(),
             logger: this.sessionLogger,
           };
           await runCleanCut(deps, { agentId, target });
           // COMPAT(agentCleanCutSubagents): added in v1.6.2, remove after 2027-09-27.
-          return includeSubagents ? runCleanCutForSubagents(deps, agentId) : undefined;
+          if (!includeSubagents) return undefined;
+          return runCleanCutForSubagents(
+            {
+              ...deps,
+              listStoredChildren: async (parentAgentId) =>
+                (await this.agentStorage.list())
+                  .filter(
+                    (record) =>
+                      record.labels[PARENT_AGENT_ID_LABEL] === parentAgentId &&
+                      !record.archivedAt &&
+                      !record.internal,
+                  )
+                  .map((record) => ({
+                    id: record.id,
+                    title: record.title ?? null,
+                    createdAt: new Date(record.createdAt),
+                  })),
+              loadAgent: (childId) =>
+                ensureAgentLoaded(childId, {
+                  agentManager,
+                  agentStorage: this.agentStorage,
+                  logger: this.sessionLogger,
+                }),
+              unloadAgent: (childId) => agentManager.closeAgent(childId),
+            },
+            agentId,
+          );
         },
       },
       logger: this.sessionLogger,

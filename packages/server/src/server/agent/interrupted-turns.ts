@@ -6,7 +6,15 @@ import { ensureAgentLoaded } from "./agent-loading.js";
 import { sendPromptToAgent } from "./agent-prompt.js";
 
 export const DAEMON_RESTART_INTERRUPT_REASON = "daemon_restart";
-export const INTERRUPTED_TURN_MAX_AGE_MS = 60 * 60 * 1000;
+/**
+ * How old an interrupted turn may be and still resume. The limit keeps a daemon
+ * that was down for days from waking long-abandoned tasks; within a day the
+ * work is still likely wanted. It is deliberately longer than any provider's
+ * prompt cache lifetime, so a turn resumed after that lifetime gets an
+ * automatic clean cut first (see auto-clean-cut.ts) instead of re-sending the
+ * whole context at full price.
+ */
+export const INTERRUPTED_TURN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export const INTERRUPTED_TURN_CONTINUATION_PROMPT =
   `The ${brand.name} daemon restarted while you were mid-turn, so your last tool call was killed. ` +
   "Re-check the current state and continue the task where you left off.";

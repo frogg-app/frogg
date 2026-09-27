@@ -118,7 +118,7 @@ frogg agent detach <child-id>
 ## After a daemon restart
 
 Agents that were in the middle of a turn when the daemon stopped are resumed with a
-continuation prompt when it starts again, if the interruption was less than an hour ago.
+continuation prompt when it starts again, if the interruption was less than 24 hours ago.
 If the provider's prompt cache has expired by then, the daemon makes an
 [automatic clean cut](/docs/using-frogg/clean-cut/#automatic-clean-cut-on-a-cold-cache) first.
 The same applies when an agent resumes after its usage limit resets.

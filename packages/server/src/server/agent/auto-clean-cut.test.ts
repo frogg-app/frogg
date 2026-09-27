@@ -5,7 +5,14 @@ import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./auto-clean-cut.js";
 const NOW = Date.parse("2026-09-27T12:00:00.000Z");
 const HOUR = 60 * 60 * 1000;
 
-function setup(options: { agent?: Partial<ManagedAgent>; enabled?: boolean; fail?: boolean } = {}) {
+function setup(
+  options: {
+    agent?: Partial<ManagedAgent>;
+    enabled?: boolean;
+    fail?: boolean;
+    unchanged?: boolean;
+  } = {},
+) {
   const agent = {
     id: "agent-1",
     provider: "claude",
@@ -16,12 +23,12 @@ function setup(options: { agent?: Partial<ManagedAgent>; enabled?: boolean; fail
   } as unknown as ManagedAgent;
   const cleanCut = vi.fn(async () => {
     if (options.fail) throw new Error("summariser failed");
+    return options.unchanged ? "unchanged" : "cut";
   });
   const warn = vi.fn();
   const deps: AutoCleanCutDeps = {
     agentManager: { getAgent: () => agent } as unknown as AgentManager,
     providerSnapshotManager: { listProviders: async () => [] },
-    readDaemonConfig: () => null,
     logger: { info: () => {}, warn },
     isEnabled: () => options.enabled ?? true,
     now: () => NOW,
@@ -80,5 +87,11 @@ describe("maybeAutoCleanCut", () => {
     const { deps, warn } = setup({ fail: true });
     await expect(run(deps, new Date(NOW - 10 * HOUR))).resolves.toBe("failed");
     expect(warn).toHaveBeenCalled();
+  });
+
+  it("reports a no-op cut as unchanged rather than cut", async () => {
+    const { deps, cleanCut } = setup({ unchanged: true });
+    await expect(run(deps, new Date(NOW - 10 * HOUR))).resolves.toBe("unchanged");
+    expect(cleanCut).toHaveBeenCalled();
   });
 });
