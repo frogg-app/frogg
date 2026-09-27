@@ -241,6 +241,12 @@ pub enum SessionMessage {
     DaemonUpdateStartRequest(DaemonUpdateStartRequest),
     #[serde(rename = "daemon.update.get_status.request")]
     DaemonUpdateGetStatusRequest(DaemonUpdateGetStatusRequest),
+    #[serde(rename = "daemon.beta_channel.get_status.request")]
+    DaemonBetaChannelGetStatusRequest(DaemonBetaChannelGetStatusRequest),
+    #[serde(rename = "daemon.beta_channel.install.request")]
+    DaemonBetaChannelInstallRequest(DaemonBetaChannelInstallRequest),
+    #[serde(rename = "daemon.beta_channel.uninstall.request")]
+    DaemonBetaChannelUninstallRequest(DaemonBetaChannelUninstallRequest),
     #[serde(rename = "hub.management.daemon.connect.request")]
     HubManagementDaemonConnectRequest(HubManagementDaemonConnectRequest),
     #[serde(rename = "hub.management.daemon.get_status.request")]
@@ -1635,6 +1641,28 @@ pub enum DaemonUpdateStartRequestChannel {
 pub struct DaemonUpdateGetStatusRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelGetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelInstallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelUninstallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub purge: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

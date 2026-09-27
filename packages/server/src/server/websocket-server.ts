@@ -1973,6 +1973,10 @@ export class VoiceAssistantWebSocketServer {
     this.broadcastCapabilitiesUpdate();
   }
 
+  private supportsBetaChannelManagement(): boolean {
+    return this.daemonRuntimeConfig?.betaChannel !== undefined;
+  }
+
   private buildServerInfoStatusPayload(session: Session): ServerInfoStatusPayload {
     return {
       status: "server_info",
@@ -2029,6 +2033,8 @@ export class VoiceAssistantWebSocketServer {
         agentCleanCut: true,
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
+        // COMPAT(betaChannelManagement): added in v1.6.5, remove after 2027-09-27.
+        betaChannelManagement: this.supportsBetaChannelManagement(),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
         workspaceCreatedAt: true,
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.

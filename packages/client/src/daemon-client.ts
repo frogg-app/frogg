@@ -153,6 +153,9 @@ import type {
   DaemonUpdateChannel,
   DaemonUpdateCheckResponse,
   DaemonUpdateGetStatusResponse,
+  DaemonBetaChannelGetStatusResponse,
+  DaemonBetaChannelInstallResponse,
+  DaemonBetaChannelUninstallResponse,
   DaemonUpdateStartResponse,
   DiagnosticsResponse,
   AgentRewindResponseMessage,
@@ -219,6 +222,11 @@ import type {
   BrowserAutomationExecuteRequest,
   BrowserAutomationExecuteResponse,
 } from "@frogg/protocol/browser-automation/rpc-schemas";
+
+export type DaemonBetaChannelStatusPayload = DaemonBetaChannelGetStatusResponse["payload"];
+export type DaemonBetaChannelRunStartPayload =
+  | DaemonBetaChannelInstallResponse["payload"]
+  | DaemonBetaChannelUninstallResponse["payload"];
 
 export interface Logger {
   debug(obj: object, msg?: string): void;
@@ -5213,6 +5221,47 @@ export class DaemonClient {
     });
   }
 
+  /** Side-by-side beta daemon on this host: installed/running state and the newest beta release. */
+  async getBetaChannelStatus(requestId?: string): Promise<DaemonBetaChannelStatusPayload> {
+    this.requireBetaChannelManagementSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.get_status.response">({
+      requestId,
+      message: { type: "daemon.beta_channel.get_status.request" },
+      timeout: 60_000,
+    });
+  }
+
+  /**
+   * Installs or updates the beta daemon (newest beta, or `version`). Returns once the run
+   * is accepted; follow `daemon.beta_channel.run.progress` and `.run.completed`.
+   */
+  async installBetaChannel(
+    options: { version?: string; requestId?: string } = {},
+  ): Promise<DaemonBetaChannelRunStartPayload> {
+    this.requireBetaChannelManagementSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.install.response">({
+      requestId: options.requestId,
+      message: {
+        type: "daemon.beta_channel.install.request",
+        ...(options.version ? { version: options.version } : {}),
+      },
+    });
+  }
+
+  /** Removes the beta daemon; `purge` also deletes its state directory. */
+  async uninstallBetaChannel(
+    options: { purge?: boolean; requestId?: string } = {},
+  ): Promise<DaemonBetaChannelRunStartPayload> {
+    this.requireBetaChannelManagementSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.uninstall.response">({
+      requestId: options.requestId,
+      message: {
+        type: "daemon.beta_channel.uninstall.request",
+        ...(options.purge ? { purge: true } : {}),
+      },
+    });
+  }
+
   async connectHub(
     hubUrl: string,
     token: string,
@@ -6261,6 +6310,13 @@ export class DaemonClient {
     // COMPAT(hubRelationship): added in v0.1.X, drop the gate when floor >= v0.1.X.
     if (this.lastServerInfoMessage?.features?.hubRelationship !== true) {
       throw new Error("Update the host to use Hub relationship management.");
+    }
+  }
+
+  private requireBetaChannelManagementSupport(): void {
+    // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
+    if (this.lastServerInfoMessage?.features?.betaChannelManagement !== true) {
+      throw new Error("Update the host to manage the beta daemon from the app.");
     }
   }
 
