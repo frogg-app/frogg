@@ -1,4 +1,5 @@
 import type { DesignLayout } from "../slots";
+import { FocusAgentCards } from "./focus-agent-cards";
 import { FocusHome } from "./focus-home";
 import { FocusSidebar } from "./focus-sidebar";
 
@@ -6,4 +7,5 @@ import { FocusSidebar } from "./focus-sidebar";
 export const focusLayout: DesignLayout = {
   sidebar: FocusSidebar,
   home: FocusHome,
+  conversationTop: FocusAgentCards,
 };

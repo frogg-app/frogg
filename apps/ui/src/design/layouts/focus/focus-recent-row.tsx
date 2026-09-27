@@ -53,8 +53,9 @@ export const FocusRecentRow = memo(function FocusRecentRow({
           )}
           {status.diff ? (
             <Text style={styles.diffText} numberOfLines={1}>
-              <Text style={styles.sep}>{" · "}</Text>
-              <Text style={styles.additions}>{`+${status.diff.additions}`}</Text>{" "}
+              <Text style={styles.sep}>{"\u00A0·\u00A0"}</Text>
+              <Text style={styles.additions}>{`+${status.diff.additions}`}</Text>
+              {"\u00A0"}
               <Text style={styles.deletions}>{`−${status.diff.deletions}`}</Text>
             </Text>
           ) : null}

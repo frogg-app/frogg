@@ -98,7 +98,8 @@ const UNCHECKED = { checked: false } as const;
 
 const styles = StyleSheet.create((theme) => ({
   card: {
-    width: "100%",
+    // Held in to the composer card's edges rather than the column's.
+    marginHorizontal: theme.spacing[4],
     gap: theme.spacing[2],
     paddingTop: theme.spacing[2],
   },

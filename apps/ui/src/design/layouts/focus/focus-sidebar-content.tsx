@@ -21,7 +21,7 @@ import { openHostSettings } from "@/navigation/settings-navigation";
 import { useHostRuntimeConnectionStatus } from "@/runtime/host-runtime";
 import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
 import { usePanelStore } from "@/stores/panel-store";
-import type { Agent } from "@/stores/session-store";
+import { useSessionStore, type Agent } from "@/stores/session-store";
 import type { Theme } from "@/styles/theme";
 import {
   buildHostSessionsRoute,
@@ -168,6 +168,10 @@ function FocusRecentList({
   const hydrated = useFocusHasHydratedAgents(serverId);
   const agentRoute = parseHostAgentRouteFromPathname(pathname);
   const workspaceRoute = parseHostWorkspaceRouteFromPathname(pathname);
+  // On a workspace route the workspace screen reports which of its agents has focus.
+  const focusedAgentId = useSessionStore((state) =>
+    serverId ? (state.sessions[serverId]?.focusedAgentId ?? null) : null,
+  );
   const handleOpen = useCallback(
     (agent: Agent) => {
       if (!serverId) return;
@@ -185,7 +189,11 @@ function FocusRecentList({
     );
   }
   return (
-    <ScrollView style={styles.list} contentContainerStyle={styles.listContent}>
+    <ScrollView
+      style={styles.list}
+      contentContainerStyle={styles.listContent}
+      testID="focus-recent-list"
+    >
       {agents.map((agent) => (
         <FocusRecentRow
           key={agent.id}
@@ -193,7 +201,9 @@ function FocusRecentList({
           workspace={agent.workspaceId ? workspaces.get(agent.workspaceId) : undefined}
           selected={
             agentRoute?.agentId === agent.id ||
-            (workspaceRoute !== null && workspaceRoute.workspaceId === agent.workspaceId)
+            (workspaceRoute !== null &&
+              workspaceRoute.workspaceId === agent.workspaceId &&
+              focusedAgentId === agent.id)
           }
           onOpen={handleOpen}
         />

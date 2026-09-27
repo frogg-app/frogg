@@ -140,7 +140,7 @@ const styles = StyleSheet.create((theme) => ({
     flexWrap: "wrap",
     alignItems: "center",
     gap: theme.spacing[1],
-    paddingHorizontal: theme.spacing[1],
+    paddingHorizontal: theme.spacing[3],
   },
   chip: {
     flexDirection: "row",
