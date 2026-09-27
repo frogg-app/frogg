@@ -18,10 +18,7 @@ import type {
   ViewStyle,
 } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import {
-  buttonIconSize,
-  type ButtonControlSize,
-} from "@/components/ui/control-geometry";
+import { buttonIconSize, type ButtonControlSize } from "@/components/ui/control-geometry";
 import { buttonText, buttonTreatment } from "@/components/ui/button-treatment";
 import { controlGeometryOf, designThemeOf } from "@/components/ui/design-surface";
 import type { Theme } from "@/styles/theme";

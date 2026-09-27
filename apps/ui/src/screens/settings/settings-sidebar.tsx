@@ -264,75 +264,75 @@ function SettingsSidebarFooter() {
 }
 
 const sidebarStyles = StyleSheet.create((theme, rt) => ({
-    desktopContainer: {
-      width: SETTINGS_DESKTOP_SIDEBAR_WIDTH,
-      borderRightWidth: 1,
-      borderRightColor: theme.colors.border,
-      backgroundColor: theme.colors.surfaceSidebar,
-      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).desktopContainer,
-    },
-    scrollBody: {
-      flex: 1,
-    },
-    mobileContainer: {
-      paddingVertical: theme.spacing[2],
-      paddingHorizontal: theme.spacing[2],
-    },
-    list: {
-      paddingVertical: theme.spacing[2],
-      paddingHorizontal: theme.spacing[2],
-      gap: theme.spacing[1],
-      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).list,
-    },
-    mobileList: {
-      paddingVertical: theme.spacing[2],
-      paddingHorizontal: theme.spacing[2],
-      gap: theme.spacing[1],
-      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).mobileList,
-    },
-    item: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing[2],
-      minHeight: 36,
-      paddingVertical: theme.spacing[2],
-      paddingHorizontal: theme.spacing[2],
-      borderRadius: theme.borderRadius.lg,
-      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).item,
-    },
-    itemHovered: {
-      backgroundColor: theme.colors.surfaceSidebarHover,
-    },
-    itemSelected: {
-      backgroundColor: theme.colors.surfaceSidebarHover,
-      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).itemSelected,
-    },
-    label: {
-      fontSize: theme.fontSize.base,
-      color: theme.colors.foregroundMuted,
-      fontWeight: theme.fontWeight.normal,
-      flex: 1,
-      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).label,
-    },
-    footer: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing[2],
-      paddingVertical: theme.spacing[3],
-      paddingHorizontal: theme.spacing[4],
-    },
-    footerName: {
-      fontSize: theme.fontSize.sm,
-      fontWeight: theme.fontWeight.medium,
-      color: theme.colors.foreground,
-      flexShrink: 1,
-    },
-    footerVersion: {
-      fontSize: theme.fontSize.sm,
-      color: theme.colors.foregroundMuted,
-    },
-    labelSelected: {
-      color: theme.colors.foreground,
-      ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).labelSelected,
-    },
+  desktopContainer: {
+    width: SETTINGS_DESKTOP_SIDEBAR_WIDTH,
+    borderRightWidth: 1,
+    borderRightColor: theme.colors.border,
+    backgroundColor: theme.colors.surfaceSidebar,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).desktopContainer,
+  },
+  scrollBody: {
+    flex: 1,
+  },
+  mobileContainer: {
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
+  },
+  list: {
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
+    gap: theme.spacing[1],
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).list,
+  },
+  mobileList: {
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
+    gap: theme.spacing[1],
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).mobileList,
+  },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+    minHeight: 36,
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
+    borderRadius: theme.borderRadius.lg,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).item,
+  },
+  itemHovered: {
+    backgroundColor: theme.colors.surfaceSidebarHover,
+  },
+  itemSelected: {
+    backgroundColor: theme.colors.surfaceSidebarHover,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).itemSelected,
+  },
+  label: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.foregroundMuted,
+    fontWeight: theme.fontWeight.normal,
+    flex: 1,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).label,
+  },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+    paddingVertical: theme.spacing[3],
+    paddingHorizontal: theme.spacing[4],
+  },
+  footerName: {
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
+    color: theme.colors.foreground,
+    flexShrink: 1,
+  },
+  footerVersion: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.foregroundMuted,
+  },
+  labelSelected: {
+    color: theme.colors.foreground,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).labelSelected,
+  },
 }));

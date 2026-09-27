@@ -244,40 +244,40 @@ const styles = StyleSheet.create((theme) => ({
 }));
 
 const formInputStyles = StyleSheet.create((theme, rt) => ({
-    chrome: {
-      ...controlGeometryOf(theme, rt.themeName).fieldSurface,
-    },
-    chromeSm: {
-      ...controlGeometryOf(theme, rt.themeName).fieldControlSm,
-    },
-    chromeMd: {
-      ...controlGeometryOf(theme, rt.themeName).fieldControlMd,
-    },
-    controlRest: {
-      ...controlGeometryOf(theme, rt.themeName).controlRest,
-    },
-    controlHover: {
-      ...controlGeometryOf(theme, rt.themeName).controlHover,
-    },
-    controlActive: {
-      ...controlGeometryOf(theme, rt.themeName).controlActive,
-    },
-    controlDisabled: {
-      ...controlGeometryOf(theme, rt.themeName).controlDisabled,
-    },
-    input: {
-      flex: 1,
-      minWidth: 0,
-      color: theme.colors.foreground,
-      paddingHorizontal: 0,
-      paddingVertical: 0,
-      outlineColor: "transparent",
-      outlineWidth: 0,
-    },
-    inputSm: {
-      ...controlGeometryOf(theme, rt.themeName).fieldTextSm,
-    },
-    inputMd: {
-      ...controlGeometryOf(theme, rt.themeName).fieldTextMd,
-    },
+  chrome: {
+    ...controlGeometryOf(theme, rt.themeName).fieldSurface,
+  },
+  chromeSm: {
+    ...controlGeometryOf(theme, rt.themeName).fieldControlSm,
+  },
+  chromeMd: {
+    ...controlGeometryOf(theme, rt.themeName).fieldControlMd,
+  },
+  controlRest: {
+    ...controlGeometryOf(theme, rt.themeName).controlRest,
+  },
+  controlHover: {
+    ...controlGeometryOf(theme, rt.themeName).controlHover,
+  },
+  controlActive: {
+    ...controlGeometryOf(theme, rt.themeName).controlActive,
+  },
+  controlDisabled: {
+    ...controlGeometryOf(theme, rt.themeName).controlDisabled,
+  },
+  input: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.foreground,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    outlineColor: "transparent",
+    outlineWidth: 0,
+  },
+  inputSm: {
+    ...controlGeometryOf(theme, rt.themeName).fieldTextSm,
+  },
+  inputMd: {
+    ...controlGeometryOf(theme, rt.themeName).fieldTextMd,
+  },
 }));

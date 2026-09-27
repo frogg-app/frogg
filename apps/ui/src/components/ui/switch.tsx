@@ -115,29 +115,29 @@ export function Switch({
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
-    switchControl: {
-      ...controlGeometryOf(theme, rt.themeName).switchControl,
-    },
-    switchTrack: {
-      width: switchGeometry.trackWidth,
-      height: switchGeometry.trackHeight,
-      borderRadius: switchGeometry.trackHeight / 2,
-      padding: (switchGeometry.trackHeight - switchGeometry.thumbSize) / 2,
-      justifyContent: "center",
-    },
-    switchThumb: {
-      width: switchGeometry.thumbSize,
-      height: switchGeometry.thumbSize,
-      borderRadius: switchGeometry.thumbSize / 2,
-    },
-    thumb: {
-      shadowColor: "rgba(0, 0, 0, 0.25)",
-      shadowOffset: { width: 0, height: 1 },
-      shadowRadius: 2,
-      shadowOpacity: 1,
-      elevation: 2,
-    },
-    disabled: {
-      opacity: theme.opacity[50],
-    },
+  switchControl: {
+    ...controlGeometryOf(theme, rt.themeName).switchControl,
+  },
+  switchTrack: {
+    width: switchGeometry.trackWidth,
+    height: switchGeometry.trackHeight,
+    borderRadius: switchGeometry.trackHeight / 2,
+    padding: (switchGeometry.trackHeight - switchGeometry.thumbSize) / 2,
+    justifyContent: "center",
+  },
+  switchThumb: {
+    width: switchGeometry.thumbSize,
+    height: switchGeometry.thumbSize,
+    borderRadius: switchGeometry.thumbSize / 2,
+  },
+  thumb: {
+    shadowColor: "rgba(0, 0, 0, 0.25)",
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    shadowOpacity: 1,
+    elevation: 2,
+  },
+  disabled: {
+    opacity: theme.opacity[50],
+  },
 }));

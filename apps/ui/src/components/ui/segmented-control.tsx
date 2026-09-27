@@ -4,10 +4,7 @@ import type { StyleProp, TextStyle, ViewStyle } from "react-native";
 import type { TextFragment, ViewFragment } from "@/styles/style-fragment";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { controlGeometryOf, designThemeOf } from "@/components/ui/design-surface";
-import {
-  segmentedIconSize,
-  type SegmentedControlSize,
-} from "@/components/ui/control-geometry";
+import { segmentedIconSize, type SegmentedControlSize } from "@/components/ui/control-geometry";
 import type { Theme } from "@/styles/theme";
 
 type SegmentedControlIconRenderer = (props: { color: string; size: number }) => ReactNode;

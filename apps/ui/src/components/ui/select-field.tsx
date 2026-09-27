@@ -342,49 +342,49 @@ export function SelectField<TValue>({
 }
 
 const styles = StyleSheet.create((theme, rt) => ({
-    trigger: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing[2],
-      ...controlGeometryOf(theme, rt.themeName).fieldSurface,
-    },
-    triggerSm: {
-      ...controlGeometryOf(theme, rt.themeName).fieldControlSm,
-    },
-    triggerMd: {
-      ...controlGeometryOf(theme, rt.themeName).fieldControlMd,
-    },
-    controlRest: {
-      ...controlGeometryOf(theme, rt.themeName).controlRest,
-    },
-    controlHover: {
-      ...controlGeometryOf(theme, rt.themeName).controlHover,
-    },
-    controlActive: {
-      ...controlGeometryOf(theme, rt.themeName).controlActive,
-    },
-    controlDisabled: {
-      ...controlGeometryOf(theme, rt.themeName).controlDisabled,
-    },
-    triggerText: {
-      flex: 1,
-      minWidth: 0,
-      color: theme.colors.foreground,
-    },
-    placeholderText: {
-      flex: 1,
-      minWidth: 0,
-      color: theme.colors.foregroundMuted,
-    },
-    triggerTextSm: {
-      ...controlGeometryOf(theme, rt.themeName).fieldTextSm,
-    },
-    triggerTextMd: {
-      ...controlGeometryOf(theme, rt.themeName).fieldTextMd,
-    },
-    spinnerSlot: {
-      flexShrink: 0,
-      width: ICON_SIZE.md,
-      alignItems: "center",
-    },
+  trigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+    ...controlGeometryOf(theme, rt.themeName).fieldSurface,
+  },
+  triggerSm: {
+    ...controlGeometryOf(theme, rt.themeName).fieldControlSm,
+  },
+  triggerMd: {
+    ...controlGeometryOf(theme, rt.themeName).fieldControlMd,
+  },
+  controlRest: {
+    ...controlGeometryOf(theme, rt.themeName).controlRest,
+  },
+  controlHover: {
+    ...controlGeometryOf(theme, rt.themeName).controlHover,
+  },
+  controlActive: {
+    ...controlGeometryOf(theme, rt.themeName).controlActive,
+  },
+  controlDisabled: {
+    ...controlGeometryOf(theme, rt.themeName).controlDisabled,
+  },
+  triggerText: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.foreground,
+  },
+  placeholderText: {
+    flex: 1,
+    minWidth: 0,
+    color: theme.colors.foregroundMuted,
+  },
+  triggerTextSm: {
+    ...controlGeometryOf(theme, rt.themeName).fieldTextSm,
+  },
+  triggerTextMd: {
+    ...controlGeometryOf(theme, rt.themeName).fieldTextMd,
+  },
+  spinnerSlot: {
+    flexShrink: 0,
+    width: ICON_SIZE.md,
+    alignItems: "center",
+  },
 }));
