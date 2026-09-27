@@ -2,7 +2,7 @@ import { ChevronDown, ChevronRight, FileDiff, GitBranch } from "lucide-react-nat
 import { useCallback, useState, type ReactNode } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { useIsCompactFormFactor } from "@/constants/layout";
+import { MAX_CONTENT_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
 import { navigateToWorkspace } from "@/stores/navigation-active-workspace-store";
 import type { Theme } from "@/styles/theme";
 import { formatDuration, formatTimeAgo } from "@/utils/time";
@@ -58,7 +58,7 @@ export function MonoConversationTop({ serverId, agentId }: { serverId: string; a
   return (
     <View style={styles.wrap} testID="mono-conversation-top">
       <View style={styles.card}>
-        <Header row={row} open={open} onToggle={toggle} />
+        <Header row={row} open={open} onToggle={toggle} compact={compact} />
         {open ? <Details row={row} /> : null}
       </View>
     </View>
@@ -69,7 +69,17 @@ function toggleStyle({ hovered }: PressableStateCallbackType & { hovered?: boole
   return [styles.headerToggle, hovered && styles.headerHovered];
 }
 
-function Header({ row, open, onToggle }: { row: MonoChatRow; open: boolean; onToggle: () => void }) {
+function Header({
+  row,
+  open,
+  onToggle,
+  compact,
+}: {
+  row: MonoChatRow;
+  open: boolean;
+  onToggle: () => void;
+  compact: boolean;
+}) {
   const openChanges = useCallback(() => {
     if (!row.workspaceId) return;
     navigateToWorkspace({
@@ -89,7 +99,7 @@ function Header({ row, open, onToggle }: { row: MonoChatRow; open: boolean; onTo
         testID="mono-details-toggle"
       >
         {open ? DOWN_ICON : RIGHT_ICON}
-        <Text style={styles.headerTitle}>{COPY.title}</Text>
+        {compact ? null : <Text style={styles.headerTitle}>{COPY.title}</Text>}
         <MonoText tone="faint">{row.shortId}</MonoText>
         {open ? null : <StatusLabel bucket={row.bucket} />}
       </Pressable>
@@ -160,7 +170,7 @@ const styles = StyleSheet.create((theme) => ({
   },
   card: {
     width: "100%",
-    maxWidth: 1040,
+    maxWidth: MAX_CONTENT_WIDTH,
     alignSelf: "center",
     borderRadius: 8,
     borderWidth: 1,

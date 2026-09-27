@@ -37,6 +37,9 @@ const COPY = { find: "Find…", overview: "Overview", changes: "Changes" };
 export function MonoTopBar() {
   const compact = useIsCompactFormFactor();
   const route = useMonoRoute();
+  // On a phone a chat already has the workspace header and tab row; a third bar would crowd the
+  // conversation, so the dashboard header shows only on dashboard pages there.
+  if (compact && route.workspace) return null;
   return (
     <View style={styles.root} testID="mono-top-bar">
       {compact ? <CompactHeader route={route} /> : <DesktopHeader route={route} />}
