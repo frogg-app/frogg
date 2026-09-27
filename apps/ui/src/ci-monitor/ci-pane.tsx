@@ -42,6 +42,8 @@ import {
 } from "./model";
 import { useCiNow, useCiRuns, type CiRunsState } from "./use-ci-runs";
 import { useCiJobLogToChat, type CiJobLogToChat } from "./use-ci-job-log-to-chat";
+import { panelListItemChrome, panelMetaText } from "@/workspace/panel-chrome";
+import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 /** How a job row attaches its log to the focused chat; null where that is not possible. */
 const CiJobLogContext = createContext<CiJobLogToChat | null>(null);
@@ -286,6 +288,7 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
     .filter(Boolean)
     .join(" · ");
   const started = run.startedAt === null ? null : formatRunStart(run.startedAt, now);
+  const metaDataSet = usePanelMetaDataSet();
   return (
     <View style={styles.run} testID="ci-run">
       <Pressable onPress={toggle} style={runHeaderStyle} accessibilityRole="button">
@@ -293,7 +296,11 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
         <View style={styles.runText}>
           <Text style={styles.runTitle} numberOfLines={1}>
             {run.pipeline}
-            {run.number !== null ? <Text style={styles.runNumber}> #{run.number}</Text> : null}
+            {run.number !== null ? (
+              <Text style={styles.runNumber} dataSet={metaDataSet}>
+                {" "}#{run.number}
+              </Text>
+            ) : null}
           </Text>
           <View
             style={styles.runMeta}
@@ -302,11 +309,16 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
             <View style={styles.runMetaIcon}>
               <CiProviderIcon provider={run.provider} size={ICON_SIZE.xs} />
             </View>
-            <Text style={styles.runMetaText} numberOfLines={1}>
+            <Text style={styles.runMetaText} numberOfLines={1} dataSet={metaDataSet}>
               {meta}
             </Text>
             {started ? (
-              <Text style={styles.runStarted} numberOfLines={1} testID="ci-run-started">
+              <Text
+                style={styles.runStarted}
+                numberOfLines={1}
+                testID="ci-run-started"
+                dataSet={metaDataSet}
+              >
                 {started}
               </Text>
             ) : null}
@@ -572,6 +584,7 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     paddingBottom: theme.spacing[2],
+    ...panelListItemChrome(theme),
   },
   runHeader: {
     flexDirection: "row",
@@ -594,6 +607,7 @@ const styles = StyleSheet.create((theme) => ({
   runNumber: {
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foregroundMuted,
+    ...panelMetaText(theme),
   },
   runMeta: {
     flexDirection: "row",
@@ -610,11 +624,13 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
     fontVariant: ["tabular-nums"],
+    ...panelMetaText(theme),
   },
   runMetaText: {
     flexShrink: 1,
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
+    ...panelMetaText(theme),
   },
   runBar: {
     paddingHorizontal: theme.spacing[3],

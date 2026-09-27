@@ -15,6 +15,8 @@ import type { WorkspacePaneContentModel } from "@/screens/workspace/workspace-pa
 import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-types";
 import type { SplitPane } from "@/stores/workspace-layout-store";
 import type { WorkspaceTab } from "@/workspace-tabs/model";
+import type { Theme } from "@/styles/theme";
+import { panelHeaderEdge } from "@/workspace/panel-chrome";
 import { WindowChromeRegion, WindowChromeSafeArea } from "@/utils/desktop-window";
 
 interface ExplorerSidebarDockProps {
@@ -159,6 +161,11 @@ export function ExplorerSidebarDock({
   );
 }
 
+function explorerDividerChrome(theme: Theme) {
+  const edge = panelHeaderEdge(theme);
+  return edge.borderBottomWidth === 0 ? { height: 0 } : { backgroundColor: edge.borderBottomColor };
+}
+
 const styles = StyleSheet.create((theme) => ({
   dock: {
     flex: 1,
@@ -178,6 +185,7 @@ const styles = StyleSheet.create((theme) => ({
     left: 0,
     height: theme.borderWidth[1],
     backgroundColor: theme.colors.border,
+    ...explorerDividerChrome(theme),
   },
   content: {
     flex: 1,

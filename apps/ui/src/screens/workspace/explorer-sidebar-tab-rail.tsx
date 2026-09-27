@@ -49,6 +49,7 @@ import {
 import { panelSupportsHost } from "@/panels/panel-manifest";
 import type { PanelIconProps } from "@/panels/panel-registry";
 import { SPACING, type Theme } from "@/styles/theme";
+import { panelTabChrome } from "@/workspace/panel-chrome";
 import type { SurfaceBackdrop } from "@/styles/surface-backdrop";
 import {
   HorizontalScrollBoundaryShades,
@@ -519,6 +520,15 @@ export function ExplorerSidebarTabRail({
   );
 }
 
+function tabChrome(theme: Theme) {
+  return panelTabChrome(theme, {
+    radius: theme.borderRadius.md,
+    hovered: theme.colors.interactionHighlight,
+    active: theme.colors.interactionHighlight,
+    activeUnfocused: theme.colors.interactionHighlight,
+  });
+}
+
 const styles = StyleSheet.create((theme) => ({
   track: {
     minWidth: 0,
@@ -551,18 +561,15 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     userSelect: "none",
+    ...tabChrome(theme).tab,
   },
   labelSlot: {
     alignSelf: "stretch",
     overflow: "hidden",
     justifyContent: "center",
   },
-  tabHovered: {
-    backgroundColor: theme.colors.interactionHighlight,
-  },
-  tabActive: {
-    backgroundColor: theme.colors.interactionHighlight,
-  },
+  tabHovered: tabChrome(theme).hovered,
+  tabActive: tabChrome(theme).active,
   tabLabel: {
     // Absolute so the label keeps its natural width while the slot around it animates.
     position: "absolute",
@@ -572,10 +579,9 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     userSelect: "none",
+    ...tabChrome(theme).label,
   },
-  tabLabelActive: {
-    color: theme.colors.foreground,
-  },
+  tabLabelActive: tabChrome(theme).labelActive,
   tabDragging: {
     opacity: 0.3,
   },

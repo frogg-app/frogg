@@ -30,6 +30,8 @@ import {
 } from "@/git/file-header-presentation";
 import type { ParsedDiffFile } from "@/git/use-diff-query";
 import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
+import { panelMetaText } from "@/workspace/panel-chrome";
+import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 export interface FileHeaderProps {
   file: ParsedDiffFile;
@@ -249,6 +251,7 @@ export const FileHeader = memo(function FileHeader({
   );
   const fileName = fileNameForPath(file.path);
   const nameStyle = fileHeaderNameStyle(showsBodyState, hover.isHovered);
+  const metaDataSet = usePanelMetaDataSet();
   const changeIcon = <FileChangeIcon change={fileChange(file)} />;
   const content = (
     <View
@@ -265,7 +268,7 @@ export const FileHeader = memo(function FileHeader({
           {fileName}
         </Text>
         {showDir ? (
-          <Text style={styles.directory} numberOfLines={1}>
+          <Text style={styles.directory} numberOfLines={1} dataSet={metaDataSet}>
             {directorySuffix(file.path)}
           </Text>
         ) : (
@@ -445,6 +448,7 @@ const styles = StyleSheet.create((theme) => ({
     flex: 1,
     minWidth: 0,
     userSelect: "none",
+    ...panelMetaText(theme),
   },
   directorySpacer: { flex: 1, minWidth: 0 },
   tooltip: { color: theme.colors.popoverForeground, fontSize: theme.fontSize.base },

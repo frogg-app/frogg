@@ -2,10 +2,16 @@ import type { Theme } from "@/styles/theme";
 import { hexColorWithAlpha } from "@/utils/color";
 import type { DiffCell, DiffPalette } from "./types";
 
+/** File and hunk header band: a tinted strip in the refresh directions, flush in Focus. */
+function diffHeaderSurface(theme: Theme): string {
+  const variant = theme.design.variant;
+  return variant === "current" || variant === "focus" ? theme.colors.surface0 : theme.colors.surface1;
+}
+
 export function createDiffPalette(theme: Theme): DiffPalette {
   return {
     surface: theme.colors.surface0,
-    headerSurface: theme.colors.surface0,
+    headerSurface: diffHeaderSurface(theme),
     border: theme.colors.border,
     foreground: theme.colors.foreground,
     foregroundMuted: theme.colors.foregroundMuted,
@@ -15,7 +21,8 @@ export function createDiffPalette(theme: Theme): DiffPalette {
     deletionBackground: hexColorWithAlpha(theme.colors.statusDanger, 0.1),
     emptyBackground: theme.colors.surface0,
     selection: theme.colors.terminal.blue,
-    headerActiveSurface: theme.colors.surface1,
+    headerActiveSurface:
+      theme.design.variant === "current" ? theme.colors.surface1 : theme.colors.surface2,
     headerBorder: theme.colors.borderAccent,
     statusSuccess: theme.colors.statusSuccess,
     statusDanger: theme.colors.statusDanger,

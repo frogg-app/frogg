@@ -19,6 +19,7 @@ import {
   smallIconButtonChromeFrameSize,
 } from "@/components/ui/icon-button-chrome";
 import { WORKSPACE_PANE_TRAILING_GLYPH_RAIL } from "@/components/tree-primitives";
+import { panelHeaderEdge } from "@/workspace/panel-chrome";
 
 const PaneToolbarAccessoryContext = createContext<ReactNode>(null);
 
@@ -211,6 +212,7 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surface0,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
+    ...panelHeaderEdge(theme),
     flexShrink: 0,
   },
   controls: {
