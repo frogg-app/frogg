@@ -803,7 +803,7 @@ export const AgentTimelineItemPayloadSchema: z.ZodType<AgentTimelineItem, unknow
     status: z.enum(["loading", "completed"]),
     trigger: z.enum(["auto", "manual"]).optional(),
     preTokens: z.number().optional(),
-    // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27. Present when
+    // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27. Present when
     // this marker is a clean cut rather than a provider compaction; older clients
     // strip it and render an ordinary compaction marker.
     cleanCut: z
@@ -2217,7 +2217,7 @@ export const AgentProviderAccountTransferResponseMessageSchema = z.object({
 });
 
 /**
- * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
  *
  * Ends the agent's provider conversation and starts a fresh one in the same
  * workspace. A cheap model on the current provider summarises the chat side of
@@ -2238,7 +2238,7 @@ export const AgentCleanCutRequestMessageSchema = z.object({
   model: z.string().nullable().optional(),
   thinkingOptionId: z.string().nullable().optional(),
   /**
-   * COMPAT(agentCleanCutSubagents): added in v1.7.0. Also cut the agent's idle
+   * COMPAT(agentCleanCutSubagents): added in v1.6.2. Also cut the agent's idle
    * Frogg child agents (recursively), each from its own timeline and on its
    * own provider and model. Omitted means true; false cuts only this agent.
    */
@@ -2247,7 +2247,7 @@ export const AgentCleanCutRequestMessageSchema = z.object({
 });
 
 /**
- * COMPAT(agentCleanCutSubagents): added in v1.7.0. One child agent's outcome.
+ * COMPAT(agentCleanCutSubagents): added in v1.6.2. One child agent's outcome.
  * `skipped` covers a running child, a closed one, or one with nothing new to
  * summarise; `failed` carries the error. Neither fails the parent's cut.
  */
@@ -2262,7 +2262,7 @@ export const AgentCleanCutSubagentResultSchema = z.object({
 export const AgentCleanCutResponseMessageSchema = z.object({
   type: z.literal("agent.clean_cut.response"),
   payload: AgentActionResponsePayloadSchema.extend({
-    // COMPAT(agentCleanCutSubagents): added in v1.7.0. Present when the
+    // COMPAT(agentCleanCutSubagents): added in v1.6.2. Present when the
     // parent's cut succeeded and its child agents were considered.
     subagents: z.array(AgentCleanCutSubagentResultSchema).optional(),
   }),
@@ -4072,7 +4072,7 @@ export const ServerInfoStatusPayloadSchema = z
         // agent.provider_account.transfer is available and this daemon's build of
         // the agent's provider can relocate a session between config directories.
         agentProviderAccountTransfer: z.boolean().optional(),
-        // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+        // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         // agent.clean_cut is available.
         agentCleanCut: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.

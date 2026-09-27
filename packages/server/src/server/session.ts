@@ -1058,7 +1058,7 @@ export class Session {
           this.assertTransferableProviderAccount(agentId, providerAccountId);
           await agentManager.transferAgentProviderAccount(agentId, providerAccountId);
         },
-        // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+        // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         cleanCut: async (agentId, target, { includeSubagents }) => {
           this.assertCleanCutTarget(agentId, target);
           const deps = {
@@ -1068,7 +1068,7 @@ export class Session {
             logger: this.sessionLogger,
           };
           await runCleanCut(deps, { agentId, target });
-          // COMPAT(agentCleanCutSubagents): added in v1.7.0, remove after 2027-09-27.
+          // COMPAT(agentCleanCutSubagents): added in v1.6.2, remove after 2027-09-27.
           return includeSubagents ? runCleanCutForSubagents(deps, agentId) : undefined;
         },
       },
@@ -1962,7 +1962,7 @@ export class Session {
    * the provider's primary config directory, which always exists.
    */
   /**
-   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27. A clean cut
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27. A clean cut
    * may land on another provider, so a named account is checked against the
    * provider the agent is moving to, not the one it runs on today.
    */
@@ -2672,7 +2672,7 @@ export class Session {
     }
   }
 
-  // COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+  // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
   private dispatchAgentCleanCutMessage(msg: SessionInboundMessage): Promise<void> | undefined {
     return msg.type === "agent.clean_cut.request"
       ? this.agentConfigSession.handleAgentCleanCutRequest(msg)

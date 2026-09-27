@@ -1,5 +1,5 @@
 /**
- * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
  *
  * The divider a clean cut leaves in the timeline. Everything above it belongs
  * to a provider conversation that has ended: the user can still read it, the

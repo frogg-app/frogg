@@ -180,7 +180,7 @@ export function ProviderAccountPill({
     [agentId, client, t],
   );
 
-  // COMPAT(agentCleanCut): added in v1.7.0. The cheap way to move: a summary
+  // COMPAT(agentCleanCut): added in v1.6.2. The cheap way to move: a summary
   // instead of the whole context.
   const cleanCut = useCleanCut(serverId, agentId);
   const runCleanCut = cleanCut.run;

@@ -273,7 +273,7 @@ export const zhCN: TranslationResources = {
       warning: "缓存已过期：发送将重新计费 {{tokens}} 个输入 token",
       warningUnknown: "缓存已过期：发送将重新发送整个对话",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "干净切换",
       pending: "正在总结...",
@@ -405,7 +405,7 @@ export const zhCN: TranslationResources = {
         failed: "无法转移该对话",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "切换提供商",
       body: "通过干净切换将此对话从 {{from}} 移到 {{to}}（{{model}}）？",
@@ -421,7 +421,7 @@ export const zhCN: TranslationResources = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "干净切换：新对话",
       copyId: "复制上一个对话 ID",

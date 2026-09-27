@@ -1489,7 +1489,7 @@ export class AgentManager {
   }
 
   /**
-   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
    *
    * Ends the agent's provider conversation and starts a new, empty one in its
    * place, optionally on another provider, account or model. The Frogg timeline
@@ -1526,7 +1526,7 @@ export class AgentManager {
   }
 
   /**
-   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
    *
    * The summary a clean cut left for the next user message, or null once a user
    * message has followed it. Read from the timeline rather than held in memory

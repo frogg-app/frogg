@@ -277,7 +277,7 @@ export const ru: TranslationResources = {
       warning: "Кэш истёк: отправка снова оплатит {{tokens}} входных токенов",
       warningUnknown: "Кэш истёк: отправка заново отправит весь разговор",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "Чистый срез",
       pending: "Составляем сводку...",
@@ -411,7 +411,7 @@ export const ru: TranslationResources = {
         failed: "Не удалось перенести разговор",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "Сменить провайдера",
       body: "Перенести этот разговор из {{from}} в {{to}} ({{model}}) через чистый срез?",
@@ -427,7 +427,7 @@ export const ru: TranslationResources = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "Чистый срез: новый разговор",
       copyId: "Копировать ID прежнего разговора",

@@ -769,7 +769,7 @@ export interface CompactionItem {
   status: "loading" | "completed";
   trigger?: "auto" | "manual";
   preTokens?: number;
-  /** COMPAT(agentCleanCut): added in v1.7.0. Set when this marker is a clean cut. */
+  /** COMPAT(agentCleanCut): added in v1.6.2. Set when this marker is a clean cut. */
   cleanCut?: CleanCutMarker;
 }
 

@@ -1666,7 +1666,7 @@ function ComposerContentImpl({
     ],
   );
 
-  // COMPAT(agentCleanCut): added in v1.7.0. Cut to a fresh conversation, then
+  // COMPAT(agentCleanCut): added in v1.6.2. Cut to a fresh conversation, then
   // send what was typed into it: the daemon puts the summary ahead of it.
   const cleanCut = useCleanCut(serverId, agentId);
   const runCleanCut = cleanCut.run;

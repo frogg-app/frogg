@@ -1565,7 +1565,7 @@ export const AgentControls = memo(function AgentControls({
     () => buildAgentProviderModels(agent?.provider, models),
     [agent?.provider, models],
   );
-  // COMPAT(agentCleanCut): added in v1.7.0. A daemon that can make a clean cut
+  // COMPAT(agentCleanCut): added in v1.6.2. A daemon that can make a clean cut
   // can move this conversation to any enabled provider, so the picker lists
   // them all; picking another provider's model asks before cutting.
   const canCleanCutProvider = useCleanCut(serverId, agentId).available;

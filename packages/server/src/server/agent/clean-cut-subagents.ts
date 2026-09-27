@@ -1,5 +1,5 @@
 /**
- * COMPAT(agentCleanCutSubagents): added in v1.7.0, remove after 2027-09-27.
+ * COMPAT(agentCleanCutSubagents): added in v1.6.2, remove after 2027-09-27.
  *
  * A clean cut of an orchestrator also cuts the Frogg child agents it spawned
  * (agents labelled with its id, and their children in turn), each summarised

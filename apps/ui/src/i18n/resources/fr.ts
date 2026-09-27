@@ -280,7 +280,7 @@ export const fr: TranslationResources = {
       warning: "Cache expiré : l'envoi refacture {{tokens}} jetons d'entrée",
       warningUnknown: "Cache expiré : l'envoi renvoie toute la conversation",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "Coupure nette",
       pending: "Résumé en cours...",
@@ -414,7 +414,7 @@ export const fr: TranslationResources = {
         failed: "Impossible de déplacer la conversation",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "Changer de fournisseur",
       body: "Déplacer cette conversation de {{from}} vers {{to}} ({{model}}) avec une coupure nette ?",
@@ -430,7 +430,7 @@ export const fr: TranslationResources = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "Coupure nette : nouvelle conversation",
       copyId: "Copier l'ID de la conversation précédente",

@@ -277,7 +277,7 @@ export const ja: TranslationResources = {
       warning: "キャッシュ期限切れ: 送信すると入力 {{tokens}} トークンが再課金されます",
       warningUnknown: "キャッシュ期限切れ: 送信すると会話全体が再送されます",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "クリーンカット",
       pending: "要約中...",
@@ -411,7 +411,7 @@ export const ja: TranslationResources = {
         failed: "会話を移動できませんでした",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "プロバイダーを切り替え",
       body: "クリーンカットでこの会話を {{from}} から {{to}}（{{model}}）へ移動しますか？",
@@ -427,7 +427,7 @@ export const ja: TranslationResources = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "クリーンカット: 新しい会話",
       copyId: "以前の会話IDをコピー",

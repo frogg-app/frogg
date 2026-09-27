@@ -1,5 +1,5 @@
 /**
- * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
  *
  * Automatic clean cut before the daemon resumes an agent on its own: after a
  * usage limit resets, and after a daemon restart cut a turn off. Resuming a

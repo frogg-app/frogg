@@ -276,7 +276,7 @@ export const ko: TranslationResources = {
       warning: "캐시 만료: 전송하면 입력 토큰 {{tokens}}개가 다시 청구됩니다",
       warningUnknown: "캐시 만료: 전송하면 대화 전체가 다시 전송됩니다",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "클린 컷",
       pending: "요약 중...",
@@ -409,7 +409,7 @@ export const ko: TranslationResources = {
         failed: "대화를 옮기지 못했습니다",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "제공자 전환",
       body: "클린 컷으로 이 대화를 {{from}}에서 {{to}}({{model}})(으)로 옮길까요?",
@@ -425,7 +425,7 @@ export const ko: TranslationResources = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "클린 컷: 새 대화",
       copyId: "이전 대화 ID 복사",

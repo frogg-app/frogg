@@ -43,7 +43,7 @@ export interface ProviderAccountTransferModalProps {
   onClose: () => void;
   onConfirm: (optionId: string) => void;
   /**
-   * COMPAT(agentCleanCut): added in v1.7.0. Moves with a summary instead of the
+   * COMPAT(agentCleanCut): added in v1.6.2. Moves with a summary instead of the
    * whole context. Absent on a daemon that cannot make a clean cut.
    */
   onCleanCut?: (optionId: string) => void;

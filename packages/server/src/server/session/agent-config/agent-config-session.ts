@@ -42,7 +42,7 @@ export interface AgentConfigOperations {
    */
   transferProviderAccount(agentId: string, providerAccountId: string | null): Promise<void>;
   /**
-   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
    * Summarises the conversation and restarts it fresh, optionally on another
    * provider, account or model.
    */
@@ -181,7 +181,7 @@ export class AgentConfigSession {
   }
 
   /**
-   * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
    *
    * Replaces the provider session like a transfer does, so it shares the same
    * envelope. The response waits for the summary, which is the slow part.

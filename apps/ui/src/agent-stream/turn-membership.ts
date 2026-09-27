@@ -23,7 +23,7 @@ export function continuesResponse(previous: StreamItem | null, next: StreamItem 
 }
 
 /**
- * COMPAT(agentCleanCut): added in v1.7.0. A clean cut ends the conversation
+ * COMPAT(agentCleanCut): added in v1.6.2. A clean cut ends the conversation
  * above it, so it never belongs to the turn before it: that turn's footer stays
  * above the line.
  */

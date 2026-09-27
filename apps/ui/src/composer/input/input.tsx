@@ -186,7 +186,7 @@ export interface MessageInputProps {
    */
   staleContextWarning?: StaleContextWarning | null;
   /**
-   * COMPAT(agentCleanCut): added in v1.7.0. Offered beside the stale-context
+   * COMPAT(agentCleanCut): added in v1.6.2. Offered beside the stale-context
    * warning: summarise the conversation into a fresh one, then send this
    * message there instead of re-sending the whole context. Null hides it.
    */
@@ -2073,7 +2073,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     fontSize: theme.fontSize.sm,
     lineHeight: theme.fontSize.sm * 1.4,
   },
-  // COMPAT(agentCleanCut): added in v1.7.0. A link, not a button: the amber
+  // COMPAT(agentCleanCut): added in v1.6.2. A link, not a button: the amber
   // line already says why it is there.
   cleanCutLink: {
     color: theme.colors.palette.amber[500],

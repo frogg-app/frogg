@@ -1,5 +1,5 @@
 /**
- * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
  *
  * A clean cut ends the agent's provider conversation and starts a fresh one
  * primed with a cheap summary of it. It can be started from the composer's

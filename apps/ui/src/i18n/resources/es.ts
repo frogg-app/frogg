@@ -279,7 +279,7 @@ export const es: TranslationResources = {
       warning: "Caché caducada: enviar vuelve a cobrar {{tokens}} tokens de entrada",
       warningUnknown: "Caché caducada: enviar reenvía toda la conversación",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "Corte limpio",
       pending: "Resumiendo...",
@@ -412,7 +412,7 @@ export const es: TranslationResources = {
         failed: "No se pudo mover la conversación",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "Cambiar de proveedor",
       body: "¿Mover esta conversación de {{from}} a {{to}} ({{model}}) con un corte limpio?",
@@ -428,7 +428,7 @@ export const es: TranslationResources = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "Corte limpio: nueva conversación",
       copyId: "Copiar ID de la conversación anterior",

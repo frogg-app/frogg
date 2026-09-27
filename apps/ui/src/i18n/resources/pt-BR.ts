@@ -278,7 +278,7 @@ export const ptBR: TranslationResources = {
       warning: "Cache expirado: enviar recobra {{tokens}} tokens de entrada",
       warningUnknown: "Cache expirado: enviar reenvia toda a conversa",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "Corte limpo",
       pending: "Resumindo...",
@@ -411,7 +411,7 @@ export const ptBR: TranslationResources = {
         failed: "Não foi possível mover a conversa",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "Trocar de provedor",
       body: "Mover esta conversa de {{from}} para {{to}} ({{model}}) com um corte limpo?",
@@ -427,7 +427,7 @@ export const ptBR: TranslationResources = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "Corte limpo: nova conversa",
       copyId: "Copiar ID da conversa anterior",

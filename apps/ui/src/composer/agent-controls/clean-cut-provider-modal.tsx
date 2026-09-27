@@ -1,5 +1,5 @@
 /**
- * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
  *
  * Confirms moving a live conversation to another provider. A provider cannot
  * resume another provider's transcript, so the only way across is a clean cut:

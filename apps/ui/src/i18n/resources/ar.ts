@@ -276,7 +276,7 @@ export const ar: TranslationResources = {
       warning: "انتهت صلاحية التخزين المؤقت: الإرسال يعيد احتساب {{tokens}} من رموز الإدخال",
       warningUnknown: "انتهت صلاحية التخزين المؤقت: الإرسال يعيد إرسال المحادثة كاملة",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "قطع نظيف",
       pending: "جارٍ التلخيص...",
@@ -409,7 +409,7 @@ export const ar: TranslationResources = {
         failed: "تعذّر نقل المحادثة",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "تبديل المزوّد",
       body: "هل تنقل هذه المحادثة من {{from}} إلى {{to}} ({{model}}) بقطع نظيف؟",
@@ -425,7 +425,7 @@ export const ar: TranslationResources = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "قطع نظيف: محادثة جديدة",
       copyId: "نسخ معرّف المحادثة السابقة",

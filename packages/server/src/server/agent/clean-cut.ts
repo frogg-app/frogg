@@ -1,5 +1,5 @@
 /**
- * COMPAT(agentCleanCut): added in v1.7.0, remove after 2027-09-27.
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
  *
  * A clean cut ends an agent's provider conversation and starts a fresh one in
  * the same workspace, primed with a short summary instead of the full history.

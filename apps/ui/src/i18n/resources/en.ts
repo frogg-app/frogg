@@ -276,7 +276,7 @@ export const en = {
       warning: "Cache expired: sending re-bills {{tokens}} input tokens",
       warningUnknown: "Cache expired: sending re-sends the whole conversation",
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       action: "Clean cut",
       pending: "Summarising...",
@@ -410,7 +410,7 @@ export const en = {
         failed: "Couldn't move the conversation",
       },
     },
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCutProvider: {
       title: "Switch provider",
       body: "Move this conversation from {{from}} to {{to}} ({{model}}) with a clean cut?",
@@ -426,7 +426,7 @@ export const en = {
     },
   },
   agentStream: {
-    // COMPAT(agentCleanCut): added in v1.7.0.
+    // COMPAT(agentCleanCut): added in v1.6.2.
     cleanCut: {
       title: "Clean cut: new conversation",
       copyId: "Copy previous conversation ID",
