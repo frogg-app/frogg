@@ -3160,6 +3160,16 @@ export const es: TranslationResources = {
       developer: "Desarrollador",
       about: "Acerca de",
     },
+    navGroups: {
+      app: "Aplicación",
+      voice: "Voz y alertas",
+      system: "Sistema",
+    },
+    hostGroups: {
+      workspace: "Espacio de trabajo",
+      access: "Acceso",
+      daemon: "Daemon",
+    },
     notifications: {
       title: "Notificaciones",
       permission: "Permiso de notificaciones",
@@ -3188,6 +3198,8 @@ export const es: TranslationResources = {
       terminals: "Terminals",
       host: "Resumen",
       deploy: "Implementar",
+      automation: "Automatización",
+      updates: "Actualizaciones",
     },
     metadataGeneration: {
       title: "Generación de metadatos",
@@ -3762,6 +3774,12 @@ export const es: TranslationResources = {
         noInterfaces: "No se encontraron interfaces.",
         unavailable: "Este daemon no incluye el cliente web.",
         loadFailed: "No se pudo leer el estado del cliente web: {{error}}",
+      },
+      automation: {
+        unavailable: "Conéctate a este host para gestionar su automatización.",
+      },
+      terminalAgents: {
+        title: "Agentes de terminal",
       },
       resources: {
         title: "Recursos",

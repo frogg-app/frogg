@@ -3084,6 +3084,16 @@ export const ar: TranslationResources = {
       developer: "المطوّر",
       about: "عن",
     },
+    navGroups: {
+      app: "التطبيق",
+      voice: "الصوت والتنبيهات",
+      system: "النظام",
+    },
+    hostGroups: {
+      workspace: "مساحة العمل",
+      access: "الوصول",
+      daemon: "الخدمة الخلفية",
+    },
     notifications: {
       title: "الإشعارات",
       permission: "إذن الإشعارات",
@@ -3112,6 +3122,8 @@ export const ar: TranslationResources = {
       terminals: "Terminals",
       host: "نظرة عامة",
       deploy: "النشر",
+      automation: "الأتمتة",
+      updates: "التحديثات",
     },
     metadataGeneration: {
       title: "إنشاء البيانات الوصفية",
@@ -3674,6 +3686,12 @@ export const ar: TranslationResources = {
         noInterfaces: "لم يتم العثور على واجهات.",
         unavailable: "لا يتضمن هذا الخادم الخلفي عميل الويب.",
         loadFailed: "تعذّرت قراءة حالة عميل الويب: {{error}}",
+      },
+      automation: {
+        unavailable: "اتصل بهذا المضيف لإدارة الأتمتة الخاصة به.",
+      },
+      terminalAgents: {
+        title: "وكلاء الطرفية",
       },
       resources: {
         title: "الموارد",

@@ -3115,6 +3115,16 @@ export const en = {
       developer: "Developer",
       about: "About",
     },
+    navGroups: {
+      app: "App",
+      voice: "Voice & alerts",
+      system: "System",
+    },
+    hostGroups: {
+      workspace: "Workspace",
+      access: "Access",
+      daemon: "Daemon",
+    },
     notifications: {
       title: "Notifications",
       permission: "Notification permission",
@@ -3143,6 +3153,8 @@ export const en = {
       terminals: "Terminals",
       host: "Overview",
       deploy: "Deploy",
+      automation: "Automation",
+      updates: "Updates",
     },
     metadataGeneration: {
       title: "Metadata generation",
@@ -3706,6 +3718,12 @@ export const en = {
         noInterfaces: "No interfaces found.",
         unavailable: "This daemon has no web client build.",
         loadFailed: "Couldn't read the web client status: {{error}}",
+      },
+      automation: {
+        unavailable: "Connect to this host to manage its automation.",
+      },
+      terminalAgents: {
+        title: "Terminal agents",
       },
       resources: {
         title: "Resources",

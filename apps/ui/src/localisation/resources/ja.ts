@@ -3130,6 +3130,16 @@ export const ja: TranslationResources = {
       developer: "開発者",
       about: "アプリ情報",
     },
+    navGroups: {
+      app: "アプリ",
+      voice: "音声とアラート",
+      system: "システム",
+    },
+    hostGroups: {
+      workspace: "ワークスペース",
+      access: "アクセス",
+      daemon: "デーモン",
+    },
     notifications: {
       title: "通知",
       permission: "通知の権限",
@@ -3158,6 +3168,8 @@ export const ja: TranslationResources = {
       terminals: "ターミナル",
       host: "概要",
       deploy: "デプロイ",
+      automation: "自動化",
+      updates: "アップデート",
     },
     metadataGeneration: {
       title: "メタデータ生成",
@@ -3725,6 +3737,12 @@ export const ja: TranslationResources = {
         noInterfaces: "インターフェースが見つかりません。",
         unavailable: "このデーモンには Web クライアントが含まれていません。",
         loadFailed: "Web クライアントの状態を読み取れませんでした: {{error}}",
+      },
+      automation: {
+        unavailable: "自動化を管理するにはこのホストに接続してください。",
+      },
+      terminalAgents: {
+        title: "ターミナルエージェント",
       },
       resources: {
         title: "リソース",

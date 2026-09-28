@@ -3038,6 +3038,16 @@ export const zhCN: TranslationResources = {
       developer: "开发者",
       about: "关于",
     },
+    navGroups: {
+      app: "应用",
+      voice: "语音和提醒",
+      system: "系统",
+    },
+    hostGroups: {
+      workspace: "工作区",
+      access: "访问",
+      daemon: "守护进程",
+    },
     notifications: {
       title: "通知",
       permission: "通知权限",
@@ -3066,6 +3076,8 @@ export const zhCN: TranslationResources = {
       terminals: "Terminals",
       host: "概览",
       deploy: "部署",
+      automation: "自动化",
+      updates: "更新",
     },
     metadataGeneration: {
       title: "元数据生成",
@@ -3618,6 +3630,12 @@ export const zhCN: TranslationResources = {
         noInterfaces: "未找到网络接口。",
         unavailable: "此守护进程不包含 Web 客户端。",
         loadFailed: "无法读取 Web 客户端状态：{{error}}",
+      },
+      automation: {
+        unavailable: "连接到此主机以管理其自动化。",
+      },
+      terminalAgents: {
+        title: "终端代理",
       },
       resources: {
         title: "资源",

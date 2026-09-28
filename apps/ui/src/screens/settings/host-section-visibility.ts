@@ -42,6 +42,17 @@ export function useHiddenHostSections(serverId: string | null): readonly HostSec
   return useMemo(() => resolveHiddenHostSections(daemonHiddenSections), [daemonHiddenSections]);
 }
 
+/**
+ * Pairing a device was its own section before it folded into Devices; a daemon
+ * that still hides `pair-device` hides the pairing card there instead.
+ */
+export function useHostPairingHidden(serverId: string | null): boolean {
+  const { config } = useDaemonConfig(serverId);
+  const hidden: readonly string[] =
+    config?.hostSettings?.hiddenSections ?? brand.hostSettings.hiddenSections;
+  return hidden.includes("pair-device");
+}
+
 export function useVisibleHostSectionItems(serverId: string | null): HostSectionItem[] {
   const hidden = useHiddenHostSections(serverId);
   const developerOptions = useSettings((settings) => settings.developerOptions) || isBetaBuild();

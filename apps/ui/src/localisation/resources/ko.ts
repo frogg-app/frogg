@@ -3108,6 +3108,16 @@ export const ko: TranslationResources = {
       developer: "개발자",
       about: "정보",
     },
+    navGroups: {
+      app: "앱",
+      voice: "음성 및 알림",
+      system: "시스템",
+    },
+    hostGroups: {
+      workspace: "작업 공간",
+      access: "액세스",
+      daemon: "데몬",
+    },
     notifications: {
       title: "알림",
       permission: "알림 권한",
@@ -3136,6 +3146,8 @@ export const ko: TranslationResources = {
       terminals: "터미널",
       host: "개요",
       deploy: "배포",
+      automation: "자동화",
+      updates: "업데이트",
     },
     metadataGeneration: {
       title: "메타데이터 생성",
@@ -3699,6 +3711,12 @@ export const ko: TranslationResources = {
         noInterfaces: "인터페이스를 찾을 수 없습니다.",
         unavailable: "이 데몬에는 웹 클라이언트가 포함되어 있지 않습니다.",
         loadFailed: "웹 클라이언트 상태를 읽지 못했습니다: {{error}}",
+      },
+      automation: {
+        unavailable: "자동화를 관리하려면 이 호스트에 연결하세요.",
+      },
+      terminalAgents: {
+        title: "터미널 에이전트",
       },
       resources: {
         title: "리소스",

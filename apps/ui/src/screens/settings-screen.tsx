@@ -56,11 +56,11 @@ import {
   type SupportedLocale,
 } from "@/localisation/locales";
 import {
-  HostPairDevicePage,
+  HostAutomationPage,
   HostDevicesPage,
   HostAgentsPage,
   HostSettingsPage,
-  HostDeployPage,
+  HostUpdatesPage,
   HostProvidersPage,
   HostTerminalsPage,
 } from "@/screens/settings/host-page";
@@ -99,12 +99,12 @@ function renderHostSettingsContent(
   onHostRemoved: () => void,
 ): ReactNode {
   switch (view.section) {
-    case "deploy":
-      return <HostDeployPage serverId={view.serverId} />;
+    case "updates":
+      return <HostUpdatesPage serverId={view.serverId} />;
+    case "automation":
+      return <HostAutomationPage serverId={view.serverId} />;
     case "projects":
       return <ProjectsScreen serverId={view.serverId} />;
-    case "pair-device":
-      return <HostPairDevicePage serverId={view.serverId} />;
     case "devices":
       return <HostDevicesPage serverId={view.serverId} />;
     case "security":
@@ -968,7 +968,8 @@ const styles = StyleSheet.create((theme) => ({
     paddingTop: theme.spacing[6],
     width: "100%",
     maxWidth: 720,
-    alignSelf: "center",
+    // Anchored beside the nav rather than floating mid-pane on a wide modal.
+    alignSelf: "flex-start",
   },
   themeTrigger: {
     flexDirection: "row",

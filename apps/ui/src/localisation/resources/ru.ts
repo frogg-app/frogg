@@ -3135,6 +3135,16 @@ export const ru: TranslationResources = {
       developer: "Разработчик",
       about: "О приложении",
     },
+    navGroups: {
+      app: "Приложение",
+      voice: "Голос и оповещения",
+      system: "Система",
+    },
+    hostGroups: {
+      workspace: "Рабочее пространство",
+      access: "Доступ",
+      daemon: "Демон",
+    },
     notifications: {
       title: "Уведомления",
       permission: "Разрешение на уведомления",
@@ -3163,6 +3173,8 @@ export const ru: TranslationResources = {
       terminals: "Терминалы",
       host: "Обзор",
       deploy: "Развертывание",
+      automation: "Автоматизация",
+      updates: "Обновления",
     },
     metadataGeneration: {
       title: "Генерация метаданных",
@@ -3738,6 +3750,12 @@ export const ru: TranslationResources = {
         noInterfaces: "Интерфейсы не найдены.",
         unavailable: "В этом демоне нет сборки веб-клиента.",
         loadFailed: "Не удалось получить состояние веб-клиента: {{error}}",
+      },
+      automation: {
+        unavailable: "Подключитесь к этому хосту, чтобы управлять автоматизацией.",
+      },
+      terminalAgents: {
+        title: "Агенты терминала",
       },
       resources: {
         title: "Ресурсы",
