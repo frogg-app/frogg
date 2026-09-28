@@ -1,7 +1,7 @@
 import { matchesBrand } from "@frogg/branding/identity";
 import { brand } from "@frogg/branding";
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
-import { existsSync, readFileSync, unlinkSync } from "node:fs";
+import { closeSync, existsSync, openSync, readFileSync, unlinkSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { loadConfig, resolveFroggHome, spawnProcess } from "@frogg/server";
@@ -170,6 +170,7 @@ export function spawnForegroundForwardingSignals(
 const DETACHED_STARTUP_GRACE_MS = 1200;
 const PID_POLL_INTERVAL_MS = 100;
 const DAEMON_LOG_FILENAME = "daemon.log";
+const DAEMON_STARTUP_ERR_FILENAME = "daemon-startup.err";
 const DAEMON_PID_FILENAME = "frogg.pid";
 
 export const DEFAULT_STOP_TIMEOUT_MS = 15_000;
@@ -696,6 +697,15 @@ export async function startLocalDaemonDetached(
 
   const froggHome = runtime.resolveHome(childEnv);
   const logPath = path.join(froggHome, DAEMON_LOG_FILENAME);
+  // Startup failures (a held PID lock, bad config) go to stderr before the daemon log opens,
+  // so capture it: daemon.log alone would show the last healthy run's output.
+  const startupErrPath = path.join(froggHome, DAEMON_STARTUP_ERR_FILENAME);
+  let startupErrFd: number | null = null;
+  try {
+    startupErrFd = openSync(startupErrPath, "w");
+  } catch {
+    startupErrFd = null;
+  }
   const child = runtime.spawnDetached(
     process.execPath,
     [...process.execArgv, daemonRunnerEntry, ...buildRunnerArgs(options)],
@@ -703,9 +713,10 @@ export async function startLocalDaemonDetached(
       detached: true,
       envMode: "internal",
       env: childEnv,
-      stdio: ["ignore", "ignore", "ignore"],
+      stdio: ["ignore", "ignore", startupErrFd ?? "ignore"],
     },
   );
+  if (startupErrFd !== null) closeSync(startupErrFd);
 
   child.unref();
 
@@ -735,10 +746,12 @@ export async function startLocalDaemonDetached(
     const reason = startup.error
       ? startup.error.message
       : `exit code ${startup.code ?? "unknown"}${startup.signal ? ` (${startup.signal})` : ""}`;
+    const startupErrors = tailFile(startupErrPath);
     const recentLogs = tailFile(logPath);
     throw new Error(
       [
         `Daemon failed to start in background (${reason}).`,
+        startupErrors ? `Startup errors:\n${startupErrors}` : null,
         recentLogs ? `Recent daemon logs:\n${recentLogs}` : null,
       ]
         .filter(Boolean)

@@ -1,6 +1,6 @@
 import { brand, brandIdentity } from "@frogg/branding";
 import { matchesBrand } from "@frogg/branding/identity";
-import { open, readFile, stat, unlink, mkdir, utimes } from "node:fs/promises";
+import { link, open, readFile, stat, unlink, mkdir, utimes, writeFile } from "node:fs/promises";
 import type { FileHandle } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -148,26 +148,37 @@ async function clearExistingPidLock(
   return "cleared";
 }
 
+async function readPidLockWithRetry(pidPath: string): Promise<PidLockInfo | null> {
+  for (let attempt = 0; attempt < PID_LOCK_READ_RETRY_ATTEMPTS; attempt += 1) {
+    const lock = await readPidLock(pidPath);
+    if (lock || !existsSync(pidPath)) {
+      return lock;
+    }
+    if (attempt < PID_LOCK_READ_RETRY_ATTEMPTS - 1) {
+      await new Promise((resolve) => setTimeout(resolve, PID_LOCK_READ_RETRY_DELAY_MS));
+    }
+  }
+  return null;
+}
+
+// Publish the lock with its content in one step: a crash can never leave an empty lock file,
+// and link() fails with EEXIST when another daemon got there first.
 async function writeNewPidLock(pidPath: string, lockInfo: PidLockInfo): Promise<void> {
-  let fd;
+  const tmpPath = `${pidPath}.${lockInfo.pid}.tmp`;
+  await writeFile(tmpPath, JSON.stringify(lockInfo));
   try {
-    fd = await open(pidPath, "wx");
-    await fd.write(JSON.stringify(lockInfo));
+    await link(tmpPath, pidPath);
   } catch (error) {
     if (!isErrnoException(error) || error.code !== "EEXIST") {
       throw error;
     }
-
-    const raceLock = await readPidLock(pidPath);
+    const raceLock = await readPidLockWithRetry(pidPath);
     if (raceLock) {
-      throw new PidLockError(
-        `Another ${brand.name} daemon is already running (PID ${raceLock.pid})`,
-        raceLock,
-      );
+      throw createLockHeldError(raceLock);
     }
     throw new PidLockError("Failed to acquire PID lock due to race condition");
   } finally {
-    await fd?.close();
+    await unlink(tmpPath).catch(() => {});
   }
 }
 
@@ -183,8 +194,12 @@ export async function acquirePidLock(
     await mkdir(froggHome, { recursive: true });
   }
 
-  // Try to read existing lock
-  const existingLock = await readPidLock(pidPath);
+  // Try to read existing lock. A lock file that stays unreadable (empty or corrupt, left by a
+  // crash mid-write in an older build) would otherwise wedge every start until removed by hand.
+  const existingLock = await readPidLockWithRetry(pidPath);
+  if (!existingLock && existsSync(pidPath)) {
+    await unlink(pidPath).catch(() => {});
+  }
 
   // Check if existing lock is stale
   const lockOwnerPid = resolveOwnerPid(options?.ownerPid);
