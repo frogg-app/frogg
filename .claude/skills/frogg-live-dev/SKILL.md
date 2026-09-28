@@ -5,7 +5,10 @@ description: Run a feature branch end to end with real providers before it ships
 
 # Live development with `npm run dev:live`
 
-A beta is for release validation, not the first time a change runs. Test locally first.
+Frogg runs **Development → Beta → Stable**. This skill is the Development stage: local
+`dev:live` builds, no CI, nothing published. Beta is CI-built with auto-update (`main`);
+Stable moves only by explicit promotion. A beta is for release validation, not the first time
+a change runs. Test locally first.
 
 ## Pick the rung
 
@@ -78,6 +81,6 @@ command that names the path — it matches the shell and kills it.
 
 ## Before handing off
 
-- Say which rung you used and what you actually exercised (real provider run, host added, etc.).
+- Development is done only when the change works on a rung that exercises it. Say which rung you used and what you actually exercised (real provider run, host added, etc.).
 - If the change needs packaging/update validation, say so explicitly — that still needs a beta.
 - Shipping, if asked, follows the normal flow (main → beta). Never touch `stable`.

@@ -69,11 +69,15 @@ export function text(t, x, y, value, opts = {}) {
     italic = false,
   } = opts;
   const size = Math.round(baseSize * TYPE_SCALE * 10) / 10;
-  return `<text x="${x}" y="${y}" font-size="${size}" font-weight="${weight}" fill="${color}" text-anchor="${anchor}"${mono ? ` font-family="${MONO}"` : ""}${italic ? ' font-style="italic"' : ""}>${esc(value)}</text>`;
+  return `<text x="${x}" y="${y}" font-size="${size}" font-weight="${weight}" fill="${color}" text-anchor="${anchor}"${
+    mono ? ` font-family="${MONO}"` : ""
+  }${italic ? ' font-style="italic"' : ""}>${esc(value)}</text>`;
 }
 
 export function lane(t, { y, x1, x2, color, dashed = false }) {
-  return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-opacity="0.8"${dashed ? ' stroke-dasharray="6 6"' : ""}/>`;
+  return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="${color}" stroke-width="4" stroke-linecap="round" stroke-opacity="0.8"${
+    dashed ? ' stroke-dasharray="6 6"' : ""
+  }/>`;
 }
 
 export function node(t, { x, y, color, label, below = true, hollow = false }) {
@@ -83,7 +87,11 @@ export function node(t, { x, y, color, label, below = true, hollow = false }) {
   return (
     circle +
     (label
-      ? text(t, x, below ? y + 26 : y - 16, label, { size: 12, mono: true, anchor: "middle" })
+      ? text(t, x, below ? y + 26 : y - 16, label, {
+          size: 12,
+          mono: true,
+          anchor: "middle",
+        })
       : "")
   );
 }
@@ -143,5 +151,11 @@ export function pill(t, { x, y, label, color, width }) {
   const w = width ?? pillWidth(label);
   // Fonts differ between renderers; pin the label to the pill so it never overflows.
   const size = Math.round(11.5 * TYPE_SCALE * 10) / 10;
-  return `<rect x="${x}" y="${y - 17}" width="${w}" height="28" rx="14" fill="${t.card}" stroke="${color}"/><text x="${x + 12}" y="${y + 2}" font-size="${size}" font-weight="600" fill="${color}" textLength="${w - 24}" lengthAdjust="spacingAndGlyphs">${esc(label)}</text>`;
+  return `<rect x="${x}" y="${y - 17}" width="${w}" height="28" rx="14" fill="${
+    t.card
+  }" stroke="${color}"/><text x="${x + 12}" y="${
+    y + 2
+  }" font-size="${size}" font-weight="600" fill="${color}" textLength="${
+    w - 24
+  }" lengthAdjust="spacingAndGlyphs">${esc(label)}</text>`;
 }

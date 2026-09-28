@@ -20,11 +20,15 @@ function fit(t, x, y, value, { size = 12, weight = 400, color = t.text, mono = f
   const estimate = String(value).length * px * (mono ? 0.6 : 0.55);
   const squeeze =
     max && estimate > max ? ` textLength="${max}" lengthAdjust="spacingAndGlyphs"` : "";
-  return `<text x="${x}" y="${y}" font-size="${px}" font-weight="${weight}" fill="${color}"${mono ? ` font-family="${MONO}"` : ""}${squeeze}>${esc(value)}</text>`;
+  return `<text x="${x}" y="${y}" font-size="${px}" font-weight="${weight}" fill="${color}"${
+    mono ? ` font-family="${MONO}"` : ""
+  }${squeeze}>${esc(value)}</text>`;
 }
 
 function path(t, d, { color = t.muted, marker = "muted", dashed = false, width = 2 } = {}) {
-  return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}"${dashed ? ' stroke-dasharray="7 5"' : ""}${marker ? ` marker-end="url(#arrow-${marker})"` : ""}/>`;
+  return `<path d="${d}" fill="none" stroke="${color}" stroke-width="${width}"${
+    dashed ? ' stroke-dasharray="7 5"' : ""
+  }${marker ? ` marker-end="url(#arrow-${marker})"` : ""}/>`;
 }
 
 function box(t, { x, y, w, h, color = t.border, fill = t.card, opacity = 1 }) {
@@ -60,9 +64,24 @@ function devFlow(t) {
         color: t.muted,
       },
     ),
-    laneLabel(t, { y: S, title: "stable", subtitle: "ships frogg", color: t.stable }),
-    laneLabel(t, { y: M, title: "main", subtitle: "ships frogg beta", color: t.beta }),
-    laneLabel(t, { y: D, title: "development", subtitle: "local, no CI", color: t.dev }),
+    laneLabel(t, {
+      y: S,
+      title: "stable",
+      subtitle: "ships frogg",
+      color: t.stable,
+    }),
+    laneLabel(t, {
+      y: M,
+      title: "main",
+      subtitle: "ships frogg beta",
+      color: t.beta,
+    }),
+    laneLabel(t, {
+      y: D,
+      title: "development",
+      subtitle: "local, no CI",
+      color: t.dev,
+    }),
     lane(t, { y: S, x1: 200, x2: 1140, color: t.stable }),
     lane(t, { y: M, x1: 200, x2: 1140, color: t.beta }),
     // the feature branch and its local development builds
@@ -92,7 +111,11 @@ function devFlow(t) {
       color: t.beta,
       marker: "beta",
     }),
-    text(t, 880, M + 60, "works: land on main", { size: 12, color: t.beta, anchor: "end" }),
+    text(t, 880, M + 60, "works: land on main", {
+      size: 12,
+      color: t.beta,
+      anchor: "end",
+    }),
     // stable releases
     node(t, { x: 250, y: S, color: t.stable, label: "1.6.4", below: false }),
     node(t, { x: 520, y: S, color: t.stable, label: "1.6.5", below: false }),
@@ -197,14 +220,22 @@ function testLadder(t) {
       size: 14,
       weight: 600,
     }),
-    text(t, 32, 62, "Beta is for release validation through CI, not the first time a change runs.", {
-      size: 13,
-      color: t.muted,
-    }),
+    text(
+      t,
+      32,
+      62,
+      "Beta is for release validation through CI, not the first time a change runs.",
+      {
+        size: 13,
+        color: t.muted,
+      },
+    ),
     text(t, 120, 96, "RUNG", { size: 10.5, weight: 700, color: t.muted }),
     text(t, 470, 96, "WHAT RUNS", { size: 10.5, weight: 700, color: t.muted }),
     text(t, 850, 96, "USE IT FOR", { size: 10.5, weight: 700, color: t.muted }),
-    `<line x1="60" y1="${top + 38}" x2="60" y2="${top + (rows.length - 1) * step + 38}" stroke="${t.faint}" stroke-width="3"/>`,
+    `<line x1="60" y1="${top + 38}" x2="60" y2="${
+      top + (rows.length - 1) * step + 38
+    }" stroke="${t.faint}" stroke-width="3"/>`,
   ];
   rows.forEach((row, index) => {
     const y = top + index * step;
@@ -219,7 +250,13 @@ function testLadder(t) {
         color: t.bg,
         anchor: "middle",
       }),
-      fit(t, 120, y + 32, row.rung, { size: 13, weight: 700, mono: true, color, max: 320 }),
+      fit(t, 120, y + 32, row.rung, {
+        size: 13,
+        weight: 700,
+        mono: true,
+        color,
+        max: 320,
+      }),
       fit(t, 120, y + 58, `${row.beta ? "beta" : "development"} · skill: ${row.skill}`, {
         size: 11,
         color: t.muted,
@@ -281,13 +318,25 @@ function devLoop(t) {
       text(t, x, y - 8, label, { size: 10.5, weight: 700, color }),
     ].join("\n");
   const body = [
-    stage(xs[0], row1 + cardH + 22, xs[3] + cardW - xs[0], "DEVELOPMENT · LOCAL dev:live BUILDS, NO CI", t.dev),
+    stage(
+      xs[0],
+      row1 + cardH + 22,
+      xs[3] + cardW - xs[0],
+      "DEVELOPMENT · LOCAL dev:live BUILDS, NO CI",
+      t.dev,
+    ),
     stage(xs[1], row2 + cardH + 30, xs[2] + cardW - xs[1], "BETA · CI BUILDS, AUTO-UPDATE", t.beta),
     stage(xs[0], row2 + cardH + 60, cardW, "STABLE", t.stable),
-    text(t, 32, 38, "Development runs on your machine. Only a change that works moves on to beta.", {
-      size: 14,
-      weight: 600,
-    }),
+    text(
+      t,
+      32,
+      38,
+      "Development runs on your machine. Only a change that works moves on to beta.",
+      {
+        size: 14,
+        weight: 600,
+      },
+    ),
     text(
       t,
       32,
@@ -359,7 +408,9 @@ function devLoop(t) {
     // back round the loop until it works
     path(
       t,
-      `M ${xs[2] + cardW / 2} ${row1 - 4} C ${xs[2] + cardW / 2} ${row1 - 42}, ${xs[0] + cardW / 2} ${row1 - 42}, ${xs[0] + cardW / 2} ${row1 - 8}`,
+      `M ${xs[2] + cardW / 2} ${row1 - 4} C ${xs[2] + cardW / 2} ${
+        row1 - 42
+      }, ${xs[0] + cardW / 2} ${row1 - 42}, ${xs[0] + cardW / 2} ${row1 - 8}`,
       { color: t.backport, marker: "backport", dashed: true },
     ),
     text(t, (xs[0] + xs[2] + cardW) / 2, row1 - 46, "not right yet: edit again", {
@@ -401,13 +452,49 @@ function brandStreams(t) {
       size: 12,
       weight: 700,
     }),
-    box(t, { x: 16, y: 400, w: W - 32, h: 186, fill: t.upstream, opacity: 0.06 }),
-    text(t, 32, 426, "upstream  (frogg-app/frogg)", { size: 12, weight: 700, color: t.upstream }),
-    laneLabel(t, { y: FS + 8, title: "stable", subtitle: "ships Acme", color: t.stable }),
-    laneLabel(t, { y: FM + 8, title: "main", subtitle: "ships Acme Beta", color: t.beta }),
-    laneLabel(t, { y: FF + 8, title: "feature/*", subtitle: "your changes", color: t.feature }),
-    laneLabel(t, { y: UM + 8, title: "main", subtitle: "upstream/main", color: t.upstream }),
-    laneLabel(t, { y: US + 8, title: "stable", subtitle: "upstream/stable", color: t.upstream }),
+    box(t, {
+      x: 16,
+      y: 400,
+      w: W - 32,
+      h: 186,
+      fill: t.upstream,
+      opacity: 0.06,
+    }),
+    text(t, 32, 426, "upstream  (frogg-app/frogg)", {
+      size: 12,
+      weight: 700,
+      color: t.upstream,
+    }),
+    laneLabel(t, {
+      y: FS + 8,
+      title: "stable",
+      subtitle: "ships Acme",
+      color: t.stable,
+    }),
+    laneLabel(t, {
+      y: FM + 8,
+      title: "main",
+      subtitle: "ships Acme Beta",
+      color: t.beta,
+    }),
+    laneLabel(t, {
+      y: FF + 8,
+      title: "feature/*",
+      subtitle: "your changes",
+      color: t.feature,
+    }),
+    laneLabel(t, {
+      y: UM + 8,
+      title: "main",
+      subtitle: "upstream/main",
+      color: t.upstream,
+    }),
+    laneLabel(t, {
+      y: US + 8,
+      title: "stable",
+      subtitle: "upstream/stable",
+      color: t.upstream,
+    }),
     lane(t, { y: FS, x1: 220, x2: X2, color: t.stable }),
     lane(t, { y: FM, x1: 220, x2: X2, color: t.beta }),
     lane(t, { y: FF, x1: 660, x2: 890, color: t.feature, dashed: true }),
@@ -419,9 +506,27 @@ function brandStreams(t) {
     node(t, { x: 1040, y: UM, color: t.upstream, hollow: true, label: "next" }),
     node(t, { x: 260, y: US, color: t.upstream, label: "1.7.0" }),
     // brand stable and main
-    node(t, { x: 270, y: FS, color: t.stable, label: "1.7.0-acme.1", below: false }),
-    node(t, { x: 820, y: FS, color: t.stable, label: "1.8.0-acme.1", below: false }),
-    node(t, { x: 1030, y: FS, color: t.stable, label: "1.8.0-acme.2", below: false }),
+    node(t, {
+      x: 270,
+      y: FS,
+      color: t.stable,
+      label: "1.7.0-acme.1",
+      below: false,
+    }),
+    node(t, {
+      x: 820,
+      y: FS,
+      color: t.stable,
+      label: "1.8.0-acme.1",
+      below: false,
+    }),
+    node(t, {
+      x: 1030,
+      y: FS,
+      color: t.stable,
+      label: "1.8.0-acme.2",
+      below: false,
+    }),
     node(t, { x: 470, y: FM, color: t.beta, label: "1.8.0-beta.2.acme.1" }),
     node(t, { x: 750, y: FM, color: t.beta, label: "1.8.0-beta.3.acme.1" }),
     link(t, {
@@ -466,7 +571,9 @@ function brandStreams(t) {
     dot(t, { x: 700, y: FF, color: t.feature }),
     dot(t, { x: 760, y: FF, color: t.feature }),
     dot(t, { x: 830, y: FF, color: t.upstream }),
-    path(t, `M 890 ${FF} C 915 ${FF}, 920 ${FM + 40}, 920 ${FM + 12}`, { color: t.feature }),
+    path(t, `M 890 ${FF} C 915 ${FF}, 920 ${FM + 40}, 920 ${FM + 12}`, {
+      color: t.feature,
+    }),
     link(t, {
       x1: 830,
       y1: FF,
