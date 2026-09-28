@@ -2,54 +2,55 @@
 <defs>
 <marker id="arrow-stable" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4cc38a"/></marker>
 <marker id="arrow-beta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f5a524"/></marker>
+<marker id="arrow-dev" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#60a5fa"/></marker>
 <marker id="arrow-upstream" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker>
 <marker id="arrow-backport" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#e0a95b"/></marker>
 <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a3adab"/></marker>
 <marker id="arrow-danger" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f87171"/></marker>
 </defs>
 <rect width="1180" height="560" rx="16" fill="#181b1a"/>
-<text x="32" y="40" font-size="18.9" font-weight="600" fill="#f4f7f6" text-anchor="start">Pick the cheapest rung that exercises the change.</text>
-<text x="32" y="62" font-size="17.6" font-weight="400" fill="#a3adab" text-anchor="start">A beta is for release validation, not the first time a change runs.</text>
+<text x="32" y="40" font-size="18.9" font-weight="600" fill="#f4f7f6" text-anchor="start">Development: pick the cheapest local rung that exercises the change.</text>
+<text x="32" y="62" font-size="17.6" font-weight="400" fill="#a3adab" text-anchor="start">Beta is for release validation through CI, not the first time a change runs.</text>
 <text x="120" y="96" font-size="14.2" font-weight="700" fill="#a3adab" text-anchor="start">RUNG</text>
 <text x="470" y="96" font-size="14.2" font-weight="700" fill="#a3adab" text-anchor="start">WHAT RUNS</text>
 <text x="850" y="96" font-size="14.2" font-weight="700" fill="#a3adab" text-anchor="start">USE IT FOR</text>
 <line x1="60" y1="148" x2="60" y2="500" stroke="#5b6462" stroke-width="3"/>
 <rect x="100" y="110" width="1050" height="76" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
-<rect x="100" y="110" width="6" height="76" rx="3" fill="#4cc38a"/>
-<circle cx="60" cy="148" r="17" fill="#4cc38a" stroke="#181b1a" stroke-width="3"/>
+<rect x="100" y="110" width="6" height="76" rx="3" fill="#60a5fa"/>
+<circle cx="60" cy="148" r="17" fill="#60a5fa" stroke="#181b1a" stroke-width="3"/>
 <text x="60" y="155" font-size="17.6" font-weight="700" fill="#181b1a" text-anchor="middle">1</text>
-<text x="120" y="142" font-size="17.6" font-weight="700" fill="#4cc38a" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run preview</text>
-<text x="120" y="168" font-size="14.9" font-weight="400" fill="#a3adab">skill: frogg-web-debug</text>
+<text x="120" y="142" font-size="17.6" font-weight="700" fill="#60a5fa" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run preview</text>
+<text x="120" y="168" font-size="14.9" font-weight="400" fill="#a3adab">development · skill: frogg-web-debug</text>
 <text x="470" y="142" font-size="16.2" font-weight="400" fill="#f4f7f6">isolated daemon, mock provider,</text>
 <text x="470" y="166" font-size="16.2" font-weight="400" fill="#f4f7f6">seeded demo project, hot reload</text>
 <text x="850" y="142" font-size="16.2" font-weight="600" fill="#f4f7f6">UI layout, copy, styling</text>
 <text x="850" y="166" font-size="16.2" font-weight="400" fill="#a3adab">npm run shot / npm run probe</text>
 <rect x="100" y="198" width="1050" height="76" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
-<rect x="100" y="198" width="6" height="76" rx="3" fill="#4cc38a"/>
-<circle cx="60" cy="236" r="17" fill="#4cc38a" stroke="#181b1a" stroke-width="3"/>
+<rect x="100" y="198" width="6" height="76" rx="3" fill="#60a5fa"/>
+<circle cx="60" cy="236" r="17" fill="#60a5fa" stroke="#181b1a" stroke-width="3"/>
 <text x="60" y="243" font-size="17.6" font-weight="700" fill="#181b1a" text-anchor="middle">2</text>
-<text x="120" y="230" font-size="17.6" font-weight="700" fill="#4cc38a" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run dev:live</text>
-<text x="120" y="256" font-size="14.9" font-weight="400" fill="#a3adab">skill: frogg-live-dev</text>
+<text x="120" y="230" font-size="17.6" font-weight="700" fill="#60a5fa" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run dev:live</text>
+<text x="120" y="256" font-size="14.9" font-weight="400" fill="#a3adab">development · skill: frogg-live-dev</text>
 <text x="470" y="230" font-size="16.2" font-weight="400" fill="#f4f7f6">this branch's daemon, real providers,</text>
 <text x="470" y="254" font-size="16.2" font-weight="400" fill="#f4f7f6">persistent home, restarts on edits</text>
 <text x="850" y="230" font-size="16.2" font-weight="600" fill="#f4f7f6">a feature end to end</text>
 <text x="850" y="254" font-size="16.2" font-weight="400" fill="#a3adab">shot / probe --live</text>
 <rect x="100" y="286" width="1050" height="76" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
-<rect x="100" y="286" width="6" height="76" rx="3" fill="#4cc38a"/>
-<circle cx="60" cy="324" r="17" fill="#4cc38a" stroke="#181b1a" stroke-width="3"/>
+<rect x="100" y="286" width="6" height="76" rx="3" fill="#60a5fa"/>
+<circle cx="60" cy="324" r="17" fill="#60a5fa" stroke="#181b1a" stroke-width="3"/>
 <text x="60" y="331" font-size="17.6" font-weight="700" fill="#181b1a" text-anchor="middle">3</text>
-<text x="120" y="318" font-size="17.6" font-weight="700" fill="#4cc38a" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">dev:live + installed app</text>
-<text x="120" y="344" font-size="14.9" font-weight="400" fill="#a3adab">skill: frogg-live-dev</text>
+<text x="120" y="318" font-size="17.6" font-weight="700" fill="#60a5fa" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">dev:live + installed app</text>
+<text x="120" y="344" font-size="14.9" font-weight="400" fill="#a3adab">development · skill: frogg-live-dev</text>
 <text x="470" y="318" font-size="16.2" font-weight="400" fill="#f4f7f6">installed app: Add host, then</text>
 <text x="470" y="342" font-size="16.2" font-weight="400" fill="#f4f7f6">the daemon endpoint dev:live prints</text>
 <text x="850" y="318" font-size="16.2" font-weight="600" fill="#f4f7f6">daemon behaviour behind</text>
 <text x="850" y="342" font-size="16.2" font-weight="400" fill="#a3adab">the app users already run</text>
 <rect x="100" y="374" width="1050" height="76" rx="12" fill="#202423" fill-opacity="1" stroke="#343a38"/>
-<rect x="100" y="374" width="6" height="76" rx="3" fill="#4cc38a"/>
-<circle cx="60" cy="412" r="17" fill="#4cc38a" stroke="#181b1a" stroke-width="3"/>
+<rect x="100" y="374" width="6" height="76" rx="3" fill="#60a5fa"/>
+<circle cx="60" cy="412" r="17" fill="#60a5fa" stroke="#181b1a" stroke-width="3"/>
 <text x="60" y="419" font-size="17.6" font-weight="700" fill="#181b1a" text-anchor="middle">4</text>
-<text x="120" y="406" font-size="17.6" font-weight="700" fill="#4cc38a" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run dev:desktop</text>
-<text x="120" y="432" font-size="14.9" font-weight="400" fill="#a3adab">skill: frogg-dev</text>
+<text x="120" y="406" font-size="17.6" font-weight="700" fill="#60a5fa" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">npm run dev:desktop</text>
+<text x="120" y="432" font-size="14.9" font-weight="400" fill="#a3adab">development · skill: frogg-dev</text>
 <text x="470" y="406" font-size="16.2" font-weight="400" fill="#f4f7f6">Electron shell against a web</text>
 <text x="470" y="430" font-size="16.2" font-weight="400" fill="#f4f7f6">dev server; needs a display</text>
 <text x="850" y="406" font-size="16.2" font-weight="600" fill="#f4f7f6">Electron shell,</text>
@@ -59,7 +60,7 @@
 <circle cx="60" cy="500" r="17" fill="#f5a524" stroke="#181b1a" stroke-width="3"/>
 <text x="60" y="507" font-size="17.6" font-weight="700" fill="#181b1a" text-anchor="middle">5</text>
 <text x="120" y="494" font-size="17.6" font-weight="700" fill="#f5a524" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">beta build</text>
-<text x="120" y="520" font-size="14.9" font-weight="400" fill="#a3adab">skill: frogg-release</text>
+<text x="120" y="520" font-size="14.9" font-weight="400" fill="#a3adab">beta · skill: frogg-release</text>
 <text x="470" y="494" font-size="16.2" font-weight="400" fill="#f4f7f6">CI cuts X.Y.Z-beta.N on a green</text>
 <text x="470" y="518" font-size="16.2" font-weight="400" fill="#f4f7f6">push to main; install as frogg beta</text>
 <text x="850" y="494" font-size="16.2" font-weight="600" fill="#f4f7f6">packaging, installers,</text>

@@ -15,6 +15,7 @@ export const THEMES = {
     backport: "#e0a95b",
     danger: "#f87171",
     feature: "#7c8783",
+    dev: "#60a5fa",
   },
   light: {
     bg: "#ffffff",
@@ -29,6 +30,7 @@ export const THEMES = {
     backport: "#9a5b12",
     danger: "#c62828",
     feature: "#8a9491",
+    dev: "#1d6fd1",
   },
 };
 
@@ -41,7 +43,7 @@ export const esc = (value) =>
 export function svg(t, width, height, body) {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" font-family="${FONT}">
 <defs>
-${["stable", "beta", "upstream", "backport", "muted", "danger"]
+${["stable", "beta", "dev", "upstream", "backport", "muted", "danger"]
   .map(
     (name) =>
       `<marker id="arrow-${name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${t[name]}"/></marker>`,

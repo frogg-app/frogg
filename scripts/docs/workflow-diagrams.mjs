@@ -31,19 +31,20 @@ function box(t, { x, y, w, h, color = t.border, fill = t.card, opacity = 1 }) {
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="12" fill="${fill}" fill-opacity="${opacity}" stroke="${color}"/>`;
 }
 
-// 1. Upstream: a feature branch is tested locally, lands on main, ships as a beta, and reaches
-//    stable only by promotion or backport.
+// 1. Upstream: Development -> Beta -> Stable. A feature branch is built and run locally with no
+//    CI, lands on main, ships as a beta, and reaches stable only by promotion or backport.
 function devFlow(t) {
   const W = 1180;
-  const H = 580;
+  const H = 600;
   const S = 150;
   const M = 290;
+  const D = 420;
   const body = [
     text(
       t,
       32,
       40,
-      "Test on the cheapest local rung first. Work lands on main; a green push ships a beta.",
+      "Development runs locally with no CI. Work that works lands on main; a green push ships a beta.",
       {
         size: 13,
         color: t.muted,
@@ -61,29 +62,37 @@ function devFlow(t) {
     ),
     laneLabel(t, { y: S, title: "stable", subtitle: "ships frogg", color: t.stable }),
     laneLabel(t, { y: M, title: "main", subtitle: "ships frogg beta", color: t.beta }),
+    laneLabel(t, { y: D, title: "development", subtitle: "local, no CI", color: t.dev }),
     lane(t, { y: S, x1: 200, x2: 1140, color: t.stable }),
     lane(t, { y: M, x1: 200, x2: 1140, color: t.beta }),
-    // the feature branch and its local ladder
-    box(t, { x: 220, y: 362, w: 690, h: 108 }),
-    fit(t, 240, 394, "feature branch in its own worktree: test locally, cheapest rung first", {
+    // the feature branch and its local development builds
+    box(t, { x: 220, y: D - 40, w: 690, h: 108, color: t.dev }),
+    fit(t, 240, D - 8, "feature branch in its own worktree: dev:live build, cheapest rung first", {
       size: 12,
-      color: t.muted,
+      color: t.dev,
       max: 650,
     }),
     pills(t, {
       x: 240,
-      y: 440,
+      y: D + 40,
       items: [
-        ["preview", t.muted],
-        ["dev:live", t.muted],
-        ["app host", t.muted],
-        ["dev:desktop", t.muted],
+        ["preview", t.dev],
+        ["dev:live", t.dev],
+        ["app host", t.dev],
+        ["dev:desktop", t.dev],
         ["verify --changed", t.stable],
       ],
     }),
-    path(t, `M 230 ${M} C 230 330, 260 330, 260 358`),
-    path(t, `M 890 360 C 890 322, 930 322, 930 ${M + 12}`),
-    text(t, 880, 340, "land on main", { size: 12, color: t.muted, anchor: "end" }),
+    path(t, `M 230 ${M} C 230 ${M + 50}, 260 ${M + 50}, 260 ${D - 44}`, {
+      color: t.dev,
+      marker: "dev",
+    }),
+    text(t, 270, M + 60, "branch", { size: 12, color: t.dev }),
+    path(t, `M 890 ${D - 40} C 890 ${M + 32}, 930 ${M + 32}, 930 ${M + 12}`, {
+      color: t.beta,
+      marker: "beta",
+    }),
+    text(t, 880, M + 60, "works: land on main", { size: 12, color: t.beta, anchor: "end" }),
     // stable releases
     node(t, { x: 250, y: S, color: t.stable, label: "1.6.4", below: false }),
     node(t, { x: 520, y: S, color: t.stable, label: "1.6.5", below: false }),
@@ -123,7 +132,7 @@ function devFlow(t) {
     text(
       t,
       32,
-      512,
+      532,
       "CI cuts the next X.Y.Z-beta.N and builds it after every green push to main.",
       {
         size: 12.5,
@@ -132,7 +141,7 @@ function devFlow(t) {
     ),
     pills(t, {
       x: 32,
-      y: 552,
+      y: 572,
       items: [
         ["npm run release:backport", t.backport],
         ["npm run release:patch", t.stable],
@@ -143,7 +152,8 @@ function devFlow(t) {
   return svg(t, W, H, body.join("\n"));
 }
 
-// 2. The local test ladder: cheapest rung first, a beta only for what nothing local covers.
+// 2. The test ladder: development rungs run locally with no CI, cheapest first; a beta only for
+//    what nothing local covers.
 function testLadder(t) {
   const W = 1180;
   const rows = [
@@ -183,8 +193,11 @@ function testLadder(t) {
   const step = 88;
   const H = top + rows.length * step + 10;
   const body = [
-    text(t, 32, 40, "Pick the cheapest rung that exercises the change.", { size: 14, weight: 600 }),
-    text(t, 32, 62, "A beta is for release validation, not the first time a change runs.", {
+    text(t, 32, 40, "Development: pick the cheapest local rung that exercises the change.", {
+      size: 14,
+      weight: 600,
+    }),
+    text(t, 32, 62, "Beta is for release validation through CI, not the first time a change runs.", {
       size: 13,
       color: t.muted,
     }),
@@ -195,7 +208,7 @@ function testLadder(t) {
   ];
   rows.forEach((row, index) => {
     const y = top + index * step;
-    const color = row.beta ? t.beta : t.stable;
+    const color = row.beta ? t.beta : t.dev;
     body.push(
       box(t, { x: 100, y, w: 1050, h: 76 }),
       `<rect x="100" y="${y}" width="6" height="76" rx="3" fill="${color}"/>`,
@@ -207,7 +220,11 @@ function testLadder(t) {
         anchor: "middle",
       }),
       fit(t, 120, y + 32, row.rung, { size: 13, weight: 700, mono: true, color, max: 320 }),
-      fit(t, 120, y + 58, `skill: ${row.skill}`, { size: 11, color: t.muted, max: 320 }),
+      fit(t, 120, y + 58, `${row.beta ? "beta" : "development"} · skill: ${row.skill}`, {
+        size: 11,
+        color: t.muted,
+        max: 320,
+      }),
       fit(t, 470, y + 32, row.runs[0], { size: 12, max: 360 }),
       fit(t, 470, y + 56, row.runs[1], { size: 12, max: 360 }),
       fit(t, 850, y + 32, row.use[0], { size: 12, weight: 600, max: 285 }),
@@ -217,10 +234,11 @@ function testLadder(t) {
   return svg(t, W, H, body.join("\n"));
 }
 
-// 3. The inner loop (edit, run, check) and the way out of it (verify, docs, main, beta, stable).
+// 3. Development, the inner loop on your machine (edit, run, check, verify), and the way out of
+//    it (docs, main, beta, stable).
 function devLoop(t) {
   const W = 1180;
-  const H = 540;
+  const H = 600;
   const cardW = 250;
   const cardH = 146;
   const row1 = 140;
@@ -257,8 +275,16 @@ function devLoop(t) {
   };
   const right = (x, y) => path(t, `M ${x + cardW + 4} ${y} L ${x + cardW + 34} ${y}`);
   const left = (x, y) => path(t, `M ${x - 4} ${y} L ${x - 34} ${y}`);
+  const stage = (x, y, w, label, color) =>
+    [
+      `<rect x="${x}" y="${y}" width="${w}" height="3" rx="1.5" fill="${color}" fill-opacity="0.5"/>`,
+      text(t, x, y - 8, label, { size: 10.5, weight: 700, color }),
+    ].join("\n");
   const body = [
-    text(t, 32, 38, "The inner loop runs on your machine. Only a change that works leaves it.", {
+    stage(xs[0], row1 + cardH + 22, xs[3] + cardW - xs[0], "DEVELOPMENT · LOCAL dev:live BUILDS, NO CI", t.dev),
+    stage(xs[1], row2 + cardH + 30, xs[2] + cardW - xs[1], "BETA · CI BUILDS, AUTO-UPDATE", t.beta),
+    stage(xs[0], row2 + cardH + 60, cardW, "STABLE", t.stable),
+    text(t, 32, 38, "Development runs on your machine. Only a change that works moves on to beta.", {
       size: 14,
       weight: 600,
     }),
@@ -279,6 +305,7 @@ function devLoop(t) {
     }),
     card(xs[1], row1, {
       title: "Run",
+      color: t.dev,
       lines: [
         ["npm run preview", true],
         ["npm run dev:live", true],
