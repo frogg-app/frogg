@@ -3615,6 +3615,8 @@ export const ar: TranslationResources = {
           agents: "حالة الوكلاء",
           projects: "المشاريع",
           worktrees: "أشجار العمل",
+          agent_worktrees: "أشجار عمل الوكلاء",
+          provider_accounts: "حسابات المزوّدين",
           uploads: "الملفات المرفوعة",
           project_import_staging: "تجهيز استيراد المشاريع",
           tts_cache: "ذاكرة الكلام المؤقتة",

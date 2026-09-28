@@ -3665,6 +3665,8 @@ export const ja: TranslationResources = {
           agents: "エージェントの状態",
           projects: "プロジェクト",
           worktrees: "ワークツリー",
+          agent_worktrees: "エージェントのワークツリー",
+          provider_accounts: "プロバイダーアカウント",
           uploads: "アップロード",
           project_import_staging: "プロジェクトインポートの一時領域",
           tts_cache: "音声キャッシュ",

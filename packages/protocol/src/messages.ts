@@ -5641,7 +5641,7 @@ export const DaemonHostGetMetricsResponseSchema = z.object({
 });
 
 export const OwnedStorageCategorySchema = z.object({
-  /** Stable id (logs, agents, projects, worktrees, uploads, project_import_staging, tts_cache, models, daemon_versions, temp); unknown ids may appear. */
+  /** Stable id (logs, agents, projects, worktrees, agent_worktrees, provider_accounts, uploads, project_import_staging, tts_cache, models, daemon_versions, temp); unknown ids may appear. */
   id: z.string(),
   path: z.string().nullable(),
   exists: z.boolean(),

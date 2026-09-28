@@ -5754,7 +5754,8 @@ export class DaemonClient {
         type: "daemon.storage.list.request",
         ...(options?.refresh ? { refresh: true } : {}),
       },
-      timeout: options?.timeout ?? 60_000,
+      // Sizing every worktree of every known repository is disk-bound.
+      timeout: options?.timeout ?? 300_000,
     });
   }
 
@@ -5766,7 +5767,7 @@ export class DaemonClient {
     return this.sendNamespacedCorrelatedSessionRequest<"daemon.storage.clean.response">({
       requestId: options?.requestId,
       message: { type: "daemon.storage.clean.request", categoryId },
-      timeout: options?.timeout ?? 120_000,
+      timeout: options?.timeout ?? 600_000,
     });
   }
 

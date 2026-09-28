@@ -3679,6 +3679,8 @@ export const ru: TranslationResources = {
           agents: "Состояние агентов",
           projects: "Проекты",
           worktrees: "Рабочие деревья",
+          agent_worktrees: "Рабочие деревья агентов",
+          provider_accounts: "Аккаунты провайдеров",
           uploads: "Загрузки",
           project_import_staging: "Подготовка импорта проектов",
           tts_cache: "Кеш речи",

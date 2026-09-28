@@ -3640,6 +3640,8 @@ export const ko: TranslationResources = {
           agents: "에이전트 상태",
           projects: "프로젝트",
           worktrees: "워크트리",
+          agent_worktrees: "에이전트 워크트리",
+          provider_accounts: "공급자 계정",
           uploads: "업로드",
           project_import_staging: "프로젝트 가져오기 준비 영역",
           tts_cache: "음성 캐시",

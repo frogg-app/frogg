@@ -3647,6 +3647,8 @@ export const en = {
           agents: "Agent state",
           projects: "Projects",
           worktrees: "Worktrees",
+          agent_worktrees: "Agent worktrees",
+          provider_accounts: "Provider accounts",
           uploads: "Uploads",
           project_import_staging: "Project import staging",
           tts_cache: "Speech cache",

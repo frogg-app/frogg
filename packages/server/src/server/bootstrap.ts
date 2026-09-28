@@ -266,10 +266,24 @@ import { BetaChannelService } from "./session/daemon/beta-channel-service.js";
 import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
 import { createHostResources } from "./host/host-resources.js";
 import { sweepFroggDebris } from "./host/debris-sweep.js";
+import { startStaleWorktreeSweep } from "./host/worktree-inventory.js";
+import { ProviderAccountStore } from "./provider-accounts/provider-account-store.js";
+import { resolveFroggWorktreesBaseRoot } from "../utils/worktree.js";
 import { getActiveImageAttachmentDir } from "./agent/providers/provider-image-output.js";
 import type { DaemonAutoUpdateConfig, MutableCleanCutConfig } from "@frogg/protocol/messages";
 
 const MCP_DEBUG_BATCH_LIMIT = 10;
+
+/** Every provider config dir: the defaults (`~/.claude`, `~/.codex`) and each account's. */
+function providerAccountDirs(froggHome: string): string[] {
+  try {
+    return new ProviderAccountStore({ froggHome })
+      .list(undefined, { includeImplicitDefault: true })
+      .map((account) => account.configDir);
+  } catch {
+    return [];
+  }
+}
 const MCP_DEBUG_SECRET = "[redacted]";
 const DOWNLOAD_OPEN_FLAGS =
   process.platform === "win32" ? constants.O_RDONLY : constants.O_RDONLY | constants.O_NOFOLLOW;
@@ -474,6 +488,8 @@ export interface FroggDaemonConfig {
     maxProcessConcurrency: number;
   };
   autoArchiveAfterMerge?: boolean;
+  /** Days an idle, clean, unreferenced worktree is kept; 0 disables the sweep. Default 7. */
+  worktreeRetentionDays?: number;
   autoResumeOnUsageLimit?: boolean;
   /** Clean cut settings: automatic triggers, idle thresholds and summariser models. */
   cleanCut?: MutableCleanCutConfig;
@@ -956,6 +972,7 @@ export async function createFroggDaemon(
   });
   let wsServer: VoiceAssistantWebSocketServer | null = null;
   let autoUpdater: DaemonAutoUpdater | null = null;
+  let stopWorktreeSweep: (() => void) | null = null;
   let serviceProxyListenTarget: ListenTarget | null = null;
   const scriptHealthMonitor = new ScriptHealthMonitor({
     serviceProxy,
@@ -2247,6 +2264,30 @@ export async function createFroggDaemon(
                 const active = getActiveImageAttachmentDir();
                 return active ? [active] : [];
               },
+              listProviderAccountDirs: () => providerAccountDirs(config.froggHome),
+              worktrees: {
+                froggHome: config.froggHome,
+                worktreesBaseRoot: resolveFroggWorktreesBaseRoot({
+                  froggHome: config.froggHome,
+                  worktreesRoot: config.worktreesRoot,
+                }),
+                retentionDays: config.worktreeRetentionDays,
+                listRepoRoots: async () =>
+                  (await projectRegistry.list()).map((project) => project.rootPath),
+                listAccountDirs: () => providerAccountDirs(config.froggHome),
+                // A project may itself be registered at a linked worktree.
+                listReferencedPaths: async () => [
+                  ...(await projectRegistry.list()).map((project) => project.rootPath),
+                  ...(await workspaceRegistry!.list())
+                    .filter((workspace) => !workspace.archivedAt)
+                    .map((workspace) => workspace.cwd),
+                  ...agentManager.listAgents().map((agent) => agent.cwd),
+                ],
+              },
+              logger,
+            });
+            stopWorktreeSweep = startStaleWorktreeSweep(hostResources.worktrees, {
+              enabled: config.worktreeRetentionDays !== 0,
               logger,
             });
             // Non-blocking: a slow or failing sweep never delays or breaks startup.
@@ -2442,6 +2483,7 @@ export async function createFroggDaemon(
   const stop = async () => {
     autoUpdater?.stop();
     await pluginService.stop().catch(() => undefined);
+    stopWorktreeSweep?.();
     await hubRelationships.stop();
     workspaceReconciliation.dispose();
     scriptHealthMonitor.stop();

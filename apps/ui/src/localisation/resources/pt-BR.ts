@@ -3681,6 +3681,8 @@ export const ptBR: TranslationResources = {
           agents: "Estado dos agentes",
           projects: "Projetos",
           worktrees: "Worktrees",
+          agent_worktrees: "Worktrees de agentes",
+          provider_accounts: "Contas de provedores",
           uploads: "Uploads",
           project_import_staging: "Preparação de importação de projetos",
           tts_cache: "Cache de voz",

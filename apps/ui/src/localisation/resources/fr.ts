@@ -3709,6 +3709,8 @@ export const fr: TranslationResources = {
           agents: "État des agents",
           projects: "Projets",
           worktrees: "Worktrees",
+          agent_worktrees: "Worktrees des agents",
+          provider_accounts: "Comptes des fournisseurs",
           uploads: "Téléversements",
           project_import_staging: "Préparation d'import de projets",
           tts_cache: "Cache vocal",

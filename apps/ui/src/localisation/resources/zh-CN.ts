@@ -3560,6 +3560,8 @@ export const zhCN: TranslationResources = {
           agents: "智能体状态",
           projects: "项目",
           worktrees: "工作树",
+          agent_worktrees: "智能体工作树",
+          provider_accounts: "提供商账户",
           uploads: "上传",
           project_import_staging: "项目导入暂存",
           tts_cache: "语音缓存",

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Stale worktree cleanup.** Host settings → Resources now sizes every linked worktree of
+  registered projects, including Claude Code's `.claude/worktrees/agent-*` and worktrees under
+  provider account directories (`~/.codex/worktrees`), plus each provider account's config
+  directory. Stale worktrees (clean, unlocked, unused, and merged or idle past retention) can
+  be cleaned from **Frogg worktrees** and **Agent worktrees**, and the daemon sweeps them every
+  6 hours. Retention defaults to 7 days (`daemon.worktreeRetentionDays`, `0` disables).
+  Branches are kept.
 - **Frogg skills.** The daemon ships two skills of its own, written for Frogg: `delegate` (split a
   task across parallel agents in worktrees, then review and merge) and `project-config` (write or
   fix `frogg.json`). Each Claude Code and Codex agent the daemon starts gets them as a
