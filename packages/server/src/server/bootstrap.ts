@@ -274,7 +274,7 @@ import type { DaemonAutoUpdateConfig, MutableCleanCutConfig } from "@frogg/proto
 
 const MCP_DEBUG_BATCH_LIMIT = 10;
 
-/** Every provider config dir: the defaults (`~/.claude`, `~/.codex`) and each account's. */
+/** Every provider config dir: each default and every added account. */
 function providerAccountDirs(froggHome: string): string[] {
   try {
     return new ProviderAccountStore({ froggHome })
