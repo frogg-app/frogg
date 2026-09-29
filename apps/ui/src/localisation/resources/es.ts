@@ -3389,7 +3389,11 @@ export const es: TranslationResources = {
         stop: "Detener",
         openWebUi: "Abrir interfaz web",
       },
+      manageOnHost: "Inícialos, detenlos e instálalos en la pestaña Desarrollador de cada host.",
+      manage: "Gestionar",
       sections: {
+        betaDaemon: "Daemon beta",
+        devDaemon: "Daemon de desarrollo",
         app: "App",
         daemons: "Daemons",
       },

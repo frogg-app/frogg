@@ -3332,7 +3332,11 @@ export const ko: TranslationResources = {
         stop: "중지",
         openWebUi: "웹 UI 열기",
       },
+      manageOnHost: "각 호스트의 개발자 탭에서 시작, 중지, 설치합니다.",
+      manage: "관리",
       sections: {
+        betaDaemon: "베타 데몬",
+        devDaemon: "개발 데몬",
         app: "앱",
         daemons: "데몬",
       },

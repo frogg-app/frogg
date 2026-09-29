@@ -3307,7 +3307,11 @@ export const ar: TranslationResources = {
         stop: "إيقاف",
         openWebUi: "فتح واجهة الويب",
       },
+      manageOnHost: "شغّلها وأوقفها وثبّتها من تبويب المطوّر لكل مضيف.",
+      manage: "إدارة",
       sections: {
+        betaDaemon: "الخادم التجريبي",
+        devDaemon: "خادم التطوير",
         app: "التطبيق",
         daemons: "الخوادم",
       },

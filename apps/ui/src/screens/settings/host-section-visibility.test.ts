@@ -32,8 +32,9 @@ describe("host settings section visibility", () => {
   it("keeps the brand's hideable sections in step with the client's own list", () => {
     // Deploy is a desktop-only client section; the daemon has no setting for it.
     // Security is never hideable: a brand must not be able to hide its warnings.
+    // Developer follows the app's own Developer options switch, not the daemon config.
     // Web client manages a daemon server the browser app itself runs on; not a brand setting.
-    const clientOnly = new Set(["deploy", "security", "web-client"]);
+    const clientOnly = new Set(["deploy", "security", "web-client", "developer"]);
     // Retired sections stay valid in brand and daemon config so existing files parse.
     const retired = ["usage"];
     const hideable = HOST_SECTION_SLUGS.filter((slug) => !clientOnly.has(slug));

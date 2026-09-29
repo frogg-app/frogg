@@ -3370,7 +3370,11 @@ export const ptBR: TranslationResources = {
         stop: "Parar",
         openWebUi: "Abrir interface web",
       },
+      manageOnHost: "Inicie, pare e instale-os na aba Desenvolvedor de cada host.",
+      manage: "Gerenciar",
       sections: {
+        betaDaemon: "Daemon beta",
+        devDaemon: "Daemon de desenvolvimento",
         app: "App",
         daemons: "Daemons",
       },

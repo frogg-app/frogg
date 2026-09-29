@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { SettingsGroup } from "@/screens/settings/settings-group";
 import { BetaAppCard } from "./beta-app-card";
-import { BetaDaemonHostsSection } from "./beta-daemon-hosts";
-import { DevDaemonHostsSection } from "./dev-daemon-hosts";
+import { HostDeveloperLinksSection } from "./host-developer-links";
 import { StableAppCard, StableDaemonHostsSection } from "./stable-channel";
 
 /**
@@ -27,14 +26,14 @@ export function DeveloperSection() {
         testID="developer-channel-beta"
       >
         <BetaAppCard />
-        <BetaDaemonHostsSection />
+        <HostDeveloperLinksSection testID="developer-beta-daemon-links" />
       </SettingsGroup>
       <SettingsGroup
         title={t("settings.developer.channels.development.title")}
         info={t("settings.developer.channels.development.info")}
         testID="developer-channel-development"
       >
-        <DevDaemonHostsSection />
+        <HostDeveloperLinksSection testID="developer-dev-daemon-links" />
       </SettingsGroup>
     </>
   );

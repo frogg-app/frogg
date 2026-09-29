@@ -6,8 +6,7 @@ import type { DaemonBetaChannelStatusPayload } from "@frogg/client";
 import { Alert as InlineAlert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useHostRuntimeClient, useHostRuntimeIsConnected, useHosts } from "@/runtime/host-runtime";
-import { SettingsSection } from "@/screens/settings/settings-section";
+import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
 import type { HostProfile } from "@/types/host-connection";
@@ -40,32 +39,16 @@ type StatusState =
   | { kind: "loaded"; status: DaemonBetaChannelStatusPayload }
   | { kind: "error"; message: string };
 
-/** Every added host, each with the side-by-side beta daemon it can install and remove. */
-export function BetaDaemonHostsSection() {
-  const { t } = useTranslation();
-  const hosts = useHosts();
-  return (
-    <SettingsSection
-      title={t("settings.developer.sections.daemons")}
-      info={t("settings.developer.betaDaemon.info")}
-      testID="developer-beta-daemon"
-    >
-      <View style={settingsStyles.card}>
-        {hosts.length === 0 ? (
-          <View style={settingsStyles.row}>
-            <Text style={settingsStyles.rowHint}>{t("settings.developer.betaDaemon.noHosts")}</Text>
-          </View>
-        ) : (
-          hosts.map((host, index) => (
-            <BetaDaemonHostRow key={host.serverId} host={host} showBorder={index > 0} />
-          ))
-        )}
-      </View>
-    </SettingsSection>
-  );
-}
-
-function BetaDaemonHostRow({ host, showBorder }: { host: HostProfile; showBorder: boolean }) {
+export function BetaDaemonHostRow({
+  host,
+  showBorder,
+  showLabel = true,
+}: {
+  host: HostProfile;
+  showBorder: boolean;
+  /** Off on the host's own page, where the host is already the page's subject. */
+  showLabel?: boolean;
+}) {
   const { t } = useTranslation();
   const isConnected = useHostRuntimeIsConnected(host.serverId);
   const supported = useSessionStore(
@@ -89,9 +72,11 @@ function BetaDaemonHostRow({ host, showBorder }: { host: HostProfile; showBorder
 
   return (
     <View style={rowStyle} testID={`developer-beta-daemon-host-${host.serverId}`}>
-      <Text style={settingsStyles.rowTitle} numberOfLines={1}>
-        {host.label}
-      </Text>
+      {showLabel ? (
+        <Text style={settingsStyles.rowTitle} numberOfLines={1}>
+          {host.label}
+        </Text>
+      ) : null}
       {body}
     </View>
   );

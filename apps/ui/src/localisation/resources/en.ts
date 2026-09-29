@@ -3338,7 +3338,11 @@ export const en = {
         stop: "Stop",
         openWebUi: "Open web UI",
       },
+      manageOnHost: "Start, stop and install these on each host's Developer tab.",
+      manage: "Manage",
       sections: {
+        betaDaemon: "Beta daemon",
+        devDaemon: "Development daemon",
         app: "App",
         daemons: "Daemons",
       },

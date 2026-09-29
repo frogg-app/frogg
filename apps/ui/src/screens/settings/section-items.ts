@@ -120,4 +120,5 @@ export const HOST_SECTION_ITEMS: HostSectionItem[] = [
     icon: SquareTerminal,
   },
   { id: "web-client", labelKey: "settings.hostSections.webClient", icon: Globe },
+  { id: "developer", labelKey: "settings.sections.developer", icon: Wrench },
 ];

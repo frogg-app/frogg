@@ -3255,7 +3255,11 @@ export const zhCN: TranslationResources = {
         stop: "停止",
         openWebUi: "打开 Web 界面",
       },
+      manageOnHost: "在每台主机的“开发者”标签页中启动、停止和安装它们。",
+      manage: "管理",
       sections: {
+        betaDaemon: "测试版守护进程",
+        devDaemon: "开发守护进程",
         app: "应用",
         daemons: "守护进程",
       },

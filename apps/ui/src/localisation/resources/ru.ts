@@ -3365,7 +3365,12 @@ export const ru: TranslationResources = {
         stop: "Остановить",
         openWebUi: "Открыть веб-интерфейс",
       },
+      manageOnHost:
+        "Запускайте, останавливайте и устанавливайте их на вкладке «Разработчик» каждого хоста.",
+      manage: "Управлять",
       sections: {
+        betaDaemon: "Бета-демон",
+        devDaemon: "Демон разработки",
         app: "Приложение",
         daemons: "Демоны",
       },

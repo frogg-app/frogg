@@ -6,8 +6,7 @@ import type { DaemonDevDaemonStatusPayload } from "@frogg/client";
 import type { DaemonDevDaemonCheckout } from "@frogg/protocol/messages";
 import { Alert as InlineAlert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { useHostRuntimeClient, useHostRuntimeIsConnected, useHosts } from "@/runtime/host-runtime";
-import { SettingsSection } from "@/screens/settings/settings-section";
+import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
 import type { HostProfile } from "@/types/host-connection";
@@ -26,32 +25,16 @@ type StatusState =
   | { kind: "loaded"; status: DaemonDevDaemonStatusPayload }
   | { kind: "error"; message: string };
 
-/** Every added host, each able to run `dev:live` from one of its source checkouts. */
-export function DevDaemonHostsSection() {
-  const { t } = useTranslation();
-  const hosts = useHosts();
-  return (
-    <SettingsSection
-      title={t("settings.developer.sections.daemons")}
-      info={t("settings.developer.devDaemon.info")}
-      testID="developer-dev-daemon"
-    >
-      <View style={settingsStyles.card}>
-        {hosts.length === 0 ? (
-          <View style={settingsStyles.row}>
-            <Text style={settingsStyles.rowHint}>{t("settings.developer.betaDaemon.noHosts")}</Text>
-          </View>
-        ) : (
-          hosts.map((host, index) => (
-            <DevDaemonHostRow key={host.serverId} host={host} showBorder={index > 0} />
-          ))
-        )}
-      </View>
-    </SettingsSection>
-  );
-}
-
-function DevDaemonHostRow({ host, showBorder }: { host: HostProfile; showBorder: boolean }) {
+export function DevDaemonHostRow({
+  host,
+  showBorder,
+  showLabel = true,
+}: {
+  host: HostProfile;
+  showBorder: boolean;
+  /** Off on the host's own page, where the host is already the page's subject. */
+  showLabel?: boolean;
+}) {
   const { t } = useTranslation();
   const isConnected = useHostRuntimeIsConnected(host.serverId);
   const supported = useSessionStore(
@@ -75,9 +58,11 @@ function DevDaemonHostRow({ host, showBorder }: { host: HostProfile; showBorder:
 
   return (
     <View style={rowStyle} testID={`developer-dev-daemon-host-${host.serverId}`}>
-      <Text style={settingsStyles.rowTitle} numberOfLines={1}>
-        {host.label}
-      </Text>
+      {showLabel ? (
+        <Text style={settingsStyles.rowTitle} numberOfLines={1}>
+          {host.label}
+        </Text>
+      ) : null}
       {body}
     </View>
   );

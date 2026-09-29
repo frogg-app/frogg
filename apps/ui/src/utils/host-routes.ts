@@ -529,6 +529,7 @@ export const HOST_SECTION_SLUGS = [
   "skills",
   "terminals",
   "web-client",
+  "developer",
   "host",
 ] as const;
 

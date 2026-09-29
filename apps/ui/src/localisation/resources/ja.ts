@@ -3353,7 +3353,11 @@ export const ja: TranslationResources = {
         stop: "停止",
         openWebUi: "Web UI を開く",
       },
+      manageOnHost: "各ホストの「開発者」タブで起動・停止・インストールします。",
+      manage: "管理",
       sections: {
+        betaDaemon: "ベータ版デーモン",
+        devDaemon: "開発用デーモン",
         app: "アプリ",
         daemons: "デーモン",
       },
