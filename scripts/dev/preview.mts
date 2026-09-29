@@ -18,7 +18,7 @@
 // names itself <hostname>-DEVELOPMENT. Add its daemon endpoint as a host in an installed Frogg app to drive it from there.
 import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, watch } from "node:fs";
-import { copyFile, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -101,6 +101,8 @@ const daemonEnv: NodeJS.ProcessEnv = {
   // Launched from a Frogg agent, this process carries the installed daemon's own settings; they
   // must not reach this daemon.
   FROGG_WEB_UI_ENABLED: "false",
+  // Its conversations are copies of the installed daemon's; it must never continue one itself.
+  FROGG_RESUME_INTERRUPTED_TURNS: live ? "0" : undefined,
   FROGG_WEB_UI_HOST: undefined,
   FROGG_WEB_UI_PORT: undefined,
   FROGG_WEB_UI_DIST_DIR: undefined,
@@ -391,6 +393,24 @@ function reapPreviousRun(): void {
 // so existing conversations open, but both daemons then share each provider session: continue a
 // conversation in one daemon at a time, or they write over each other.
 // FROGG_LIVE_SOURCE_HOME picks another home; FROGG_LIVE_SOURCE_HOME=none skips the import.
+/** Drops "cut off mid-turn" markers, so nothing here ever continues a copied conversation. */
+async function clearInterruptedTurns(dir: string): Promise<void> {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const file = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      await clearInterruptedTurns(file);
+      continue;
+    }
+    if (!entry.name.endsWith(".json")) continue;
+    const text = await readFile(file, "utf8");
+    if (!text.includes('"interruptedTurn"')) continue;
+    const record = JSON.parse(text) as Record<string, unknown>;
+    if (!record.interruptedTurn) continue;
+    record.interruptedTurn = null;
+    await writeFile(file, JSON.stringify(record, null, 2));
+  }
+}
+
 async function importInstalledHome(): Promise<void> {
   const source = process.env.FROGG_LIVE_SOURCE_HOME ?? path.join(os.homedir(), ".frogg");
   if (source === "none" || !existsSync(source)) return;
@@ -402,12 +422,23 @@ async function importInstalledHome(): Promise<void> {
     }
   };
   const installed = await readJson(path.join(source, "config.json"));
-  if (installed.providerAccounts) {
-    const configFile = path.join(home, "config.json");
-    const config = await readJson(configFile);
-    config.providerAccounts = installed.providerAccounts;
-    await writeFile(configFile, `${JSON.stringify(config, null, 2)}\n`);
-  }
+  const configFile = path.join(home, "config.json");
+  const config = await readJson(configFile);
+  if (installed.providerAccounts) config.providerAccounts = installed.providerAccounts;
+  // Everything this daemon would do on its own to shared sessions and worktrees is off: resuming
+  // or clean-cutting agents after a usage limit, archiving merged workspaces, sweeping worktrees.
+  const daemon = (config.daemon ?? {}) as Record<string, unknown>;
+  config.daemon = {
+    ...daemon,
+    autoResumeOnUsageLimit: false,
+    autoArchiveAfterMerge: false,
+    worktreeRetentionDays: 0,
+    cleanCut: {
+      ...(daemon.cleanCut as Record<string, unknown> | undefined),
+      auto: { usageLimit: false, daemonRestart: false },
+    },
+  };
+  await writeFile(configFile, `${JSON.stringify(config, null, 2)}\n`);
   await mkdir(path.join(home, "projects"), { recursive: true });
   for (const file of ["projects.json", "workspaces.json"]) {
     const from = path.join(source, "projects", file);
@@ -415,8 +446,10 @@ async function importInstalledHome(): Promise<void> {
   }
   // Agent records merge over the dev home's own: installed ones are refreshed, agents made here stay.
   const agents = path.join(source, "agents");
-  if (existsSync(agents))
+  if (existsSync(agents)) {
     await cp(agents, path.join(home, "agents"), { recursive: true, force: true });
+    await clearInterruptedTurns(path.join(home, "agents"));
+  }
   log(`imported provider accounts, projects and agents from ${source}`);
 }
 

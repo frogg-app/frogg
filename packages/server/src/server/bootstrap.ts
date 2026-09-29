@@ -2457,18 +2457,21 @@ export async function createFroggDaemon(
             }
             autoUpdater.start();
             // Fire-and-forget: continue agents a previous daemon stop cut off mid-turn.
-            void resumeInterruptedAgents({
-              agentManager,
-              agentStorage,
-              logger,
-              beforeResume: async (agentId, interruptedAt) => {
-                await maybeAutoCleanCut(autoCleanCutDeps, {
-                  agentId,
-                  lastProviderTurnAt: interruptedAt,
-                  trigger: "daemon_restart",
-                });
-              },
-            }).catch((err) => logger.error({ err }, "Interrupted-turn resume failed"));
+            // FROGG_RESUME_INTERRUPTED_TURNS=0 turns it off for a daemon that shares provider
+            // sessions with another one (the development daemon), which must never drive them.
+            if (process.env.FROGG_RESUME_INTERRUPTED_TURNS !== "0")
+              void resumeInterruptedAgents({
+                agentManager,
+                agentStorage,
+                logger,
+                beforeResume: async (agentId, interruptedAt) => {
+                  await maybeAutoCleanCut(autoCleanCutDeps, {
+                    agentId,
+                    lastProviderTurnAt: interruptedAt,
+                    trigger: "daemon_restart",
+                  });
+                },
+              }).catch((err) => logger.error({ err }, "Interrupted-turn resume failed"));
             relayRuntime = createRelayRuntime({
               config: {
                 enabled: relayEnabled,
