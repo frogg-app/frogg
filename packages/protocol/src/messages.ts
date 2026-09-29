@@ -940,6 +940,15 @@ export const AgentTimelineItemPayloadSchema: z.ZodType<AgentTimelineItem, unknow
         provider: z.string().optional(),
         model: z.string().optional(),
         summaryModel: z.string().optional(),
+        summaryUsage: z
+          .object({
+            inputTokens: z.number().optional(),
+            cachedInputTokens: z.number().optional(),
+            outputTokens: z.number().optional(),
+            totalCostUsd: z.number().optional(),
+          })
+          .optional(),
+        previousContextTokens: z.number().optional(),
         // Why the cut was made: "manual" (the user asked) or "cold-cache" (the
         // daemon cut automatically because the prompt cache had expired). A
         // string rather than an enum so a future reason cannot fail the item.

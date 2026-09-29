@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Clean cut cost.** The clean cut divider now shows what the summary cost (tokens in and out,
+  plus dollars when the provider reports them, failed attempts included) next to how much
+  context the ended conversation held, so a cut that cost as much as it saved stands out.
 - **Stale worktree cleanup.** Host settings → Resources now sizes every linked worktree of
   registered projects, including Claude Code's `.claude/worktrees/agent-*` and worktrees under
   provider account directories (`~/.codex/worktrees`), plus each provider account's config

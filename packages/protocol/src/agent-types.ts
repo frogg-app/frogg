@@ -368,10 +368,24 @@ export interface CleanCutMarker {
   model?: string;
   summaryModel?: string;
   /**
+   * What writing the summary cost, summed over every summariser attempt.
+   * Absent on cuts that reused an earlier summary and on older daemons.
+   */
+  summaryUsage?: CleanCutUsage;
+  /** How much context the ended conversation held, when the provider reported it. */
+  previousContextTokens?: number;
+  /**
    * Why the cut was made. Absent on cuts recorded before this field existed,
    * which were all manual. Other strings may appear from newer daemons.
    */
   reason?: CleanCutReason | (string & {});
+}
+
+export interface CleanCutUsage {
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  totalCostUsd?: number;
 }
 
 /** `cold-cache`: the daemon cut automatically because the prompt cache had expired. */

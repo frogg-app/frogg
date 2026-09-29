@@ -9236,6 +9236,27 @@
                                         "summaryModel": {
                                           "type": "string"
                                         },
+                                        "summaryUsage": {
+                                          "type": "object",
+                                          "properties": {
+                                            "inputTokens": {
+                                              "type": "number"
+                                            },
+                                            "cachedInputTokens": {
+                                              "type": "number"
+                                            },
+                                            "outputTokens": {
+                                              "type": "number"
+                                            },
+                                            "totalCostUsd": {
+                                              "type": "number"
+                                            }
+                                          },
+                                          "additionalProperties": false
+                                        },
+                                        "previousContextTokens": {
+                                          "type": "number"
+                                        },
                                         "reason": {
                                           "type": "string"
                                         }
@@ -16723,6 +16744,27 @@
                                         },
                                         "summaryModel": {
                                           "type": "string"
+                                        },
+                                        "summaryUsage": {
+                                          "type": "object",
+                                          "properties": {
+                                            "inputTokens": {
+                                              "type": "number"
+                                            },
+                                            "cachedInputTokens": {
+                                              "type": "number"
+                                            },
+                                            "outputTokens": {
+                                              "type": "number"
+                                            },
+                                            "totalCostUsd": {
+                                              "type": "number"
+                                            }
+                                          },
+                                          "additionalProperties": false
+                                        },
+                                        "previousContextTokens": {
+                                          "type": "number"
                                         },
                                         "reason": {
                                           "type": "string"
@@ -27691,6 +27733,27 @@
                                       "summaryModel": {
                                         "type": "string"
                                       },
+                                      "summaryUsage": {
+                                        "type": "object",
+                                        "properties": {
+                                          "inputTokens": {
+                                            "type": "number"
+                                          },
+                                          "cachedInputTokens": {
+                                            "type": "number"
+                                          },
+                                          "outputTokens": {
+                                            "type": "number"
+                                          },
+                                          "totalCostUsd": {
+                                            "type": "number"
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      },
+                                      "previousContextTokens": {
+                                        "type": "number"
+                                      },
                                       "reason": {
                                         "type": "string"
                                       }
@@ -30352,6 +30415,27 @@
                                       "summaryModel": {
                                         "type": "string"
                                       },
+                                      "summaryUsage": {
+                                        "type": "object",
+                                        "properties": {
+                                          "inputTokens": {
+                                            "type": "number"
+                                          },
+                                          "cachedInputTokens": {
+                                            "type": "number"
+                                          },
+                                          "outputTokens": {
+                                            "type": "number"
+                                          },
+                                          "totalCostUsd": {
+                                            "type": "number"
+                                          }
+                                        },
+                                        "additionalProperties": false
+                                      },
+                                      "previousContextTokens": {
+                                        "type": "number"
+                                      },
                                       "reason": {
                                         "type": "string"
                                       }
@@ -32782,6 +32866,27 @@
                                     },
                                     "summaryModel": {
                                       "type": "string"
+                                    },
+                                    "summaryUsage": {
+                                      "type": "object",
+                                      "properties": {
+                                        "inputTokens": {
+                                          "type": "number"
+                                        },
+                                        "cachedInputTokens": {
+                                          "type": "number"
+                                        },
+                                        "outputTokens": {
+                                          "type": "number"
+                                        },
+                                        "totalCostUsd": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "additionalProperties": false
+                                    },
+                                    "previousContextTokens": {
+                                      "type": "number"
                                     },
                                     "reason": {
                                       "type": "string"
