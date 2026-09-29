@@ -3699,6 +3699,23 @@ export const fr: TranslationResources = {
           codex: "Codex",
         },
       },
+      webClient: {
+        title: "Client web",
+        info: "Le serveur web de l'hôte pour l'application navigateur, sur son propre port à côté de celui du démon. Il ne sert que l'application ; la page se connecte au démon pour tout le reste.",
+        running: "En cours d'exécution sur le port {{port}}",
+        stopped: "Arrêté (port {{port}})",
+        startOnLaunch: "Démarrer avec le démon",
+        startOnLaunchHint: "Démarre le client web à chaque démarrage du démon.",
+        startOnLaunchPinned: "Défini par l'environnement ou la ligne de commande du démon.",
+        interface: "Interface",
+        interfaceHint:
+          "La boucle locale n'est accessible que depuis cette machine. Toutes les interfaces (0.0.0.0) le rend accessible depuis tous les réseaux de l'hôte.",
+        loopback: "Cette machine uniquement",
+        allInterfaces: "Toutes les interfaces",
+        noInterfaces: "Aucune interface trouvée.",
+        unavailable: "Ce démon n'inclut pas le client web.",
+        loadFailed: "Impossible de lire l'état du client web : {{error}}",
+      },
       resources: {
         title: "Ressources",
         info: "Charge de l'hôte en direct et taille du stockage géré par ce daemon. Les métriques s'actualisent toutes les quelques secondes tant que cette page est ouverte.",

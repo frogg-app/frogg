@@ -39,6 +39,7 @@ export type {
   DaemonBetaChannelStatusPayload,
   DaemonControlResultPayload,
   DaemonDevDaemonStatusPayload,
+  DaemonWebUiStatusPayload,
 } from "./daemon-client.js";
 
 /**

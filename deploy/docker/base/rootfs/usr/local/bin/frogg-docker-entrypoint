@@ -15,6 +15,8 @@ export "$home_key=$state_home" "${BRAND_ENV_PREFIX}_DOCKER=1"
 : "${HOME:=/home/frogg}"
 : "${FROGG_LISTEN:=0.0.0.0:${BRAND_PORT}}"
 : "${FROGG_WEB_UI_ENABLED:=true}"
+# Loopback inside a container is unreachable; the published port decides who can connect.
+: "${FROGG_WEB_UI_HOST:=0.0.0.0}"
 : "${FROGG_LOG_LEVEL:=info}"
 : "${FROGG_LOG_FORMAT:=json}"
 : "${CLAUDE_CONFIG_DIR:=${HOME}/.claude}"
@@ -24,7 +26,7 @@ export "$home_key=$state_home" "${BRAND_ENV_PREFIX}_DOCKER=1"
 : "${XDG_STATE_HOME:=${HOME}/.local/state}"
 : "${XDG_CACHE_HOME:=${HOME}/.cache}"
 
-export HOME FROGG_LISTEN FROGG_WEB_UI_ENABLED FROGG_LOG_LEVEL FROGG_LOG_FORMAT
+export HOME FROGG_LISTEN FROGG_WEB_UI_ENABLED FROGG_WEB_UI_HOST FROGG_LOG_LEVEL FROGG_LOG_FORMAT
 export CLAUDE_CONFIG_DIR CODEX_HOME XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME
 
 ensure_dir() {

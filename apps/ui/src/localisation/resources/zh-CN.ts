@@ -3550,6 +3550,23 @@ export const zhCN: TranslationResources = {
           codex: "Codex",
         },
       },
+      webClient: {
+        title: "Web 客户端",
+        info: "主机为浏览器版应用提供的 Web 服务器，使用独立于守护进程的端口。它只提供应用本身，页面的其他操作都连接到守护进程。",
+        running: "正在端口 {{port}} 上运行",
+        stopped: "已停止（端口 {{port}}）",
+        startOnLaunch: "随守护进程启动",
+        startOnLaunchHint: "每次守护进程启动时启动 Web 客户端。",
+        startOnLaunchPinned: "由守护进程的环境变量或命令行设置。",
+        interface: "网络接口",
+        interfaceHint:
+          "环回地址只能从本机访问。选择所有接口（0.0.0.0）后，主机所在的所有网络都可以访问。",
+        loopback: "仅本机",
+        allInterfaces: "所有接口",
+        noInterfaces: "未找到网络接口。",
+        unavailable: "此守护进程不包含 Web 客户端。",
+        loadFailed: "无法读取 Web 客户端状态：{{error}}",
+      },
       resources: {
         title: "资源",
         info: "主机实时负载以及此守护进程管理的存储大小。页面打开时，指标每隔几秒刷新一次。",

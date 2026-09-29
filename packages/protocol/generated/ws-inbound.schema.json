@@ -3984,6 +3984,76 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.web_ui.get_status.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.web_ui.update.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "startOnLaunch": {
+                  "type": "boolean"
+                },
+                "host": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.web_ui.start.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.web_ui.stop.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "hub.management.daemon.connect.request"
                 },
                 "requestId": {

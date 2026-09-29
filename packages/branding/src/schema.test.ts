@@ -348,7 +348,9 @@ test("the beta channel installs beside stable under its own identity", () => {
   assert.equal(beta.id, "frogg-beta");
   assert.equal(beta.name, "frogg beta");
   assert.equal(beta.applicationId, "app.frogg.frogg.beta");
-  assert.equal(beta.daemonPort, 9998);
+  assert.equal(beta.daemonPort, 9989);
+  assert.equal(beta.webPort, 9988);
+  assert.equal(beta.channels.stable.webPort, 9998);
   assert.equal(beta.cliName, "frogg-beta");
   assert.equal(beta.desktopBinaryName, "frogg-beta");
   assert.equal(beta.homeDir, ".frogg-beta");

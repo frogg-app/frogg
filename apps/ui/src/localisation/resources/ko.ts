@@ -3630,6 +3630,23 @@ export const ko: TranslationResources = {
           codex: "Codex",
         },
       },
+      webClient: {
+        title: "웹 클라이언트",
+        info: "브라우저 앱을 위한 호스트의 웹 서버로, 데몬과 별도의 포트에서 실행됩니다. 앱만 제공하며, 페이지는 나머지 모든 작업을 데몬에 연결해 처리합니다.",
+        running: "포트 {{port}}에서 실행 중",
+        stopped: "중지됨 (포트 {{port}})",
+        startOnLaunch: "데몬과 함께 시작",
+        startOnLaunchHint: "데몬이 시작될 때마다 웹 클라이언트를 시작합니다.",
+        startOnLaunchPinned: "데몬의 환경 변수 또는 명령줄에서 설정되었습니다.",
+        interface: "인터페이스",
+        interfaceHint:
+          "루프백은 이 컴퓨터에서만 접근할 수 있습니다. 모든 인터페이스(0.0.0.0)를 선택하면 호스트가 연결된 모든 네트워크에서 접근할 수 있습니다.",
+        loopback: "이 컴퓨터만",
+        allInterfaces: "모든 인터페이스",
+        noInterfaces: "인터페이스를 찾을 수 없습니다.",
+        unavailable: "이 데몬에는 웹 클라이언트가 포함되어 있지 않습니다.",
+        loadFailed: "웹 클라이언트 상태를 읽지 못했습니다: {{error}}",
+      },
       resources: {
         title: "리소스",
         info: "호스트의 실시간 부하와 이 데몬이 관리하는 저장소 크기입니다. 이 페이지가 열려 있는 동안 몇 초마다 지표가 갱신됩니다.",

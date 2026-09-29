@@ -2728,6 +2728,11 @@ export class Session {
         return this.daemonSession.handleDevDaemonStartRequest(msg);
       case "daemon.dev_daemon.stop.request":
         return this.daemonSession.handleDevDaemonStopRequest(msg);
+      case "daemon.web_ui.get_status.request":
+      case "daemon.web_ui.update.request":
+      case "daemon.web_ui.start.request":
+      case "daemon.web_ui.stop.request":
+        return this.daemonSession.handleWebUiRequest(msg);
       default:
         return undefined;
     }

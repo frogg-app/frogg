@@ -72,6 +72,7 @@ import { HostAppearanceSection } from "@/screens/settings/host-appearance-sectio
 import { HostDaemonUpdateSection } from "@/screens/settings/host-daemon-update-section";
 import { HostSshDeploySection } from "@/screens/settings/host-ssh-deploy-section";
 import { HostResourcesSection } from "@/screens/settings/host-resources-section";
+import { HostWebClientSection } from "@/screens/settings/host-web-client-section";
 import { CleanCutSection } from "@/screens/settings/clean-cut-section";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { useSessionStore } from "@/stores/session-store";
@@ -370,6 +371,8 @@ export function HostSettingsPage({
 
       <DaemonConflictWarning serverId={serverId} />
       <ConnectionsSection host={host} />
+
+      <HostWebClientSection serverId={serverId} />
 
       <HostResourcesSection serverId={serverId} />
 

@@ -24,6 +24,7 @@ Do not add a `$schema` key to the manifest: the strict schema rejects it.
 | `name`          | 1 to 160 characters, Unicode allowed, no control characters        | Window titles, installers, app name, release titles                    |
 | `applicationId` | Reverse DNS, 3+ lowercase segments, e.g. `com.acme.studio`         | Android package, macOS/Windows app ID, Windows install path, storage namespace |
 | `daemonPort`    | Integer, 1024 to 65535                                             | Default daemon port for installers, Docker, Nix and clients            |
+| `webPort`       | Integer, 1024 to 65535                                             | Port of the daemon's web client. Default `daemonPort - 1`               |
 | `assets.icon`   | Path to a square PNG or SVG, at least 1024 × 1024                  | Source for every generated icon                                        |
 
 ## Identity fields
@@ -425,7 +426,8 @@ The beta build derives its identity from the stable one. Override any of it unde
 | ------------------- | -------------------------------- | ---------------------------- |
 | `name`, `fullName`  | `<name> Beta` (`<name> beta` for an all-lowercase name) | `Acme Studio Beta` |
 | `applicationId`     | `<applicationId>.beta`           | `com.acme.studio.beta`       |
-| `daemonPort`        | `daemonPort - 1`; must differ from stable | `10098`             |
+| `daemonPort`        | `daemonPort - 10`                | `10089`                      |
+| `webPort`           | beta `daemonPort - 1`; all four ports must differ | `10088`     |
 | `cliName`           | `<cliName>-beta`                 | `acme-beta`                  |
 | `desktopBinaryName` | `<desktopBinaryName>-beta`       | `acme-desktop-beta`          |
 | `homeDir`           | `<homeDir>-beta`                 | `.acme-beta`                 |

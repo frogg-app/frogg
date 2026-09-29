@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
@@ -56,6 +57,7 @@ export interface BetaChannelServiceOptions {
   fetchImpl?: typeof fetch;
   spawnScript?: SpawnInstallerScript;
   probeDaemon?: (port: number) => Promise<BetaDaemonProbe | null>;
+  probeWeb?: (port: number) => Promise<boolean>;
   now?: () => Date;
   runTimeoutMs?: number;
   latestCacheMs?: number;
@@ -141,6 +143,34 @@ export function probeBetaDaemon(betaId: string) {
     });
 }
 
+/** Whether anything accepts connections on `port` at loopback or any of this host's addresses. */
+export async function probeListening(port: number): Promise<boolean> {
+  const addresses = ["127.0.0.1"];
+  for (const entries of Object.values(os.networkInterfaces())) {
+    for (const entry of entries ?? []) {
+      if (entry.family === "IPv4" && !entry.internal) addresses.push(entry.address);
+    }
+  }
+  const results = await Promise.all(
+    addresses.map(
+      (host) =>
+        new Promise<boolean>((resolve) => {
+          const socket = net.connect({ host, port, timeout: PROBE_TIMEOUT_MS });
+          socket.once("connect", () => {
+            socket.destroy();
+            resolve(true);
+          });
+          socket.once("timeout", () => {
+            socket.destroy();
+            resolve(false);
+          });
+          socket.once("error", () => resolve(false));
+        }),
+    ),
+  );
+  return results.includes(true);
+}
+
 export class BetaChannelService {
   private readonly logger: pino.Logger;
   private readonly env: NodeJS.ProcessEnv;
@@ -153,6 +183,7 @@ export class BetaChannelService {
   private readonly fetchImpl: typeof fetch | undefined;
   private readonly spawnScript: SpawnInstallerScript;
   private readonly probeDaemon: (port: number) => Promise<BetaDaemonProbe | null>;
+  private readonly probeWeb: (port: number) => Promise<boolean>;
   private readonly now: () => Date;
   private readonly runTimeoutMs: number;
   private readonly latestCacheMs: number;
@@ -175,6 +206,7 @@ export class BetaChannelService {
     this.fetchImpl = options.fetchImpl;
     this.spawnScript = options.spawnScript ?? defaultSpawnScript;
     this.probeDaemon = options.probeDaemon ?? probeBetaDaemon(brand.channels.beta.id);
+    this.probeWeb = options.probeWeb ?? probeListening;
     this.now = options.now ?? (() => new Date());
     this.runTimeoutMs = options.runTimeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
     this.latestCacheMs = options.latestCacheMs ?? DEFAULT_LATEST_CACHE_MS;
@@ -257,9 +289,10 @@ export class BetaChannelService {
     const reason = this.unsupportedReason();
     const selfIsBeta = this.selfChannel === "beta";
     const installedVersion = selfIsBeta ? null : this.readInstalledVersion();
-    const [probe, latest] = await Promise.all([
+    const [probe, latest, webRunning] = await Promise.all([
       this.probeDaemon(this.beta.daemonPort),
       this.latest(),
+      this.probeWeb(this.beta.webPort),
     ]);
     return {
       supported: reason === null,
@@ -272,6 +305,8 @@ export class BetaChannelService {
       running: probe !== null,
       runningVersion: probe?.version ?? null,
       port: this.beta.daemonPort,
+      webPort: this.beta.webPort,
+      webRunning,
       serviceName: this.beta.serviceName,
       cliName: this.beta.cliName,
       homeDir: path.join(this.homedir, this.beta.homeDir),

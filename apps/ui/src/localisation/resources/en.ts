@@ -3636,6 +3636,23 @@ export const en = {
           codex: "Codex",
         },
       },
+      webClient: {
+        title: "Web client",
+        info: "The host's web server for the browser app, on its own port beside the daemon's. It serves only the app; the page connects to the daemon for everything else.",
+        running: "Running on port {{port}}",
+        stopped: "Stopped (port {{port}})",
+        startOnLaunch: "Start with the daemon",
+        startOnLaunchHint: "Start the web client whenever the daemon starts.",
+        startOnLaunchPinned: "Set by the daemon's environment or command line.",
+        interface: "Interface",
+        interfaceHint:
+          "Loopback is reachable only from this machine. All interfaces (0.0.0.0) makes it reachable from every network the host is on.",
+        loopback: "This machine only",
+        allInterfaces: "All interfaces",
+        noInterfaces: "No interfaces found.",
+        unavailable: "This daemon has no web client build.",
+        loadFailed: "Couldn't read the web client status: {{error}}",
+      },
       resources: {
         title: "Resources",
         info: "Live host load and the size of the storage this daemon owns. Metrics refresh every few seconds while this page is open.",

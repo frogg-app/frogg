@@ -16,8 +16,8 @@ import type { PersistedWorkspaceRecord } from "../../workspace-registry.js";
  * its own process group so stopping it takes the daemon and web app with it.
  */
 
-export const DEV_DAEMON_PORT = 9898;
-export const DEV_WEB_PORT = 7820;
+export const DEV_DAEMON_PORT = 9899;
+export const DEV_WEB_PORT = 9898;
 const STOP_TIMEOUT_MS = 10_000;
 const PROBE_TIMEOUT_MS = 1500;
 /** A launcher that dies this soon failed to start; its log says why. */

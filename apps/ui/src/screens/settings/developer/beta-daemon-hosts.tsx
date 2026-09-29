@@ -248,7 +248,8 @@ function BetaDaemonHostManager({ host }: { host: HostProfile }) {
   }
 
   const status = statusState.status;
-  const webUrl = status.running ? siblingDaemonWebUrl(host, status.port) : null;
+  const webUrl =
+    status.webRunning && status.webPort ? siblingDaemonWebUrl(host, status.webPort) : null;
   return (
     <View style={styles.manager}>
       <StatusLines status={status} />

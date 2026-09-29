@@ -586,6 +586,14 @@ pub enum SessionMessage {
     DaemonDevDaemonStartResponse(DaemonDevDaemonStartResponse),
     #[serde(rename = "daemon.dev_daemon.stop.response")]
     DaemonDevDaemonStopResponse(DaemonDevDaemonStopResponse),
+    #[serde(rename = "daemon.web_ui.get_status.response")]
+    DaemonWebUiGetStatusResponse(DaemonWebUiGetStatusResponse),
+    #[serde(rename = "daemon.web_ui.update.response")]
+    DaemonWebUiUpdateResponse(DaemonWebUiUpdateResponse),
+    #[serde(rename = "daemon.web_ui.start.response")]
+    DaemonWebUiStartResponse(DaemonWebUiStartResponse),
+    #[serde(rename = "daemon.web_ui.stop.response")]
+    DaemonWebUiStopResponse(DaemonWebUiStopResponse),
     #[serde(rename = "daemon.beta_channel.run.progress")]
     DaemonBetaChannelRunProgress(DaemonBetaChannelRunProgress),
     #[serde(rename = "daemon.beta_channel.run.completed")]
@@ -13326,6 +13334,10 @@ pub struct DaemonBetaChannelGetStatusResponsePayload {
     #[serde(rename = "runningVersion", skip_serializing_if = "Option::is_none")]
     pub running_version: Option<String>,
     pub port: f64,
+    #[serde(rename = "webPort", skip_serializing_if = "Option::is_none")]
+    pub web_port: Option<f64>,
+    #[serde(rename = "webRunning", skip_serializing_if = "Option::is_none")]
+    pub web_running: Option<bool>,
     #[serde(rename = "serviceName")]
     pub service_name: String,
     #[serde(rename = "cliName")]
@@ -13472,6 +13484,126 @@ pub struct DaemonDevDaemonStopResponsePayload {
     pub request_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiGetStatusResponse {
+    pub payload: DaemonWebUiGetStatusResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiGetStatusResponsePayload {
+    pub available: bool,
+    pub running: bool,
+    pub host: String,
+    pub port: f64,
+    #[serde(rename = "startOnLaunch")]
+    pub start_on_launch: bool,
+    #[serde(rename = "startOnLaunchPinned")]
+    pub start_on_launch_pinned: bool,
+    pub interfaces: Vec<DaemonWebUiGetStatusResponsePayloadInterfacesItem>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiGetStatusResponsePayloadInterfacesItem {
+    pub address: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiUpdateResponse {
+    pub payload: DaemonWebUiUpdateResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiUpdateResponsePayload {
+    pub available: bool,
+    pub running: bool,
+    pub host: String,
+    pub port: f64,
+    #[serde(rename = "startOnLaunch")]
+    pub start_on_launch: bool,
+    #[serde(rename = "startOnLaunchPinned")]
+    pub start_on_launch_pinned: bool,
+    pub interfaces: Vec<DaemonWebUiUpdateResponsePayloadInterfacesItem>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiUpdateResponsePayloadInterfacesItem {
+    pub address: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStartResponse {
+    pub payload: DaemonWebUiStartResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStartResponsePayload {
+    pub available: bool,
+    pub running: bool,
+    pub host: String,
+    pub port: f64,
+    #[serde(rename = "startOnLaunch")]
+    pub start_on_launch: bool,
+    #[serde(rename = "startOnLaunchPinned")]
+    pub start_on_launch_pinned: bool,
+    pub interfaces: Vec<DaemonWebUiStartResponsePayloadInterfacesItem>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStartResponsePayloadInterfacesItem {
+    pub address: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStopResponse {
+    pub payload: DaemonWebUiStopResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStopResponsePayload {
+    pub available: bool,
+    pub running: bool,
+    pub host: String,
+    pub port: f64,
+    #[serde(rename = "startOnLaunch")]
+    pub start_on_launch: bool,
+    #[serde(rename = "startOnLaunchPinned")]
+    pub start_on_launch_pinned: bool,
+    pub interfaces: Vec<DaemonWebUiStopResponsePayloadInterfacesItem>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStopResponsePayloadInterfacesItem {
+    pub address: String,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

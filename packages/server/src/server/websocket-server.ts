@@ -217,6 +217,8 @@ interface WebSocketServerConfig {
   allowedOrigins?: Set<string>;
   hostnames?: HostnamesConfig;
   getAllowedOrigins?: () => Set<string>;
+  /** Origins trusted by rule rather than listed, such as this daemon's own web client. */
+  isTrustedOrigin?: (origin: string, requestHost: string | null) => boolean;
   getHostnames?: () => HostnamesConfig | undefined;
   /** Host-allowlist tuning shared with the HTTP allowlist (pairing-hostname opt-out). */
   hostnameCheckOptions?: HostnameCheckOptions;
@@ -921,6 +923,7 @@ export class VoiceAssistantWebSocketServer {
           wsConfig.getHostnames?.() ?? wsConfig.hostnames,
           wsConfig.hostnameCheckOptions ?? {},
           callback,
+          wsConfig.isTrustedOrigin,
         );
       },
     });
@@ -976,6 +979,7 @@ export class VoiceAssistantWebSocketServer {
     hostnames: HostnamesConfig | undefined,
     hostnameCheckOptions: HostnameCheckOptions,
     callback: (res: boolean, code?: number, message?: string) => void,
+    isTrustedOrigin?: (origin: string, requestHost: string | null) => boolean,
   ): void {
     if (this.connectionLifecycle !== "accepting") {
       callback(false, 503, "Server not ready");
@@ -996,7 +1000,13 @@ export class VoiceAssistantWebSocketServer {
     }
     const sameOrigin = isWebSocketSameOrigin(origin, requestHost);
 
-    if (!origin || allowedOrigins.has("*") || allowedOrigins.has(origin) || sameOrigin) {
+    if (
+      !origin ||
+      allowedOrigins.has("*") ||
+      allowedOrigins.has(origin) ||
+      sameOrigin ||
+      isTrustedOrigin?.(origin, requestHost) === true
+    ) {
       callback(true);
     } else {
       this.incrementRuntimeCounter("originRejected");
@@ -2072,6 +2082,8 @@ export class VoiceAssistantWebSocketServer {
         betaChannelManagement: this.supportsBetaChannelManagement(),
         // COMPAT(daemonChannelControl): added in v1.6.7, remove after 2027-09-29.
         ...(this.daemonRuntimeConfig?.devDaemon ? { daemonChannelControl: true } : {}),
+        // COMPAT(webUiControl): added in v1.6.7, remove after 2027-09-29.
+        ...(this.daemonRuntimeConfig?.webUi ? { webUiControl: true } : {}),
         // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
         projectTodos: this.projectTodoService !== null,
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.

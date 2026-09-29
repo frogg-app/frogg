@@ -172,6 +172,7 @@ import type {
   DaemonBetaChannelStartResponse,
   DaemonDevDaemonGetStatusResponse,
   DaemonDevDaemonStartResponse,
+  DaemonWebUiGetStatusResponse,
   DaemonUpdateStartResponse,
   DiagnosticsResponse,
   AgentRewindResponseMessage,
@@ -241,6 +242,8 @@ import type {
 
 export type DaemonBetaChannelStatusPayload = DaemonBetaChannelGetStatusResponse["payload"];
 export type DaemonDevDaemonStatusPayload = DaemonDevDaemonGetStatusResponse["payload"];
+/** Web client status; every web client action answers with it and its own `error`. */
+export type DaemonWebUiStatusPayload = DaemonWebUiGetStatusResponse["payload"];
 /** Start/stop of the beta or development daemon: `error` is null on success. */
 export type DaemonControlResultPayload =
   | DaemonBetaChannelStartResponse["payload"]
@@ -5688,6 +5691,41 @@ export class DaemonClient {
     });
   }
 
+  async getWebUiStatus(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.get_status.response">({
+      requestId,
+      message: { type: "daemon.web_ui.get_status.request" },
+    });
+  }
+
+  async updateWebUi(
+    input: { startOnLaunch?: boolean; host?: string },
+    requestId?: string,
+  ): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.update.response">({
+      requestId,
+      message: { type: "daemon.web_ui.update.request", ...input },
+    });
+  }
+
+  async startWebUi(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.start.response">({
+      requestId,
+      message: { type: "daemon.web_ui.start.request" },
+    });
+  }
+
+  async stopWebUi(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.stop.response">({
+      requestId,
+      message: { type: "daemon.web_ui.stop.request" },
+    });
+  }
+
   async connectHub(
     hubUrl: string,
     token: string,
@@ -6790,6 +6828,13 @@ export class DaemonClient {
     // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
     if (this.lastServerInfoMessage?.features?.betaChannelManagement !== true) {
       throw new Error("Update the host to manage the beta daemon from the app.");
+    }
+  }
+
+  private requireWebUiControlSupport(): void {
+    // COMPAT(webUiControl): added in v1.6.7, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.webUiControl !== true) {
+      throw new Error("Update the host to manage its web client from the app.");
     }
   }
 

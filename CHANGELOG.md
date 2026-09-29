@@ -2,10 +2,22 @@
 
 ## Unreleased
 
+- **Web client on its own port, managed from the app.** The daemon no longer serves the web
+  app on its own port: the web client has a server of its own, on 9998 for frogg and 9988 for
+  frogg beta, listening on `127.0.0.1` unless you pick another interface. A new **Web client**
+  card in a host's settings (in the desktop and mobile apps, not in the browser app itself)
+  starts and stops it, sets whether it starts with the daemon, lists the host's interfaces to
+  bind (`0.0.0.0` for all), and links to it while it runs. New `features.webUi.host` and
+  `features.webUi.port` (`FROGG_WEB_UI_HOST`, `FROGG_WEB_UI_PORT`); `FROGG_WEB_UI_ENABLED` is
+  now only the default for `features.webUi.enabled`, so the app's choice holds. Docker binds it
+  to `0.0.0.0` and publishes 9998. New `daemon.web_ui.*` RPCs behind `features.webUiControl`.
+- **frogg beta moves to port 9989.** Its web client is on 9988. A beta installed before this
+  release keeps 9998 until it is reinstalled; re-add it as a host afterwards. Brands get a
+  `webPort` (default `daemonPort - 1`), and a beta's ports now default to ten below stable's.
 - **Beta and development daemons from Developer settings.** An installed beta daemon gets
   **Start**/**Stop** (through its own CLI, so its service stays in charge) and **Open web UI**.
   A new **Development daemon** card launches `npm run dev:live` from any source checkout among a
-  host's workspaces (daemon on port 9898, web app on 7820, one at a time), stops it, and opens
+  host's workspaces (daemon on port 9899, web app on 9898, one at a time), stops it, and opens
   its web UI. The development daemon names itself `<hostname>-DEVELOPMENT` and starts with the
   host's provider accounts, projects and conversations. New `daemon.beta_channel.start`/`stop`
   and `daemon.dev_daemon.*` RPCs behind `features.daemonChannelControl`.

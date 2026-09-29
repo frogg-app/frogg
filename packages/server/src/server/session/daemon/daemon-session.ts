@@ -16,6 +16,7 @@ import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import type { DaemonUpdateService } from "./daemon-update-service.js";
 import type { BetaChannelService, BetaChannelStartResult } from "./beta-channel-service.js";
 import type { DevDaemonService } from "./dev-daemon-service.js";
+import type { WebUiServer } from "../../web-ui-server.js";
 import type { SecurityPosture } from "@frogg/protocol/messages";
 import type { HostResources } from "../../host/host-resources.js";
 import type { SkillCatalog } from "../../skills/catalog.js";
@@ -31,6 +32,8 @@ export interface DaemonRuntimeConfig {
   betaChannel?: BetaChannelService;
   /** Development daemon (`dev:live`) launch/stop; absent without bootstrap wiring. */
   devDaemon?: DevDaemonService;
+  /** The web client's own server; absent without bootstrap wiring. */
+  webUi?: WebUiServer;
   /** Live security findings (security-posture.ts); absent without bootstrap wiring. */
   getSecurityPosture?(): SecurityPosture;
   /** Host metrics and owned-storage sizes/cleanup; absent without bootstrap wiring. */
@@ -689,6 +692,66 @@ export class DaemonSession {
       type: "daemon.dev_daemon.stop.response",
       payload: { requestId: msg.requestId, error },
     });
+  }
+
+  async handleWebUiRequest(
+    msg: Extract<
+      SessionInboundMessage,
+      {
+        type:
+          | "daemon.web_ui.get_status.request"
+          | "daemon.web_ui.update.request"
+          | "daemon.web_ui.start.request"
+          | "daemon.web_ui.stop.request";
+      }
+    >,
+  ): Promise<void> {
+    const server = this.daemonRuntimeConfig?.webUi;
+    if (!server) {
+      this.host.emit({
+        type: "rpc_error",
+        payload: {
+          requestId: msg.requestId,
+          requestType: msg.type,
+          error: "The web client is not available on this daemon.",
+          code: "unsupported",
+        },
+      });
+      return;
+    }
+    let error: string | null = null;
+    try {
+      switch (msg.type) {
+        case "daemon.web_ui.update.request":
+          error = await server.update({ startOnLaunch: msg.startOnLaunch, host: msg.host });
+          break;
+        case "daemon.web_ui.start.request":
+          error = await server.start();
+          break;
+        case "daemon.web_ui.stop.request":
+          await server.stop();
+          break;
+        case "daemon.web_ui.get_status.request":
+          break;
+      }
+    } catch (err) {
+      error = errorMessage(err);
+    }
+    const payload = { requestId: msg.requestId, ...server.status(), error };
+    switch (msg.type) {
+      case "daemon.web_ui.get_status.request":
+        this.host.emit({ type: "daemon.web_ui.get_status.response", payload });
+        return;
+      case "daemon.web_ui.update.request":
+        this.host.emit({ type: "daemon.web_ui.update.response", payload });
+        return;
+      case "daemon.web_ui.start.request":
+        this.host.emit({ type: "daemon.web_ui.start.response", payload });
+        return;
+      case "daemon.web_ui.stop.request":
+        this.host.emit({ type: "daemon.web_ui.stop.response", payload });
+        return;
+    }
   }
 
   private updateUnavailable(): { updatable: false; reason: string; currentVersion: string } {

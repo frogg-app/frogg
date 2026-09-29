@@ -113,6 +113,7 @@ function makeService(overrides: Partial<BetaChannelServiceOptions> = {}) {
     selfChannel: "stable",
     isDocker: () => false,
     probeDaemon: async () => null,
+    probeWeb: async () => false,
     fetchImpl: fakeFetch([]),
     ...overrides,
   });

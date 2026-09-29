@@ -3656,6 +3656,23 @@ export const ja: TranslationResources = {
           codex: "Codex",
         },
       },
+      webClient: {
+        title: "Web クライアント",
+        info: "ブラウザ版アプリ用のホストの Web サーバーです。デーモンとは別のポートで動作し、アプリの配信だけを行います。ページはそれ以外のすべてでデーモンに接続します。",
+        running: "ポート {{port}} で実行中",
+        stopped: "停止中（ポート {{port}}）",
+        startOnLaunch: "デーモンと一緒に起動",
+        startOnLaunchHint: "デーモンの起動時に毎回 Web クライアントを起動します。",
+        startOnLaunchPinned: "デーモンの環境変数またはコマンドラインで設定されています。",
+        interface: "インターフェース",
+        interfaceHint:
+          "ループバックはこのマシンからのみアクセスできます。すべてのインターフェース（0.0.0.0）にすると、ホストが接続しているすべてのネットワークからアクセスできます。",
+        loopback: "このマシンのみ",
+        allInterfaces: "すべてのインターフェース",
+        noInterfaces: "インターフェースが見つかりません。",
+        unavailable: "このデーモンには Web クライアントが含まれていません。",
+        loadFailed: "Web クライアントの状態を読み取れませんでした: {{error}}",
+      },
       resources: {
         title: "リソース",
         info: "ホストのリアルタイム負荷と、このデーモンが管理するストレージのサイズ。このページを開いている間、メトリクスは数秒ごとに更新されます。",

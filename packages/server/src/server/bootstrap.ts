@@ -210,7 +210,7 @@ import {
   type DaemonAuthConfig,
 } from "./auth.js";
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
-import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
+import type { WebUiGate } from "./web-ui.js";
 import { createAccessPolicy, DEFAULT_TRUST_LAN, isLoopbackIp } from "./access-policy.js";
 import { computeSecurityPosture, updateAcknowledgedFindings } from "./security-posture.js";
 import { createClaimStore, isDaemonClaimed, type ClaimStore } from "./claim-store.js";
@@ -265,6 +265,7 @@ import {
 import { describeDaemonInstall } from "./session/daemon/daemon-update-install.js";
 import { BetaChannelService } from "./session/daemon/beta-channel-service.js";
 import { DevDaemonService } from "./session/daemon/dev-daemon-service.js";
+import { WEB_UI_DEFAULT_HOST, WebUiServer } from "./web-ui-server.js";
 import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
 import { createHostResources } from "./host/host-resources.js";
 import { sweepFroggDebris } from "./host/debris-sweep.js";
@@ -520,7 +521,10 @@ export interface FroggDaemonConfig {
   };
   webUi?: {
     enabled: boolean;
+    enabledPinned?: boolean;
     distDir: string | null;
+    host?: string;
+    port?: number;
   };
   appBaseUrl?: string;
   auth?: DaemonAuthConfig;
@@ -608,21 +612,48 @@ async function reconcileManagedProcessLedger(
   }
 }
 
-function mountWebUi(
-  app: express.Application,
-  config: FroggDaemonConfig,
-  logger: Logger,
-  gate: WebUiGate,
-): void {
-  app.use(
-    createWebUiMiddleware({
-      enabled: config.webUi?.enabled ?? false,
-      distDir: config.webUi?.distDir ?? null,
-      label: getHostname(),
-      logger,
-      gate,
-    }),
-  );
+function createWebUiServer(input: {
+  config: FroggDaemonConfig;
+  logger: Logger;
+  daemonPort: () => number | null;
+  gate: WebUiGate;
+  trustProxy: () => unknown;
+}): WebUiServer {
+  const { config, logger } = input;
+  const webUi = config.webUi;
+  const enabledPinned = webUi?.enabledPinned ?? false;
+  return new WebUiServer({
+    logger,
+    distDir: webUi?.distDir ?? null,
+    port: webUi?.port ?? brand.webPort,
+    daemonPort: input.daemonPort,
+    label: getHostname(),
+    gate: input.gate,
+    trustProxy: input.trustProxy,
+    settings: {
+      startOnLaunch: webUi?.enabled ?? false,
+      host: webUi?.host ?? WEB_UI_DEFAULT_HOST,
+    },
+    startOnLaunchPinned: enabledPinned,
+    saveSettings: (settings) => {
+      const persisted = loadPersistedConfig(config.froggHome, logger);
+      savePersistedConfig(
+        config.froggHome,
+        {
+          ...persisted,
+          features: {
+            ...persisted.features,
+            webUi: {
+              ...persisted.features?.webUi,
+              ...(enabledPinned ? {} : { enabled: settings.startOnLaunch }),
+              host: settings.host,
+            },
+          },
+        },
+        logger,
+      );
+    },
+  });
 }
 
 /**
@@ -1040,7 +1071,10 @@ export async function createFroggDaemon(
     const origin = req.headers.origin;
     if (
       origin &&
-      (allowedOrigins.has("*") || allowedOrigins.has(origin) || publicOrigins().includes(origin))
+      (allowedOrigins.has("*") ||
+        allowedOrigins.has(origin) ||
+        publicOrigins().includes(origin) ||
+        webUiServer.isWebClientOrigin(origin, req.headers.host))
     ) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
@@ -1096,12 +1130,19 @@ export async function createFroggDaemon(
     pairingBaseUrl: () => appBaseUrl,
   });
 
-  mountWebUi(
-    app,
+  // The web client has its own server and port (web-ui-server.ts); the daemon's port serves none.
+  const webUiServer = createWebUiServer({
     config,
     logger,
-    createClaimGate({ auth: authConfig, claimStore, offerSource: claimOfferSource, daemonVersion }),
-  );
+    daemonPort: publicTcpPort,
+    trustProxy: () => app.get("trust proxy"),
+    gate: createClaimGate({
+      auth: authConfig,
+      claimStore,
+      offerSource: claimOfferSource,
+      daemonVersion,
+    }),
+  });
 
   app.use(
     createRequireBearerMiddleware(authConfig, (context) => {
@@ -2328,6 +2369,8 @@ export async function createFroggDaemon(
               mcpBaseUrl,
               {
                 getAllowedOrigins: () => new Set([...allowedOrigins, ...publicOrigins()]),
+                isTrustedOrigin: (origin, requestHost) =>
+                  webUiServer.isWebClientOrigin(origin, requestHost),
                 getHostnames: () => configuredHostnames,
                 hostnameCheckOptions,
                 daemonStatusRpc: dependencies.serverFeatureOverrides?.daemonStatusRpc,
@@ -2374,6 +2417,7 @@ export async function createFroggDaemon(
                 update: updateService,
                 betaChannel: betaChannelService,
                 devDaemon: devDaemonService,
+                webUi: webUiServer,
                 hostResources,
                 skills: skillCatalog,
                 getSecurityPosture,
@@ -2475,6 +2519,7 @@ export async function createFroggDaemon(
       // model loading doesn't block the server from accepting connections.
       speechService.start();
       scriptHealthMonitor.start();
+      await webUiServer.startOnLaunch();
     } catch (error) {
       await serviceProxy.stopStandalone().catch(() => undefined);
       await agentProviderRuntime.shutdown().catch(() => undefined);
@@ -2521,6 +2566,7 @@ export async function createFroggDaemon(
       await wsServer.close();
     }
     await serviceProxy.stopStandalone();
+    await webUiServer.stop();
     // Force-drop remaining sockets so httpServer.close() resolves promptly.
     // We've already closed wsServer (which sent ws-layer close frames) and
     // stopped every other service, so anything still attached is a TCP

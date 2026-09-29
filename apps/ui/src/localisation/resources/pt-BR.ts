@@ -3671,6 +3671,23 @@ export const ptBR: TranslationResources = {
           codex: "Codex",
         },
       },
+      webClient: {
+        title: "Cliente web",
+        info: "O servidor web do host para o app de navegador, na sua própria porta ao lado da do daemon. Ele só serve o app; a página se conecta ao daemon para todo o resto.",
+        running: "Em execução na porta {{port}}",
+        stopped: "Parado (porta {{port}})",
+        startOnLaunch: "Iniciar com o daemon",
+        startOnLaunchHint: "Inicia o cliente web sempre que o daemon for iniciado.",
+        startOnLaunchPinned: "Definido pelo ambiente ou pela linha de comando do daemon.",
+        interface: "Interface",
+        interfaceHint:
+          "A interface de loopback só é acessível a partir desta máquina. Todas as interfaces (0.0.0.0) o torna acessível em todas as redes do host.",
+        loopback: "Somente esta máquina",
+        allInterfaces: "Todas as interfaces",
+        noInterfaces: "Nenhuma interface encontrada.",
+        unavailable: "Este daemon não inclui o cliente web.",
+        loadFailed: "Não foi possível ler o status do cliente web: {{error}}",
+      },
       resources: {
         title: "Recursos",
         info: "Carga do host em tempo real e o tamanho do armazenamento deste daemon. As métricas são atualizadas a cada poucos segundos enquanto esta página está aberta.",

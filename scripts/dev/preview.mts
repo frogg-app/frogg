@@ -7,8 +7,8 @@
 //
 //   npm run dev:live                # --live: real providers, persistent home, no demo seeding
 //
-// Ports: PREVIEW_PORT (web, default 7800; 7820 with --live) and PREVIEW_PORT + 1 (daemon), or
-// LIVE_DAEMON_PORT (default 9898) with --live.
+// Ports: PREVIEW_PORT (web, default 7800) and PREVIEW_PORT + 1 (daemon). With --live, the
+// development channel's own pair: web 9898 and daemon 9899 (PREVIEW_PORT, LIVE_DAEMON_PORT).
 // `npm run shot` reads .dev/preview/state.json to screenshot the running preview.
 //
 // --live is the stack for trying a feature end to end before it ships as a beta: the daemon runs
@@ -31,10 +31,10 @@ const previewDir = path.join(root, live ? ".dev/live" : ".dev/preview");
 const home = path.join(previewDir, "home");
 const repo = path.join(previewDir, "demo-repo");
 const keep = live || process.argv.includes("--keep");
-const webPort = Number(process.env.PREVIEW_PORT ?? (live ? 7820 : 7800));
-// Live gets a fixed daemon port apart from stable (9999) and beta (9998), so a host added in the
-// installed app keeps working across runs.
-const daemonPort = live ? Number(process.env.LIVE_DAEMON_PORT ?? 9898) : webPort + 1;
+const webPort = Number(process.env.PREVIEW_PORT ?? (live ? 9898 : 7800));
+// Each channel has a fixed daemon and web port: stable 9999/9998, beta 9989/9988, development
+// 9899/9898. A host added in the installed app keeps working across runs.
+const daemonPort = live ? Number(process.env.LIVE_DAEMON_PORT ?? 9899) : webPort + 1;
 const lanIp =
   Object.values(os.networkInterfaces())
     .flat()

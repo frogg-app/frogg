@@ -50,7 +50,8 @@ identity its own name:
 | --------------- | ------------------- | ------------------------ |
 | App name        | `frogg`             | `frogg beta`             |
 | Application id  | `app.frogg.frogg`   | `app.frogg.frogg.beta`   |
-| Daemon port     | `9999`              | `9998`                   |
+| Daemon port     | `9999`              | `9989`                   |
+| Web client port | `9998`              | `9988`                   |
 | State directory | `~/.frogg`          | `~/.frogg-beta`          |
 | CLI             | `frogg`             | `frogg-beta`             |
 | Service         | `frogg-daemon`      | `frogg-beta-daemon`      |
@@ -83,18 +84,22 @@ commands frogg beta's agents run do not see frogg beta's internal settings.
    ```
 
    The beta installer puts `frogg-beta` next to `frogg` and registers `frogg-beta-daemon`
-   on port 9998. With no `FROGG_BETA_VERSION` set, it installs the newest `-beta.N` release.
+   on port 9989. With no `FROGG_BETA_VERSION` set, it installs the newest `-beta.N` release.
    Install the frogg beta desktop app or APK from the same release. With
    [developer options](/docs/using-frogg/developer-options/) on, **Settings → Developer** does
    both the app and each host's beta daemon from inside frogg.
 
-3. For work that is not released yet, use a worktree dev daemon
-   ([development setup](/docs/contributing/development-setup/)). It uses its own home and
-   port, so it does not touch either install.
+3. For work that is not released yet, run a development daemon from a worktree with
+   `npm run dev:live`, or launch one from **Settings → Developer**. It uses its own home and
+   ports (daemon `9899`, web `9898`), so it does not touch either install.
 
 Stable and beta are separate daemons with separate projects, sessions and pairings. A
-frogg client can still add the frogg beta daemon as a host (`localhost:9998`) if you want
+frogg client can still add the frogg beta daemon as a host (`localhost:9989`) if you want
 one window on both.
+
+A frogg beta installed before 1.6.7 listens on `9998`, which is now frogg's web client port.
+Reinstall it (uninstall, then install, from **Settings → Developer** or with the scripts) to
+move it to `9989`, and re-add it as a host.
 
 ## Everyday flow
 
