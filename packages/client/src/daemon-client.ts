@@ -6794,7 +6794,7 @@ export class DaemonClient {
   }
 
   private requireDaemonChannelControlSupport(): void {
-    // COMPAT(daemonChannelControl): added in v1.6.6, remove gate after 2027-09-29.
+    // COMPAT(daemonChannelControl): added in v1.6.7, remove gate after 2027-09-29.
     if (this.lastServerInfoMessage?.features?.daemonChannelControl !== true) {
       throw new Error("Update the host to start and stop the beta and development daemons.");
     }

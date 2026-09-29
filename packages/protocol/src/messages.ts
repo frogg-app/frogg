@@ -4425,7 +4425,7 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
         // daemon.beta_channel.* install/uninstall/status for the side-by-side beta daemon.
         betaChannelManagement: z.boolean().optional(),
-        // COMPAT(daemonChannelControl): added in v1.6.6, remove gate after 2027-09-29.
+        // COMPAT(daemonChannelControl): added in v1.6.7, remove gate after 2027-09-29.
         // daemon.beta_channel.start/stop and daemon.dev_daemon.* for the developer settings.
         daemonChannelControl: z.boolean().optional(),
         // COMPAT(agentForkContext): added in v0.1.102, remove gate after 2026-12-28.
