@@ -28,6 +28,7 @@ import {
   savePersistedConfig,
   type PersistedConfig,
 } from "../persisted-config.js";
+import { claudeKeychainServices, systemKeychainProbe, type KeychainProbe } from "./claude-keychain.js";
 import { provisionProviderAccount } from "./provider-account-provisioner.js";
 
 export class ProviderAccountError extends Error {}
@@ -36,6 +37,8 @@ export interface ProviderAccountStoreOptions {
   froggHome: string;
   /** Overridable for tests; defaults to the daemon user's home directory. */
   homeDir?: string;
+  /** Overridable for tests; defaults to the macOS login keychain. */
+  keychainProbe?: KeychainProbe;
 }
 
 export interface CreateProviderAccountInput {
@@ -67,10 +70,12 @@ type ProviderAccountsConfig = Record<string, ProviderAccountsConfigEntry>;
 export class ProviderAccountStore {
   private readonly froggHome: string;
   private readonly homeDir: string;
+  private readonly keychainProbe: KeychainProbe;
 
   constructor(options: ProviderAccountStoreOptions) {
     this.froggHome = options.froggHome;
     this.homeDir = options.homeDir ?? os.homedir();
+    this.keychainProbe = options.keychainProbe ?? systemKeychainProbe;
   }
 
   /** The capability manifest with `enabled` overridden from `config.json`. */
@@ -114,7 +119,7 @@ export class ProviderAccountStore {
       for (const account of entry.accounts ?? []) {
         states.push({
           ...account,
-          authenticated: isAccountAuthenticated(account, capability),
+          authenticated: isAccountAuthenticated(account, capability, this.keychainProbe),
           isActive: isDefaultAccountActive(account.id, active)
             ? true
             : entry.activeAccountId === account.id,
@@ -136,7 +141,7 @@ export class ProviderAccountStore {
         });
         states.push({
           ...account,
-          authenticated: isAccountAuthenticated(account, capability),
+          authenticated: isAccountAuthenticated(account, capability, this.keychainProbe),
           isActive: isDefaultAccountActive(defaultId, active),
         });
       }
@@ -874,10 +879,18 @@ export class ProviderAccountStore {
 export function isAccountAuthenticated(
   account: Pick<ProviderAccount, "configDir" | "provider">,
   capability: ProviderAccountCapability | undefined,
+  keychainProbe: KeychainProbe = systemKeychainProbe,
 ): boolean {
   const resolved = capability ?? findProviderAccountCapability(account.provider);
   if (!resolved) return false;
-  return resolved.credentialFiles.some((file) => existsSync(path.join(account.configDir, file)));
+  if (resolved.credentialFiles.some((file) => existsSync(path.join(account.configDir, file)))) {
+    return true;
+  }
+  // Claude Code on macOS keeps its sign-in in the keychain, not in a credential file.
+  return (
+    account.provider === "claude" &&
+    claudeKeychainServices(account.configDir).some((service) => keychainProbe(service))
+  );
 }
 
 /**

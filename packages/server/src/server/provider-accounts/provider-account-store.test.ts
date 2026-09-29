@@ -19,6 +19,7 @@ import {
 } from "@frogg/protocol/provider-accounts";
 
 import { loadPersistedConfig, savePersistedConfig } from "../persisted-config.js";
+import { claudeKeychainServices } from "./claude-keychain.js";
 import { resolveProviderAccountEnv } from "./provider-account-env.js";
 import { ProviderAccountError, ProviderAccountStore } from "./provider-account-store.js";
 
@@ -34,7 +35,7 @@ describe("ProviderAccountStore", () => {
     homeDir = path.join(root, "home");
     mkdirSync(froggHome, { recursive: true });
     mkdirSync(path.join(homeDir, ".claude", "skills"), { recursive: true });
-    store = new ProviderAccountStore({ froggHome, homeDir });
+    store = new ProviderAccountStore({ froggHome, homeDir, keychainProbe: () => false });
   });
 
   afterEach(() => {
@@ -73,6 +74,23 @@ describe("ProviderAccountStore", () => {
     writeFileSync(path.join(account.configDir, ".credentials.json"), "{}");
 
     expect(store.list().find((candidate) => candidate.id === account.id)?.authenticated).toBe(true);
+  });
+
+  it("reports a claude account as authenticated from its macOS keychain item", () => {
+    const probed: string[] = [];
+    const keychainStore = new ProviderAccountStore({
+      froggHome,
+      homeDir,
+      keychainProbe: (service) => {
+        probed.push(service);
+        return service === claudeKeychainServices(path.join(homeDir, ".claude-peter"))[0];
+      },
+    });
+    const created = keychainStore.create({ provider: "claude", name: "peter", linkedFolders: [] });
+    const account = created.accounts.find((candidate) => candidate.name === "peter")!;
+
+    expect(account.authenticated).toBe(true);
+    expect(probed).toContain(claudeKeychainServices(account.configDir)[0]);
   });
 
   it("rejects invalid and duplicate names", () => {
@@ -236,7 +254,7 @@ describe("ProviderAccountStore rename, sign-out and portability", () => {
     homeDir = path.join(root, "home");
     mkdirSync(froggHome, { recursive: true });
     mkdirSync(path.join(homeDir, ".claude", "skills"), { recursive: true });
-    store = new ProviderAccountStore({ froggHome, homeDir });
+    store = new ProviderAccountStore({ froggHome, homeDir, keychainProbe: () => false });
   });
 
   afterEach(() => {
@@ -532,7 +550,7 @@ describe("ProviderAccountStore with a home-mode provider", () => {
     savePersistedConfig(froggHome, {
       providerAccounts: { gemini: { enabled: true } },
     });
-    store = new ProviderAccountStore({ froggHome, homeDir });
+    store = new ProviderAccountStore({ froggHome, homeDir, keychainProbe: () => false });
   });
 
   afterEach(() => {
