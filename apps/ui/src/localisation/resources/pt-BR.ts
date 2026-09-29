@@ -284,6 +284,10 @@ export const ptBR: TranslationResources = {
     cleanCut: {
       action: "Corte limpo",
       pending: "Resumindo...",
+      progress: "Resumindo a conversa, {{seconds}} s",
+      queue: "Enfileirar",
+      queueHint: "Na fila: enviada para a nova conversa quando o resumo estiver pronto",
+      ready: "Nova conversa pronta: o envio é imediato",
       failed: "Não foi possível fazer o corte limpo",
       hint: "Encerra esta conversa e inicia uma nova. Um modelo barato do mesmo provedor resume o chat (mensagens e chamadas de ferramentas, sem a saída delas) e o envia antes da sua mensagem. As alterações do workspace são mantidas e a conversa anterior continua visível para você, mas não para o agente.",
       subagents: {

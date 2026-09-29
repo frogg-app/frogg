@@ -282,6 +282,10 @@ export const en = {
     cleanCut: {
       action: "Clean cut",
       pending: "Summarising...",
+      progress: "Summarising the conversation, {{seconds}}s",
+      queue: "Queue",
+      queueHint: "Queued: sends into the fresh conversation once the summary is ready",
+      ready: "Fresh conversation ready: sending is instant",
       failed: "Couldn't make a clean cut",
       hint: "End this conversation and start a fresh one. A cheap model on the same provider summarises the chat (messages and tool calls, not their output) and sends it ahead of your message. Your workspace changes are kept, and the old conversation stays visible to you but not to the agent.",
       subagents: {

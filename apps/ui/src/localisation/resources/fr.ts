@@ -286,6 +286,10 @@ export const fr: TranslationResources = {
     cleanCut: {
       action: "Coupure nette",
       pending: "Résumé en cours...",
+      progress: "Résumé de la conversation, {{seconds}} s",
+      queue: "File d'attente",
+      queueHint: "En file : envoyé dans la nouvelle conversation dès que le résumé est prêt",
+      ready: "Nouvelle conversation prête : l'envoi est immédiat",
       failed: "Impossible de faire la coupure nette",
       hint: "Termine cette conversation et en démarre une nouvelle. Un modèle économique du même fournisseur résume le chat (messages et appels d'outils, sans leur sortie) et l'envoie avant votre message. Les modifications de l'espace de travail sont conservées et l'ancienne conversation reste visible pour vous, mais pas pour l'agent.",
       subagents: {

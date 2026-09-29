@@ -189,11 +189,16 @@ export interface MessageInputProps {
   staleContextWarning?: StaleContextWarning | null;
   /**
    * COMPAT(agentCleanCut): added in v1.6.2. Offered beside the stale-context
-   * warning: summarise the conversation into a fresh one, then send this
-   * message there instead of re-sending the whole context. Null hides it.
+   * warning: summarise the conversation into a fresh one instead of
+   * re-sending the whole context. Null hides it.
    */
   onCleanCut?: (() => void) | null;
+  /** While true, sending queues: the button turns amber and says so. */
   cleanCutPending?: boolean;
+  /** When the running cut started, for its elapsed time. */
+  cleanCutStartedAt?: number | null;
+  /** A cut finished and the next send goes straight into the fresh conversation. */
+  cleanCutReady?: boolean;
   /**
    * COMPAT(sessionPresence): added in v1.6.0. Set when somebody else is
    * actively writing to the same agent. Warns in amber; never disables.
@@ -1120,6 +1125,8 @@ interface ResolvedMessageInputProps {
   staleContextWarning: StaleContextWarning | null;
   onCleanCut: (() => void) | null;
   cleanCutPending: boolean;
+  cleanCutStartedAt: number | null;
+  cleanCutReady: boolean;
   presenceWarning: PresenceWarning | null;
   presenceSlot: React.ReactNode;
   textReplacement: TextReplacement;
@@ -1176,6 +1183,8 @@ function resolveMessageInputProps(props: MessageInputProps): ResolvedMessageInpu
     staleContextWarning: props.offline ? null : (props.staleContextWarning ?? null),
     onCleanCut: props.onCleanCut ?? null,
     cleanCutPending: props.cleanCutPending ?? false,
+    cleanCutStartedAt: props.cleanCutStartedAt ?? null,
+    cleanCutReady: props.cleanCutReady ?? false,
     // Offline wins over every advisory outline: a composer that cannot reach
     // its daemon has a more urgent thing to say than who else is typing, and
     // resolving it here keeps the render paths from combining the two.
@@ -1204,12 +1213,28 @@ const StaleContextNotice = memo(function StaleContextNotice({
   warning,
   onCleanCut,
   cleanCutPending,
+  cleanCutStartedAt,
+  cleanCutReady,
 }: {
   warning: StaleContextWarning | null;
   onCleanCut: (() => void) | null;
   cleanCutPending: boolean;
+  cleanCutStartedAt: number | null;
+  cleanCutReady: boolean;
 }): React.ReactElement | null {
   const { t } = useTranslation();
+  if (cleanCutPending) {
+    return <CleanCutProgress startedAt={cleanCutStartedAt} />;
+  }
+  if (cleanCutReady) {
+    return (
+      <View style={styles.staleContextNotice} pointerEvents="none">
+        <Text style={styles.cleanCutReadyText} numberOfLines={1} testID="composer-clean-cut-ready">
+          {t("composer.cleanCut.ready")}
+        </Text>
+      </View>
+    );
+  }
   if (warning === null) {
     return null;
   }
@@ -1256,6 +1281,37 @@ const StaleContextNotice = memo(function StaleContextNotice({
     </View>
   );
 });
+
+/**
+ * COMPAT(agentCleanCut): what the summariser is doing while it runs. The
+ * daemon reports no stages, so this is elapsed time and a bar that eases
+ * toward full over a typical cut; it never claims to be done before it is.
+ */
+const CLEAN_CUT_TYPICAL_MS = 20_000;
+
+function CleanCutProgress({ startedAt }: { startedAt: number | null }): React.ReactElement {
+  const { t } = useTranslation();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const elapsedMs = Math.max(0, now - (startedAt ?? now));
+  const fraction = 0.95 * (1 - Math.exp(-elapsedMs / CLEAN_CUT_TYPICAL_MS));
+  return (
+    <View style={styles.cleanCutProgress} pointerEvents="none" testID="composer-clean-cut-progress">
+      <View style={styles.staleContextNotice}>
+        <ThemedLoadingSpinner size="small" uniProps={amberSpinnerMapping} />
+        <Text style={styles.staleContextText} numberOfLines={1}>
+          {t("composer.cleanCut.progress", { seconds: Math.floor(elapsedMs / 1000) })}
+        </Text>
+      </View>
+      <View style={styles.cleanCutTrack}>
+        <View style={[styles.cleanCutFill, { width: `${Math.round(fraction * 100)}%` }]} />
+      </View>
+    </View>
+  );
+}
 
 export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
   function MessageInput(props, ref) {
@@ -1305,13 +1361,17 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       staleContextWarning,
       onCleanCut,
       cleanCutPending,
+      cleanCutStartedAt,
+      cleanCutReady,
       presenceWarning,
       presenceSlot,
       textReplacement,
-      submitLabel,
+      submitLabel: submitLabelProp,
     } = resolveMessageInputProps(props);
     const mode = resolveComposerInputMode(inputMode);
     const { t } = useTranslation();
+    // COMPAT(agentCleanCut): a send during a cut waits for the fresh conversation.
+    const submitLabel = cleanCutPending ? t("composer.cleanCut.queue") : submitLabelProp;
     const isCompact = useIsCompactFormFactor();
     const { height: windowHeight } = useWindowDimensions();
     const maxInputHeight = resolveMaxInputHeight(windowHeight);
@@ -1771,11 +1831,13 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       t,
     });
 
-    const sendTooltipLabel = resolveSendTooltipLabel({
-      submitButtonAccessibilityLabel,
-      defaultActionQueues,
-      t,
-    });
+    const sendTooltipLabel = cleanCutPending
+      ? t("composer.cleanCut.queueHint")
+      : resolveSendTooltipLabel({
+          submitButtonAccessibilityLabel,
+          defaultActionQueues,
+          t,
+        });
 
     const handleInputChange = useCallback(
       (nextValue: string) => {
@@ -1868,9 +1930,10 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
       () => [
         styles.sendButton,
         submitLabel ? styles.sendButtonLabeled : undefined,
+        cleanCutPending && styles.sendButtonQueued,
         isSendButtonDisabled && styles.buttonDisabled,
       ],
-      [isSendButtonDisabled, submitLabel],
+      [cleanCutPending, isSendButtonDisabled, submitLabel],
     );
     const overlayContainerStyle = useMemo(
       () => [styles.overlayContainer, { opacity: surfacePresentation.overlay.opacity }],
@@ -1923,6 +1986,8 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
             warning={staleContextWarning}
             onCleanCut={onCleanCut}
             cleanCutPending={cleanCutPending}
+            cleanCutStartedAt={cleanCutStartedAt}
+            cleanCutReady={cleanCutReady}
           />
           {attachmentSlot}
           {/* Text input */}
@@ -2084,6 +2149,26 @@ const styles = StyleSheet.create((theme: Theme, rt) => ({
     fontWeight: theme.fontWeight.semibold,
     textDecorationLine: "underline",
   },
+  cleanCutReadyText: {
+    flexShrink: 1,
+    color: theme.colors.palette.green[500],
+    fontSize: theme.fontSize.sm,
+    lineHeight: theme.fontSize.sm * 1.4,
+  },
+  cleanCutProgress: {
+    alignSelf: "stretch",
+    gap: theme.spacing[1],
+  },
+  cleanCutTrack: {
+    height: 2,
+    borderRadius: 1,
+    overflow: "hidden",
+    backgroundColor: theme.colors.surface2,
+  },
+  cleanCutFill: {
+    height: 2,
+    backgroundColor: theme.colors.palette.amber[500],
+  },
   cleanCutLinkHovered: {
     opacity: 0.8,
   },
@@ -2217,6 +2302,11 @@ const styles = StyleSheet.create((theme: Theme, rt) => ({
     paddingHorizontal: theme.spacing[3],
     borderRadius: controlRadius(themeOf(rt.themeName), "full"),
   },
+  // COMPAT(agentCleanCut): amber, like the notice above it, so a queued send
+  // does not look like an instant one.
+  sendButtonQueued: {
+    backgroundColor: theme.colors.palette.amber[500],
+  },
   sendButtonLabel: {
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.medium,
@@ -2263,6 +2353,9 @@ const iconForegroundMapping = (theme: Theme) => ({
 });
 const iconForegroundMutedMapping = (theme: Theme) => ({
   color: theme.colors.foregroundMuted,
+});
+const amberSpinnerMapping = (theme: Theme) => ({
+  color: theme.colors.palette.amber[500],
 });
 const iconAccentForegroundMapping = (theme: Theme) => ({
   color: theme.colors.accentForeground,
