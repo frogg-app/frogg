@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- **Beta and development daemons from Developer settings.** An installed beta daemon gets
+  **Start**/**Stop** (through its own CLI, so its service stays in charge) and **Open web UI**.
+  A new **Development daemon** card launches `npm run dev:live` from any source checkout among a
+  host's workspaces (daemon on port 9898, web app on 7820, one at a time), stops it, and opens
+  its web UI. The development daemon names itself `<hostname>-DEVELOPMENT` and starts with the
+  host's provider accounts, projects and conversations. New `daemon.beta_channel.start`/`stop`
+  and `daemon.dev_daemon.*` RPCs behind `features.daemonChannelControl`.
+- **Claude input tokens include cached input.** Claude usage now counts cache writes and reads
+  in input tokens (cache reads stay reported separately), as the other providers do; a clean
+  cut's summary no longer shows a handful of tokens in.
+- **Shut down in the daemon conflict warning works on desktop and web.** It asked for
+  confirmation with a dialog that only exists on mobile.
 - **Clean cut cost.** The clean cut divider now shows what the summary cost (tokens in and out,
   plus dollars when the provider reports them, failed attempts included) next to how much
   context the ended conversation held, so a cut that cost as much as it saved stands out.
