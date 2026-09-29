@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
+  devBar: {
+    daemon: "개발 데몬",
+    web: "개발 웹",
+    rebuildDaemon: "빌드 후 재시작",
+    restartWeb: "캐시를 지우고 재시작",
+    openWeb: "열기",
+    stop: "중지",
+    startIn: "{{name}}에서 시작",
+    lastError: "마지막 빌드 실패: {{error}}",
+    behindMain_one: "main보다 커밋 {{count}}개 뒤처짐",
+    behindMain_other: "main보다 커밋 {{count}}개 뒤처짐",
+    tone: {
+      running: "실행 중",
+      stale: "오래됨",
+      busy: "빌드 중…",
+      stopped: "중지됨",
+    },
+  },
   releaseStreams: {
     label: "릴리스 스트림",
     subtitle: "베타, 안정 릴리스, 업스트림과 각 스트림에 도달한 변경 사항",

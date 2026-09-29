@@ -146,9 +146,83 @@ describe("DevDaemonService", () => {
     expect((await service.status([])).running).toBe(false);
   });
 
-  test("the development daemon itself cannot launch another", async () => {
-    const { service } = createService({ env: { FROGG_LISTEN: `0.0.0.0:${DEV_DAEMON_PORT}` } });
-    expect((await service.status([])).supported).toBe(false);
+  test("the development daemon reports and rebuilds itself through its launcher", async () => {
+    const control = path.join(root, "control.json");
+    await writeFile(
+      control,
+      JSON.stringify({ url: "http://launcher.test", token: "t0k", pid: 77 }),
+    );
+    const requests: Array<{ url: string; method: string; auth: string | null }> = [];
+    const fetchImpl = (async (url: string, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      requests.push({ url, method: init?.method ?? "GET", auth: headers.get("authorization") });
+      if (url.endsWith("/status")) {
+        return Response.json({
+          daemon: { running: true, stale: ["protocol or client source changed"] },
+          web: { running: false, stale: [] },
+          busy: null,
+          lastError: null,
+          behindMain: 3,
+          branch: "feature",
+        });
+      }
+      return Response.json({ accepted: true }, { status: 202 });
+    }) as typeof fetch;
+    const service = new DevDaemonService({
+      logger: createTestLogger(),
+      froggHome: home,
+      platform: "linux",
+      env: { FROGG_DEV_CONTROL_FILE: control, FROGG_DEV_ROOT: root },
+      isAlive: (pid) => pid === 77,
+      probe: async () => false,
+      fetchImpl,
+    });
+
+    const status = await service.status([]);
+    expect(status).toMatchObject({
+      supported: true,
+      isSelf: true,
+      running: true,
+      ready: true,
+      webReady: false,
+      daemonStale: ["protocol or client source changed"],
+      behindMain: 3,
+      branch: "feature",
+      canRebuild: true,
+      cwd: root,
+    });
+    expect(await service.rebuild("daemon")).toBeNull();
+    expect(requests.at(-1)).toEqual({
+      url: "http://launcher.test/rebuild?target=daemon",
+      method: "POST",
+      auth: "Bearer t0k",
+    });
+    expect(await service.start(await makeCheckout("frogg"))).toMatch(/development daemon/);
+    expect(await service.stop()).toMatch(/development daemon/);
+  });
+
+  test("adopts a dev:live started by hand in one of the checkouts", async () => {
+    const checkout = await makeCheckout("frogg");
+    await mkdir(path.join(checkout, ".dev", "live"), { recursive: true });
+    await writeFile(
+      path.join(checkout, ".dev", "live", "control.json"),
+      JSON.stringify({ url: "http://launcher.test", token: "t", pid: 55 }),
+    );
+    const service = new DevDaemonService({
+      logger: createTestLogger(),
+      froggHome: home,
+      platform: "linux",
+      env: {},
+      isAlive: (pid) => pid === 55,
+      probe: async () => true,
+      fetchImpl: (async () => new Response("", { status: 500 })) as typeof fetch,
+    });
+
+    expect(await service.status([workspace(checkout)])).toMatchObject({
+      running: true,
+      cwd: checkout,
+      canRebuild: true,
+    });
   });
 
   test("stop clears a launcher that already exited", async () => {

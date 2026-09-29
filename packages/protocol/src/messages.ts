@@ -1881,6 +1881,13 @@ export const DaemonDevDaemonStopRequestSchema = z.object({
 export type DaemonDevDaemonGetStatusRequest = z.infer<typeof DaemonDevDaemonGetStatusRequestSchema>;
 export type DaemonDevDaemonStartRequest = z.infer<typeof DaemonDevDaemonStartRequestSchema>;
 export type DaemonDevDaemonStopRequest = z.infer<typeof DaemonDevDaemonStopRequestSchema>;
+export const DaemonDevDaemonRebuildRequestSchema = z.object({
+  type: z.literal("daemon.dev_daemon.rebuild.request"),
+  requestId: z.string(),
+  /** "daemon": build protocol and client, then restart the daemon. "web": restart the web app. */
+  target: z.enum(["daemon", "web"]),
+});
+export type DaemonDevDaemonRebuildRequest = z.infer<typeof DaemonDevDaemonRebuildRequestSchema>;
 
 // Web client: the daemon's own web server for the browser app, on its own port.
 export const DaemonWebUiGetStatusRequestSchema = z.object({
@@ -3798,6 +3805,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   DaemonDevDaemonGetStatusRequestSchema,
   DaemonDevDaemonStartRequestSchema,
   DaemonDevDaemonStopRequestSchema,
+  DaemonDevDaemonRebuildRequestSchema,
   DaemonWebUiGetStatusRequestSchema,
   DaemonWebUiUpdateRequestSchema,
   DaemonWebUiStartRequestSchema,
@@ -4461,6 +4469,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(webUiControl): added in v1.6.7, remove gate after 2027-09-29.
         // daemon.web_ui.* start/stop/configure the web client's own server.
         webUiControl: z.boolean().optional(),
+        // COMPAT(devDaemonRebuild): added in v1.6.7, remove gate after 2027-09-29.
+        // daemon.dev_daemon.rebuild and the rebuild fields on the development daemon status.
+        devDaemonRebuild: z.boolean().optional(),
         // COMPAT(agentForkContext): added in v0.1.102, remove gate after 2026-12-28.
         agentForkContext: z.boolean().optional(),
         // COMPAT(agentForkContextCursor): added in v0.1.108, remove gate after 2027-01-14.
@@ -6118,6 +6129,21 @@ export const DaemonDevDaemonStatusSchema = z.object({
   logPath: z.string().nullable(),
   /** Source checkouts of this repo among the host's workspaces. */
   checkouts: z.array(DaemonDevDaemonCheckoutSchema),
+  /** Its web app answers on `webPort`. */
+  webReady: z.boolean().optional(),
+  /** Why the daemon or web app is out of date and needs a rebuild; empty when current. */
+  daemonStale: z.array(z.string()).optional(),
+  webStale: z.array(z.string()).optional(),
+  /** A rebuild in progress: "daemon" or "web". */
+  busy: z.string().nullable().optional(),
+  /** Why the last rebuild failed. */
+  lastError: z.string().nullable().optional(),
+  /** Commits on origin/main the checkout does not have. */
+  behindMain: z.number().nullable().optional(),
+  /** This daemon is the development daemon: it can rebuild itself, not start or stop. */
+  isSelf: z.boolean().optional(),
+  /** Its launcher accepts rebuild requests. */
+  canRebuild: z.boolean().optional(),
 });
 export type DaemonDevDaemonStatus = z.infer<typeof DaemonDevDaemonStatusSchema>;
 
@@ -6143,6 +6169,12 @@ export const DaemonDevDaemonStopResponseSchema = z.object({
   payload: DaemonControlResultPayloadSchema,
 });
 export type DaemonDevDaemonStopResponse = z.infer<typeof DaemonDevDaemonStopResponseSchema>;
+
+export const DaemonDevDaemonRebuildResponseSchema = z.object({
+  type: z.literal("daemon.dev_daemon.rebuild.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonDevDaemonRebuildResponse = z.infer<typeof DaemonDevDaemonRebuildResponseSchema>;
 
 export const DaemonWebUiInterfaceSchema = z.object({
   address: z.string(),
@@ -8333,6 +8365,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   DaemonDevDaemonGetStatusResponseSchema,
   DaemonDevDaemonStartResponseSchema,
   DaemonDevDaemonStopResponseSchema,
+  DaemonDevDaemonRebuildResponseSchema,
   DaemonWebUiGetStatusResponseSchema,
   DaemonWebUiUpdateResponseSchema,
   DaemonWebUiStartResponseSchema,

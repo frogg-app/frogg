@@ -100,3 +100,22 @@ that fails straight away shows that log's error.
 It needs the **owner** role, Linux or macOS, and dependencies installed in the checkout
 (`npm ci`). The development daemon cannot launch another one. When the daemon that launched it
 runs as a systemd service, restarting that daemon stops the development daemon too.
+
+## Dev bar
+
+With developer options on, a bar under the sidebar header shows the development daemon and its
+web app when a connected host manages one (or is one). Each has a dot: green running, amber
+out of date, blue rebuilding, grey stopped. Its menu says why it is out of date, how many
+commits the checkout is behind `origin/main`, and why the last rebuild failed, if it did.
+
+| Pill       | Actions                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------- |
+| Dev daemon | **Rebuild and restart** (`npm run build:client`, then restart), **Stop**, **Start in** a checkout |
+| Dev web    | **Open**, **Restart with a clear cache**                                                 |
+
+"Out of date" means protocol or client source changed since the last build, dependencies changed
+(run `npm ci`, then stop and start it), or the web app's config changed since it started. The
+bar reaches `dev:live` through `.dev/live/control.json`, which the launcher writes on start, so
+it also manages a `dev:live` you started by hand. Start and stop come from the stable or beta
+daemon; the development daemon itself can only rebuild and restart.
+

@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
+  devBar: {
+    daemon: "Демон разработки",
+    web: "Веб разработки",
+    rebuildDaemon: "Собрать и перезапустить",
+    restartWeb: "Перезапустить с очисткой кэша",
+    openWeb: "Открыть",
+    stop: "Остановить",
+    startIn: "Запустить в {{name}}",
+    lastError: "Последняя сборка не удалась: {{error}}",
+    behindMain_one: "Коммитов позади main: {{count}}",
+    behindMain_other: "Коммитов позади main: {{count}}",
+    tone: {
+      running: "Работает",
+      stale: "Устарел",
+      busy: "Сборка…",
+      stopped: "Остановлен",
+    },
+  },
   releaseStreams: {
     label: "Потоки выпусков",
     subtitle: "Бета-версии, стабильные выпуски и upstream, и какие изменения дошли до каждого",

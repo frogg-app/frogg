@@ -127,6 +127,7 @@ const INBOUND_ROLE = {
   "daemon.beta_channel.uninstall.request": "owner",
   "daemon.config.reload.request": "owner",
   "daemon.dev_daemon.get_status.request": "owner",
+  "daemon.dev_daemon.rebuild.request": "owner",
   "daemon.dev_daemon.start.request": "owner",
   "daemon.dev_daemon.stop.request": "owner",
   "daemon.get_pairing_offer.request": "owner",

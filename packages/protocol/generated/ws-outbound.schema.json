@@ -60120,6 +60120,45 @@
                         "additionalProperties": false
                       }
                     },
+                    "webReady": {
+                      "type": "boolean"
+                    },
+                    "daemonStale": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "webStale": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "busy": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastError": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "behindMain": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "isSelf": {
+                      "type": "boolean"
+                    },
+                    "canRebuild": {
+                      "type": "boolean"
+                    },
                     "requestId": {
                       "type": "string"
                     },
@@ -60193,6 +60232,39 @@
                 "type": {
                   "type": "string",
                   "const": "daemon.dev_daemon.stop.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "error"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.dev_daemon.rebuild.response"
                 },
                 "payload": {
                   "type": "object",

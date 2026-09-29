@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- **Dev bar.** With developer options on, the sidebar shows the development daemon and its web
+  app with a status dot each, and menus to rebuild and restart the daemon, restart the web app
+  with a clear cache, open it, and start or stop it. It flags what is out of date and how far
+  the checkout is behind `origin/main`. New `daemon.dev_daemon.rebuild` RPC behind
+  `features.devDaemonRebuild`; `dev:live` exposes a token-guarded control endpoint through
+  `.dev/live/control.json`. The repo's `frogg.json` drops its old `daemon`, `app`, `desktop` and
+  `ios-simulator` scripts in favour of it.
 - **Linked Claude conversations.** Two processes holding the same Claude session (stable and beta
   daemons, a development daemon, or `claude --resume` in a terminal) no longer fork it. Each
   daemon follows the session's transcript while idle and shows turns the other side added, live,

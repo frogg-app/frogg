@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ptBR: TranslationResources = {
+  devBar: {
+    daemon: "Daemon dev",
+    web: "Web dev",
+    rebuildDaemon: "Recompilar e reiniciar",
+    restartWeb: "Reiniciar com o cache limpo",
+    openWeb: "Abrir",
+    stop: "Parar",
+    startIn: "Iniciar em {{name}}",
+    lastError: "A última recompilação falhou: {{error}}",
+    behindMain_one: "{{count}} commit atrás da main",
+    behindMain_other: "{{count}} commits atrás da main",
+    tone: {
+      running: "Em execução",
+      stale: "Desatualizado",
+      busy: "Recompilando…",
+      stopped: "Parado",
+    },
+  },
   releaseStreams: {
     label: "Fluxos de versões",
     subtitle: "Betas, versões estáveis e upstream, e quais mudanças chegaram a cada um",

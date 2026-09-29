@@ -1,6 +1,24 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
 export const en = {
+  devBar: {
+    daemon: "Dev daemon",
+    web: "Dev web",
+    rebuildDaemon: "Rebuild and restart",
+    restartWeb: "Restart with a clear cache",
+    openWeb: "Open",
+    stop: "Stop",
+    startIn: "Start in {{name}}",
+    lastError: "Last rebuild failed: {{error}}",
+    behindMain_one: "{{count}} commit behind main",
+    behindMain_other: "{{count}} commits behind main",
+    tone: {
+      running: "Running",
+      stale: "Out of date",
+      busy: "Rebuilding…",
+      stopped: "Stopped",
+    },
+  },
   releaseStreams: {
     label: "Release streams",
     subtitle: "Betas, stable releases and upstream, and which changes have reached each",

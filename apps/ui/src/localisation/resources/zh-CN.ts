@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
+  devBar: {
+    daemon: "开发守护进程",
+    web: "开发 Web",
+    rebuildDaemon: "重新构建并重启",
+    restartWeb: "清除缓存后重启",
+    openWeb: "打开",
+    stop: "停止",
+    startIn: "在 {{name}} 中启动",
+    lastError: "上次构建失败：{{error}}",
+    behindMain_one: "落后 main {{count}} 个提交",
+    behindMain_other: "落后 main {{count}} 个提交",
+    tone: {
+      running: "运行中",
+      stale: "已过时",
+      busy: "正在构建…",
+      stopped: "已停止",
+    },
+  },
   releaseStreams: {
     label: "发布流",
     subtitle: "Beta 版、稳定版和上游，以及各自已包含的变更",

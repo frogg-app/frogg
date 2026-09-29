@@ -683,6 +683,17 @@ export class DaemonSession {
     });
   }
 
+  async handleDevDaemonRebuildRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.rebuild.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.devDaemon;
+    const error = service ? await service.rebuild(msg.target) : DEV_DAEMON_UNAVAILABLE;
+    this.host.emit({
+      type: "daemon.dev_daemon.rebuild.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
   async handleDevDaemonStopRequest(
     msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.stop.request" }>,
   ): Promise<void> {

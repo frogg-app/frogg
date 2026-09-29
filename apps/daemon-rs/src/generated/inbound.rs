@@ -295,6 +295,8 @@ pub enum SessionMessage {
     DaemonDevDaemonStartRequest(DaemonDevDaemonStartRequest),
     #[serde(rename = "daemon.dev_daemon.stop.request")]
     DaemonDevDaemonStopRequest(DaemonDevDaemonStopRequest),
+    #[serde(rename = "daemon.dev_daemon.rebuild.request")]
+    DaemonDevDaemonRebuildRequest(DaemonDevDaemonRebuildRequest),
     #[serde(rename = "daemon.web_ui.get_status.request")]
     DaemonWebUiGetStatusRequest(DaemonWebUiGetStatusRequest),
     #[serde(rename = "daemon.web_ui.update.request")]
@@ -1924,6 +1926,21 @@ pub struct DaemonDevDaemonStartRequest {
 pub struct DaemonDevDaemonStopRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonRebuildRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub target: DaemonDevDaemonRebuildRequestTarget,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DaemonDevDaemonRebuildRequestTarget {
+    #[serde(rename = "daemon")]
+    Daemon,
+    #[serde(rename = "web")]
+    Web,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
+  devBar: {
+    daemon: "開発デーモン",
+    web: "開発 Web",
+    rebuildDaemon: "ビルドして再起動",
+    restartWeb: "キャッシュを消して再起動",
+    openWeb: "開く",
+    stop: "停止",
+    startIn: "{{name}} で起動",
+    lastError: "前回のビルドに失敗しました: {{error}}",
+    behindMain_one: "main より {{count}} コミット遅れています",
+    behindMain_other: "main より {{count}} コミット遅れています",
+    tone: {
+      running: "実行中",
+      stale: "古くなっています",
+      busy: "ビルド中…",
+      stopped: "停止中",
+    },
+  },
   releaseStreams: {
     label: "リリースストリーム",
     subtitle: "ベータ、安定版、アップストリームと、各ストリームに届いた変更",

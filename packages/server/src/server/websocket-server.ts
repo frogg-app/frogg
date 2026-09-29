@@ -2081,7 +2081,9 @@ export class VoiceAssistantWebSocketServer {
         // COMPAT(betaChannelManagement): added in v1.6.5, remove after 2027-09-27.
         betaChannelManagement: this.supportsBetaChannelManagement(),
         // COMPAT(daemonChannelControl): added in v1.6.7, remove after 2027-09-29.
-        ...(this.daemonRuntimeConfig?.devDaemon ? { daemonChannelControl: true } : {}),
+        ...(this.daemonRuntimeConfig?.devDaemon
+          ? { daemonChannelControl: true, devDaemonRebuild: true }
+          : {}),
         // COMPAT(webUiControl): added in v1.6.7, remove after 2027-09-29.
         ...(this.daemonRuntimeConfig?.webUi ? { webUiControl: true } : {}),
         // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.

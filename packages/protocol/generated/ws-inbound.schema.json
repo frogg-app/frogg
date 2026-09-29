@@ -3984,6 +3984,30 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.dev_daemon.rebuild.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "target": {
+                  "type": "string",
+                  "enum": [
+                    "daemon",
+                    "web"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "target"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "daemon.web_ui.get_status.request"
                 },
                 "requestId": {

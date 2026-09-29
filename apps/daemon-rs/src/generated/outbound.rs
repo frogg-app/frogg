@@ -586,6 +586,8 @@ pub enum SessionMessage {
     DaemonDevDaemonStartResponse(DaemonDevDaemonStartResponse),
     #[serde(rename = "daemon.dev_daemon.stop.response")]
     DaemonDevDaemonStopResponse(DaemonDevDaemonStopResponse),
+    #[serde(rename = "daemon.dev_daemon.rebuild.response")]
+    DaemonDevDaemonRebuildResponse(DaemonDevDaemonRebuildResponse),
     #[serde(rename = "daemon.web_ui.get_status.response")]
     DaemonWebUiGetStatusResponse(DaemonWebUiGetStatusResponse),
     #[serde(rename = "daemon.web_ui.update.response")]
@@ -13446,6 +13448,22 @@ pub struct DaemonDevDaemonGetStatusResponsePayload {
     #[serde(rename = "logPath", skip_serializing_if = "Option::is_none")]
     pub log_path: Option<String>,
     pub checkouts: Vec<DaemonDevDaemonGetStatusResponsePayloadCheckoutsItem>,
+    #[serde(rename = "webReady", skip_serializing_if = "Option::is_none")]
+    pub web_ready: Option<bool>,
+    #[serde(rename = "daemonStale", skip_serializing_if = "Option::is_none")]
+    pub daemon_stale: Option<Vec<String>>,
+    #[serde(rename = "webStale", skip_serializing_if = "Option::is_none")]
+    pub web_stale: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub busy: Option<String>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "behindMain", skip_serializing_if = "Option::is_none")]
+    pub behind_main: Option<f64>,
+    #[serde(rename = "isSelf", skip_serializing_if = "Option::is_none")]
+    pub is_self: Option<bool>,
+    #[serde(rename = "canRebuild", skip_serializing_if = "Option::is_none")]
+    pub can_rebuild: Option<bool>,
     #[serde(rename = "requestId")]
     pub request_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -13480,6 +13498,19 @@ pub struct DaemonDevDaemonStopResponse {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DaemonDevDaemonStopResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonRebuildResponse {
+    pub payload: DaemonDevDaemonRebuildResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonRebuildResponsePayload {
     #[serde(rename = "requestId")]
     pub request_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]

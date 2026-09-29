@@ -5682,6 +5682,21 @@ export class DaemonClient {
     });
   }
 
+  /** "daemon": build protocol and client, then restart the daemon. "web": restart the web app. */
+  async rebuildDevDaemon(
+    target: "daemon" | "web",
+    requestId?: string,
+  ): Promise<DaemonControlResultPayload> {
+    // COMPAT(devDaemonRebuild): added in v1.6.7, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.devDaemonRebuild !== true) {
+      throw new Error("Update the host to rebuild the development daemon from the app.");
+    }
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.rebuild.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.rebuild.request", target },
+    });
+  }
+
   async stopDevDaemon(requestId?: string): Promise<DaemonControlResultPayload> {
     this.requireDaemonChannelControlSupport();
     return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.stop.response">({

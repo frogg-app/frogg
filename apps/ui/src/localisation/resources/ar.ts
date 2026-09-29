@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
+  devBar: {
+    daemon: "خادم التطوير",
+    web: "ويب التطوير",
+    rebuildDaemon: "إعادة البناء وإعادة التشغيل",
+    restartWeb: "إعادة التشغيل مع مسح الذاكرة المؤقتة",
+    openWeb: "فتح",
+    stop: "إيقاف",
+    startIn: "التشغيل في {{name}}",
+    lastError: "فشلت آخر إعادة بناء: {{error}}",
+    behindMain_one: "إيداعات متأخرة عن main: {{count}}",
+    behindMain_other: "إيداعات متأخرة عن main: {{count}}",
+    tone: {
+      running: "يعمل",
+      stale: "قديم",
+      busy: "جارٍ إعادة البناء…",
+      stopped: "متوقف",
+    },
+  },
   releaseStreams: {
     label: "مسارات الإصدارات",
     subtitle: "الإصدارات التجريبية والمستقرة والمصدر الأعلى، وأي التغييرات وصلت إلى كل منها",

@@ -17,7 +17,9 @@
 // changes. It imports the installed daemon's provider accounts and projects on each start, and
 // names itself <hostname>-DEVELOPMENT. Add its daemon endpoint as a host in an installed Frogg app to drive it from there.
 import { spawn, execSync, type ChildProcess } from "node:child_process";
-import { existsSync, readFileSync, watch } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, watch } from "node:fs";
+import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import { copyFile, cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
@@ -103,6 +105,9 @@ const daemonEnv: NodeJS.ProcessEnv = {
   FROGG_WEB_UI_ENABLED: "false",
   // Its conversations are copies of the installed daemon's; it must never continue one itself.
   FROGG_RESUME_INTERRUPTED_TURNS: live ? "0" : undefined,
+  // Lets the development daemon report and rebuild itself through its launcher.
+  FROGG_DEV_CONTROL_FILE: live ? path.join(root, ".dev/live/control.json") : undefined,
+  FROGG_DEV_ROOT: live ? root : undefined,
   FROGG_WEB_UI_HOST: undefined,
   FROGG_WEB_UI_PORT: undefined,
   FROGG_WEB_UI_DIST_DIR: undefined,
@@ -127,6 +132,54 @@ if (brandPrefix !== "FROGG") {
   }
 }
 let daemon: ChildProcess | undefined;
+let web: ChildProcess | undefined;
+let webStartedAt = Date.now();
+const launcherStartedAt = Date.now();
+
+function startWeb(clearCache = false): void {
+  webStartedAt = Date.now();
+  web = start(
+    "web",
+    process.execPath,
+    [
+      path.join(root, "node_modules/expo/bin/cli"),
+      "start",
+      "--web",
+      "--port",
+      String(webPort),
+      ...(clearCache ? ["--clear"] : []),
+    ],
+    {
+      BROWSER: "none",
+      APP_VARIANT: "development",
+      EXPO_PUBLIC_LOCAL_DAEMON: `${lanIp}:${daemonPort}`,
+      EXPO_PUBLIC_FROGG_DEV_BUILD_LABEL: live ? currentBranch() : "preview",
+    },
+    path.join(root, "apps/ui"),
+  );
+}
+
+/** Stops the Metro group and starts it again with a cleared cache. */
+async function restartWeb(): Promise<void> {
+  const previous = web;
+  if (!previous?.pid || shuttingDown) return;
+  log("restarting the web app…");
+  restarting.add(previous);
+  const exited = new Promise((resolve) => previous.once("exit", resolve));
+  try {
+    process.kill(-previous.pid, "SIGTERM");
+  } catch {
+    /* already gone */
+  }
+  await exited;
+  children.splice(children.indexOf(previous), 1);
+  await waitForPortFree(webPort, 15_000);
+  startWeb(true);
+  await writeFile(pidFile, JSON.stringify(children.map((child) => child.pid)));
+  await waitForPort(webPort, "web app", 180_000);
+  await fetch(`http://127.0.0.1:${webPort}`).catch(() => undefined);
+  log("web app back up; reload the page.");
+}
 function startDaemon(): void {
   daemon = start("daemon", "npm", ["run", "dev", "--workspace=@frogg/server"], daemonEnv);
 }
@@ -177,7 +230,10 @@ function watchDaemonSources(): void {
       if (!file || /\.test\.ts$|(^|\/)\./.test(String(file))) return;
       changed = label;
       clearTimeout(timer);
-      timer = setTimeout(() => void restartDaemon(changed), 400);
+      // A rebuild from the app restarts the daemon itself once its build is done.
+      timer = setTimeout(() => {
+        if (busy !== "daemon") void restartDaemon(changed);
+      }, 400);
     });
   }
 }
@@ -361,6 +417,7 @@ async function shutdown(code: number): Promise<void> {
     }
   }
   await rm(path.join(previewDir, "state.json"), { force: true });
+  await rm(controlFile, { force: true });
   process.exit(code);
 }
 process.on("SIGINT", () => void shutdown(0));
@@ -427,14 +484,14 @@ async function importInstalledHome(): Promise<void> {
   if (installed.providerAccounts) config.providerAccounts = installed.providerAccounts;
   // Everything this daemon would do on its own to shared sessions and worktrees is off: resuming
   // or clean-cutting agents after a usage limit, archiving merged workspaces, sweeping worktrees.
-  const daemon = (config.daemon ?? {}) as Record<string, unknown>;
+  const daemonConfig = (config.daemon ?? {}) as Record<string, unknown>;
   config.daemon = {
-    ...daemon,
+    ...daemonConfig,
     autoResumeOnUsageLimit: false,
     autoArchiveAfterMerge: false,
     worktreeRetentionDays: 0,
     cleanCut: {
-      ...(daemon.cleanCut as Record<string, unknown> | undefined),
+      ...(daemonConfig.cleanCut as Record<string, unknown> | undefined),
       auto: { usageLimit: false, daemonRestart: false },
     },
   };
@@ -453,6 +510,154 @@ async function importInstalledHome(): Promise<void> {
   log(`imported provider accounts, projects and agents from ${source}`);
 }
 
+// Launcher control: the development daemon (or any daemon on this machine, which finds this
+// file) reports what is running and out of date, and asks for rebuilds, through a token-guarded
+// loopback endpoint. See DevDaemonService in packages/server.
+const controlFile = path.join(previewDir, "control.json");
+let busy: "daemon" | "web" | null = null;
+let lastActionError: string | null = null;
+
+function newestMtime(dir: string): number {
+  let newest = 0;
+  const walk = (current: string) => {
+    let entries: import("node:fs").Dirent[];
+    try {
+      entries = readdirSync(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const file = path.join(current, entry.name);
+      if (entry.isDirectory()) walk(file);
+      else newest = Math.max(newest, mtimeOf(file));
+    }
+  };
+  walk(dir);
+  return newest;
+}
+
+function mtimeOf(file: string): number {
+  try {
+    return statSync(file).mtimeMs;
+  } catch {
+    return 0;
+  }
+}
+
+function behindMain(): number | null {
+  try {
+    const count = execSync("git rev-list --count HEAD..origin/main", {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    return Number(count.trim());
+  } catch {
+    return null;
+  }
+}
+
+async function controlStatus() {
+  const depsChanged = mtimeOf(path.join(root, "package-lock.json")) > launcherStartedAt;
+  const builtAt = Math.min(
+    mtimeOf(path.join(root, "packages/client/dist/daemon-client.js")),
+    mtimeOf(path.join(root, "packages/protocol/dist/messages.js")),
+  );
+  const sourceAt = Math.max(
+    newestMtime(path.join(root, "packages/protocol/src")),
+    newestMtime(path.join(root, "packages/client/src")),
+  );
+  const daemonStale: string[] = [];
+  const webStale: string[] = [];
+  if (sourceAt > builtAt)
+    daemonStale.push("protocol or client source changed since the last build");
+  if (depsChanged) {
+    const reason = "dependencies changed: run npm ci, then stop and start the development daemon";
+    daemonStale.push(reason);
+    webStale.push(reason);
+  }
+  const webConfigAt = Math.max(
+    ...["metro.config.js", "app.config.ts", "app.json", ".env", ".env.local"].map((name) =>
+      mtimeOf(path.join(root, "apps/ui", name)),
+    ),
+  );
+  if (webConfigAt > webStartedAt) webStale.push("web app config changed since it started");
+  return {
+    daemon: { running: await isPortOpen(daemonPort), stale: daemonStale },
+    web: { running: await isPortOpen(webPort), stale: webStale },
+    busy,
+    lastError: lastActionError,
+    behindMain: behindMain(),
+    branch: currentBranch(),
+    daemonPort,
+    webPort,
+  };
+}
+
+async function runAction(target: "daemon" | "web"): Promise<void> {
+  busy = target;
+  lastActionError = null;
+  try {
+    if (target === "daemon") {
+      log("rebuilding protocol and client…");
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn("npm", ["run", "build:client"], { cwd: root, stdio: "ignore" });
+        child.once("error", reject);
+        child.once("exit", (code) => {
+          if (code === 0) {
+            resolve();
+            return;
+          }
+          reject(new Error(`npm run build:client exited with ${code}`));
+        });
+      });
+      await restartDaemon("rebuild");
+    } else {
+      await restartWeb();
+    }
+  } catch (error) {
+    lastActionError = error instanceof Error ? error.message : String(error);
+    log(`${target} rebuild failed: ${lastActionError}`);
+  } finally {
+    busy = null;
+  }
+}
+
+async function startControlServer(): Promise<void> {
+  const token = randomUUID();
+  const server = createServer((req, res) => {
+    const send = (status: number, body: unknown) => {
+      res.writeHead(status, { "content-type": "application/json" });
+      res.end(JSON.stringify(body));
+    };
+    if (req.headers.authorization !== `Bearer ${token}`)
+      return send(401, { error: "unauthorized" });
+    const url = new URL(req.url ?? "/", "http://127.0.0.1");
+    if (req.method === "GET" && url.pathname === "/status") {
+      void controlStatus().then((status) => send(200, status));
+      return;
+    }
+    if (req.method === "POST" && url.pathname === "/rebuild") {
+      const target = url.searchParams.get("target");
+      if (target !== "daemon" && target !== "web") return send(400, { error: "unknown target" });
+      if (busy) return send(409, { error: `already rebuilding the ${busy}` });
+      // Answer first: rebuilding the daemon restarts the daemon that asked.
+      send(202, { accepted: true });
+      void runAction(target);
+      return;
+    }
+    send(404, { error: "not found" });
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  server.unref();
+  const address = server.address();
+  const port = typeof address === "object" && address ? address.port : 0;
+  await writeFile(
+    controlFile,
+    JSON.stringify({ url: `http://127.0.0.1:${port}`, token, pid: process.pid, cwd: root }),
+  );
+}
+
 async function main(): Promise<void> {
   reapPreviousRun();
   await mkdir(previewDir, { recursive: true });
@@ -468,18 +673,8 @@ async function main(): Promise<void> {
   log("starting daemon…");
   startDaemon();
   log("starting web app…");
-  start(
-    "web",
-    process.execPath,
-    [path.join(root, "node_modules/expo/bin/cli"), "start", "--web", "--port", String(webPort)],
-    {
-      BROWSER: "none",
-      APP_VARIANT: "development",
-      EXPO_PUBLIC_LOCAL_DAEMON: `${lanIp}:${daemonPort}`,
-      EXPO_PUBLIC_FROGG_DEV_BUILD_LABEL: live ? currentBranch() : "preview",
-    },
-    path.join(root, "apps/ui"),
-  );
+  startWeb();
+  if (live) await startControlServer();
 
   await writeFile(pidFile, JSON.stringify(children.map((child) => child.pid)));
   await waitForPort(daemonPort, "daemon", 120_000);

@@ -210,13 +210,11 @@ The repo's own `frogg.json` configures worktrees created by a Frogg daemon. See
 `scripts/dev/seed-worktree-dev-state.mjs` (copies the source checkout's `.dev/frogg-home` and
 `packages/server/.env`), `npm run build:server`, and the `@frogg/expo-two-way-audio` build.
 
-| Script          | Type    | What it runs                                                              |
-| --------------- | ------- | ------------------------------------------------------------------------- |
-| `daemon`        | service | `scripts/dev/dev-daemon.sh` on `FROGG_PORT`, skipping the deps build        |
-| `app`           | service | `scripts/dev/dev-app.sh` with Metro on `FROGG_PORT`, pointed at the `daemon` service |
-| `desktop`       | service | `npm run dev:desktop` against the `daemon` service                        |
-| `ios-simulator` | service | `scripts/mobile/frogg-ios-simulator-service.sh` (macOS only)                |
-| `typecheck`     | script  | `npm run typecheck`                                                       |
+Its only script is `typecheck` (`npm run typecheck`). To try a branch with real providers, run
+`npm run dev:live` in the worktree (daemon on 9899, web app on 9898), or launch and manage it from
+the app: with [developer options](/docs/using-frogg/developer-options/) on, the dev bar at the
+top of the sidebar shows whether the development daemon and web app are running, and starts,
+stops, rebuilds and restarts them.
 
 ## Check a change
 

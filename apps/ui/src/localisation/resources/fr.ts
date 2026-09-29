@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
+  devBar: {
+    daemon: "Démon dev",
+    web: "Web dev",
+    rebuildDaemon: "Recompiler et redémarrer",
+    restartWeb: "Redémarrer avec un cache vide",
+    openWeb: "Ouvrir",
+    stop: "Arrêter",
+    startIn: "Démarrer dans {{name}}",
+    lastError: "La dernière recompilation a échoué : {{error}}",
+    behindMain_one: "{{count}} commit de retard sur main",
+    behindMain_other: "{{count}} commits de retard sur main",
+    tone: {
+      running: "En cours",
+      stale: "Obsolète",
+      busy: "Recompilation…",
+      stopped: "Arrêté",
+    },
+  },
   releaseStreams: {
     label: "Flux de versions",
     subtitle: "Bêtas, versions stables et upstream, et les changements arrivés dans chacun",
