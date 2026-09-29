@@ -19,7 +19,7 @@ import { SecurityDot } from "@/security/security-dot";
 import { useSecurityPosture } from "@/security/use-security-posture";
 import { BrandLogo } from "@/components/icons/brand-logo";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
-import { resolveAppVersion } from "@/utils/app-version";
+import { isBetaBuild, resolveAppVersion } from "@/utils/app-version";
 
 type SidebarIcon = ComponentType<{ size: number; color: string }>;
 
@@ -158,7 +158,7 @@ export function SettingsSidebar({
   const { t } = useTranslation();
   const isDesktopApp = isElectronRuntime();
   const shortcutsAvailable = useKeyboardShortcutsAvailable();
-  const developerOptions = useSettings((settings) => settings.developerOptions);
+  const developerOptions = useSettings((settings) => settings.developerOptions) || isBetaBuild();
   const scope = resolveSettingsScope(view);
   const isDesktop = layout === "desktop";
   // A host decides which of its own sections this app offers, so the list is

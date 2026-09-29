@@ -316,21 +316,3 @@ export async function runUnlinkCommand(
     return fields({ unlinked: id });
   });
 }
-
-export async function runDevModeCommand(
-  state: string | undefined,
-  options: CommandOptions,
-  _command: Command,
-): Promise<ListResult<FieldRow>> {
-  return withPlugins(options, async (client) => {
-    let policy;
-    if (state === undefined) policy = (await client.pluginsList()).policy;
-    else if (state === "on" || state === "off")
-      policy = (await client.pluginsDevSetEnabled(state === "on")).policy;
-    else throw { code: "INVALID_ARGUMENT", message: "Expected on or off" };
-    return fields({
-      developerMode: policy.developerModeEnabled ? "on" : "off",
-      brand: policy.developerMode,
-    });
-  });
-}

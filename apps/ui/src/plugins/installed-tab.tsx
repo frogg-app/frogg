@@ -75,12 +75,9 @@ export function InstalledTab({ serverId }: { serverId: string }): ReactElement {
 
 function DeveloperToolbar({ policy, onOpen }: { policy: PluginPolicy; onOpen: () => void }) {
   const { t } = useTranslation();
-  if (policy.developerMode === "forbidden") return null;
+  if (!policy.developerModeEnabled) return null;
   return (
     <View style={styles.toolbar}>
-      <Text style={styles.meta}>
-        {policy.developerModeEnabled ? t("plugins.developer.on") : t("plugins.developer.off")}
-      </Text>
       <Button variant="ghost" size="sm" onPress={onOpen} testID="plugins-developer-open">
         {t("plugins.developer.title")}
       </Button>
@@ -143,7 +140,12 @@ function InstalledRow({
   }, [plugin.id, plugin.name, remover, t]);
   const handleUnlink = useCallback(() => unlinker.mutate(plugin.id), [plugin.id, unlinker]);
   const handleSettings = useCallback(
-    () => setView({ kind: "settings", pluginId: plugin.id, pluginName: plugin.name }),
+    () =>
+      setView({
+        kind: "settings",
+        pluginId: plugin.id,
+        pluginName: plugin.name,
+      }),
     [plugin.id, plugin.name, setView],
   );
   const showUpdateError =
@@ -158,14 +160,19 @@ function InstalledRow({
             {plugin.name}
           </Text>
           <Text style={styles.meta} numberOfLines={1}>
-            {t("plugins.installed.meta", { id: plugin.id, version: plugin.version })}
+            {t("plugins.installed.meta", {
+              id: plugin.id,
+              version: plugin.version,
+            })}
           </Text>
         </View>
         <Switch
           value={plugin.enabled}
           onValueChange={handleToggle}
           disabled={busy}
-          accessibilityLabel={t("plugins.installed.enable", { name: plugin.name })}
+          accessibilityLabel={t("plugins.installed.enable", {
+            name: plugin.name,
+          })}
           testID={`plugins-enable-${plugin.id}`}
         />
       </View>
@@ -235,7 +242,9 @@ function InstalledRowDetails({ plugin }: { plugin: PluginInstalled }): ReactElem
         {isDev ? <StatusBadge label={t("plugins.devBadge")} variant="warning" /> : null}
         {plugin.updateAvailable ? (
           <StatusBadge
-            label={t("plugins.installed.updateAvailable", { version: plugin.updateAvailable })}
+            label={t("plugins.installed.updateAvailable", {
+              version: plugin.updateAvailable,
+            })}
             variant="success"
           />
         ) : null}

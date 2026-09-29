@@ -166,6 +166,7 @@ import { createRelayRuntime, type RelayRuntime } from "./relay-runtime.js";
 import type { PushNotificationSender } from "./push/index.js";
 import { getOrCreateServerId } from "./server-id.js";
 import { resolveDaemonVersion } from "./daemon-version.js";
+import { isStableVersion } from "@frogg/protocol/release-version";
 import type { AgentClient, AgentProvider } from "./agent/agent-sdk-types.js";
 import type {
   FirstAgentContext,
@@ -1631,6 +1632,8 @@ export async function createFroggDaemon(
     froggHome: config.froggHome,
     logger,
     policy: brand.plugins,
+    // Beta builds are the developer channel: local plugin folders link out of the box.
+    localLinking: !isStableVersion(daemonVersion),
     agents: createPluginAgentBridge({ agentManager, agentStorage, logger }),
   });
 

@@ -399,7 +399,7 @@ Controls where plugins come from and what users may do with them. The daemon enf
 | `officialRepo`   | boolean | `true` | Include Frogg's official repository (its key is compiled in) |
 | `repos`          | array of `{ name, url, publicKey }` | `[]` | Brand repositories. `publicKey` is the base64 raw ed25519 key from `frogg plugins keygen` |
 | `allowUserRepos` | boolean | `false` (`true` for frogg) | Users may add repositories; their key is pinned on first add |
-| `developerMode`  | `allowed` \| `forbidden` | `allowed` | Whether users can turn on developer mode and link local folders |
+| `developerMode`  | `allowed` \| `forbidden` | `allowed` | Whether beta builds can link local plugin folders (stable builds never can) |
 | `allow` / `deny` | plugin-id globs (`*`) | `[]` | Deny wins; an empty `allow` allows every id. Applies to the catalog, installs and already-installed plugins |
 | `preinstalled`   | array of `{ id, version? }` | `[]` | Installed on daemon start from brand repositories first, then the official one. `version` is exact or a range (`^1`, `~1.2`). Users cannot uninstall them. `build`-scope entries are for the brand build pipeline |
 | `autoUpdate`     | `off` \| `brand-repos` \| `all` | `brand-repos` | Background updates. Never applied when an update adds capabilities |

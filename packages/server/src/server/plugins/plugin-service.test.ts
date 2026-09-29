@@ -23,7 +23,9 @@ afterEach(async () => {
   for (const fn of cleanups.splice(0).toReversed()) await fn();
 });
 
-async function setup(opts: { policy?: Partial<PluginBrandPolicy>; brandRepo?: boolean } = {}) {
+async function setup(
+  opts: { policy?: Partial<PluginBrandPolicy>; brandRepo?: boolean; localLinking?: boolean } = {},
+) {
   const official = await startFixtureRepo();
   cleanups.push(() => official.close());
   let brand: FixtureRepo | null = null;
@@ -46,6 +48,7 @@ async function setup(opts: { policy?: Partial<PluginBrandPolicy>; brandRepo?: bo
           : {}),
         ...opts.policy,
       },
+      localLinking: opts.localLinking,
       autoUpdateIntervalMs: 0,
       devReloadDebounceMs: 50,
     });
@@ -349,10 +352,15 @@ describe("PluginService brand policy", () => {
     expect(open.service.listRepos().map((r) => r.tier)).toEqual(["official"]);
   });
 
-  it("forbids developer mode when the brand does", async () => {
-    const { service } = await setup({ policy: { developerMode: "forbidden" } });
+  it("forbids local linking on stable builds and when the brand does", async () => {
+    const stable = (await setup()).service;
+    await stable.start();
+    expect(stable.getPolicy().developerModeEnabled).toBe(false);
+    await expect(stable.devLink("/tmp/x")).rejects.toMatchObject({ code: "forbidden" });
+
+    const { service } = await setup({ policy: { developerMode: "forbidden" }, localLinking: true });
     await service.start();
-    await expect(service.setDeveloperMode(true)).rejects.toMatchObject({ code: "forbidden" });
+    expect(service.setDeveloperMode(true).developerModeEnabled).toBe(false);
     await expect(service.devLink("/tmp/x")).rejects.toMatchObject({ code: "forbidden" });
   });
 
@@ -413,7 +421,7 @@ describe("PluginService brand policy", () => {
 
 describe("PluginService dev links", () => {
   it("links a local folder and hot-reloads on change", async () => {
-    const { service } = await setup();
+    const { service } = await setup({ localLinking: true });
     await service.start();
     const root = await tempDir("frogg-plugin-dev-");
     cleanups.push(() => fs.rm(root, { recursive: true, force: true }));
@@ -423,8 +431,6 @@ describe("PluginService dev links", () => {
       code: greetCode("one"),
     });
 
-    await expect(service.devLink(dir)).rejects.toMatchObject({ code: "forbidden" });
-    await service.setDeveloperMode(true);
     await expect(service.devLink("relative/path")).rejects.toMatchObject({
       code: "invalid_request",
     });

@@ -82,6 +82,11 @@ export interface PluginServiceOptions {
   /** Auto-update poll interval; 0 disables polling. Default 6h. */
   autoUpdateIntervalMs?: number;
   indexCacheTtlMs?: number;
+  /**
+   * Allow linking local plugin folders. On for beta daemons, off for stable ones; there is no
+   * user toggle. Default false.
+   */
+  localLinking?: boolean;
   /** Watch dev-linked folders for changes. Default true. */
   watchDevLinks?: boolean;
   devReloadDebounceMs?: number;
@@ -236,7 +241,7 @@ export class PluginService {
   }
 
   private devModeActive(): boolean {
-    return this.opts.policy.developerMode === "allowed" && this.state.get().developerMode;
+    return this.opts.policy.developerMode === "allowed" && this.opts.localLinking === true;
   }
 
   private isAllowed(id: string): boolean {
@@ -876,31 +881,19 @@ export class PluginService {
 
   // --------------------------------------------------------------- dev links
 
-  async setDeveloperMode(enabled: boolean): Promise<PluginPolicy> {
+  /**
+   * Older clients still send the developer mode toggle. Linking now follows the build (beta
+   * daemons link, stable ones don't), so the request only reports the current policy.
+   */
+  setDeveloperMode(_enabled: boolean): PluginPolicy {
     this.requireEnabled();
-    if (enabled && this.opts.policy.developerMode === "forbidden") {
-      throw new PluginServiceError("forbidden", "Developer mode is disabled for this build");
-    }
-    await this.exclusive(async () => {
-      await this.state.update((s) => {
-        s.developerMode = enabled;
-      });
-      if (enabled) {
-        for (const link of this.state.get().devLinks)
-          await this.loadDevLink(link.path).catch(() => undefined);
-      } else {
-        for (const p of Array.from(this.plugins.values()))
-          if (p.dev) await this.dropDev(p.manifest.id);
-      }
-    });
-    this.changed(null, "policy");
     return this.getPolicy();
   }
 
   private requireDevMode(): void {
     this.requireEnabled();
     if (!this.devModeActive())
-      throw new PluginServiceError("forbidden", "Turn on developer mode to link local plugins");
+      throw new PluginServiceError("forbidden", "Linking local plugins needs a beta build");
   }
 
   async devLink(dirInput: string): Promise<PluginInstalled> {

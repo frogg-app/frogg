@@ -1,6 +1,6 @@
 ---
 title: Plugins
-description: Install, update and remove plugins on a host, add plugin repositories, link local plugins in developer mode, and use the commands, actions and panels plugins add.
+description: Install, update and remove plugins on a host, add plugin repositories, link local plugins on beta builds, and use the commands, actions and panels plugins add.
 sidebar:
   order: 9
 ---
@@ -55,7 +55,7 @@ The **Installed** list shows each plugin's status (Starting, Active, Error, Disa
 source and a switch. **Uninstall** asks for confirmation. Your brand's allow and deny lists
 apply here too.
 
-On desktop, when your brand allows developer mode, **Add local folder** links a plugin folder on
+On the beta desktop app, unless your brand forbids it, **Add local folder** links a plugin folder on
 this computer. Linked plugins skip integrity checks and carry a **DEV** badge; **Reload** reads
 the folder again after you rebuild.
 
@@ -121,16 +121,15 @@ key the repository publishes the first time you add it; Frogg pins that key and 
 can compare it with the one the publisher shared. Paste a key to pin it yourself instead. Official
 and brand repositories cannot be removed.
 
-## Developer mode
+## Local plugins
 
-Developer mode lets you link a plugin folder on the host while you work on it. Open **Plugins**,
-pick the host, then **Developer mode** on the Installed tab, and turn it on. It is a setting of
-that host. Enter the absolute path of the plugin folder **on the host** and choose
-**Link folder**. Linked plugins skip signature and checksum checks, reload when their files
+Beta builds of the daemon let you link a plugin folder on the host while you work on it, with
+nothing to turn on. Open **Plugins**, pick the host, then **Local plugins** on the Installed
+tab. Enter the absolute path of the plugin folder **on the host** and choose **Link folder**. Linked plugins skip signature and checksum checks, reload when their files
 change and carry a **DEV** badge. **Unlink** removes the link without touching the folder.
 
-Brands can forbid developer mode, in which case the option is hidden, on hosts and in the
-desktop app alike.
+Stable builds can't link local plugins. Brands can also forbid it with `plugins.developerMode`,
+in which case the option is hidden on hosts and in the desktop app alike.
 
 ## What plugins add
 
