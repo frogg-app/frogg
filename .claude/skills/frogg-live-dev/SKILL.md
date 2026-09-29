@@ -28,7 +28,7 @@ Prerequisites once per worktree: `npm ci` (wait for worktree setup to finish; a 
 Run it as a **background task**, not under `timeout`:
 
 ```bash
-npm run dev:live            # web 7820, daemon 7821
+npm run dev:live            # web 7820, daemon 9898 (LIVE_DAEMON_PORT)
 PREVIEW_PORT=7830 npm run dev:live   # another worktree already on 7820
 ```
 
@@ -36,7 +36,7 @@ Wait for the banner, then give the user both lines verbatim:
 
 ```
 Live:     http://<lan-ip>:7820
-Daemon:   <lan-ip>:7821  (real providers, home .dev/live/home)
+Daemon:   <lan-ip>:9898  (real providers, home .dev/live/home)
 ```
 
 - **Web:** the URL opens in any browser on the LAN. Never hand out `localhost`; the VM is headless.
