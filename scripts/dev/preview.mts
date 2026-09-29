@@ -13,10 +13,11 @@
 // --live is the stack for trying a feature end to end before it ships as a beta: the daemon runs
 // this checkout's source against your real provider logins, its home (.dev/live/home) survives
 // restarts, and it restarts itself when packages/server/src or a rebuilt protocol/client dist
-// changes. Add its daemon endpoint as a host in an installed Frogg app to drive it from there.
+// changes. It imports the installed daemon's provider accounts and projects on each start, and
+// names itself <hostname>-DEVELOPMENT. Add its daemon endpoint as a host in an installed Frogg app to drive it from there.
 import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, watch } from "node:fs";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -83,6 +84,8 @@ const daemonEnv: NodeJS.ProcessEnv = {
   FROGG_RELAY_ENABLED: "0",
   FROGG_NODE_INSPECT: "--inspect=0",
   NODE_ENV: "development",
+  // A development daemon must never pass for the installed one in a host list.
+  ...(live ? { FROGG_HOSTNAME: `${os.hostname()}-DEVELOPMENT` } : {}),
 };
 // A custom brand's daemon drops inherited FROGG_* settings and reads its own prefix (ACME_HOME),
 // so hand it the same settings under that prefix. branded-run has prepared the brand already.
@@ -336,6 +339,36 @@ function reapPreviousRun(): void {
   }
 }
 
+// Live mode borrows the installed daemon's provider accounts and projects on every start, so the
+// branch runs against the logins and repos already set up there instead of asking for them again.
+// Accounts are only config-dir pointers (~/.claude-*), so nobody signs in twice. Agents and chats
+// are not copied: two daemons resuming one provider session would write over each other.
+// FROGG_LIVE_SOURCE_HOME picks another home; FROGG_LIVE_SOURCE_HOME=none skips the import.
+async function importInstalledHome(): Promise<void> {
+  const source = process.env.FROGG_LIVE_SOURCE_HOME ?? path.join(os.homedir(), ".frogg");
+  if (source === "none" || !existsSync(source)) return;
+  const readJson = async (file: string): Promise<Record<string, unknown>> => {
+    try {
+      return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  };
+  const installed = await readJson(path.join(source, "config.json"));
+  if (installed.providerAccounts) {
+    const configFile = path.join(home, "config.json");
+    const config = await readJson(configFile);
+    config.providerAccounts = installed.providerAccounts;
+    await writeFile(configFile, `${JSON.stringify(config, null, 2)}\n`);
+  }
+  await mkdir(path.join(home, "projects"), { recursive: true });
+  for (const file of ["projects.json", "workspaces.json"]) {
+    const from = path.join(source, "projects", file);
+    if (existsSync(from)) await copyFile(from, path.join(home, "projects", file));
+  }
+  log(`imported provider accounts and projects from ${source}`);
+}
+
 async function main(): Promise<void> {
   reapPreviousRun();
   await mkdir(previewDir, { recursive: true });
@@ -347,6 +380,7 @@ async function main(): Promise<void> {
     execSync("npm run build:server-deps", { cwd: root, stdio: "inherit" });
   }
 
+  if (live) await importInstalledHome();
   log("starting daemon…");
   startDaemon();
   log("starting web app…");

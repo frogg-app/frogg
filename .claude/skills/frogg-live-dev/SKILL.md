@@ -59,7 +59,13 @@ Clients reconnect on their own after a daemon restart. A running agent turn is c
 
 - Home is `.dev/live/home`, persistent across runs: projects, chats and settings survive.
   Delete it for a clean slate. Nothing is seeded.
-- Real provider logins come from the user's own `~` (Claude, Codex, …), same as a normal daemon.
+- Every start imports the installed daemon's provider accounts (`providerAccounts`, which are
+  just config-dir pointers such as `~/.claude-steve`) and its projects/workspaces from `~/.frogg`,
+  so no re-sign-in and the real repos are there. Agents and chats are not copied: two daemons
+  resuming one provider session would clobber it. `FROGG_LIVE_SOURCE_HOME=<dir>` picks another
+  source; `=none` skips the import.
+- The daemon names itself `<hostname>-DEVELOPMENT` (`FROGG_HOSTNAME`), so it can't be mistaken
+  for the installed daemon in a host list.
 - It never touches the installed stable daemon (9999, `~/.frogg`) or the side-by-side beta
   daemon. It is not "the deployed beta"; deployed daemons run release builds, not this branch.
 - Relay is off and auth is not required — LAN only.
