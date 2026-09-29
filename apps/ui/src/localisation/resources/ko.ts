@@ -282,6 +282,10 @@ export const ko: TranslationResources = {
     cleanCut: {
       action: "클린 컷",
       pending: "요약 중...",
+      progress: "대화 요약 중, {{seconds}}초",
+      queue: "대기열",
+      queueHint: "대기열: 요약이 끝나면 새 대화로 보냅니다",
+      ready: "새 대화 준비 완료: 바로 전송됩니다",
       failed: "클린 컷을 하지 못했습니다",
       hint: "이 대화를 끝내고 새 대화를 시작합니다. 같은 제공자의 저렴한 모델이 채팅(메시지와 도구 호출, 출력 제외)을 요약해 메시지 앞에 보냅니다. 워크스페이스 변경 사항은 유지되며, 이전 대화는 나에게는 계속 보이지만 에이전트에게는 보이지 않습니다.",
       subagents: {

@@ -279,6 +279,10 @@ export const zhCN: TranslationResources = {
     cleanCut: {
       action: "干净切换",
       pending: "正在总结...",
+      progress: "正在总结对话，{{seconds}} 秒",
+      queue: "排队",
+      queueHint: "已排队：摘要完成后发送到新对话",
+      ready: "新对话已就绪：发送即时生效",
       failed: "无法完成干净切换",
       hint: "结束此对话并开始新对话。同一提供商的低价模型会总结聊天内容（消息和工具调用，不含其输出），并在你的消息之前发送。工作区更改会保留，旧对话对你仍然可见，但对代理不可见。",
       subagents: {

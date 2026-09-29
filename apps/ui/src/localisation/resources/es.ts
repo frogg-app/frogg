@@ -285,6 +285,10 @@ export const es: TranslationResources = {
     cleanCut: {
       action: "Corte limpio",
       pending: "Resumiendo...",
+      progress: "Resumiendo la conversación, {{seconds}} s",
+      queue: "En cola",
+      queueHint: "En cola: se envía a la conversación nueva cuando el resumen esté listo",
+      ready: "Conversación nueva lista: el envío es inmediato",
       failed: "No se pudo hacer el corte limpio",
       hint: "Termina esta conversación y empieza una nueva. Un modelo económico del mismo proveedor resume el chat (mensajes y llamadas a herramientas, sin su salida) y lo envía antes de tu mensaje. Los cambios del espacio de trabajo se conservan y la conversación anterior sigue visible para ti, pero no para el agente.",
       subagents: {
