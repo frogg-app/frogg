@@ -2270,7 +2270,7 @@ describe("ClaudeAgentSession context window usage", () => {
 
       expect(getContextUsage).not.toHaveBeenCalled();
       expect(result.usage).toEqual({
-        inputTokens: 9_000,
+        inputTokens: 10_000,
         cachedInputTokens: 700,
         outputTokens: 400,
         totalCostUsd: 0.25,
@@ -2311,7 +2311,7 @@ describe("ClaudeAgentSession context window usage", () => {
       const result = await session.run("turn");
 
       expect(result.usage).toEqual({
-        inputTokens: 10,
+        inputTokens: 15,
         cachedInputTokens: 5,
         outputTokens: 7,
         totalCostUsd: 0.25,
@@ -2426,7 +2426,7 @@ describe("ClaudeAgentSession context window usage", () => {
 
       expect(getContextUsage).not.toHaveBeenCalled();
       expect(result.usage).toEqual({
-        inputTokens: 4,
+        inputTokens: 34_255,
         cachedInputTokens: 16_999,
         outputTokens: 171,
         totalCostUsd: 0.25,
@@ -2471,7 +2471,7 @@ describe("ClaudeAgentSession context window usage", () => {
       const result = await session.run("turn");
 
       expect(result.usage).toEqual({
-        inputTokens: 5_000,
+        inputTokens: 6_100,
         cachedInputTokens: 600,
         outputTokens: 700,
         totalCostUsd: 0.25,
@@ -2509,7 +2509,7 @@ describe("ClaudeAgentSession context window usage", () => {
       const secondTurn = await session.run("turn 2");
 
       expect(firstTurn.usage).toEqual({
-        inputTokens: 10,
+        inputTokens: 15,
         cachedInputTokens: 5,
         outputTokens: 7,
         totalCostUsd: 0.25,
@@ -2517,7 +2517,7 @@ describe("ClaudeAgentSession context window usage", () => {
         contextWindowUsedTokens: 175,
       });
       expect(secondTurn.usage).toEqual({
-        inputTokens: 1_000,
+        inputTokens: 1_200,
         cachedInputTokens: 200,
         outputTokens: 300,
         totalCostUsd: 0.1,

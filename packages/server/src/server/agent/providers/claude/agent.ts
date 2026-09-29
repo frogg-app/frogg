@@ -2059,8 +2059,12 @@ class ClaudeContextUsageState {
       if (!message.usage) {
         return undefined;
       }
+      // Anthropic's input_tokens excludes cache writes and reads; report the
+      // whole input, with cached reads as a subset, as the other providers do.
+      const cacheRead = message.usage.cache_read_input_tokens ?? 0;
       const usage: AgentUsage = {
-        inputTokens: message.usage.input_tokens,
+        inputTokens:
+          message.usage.input_tokens + (message.usage.cache_creation_input_tokens ?? 0) + cacheRead,
         cachedInputTokens: message.usage.cache_read_input_tokens,
         outputTokens: message.usage.output_tokens,
         totalCostUsd: message.total_cost_usd,
