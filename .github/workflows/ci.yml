@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 env:
   # CI never uses the CUDA execution provider; the onnxruntime-node postinstall
@@ -34,9 +35,24 @@ jobs:
         with:
           fetch-depth: 0
       # Release cuts and promotions only change versions on code main already tested; the
-      # release workflow checks that main run instead of repeating it here.
+      # release workflow checks that main run instead of repeating it here. Code on main is
+      # only "already tested" if CI passed on it: a feature pushed together with its cut never
+      # had a run of its own, so without one the tests run here.
       - id: plan
-        run: echo "tests=$(node scripts/release/streams.mjs needs-tests HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tests="$(node scripts/release/streams.mjs needs-tests HEAD)"
+          if [ "$tests" = false ]; then
+            source="$(node scripts/release/streams.mjs tested-source HEAD)"
+            runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$source&per_page=20" \
+              --jq '[.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch")] | map(.status + ":" + (.conclusion // "")) | join(" ")')"
+            case " $runs " in
+              *" completed:success "*) echo "CI already passed on $(git log -1 --format=%s "$source")." ;;
+              *) echo "No passing CI run on $(git log -1 --format=%s "$source"); running tests."; tests=true ;;
+            esac
+          fi
+          echo "tests=$tests" >> "$GITHUB_OUTPUT"
 
   checks:
     name: format, lint, typecheck
