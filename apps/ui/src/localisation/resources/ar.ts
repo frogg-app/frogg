@@ -582,6 +582,7 @@ export const ar: TranslationResources = {
       copyTurn: "نسخ بدوره",
       copyMessage: "انسخ الرسالة",
       forkMenu: "تفريع الرسالة",
+      cleanCut: "قطع نظيف: محادثة جديدة، نفس الحساب",
       forkInNewTab: "تفريع في تبويب جديد",
       forkInNewWorkspace: "تفريع في جلسة جديدة",
       forkUnavailable: "حدّث المضيف لاستخدام هذا.",

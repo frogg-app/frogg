@@ -584,6 +584,7 @@ export const en = {
       copyTurn: "Copy turn",
       copyMessage: "Copy message",
       forkMenu: "Fork chat from here",
+      cleanCut: "Clean cut: fresh conversation, same account",
       forkInNewTab: "Fork in a new tab",
       forkInNewWorkspace: "Fork in a new session",
       forkUnavailable: "Update the host to use this.",

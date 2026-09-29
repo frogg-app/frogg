@@ -583,6 +583,7 @@ export const ko: TranslationResources = {
       copyTurn: "턴 복사",
       copyMessage: "메시지 복사",
       forkMenu: "여기에서 채팅 분기",
+      cleanCut: "클린 컷: 같은 계정으로 새 대화",
       forkInNewTab: "새 탭으로 분기",
       forkInNewWorkspace: "새 세션으로 분기",
       forkUnavailable: "이를 사용하려면 호스트를 업데이트하세요.",

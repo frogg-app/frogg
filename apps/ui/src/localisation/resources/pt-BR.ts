@@ -587,6 +587,7 @@ export const ptBR: TranslationResources = {
       copyTurn: "Copiar turno",
       copyMessage: "Copiar mensagem",
       forkMenu: "Bifurcar mensagem",
+      cleanCut: "Corte limpo: nova conversa, mesma conta",
       forkInNewTab: "Bifurcar em uma nova aba",
       forkInNewWorkspace: "Bifurcar em uma nova sessão",
       forkUnavailable: "Atualize o host para usar isto.",

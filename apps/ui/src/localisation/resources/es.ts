@@ -588,6 +588,7 @@ export const es: TranslationResources = {
       copyTurn: "Copiar turno",
       copyMessage: "Copiar mensaje",
       forkMenu: "Bifurcar mensaje",
+      cleanCut: "Corte limpio: conversación nueva, misma cuenta",
       forkInNewTab: "Bifurcar en una pestaña nueva",
       forkInNewWorkspace: "Bifurcar en una sesión nueva",
       forkUnavailable: "Actualiza el host para usar esto.",

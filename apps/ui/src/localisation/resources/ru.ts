@@ -586,6 +586,7 @@ export const ru: TranslationResources = {
       copyTurn: "Скопировать ответ",
       copyMessage: "Копировать сообщение",
       forkMenu: "Форкнуть чат отсюда",
+      cleanCut: "Чистый срез: новый разговор, тот же аккаунт",
       forkInNewTab: "Создать форк в новой вкладке",
       forkInNewWorkspace: "Создать форк в новой сессии",
       forkUnavailable: "Обновите хост, чтобы использовать эту функцию.",
