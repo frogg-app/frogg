@@ -15,6 +15,8 @@ import type { HubRelationshipManagement } from "../../hub/relationship-controlle
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import type { DaemonUpdateService } from "./daemon-update-service.js";
 import type { BetaChannelService, BetaChannelStartResult } from "./beta-channel-service.js";
+import type { DevDaemonService } from "./dev-daemon-service.js";
+import type { WebUiServer } from "../../web-ui-server.js";
 import type { SecurityPosture } from "@frogg/protocol/messages";
 import type { HostResources } from "../../host/host-resources.js";
 import type { SkillCatalog } from "../../skills/catalog.js";
@@ -28,6 +30,10 @@ export interface DaemonRuntimeConfig {
   update?: DaemonUpdateService;
   /** Side-by-side beta daemon install/uninstall; absent without bootstrap wiring. */
   betaChannel?: BetaChannelService;
+  /** Development daemon (`dev:live`) launch/stop; absent without bootstrap wiring. */
+  devDaemon?: DevDaemonService;
+  /** The web client's own server; absent without bootstrap wiring. */
+  webUi?: WebUiServer;
   /** Live security findings (security-posture.ts); absent without bootstrap wiring. */
   getSecurityPosture?(): SecurityPosture;
   /** Host metrics and owned-storage sizes/cleanup; absent without bootstrap wiring. */
@@ -625,6 +631,140 @@ export class DaemonSession {
     });
   }
 
+  async handleBetaChannelStartRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.start.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.betaChannel;
+    const error = service ? await service.setRunning(true) : BETA_CHANNEL_UNAVAILABLE.error;
+    this.host.emit({
+      type: "daemon.beta_channel.start.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
+  async handleBetaChannelStopRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.stop.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.betaChannel;
+    const error = service ? await service.setRunning(false) : BETA_CHANNEL_UNAVAILABLE.error;
+    this.host.emit({
+      type: "daemon.beta_channel.stop.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
+  async handleDevDaemonGetStatusRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.get_status.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.devDaemon;
+    try {
+      if (!service) throw new Error(DEV_DAEMON_UNAVAILABLE);
+      const status = await service.status(await this.listWorkspaces());
+      this.host.emit({
+        type: "daemon.dev_daemon.get_status.response",
+        payload: { requestId: msg.requestId, ...status, error: null },
+      });
+    } catch (error) {
+      this.host.emit({
+        type: "rpc_error",
+        payload: { requestId: msg.requestId, requestType: msg.type, error: errorMessage(error) },
+      });
+    }
+  }
+
+  async handleDevDaemonStartRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.start.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.devDaemon;
+    const error = service ? await service.start(msg.cwd) : DEV_DAEMON_UNAVAILABLE;
+    this.host.emit({
+      type: "daemon.dev_daemon.start.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
+  async handleDevDaemonRebuildRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.rebuild.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.devDaemon;
+    const error = service ? await service.rebuild(msg.target) : DEV_DAEMON_UNAVAILABLE;
+    this.host.emit({
+      type: "daemon.dev_daemon.rebuild.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
+  async handleDevDaemonStopRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.stop.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.devDaemon;
+    const error = service ? await service.stop() : DEV_DAEMON_UNAVAILABLE;
+    this.host.emit({
+      type: "daemon.dev_daemon.stop.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
+  async handleWebUiRequest(
+    msg: Extract<
+      SessionInboundMessage,
+      {
+        type:
+          | "daemon.web_ui.get_status.request"
+          | "daemon.web_ui.update.request"
+          | "daemon.web_ui.start.request"
+          | "daemon.web_ui.stop.request";
+      }
+    >,
+  ): Promise<void> {
+    const server = this.daemonRuntimeConfig?.webUi;
+    if (!server) {
+      this.host.emit({
+        type: "rpc_error",
+        payload: {
+          requestId: msg.requestId,
+          requestType: msg.type,
+          error: "The web client is not available on this daemon.",
+          code: "unsupported",
+        },
+      });
+      return;
+    }
+    let error: string | null = null;
+    try {
+      switch (msg.type) {
+        case "daemon.web_ui.update.request":
+          error = await server.update({ startOnLaunch: msg.startOnLaunch, host: msg.host });
+          break;
+        case "daemon.web_ui.start.request":
+          error = await server.start();
+          break;
+        case "daemon.web_ui.stop.request":
+          await server.stop();
+          break;
+        case "daemon.web_ui.get_status.request":
+          break;
+      }
+    } catch (err) {
+      error = errorMessage(err);
+    }
+    const payload = { requestId: msg.requestId, ...server.status(), error };
+    switch (msg.type) {
+      case "daemon.web_ui.get_status.request":
+        this.host.emit({ type: "daemon.web_ui.get_status.response", payload });
+        return;
+      case "daemon.web_ui.update.request":
+        this.host.emit({ type: "daemon.web_ui.update.response", payload });
+        return;
+      case "daemon.web_ui.start.request":
+        this.host.emit({ type: "daemon.web_ui.start.response", payload });
+        return;
+      case "daemon.web_ui.stop.request":
+        this.host.emit({ type: "daemon.web_ui.stop.response", payload });
+        return;
+    }
+  }
+
   private updateUnavailable(): { updatable: false; reason: string; currentVersion: string } {
     return {
       updatable: false,
@@ -640,6 +780,8 @@ const BETA_CHANNEL_UNAVAILABLE: BetaChannelStartResult = {
   targetVersion: null,
   error: "Beta channel management is not available on this daemon.",
 };
+
+const DEV_DAEMON_UNAVAILABLE = "Development daemon management is not available on this daemon.";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

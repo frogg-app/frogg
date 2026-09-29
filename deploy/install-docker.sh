@@ -19,6 +19,7 @@
 #   FROGG_IMAGE        full image reference (default: froggapp/frogg:$FROGG_VERSION)
 #   FROGG_HOME         host directory for daemon state (default: ~/.frogg)
 #   FROGG_PORT         host port published to the daemon (default: 9999)
+#   FROGG_WEB_PORT     host port published to the web client (default: 9998)
 #   FROGG_BIND         host address the port is published on (default: 0.0.0.0;
 #                    127.0.0.1 keeps it reachable only through an SSH tunnel)
 #   FROGG_WORKSPACE    host directory mounted at /workspace (default: none)
@@ -41,6 +42,7 @@ BRAND_SERVICE='frogg-daemon'
 BRAND_LAUNCHD='app.frogg.frogg-daemon'
 BRAND_DAEMON_PREFIX='frogg-daemon'
 BRAND_PORT='9999'
+BRAND_WEB_PORT='9998'
 BRAND_BIND_HOST='0.0.0.0'
 BRAND_RELEASE_BASE='https://github.com/frogg-app/frogg/releases'
 BRAND_DOCKER_IMAGE='froggapp/frogg'
@@ -61,6 +63,7 @@ FROGG_VERSION="${FROGG_VERSION:-latest}"
 FROGG_IMAGE="${FROGG_IMAGE:-${BRAND_DOCKER_IMAGE:+${BRAND_DOCKER_IMAGE}:${FROGG_VERSION}}}"
 FROGG_HOME="${FROGG_HOME:-${HOME}/${BRAND_HOME}}"
 FROGG_PORT="${FROGG_PORT:-${BRAND_PORT}}"
+FROGG_WEB_PORT="${FROGG_WEB_PORT:-${BRAND_WEB_PORT:-$((BRAND_PORT - 1))}}"
 FROGG_BIND="${FROGG_BIND:-0.0.0.0}"
 FROGG_WORKSPACE="${FROGG_WORKSPACE:-}"
 FROGG_PASSWORD="${FROGG_PASSWORD:-}"
@@ -121,9 +124,11 @@ start_container() {
     -e "${BRAND_ENV_PREFIX}_HOME=/home/frogg/${BRAND_HOME}"
     --restart unless-stopped
     -p "${FROGG_BIND}:${FROGG_PORT}:${BRAND_PORT}"
+    -p "${FROGG_BIND}:${FROGG_WEB_PORT}:${BRAND_WEB_PORT:-$((BRAND_PORT - 1))}"
     -v "${FROGG_HOME}:/home/frogg/${BRAND_HOME}"
     -e FROGG_LISTEN=0.0.0.0:${BRAND_PORT}
     -e FROGG_WEB_UI_ENABLED=true
+    -e FROGG_WEB_UI_HOST=0.0.0.0
   )
   if [ -n "${FROGG_WORKSPACE}" ]; then
     mkdir -p "${FROGG_WORKSPACE}"

@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
+  devBar: {
+    daemon: "开发守护进程",
+    web: "开发 Web",
+    rebuildDaemon: "重新构建并重启",
+    restartWeb: "清除缓存后重启",
+    openWeb: "打开",
+    stop: "停止",
+    startIn: "在 {{name}} 中启动",
+    lastError: "上次构建失败：{{error}}",
+    behindMain_one: "落后 main {{count}} 个提交",
+    behindMain_other: "落后 main {{count}} 个提交",
+    tone: {
+      running: "运行中",
+      stale: "已过时",
+      busy: "正在构建…",
+      stopped: "已停止",
+    },
+  },
   releaseStreams: {
     label: "发布流",
     subtitle: "Beta 版、稳定版和上游，以及各自已包含的变更",
@@ -3230,6 +3248,23 @@ export const zhCN: TranslationResources = {
       upToDate: "已是最新",
       installVersion: "安装 {{version}}",
       updateVersion: "更新到 {{version}}",
+      daemonControl: {
+        start: "启动",
+        stop: "停止",
+        openWebUi: "打开 Web 界面",
+      },
+      devDaemon: {
+        title: "开发守护进程",
+        info: "在主机上的源码检出目录中运行 npm run dev:live：该检出的守护进程在独立端口上运行，使用主机的账户、项目和对话，并启动其 Web 应用。同一时间只运行一个。",
+        needsUpdate: "请更新主机以启动开发守护进程。",
+        loadFailed: "无法读取开发守护进程状态：{{error}}",
+        running: "正在端口 {{port}} 上运行",
+        starting: "正在端口 {{port}} 上启动…",
+        stopped: "未运行",
+        noCheckouts: "此主机的工作区中没有此仓库的源码检出。",
+        launch: "启动",
+        log: "日志：{{path}}",
+      },
       betaApp: {
         title: "测试版应用",
         info: "在此应用旁安装 {{name}}。它有自己的设置和数据。",
@@ -3532,6 +3567,23 @@ export const zhCN: TranslationResources = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        title: "Web 客户端",
+        info: "主机为浏览器版应用提供的 Web 服务器，使用独立于守护进程的端口。它只提供应用本身，页面的其他操作都连接到守护进程。",
+        running: "正在端口 {{port}} 上运行",
+        stopped: "已停止（端口 {{port}}）",
+        startOnLaunch: "随守护进程启动",
+        startOnLaunchHint: "每次守护进程启动时启动 Web 客户端。",
+        startOnLaunchPinned: "由守护进程的环境变量或命令行设置。",
+        interface: "网络接口",
+        interfaceHint:
+          "环回地址只能从本机访问。选择所有接口（0.0.0.0）后，主机所在的所有网络都可以访问。",
+        loopback: "仅本机",
+        allInterfaces: "所有接口",
+        noInterfaces: "未找到网络接口。",
+        unavailable: "此守护进程不包含 Web 客户端。",
+        loadFailed: "无法读取 Web 客户端状态：{{error}}",
       },
       resources: {
         title: "资源",

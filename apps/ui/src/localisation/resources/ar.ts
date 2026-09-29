@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
+  devBar: {
+    daemon: "خادم التطوير",
+    web: "ويب التطوير",
+    rebuildDaemon: "إعادة البناء وإعادة التشغيل",
+    restartWeb: "إعادة التشغيل مع مسح الذاكرة المؤقتة",
+    openWeb: "فتح",
+    stop: "إيقاف",
+    startIn: "التشغيل في {{name}}",
+    lastError: "فشلت آخر إعادة بناء: {{error}}",
+    behindMain_one: "إيداعات متأخرة عن main: {{count}}",
+    behindMain_other: "إيداعات متأخرة عن main: {{count}}",
+    tone: {
+      running: "يعمل",
+      stale: "قديم",
+      busy: "جارٍ إعادة البناء…",
+      stopped: "متوقف",
+    },
+  },
   releaseStreams: {
     label: "مسارات الإصدارات",
     subtitle: "الإصدارات التجريبية والمستقرة والمصدر الأعلى، وأي التغييرات وصلت إلى كل منها",
@@ -3282,6 +3300,23 @@ export const ar: TranslationResources = {
       upToDate: "محدَّث",
       installVersion: "تثبيت {{version}}",
       updateVersion: "التحديث إلى {{version}}",
+      daemonControl: {
+        start: "تشغيل",
+        stop: "إيقاف",
+        openWebUi: "فتح واجهة الويب",
+      },
+      devDaemon: {
+        title: "خادم التطوير",
+        info: "يشغّل npm run dev:live من نسخة مصدرية على المضيف: خادم تلك النسخة على منفذه الخاص، مع حسابات المضيف ومشاريعه ومحادثاته، وتطبيق الويب الخاص به. يعمل خادم واحد فقط في كل مرة.",
+        needsUpdate: "حدّث المضيف لتشغيل خادم التطوير.",
+        loadFailed: "تعذّرت قراءة حالة خادم التطوير: {{error}}",
+        running: "يعمل على المنفذ {{port}}",
+        starting: "جارٍ التشغيل على المنفذ {{port}}…",
+        stopped: "متوقف",
+        noCheckouts: "لا توجد نسخة مصدرية من هذا المستودع ضمن مساحات عمل هذا المضيف.",
+        launch: "تشغيل",
+        log: "السجل: {{path}}",
+      },
       betaApp: {
         title: "التطبيق التجريبي",
         info: "ثبّت {{name}} بجانب هذا التطبيق. يحتفظ بإعداداته وبياناته الخاصة.",
@@ -3587,6 +3622,23 @@ export const ar: TranslationResources = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        title: "عميل الويب",
+        info: "خادم الويب الخاص بالمضيف لتطبيق المتصفح، على منفذه الخاص بجانب منفذ الخادم الخلفي. يقدّم التطبيق فقط، وتتصل الصفحة بالخادم الخلفي لكل ما عدا ذلك.",
+        running: "يعمل على المنفذ {{port}}",
+        stopped: "متوقف (المنفذ {{port}})",
+        startOnLaunch: "التشغيل مع الخادم الخلفي",
+        startOnLaunchHint: "شغّل عميل الويب في كل مرة يبدأ فيها الخادم الخلفي.",
+        startOnLaunchPinned: "مضبوط من بيئة الخادم الخلفي أو سطر أوامره.",
+        interface: "الواجهة",
+        interfaceHint:
+          "واجهة الاسترجاع متاحة من هذا الجهاز فقط. اختيار كل الواجهات (0.0.0.0) يجعله متاحًا من كل الشبكات التي يتصل بها المضيف.",
+        loopback: "هذا الجهاز فقط",
+        allInterfaces: "كل الواجهات",
+        noInterfaces: "لم يتم العثور على واجهات.",
+        unavailable: "لا يتضمن هذا الخادم الخلفي عميل الويب.",
+        loadFailed: "تعذّرت قراءة حالة عميل الويب: {{error}}",
       },
       resources: {
         title: "الموارد",

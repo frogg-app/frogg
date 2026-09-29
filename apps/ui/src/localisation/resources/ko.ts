@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
+  devBar: {
+    daemon: "개발 데몬",
+    web: "개발 웹",
+    rebuildDaemon: "빌드 후 재시작",
+    restartWeb: "캐시를 지우고 재시작",
+    openWeb: "열기",
+    stop: "중지",
+    startIn: "{{name}}에서 시작",
+    lastError: "마지막 빌드 실패: {{error}}",
+    behindMain_one: "main보다 커밋 {{count}}개 뒤처짐",
+    behindMain_other: "main보다 커밋 {{count}}개 뒤처짐",
+    tone: {
+      running: "실행 중",
+      stale: "오래됨",
+      busy: "빌드 중…",
+      stopped: "중지됨",
+    },
+  },
   releaseStreams: {
     label: "릴리스 스트림",
     subtitle: "베타, 안정 릴리스, 업스트림과 각 스트림에 도달한 변경 사항",
@@ -3307,6 +3325,23 @@ export const ko: TranslationResources = {
       upToDate: "최신 상태",
       installVersion: "{{version}} 설치",
       updateVersion: "{{version}}(으)로 업데이트",
+      daemonControl: {
+        start: "시작",
+        stop: "중지",
+        openWebUi: "웹 UI 열기",
+      },
+      devDaemon: {
+        title: "개발용 데몬",
+        info: "호스트의 소스 체크아웃에서 npm run dev:live를 실행합니다. 해당 체크아웃의 데몬이 별도 포트에서 호스트의 계정, 프로젝트, 대화와 함께 실행되고 웹 앱도 함께 시작됩니다. 한 번에 하나만 실행됩니다.",
+        needsUpdate: "개발용 데몬을 실행하려면 호스트를 업데이트하세요.",
+        loadFailed: "개발용 데몬 상태를 읽지 못했습니다: {{error}}",
+        running: "포트 {{port}}에서 실행 중",
+        starting: "포트 {{port}}에서 시작하는 중…",
+        stopped: "실행 중 아님",
+        noCheckouts: "이 호스트의 워크스페이스 중 이 저장소의 소스 체크아웃이 없습니다.",
+        launch: "실행",
+        log: "로그: {{path}}",
+      },
       betaApp: {
         title: "베타 앱",
         info: "{{name}}을(를) 이 앱과 나란히 설치합니다. 설정과 데이터는 따로 유지됩니다.",
@@ -3612,6 +3647,23 @@ export const ko: TranslationResources = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        title: "웹 클라이언트",
+        info: "브라우저 앱을 위한 호스트의 웹 서버로, 데몬과 별도의 포트에서 실행됩니다. 앱만 제공하며, 페이지는 나머지 모든 작업을 데몬에 연결해 처리합니다.",
+        running: "포트 {{port}}에서 실행 중",
+        stopped: "중지됨 (포트 {{port}})",
+        startOnLaunch: "데몬과 함께 시작",
+        startOnLaunchHint: "데몬이 시작될 때마다 웹 클라이언트를 시작합니다.",
+        startOnLaunchPinned: "데몬의 환경 변수 또는 명령줄에서 설정되었습니다.",
+        interface: "인터페이스",
+        interfaceHint:
+          "루프백은 이 컴퓨터에서만 접근할 수 있습니다. 모든 인터페이스(0.0.0.0)를 선택하면 호스트가 연결된 모든 네트워크에서 접근할 수 있습니다.",
+        loopback: "이 컴퓨터만",
+        allInterfaces: "모든 인터페이스",
+        noInterfaces: "인터페이스를 찾을 수 없습니다.",
+        unavailable: "이 데몬에는 웹 클라이언트가 포함되어 있지 않습니다.",
+        loadFailed: "웹 클라이언트 상태를 읽지 못했습니다: {{error}}",
       },
       resources: {
         title: "리소스",

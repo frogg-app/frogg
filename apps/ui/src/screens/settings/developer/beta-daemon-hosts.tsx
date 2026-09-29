@@ -18,6 +18,8 @@ import {
   reduceBetaDaemonRun,
   type BetaDaemonRunView,
 } from "./beta-daemon-run";
+import { siblingDaemonWebUrl } from "./daemon-web-url";
+import { OpenWebUiButton } from "./open-web-ui-button";
 
 const KNOWN_PHASES = new Set([
   "resolve",
@@ -82,7 +84,7 @@ function BetaDaemonHostRow({ host, showBorder }: { host: HostProfile; showBorder
       <Text style={settingsStyles.rowHint}>{t("settings.developer.betaDaemon.needsUpdate")}</Text>
     );
   } else {
-    body = <BetaDaemonHostManager serverId={host.serverId} hostLabel={host.label} />;
+    body = <BetaDaemonHostManager host={host} />;
   }
 
   return (
@@ -95,8 +97,14 @@ function BetaDaemonHostRow({ host, showBorder }: { host: HostProfile; showBorder
   );
 }
 
-function BetaDaemonHostManager({ serverId, hostLabel }: { serverId: string; hostLabel: string }) {
+function BetaDaemonHostManager({ host }: { host: HostProfile }) {
+  const { serverId, label: hostLabel } = host;
   const { t } = useTranslation();
+  const canControl = useSessionStore(
+    (state) => state.sessions[serverId]?.serverInfo?.features?.daemonChannelControl === true,
+  );
+  const [controlBusy, setControlBusy] = useState(false);
+  const [controlError, setControlError] = useState<string | null>(null);
   const client = useHostRuntimeClient(serverId);
   const [statusState, setStatusState] = useState<StatusState>({ kind: "loading" });
   const [runState, dispatch] = useReducer(reduceBetaDaemonRun, INITIAL_BETA_DAEMON_RUN_STATE);
@@ -197,6 +205,26 @@ function BetaDaemonHostManager({ serverId, hostLabel }: { serverId: string; host
     }
   }, [client, hostLabel, purge, t]);
 
+  const handleSetRunning = useCallback(
+    async (running: boolean) => {
+      if (!client) return;
+      setControlBusy(true);
+      setControlError(null);
+      try {
+        const result = running ? await client.startBetaChannel() : await client.stopBetaChannel();
+        if (mounted.current && result.error) setControlError(result.error);
+      } catch (error) {
+        if (mounted.current) setControlError(errorText(error));
+      }
+      if (!mounted.current) return;
+      setControlBusy(false);
+      void refresh();
+    },
+    [client, refresh],
+  );
+  const handleStart = useCallback(() => void handleSetRunning(true), [handleSetRunning]);
+  const handleStop = useCallback(() => void handleSetRunning(false), [handleSetRunning]);
+
   const handleToggleLog = useCallback(() => setShowLog((current) => !current), []);
   const handleRetry = useCallback(() => {
     setStatusState({ kind: "loading" });
@@ -220,9 +248,42 @@ function BetaDaemonHostManager({ serverId, hostLabel }: { serverId: string; host
   }
 
   const status = statusState.status;
+  const webUrl =
+    status.webRunning && status.webPort ? siblingDaemonWebUrl(host, status.webPort) : null;
   return (
     <View style={styles.manager}>
       <StatusLines status={status} />
+      {canControl && status.supported && status.installed ? (
+        <View style={styles.actions}>
+          {status.running ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={handleStop}
+              loading={controlBusy}
+              disabled={busy}
+              testID={`developer-beta-daemon-stop-${serverId}`}
+            >
+              {t("settings.developer.daemonControl.stop")}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={handleStart}
+              loading={controlBusy}
+              disabled={busy}
+              testID={`developer-beta-daemon-start-${serverId}`}
+            >
+              {t("settings.developer.daemonControl.start")}
+            </Button>
+          )}
+          {webUrl ? (
+            <OpenWebUiButton url={webUrl} testID={`developer-beta-daemon-open-${serverId}`} />
+          ) : null}
+        </View>
+      ) : null}
+      {controlError ? <InlineAlert variant="error" description={controlError} /> : null}
       {status.supported ? (
         <View style={styles.actions}>
           <InstallButton status={status} busy={busy} onPress={handleInstall} />

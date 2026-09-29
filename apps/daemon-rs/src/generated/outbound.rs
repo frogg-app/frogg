@@ -576,6 +576,26 @@ pub enum SessionMessage {
     DaemonBetaChannelInstallResponse(DaemonBetaChannelInstallResponse),
     #[serde(rename = "daemon.beta_channel.uninstall.response")]
     DaemonBetaChannelUninstallResponse(DaemonBetaChannelUninstallResponse),
+    #[serde(rename = "daemon.beta_channel.start.response")]
+    DaemonBetaChannelStartResponse(DaemonBetaChannelStartResponse),
+    #[serde(rename = "daemon.beta_channel.stop.response")]
+    DaemonBetaChannelStopResponse(DaemonBetaChannelStopResponse),
+    #[serde(rename = "daemon.dev_daemon.get_status.response")]
+    DaemonDevDaemonGetStatusResponse(DaemonDevDaemonGetStatusResponse),
+    #[serde(rename = "daemon.dev_daemon.start.response")]
+    DaemonDevDaemonStartResponse(DaemonDevDaemonStartResponse),
+    #[serde(rename = "daemon.dev_daemon.stop.response")]
+    DaemonDevDaemonStopResponse(DaemonDevDaemonStopResponse),
+    #[serde(rename = "daemon.dev_daemon.rebuild.response")]
+    DaemonDevDaemonRebuildResponse(DaemonDevDaemonRebuildResponse),
+    #[serde(rename = "daemon.web_ui.get_status.response")]
+    DaemonWebUiGetStatusResponse(DaemonWebUiGetStatusResponse),
+    #[serde(rename = "daemon.web_ui.update.response")]
+    DaemonWebUiUpdateResponse(DaemonWebUiUpdateResponse),
+    #[serde(rename = "daemon.web_ui.start.response")]
+    DaemonWebUiStartResponse(DaemonWebUiStartResponse),
+    #[serde(rename = "daemon.web_ui.stop.response")]
+    DaemonWebUiStopResponse(DaemonWebUiStopResponse),
     #[serde(rename = "daemon.beta_channel.run.progress")]
     DaemonBetaChannelRunProgress(DaemonBetaChannelRunProgress),
     #[serde(rename = "daemon.beta_channel.run.completed")]
@@ -13316,6 +13336,10 @@ pub struct DaemonBetaChannelGetStatusResponsePayload {
     #[serde(rename = "runningVersion", skip_serializing_if = "Option::is_none")]
     pub running_version: Option<String>,
     pub port: f64,
+    #[serde(rename = "webPort", skip_serializing_if = "Option::is_none")]
+    pub web_port: Option<f64>,
+    #[serde(rename = "webRunning", skip_serializing_if = "Option::is_none")]
+    pub web_running: Option<bool>,
     #[serde(rename = "serviceName")]
     pub service_name: String,
     #[serde(rename = "cliName")]
@@ -13371,6 +13395,246 @@ pub struct DaemonBetaChannelUninstallResponsePayload {
     pub target_version: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelStartResponse {
+    pub payload: DaemonBetaChannelStartResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelStartResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelStopResponse {
+    pub payload: DaemonBetaChannelStopResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelStopResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonGetStatusResponse {
+    pub payload: DaemonDevDaemonGetStatusResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonGetStatusResponsePayload {
+    pub supported: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub reason: Option<String>,
+    pub running: bool,
+    pub ready: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cwd: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    #[serde(rename = "startedAt", skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(rename = "daemonPort")]
+    pub daemon_port: f64,
+    #[serde(rename = "webPort")]
+    pub web_port: f64,
+    #[serde(rename = "logPath", skip_serializing_if = "Option::is_none")]
+    pub log_path: Option<String>,
+    pub checkouts: Vec<DaemonDevDaemonGetStatusResponsePayloadCheckoutsItem>,
+    #[serde(rename = "webReady", skip_serializing_if = "Option::is_none")]
+    pub web_ready: Option<bool>,
+    #[serde(rename = "daemonStale", skip_serializing_if = "Option::is_none")]
+    pub daemon_stale: Option<Vec<String>>,
+    #[serde(rename = "webStale", skip_serializing_if = "Option::is_none")]
+    pub web_stale: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub busy: Option<String>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "behindMain", skip_serializing_if = "Option::is_none")]
+    pub behind_main: Option<f64>,
+    #[serde(rename = "isSelf", skip_serializing_if = "Option::is_none")]
+    pub is_self: Option<bool>,
+    #[serde(rename = "canRebuild", skip_serializing_if = "Option::is_none")]
+    pub can_rebuild: Option<bool>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonGetStatusResponsePayloadCheckoutsItem {
+    pub cwd: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonStartResponse {
+    pub payload: DaemonDevDaemonStartResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonStartResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonStopResponse {
+    pub payload: DaemonDevDaemonStopResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonStopResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonRebuildResponse {
+    pub payload: DaemonDevDaemonRebuildResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonRebuildResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiGetStatusResponse {
+    pub payload: DaemonWebUiGetStatusResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiGetStatusResponsePayload {
+    pub available: bool,
+    pub running: bool,
+    pub host: String,
+    pub port: f64,
+    #[serde(rename = "startOnLaunch")]
+    pub start_on_launch: bool,
+    #[serde(rename = "startOnLaunchPinned")]
+    pub start_on_launch_pinned: bool,
+    pub interfaces: Vec<DaemonWebUiGetStatusResponsePayloadInterfacesItem>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiGetStatusResponsePayloadInterfacesItem {
+    pub address: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiUpdateResponse {
+    pub payload: DaemonWebUiUpdateResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiUpdateResponsePayload {
+    pub available: bool,
+    pub running: bool,
+    pub host: String,
+    pub port: f64,
+    #[serde(rename = "startOnLaunch")]
+    pub start_on_launch: bool,
+    #[serde(rename = "startOnLaunchPinned")]
+    pub start_on_launch_pinned: bool,
+    pub interfaces: Vec<DaemonWebUiUpdateResponsePayloadInterfacesItem>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiUpdateResponsePayloadInterfacesItem {
+    pub address: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStartResponse {
+    pub payload: DaemonWebUiStartResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStartResponsePayload {
+    pub available: bool,
+    pub running: bool,
+    pub host: String,
+    pub port: f64,
+    #[serde(rename = "startOnLaunch")]
+    pub start_on_launch: bool,
+    #[serde(rename = "startOnLaunchPinned")]
+    pub start_on_launch_pinned: bool,
+    pub interfaces: Vec<DaemonWebUiStartResponsePayloadInterfacesItem>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStartResponsePayloadInterfacesItem {
+    pub address: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStopResponse {
+    pub payload: DaemonWebUiStopResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStopResponsePayload {
+    pub available: bool,
+    pub running: bool,
+    pub host: String,
+    pub port: f64,
+    #[serde(rename = "startOnLaunch")]
+    pub start_on_launch: bool,
+    #[serde(rename = "startOnLaunchPinned")]
+    pub start_on_launch_pinned: bool,
+    pub interfaces: Vec<DaemonWebUiStopResponsePayloadInterfacesItem>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStopResponsePayloadInterfacesItem {
+    pub address: String,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

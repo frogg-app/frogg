@@ -188,8 +188,13 @@ const FeatureCompanionSchema = z
 
 const FeatureWebUiSchema = z
   .object({
+    /** Start the web client's server when the daemon starts. */
     enabled: z.boolean().optional(),
     distDir: z.string().min(1).optional(),
+    /** Interface the web client binds; 127.0.0.1 by default. */
+    host: z.string().min(1).optional(),
+    /** Port of the web client; the brand's web port by default. */
+    port: z.number().int().min(1).max(65535).optional(),
   })
   .strict();
 

@@ -37,6 +37,9 @@ import type {
 export type {
   DaemonBetaChannelRunStartPayload,
   DaemonBetaChannelStatusPayload,
+  DaemonControlResultPayload,
+  DaemonDevDaemonStatusPayload,
+  DaemonWebUiStatusPayload,
 } from "./daemon-client.js";
 
 /**

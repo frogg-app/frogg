@@ -169,6 +169,10 @@ import type {
   DaemonBetaChannelGetStatusResponse,
   DaemonBetaChannelInstallResponse,
   DaemonBetaChannelUninstallResponse,
+  DaemonBetaChannelStartResponse,
+  DaemonDevDaemonGetStatusResponse,
+  DaemonDevDaemonStartResponse,
+  DaemonWebUiGetStatusResponse,
   DaemonUpdateStartResponse,
   DiagnosticsResponse,
   AgentRewindResponseMessage,
@@ -237,6 +241,13 @@ import type {
 } from "@frogg/protocol/browser-automation/rpc-schemas";
 
 export type DaemonBetaChannelStatusPayload = DaemonBetaChannelGetStatusResponse["payload"];
+export type DaemonDevDaemonStatusPayload = DaemonDevDaemonGetStatusResponse["payload"];
+/** Web client status; every web client action answers with it and its own `error`. */
+export type DaemonWebUiStatusPayload = DaemonWebUiGetStatusResponse["payload"];
+/** Start/stop of the beta or development daemon: `error` is null on success. */
+export type DaemonControlResultPayload =
+  | DaemonBetaChannelStartResponse["payload"]
+  | DaemonDevDaemonStartResponse["payload"];
 export type DaemonBetaChannelRunStartPayload =
   | DaemonBetaChannelInstallResponse["payload"]
   | DaemonBetaChannelUninstallResponse["payload"];
@@ -1038,6 +1049,8 @@ const DEFAULT_SESSION_RPC_TIMEOUT_MS = 60_000;
 const PUSH_TOKEN_REVOCATION_TIMEOUT_MS = 2_000;
 /** A clean cut waits for a model to write the summary before it answers. */
 const CLEAN_CUT_TIMEOUT_MS = 5 * 60_000;
+/** Beta CLI start/stop can take up to a minute on the daemon side. */
+const DAEMON_CONTROL_TIMEOUT_MS = 90_000;
 // Synthesis may still be running when the app asks; the daemon waits up to 30s for it.
 const NOTIFICATION_AUDIO_TIMEOUT_MS = 45_000;
 const DEFAULT_CONNECT_TIMEOUT_MS = 15_000;
@@ -5634,6 +5647,100 @@ export class DaemonClient {
     });
   }
 
+  async startBetaChannel(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.start.response">({
+      requestId,
+      message: { type: "daemon.beta_channel.start.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async stopBetaChannel(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.stop.response">({
+      requestId,
+      message: { type: "daemon.beta_channel.stop.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async getDevDaemonStatus(requestId?: string): Promise<DaemonDevDaemonStatusPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.get_status.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.get_status.request" },
+    });
+  }
+
+  async startDevDaemon(cwd: string, requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.start.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.start.request", cwd },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  /** "daemon": build protocol and client, then restart the daemon. "web": restart the web app. */
+  async rebuildDevDaemon(
+    target: "daemon" | "web",
+    requestId?: string,
+  ): Promise<DaemonControlResultPayload> {
+    // COMPAT(devDaemonRebuild): added in v1.6.7, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.devDaemonRebuild !== true) {
+      throw new Error("Update the host to rebuild the development daemon from the app.");
+    }
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.rebuild.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.rebuild.request", target },
+    });
+  }
+
+  async stopDevDaemon(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.stop.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.stop.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async getWebUiStatus(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.get_status.response">({
+      requestId,
+      message: { type: "daemon.web_ui.get_status.request" },
+    });
+  }
+
+  async updateWebUi(
+    input: { startOnLaunch?: boolean; host?: string },
+    requestId?: string,
+  ): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.update.response">({
+      requestId,
+      message: { type: "daemon.web_ui.update.request", ...input },
+    });
+  }
+
+  async startWebUi(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.start.response">({
+      requestId,
+      message: { type: "daemon.web_ui.start.request" },
+    });
+  }
+
+  async stopWebUi(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.stop.response">({
+      requestId,
+      message: { type: "daemon.web_ui.stop.request" },
+    });
+  }
+
   async connectHub(
     hubUrl: string,
     token: string,
@@ -6736,6 +6843,20 @@ export class DaemonClient {
     // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
     if (this.lastServerInfoMessage?.features?.betaChannelManagement !== true) {
       throw new Error("Update the host to manage the beta daemon from the app.");
+    }
+  }
+
+  private requireWebUiControlSupport(): void {
+    // COMPAT(webUiControl): added in v1.6.7, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.webUiControl !== true) {
+      throw new Error("Update the host to manage its web client from the app.");
+    }
+  }
+
+  private requireDaemonChannelControlSupport(): void {
+    // COMPAT(daemonChannelControl): added in v1.6.7, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.daemonChannelControl !== true) {
+      throw new Error("Update the host to start and stop the beta and development daemons.");
     }
   }
 

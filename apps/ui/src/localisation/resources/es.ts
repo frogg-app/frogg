@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const es: TranslationResources = {
+  devBar: {
+    daemon: "Daemon dev",
+    web: "Web dev",
+    rebuildDaemon: "Recompilar y reiniciar",
+    restartWeb: "Reiniciar con la caché vacía",
+    openWeb: "Abrir",
+    stop: "Detener",
+    startIn: "Iniciar en {{name}}",
+    lastError: "La última recompilación falló: {{error}}",
+    behindMain_one: "{{count}} commit por detrás de main",
+    behindMain_other: "{{count}} commits por detrás de main",
+    tone: {
+      running: "En ejecución",
+      stale: "Desactualizado",
+      busy: "Recompilando…",
+      stopped: "Detenido",
+    },
+  },
   releaseStreams: {
     label: "Flujos de versiones",
     subtitle: "Betas, versiones estables y upstream, y qué cambios ha alcanzado cada uno",
@@ -3364,6 +3382,24 @@ export const es: TranslationResources = {
       upToDate: "Actualizado",
       installVersion: "Instalar {{version}}",
       updateVersion: "Actualizar a {{version}}",
+      daemonControl: {
+        start: "Iniciar",
+        stop: "Detener",
+        openWebUi: "Abrir interfaz web",
+      },
+      devDaemon: {
+        title: "Daemon de desarrollo",
+        info: "Ejecuta npm run dev:live desde una copia del código fuente en el host: el daemon de esa copia en su propio puerto, con las cuentas, proyectos y conversaciones del host, y su aplicación web. Solo se ejecuta uno a la vez.",
+        needsUpdate: "Actualiza el host para iniciar un daemon de desarrollo.",
+        loadFailed: "No se pudo leer el estado del daemon de desarrollo: {{error}}",
+        running: "En ejecución en el puerto {{port}}",
+        starting: "Iniciando en el puerto {{port}}…",
+        stopped: "Detenido",
+        noCheckouts:
+          "Ningún espacio de trabajo de este host es una copia del código fuente de este repositorio.",
+        launch: "Iniciar",
+        log: "Registro: {{path}}",
+      },
       betaApp: {
         title: "App beta",
         info: "Instala {{name}} junto a esta app. Tiene su propia configuración y sus propios datos.",
@@ -3673,6 +3709,23 @@ export const es: TranslationResources = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        title: "Cliente web",
+        info: "El servidor web del host para la aplicación de navegador, en su propio puerto junto al del daemon. Solo sirve la aplicación; la página se conecta al daemon para todo lo demás.",
+        running: "En ejecución en el puerto {{port}}",
+        stopped: "Detenido (puerto {{port}})",
+        startOnLaunch: "Iniciar con el daemon",
+        startOnLaunchHint: "Inicia el cliente web cada vez que se inicia el daemon.",
+        startOnLaunchPinned: "Lo define el entorno o la línea de comandos del daemon.",
+        interface: "Interfaz",
+        interfaceHint:
+          "La interfaz de loopback solo es accesible desde esta máquina. Todas las interfaces (0.0.0.0) lo hace accesible desde todas las redes del host.",
+        loopback: "Solo esta máquina",
+        allInterfaces: "Todas las interfaces",
+        noInterfaces: "No se encontraron interfaces.",
+        unavailable: "Este daemon no incluye el cliente web.",
+        loadFailed: "No se pudo leer el estado del cliente web: {{error}}",
       },
       resources: {
         title: "Recursos",

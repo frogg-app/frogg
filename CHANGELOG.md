@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+- **Dev bar.** With developer options on, the sidebar shows the development daemon and its web
+  app with a status dot each, and menus to rebuild and restart the daemon, restart the web app
+  with a clear cache, open it, and start or stop it. It flags what is out of date and how far
+  the checkout is behind `origin/main`. New `daemon.dev_daemon.rebuild` RPC behind
+  `features.devDaemonRebuild`; `dev:live` exposes a token-guarded control endpoint through
+  `.dev/live/control.json`. The repo's `frogg.json` drops its old `daemon`, `app`, `desktop` and
+  `ios-simulator` scripts in favour of it.
+- **Linked Claude conversations.** Two processes holding the same Claude session (stable and beta
+  daemons, a development daemon, or `claude --resume` in a terminal) no longer fork it. Each
+  daemon follows the session's transcript while idle and shows turns the other side added, live,
+  then resumes from the transcript's end; turns run one process at a time through a lease file
+  beside the transcript (`<session>.jsonl.frogg-turn`), and a message sent while the other side
+  is mid-turn waits for it. Both sides need this build.
+- **Web client on its own port, managed from the app.** The daemon no longer serves the web
+  app on its own port: the web client has a server of its own, on 9998 for frogg and 9988 for
+  frogg beta, listening on `127.0.0.1` unless you pick another interface. A new **Web client**
+  card in a host's settings (in the desktop and mobile apps, not in the browser app itself)
+  starts and stops it, sets whether it starts with the daemon, lists the host's interfaces to
+  bind (`0.0.0.0` for all), and links to it while it runs. New `features.webUi.host` and
+  `features.webUi.port` (`FROGG_WEB_UI_HOST`, `FROGG_WEB_UI_PORT`); `FROGG_WEB_UI_ENABLED` is
+  now only the default for `features.webUi.enabled`, so the app's choice holds. Docker binds it
+  to `0.0.0.0` and publishes 9998. New `daemon.web_ui.*` RPCs behind `features.webUiControl`.
+- **frogg beta moves to port 9989.** Its web client is on 9988. A beta installed before this
+  release keeps 9998 until it is reinstalled; re-add it as a host afterwards. Brands get a
+  `webPort` (default `daemonPort - 1`), and a beta's ports now default to ten below stable's.
+- **Beta and development daemons from Developer settings.** An installed beta daemon gets
+  **Start**/**Stop** (through its own CLI, so its service stays in charge) and **Open web UI**.
+  A new **Development daemon** card launches `npm run dev:live` from any source checkout among a
+  host's workspaces (daemon on port 9899, web app on 9898, one at a time), stops it, and opens
+  its web UI. The development daemon names itself `<hostname>-DEVELOPMENT` and starts with the
+  host's provider accounts, projects and conversations. New `daemon.beta_channel.start`/`stop`
+  and `daemon.dev_daemon.*` RPCs behind `features.daemonChannelControl`.
+- **Claude input tokens include cached input.** Claude usage now counts cache writes and reads
+  in input tokens (cache reads stay reported separately), as the other providers do; a clean
+  cut's summary no longer shows a handful of tokens in.
+- **Shut down in the daemon conflict warning works on desktop and web.** It asked for
+  confirmation with a dialog that only exists on mobile.
 - **Clean cut cost.** The clean cut divider now shows what the summary cost (tokens in and out,
   plus dollars when the provider reports them, failed attempts included) next to how much
   context the ended conversation held, so a cut that cost as much as it saved stands out.

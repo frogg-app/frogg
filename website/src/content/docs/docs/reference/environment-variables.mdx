@@ -31,7 +31,9 @@ Official Frogg continues to use `FROGG_*`.
 | `FROGG_ALLOW_PAIRING_HOSTNAME` | `true`               | Accept the pairing host as a `Host` without listing it in `FROGG_HOSTNAMES` |
 | `FROGG_CORS_ORIGINS`      |                           | Comma-separated extra origins, or `*` |
 | `FROGG_TRUSTED_PROXIES`   | `loopback`                | Comma-separated proxy IPs, `true`, or `false` |
-| `FROGG_WEB_UI_ENABLED`    | `false`                   | Serve the web app. Installed services set it to `true` |
+| `FROGG_WEB_UI_ENABLED`    | `false`                   | Start the web client with the daemon, unless `features.webUi.enabled` says otherwise. Installed services set it to `true` |
+| `FROGG_WEB_UI_HOST`       | `127.0.0.1`               | Interface the web client listens on |
+| `FROGG_WEB_UI_PORT`       | `9998`                    | Web client port (frogg beta: `9988`) |
 | `FROGG_WEB_UI_DIST_DIR`   | bundled                   | Serve another web build |
 | `FROGG_PAIRING_BASE_URL`  | `https://pair.frogg.app`  | Pairing link base. Legacy alias `FROGG_APP_BASE_URL` |
 | `FROGG_PRIMARY_LAN_IP`    | detected                  | LAN address advertised in pairing offers |

@@ -154,7 +154,7 @@ function sideBySide(t) {
       color: t.beta,
       rows: [
         ["App", "frogg beta"],
-        ["Daemon", "frogg-beta-daemon :9998"],
+        ["Daemon", "frogg-beta-daemon :9989"],
         ["Data", "~/.frogg-beta"],
         ["CLI", "frogg-beta"],
         ["App id", "app.frogg.frogg.beta"],

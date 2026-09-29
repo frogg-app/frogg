@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
+  devBar: {
+    daemon: "開発デーモン",
+    web: "開発 Web",
+    rebuildDaemon: "ビルドして再起動",
+    restartWeb: "キャッシュを消して再起動",
+    openWeb: "開く",
+    stop: "停止",
+    startIn: "{{name}} で起動",
+    lastError: "前回のビルドに失敗しました: {{error}}",
+    behindMain_one: "main より {{count}} コミット遅れています",
+    behindMain_other: "main より {{count}} コミット遅れています",
+    tone: {
+      running: "実行中",
+      stale: "古くなっています",
+      busy: "ビルド中…",
+      stopped: "停止中",
+    },
+  },
   releaseStreams: {
     label: "リリースストリーム",
     subtitle: "ベータ、安定版、アップストリームと、各ストリームに届いた変更",
@@ -3328,6 +3346,24 @@ export const ja: TranslationResources = {
       upToDate: "最新です",
       installVersion: "{{version}} をインストール",
       updateVersion: "{{version}} に更新",
+      daemonControl: {
+        start: "起動",
+        stop: "停止",
+        openWebUi: "Web UI を開く",
+      },
+      devDaemon: {
+        title: "開発用デーモン",
+        info: "ホスト上のソースのチェックアウトで npm run dev:live を実行します。そのチェックアウトのデーモンが専用ポートで、ホストのアカウント・プロジェクト・会話とともに動作し、Web アプリも起動します。同時に動かせるのは 1 つだけです。",
+        needsUpdate: "開発用デーモンを起動するにはホストを更新してください。",
+        loadFailed: "開発用デーモンの状態を読み取れませんでした: {{error}}",
+        running: "ポート {{port}} で実行中",
+        starting: "ポート {{port}} で起動中…",
+        stopped: "停止中",
+        noCheckouts:
+          "このホストのワークスペースに、このリポジトリのソースのチェックアウトがありません。",
+        launch: "起動",
+        log: "ログ: {{path}}",
+      },
       betaApp: {
         title: "ベータ版アプリ",
         info: "{{name}} をこのアプリと並べてインストールします。設定とデータは別々に保持されます。",
@@ -3637,6 +3673,23 @@ export const ja: TranslationResources = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        title: "Web クライアント",
+        info: "ブラウザ版アプリ用のホストの Web サーバーです。デーモンとは別のポートで動作し、アプリの配信だけを行います。ページはそれ以外のすべてでデーモンに接続します。",
+        running: "ポート {{port}} で実行中",
+        stopped: "停止中（ポート {{port}}）",
+        startOnLaunch: "デーモンと一緒に起動",
+        startOnLaunchHint: "デーモンの起動時に毎回 Web クライアントを起動します。",
+        startOnLaunchPinned: "デーモンの環境変数またはコマンドラインで設定されています。",
+        interface: "インターフェース",
+        interfaceHint:
+          "ループバックはこのマシンからのみアクセスできます。すべてのインターフェース（0.0.0.0）にすると、ホストが接続しているすべてのネットワークからアクセスできます。",
+        loopback: "このマシンのみ",
+        allInterfaces: "すべてのインターフェース",
+        noInterfaces: "インターフェースが見つかりません。",
+        unavailable: "このデーモンには Web クライアントが含まれていません。",
+        loadFailed: "Web クライアントの状態を読み取れませんでした: {{error}}",
       },
       resources: {
         title: "リソース",

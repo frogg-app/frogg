@@ -4,6 +4,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
@@ -56,6 +57,7 @@ export interface BetaChannelServiceOptions {
   fetchImpl?: typeof fetch;
   spawnScript?: SpawnInstallerScript;
   probeDaemon?: (port: number) => Promise<BetaDaemonProbe | null>;
+  probeWeb?: (port: number) => Promise<boolean>;
   now?: () => Date;
   runTimeoutMs?: number;
   latestCacheMs?: number;
@@ -77,6 +79,7 @@ interface ScriptHeader {
 const DEFAULT_RUN_TIMEOUT_MS = 15 * 60_000;
 const DEFAULT_LATEST_CACHE_MS = 60_000;
 const PROBE_TIMEOUT_MS = 1500;
+const CONTROL_TIMEOUT_MS = 60_000;
 
 /** The `BRAND_X='value'` defaults block every generated installer starts with. */
 export function parseScriptHeader(script: string): ScriptHeader {
@@ -140,6 +143,34 @@ export function probeBetaDaemon(betaId: string) {
     });
 }
 
+/** Whether anything accepts connections on `port` at loopback or any of this host's addresses. */
+export async function probeListening(port: number): Promise<boolean> {
+  const addresses = ["127.0.0.1"];
+  for (const entries of Object.values(os.networkInterfaces())) {
+    for (const entry of entries ?? []) {
+      if (entry.family === "IPv4" && !entry.internal) addresses.push(entry.address);
+    }
+  }
+  const results = await Promise.all(
+    addresses.map(
+      (host) =>
+        new Promise<boolean>((resolve) => {
+          const socket = net.connect({ host, port, timeout: PROBE_TIMEOUT_MS });
+          socket.once("connect", () => {
+            socket.destroy();
+            resolve(true);
+          });
+          socket.once("timeout", () => {
+            socket.destroy();
+            resolve(false);
+          });
+          socket.once("error", () => resolve(false));
+        }),
+    ),
+  );
+  return results.includes(true);
+}
+
 export class BetaChannelService {
   private readonly logger: pino.Logger;
   private readonly env: NodeJS.ProcessEnv;
@@ -152,6 +183,7 @@ export class BetaChannelService {
   private readonly fetchImpl: typeof fetch | undefined;
   private readonly spawnScript: SpawnInstallerScript;
   private readonly probeDaemon: (port: number) => Promise<BetaDaemonProbe | null>;
+  private readonly probeWeb: (port: number) => Promise<boolean>;
   private readonly now: () => Date;
   private readonly runTimeoutMs: number;
   private readonly latestCacheMs: number;
@@ -174,6 +206,7 @@ export class BetaChannelService {
     this.fetchImpl = options.fetchImpl;
     this.spawnScript = options.spawnScript ?? defaultSpawnScript;
     this.probeDaemon = options.probeDaemon ?? probeBetaDaemon(brand.channels.beta.id);
+    this.probeWeb = options.probeWeb ?? probeListening;
     this.now = options.now ?? (() => new Date());
     this.runTimeoutMs = options.runTimeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
     this.latestCacheMs = options.latestCacheMs ?? DEFAULT_LATEST_CACHE_MS;
@@ -256,9 +289,10 @@ export class BetaChannelService {
     const reason = this.unsupportedReason();
     const selfIsBeta = this.selfChannel === "beta";
     const installedVersion = selfIsBeta ? null : this.readInstalledVersion();
-    const [probe, latest] = await Promise.all([
+    const [probe, latest, webRunning] = await Promise.all([
       this.probeDaemon(this.beta.daemonPort),
       this.latest(),
+      this.probeWeb(this.beta.webPort),
     ]);
     return {
       supported: reason === null,
@@ -271,6 +305,8 @@ export class BetaChannelService {
       running: probe !== null,
       runningVersion: probe?.version ?? null,
       port: this.beta.daemonPort,
+      webPort: this.beta.webPort,
+      webRunning,
       serviceName: this.beta.serviceName,
       cliName: this.beta.cliName,
       homeDir: path.join(this.homedir, this.beta.homeDir),
@@ -288,6 +324,53 @@ export class BetaChannelService {
 
   uninstall(input: { purge?: boolean } = {}): BetaChannelStartResult {
     return this.start("uninstall", { purge: input.purge === true });
+  }
+
+  /**
+   * Starts or stops the installed beta daemon with its own CLI, which knows whether a service
+   * supervises it. Returns an error message, or null on success.
+   */
+  async setRunning(running: boolean): Promise<string | null> {
+    const reason = this.unsupportedReason();
+    if (reason) return reason;
+    if (this.readInstalledVersion() === null)
+      return `${this.beta.name} is not installed on this host`;
+    const cli = path.join(this.installDir, "current", "bin", this.beta.cliName);
+    const betaPrefix = `${brand.channels.stable.id.toUpperCase()}_BETA`;
+    const env = scrubInstallerEnv(this.env, ["FROGG", brand.envPrefix, betaPrefix]);
+    const verb = running ? "start" : "stop";
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const child = this.spawnScript(cli, ["daemon", verb], { env, cwd: this.homedir });
+        let tail = "";
+        const collect = (chunk: Buffer) => {
+          tail = (tail + chunk.toString("utf8")).slice(-2000);
+        };
+        child.stdout?.on("data", collect);
+        child.stderr?.on("data", collect);
+        const timer = setTimeout(() => child.kill(), CONTROL_TIMEOUT_MS);
+        child.once("error", (error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
+        child.once("close", (code, signal) => {
+          clearTimeout(timer);
+          if (code === 0) {
+            resolve();
+            return;
+          }
+          const last = tail.trim().split("\n").at(-1);
+          reject(
+            new Error(
+              `${this.beta.cliName} daemon ${verb} exited with ${code ?? signal}${last ? `: ${last}` : ""}`,
+            ),
+          );
+        });
+      });
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
   }
 
   private start(

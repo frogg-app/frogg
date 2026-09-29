@@ -1,6 +1,24 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
 export const en = {
+  devBar: {
+    daemon: "Dev daemon",
+    web: "Dev web",
+    rebuildDaemon: "Rebuild and restart",
+    restartWeb: "Restart with a clear cache",
+    openWeb: "Open",
+    stop: "Stop",
+    startIn: "Start in {{name}}",
+    lastError: "Last rebuild failed: {{error}}",
+    behindMain_one: "{{count}} commit behind main",
+    behindMain_other: "{{count}} commits behind main",
+    tone: {
+      running: "Running",
+      stale: "Out of date",
+      busy: "Rebuilding…",
+      stopped: "Stopped",
+    },
+  },
   releaseStreams: {
     label: "Release streams",
     subtitle: "Betas, stable releases and upstream, and which changes have reached each",
@@ -3313,6 +3331,23 @@ export const en = {
       upToDate: "Up to date",
       installVersion: "Install {{version}}",
       updateVersion: "Update to {{version}}",
+      daemonControl: {
+        start: "Start",
+        stop: "Stop",
+        openWebUi: "Open web UI",
+      },
+      devDaemon: {
+        title: "Development daemon",
+        info: "Runs npm run dev:live from a source checkout on the host: that checkout's daemon on its own port, with the host's accounts, projects and conversations, and its web app. One runs at a time.",
+        needsUpdate: "Update the host to launch a development daemon.",
+        loadFailed: "Couldn't read the development daemon status: {{error}}",
+        running: "Running on port {{port}}",
+        starting: "Starting on port {{port}}…",
+        stopped: "Not running",
+        noCheckouts: "No source checkout of this repo among this host's workspaces.",
+        launch: "Launch",
+        log: "Log: {{path}}",
+      },
       betaApp: {
         title: "Beta app",
         info: "Install {{name}} beside this app. It keeps its own settings and data.",
@@ -3618,6 +3653,23 @@ export const en = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        title: "Web client",
+        info: "The host's web server for the browser app, on its own port beside the daemon's. It serves only the app; the page connects to the daemon for everything else.",
+        running: "Running on port {{port}}",
+        stopped: "Stopped (port {{port}})",
+        startOnLaunch: "Start with the daemon",
+        startOnLaunchHint: "Start the web client whenever the daemon starts.",
+        startOnLaunchPinned: "Set by the daemon's environment or command line.",
+        interface: "Interface",
+        interfaceHint:
+          "Loopback is reachable only from this machine. All interfaces (0.0.0.0) makes it reachable from every network the host is on.",
+        loopback: "This machine only",
+        allInterfaces: "All interfaces",
+        noInterfaces: "No interfaces found.",
+        unavailable: "This daemon has no web client build.",
+        loadFailed: "Couldn't read the web client status: {{error}}",
       },
       resources: {
         title: "Resources",

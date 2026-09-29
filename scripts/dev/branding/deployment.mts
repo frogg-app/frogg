@@ -21,6 +21,7 @@ export async function generateDeployment({
     HOME: b.homeDir,
     ENV_PREFIX: b.envPrefix,
     PORT: String(b.daemonPort),
+    WEB_PORT: String(b.webPort),
   };
   await writeFile(
     path.join(directory, "runtime.sh"),
@@ -39,10 +40,11 @@ export async function generateDeployment({
           args: { FROGG_BRAND_DIR: brandInput },
         },
         container_name: b.serviceName,
-        ports: [`${b.daemonPort}:${b.daemonPort}`],
+        ports: [`${b.daemonPort}:${b.daemonPort}`, `${b.webPort}:${b.webPort}`],
         environment: {
           [`${b.envPrefix}_HOME`]: `/home/frogg/${b.homeDir}`,
           FROGG_LISTEN: `0.0.0.0:${b.daemonPort}`,
+          FROGG_WEB_UI_HOST: "0.0.0.0",
         },
         volumes: [`./${b.id}-state:/home/frogg/${b.homeDir}`],
         labels: { "app.brand.id": b.id, "app.brand.application-id": b.applicationId },

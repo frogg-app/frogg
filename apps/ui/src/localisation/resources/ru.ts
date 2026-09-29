@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
+  devBar: {
+    daemon: "Демон разработки",
+    web: "Веб разработки",
+    rebuildDaemon: "Собрать и перезапустить",
+    restartWeb: "Перезапустить с очисткой кэша",
+    openWeb: "Открыть",
+    stop: "Остановить",
+    startIn: "Запустить в {{name}}",
+    lastError: "Последняя сборка не удалась: {{error}}",
+    behindMain_one: "Коммитов позади main: {{count}}",
+    behindMain_other: "Коммитов позади main: {{count}}",
+    tone: {
+      running: "Работает",
+      stale: "Устарел",
+      busy: "Сборка…",
+      stopped: "Остановлен",
+    },
+  },
   releaseStreams: {
     label: "Потоки выпусков",
     subtitle: "Бета-версии, стабильные выпуски и upstream, и какие изменения дошли до каждого",
@@ -3340,6 +3358,23 @@ export const ru: TranslationResources = {
       upToDate: "Актуальная версия",
       installVersion: "Установить {{version}}",
       updateVersion: "Обновить до {{version}}",
+      daemonControl: {
+        start: "Запустить",
+        stop: "Остановить",
+        openWebUi: "Открыть веб-интерфейс",
+      },
+      devDaemon: {
+        title: "Демон для разработки",
+        info: "Запускает npm run dev:live из рабочей копии исходников на хосте: демон этой копии на отдельном порту с аккаунтами, проектами и беседами хоста, а также его веб-приложение. Одновременно работает только один.",
+        needsUpdate: "Обновите хост, чтобы запускать демон для разработки.",
+        loadFailed: "Не удалось получить состояние демона для разработки: {{error}}",
+        running: "Работает на порту {{port}}",
+        starting: "Запускается на порту {{port}}…",
+        stopped: "Не запущен",
+        noCheckouts: "Среди рабочих пространств этого хоста нет рабочей копии этого репозитория.",
+        launch: "Запустить",
+        log: "Журнал: {{path}}",
+      },
       betaApp: {
         title: "Бета-приложение",
         info: "Установите {{name}} рядом с этим приложением. У него свои настройки и данные.",
@@ -3650,6 +3685,23 @@ export const ru: TranslationResources = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        title: "Веб-клиент",
+        info: "Веб-сервер хоста для браузерного приложения на отдельном от демона порту. Он только отдаёт приложение, а за всем остальным страница обращается к демону.",
+        running: "Работает на порту {{port}}",
+        stopped: "Остановлен (порт {{port}})",
+        startOnLaunch: "Запускать вместе с демоном",
+        startOnLaunchHint: "Запускать веб-клиент при каждом запуске демона.",
+        startOnLaunchPinned: "Задано переменными окружения или командной строкой демона.",
+        interface: "Интерфейс",
+        interfaceHint:
+          "Loopback доступен только с этого компьютера. Все интерфейсы (0.0.0.0) делают клиент доступным из всех сетей хоста.",
+        loopback: "Только этот компьютер",
+        allInterfaces: "Все интерфейсы",
+        noInterfaces: "Интерфейсы не найдены.",
+        unavailable: "В этом демоне нет сборки веб-клиента.",
+        loadFailed: "Не удалось получить состояние веб-клиента: {{error}}",
       },
       resources: {
         title: "Ресурсы",

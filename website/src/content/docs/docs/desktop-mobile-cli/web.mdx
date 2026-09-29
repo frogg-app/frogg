@@ -5,21 +5,46 @@ sidebar:
   order: 3
 ---
 
-Every daemon can serve the full app to a browser. There is no hosted Frogg web app; you
-open your own daemon's address.
+Every daemon can serve the full app to a browser from its own **web client** server. There
+is no hosted Frogg web app; you open your own host's address.
+
+The web client has its own port, beside the daemon's. It serves only the app; the page then
+connects to the daemon's port for everything it does.
+
+| Channel     | Daemon | Web client |
+| ----------- | ------ | ---------- |
+| frogg       | `9999` | `9998`     |
+| frogg beta  | `9989` | `9988`     |
+| Development | `9899` | `9898`     |
 
 ## Turn it on
 
-Daemons installed with `install.sh`, Docker, Nix or `frogg install-service` already serve
-it. For a daemon you start by hand:
+From another client (the desktop or mobile app), open the host's settings: **Web client**
+starts and stops it, sets whether it starts with the daemon, and picks the interface it
+listens on. While it runs, the card links to it. The browser app itself does not show the
+card, so a page cannot switch off the server it came from.
 
-```sh
-frogg start --web-ui
-```
+The web client listens on `127.0.0.1` (this machine only) unless you pick another interface.
+The card lists the host's interfaces: loopback, each network address, and `0.0.0.0` for all
+of them. Choose a network address, or `0.0.0.0`, to open it from other devices.
 
-or set `features.webUi.enabled: true` in config, or `FROGG_WEB_UI_ENABLED=true`.
+Daemons installed with `install.sh`, Nix or `frogg install-service` start it with the daemon
+by default; Docker also binds it to `0.0.0.0` inside the container and publishes port 9998.
+For a daemon you start by hand, `frogg start --web-ui` starts it for that run.
 
-Then open `http://<daemon-host>:9999/`.
+Then open `http://<host>:9998/`.
+
+### Configuration
+
+| `config.json`                  | Environment              | Default          |
+| ------------------------------ | ------------------------ | ---------------- |
+| `features.webUi.enabled`       | `FROGG_WEB_UI_ENABLED`   | `false`          |
+| `features.webUi.host`          | `FROGG_WEB_UI_HOST`      | `127.0.0.1`      |
+| `features.webUi.port`          | `FROGG_WEB_UI_PORT`      | the brand's web port |
+
+The app writes `features.webUi.enabled` and `features.webUi.host`. `FROGG_WEB_UI_ENABLED`
+is only the default for `enabled`, so what you choose in the app holds across restarts;
+`--web-ui` / `--no-web-ui` on `frogg start` fix it for that run and grey the switch out.
 
 ## Access
 

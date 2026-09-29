@@ -3,7 +3,8 @@
 // Chromium, and renders real command output as terminal images.
 //
 // Usage:
-//   node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 [--only a,b] [--list]
+//   node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17901 \
+//     --daemon-url http://127.0.0.1:17900 [--only a,b] [--list]
 //     [--out website/src/assets/docs] [--brand-tag frogg]
 //
 // Prerequisites (see .claude/skills/frogg-docs/SKILL.md, "Screenshots"):
@@ -31,6 +32,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const { values } = parseArgs({
   options: {
     url: { type: "string" },
+    // The daemon itself, for /api and seeding; the web client (--url) is on its own port.
+    "daemon-url": { type: "string" },
     out: { type: "string", default: path.join(root, "website/src/assets/docs") },
     only: { type: "string" },
     "brand-tag": { type: "string", default: "frogg" },
@@ -217,8 +220,9 @@ async function main() {
     if (!webNames.length) return;
     if (!values.url) throw new Error("--url is required for web UI shots");
     const base = values.url.replace(/\/$/, "");
-    const identity = await (await fetch(`${base}/api/identity`)).json();
-    if (values.seed) seedDemoProject(base);
+    const daemonBase = (values["daemon-url"] ?? values.url).replace(/\/$/, "");
+    const identity = await (await fetch(`${daemonBase}/api/identity`)).json();
+    if (values.seed) seedDemoProject(daemonBase);
     for (const name of webNames) {
       const shot = webShots[name];
       const context = await browser.newContext({

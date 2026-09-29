@@ -441,7 +441,11 @@ function resolveServiceProxyConfig(
 
 interface ResolvedWebUi {
   enabled: boolean;
+  /** `enabled` comes from an in-process CLI flag, so config.json cannot change it. */
+  enabledPinned: boolean;
   distDir: string | null;
+  host: string;
+  port: number;
 }
 
 function resolveWebUiConfig(
@@ -450,10 +454,12 @@ function resolveWebUiConfig(
   cli: CliConfigOverrides | undefined,
   persisted: ReturnType<typeof loadPersistedConfig>,
 ): ResolvedWebUi {
+  // Installers and service units set FROGG_WEB_UI_ENABLED; it is only the default, so the
+  // owner's choice from the app (config.json) holds across restarts.
   const enabled =
     cli?.webUiEnabled ??
-    parseBooleanEnv(env.FROGG_WEB_UI_ENABLED) ??
     persisted.features?.webUi?.enabled ??
+    parseBooleanEnv(env.FROGG_WEB_UI_ENABLED) ??
     false;
   const rawDistDir = env.FROGG_WEB_UI_DIST_DIR ?? persisted.features?.webUi?.distDir;
   const trimmedDistDir = rawDistDir?.trim();
@@ -462,7 +468,10 @@ function resolveWebUiConfig(
     : BUNDLED_WEB_UI_DIST_DIR;
   return {
     enabled,
+    enabledPinned: cli?.webUiEnabled !== undefined,
     distDir,
+    host: env.FROGG_WEB_UI_HOST?.trim() || persisted.features?.webUi?.host || "127.0.0.1",
+    port: Number(env.FROGG_WEB_UI_PORT) || persisted.features?.webUi?.port || brand.webPort,
   };
 }
 
@@ -1032,9 +1041,8 @@ function resolveServiceAndWebUiOverridePaths(
     paths.push("daemon.serviceProxy.publicBaseUrl");
   }
 
-  if (cli?.webUiEnabled !== undefined || parseBooleanEnv(env.FROGG_WEB_UI_ENABLED) !== undefined) {
-    paths.push("features.webUi.enabled");
-  }
+  // FROGG_WEB_UI_ENABLED is only a default (resolveWebUiConfig); the CLI flag pins it.
+  if (cli?.webUiEnabled !== undefined) paths.push("features.webUi.enabled");
   if (env.FROGG_WEB_UI_DIST_DIR !== undefined) paths.push("features.webUi.distDir");
   return paths;
 }

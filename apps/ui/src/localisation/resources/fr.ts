@@ -3,6 +3,24 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
+  devBar: {
+    daemon: "Démon dev",
+    web: "Web dev",
+    rebuildDaemon: "Recompiler et redémarrer",
+    restartWeb: "Redémarrer avec un cache vide",
+    openWeb: "Ouvrir",
+    stop: "Arrêter",
+    startIn: "Démarrer dans {{name}}",
+    lastError: "La dernière recompilation a échoué : {{error}}",
+    behindMain_one: "{{count}} commit de retard sur main",
+    behindMain_other: "{{count}} commits de retard sur main",
+    tone: {
+      running: "En cours",
+      stale: "Obsolète",
+      busy: "Recompilation…",
+      stopped: "Arrêté",
+    },
+  },
   releaseStreams: {
     label: "Flux de versions",
     subtitle: "Bêtas, versions stables et upstream, et les changements arrivés dans chacun",
@@ -3370,6 +3388,23 @@ export const fr: TranslationResources = {
       upToDate: "À jour",
       installVersion: "Installer {{version}}",
       updateVersion: "Mettre à jour vers {{version}}",
+      daemonControl: {
+        start: "Démarrer",
+        stop: "Arrêter",
+        openWebUi: "Ouvrir l'interface web",
+      },
+      devDaemon: {
+        title: "Démon de développement",
+        info: "Exécute npm run dev:live depuis une copie des sources sur l'hôte : le démon de cette copie sur son propre port, avec les comptes, projets et conversations de l'hôte, et son application web. Un seul à la fois.",
+        needsUpdate: "Mettez à jour l'hôte pour lancer un démon de développement.",
+        loadFailed: "Impossible de lire l'état du démon de développement : {{error}}",
+        running: "En cours d'exécution sur le port {{port}}",
+        starting: "Démarrage sur le port {{port}}…",
+        stopped: "Arrêté",
+        noCheckouts: "Aucun espace de travail de cet hôte n'est une copie des sources de ce dépôt.",
+        launch: "Lancer",
+        log: "Journal : {{path}}",
+      },
       betaApp: {
         title: "App bêta",
         info: "Installez {{name}} à côté de cette app. Elle garde ses propres réglages et données.",
@@ -3681,6 +3716,23 @@ export const fr: TranslationResources = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        title: "Client web",
+        info: "Le serveur web de l'hôte pour l'application navigateur, sur son propre port à côté de celui du démon. Il ne sert que l'application ; la page se connecte au démon pour tout le reste.",
+        running: "En cours d'exécution sur le port {{port}}",
+        stopped: "Arrêté (port {{port}})",
+        startOnLaunch: "Démarrer avec le démon",
+        startOnLaunchHint: "Démarre le client web à chaque démarrage du démon.",
+        startOnLaunchPinned: "Défini par l'environnement ou la ligne de commande du démon.",
+        interface: "Interface",
+        interfaceHint:
+          "La boucle locale n'est accessible que depuis cette machine. Toutes les interfaces (0.0.0.0) le rend accessible depuis tous les réseaux de l'hôte.",
+        loopback: "Cette machine uniquement",
+        allInterfaces: "Toutes les interfaces",
+        noInterfaces: "Aucune interface trouvée.",
+        unavailable: "Ce démon n'inclut pas le client web.",
+        loadFailed: "Impossible de lire l'état du client web : {{error}}",
       },
       resources: {
         title: "Ressources",

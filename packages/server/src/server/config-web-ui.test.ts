@@ -1,3 +1,4 @@
+import { brand } from "@frogg/branding";
 import { mkdir, mkdtemp, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -47,15 +48,24 @@ describe("daemon web UI config", () => {
     expectBundledWebUiDistDir(config.webUi.distDir);
   });
 
-  test("FROGG_WEB_UI_ENABLED overrides persisted setting", async () => {
+  test("the persisted setting overrides FROGG_WEB_UI_ENABLED, which is only a default", async () => {
     const home = await createFroggHome({
       version: 1,
-      features: { webUi: { enabled: true } },
+      features: { webUi: { enabled: false } },
     });
 
-    const config = loadConfig(home, { env: { FROGG_WEB_UI_ENABLED: "false" } });
+    const config = loadConfig(home, { env: { FROGG_WEB_UI_ENABLED: "true" } });
 
     expect(config.webUi.enabled).toBe(false);
+    expect(config.webUi.enabledPinned).toBe(false);
+  });
+
+  test("the web client defaults to loopback on the brand's web port", async () => {
+    const home = await createFroggHome({ version: 1 });
+
+    const config = loadConfig(home, { env: {} });
+
+    expect(config.webUi).toMatchObject({ host: "127.0.0.1", port: brand.webPort });
   });
 
   test("FROGG_WEB_UI_ENABLED=true enables web UI", async () => {

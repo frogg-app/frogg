@@ -1,3 +1,5 @@
+import { daemonHostname } from "../../../daemon-hostname.js";
+import { TranscriptFollower, TurnLease } from "./linked-transcript.js";
 import type { ChildProcess } from "node:child_process";
 import type { SkillLaunchPolicy } from "../../../skills/catalog.js";
 import { randomUUID } from "node:crypto";
@@ -2059,8 +2061,12 @@ class ClaudeContextUsageState {
       if (!message.usage) {
         return undefined;
       }
+      // Anthropic's input_tokens excludes cache writes and reads; report the
+      // whole input, with cached reads as a subset, as the other providers do.
+      const cacheRead = message.usage.cache_read_input_tokens ?? 0;
       const usage: AgentUsage = {
-        inputTokens: message.usage.input_tokens,
+        inputTokens:
+          message.usage.input_tokens + (message.usage.cache_creation_input_tokens ?? 0) + cacheRead,
         cachedInputTokens: message.usage.cache_read_input_tokens,
         outputTokens: message.usage.output_tokens,
         totalCostUsd: message.total_cost_usd,
@@ -2143,6 +2149,8 @@ class ClaudeAgentSession implements AgentSession {
   private readonly defaults?: { agents?: Record<string, AgentDefinition> };
   private readonly runtimeSettings?: ProviderRuntimeSettings;
   private readonly persistSession?: boolean;
+  private transcriptFollower: TranscriptFollower | null = null;
+  private turnLease: TurnLease | null = null;
   private readonly logger: Logger;
   private readonly queryFactory?: ClaudeQueryFactory;
   private readonly resolveBinary: () => Promise<string>;
@@ -2254,6 +2262,7 @@ class ClaudeAgentSession implements AgentSession {
       this.claudeSessionId = null;
       this.persistence = null;
     }
+    this.startLinkedTranscript();
 
     // Validate mode if provided
     if (config.modeId && !VALID_CLAUDE_MODES.has(config.modeId)) {
@@ -2395,6 +2404,19 @@ class ClaudeAgentSession implements AgentSession {
     this.notifySubscribers({ type: "turn_started", provider: "claude" });
 
     try {
+      if (this.turnLease) {
+        const acquired = await this.turnLease.acquire({
+          isCancelled: () => this.closed || this.activeForegroundTurnId !== turnId,
+          onWaiting: (holder) =>
+            this.logger.info(
+              { sessionId: this.claudeSessionId, holder: holder.label },
+              "Waiting for another process to finish its turn in a linked conversation",
+            ),
+        });
+        if (!acquired) return { turnId };
+        // The other side may have finished moments ago: take in its last turn before this one.
+        this.transcriptFollower?.poll(true);
+      }
       await this.ensureQuery();
       if (!this.input) {
         throw new Error("Claude session input stream not initialized");
@@ -2817,6 +2839,8 @@ class ClaudeAgentSession implements AgentSession {
       "provider.claude.session_close.start",
     );
     this.closed = true;
+    this.transcriptFollower?.stop();
+    this.turnLease?.release();
     this.rejectAllPendingPermissions(new Error("Claude session closed"));
     this.cancelCurrentTurn?.();
     this.subscribers.clear();
@@ -3597,6 +3621,59 @@ class ClaudeAgentSession implements AgentSession {
     }
     this.logger.debug({ from: this.turnState, to: next, reason }, "Claude turn state transition");
     this.turnState = next;
+    if (next === "idle") {
+      // Everything written during the turn was this session's own; hand the conversation back.
+      this.transcriptFollower?.skipToEnd();
+      this.turnLease?.release();
+    }
+  }
+
+  /**
+   * Linked conversations (linked-transcript.ts): follow what another process appends to this
+   * session's transcript, and run turns one process at a time.
+   */
+  private startLinkedTranscript(): void {
+    if (this.config.internal) return;
+    const transcriptPath = () =>
+      this.claudeSessionId ? this.resolveHistoryPath(this.claudeSessionId) : null;
+    this.transcriptFollower = new TranscriptFollower({
+      resolvePath: transcriptPath,
+      isBusy: () => this.turnState !== "idle",
+      onForeignLines: (lines) => this.ingestForeignTranscriptLines(lines),
+      logger: this.logger,
+    });
+    this.turnLease = new TurnLease({
+      resolvePath: () => {
+        const transcript = transcriptPath();
+        return transcript ? `${transcript}.frogg-turn` : null;
+      },
+      label: daemonHostname(),
+      logger: this.logger,
+    });
+    this.transcriptFollower.start();
+  }
+
+  /** Turns another process ran in this conversation: show them, and resume after them. */
+  private ingestForeignTranscriptLines(lines: string[]): void {
+    const timeline: PersistedTimelineEntry[] = [];
+    for (const line of lines) {
+      this.ingestPersistedHistoryLine(line, timeline, new Set());
+    }
+    for (const entry of timeline) {
+      this.notifySubscribers({
+        type: "timeline",
+        item: entry.item,
+        provider: "claude",
+        timestamp: entry.timestamp,
+      });
+    }
+    // The live Claude process still sits at its own last message; the next turn must start a
+    // fresh one, which resumes from the transcript's end.
+    if (this.query) this.queryRestartNeeded = true;
+    this.logger.info(
+      { sessionId: this.claudeSessionId, lines: lines.length, items: timeline.length },
+      "Picked up turns another process added to a linked conversation",
+    );
   }
 
   private syncTurnState(reason: string): void {

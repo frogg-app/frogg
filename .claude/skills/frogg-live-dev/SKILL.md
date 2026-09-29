@@ -28,15 +28,15 @@ Prerequisites once per worktree: `npm ci` (wait for worktree setup to finish; a 
 Run it as a **background task**, not under `timeout`:
 
 ```bash
-npm run dev:live            # web 7820, daemon 7821
-PREVIEW_PORT=7830 npm run dev:live   # another worktree already on 7820
+npm run dev:live            # web 9898, daemon 9899 (PREVIEW_PORT, LIVE_DAEMON_PORT)
+PREVIEW_PORT=9878 LIVE_DAEMON_PORT=9879 npm run dev:live   # another worktree is on 9898/9899
 ```
 
 Wait for the banner, then give the user both lines verbatim:
 
 ```
-Live:     http://<lan-ip>:7820
-Daemon:   <lan-ip>:7821  (real providers, home .dev/live/home)
+Live:     http://<lan-ip>:9898
+Daemon:   <lan-ip>:9899  (real providers, home .dev/live/home)
 ```
 
 - **Web:** the URL opens in any browser on the LAN. Never hand out `localhost`; the VM is headless.
@@ -59,7 +59,14 @@ Clients reconnect on their own after a daemon restart. A running agent turn is c
 
 - Home is `.dev/live/home`, persistent across runs: projects, chats and settings survive.
   Delete it for a clean slate. Nothing is seeded.
-- Real provider logins come from the user's own `~` (Claude, Codex, …), same as a normal daemon.
+- Every start imports the installed daemon's provider accounts (`providerAccounts`, which are
+  just config-dir pointers such as `~/.claude-steve`) and its projects/workspaces from `~/.frogg`,
+  and its agent records, so no re-sign-in and existing repos and conversations open. The provider
+  sessions behind those conversations are shared with the installed daemon: continue a
+  conversation in one daemon at a time. `FROGG_LIVE_SOURCE_HOME=<dir>` picks another
+  source; `=none` skips the import.
+- The daemon names itself `<hostname>-DEVELOPMENT` (`FROGG_HOSTNAME`), so it can't be mistaken
+  for the installed daemon in a host list.
 - It never touches the installed stable daemon (9999, `~/.frogg`) or the side-by-side beta
   daemon. It is not "the deployed beta"; deployed daemons run release builds, not this branch.
 - Relay is off and auth is not required — LAN only.
