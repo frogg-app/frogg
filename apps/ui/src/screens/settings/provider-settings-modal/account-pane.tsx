@@ -8,7 +8,8 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
-import { StyleSheet } from "react-native-unistyles";
+import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { ChevronDown, ChevronUp } from "lucide-react-native";
 import {
   PROVIDER_ACCOUNT_DISPLAY_NAME_MAX_LENGTH,
   PROVIDER_ACCOUNT_SYSTEM_PROMPT_MAX_LENGTH,
@@ -25,6 +26,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Switch } from "@/components/ui/switch";
 import { SettingsTextArea } from "@/components/settings-textarea";
 import { settingsStyles } from "@/styles/settings";
+import { ICON_SIZE, type Theme } from "@/styles/theme";
 import {
   IDENTITY_COLOR_NAMES,
   identityColor,
@@ -161,11 +163,11 @@ export function AccountPane(props: AccountPaneProps): ReactElement {
   return (
     <View style={styles.pane} testID={`provider-account-pane-${account.id}`}>
       <AccountHero {...props} />
+      <AccountIdentity {...props} />
       <AccountUsage {...props} />
       {canSetPreferences && models.length > 0 ? <AccountDefaults {...props} /> : null}
       {canRestrictModels && models.length > 0 ? <AccountModelAccess {...props} /> : null}
       {canSetPreferences ? <AccountSystemPrompt {...props} /> : null}
-      <AccountIdentity {...props} />
       {props.canManage ? (
         <AccountTransfer
           providerId={props.providerId}
@@ -533,19 +535,41 @@ function ModelAccessRow({
   );
 }
 
+const ThemedChevronDown = withUnistyles(ChevronDown);
+const ThemedChevronUp = withUnistyles(ChevronUp);
+const mutedColorMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
+
 function AccountModelAccess({ account, accounts, models }: AccountPaneProps) {
   const { t } = useTranslation();
+  // Collapsed by default: the summary badge says enough until someone wants to change access.
+  const [expanded, setExpanded] = useState(false);
+  const toggleExpanded = useCallback(() => setExpanded((open) => !open), []);
   const mutation = useSectionMutation();
   const mutate = accounts.setAllowedModels.mutateAsync;
   const busy = accounts.setAllowedModels.isPending;
   const summary = modelAccessSummary(account.allowedModels, models.length, t);
+  const expandedState = useMemo(() => ({ expanded }), [expanded]);
   const summaryBadge = useMemo(
     () => (
-      <View testID="provider-account-models-summary">
-        <StatusBadge label={summary.label} variant={summary.variant} />
-      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={expandedState}
+        accessibilityLabel={t("settings.providers.settingsModal.account.modelsTitle")}
+        onPress={toggleExpanded}
+        style={styles.modelsToggle}
+        testID="provider-account-models-toggle"
+      >
+        <View testID="provider-account-models-summary">
+          <StatusBadge label={summary.label} variant={summary.variant} />
+        </View>
+        {expanded ? (
+          <ThemedChevronUp size={ICON_SIZE.sm} uniProps={mutedColorMapping} />
+        ) : (
+          <ThemedChevronDown size={ICON_SIZE.sm} uniProps={mutedColorMapping} />
+        )}
+      </Pressable>
     ),
-    [summary.label, summary.variant],
+    [expanded, expandedState, summary.label, summary.variant, t, toggleExpanded],
   );
 
   const write = useCallback(
@@ -576,32 +600,36 @@ function AccountModelAccess({ account, accounts, models }: AccountPaneProps) {
       trailing={summaryBadge}
       testID="provider-account-models"
     >
-      <View style={settingsStyles.card}>
-        {models.map((model, index) => (
-          <ModelAccessRow
-            key={model.id}
-            model={model}
-            isFirst={index === 0}
-            isAllowed={
-              account.allowedModels === undefined || account.allowedModels.includes(model.id)
-            }
-            busy={busy}
-            onToggle={handleToggle}
-          />
-        ))}
-      </View>
-      {account.allowedModels !== undefined ? (
-        <View style={styles.inlineActions}>
-          <Button
-            size="sm"
-            variant="ghost"
-            disabled={busy}
-            onPress={handleAllowAll}
-            testID="provider-account-models-allow-all"
-          >
-            {t("settings.providers.settingsModal.account.allowAll")}
-          </Button>
-        </View>
+      {expanded ? (
+        <>
+          <View style={settingsStyles.card}>
+            {models.map((model, index) => (
+              <ModelAccessRow
+                key={model.id}
+                model={model}
+                isFirst={index === 0}
+                isAllowed={
+                  account.allowedModels === undefined || account.allowedModels.includes(model.id)
+                }
+                busy={busy}
+                onToggle={handleToggle}
+              />
+            ))}
+          </View>
+          {account.allowedModels !== undefined ? (
+            <View style={styles.inlineActions}>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={busy}
+                onPress={handleAllowAll}
+                testID="provider-account-models-allow-all"
+              >
+                {t("settings.providers.settingsModal.account.allowAll")}
+              </Button>
+            </View>
+          ) : null}
+        </>
       ) : null}
       <SectionFeedback error={mutation.error} testID="provider-account-models" />
     </PaneSection>
@@ -961,6 +989,11 @@ const styles = StyleSheet.create((theme) => ({
   },
   section: {
     gap: theme.spacing[2],
+  },
+  modelsToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   sectionHeader: {
     flexDirection: "row",
