@@ -56,6 +56,12 @@ export type SpawnDevLauncher = (
 export interface DevDaemonServiceOptions {
   logger: pino.Logger;
   froggHome: string;
+  /**
+   * The workspace registries of this host's other channels (stable, beta). Their checkouts are
+   * offered too: a beta daemon has its own projects, but the frogg checkout usually lives in the
+   * stable daemon's.
+   */
+  siblingWorkspaceFiles?: string[];
   env?: NodeJS.ProcessEnv;
   platform?: NodeJS.Platform;
   spawnLauncher?: SpawnDevLauncher;
@@ -147,8 +153,10 @@ export class DevDaemonService {
   /** Checkouts seen by the last status call, where a hand-started launcher may be running. */
   private knownCheckouts: string[] = [];
   private readonly startupCheckMs: number;
+  private readonly siblingWorkspaceFiles: string[];
 
   constructor(options: DevDaemonServiceOptions) {
+    this.siblingWorkspaceFiles = options.siblingWorkspaceFiles ?? [];
     this.logger = options.logger.child({ module: "dev-daemon" });
     this.statePath = path.join(options.froggHome, "dev-daemon.json");
     this.env = options.env ?? process.env;
@@ -265,10 +273,41 @@ export class DevDaemonService {
     return null;
   }
 
+  /** The other channels' workspaces, read straight from their registry files; unreadable ones are skipped. */
+  private readSiblingWorkspaces(): Pick<
+    PersistedWorkspaceRecord,
+    "cwd" | "title" | "displayName" | "branch" | "archivedAt"
+  >[] {
+    const records: Pick<
+      PersistedWorkspaceRecord,
+      "cwd" | "title" | "displayName" | "branch" | "archivedAt"
+    >[] = [];
+    for (const file of this.siblingWorkspaceFiles) {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(readFileSync(file, "utf8"));
+      } catch {
+        continue;
+      }
+      if (!Array.isArray(parsed)) continue;
+      for (const entry of parsed as Record<string, unknown>[]) {
+        if (!entry || typeof entry.cwd !== "string") continue;
+        records.push({
+          cwd: entry.cwd,
+          title: typeof entry.title === "string" ? entry.title : null,
+          displayName: typeof entry.displayName === "string" ? entry.displayName : entry.cwd,
+          branch: typeof entry.branch === "string" ? entry.branch : null,
+          archivedAt: typeof entry.archivedAt === "string" ? entry.archivedAt : null,
+        });
+      }
+    }
+    return records;
+  }
+
   async status(workspaces: PersistedWorkspaceRecord[]): Promise<DaemonDevDaemonStatus> {
     const reason = this.unsupportedReason();
     const checkouts = new Map<string, DaemonDevDaemonCheckout>();
-    for (const workspace of workspaces) {
+    for (const workspace of [...workspaces, ...this.readSiblingWorkspaces()]) {
       if (workspace.archivedAt || checkouts.has(workspace.cwd)) continue;
       if (!isDevCheckout(workspace.cwd)) continue;
       checkouts.set(workspace.cwd, {

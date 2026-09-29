@@ -3433,6 +3433,9 @@ export const ja: TranslationResources = {
         needsUpdate: "ベータを管理するにはこのホストを更新してください。",
         loadFailed: "ベータの状態を読み込めませんでした: {{error}}",
         unsupported: "このホストでは利用できません: {{reason}}",
+        stopSelfConfirmTitle: "ベータ版デーモンを停止しますか?",
+        stopSelfConfirmMessage:
+          "このアプリはベータ版デーモン経由で {{host}} に接続しているため、接続が切れます。ホストの安定版デーモンから再起動してください。",
         selfConnected: "接続中 · {{version}}(ポート {{port}})",
         installed: "ベータ {{version}} インストール済み",
         notInstalled: "ベータは未インストール",

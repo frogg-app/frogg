@@ -3476,6 +3476,9 @@ export const fr: TranslationResources = {
         needsUpdate: "Mettez à jour cet hôte pour gérer les bêtas.",
         loadFailed: "Impossible de charger l'état bêta : {{error}}",
         unsupported: "Indisponible sur cet hôte : {{reason}}",
+        stopSelfConfirmTitle: "Arrêter le daemon bêta ?",
+        stopSelfConfirmMessage:
+          "Cette app atteint {{host}} via son daemon bêta : la connexion va tomber. Redémarrez-le depuis le daemon stable de l'hôte.",
         selfConnected: "Connecté · {{version}} sur le port {{port}}",
         installed: "Bêta {{version}} installée",
         notInstalled: "Bêta non installée",

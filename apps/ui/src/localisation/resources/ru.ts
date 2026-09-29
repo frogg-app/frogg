@@ -3444,6 +3444,9 @@ export const ru: TranslationResources = {
         needsUpdate: "Обновите этот хост, чтобы управлять бетами.",
         loadFailed: "Не удалось загрузить состояние беты: {{error}}",
         unsupported: "Недоступно на этом хосте: {{reason}}",
+        stopSelfConfirmTitle: "Остановить бета-демон?",
+        stopSelfConfirmMessage:
+          "Приложение подключено к {{host}} через бета-демон, поэтому соединение оборвётся. Запустите его снова через стабильный демон хоста.",
         selfConnected: "Подключено · {{version}}, порт {{port}}",
         installed: "Установлена бета {{version}}",
         notInstalled: "Бета не установлена",

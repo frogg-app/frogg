@@ -3417,6 +3417,9 @@ export const en = {
         needsUpdate: "Update this host to manage betas.",
         loadFailed: "Couldn't load beta status: {{error}}",
         unsupported: "Not available on this host: {{reason}}",
+        stopSelfConfirmTitle: "Stop the beta daemon?",
+        stopSelfConfirmMessage:
+          "This app reaches {{host}} through its beta daemon, so the connection drops. Start it again from the host's stable daemon.",
         selfConnected: "Connected · {{version}} on port {{port}}",
         installed: "Beta {{version}} installed",
         notInstalled: "Beta not installed",

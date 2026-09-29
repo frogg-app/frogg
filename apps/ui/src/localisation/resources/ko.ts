@@ -3410,6 +3410,9 @@ export const ko: TranslationResources = {
         needsUpdate: "베타를 관리하려면 이 호스트를 업데이트하세요.",
         loadFailed: "베타 상태를 불러올 수 없습니다: {{error}}",
         unsupported: "이 호스트에서는 사용할 수 없습니다: {{reason}}",
+        stopSelfConfirmTitle: "베타 데몬을 중지할까요?",
+        stopSelfConfirmMessage:
+          "이 앱은 베타 데몬을 통해 {{host}}에 연결되어 있어 연결이 끊어집니다. 호스트의 안정판 데몬에서 다시 시작하세요.",
         selfConnected: "연결됨 · {{version}}, 포트 {{port}}",
         installed: "베타 {{version}} 설치됨",
         notInstalled: "베타가 설치되지 않음",

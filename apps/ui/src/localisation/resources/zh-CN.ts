@@ -3332,6 +3332,9 @@ export const zhCN: TranslationResources = {
         needsUpdate: "更新此主机以管理测试版。",
         loadFailed: "无法加载测试版状态：{{error}}",
         unsupported: "此主机不可用：{{reason}}",
+        stopSelfConfirmTitle: "停止测试版守护进程?",
+        stopSelfConfirmMessage:
+          "本应用通过测试版守护进程连接 {{host}},连接将会断开。请从该主机的稳定版守护进程重新启动它。",
         selfConnected: "已连接 · {{version}},端口 {{port}}",
         installed: "已安装测试版 {{version}}",
         notInstalled: "未安装测试版",

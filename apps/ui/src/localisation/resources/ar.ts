@@ -3385,6 +3385,9 @@ export const ar: TranslationResources = {
         needsUpdate: "حدّث هذا المضيف لإدارة الإصدارات التجريبية.",
         loadFailed: "تعذّر تحميل حالة الإصدار التجريبي: {{error}}",
         unsupported: "غير متاح على هذا المضيف: {{reason}}",
+        stopSelfConfirmTitle: "إيقاف الخادم التجريبي؟",
+        stopSelfConfirmMessage:
+          "يتصل هذا التطبيق بـ {{host}} عبر الخادم التجريبي، لذا سينقطع الاتصال. أعد تشغيله من الخادم المستقر على المضيف.",
         selfConnected: "متصل · {{version}} على المنفذ {{port}}",
         installed: "الإصدار التجريبي {{version}} مثبّت",
         notInstalled: "الإصدار التجريبي غير مثبّت",

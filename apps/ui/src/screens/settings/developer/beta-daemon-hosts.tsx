@@ -208,7 +208,20 @@ function BetaDaemonHostManager({ host }: { host: HostProfile }) {
     [client, refresh],
   );
   const handleStart = useCallback(() => void handleSetRunning(true), [handleSetRunning]);
-  const handleStop = useCallback(() => void handleSetRunning(false), [handleSetRunning]);
+  const selfIsBeta = statusState.kind === "loaded" && statusState.status.selfIsBeta;
+  const handleStop = useCallback(async () => {
+    // Stopping the daemon this connection runs through drops the connection with it.
+    if (selfIsBeta) {
+      const confirmed = await confirmDialog({
+        title: t("settings.developer.betaDaemon.stopSelfConfirmTitle"),
+        message: t("settings.developer.betaDaemon.stopSelfConfirmMessage", { host: hostLabel }),
+        confirmLabel: t("settings.developer.daemonControl.stop"),
+        destructive: true,
+      });
+      if (!confirmed || !mounted.current) return;
+    }
+    void handleSetRunning(false);
+  }, [handleSetRunning, hostLabel, selfIsBeta, t]);
 
   const handleToggleLog = useCallback(() => setShowLog((current) => !current), []);
   const handleRetry = useCallback(() => {
@@ -238,7 +251,7 @@ function BetaDaemonHostManager({ host }: { host: HostProfile }) {
   return (
     <View style={styles.manager}>
       <StatusLines status={status} serverId={serverId} />
-      {canControl && status.supported && status.installed ? (
+      {canControl && (status.supported || status.selfIsBeta) && status.installed ? (
         <View style={styles.actions}>
           {status.running ? (
             <Button

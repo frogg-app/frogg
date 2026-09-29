@@ -6,6 +6,7 @@ import { constants, existsSync, unlinkSync } from "fs";
 import { open, rm } from "fs/promises";
 import { randomUUID } from "node:crypto";
 import { daemonHostname as getHostname } from "./daemon-hostname.js";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -14,6 +15,15 @@ import { z } from "zod";
 import { createBranchChangeRouteHandler } from "./script-route-branch-handler.js";
 
 import { parseListenString, type ListenTarget } from "./listen-target.js";
+
+/** The state homes of this host's other channel daemons (stable, beta), not this daemon's own. */
+function siblingChannelHomes(froggHome: string): string[] {
+  const self = path.resolve(froggHome);
+  return [brand.channels.stable, brand.channels.beta]
+    .map((channel) => path.join(os.homedir(), channel.homeDir))
+    .filter((home) => path.resolve(home) !== self);
+}
+
 export { parseListenString, type ListenTarget } from "./listen-target.js";
 import { createExecutionHttpServer } from "./execution-service/http-server.js";
 
@@ -2298,7 +2308,13 @@ export async function createFroggDaemon(
               logger,
               modulePath: fileURLToPath(import.meta.url),
             });
-            const devDaemonService = new DevDaemonService({ logger, froggHome: config.froggHome });
+            const devDaemonService = new DevDaemonService({
+              logger,
+              froggHome: config.froggHome,
+              siblingWorkspaceFiles: siblingChannelHomes(config.froggHome).map((home) =>
+                path.join(home, "projects", "workspaces.json"),
+              ),
+            });
             const runningVersionRoot = updateService.installInfo.runningRoot;
             const hostResources = createHostResources({
               froggHome: config.froggHome,
