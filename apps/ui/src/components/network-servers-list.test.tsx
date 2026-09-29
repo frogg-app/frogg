@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { createInstance } from "i18next";
 import { I18nextProvider } from "react-i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { en } from "@/i18n/resources/en";
+import { en } from "@/localisation/resources/en";
 import { NetworkServersList } from "./network-servers-list";
 import type { DiscoveredServer } from "@/network-scan/types";
 

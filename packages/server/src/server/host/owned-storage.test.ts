@@ -53,14 +53,25 @@ describe("OwnedStorageService", () => {
       cleanable: false,
       reclaimableBytes: null,
     });
-    expect(byId.get("worktrees")).toMatchObject({ bytes: 40, cleanable: false });
+    expect(byId.get("worktrees")).toMatchObject({
+      bytes: 40,
+      cleanable: true,
+      reclaimableBytes: 0,
+    });
+    expect(byId.get("models")).toMatchObject({ cleanable: false });
     expect(byId.get("daemon_versions")).toMatchObject({ exists: false, path: null });
   });
 
   it("rejects cleanup of size-only and unknown categories", async () => {
     write(path.join(froggHome, "worktrees", "p", "w", "file"), 40);
-    await expect(service().cleanup("worktrees")).rejects.toThrow(/not cleanable/);
+    await expect(service().cleanup("models")).rejects.toThrow(/not cleanable/);
     await expect(service().cleanup("../etc")).rejects.toThrow(/not cleanable/);
+    expect(existsSync(path.join(froggHome, "worktrees", "p", "w", "file"))).toBe(true);
+  });
+
+  it("only removes git worktrees the inventory reports stale", async () => {
+    write(path.join(froggHome, "worktrees", "p", "w", "file"), 40);
+    await expect(service().cleanup("worktrees")).resolves.toMatchObject({ removedCount: 0 });
     expect(existsSync(path.join(froggHome, "worktrees", "p", "w", "file"))).toBe(true);
   });
 

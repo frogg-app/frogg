@@ -1,0 +1,149 @@
+---
+title: Plugins
+description: Install, update and remove plugins on a host, add plugin repositories, link local plugins on beta builds, and use the commands, actions and panels plugins add.
+sidebar:
+  order: 9
+---
+
+import { Screenshot } from "@/components/docs";
+import pluginsInstalledImg from "@/assets/docs/app/plugins-installed.png";
+import pluginsConsentImg from "@/assets/docs/app/plugins-consent.png";
+import pluginsRepositoriesImg from "@/assets/docs/app/plugins-repositories.png";
+import pluginsPanelImg from "@/assets/docs/app/plugins-panel.png";
+
+Plugins add commands, session actions, panels and settings to Frogg. Most plugins run on a
+host, inside the daemon process, so you install them per host and every client connected to
+that host sees what they add.
+
+Open **Plugins** in the sidebar, between **Add project** and **Hosts**. The entry is hidden when
+your build's brand turns plugins off, and on mobile when no connected host supports plugins. You can also
+open it from the Command Center by searching for "Plugins".
+
+<Screenshot src={pluginsInstalledImg} alt="Plugins window, Installed tab, with a developer-linked plugin" />
+
+## Choose where to install
+
+**Install on** picks the target:
+
+- **A host.** Plugins that run in the daemon (`daemon` scope) and the host half of `hybrid`
+  plugins are installed here.
+- **This client.** Plugins that run inside the app on this device (`client` scope), and the
+  client half of `hybrid` plugins. Available in the desktop and web apps; the mobile app does not
+  run client plugins and does not show this target.
+
+## This client
+
+Client plugins are installed per device: each desktop app or browser keeps its own. The desktop
+app stores them in its app data folder; the web app stores them in the browser (IndexedDB), so
+clearing site data removes them.
+
+**Browse** lists `client`-scope plugins from the official repository, your brand's
+repositories and any user repositories added on a connected host. The app fetches each
+repository index itself and checks its signature against the pinned key (official and brand keys
+are built into the app; user repository keys are the ones the host pinned). **Install** shows
+the permissions the plugin asks for, then downloads the plugin, checks its checksum against the
+signed index and checks that its manifest matches, before anything runs. A plugin that fails any
+check is not installed and the reason is shown.
+
+Each client plugin runs in its own sandbox with no access to the app's windows, storage or
+other plugins. It can only use what its permissions allow: device-local settings
+(`settings.store`), toasts (`ui.contribute`), answering its own commands, session actions and
+panels, and calling its host half (`rpc`), and network requests only with `network`. Commands,
+session actions and panels from client plugins appear alongside those from hosts.
+
+The **Installed** list shows each plugin's status (Starting, Active, Error, Disabled, Blocked),
+source and a switch. **Uninstall** asks for confirmation. Your brand's allow and deny lists
+apply here too.
+
+On the beta desktop app, unless your brand forbids it, **Add local folder** links a plugin folder on
+this computer. Linked plugins skip integrity checks and carry a **DEV** badge; **Reload** reads
+the folder again after you rebuild.
+
+### Hybrid plugins
+
+A `hybrid` plugin installed on a host lists its client component on the host's Installed tab.
+Choose **Install on this device** to fetch that plugin version's client half from the same
+repository and verify it the same way. Once installed, it shows **Client component installed on
+this device**, and its actions run through the client half, which can call the host half. Install
+it on each device where you want it; without it, the host half still works on its own.
+
+## Installed
+
+Each plugin shows its name, id and version, then badges for:
+
+- **Status**: Active, Disabled, Error, Incompatible (unsupported API version), Blocked (denied
+  by the brand's allow/deny list) or Inactive (nothing runs on the host).
+- **Source**: Official, Brand, User (a repository you added) or Local (a linked folder), plus a
+  **DEV** badge for linked folders.
+- **Update to vX**, when its repository has a newer compatible version.
+
+Use the switch to enable or disable a plugin. **Update** installs the newer version; if the
+update asks for permissions the installed version did not have, Frogg shows the consent screen
+again with just the new ones. **Settings** opens the plugin's settings page when it declares
+any. **Uninstall** asks for confirmation, because it also removes the plugin's stored settings.
+Plugins your brand preinstalls cannot be uninstalled. A plugin that failed to load shows its
+error under the description.
+
+## Browse and install
+
+**Browse** lists every plugin from the host's repositories, grouped by category, with a search
+box. Repositories that could not be fetched or verified are listed above the results; the
+others still show. **Install** opens the consent screen:
+
+<Screenshot src={pluginsConsentImg} alt="Consent screen listing a plugin's permissions and its repository" />
+
+It names the repository and its tier and lists every permission the plugin asks for. Consent
+is all or nothing: **Allow and install** grants all of them. Plugins run inside the host
+process and are not sandboxed, so only install plugins you trust. Plugins from a repository you
+added yourself carry an extra warning.
+
+| Permission             | What the plugin can do                  |
+| ---------------------- | --------------------------------------- |
+| `network`              | Make network requests                   |
+| `filesystem.workspace` | Read and write files in workspaces      |
+| `process.spawn`        | Run programs on the host                |
+| `agent.read`           | Read agent sessions and their events    |
+| `agent.write`          | Send messages to agents                 |
+| `settings.store`       | Store its own settings                  |
+| `ui.contribute`        | Add commands, buttons and panels        |
+| `rpc`                  | Answer requests from the app            |
+
+## Repositories
+
+A repository is an HTTPS URL serving a signed `index.json`. The host always verifies the
+signature before using it. The **Repositories** tab appears only when your brand allows user
+repositories (the default Frogg build does).
+
+<Screenshot src={pluginsRepositoriesImg} alt="Repositories tab with the official repository and a user repository" />
+
+To add one, enter its index URL and optionally a name. Leave **Public key** empty to trust the
+key the repository publishes the first time you add it; Frogg pins that key and shows it so you
+can compare it with the one the publisher shared. Paste a key to pin it yourself instead. Official
+and brand repositories cannot be removed.
+
+## Local plugins
+
+Beta builds of the daemon let you link a plugin folder on the host while you work on it, with
+nothing to turn on. Open **Plugins**, pick the host, then **Local plugins** on the Installed
+tab. Enter the absolute path of the plugin folder **on the host** and choose **Link folder**. Linked plugins skip signature and checksum checks, reload when their files
+change and carry a **DEV** badge. **Unlink** removes the link without touching the folder.
+
+Stable builds can't link local plugins. Brands can also forbid it with `plugins.developerMode`,
+in which case the option is hidden on hosts and in the desktop app alike.
+
+## What plugins add
+
+- **Commands** appear in the Command Center under **Plugins**, with the plugin's name (and the
+  host's, when more than one host has plugins).
+- **Session actions** and **panels** appear under the puzzle button in the session header.
+  Actions run against the focused agent and the workspace directory. Panels open as workspace
+  tabs and show a list, formatted text or a form the plugin provides.
+- **Settings** appear on the plugin's settings page.
+- **Notifications** from a plugin show as toasts.
+
+<Screenshot src={pluginsPanelImg} alt="A plugin panel open as a workspace tab" />
+
+The same operations are available from the command line; see
+[`frogg plugins`](/docs/desktop-mobile-cli/cli/#frogg-plugins). Brands control plugin
+distribution with the [`plugins` block](/docs/fork-and-rebrand/brand-manifest/#plugins) in
+`brand.json`.

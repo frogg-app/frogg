@@ -5,7 +5,7 @@ import { create } from "zustand";
 import { HostWorkspaceLabelReplica } from "./internal/host-replica";
 import { mergeWorkspaceLabelCatalogs } from "./internal/merge";
 import { WorkspaceLabelManagerModel, WorkspaceLabelPickerModel } from "./internal/workflow-model";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export { buildWorkspaceLabelPickerRows } from "./internal/picker-model";
 export type { WorkspaceLabelPickerRow } from "./internal/picker-model";

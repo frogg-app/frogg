@@ -48,6 +48,10 @@ product repository, create an empty private repository and push a mirror instead
    upstream  https://github.com/frogg-app/frogg.git (push)
    ```
 
+   After `npm ci`, `npm run fork:setup` does this for you and also records upstream in
+   `frogg.json` for the release scripts
+   ([set up once](/docs/fork-and-rebrand/branded-development/#set-up-once)).
+
 3. Install and confirm the stock build works before changing anything:
 
    ```sh
@@ -56,7 +60,7 @@ product repository, create an empty private repository and push a mirror instead
    ```
 
    ```text
-   Frogg: valid (app.frogg.frogg); updates github-release
+   frogg: valid (app.frogg.frogg, stable channel); updates github-release
    ```
 
 4. Open the fork's **Actions** tab and enable workflows. GitHub disables them in new
@@ -73,9 +77,13 @@ merges boring.
 
 | Branch            | Contains                                                        | Based on        |
 | ----------------- | --------------------------------------------------------------- | --------------- |
-| `main`            | Upstream history plus your brand directory and release tags    | `upstream/main` |
+| `main`            | Upstream history plus your brand directory and `frogg.json`; ships your betas | `upstream/main` |
+| `stable`          | Promotions of `main` and backported fixes; ships your product   | `main`, by promotion only |
 | `feature/*`       | Product features you may contribute back                        | `upstream/main` |
 | `acme/*` (optional) | Product-only changes you will never upstream                  | your `main`     |
+
+[Develop a branded distribution](/docs/fork-and-rebrand/branded-development/) shows how
+changes move between these branches and upstream.
 
 Two supported places for the brand itself:
 

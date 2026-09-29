@@ -15,6 +15,8 @@ export const KNOWN_STORAGE_CATEGORY_IDS = [
   "agents",
   "projects",
   "worktrees",
+  "agent_worktrees",
+  "provider_accounts",
   "uploads",
   "project_import_staging",
   "tts_cache",

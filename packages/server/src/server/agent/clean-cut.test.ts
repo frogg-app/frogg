@@ -4,6 +4,7 @@ import type { AgentTimelineItem } from "./agent-sdk-types.js";
 import {
   buildCleanCutTranscript,
   prependCleanCutSummary,
+  resolveCleanCutSummaryCandidates,
   runCleanCut,
   selectCleanCutItems,
   type CleanCutDeps,
@@ -17,7 +18,11 @@ const toolCall: AgentTimelineItem = {
   name: "Read",
   status: "completed",
   error: null,
-  detail: { type: "read", filePath: "src/app.ts", content: "SECRET FILE CONTENTS" },
+  detail: {
+    type: "read",
+    filePath: "src/app.ts",
+    content: "SECRET FILE CONTENTS",
+  },
 } as AgentTimelineItem;
 
 const conversation: AgentTimelineItem[] = [
@@ -77,7 +82,12 @@ function makeDeps(agent: Partial<ManagedAgent>, timeline: AgentTimelineItem[]) {
     provider: "claude",
     cwd: "/repo",
     lifecycle: "idle",
-    config: { provider: "claude", cwd: "/repo", model: "opus", providerAccountId: "acct-1" },
+    config: {
+      provider: "claude",
+      cwd: "/repo",
+      model: "opus",
+      providerAccountId: "acct-1",
+    },
     persistence: { provider: "claude", sessionId: "old-session" },
     ...agent,
   } as unknown as ManagedAgent;
@@ -118,19 +128,27 @@ function makeDeps(agent: Partial<ManagedAgent>, timeline: AgentTimelineItem[]) {
 describe("runCleanCut", () => {
   it("summarises on the cheapest same-provider model, restarts, then records the marker", async () => {
     const { deps, runner, startFreshAgentSession, appendTimelineItem } = makeDeps({}, conversation);
-    await runCleanCut(deps, { agentId: "agent-1", target: { provider: "codex", model: "gpt" } });
+    await runCleanCut(deps, {
+      agentId: "agent-1",
+      target: { providerAccountId: "acct-2" },
+    });
 
     const firstCall = runner.mock.calls[0] as unknown as [
-      { agentConfig: { provider: string; model: string; providerAccountId: string } },
+      {
+        agentConfig: {
+          provider: string;
+          model: string;
+          providerAccountId: string;
+        };
+      },
     ];
     expect(firstCall[0].agentConfig).toMatchObject({
       provider: "claude",
       model: "haiku",
-      providerAccountId: "acct-1",
+      providerAccountId: "acct-2",
     });
     expect(startFreshAgentSession).toHaveBeenCalledWith("agent-1", {
-      provider: "codex",
-      model: "gpt",
+      providerAccountId: "acct-2",
     });
     expect(appendTimelineItem).toHaveBeenCalledWith("agent-1", {
       type: "compaction",
@@ -147,6 +165,53 @@ describe("runCleanCut", () => {
         reason: "manual",
       },
     });
+  });
+
+  it("records the summariser's usage, failed attempts included, and the old context size", async () => {
+    const { deps, runner, appendTimelineItem } = makeDeps(
+      { lastUsage: { contextWindowUsedTokens: 100_000 } },
+      conversation,
+    );
+    deps.getCleanCutSettings = () => ({ summaryModel: { provider: "claude", model: "opus" } });
+    type Report = (usage: Record<string, number>) => void;
+    runner
+      .mockImplementationOnce((async (_options: unknown, onUsage: Report) => {
+        onUsage({ inputTokens: 1_000, outputTokens: 10, totalCostUsd: 0.01 });
+        throw new Error("bad output");
+      }) as never)
+      .mockImplementationOnce((async (_options: unknown, onUsage: Report) => {
+        onUsage({ inputTokens: 2_000, cachedInputTokens: 500, outputTokens: 20 });
+        return { summary: "The summary" };
+      }) as never);
+    await runCleanCut(deps, { agentId: "agent-1", target: {} });
+    expect(appendTimelineItem).toHaveBeenCalledWith(
+      "agent-1",
+      expect.objectContaining({
+        cleanCut: expect.objectContaining({
+          summaryUsage: {
+            inputTokens: 3_000,
+            cachedInputTokens: 500,
+            outputTokens: 30,
+            totalCostUsd: 0.01,
+          },
+          previousContextTokens: 100_000,
+        }),
+      }),
+    );
+  });
+
+  it("summarises on the target provider's default account when moving provider", async () => {
+    const { deps, runner } = makeDeps({}, conversation);
+    await runCleanCut(deps, {
+      agentId: "agent-1",
+      target: { provider: "codex", model: "gpt" },
+    });
+    const configs = runner.mock.calls.map(
+      (call) => (call as unknown as [{ agentConfig: Record<string, unknown> }])[0].agentConfig,
+    );
+    expect(configs).toHaveLength(1);
+    expect(configs[0]).toMatchObject({ provider: "codex", model: "gpt" });
+    expect(configs[0]).not.toHaveProperty("providerAccountId");
   });
 
   it("refuses while the agent is running", async () => {
@@ -168,17 +233,26 @@ describe("runCleanCut", () => {
 
   it("reuses the last summary to move provider when nothing new was said", async () => {
     const { deps, runner, appendTimelineItem } = makeDeps({}, [
-      { type: "compaction", status: "completed", cleanCut: { summary: "kept summary" } },
+      {
+        type: "compaction",
+        status: "completed",
+        cleanCut: { summary: "kept summary" },
+      },
     ]);
-    await runCleanCut(deps, { agentId: "agent-1", target: { provider: "codex" } });
+    await runCleanCut(deps, {
+      agentId: "agent-1",
+      target: { provider: "codex" },
+    });
     expect(runner).not.toHaveBeenCalled();
     expect(appendTimelineItem).toHaveBeenCalledWith(
       "agent-1",
-      expect.objectContaining({ cleanCut: expect.objectContaining({ summary: "kept summary" }) }),
+      expect.objectContaining({
+        cleanCut: expect.objectContaining({ summary: "kept summary" }),
+      }),
     );
   });
 
-  it("tries only the agent's own provider and account, then fails with the reason", async () => {
+  it("tries only the destination provider and account, then fails with the reason", async () => {
     const { deps, runner, startFreshAgentSession } = makeDeps({}, conversation);
     runner.mockImplementation(async () => {
       throw new Error("usage limit reached");
@@ -202,9 +276,38 @@ describe("runCleanCut", () => {
     );
     expect(configs.map((config) => config.model)).toEqual(["haiku", "opus"]);
     for (const config of configs) {
-      expect(config).toMatchObject({ provider: "claude", providerAccountId: "acct-1" });
+      expect(config).toMatchObject({
+        provider: "claude",
+        providerAccountId: "acct-1",
+      });
     }
     expect(startFreshAgentSession).not.toHaveBeenCalled();
+  });
+
+  it("runs a summary model configured on another provider on that provider's default account", async () => {
+    const { deps, runner } = makeDeps({}, conversation);
+    const listProviders = deps.providerSnapshotManager.listProviders;
+    deps.providerSnapshotManager = {
+      listProviders: async (options) => [
+        ...(await listProviders(options)),
+        {
+          provider: "codex",
+          enabled: true,
+          models: [{ id: "gpt-mini", label: "GPT mini" }],
+        },
+      ],
+    } as CleanCutDeps["providerSnapshotManager"];
+    deps.getCleanCutSettings = () => ({
+      auto: { usageLimit: true, daemonRestart: true },
+      summaryModel: { provider: "codex", model: "gpt-mini" },
+      providers: {},
+    });
+    await runCleanCut(deps, { agentId: "agent-1", target: {} });
+    const config = (
+      runner.mock.calls[0] as unknown as [{ agentConfig: Record<string, unknown> }]
+    )[0].agentConfig;
+    expect(config).toMatchObject({ provider: "codex", model: "gpt-mini" });
+    expect(config).not.toHaveProperty("providerAccountId");
   });
 
   it("refuses when there is no conversation at all", async () => {
@@ -212,6 +315,121 @@ describe("runCleanCut", () => {
     await expect(runCleanCut(deps, { agentId: "agent-1", target: {} })).rejects.toThrow(
       /no conversation/,
     );
+  });
+});
+
+describe("resolveCleanCutSummaryCandidates", () => {
+  const providers = [
+    {
+      provider: "claude",
+      enabled: true,
+      models: [
+        { id: "opus", label: "Opus" },
+        { id: "sonnet", label: "Sonnet" },
+        { id: "haiku", label: "Haiku" },
+      ],
+    },
+    {
+      provider: "codex",
+      enabled: true,
+      models: [
+        {
+          id: "gpt-5.4-mini",
+          label: "GPT-5.4 mini",
+          thinkingOptions: [{ id: "low" }, { id: "high" }],
+          defaultThinkingOptionId: "high",
+        },
+      ],
+    },
+    {
+      provider: "gemini",
+      enabled: false,
+      models: [{ id: "flash", label: "Flash" }],
+    },
+  ];
+  const agent = {
+    id: "agent-1",
+    cwd: "/repo",
+    provider: "claude",
+    config: { provider: "claude", cwd: "/repo", model: "opus" },
+  } as unknown as ManagedAgent;
+  const resolve = (settings: object) => {
+    const warn = vi.fn();
+    const deps = {
+      providerSnapshotManager: { listProviders: async () => providers },
+      logger: { info: () => {}, warn },
+      getCleanCutSettings: () => ({
+        auto: { usageLimit: true, daemonRestart: true },
+        providers: {},
+        ...settings,
+      }),
+    } as unknown as CleanCutDeps;
+    return {
+      warn,
+      candidates: resolveCleanCutSummaryCandidates(deps, agent, {
+        provider: "claude",
+        model: "opus",
+      }),
+    };
+  };
+
+  it("tries the provider override, then the global model, then the defaults, then the agent's model", async () => {
+    const { candidates } = resolve({
+      summaryModel: {
+        provider: "codex",
+        model: "gpt-5.4-mini",
+        thinkingOptionId: "low",
+      },
+      providers: {
+        claude: { summaryModel: { provider: "claude", model: "sonnet" } },
+      },
+    });
+    await expect(candidates).resolves.toEqual([
+      { provider: "claude", model: "sonnet" },
+      { provider: "codex", model: "gpt-5.4-mini", thinkingOptionId: "low" },
+      { provider: "claude", model: "haiku" },
+      { provider: "claude", model: "opus" },
+    ]);
+  });
+
+  it("falls back to the substring list and the agent's model with nothing configured", async () => {
+    await expect(resolve({}).candidates).resolves.toEqual([
+      { provider: "claude", model: "haiku" },
+      { provider: "claude", model: "opus" },
+    ]);
+  });
+
+  it("skips and logs a configured model its provider does not offer", async () => {
+    const { candidates, warn } = resolve({
+      summaryModel: { provider: "gemini", model: "flash" },
+      providers: {
+        claude: { summaryModel: { provider: "claude", model: "retired" } },
+      },
+    });
+    await expect(candidates).resolves.toEqual([
+      { provider: "claude", model: "haiku" },
+      { provider: "claude", model: "opus" },
+    ]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ source: "provider", reason: "model_missing" }),
+      expect.any(String),
+    );
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "global",
+        reason: "provider_disabled",
+      }),
+      expect.any(String),
+    );
+  });
+
+  it("does not repeat a configured model the defaults would also pick", async () => {
+    await expect(
+      resolve({ summaryModel: { provider: "claude", model: "haiku" } }).candidates,
+    ).resolves.toEqual([
+      { provider: "claude", model: "haiku" },
+      { provider: "claude", model: "opus" },
+    ]);
   });
 });
 
@@ -224,7 +442,12 @@ describe("runCleanCutForSubagents", () => {
       lifecycle: "idle",
       createdAt: new Date(id.length),
       labels: { [PARENT_AGENT_ID_LABEL]: parent },
-      config: { provider: "claude", cwd: `/worktrees/${id}`, model: "opus", title: id },
+      config: {
+        provider: "claude",
+        cwd: `/worktrees/${id}`,
+        model: "opus",
+        title: id,
+      },
       persistence: { provider: "claude", sessionId: `${id}-session` },
       ...extra,
     } as unknown as ManagedAgent;
@@ -249,7 +472,11 @@ describe("runCleanCutForSubagents", () => {
       } as unknown as AgentManager,
       providerSnapshotManager: {
         listProviders: async () => [
-          { provider: "claude", enabled: true, models: [{ id: "haiku", label: "Haiku" }] },
+          {
+            provider: "claude",
+            enabled: true,
+            models: [{ id: "haiku", label: "Haiku" }],
+          },
         ],
       } as unknown as CleanCutDeps["providerSnapshotManager"],
       logger: { info: () => {}, warn: () => {} },
@@ -277,7 +504,13 @@ describe("runCleanCutForSubagents", () => {
     const { deps, startFreshAgentSession, appendTimelineItem } = makeTree(agents, timelines);
     const results = await runCleanCutForSubagents(deps, "root");
 
-    expect(results.map(({ agentId, status, reason }) => ({ agentId, status, reason }))).toEqual([
+    expect(
+      results.map(({ agentId, status, reason }) => ({
+        agentId,
+        status,
+        reason,
+      })),
+    ).toEqual([
       { agentId: "idle", status: "cut", reason: undefined },
       { agentId: "busy", status: "skipped", reason: "running" },
       { agentId: "empty", status: "skipped", reason: "nothing to summarise" },

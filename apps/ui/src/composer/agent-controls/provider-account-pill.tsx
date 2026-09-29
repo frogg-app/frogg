@@ -16,6 +16,11 @@ import {
   type ProviderAccountTransferOption,
 } from "@/composer/agent-controls/provider-account-transfer-modal";
 import { useCleanCut } from "@/composer/clean-cut";
+import {
+  CleanCutProviderModal,
+  useCleanCutProviderSwitch,
+} from "@/composer/agent-controls/clean-cut-provider-modal";
+import type { ProviderSnapshotEntry } from "@frogg/protocol/agent-types";
 import { useProvidersSnapshot } from "@/hooks/use-providers-snapshot";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
@@ -73,6 +78,12 @@ export interface ProviderAccountPillModel {
    */
   transferOptions: ProviderAccountTransferOption[];
   contextTokens: number | null;
+  /** The account the agent runs as, shown in the sheet beside the targets. */
+  current: { id: string; label: string };
+  provider: string;
+  /** Other enabled providers, for a clean cut across providers. */
+  otherProviders: { provider: string; label: string; model: string | null }[];
+  snapshotEntries: readonly ProviderSnapshotEntry[];
 }
 
 export function useProviderAccountPillModel(
@@ -113,12 +124,28 @@ export function useProviderAccountPillModel(
       label: option.label,
       authenticated: option.authenticated,
     }));
+    const otherProviders = (entries ?? [])
+      .filter((candidate) => candidate.provider !== agent.provider && candidate.enabled)
+      .map((candidate) => {
+        const models = (candidate.models ?? []).filter((m) => m.isSelectable !== false);
+        const defaultModel = models.find((m) => m.isDefault) ?? models[0] ?? null;
+        return {
+          provider: candidate.provider,
+          label: candidate.label ?? candidate.provider,
+          model: defaultModel?.id ?? null,
+        };
+      })
+      .filter((candidate) => candidate.model !== null);
     return {
       label: model.displayLabel,
       transferOptions,
       contextTokens: agent.contextTokens,
+      current: { id: model.selectedOptionId, label: model.displayLabel },
+      provider: agent.provider,
+      otherProviders,
+      snapshotEntries: entries ?? [],
     };
-  }, [agent, entry]);
+  }, [agent, entry, entries]);
 }
 
 /**
@@ -201,13 +228,37 @@ export function ProviderAccountPill({
     [runCleanCut],
   );
 
+  // Picking another provider hands over to the same confirmation the model
+  // picker uses; a same-provider pick never happens from here.
+  const providerSwitch = useCleanCutProviderSwitch({
+    serverId,
+    agentId,
+    agentProvider: model?.provider,
+    snapshotEntries: model?.snapshotEntries,
+    onSelectSameProviderModel: noopSelect,
+  });
+  const selectProviderAndModel = providerSwitch.selectProviderAndModel;
+  const otherProviders = model?.otherProviders;
+  const handleSwitchProvider = useCallback(
+    (provider: string) => {
+      const target = otherProviders?.find((candidate) => candidate.provider === provider);
+      if (!target?.model || !selectProviderAndModel) return;
+      setIsOpen(false);
+      selectProviderAndModel(provider, target.model);
+    },
+    [otherProviders, selectProviderAndModel],
+  );
+
   if (!model) {
     return null;
   }
 
   const label = t("agentControls.account.pillLabel", { value: model.label });
+  const canSwitchProvider = cleanCut.available && model.otherProviders.length > 0;
   const isPressable =
-    (canTransfer || cleanCut.available) && client !== null && model.transferOptions.length > 0;
+    client !== null &&
+    (((canTransfer || cleanCut.available) && model.transferOptions.length > 0) ||
+      canSwitchProvider);
   const body = (
     <>
       <ThemedUserRound size={14} uniProps={iconColor} />
@@ -251,7 +302,22 @@ export function ProviderAccountPill({
         onConfirm={handleConfirm}
         onCleanCut={cleanCut.available ? handleCleanCut : undefined}
         cleanCutPending={cleanCut.pending}
+        serverId={serverId}
+        provider={model.provider}
+        current={model.current}
+        otherProviders={canSwitchProvider ? model.otherProviders : undefined}
+        onSwitchProvider={canSwitchProvider ? handleSwitchProvider : undefined}
+      />
+      <CleanCutProviderModal
+        target={providerSwitch.target}
+        fromProviderLabel={providerSwitch.fromProviderLabel}
+        isPending={providerSwitch.pending}
+        error={providerSwitch.error}
+        onClose={providerSwitch.close}
+        onConfirm={providerSwitch.confirm}
       />
     </>
   );
 }
+
+function noopSelect(): void {}

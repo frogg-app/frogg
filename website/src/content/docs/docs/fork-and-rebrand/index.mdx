@@ -41,11 +41,12 @@ product.
 
 ## The workflow at a glance
 
-1. [Fork the repository](/docs/fork-and-rebrand/fork-the-repo/) and add an `upstream` remote.
-2. [Create a brand](/docs/fork-and-rebrand/create-a-brand/) with `npm run brand:init`, then check and run it locally.
+1. [Fork the repository](/docs/fork-and-rebrand/fork-the-repo/) and connect upstream with `npm run fork:setup`.
+2. [Create a brand](/docs/fork-and-rebrand/create-a-brand/) with `npm run brand:init`, then check it and run it locally with `npm run brand:dev`.
 3. [Build and release](/docs/fork-and-rebrand/build-and-release/) through the fork's GitHub Actions, with your own secrets.
-4. [Stay current](/docs/fork-and-rebrand/staying-current/) by merging `upstream/main` regularly.
-5. [Contribute features back](/docs/fork-and-rebrand/contributing-upstream/) from branches based on `upstream/main`.
+4. [Develop the distribution](/docs/fork-and-rebrand/branded-development/): upstream changes arrive on your `main`, ship as your beta, and reach your `stable` by promotion or backport.
+5. [Stay current](/docs/fork-and-rebrand/staying-current/) by merging upstream regularly.
+6. [Contribute features back](/docs/fork-and-rebrand/contributing-upstream/) from branches based on `upstream/main`.
 
 The [Acme Studio walkthrough](/docs/fork-and-rebrand/worked-example/) runs the whole
 flow with the `brands/example` brand that ships in the repository.
@@ -64,6 +65,11 @@ IDs or launchd labels starting with `app.frogg.` or `sh.frogg.`.
 :::
 
 <CardGrid>
+  <LinkCard
+    title="Develop a branded distribution"
+    description="Branches, setup scripts, running the brand locally, and the beta-to-stable loop."
+    href="/docs/fork-and-rebrand/branded-development/"
+  />
   <LinkCard
     title="Brand manifest reference"
     description="Every brand.json field, default and validation rule."

@@ -58,6 +58,27 @@ import {
 import { TOOL_CALL_ICON_NAMES } from "./agent-types.js";
 import { WORKSPACE_LABEL_COLORS } from "./workspace-labels.js";
 import {
+  ProjectTodoListRequestSchema,
+  ProjectTodoGetRequestSchema,
+  ProjectTodoCreateRequestSchema,
+  ProjectTodoUpdateRequestSchema,
+  ProjectTodoUpdatePlanRequestSchema,
+  ProjectTodoSetStatusRequestSchema,
+  ProjectTodoReleaseRequestSchema,
+  ProjectTodoDeleteRequestSchema,
+  ProjectTodoUnsubscribeRequestSchema,
+  ProjectTodoListResponseSchema,
+  ProjectTodoGetResponseSchema,
+  ProjectTodoCreateResponseSchema,
+  ProjectTodoUpdateResponseSchema,
+  ProjectTodoUpdatePlanResponseSchema,
+  ProjectTodoSetStatusResponseSchema,
+  ProjectTodoReleaseResponseSchema,
+  ProjectTodoDeleteResponseSchema,
+  ProjectTodoUnsubscribeResponseSchema,
+  ProjectTodoChangedMessageSchema,
+} from "./todos/rpc-schemas.js";
+import {
   ChatCreateRequestSchema,
   ChatListRequestSchema,
   ChatInspectRequestSchema,
@@ -85,6 +106,42 @@ import {
   LoopLogsResponseSchema,
   LoopStopResponseSchema,
 } from "./loop/rpc-schemas.js";
+import {
+  PluginsListRequestSchema,
+  PluginsReposListRequestSchema,
+  PluginsReposAddRequestSchema,
+  PluginsReposRemoveRequestSchema,
+  PluginsGetCatalogRequestSchema,
+  PluginsInstallRequestSchema,
+  PluginsUninstallRequestSchema,
+  PluginsSetEnabledRequestSchema,
+  PluginsUpdateRequestSchema,
+  PluginsDevLinkRequestSchema,
+  PluginsDevUnlinkRequestSchema,
+  PluginsDevSetEnabledRequestSchema,
+  PluginsRpcCallRequestSchema,
+  PluginsGetContributionsRequestSchema,
+  PluginsSettingsGetRequestSchema,
+  PluginsSettingsSetRequestSchema,
+  PluginsListResponseSchema,
+  PluginsReposListResponseSchema,
+  PluginsReposAddResponseSchema,
+  PluginsReposRemoveResponseSchema,
+  PluginsGetCatalogResponseSchema,
+  PluginsInstallResponseSchema,
+  PluginsUninstallResponseSchema,
+  PluginsSetEnabledResponseSchema,
+  PluginsUpdateResponseSchema,
+  PluginsDevLinkResponseSchema,
+  PluginsDevUnlinkResponseSchema,
+  PluginsDevSetEnabledResponseSchema,
+  PluginsRpcCallResponseSchema,
+  PluginsGetContributionsResponseSchema,
+  PluginsSettingsGetResponseSchema,
+  PluginsSettingsSetResponseSchema,
+  PluginsChangedMessageSchema,
+  PluginsNotifyMessageSchema,
+} from "./plugins/rpc-schemas.js";
 import {
   BrowserAutomationExecuteRequestSchema,
   BrowserAutomationExecuteResponseSchema,
@@ -168,6 +225,68 @@ const MutableMetadataGenerationConfigSchema = z
   })
   .passthrough();
 
+/**
+ * COMPAT(cleanCutSettings): added in v1.6.5, remove after 2027-09-27.
+ * Clean cut settings. Idle thresholds are whole minutes; a provider override
+ * wins over the global value, which wins over the provider's prompt cache TTL.
+ */
+export const CLEAN_CUT_IDLE_THRESHOLD_MAX_MINUTES = 30 * 24 * 60;
+const CleanCutIdleThresholdMinutesSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(CLEAN_CUT_IDLE_THRESHOLD_MAX_MINUTES);
+
+export const CleanCutSummaryModelSchema = z.object({
+  provider: z.string().min(1).max(100),
+  model: z.string().min(1).max(200),
+  thinkingOptionId: z.string().min(1).max(100).optional(),
+});
+export type CleanCutSummaryModel = z.infer<typeof CleanCutSummaryModelSchema>;
+
+export const CleanCutProviderSettingsSchema = z.object({
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.optional(),
+  summaryModel: CleanCutSummaryModelSchema.optional(),
+});
+export type CleanCutProviderSettings = z.infer<typeof CleanCutProviderSettingsSchema>;
+
+export const MutableCleanCutConfigSchema = z.object({
+  auto: z.object({
+    /** Cut before the resume the daemon sends once a usage limit resets. */
+    usageLimit: z.boolean(),
+    /** Cut before resuming a turn a daemon restart interrupted. */
+    daemonRestart: z.boolean(),
+  }),
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.optional(),
+  summaryModel: CleanCutSummaryModelSchema.optional(),
+  providers: z.record(z.string(), CleanCutProviderSettingsSchema).default({}),
+});
+export type MutableCleanCutConfig = z.infer<typeof MutableCleanCutConfigSchema>;
+
+/** `null` clears a value back to its default; a provider set to `null` drops all its overrides. */
+export const MutableCleanCutConfigPatchSchema = z.object({
+  auto: z
+    .object({
+      usageLimit: z.boolean().optional(),
+      daemonRestart: z.boolean().optional(),
+    })
+    .optional(),
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.nullable().optional(),
+  summaryModel: CleanCutSummaryModelSchema.nullable().optional(),
+  providers: z
+    .record(
+      z.string().min(1),
+      z
+        .object({
+          idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.nullable().optional(),
+          summaryModel: CleanCutSummaryModelSchema.nullable().optional(),
+        })
+        .nullable(),
+    )
+    .optional(),
+});
+export type MutableCleanCutConfigPatch = z.infer<typeof MutableCleanCutConfigPatchSchema>;
+
 export const TerminalProfileSchema = z
   .object({
     id: z.string(),
@@ -226,6 +345,9 @@ export const HostSettingsSectionSchema = z.enum([
   "agents",
   "providers",
   "usage",
+  // COMPAT(skillsManagement): added in v1.6.6 with the <brand> skills section. Apps older
+  // than that reject a config that hides it.
+  "skills",
   "terminals",
   "host",
 ]);
@@ -273,6 +395,8 @@ export const MutableDaemonConfigSchema = z
     // COMPAT(companionModel): added in v1.5.43; absent means an older daemon without the picker.
     // null is "the backend's default model".
     companionModel: z.string().nullable().optional(),
+    // COMPAT(cleanCutSettings): added in v1.6.5; absent means an older daemon without the settings.
+    cleanCut: MutableCleanCutConfigSchema.optional(),
     enableTerminalAgentHooks: z.boolean().default(false),
     appendSystemPrompt: z.string().default(""),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -297,6 +421,7 @@ export const MutableDaemonConfigPatchSchema = z
     autoArchiveAfterMerge: z.boolean().optional(),
     autoResumeOnUsageLimit: z.boolean().optional(),
     companionModel: z.string().trim().min(1).max(200).nullable().optional(),
+    cleanCut: MutableCleanCutConfigPatchSchema.optional(),
     enableTerminalAgentHooks: z.boolean().optional(),
     appendSystemPrompt: z.string().optional(),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -815,6 +940,15 @@ export const AgentTimelineItemPayloadSchema: z.ZodType<AgentTimelineItem, unknow
         provider: z.string().optional(),
         model: z.string().optional(),
         summaryModel: z.string().optional(),
+        summaryUsage: z
+          .object({
+            inputTokens: z.number().optional(),
+            cachedInputTokens: z.number().optional(),
+            outputTokens: z.number().optional(),
+            totalCostUsd: z.number().optional(),
+          })
+          .optional(),
+        previousContextTokens: z.number().optional(),
         // Why the cut was made: "manual" (the user asked) or "cold-cache" (the
         // daemon cut automatically because the prompt cache had expired). A
         // string rather than an enum so a future reason cannot fail the item.
@@ -1626,6 +1760,30 @@ export const DaemonStorageCleanRequestSchema = z.object({
   categoryId: z.string().min(1).max(64),
 });
 export type DaemonStorageCleanRequest = z.infer<typeof DaemonStorageCleanRequestSchema>;
+
+/** The skills built into the product (not the user's or a project's), with whether each is on. */
+export const DaemonSkillsListRequestSchema = z.object({
+  type: z.literal("daemon.skills.list.request"),
+  requestId: z.string(),
+});
+export type DaemonSkillsListRequest = z.infer<typeof DaemonSkillsListRequestSchema>;
+
+/** Switch a skill on or off for agents started from now on. */
+export const DaemonSkillsSetEnabledRequestSchema = z.object({
+  type: z.literal("daemon.skills.set_enabled.request"),
+  requestId: z.string(),
+  skillId: z.string().min(1).max(256),
+  enabled: z.boolean(),
+});
+export type DaemonSkillsSetEnabledRequest = z.infer<typeof DaemonSkillsSetEnabledRequestSchema>;
+
+/** The full SKILL.md text of one listed skill. */
+export const DaemonSkillsGetContentRequestSchema = z.object({
+  type: z.literal("daemon.skills.get_content.request"),
+  requestId: z.string(),
+  skillId: z.string().min(1).max(256),
+});
+export type DaemonSkillsGetContentRequest = z.infer<typeof DaemonSkillsGetContentRequestSchema>;
 
 export const DaemonGetPairingOfferRequestSchema = z.object({
   type: z.literal("daemon.get_pairing_offer.request"),
@@ -3486,6 +3644,22 @@ export const HubExecutionControlRequestSchema = z.object({
 export type HubExecutionControlRequest = z.infer<typeof HubExecutionControlRequestSchema>;
 
 export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
+  PluginsListRequestSchema,
+  PluginsReposListRequestSchema,
+  PluginsReposAddRequestSchema,
+  PluginsReposRemoveRequestSchema,
+  PluginsGetCatalogRequestSchema,
+  PluginsInstallRequestSchema,
+  PluginsUninstallRequestSchema,
+  PluginsSetEnabledRequestSchema,
+  PluginsUpdateRequestSchema,
+  PluginsDevLinkRequestSchema,
+  PluginsDevUnlinkRequestSchema,
+  PluginsDevSetEnabledRequestSchema,
+  PluginsRpcCallRequestSchema,
+  PluginsGetContributionsRequestSchema,
+  PluginsSettingsGetRequestSchema,
+  PluginsSettingsSetRequestSchema,
   AuthDeviceListRequestSchema,
   AuthDeviceRenameRequestSchema,
   AuthDeviceRevokeRequestSchema,
@@ -3547,6 +3721,9 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   DaemonHostGetMetricsRequestSchema,
   DaemonStorageListRequestSchema,
   DaemonStorageCleanRequestSchema,
+  DaemonSkillsListRequestSchema,
+  DaemonSkillsSetEnabledRequestSchema,
+  DaemonSkillsGetContentRequestSchema,
   DaemonGetPairingOfferRequestSchema,
   DaemonGetSecurityPostureRequestSchema,
   DaemonSetSecurityFindingAcknowledgedRequestSchema,
@@ -3705,6 +3882,15 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ChatPostRequestSchema,
   ChatReadRequestSchema,
   ChatWaitRequestSchema,
+  ProjectTodoListRequestSchema,
+  ProjectTodoGetRequestSchema,
+  ProjectTodoCreateRequestSchema,
+  ProjectTodoUpdateRequestSchema,
+  ProjectTodoUpdatePlanRequestSchema,
+  ProjectTodoSetStatusRequestSchema,
+  ProjectTodoReleaseRequestSchema,
+  ProjectTodoDeleteRequestSchema,
+  ProjectTodoUnsubscribeRequestSchema,
   LoopRunRequestSchema,
   LoopListRequestSchema,
   LoopInspectRequestSchema,
@@ -4079,6 +4265,9 @@ export const ServerInfoStatusPayloadSchema = z
         directorySync: z.boolean().optional(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         workspaceLabels: z.boolean().optional(),
+        // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
+        // project.todo.* RPCs and the project.todo.changed push event.
+        projectTodos: z.boolean().optional(),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
         // Workspace and project descriptors carry createdAt / projectCreatedAt.
         workspaceCreatedAt: z.boolean().optional(),
@@ -4103,6 +4292,9 @@ export const ServerInfoStatusPayloadSchema = z
         // agent.provider_account.transfer is available and this daemon's build of
         // the agent's provider can relocate a session between config directories.
         agentProviderAccountTransfer: z.boolean().optional(),
+        // COMPAT(plugins): added in v1.6.2, remove gate after 2027-09-27.
+        // plugins.* session RPCs, plugins.changed and plugins.notify are available.
+        plugins: z.boolean().optional(),
         // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
         // agent.clean_cut is available.
         agentCleanCut: z.boolean().optional(),
@@ -4275,6 +4467,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
         // daemon.host.get_metrics, daemon.storage.list and daemon.storage.clean are available.
         hostResources: z.boolean().optional(),
+        // COMPAT(skillsManagement): added in v1.6.6, remove gate after 2027-09-27.
+        // daemon.skills.list, daemon.skills.set_enabled and daemon.skills.get_content are available.
+        skillsManagement: z.boolean().optional(),
       })
       .optional(),
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
@@ -4283,7 +4478,11 @@ export const ServerInfoStatusPayloadSchema = z
     // COMPAT(deviceAccess): added in v1.6.0. The paired device this connection
     // authenticated as; absent for credential-less (loopback / trusted LAN) connections.
     device: z
-      .object({ id: z.string(), name: z.string(), role: z.enum(["owner", "operator", "viewer"]) })
+      .object({
+        id: z.string(),
+        name: z.string(),
+        role: z.enum(["owner", "operator", "viewer"]),
+      })
       .optional(),
   })
   .passthrough()
@@ -5451,7 +5650,7 @@ export const DaemonHostGetMetricsResponseSchema = z.object({
 });
 
 export const OwnedStorageCategorySchema = z.object({
-  /** Stable id (logs, agents, projects, worktrees, uploads, project_import_staging, tts_cache, models, daemon_versions, temp); unknown ids may appear. */
+  /** Stable id (logs, agents, projects, worktrees, agent_worktrees, provider_accounts, uploads, project_import_staging, tts_cache, models, daemon_versions, temp); unknown ids may appear. */
   id: z.string(),
   path: z.string().nullable(),
   exists: z.boolean(),
@@ -5482,6 +5681,55 @@ export const DaemonStorageCleanResponseSchema = z.object({
     categoryId: z.string(),
     bytesFreed: z.number(),
     removedCount: z.number(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const SkillLocationSchema = z.object({
+  /** built_in today; kept open so other sources can be added without a wire change. */
+  scope: z.string(),
+  path: z.string(),
+  /** Providers that load this copy (claude, codex); unknown ids may appear. */
+  providers: z.array(z.string()),
+});
+export type SkillLocation = z.infer<typeof SkillLocationSchema>;
+
+export const SkillEntrySchema = z.object({
+  /** Stable key for set_enabled/get_content: the skill's short name, e.g. `delegate`. */
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  /** built_in today. */
+  scope: z.string(),
+  locations: z.array(SkillLocationSchema),
+});
+export type SkillEntry = z.infer<typeof SkillEntrySchema>;
+
+export const DaemonSkillsListResponseSchema = z.object({
+  type: z.literal("daemon.skills.list.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skills: z.array(SkillEntrySchema),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonSkillsSetEnabledResponseSchema = z.object({
+  type: z.literal("daemon.skills.set_enabled.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skill: SkillEntrySchema.nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonSkillsGetContentResponseSchema = z.object({
+  type: z.literal("daemon.skills.get_content.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skillId: z.string(),
+    content: z.string().nullable(),
     error: z.string().nullable(),
   }),
 });
@@ -7606,6 +7854,24 @@ export function parseHubExecutionOutboundMessage(value: unknown): HubExecutionOu
 export type DaemonUpdateProgressMessage = z.infer<typeof DaemonUpdateProgressMessageSchema>;
 
 export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
+  PluginsListResponseSchema,
+  PluginsReposListResponseSchema,
+  PluginsReposAddResponseSchema,
+  PluginsReposRemoveResponseSchema,
+  PluginsGetCatalogResponseSchema,
+  PluginsInstallResponseSchema,
+  PluginsUninstallResponseSchema,
+  PluginsSetEnabledResponseSchema,
+  PluginsUpdateResponseSchema,
+  PluginsDevLinkResponseSchema,
+  PluginsDevUnlinkResponseSchema,
+  PluginsDevSetEnabledResponseSchema,
+  PluginsRpcCallResponseSchema,
+  PluginsGetContributionsResponseSchema,
+  PluginsSettingsGetResponseSchema,
+  PluginsSettingsSetResponseSchema,
+  PluginsChangedMessageSchema,
+  PluginsNotifyMessageSchema,
   AuthDeviceListResponseSchema,
   AuthDeviceRenameResponseSchema,
   AuthDeviceRevokeResponseSchema,
@@ -7710,6 +7976,9 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   DaemonHostGetMetricsResponseSchema,
   DaemonStorageListResponseSchema,
   DaemonStorageCleanResponseSchema,
+  DaemonSkillsListResponseSchema,
+  DaemonSkillsSetEnabledResponseSchema,
+  DaemonSkillsGetContentResponseSchema,
   DaemonGetPairingOfferResponseSchema,
   DaemonGetSecurityPostureResponseSchema,
   DaemonSetSecurityFindingAcknowledgedResponseSchema,
@@ -7838,6 +8107,16 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ChatPostResponseSchema,
   ChatReadResponseSchema,
   ChatWaitResponseSchema,
+  ProjectTodoListResponseSchema,
+  ProjectTodoGetResponseSchema,
+  ProjectTodoCreateResponseSchema,
+  ProjectTodoUpdateResponseSchema,
+  ProjectTodoUpdatePlanResponseSchema,
+  ProjectTodoSetStatusResponseSchema,
+  ProjectTodoReleaseResponseSchema,
+  ProjectTodoDeleteResponseSchema,
+  ProjectTodoUnsubscribeResponseSchema,
+  ProjectTodoChangedMessageSchema,
   LoopRunResponseSchema,
   LoopListResponseSchema,
   LoopInspectResponseSchema,
@@ -8014,6 +8293,9 @@ export type DaemonGetStatusResponse = z.infer<typeof DaemonGetStatusResponseSche
 export type DaemonHostGetMetricsResponse = z.infer<typeof DaemonHostGetMetricsResponseSchema>;
 export type DaemonStorageListResponse = z.infer<typeof DaemonStorageListResponseSchema>;
 export type DaemonStorageCleanResponse = z.infer<typeof DaemonStorageCleanResponseSchema>;
+export type DaemonSkillsListResponse = z.infer<typeof DaemonSkillsListResponseSchema>;
+export type DaemonSkillsSetEnabledResponse = z.infer<typeof DaemonSkillsSetEnabledResponseSchema>;
+export type DaemonSkillsGetContentResponse = z.infer<typeof DaemonSkillsGetContentResponseSchema>;
 export type DaemonGetPairingOfferResponse = z.infer<typeof DaemonGetPairingOfferResponseSchema>;
 export type DaemonGetSecurityPostureResponse = z.infer<
   typeof DaemonGetSecurityPostureResponseSchema
@@ -8550,3 +8832,5 @@ export function parseServerInfoStatusPayload(payload: unknown): ServerInfoStatus
 }
 
 export * from "./device-access-rpc.js";
+export * from "./plugins/rpc-schemas.js";
+export * from "./todos/rpc-schemas.js";

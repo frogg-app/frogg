@@ -161,9 +161,10 @@ function ProviderAccountUsageColumns({
   );
 }
 
-function ProviderAccountComboboxOption({
+export function ProviderAccountComboboxOption({
   option,
   account,
+  description,
   selected,
   active,
   onPress,
@@ -174,7 +175,9 @@ function ProviderAccountComboboxOption({
   provider,
 }: {
   option: ComboboxOption;
-  account: ProviderAccountOption | undefined;
+  account: Pick<ProviderAccountOption, "authenticated"> | undefined;
+  /** Extra detail under the name, e.g. marking the account in use. */
+  description?: string;
   selected: boolean;
   active: boolean;
   onPress: () => void;
@@ -219,7 +222,7 @@ function ProviderAccountComboboxOption({
   return (
     <ComboboxItem
       label={option.label}
-      description={unauthenticated ? unauthenticatedLabel : undefined}
+      description={unauthenticated ? unauthenticatedLabel : description}
       selected={selected}
       active={active}
       disabled={unauthenticated}

@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { release } from "@frogg/branding";
+import { isStableVersion } from "@frogg/protocol/release-version";
 import appPackage from "../../package.json";
 
 function toVersionOrNull(value: unknown): string | null {
@@ -42,4 +43,13 @@ export function resolveAppVersion(): string | null {
   }
 
   return null;
+}
+
+/**
+ * Beta (prerelease) builds are the developer channel: developer options are always on and
+ * cannot be switched off there.
+ */
+export function isBetaBuild(): boolean {
+  const version = resolveAppVersion();
+  return version !== null && !isStableVersion(version);
 }

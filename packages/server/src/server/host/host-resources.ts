@@ -1,20 +1,31 @@
 import type pino from "pino";
 import { HostMetricsSampler } from "./host-metrics.js";
 import { OwnedStorageService, type OwnedStorageOptions } from "./owned-storage.js";
+import { WorktreeInventory, type WorktreeInventoryOptions } from "./worktree-inventory.js";
 
 /** One per daemon: metrics windows and storage-size caches are shared by every client. */
 export interface HostResources {
   metrics: HostMetricsSampler;
   storage: OwnedStorageService;
+  worktrees: WorktreeInventory;
 }
 
 export function createHostResources(
-  options: Omit<OwnedStorageOptions, "logger"> & { logger: pino.Logger },
+  options: Omit<OwnedStorageOptions, "logger" | "worktreeInventory"> & {
+    logger: pino.Logger;
+    worktrees: Omit<WorktreeInventoryOptions, "logger">;
+  },
 ): HostResources {
+  const worktrees = new WorktreeInventory({
+    ...options.worktrees,
+    logger: options.logger.child({ module: "worktree-inventory" }),
+  });
   return {
     metrics: new HostMetricsSampler({ diskPath: options.froggHome }),
+    worktrees,
     storage: new OwnedStorageService({
       ...options,
+      worktreeInventory: worktrees,
       logger: options.logger.child({ module: "owned-storage" }),
     }),
   };

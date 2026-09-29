@@ -3,8 +3,10 @@
  *
  * A clean cut ends an agent's provider conversation and starts a fresh one in
  * the same workspace, primed with a short summary instead of the full history.
- * The summary is written by the cheapest model available on the agent's own
- * provider and account, reading only the chat side of the conversation: user
+ * The summary is written by the owner's configured summary model, else the
+ * cheapest model available on the cut's target provider and account (the
+ * source is often the one that just hit its usage limit), reading
+ * only the chat side of the conversation: user
  * and assistant messages plus tool call names and short arguments, never tool
  * output. That transcript is a fraction of the context it stands for, which is
  * where the saving comes from when the prompt cache has expired.
@@ -19,12 +21,15 @@ import {
 } from "./agent-response-loop.js";
 import type { AgentManager, ManagedAgent } from "./agent-manager.js";
 import type {
+  AgentModelDefinition,
   AgentPromptInput,
   AgentSessionConfig,
   AgentTimelineItem,
+  AgentUsage,
   CleanCutMarker,
 } from "./agent-sdk-types.js";
 import type { ProviderSnapshotManager } from "./provider-snapshot-manager.js";
+import type { CleanCutSummaryModel, MutableCleanCutConfig } from "@frogg/protocol/messages";
 import { DEFAULT_STRUCTURED_GENERATION_PROVIDERS } from "./structured-generation-providers.js";
 
 /** Head kept when a transcript is too long: the opening request frames the rest. */
@@ -45,12 +50,31 @@ export interface CleanCutTarget {
 export interface CleanCutDeps {
   agentManager: AgentManager;
   providerSnapshotManager: Pick<ProviderSnapshotManager, "listProviders">;
-  logger: { info: (obj: object, msg?: string) => void; warn: (obj: object, msg?: string) => void };
+  logger: {
+    info: (obj: object, msg?: string) => void;
+    warn: (obj: object, msg?: string) => void;
+  };
   /** Test seam: runs one summariser candidate. Defaults to a real internal agent. */
   runner?: SummariserRunner;
+  /** The daemon's clean cut settings, read at cut time so a change applies at once. */
+  getCleanCutSettings?: () => MutableCleanCutConfig | undefined;
 }
 
-type SummariserRunner = <T>(options: StructuredAgentGenerationOptions<T>) => Promise<T>;
+type SummariserRunner = <T>(
+  options: StructuredAgentGenerationOptions<T>,
+  onUsage?: (usage: AgentUsage) => void,
+) => Promise<T>;
+
+type CleanCutUsage = NonNullable<CleanCutMarker["summaryUsage"]>;
+
+function addUsage(total: CleanCutUsage | undefined, usage: AgentUsage): CleanCutUsage {
+  const next: CleanCutUsage = { ...total };
+  for (const key of ["inputTokens", "cachedInputTokens", "outputTokens", "totalCostUsd"] as const) {
+    const value = usage[key];
+    if (typeof value === "number") next[key] = (next[key] ?? 0) + value;
+  }
+  return next;
+}
 
 /**
  * Runs one summariser candidate as a hidden internal agent. It is told not to
@@ -58,7 +82,7 @@ type SummariserRunner = <T>(options: StructuredAgentGenerationOptions<T>) => Pro
  * permission prompt: every request is denied on the spot, and an attempt that
  * still does not finish is abandoned, so a cut can never hang on it.
  */
-export const runSummariserAgent: SummariserRunner = async (options) => {
+export const runSummariserAgent: SummariserRunner = async (options, onUsage) => {
   const { manager, agentConfig, prompt, schema, maxRetries, schemaName } = options;
   const agent = await manager.createAgent(agentConfig, undefined, {
     persistSession: options.persistSession,
@@ -75,6 +99,8 @@ export const runSummariserAgent: SummariserRunner = async (options) => {
               message: "Tools are unavailable. Answer from the transcript alone.",
             })
             .catch(() => undefined);
+        } else if (event.type === "turn_completed") {
+          if (event.usage) onUsage?.(event.usage);
         } else if (event.type === "turn_failed") {
           throw new Error(event.error);
         }
@@ -89,7 +115,13 @@ export const runSummariserAgent: SummariserRunner = async (options) => {
       );
     });
     return await Promise.race([
-      getStructuredAgentResponse({ caller, prompt, schema, maxRetries, schemaName }),
+      getStructuredAgentResponse({
+        caller,
+        prompt,
+        schema,
+        maxRetries,
+        schemaName,
+      }),
       timeout,
     ]);
   } finally {
@@ -185,52 +217,148 @@ export function prependCleanCutSummary(
 }
 
 /**
- * The summariser candidates, cheapest first, all on the agent's own provider so
- * the cost lands on the account the conversation already bills to. The agent's
- * current model is the last resort: dearer, but still reading the stripped
- * transcript rather than the whole context.
+ * Where the conversation lands after the cut. The summary is written here: a
+ * cut is often made because the source account hit its usage limit, and the
+ * cost then lands on the account the conversation will bill to next.
  */
-async function resolveSameProviderCandidates(
+export interface CleanCutDestination {
+  provider: string;
+  /** `undefined` is the provider's default account. */
+  providerAccountId?: string;
+  model?: string;
+}
+
+export function resolveCleanCutDestination(
+  agent: Pick<ManagedAgent, "provider" | "config">,
+  target: CleanCutTarget,
+): CleanCutDestination {
+  const provider = target.provider ?? agent.provider;
+  // Moving provider starts on its default account and model unless named.
+  const kept: { providerAccountId?: string | null; model?: string | null } =
+    provider === agent.provider ? agent.config : {};
+  const providerAccountId =
+    target.providerAccountId === undefined ? kept.providerAccountId : target.providerAccountId;
+  const model = target.model === undefined ? kept.model : target.model;
+  return {
+    provider,
+    ...(providerAccountId ? { providerAccountId } : {}),
+    ...(model ? { model } : {}),
+  };
+}
+
+/**
+ * The summariser candidates, in order:
+ * 1. the summary model configured for the destination provider,
+ * 2. the global summary model,
+ * 3. the cheapest known model on the destination provider,
+ * 4. the destination model: dearer, but still reading the stripped
+ *    transcript rather than the whole context.
+ *
+ * A configured model the provider does not currently offer (provider missing,
+ * disabled, or model not in its list) is skipped with a log line rather than
+ * tried and failed, so the next candidate answers without a wasted attempt.
+ */
+export async function resolveCleanCutSummaryCandidates(
   deps: CleanCutDeps,
-  agent: ManagedAgent,
+  agent: Pick<ManagedAgent, "id" | "cwd">,
+  destination: CleanCutDestination,
 ): Promise<StructuredGenerationProvider[]> {
   const entries = await deps.providerSnapshotManager.listProviders({
     cwd: agent.cwd,
     wait: true,
   });
-  const entry = entries.find((candidate) => candidate.provider === agent.provider);
-  const models = entry?.enabled ? (entry.models ?? []) : [];
+  const settings = deps.getCleanCutSettings?.();
+  const configured = [
+    { source: "provider", wanted: settings?.providers?.[destination.provider]?.summaryModel },
+    { source: "global", wanted: settings?.summaryModel },
+  ];
   const candidates: StructuredGenerationProvider[] = [];
-  for (const identifier of DEFAULT_STRUCTURED_GENERATION_PROVIDERS) {
+  for (const { source, wanted } of configured) {
+    if (!wanted) continue;
+    const resolved = resolveConfiguredSummaryModel(entries, wanted);
+    if ("unavailable" in resolved) {
+      deps.logger.warn(
+        {
+          agentId: agent.id,
+          source,
+          summaryProvider: wanted.provider,
+          summaryModel: wanted.model,
+          reason: resolved.unavailable,
+        },
+        "Configured clean cut summary model is unavailable; trying the next candidate",
+      );
+    } else {
+      candidates.push(resolved);
+    }
+  }
+  candidates.push(...resolveDefaultSummaryModels(entries, destination.provider));
+  candidates.push({
+    provider: destination.provider,
+    ...(destination.model ? { model: destination.model } : {}),
+  });
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const key = `${candidate.provider}\0${candidate.model ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+type ProviderEntries = Awaited<
+  ReturnType<CleanCutDeps["providerSnapshotManager"]["listProviders"]>
+>;
+
+function withThinking(
+  provider: string,
+  model: AgentModelDefinition,
+  preferred: string | undefined,
+): StructuredGenerationProvider {
+  const thinkingOptionId =
+    preferred && model.thinkingOptions?.some((option) => option.id === preferred)
+      ? preferred
+      : model.defaultThinkingOptionId;
+  return { provider, model: model.id, ...(thinkingOptionId ? { thinkingOptionId } : {}) };
+}
+
+function resolveConfiguredSummaryModel(
+  entries: ProviderEntries,
+  wanted: CleanCutSummaryModel,
+): StructuredGenerationProvider | { unavailable: string } {
+  const entry = entries.find((candidate) => candidate.provider === wanted.provider);
+  if (!entry) return { unavailable: "provider_missing" };
+  if (!entry.enabled) return { unavailable: "provider_disabled" };
+  const model = entry.models?.find((candidate) => candidate.id === wanted.model);
+  if (!model) return { unavailable: "model_missing" };
+  return withThinking(wanted.provider, model, wanted.thinkingOptionId);
+}
+
+/** The cheapest known models on the agent's own provider, by name. */
+function resolveDefaultSummaryModels(
+  entries: ProviderEntries,
+  provider: string,
+): StructuredGenerationProvider[] {
+  const entry = entries.find((candidate) => candidate.provider === provider);
+  const models = entry?.enabled ? (entry.models ?? []) : [];
+  return DEFAULT_STRUCTURED_GENERATION_PROVIDERS.flatMap((identifier) => {
     const needle = identifier.modelSubstring.toLowerCase();
     const model = models.find((candidate) =>
       [candidate.id, candidate.label].some((value) => value.toLowerCase().includes(needle)),
     );
-    if (model) {
-      const thinkingOptionId = model.thinkingOptions?.some(
-        (option) => option.id === identifier.thinkingOptionId,
-      )
-        ? identifier.thinkingOptionId
-        : model.defaultThinkingOptionId;
-      candidates.push({
-        provider: agent.provider,
-        model: model.id,
-        ...(thinkingOptionId ? { thinkingOptionId } : {}),
-      });
-    }
-  }
-  candidates.push({
-    provider: agent.provider,
-    ...(agent.config.model ? { model: agent.config.model } : {}),
+    return model ? [withThinking(provider, model, identifier.thinkingOptionId)] : [];
   });
-  return candidates;
 }
 
 async function generateCleanCutSummary(
   deps: CleanCutDeps,
   agent: ManagedAgent,
+  destination: CleanCutDestination,
   transcript: string,
-): Promise<{ summary: string; summaryModel: string | undefined }> {
+): Promise<{
+  summary: string;
+  summaryModel: string | undefined;
+  summaryUsage: CleanCutUsage | undefined;
+}> {
   const prompt = buildCleanCutSummaryPrompt({ transcript, cwd: agent.cwd });
   const baseOverrides = {
     title: "Clean cut summary",
@@ -238,9 +366,22 @@ async function generateCleanCutSummary(
   } satisfies Omit<AgentSessionConfig, "provider" | "cwd" | "model" | "thinkingOptionId">;
   // Remember which candidate answered, so the marker can name the model.
   let summaryModel: string | undefined;
+  // Every attempt is billed, failed candidates and retries included.
+  let summaryUsage: CleanCutUsage | undefined;
+  const recordUsage = (usage: AgentUsage) => {
+    summaryUsage = addUsage(summaryUsage, usage);
+  };
   const runOne = deps.runner ?? runSummariserAgent;
   const runner: SummariserRunner = async (options) => {
-    const result = await runOne(options);
+    // A summary model configured on another provider runs on that provider's
+    // default account: the destination account belongs to its own provider.
+    const { providerAccountId: _destinationAccount, ...defaultAccountConfig } = options.agentConfig;
+    const result = await runOne(
+      options.agentConfig.provider === destination.provider
+        ? options
+        : { ...options, agentConfig: defaultAccountConfig },
+      recordUsage,
+    );
     summaryModel = options.agentConfig.model;
     return result;
   };
@@ -262,25 +403,26 @@ async function generateCleanCutSummary(
       runner,
     });
 
-  const candidates = await resolveSameProviderCandidates(deps, agent);
+  const candidates = await resolveCleanCutSummaryCandidates(deps, agent, destination);
   try {
     const result = await generate(candidates, {
       ...baseOverrides,
-      ...(agent.config.providerAccountId !== undefined
-        ? { providerAccountId: agent.config.providerAccountId }
+      ...(destination.providerAccountId !== undefined
+        ? { providerAccountId: destination.providerAccountId }
         : {}),
     });
-    return { summary: result.summary.trim(), summaryModel };
+    return { summary: result.summary.trim(), summaryModel, summaryUsage };
   } catch (error) {
-    // Only the agent's own provider and account are tried: summarising on
-    // another would bill an account the conversation never used.
+    // Unless the owner configured a summary model elsewhere, only the
+    // destination provider and account are tried: summarising on another would
+    // bill an account the conversation is not moving to.
     const detail = error instanceof Error ? error.message : String(error);
     deps.logger.warn(
-      { err: error, agentId: agent.id, provider: agent.provider },
-      "Clean cut summary failed on every candidate of the agent's provider",
+      { err: error, agentId: agent.id, provider: destination.provider },
+      "Clean cut summary failed on every candidate",
     );
     throw new Error(
-      `Could not write the clean cut summary on ${agent.provider} ` +
+      `Could not write the clean cut summary on ${destination.provider} ` +
         `(tried ${candidates
           .map((candidate) => candidate.model ?? "default model")
           .join(", ")}): ${detail}`,
@@ -308,7 +450,11 @@ export type CleanCutOutcome = "cut" | "unchanged";
  */
 export async function runCleanCut(
   deps: CleanCutDeps,
-  input: { agentId: string; target: CleanCutTarget; reason?: CleanCutMarker["reason"] },
+  input: {
+    agentId: string;
+    target: CleanCutTarget;
+    reason?: CleanCutMarker["reason"];
+  },
 ): Promise<CleanCutOutcome> {
   const agent = deps.agentManager.getAgent(input.agentId);
   if (!agent) {
@@ -323,11 +469,17 @@ export async function runCleanCut(
   const previousCut = selected[0]?.type === "compaction" ? selected[0].cleanCut : undefined;
   let summary: string;
   let summaryModel: string | undefined;
+  let summaryUsage: CleanCutUsage | undefined;
   let transcriptChars = 0;
   if (selected.some((item) => item.type === "user_message")) {
     const transcript = buildCleanCutTranscript(items);
     transcriptChars = transcript.length;
-    ({ summary, summaryModel } = await generateCleanCutSummary(deps, agent, transcript));
+    ({ summary, summaryModel, summaryUsage } = await generateCleanCutSummary(
+      deps,
+      agent,
+      resolveCleanCutDestination(agent, target),
+      transcript,
+    ));
   } else if (previousCut) {
     // Nothing new since the last cut: its summary still stands, and a cut is
     // only worth making to move somewhere else.
@@ -342,6 +494,7 @@ export async function runCleanCut(
     sessionId: agent.persistence?.sessionId,
     provider: agent.provider,
     model: agent.config.model,
+    contextTokens: agent.lastUsage?.contextWindowUsedTokens,
   };
   const overrides: Partial<AgentSessionConfig> = {
     ...(target.provider ? { provider: target.provider } : {}),
@@ -363,6 +516,8 @@ export async function runCleanCut(
     provider: next.provider,
     ...(next.config.model ? { model: next.config.model } : {}),
     ...(summaryModel ? { summaryModel } : {}),
+    ...(summaryUsage ? { summaryUsage } : {}),
+    ...(previous.contextTokens ? { previousContextTokens: previous.contextTokens } : {}),
     reason: input.reason ?? "manual",
   };
   await deps.agentManager.appendTimelineItem(input.agentId, {
@@ -379,6 +534,8 @@ export async function runCleanCut(
       transcriptChars,
       summaryChars: summary.length,
       summaryModel,
+      summaryUsage,
+      previousContextTokens: previous.contextTokens,
       reason: marker.reason,
     },
     "Clean cut completed",

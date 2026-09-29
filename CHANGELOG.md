@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- **Clean cut cost.** The clean cut divider now shows what the summary cost (tokens in and out,
+  plus dollars when the provider reports them, failed attempts included) next to how much
+  context the ended conversation held, so a cut that cost as much as it saved stands out.
+- **Stale worktree cleanup.** Host settings → Resources now sizes every linked worktree of
+  registered projects, including Claude Code's `.claude/worktrees/agent-*` and worktrees under
+  provider account directories (`~/.codex/worktrees`), plus each provider account's config
+  directory. Stale worktrees (clean, unlocked, unused, and merged or idle past retention) can
+  be cleaned from **Frogg worktrees** and **Agent worktrees**, and the daemon sweeps them every
+  6 hours. Retention defaults to 7 days (`daemon.worktreeRetentionDays`, `0` disables).
+  Branches are kept.
+- **Frogg skills.** The daemon ships two skills of its own, written for Frogg: `delegate` (split a
+  task across parallel agents in worktrees, then review and merge) and `project-config` (write or
+  fix `frogg.json`). Each Claude Code and Codex agent the daemon starts gets them as a
+  per-session plugin (`frogg:<name>`) or extra skill root (`frogg-<name>`); nothing is written
+  into the user's skill folders, and agents see only descriptions until a skill is used.
+  **Host settings → Frogg skills** lists them with a switch each and shows their full text;
+  choices are stored in `~/.frogg/skills.json` and apply to agents started afterwards. Branded
+  builds get the skills under their own id, CLI name and docs links. New `daemon.skills.list`,
+  `daemon.skills.set_enabled` and `daemon.skills.get_content` RPCs behind
+  `features.skillsManagement`. The repo's own dev skills are renamed `frogg-localisation` (was
+  `frogg-i18n`) and `frogg-daemon-rpc` (was `frogg-rpc`), and the Paseo-derived `frogg`,
+  `frogg-advisor`, `frogg-committee`, `frogg-handoff` and `frogg-help` skills are removed.
 - **Developer options in Settings.** A **Developer options** switch at the bottom of
   **Settings → About** (off by default, stored per app install) shows a **Developer** section
   above About. Its **Beta app** card installs or updates frogg beta beside the desktop app with
@@ -9,9 +31,16 @@
   daemon on hosts** lists every host with its beta daemon status (installed version, running
   and port, latest beta, or why it is unavailable), installs, updates and uninstalls it
   (confirmed, optionally deleting its data), and streams the run's phase and installer log.
-  Hosts without `features.betaChannelManagement` ask to be updated.
-- **Stable patches may reach the beta line's version.** Betas open the next patch line above
-  stable by default (`release:beta -- --minor` / `--major` are explicit).
+  Hosts without `features.betaChannelManagement` ask to be updated. Strings are translated in
+  all nine locales. The unused desktop `install_cli` / `get_cli_install_status` commands and
+  their CLI installer code are removed.
+- **Configurable automatic clean cut.** `daemon.cleanCut` and **Settings → Host → Clean cut** set each trigger (usage-limit resume, daemon-restart resume) on or off, a global and per-provider idle threshold (default: the provider's cache lifetime, also used by the composer's stale-cache warning) and a global and per-provider summary model. Changes apply live. Every automatic cut decision is logged with its outcome and reason. `autoCleanCutOnColdCache: false` still disables both triggers. Fixed a usage-limit reschedule without a reset time overwriting a known reset.
+- **Leaner app Settings.** The app settings sidebar is General, Appearance, Shortcuts,
+  Notifications, Permissions and About. Companion and Diagnostics are now groups inside
+  General. The Layout (open-location preferences), Editor (Vim keybindings) and Integrations
+  (install the CLI) sections are removed; their saved preferences keep working with the values
+  already stored or the defaults. Old `/settings/<section>` links open General. A unit test pins
+  the section list.
 - **Beta daemon management (daemon, protocol, client).** A stable daemon installs, updates
   and removes the side-by-side `frogg-beta` daemon on its host for an owner client: new
   `daemon.beta_channel.get_status`, `.install` and `.uninstall` RPCs, with
@@ -26,7 +55,20 @@
   progress events, verifies it against the release's SHA-256 checksums, and installs it
   beside the stable app (Windows NSIS, macOS `.dmg` to `/Applications`, Linux AppImage to
   `~/Applications`). It also reports whether frogg beta is installed, with its version, and
-  opens it.
+  opens it. The Settings entry point comes separately.
+- **Project to-dos (daemon and protocol).** Each project has a daemon-owned to-do list stored
+  in its main checkout under `.frogg/todos/` (self-ignored by git): items with category,
+  priority, a kanban-style status, a markdown plan and an append-only progress log. Agents use
+  new `todo_*` MCP tools; claims are compare-and-set, report the current claimant on conflict,
+  show as stale when the agent is no longer running, and are released on done, release or
+  agent archive. New `project.todo.*` session RPCs and the `project.todo.changed` event, gated
+  on `features.projectTodos`.
+- **Project to-dos in the app.** A project's sidebar menu has **To-dos** on hosts that support
+  them: a live list grouped by category with a status filter, priority, parallel marker and
+  claim badges that link to the claiming agent and mark stale claims. The detail view renders
+  the plan as markdown, shows the progress log and claims, and edits fields, plan and status,
+  force-releases claims and deletes items (both confirmed). New items can be created from the
+  list. Strings are translated in all nine locales.
 
 ## 1.6.4 — 2026-09-27
 

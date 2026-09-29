@@ -17,6 +17,8 @@ import {
   getPromptCacheTtlMs,
   isPromptCacheCold,
   PROMPT_CACHE_TTL_MS,
+  resolveIdleThresholdMs,
+  type IdleThresholdSettings,
 } from "@frogg/protocol/prompt-cache";
 
 /**
@@ -27,9 +29,16 @@ import {
 export const STALE_CONTEXT_TTL_MS_BY_PROVIDER: Readonly<Record<string, number>> =
   PROMPT_CACHE_TTL_MS;
 
-/** The cache window for a provider, or null when the rule does not apply to it. */
-export function staleContextTtlMs(provider: string | null): number | null {
-  return getPromptCacheTtlMs(provider);
+/**
+ * The idle window for a provider, or null when the rule does not apply to it:
+ * the host's clean cut threshold when one is set, else the provider's cache
+ * TTL. The same rule decides the daemon's automatic clean cut.
+ */
+export function staleContextTtlMs(
+  provider: string | null,
+  settings?: IdleThresholdSettings | null,
+): number | null {
+  return resolveIdleThresholdMs(provider, settings);
 }
 
 /**
@@ -55,6 +64,8 @@ export interface StaleContextInput {
   /** True once the user has actually started typing something to send. */
   isComposing: boolean;
   now: number;
+  /** The host's clean cut thresholds (`cleanCut` daemon config), when known. */
+  thresholds?: IdleThresholdSettings | null;
 }
 
 export interface StaleContextWarning {
@@ -76,7 +87,7 @@ export interface StaleContextWarning {
  * unreported still warns, without a number.
  */
 export function resolveStaleContextWarning(input: StaleContextInput): StaleContextWarning | null {
-  if (staleContextTtlMs(input.provider) === null) return null;
+  if (staleContextTtlMs(input.provider, input.thresholds) === null) return null;
   if (!input.isComposing) return null;
   if (input.contextTokens !== null && input.contextTokens <= 0) return null;
   if (input.contextTokens === null && !input.hasConversation) return null;
@@ -88,6 +99,7 @@ export function resolveStaleContextWarning(input: StaleContextInput): StaleConte
     provider: input.provider,
     lastTurnAt: input.lastActivityAt,
     now: input.now,
+    settings: input.thresholds,
   });
   if (cold !== true) return null;
 

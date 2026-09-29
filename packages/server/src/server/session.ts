@@ -79,6 +79,10 @@ import {
 import { DirectorySyncService } from "./directory-sync/index.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import { WorkspaceLabelsSession } from "./session/workspace-labels/workspace-labels-session.js";
+import { PluginsSession } from "./session/plugins/plugins-session.js";
+import type { PluginService } from "./plugins/plugin-service.js";
+import { ProjectTodosSession } from "./session/project-todos/project-todos-session.js";
+import type { ProjectTodoService } from "./project-todos/service.js";
 import { AgentLifecycleSession } from "./session/agent-lifecycle/agent-lifecycle-session.js";
 import { WorkspaceMetadataSession } from "./session/workspace-metadata/workspace-metadata-session.js";
 
@@ -471,6 +475,8 @@ export interface SessionOptions {
   workspaceRegistry: WorkspaceRegistry;
   directorySync?: DirectorySyncService;
   workspaceLabelService?: WorkspaceLabelService;
+  pluginService?: PluginService | null;
+  projectTodoService?: ProjectTodoService | null;
   filesystem?: SessionFileSystem;
   checkoutDiffManager: CheckoutDiffManager;
   github?: ForgeService;
@@ -726,6 +732,8 @@ export class Session {
   private workspaceUpdatesSubscription: WorkspaceUpdatesSubscriptionState | null = null;
   private readonly workspaceLabelService: WorkspaceLabelService | null;
   private readonly workspaceLabels: WorkspaceLabelsSession;
+  private readonly plugins: PluginsSession;
+  private readonly projectTodos: ProjectTodosSession;
   private readonly workspaceMetadata: WorkspaceMetadataSession;
   private projectSyncEnabled = false;
   private readonly workspaceUpdateTails = new Map<string, Promise<void>>();
@@ -798,6 +806,8 @@ export class Session {
       workspaceRegistry,
       directorySync,
       workspaceLabelService,
+      pluginService,
+      projectTodoService,
       filesystem,
       checkoutDiffManager,
       github,
@@ -888,6 +898,15 @@ export class Session {
     });
     this.workspaceLabels = new WorkspaceLabelsSession({
       service: this.workspaceLabelService,
+      emit: (message) => this.emit(message),
+    });
+    this.plugins = new PluginsSession({
+      service: pluginService,
+      clientId,
+      emit: (message) => this.emit(message),
+    });
+    this.projectTodos = new ProjectTodosSession({
+      service: projectTodoService,
       emit: (message) => this.emit(message),
     });
     this.filesystem = filesystem ?? nodeSessionFileSystem;
@@ -1065,6 +1084,7 @@ export class Session {
             agentManager,
             providerSnapshotManager,
             logger: this.sessionLogger,
+            getCleanCutSettings: () => this.daemonConfigStore.get().cleanCut,
           };
           await runCleanCut(deps, { agentId, target });
           // COMPAT(agentCleanCutSubagents): added in v1.6.2, remove after 2027-09-27.
@@ -2353,6 +2373,15 @@ export class Session {
     }
   }
 
+  /** Messages owned by self-contained sub-sessions. */
+  private dispatchDelegatedSessionMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    return (
+      this.workspaceLabels.dispatch(msg) ??
+      this.plugins.dispatch(msg) ??
+      this.projectTodos.dispatch(msg)
+    );
+  }
+
   private async dispatchInboundMessage(msg: SessionInboundMessage, source?: object): Promise<void> {
     this.noteInboundPresenceActivity(msg);
     const promise =
@@ -2367,7 +2396,7 @@ export class Session {
       this.dispatchAgentCleanCutMessage(msg) ??
       this.dispatchCheckoutMessage(msg) ??
       this.dispatchWorkspaceRecoveryMessage(msg) ??
-      this.workspaceLabels.dispatch(msg) ??
+      this.dispatchDelegatedSessionMessage(msg) ??
       this.dispatchWorkspaceAndProjectMessage(msg) ??
       this.dispatchWorkspaceFileMessage(msg, source) ??
       this.dispatchProviderMessage(msg) ??
@@ -2677,6 +2706,12 @@ export class Session {
         return this.daemonSession.handleStorageListRequest(msg);
       case "daemon.storage.clean.request":
         return this.daemonSession.handleStorageCleanRequest(msg);
+      case "daemon.skills.list.request":
+        return this.daemonSession.handleSkillsListRequest(msg);
+      case "daemon.skills.set_enabled.request":
+        return this.daemonSession.handleSkillsSetEnabledRequest(msg);
+      case "daemon.skills.get_content.request":
+        return this.daemonSession.handleSkillsGetContentRequest(msg);
       case "daemon.beta_channel.get_status.request":
         return this.daemonSession.handleBetaChannelGetStatusRequest(msg);
       case "daemon.beta_channel.install.request":
@@ -7723,6 +7758,7 @@ export class Session {
     this.unsubscribeWorkspaceMutations?.();
     this.unsubscribeWorkspaceMutations = null;
     this.workspaceLabels.close();
+    this.projectTodos.close();
     this.agentUpdates.dispose();
     await this.hubExecutionController?.cleanup();
     if (this.unsubscribeTerminalWorkspaceContributionEvents) {

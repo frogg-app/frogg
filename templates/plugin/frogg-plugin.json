@@ -1,0 +1,14 @@
+{
+  "id": "{{id}}",
+  "name": "{{name}}",
+  "version": "0.1.0",
+  "apiVersion": 1,
+  "scope": "daemon",
+  "description": "",
+  "author": "",
+  "entry": { "daemon": "dist/daemon.js" },
+  "capabilities": ["rpc", "ui.contribute"],
+  "contributes": {
+    "commands": [{ "id": "{{id}}.hello", "title": "{{name}}: hello" }]
+  }
+}

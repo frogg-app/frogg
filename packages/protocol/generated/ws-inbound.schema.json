@@ -155,6 +155,359 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "plugins.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.repos.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.repos.add.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "publicKey": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "url"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.repos.remove.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "url"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.get_catalog.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "refresh": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.install.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "repoUrl": {
+                  "type": "string"
+                },
+                "grantedCapabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "id",
+                "repoUrl",
+                "grantedCapabilities"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.uninstall.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "id"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.set_enabled.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "id",
+                "enabled"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.update.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "version": {
+                  "type": "string"
+                },
+                "grantedCapabilities": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "id"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.dev.link.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "path"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.dev.unlink.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "id"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.dev.set_enabled.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "enabled"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.rpc.call.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "pluginId": {
+                  "type": "string"
+                },
+                "method": {
+                  "type": "string"
+                },
+                "params": {}
+              },
+              "required": [
+                "type",
+                "requestId",
+                "pluginId",
+                "method"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.get_contributions.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.settings.get.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "id"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.settings.set.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "values": {
+                  "type": "object",
+                  "propertyNames": {
+                    "type": "string"
+                  },
+                  "additionalProperties": {}
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "id",
+                "values"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "auth.device.list.request"
                 },
                 "requestId": {
@@ -3260,6 +3613,70 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.skills.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.skills.set_enabled.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "skillId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "enabled": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "skillId",
+                "enabled"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.skills.get_content.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "skillId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "skillId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "daemon.get_pairing_offer.request"
                 },
                 "requestId": {
@@ -3787,6 +4204,127 @@
                         }
                       ]
                     },
+                    "cleanCut": {
+                      "type": "object",
+                      "properties": {
+                        "auto": {
+                          "type": "object",
+                          "properties": {
+                            "usageLimit": {
+                              "type": "boolean"
+                            },
+                            "daemonRestart": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "idleThresholdMinutes": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 43200
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "summaryModel": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "provider": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 100
+                                },
+                                "model": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 200
+                                },
+                                "thinkingOptionId": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 100
+                                }
+                              },
+                              "required": [
+                                "provider",
+                                "model"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "providers": {
+                          "type": "object",
+                          "propertyNames": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "additionalProperties": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "idleThresholdMinutes": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 43200
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "summaryModel": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "provider": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 100
+                                          },
+                                          "model": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 200
+                                          },
+                                          "thinkingOptionId": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 100
+                                          }
+                                        },
+                                        "required": [
+                                          "provider",
+                                          "model"
+                                        ]
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
                     "enableTerminalAgentHooks": {
                       "type": "boolean"
                     },
@@ -3884,6 +4422,7 @@
                               "agents",
                               "providers",
                               "usage",
+                              "skills",
                               "terminals",
                               "host"
                             ]
@@ -8901,6 +9440,315 @@
                 "type",
                 "requestId",
                 "room"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.list.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "statuses": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "backlog",
+                      "ready",
+                      "claimed",
+                      "in_progress",
+                      "review",
+                      "done",
+                      "blocked"
+                    ]
+                  }
+                },
+                "category": {
+                  "type": "string"
+                },
+                "subscribe": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.get.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.create.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "backlog",
+                    "ready",
+                    "claimed",
+                    "in_progress",
+                    "review",
+                    "done",
+                    "blocked"
+                  ]
+                },
+                "allowParallel": {
+                  "type": "boolean"
+                },
+                "plan": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "title"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.update.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "category": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "priority": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high",
+                    "urgent"
+                  ]
+                },
+                "allowParallel": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.update_plan.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                },
+                "plan": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId",
+                "plan"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.set_status.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "backlog",
+                    "ready",
+                    "claimed",
+                    "in_progress",
+                    "review",
+                    "done",
+                    "blocked"
+                  ]
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId",
+                "status"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.release.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                },
+                "agentId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.delete.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                },
+                "todoId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId",
+                "todoId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "project.todo.unsubscribe.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "projectId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "projectId"
               ]
             },
             {

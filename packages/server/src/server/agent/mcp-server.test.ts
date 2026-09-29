@@ -1,3 +1,5 @@
+import type { ProjectTodoService } from "../project-todos/service.js";
+import { PROJECT_TODO_TOOL_NAMES } from "./tools/todo-tools.js";
 import { execFileSync } from "node:child_process";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
@@ -783,6 +785,31 @@ function createFroggWorktreeForMcpTest(options: {
     return result;
   };
 }
+
+describe("project to-do MCP tools", () => {
+  const logger = createTestLogger();
+
+  it("registers todo tools only when the daemon provides a to-do service", async () => {
+    const { agentManager, agentStorage } = createTestDeps();
+    const base = {
+      agentManager,
+      agentStorage,
+      providerSnapshotManager: createOpenCodeManager().manager,
+      callerAgentId: "agent-1",
+      logger,
+    };
+    const without = await createAgentMcpServer(base);
+    expect(lookupTool(without, "todo_claim")).toBeUndefined();
+
+    const withTodos = await createAgentMcpServer({
+      ...base,
+      projectTodos: {} as unknown as ProjectTodoService,
+    });
+    for (const name of PROJECT_TODO_TOOL_NAMES) {
+      expect(lookupTool(withTodos, name)).toBeDefined();
+    }
+  });
+});
 
 describe("browser MCP tools", () => {
   const logger = createTestLogger();

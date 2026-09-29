@@ -2,7 +2,7 @@
 title: Release streams
 description: Develop on a beta stream without disturbing stable users, install frogg beta beside frogg, promote and backport, and run the same flow in a fork that follows upstream.
 sidebar:
-  order: 7
+  order: 9
 ---
 
 import { Screenshot, Steps } from "@/components/docs";
@@ -16,12 +16,14 @@ import forkLight from "@/assets/docs/diagrams/fork-streams-light.svg";
 import versionsDark from "@/assets/docs/diagrams/version-order-dark.svg";
 import versionsLight from "@/assets/docs/diagrams/version-order-light.svg";
 
-Frogg ships from two branches, called **streams**:
+Frogg ships from two branches, called **streams**. They are the last two of the three stages
+in the [development workflow](/docs/contributing/development-workflow/#three-stages):
+Development runs locally and never publishes anything.
 
-| Stream      | Branch   | Releases        | Installs as                                                  |
-| ----------- | -------- | --------------- | ------------------------------------------------------------ |
-| Development | `main`   | `X.Y.0-beta.N`  | **frogg beta**: its own app, daemon, CLI and data            |
-| Stable      | `stable` | `X.Y.Z`         | **frogg**: what users run                                    |
+| Stream | Branch   | Releases       | Installs as                                       |
+| ------ | -------- | -------------- | ------------------------------------------------- |
+| Beta   | `main`   | `X.Y.0-beta.N` | **frogg beta**: its own app, daemon, CLI and data |
+| Stable | `stable` | `X.Y.Z`        | **frogg**: what users run                         |
 
 <Screenshot
   src={streamsDark}
@@ -44,17 +46,17 @@ A beta release is built as a separate product. The release workflow selects the 
 **beta channel** for any `-beta.N` tag (`FROGG_BRAND_CHANNEL=beta`). That gives every install
 identity its own name:
 
-| Identity         | frogg                    | frogg beta                    |
-| ---------------- | ------------------------ | ----------------------------- |
-| App name         | `frogg`                  | `frogg beta`                  |
-| Application id   | `app.frogg.frogg`        | `app.frogg.frogg.beta`        |
-| Daemon port      | `9999`                   | `9998`                        |
-| State directory  | `~/.frogg`               | `~/.frogg-beta`               |
-| CLI              | `frogg`                  | `frogg-beta`                  |
-| Service          | `frogg-daemon`           | `frogg-beta-daemon`           |
-| URL scheme       | `frogg://`               | `frogg-beta://`               |
-| Environment      | `FROGG_*`                | `FROGG_BETA_*`                |
-| Release assets   | `frogg-<version>-…`      | `frogg-beta-<version>-…`      |
+| Identity        | frogg               | frogg beta               |
+| --------------- | ------------------- | ------------------------ |
+| App name        | `frogg`             | `frogg beta`             |
+| Application id  | `app.frogg.frogg`   | `app.frogg.frogg.beta`   |
+| Daemon port     | `9999`              | `9998`                   |
+| State directory | `~/.frogg`          | `~/.frogg-beta`          |
+| CLI             | `frogg`             | `frogg-beta`             |
+| Service         | `frogg-daemon`      | `frogg-beta-daemon`      |
+| URL scheme      | `frogg://`          | `frogg-beta://`          |
+| Environment     | `FROGG_*`           | `FROGG_BETA_*`           |
+| Release assets  | `frogg-<version>-…` | `frogg-beta-<version>-…` |
 
 <Screenshot
   src={sideDark}
@@ -85,6 +87,7 @@ commands frogg beta's agents run do not see frogg beta's internal settings.
    Install the frogg beta desktop app or APK from the same release. With
    [developer options](/docs/using-frogg/developer-options/) on, **Settings → Developer** does
    both the app and each host's beta daemon from inside frogg.
+
 3. For work that is not released yet, use a worktree dev daemon
    ([development setup](/docs/contributing/development-setup/)). It uses its own home and
    port, so it does not touch either install.
@@ -97,16 +100,20 @@ one window on both.
 
 <Steps>
 
-1. **Land work on `main`** as usual. CI builds frogg beta test artifacts on every push.
+1. **Land work on `main`** as usual, after testing it locally
+   ([development workflow](/docs/contributing/development-workflow/)).
 
-2. **Cut a beta** when you want testers on it:
+2. **CI cuts the beta.** When the CI run for a push to `main` is green, its `beta` job runs
+   `node scripts/release/streams.mjs beta --skip-check`, pushes the tag and starts the release
+   workflow for every platform. It skips a push that only cuts a release, and a run that
+   `main` has already moved past. To cut one by hand, for example to open a new minor line:
 
    ```sh
    git switch main && git pull
    npm run release:beta
    ```
 
-   It opens the next patch line above stable (`1.6.5-beta.1` after `1.6.4`), or continues
+   A beta opens the next patch line above stable (`1.6.5-beta.1` after `1.6.4`), or continues
    the open one (`1.6.5-beta.4`). `npm run release:beta -- --minor` opens the next minor
    line and `-- --major` the next major; bump those deliberately, never by default.
    `-- --print` shows the version without cutting it.
@@ -170,7 +177,10 @@ streams tab shows the same command.
 Open it from the new-tab menu (**+** → **Release streams**). It reads the checkout's
 `origin` and, in a fork, `upstream`, fetching them at most once a minute.
 
-<Screenshot src={releaseStreams} alt="Release streams tab: stream cards, the stream graph, flows waiting to move and the change list" />
+<Screenshot
+  src={releaseStreams}
+  alt="Release streams tab: stream cards, the stream graph, flows waiting to move and the change list"
+/>
 
 - **Cards** show each stream's branch, version, newest release and unreleased commits.
 - **The graph** has one lane per stream, the most stable at the top. Filled nodes are
@@ -197,16 +207,16 @@ them explicitly:
 }
 ```
 
-| Key                             | Default     | Meaning                                                      |
-| ------------------------------- | ----------- | ------------------------------------------------------------ |
-| `streams.development`           | `main`      | Branch that cuts betas                                       |
-| `streams.stable`                | `stable`    | Branch that cuts stable releases                             |
-| `streams.upstream.remote`       | `upstream`  | Remote a fork pulls from                                     |
-| `streams.upstream.repository`   | from remote | `owner/name`, for pull requests upstream                     |
-| `streams.upstream.development`  | `main`      | Upstream's development branch                                |
-| `streams.upstream.stable`       | `stable`    | Upstream's stable branch                                     |
-| `streams.upstream.follow`       | `stable`    | `stable` merges upstream's releases; `development` its betas |
-| `streams.upstream.suffix`       | none        | The fork's build counter name (`acme`): see [fork versions](#fork-versions) |
+| Key                            | Default     | Meaning                                                                     |
+| ------------------------------ | ----------- | --------------------------------------------------------------------------- |
+| `streams.development`          | `main`      | Branch that cuts betas                                                      |
+| `streams.stable`               | `stable`    | Branch that cuts stable releases                                            |
+| `streams.upstream.remote`      | `upstream`  | Remote a fork pulls from                                                    |
+| `streams.upstream.repository`  | from remote | `owner/name`, for pull requests upstream                                    |
+| `streams.upstream.development` | `main`      | Upstream's development branch                                               |
+| `streams.upstream.stable`      | `stable`    | Upstream's stable branch                                                    |
+| `streams.upstream.follow`      | `stable`    | `stable` merges upstream's releases; `development` its betas                |
+| `streams.upstream.suffix`      | none        | The fork's build counter name (`acme`): see [fork versions](#fork-versions) |
 
 The Release streams tab also treats a remote named `upstream` as the upstream stream when
 `frogg.json` does not declare one. The scripts need it declared.
@@ -294,11 +304,11 @@ fork and upstream versions correctly and knows which app takes each:
   alt="Versions from oldest to newest: 1.8.0-beta.3, 1.8.0-beta.3.acme.1, 1.8.0-rc.1.acme.1 (beta app), 1.8.0, 1.8.0-acme.1, 1.8.0-acme.2 (stable app), 1.9.0-beta.1 (beta app)."
 />
 
-| Command            | Following upstream stable | Following upstream `main`   |
-| ------------------ | ------------------------- | --------------------------- |
-| `release:beta`     | `1.8.0-rc.1.acme.N`       | `1.8.0-beta.3.acme.N`       |
-| `release:promote`  | `1.8.0-acme.N`            | `1.8.0-acme.N`              |
-| `release:patch`    | next `1.8.0-acme.N`       | next `1.8.0-acme.N`         |
+| Command           | Following upstream stable | Following upstream `main` |
+| ----------------- | ------------------------- | ------------------------- |
+| `release:beta`    | `1.8.0-rc.1.acme.N`       | `1.8.0-beta.3.acme.N`     |
+| `release:promote` | `1.8.0-acme.N`            | `1.8.0-acme.N`            |
+| `release:patch`   | next `1.8.0-acme.N`       | next `1.8.0-acme.N`       |
 
 - A version is a beta when its suffix **starts** with a channel name (`beta`, `rc`, `alpha`,
   ...). Anything else after the version is a build counter, and the build is stable.
@@ -310,4 +320,3 @@ fork and upstream versions correctly and knows which app takes each:
   `v1.8.0-acme.2`); the installer and the updater look them up the same way.
 - Without `suffix`, a fork numbers its releases like upstream does, with its own minors and
   patches. That works, but its versions stop meaning "which upstream release is this".
-

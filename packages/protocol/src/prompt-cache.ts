@@ -35,16 +35,56 @@ export function getPromptCacheTtlMs(provider: string | null | undefined): number
 }
 
 /**
- * Whether the provider's prompt cache for a conversation has expired: `true`
- * cold, `false` warm, `null` unknown (no known TTL or no last-turn time). A
- * last-turn time in the future (clock skew) counts as warm, not as very stale.
+ * COMPAT(cleanCutSettings): added in v1.6.5, remove after 2027-09-27.
+ * The owner's idle thresholds, in minutes (the `cleanCut` daemon config).
+ */
+export interface IdleThresholdSettings {
+  idleThresholdMinutes?: number;
+  providers?: Readonly<Record<string, { idleThresholdMinutes?: number } | undefined>>;
+}
+
+/**
+ * How long a conversation on this provider may sit idle before it counts as
+ * cold, or null when it never does. The one rule behind both the automatic
+ * clean cut and the composer's stale-context warning.
+ *
+ * A per-provider threshold wins, and is what makes a provider with no known
+ * cache lifetime cuttable at all. The global threshold replaces the cache TTL
+ * only for providers that have one: a subscription or unknown-cache provider
+ * gains nothing from a cut, so a single global number should not start cutting
+ * it.
+ */
+export function resolveIdleThresholdMs(
+  provider: string | null | undefined,
+  settings?: IdleThresholdSettings | null,
+): number | null {
+  if (!provider) return null;
+  const override =
+    settings?.providers && Object.hasOwn(settings.providers, provider)
+      ? settings.providers[provider]?.idleThresholdMinutes
+      : undefined;
+  if (override !== undefined) return override * 60_000;
+  const ttl = getPromptCacheTtlMs(provider);
+  if (ttl === null) return null;
+  return settings?.idleThresholdMinutes !== undefined
+    ? settings.idleThresholdMinutes * 60_000
+    : ttl;
+}
+
+/**
+ * Whether a conversation has sat idle past its threshold (see
+ * `resolveIdleThresholdMs`), which without settings is the provider's prompt
+ * cache TTL: `true` cold, `false` warm, `null` unknown (no threshold or no
+ * last-turn time). A last-turn time in the future (clock skew) counts as
+ * warm, not as very stale.
  */
 export function isPromptCacheCold(input: {
   provider: string | null | undefined;
   lastTurnAt: Date | number | null | undefined;
   now: number;
+  settings?: IdleThresholdSettings | null;
 }): boolean | null {
-  const ttl = getPromptCacheTtlMs(input.provider);
+  const ttl = resolveIdleThresholdMs(input.provider, input.settings);
   if (ttl === null || input.lastTurnAt === null || input.lastTurnAt === undefined) return null;
   const at = typeof input.lastTurnAt === "number" ? input.lastTurnAt : input.lastTurnAt.getTime();
   const idleMs = input.now - at;

@@ -504,15 +504,10 @@ export function resolveKnownHostRoute(input: {
 
 export const SETTINGS_SECTION_SLUGS = [
   "general",
-  "companion",
   "appearance",
-  "layout",
-  "editor",
   "shortcuts",
-  "integrations",
   "notifications",
   "permissions",
-  "diagnostics",
   "developer",
   "about",
 ] as const;
@@ -531,6 +526,7 @@ export const HOST_SECTION_SLUGS = [
   "security",
   "agents",
   "providers",
+  "skills",
   "terminals",
   "host",
 ] as const;
@@ -599,6 +595,13 @@ export function buildProjectSettingsRoute(serverId: string, projectId: string) {
     throw new Error("buildProjectSettingsRoute requires a serverId and projectId");
   }
   return `/settings/hosts/${encodeSegment(serverId)}/projects/${encodeSegment(projectId)}` as const;
+}
+
+export function buildProjectTodosRoute(serverId: string, projectId: string) {
+  if (!serverId.trim() || !projectId.trim()) {
+    throw new Error("buildProjectTodosRoute requires a serverId and projectId");
+  }
+  return `/h/${encodeSegment(serverId)}/projects/${encodeSegment(projectId)}/todos` as const;
 }
 
 export function normalizeProjectSettingsRouteId(value: string | string[] | undefined): string {

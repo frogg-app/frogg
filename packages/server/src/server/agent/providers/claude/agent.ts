@@ -1,4 +1,5 @@
 import type { ChildProcess } from "node:child_process";
+import type { SkillLaunchPolicy } from "../../../skills/catalog.js";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { promises } from "node:fs";
@@ -426,6 +427,7 @@ interface ClaudeAgentSessionOptions {
   handle?: AgentPersistenceHandle;
   agentId?: string;
   launchEnv?: Record<string, string>;
+  skills?: SkillLaunchPolicy;
   persistSession?: boolean;
   logger: Logger;
   queryFactory?: ClaudeQueryFactory;
@@ -584,6 +586,14 @@ function readClaudeFastModeSetting(settings: ClaudeOptions["settings"]): boolean
     return null;
   }
   return typeof settings.fastMode === "boolean" ? settings.fastMode : null;
+}
+
+/** Hides the host's switched-off skills from the model and the Skill tool. */
+export function buildClaudeSkillOverrides(
+  skills: SkillLaunchPolicy | undefined,
+): Record<string, "off"> | null {
+  if (!skills || skills.claudeDisabled.length === 0) return null;
+  return Object.fromEntries(skills.claudeDisabled.map((name) => [name, "off" as const]));
 }
 
 function mergeClaudeSettings(
@@ -1546,6 +1556,7 @@ export class ClaudeAgentClient implements AgentClient {
       runtimeSettings: this.runtimeSettings,
       agentId: launchContext?.agentId,
       launchEnv: launchContext?.env,
+      skills: launchContext?.skills,
       persistSession: options?.persistSession,
       logger: this.logger,
       queryFactory: this.queryFactory,
@@ -1575,6 +1586,7 @@ export class ClaudeAgentClient implements AgentClient {
       handle,
       agentId: launchContext?.agentId,
       launchEnv: launchContext?.env,
+      skills: launchContext?.skills,
       logger: this.logger,
       queryFactory: this.queryFactory,
       resolveBinary: this.resolveBinary,
@@ -2126,6 +2138,7 @@ class ClaudeAgentSession implements AgentSession {
 
   private readonly config: ClaudeAgentConfig;
   private readonly launchEnv?: Record<string, string>;
+  private readonly skills?: SkillLaunchPolicy;
   private readonly agentId?: string;
   private readonly defaults?: { agents?: Record<string, AgentDefinition> };
   private readonly runtimeSettings?: ProviderRuntimeSettings;
@@ -2216,6 +2229,7 @@ class ClaudeAgentSession implements AgentSession {
     this.config = config;
     assertClaudeThinkingOptionSupported(config.model, config.thinkingOptionId);
     this.launchEnv = options.launchEnv;
+    this.skills = options.skills;
     this.agentId = options.agentId;
     this.defaults = options.defaults;
     this.runtimeSettings = options.runtimeSettings;
@@ -3459,6 +3473,12 @@ class ClaudeAgentSession implements AgentSession {
     if (this.config.mcpServers) {
       base.mcpServers = this.normalizeMcpServers(this.config.mcpServers);
     }
+    if (this.skills?.claudePluginDir) {
+      base.plugins = [
+        ...(base.plugins ?? []),
+        { type: "local", path: this.skills.claudePluginDir },
+      ];
+    }
 
     if (this.config.model) {
       base.model = this.config.model;
@@ -3488,13 +3508,15 @@ class ClaudeAgentSession implements AgentSession {
     input: { ultracode: boolean },
   ): Pick<ClaudeOptions, "settings"> | Record<string, never> {
     const fastMode = this.resolveFastModeSetting();
-    if (fastMode === null && !input.ultracode) {
+    const skillOverrides = buildClaudeSkillOverrides(this.skills);
+    if (fastMode === null && !input.ultracode && !skillOverrides) {
       return {};
     }
     return {
       settings: mergeClaudeSettings(providerOptions.settings, {
         ...(fastMode === null ? {} : { fastMode }),
         ...(input.ultracode ? { ultracode: true } : {}),
+        ...(skillOverrides ? { skillOverrides } : {}),
       }),
     };
   }

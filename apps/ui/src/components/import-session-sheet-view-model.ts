@@ -1,6 +1,6 @@
 import type { FetchRecentProviderSessionEntry } from "@frogg/client/internal/daemon-client";
 import type { AgentProvider } from "@frogg/protocol/agent-types";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export const PER_PROVIDER_LIMIT = 15;
 export const ALL_FILTER_VALUE = "__all__";

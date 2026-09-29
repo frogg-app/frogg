@@ -1,0 +1,232 @@
+---
+title: Develop a branded distribution
+description: Branch layout, one-time setup scripts, running the brand locally, and the loop that takes upstream changes through your own betas to your own stable users.
+sidebar:
+  order: 7
+---
+
+import { Screenshot, Steps } from "@/components/docs";
+import brandDark from "@/assets/docs/diagrams/brand-streams-dark.svg";
+import brandLight from "@/assets/docs/diagrams/brand-streams-light.svg";
+
+A branded distribution runs Frogg's two streams under its own name: its `main` ships your
+beta and its `stable` ships your product. Upstream Frogg is a third stream that changes
+arrive from and fixes go back to.
+
+<Screenshot
+  src={brandDark}
+  lightSrc={brandLight}
+  variant="bare"
+  alt="Your brand repository above upstream. Upstream main's betas sync into your main, which ships 1.8.0-beta.2.acme.1 and 1.8.0-beta.3.acme.1 as Acme Beta. A promotion ships 1.8.0-acme.1 to your stable and a backport ships 1.8.0-acme.2. A feature branch lands on your main, and one of its commits is contributed back to upstream main."
+/>
+
+## Branches
+
+| Branch            | Holds                                                         | Ships                                  |
+| ----------------- | ------------------------------------------------------------- | -------------------------------------- |
+| `upstream/main`   | Upstream development                                          | frogg beta                             |
+| `upstream/stable` | Upstream releases                                             | frogg                                  |
+| `main`            | Upstream, plus your brand directory, `frogg.json` and features | Your beta (`<id>-beta`), cut by CI     |
+| `stable`          | Only promotions of `main` and backported fixes                | Your product                           |
+| `feature/*`       | Work in progress                                              | Nothing until it lands on `main`       |
+
+Keep product identity in `brands/<id>/` (or an external brand repository) and the
+repository variables, never in shared source. That keeps every upstream merge boring
+([why merges stay clean](/docs/fork-and-rebrand/staying-current/#why-merges-stay-clean)).
+
+## Set up once
+
+<Steps>
+
+1. **Fork and clone** the repository: [fork the repository](/docs/fork-and-rebrand/fork-the-repo/).
+
+2. **Connect upstream.** `fork:setup` adds the `upstream` remote, fetches it (upstream tags
+   into `refs/remotes/upstream/tags/`, because your releases reuse upstream's version numbers)
+   and writes `streams.upstream` into `frogg.json`. Look first:
+
+   ```sh
+   npm run fork:setup -- --suffix acme --dry-run
+   ```
+
+   ```text
+   Fork setup (dry run, nothing changes)
+     would: git remote add upstream https://github.com/frogg-app/frogg.git
+     would: fetch upstream (branches, and tags into refs/remotes/upstream/tags/)
+     would: write frogg.json streams.upstream = {"remote":"upstream","repository":"frogg-app/frogg","follow":"stable","suffix":"acme"}
+     development branch main: present
+     stable branch stable: present
+   ```
+
+   Then run it without `--dry-run` and commit `frogg.json` on `main`. It is safe to re-run:
+   an existing remote is kept, settings you leave out keep their current values, and a
+   remote that points somewhere else stops the run instead of being changed.
+
+   | Option                          | Meaning                                                                                  |
+   | ------------------------------- | ---------------------------------------------------------------------------------------- |
+   | `--suffix <word>`               | Your build counter: `1.8.0-acme.1`. See [fork versions](/docs/contributing/release-streams/#fork-versions) |
+   | `--follow stable\|development`  | Merge upstream's releases (default) or upstream `main` as it lands                       |
+   | `--upstream-url <url>`          | Upstream repository. Default `https://github.com/frogg-app/frogg.git`                    |
+   | `--remote <name>`               | Remote name. Default `upstream`                                                          |
+   | `--repository <owner/name>`     | Upstream repository for `release:contribute` pull requests. Default: from the URL        |
+   | `--init-stable`                 | Create `stable` from the newest stable tag (`npm run streams -- init`)                   |
+   | `--brand <dir>`                 | Also run `brand:check` on the brand                                                      |
+   | `--no-fetch`, `--dry-run`       | Skip the fetch; change nothing                                                           |
+
+3. **Create the brand.** `--icon` is optional; without it `brand:init` writes a placeholder
+   `icon.svg` with the brand's initials, so you can build before the artwork exists:
+
+   ```sh
+   npm run brand:init -- --dir brands/acme --id acme --name "Acme Studio" \
+     --app-id com.acme.studio --port 10099
+   npm run brand:check -- --brand brands/acme
+   ```
+
+   ```text
+   Brand created at /home/you/acme-studio/brands/acme. Build with FROGG_BRAND_DIR=/home/you/acme-studio/brands/acme
+   Placeholder icon.svg written; replace it before you ship.
+   Acme Studio: valid (com.acme.studio, stable channel); updates disabled
+   ```
+
+   [Create a brand](/docs/fork-and-rebrand/create-a-brand/) covers colours, links and updates.
+
+4. **Select the brand in CI** with a repository variable:
+
+   ```sh
+   gh variable set FROGG_BRAND_DIR --body brands/acme --repo acme-corp/frogg
+   ```
+
+5. **Create `stable`** if the fork has none, then publish it:
+
+   ```sh
+   npm run fork:setup -- --init-stable
+   git push -u origin stable
+   ```
+
+   `streams init` starts `stable` at the newest `vX.Y.Z` tag on `main`. A fork without a
+   stable tag of its own stops with `No stable vX.Y.Z tag to start stable from.`; start it from
+   the upstream release you are based on instead:
+   `git branch stable refs/remotes/upstream/tags/v1.6.5`.
+
+</Steps>
+
+## Run the brand locally
+
+`brand:dev` runs a dev entrypoint with the brand selected, so you do not export
+`FROGG_BRAND_DIR` by hand, and it checks the brand first:
+
+```sh
+npm run brand:dev -- brands/acme            # mock-provider UI preview
+npm run brand:dev -- brands/acme live       # this checkout's daemon, real providers
+npm run brand:dev -- brands/acme server     # dev daemon; pair with `app` in a second terminal
+npm run brand:dev -- brands/acme live --dry-run
+```
+
+```text
+[brand:dev] Acme Studio (brands/acme), live: this checkout's daemon + web app, real providers (.dev/live/home)
+[brand:dev] ports: web 7820, daemon 7821 (PREVIEW_PORT)
+[brand:dev] FROGG_BRAND_DIR=brands/acme npm run dev:live
+```
+
+| Mode      | Runs                  | Ports                                            |
+| --------- | --------------------- | ------------------------------------------------ |
+| `preview` | `npm run preview`     | web 7800, daemon 7801 (`PREVIEW_PORT`)           |
+| `live`    | `npm run dev:live`    | web 7820, daemon 7821 (`PREVIEW_PORT`)           |
+| `server`  | `npm run dev:server`  | daemon on `daemonPort`, state in `.dev/<id>-home` |
+| `app`     | `npm run dev:app`     | Metro on `daemonPort + 1`                        |
+| `check`   | `npm run brand:check` | none                                             |
+
+Arguments after `--` go to the script: `npm run brand:dev -- brands/acme preview -- --keep`.
+Pick the rung the same way upstream does
+([test locally before a beta](/docs/contributing/development-workflow/#test-locally-before-a-beta)):
+the preview for branded UI, `live` for a feature end to end, and your beta build for
+installers and updates.
+
+A custom brand's daemon ignores inherited `FROGG_*` settings and reads its own prefix
+(`ACME_HOME`, `ACME_LISTEN`), so the preview passes its home and ports under both names. A
+checkout builds one brand at a time: stop its dev servers before switching brands, or use a
+second worktree.
+
+## The loop
+
+<Steps>
+
+1. **Pull upstream** into `main`:
+
+   ```sh
+   git switch main && git pull --ff-only
+   npm run release:sync-upstream
+   ```
+
+   With `follow: "stable"` it merges upstream's newest release tag; with `"development"` it
+   merges upstream `main`. Version files resolve themselves; resolve anything else, `git add`,
+   then `npm run release:sync-upstream -- --continue`.
+
+2. **Check** that the brand still builds against the new code:
+
+   ```sh
+   npm ci
+   npm run brand:dev -- brands/acme check
+   FROGG_BRAND_DIR=brands/acme node scripts/ci/branding-acceptance.mjs
+   npm run verify -- --fast
+   ```
+
+3. **Push `main`.** The shared `ci.yml` cuts your next beta after a green run and starts the
+   release build: `1.8.0-rc.1.acme.1` after merging upstream `1.8.0`, or
+   `1.8.0-beta.3.acme.1` when you follow upstream `main`. `npm run release:beta` cuts one by
+   hand.
+
+4. **Test the beta** installed beside your stable app. It is `<id>-beta`, with its own app id,
+   port, data directory and CLI ([channels](/docs/fork-and-rebrand/brand-manifest/#channels)).
+
+5. **Promote** when it is ready, on `stable`:
+
+   ```sh
+   git switch stable && git pull
+   npm run release:promote        # 1.8.0-acme.1
+   ```
+
+6. **Backport** a fix your users need before the next promotion. Land it on `main` first:
+
+   ```sh
+   git switch stable && git pull
+   npm run release:backport -- <commit>
+   git push
+   npm run release:patch          # 1.8.0-acme.2
+   ```
+
+   A fix made only on `stable` blocks the next promotion until it is on `main` too.
+   `npm run streams` lists it under `stable-only change(s) missing from main`.
+
+7. **Contribute back** product fixes upstream should have:
+
+   ```sh
+   npm run release:contribute -- <commit> --open-pr
+   ```
+
+   It refuses commits that touch `brands/` (other than `brands/example/`). Once upstream
+   merges them, the next sync makes them upstream's. See [contributing upstream](/docs/fork-and-rebrand/contributing-upstream/).
+
+</Steps>
+
+`npm run streams` shows where each stream is and what has not moved yet; the **Release
+streams** tab in the app shows the same as a graph. The full command reference is in
+[release streams](/docs/contributing/release-streams/#forks).
+
+## Scripts
+
+| Script                          | Purpose                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| `npm run fork:setup`            | Upstream remote and fetch, `streams.upstream` in `frogg.json`, `stable`  |
+| `npm run brand:init`            | Scaffold `brand.json` and an icon (placeholder when `--icon` is omitted) |
+| `npm run brand:check`           | Validate the manifest and artwork                                        |
+| `npm run brand:dev`             | Run preview, `dev:live`, `dev:server` or `dev:app` with a brand selected |
+| `npm run streams`               | Where each stream is, and what is waiting                                |
+| `npm run release:sync-upstream` | Merge upstream into `main`                                               |
+| `npm run release:beta`          | Cut a beta by hand (CI does it after green pushes)                       |
+| `npm run release:promote`       | Ship `main`'s beta line on `stable`                                      |
+| `npm run release:backport`      | Cherry-pick fixes from `main` onto `stable`                              |
+| `npm run release:patch`         | Release backported fixes from `stable`                                   |
+| `npm run release:contribute`    | Offer fork commits back upstream                                         |
+
+`fork:setup` and `brand:dev` print their options with `--help`; `npm run streams -- help`
+lists the release commands.

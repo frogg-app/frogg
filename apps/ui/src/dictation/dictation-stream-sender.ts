@@ -1,6 +1,6 @@
 import { generateMessageId } from "@/types/stream";
 import type { SessionOutboundMessage } from "@frogg/protocol/messages";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 const MAX_CHUNKS_PER_FLUSH_TURN = 128;
 const DICTATION_DRAIN_IDLE_TIMEOUT_MS = 30_000;

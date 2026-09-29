@@ -2,7 +2,15 @@ import { useCallback, useMemo, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { ClipboardPaste, Link2, QrCode, Rocket, Server, Terminal } from "lucide-react-native";
+import {
+  ClipboardPaste,
+  Link2,
+  QrCode,
+  Rocket,
+  Server,
+  Settings,
+  Terminal,
+} from "lucide-react-native";
 import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
 import { MenuItem, MenuLabel, MenuRoot, MenuSeparator, MenuSurface } from "@/components/ui/menu";
 import {
@@ -35,6 +43,7 @@ const ThemedClipboardPaste = withUnistyles(ClipboardPaste);
 const ThemedQrCode = withUnistyles(QrCode);
 const ThemedServer = withUnistyles(Server);
 const ThemedRocket = withUnistyles(Rocket);
+const ThemedSettings = withUnistyles(Settings);
 
 const DIRECT_ICON = <ThemedLink2 size={ICON_SIZE} uniProps={mutedIconMapping} />;
 const REMOTE_SSH_ICON = <ThemedTerminal size={ICON_SIZE} uniProps={mutedIconMapping} />;
@@ -42,6 +51,7 @@ const PASTE_LINK_ICON = <ThemedClipboardPaste size={ICON_SIZE} uniProps={mutedIc
 const DEPLOY_ICON = <ThemedRocket size={ICON_SIZE} uniProps={mutedIconMapping} />;
 const SCAN_QR_ICON = <ThemedQrCode size={ICON_SIZE} uniProps={mutedIconMapping} />;
 const SERVER_ICON = <ThemedServer size={ICON_SIZE} uniProps={mutedIconMapping} />;
+const SETTINGS_ICON = <ThemedSettings size={ICON_SIZE} uniProps={mutedIconMapping} />;
 
 interface HostsMenuProps {
   /** Runs before any menu action leaves the sidebar, e.g. to close the mobile sidebar panel. */
@@ -187,17 +197,24 @@ function HostsMenuHostItem({
   label: string;
   onOpen: (serverId: string) => void;
 }): ReactElement {
+  const { t } = useTranslation();
   const activeConnection = useHostRuntimeSnapshot(serverId)?.activeConnection ?? null;
   const securitySeverity = useSecuritySeverity(serverId);
   const trailing = useMemo(
-    () =>
-      securitySeverity ? (
-        <SecurityDot
-          severity={securitySeverity}
-          testID={`sidebar-hosts-item-${serverId}-security-dot`}
-        />
-      ) : null,
-    [securitySeverity, serverId],
+    () => (
+      <View
+        style={[styles.settingsBadge, securitySeverity ? styles.settingsBadgeAlert : null]}
+        accessibilityLabel={securitySeverity ? t("settings.host.security.dotLabel") : undefined}
+        testID={
+          securitySeverity
+            ? `sidebar-hosts-item-${serverId}-security-${securitySeverity}`
+            : undefined
+        }
+      >
+        {SETTINGS_ICON}
+      </View>
+    ),
+    [securitySeverity, serverId, t],
   );
   const leading = useMemo(
     () => (
@@ -221,11 +238,19 @@ function HostsMenuHostItem({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = StyleSheet.create((theme) => ({
   dotSlot: {
     width: ICON_SIZE,
     height: ICON_SIZE,
     alignItems: "center",
     justifyContent: "center",
   },
-});
+  settingsBadge: {
+    padding: 4,
+    borderRadius: theme.borderRadius.full,
+  },
+  settingsBadgeAlert: {
+    backgroundColor: `${theme.colors.statusDotWarning}1f`,
+    boxShadow: `0 0 8px 2px ${theme.colors.statusDotWarning}33`,
+  },
+}));

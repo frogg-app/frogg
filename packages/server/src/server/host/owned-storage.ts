@@ -9,6 +9,7 @@ import {
   type DebrisScanOptions,
 } from "./debris-sweep.js";
 import { measureDirectory, type DirectoryMeasurement } from "./measure.js";
+import type { WorktreeEntry, WorktreeInventory, WorktreeOwner } from "./worktree-inventory.js";
 
 /**
  * Stable wire ids for the storage Frogg owns. Clients key labels and actions
@@ -19,6 +20,8 @@ export const STORAGE_CATEGORY_IDS = [
   "agents",
   "projects",
   "worktrees",
+  "agent_worktrees",
+  "provider_accounts",
   "uploads",
   "project_import_staging",
   "tts_cache",
@@ -31,6 +34,8 @@ export type StorageCategoryId = (typeof STORAGE_CATEGORY_IDS)[number];
 /** Categories the cleanup RPC accepts; everything else is size-only. */
 export const CLEANABLE_STORAGE_CATEGORIES: ReadonlySet<StorageCategoryId> = new Set([
   "logs",
+  "worktrees",
+  "agent_worktrees",
   "tts_cache",
   "temp",
 ]);
@@ -73,6 +78,10 @@ export interface OwnedStorageOptions {
   listStagingParents?: () => Promise<string[]>;
   /** Paths this process is using right now (e.g. its attachment directory). */
   listProtectedPaths?: () => string[];
+  /** Linked worktrees of known repositories; stale ones are what worktree cleanup removes. */
+  worktreeInventory?: WorktreeInventory;
+  /** Provider config dirs, default (`~/.claude`) and per-account. */
+  listProviderAccountDirs?: () => string[];
   cacheTtlMs?: number;
   logger: pino.Logger;
 }
@@ -121,14 +130,35 @@ export class OwnedStorageService {
     if (!isStorageCategoryId(categoryId) || !CLEANABLE_STORAGE_CATEGORIES.has(categoryId)) {
       throw new Error(`Storage category is not cleanable: ${categoryId}`);
     }
+    const owner = worktreeOwnerFor(categoryId);
+    if (owner) {
+      const removed = (await this.options.worktreeInventory?.removeStale(owner)) ?? {
+        bytesFreed: 0,
+        removed: [],
+      };
+      this.cached = null;
+      return {
+        categoryId,
+        bytesFreed: removed.bytesFreed,
+        removedCount: removed.removed.length,
+      };
+    }
     const paths = await this.cleanablePaths(categoryId);
     const result = await removeDebris(paths);
     this.cached = null;
     this.options.logger.info(
-      { categoryId, removed: result.removed.length, bytesFreed: result.bytesFreed },
+      {
+        categoryId,
+        removed: result.removed.length,
+        bytesFreed: result.bytesFreed,
+      },
       "Cleaned Frogg storage",
     );
-    return { categoryId, bytesFreed: result.bytesFreed, removedCount: result.removed.length };
+    return {
+      categoryId,
+      bytesFreed: result.bytesFreed,
+      removedCount: result.removed.length,
+    };
   }
 
   private async cleanablePaths(categoryId: StorageCategoryId): Promise<string[]> {
@@ -156,11 +186,22 @@ export class OwnedStorageService {
   private async compute(): Promise<OwnedStorageReport> {
     const home = this.options.froggHome;
     const dir = (id: StorageCategoryId, target: string | null) => this.measureCategory(id, target);
+    const worktrees =
+      (await this.options.worktreeInventory?.list().catch((error) => {
+        this.options.logger.warn({ err: error }, "Failed to list worktrees");
+        return null;
+      })) ?? [];
+    const worktreesRoot = this.options.worktreesRoot ?? path.join(home, "worktrees");
     const categories = await Promise.all([
       this.measureLogs(),
       dir("agents", path.join(home, "agents")),
       dir("projects", path.join(home, "projects")),
-      dir("worktrees", this.options.worktreesRoot ?? path.join(home, "worktrees")),
+      this.measureCategory("worktrees", worktreesRoot).then((category) => ({
+        ...category,
+        reclaimableBytes: staleBytes(worktrees, "frogg"),
+      })),
+      this.measureAgentWorktrees(worktrees),
+      this.measureProviderAccounts(),
       dir("uploads", path.join(home, "uploads")),
       dir("project_import_staging", path.join(home, "project-import-staging")),
       this.measureCategory("tts_cache", path.join(home, "tts-cache"), "all"),
@@ -182,6 +223,41 @@ export class OwnedStorageService {
       ? await measureDirectory(target)
       : { exists: false, bytes: 0, entries: 0, truncated: false };
     return toCategory(id, target, measured, reclaim === "all" ? measured.bytes : null);
+  }
+
+  private async measureAgentWorktrees(worktrees: WorktreeEntry[]): Promise<StorageCategory> {
+    const external = worktrees.filter((entry) => entry.owner === "external");
+    return {
+      id: "agent_worktrees",
+      path: null,
+      exists: external.length > 0,
+      bytes: external.reduce((sum, entry) => sum + entry.bytes, 0),
+      entryCount: external.length,
+      truncated: false,
+      cleanable: true,
+      reclaimableBytes: staleBytes(worktrees, "external"),
+    };
+  }
+
+  private async measureProviderAccounts(): Promise<StorageCategory> {
+    const dirs = [...new Set(this.options.listProviderAccountDirs?.() ?? [])];
+    let bytes = 0;
+    let entries = 0;
+    let truncated = false;
+    let exists = false;
+    for (const dir of dirs) {
+      const measured = await measureDirectory(dir);
+      exists ||= measured.exists;
+      bytes += measured.bytes;
+      entries += measured.entries;
+      truncated ||= measured.truncated;
+    }
+    return toCategory(
+      "provider_accounts",
+      dirs.length === 1 ? dirs[0]! : null,
+      { exists, bytes, entries, truncated },
+      null,
+    );
   }
 
   private async measureLogs(): Promise<StorageCategory> {
@@ -260,6 +336,18 @@ function toCategory(
     cleanable,
     reclaimableBytes: cleanable ? (reclaimableBytes ?? 0) : null,
   };
+}
+
+function worktreeOwnerFor(categoryId: StorageCategoryId): WorktreeOwner | null {
+  if (categoryId === "worktrees") return "frogg";
+  if (categoryId === "agent_worktrees") return "external";
+  return null;
+}
+
+function staleBytes(worktrees: WorktreeEntry[], owner: WorktreeOwner): number {
+  return worktrees
+    .filter((entry) => entry.owner === owner && entry.stale)
+    .reduce((sum, entry) => sum + entry.bytes, 0);
 }
 
 export function isStorageCategoryId(value: string): value is StorageCategoryId {

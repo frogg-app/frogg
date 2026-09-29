@@ -9,7 +9,7 @@ import type {
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { useCheckoutPrStatusQuery } from "@/git/use-pr-status-query";
 import type { Forge } from "@/git/forge";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { mapPrPaneData, type PrPaneData } from "./data";
 import { prPaneTimelineQueryKey } from "./query-keys";
 

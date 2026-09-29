@@ -101,6 +101,7 @@ import {
 } from "@/attachments/service";
 import type { AgentUsage } from "@frogg/protocol/agent-types";
 import { resolveStaleContextWarning, type StaleContextWarning } from "@/composer/stale-context";
+import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import { useCleanCut } from "@/composer/clean-cut";
 import { useComposerPresenceWarning } from "@/presence/composer-presence";
 import { PresenceBar } from "@/presence/presence-bar";
@@ -313,6 +314,7 @@ function buildAgentStateSelector(serverId: string, agentId: string) {
  * being typed into a conversation whose prompt cache has already lapsed.
  */
 function useStaleContextWarning(
+  serverId: string,
   agentState: {
     provider: string | null;
     contextWindowUsedTokens: number | null;
@@ -322,6 +324,10 @@ function useStaleContextWarning(
   userInput: string,
 ): StaleContextWarning | null {
   const { provider, contextWindowUsedTokens, lastActivityAt, hasConversation } = agentState;
+  // COMPAT(cleanCutSettings): the host's clean cut thresholds, so the warning
+  // and the automatic cut agree. Older daemons and viewers have none, which
+  // leaves each provider's cache TTL.
+  const thresholds = useDaemonConfig(serverId).config?.cleanCut ?? null;
   // Only whether the user is composing matters, not what they typed: memoising
   // on the boolean keeps the result — and so the composer's styles — identical
   // across keystrokes instead of handing the input a new object every character.
@@ -335,8 +341,9 @@ function useStaleContextWarning(
         hasConversation,
         isComposing,
         now: Date.now(),
+        thresholds,
       }),
-    [contextWindowUsedTokens, hasConversation, isComposing, lastActivityAt, provider],
+    [contextWindowUsedTokens, hasConversation, isComposing, lastActivityAt, provider, thresholds],
   );
 }
 
@@ -1285,7 +1292,7 @@ function ComposerContentImpl({
     ? t("agentPanel.connectionNotice.composerOffline")
     : resolveMessagePlaceholder(inputMode, isDesktopLayout, t, placeholder);
   const userInput = value;
-  const staleContextWarning = useStaleContextWarning(agentState, userInput);
+  const staleContextWarning = useStaleContextWarning(serverId, agentState, userInput);
   // COMPAT(sessionPresence): added in v1.6.0. Reports this composer as viewing
   // (or typing) the agent and reads back whoever else is writing to it.
   const presenceWarning = useComposerPresenceWarning({ serverId, agentId, text: userInput });
@@ -1574,6 +1581,12 @@ function ComposerContentImpl({
   );
   const hasAgent = agentState.status !== null;
 
+  // COMPAT(agentCleanCut): added in v1.6.2. Cut to a fresh conversation. The
+  // draft is not sent for the user: a send while the summariser runs queues,
+  // and the queue drains into the fresh conversation once it is in place.
+  const cleanCut = useCleanCut(serverId, agentId);
+  const acknowledgeCleanCut = cleanCut.acknowledge;
+
   const queueWriter = useMemo<QueueWriter>(
     () => ({
       read: (id) => useSessionStore.getState().sessions[serverId]?.queuedMessages?.get(id) ?? [],
@@ -1618,9 +1631,10 @@ function ComposerContentImpl({
         attachments: outgoingAttachments,
         hasExternalContent,
         allowEmptySubmit,
-        forceSend,
+        // Nothing reaches the old conversation while a clean cut replaces it.
+        forceSend: cleanCut.pending ? false : forceSend,
         submitBehavior,
-        isAgentRunning,
+        isAgentRunning: isAgentRunning || cleanCut.pending,
         // Parent-managed submits are still valid submit paths even when the
         // transport is disconnected, because the parent decides the failure mode.
         canSubmit: Boolean(sendAgentMessageRef.current || onSubmitMessageRef.current),
@@ -1649,8 +1663,11 @@ function ComposerContentImpl({
         result,
         outgoingAttachments,
       });
+      if (result === "submitted") acknowledgeCleanCut();
     },
     [
+      acknowledgeCleanCut,
+      cleanCut.pending,
       allowEmptySubmit,
       beginSubmit,
       clearDraft,
@@ -1666,18 +1683,11 @@ function ComposerContentImpl({
     ],
   );
 
-  // COMPAT(agentCleanCut): added in v1.6.2. Cut to a fresh conversation, then
-  // send what was typed into it: the daemon puts the summary ahead of it.
-  const cleanCut = useCleanCut(serverId, agentId);
   const runCleanCut = cleanCut.run;
   const handleCleanCut = useCallback(() => {
     void (async () => {
       const error = await runCleanCut();
-      if (error === null) {
-        messageInputRef.current?.submit();
-      } else {
-        toastErrorRef.current(error);
-      }
+      if (error !== null) toastErrorRef.current(error);
     })();
   }, [runCleanCut]);
 
@@ -2456,6 +2466,8 @@ function ComposerContentImpl({
                   staleContextWarning={staleContextWarning}
                   onCleanCut={cleanCut.available ? handleCleanCut : null}
                   cleanCutPending={cleanCut.pending}
+                  cleanCutStartedAt={cleanCut.startedAt}
+                  cleanCutReady={cleanCut.ready}
                   presenceWarning={presenceWarning}
                   presenceSlot={presenceSlot}
                   attachmentSlot={attachmentTray}

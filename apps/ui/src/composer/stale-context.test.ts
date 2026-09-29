@@ -89,4 +89,24 @@ describe("resolveStaleContextWarning", () => {
     // Daemon and client clocks disagree; that is not an idle conversation.
     expect(resolveStaleContextWarning(input({ lastActivityAt: new Date(NOW + 5_000) }))).toBeNull();
   });
+
+  it("uses the host's clean cut thresholds, the same rule as the automatic cut", () => {
+    const minute = 60_000;
+    const thresholds = {
+      idleThresholdMinutes: 20,
+      providers: { copilot: { idleThresholdMinutes: 45 } },
+    };
+    const at = (minutes: number) => new Date(NOW - minutes * minute);
+    expect(resolveStaleContextWarning(input({ lastActivityAt: at(21), thresholds }))).toEqual({
+      tokens: 42_000,
+    });
+    expect(resolveStaleContextWarning(input({ lastActivityAt: at(20), thresholds }))).toBeNull();
+    expect(
+      resolveStaleContextWarning(
+        input({ provider: "copilot", lastActivityAt: at(46), thresholds }),
+      ),
+    ).not.toBeNull();
+    expect(staleContextTtlMs("copilot", thresholds)).toBe(45 * minute);
+    expect(staleContextTtlMs("opencode", thresholds)).toBeNull();
+  });
 });

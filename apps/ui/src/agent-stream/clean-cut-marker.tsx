@@ -7,6 +7,8 @@
  * from, collapsed by default, and the old conversation's id for when it needs
  * to be looked up. A cut the daemon made itself because the prompt cache had
  * expired says so; one without a reason (older daemons) reads as manual.
+ * What the summary cost is shown beside the size of the context it replaced,
+ * so a cut that cost as much as it saved stands out.
  */
 import { memo, useCallback, useMemo, useState, type ReactElement } from "react";
 import { useTranslation } from "react-i18next";
@@ -14,6 +16,7 @@ import { Pressable, Text, View } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { ChevronDown, ChevronRight, Copy, Scissors } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
+import { formatTokenCount } from "@/components/context-window-meter.utils";
 import { MarkdownRenderer } from "@/components/markdown/renderer";
 import { useToast } from "@/contexts/toast-context";
 import type { CleanCutMarker as CleanCutMarkerData } from "@/types/stream";
@@ -53,6 +56,25 @@ export const CleanCutMarker = memo(function CleanCutMarker({
         })
       : null;
 
+  const usage = cleanCut.summaryUsage;
+  const cost = usage
+    ? t(
+        usage.totalCostUsd !== undefined
+          ? "agentStream.cleanCut.costWithUsd"
+          : "agentStream.cleanCut.cost",
+        {
+          input: formatTokenCount(usage.inputTokens ?? 0),
+          output: formatTokenCount(usage.outputTokens ?? 0),
+          usd: `$${(usage.totalCostUsd ?? 0).toFixed(2)}`,
+        },
+      )
+    : null;
+  const fromContext = cleanCut.previousContextTokens
+    ? t("agentStream.cleanCut.fromContext", {
+        tokens: formatTokenCount(cleanCut.previousContextTokens),
+      })
+    : null;
+
   return (
     <View style={styles.container} testID="clean-cut-marker">
       <View style={styles.divider}>
@@ -70,6 +92,12 @@ export const CleanCutMarker = memo(function CleanCutMarker({
 
       <View style={styles.meta}>
         {switched ? <Text style={styles.metaText}>{switched}</Text> : null}
+        {fromContext ? <Text style={styles.metaText}>{fromContext}</Text> : null}
+        {cost ? (
+          <Text style={styles.metaText} testID="clean-cut-cost">
+            {cost}
+          </Text>
+        ) : null}
         {previousSessionId ? (
           <Pressable
             accessibilityRole="button"

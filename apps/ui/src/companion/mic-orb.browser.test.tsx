@@ -10,10 +10,6 @@ vi.mock("react-i18next", () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 const motion = vi.hoisted(() => ({ reduced: false }));
-vi.mock("react-native-reanimated", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("react-native-reanimated")>()),
-  useReducedMotion: () => motion.reduced,
-}));
 // RN Web replaces looping animations with no-ops under NODE_ENV=test. Exercise its real driver.
 vi.mock("react-native", async (importOriginal) => {
   const native = await importOriginal<typeof import("react-native")>();
@@ -55,6 +51,7 @@ function orb(state: CompanionMicState, volume: number, speakingVolume = 0) {
       state={state}
       volume={volume}
       speakingVolume={speakingVolume}
+      animated={!motion.reduced}
       onPress={onPress}
       accessibilityLabel="Mute"
       testID="orb"

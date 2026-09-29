@@ -37,6 +37,7 @@ Docs change when the diff touches any of these. Otherwise tick "not needed" in t
 | Providers, provider registry                                                                                                                                                              | `agents-and-providers/providers.mdx`                                               |
 | `agents.providers` overrides, ACP catalog (`apps/ui/src/data/acp-provider-catalog.ts`)                                                                                                    | `agents-and-providers/custom-providers.mdx`                                        |
 | MCP tools (`packages/server/src/server/agent/tools/frogg-tools.ts`)                                                                                                                       | `agents-and-providers/mcp.mdx`                                                     |
+| Project to-dos (`packages/server/src/server/project-todos/`, `agent/tools/todo-tools.ts`, `packages/protocol/src/todos/`)                                                                 | `using-frogg/project-todos.mdx`, `agents-and-providers/mcp.mdx`                    |
 | Bundled skills (`skills/`, `orchestration-skills/`)                                                                                                                                       | `agents-and-providers/skills.mdx`                                                  |
 | Electron app (`apps/desktop/`), SSH deploy, updater                                                                                                                                       | `desktop-mobile-cli/desktop.mdx`                                                   |
 | Expo mobile, Android APK, iOS                                                                                                                                                             | `desktop-mobile-cli/mobile.mdx`                                                    |
@@ -55,13 +56,18 @@ Docs change when the diff touches any of these. Otherwise tick "not needed" in t
 | `scripts/ci/branding-contribution.mjs`, contribution rules                                                                                                                                | `fork-and-rebrand/contributing-upstream.mdx`, `contributing/coding-standards.mdx`  |
 | Build scripts, dev scripts, workspaces                                                                                                                                                    | `contributing/development-setup.mdx`, `contributing/architecture.mdx`              |
 | Test tooling, CI jobs                                                                                                                                                                     | `contributing/testing.mdx`                                                         |
+| Branch/beta/stable flow, local test ladder, `ci.yml` beta job, `.claude/skills`, `.claude/agents`                                                                                         | `contributing/development-workflow.mdx`, `contributing/development-skills.mdx`     |
+| `scripts/dev/fork-setup.mjs`, `scripts/dev/brand-dev.mjs`, `streams.upstream`                                                                                                             | `fork-and-rebrand/branded-development.mdx`, `contributing/release-streams.mdx`     |
+
+Diagrams are SVGs drawn by `scripts/docs/stream-diagrams.mjs` and `workflow-diagrams.mjs`
+(dark and light, in `website/src/assets/docs/diagrams/`). Edit the code and run
+`node scripts/docs/stream-diagrams.mjs`; embed with `<Screenshot src lightSrc variant="bare">`.
 
 Page paths are also a URL contract. The app and CLI link to `<brand links.docs>/` plus:
 `using-frogg/projects-and-sessions/`, `reference/project-config/#metadatageneration`,
-`agents-and-providers/skills/`, `desktop-mobile-cli/cli/`, `reference/configuration/`,
+`desktop-mobile-cli/cli/`, `reference/configuration/`,
 `self-hosting/security/#relay`, `getting-started/connect-and-pair/#direct-connection`
-(`rg -n 'brandDocsUrl|DOCS_BASE' apps`), and the `frogg-help` skill fetches
-`self-hosting/troubleshooting.md`. Moving or renaming those pages or headings
+(`rg -n 'brandDocsUrl|DOCS_BASE' apps`). Moving or renaming those pages or headings
 means updating the links in the same PR.
 
 Also check: section `index.mdx` overview tables, `README.md` feature bullets and downloads,
@@ -138,7 +144,7 @@ npm run build && npm run linkcheck
 ```
 
 A clean build and link check are required before committing docs. The site also generates
-`/llms.txt` and a Markdown copy of every page, which the `frogg-help` skill reads.
+`/llms.txt` and a Markdown copy of every page for agents to read.
 
 ## Checklist
 

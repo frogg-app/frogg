@@ -24,6 +24,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { useTranslation } from "react-i18next";
+import { useSessionStore } from "@/stores/session-store";
 import { router, usePathname, type Href } from "expo-router";
 import {
   navigateToWorkspace,
@@ -46,6 +47,7 @@ import {
   MoreVertical,
   Plus,
   Trash2,
+  ListChecks,
 } from "lucide-react-native";
 import { useSidebarHiddenStore } from "@/stores/sidebar-hidden-store";
 import { useSidebarHideToggles } from "@/stores/sidebar-hidden-store/use-hide-toggles";
@@ -65,6 +67,7 @@ import { useProjectIcons } from "@/projects/icons";
 import {
   buildNewWorkspaceRoute,
   buildProjectSettingsRoute,
+  buildProjectTodosRoute,
   parseHostWorkspaceRouteFromPathname,
 } from "@/utils/host-routes";
 import {
@@ -465,6 +468,8 @@ function ProjectRowTrailingActions({
 
 const trash2LeadingIcon = <ThemedTrash2 size={14} uniProps={foregroundMutedColorMapping} />;
 const archiveLeadingIcon = <ThemedArchive size={14} uniProps={foregroundMutedColorMapping} />;
+const ThemedListChecks = withUnistyles(ListChecks);
+const todosLeadingIcon = <ThemedListChecks size={14} uniProps={foregroundMutedColorMapping} />;
 const settingsLeadingIcon = <ThemedSettings size={14} uniProps={foregroundMutedColorMapping} />;
 const ThemedEye = withUnistyles(Eye);
 const ThemedEyeOff = withUnistyles(EyeOff);
@@ -563,6 +568,15 @@ function ProjectMenuItems({
     if (!settingsTarget) return;
     router.navigate(buildProjectSettingsRoute(settingsTarget.serverId, settingsTarget.projectId));
   }, [settingsTarget]);
+  const todosSupported = useSessionStore(
+    (state) =>
+      settingsTarget !== null &&
+      state.sessions[settingsTarget.serverId]?.serverInfo?.features?.projectTodos === true,
+  );
+  const handleOpenTodos = useCallback(() => {
+    if (!settingsTarget) return;
+    router.navigate(buildProjectTodosRoute(settingsTarget.serverId, settingsTarget.projectId));
+  }, [settingsTarget]);
   const handleShowArchivedSessions = useCallback(() => {
     if (!archivedSessionsTarget) return;
     router.navigate({
@@ -601,6 +615,16 @@ function ProjectMenuItems({
           onSelect={handleOpenProjectSettings}
         >
           {t("sidebar.project.actions.openSettings")}
+        </ProjectMenuItem>
+      ) : null}
+      {settingsTarget && todosSupported ? (
+        <ProjectMenuItem
+          surface={surface}
+          testID={`sidebar-project-menu-open-todos-${projectViewKey}`}
+          leading={todosLeadingIcon}
+          onSelect={handleOpenTodos}
+        >
+          {t("sidebar.project.actions.openTodos")}
         </ProjectMenuItem>
       ) : null}
       {archivedSessionsTarget ? (

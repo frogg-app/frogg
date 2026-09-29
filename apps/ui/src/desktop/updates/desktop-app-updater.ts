@@ -4,7 +4,7 @@ import type {
   DesktopAppUpdateInstallResult,
   DesktopReleaseChannel,
 } from "@/desktop/updates/desktop-updates";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export type DesktopAppUpdateStatus =
   | "idle"

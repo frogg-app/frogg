@@ -2,13 +2,13 @@
 title: Stay current with upstream
 description: Merge upstream Frogg into your fork, test it as your beta before your users get it, resolve conflicts, automate a sync check, and version fork releases.
 sidebar:
-  order: 7
+  order: 8
 ---
 
 import { Steps } from "@/components/docs";
 
-Upstream Frogg ships often. A fork that merges weekly stays easy; a fork that merges
-twice a year becomes a project. The branding system is designed so that a normal
+Upstream Frogg ships often. Small, frequent merges stay easy; a merge that spans many
+upstream releases becomes a project. The branding system is designed so that a normal
 merge touches none of your product files.
 
 ## Why merges stay clean
@@ -28,7 +28,9 @@ macOS signing, a patched component), and the root `package.json` version.
 ## Merge upstream
 
 Declare upstream once in `frogg.json`, next to your own streams
-([release streams](/docs/contributing/release-streams/#forks)):
+([release streams](/docs/contributing/release-streams/#forks)). `npm run fork:setup` writes
+this block and adds the remote
+([set up once](/docs/fork-and-rebrand/branded-development/#set-up-once)):
 
 ```json
 {
@@ -77,11 +79,11 @@ test upstream betas as they land.
    npm run verify -- --fast
    ```
 
-4. Push, then cut a beta and test the update before your users get it:
+4. Push. CI cuts your beta after the green run (`npm run release:beta` cuts one by hand),
+   then test the update before your users get it:
 
    ```sh
-   git push origin main
-   npm run release:beta      # 1.7.0-rc.1.acme.1 after merging upstream 1.7.0
+   git push origin main      # CI cuts 1.7.0-rc.1.acme.1 after merging upstream 1.7.0
    ```
 
    Your beta build (`<id>-beta`) installs beside your stable app, so you can check the
@@ -196,7 +198,7 @@ updaters do not see `+acme.2` as newer than `+acme.1`, and Docker tags cannot co
 
 ## Upgrade cadence
 
-- Merge upstream at least every few weeks. Small merges resolve in minutes.
+- Merge upstream often. Small merges resolve quickly.
 - Read each `CHANGELOG.md` section for notes marked as coordinated client and daemon
   upgrades. Release those to your users with the same care upstream describes.
 - After a merge that changes `.github/workflows/release.yml` or `scripts/release/`,

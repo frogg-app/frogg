@@ -52,6 +52,7 @@ const { values, positionals } = parseArgs({
     width: { type: "string", default: "1400" },
     height: { type: "string", default: "900" },
     mobile: { type: "boolean", default: false },
+    live: { type: "boolean", default: false },
     theme: { type: "string", default: "dark" },
     chrome: { type: "string" },
     bundle: { type: "string" },
