@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { useReduceMotion } from "@/hooks/use-reduce-motion";
 import { Animated, Easing, Platform, Pressable } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { Nebula } from "./nebula";
@@ -33,7 +32,9 @@ export function MicOrb({
   testID,
 }: MicOrbProps) {
   const active = !muted && state !== "idle";
-  const reducedMotion = useReduceMotion() || !animated;
+  // Callers fold the app's Reduce motion setting into `animated`; this component reads no settings
+  // so it stays renderable in browser tests.
+  const reducedMotion = !animated;
   const flowing = active || playbackActive;
   const [phase] = useState(() => new Animated.Value(0));
   const [drift] = useState(() => new Animated.Value(0));
