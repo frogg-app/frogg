@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **Linked Claude conversations.** Two processes holding the same Claude session (stable and beta
+  daemons, a development daemon, or `claude --resume` in a terminal) no longer fork it. Each
+  daemon follows the session's transcript while idle and shows turns the other side added, live,
+  then resumes from the transcript's end; turns run one process at a time through a lease file
+  beside the transcript (`<session>.jsonl.frogg-turn`), and a message sent while the other side
+  is mid-turn waits for it. Both sides need this build.
 - **Web client on its own port, managed from the app.** The daemon no longer serves the web
   app on its own port: the web client has a server of its own, on 9998 for frogg and 9988 for
   frogg beta, listening on `127.0.0.1` unless you pick another interface. A new **Web client**
