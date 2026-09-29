@@ -3472,10 +3472,10 @@ export const ptBR: TranslationResources = {
       },
       motion: {
         title: "Movimento",
-        activityIndicators: {
-          title: "Animar indicadores de atividade",
+        reduceMotion: {
+          title: "Reduzir movimento",
           description:
-            "Mantém os indicadores de carregamento e progresso em movimento mesmo quando o sistema pede menos movimento",
+            "Mantém parados os indicadores de carregamento, as transições e outras animações",
         },
       },
       usage: {

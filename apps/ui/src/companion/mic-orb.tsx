@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
+import { useReduceMotion } from "@/hooks/use-reduce-motion";
 import { Animated, Easing, Platform, Pressable } from "react-native";
-import { useReducedMotion } from "react-native-reanimated";
 import { StyleSheet } from "react-native-unistyles";
 import { Nebula } from "./nebula";
 import type { CompanionMicState } from "./store";
@@ -33,8 +33,7 @@ export function MicOrb({
   testID,
 }: MicOrbProps) {
   const active = !muted && state !== "idle";
-  const systemReducedMotion = useReducedMotion();
-  const reducedMotion = systemReducedMotion || !animated;
+  const reducedMotion = useReduceMotion() || !animated;
   const flowing = active || playbackActive;
   const [phase] = useState(() => new Animated.Value(0));
   const [drift] = useState(() => new Animated.Value(0));

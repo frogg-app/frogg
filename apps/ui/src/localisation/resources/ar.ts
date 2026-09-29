@@ -3409,9 +3409,9 @@ export const ar: TranslationResources = {
       },
       motion: {
         title: "الحركة",
-        activityIndicators: {
-          title: "تحريك مؤشرات النشاط",
-          description: "إبقاء مؤشرات التحميل والتقدم متحركة حتى عندما يطلب النظام تقليل الحركة",
+        reduceMotion: {
+          title: "تقليل الحركة",
+          description: "إيقاف مؤشرات التحميل والانتقالات والرسوم المتحركة الأخرى",
         },
       },
       usage: {

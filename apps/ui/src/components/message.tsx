@@ -112,7 +112,6 @@ import type { AgentCapabilityFlags } from "@frogg/protocol/agent-types";
 import { RewindMenu, type RewindMode } from "@/components/rewind/rewind-menu";
 import { useRewindAgentMutation } from "@/components/rewind/use-rewind-agent-mutation";
 import { AssistantForkMenu, type AssistantForkTarget } from "@/components/assistant-fork-menu";
-import { useActivityReduceMotionConfig } from "@/hooks/use-activity-reduce-motion";
 import { useRetainedPanelActive } from "@/components/retained-panel";
 import {
   markdownCopyDataSet,
@@ -1268,7 +1267,6 @@ const NativeExpandableBadgeShimmer = memo(function NativeExpandableBadgeShimmer(
   gradientId,
 }: NativeExpandableBadgeShimmerProps) {
   const isPanelActive = useRetainedPanelActive();
-  const reduceMotion = useActivityReduceMotionConfig();
   const shimmerTranslateX = useSharedValue(0);
 
   useEffect(() => {
@@ -1286,13 +1284,11 @@ const NativeExpandableBadgeShimmer = memo(function NativeExpandableBadgeShimmer(
       }),
       -1,
       false,
-      undefined,
-      reduceMotion,
     );
     return () => {
       cancelAnimation(shimmerTranslateX);
     };
-  }, [durationSeconds, isPanelActive, peakWidth, reduceMotion, rowWidth, shimmerTranslateX]);
+  }, [durationSeconds, isPanelActive, peakWidth, rowWidth, shimmerTranslateX]);
 
   const nativeShimmerPeakStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: shimmerTranslateX.value }],

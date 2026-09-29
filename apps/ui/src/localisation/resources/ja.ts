@@ -3456,10 +3456,9 @@ export const ja: TranslationResources = {
       },
       motion: {
         title: "モーション",
-        activityIndicators: {
-          title: "アクティビティ表示をアニメーション",
-          description:
-            "システムで視差効果を減らす設定になっていても、読み込みや進行状況の表示を動かし続けます",
+        reduceMotion: {
+          title: "視差効果を減らす",
+          description: "読み込み表示、トランジション、その他のアニメーションを止めます",
         },
       },
       usage: {

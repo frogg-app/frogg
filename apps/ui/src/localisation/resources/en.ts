@@ -3440,10 +3440,9 @@ export const en = {
       },
       motion: {
         title: "Motion",
-        activityIndicators: {
-          title: "Animate activity indicators",
-          description:
-            "Keep loaders and progress pulses moving even when your system asks for reduced motion",
+        reduceMotion: {
+          title: "Reduce motion",
+          description: "Hold loaders, transitions and other animations still",
         },
       },
       usage: {

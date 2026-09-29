@@ -8,7 +8,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { scheduleOnUI } from "react-native-worklets";
 import { useRetainedPanelActive } from "@/components/retained-panel";
-import { useActivityReduceMotion } from "@/hooks/use-activity-reduce-motion";
+import { useReduceMotion } from "@/hooks/use-reduce-motion";
 import {
   SYNCED_LOADER_DOT_COUNT,
   getSyncedLoaderDotOpacity,
@@ -94,7 +94,7 @@ function useSyncedLoaderStep(active: boolean, reduceMotion: boolean): SharedValu
 
 export function SyncedLoader({ size = 10, color }: { size?: number; color: string }) {
   const active = useRetainedPanelActive();
-  const reduceMotion = useActivityReduceMotion();
+  const reduceMotion = useReduceMotion();
   const step = useSyncedLoaderStep(active, reduceMotion);
 
   // The 2x3 grid fills `size` exactly on its long axis: the dot is whatever is left after

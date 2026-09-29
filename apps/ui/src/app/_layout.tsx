@@ -1,4 +1,5 @@
 import "@/styles/unistyles";
+import { ReduceMotionSync } from "@/hooks/use-reduce-motion";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { PortalProvider } from "@gorhom/portal";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -662,6 +663,7 @@ function ProvidersWrapper({ children }: { children: ReactNode }) {
   return (
     <AppearanceProvider>
       <VoiceProvider>
+        <ReduceMotionSync />
         <DesktopWindowControlsSync />
         <OfferLinkListener />
         <HostAddLinkListener />

@@ -3356,9 +3356,9 @@ export const zhCN: TranslationResources = {
       },
       motion: {
         title: "动效",
-        activityIndicators: {
-          title: "活动指示器保持动画",
-          description: "即使系统要求减少动态效果，加载和进度指示器也会继续动画",
+        reduceMotion: {
+          title: "减少动态效果",
+          description: "停止加载指示器、过渡和其他动画",
         },
       },
       usage: {

@@ -3434,9 +3434,9 @@ export const ko: TranslationResources = {
       },
       motion: {
         title: "동작",
-        activityIndicators: {
-          title: "활동 표시기 애니메이션",
-          description: "시스템에서 동작 줄이기를 요청해도 로딩 및 진행 표시기를 계속 움직입니다",
+        reduceMotion: {
+          title: "동작 줄이기",
+          description: "로딩 표시기, 전환 효과 및 기타 애니메이션을 멈춥니다",
         },
       },
       usage: {

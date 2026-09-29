@@ -3499,10 +3499,10 @@ export const fr: TranslationResources = {
       },
       motion: {
         title: "Mouvement",
-        activityIndicators: {
-          title: "Animer les indicateurs d’activité",
+        reduceMotion: {
+          title: "Réduire les animations",
           description:
-            "Garde les indicateurs de chargement et de progression en mouvement même si le système demande de réduire les animations",
+            "Fige les indicateurs de chargement, les transitions et les autres animations",
         },
       },
       usage: {

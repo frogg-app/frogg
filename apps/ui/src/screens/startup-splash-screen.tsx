@@ -21,7 +21,6 @@ import { Button } from "@/components/ui/button";
 import { getDesktopDaemonLogs, type DesktopDaemonLogs } from "@/desktop/daemon/desktop-daemon";
 import { TitlebarDragRegion } from "@/components/desktop/titlebar-drag-region";
 import { isWeb } from "@/constants/platform";
-import { useActivityReduceMotionConfig } from "@/hooks/use-activity-reduce-motion";
 import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
 
 interface StartupSplashScreenProps {
@@ -49,7 +48,6 @@ function openDocs(): void {
 /** The Frogg mark, breathing while the app boots. Full-colour raster, so it pulses rather than shimmers. */
 function LogoPulse() {
   const opacity = useSharedValue(1);
-  const reduceMotion = useActivityReduceMotionConfig();
 
   useEffect(() => {
     opacity.value = 1;
@@ -63,13 +61,11 @@ function LogoPulse() {
       ),
       -1,
       false,
-      undefined,
-      reduceMotion,
     );
     return () => {
       cancelAnimation(opacity);
     };
-  }, [opacity, reduceMotion]);
+  }, [opacity]);
 
   const pulseStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
   const containerStyle = useMemo(() => [styles.logoPulse, pulseStyle], [pulseStyle]);

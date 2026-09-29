@@ -221,23 +221,23 @@ function ChatOutlineRow({ value, onChange }: ChatOutlineRowProps) {
   );
 }
 
-function ActivityMotionRow({ value, onChange }: ChatOutlineRowProps) {
+function ReduceMotionRow({ value, onChange }: ChatOutlineRowProps) {
   const { t } = useTranslation();
   return (
     <View style={settingsStyles.row}>
       <View style={settingsStyles.rowContent}>
         <Text style={settingsStyles.rowTitle}>
-          {t("settings.appearance.motion.activityIndicators.title")}
+          {t("settings.appearance.motion.reduceMotion.title")}
         </Text>
         <Text style={settingsStyles.rowHint}>
-          {t("settings.appearance.motion.activityIndicators.description")}
+          {t("settings.appearance.motion.reduceMotion.description")}
         </Text>
       </View>
       <Switch
         value={value}
         onValueChange={onChange}
-        accessibilityLabel={t("settings.appearance.motion.activityIndicators.title")}
-        testID="settings-animate-activity-under-reduced-motion"
+        accessibilityLabel={t("settings.appearance.motion.reduceMotion.title")}
+        testID="settings-reduce-motion"
       />
     </View>
   );
@@ -548,9 +548,9 @@ export function AppearanceSection() {
     [updateSettings],
   );
 
-  const handleActivityMotionChange = useCallback(
-    (animateActivityUnderReducedMotion: boolean) => {
-      void updateSettings({ animateActivityUnderReducedMotion });
+  const handleReduceMotionChange = useCallback(
+    (reduceMotion: boolean) => {
+      void updateSettings({ reduceMotion });
     },
     [updateSettings],
   );
@@ -672,10 +672,7 @@ export function AppearanceSection() {
       </SettingsSection>
       <SettingsSection title={t("settings.appearance.motion.title")}>
         <View style={settingsStyles.card}>
-          <ActivityMotionRow
-            value={settings.animateActivityUnderReducedMotion}
-            onChange={handleActivityMotionChange}
-          />
+          <ReduceMotionRow value={settings.reduceMotion} onChange={handleReduceMotionChange} />
         </View>
       </SettingsSection>
       <SidebarNavSection />

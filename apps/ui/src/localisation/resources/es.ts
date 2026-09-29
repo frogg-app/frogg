@@ -3492,10 +3492,9 @@ export const es: TranslationResources = {
       },
       motion: {
         title: "Movimiento",
-        activityIndicators: {
-          title: "Animar indicadores de actividad",
-          description:
-            "Mantiene en movimiento los indicadores de carga y progreso aunque el sistema pida reducir el movimiento",
+        reduceMotion: {
+          title: "Reducir movimiento",
+          description: "Detiene los indicadores de carga, las transiciones y otras animaciones",
         },
       },
       usage: {
