@@ -69,6 +69,16 @@ function start(
   child.stdout?.on("data", forward);
   child.stderr?.on("data", forward);
   child.on("exit", (code) => {
+    if (label === "daemon" && live && !shuttingDown && !restarting.has(child) && code !== 0) {
+      // A restart on a source edit can catch a half-written file; try again rather than stop.
+      if (daemonRetries < 3) {
+        daemonRetries += 1;
+        log(`daemon exited (${code}); starting it again (${daemonRetries}/3)…`);
+        children.splice(children.indexOf(child), 1);
+        setTimeout(() => startDaemon(), 2000);
+        return;
+      }
+    }
     if (!shuttingDown && !restarting.has(child)) {
       log(`${label} exited (${code}); stopping.`);
       void shutdown(1);
@@ -79,6 +89,7 @@ function start(
 }
 
 const restarting = new Set<ChildProcess>();
+let daemonRetries = 0;
 const daemonEnv: NodeJS.ProcessEnv = {
   FROGG_HOME: home,
   FROGG_SERVER_ID: serverId,
@@ -87,6 +98,14 @@ const daemonEnv: NodeJS.ProcessEnv = {
   FROGG_RELAY_ENABLED: "0",
   FROGG_NODE_INSPECT: "--inspect=0",
   NODE_ENV: "development",
+  // Launched from a Frogg agent, this process carries the installed daemon's own settings; they
+  // must not reach this daemon.
+  FROGG_WEB_UI_ENABLED: "false",
+  FROGG_WEB_UI_HOST: undefined,
+  FROGG_WEB_UI_PORT: undefined,
+  FROGG_WEB_UI_DIST_DIR: undefined,
+  FROGG_INSTALL_DIR: undefined,
+  FROGG_NODE_ENV: undefined,
   // A development daemon must never pass for the installed one in a host list.
   ...(live ? { FROGG_HOSTNAME: `${os.hostname()}-DEVELOPMENT` } : {}),
 };
@@ -123,9 +142,20 @@ async function restartDaemon(reason: string): Promise<void> {
   }
   await exited;
   children.splice(children.indexOf(previous), 1);
+  // npm exits before the daemon under it lets go of the port and its pid lock; a daemon started
+  // now would find both taken and exit, and the dying one would pass for the new one.
+  if (!(await waitForPortFree(daemonPort, 15_000))) {
+    try {
+      process.kill(-previous.pid, "SIGKILL");
+    } catch {
+      /* already gone */
+    }
+    await waitForPortFree(daemonPort, 5_000);
+  }
   startDaemon();
   await writeFile(pidFile, JSON.stringify(children.map((child) => child.pid)));
   await waitForPort(daemonPort, "daemon", 120_000);
+  daemonRetries = 0;
   log("daemon back up; the app reconnects on its own.");
 }
 
@@ -150,16 +180,29 @@ function watchDaemonSources(): void {
   }
 }
 
+function isPortOpen(port: number): Promise<boolean> {
+  return new Promise<boolean>((resolve) => {
+    const socket = net.connect(port, "127.0.0.1", () => {
+      socket.end();
+      resolve(true);
+    });
+    socket.on("error", () => resolve(false));
+  });
+}
+
+async function waitForPortFree(port: number, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (!(await isPortOpen(port))) return true;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  return false;
+}
+
 async function waitForPort(port: number, label: string, timeoutMs: number): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    const open = await new Promise<boolean>((resolve) => {
-      const socket = net.connect(port, "127.0.0.1", () => {
-        socket.end();
-        resolve(true);
-      });
-      socket.on("error", () => resolve(false));
-    });
+    const open = await isPortOpen(port);
     if (open) return;
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
