@@ -3282,6 +3282,23 @@ export const ar: TranslationResources = {
       upToDate: "محدَّث",
       installVersion: "تثبيت {{version}}",
       updateVersion: "التحديث إلى {{version}}",
+      daemonControl: {
+        start: "تشغيل",
+        stop: "إيقاف",
+        openWebUi: "فتح واجهة الويب",
+      },
+      devDaemon: {
+        title: "خادم التطوير",
+        info: "يشغّل npm run dev:live من نسخة مصدرية على المضيف: خادم تلك النسخة على منفذه الخاص، مع حسابات المضيف ومشاريعه ومحادثاته، وتطبيق الويب الخاص به. يعمل خادم واحد فقط في كل مرة.",
+        needsUpdate: "حدّث المضيف لتشغيل خادم التطوير.",
+        loadFailed: "تعذّرت قراءة حالة خادم التطوير: {{error}}",
+        running: "يعمل على المنفذ {{port}}",
+        starting: "جارٍ التشغيل على المنفذ {{port}}…",
+        stopped: "متوقف",
+        noCheckouts: "لا توجد نسخة مصدرية من هذا المستودع ضمن مساحات عمل هذا المضيف.",
+        launch: "تشغيل",
+        log: "السجل: {{path}}",
+      },
       betaApp: {
         title: "التطبيق التجريبي",
         info: "ثبّت {{name}} بجانب هذا التطبيق. يحتفظ بإعداداته وبياناته الخاصة.",

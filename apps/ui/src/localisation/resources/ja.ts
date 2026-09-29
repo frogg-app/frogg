@@ -3328,6 +3328,24 @@ export const ja: TranslationResources = {
       upToDate: "最新です",
       installVersion: "{{version}} をインストール",
       updateVersion: "{{version}} に更新",
+      daemonControl: {
+        start: "起動",
+        stop: "停止",
+        openWebUi: "Web UI を開く",
+      },
+      devDaemon: {
+        title: "開発用デーモン",
+        info: "ホスト上のソースのチェックアウトで npm run dev:live を実行します。そのチェックアウトのデーモンが専用ポートで、ホストのアカウント・プロジェクト・会話とともに動作し、Web アプリも起動します。同時に動かせるのは 1 つだけです。",
+        needsUpdate: "開発用デーモンを起動するにはホストを更新してください。",
+        loadFailed: "開発用デーモンの状態を読み取れませんでした: {{error}}",
+        running: "ポート {{port}} で実行中",
+        starting: "ポート {{port}} で起動中…",
+        stopped: "停止中",
+        noCheckouts:
+          "このホストのワークスペースに、このリポジトリのソースのチェックアウトがありません。",
+        launch: "起動",
+        log: "ログ: {{path}}",
+      },
       betaApp: {
         title: "ベータ版アプリ",
         info: "{{name}} をこのアプリと並べてインストールします。設定とデータは別々に保持されます。",

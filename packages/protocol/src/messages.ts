@@ -1850,6 +1850,38 @@ export type DaemonBetaChannelUninstallRequest = z.infer<
   typeof DaemonBetaChannelUninstallRequestSchema
 >;
 
+// Start or stop the installed side-by-side beta daemon through its own CLI.
+export const DaemonBetaChannelStartRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.start.request"),
+  requestId: z.string(),
+});
+export const DaemonBetaChannelStopRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.stop.request"),
+  requestId: z.string(),
+});
+export type DaemonBetaChannelStartRequest = z.infer<typeof DaemonBetaChannelStartRequestSchema>;
+export type DaemonBetaChannelStopRequest = z.infer<typeof DaemonBetaChannelStopRequestSchema>;
+
+// Development daemon: `npm run dev:live` in a source checkout of this repo on the host, so a
+// branch can be tried against real providers before it ships as a beta.
+export const DaemonDevDaemonGetStatusRequestSchema = z.object({
+  type: z.literal("daemon.dev_daemon.get_status.request"),
+  requestId: z.string(),
+});
+export const DaemonDevDaemonStartRequestSchema = z.object({
+  type: z.literal("daemon.dev_daemon.start.request"),
+  requestId: z.string(),
+  /** The checkout to run it from; one of the status's `checkouts`. */
+  cwd: z.string(),
+});
+export const DaemonDevDaemonStopRequestSchema = z.object({
+  type: z.literal("daemon.dev_daemon.stop.request"),
+  requestId: z.string(),
+});
+export type DaemonDevDaemonGetStatusRequest = z.infer<typeof DaemonDevDaemonGetStatusRequestSchema>;
+export type DaemonDevDaemonStartRequest = z.infer<typeof DaemonDevDaemonStartRequestSchema>;
+export type DaemonDevDaemonStopRequest = z.infer<typeof DaemonDevDaemonStopRequestSchema>;
+
 export const HubManagementDaemonConnectRequestSchema = z.object({
   type: z.literal("hub.management.daemon.connect.request"),
   requestId: z.string(),
@@ -3735,6 +3767,11 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   DaemonBetaChannelGetStatusRequestSchema,
   DaemonBetaChannelInstallRequestSchema,
   DaemonBetaChannelUninstallRequestSchema,
+  DaemonBetaChannelStartRequestSchema,
+  DaemonBetaChannelStopRequestSchema,
+  DaemonDevDaemonGetStatusRequestSchema,
+  DaemonDevDaemonStartRequestSchema,
+  DaemonDevDaemonStopRequestSchema,
   HubManagementDaemonConnectRequestSchema,
   HubManagementDaemonGetStatusRequestSchema,
   HubManagementDaemonDisconnectRequestSchema,
@@ -4388,6 +4425,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
         // daemon.beta_channel.* install/uninstall/status for the side-by-side beta daemon.
         betaChannelManagement: z.boolean().optional(),
+        // COMPAT(daemonChannelControl): added in v1.6.6, remove gate after 2027-09-29.
+        // daemon.beta_channel.start/stop and daemon.dev_daemon.* for the developer settings.
+        daemonChannelControl: z.boolean().optional(),
         // COMPAT(agentForkContext): added in v0.1.102, remove gate after 2026-12-28.
         agentForkContext: z.boolean().optional(),
         // COMPAT(agentForkContextCursor): added in v0.1.108, remove gate after 2027-01-14.
@@ -5999,6 +6039,74 @@ export const DaemonBetaChannelUninstallResponseSchema = z.object({
 export type DaemonBetaChannelUninstallResponse = z.infer<
   typeof DaemonBetaChannelUninstallResponseSchema
 >;
+
+const DaemonControlResultPayloadSchema = z.object({
+  requestId: z.string(),
+  error: z.string().nullable(),
+});
+
+export const DaemonBetaChannelStartResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.start.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonBetaChannelStartResponse = z.infer<typeof DaemonBetaChannelStartResponseSchema>;
+
+export const DaemonBetaChannelStopResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.stop.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonBetaChannelStopResponse = z.infer<typeof DaemonBetaChannelStopResponseSchema>;
+
+export const DaemonDevDaemonCheckoutSchema = z.object({
+  cwd: z.string(),
+  /** Workspace title or folder name. */
+  name: z.string(),
+  branch: z.string().nullable(),
+});
+export type DaemonDevDaemonCheckout = z.infer<typeof DaemonDevDaemonCheckoutSchema>;
+
+export const DaemonDevDaemonStatusSchema = z.object({
+  /** A development daemon can be launched here; `reason` says why not when false. */
+  supported: z.boolean(),
+  reason: z.string().nullable(),
+  /** Launched and its process is still alive. */
+  running: z.boolean(),
+  /** Its daemon answers on `daemonPort`. */
+  ready: z.boolean(),
+  cwd: z.string().nullable(),
+  branch: z.string().nullable(),
+  startedAt: z.string().nullable(),
+  daemonPort: z.number(),
+  /** Port of its web app; open it at the host's address. */
+  webPort: z.number(),
+  logPath: z.string().nullable(),
+  /** Source checkouts of this repo among the host's workspaces. */
+  checkouts: z.array(DaemonDevDaemonCheckoutSchema),
+});
+export type DaemonDevDaemonStatus = z.infer<typeof DaemonDevDaemonStatusSchema>;
+
+export const DaemonDevDaemonGetStatusResponseSchema = z.object({
+  type: z.literal("daemon.dev_daemon.get_status.response"),
+  payload: DaemonDevDaemonStatusSchema.extend({
+    requestId: z.string(),
+    error: z.string().nullable(),
+  }),
+});
+export type DaemonDevDaemonGetStatusResponse = z.infer<
+  typeof DaemonDevDaemonGetStatusResponseSchema
+>;
+
+export const DaemonDevDaemonStartResponseSchema = z.object({
+  type: z.literal("daemon.dev_daemon.start.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonDevDaemonStartResponse = z.infer<typeof DaemonDevDaemonStartResponseSchema>;
+
+export const DaemonDevDaemonStopResponseSchema = z.object({
+  type: z.literal("daemon.dev_daemon.stop.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonDevDaemonStopResponse = z.infer<typeof DaemonDevDaemonStopResponseSchema>;
 
 // Broadcast to every owner session while a beta channel run is in flight; not correlated.
 export const DaemonBetaChannelRunProgressMessageSchema = z.object({
@@ -8131,6 +8239,11 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   DaemonBetaChannelGetStatusResponseSchema,
   DaemonBetaChannelInstallResponseSchema,
   DaemonBetaChannelUninstallResponseSchema,
+  DaemonBetaChannelStartResponseSchema,
+  DaemonBetaChannelStopResponseSchema,
+  DaemonDevDaemonGetStatusResponseSchema,
+  DaemonDevDaemonStartResponseSchema,
+  DaemonDevDaemonStopResponseSchema,
   DaemonBetaChannelRunProgressMessageSchema,
   DaemonBetaChannelRunCompletedMessageSchema,
 ]);

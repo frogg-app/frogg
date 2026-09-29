@@ -15,6 +15,7 @@ import type { HubRelationshipManagement } from "../../hub/relationship-controlle
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import type { DaemonUpdateService } from "./daemon-update-service.js";
 import type { BetaChannelService, BetaChannelStartResult } from "./beta-channel-service.js";
+import type { DevDaemonService } from "./dev-daemon-service.js";
 import type { SecurityPosture } from "@frogg/protocol/messages";
 import type { HostResources } from "../../host/host-resources.js";
 import type { SkillCatalog } from "../../skills/catalog.js";
@@ -28,6 +29,8 @@ export interface DaemonRuntimeConfig {
   update?: DaemonUpdateService;
   /** Side-by-side beta daemon install/uninstall; absent without bootstrap wiring. */
   betaChannel?: BetaChannelService;
+  /** Development daemon (`dev:live`) launch/stop; absent without bootstrap wiring. */
+  devDaemon?: DevDaemonService;
   /** Live security findings (security-posture.ts); absent without bootstrap wiring. */
   getSecurityPosture?(): SecurityPosture;
   /** Host metrics and owned-storage sizes/cleanup; absent without bootstrap wiring. */
@@ -625,6 +628,69 @@ export class DaemonSession {
     });
   }
 
+  async handleBetaChannelStartRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.start.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.betaChannel;
+    const error = service ? await service.setRunning(true) : BETA_CHANNEL_UNAVAILABLE.error;
+    this.host.emit({
+      type: "daemon.beta_channel.start.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
+  async handleBetaChannelStopRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.stop.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.betaChannel;
+    const error = service ? await service.setRunning(false) : BETA_CHANNEL_UNAVAILABLE.error;
+    this.host.emit({
+      type: "daemon.beta_channel.stop.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
+  async handleDevDaemonGetStatusRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.get_status.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.devDaemon;
+    try {
+      if (!service) throw new Error(DEV_DAEMON_UNAVAILABLE);
+      const status = await service.status(await this.listWorkspaces());
+      this.host.emit({
+        type: "daemon.dev_daemon.get_status.response",
+        payload: { requestId: msg.requestId, ...status, error: null },
+      });
+    } catch (error) {
+      this.host.emit({
+        type: "rpc_error",
+        payload: { requestId: msg.requestId, requestType: msg.type, error: errorMessage(error) },
+      });
+    }
+  }
+
+  async handleDevDaemonStartRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.start.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.devDaemon;
+    const error = service ? await service.start(msg.cwd) : DEV_DAEMON_UNAVAILABLE;
+    this.host.emit({
+      type: "daemon.dev_daemon.start.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
+  async handleDevDaemonStopRequest(
+    msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.stop.request" }>,
+  ): Promise<void> {
+    const service = this.daemonRuntimeConfig?.devDaemon;
+    const error = service ? await service.stop() : DEV_DAEMON_UNAVAILABLE;
+    this.host.emit({
+      type: "daemon.dev_daemon.stop.response",
+      payload: { requestId: msg.requestId, error },
+    });
+  }
+
   private updateUnavailable(): { updatable: false; reason: string; currentVersion: string } {
     return {
       updatable: false,
@@ -640,6 +706,8 @@ const BETA_CHANNEL_UNAVAILABLE: BetaChannelStartResult = {
   targetVersion: null,
   error: "Beta channel management is not available on this daemon.",
 };
+
+const DEV_DAEMON_UNAVAILABLE = "Development daemon management is not available on this daemon.";
 
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

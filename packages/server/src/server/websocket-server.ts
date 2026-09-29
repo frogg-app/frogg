@@ -2070,6 +2070,8 @@ export class VoiceAssistantWebSocketServer {
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
         // COMPAT(betaChannelManagement): added in v1.6.5, remove after 2027-09-27.
         betaChannelManagement: this.supportsBetaChannelManagement(),
+        // COMPAT(daemonChannelControl): added in v1.6.6, remove after 2027-09-29.
+        ...(this.daemonRuntimeConfig?.devDaemon ? { daemonChannelControl: true } : {}),
         // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
         projectTodos: this.projectTodoService !== null,
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.

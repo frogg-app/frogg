@@ -3364,6 +3364,24 @@ export const es: TranslationResources = {
       upToDate: "Actualizado",
       installVersion: "Instalar {{version}}",
       updateVersion: "Actualizar a {{version}}",
+      daemonControl: {
+        start: "Iniciar",
+        stop: "Detener",
+        openWebUi: "Abrir interfaz web",
+      },
+      devDaemon: {
+        title: "Daemon de desarrollo",
+        info: "Ejecuta npm run dev:live desde una copia del código fuente en el host: el daemon de esa copia en su propio puerto, con las cuentas, proyectos y conversaciones del host, y su aplicación web. Solo se ejecuta uno a la vez.",
+        needsUpdate: "Actualiza el host para iniciar un daemon de desarrollo.",
+        loadFailed: "No se pudo leer el estado del daemon de desarrollo: {{error}}",
+        running: "En ejecución en el puerto {{port}}",
+        starting: "Iniciando en el puerto {{port}}…",
+        stopped: "Detenido",
+        noCheckouts:
+          "Ningún espacio de trabajo de este host es una copia del código fuente de este repositorio.",
+        launch: "Iniciar",
+        log: "Registro: {{path}}",
+      },
       betaApp: {
         title: "App beta",
         info: "Instala {{name}} junto a esta app. Tiene su propia configuración y sus propios datos.",

@@ -169,6 +169,9 @@ import type {
   DaemonBetaChannelGetStatusResponse,
   DaemonBetaChannelInstallResponse,
   DaemonBetaChannelUninstallResponse,
+  DaemonBetaChannelStartResponse,
+  DaemonDevDaemonGetStatusResponse,
+  DaemonDevDaemonStartResponse,
   DaemonUpdateStartResponse,
   DiagnosticsResponse,
   AgentRewindResponseMessage,
@@ -237,6 +240,11 @@ import type {
 } from "@frogg/protocol/browser-automation/rpc-schemas";
 
 export type DaemonBetaChannelStatusPayload = DaemonBetaChannelGetStatusResponse["payload"];
+export type DaemonDevDaemonStatusPayload = DaemonDevDaemonGetStatusResponse["payload"];
+/** Start/stop of the beta or development daemon: `error` is null on success. */
+export type DaemonControlResultPayload =
+  | DaemonBetaChannelStartResponse["payload"]
+  | DaemonDevDaemonStartResponse["payload"];
 export type DaemonBetaChannelRunStartPayload =
   | DaemonBetaChannelInstallResponse["payload"]
   | DaemonBetaChannelUninstallResponse["payload"];
@@ -1038,6 +1046,8 @@ const DEFAULT_SESSION_RPC_TIMEOUT_MS = 60_000;
 const PUSH_TOKEN_REVOCATION_TIMEOUT_MS = 2_000;
 /** A clean cut waits for a model to write the summary before it answers. */
 const CLEAN_CUT_TIMEOUT_MS = 5 * 60_000;
+/** Beta CLI start/stop can take up to a minute on the daemon side. */
+const DAEMON_CONTROL_TIMEOUT_MS = 90_000;
 // Synthesis may still be running when the app asks; the daemon waits up to 30s for it.
 const NOTIFICATION_AUDIO_TIMEOUT_MS = 45_000;
 const DEFAULT_CONNECT_TIMEOUT_MS = 15_000;
@@ -5634,6 +5644,50 @@ export class DaemonClient {
     });
   }
 
+  async startBetaChannel(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.start.response">({
+      requestId,
+      message: { type: "daemon.beta_channel.start.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async stopBetaChannel(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.stop.response">({
+      requestId,
+      message: { type: "daemon.beta_channel.stop.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async getDevDaemonStatus(requestId?: string): Promise<DaemonDevDaemonStatusPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.get_status.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.get_status.request" },
+    });
+  }
+
+  async startDevDaemon(cwd: string, requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.start.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.start.request", cwd },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async stopDevDaemon(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.stop.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.stop.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
   async connectHub(
     hubUrl: string,
     token: string,
@@ -6736,6 +6790,13 @@ export class DaemonClient {
     // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
     if (this.lastServerInfoMessage?.features?.betaChannelManagement !== true) {
       throw new Error("Update the host to manage the beta daemon from the app.");
+    }
+  }
+
+  private requireDaemonChannelControlSupport(): void {
+    // COMPAT(daemonChannelControl): added in v1.6.6, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.daemonChannelControl !== true) {
+      throw new Error("Update the host to start and stop the beta and development daemons.");
     }
   }
 

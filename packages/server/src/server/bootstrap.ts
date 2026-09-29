@@ -264,6 +264,7 @@ import {
 } from "./session/daemon/daemon-auto-updater.js";
 import { describeDaemonInstall } from "./session/daemon/daemon-update-install.js";
 import { BetaChannelService } from "./session/daemon/beta-channel-service.js";
+import { DevDaemonService } from "./session/daemon/dev-daemon-service.js";
 import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
 import { createHostResources } from "./host/host-resources.js";
 import { sweepFroggDebris } from "./host/debris-sweep.js";
@@ -2256,6 +2257,7 @@ export async function createFroggDaemon(
               logger,
               modulePath: fileURLToPath(import.meta.url),
             });
+            const devDaemonService = new DevDaemonService({ logger, froggHome: config.froggHome });
             const runningVersionRoot = updateService.installInfo.runningRoot;
             const hostResources = createHostResources({
               froggHome: config.froggHome,
@@ -2371,6 +2373,7 @@ export async function createFroggDaemon(
                 desktopManaged: config.desktopManaged === true,
                 update: updateService,
                 betaChannel: betaChannelService,
+                devDaemon: devDaemonService,
                 hostResources,
                 skills: skillCatalog,
                 getSecurityPosture,

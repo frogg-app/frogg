@@ -77,6 +77,7 @@ interface ScriptHeader {
 const DEFAULT_RUN_TIMEOUT_MS = 15 * 60_000;
 const DEFAULT_LATEST_CACHE_MS = 60_000;
 const PROBE_TIMEOUT_MS = 1500;
+const CONTROL_TIMEOUT_MS = 60_000;
 
 /** The `BRAND_X='value'` defaults block every generated installer starts with. */
 export function parseScriptHeader(script: string): ScriptHeader {
@@ -288,6 +289,53 @@ export class BetaChannelService {
 
   uninstall(input: { purge?: boolean } = {}): BetaChannelStartResult {
     return this.start("uninstall", { purge: input.purge === true });
+  }
+
+  /**
+   * Starts or stops the installed beta daemon with its own CLI, which knows whether a service
+   * supervises it. Returns an error message, or null on success.
+   */
+  async setRunning(running: boolean): Promise<string | null> {
+    const reason = this.unsupportedReason();
+    if (reason) return reason;
+    if (this.readInstalledVersion() === null)
+      return `${this.beta.name} is not installed on this host`;
+    const cli = path.join(this.installDir, "current", "bin", this.beta.cliName);
+    const betaPrefix = `${brand.channels.stable.id.toUpperCase()}_BETA`;
+    const env = scrubInstallerEnv(this.env, ["FROGG", brand.envPrefix, betaPrefix]);
+    const verb = running ? "start" : "stop";
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const child = this.spawnScript(cli, ["daemon", verb], { env, cwd: this.homedir });
+        let tail = "";
+        const collect = (chunk: Buffer) => {
+          tail = (tail + chunk.toString("utf8")).slice(-2000);
+        };
+        child.stdout?.on("data", collect);
+        child.stderr?.on("data", collect);
+        const timer = setTimeout(() => child.kill(), CONTROL_TIMEOUT_MS);
+        child.once("error", (error) => {
+          clearTimeout(timer);
+          reject(error);
+        });
+        child.once("close", (code, signal) => {
+          clearTimeout(timer);
+          if (code === 0) {
+            resolve();
+            return;
+          }
+          const last = tail.trim().split("\n").at(-1);
+          reject(
+            new Error(
+              `${this.beta.cliName} daemon ${verb} exited with ${code ?? signal}${last ? `: ${last}` : ""}`,
+            ),
+          );
+        });
+      });
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : String(error);
+    }
   }
 
   private start(

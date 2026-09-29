@@ -3230,6 +3230,23 @@ export const zhCN: TranslationResources = {
       upToDate: "已是最新",
       installVersion: "安装 {{version}}",
       updateVersion: "更新到 {{version}}",
+      daemonControl: {
+        start: "启动",
+        stop: "停止",
+        openWebUi: "打开 Web 界面",
+      },
+      devDaemon: {
+        title: "开发守护进程",
+        info: "在主机上的源码检出目录中运行 npm run dev:live：该检出的守护进程在独立端口上运行，使用主机的账户、项目和对话，并启动其 Web 应用。同一时间只运行一个。",
+        needsUpdate: "请更新主机以启动开发守护进程。",
+        loadFailed: "无法读取开发守护进程状态：{{error}}",
+        running: "正在端口 {{port}} 上运行",
+        starting: "正在端口 {{port}} 上启动…",
+        stopped: "未运行",
+        noCheckouts: "此主机的工作区中没有此仓库的源码检出。",
+        launch: "启动",
+        log: "日志：{{path}}",
+      },
       betaApp: {
         title: "测试版应用",
         info: "在此应用旁安装 {{name}}。它有自己的设置和数据。",

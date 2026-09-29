@@ -3345,6 +3345,23 @@ export const ptBR: TranslationResources = {
       upToDate: "Atualizado",
       installVersion: "Instalar {{version}}",
       updateVersion: "Atualizar para {{version}}",
+      daemonControl: {
+        start: "Iniciar",
+        stop: "Parar",
+        openWebUi: "Abrir interface web",
+      },
+      devDaemon: {
+        title: "Daemon de desenvolvimento",
+        info: "Executa npm run dev:live a partir de uma cópia do código-fonte no host: o daemon dessa cópia na sua própria porta, com as contas, projetos e conversas do host, e o app web. Apenas um é executado por vez.",
+        needsUpdate: "Atualize o host para iniciar um daemon de desenvolvimento.",
+        loadFailed: "Não foi possível ler o status do daemon de desenvolvimento: {{error}}",
+        running: "Em execução na porta {{port}}",
+        starting: "Iniciando na porta {{port}}…",
+        stopped: "Parado",
+        noCheckouts: "Nenhum workspace deste host é uma cópia do código-fonte deste repositório.",
+        launch: "Iniciar",
+        log: "Log: {{path}}",
+      },
       betaApp: {
         title: "App beta",
         info: "Instale {{name}} ao lado deste app. Ele mantém suas próprias configurações e dados.",

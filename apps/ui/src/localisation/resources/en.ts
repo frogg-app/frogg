@@ -3313,6 +3313,23 @@ export const en = {
       upToDate: "Up to date",
       installVersion: "Install {{version}}",
       updateVersion: "Update to {{version}}",
+      daemonControl: {
+        start: "Start",
+        stop: "Stop",
+        openWebUi: "Open web UI",
+      },
+      devDaemon: {
+        title: "Development daemon",
+        info: "Runs npm run dev:live from a source checkout on the host: that checkout's daemon on its own port, with the host's accounts, projects and conversations, and its web app. One runs at a time.",
+        needsUpdate: "Update the host to launch a development daemon.",
+        loadFailed: "Couldn't read the development daemon status: {{error}}",
+        running: "Running on port {{port}}",
+        starting: "Starting on port {{port}}…",
+        stopped: "Not running",
+        noCheckouts: "No source checkout of this repo among this host's workspaces.",
+        launch: "Launch",
+        log: "Log: {{path}}",
+      },
       betaApp: {
         title: "Beta app",
         info: "Install {{name}} beside this app. It keeps its own settings and data.",

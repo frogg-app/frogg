@@ -3307,6 +3307,23 @@ export const ko: TranslationResources = {
       upToDate: "최신 상태",
       installVersion: "{{version}} 설치",
       updateVersion: "{{version}}(으)로 업데이트",
+      daemonControl: {
+        start: "시작",
+        stop: "중지",
+        openWebUi: "웹 UI 열기",
+      },
+      devDaemon: {
+        title: "개발용 데몬",
+        info: "호스트의 소스 체크아웃에서 npm run dev:live를 실행합니다. 해당 체크아웃의 데몬이 별도 포트에서 호스트의 계정, 프로젝트, 대화와 함께 실행되고 웹 앱도 함께 시작됩니다. 한 번에 하나만 실행됩니다.",
+        needsUpdate: "개발용 데몬을 실행하려면 호스트를 업데이트하세요.",
+        loadFailed: "개발용 데몬 상태를 읽지 못했습니다: {{error}}",
+        running: "포트 {{port}}에서 실행 중",
+        starting: "포트 {{port}}에서 시작하는 중…",
+        stopped: "실행 중 아님",
+        noCheckouts: "이 호스트의 워크스페이스 중 이 저장소의 소스 체크아웃이 없습니다.",
+        launch: "실행",
+        log: "로그: {{path}}",
+      },
       betaApp: {
         title: "베타 앱",
         info: "{{name}}을(를) 이 앱과 나란히 설치합니다. 설정과 데이터는 따로 유지됩니다.",

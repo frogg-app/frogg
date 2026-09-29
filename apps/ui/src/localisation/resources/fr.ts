@@ -3370,6 +3370,23 @@ export const fr: TranslationResources = {
       upToDate: "À jour",
       installVersion: "Installer {{version}}",
       updateVersion: "Mettre à jour vers {{version}}",
+      daemonControl: {
+        start: "Démarrer",
+        stop: "Arrêter",
+        openWebUi: "Ouvrir l'interface web",
+      },
+      devDaemon: {
+        title: "Démon de développement",
+        info: "Exécute npm run dev:live depuis une copie des sources sur l'hôte : le démon de cette copie sur son propre port, avec les comptes, projets et conversations de l'hôte, et son application web. Un seul à la fois.",
+        needsUpdate: "Mettez à jour l'hôte pour lancer un démon de développement.",
+        loadFailed: "Impossible de lire l'état du démon de développement : {{error}}",
+        running: "En cours d'exécution sur le port {{port}}",
+        starting: "Démarrage sur le port {{port}}…",
+        stopped: "Arrêté",
+        noCheckouts: "Aucun espace de travail de cet hôte n'est une copie des sources de ce dépôt.",
+        launch: "Lancer",
+        log: "Journal : {{path}}",
+      },
       betaApp: {
         title: "App bêta",
         info: "Installez {{name}} à côté de cette app. Elle garde ses propres réglages et données.",

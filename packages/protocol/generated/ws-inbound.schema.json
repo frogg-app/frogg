@@ -3900,6 +3900,90 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "daemon.beta_channel.start.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.beta_channel.stop.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.dev_daemon.get_status.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.dev_daemon.start.request"
+                },
+                "requestId": {
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId",
+                "cwd"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "daemon.dev_daemon.stop.request"
+                },
+                "requestId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "requestId"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "hub.management.daemon.connect.request"
                 },
                 "requestId": {

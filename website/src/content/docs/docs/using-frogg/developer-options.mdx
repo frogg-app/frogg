@@ -1,6 +1,6 @@
 ---
 title: Developer options
-description: Turn on the hidden Developer section to install frogg beta beside the app and manage beta daemons on your hosts.
+description: Turn on the hidden Developer section to install frogg beta beside the app, manage beta daemons on your hosts and launch development daemons from source.
 sidebar:
   order: 10
 ---
@@ -73,5 +73,28 @@ Managing the beta daemon needs the **owner** role on the host; other roles see t
 error. The stable daemon refuses these requests when it is itself the beta daemon, and on
 Windows, Docker and Nix installs, where it reports the reason instead.
 
+When the host also supports `features.daemonChannelControl`, an installed beta daemon gets
+**Start** or **Stop**, which run the beta's own `daemon start` / `daemon stop` (through its
+service when one is installed), and **Open web UI** while it is running, which opens
+`http://<host>:9998` in the browser.
+
 The beta daemon is a separate host. To use it from this app, add it as a host (for example
 `localhost:9998` on the same machine).
+
+## Development daemon
+
+**Development daemon** runs `npm run dev:live` from a source checkout of frogg on a host, so a
+branch can be tried with real providers before it ships as a beta. It lists every workspace on
+the host that is such a checkout, with its branch. **Launch** starts that checkout's daemon on
+port 9898 and its web app on port 7820; launching another checkout stops the running one
+first. **Stop** ends it, and **Open web UI** opens the web app once the daemon answers.
+
+The development daemon names itself `<hostname>-DEVELOPMENT` and starts with a copy of the
+host daemon's provider accounts, projects and conversations, so nothing needs signing in
+again. Continue a conversation in one daemon at a time: both write to the same provider
+session. The launcher's output goes to `.dev/live/launcher.log` in the checkout, and a launch
+that fails straight away shows that log's error.
+
+It needs the **owner** role, Linux or macOS, and dependencies installed in the checkout
+(`npm ci`). The development daemon cannot launch another one. When the daemon that launched it
+runs as a systemd service, restarting that daemon stops the development daemon too.
