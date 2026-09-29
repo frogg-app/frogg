@@ -1,6 +1,6 @@
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-types";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export interface BulkClosableTabGroups {
   archiveAgentTabs: Array<{ tabId: string; agentId: string }>;

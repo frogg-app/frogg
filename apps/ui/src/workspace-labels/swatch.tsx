@@ -3,7 +3,7 @@ import { Pressable, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { WORKSPACE_LABEL_COLORS, type WorkspaceLabelColor } from "@frogg/protocol/workspace-labels";
 import { identityForeground } from "@/styles/identity-colors";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import type { Theme } from "@/styles/theme";
 
 /**

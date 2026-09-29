@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { UPDATE_RATE_LIMITED_MESSAGE } from "./app-update-config.js";
 import {
   createAppUpdateService,
   type AppUpdateCheckResult,
@@ -167,6 +168,41 @@ const rolledOutUpdate = {
 };
 
 describe("app update service", () => {
+  it("stops checking after GitHub answers 429, backing off further on each repeat", async () => {
+    let now = Date.parse("2026-04-28T12:00:00.000Z");
+    const { runtime, service } = createService({ now: () => now });
+    const check = () =>
+      service.checkForAppUpdate({
+        currentVersion: "1.2.3",
+        releaseChannel: "stable",
+        intent: "manual",
+      });
+    const throttled = () =>
+      runtime.failNextCheck(
+        new Error(UPDATE_RATE_LIMITED_MESSAGE, {
+          cause: Object.assign(new Error("429"), { statusCode: 429 }),
+        }),
+      );
+
+    throttled();
+    expect(await check()).toMatchObject({ errorMessage: UPDATE_RATE_LIMITED_MESSAGE });
+    expect(await check()).toMatchObject({ errorMessage: UPDATE_RATE_LIMITED_MESSAGE });
+    expect(runtime.checkCount).toBe(1);
+
+    now += 5 * 60_000;
+    throttled();
+    await check();
+    expect(runtime.checkCount).toBe(2);
+    now += 5 * 60_000;
+    await check();
+    expect(runtime.checkCount).toBe(2);
+
+    now += 5 * 60_000;
+    runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
+    expect(await check()).toMatchObject({ hasUpdate: true, errorMessage: null });
+    expect(runtime.checkCount).toBe(3);
+  });
+
   it("reports a background download and tells the window when it lands", async () => {
     const runtime = new FakeAppUpdateRuntime();
     const notified: AppUpdateCheckResult[] = [];

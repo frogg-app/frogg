@@ -82,14 +82,25 @@ fs.writeFileSync(path, JSON.stringify(cfg, null, 2));
 ' "$FROGG_HOME/config.json" "$FROGG_LISTEN"
 }
 
+dev_lan_ip() {
+  local ip
+  ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+  if [ -z "$ip" ]; then
+    ip="$(ipconfig getifaddr en0 2>/dev/null || true)"
+  fi
+  echo "${ip:-localhost}"
+}
+
 resolve_dev_daemon_endpoint() {
   if [ -n "${FROGG_DEV_DAEMON_ENDPOINT:-}" ]; then
     echo "$FROGG_DEV_DAEMON_ENDPOINT"
     return
   fi
 
+  # A 0.0.0.0 daemon is meant to be reached from other machines; the browser running the app is
+  # usually not on this host, so hand it the LAN address rather than localhost.
   case "${FROGG_LISTEN:-127.0.0.1:6768}" in
-    0.0.0.0:*) echo "localhost:${FROGG_LISTEN#0.0.0.0:}" ;;
+    0.0.0.0:*) echo "$(dev_lan_ip):${FROGG_LISTEN#0.0.0.0:}" ;;
     127.0.0.1:*) echo "localhost:${FROGG_LISTEN#127.0.0.1:}" ;;
     *) echo "$FROGG_LISTEN" ;;
   esac

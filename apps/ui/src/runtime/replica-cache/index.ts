@@ -102,6 +102,18 @@ const StoredTimelineItemSchema = z.discriminatedUnion("kind", [
     status: z.enum(["loading", "completed"]),
     trigger: z.enum(["auto", "manual"]).optional(),
     preTokens: z.number().nonnegative().optional(),
+    // COMPAT(agentCleanCut): added in v1.6.2.
+    cleanCut: z
+      .object({
+        summary: z.string(),
+        previousSessionId: z.string().optional(),
+        previousProvider: z.string().optional(),
+        previousModel: z.string().optional(),
+        provider: z.string().optional(),
+        model: z.string().optional(),
+        summaryModel: z.string().optional(),
+      })
+      .optional(),
   }),
   z.strictObject({
     ...TimelineItemBaseShape,
@@ -421,6 +433,7 @@ function serializeTimelineItem(item: StreamItem): StoredTimelineItem | null {
         status: item.status,
         ...(item.trigger ? { trigger: item.trigger } : {}),
         ...(item.preTokens !== undefined ? { preTokens: item.preTokens } : {}),
+        ...(item.cleanCut ? { cleanCut: item.cleanCut } : {}),
       };
     case "tool_call":
       if (item.payload.source !== "agent") return null;
@@ -482,6 +495,7 @@ function deserializeTimelineItem(item: StoredTimelineItem): StreamItem {
         status: item.status,
         ...(item.trigger ? { trigger: item.trigger } : {}),
         ...(item.preTokens !== undefined ? { preTokens: item.preTokens } : {}),
+        ...(item.cleanCut ? { cleanCut: item.cleanCut } : {}),
       };
     case "tool_call": {
       const tool = item.item;

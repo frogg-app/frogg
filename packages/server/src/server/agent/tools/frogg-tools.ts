@@ -73,6 +73,8 @@ import {
 } from "../../worktree/commands.js";
 import { registerBrowserTools } from "../../browser-tools/tools.js";
 import type { BrowserToolsBroker } from "../../browser-tools/broker.js";
+import type { ProjectTodoService } from "../../project-todos/service.js";
+import { registerTodoTools } from "./todo-tools.js";
 import type {
   FroggToolCatalog,
   FroggToolConfig,
@@ -114,6 +116,8 @@ export interface FroggToolHostDependencies {
   ) => Promise<string>;
   browserToolsEnabled?: boolean;
   browserToolsBroker?: BrowserToolsBroker | null;
+  /** Project to-do service; the todo_* tools are registered only when present. */
+  projectTodos?: ProjectTodoService | null;
   froggHome?: string;
   worktreesRoot?: string;
   /**
@@ -2472,6 +2476,16 @@ export function createFroggToolCatalog(options: FroggToolHostDependencies): Frog
       };
     },
   );
+
+  if (options.projectTodos) {
+    registerTodoTools({
+      registerTool,
+      projectTodos: options.projectTodos,
+      agentManager,
+      workspaceRegistry: options.workspaceRegistry,
+      callerAgentId,
+    });
+  }
 
   return toCatalog();
 }

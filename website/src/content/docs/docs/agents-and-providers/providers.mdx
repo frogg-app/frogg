@@ -213,6 +213,10 @@ nothing in it can come back as a prompt-cache read: the whole context is re-sent
 input and charged the moment the next message goes out. Frogg says so, with the token count,
 before the move is made.
 
+The same sheet offers **Clean cut to this account**, which does not need the provider to carry
+its history across: a cheap model summarises the conversation and a fresh one starts on the
+new account from that summary, so the whole context is not re-sent. See [clean cuts](/docs/using-frogg/clean-cut/).
+
 An agent can be launched with:
 
 - **Default** — the provider's primary config directory (`~/.claude`), ignoring whichever

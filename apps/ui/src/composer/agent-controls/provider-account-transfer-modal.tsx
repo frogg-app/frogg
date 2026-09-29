@@ -16,6 +16,7 @@ import {
   type SelectFieldDisplay,
   type SelectFieldOption,
 } from "@/components/ui/select-field";
+import { ProviderAccountComboboxOption } from "@/composer/agent-controls/provider-account-control";
 
 /**
  * An account a transfer can target: every account of the agent's provider
@@ -42,6 +43,24 @@ export interface ProviderAccountTransferModalProps {
   error: string | null;
   onClose: () => void;
   onConfirm: (optionId: string) => void;
+  /**
+   * COMPAT(agentCleanCut): added in v1.6.2. Moves with a summary instead of the
+   * whole context. Absent on a daemon that cannot make a clean cut.
+   */
+  onCleanCut?: (optionId: string) => void;
+  cleanCutPending?: boolean;
+  /** Host and provider the accounts belong to; needed for each row's usage. */
+  serverId?: string | null;
+  provider?: string | null;
+  /** The account the agent runs as today, listed first for comparison. */
+  current?: { id: string; label: string } | null;
+  /**
+   * COMPAT(agentCleanCut): added in v1.6.2. Other enabled providers the
+   * conversation can move to with a clean cut. Absent or empty hides the
+   * provider switch.
+   */
+  otherProviders?: readonly { provider: string; label: string }[];
+  onSwitchProvider?: (provider: string) => void;
 }
 
 /**
@@ -57,6 +76,13 @@ export function ProviderAccountTransferModal({
   error,
   onClose,
   onConfirm,
+  onCleanCut,
+  cleanCutPending = false,
+  serverId,
+  provider,
+  current,
+  otherProviders,
+  onSwitchProvider,
 }: ProviderAccountTransferModalProps): ReactElement {
   const { t } = useTranslation();
   const onlyOptionId = options.length === 1 ? options[0].id : null;
@@ -71,33 +97,42 @@ export function ProviderAccountTransferModal({
     () => options.find((option) => option.id === selectedId) ?? null,
     [options, selectedId],
   );
-  const canConfirm = !isPending && selected !== null && selected.authenticated;
+  const busy = isPending || cleanCutPending;
+  const canConfirm = !busy && selected !== null && selected.authenticated;
 
   const header = useMemo<SheetHeader>(
     () => ({ title: t("agentControls.account.transfer.title") }),
     [t],
   );
 
-  const selectOptions = useMemo<SelectFieldOption<string>[]>(
+  const providerOptions = useMemo<SelectFieldOption<string>[]>(
     () =>
-      options.map((option) => ({
-        id: option.id,
-        value: option.id,
-        label: option.label,
-        description: option.authenticated ? undefined : t("agentControls.account.notSignedIn"),
-        testID: `provider-account-transfer-option-${option.id}`,
+      (otherProviders ?? []).map((entry) => ({
+        id: entry.provider,
+        value: entry.provider,
+        label: entry.label,
+        testID: `provider-account-transfer-provider-${entry.provider}`,
       })),
-    [options, t],
+    [otherProviders],
   );
-  const selectedDisplay = useMemo<SelectFieldDisplay | null>(
-    () => (selected ? { label: selected.label } : null),
-    [selected],
+  const noProviderDisplay = useMemo<SelectFieldDisplay | null>(() => null, []);
+  const handleSwitchProvider = useCallback(
+    (value: string) => onSwitchProvider?.(value),
+    [onSwitchProvider],
   );
+  const showProviderSwitch = Boolean(onSwitchProvider) && providerOptions.length > 0;
 
-  const handleChange = useCallback((value: string) => setSelectedId(value), []);
+  const unauthenticatedLabel = t("agentControls.account.notSignedIn");
+  const inUseLabel = t("agentControls.account.transfer.inUse");
+  const iconColor = styles.optionIconColor.color;
+  const warningColor = styles.warningIconColor.color;
+
   const handleConfirm = useCallback(() => {
     if (canConfirm && selected) onConfirm(selected.id);
   }, [canConfirm, onConfirm, selected]);
+  const handleCleanCut = useCallback(() => {
+    if (canConfirm && selected) onCleanCut?.(selected.id);
+  }, [canConfirm, onCleanCut, selected]);
 
   const cost =
     contextTokens === null
@@ -112,22 +147,52 @@ export function ProviderAccountTransferModal({
       testID="provider-account-transfer-modal"
     >
       <View style={styles.body}>
-        <SelectField
-          label={t("agentControls.account.transfer.targetLabel")}
-          value={selectedId}
-          selectedDisplay={selectedDisplay}
-          options={selectOptions}
-          onChange={handleChange}
-          placeholder={t("agentControls.account.transfer.targetPlaceholder")}
-          emptyText={t("agentControls.account.transfer.noTargets")}
-          disabled={isPending}
-          error={
-            selected && !selected.authenticated ? t("agentControls.account.notSignedIn") : null
-          }
-          triggerTestID="provider-account-transfer-target"
-        />
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>{t("agentControls.account.transfer.targetLabel")}</Text>
+          <View style={styles.accountList} testID="provider-account-transfer-target">
+            {current ? (
+              <ProviderAccountComboboxOption
+                option={current}
+                account={CURRENT_ACCOUNT}
+                description={inUseLabel}
+                selected={false}
+                active={false}
+                onPress={noop}
+                iconColor={iconColor}
+                warningColor={warningColor}
+                unauthenticatedLabel={unauthenticatedLabel}
+                serverId={serverId}
+                provider={provider}
+              />
+            ) : null}
+            {options.length === 0 ? (
+              <Text style={styles.hint}>{t("agentControls.account.transfer.noTargets")}</Text>
+            ) : (
+              options.map((option) => (
+                <TransferAccountRow
+                  key={option.id}
+                  option={option}
+                  selected={option.id === selectedId}
+                  disabled={busy}
+                  onSelect={setSelectedId}
+                  iconColor={iconColor}
+                  warningColor={warningColor}
+                  unauthenticatedLabel={unauthenticatedLabel}
+                  serverId={serverId}
+                  provider={provider}
+                />
+              ))
+            )}
+          </View>
+        </View>
 
         <Alert variant="warning" description={cost} testID="provider-account-transfer-warning" />
+
+        {onCleanCut ? (
+          <Text style={styles.hint} testID="provider-account-transfer-clean-cut-hint">
+            {t("agentControls.account.transfer.cleanCutHint")}
+          </Text>
+        ) : null}
 
         {error ? (
           <Text style={styles.error} testID="provider-account-transfer-error">
@@ -141,13 +206,13 @@ export function ProviderAccountTransferModal({
             size="sm"
             style={styles.actionButton}
             onPress={onClose}
-            disabled={isPending}
+            disabled={busy}
             testID="provider-account-transfer-cancel"
           >
             {t("common.actions.cancel")}
           </Button>
           <Button
-            variant="default"
+            variant={onCleanCut ? "secondary" : "default"}
             size="sm"
             style={styles.actionButton}
             onPress={handleConfirm}
@@ -160,6 +225,36 @@ export function ProviderAccountTransferModal({
               : t("agentControls.account.transfer.confirm")}
           </Button>
         </View>
+        {onCleanCut ? (
+          <Button
+            variant="default"
+            size="sm"
+            onPress={handleCleanCut}
+            disabled={!canConfirm}
+            loading={cleanCutPending}
+            testID="provider-account-transfer-clean-cut"
+          >
+            {cleanCutPending
+              ? t("composer.cleanCut.pending")
+              : t("agentControls.account.transfer.cleanCut")}
+          </Button>
+        ) : null}
+
+        {showProviderSwitch ? (
+          <View style={styles.providerSwitch}>
+            <SelectField
+              label={t("agentControls.account.transfer.providerLabel")}
+              value={null}
+              selectedDisplay={noProviderDisplay}
+              options={providerOptions}
+              onChange={handleSwitchProvider}
+              placeholder={t("agentControls.account.transfer.providerPlaceholder")}
+              emptyText={t("agentControls.account.transfer.noTargets")}
+              disabled={busy}
+              triggerTestID="provider-account-transfer-provider"
+            />
+          </View>
+        ) : null}
       </View>
     </AdaptiveModalSheet>
   );
@@ -178,10 +273,84 @@ export function providerAccountTransferLabel(
   return isDefault && account.name === PROVIDER_ACCOUNT_DEFAULT_NAME ? defaultLabel : account.name;
 }
 
+function noop(): void {}
+
+const CURRENT_ACCOUNT = { authenticated: true };
+
+/** A target row; binds its own press so the list stays free of inline closures. */
+function TransferAccountRow({
+  option,
+  selected,
+  disabled,
+  onSelect,
+  iconColor,
+  warningColor,
+  unauthenticatedLabel,
+  serverId,
+  provider,
+}: {
+  option: ProviderAccountTransferOption;
+  selected: boolean;
+  disabled: boolean;
+  onSelect: (id: string) => void;
+  iconColor: string;
+  warningColor: string;
+  unauthenticatedLabel: string;
+  serverId: string | null | undefined;
+  provider: string | null | undefined;
+}): ReactElement {
+  const handlePress = useCallback(() => {
+    if (!disabled && option.authenticated) onSelect(option.id);
+  }, [disabled, onSelect, option.authenticated, option.id]);
+  return (
+    <ProviderAccountComboboxOption
+      option={option}
+      account={option}
+      selected={selected}
+      active={false}
+      onPress={handlePress}
+      iconColor={iconColor}
+      warningColor={warningColor}
+      unauthenticatedLabel={unauthenticatedLabel}
+      serverId={serverId}
+      provider={provider}
+    />
+  );
+}
+
 const styles = StyleSheet.create((theme) => ({
+  optionIconColor: {
+    color: theme.colors.foreground,
+  },
+  warningIconColor: {
+    color: theme.colors.statusWarning,
+  },
+  section: {
+    gap: theme.spacing[2],
+  },
+  sectionLabel: {
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
+  },
+  accountList: {
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    overflow: "hidden",
+  },
+  providerSwitch: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    paddingTop: theme.spacing[3],
+  },
   body: {
     gap: theme.spacing[3],
     paddingBottom: theme.spacing[2],
+  },
+  hint: {
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
+    lineHeight: theme.fontSize.sm * 1.4,
   },
   error: {
     color: theme.colors.palette.red[300],

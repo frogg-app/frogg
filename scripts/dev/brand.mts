@@ -23,10 +23,28 @@ const { values, positionals } = parseArgs({
   },
 });
 const command = positionals[0];
+
+/** A 1024 px tile with the brand's initials, so a brand can be scaffolded before its artwork exists. */
+function placeholderIcon(name: string): string {
+  const initials = name
+    .split(/\s+/u)
+    .map((word) => word.charAt(0).toUpperCase())
+    .filter((letter) => /[A-Z0-9]/u.test(letter))
+    .slice(0, 2)
+    .join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="#3f4a47"/>
+  <text x="512" y="512" dy="0.35em" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="400" font-weight="700" fill="#f4f7f6">${initials || "B"}</text>
+</svg>
+`;
+}
+
 if (command === "init") {
-  if (!values.dir || !values.icon)
-    throw new Error("brand:init requires --dir, --id, --name, --app-id, --port and --icon");
-  const filename = `icon${path.extname(values.icon)}`;
+  if (!values.dir || !values.id || !values.name || !values["app-id"] || !values.port)
+    throw new Error(
+      "brand:init requires --dir, --id, --name, --app-id and --port (--icon optional)",
+    );
+  const filename = values.icon ? `icon${path.extname(values.icon)}` : "icon.svg";
   const manifest = BrandManifestSchema.parse({
     schemaVersion: 1,
     id: values.id,
@@ -42,7 +60,8 @@ if (command === "init") {
   await mkdir(path.dirname(destination), { recursive: true });
   const staging = await mkdtemp(path.join(path.dirname(destination), ".brand-init-"));
   try {
-    await copyFile(path.resolve(values.icon), path.join(staging, filename));
+    if (values.icon) await copyFile(path.resolve(values.icon), path.join(staging, filename));
+    else await writeFile(path.join(staging, filename), placeholderIcon(manifest.name));
     await writeFile(path.join(staging, "brand.json"), JSON.stringify(manifest, null, 2) + "\n");
     await validateAssets(resolveBrand(staging));
     await rename(staging, destination);
@@ -50,7 +69,8 @@ if (command === "init") {
     await rm(staging, { recursive: true, force: true });
   }
   process.stdout.write(
-    `Brand created at ${destination}. Build with FROGG_BRAND_DIR=${destination}\n`,
+    `Brand created at ${destination}. Build with FROGG_BRAND_DIR=${destination}\n` +
+      (values.icon ? "" : `Placeholder ${filename} written; replace it before you ship.\n`),
   );
 } else if (command === "check") {
   const build = resolveBrand(values.brand, values.channel);

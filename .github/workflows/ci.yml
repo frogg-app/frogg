@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    # Both release streams (frogg.json "streams"): main cuts betas, stable cuts releases.
+    # Both release streams (frogg.json "streams"). A green main push cuts the next beta (the
+    # `beta` job below); stable only reruns tests for commits main never tested (backports).
     branches: [main, stable]
   pull_request:
   workflow_dispatch:
@@ -22,8 +23,25 @@ env:
   LEFTHOOK: "0"
 
 jobs:
+  plan:
+    name: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tests: ${{ steps.plan.outputs.tests }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      # Release cuts and promotions only change versions on code main already tested; the
+      # release workflow checks that main run instead of repeating it here.
+      - id: plan
+        run: echo "tests=$(node scripts/release/streams.mjs needs-tests HEAD)" >> "$GITHUB_OUTPUT"
+
   checks:
     name: format, lint, typecheck
+    needs: plan
+    if: needs.plan.outputs.tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -37,9 +55,6 @@ jobs:
       - name: Lint
         run: npx oxlint .
 
-      - name: Script tests
-        run: npm run test:scripts
-
       # Workspaces typecheck against each other's dist/ output, so the server stack
       # (protocol, client, highlight, relay, server, cli) is built first.
       - name: Build server stack
@@ -51,8 +66,14 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # After the build: some script tests import built workspace output (protocol's dist).
+      - name: Script tests
+        run: npm run test:scripts
+
   tests:
     name: unit tests (libraries, cli)
+    needs: plan
+    if: needs.plan.outputs.tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -82,6 +103,8 @@ jobs:
     # the Playwright install off the shards, and sharding the rest turns a
     # single long job into three short ones.
     name: unit tests (ui) ${{ matrix.shard }}/3
+    needs: plan
+    if: needs.plan.outputs.tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -104,6 +127,8 @@ jobs:
 
   ui-browser-tests:
     name: browser tests (ui)
+    needs: plan
+    if: needs.plan.outputs.tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -122,6 +147,8 @@ jobs:
 
   server-tests:
     name: unit tests (server) ${{ matrix.shard }}/5
+    needs: plan
+    if: needs.plan.outputs.tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     strategy:
@@ -147,7 +174,51 @@ jobs:
       - name: Test server (unit, no e2e)
         run: npx vitest run --root packages/server --fileParallelism --exclude "**/*.e2e.test.ts" --shard=${{ matrix.shard }}/5
 
-  builds:
-    name: Selected clients and daemon
-    if: github.event_name != 'pull_request'
-    uses: ./.github/workflows/build-selected.yml
+  # Every green push to main ships as the next beta. The cut is pushed with GITHUB_TOKEN, which
+  # starts no workflows (so no CI loop), and the release is dispatched explicitly instead.
+  beta:
+    name: cut beta
+    needs: [plan, checks, tests, ui-tests, ui-browser-tests, server-tests]
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.plan.outputs.tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: write
+    concurrency:
+      group: beta-cut
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Skip if main has moved on
+        id: current
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]; then
+            echo "::notice::main moved past $GITHUB_SHA; the newer push cuts the beta."
+            echo "cut=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "cut=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.current.outputs.cut == 'true'
+        uses: ./.github/actions/setup-node-deps
+
+      - name: Cut and push the beta
+        if: steps.current.outputs.cut == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          node scripts/release/streams.mjs beta --skip-check
+
+      # Betas publish, so they need the full matrix; the default set only builds a draft.
+      - name: Start the release build
+        if: steps.current.outputs.cut == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref main -f platforms=all -f tag="v$(node -p "require('./package.json').version")"

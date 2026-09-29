@@ -88,14 +88,15 @@ test("selected builds use one immutable source and only the requested independen
   assert.doesNotMatch(selectedWorkflow, /darwin|macos|linux-arm64|win-arm64|needs:/);
 });
 
-test("main CI uses selected builds and desktop PRs package Windows only", () => {
+test("main CI cuts betas instead of building, and desktop PRs package Windows only", () => {
   const ci = readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
   const desktop = readFileSync(
     new URL("../../.github/workflows/electron-desktop.yml", import.meta.url),
     "utf8",
   );
-  assert.match(ci, /uses: \.\/\.github\/workflows\/build-selected.yml/);
-  assert.match(selectedWorkflow, /workflow_call:/);
+  assert.doesNotMatch(ci, /build-selected\.yml/);
+  assert.match(ci, /streams\.mjs beta --skip-check/);
+  assert.match(ci, /gh workflow run release\.yml/);
   assert.doesNotMatch(ci, /build:desktop|build-android-apk/);
   assert.deepEqual(
     [...desktop.matchAll(/target: ([\w-]+)/g)].map((match) => match[1]),

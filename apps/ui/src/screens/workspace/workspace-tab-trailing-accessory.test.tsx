@@ -1,7 +1,7 @@
 /**
  * @vitest-environment jsdom
  */
-import { i18n as testI18n } from "@/i18n/i18next";
+import { i18n as testI18n } from "@/localisation/i18next";
 import React, { type ReactElement } from "react";
 import { act, fireEvent } from "@testing-library/react";
 import { createRoot } from "react-dom/client";

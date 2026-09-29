@@ -3,7 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import type { AuthPairingCodeCreateResponse } from "@frogg/protocol/device-access-rpc";
 import type { DeviceRole } from "@frogg/protocol/device-access";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 type PairingCodePayload = AuthPairingCodeCreateResponse["payload"];
 

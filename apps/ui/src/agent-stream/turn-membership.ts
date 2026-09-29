@@ -6,6 +6,7 @@ import type { StreamItem } from "@/types/stream";
  */
 export function continuesTurn(previous: StreamItem | null, next: StreamItem | null): boolean {
   if (!previous || !next) return false;
+  if (isCleanCut(next)) return false;
   if (previous.turnId !== undefined && next.turnId !== undefined) {
     return previous.turnId === next.turnId;
   }
@@ -18,7 +19,16 @@ export function continuesTurn(previous: StreamItem | null, next: StreamItem | nu
  */
 export function continuesResponse(previous: StreamItem | null, next: StreamItem | null): boolean {
   if (!previous || !next) return false;
-  return continuesTurn(previous, next) || next.kind !== "user_message";
+  return continuesTurn(previous, next) || (next.kind !== "user_message" && !isCleanCut(next));
+}
+
+/**
+ * COMPAT(agentCleanCut): added in v1.6.2. A clean cut ends the conversation
+ * above it, so it never belongs to the turn before it: that turn's footer stays
+ * above the line.
+ */
+function isCleanCut(item: StreamItem): boolean {
+  return item.kind === "compaction" && item.cleanCut !== undefined;
 }
 
 export function isTurnBoundary(previous: StreamItem | null, next: StreamItem | null): boolean {

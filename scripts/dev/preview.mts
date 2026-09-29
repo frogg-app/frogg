@@ -5,10 +5,17 @@
 //   npm run preview                 # fresh demo state each launch
 //   npm run preview -- --keep       # keep the previous run's daemon home (your own chats survive)
 //
-// Ports: PREVIEW_PORT (web, default 7800) and PREVIEW_PORT + 1 (daemon). `npm run shot` reads
-// .dev/preview/state.json to screenshot the running preview.
+//   npm run dev:live                # --live: real providers, persistent home, no demo seeding
+//
+// Ports: PREVIEW_PORT (web, default 7800; 7820 with --live) and PREVIEW_PORT + 1 (daemon).
+// `npm run shot` reads .dev/preview/state.json to screenshot the running preview.
+//
+// --live is the stack for trying a feature end to end before it ships as a beta: the daemon runs
+// this checkout's source against your real provider logins, its home (.dev/live/home) survives
+// restarts, and it restarts itself when packages/server/src or a rebuilt protocol/client dist
+// changes. Add its daemon endpoint as a host in an installed Frogg app to drive it from there.
 import { spawn, execSync, type ChildProcess } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, watch } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
@@ -17,17 +24,18 @@ import { fileURLToPath } from "node:url";
 import { connectSeedClient } from "../../apps/ui/e2e/support/helpers/seed-client.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const previewDir = path.join(root, ".dev/preview");
+const live = process.argv.includes("--live");
+const previewDir = path.join(root, live ? ".dev/live" : ".dev/preview");
 const home = path.join(previewDir, "home");
 const repo = path.join(previewDir, "demo-repo");
-const keep = process.argv.includes("--keep");
-const webPort = Number(process.env.PREVIEW_PORT ?? 7800);
+const keep = live || process.argv.includes("--keep");
+const webPort = Number(process.env.PREVIEW_PORT ?? (live ? 7820 : 7800));
 const daemonPort = webPort + 1;
 const lanIp =
   Object.values(os.networkInterfaces())
     .flat()
     .find((entry) => entry && entry.family === "IPv4" && !entry.internal)?.address ?? "127.0.0.1";
-const serverId = "srv_preview";
+const serverId = live ? "srv_live" : "srv_preview";
 const children: ChildProcess[] = [];
 
 function log(message: string): void {
@@ -40,7 +48,7 @@ function start(
   args: string[],
   env: NodeJS.ProcessEnv,
   cwd = root,
-): void {
+): ChildProcess {
   const child = spawn(command, args, {
     cwd,
     env: { ...process.env, ...env },
@@ -57,12 +65,83 @@ function start(
   child.stdout?.on("data", forward);
   child.stderr?.on("data", forward);
   child.on("exit", (code) => {
-    if (!shuttingDown) {
+    if (!shuttingDown && !restarting.has(child)) {
       log(`${label} exited (${code}); stopping.`);
       void shutdown(1);
     }
   });
   children.push(child);
+  return child;
+}
+
+const restarting = new Set<ChildProcess>();
+const daemonEnv: NodeJS.ProcessEnv = {
+  FROGG_HOME: home,
+  FROGG_SERVER_ID: serverId,
+  FROGG_LISTEN: `0.0.0.0:${daemonPort}`,
+  FROGG_CORS_ORIGINS: "*",
+  FROGG_RELAY_ENABLED: "0",
+  FROGG_NODE_INSPECT: "--inspect=0",
+  NODE_ENV: "development",
+};
+// A custom brand's daemon drops inherited FROGG_* settings and reads its own prefix (ACME_HOME),
+// so hand it the same settings under that prefix. branded-run has prepared the brand already.
+const brandPrefix = (() => {
+  try {
+    const file = path.join(root, ".generated/branding/brand.json");
+    return String(JSON.parse(readFileSync(file, "utf8")).envPrefix ?? "FROGG");
+  } catch {
+    return "FROGG";
+  }
+})();
+if (brandPrefix !== "FROGG") {
+  for (const [key, value] of Object.entries({ ...daemonEnv })) {
+    if (key.startsWith("FROGG_")) daemonEnv[`${brandPrefix}_${key.slice("FROGG_".length)}`] = value;
+  }
+}
+let daemon: ChildProcess | undefined;
+function startDaemon(): void {
+  daemon = start("daemon", "npm", ["run", "dev", "--workspace=@frogg/server"], daemonEnv);
+}
+
+async function restartDaemon(reason: string): Promise<void> {
+  const previous = daemon;
+  if (!previous?.pid || shuttingDown) return;
+  log(`${reason} changed, restarting the daemon…`);
+  restarting.add(previous);
+  const exited = new Promise((resolve) => previous.once("exit", resolve));
+  try {
+    process.kill(-previous.pid, "SIGTERM");
+  } catch {
+    /* already gone */
+  }
+  await exited;
+  children.splice(children.indexOf(previous), 1);
+  startDaemon();
+  await writeFile(pidFile, JSON.stringify(children.map((child) => child.pid)));
+  await waitForPort(daemonPort, "daemon", 120_000);
+  log("daemon back up; the app reconnects on its own.");
+}
+
+/** Debounced daemon restarts on server source edits and protocol/client rebuilds. */
+function watchDaemonSources(): void {
+  let timer: NodeJS.Timeout | undefined;
+  let changed = "";
+  const targets: Array<[string, string]> = [
+    ["packages/server/src", "server source"],
+    ["packages/protocol/dist", "protocol build"],
+    ["packages/client/dist", "client build"],
+  ];
+  for (const [dir, label] of targets) {
+    const absolute = path.join(root, dir);
+    if (!existsSync(absolute)) continue;
+    watch(absolute, { recursive: true }, (_event, file) => {
+      if (!file || /\.test\.ts$|(^|\/)\./.test(String(file))) return;
+      changed = label;
+      clearTimeout(timer);
+      timer = setTimeout(() => void restartDaemon(changed), 400);
+    });
+  }
 }
 
 async function waitForPort(port: number, label: string, timeoutMs: number): Promise<void> {
@@ -79,6 +158,14 @@ async function waitForPort(port: number, label: string, timeoutMs: number): Prom
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
   throw new Error(`${label} did not listen on ${port} within ${timeoutMs / 1000}s`);
+}
+
+function currentBranch(): string {
+  try {
+    return execSync("git branch --show-current", { cwd: root, encoding: "utf8" }).trim() || "live";
+  } catch {
+    return "live";
+  }
 }
 
 function git(args: string): void {
@@ -261,15 +348,7 @@ async function main(): Promise<void> {
   }
 
   log("starting daemon…");
-  start("daemon", "npm", ["run", "dev", "--workspace=@frogg/server"], {
-    FROGG_HOME: home,
-    FROGG_SERVER_ID: serverId,
-    FROGG_LISTEN: `0.0.0.0:${daemonPort}`,
-    FROGG_CORS_ORIGINS: "*",
-    FROGG_RELAY_ENABLED: "0",
-    FROGG_NODE_INSPECT: "--inspect=0",
-    NODE_ENV: "development",
-  });
+  startDaemon();
   log("starting web app…");
   start(
     "web",
@@ -279,14 +358,15 @@ async function main(): Promise<void> {
       BROWSER: "none",
       APP_VARIANT: "development",
       EXPO_PUBLIC_LOCAL_DAEMON: `${lanIp}:${daemonPort}`,
-      EXPO_PUBLIC_FROGG_DEV_BUILD_LABEL: "preview",
+      EXPO_PUBLIC_FROGG_DEV_BUILD_LABEL: live ? currentBranch() : "preview",
     },
     path.join(root, "apps/ui"),
   );
 
   await writeFile(pidFile, JSON.stringify(children.map((child) => child.pid)));
   await waitForPort(daemonPort, "daemon", 120_000);
-  const seeded = keep && existsSync(path.join(home, "projects")) ? {} : await seed();
+  const seeded = live || (keep && existsSync(path.join(home, "projects"))) ? {} : await seed();
+  if (live) watchDaemonSources();
   await waitForPort(webPort, "web app", 180_000);
   log("compiling the web bundle (first load is the slow one)…");
   await fetch(`http://127.0.0.1:${webPort}`).catch(() => undefined);
@@ -304,9 +384,18 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log("══════════════════════════════════════════════════════");
-  console.log(`  Preview:  ${state.webUrl}`);
-  console.log(`  Daemon:   ${state.daemonEndpoint}  (isolated home, mock provider)`);
-  console.log("  UI edits hot-reload. Screenshot with: npm run shot -- --help");
+  if (live) {
+    console.log(`  Live:     ${state.webUrl}`);
+    console.log(
+      `  Daemon:   ${state.daemonEndpoint}  (real providers, home ${path.relative(root, home)})`,
+    );
+    console.log("  In an installed app: Add host → the daemon endpoint above.");
+    console.log("  UI edits hot-reload; the daemon restarts on server edits.");
+  } else {
+    console.log(`  Preview:  ${state.webUrl}`);
+    console.log(`  Daemon:   ${state.daemonEndpoint}  (isolated home, mock provider)`);
+    console.log("  UI edits hot-reload. Screenshot with: npm run shot -- --help");
+  }
   console.log("══════════════════════════════════════════════════════");
 }
 

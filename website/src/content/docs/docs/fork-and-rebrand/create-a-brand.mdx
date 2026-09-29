@@ -37,9 +37,11 @@ npm run brand:init -- \
 Brand created at /home/you/acme-studio/brands/acme. Build with FROGG_BRAND_DIR=/home/you/acme-studio/brands/acme
 ```
 
-All six flags are required. `brand:init` copies the icon into the directory as
-`icon.svg` or `icon.png`, writes a minimal manifest, and validates it. It refuses to
-overwrite an existing directory.
+`--icon` is optional; the other five flags are required. `brand:init` copies the icon into
+the directory as `icon.svg` or `icon.png`, writes a minimal manifest, and validates it.
+Without `--icon` it writes a placeholder `icon.svg` (the brand's initials on a 1024 × 1024
+tile) and says so; replace it before you ship. It refuses to overwrite an existing
+directory.
 
 ```json title="brands/acme/brand.json"
 {
@@ -128,7 +130,7 @@ npm run brand:check -- --brand brands/acme
 ```
 
 ```text
-Acme Studio: valid (com.acme.studio); updates github-release
+Acme Studio: valid (com.acme.studio, stable channel); updates github-release
 ```
 
 <Screenshot src={forkBrandCheckImg} alt="brand:check output for a valid brand and two rejected ones" />
@@ -236,6 +238,19 @@ npm run dev:win
 
 The dev scripts go through `scripts/dev/branded-run.mts`, which prepares the brand and
 holds it for the life of the process.
+
+`npm run brand:dev` does the same without exporting anything, from any shell, and checks the
+brand first. It also runs the mock-provider preview and `dev:live` under the brand:
+
+```sh
+npm run brand:dev -- brands/acme            # npm run preview
+npm run brand:dev -- brands/acme live       # npm run dev:live
+npm run brand:dev -- brands/acme server     # npm run dev:server
+npm run brand:dev -- brands/acme app        # npm run dev:app
+```
+
+See [run the brand locally](/docs/fork-and-rebrand/branded-development/#run-the-brand-locally)
+for ports and options.
 
 | Setting       | Stock Frogg              | Custom brand                              |
 | ------------- | ---------------------- | ----------------------------------------- |

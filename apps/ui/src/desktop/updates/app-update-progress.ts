@@ -5,7 +5,7 @@
 import { listenToDesktopEvent, type DesktopEventUnlisten } from "@/desktop/electron/events";
 import type { DesktopUpdateInstallKind } from "@/desktop/updates/desktop-updates";
 import { formatBytes } from "@/desktop/daemon/local-daemon-install-progress";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export type AppUpdateProgressPhase = "download" | "verify" | "install";
 

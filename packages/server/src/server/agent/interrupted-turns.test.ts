@@ -82,7 +82,13 @@ describe("interrupted turn persistence and resume", () => {
     const interruptedTurn = { at: "2026-09-13T11:59:00.000Z", reason: "daemon_restart" };
     await storage.upsert(record("fresh", { interruptedTurn }));
     await storage.upsert(
-      record("stale", { interruptedTurn: { ...interruptedTurn, at: "2026-09-13T10:00:00.000Z" } }),
+      record("stale", { interruptedTurn: { ...interruptedTurn, at: "2026-09-12T11:00:00.000Z" } }),
+    );
+    // Past every provider's cache lifetime but inside the resume window.
+    await storage.upsert(
+      record("hours-old", {
+        interruptedTurn: { ...interruptedTurn, at: "2026-09-13T06:00:00.000Z" },
+      }),
     );
     await storage.upsert(
       record("archived", { interruptedTurn, archivedAt: "2026-09-13T11:59:30.000Z" }),
@@ -107,11 +113,42 @@ describe("interrupted turn persistence and resume", () => {
       sendPrompt: sendPrompt as never,
     });
 
-    expect(resumed).toEqual(["fresh"]);
-    expect(sendPrompt.mock.calls.map(([p]) => p.agentId).sort()).toEqual(["failing", "fresh"]);
+    expect(resumed.sort()).toEqual(["fresh", "hours-old"]);
+    expect(sendPrompt.mock.calls.map(([p]) => p.agentId).sort()).toEqual([
+      "failing",
+      "fresh",
+      "hours-old",
+    ]);
     expect(sendPrompt.mock.calls[0]?.[0].prompt).toBe(INTERRUPTED_TURN_CONTINUATION_PROMPT);
     for (const agent of await storage.list()) {
       expect(agent.interruptedTurn ?? null).toBeNull();
     }
+  });
+
+  test("runs the pre-resume step with the interruption time and resumes even if it fails", async () => {
+    const at = "2026-09-13T11:59:00.000Z";
+    await storage.upsert(record("a", { interruptedTurn: { at, reason: "daemon_restart" } }));
+    const order: string[] = [];
+    const beforeResume = vi.fn(async (agentId: string) => {
+      order.push(`before:${agentId}`);
+      throw new Error("summariser down");
+    });
+    const sendPrompt = vi.fn(async (params: { agentId: string }) => {
+      order.push(`send:${params.agentId}`);
+      return { disposition: "turn_started" as const };
+    });
+
+    const resumed = await resumeInterruptedAgents({
+      agentManager: { getAgent: (id: string) => ({ id }) } as unknown as AgentManager,
+      agentStorage: storage,
+      logger: createTestLogger(),
+      now: () => NOW,
+      sendPrompt: sendPrompt as never,
+      beforeResume,
+    });
+
+    expect(resumed).toEqual(["a"]);
+    expect(beforeResume).toHaveBeenCalledWith("a", new Date(at));
+    expect(order).toEqual(["before:a", "send:a"]);
   });
 });

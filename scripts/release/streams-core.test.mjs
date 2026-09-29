@@ -17,13 +17,20 @@ import {
   promotionVersion,
 } from "./streams-core.mjs";
 
-test("the first beta opens the next minor above stable", () => {
+test("the first beta opens the next patch above stable", () => {
   assert.equal(
     nextBetaVersion({ developmentVersion: "1.5.52", stableVersion: "1.5.52" }),
-    "1.6.0-beta.1",
+    "1.5.53-beta.1",
   );
   assert.equal(
     nextBetaVersion({ developmentVersion: "1.5.52", stableVersion: null }),
+    "1.5.53-beta.1",
+  );
+});
+
+test("--minor opens the next minor above stable", () => {
+  assert.equal(
+    nextBetaVersion({ developmentVersion: "1.5.52", stableVersion: "1.5.52", minor: true }),
     "1.6.0-beta.1",
   );
 });
@@ -35,14 +42,14 @@ test("an open beta line continues", () => {
   );
 });
 
-test("after a promotion the next beta opens the following minor", () => {
+test("after a promotion or a stable patch the next beta opens the following patch", () => {
   assert.equal(
     nextBetaVersion({ developmentVersion: "1.6.0-beta.4", stableVersion: "1.6.0" }),
-    "1.7.0-beta.1",
+    "1.6.1-beta.1",
   );
   assert.equal(
-    nextBetaVersion({ developmentVersion: "1.6.0-beta.4", stableVersion: "1.6.2" }),
-    "1.7.0-beta.1",
+    nextBetaVersion({ developmentVersion: "1.6.2-beta.1", stableVersion: "1.6.4" }),
+    "1.6.5-beta.1",
   );
 });
 
@@ -82,7 +89,7 @@ test("a fork starts the upstream line it merged, so its releases carry upstream 
       stableVersion: "1.7.1",
       upstreamVersion: "1.7.0",
     }),
-    "1.8.0-beta.1",
+    "1.7.2-beta.1",
   );
 });
 
@@ -105,8 +112,11 @@ test("a stable patch stays below the beta line", () => {
   assert.doesNotThrow(() =>
     assertStablePatch({ nextStable: "1.5.10", developmentVersion: "1.6.0-beta.1" }),
   );
+  assert.doesNotThrow(() =>
+    assertStablePatch({ nextStable: "1.6.0", developmentVersion: "1.6.0-beta.1" }),
+  );
   assert.throws(
-    () => assertStablePatch({ nextStable: "1.6.0", developmentVersion: "1.6.0-beta.1" }),
+    () => assertStablePatch({ nextStable: "1.6.1", developmentVersion: "1.6.0-beta.1" }),
     /Promote it instead/,
   );
 });

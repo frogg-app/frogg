@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { SkillLaunchPolicy } from "../skills/catalog.js";
 import { resolve } from "node:path";
 import { stat } from "node:fs/promises";
 import {
@@ -76,6 +77,7 @@ import { isSystemInjectedEnvelope } from "./agent-prompt.js";
 import { stripInternalFroggMcpServer, withRuntimeFroggMcpServer } from "./runtime-mcp-config.js";
 import { applyChatLaunchConfig, isChatCwd, sanitizeChatSessionConfig } from "./chat-profile.js";
 import { resolveCreateAgentTitles } from "./create-agent-title.js";
+import { prependCleanCutSummary } from "./clean-cut.js";
 import type { FroggToolCatalogFactory } from "./tools/types.js";
 import {
   ProviderSubagentStore,
@@ -333,6 +335,8 @@ export interface AgentManagerOptions {
   /** Root of the chat directories; agents inside it launch with the chat profile. */
   chatsRoot?: string;
   froggToolsEnabled?: boolean;
+  /** The host's current skill choices, read at every launch. */
+  resolveSkillLaunchPolicy?: () => SkillLaunchPolicy;
   froggToolCatalogFactory?: FroggToolCatalogFactory;
   appendSystemPrompt?: string;
   agentStreamCoalesceWindowMs?: number;
@@ -771,6 +775,7 @@ export class AgentManager {
   private readonly mcpAuthToken: string | null;
   private readonly chatsRoot: string | undefined;
   private froggToolsEnabled = true;
+  private resolveSkillLaunchPolicy?: () => SkillLaunchPolicy;
   private froggToolCatalogFactory: FroggToolCatalogFactory | null = null;
   private appendSystemPrompt: string;
   private readonly resolveProviderAccountSystemPrompt?: (
@@ -830,6 +835,7 @@ export class AgentManager {
 
   private configureFroggTools(options: AgentManagerOptions): void {
     this.froggToolsEnabled = options.froggToolsEnabled ?? true;
+    this.resolveSkillLaunchPolicy = options.resolveSkillLaunchPolicy;
     this.froggToolCatalogFactory = options.froggToolCatalogFactory ?? null;
   }
 
@@ -1487,6 +1493,64 @@ export class AgentManager {
     return this.reloadAgentSession(agentId, { providerAccountId: accountId });
   }
 
+  /**
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+   *
+   * Ends the agent's provider conversation and starts a new, empty one in its
+   * place, optionally on another provider, account or model. The Frogg timeline
+   * is kept, so the user still sees the old conversation; the provider does not.
+   * Priming the new conversation is the caller's job (see `clean-cut.ts`).
+   *
+   * Moving provider drops the old mode, thinking option and feature values:
+   * their ids belong to the provider that defined them. The new provider's
+   * defaults apply unless the overrides name replacements.
+   */
+  startFreshAgentSession(
+    agentId: string,
+    overrides: Partial<AgentSessionConfig>,
+  ): Promise<ManagedAgent> {
+    const existing = this.requireSessionAgent(agentId);
+    const provider = overrides.provider ?? existing.config.provider;
+    const crossProvider = provider !== existing.config.provider;
+    const resolved: Partial<AgentSessionConfig> = {
+      ...(crossProvider
+        ? {
+            modeId: undefined,
+            model: undefined,
+            thinkingOptionId: undefined,
+            featureValues: undefined,
+            providerAccountId: undefined,
+          }
+        : {}),
+      ...overrides,
+      provider,
+    };
+    return this.trackAgentRegistrationOperation(
+      this.reloadAgentSessionInternal(agentId, resolved, { freshSession: true }),
+    );
+  }
+
+  /**
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+   *
+   * The summary a clean cut left for the next user message, or null once a user
+   * message has followed it. Read from the timeline rather than held in memory
+   * so a daemon restart between the cut and the next message keeps it.
+   */
+  getPendingCleanCutSummary(agentId: string): string | null {
+    const items = this.timelineStore.getItems(agentId);
+    for (let index = items.length - 1; index >= 0; index -= 1) {
+      const item = items[index];
+      if (item.type === "user_message") {
+        return null;
+      }
+      if (item.type === "compaction" && item.cleanCut) {
+        return item.cleanCut.summary;
+      }
+    }
+    return null;
+  }
+
   // Hot-reload an active agent session with config overrides. By default the
   // in-memory timeline is preserved (used for voice-mode toggles and similar
   // config swaps). When `rehydrateFromDisk` is set, the timeline is wiped so a
@@ -1506,7 +1570,7 @@ export class AgentManager {
   private async reloadAgentSessionInternal(
     agentId: string,
     overrides?: Partial<AgentSessionConfig>,
-    options?: { rehydrateFromDisk?: boolean },
+    options?: { rehydrateFromDisk?: boolean; freshSession?: boolean },
   ): Promise<ManagedAgent> {
     this.assertAcceptingAgentRegistrations();
     let existing = this.requireSessionAgent(agentId);
@@ -1516,12 +1580,14 @@ export class AgentManager {
     }
     const rehydrateFromDisk = options?.rehydrateFromDisk ?? false;
     const preservedHistoryPrimed = existing.historyPrimed;
-    const preservedLastUsage = existing.lastUsage;
-    const preservedLastUsageAt = existing.lastUsageAt;
+    const {
+      handle,
+      provider,
+      lastUsage: preservedLastUsage,
+      lastUsageAt: preservedLastUsageAt,
+    } = resolveReloadSource(existing, overrides, options?.freshSession ?? false);
     const preservedLastError = existing.lastError;
     const preservedAttention = existing.attention;
-    const handle = existing.persistence;
-    const provider = handle?.provider ?? existing.provider;
     const client = this.requireClient(provider);
     const refreshConfig = {
       ...existing.config,
@@ -2441,6 +2507,12 @@ export class AgentManager {
     agent.lastError = undefined;
 
     const pendingRun = this.runs.createPendingRun(agentId);
+    // The provider sees the clean-cut summary ahead of the message; the
+    // timeline records only what the user wrote.
+    const cleanCutSummary = this.getPendingCleanCutSummary(agentId);
+    const providerPrompt = cleanCutSummary
+      ? prependCleanCutSummary(prompt, cleanCutSummary)
+      : prompt;
 
     const streamForwarder = async function* streamForwarder(this: AgentManager) {
       let turnId: string;
@@ -2449,7 +2521,7 @@ export class AgentManager {
         agent,
         agentId,
         pendingRun,
-        prompt,
+        prompt: providerPrompt,
         options,
       });
 
@@ -5171,6 +5243,9 @@ export class AgentManager {
     if (chat && client.capabilities.supportsChatProfile !== true) {
       throw new Error(`Provider '${config.provider}' is not available in chats`);
     }
+    if (!chat && this.resolveSkillLaunchPolicy) {
+      context.skills = this.resolveSkillLaunchPolicy();
+    }
     if (
       !chat &&
       this.froggToolsEnabled &&
@@ -5385,4 +5460,36 @@ export function commandMayHaveChangedExternalState(command: string): boolean {
     // ahead/behind counts can drift stale until the next refresh.
     /\bgit\s+fetch\b/.test(normalized)
   );
+}
+
+/**
+ * What a reload resumes from. A fresh session (a clean cut) resumes nothing: it
+ * starts on the override's provider with no transcript. Its usage is reset to an
+ * empty context as of now, so neither the context meter nor the composer's
+ * stale-cache warning reports the conversation that was just cut away.
+ */
+function resolveReloadSource(
+  existing: ManagedAgent,
+  overrides: Partial<AgentSessionConfig> | undefined,
+  freshSession: boolean,
+): {
+  handle: AgentPersistenceHandle | null | undefined;
+  provider: AgentProvider;
+  lastUsage: AgentUsage | undefined;
+  lastUsageAt: Date | null | undefined;
+} {
+  if (freshSession) {
+    return {
+      handle: undefined,
+      provider: overrides?.provider ?? existing.provider,
+      lastUsage: { contextWindowUsedTokens: 0 },
+      lastUsageAt: new Date(),
+    };
+  }
+  return {
+    handle: existing.persistence,
+    provider: existing.persistence?.provider ?? existing.provider,
+    lastUsage: existing.lastUsage,
+    lastUsageAt: existing.lastUsageAt,
+  };
 }

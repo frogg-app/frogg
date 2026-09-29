@@ -1,5 +1,5 @@
 import { useDesignChrome } from "@/design/layouts/design-slot";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { describeHostConnectionError } from "@/runtime/host-connection-error";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { JsonValue } from "@frogg/protocol/agent-types";
@@ -45,6 +45,7 @@ import { WorkspaceOpenInEditorButton } from "@/workspace/open-in-editor/button";
 import { ChatSandboxBadge } from "@/components/chat-sandbox-badge";
 import { WorkspaceScriptsButton } from "@/screens/workspace/workspace-scripts-button";
 import { WorkspaceCiButton } from "@/screens/workspace/workspace-ci-button";
+import { PluginSessionActionsButton } from "@/plugins/session-actions-button";
 import { ImportSessionSheet } from "@/components/import-session-sheet";
 import { useToast } from "@/contexts/toast-context";
 import { getOrCreateClientId } from "@/utils/client-id";
@@ -362,10 +363,18 @@ function getFallbackTabOptionLabel(
   if (tab.target.kind === "release_streams") {
     return i18n.t("releaseStreams.label");
   }
+  if (tab.target.kind === "plugin_panel") {
+    return tab.target.panelId;
+  }
   if (tab.target.kind === "commit_diff") {
     return tab.target.sha.slice(0, 7);
   }
   return labels.agent;
+}
+
+/** The agent a tab shows, for contributions that act on "the current session". */
+function getTabAgentId(tab: WorkspaceTabDescriptor | null): string | null {
+  return tab?.target.kind === "agent" ? tab.target.agentId : null;
 }
 
 function getFallbackTabOptionDescription(
@@ -420,6 +429,9 @@ function getFallbackTabOptionDescription(
   }
   if (tab.target.kind === "release_streams") {
     return i18n.t("releaseStreams.label");
+  }
+  if (tab.target.kind === "plugin_panel") {
+    return tab.target.panelId;
   }
   return tab.target.path;
 }
@@ -3523,6 +3535,7 @@ function WorkspaceScreenContent({
   });
 
   const activeTabDescriptor = useMemo(() => activeTab?.descriptor ?? null, [activeTab]);
+  const activeAgentId = getTabAgentId(activeTabDescriptor);
   const activeFileFields = getWorkspaceFileLocationFields(activeTabDescriptor);
   const activeFilePath = activeFileFields.path;
   const activeFileLineStart = activeFileFields.lineStart;
@@ -3832,6 +3845,12 @@ function WorkspaceScreenContent({
           ) : null}
           {!isMobile && workspaceDirectory ? (
             <>
+              <PluginSessionActionsButton
+                serverId={normalizedServerId}
+                cwd={workspaceDirectory}
+                agentId={activeAgentId}
+                workspaceKey={persistenceKey}
+              />
               <WorkspaceActions serverId={normalizedServerId} cwd={workspaceDirectory} />
               <WorkspaceCiButton
                 workspaceDescriptor={workspaceDescriptor}
@@ -3871,6 +3890,7 @@ function WorkspaceScreenContent({
       normalizedWorkspaceId,
       workspaceDirectory,
       activeFileLocation,
+      activeAgentId,
       liveTerminalIds,
       handleScriptTerminalStarted,
       handleViewScriptTerminal,

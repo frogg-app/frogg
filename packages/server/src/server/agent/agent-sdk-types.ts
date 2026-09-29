@@ -1,6 +1,8 @@
 import type { ProviderAccountPreferences } from "@frogg/protocol/provider-accounts";
+import type { SkillLaunchPolicy } from "../skills/catalog.js";
 import type {
   AgentProviderNotice,
+  CleanCutMarker,
   AgentTaskItem,
   ProviderOptions,
   ToolPolicy,
@@ -414,7 +416,11 @@ export interface CompactionTimelineItem {
   status: "loading" | "completed";
   trigger?: "auto" | "manual";
   preTokens?: number;
+  /** Set when this marker is a clean cut rather than a provider compaction. */
+  cleanCut?: CleanCutMarker;
 }
+
+export type { CleanCutMarker };
 
 export type AgentTimelineItem =
   | { type: "user_message"; text: string; messageId?: string; clientMessageId?: string }
@@ -659,6 +665,11 @@ export interface AgentLaunchContext {
    * AgentSessionConfig; providers may adapt it to their native tool surface.
    */
   froggTools?: FroggToolCatalog;
+  /**
+   * Runtime-only: the host's skill choices (built-ins to add, skills to hide). Absent for
+   * chats and for providers that do not load skills.
+   */
+  skills?: SkillLaunchPolicy;
 }
 
 export interface AgentCreateSessionOptions {

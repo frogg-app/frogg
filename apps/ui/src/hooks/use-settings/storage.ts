@@ -2,7 +2,7 @@ import { isSyntaxThemeId, type SyntaxThemeId } from "@frogg/highlight";
 import type { ActiveTurnBehavior } from "@frogg/protocol/messages";
 import type { QueryClient } from "@tanstack/react-query";
 import type { DesktopSettings } from "@/desktop/settings/desktop-settings";
-import type { AppLanguage } from "@/i18n/locales";
+import type { AppLanguage } from "@/localisation/locales";
 import type { SidebarNavPreference } from "@/sidebar-nav/model";
 import {
   DEFAULT_SIDEBAR_CHECKS_DISPLAY,
@@ -93,6 +93,8 @@ export interface AppSettings {
   vimKeybindings: boolean;
   /** Show folders whose names start with "." in folder pickers. */
   showHiddenFolders: boolean;
+  /** Show the Developer settings section (beta app and beta daemons). Off by default. */
+  developerOptions: boolean;
   /** Desktop-only preferences for implicit opens into the ordinary side pane. */
   openInSidePane: OpenInSidePanePreferences;
   pullRequestOpenLocation: PullRequestOpenLocation;
@@ -171,6 +173,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   chatOutlineEnabled: true,
   vimKeybindings: false,
   showHiddenFolders: false,
+  developerOptions: false,
   openInSidePane: DEFAULT_OPEN_IN_SIDE_PANE_PREFERENCES,
   pullRequestOpenLocation: "explorer",
   spokenAlertsAutoPlay: DEFAULT_SPOKEN_ALERTS_AUTO_PLAY,
@@ -284,6 +287,7 @@ const StoredAppSettingsSchema = z
     chatOutlineEnabled: z.boolean().catch(true),
     vimKeybindings: z.boolean().catch(false),
     showHiddenFolders: z.boolean().catch(false),
+    developerOptions: z.boolean().catch(false),
     openInSidePane: z
       .object({
         explorerFiles: z.boolean().catch(false),

@@ -16,6 +16,7 @@ import { pullRequestPanelRegistration } from "@/panels/pull-request-panel";
 import { ciRunsPanelRegistration } from "@/ci-monitor/ci-runs-panel";
 import { releaseStreamsPanelRegistration } from "@/release-streams/release-streams-panel";
 import { newTabPanelRegistration } from "@/panels/new-tab-panel";
+import { pluginPanelRegistration } from "@/plugins/plugin-panel";
 
 let panelsRegistered = false;
 
@@ -38,5 +39,6 @@ export function ensurePanelsRegistered(): void {
   registerPanel(commitDiffPanelRegistration);
   registerPanel(workingDiffPanelRegistration);
   registerPanel(changesTreePanelRegistration);
+  registerPanel(pluginPanelRegistration);
   panelsRegistered = true;
 }

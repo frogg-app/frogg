@@ -102,7 +102,7 @@ function SidebarCompanionRow({ onBeforeNavigate, iconOnly }: SidebarNavRowProps)
     onBeforeNavigate?.();
     // Companion is opt-in; while it is off the row leads to where it is turned on.
     if (companionEnabled) openCompanion();
-    else router.push(buildSettingsSectionRoute("companion"));
+    else router.push(buildSettingsSectionRoute("general"));
   }, [companionEnabled, onBeforeNavigate, openCompanion]);
 
   return (

@@ -23,6 +23,7 @@ import type {
 } from "./agent/provider-launch-config.js";
 import { ProviderOverrideSchema } from "./agent/provider-launch-config.js";
 import { AgentProviderSchema } from "@frogg/protocol/provider-manifest";
+import type { MutableCleanCutConfig } from "@frogg/protocol/messages";
 import { hashDaemonPassword } from "./auth.js";
 import { resolveSpeechConfig } from "./speech/speech-config-resolver.js";
 import type { RequestedSpeechProviders } from "./speech/speech-types.js";
@@ -698,6 +699,31 @@ function resolveAutoResumeOnUsageLimit(persisted: ReturnType<typeof loadPersiste
   return persisted.daemon?.autoResumeOnUsageLimit !== false;
 }
 
+/**
+ * `daemon.cleanCut`, with both automatic triggers resolved. They are on by
+ * default: a cut only happens once a conversation has sat idle past its
+ * threshold, where a summary is the cheaper resume.
+ */
+export function resolveCleanCutSetting(
+  persisted: ReturnType<typeof loadPersistedConfig>,
+): MutableCleanCutConfig {
+  const cleanCut = persisted.daemon?.cleanCut;
+  // COMPAT(cleanCutSettings): `autoCleanCutOnColdCache: false` (v1.6.2) turns
+  // off whichever trigger `cleanCut.auto` leaves unset. Remove after 2027-09-27.
+  const legacyEnabled = persisted.daemon?.autoCleanCutOnColdCache !== false;
+  return {
+    auto: {
+      usageLimit: cleanCut?.auto?.usageLimit ?? legacyEnabled,
+      daemonRestart: cleanCut?.auto?.daemonRestart ?? legacyEnabled,
+    },
+    ...(cleanCut?.idleThresholdMinutes !== undefined
+      ? { idleThresholdMinutes: cleanCut.idleThresholdMinutes }
+      : {}),
+    ...(cleanCut?.summaryModel ? { summaryModel: cleanCut.summaryModel } : {}),
+    providers: cleanCut?.providers ?? {},
+  };
+}
+
 /** `features.companion.model`, surfaced as the mutable `companionModel`; null is the default. */
 function resolveCompanionModelSetting(
   persisted: ReturnType<typeof loadPersistedConfig>,
@@ -716,7 +742,9 @@ function resolveStaticLoadConfigSettings(
       cli?.mcpInjectIntoAgents ?? persisted.daemon?.mcp?.injectIntoAgents ?? false,
     browserToolsEnabled: resolveBrowserToolsEnabled(persisted),
     autoArchiveAfterMerge: persisted.daemon?.autoArchiveAfterMerge ?? false,
+    worktreeRetentionDays: persisted.daemon?.worktreeRetentionDays,
     autoResumeOnUsageLimit: resolveAutoResumeOnUsageLimit(persisted),
+    cleanCut: resolveCleanCutSetting(persisted),
     companionModel: resolveCompanionModelSetting(persisted),
     hostSettingsHiddenSections: resolveHostSettingsHiddenSections(persisted),
     autoUpdate: resolveAutoUpdateConfig(env, persisted),
@@ -763,7 +791,9 @@ export function resolveConfigFromPersisted(
     mcpInjectIntoAgents,
     browserToolsEnabled,
     autoArchiveAfterMerge,
+    worktreeRetentionDays,
     autoResumeOnUsageLimit,
+    cleanCut,
     companionModel,
     hostSettingsHiddenSections,
     autoUpdate,
@@ -820,7 +850,9 @@ export function resolveConfigFromPersisted(
     browserToolsEnabled,
     git: resolveGitProcessConfig(env, persisted),
     autoArchiveAfterMerge,
+    worktreeRetentionDays,
     autoResumeOnUsageLimit,
+    cleanCut,
     companionModel,
     hostSettingsHiddenSections,
     autoUpdate,

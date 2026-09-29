@@ -11,7 +11,7 @@ import { WorkspaceAgentTreeState, WorkspaceAgentDisclosure } from "./workspace-t
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Pressable, Text } from "react-native";
 import type { SidebarAgentNode } from "./model";
-import { en } from "@/i18n/resources/en";
+import { en } from "@/localisation/resources/en";
 
 vi.hoisted(() => {
   Object.defineProperty(Element.prototype, "animate", {

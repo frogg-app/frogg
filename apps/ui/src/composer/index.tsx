@@ -103,6 +103,8 @@ import {
 } from "@/attachments/service";
 import type { AgentUsage } from "@frogg/protocol/agent-types";
 import { resolveStaleContextWarning, type StaleContextWarning } from "@/composer/stale-context";
+import { useDaemonConfig } from "@/hooks/use-daemon-config";
+import { useCleanCut } from "@/composer/clean-cut";
 import { useComposerPresenceWarning } from "@/presence/composer-presence";
 import { PresenceBar } from "@/presence/presence-bar";
 import { resolveAgentControlsMode } from "@/composer/agent-controls/mode";
@@ -314,6 +316,7 @@ function buildAgentStateSelector(serverId: string, agentId: string) {
  * being typed into a conversation whose prompt cache has already lapsed.
  */
 function useStaleContextWarning(
+  serverId: string,
   agentState: {
     provider: string | null;
     contextWindowUsedTokens: number | null;
@@ -323,6 +326,10 @@ function useStaleContextWarning(
   userInput: string,
 ): StaleContextWarning | null {
   const { provider, contextWindowUsedTokens, lastActivityAt, hasConversation } = agentState;
+  // COMPAT(cleanCutSettings): the host's clean cut thresholds, so the warning
+  // and the automatic cut agree. Older daemons and viewers have none, which
+  // leaves each provider's cache TTL.
+  const thresholds = useDaemonConfig(serverId).config?.cleanCut ?? null;
   // Only whether the user is composing matters, not what they typed: memoising
   // on the boolean keeps the result — and so the composer's styles — identical
   // across keystrokes instead of handing the input a new object every character.
@@ -336,8 +343,9 @@ function useStaleContextWarning(
         hasConversation,
         isComposing,
         now: Date.now(),
+        thresholds,
       }),
-    [contextWindowUsedTokens, hasConversation, isComposing, lastActivityAt, provider],
+    [contextWindowUsedTokens, hasConversation, isComposing, lastActivityAt, provider, thresholds],
   );
 }
 
@@ -1286,7 +1294,7 @@ function ComposerContentImpl({
     ? t("agentPanel.connectionNotice.composerOffline")
     : resolveMessagePlaceholder(inputMode, isDesktopLayout, t, placeholder);
   const userInput = value;
-  const staleContextWarning = useStaleContextWarning(agentState, userInput);
+  const staleContextWarning = useStaleContextWarning(serverId, agentState, userInput);
   // COMPAT(sessionPresence): added in v1.6.0. Reports this composer as viewing
   // (or typing) the agent and reads back whoever else is writing to it.
   const presenceWarning = useComposerPresenceWarning({ serverId, agentId, text: userInput });
@@ -1666,6 +1674,21 @@ function ComposerContentImpl({
       t,
     ],
   );
+
+  // COMPAT(agentCleanCut): added in v1.6.2. Cut to a fresh conversation, then
+  // send what was typed into it: the daemon puts the summary ahead of it.
+  const cleanCut = useCleanCut(serverId, agentId);
+  const runCleanCut = cleanCut.run;
+  const handleCleanCut = useCallback(() => {
+    void (async () => {
+      const error = await runCleanCut();
+      if (error === null) {
+        messageInputRef.current?.submit();
+      } else {
+        toastErrorRef.current(error);
+      }
+    })();
+  }, [runCleanCut]);
 
   const handleSubmit = useCallback(
     (payload: MessagePayload) => {
@@ -2440,6 +2463,8 @@ function ComposerContentImpl({
                   inputWrapperStyle={inputWrapperStyle}
                   offline={showOfflineComposer}
                   staleContextWarning={staleContextWarning}
+                  onCleanCut={cleanCut.available ? handleCleanCut : null}
+                  cleanCutPending={cleanCut.pending}
                   presenceWarning={presenceWarning}
                   presenceSlot={presenceSlot}
                   attachmentSlot={attachmentTray}

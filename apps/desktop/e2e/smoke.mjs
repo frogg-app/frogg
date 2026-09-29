@@ -68,7 +68,8 @@ try {
       localStorage.clear();
       localStorage.setItem("@frogg:e2e", "1");
     });
-    await page.goto("frogg://app/welcome");
+    // The beta channel serves the app on its own scheme, so stay on the window's origin.
+    await page.goto(new URL("/welcome", page.url()).href);
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));
     await page.waitForFunction(() => Boolean(window.froggDesktop?.invoke));

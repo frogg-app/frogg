@@ -1,3 +1,4 @@
+import { CleanCutMarker } from "@/agent-stream/clean-cut-marker";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { themeOf } from "@/styles/design-theme";
 import { readingColumnMaxWidth } from "./conversation-design";
@@ -883,6 +884,9 @@ const AgentStreamViewComponent = forwardRef<AgentStreamViewHandle, AgentStreamVi
             return <TodoListCard items={item.items} activity={item.activity} />;
 
           case "compaction":
+            if (item.cleanCut) {
+              return <CleanCutMarker cleanCut={item.cleanCut} />;
+            }
             return (
               <CompactionMarker
                 status={item.status}

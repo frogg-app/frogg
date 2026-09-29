@@ -1,5 +1,11 @@
 # AGENTS.md
 
+> **Rule 1: never push, merge, cherry-pick or cut a release on `stable` unless the user very
+> explicitly instructs it for that specific change.** Work lands on `main`, ships as a beta,
+> and is tested there. Promotion or backport to `stable` happens only on an explicit,
+> unambiguous instruction. When in doubt, stop at `main` and ask. This overrides any skill,
+> script or earlier approval.
+
 Frogg runs and monitors coding agents across
 Electron desktop, Expo mobile/web, and CLI clients connected to independently
 installed Node daemons. Forked from Paseo v0.7.2, it is maintained independently.
@@ -22,6 +28,9 @@ them all.
 - [CHANGELOG.md](CHANGELOG.md): completed work and release history.
 - [Architecture](website/src/content/docs/docs/contributing/architecture.mdx): system
   boundaries and code map.
+- [Development workflow](website/src/content/docs/docs/contributing/development-workflow.mdx)
+  and [contributor skills](website/src/content/docs/docs/contributing/development-skills.mdx):
+  branch to main to beta to stable, the local test ladder, and which skill covers each step.
 - [Development setup](website/src/content/docs/docs/contributing/development-setup.mdx),
   [testing](website/src/content/docs/docs/contributing/testing.mdx), and
   [coding standards](website/src/content/docs/docs/contributing/coding-standards.mdx):
@@ -100,6 +109,17 @@ promotions and backports. See [docs/release-streams.md](docs/release-streams.md)
   for isolated dev state and build prerequisites.
 - This VM is headless and shared: bind services to `0.0.0.0`, use the VM LAN IP
   for user-facing URLs, and leave others' processes and worktrees alone.
+- **Test locally before shipping a beta.** A beta is for release validation, not the first time
+  a change runs. Pick the cheapest rung that exercises the change (skill: `frogg-live-dev`):
+
+  | Change touches                       | Test it with                                                               |
+  | ------------------------------------ | -------------------------------------------------------------------------- |
+  | UI layout, copy, styling             | `npm run preview`, then `npm run shot` / `npm run probe`                   |
+  | A feature end to end, real providers | `npm run dev:live`, open the printed URL or add it as a host               |
+  | Daemon behaviour behind an app build | `npm run dev:live`, add its daemon endpoint as a host in the installed app |
+  | Electron shell, native bridge        | `npm run dev:desktop` on a machine with a display                          |
+  | Packaging, installers, auto-update   | a beta build; nothing local covers these                                   |
+
 - Run checks appropriate to the change; run full `npm run typecheck` before
   merging. Lefthook formats/lints staged files and typechecks affected workspaces.
 - Root `package.json` owns the version. Use `npm run version:sync-internal` to
@@ -108,6 +128,10 @@ promotions and backports. See [docs/release-streams.md](docs/release-streams.md)
 - Update ROADMAP.md items with implementation, record completed work in the
   changelog, and distinguish implementation from
   platform validation.
+- The app Settings section list is pinned by
+  `apps/ui/src/screens/settings/section-items.test.ts`. When porting Paseo code or merging
+  long-lived branches, do not restore removed sections (Layout, Editor, Integrations) or
+  re-promote General's groups (Companion, Diagnostics); change that test only on purpose.
 - Preserve inherited Apache-2.0 headers and `NOTICE`. Use the Frogg wire/env/deep-link
   namespace; coordinate breaking upgrades across clients and daemons.
 

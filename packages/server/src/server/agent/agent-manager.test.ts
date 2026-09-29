@@ -10233,3 +10233,60 @@ test("reload closes the previous session before the replacement starts", async (
     rmSync(workdir, { recursive: true, force: true });
   }
 });
+
+test("startFreshAgentSession moves provider and primes only the next prompt with the clean-cut summary", async () => {
+  const workdir = mkdtempSync(join(tmpdir(), "agent-manager-clean-cut-"));
+  const codexSessions: SteeringTestSession[] = [];
+  const claude = new TestAgentClient("claude");
+  const codex = new (class extends TestAgentClient {
+    override async createSession(config: AgentSessionConfig): Promise<AgentSession> {
+      this.createdConfigs.push(config);
+      const session = new SteeringTestSession({ provider: "codex", cwd: config.cwd });
+      codexSessions.push(session);
+      return session;
+    }
+  })("codex");
+  const manager = new AgentManager({ clients: { claude, codex }, logger });
+  let agentId: string | null = null;
+  try {
+    const agent = await manager.createAgent(
+      { provider: "claude", cwd: workdir, modeId: "plan", model: "claude-model" },
+      undefined,
+      { workspaceId: undefined },
+    );
+    agentId = agent.id;
+    await manager.appendTimelineItem(agent.id, { type: "user_message", text: "earlier" });
+
+    const moved = await manager.startFreshAgentSession(agent.id, { provider: "codex" });
+    expect(moved.provider).toBe("codex");
+    expect(codex.createdConfigs.at(-1)).toMatchObject({ provider: "codex" });
+    expect(codex.createdConfigs.at(-1)?.modeId).toBeUndefined();
+    expect(codex.createdConfigs.at(-1)?.model).not.toBe("claude-model");
+
+    await manager.appendTimelineItem(agent.id, {
+      type: "compaction",
+      status: "completed",
+      trigger: "manual",
+      cleanCut: { summary: "SUMMARY TEXT" },
+    });
+    expect(manager.getPendingCleanCutSummary(agent.id)).toBe("SUMMARY TEXT");
+
+    const run = manager.streamAgent(agent.id, "next message", { clientMessageId: "c1" });
+    void (async () => {
+      for await (const _event of run) {
+      }
+    })();
+    await manager.waitForAgentRunStart(agent.id);
+
+    const sent = codexSessions.at(-1)?.startPrompts[0];
+    expect(typeof sent === "string" && sent.includes("SUMMARY TEXT")).toBe(true);
+    expect(typeof sent === "string" && sent.endsWith("next message")).toBe(true);
+    expect(manager.getTimeline(agent.id)).toContainEqual(
+      expect.objectContaining({ type: "user_message", text: "next message" }),
+    );
+    expect(manager.getPendingCleanCutSummary(agent.id)).toBeNull();
+  } finally {
+    if (agentId) await manager.closeAgent(agentId).catch(() => undefined);
+    rmSync(workdir, { recursive: true, force: true });
+  }
+});

@@ -60,6 +60,38 @@ describe("pid-lock ownership", () => {
     }
   });
 
+  test.each([
+    ["empty", ""],
+    ["corrupt", "{not json"],
+  ])("reclaims an %s lock file left by a crash mid-write", async (_label, content) => {
+    const froggHome = await mkdtemp(join(tmpdir(), "frogg-pid-lock-unreadable-"));
+    try {
+      await writeFile(join(froggHome, "frogg.pid"), content);
+      await acquirePidLock(froggHome, null);
+      expect((await getPidLockInfo(froggHome))?.pid).toBe(process.pid);
+    } finally {
+      await rm(froggHome, { recursive: true, force: true });
+    }
+  });
+
+  test("names the holder when a second daemon loses the race", async () => {
+    const froggHome = await mkdtemp(join(tmpdir(), "frogg-pid-lock-race-"));
+    try {
+      const results = await Promise.allSettled([
+        acquirePidLock(froggHome, null, { ownerPid: process.pid }),
+        acquirePidLock(froggHome, null, { ownerPid: process.ppid }),
+      ]);
+      const rejected = results.filter((r) => r.status === "rejected");
+      expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+      const reason = (rejected[0] as PromiseRejectedResult).reason;
+      expect(reason).toBeInstanceOf(PidLockError);
+      expect(reason.existingLock?.pid).toBe((await getPidLockInfo(froggHome))?.pid);
+    } finally {
+      await rm(froggHome, { recursive: true, force: true });
+    }
+  });
+
   test("keeps a stale heartbeat lock when the recorded pid is alive without a reachability check", async () => {
     const froggHome = await mkdtemp(join(tmpdir(), "frogg-pid-lock-stale-heartbeat-"));
     const replacementOwnerPid = process.pid + 10_000;

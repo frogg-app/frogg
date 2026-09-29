@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DeviceCredential, DeviceRole } from "@frogg/protocol/device-access";
 import { useFetchQuery } from "@/data/query";
 import { useHostRuntimeClient, useHostRuntimeSnapshot } from "@/runtime/host-runtime";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { devicesQueryKey } from "./query-keys";
 import { useDeviceAccess } from "./use-device-access";
 

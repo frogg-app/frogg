@@ -17,8 +17,8 @@ pipeline builds your brand.
 | Workflow                | File                                     | Trigger                                    | What it produces                                                                      |
 | ----------------------- | ---------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------- |
 | **Release**             | `.github/workflows/release.yml`          | Push a `v*` tag, or run manually with a tag | A GitHub release: desktop packages, daemon bundles, Android APK, updater metadata, install scripts, optional Docker image |
-| **Build selected**      | `.github/workflows/build-selected.yml`   | Manual (`target`: all, windows, daemon, android); also called by CI on pushes to `main` | Workflow artifacts (not a release): Windows x64 client, Linux x64 daemon, Android arm64 debug-signed APK |
-| **CI**                  | `.github/workflows/ci.yml`               | Pull requests, pushes to `main`            | Format, lint, typecheck, unit tests; calls Build selected on `main`                   |
+| **Build selected**      | `.github/workflows/build-selected.yml`   | Manual (`target`: all, windows, daemon, android), or `workflow_call` | Workflow artifacts (not a release): Windows x64 client, Linux x64 daemon, Android arm64 debug-signed APK |
+| **CI**                  | `.github/workflows/ci.yml`               | Pull requests, pushes to `main` and `stable` | Format, lint, typecheck, unit tests; after a green push to `main`, cuts the next beta and starts Release |
 | **Branding acceptance** | `.github/workflows/branding.yml`         | PRs touching branding, deploy, desktop or workflows; manual | Builds `brands/frogg` and `brands/example` on Linux, Windows, macOS, Android, iOS simulator and Nix; checks your selected brand builds |
 | **Electron desktop**    | `.github/workflows/electron-desktop.yml` | PRs touching desktop, UI or packages; manual | Windows x64 Electron build as an artifact                                           |
 

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, test } from "vitest";
 
 import { DaemonConfigStore, applyMutableProviderConfigToOverrides } from "./daemon-config-store.js";
 import { loadPersistedConfig } from "./persisted-config.js";
+import { resolveCleanCutSetting } from "./config.js";
 import type { PersistedConfig } from "./persisted-config.js";
 import type { MutableDaemonConfig } from "@frogg/protocol/messages";
 
@@ -18,7 +19,9 @@ function reloadableGit(git: NonNullable<PersistedConfig["daemon"]>["git"]) {
 function reloadableAgents(agents: PersistedConfig["agents"]) {
   return {
     providers: (agents?.providers ?? {}) as MutableDaemonConfig["providers"],
-    metadataGeneration: { providers: agents?.metadataGeneration?.providers ?? [] },
+    metadataGeneration: {
+      providers: agents?.metadataGeneration?.providers ?? [],
+    },
   };
 }
 
@@ -163,6 +166,89 @@ describe("DaemonConfigStore", () => {
     expect(changes).toEqual(["claude-sonnet-5", null]);
   });
 
+  test("clean cut: legacy switch, per-trigger patch, and null clears", () => {
+    const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
+    tempDirs.push(froggHome);
+    writeFileSync(
+      path.join(froggHome, "config.json"),
+      JSON.stringify({ version: 1, daemon: { autoCleanCutOnColdCache: false } }),
+    );
+    const store = new DaemonConfigStore(froggHome, {
+      relay: { enabled: false },
+      mcp: { injectIntoAgents: false },
+      browserTools: { enabled: false },
+      providers: {},
+      metadataGeneration: { providers: [] },
+      autoArchiveAfterMerge: false,
+      enableTerminalAgentHooks: false,
+      appendSystemPrompt: "",
+      cleanCut: resolveCleanCutSetting(loadPersistedConfig(froggHome)),
+    });
+    // COMPAT(cleanCutSettings): the v1.6.2 switch still turns both triggers off.
+    expect(store.get().cleanCut?.auto).toEqual({
+      usageLimit: false,
+      daemonRestart: false,
+    });
+
+    store.patch({ cleanCut: { auto: { usageLimit: true } } });
+    expect(store.get().cleanCut?.auto).toEqual({
+      usageLimit: true,
+      daemonRestart: false,
+    });
+    const persisted = loadPersistedConfig(froggHome).daemon;
+    expect(persisted?.cleanCut?.auto).toEqual({
+      usageLimit: true,
+      daemonRestart: false,
+    });
+    expect(persisted).not.toHaveProperty("autoCleanCutOnColdCache");
+
+    store.patch({
+      cleanCut: {
+        idleThresholdMinutes: 30,
+        summaryModel: { provider: "claude", model: "haiku" },
+        providers: { copilot: { idleThresholdMinutes: 90 } },
+      },
+    });
+    expect(store.get().cleanCut).toMatchObject({
+      idleThresholdMinutes: 30,
+      summaryModel: { provider: "claude", model: "haiku" },
+      providers: { copilot: { idleThresholdMinutes: 90 } },
+    });
+
+    store.patch({
+      cleanCut: {
+        idleThresholdMinutes: null,
+        providers: { copilot: { idleThresholdMinutes: null } },
+      },
+    });
+    expect(store.get().cleanCut).not.toHaveProperty("idleThresholdMinutes");
+    expect(store.get().cleanCut?.providers).toEqual({});
+    const cleared = loadPersistedConfig(froggHome).daemon?.cleanCut;
+    expect(cleared).not.toHaveProperty("idleThresholdMinutes");
+    expect(cleared?.providers).toEqual({});
+    expect(cleared?.summaryModel).toEqual({
+      provider: "claude",
+      model: "haiku",
+    });
+    expect(resolveCleanCutSetting(loadPersistedConfig(froggHome))).toEqual(store.get().cleanCut);
+  });
+
+  test("clean cut: explicit triggers win over the legacy switch; both default on", () => {
+    const resolve = (daemon: NonNullable<PersistedConfig["daemon"]>) =>
+      resolveCleanCutSetting({ version: 1, daemon } as PersistedConfig).auto;
+    expect(resolve({})).toEqual({ usageLimit: true, daemonRestart: true });
+    expect(resolve({ autoCleanCutOnColdCache: true })).toEqual({
+      usageLimit: true,
+      daemonRestart: true,
+    });
+    expect(
+      resolve({
+        autoCleanCutOnColdCache: false,
+        cleanCut: { auto: { daemonRestart: true } },
+      }),
+    ).toEqual({ usageLimit: false, daemonRestart: true });
+  });
+
   test("patch persists relay state and emits its field change", () => {
     const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
     tempDirs.push(froggHome);
@@ -189,7 +275,12 @@ describe("DaemonConfigStore", () => {
     const froggHome = mkdtempSync(path.join(tmpdir(), "frogg-daemon-config-store-"));
     tempDirs.push(froggHome);
     const store = new DaemonConfigStore(froggHome, {
-      relay: { enabled: true, endpoint: "", useTls: true, endpointMutable: true },
+      relay: {
+        enabled: true,
+        endpoint: "",
+        useTls: true,
+        endpointMutable: true,
+      },
       mcp: { injectIntoAgents: false },
       browserTools: { enabled: false },
       providers: {},
@@ -203,7 +294,9 @@ describe("DaemonConfigStore", () => {
     store.onFieldChange("relay.endpoint", (value) => endpoints.push(value));
     store.onFieldChange("relay.useTls", (value) => tls.push(value));
 
-    store.patch({ relay: { endpoint: "  relay.example.test:8443 ", useTls: false } });
+    store.patch({
+      relay: { endpoint: "  relay.example.test:8443 ", useTls: false },
+    });
 
     expect(endpoints).toEqual(["relay.example.test:8443"]);
     expect(tls).toEqual([false]);
@@ -227,7 +320,11 @@ describe("DaemonConfigStore", () => {
     const store = new DaemonConfigStore(
       froggHome,
       {
-        relay: { enabled: false, endpoint: "env.example.test:443", endpointMutable: false },
+        relay: {
+          enabled: false,
+          endpoint: "env.example.test:443",
+          endpointMutable: false,
+        },
         mcp: { injectIntoAgents: false },
         browserTools: { enabled: false },
         providers: {},
@@ -880,7 +977,9 @@ describe("DaemonConfigStore", () => {
         autoArchiveAfterMerge: false,
         enableTerminalAgentHooks: false,
         appendSystemPrompt: "",
-        metadataGeneration: { providers: [{ provider: "claude", model: "haiku" }] },
+        metadataGeneration: {
+          providers: [{ provider: "claude", model: "haiku" }],
+        },
       },
       undefined,
     );
@@ -955,11 +1054,15 @@ describe("DaemonConfigStore reload", () => {
     }
     const persisted = loadPersistedConfig(froggHome);
     const relayEnabledFallback = persisted.daemon?.relay?.enabled === undefined;
-    const initialMutable = reloadableConfig(persisted, { relayEnabledFallback });
+    const initialMutable = reloadableConfig(persisted, {
+      relayEnabledFallback,
+    });
     const store = new DaemonConfigStore(froggHome, initialMutable, undefined, {
       reloadSource: {
         resolve: (nextPersisted) => {
-          const mutable = reloadableConfig(nextPersisted, { relayEnabledFallback });
+          const mutable = reloadableConfig(nextPersisted, {
+            relayEnabledFallback,
+          });
           if (options.overrideControlledPaths?.includes("daemon.relay.enabled")) {
             mutable.relay = initialMutable.relay;
           }
@@ -999,7 +1102,10 @@ describe("DaemonConfigStore reload", () => {
       overrideControlledPaths: [],
     });
     expect(store.get().browserTools.enabled).toBe(true);
-    expect(store.get().git).toEqual({ maxProcessesPerSecond: 12, maxProcessConcurrency: 3 });
+    expect(store.get().git).toEqual({
+      maxProcessesPerSecond: 12,
+      maxProcessConcurrency: 3,
+    });
   });
 
   test("applies daemon.auth.trustLan live, in both directions", () => {
@@ -1123,7 +1229,11 @@ describe("DaemonConfigStore reload", () => {
       },
       agents: {
         providers: {
-          gemini: { extends: "acp", label: "Gemini", command: ["gemini", "--acp"] },
+          gemini: {
+            extends: "acp",
+            label: "Gemini",
+            command: ["gemini", "--acp"],
+          },
         },
       },
     });

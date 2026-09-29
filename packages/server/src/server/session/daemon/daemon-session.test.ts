@@ -11,6 +11,7 @@ import {
 import type { DaemonWebSocketRuntimeDiagnosticSnapshot } from "./diagnostics.js";
 import type { ProviderAvailability } from "../../agent/agent-manager.js";
 import type { HubRelationshipManagement } from "../../hub/relationship-controller.js";
+import { brand } from "@frogg/branding";
 import type { SessionOutboundMessage } from "../../messages.js";
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import { createHostResources } from "../../host/host-resources.js";
@@ -627,7 +628,7 @@ describe("DaemonSession self-update RPCs", () => {
           updatable: false,
           reason: "Self-update is not available on this daemon.",
           currentVersion: "0.1.13",
-          channel: "beta",
+          channel: brand.channel,
           latestVersion: null,
           updateAvailable: false,
           releaseUrl: null,
@@ -734,5 +735,74 @@ describe("DaemonSession self-update RPCs", () => {
         lastResult: { status: "applied" },
       },
     });
+  });
+});
+
+describe("beta channel handlers", () => {
+  function runtime(betaChannel?: DaemonRuntimeConfig["betaChannel"]): DaemonRuntimeConfig {
+    return { listen: null, getRelayConfig: () => null, ...(betaChannel ? { betaChannel } : {}) };
+  }
+
+  test("status without the service is an unsupported rpc_error", async () => {
+    const { subsystem, emitted } = makeSubsystem({ daemonRuntimeConfig: runtime() });
+    await subsystem.handleBetaChannelGetStatusRequest({
+      type: "daemon.beta_channel.get_status.request",
+      requestId: "r1",
+    });
+    expect(emitted[0]).toMatchObject({
+      type: "rpc_error",
+      payload: { requestId: "r1", code: "unsupported" },
+    });
+  });
+
+  test("install and uninstall respond with the service's start result", async () => {
+    const calls: unknown[] = [];
+    const service = {
+      install: (input: unknown) => {
+        calls.push(["install", input]);
+        return { accepted: true, runId: "run-1", targetVersion: "1.6.5-beta.2", error: null };
+      },
+      uninstall: (input: unknown) => {
+        calls.push(["uninstall", input]);
+        return { accepted: false, runId: null, targetVersion: null, error: "not installed" };
+      },
+    } as unknown as NonNullable<DaemonRuntimeConfig["betaChannel"]>;
+    const { subsystem, emitted } = makeSubsystem({ daemonRuntimeConfig: runtime(service) });
+    await subsystem.handleBetaChannelInstallRequest({
+      type: "daemon.beta_channel.install.request",
+      requestId: "r2",
+      version: "1.6.5-beta.2",
+    });
+    await subsystem.handleBetaChannelUninstallRequest({
+      type: "daemon.beta_channel.uninstall.request",
+      requestId: "r3",
+      purge: true,
+    });
+    expect(calls).toEqual([
+      ["install", { version: "1.6.5-beta.2" }],
+      ["uninstall", { purge: true }],
+    ]);
+    expect(emitted).toEqual([
+      {
+        type: "daemon.beta_channel.install.response",
+        payload: {
+          requestId: "r2",
+          accepted: true,
+          runId: "run-1",
+          targetVersion: "1.6.5-beta.2",
+          error: null,
+        },
+      },
+      {
+        type: "daemon.beta_channel.uninstall.response",
+        payload: {
+          requestId: "r3",
+          accepted: false,
+          runId: null,
+          targetVersion: null,
+          error: "not installed",
+        },
+      },
+    ]);
   });
 });

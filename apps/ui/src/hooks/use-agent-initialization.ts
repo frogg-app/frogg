@@ -12,7 +12,7 @@ import {
 } from "@/utils/agent-initialization";
 import { getHostRuntimeStore, type HostRuntimeStore } from "@/runtime/host-runtime";
 import { planTimelineResumeFetch, planTimelineTailFetch } from "@/timeline/timeline-sync-plan";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export type SetAgentInitializing = (agentId: string, initializing: boolean) => void;
 

@@ -86,12 +86,33 @@ Host settings → **Host** has a **Resources** section when the daemon supports 
   while settings is open. The daemon process row shows its PID, RSS and heap, CPU as a
   share of one core (it can exceed 100%), and uptime.
 - **Owned storage.** The size and entry count of each area Frogg owns: logs, agent state,
-  projects, worktrees, uploads, project import staging, speech cache, models, daemon
-  versions and temp. Sizes are cached on the daemon for 5 minutes; **Refresh** remeasures.
-  A size prefixed with `≥` is a lower bound, because the walk stopped at its entry cap.
-- **Clean.** Owners can clean three areas after a confirmation: rotated logs (never the live
-  `daemon.log`), the spoken alert cache (`tts-cache`), and stale temp debris. The result
-  shows what was freed, then the list remeasures. Other areas are shown for size only.
+  projects, Frogg worktrees, agent worktrees, provider accounts, uploads, project import
+  staging, speech cache, models, daemon versions and temp. Sizes are cached on the daemon for
+  5 minutes; **Refresh** remeasures. A size prefixed with `≥` is a lower bound, because the
+  walk stopped at its entry cap.
+  - **Agent worktrees** are the linked Git worktrees of every registered project that Frogg
+    did not create, such as Claude Code's `.claude/worktrees/agent-*` and Codex's
+    `~/.codex/worktrees`. Repositories behind worktrees in provider account directories are
+    found even when they are not registered projects.
+  - **Provider accounts** is the combined size of each provider's default config directory
+    (`~/.claude`, `~/.codex`, …) and every added account's directory.
+- **Clean.** Owners can clean five areas after a confirmation: rotated logs (never the live
+  `daemon.log`), the spoken alert cache (`tts-cache`), stale temp debris, and stale Frogg and
+  agent worktrees. The result shows what was freed, then the list remeasures. Other areas are
+  shown for size only.
+
+### Stale worktrees
+
+A worktree is stale when it is not locked, has no uncommitted or untracked changes, no active
+workspace, project or agent runs inside it, and either its `HEAD` is merged into the default
+branch and it has been idle a day, or it has been idle longer than the retention period
+(7 days). A detached `HEAD` that is not merged is never stale. Removing a worktree keeps its
+branch, so committed work survives; ignored files such as `node_modules` go with it.
+
+The daemon removes stale worktrees 5 minutes after start and every 6 hours. Set
+`daemon.worktreeRetentionDays` in `config.json` to change the retention period, or `0` to
+turn off the automatic sweep and the idle rule (merged worktrees can still be cleaned by hand).
+The setting is read at startup.
 
 Viewers see metrics only; storage sizes need the operator role and cleaning needs owner. See
 [device roles](/docs/getting-started/connect-and-pair/#device-roles).

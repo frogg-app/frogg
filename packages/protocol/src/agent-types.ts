@@ -350,7 +350,32 @@ export interface CompactionTimelineItem {
   status: "loading" | "completed";
   trigger?: "auto" | "manual";
   preTokens?: number;
+  /** COMPAT(agentCleanCut): added in v1.6.2. Set when this marker is a clean cut. */
+  cleanCut?: CleanCutMarker;
 }
+
+/**
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27. The
+ * provider conversation before this marker was ended and a fresh one started,
+ * primed with `summary` instead of the full history.
+ */
+export interface CleanCutMarker {
+  summary: string;
+  previousSessionId?: string;
+  previousProvider?: string;
+  previousModel?: string;
+  provider?: string;
+  model?: string;
+  summaryModel?: string;
+  /**
+   * Why the cut was made. Absent on cuts recorded before this field existed,
+   * which were all manual. Other strings may appear from newer daemons.
+   */
+  reason?: CleanCutReason | (string & {});
+}
+
+/** `cold-cache`: the daemon cut automatically because the prompt cache had expired. */
+export type CleanCutReason = "manual" | "cold-cache";
 
 // COMPAT(pluginTimelineItems): plugins were removed after v0.7.0. Older daemons can still send
 // these items; clients parse and ignore them. Remove after 2027-09-13.

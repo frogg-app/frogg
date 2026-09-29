@@ -1,0 +1,53 @@
+---
+title: Frogg skills
+description: The skills built into Frogg that teach agents to work in it, and how to switch them on and off per host.
+sidebar:
+  order: 4
+---
+
+Frogg skills are instruction files built into Frogg that teach the agents it runs how to work
+inside Frogg: splitting a task across agents, setting a project up for worktrees and services.
+The daemon hands them to every Claude Code and Codex agent it starts.
+
+An agent sees only each skill's name and one-line description until a task calls for it, so a
+skill it does not use costs a line of context, not its whole text.
+
+This page is only about Frogg's own skills. Skills you or a project install for Claude Code or
+Codex (`~/.claude/skills`, `.claude/skills`, `~/.codex/skills` and so on) are managed by those
+tools and are not listed or changed by Frogg.
+
+## The skills
+
+| Skill            | Use                                                                                                                                                      |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `delegate`       | Split a task across parallel agents, each in its own worktree, then review and merge the results. Uses the [MCP tools](/docs/agents-and-providers/mcp/) |
+| `project-config` | Write or fix a repository's [`frogg.json`](/docs/reference/project-config/): worktree setup, scripts, services and ports                                 |
+
+Claude sees them as `frogg:<name>` (for example `/frogg:delegate`), Codex as `frogg-<name>`.
+
+## Switching skills on and off
+
+**Host settings → Frogg skills** lists the skills with a switch each. Select a skill to read its
+full instructions.
+
+- Switching a skill off hides it from agents started afterwards: it drops out of the agent's
+  skill list and `/` commands, and the agent cannot load it. Reload a running agent
+  (`frogg agent reload <id>`) to apply a change to it.
+- The choice is stored on the daemon host in `~/.frogg/skills.json`.
+- Only the host owner can switch skills; anyone who can open Host settings can view them.
+- Chats never load skills.
+- Only Claude Code and Codex agents get Frogg skills.
+
+## Where they live
+
+The daemon writes the skills under `~/.frogg/skills/built-in/` each time it starts, replacing
+what was there. Nothing is installed into your own skill folders:
+
+- Claude Code gets them as a local plugin for each session.
+- Codex gets them as an extra skill folder for each session.
+
+## Branded builds
+
+A custom brand gets the same skills under its own name, with its CLI name, environment prefix and
+docs links filled in. A brand with id `acme` shows **Host settings → Acme skills**, and its
+agents see `acme:delegate` and `acme-delegate`.

@@ -68,6 +68,11 @@ const manifests = {
     supportedHosts: ["main", "explorer"],
     resourceKey: () => "release_streams",
   },
+  plugin_panel: {
+    kind: "plugin_panel",
+    supportedHosts: ["main", "explorer"],
+    resourceKey: (target) => `${target.pluginId}:${target.panelId}`,
+  },
   file: {
     kind: "file",
     supportedHosts: ["main", "explorer"],

@@ -11,7 +11,12 @@ import {
 import type { AgentProviderRuntimeSettingsMap } from "./agent/provider-launch-config.js";
 import { DEFAULT_GIT_PROCESS_POLICY } from "../utils/git-process-scheduler.js";
 import { ensurePrivateFile, writePrivateFileAtomicSync } from "./private-files.js";
-import { HostSettingsSectionSchema, TerminalProfileSchema } from "@frogg/protocol/messages";
+import {
+  CleanCutProviderSettingsSchema,
+  CleanCutSummaryModelSchema,
+  HostSettingsSectionSchema,
+  TerminalProfileSchema,
+} from "@frogg/protocol/messages";
 import { FroggServicePortAllocationSchema } from "@frogg/protocol/frogg-config-schema";
 import { ProviderAccountSchema } from "@frogg/protocol/provider-accounts";
 
@@ -335,9 +340,30 @@ export const PersistedConfigSchema = z
           .strict()
           .optional(),
         autoArchiveAfterMerge: z.boolean().optional(),
+        worktreeRetentionDays: z.number().int().min(0).max(3650).optional(),
         autoResumeOnUsageLimit: z.boolean().optional(),
+        // COMPAT(cleanCutSettings): the v1.6.2 switch, superseded by `cleanCut.auto`
+        // in v1.6.5. `false` still turns off both automatic triggers while
+        // `cleanCut.auto` leaves them unset. Remove after 2027-09-27.
+        autoCleanCutOnColdCache: z.boolean().optional(),
+        cleanCut: z
+          .object({
+            auto: z
+              .object({
+                usageLimit: z.boolean().optional(),
+                daemonRestart: z.boolean().optional(),
+              })
+              .strict()
+              .optional(),
+            idleThresholdMinutes: CleanCutProviderSettingsSchema.shape.idleThresholdMinutes,
+            summaryModel: CleanCutSummaryModelSchema.optional(),
+            providers: z.record(z.string(), CleanCutProviderSettingsSchema).optional(),
+          })
+          .optional(),
         hostSettings: z
-          .object({ hiddenSections: z.array(HostSettingsSectionSchema).optional() })
+          .object({
+            hiddenSections: z.array(HostSettingsSectionSchema).optional(),
+          })
           .strict()
           .optional(),
         autoUpdate: z
@@ -463,6 +489,7 @@ const DEFAULT_PERSISTED_CONFIG = PersistedConfigSchema.parse({
     git: DEFAULT_GIT_PROCESS_POLICY,
     autoArchiveAfterMerge: false,
     autoResumeOnUsageLimit: true,
+    cleanCut: { auto: { usageLimit: true, daemonRestart: true } },
     // The brand decides which host settings sections a fresh install offers;
     // the admin of this host owns the value from here on.
     hostSettings: { hiddenSections: brand.hostSettings.hiddenSections },
@@ -516,7 +543,9 @@ function stripPaseoDefaults(root: Record<string, unknown>): void {
           allowedOrigins: origins.filter((origin) => origin !== PASEO_APP_ORIGIN),
         };
         if ((nextCors.allowedOrigins as unknown[]).length === 0) delete nextCors.allowedOrigins;
-        const nextDaemon: Record<string, unknown> = { ...(daemon as Record<string, unknown>) };
+        const nextDaemon: Record<string, unknown> = {
+          ...(daemon as Record<string, unknown>),
+        };
         if (Object.keys(nextCors).length > 0) nextDaemon.cors = nextCors;
         else delete nextDaemon.cors;
         root.daemon = nextDaemon;

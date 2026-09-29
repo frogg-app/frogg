@@ -35,6 +35,7 @@ export type WorkspaceTabTarget =
   | { kind: "pull_request" }
   | { kind: "ci_runs" }
   | { kind: "release_streams" }
+  | { kind: "plugin_panel"; pluginId: string; panelId: string }
   | WorkspaceFileTabTarget
   | WorkspaceWorkingDiffTabTarget
   | { kind: "setup"; workspaceId: string }
