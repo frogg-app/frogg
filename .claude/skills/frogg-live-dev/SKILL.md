@@ -61,8 +61,9 @@ Clients reconnect on their own after a daemon restart. A running agent turn is c
   Delete it for a clean slate. Nothing is seeded.
 - Every start imports the installed daemon's provider accounts (`providerAccounts`, which are
   just config-dir pointers such as `~/.claude-steve`) and its projects/workspaces from `~/.frogg`,
-  so no re-sign-in and the real repos are there. Agents and chats are not copied: two daemons
-  resuming one provider session would clobber it. `FROGG_LIVE_SOURCE_HOME=<dir>` picks another
+  and its agent records, so no re-sign-in and existing repos and conversations open. The provider
+  sessions behind those conversations are shared with the installed daemon: continue a
+  conversation in one daemon at a time. `FROGG_LIVE_SOURCE_HOME=<dir>` picks another
   source; `=none` skips the import.
 - The daemon names itself `<hostname>-DEVELOPMENT` (`FROGG_HOSTNAME`), so it can't be mistaken
   for the installed daemon in a host list.

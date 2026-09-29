@@ -17,7 +17,7 @@
 // names itself <hostname>-DEVELOPMENT. Add its daemon endpoint as a host in an installed Frogg app to drive it from there.
 import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, watch } from "node:fs";
-import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -341,8 +341,9 @@ function reapPreviousRun(): void {
 
 // Live mode borrows the installed daemon's provider accounts and projects on every start, so the
 // branch runs against the logins and repos already set up there instead of asking for them again.
-// Accounts are only config-dir pointers (~/.claude-*), so nobody signs in twice. Agents and chats
-// are not copied: two daemons resuming one provider session would write over each other.
+// Accounts are only config-dir pointers (~/.claude-*), so nobody signs in twice. Agents are copied
+// so existing conversations open, but both daemons then share each provider session: continue a
+// conversation in one daemon at a time, or they write over each other.
 // FROGG_LIVE_SOURCE_HOME picks another home; FROGG_LIVE_SOURCE_HOME=none skips the import.
 async function importInstalledHome(): Promise<void> {
   const source = process.env.FROGG_LIVE_SOURCE_HOME ?? path.join(os.homedir(), ".frogg");
@@ -366,7 +367,11 @@ async function importInstalledHome(): Promise<void> {
     const from = path.join(source, "projects", file);
     if (existsSync(from)) await copyFile(from, path.join(home, "projects", file));
   }
-  log(`imported provider accounts and projects from ${source}`);
+  // Agent records merge over the dev home's own: installed ones are refreshed, agents made here stay.
+  const agents = path.join(source, "agents");
+  if (existsSync(agents))
+    await cp(agents, path.join(home, "agents"), { recursive: true, force: true });
+  log(`imported provider accounts, projects and agents from ${source}`);
 }
 
 async function main(): Promise<void> {
