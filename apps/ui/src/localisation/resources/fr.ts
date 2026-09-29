@@ -589,6 +589,7 @@ export const fr: TranslationResources = {
       copyTurn: "Copier le tour",
       copyMessage: "Copier le message",
       forkMenu: "Dupliquer le message",
+      cleanCut: "Coupure nette : nouvelle conversation, même compte",
       forkInNewTab: "Dupliquer dans un nouvel onglet",
       forkInNewWorkspace: "Dupliquer dans une nouvelle session",
       forkUnavailable: "Mettez l'hôte à jour pour utiliser ceci.",

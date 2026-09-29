@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Clean cut from a reply.** A scissors button next to copy and fork on each finished turn
+  makes a clean cut on the same account and model: a fresh conversation primed with a summary.
 - **Dev bar.** With developer options on, the sidebar shows the development daemon and its web
   app with a status dot each, and menus to rebuild and restart the daemon, restart the web app
   with a clear cache, open it, and start or stop it. It flags what is out of date and how far

@@ -587,6 +587,7 @@ export const ja: TranslationResources = {
       copyTurn: "ターンをコピー",
       copyMessage: "メッセージをコピー",
       forkMenu: "メッセージをフォーク",
+      cleanCut: "クリーンカット：同じアカウントで新しい会話",
       forkInNewTab: "新しいタブにフォーク",
       forkInNewWorkspace: "新しいセッションにフォーク",
       forkUnavailable: "これを使用するにはホストを更新してください。",
