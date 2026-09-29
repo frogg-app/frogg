@@ -3154,6 +3154,7 @@ export const ja: TranslationResources = {
       providers: "プロバイダー",
       skills: "{{brandFullName}} スキル",
       usage: "使用状況",
+      webClient: "Web クライアント",
       terminals: "ターミナル",
       host: "概要",
       deploy: "デプロイ",
@@ -3352,8 +3353,33 @@ export const ja: TranslationResources = {
         stop: "停止",
         openWebUi: "Web UI を開く",
       },
+      sections: {
+        app: "アプリ",
+        daemons: "デーモン",
+      },
+      channels: {
+        stable: {
+          title: "安定版",
+          info: "誰もが使うリリース済みのアプリとデーモン。各チャネルは互いに並べてインストールされ、ポート・データ・設定はそれぞれ独立しています。",
+        },
+        beta: {
+          title: "ベータ",
+          info: "安定版に出る前にここで試すプレリリース版。ベータのアプリとデーモンは安定版のデータに触れずに並行して動きます。",
+        },
+        development: {
+          title: "開発",
+          info: "ホスト上のソースチェックアウトから動かすデーモンと Web アプリ。ベータになる前の変更を試すためのものです。",
+        },
+      },
+      stable: {
+        thisApp: "このアプリ · {{version}}",
+        appSeparate: "別にインストールされます。これはベータ版アプリです。",
+        daemonInfo:
+          "このアプリが各ホストで接続するデーモン。安定版デーモンの既定ポートは {{port}} です。",
+        connected: "接続中 · {{version}}",
+        viaBeta: "この接続はベータ版デーモンです。安定版デーモンはポート {{port}} で待ち受けます。",
+      },
       devDaemon: {
-        title: "開発用デーモン",
         info: "ホスト上のソースのチェックアウトで npm run dev:live を実行します。そのチェックアウトのデーモンが専用ポートで、ホストのアカウント・プロジェクト・会話とともに動作し、Web アプリも起動します。同時に動かせるのは 1 つだけです。",
         needsUpdate: "開発用デーモンを起動するにはホストを更新してください。",
         loadFailed: "開発用デーモンの状態を読み取れませんでした: {{error}}",
@@ -3397,14 +3423,13 @@ export const ja: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "ホストのベータ版デーモン",
         info: "ホストでは安定版の横でベータ版デーモンを、別のポートと別のデータで実行できます。インストールと削除にはオーナー権限が必要です。",
         noHosts: "ホストが追加されていません。",
         offline: "オフライン",
         needsUpdate: "ベータを管理するにはこのホストを更新してください。",
         loadFailed: "ベータの状態を読み込めませんでした: {{error}}",
         unsupported: "このホストでは利用できません: {{reason}}",
-        selfIsBeta: "このホストのデーモンはベータ版です。",
+        selfConnected: "接続中 · {{version}}(ポート {{port}})",
         installed: "ベータ {{version}} インストール済み",
         notInstalled: "ベータは未インストール",
         running: "ポート {{port}} で実行中",
@@ -3676,6 +3701,8 @@ export const ja: TranslationResources = {
         },
       },
       webClient: {
+        offline: "ホストはオフラインです。",
+        needsUpdate: "Web クライアントを管理するにはホストを更新してください。",
         title: "Web クライアント",
         info: "ブラウザ版アプリ用のホストの Web サーバーです。デーモンとは別のポートで動作し、アプリの配信だけを行います。ページはそれ以外のすべてでデーモンに接続します。",
         running: "ポート {{port}} で実行中",

@@ -3139,6 +3139,7 @@ export const en = {
       providers: "Providers",
       skills: "{{brandFullName}} skills",
       usage: "Usage",
+      webClient: "Web client",
       terminals: "Terminals",
       host: "Overview",
       deploy: "Deploy",
@@ -3337,8 +3338,34 @@ export const en = {
         stop: "Stop",
         openWebUi: "Open web UI",
       },
+      sections: {
+        app: "App",
+        daemons: "Daemons",
+      },
+      channels: {
+        stable: {
+          title: "Stable",
+          info: "The released app and daemon everyone runs. Each channel installs beside the others, with its own port, data and settings.",
+        },
+        beta: {
+          title: "Beta",
+          info: "Pre-release builds, tested here before they ship to stable. The beta app and daemon run beside stable ones without touching their data.",
+        },
+        development: {
+          title: "Development",
+          info: "A daemon and web app run from a source checkout on a host, for trying changes before they become a beta.",
+        },
+      },
+      stable: {
+        thisApp: "This app · {{version}}",
+        appSeparate: "Installed separately. This is the beta app.",
+        daemonInfo:
+          "The daemon this app connects to on each host. The stable daemon listens on port {{port}} by default.",
+        connected: "Connected · {{version}}",
+        viaBeta:
+          "This connection is to the beta daemon. The stable daemon listens on port {{port}}.",
+      },
       devDaemon: {
-        title: "Development daemon",
         info: "Runs npm run dev:live from a source checkout on the host: that checkout's daemon on its own port, with the host's accounts, projects and conversations, and its web app. One runs at a time.",
         needsUpdate: "Update the host to launch a development daemon.",
         loadFailed: "Couldn't read the development daemon status: {{error}}",
@@ -3380,14 +3407,13 @@ export const en = {
         },
       },
       betaDaemon: {
-        title: "Beta daemon on hosts",
         info: "A host can run a beta daemon beside its stable one, on its own port and with its own data. Installing and removing it needs the owner role.",
         noHosts: "No hosts added.",
         offline: "Offline",
         needsUpdate: "Update this host to manage betas.",
         loadFailed: "Couldn't load beta status: {{error}}",
         unsupported: "Not available on this host: {{reason}}",
-        selfIsBeta: "This host's daemon is the beta.",
+        selfConnected: "Connected · {{version}} on port {{port}}",
         installed: "Beta {{version}} installed",
         notInstalled: "Beta not installed",
         running: "Running on port {{port}}",
@@ -3656,6 +3682,8 @@ export const en = {
         },
       },
       webClient: {
+        offline: "The host is offline.",
+        needsUpdate: "Update the host to manage its web client.",
         title: "Web client",
         info: "The host's web server for the browser app, on its own port beside the daemon's. It serves only the app; the page connects to the daemon for everything else.",
         running: "Running on port {{port}}",

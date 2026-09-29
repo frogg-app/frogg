@@ -32,7 +32,7 @@ export function DevDaemonHostsSection() {
   const hosts = useHosts();
   return (
     <SettingsSection
-      title={t("settings.developer.devDaemon.title")}
+      title={t("settings.developer.sections.daemons")}
       info={t("settings.developer.devDaemon.info")}
       testID="developer-dev-daemon"
     >

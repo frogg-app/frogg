@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Wrench,
   Sparkles,
+  Globe,
 } from "lucide-react-native";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 
@@ -118,4 +119,5 @@ export const HOST_SECTION_ITEMS: HostSectionItem[] = [
     labelKey: "settings.hostSections.terminals",
     icon: SquareTerminal,
   },
+  { id: "web-client", labelKey: "settings.hostSections.webClient", icon: Globe },
 ];

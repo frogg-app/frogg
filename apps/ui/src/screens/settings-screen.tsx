@@ -65,6 +65,7 @@ import {
   HostTerminalsPage,
 } from "@/screens/settings/host-page";
 import { HostSkillsSection } from "@/screens/settings/skills-section";
+import { HostWebClientSection } from "@/screens/settings/host-web-client-section";
 import ProjectsScreen from "@/screens/projects-screen";
 import ProjectSettingsScreen from "@/screens/project-settings-screen";
 import { useIsCompactFormFactor } from "@/constants/layout";
@@ -115,6 +116,8 @@ function renderHostSettingsContent(
       return <HostSkillsSection serverId={view.serverId} />;
     case "terminals":
       return <HostTerminalsPage serverId={view.serverId} />;
+    case "web-client":
+      return <HostWebClientSection serverId={view.serverId} />;
     case "host":
       return <HostSettingsPage serverId={view.serverId} onHostRemoved={onHostRemoved} />;
   }

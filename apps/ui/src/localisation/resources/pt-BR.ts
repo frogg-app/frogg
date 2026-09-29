@@ -3167,6 +3167,7 @@ export const ptBR: TranslationResources = {
       providers: "Provedores",
       skills: "Habilidades do {{brandFullName}}",
       usage: "Uso",
+      webClient: "Cliente web",
       terminals: "Terminais",
       host: "Visão geral",
       deploy: "Implantar",
@@ -3369,8 +3370,33 @@ export const ptBR: TranslationResources = {
         stop: "Parar",
         openWebUi: "Abrir interface web",
       },
+      sections: {
+        app: "App",
+        daemons: "Daemons",
+      },
+      channels: {
+        stable: {
+          title: "Estável",
+          info: "O app e o daemon publicados que todos usam. Cada canal é instalado ao lado dos outros, com porta, dados e configurações próprios.",
+        },
+        beta: {
+          title: "Beta",
+          info: "Versões de pré-lançamento testadas aqui antes de chegarem ao estável. O app e o daemon beta rodam ao lado dos estáveis sem mexer nos dados deles.",
+        },
+        development: {
+          title: "Desenvolvimento",
+          info: "Um daemon e um app web executados a partir de uma cópia do código-fonte em um host, para testar mudanças antes de virarem beta.",
+        },
+      },
+      stable: {
+        thisApp: "Este app · {{version}}",
+        appSeparate: "Instalado separadamente. Este é o app beta.",
+        daemonInfo:
+          "O daemon ao qual este app se conecta em cada host. O daemon estável escuta na porta {{port}} por padrão.",
+        connected: "Conectado · {{version}}",
+        viaBeta: "Esta conexão é com o daemon beta. O daemon estável escuta na porta {{port}}.",
+      },
       devDaemon: {
-        title: "Daemon de desenvolvimento",
         info: "Executa npm run dev:live a partir de uma cópia do código-fonte no host: o daemon dessa cópia na sua própria porta, com as contas, projetos e conversas do host, e o app web. Apenas um é executado por vez.",
         needsUpdate: "Atualize o host para iniciar um daemon de desenvolvimento.",
         loadFailed: "Não foi possível ler o status do daemon de desenvolvimento: {{error}}",
@@ -3412,14 +3438,13 @@ export const ptBR: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "Daemon beta nos hosts",
         info: "Um host pode executar um daemon beta ao lado do estável, em sua própria porta e com seus próprios dados. Instalar e remover exige a função de proprietário.",
         noHosts: "Nenhum host adicionado.",
         offline: "Offline",
         needsUpdate: "Atualize este host para gerenciar betas.",
         loadFailed: "Não foi possível carregar o status beta: {{error}}",
         unsupported: "Indisponível neste host: {{reason}}",
-        selfIsBeta: "O daemon deste host é a beta.",
+        selfConnected: "Conectado · {{version}} na porta {{port}}",
         installed: "Beta {{version}} instalada",
         notInstalled: "Beta não instalada",
         running: "Em execução na porta {{port}}",
@@ -3691,6 +3716,8 @@ export const ptBR: TranslationResources = {
         },
       },
       webClient: {
+        offline: "O host está offline.",
+        needsUpdate: "Atualize o host para gerenciar o cliente web.",
         title: "Cliente web",
         info: "O servidor web do host para o app de navegador, na sua própria porta ao lado da do daemon. Ele só serve o app; a página se conecta ao daemon para todo o resto.",
         running: "Em execução na porta {{port}}",

@@ -3062,6 +3062,7 @@ export const zhCN: TranslationResources = {
       providers: "Providers",
       skills: "{{brandFullName}} 技能",
       usage: "使用情况",
+      webClient: "Web 客户端",
       terminals: "Terminals",
       host: "概览",
       deploy: "部署",
@@ -3254,8 +3255,32 @@ export const zhCN: TranslationResources = {
         stop: "停止",
         openWebUi: "打开 Web 界面",
       },
+      sections: {
+        app: "应用",
+        daemons: "守护进程",
+      },
+      channels: {
+        stable: {
+          title: "稳定版",
+          info: "大家都在使用的正式版应用和守护进程。每个渠道并排安装,拥有各自的端口、数据和设置。",
+        },
+        beta: {
+          title: "测试版",
+          info: "在发布到稳定版之前在这里测试的预发布版本。测试版应用和守护进程与稳定版并排运行,不会触碰其数据。",
+        },
+        development: {
+          title: "开发",
+          info: "从主机上的源码检出运行的守护进程和 Web 应用,用于在变更成为测试版之前试用。",
+        },
+      },
+      stable: {
+        thisApp: "本应用 · {{version}}",
+        appSeparate: "单独安装。这是测试版应用。",
+        daemonInfo: "本应用在每台主机上连接的守护进程。稳定版守护进程默认监听端口 {{port}}。",
+        connected: "已连接 · {{version}}",
+        viaBeta: "此连接指向测试版守护进程。稳定版守护进程监听端口 {{port}}。",
+      },
       devDaemon: {
-        title: "开发守护进程",
         info: "在主机上的源码检出目录中运行 npm run dev:live：该检出的守护进程在独立端口上运行，使用主机的账户、项目和对话，并启动其 Web 应用。同一时间只运行一个。",
         needsUpdate: "请更新主机以启动开发守护进程。",
         loadFailed: "无法读取开发守护进程状态：{{error}}",
@@ -3297,14 +3322,13 @@ export const zhCN: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "主机上的测试版守护进程",
         info: "主机可以在稳定版旁运行测试版守护进程，使用独立的端口和数据。安装和移除需要所有者角色。",
         noHosts: "尚未添加主机。",
         offline: "离线",
         needsUpdate: "更新此主机以管理测试版。",
         loadFailed: "无法加载测试版状态：{{error}}",
         unsupported: "此主机不可用：{{reason}}",
-        selfIsBeta: "此主机的守护进程就是测试版。",
+        selfConnected: "已连接 · {{version}},端口 {{port}}",
         installed: "已安装测试版 {{version}}",
         notInstalled: "未安装测试版",
         running: "正在端口 {{port}} 上运行",
@@ -3570,6 +3594,8 @@ export const zhCN: TranslationResources = {
         },
       },
       webClient: {
+        offline: "主机已离线。",
+        needsUpdate: "请更新主机以管理其 Web 客户端。",
         title: "Web 客户端",
         info: "主机为浏览器版应用提供的 Web 服务器，使用独立于守护进程的端口。它只提供应用本身，页面的其他操作都连接到守护进程。",
         running: "正在端口 {{port}} 上运行",

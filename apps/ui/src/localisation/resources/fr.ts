@@ -3191,6 +3191,7 @@ export const fr: TranslationResources = {
       providers: "Fournisseurs",
       skills: "Compétences {{brandFullName}}",
       usage: "Utilisation",
+      webClient: "Client web",
       terminals: "Terminals",
       host: "Aperçu",
       deploy: "Déployer",
@@ -3394,8 +3395,34 @@ export const fr: TranslationResources = {
         stop: "Arrêter",
         openWebUi: "Ouvrir l'interface web",
       },
+      sections: {
+        app: "App",
+        daemons: "Daemons",
+      },
+      channels: {
+        stable: {
+          title: "Stable",
+          info: "L'app et le daemon publiés que tout le monde utilise. Chaque canal s'installe à côté des autres, avec son propre port, ses données et ses réglages.",
+        },
+        beta: {
+          title: "Bêta",
+          info: "Des versions préliminaires testées ici avant de passer en stable. L'app et le daemon bêta tournent à côté des versions stables sans toucher à leurs données.",
+        },
+        development: {
+          title: "Développement",
+          info: "Un daemon et une app web lancés depuis une copie des sources sur un hôte, pour essayer des changements avant qu'ils deviennent une bêta.",
+        },
+      },
+      stable: {
+        thisApp: "Cette app · {{version}}",
+        appSeparate: "Installée séparément. Ceci est l'app bêta.",
+        daemonInfo:
+          "Le daemon auquel cette app se connecte sur chaque hôte. Le daemon stable écoute par défaut sur le port {{port}}.",
+        connected: "Connecté · {{version}}",
+        viaBeta:
+          "Cette connexion mène au daemon bêta. Le daemon stable écoute sur le port {{port}}.",
+      },
       devDaemon: {
-        title: "Démon de développement",
         info: "Exécute npm run dev:live depuis une copie des sources sur l'hôte : le démon de cette copie sur son propre port, avec les comptes, projets et conversations de l'hôte, et son application web. Un seul à la fois.",
         needsUpdate: "Mettez à jour l'hôte pour lancer un démon de développement.",
         loadFailed: "Impossible de lire l'état du démon de développement : {{error}}",
@@ -3438,14 +3465,13 @@ export const fr: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "Daemon bêta sur les hôtes",
         info: "Un hôte peut exécuter un daemon bêta à côté du daemon stable, sur son propre port et avec ses propres données. L'installer et le retirer nécessite le rôle de propriétaire.",
         noHosts: "Aucun hôte ajouté.",
         offline: "Hors ligne",
         needsUpdate: "Mettez à jour cet hôte pour gérer les bêtas.",
         loadFailed: "Impossible de charger l'état bêta : {{error}}",
         unsupported: "Indisponible sur cet hôte : {{reason}}",
-        selfIsBeta: "Le daemon de cet hôte est la bêta.",
+        selfConnected: "Connecté · {{version}} sur le port {{port}}",
         installed: "Bêta {{version}} installée",
         notInstalled: "Bêta non installée",
         running: "En cours d'exécution sur le port {{port}}",
@@ -3719,6 +3745,8 @@ export const fr: TranslationResources = {
         },
       },
       webClient: {
+        offline: "L'hôte est hors ligne.",
+        needsUpdate: "Mettez à jour l'hôte pour gérer son client web.",
         title: "Client web",
         info: "Le serveur web de l'hôte pour l'application navigateur, sur son propre port à côté de celui du démon. Il ne sert que l'application ; la page se connecte au démon pour tout le reste.",
         running: "En cours d'exécution sur le port {{port}}",

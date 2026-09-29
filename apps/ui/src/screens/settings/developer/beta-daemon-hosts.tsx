@@ -46,7 +46,7 @@ export function BetaDaemonHostsSection() {
   const hosts = useHosts();
   return (
     <SettingsSection
-      title={t("settings.developer.betaDaemon.title")}
+      title={t("settings.developer.sections.daemons")}
       info={t("settings.developer.betaDaemon.info")}
       testID="developer-beta-daemon"
     >
@@ -252,7 +252,7 @@ function BetaDaemonHostManager({ host }: { host: HostProfile }) {
     status.webRunning && status.webPort ? siblingDaemonWebUrl(host, status.webPort) : null;
   return (
     <View style={styles.manager}>
-      <StatusLines status={status} />
+      <StatusLines status={status} serverId={serverId} />
       {canControl && status.supported && status.installed ? (
         <View style={styles.actions}>
           {status.running ? (
@@ -335,21 +335,40 @@ function BetaDaemonHostManager({ host }: { host: HostProfile }) {
   );
 }
 
-function StatusLines({ status }: { status: DaemonBetaChannelStatusPayload }) {
+function StatusLines({
+  status,
+  serverId,
+}: {
+  status: DaemonBetaChannelStatusPayload;
+  serverId: string;
+}) {
   const { t } = useTranslation();
+  const connectedVersion = useSessionStore(
+    (state) => state.sessions[serverId]?.serverInfo?.version ?? null,
+  );
   const lines: string[] = [];
-  if (status.selfIsBeta) lines.push(t("settings.developer.betaDaemon.selfIsBeta"));
-  if (!status.supported) {
+  if (status.selfIsBeta) {
+    // This connection is the beta daemon: it can't manage itself, so say what it is and leave
+    // install and removal to the stable daemon.
+    lines.push(
+      t("settings.developer.betaDaemon.selfConnected", {
+        version: connectedVersion ?? "?",
+        port: status.port,
+      }),
+    );
+  } else if (!status.supported) {
     lines.push(
       t("settings.developer.betaDaemon.unsupported", { reason: status.reason ?? status.platform }),
     );
   }
-  lines.push(
-    status.installed
-      ? t("settings.developer.betaDaemon.installed", { version: status.installedVersion ?? "?" })
-      : t("settings.developer.betaDaemon.notInstalled"),
-  );
-  if (status.installed) {
+  if (!status.selfIsBeta) {
+    lines.push(
+      status.installed
+        ? t("settings.developer.betaDaemon.installed", { version: status.installedVersion ?? "?" })
+        : t("settings.developer.betaDaemon.notInstalled"),
+    );
+  }
+  if (status.installed && !status.selfIsBeta) {
     lines.push(
       status.running
         ? t("settings.developer.betaDaemon.running", { port: status.port })
