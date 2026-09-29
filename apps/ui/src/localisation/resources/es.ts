@@ -3490,6 +3490,14 @@ export const es: TranslationResources = {
         title: "Esquema del chat",
         description: "Muestra un esquema para saltar entre instrucciones",
       },
+      motion: {
+        title: "Movimiento",
+        activityIndicators: {
+          title: "Animar indicadores de actividad",
+          description:
+            "Mantiene en movimiento los indicadores de carga y progreso aunque el sistema pida reducir el movimiento",
+        },
+      },
       usage: {
         title: "Medidores de uso",
         heading: "Actualización y umbrales",

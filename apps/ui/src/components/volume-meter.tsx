@@ -9,6 +9,7 @@ import ReanimatedAnimated, {
   Easing,
 } from "react-native-reanimated";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
+import { useActivityReduceMotionConfig } from "@/hooks/use-activity-reduce-motion";
 
 interface VolumeMeterProps {
   volume: number;
@@ -28,6 +29,7 @@ export function VolumeMeter({
   color,
 }: VolumeMeterProps) {
   const { theme } = useUnistyles();
+  const reduceMotion = useActivityReduceMotionConfig();
   const isCompact = variant === "compact";
 
   // Base dimensions
@@ -71,6 +73,8 @@ export function VolumeMeter({
       ),
       -1,
       false,
+      undefined,
+      reduceMotion,
     );
 
     line2Pulse.value = withRepeat(
@@ -81,6 +85,8 @@ export function VolumeMeter({
       ),
       -1,
       false,
+      undefined,
+      reduceMotion,
     );
 
     line3Pulse.value = withRepeat(
@@ -91,8 +97,10 @@ export function VolumeMeter({
       ),
       -1,
       false,
+      undefined,
+      reduceMotion,
     );
-  }, [isMuted, line1Pulse, line2Pulse, line3Pulse]);
+  }, [isMuted, line1Pulse, line2Pulse, line3Pulse, reduceMotion]);
 
   // Drive a single animated volume value and derive the individual bar heights
   // on the UI thread instead of scheduling three independent springs per sample.

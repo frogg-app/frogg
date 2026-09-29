@@ -3438,6 +3438,14 @@ export const en = {
         title: "Chat outline",
         description: "Show an outline for jumping between prompts",
       },
+      motion: {
+        title: "Motion",
+        activityIndicators: {
+          title: "Animate activity indicators",
+          description:
+            "Keep loaders and progress pulses moving even when your system asks for reduced motion",
+        },
+      },
       usage: {
         title: "Usage meters",
         heading: "Refresh and thresholds",

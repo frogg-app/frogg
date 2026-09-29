@@ -3497,6 +3497,14 @@ export const fr: TranslationResources = {
         title: "Plan de la discussion",
         description: "Afficher un plan pour passer d’une requête à l’autre",
       },
+      motion: {
+        title: "Mouvement",
+        activityIndicators: {
+          title: "Animer les indicateurs d’activité",
+          description:
+            "Garde les indicateurs de chargement et de progression en mouvement même si le système demande de réduire les animations",
+        },
+      },
       usage: {
         title: "Jauges d’utilisation",
         heading: "Actualisation et seuils",

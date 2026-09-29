@@ -3354,6 +3354,13 @@ export const zhCN: TranslationResources = {
         title: "聊天大纲",
         description: "显示用于在提示词之间跳转的大纲",
       },
+      motion: {
+        title: "动效",
+        activityIndicators: {
+          title: "活动指示器保持动画",
+          description: "即使系统要求减少动态效果，加载和进度指示器也会继续动画",
+        },
+      },
       usage: {
         title: "用量仪表",
         heading: "刷新与阈值",

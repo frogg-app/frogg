@@ -3432,6 +3432,13 @@ export const ko: TranslationResources = {
         title: "채팅 개요",
         description: "프롬프트 사이를 이동하기 위한 개요 표시",
       },
+      motion: {
+        title: "동작",
+        activityIndicators: {
+          title: "활동 표시기 애니메이션",
+          description: "시스템에서 동작 줄이기를 요청해도 로딩 및 진행 표시기를 계속 움직입니다",
+        },
+      },
       usage: {
         title: "사용량 미터",
         heading: "새로 고침 및 임계값",

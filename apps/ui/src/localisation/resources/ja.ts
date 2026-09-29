@@ -3454,6 +3454,14 @@ export const ja: TranslationResources = {
         title: "チャットのアウトライン",
         description: "プロンプト間を移動するためのアウトラインを表示します",
       },
+      motion: {
+        title: "モーション",
+        activityIndicators: {
+          title: "アクティビティ表示をアニメーション",
+          description:
+            "システムで視差効果を減らす設定になっていても、読み込みや進行状況の表示を動かし続けます",
+        },
+      },
       usage: {
         title: "使用量メーター",
         heading: "更新としきい値",

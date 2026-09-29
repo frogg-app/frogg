@@ -3470,6 +3470,14 @@ export const ptBR: TranslationResources = {
         title: "Estrutura do chat",
         description: "Mostrar uma estrutura para navegar entre prompts",
       },
+      motion: {
+        title: "Movimento",
+        activityIndicators: {
+          title: "Animar indicadores de atividade",
+          description:
+            "Mantém os indicadores de carregamento e progresso em movimento mesmo quando o sistema pede menos movimento",
+        },
+      },
       usage: {
         title: "Medidores de uso",
         heading: "Atualização e limites",

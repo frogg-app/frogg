@@ -3407,6 +3407,13 @@ export const ar: TranslationResources = {
         title: "مخطط المحادثة",
         description: "عرض مخطط للتنقل بين المطالبات",
       },
+      motion: {
+        title: "الحركة",
+        activityIndicators: {
+          title: "تحريك مؤشرات النشاط",
+          description: "إبقاء مؤشرات التحميل والتقدم متحركة حتى عندما يطلب النظام تقليل الحركة",
+        },
+      },
       usage: {
         title: "مقاييس الاستخدام",
         heading: "التحديث والعتبات",
