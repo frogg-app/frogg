@@ -4,6 +4,7 @@ import type { TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
   devBar: {
+    menu: "التطوير",
     daemon: "خادم التطوير",
     web: "ويب التطوير",
     rebuildDaemon: "إعادة البناء وإعادة التشغيل",

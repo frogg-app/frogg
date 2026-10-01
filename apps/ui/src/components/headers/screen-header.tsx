@@ -16,6 +16,7 @@ import {
   titlebarDragSurfaceStyle,
 } from "@/components/desktop/titlebar-drag-region";
 import { resolveShellDesign } from "@/components/sidebar/shell-design";
+import { DevMenu } from "@/components/dev-menu";
 
 interface ScreenHeaderProps {
   left?: ReactNode;
@@ -86,7 +87,11 @@ export function ScreenHeader({
         >
           <TitlebarDragRegion />
           <View style={leftCombinedStyle}>{left}</View>
-          <View style={rightCombinedStyle}>{right}</View>
+          <View style={rightCombinedStyle}>
+            {/* Developer-only; the main panel's top bar, not headers inside modals. */}
+            {isWindowChromeHeader && !isMobile ? <DevMenu /> : null}
+            {right}
+          </View>
         </WindowChromeSafeArea>
       </View>
     </View>

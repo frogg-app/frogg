@@ -4,6 +4,7 @@ import type { TranslationResources } from "./en";
 
 export const ru: TranslationResources = {
   devBar: {
+    menu: "Разработка",
     daemon: "Демон разработки",
     web: "Веб разработки",
     rebuildDaemon: "Собрать и перезапустить",

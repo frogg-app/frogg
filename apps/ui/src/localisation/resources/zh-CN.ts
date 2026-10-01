@@ -4,6 +4,7 @@ import type { TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
   devBar: {
+    menu: "开发",
     daemon: "开发守护进程",
     web: "开发 Web",
     rebuildDaemon: "重新构建并重启",

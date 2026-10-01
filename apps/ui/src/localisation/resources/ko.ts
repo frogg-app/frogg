@@ -4,6 +4,7 @@ import type { TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
   devBar: {
+    menu: "개발",
     daemon: "개발 데몬",
     web: "개발 웹",
     rebuildDaemon: "빌드 후 재시작",

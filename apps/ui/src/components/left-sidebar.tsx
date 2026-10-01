@@ -1,4 +1,3 @@
-import { DevBar } from "@/components/dev-bar";
 import { router } from "expo-router";
 import { FolderPlus, GitBranch, Settings, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -597,7 +596,6 @@ function DesktopSidebar({
             ) : null}
           </View>
         </View>
-        <DevBar />
 
         {chatsSupported ? <SidebarSectionBar /> : null}
         <SidebarSectionTransition section={section}>

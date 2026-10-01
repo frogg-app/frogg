@@ -4,6 +4,7 @@ import type { TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
   devBar: {
+    menu: "開発",
     daemon: "開発デーモン",
     web: "開発 Web",
     rebuildDaemon: "ビルドして再起動",

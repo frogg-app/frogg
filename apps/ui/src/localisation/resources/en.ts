@@ -2,6 +2,7 @@ import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
 export const en = {
   devBar: {
+    menu: "Dev",
     daemon: "Dev daemon",
     web: "Dev web",
     rebuildDaemon: "Rebuild and restart",
