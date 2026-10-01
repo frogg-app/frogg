@@ -11,6 +11,8 @@ export const ja: TranslationResources = {
     restartWeb: "キャッシュを消して再起動",
     openWeb: "開く",
     stop: "停止",
+    noCheckouts:
+      "このホストに Frogg のソースのチェックアウトがありません。ここで起動するにはリポジトリをプロジェクトとして追加してください。",
     startIn: "{{name}} で起動",
     lastError: "前回のビルドに失敗しました: {{error}}",
     behindMain_one: "main より {{count}} コミット遅れています",

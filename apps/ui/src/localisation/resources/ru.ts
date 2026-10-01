@@ -11,6 +11,8 @@ export const ru: TranslationResources = {
     restartWeb: "Перезапустить с очисткой кэша",
     openWeb: "Открыть",
     stop: "Остановить",
+    noCheckouts:
+      "На этом хосте нет checkout исходников Frogg. Добавьте репозиторий как проект, чтобы запустить его здесь.",
     startIn: "Запустить в {{name}}",
     lastError: "Последняя сборка не удалась: {{error}}",
     behindMain_one: "Коммитов позади main: {{count}}",

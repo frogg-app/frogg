@@ -11,6 +11,7 @@ export const zhCN: TranslationResources = {
     restartWeb: "清除缓存后重启",
     openWeb: "打开",
     stop: "停止",
+    noCheckouts: "此主机上没有 Frogg 源码检出。将仓库添加为项目即可在此启动。",
     startIn: "在 {{name}} 中启动",
     lastError: "上次构建失败：{{error}}",
     behindMain_one: "落后 main {{count}} 个提交",

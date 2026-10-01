@@ -11,6 +11,8 @@ export const ptBR: TranslationResources = {
     restartWeb: "Reiniciar com o cache limpo",
     openWeb: "Abrir",
     stop: "Parar",
+    noCheckouts:
+      "Nenhum checkout do código do Frogg neste host. Adicione o repositório como projeto para iniciar um aqui.",
     startIn: "Iniciar em {{name}}",
     lastError: "A última recompilação falhou: {{error}}",
     behindMain_one: "{{count}} commit atrás da main",

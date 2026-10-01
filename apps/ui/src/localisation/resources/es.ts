@@ -11,6 +11,8 @@ export const es: TranslationResources = {
     restartWeb: "Reiniciar con la caché vacía",
     openWeb: "Abrir",
     stop: "Detener",
+    noCheckouts:
+      "No hay ningún checkout del código de Frogg en este host. Añade el repositorio como proyecto para iniciar uno aquí.",
     startIn: "Iniciar en {{name}}",
     lastError: "La última recompilación falló: {{error}}",
     behindMain_one: "{{count}} commit por detrás de main",

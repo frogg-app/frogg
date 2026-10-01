@@ -106,6 +106,29 @@ function DevMenuForHost({ host }: { host: HostProfile }) {
     [refresh],
   );
 
+  // dev:live runs the daemon and its web app together, so one block starts and stops both.
+  const lifecycleItems = useMemo<DevMenuItem[]>(() => {
+    if (!status || !client || status.isSelf) return [];
+    if (status.running) {
+      return [
+        {
+          id: "stop",
+          label: t("devBar.stop"),
+          onSelect: () => void run("daemon", () => client.stopDevDaemon()),
+        },
+      ];
+    }
+    if (status.checkouts.length === 0) {
+      return [{ id: "no-checkouts", label: t("devBar.noCheckouts"), disabled: true }];
+    }
+    return status.checkouts.map((checkout) => ({
+      id: `start-${checkout.cwd}`,
+      label: t("devBar.startIn", { name: checkout.name }),
+      description: checkout.branch ?? checkout.cwd,
+      onSelect: () => void run("daemon", () => client.startDevDaemon(checkout.cwd)),
+    }));
+  }, [client, run, status, t]);
+
   const daemonItems = useMemo<DevMenuItem[]>(() => {
     if (!status || !client) return [];
     const items: DevMenuItem[] = [];
@@ -116,23 +139,6 @@ function DevMenuForHost({ host }: { host: HostProfile }) {
         disabled: Boolean(status.busy),
         onSelect: () => void run("daemon", () => client.rebuildDevDaemon("daemon")),
       });
-    }
-    if (!status.isSelf && status.running) {
-      items.push({
-        id: "stop",
-        label: t("devBar.stop"),
-        onSelect: () => void run("daemon", () => client.stopDevDaemon()),
-      });
-    }
-    if (!status.isSelf && !status.running) {
-      for (const checkout of status.checkouts) {
-        items.push({
-          id: `start-${checkout.cwd}`,
-          label: t("devBar.startIn", { name: checkout.name }),
-          description: checkout.branch ?? checkout.cwd,
-          onSelect: () => void run("daemon", () => client.startDevDaemon(checkout.cwd)),
-        });
-      }
     }
     return items;
   }, [client, run, status, t]);
@@ -213,6 +219,18 @@ function DevMenuForHost({ host }: { host: HostProfile }) {
           notes={[]}
           items={webItems}
         />
+        {lifecycleItems.length > 0 ? <DropdownMenuSeparator /> : null}
+        {lifecycleItems.map((item) => (
+          <DropdownMenuItem
+            key={item.id}
+            testID={`dev-menu-${item.id}`}
+            disabled={item.disabled}
+            description={item.description}
+            onSelect={item.onSelect}
+          >
+            {item.label}
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

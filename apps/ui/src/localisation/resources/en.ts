@@ -9,6 +9,8 @@ export const en = {
     restartWeb: "Restart with a clear cache",
     openWeb: "Open",
     stop: "Stop",
+    noCheckouts:
+      "No Frogg source checkout on this host. Add the repo as a project to start one here.",
     startIn: "Start in {{name}}",
     lastError: "Last rebuild failed: {{error}}",
     behindMain_one: "{{count}} commit behind main",

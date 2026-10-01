@@ -11,6 +11,8 @@ export const ko: TranslationResources = {
     restartWeb: "캐시를 지우고 재시작",
     openWeb: "열기",
     stop: "중지",
+    noCheckouts:
+      "이 호스트에 Frogg 소스 체크아웃이 없습니다. 여기서 시작하려면 저장소를 프로젝트로 추가하세요.",
     startIn: "{{name}}에서 시작",
     lastError: "마지막 빌드 실패: {{error}}",
     behindMain_one: "main보다 커밋 {{count}}개 뒤처짐",

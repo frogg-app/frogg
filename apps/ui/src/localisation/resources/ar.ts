@@ -11,6 +11,7 @@ export const ar: TranslationResources = {
     restartWeb: "إعادة التشغيل مع مسح الذاكرة المؤقتة",
     openWeb: "فتح",
     stop: "إيقاف",
+    noCheckouts: "لا توجد نسخة من مصدر Frogg على هذا المضيف. أضف المستودع كمشروع لتشغيله هنا.",
     startIn: "التشغيل في {{name}}",
     lastError: "فشلت آخر إعادة بناء: {{error}}",
     behindMain_one: "إيداعات متأخرة عن main: {{count}}",
