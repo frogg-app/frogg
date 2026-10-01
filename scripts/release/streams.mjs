@@ -638,7 +638,9 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   },
 
   "tested-chain"(args) {
-    process.stdout.write(`${testedChain(args[0] ?? fail("usage: tested-chain <ref>")).join(" ")}\n`);
+    process.stdout.write(
+      `${testedChain(args[0] ?? fail("usage: tested-chain <ref>")).join(" ")}\n`,
+    );
   },
 
   "needs-tests"(args) {
