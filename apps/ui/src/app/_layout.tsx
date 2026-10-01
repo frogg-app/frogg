@@ -32,6 +32,7 @@ import { AppearanceStyleBoundary } from "@/components/appearance-style-boundary"
 import { WorktreeSetupCalloutSource } from "@/components/worktree-setup-callout-source";
 import { DownloadToast } from "@/components/download-toast";
 import { DesignSwitcher } from "@/design/design-switcher";
+import { DESIGN_PREVIEW_ENABLED } from "@/design/design-preview-store";
 import { DesignSlot } from "@/design/layouts/design-slot";
 import { QuittingOverlay } from "@/components/quitting-overlay";
 import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
@@ -613,7 +614,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
       <FloatingPanelPortalHost />
       {isCompactLayout ? sidebarChrome : null}
       <DownloadToast />
-      <DesignSwitcher />
+      {DESIGN_PREVIEW_ENABLED ? <DesignSwitcher /> : null}
       <RosettaCalloutSource />
       <UpdateCalloutSource />
       <MobileUpdateCalloutSource />

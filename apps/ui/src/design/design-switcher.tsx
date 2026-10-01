@@ -15,7 +15,11 @@ import {
 import { useDemoChatRoute } from "./use-demo-chat-route";
 import { DESIGN_VARIANT_IDS, getDesignVariant } from "@/styles/design-variants";
 import type { DesignVariantId, Theme } from "@/styles/theme";
-import { useDesignPreviewStore, type DesignSchemePreference } from "./design-preview-store";
+import {
+  designPreviewPersist,
+  useDesignPreviewStore,
+  type DesignSchemePreference,
+} from "./design-preview-store";
 
 // Review tool for the UI-refresh branch: a floating bar to flip between the five design
 // directions and the shipping design without reloading. Copy is intentionally not localised;
@@ -73,11 +77,11 @@ function useDesignUrlParams(): void {
       for (const key of ["design", "scheme", "switcher"]) url.searchParams.delete(key);
       window.history.replaceState(window.history.state, "", url.toString());
     };
-    if (useDesignPreviewStore.persist.hasHydrated()) {
+    if (!designPreviewPersist || designPreviewPersist.hasHydrated()) {
       apply();
       return;
     }
-    return useDesignPreviewStore.persist.onFinishHydration(apply);
+    return designPreviewPersist.onFinishHydration(apply);
   }, []);
 }
 
