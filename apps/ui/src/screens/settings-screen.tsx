@@ -43,7 +43,7 @@ import { VoiceAlertsSection } from "@/screens/settings/voice-alerts-section";
 import { BrowserDataSection } from "@/desktop/browser/settings/browser-data-section";
 import { isElectronRuntime } from "@/desktop/host";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
-import { resolveAppVersion } from "@/utils/app-version";
+import { isBetaBuild, resolveAppVersion } from "@/utils/app-version";
 import { useAppDiagnosticStore } from "@/diagnostics/store";
 import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { settingsStyles } from "@/styles/settings";
@@ -58,15 +58,17 @@ import {
   type SupportedLocale,
 } from "@/localisation/locales";
 import {
-  HostPairDevicePage,
+  HostAutomationPage,
   HostDevicesPage,
   HostAgentsPage,
   HostSettingsPage,
-  HostDeployPage,
+  HostUpdatesPage,
   HostProvidersPage,
   HostTerminalsPage,
 } from "@/screens/settings/host-page";
 import { HostSkillsSection } from "@/screens/settings/skills-section";
+import { HostWebClientSection } from "@/screens/settings/host-web-client-section";
+import { HostDeveloperPage } from "@/screens/settings/developer/host-developer-page";
 import ProjectsScreen from "@/screens/projects-screen";
 import ProjectSettingsScreen from "@/screens/project-settings-screen";
 import { useIsCompactFormFactor } from "@/constants/layout";
@@ -99,12 +101,12 @@ function renderHostSettingsContent(
   onHostRemoved: () => void,
 ): ReactNode {
   switch (view.section) {
-    case "deploy":
-      return <HostDeployPage serverId={view.serverId} />;
+    case "updates":
+      return <HostUpdatesPage serverId={view.serverId} />;
+    case "automation":
+      return <HostAutomationPage serverId={view.serverId} />;
     case "projects":
       return <ProjectsScreen serverId={view.serverId} />;
-    case "pair-device":
-      return <HostPairDevicePage serverId={view.serverId} />;
     case "devices":
       return <HostDevicesPage serverId={view.serverId} />;
     case "security":
@@ -117,6 +119,10 @@ function renderHostSettingsContent(
       return <HostSkillsSection serverId={view.serverId} />;
     case "terminals":
       return <HostTerminalsPage serverId={view.serverId} />;
+    case "web-client":
+      return <HostWebClientSection serverId={view.serverId} />;
+    case "developer":
+      return <HostDeveloperPage serverId={view.serverId} />;
     case "host":
       return <HostSettingsPage serverId={view.serverId} onHostRemoved={onHostRemoved} />;
   }
@@ -798,7 +804,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
         case "permissions":
           return isDesktopApp ? <DesktopPermissionsSection /> : null;
         case "developer":
-          return settings.developerOptions ? <DeveloperSection /> : null;
+          return settings.developerOptions || isBetaBuild() ? <DeveloperSection /> : null;
         case "about":
           return (
             <AboutSection
@@ -972,7 +978,8 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingTop: theme.spacing[6],
     width: "100%",
     maxWidth: 720,
-    alignSelf: "center",
+    // Anchored beside the nav rather than floating mid-pane on a wide modal.
+    alignSelf: "flex-start",
     ...settingsTreatment(designThemeOf(theme, rt.themeName)).content,
   },
   themeTrigger: {

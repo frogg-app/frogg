@@ -127,7 +127,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          candidates="$(node scripts/release/streams.mjs tested-source "$RELEASE_TAG") $(git rev-parse "$RELEASE_TAG^{commit}")"
+          candidates="$(node scripts/release/streams.mjs tested-chain "$RELEASE_TAG")"
           for attempt in $(seq 1 90); do
             pending=false
             for sha in $candidates; do

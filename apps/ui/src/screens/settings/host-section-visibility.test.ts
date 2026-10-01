@@ -19,22 +19,25 @@ describe("host settings section visibility", () => {
   });
 
   it("drops hidden sections from the nav and keeps the rest in order", () => {
-    const items = visibleHostSectionItems(["pair-device", "agents"]);
+    const items = visibleHostSectionItems(["terminals", "agents"]);
     expect(items.map((item) => item.id)).toEqual(
-      HOST_SECTION_ITEMS.filter((item) => item.id !== "pair-device" && item.id !== "agents").map(
+      HOST_SECTION_ITEMS.filter((item) => item.id !== "terminals" && item.id !== "agents").map(
         (item) => item.id,
       ),
     );
-    expect(isHostSectionVisible("agents", ["pair-device", "agents"])).toBe(false);
-    expect(isHostSectionVisible("projects", ["pair-device", "agents"])).toBe(true);
+    expect(isHostSectionVisible("agents", ["terminals", "agents"])).toBe(false);
+    expect(isHostSectionVisible("projects", ["terminals", "agents"])).toBe(true);
   });
 
   it("keeps the brand's hideable sections in step with the client's own list", () => {
-    // Deploy is a desktop-only client section; the daemon has no setting for it.
     // Security is never hideable: a brand must not be able to hide its warnings.
-    const clientOnly = new Set(["deploy", "security"]);
-    // Retired sections stay valid in brand and daemon config so existing files parse.
-    const retired = ["usage"];
+    // Developer follows the app's own Developer options switch, not the daemon config.
+    // Web client manages a daemon server the browser app itself runs on; not a brand setting.
+    // Automation and Updates are client groupings of cards Overview used to hold.
+    const clientOnly = new Set(["security", "web-client", "developer", "automation", "updates"]);
+    // Retired sections stay valid in brand and daemon config so existing files parse;
+    // `pair-device` now hides the pairing card inside Devices.
+    const retired = ["usage", "pair-device"];
     const hideable = HOST_SECTION_SLUGS.filter((slug) => !clientOnly.has(slug));
     expect([...HOST_SETTINGS_SECTIONS].sort()).toEqual([...hideable, ...retired].sort());
   });
@@ -44,7 +47,7 @@ describe("host settings section visibility", () => {
   });
 
   it("sends a view of a hidden section to the first section the host still offers", () => {
-    const hidden = ["pair-device", "agents"] as const;
+    const hidden = ["terminals", "agents"] as const;
     const visible = visibleHostSectionItems(hidden);
     expect(resolveHiddenSectionRedirect({ section: "agents", hidden, visible })).toBe(
       visible[0]?.id,

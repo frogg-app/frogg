@@ -4,7 +4,20 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, test } from "vitest";
 
+import net from "node:net";
 import { createTestFroggDaemon, type TestFroggDaemon } from "./test-utils/frogg-daemon.js";
+
+function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      server.close(() => resolve(port));
+    });
+  });
+}
 
 interface InitialDaemonConnectionHint {
   listen: string;
@@ -54,6 +67,15 @@ function readInjectedConnectionHint(html: string): InitialDaemonConnectionHint {
 }
 
 describe("daemon web UI bootstrap", () => {
+  test("the daemon's own port serves no web client", async () => {
+    const distDir = await createWebUiDist();
+    daemonHandle = await createTestFroggDaemon({
+      mcpEnabled: false,
+      webUi: { enabled: true, distDir, port: await freePort() },
+    });
+    await expect(fetchDaemonWebUi({ port: daemonHandle.port })).rejects.toThrow(/got 404/);
+  });
+
   let tempRoot: string | null = null;
   let daemonHandle: TestFroggDaemon | null = null;
 
@@ -77,23 +99,23 @@ describe("daemon web UI bootstrap", () => {
     }
   });
 
-  test("injects a TLS initial connection hint only for HTTPS forwarded by a trusted proxy", async () => {
+  test("the web client's page connects to the daemon's port; TLS only via a trusted proxy only ", async () => {
     const distDir = await createWebUiDist();
 
+    const webPort = await freePort();
     daemonHandle = await createTestFroggDaemon({
       mcpEnabled: false,
       webUi: {
         enabled: true,
         distDir,
+        port: webPort,
       },
     });
 
-    const httpHint = readInjectedConnectionHint(
-      await fetchDaemonWebUi({ port: daemonHandle.port }),
-    );
+    const httpHint = readInjectedConnectionHint(await fetchDaemonWebUi({ port: webPort }));
     const httpsHint = readInjectedConnectionHint(
       await fetchDaemonWebUi({
-        port: daemonHandle.port,
+        port: webPort,
         headers: { "x-forwarded-proto": "https" },
       }),
     );
@@ -112,6 +134,7 @@ describe("daemon web UI bootstrap", () => {
 
   test("ignores forwarded HTTPS when proxy trust is disabled", async () => {
     const distDir = await createWebUiDist();
+    const webPort = await freePort();
 
     daemonHandle = await createTestFroggDaemon({
       mcpEnabled: false,
@@ -119,12 +142,13 @@ describe("daemon web UI bootstrap", () => {
       webUi: {
         enabled: true,
         distDir,
+        port: webPort,
       },
     });
 
     const httpsHint = readInjectedConnectionHint(
       await fetchDaemonWebUi({
-        port: daemonHandle.port,
+        port: webPort,
         headers: { "x-forwarded-proto": "https" },
       }),
     );

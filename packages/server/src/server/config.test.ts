@@ -111,7 +111,7 @@ describe("server config", () => {
       "daemon.relay.useTls",
       "daemon.trustedProxies",
       "features.voiceMode.llm.provider",
-      "features.webUi.enabled",
+      // FROGG_WEB_UI_ENABLED is only a default for the persisted setting, so it pins nothing.
       "log.file.path",
     ]);
     expect(config.trustLan).toBe(false);

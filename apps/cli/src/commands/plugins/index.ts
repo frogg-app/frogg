@@ -11,7 +11,6 @@ import {
 } from "./authoring.js";
 import {
   makeSetEnabledCommand,
-  runDevModeCommand,
   runInstallCommand,
   runLinkCommand,
   runListCommand,
@@ -89,14 +88,8 @@ export function createPluginsCommand(): Command {
 
   addJsonAndDaemonHostOptions(
     plugins
-      .command("dev-mode")
-      .description("Show or set developer mode on the host")
-      .argument("[state]", "on or off"),
-  ).action(withOutput(runDevModeCommand));
-  addJsonAndDaemonHostOptions(
-    plugins
       .command("link")
-      .description("Link a local plugin folder (developer mode; hot-reloads)")
+      .description("Link a local plugin folder (beta daemons; hot-reloads)")
       .argument("<dir>", "Plugin folder on the host"),
   ).action(withOutput(runLinkCommand));
   addJsonAndDaemonHostOptions(

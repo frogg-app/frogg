@@ -1,6 +1,27 @@
 import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
 export const en = {
+  devBar: {
+    menu: "Dev",
+    daemon: "Dev daemon",
+    web: "Dev web",
+    rebuildDaemon: "Rebuild and restart",
+    restartWeb: "Restart with a clear cache",
+    openWeb: "Open",
+    stop: "Stop",
+    noCheckouts:
+      "No Frogg source checkout on this host. Add the repo as a project to start one here.",
+    startIn: "Start in {{name}}",
+    lastError: "Last rebuild failed: {{error}}",
+    behindMain_one: "{{count}} commit behind main",
+    behindMain_other: "{{count}} commits behind main",
+    tone: {
+      running: "Running",
+      stale: "Out of date",
+      busy: "Rebuilding…",
+      stopped: "Stopped",
+    },
+  },
   releaseStreams: {
     label: "Release streams",
     subtitle: "Betas, stable releases and upstream, and which changes have reached each",
@@ -459,6 +480,9 @@ export const en = {
       summaryBy: "Summary sent to the agent ({{model}})",
       switched: "{{from}} → {{to}}",
       automatic: "Clean cut: cache expired, new conversation",
+      cost: "Summary cost {{input}} in, {{output}} out",
+      costWithUsd: "Summary cost {{input}} in, {{output}} out ({{usd}})",
+      fromContext: "Replaced {{tokens}} of context",
     },
     empty: "Start chatting with this agent...",
     scrollToBottom: "Scroll to bottom",
@@ -563,6 +587,7 @@ export const en = {
       copyTurn: "Copy turn",
       copyMessage: "Copy message",
       forkMenu: "Fork chat from here",
+      cleanCut: "Clean cut: fresh conversation, same account",
       forkInNewTab: "Fork in a new tab",
       forkInNewWorkspace: "Fork in a new session",
       forkUnavailable: "Update the host to use this.",
@@ -3094,6 +3119,16 @@ export const en = {
       developer: "Developer",
       about: "About",
     },
+    navGroups: {
+      app: "App",
+      voice: "Voice & alerts",
+      system: "System",
+    },
+    hostGroups: {
+      workspace: "Workspace",
+      access: "Access",
+      daemon: "Daemon",
+    },
     notifications: {
       title: "Notifications",
       permission: "Notification permission",
@@ -3118,9 +3153,12 @@ export const en = {
       providers: "Providers",
       skills: "{{brandFullName}} skills",
       usage: "Usage",
+      webClient: "Web client",
       terminals: "Terminals",
       host: "Overview",
       deploy: "Deploy",
+      automation: "Automation",
+      updates: "Updates",
     },
     metadataGeneration: {
       title: "Metadata generation",
@@ -3311,6 +3349,53 @@ export const en = {
       upToDate: "Up to date",
       installVersion: "Install {{version}}",
       updateVersion: "Update to {{version}}",
+      daemonControl: {
+        start: "Start",
+        stop: "Stop",
+        openWebUi: "Open web UI",
+      },
+      manageOnHost: "Start, stop and install these on each host's Developer tab.",
+      manage: "Manage",
+      sections: {
+        betaDaemon: "Beta daemon",
+        devDaemon: "Development daemon",
+        app: "App",
+        daemons: "Daemons",
+      },
+      channels: {
+        stable: {
+          title: "Stable",
+          info: "The released app and daemon everyone runs. Each channel installs beside the others, with its own port, data and settings.",
+        },
+        beta: {
+          title: "Beta",
+          info: "Pre-release builds, tested here before they ship to stable. The beta app and daemon run beside stable ones without touching their data.",
+        },
+        development: {
+          title: "Development",
+          info: "A daemon and web app run from a source checkout on a host, for trying changes before they become a beta.",
+        },
+      },
+      stable: {
+        thisApp: "This app · {{version}}",
+        appSeparate: "Installed separately. This is the beta app.",
+        daemonInfo:
+          "The daemon this app connects to on each host. The stable daemon listens on port {{port}} by default.",
+        connected: "Connected · {{version}}",
+        viaBeta:
+          "This connection is to the beta daemon. The stable daemon listens on port {{port}}.",
+      },
+      devDaemon: {
+        info: "Runs npm run dev:live from a source checkout on the host: that checkout's daemon on its own port, with the host's accounts, projects and conversations, and its web app. One runs at a time.",
+        needsUpdate: "Update the host to launch a development daemon.",
+        loadFailed: "Couldn't read the development daemon status: {{error}}",
+        running: "Running on port {{port}}",
+        starting: "Starting on port {{port}}…",
+        stopped: "Not running",
+        noCheckouts: "No source checkout of this repo among this host's workspaces.",
+        launch: "Launch",
+        log: "Log: {{path}}",
+      },
       betaApp: {
         title: "Beta app",
         info: "Install {{name}} beside this app. It keeps its own settings and data.",
@@ -3342,14 +3427,16 @@ export const en = {
         },
       },
       betaDaemon: {
-        title: "Beta daemon on hosts",
         info: "A host can run a beta daemon beside its stable one, on its own port and with its own data. Installing and removing it needs the owner role.",
         noHosts: "No hosts added.",
         offline: "Offline",
         needsUpdate: "Update this host to manage betas.",
         loadFailed: "Couldn't load beta status: {{error}}",
         unsupported: "Not available on this host: {{reason}}",
-        selfIsBeta: "This host's daemon is the beta.",
+        stopSelfConfirmTitle: "Stop the beta daemon?",
+        stopSelfConfirmMessage:
+          "This app reaches {{host}} through its beta daemon, so the connection drops. Start it again from the host's stable daemon.",
+        selfConnected: "Connected · {{version}} on port {{port}}",
         installed: "Beta {{version}} installed",
         notInstalled: "Beta not installed",
         running: "Running on port {{port}}",
@@ -3438,6 +3525,13 @@ export const en = {
       chatOutline: {
         title: "Chat outline",
         description: "Show an outline for jumping between prompts",
+      },
+      motion: {
+        title: "Motion",
+        reduceMotion: {
+          title: "Reduce motion",
+          description: "Hold loaders, transitions and other animations still",
+        },
       },
       usage: {
         title: "Usage meters",
@@ -3609,6 +3703,31 @@ export const en = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        offline: "The host is offline.",
+        needsUpdate: "Update the host to manage its web client.",
+        title: "Web client",
+        info: "The host's web server for the browser app, on its own port beside the daemon's. It serves only the app; the page connects to the daemon for everything else.",
+        running: "Running on port {{port}}",
+        stopped: "Stopped (port {{port}})",
+        startOnLaunch: "Start with the daemon",
+        startOnLaunchHint: "Start the web client whenever the daemon starts.",
+        startOnLaunchPinned: "Set by the daemon's environment or command line.",
+        interface: "Interface",
+        interfaceHint:
+          "Loopback is reachable only from this machine. All interfaces (0.0.0.0) makes it reachable from every network the host is on.",
+        loopback: "This machine only",
+        allInterfaces: "All interfaces",
+        noInterfaces: "No interfaces found.",
+        unavailable: "This daemon has no web client build.",
+        loadFailed: "Couldn't read the web client status: {{error}}",
+      },
+      automation: {
+        unavailable: "Connect to this host to manage its automation.",
+      },
+      terminalAgents: {
+        title: "Terminal agents",
       },
       resources: {
         title: "Resources",

@@ -167,6 +167,39 @@ describe("runCleanCut", () => {
     });
   });
 
+  it("records the summariser's usage, failed attempts included, and the old context size", async () => {
+    const { deps, runner, appendTimelineItem } = makeDeps(
+      { lastUsage: { contextWindowUsedTokens: 100_000 } },
+      conversation,
+    );
+    deps.getCleanCutSettings = () => ({ summaryModel: { provider: "claude", model: "opus" } });
+    type Report = (usage: Record<string, number>) => void;
+    runner
+      .mockImplementationOnce((async (_options: unknown, onUsage: Report) => {
+        onUsage({ inputTokens: 1_000, outputTokens: 10, totalCostUsd: 0.01 });
+        throw new Error("bad output");
+      }) as never)
+      .mockImplementationOnce((async (_options: unknown, onUsage: Report) => {
+        onUsage({ inputTokens: 2_000, cachedInputTokens: 500, outputTokens: 20 });
+        return { summary: "The summary" };
+      }) as never);
+    await runCleanCut(deps, { agentId: "agent-1", target: {} });
+    expect(appendTimelineItem).toHaveBeenCalledWith(
+      "agent-1",
+      expect.objectContaining({
+        cleanCut: expect.objectContaining({
+          summaryUsage: {
+            inputTokens: 3_000,
+            cachedInputTokens: 500,
+            outputTokens: 30,
+            totalCostUsd: 0.01,
+          },
+          previousContextTokens: 100_000,
+        }),
+      }),
+    );
+  });
+
   it("summarises on the target provider's default account when moving provider", async () => {
     const { deps, runner } = makeDeps({}, conversation);
     await runCleanCut(deps, {

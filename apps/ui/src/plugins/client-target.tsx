@@ -28,6 +28,7 @@ import {
 } from "./client-runtime/runtime-store";
 import { isDesktopApp } from "./client-runtime/storage";
 import { describePluginError } from "./errors";
+import { isBetaBuild } from "@/utils/app-version";
 import { isPluginDeveloperModeAllowedByBrand, usePluginHostIds } from "./hosts";
 import type { PluginsTab } from "./modal-store";
 import { PluginSpinner } from "./spinner";
@@ -89,7 +90,9 @@ function ClientInstalled(): ReactElement {
   if (!loaded) return <PluginSpinner />;
   return (
     <View style={styles.list} testID="plugins-client-installed">
-      {isDesktopApp() && isPluginDeveloperModeAllowedByBrand() ? <ClientDevFolder /> : null}
+      {isDesktopApp() && isBetaBuild() && isPluginDeveloperModeAllowedByBrand() ? (
+        <ClientDevFolder />
+      ) : null}
       {loadError ? (
         <Text style={styles.error}>{t("plugins.client.loadFailed", { error: loadError })}</Text>
       ) : null}

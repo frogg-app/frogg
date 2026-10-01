@@ -78,6 +78,13 @@ The cut leaves a **Clean cut: new conversation** divider in the timeline. Under 
 - **Copy previous conversation ID**, the provider session ID of the old conversation, for when
   you need to find it in the provider's own history.
 - The provider change, for example `claude → codex`, when the cut switched provider.
+- **Replaced 100k of context**: how much context the old conversation held, when the provider
+  reported it.
+- **Summary cost 12k in, 2k out ($0.04)**: the tokens the summariser used, every attempt
+  included, with the dollar cost when the provider reports one. Compare it with the context it
+  replaced: a cut that costs about as much as the conversation it ended saved nothing. Cuts
+  that reused an earlier summary cost nothing and show no cost. The same figures are in the
+  timeline item as `cleanCut.summaryUsage` and `cleanCut.previousContextTokens`.
 
 Clients that predate clean cuts show the divider as an ordinary compaction marker.
 

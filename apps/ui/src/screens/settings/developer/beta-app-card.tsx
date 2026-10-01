@@ -50,7 +50,7 @@ function BetaAppReleasesLink() {
   }, [releaseBase]);
   if (!releaseBase) return null;
   return (
-    <SettingsSection title={t("settings.developer.betaApp.title")} testID="developer-beta-app">
+    <SettingsSection title={t("settings.developer.sections.app")} testID="developer-beta-app">
       <View style={settingsStyles.card}>
         <View style={settingsStyles.row}>
           <View style={settingsStyles.rowContent}>
@@ -178,7 +178,7 @@ function DesktopBetaAppCard({ bridge }: { bridge: DesktopBetaAppBridge }) {
 
   return (
     <SettingsSection
-      title={t("settings.developer.betaApp.title")}
+      title={t("settings.developer.sections.app")}
       info={t("settings.developer.betaApp.info", { name: betaName })}
       testID="developer-beta-app"
     >

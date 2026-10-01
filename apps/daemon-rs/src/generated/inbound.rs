@@ -285,6 +285,26 @@ pub enum SessionMessage {
     DaemonBetaChannelInstallRequest(DaemonBetaChannelInstallRequest),
     #[serde(rename = "daemon.beta_channel.uninstall.request")]
     DaemonBetaChannelUninstallRequest(DaemonBetaChannelUninstallRequest),
+    #[serde(rename = "daemon.beta_channel.start.request")]
+    DaemonBetaChannelStartRequest(DaemonBetaChannelStartRequest),
+    #[serde(rename = "daemon.beta_channel.stop.request")]
+    DaemonBetaChannelStopRequest(DaemonBetaChannelStopRequest),
+    #[serde(rename = "daemon.dev_daemon.get_status.request")]
+    DaemonDevDaemonGetStatusRequest(DaemonDevDaemonGetStatusRequest),
+    #[serde(rename = "daemon.dev_daemon.start.request")]
+    DaemonDevDaemonStartRequest(DaemonDevDaemonStartRequest),
+    #[serde(rename = "daemon.dev_daemon.stop.request")]
+    DaemonDevDaemonStopRequest(DaemonDevDaemonStopRequest),
+    #[serde(rename = "daemon.dev_daemon.rebuild.request")]
+    DaemonDevDaemonRebuildRequest(DaemonDevDaemonRebuildRequest),
+    #[serde(rename = "daemon.web_ui.get_status.request")]
+    DaemonWebUiGetStatusRequest(DaemonWebUiGetStatusRequest),
+    #[serde(rename = "daemon.web_ui.update.request")]
+    DaemonWebUiUpdateRequest(DaemonWebUiUpdateRequest),
+    #[serde(rename = "daemon.web_ui.start.request")]
+    DaemonWebUiStartRequest(DaemonWebUiStartRequest),
+    #[serde(rename = "daemon.web_ui.stop.request")]
+    DaemonWebUiStopRequest(DaemonWebUiStopRequest),
     #[serde(rename = "hub.management.daemon.connect.request")]
     HubManagementDaemonConnectRequest(HubManagementDaemonConnectRequest),
     #[serde(rename = "hub.management.daemon.get_status.request")]
@@ -1875,6 +1895,80 @@ pub struct DaemonBetaChannelUninstallRequest {
     pub request_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub purge: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelStartRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelStopRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonGetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonStartRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub cwd: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonStopRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonRebuildRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub target: DaemonDevDaemonRebuildRequestTarget,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DaemonDevDaemonRebuildRequestTarget {
+    #[serde(rename = "daemon")]
+    Daemon,
+    #[serde(rename = "web")]
+    Web,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiGetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiUpdateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "startOnLaunch", skip_serializing_if = "Option::is_none")]
+    pub start_on_launch: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStartRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStopRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

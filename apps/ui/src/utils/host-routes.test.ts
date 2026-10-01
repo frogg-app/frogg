@@ -17,6 +17,7 @@ import {
   encodeWorkspaceIdForPathSegment,
   isSettingsSectionSlug,
   normalizeHostSectionSlug,
+  normalizeSettingsSectionSlug,
   normalizeProjectSettingsRouteId,
   parseHostAgentRouteFromPathname,
   parseHostWorkspaceOpenIntentFromPathname,
@@ -256,7 +257,9 @@ describe("global routes", () => {
 
 describe("host settings section slugs", () => {
   it("keeps current host settings sections", () => {
-    expect(normalizeHostSectionSlug("pair-device")).toBe("pair-device");
+    expect(normalizeHostSectionSlug("devices")).toBe("devices");
+    expect(normalizeHostSectionSlug("automation")).toBe("automation");
+    expect(normalizeHostSectionSlug("updates")).toBe("updates");
     expect(normalizeHostSectionSlug("agents")).toBe("agents");
     expect(normalizeHostSectionSlug("projects")).toBe("projects");
     expect(normalizeHostSectionSlug("providers")).toBe("providers");
@@ -268,14 +271,23 @@ describe("host settings section slugs", () => {
     expect(normalizeHostSectionSlug("orchestration")).toBe("agents");
     expect(normalizeHostSectionSlug("daemon")).toBe("host");
     expect(normalizeHostSectionSlug("connections")).toBe("host");
-    expect(normalizeHostSectionSlug("metadata")).toBe("host");
-    expect(normalizeHostSectionSlug("workspaces")).toBe("host");
+    expect(normalizeHostSectionSlug("metadata")).toBe("agents");
+    expect(normalizeHostSectionSlug("workspaces")).toBe("automation");
+    expect(normalizeHostSectionSlug("pair-device")).toBe("devices");
+    expect(normalizeHostSectionSlug("deploy")).toBe("updates");
   });
 });
 
 describe("settings section slugs", () => {
   it("includes desktop notification settings", () => {
     expect(isSettingsSectionSlug("notifications")).toBe(true);
+  });
+
+  it("maps sections folded into General there", () => {
+    expect(normalizeSettingsSectionSlug("companion")).toBe("general");
+    expect(normalizeSettingsSectionSlug("diagnostics")).toBe("general");
+    expect(normalizeSettingsSectionSlug("permissions")).toBe("permissions");
+    expect(normalizeSettingsSectionSlug("nope")).toBeNull();
   });
 
   it("no longer treats daemon as a valid app-level settings section", () => {

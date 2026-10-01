@@ -3,7 +3,7 @@ import { CHAT_SUPPORTED_PROVIDERS } from "./agent/chat-profile.js";
 import { WebSocket, WebSocketServer } from "ws";
 import type { IncomingMessage, Server as HTTPServer } from "http";
 import { join } from "path";
-import { hostname as getHostname } from "node:os";
+import { daemonHostname as getHostname } from "./daemon-hostname.js";
 import { randomUUID } from "node:crypto";
 import { monitorEventLoopDelay } from "node:perf_hooks";
 import type { AgentManager, AgentMetricsSnapshot } from "./agent/agent-manager.js";
@@ -217,6 +217,8 @@ interface WebSocketServerConfig {
   allowedOrigins?: Set<string>;
   hostnames?: HostnamesConfig;
   getAllowedOrigins?: () => Set<string>;
+  /** Origins trusted by rule rather than listed, such as this daemon's own web client. */
+  isTrustedOrigin?: (origin: string, requestHost: string | null) => boolean;
   getHostnames?: () => HostnamesConfig | undefined;
   /** Host-allowlist tuning shared with the HTTP allowlist (pairing-hostname opt-out). */
   hostnameCheckOptions?: HostnameCheckOptions;
@@ -921,6 +923,7 @@ export class VoiceAssistantWebSocketServer {
           wsConfig.getHostnames?.() ?? wsConfig.hostnames,
           wsConfig.hostnameCheckOptions ?? {},
           callback,
+          wsConfig.isTrustedOrigin,
         );
       },
     });
@@ -976,6 +979,7 @@ export class VoiceAssistantWebSocketServer {
     hostnames: HostnamesConfig | undefined,
     hostnameCheckOptions: HostnameCheckOptions,
     callback: (res: boolean, code?: number, message?: string) => void,
+    isTrustedOrigin?: (origin: string, requestHost: string | null) => boolean,
   ): void {
     if (this.connectionLifecycle !== "accepting") {
       callback(false, 503, "Server not ready");
@@ -996,7 +1000,13 @@ export class VoiceAssistantWebSocketServer {
     }
     const sameOrigin = isWebSocketSameOrigin(origin, requestHost);
 
-    if (!origin || allowedOrigins.has("*") || allowedOrigins.has(origin) || sameOrigin) {
+    if (
+      !origin ||
+      allowedOrigins.has("*") ||
+      allowedOrigins.has(origin) ||
+      sameOrigin ||
+      isTrustedOrigin?.(origin, requestHost) === true
+    ) {
       callback(true);
     } else {
       this.incrementRuntimeCounter("originRejected");
@@ -2070,6 +2080,12 @@ export class VoiceAssistantWebSocketServer {
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
         // COMPAT(betaChannelManagement): added in v1.6.5, remove after 2027-09-27.
         betaChannelManagement: this.supportsBetaChannelManagement(),
+        // COMPAT(daemonChannelControl): added in v1.6.7, remove after 2027-09-29.
+        ...(this.daemonRuntimeConfig?.devDaemon
+          ? { daemonChannelControl: true, devDaemonRebuild: true }
+          : {}),
+        // COMPAT(webUiControl): added in v1.6.7, remove after 2027-09-29.
+        ...(this.daemonRuntimeConfig?.webUi ? { webUiControl: true } : {}),
         // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
         projectTodos: this.projectTodoService !== null,
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.

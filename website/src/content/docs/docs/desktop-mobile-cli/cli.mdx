@@ -62,7 +62,7 @@ Common `start`/`restart` flags:
 | ----------------------------- | ------- |
 | `--listen <addr>` / `--port <n>` | Listen target (not both) |
 | `--home <dir>`                | State directory |
-| `--web-ui` / `--no-web-ui`    | Serve the web app |
+| `--web-ui` / `--no-web-ui`    | Start (or not) the web client on its own port for this run |
 | `--relay` / `--no-relay`      | Connect to the configured relay |
 | `--no-mcp`, `--no-inject-mcp` | Disable the MCP endpoint, or its injection into agents |
 | `--hostnames <hosts>`         | Allowed `Host` headers |
@@ -223,8 +223,7 @@ Host commands take `--host` and `--json`; they need a daemon that reports plugin
 | `frogg plugins repos list` | Official, brand and user repositories with their pinned keys and fetch errors |
 | `frogg plugins repos add <url>` | Add a user repository, when the build allows it. Pins `--public-key`, or the key served at `<url>.pub` on first use |
 | `frogg plugins repos remove <url>` | Remove a user repository |
-| `frogg plugins dev-mode [on\|off]` | Show or set developer mode on the host (unless the brand forbids it) |
-| `frogg plugins link <dir>` / `unlink <id>` | Load a local plugin folder without integrity checks; it reloads when files change |
+| `frogg plugins link <dir>` / `unlink <id>` | Load a local plugin folder without integrity checks (beta daemons only); it reloads when files change |
 
 Authoring and repository tooling runs locally:
 

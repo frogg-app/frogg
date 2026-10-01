@@ -3,6 +3,27 @@ import { pluginsCopies } from "./plugins";
 import type { TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
+  devBar: {
+    menu: "Dév",
+    daemon: "Démon dev",
+    web: "Web dev",
+    rebuildDaemon: "Recompiler et redémarrer",
+    restartWeb: "Redémarrer avec un cache vide",
+    openWeb: "Ouvrir",
+    stop: "Arrêter",
+    noCheckouts:
+      "Aucun checkout des sources de Frogg sur cet hôte. Ajoutez le dépôt comme projet pour en démarrer un ici.",
+    startIn: "Démarrer dans {{name}}",
+    lastError: "La dernière recompilation a échoué : {{error}}",
+    behindMain_one: "{{count}} commit de retard sur main",
+    behindMain_other: "{{count}} commits de retard sur main",
+    tone: {
+      running: "En cours",
+      stale: "Obsolète",
+      busy: "Recompilation…",
+      stopped: "Arrêté",
+    },
+  },
   releaseStreams: {
     label: "Flux de versions",
     subtitle: "Bêtas, versions stables et upstream, et les changements arrivés dans chacun",
@@ -463,6 +484,9 @@ export const fr: TranslationResources = {
       summaryBy: "Résumé envoyé à l'agent ({{model}})",
       switched: "{{from}} → {{to}}",
       automatic: "Coupure nette : cache expiré, nouvelle conversation",
+      cost: "Coût du résumé {{input}} en entrée, {{output}} en sortie",
+      costWithUsd: "Coût du résumé {{input}} en entrée, {{output}} en sortie ({{usd}})",
+      fromContext: "A remplacé {{tokens}} de contexte",
     },
     empty: "Commencez à discuter avec cet agent...",
     scrollToBottom: "Faire défiler vers le bas",
@@ -568,6 +592,7 @@ export const fr: TranslationResources = {
       copyTurn: "Copier le tour",
       copyMessage: "Copier le message",
       forkMenu: "Dupliquer le message",
+      cleanCut: "Coupure nette : nouvelle conversation, même compte",
       forkInNewTab: "Dupliquer dans un nouvel onglet",
       forkInNewWorkspace: "Dupliquer dans une nouvelle session",
       forkUnavailable: "Mettez l'hôte à jour pour utiliser ceci.",
@@ -3146,6 +3171,16 @@ export const fr: TranslationResources = {
       developer: "Développeur",
       about: "À propos",
     },
+    navGroups: {
+      app: "Application",
+      voice: "Voix et alertes",
+      system: "Système",
+    },
+    hostGroups: {
+      workspace: "Espace de travail",
+      access: "Accès",
+      daemon: "Démon",
+    },
     notifications: {
       title: "Notifications",
       permission: "Autorisation des notifications",
@@ -3170,9 +3205,12 @@ export const fr: TranslationResources = {
       providers: "Fournisseurs",
       skills: "Compétences {{brandFullName}}",
       usage: "Utilisation",
+      webClient: "Client web",
       terminals: "Terminals",
       host: "Aperçu",
       deploy: "Déployer",
+      automation: "Automatisation",
+      updates: "Mises à jour",
     },
     metadataGeneration: {
       title: "Génération de métadonnées",
@@ -3368,6 +3406,54 @@ export const fr: TranslationResources = {
       upToDate: "À jour",
       installVersion: "Installer {{version}}",
       updateVersion: "Mettre à jour vers {{version}}",
+      daemonControl: {
+        start: "Démarrer",
+        stop: "Arrêter",
+        openWebUi: "Ouvrir l'interface web",
+      },
+      manageOnHost:
+        "Démarrez-les, arrêtez-les et installez-les dans l'onglet Développeur de chaque hôte.",
+      manage: "Gérer",
+      sections: {
+        betaDaemon: "Daemon bêta",
+        devDaemon: "Daemon de développement",
+        app: "App",
+        daemons: "Daemons",
+      },
+      channels: {
+        stable: {
+          title: "Stable",
+          info: "L'app et le daemon publiés que tout le monde utilise. Chaque canal s'installe à côté des autres, avec son propre port, ses données et ses réglages.",
+        },
+        beta: {
+          title: "Bêta",
+          info: "Des versions préliminaires testées ici avant de passer en stable. L'app et le daemon bêta tournent à côté des versions stables sans toucher à leurs données.",
+        },
+        development: {
+          title: "Développement",
+          info: "Un daemon et une app web lancés depuis une copie des sources sur un hôte, pour essayer des changements avant qu'ils deviennent une bêta.",
+        },
+      },
+      stable: {
+        thisApp: "Cette app · {{version}}",
+        appSeparate: "Installée séparément. Ceci est l'app bêta.",
+        daemonInfo:
+          "Le daemon auquel cette app se connecte sur chaque hôte. Le daemon stable écoute par défaut sur le port {{port}}.",
+        connected: "Connecté · {{version}}",
+        viaBeta:
+          "Cette connexion mène au daemon bêta. Le daemon stable écoute sur le port {{port}}.",
+      },
+      devDaemon: {
+        info: "Exécute npm run dev:live depuis une copie des sources sur l'hôte : le démon de cette copie sur son propre port, avec les comptes, projets et conversations de l'hôte, et son application web. Un seul à la fois.",
+        needsUpdate: "Mettez à jour l'hôte pour lancer un démon de développement.",
+        loadFailed: "Impossible de lire l'état du démon de développement : {{error}}",
+        running: "En cours d'exécution sur le port {{port}}",
+        starting: "Démarrage sur le port {{port}}…",
+        stopped: "Arrêté",
+        noCheckouts: "Aucun espace de travail de cet hôte n'est une copie des sources de ce dépôt.",
+        launch: "Lancer",
+        log: "Journal : {{path}}",
+      },
       betaApp: {
         title: "App bêta",
         info: "Installez {{name}} à côté de cette app. Elle garde ses propres réglages et données.",
@@ -3400,14 +3486,16 @@ export const fr: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "Daemon bêta sur les hôtes",
         info: "Un hôte peut exécuter un daemon bêta à côté du daemon stable, sur son propre port et avec ses propres données. L'installer et le retirer nécessite le rôle de propriétaire.",
         noHosts: "Aucun hôte ajouté.",
         offline: "Hors ligne",
         needsUpdate: "Mettez à jour cet hôte pour gérer les bêtas.",
         loadFailed: "Impossible de charger l'état bêta : {{error}}",
         unsupported: "Indisponible sur cet hôte : {{reason}}",
-        selfIsBeta: "Le daemon de cet hôte est la bêta.",
+        stopSelfConfirmTitle: "Arrêter le daemon bêta ?",
+        stopSelfConfirmMessage:
+          "Cette app atteint {{host}} via son daemon bêta : la connexion va tomber. Redémarrez-le depuis le daemon stable de l'hôte.",
+        selfConnected: "Connecté · {{version}} sur le port {{port}}",
         installed: "Bêta {{version}} installée",
         notInstalled: "Bêta non installée",
         running: "En cours d'exécution sur le port {{port}}",
@@ -3497,6 +3585,14 @@ export const fr: TranslationResources = {
       chatOutline: {
         title: "Plan de la discussion",
         description: "Afficher un plan pour passer d’une requête à l’autre",
+      },
+      motion: {
+        title: "Mouvement",
+        reduceMotion: {
+          title: "Réduire les animations",
+          description:
+            "Fige les indicateurs de chargement, les transitions et les autres animations",
+        },
       },
       usage: {
         title: "Jauges d’utilisation",
@@ -3671,6 +3767,31 @@ export const fr: TranslationResources = {
           claude: "Claude",
           codex: "Codex",
         },
+      },
+      webClient: {
+        offline: "L'hôte est hors ligne.",
+        needsUpdate: "Mettez à jour l'hôte pour gérer son client web.",
+        title: "Client web",
+        info: "Le serveur web de l'hôte pour l'application navigateur, sur son propre port à côté de celui du démon. Il ne sert que l'application ; la page se connecte au démon pour tout le reste.",
+        running: "En cours d'exécution sur le port {{port}}",
+        stopped: "Arrêté (port {{port}})",
+        startOnLaunch: "Démarrer avec le démon",
+        startOnLaunchHint: "Démarre le client web à chaque démarrage du démon.",
+        startOnLaunchPinned: "Défini par l'environnement ou la ligne de commande du démon.",
+        interface: "Interface",
+        interfaceHint:
+          "La boucle locale n'est accessible que depuis cette machine. Toutes les interfaces (0.0.0.0) le rend accessible depuis tous les réseaux de l'hôte.",
+        loopback: "Cette machine uniquement",
+        allInterfaces: "Toutes les interfaces",
+        noInterfaces: "Aucune interface trouvée.",
+        unavailable: "Ce démon n'inclut pas le client web.",
+        loadFailed: "Impossible de lire l'état du client web : {{error}}",
+      },
+      automation: {
+        unavailable: "Connectez-vous à cet hôte pour gérer son automatisation.",
+      },
+      terminalAgents: {
+        title: "Agents de terminal",
       },
       resources: {
         title: "Ressources",

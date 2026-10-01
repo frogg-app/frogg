@@ -1,6 +1,6 @@
 ---
 title: Developer options
-description: Turn on the hidden Developer section to install frogg beta beside the app and manage beta daemons on your hosts.
+description: Turn on the hidden Developer section to install frogg beta beside the app, manage beta daemons on your hosts and launch development daemons from source.
 sidebar:
   order: 10
 ---
@@ -19,6 +19,8 @@ Open **Settings → About** and switch on **Developer options** at the bottom of
 **Developer** section appears in the settings sidebar, just above **About**. The switch is a
 preference of this app install; it is off by default and does not sync to other devices.
 Switch it off to hide the section again. Installed betas stay installed.
+
+Beta builds always show the **Developer** section, so they have no switch.
 
 <Screenshot
   src={developerOptions}
@@ -71,5 +73,49 @@ Managing the beta daemon needs the **owner** role on the host; other roles see t
 error. The stable daemon refuses these requests when it is itself the beta daemon, and on
 Windows, Docker and Nix installs, where it reports the reason instead.
 
+When the host also supports `features.daemonChannelControl`, an installed beta daemon gets
+**Start** or **Stop**, which run the beta's own `daemon start` / `daemon stop` (through its
+service when one is installed), and **Open web UI** while its web client answers, which
+opens `http://<host>:9988` in the browser. Turn the beta's web client on from its own host
+settings (**Web client**) once it is added as a host.
+
 The beta daemon is a separate host. To use it from this app, add it as a host (for example
-`localhost:9998` on the same machine).
+`localhost:9989` on the same machine). A beta installed before 1.6.7 listens on 9998;
+reinstall it to move it to 9989.
+
+## Development daemon
+
+**Development daemon** runs `npm run dev:live` from a source checkout of frogg on a host, so a
+branch can be tried with real providers before it ships as a beta. It lists every workspace on
+the host that is such a checkout, with its branch. **Launch** starts that checkout's daemon on
+port 9899 and its web app on port 9898; launching another checkout stops the running one
+first. **Stop** ends it, and **Open web UI** opens the web app once the daemon answers.
+
+The development daemon names itself `<hostname>-DEVELOPMENT` and starts with a copy of the
+host daemon's provider accounts, projects and conversations, so nothing needs signing in
+again. Continue a conversation in one daemon at a time: both write to the same provider
+session. The launcher's output goes to `.dev/live/launcher.log` in the checkout, and a launch
+that fails straight away shows that log's error.
+
+It needs the **owner** role, Linux or macOS, and dependencies installed in the checkout
+(`npm ci`). The development daemon cannot launch another one. When the daemon that launched it
+runs as a systemd service, restarting that daemon stops the development daemon too.
+
+## Dev bar
+
+With developer options on, a bar under the sidebar header shows the development daemon and its
+web app when a connected host manages one (or is one). Each has a dot: green running, amber
+out of date, blue rebuilding, grey stopped. Its menu says why it is out of date, how many
+commits the checkout is behind `origin/main`, and why the last rebuild failed, if it did.
+
+| Pill       | Actions                                                                                  |
+| ---------- | ---------------------------------------------------------------------------------------- |
+| Dev daemon | **Rebuild and restart** (`npm run build:client`, then restart), **Stop**, **Start in** a checkout |
+| Dev web    | **Open**, **Restart with a clear cache**                                                 |
+
+"Out of date" means protocol or client source changed since the last build, dependencies changed
+(run `npm ci`, then stop and start it), or the web app's config changed since it started. The
+bar reaches `dev:live` through `.dev/live/control.json`, which the launcher writes on start, so
+it also manages a `dev:live` you started by hand. Start and stop come from the stable or beta
+daemon; the development daemon itself can only rebuild and restart.
+

@@ -1,4 +1,5 @@
 import { FolderClosed, MessageCircle } from "lucide-react-native";
+import { useReduceMotion } from "@/hooks/use-reduce-motion";
 import { memo, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -12,7 +13,6 @@ import {
 import Animated, {
   Easing,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   type SharedValue,
   withTiming,
@@ -68,7 +68,7 @@ export function SidebarSectionBar() {
   const { t } = useTranslation();
   const section = useEffectiveSidebarSection();
   const setSection = useSidebarSectionStore((state) => state.setSection);
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReduceMotion();
   const progress = useSharedValue(SECTION_INDEX[section]);
   const projectsX = useSharedValue(0);
   const projectsWidth = useSharedValue(0);
@@ -225,7 +225,7 @@ export function SidebarSectionTransition({
   section: SidebarSection;
   children: ReactNode;
 }) {
-  const reducedMotion = useReducedMotion();
+  const reducedMotion = useReduceMotion();
   // 0 = just swapped in, 1 = settled. One value drives both channels so they cannot drift.
   const enter = useSharedValue(1);
   const direction = useSharedValue(1);

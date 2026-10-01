@@ -1,4 +1,4 @@
-// $FROGG_HOME/plugins/state.json: installed plugins, user repos, dev links, developer mode.
+// $FROGG_HOME/plugins/state.json: installed plugins, user repos, dev links.
 // Writes are serialized and atomic; a corrupt file is moved aside rather than crashing the daemon.
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -32,7 +32,6 @@ export type DevLinkRecord = z.infer<typeof DevLinkSchema>;
 
 const PluginStateSchema = z.object({
   version: z.literal(1),
-  developerMode: z.boolean().default(false),
   installed: z.record(z.string(), InstalledRecordSchema).default({}),
   userRepos: z.array(UserRepoSchema).default([]),
   devLinks: z.array(DevLinkSchema).default([]),
@@ -40,7 +39,7 @@ const PluginStateSchema = z.object({
 export type PluginState = z.infer<typeof PluginStateSchema>;
 
 export function emptyPluginState(): PluginState {
-  return { version: 1, developerMode: false, installed: {}, userRepos: [], devLinks: [] };
+  return { version: 1, installed: {}, userRepos: [], devLinks: [] };
 }
 
 export class PluginStateStore {

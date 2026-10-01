@@ -25,6 +25,7 @@ import type {
   AgentPromptInput,
   AgentSessionConfig,
   AgentTimelineItem,
+  AgentUsage,
   CleanCutMarker,
 } from "./agent-sdk-types.js";
 import type { ProviderSnapshotManager } from "./provider-snapshot-manager.js";
@@ -59,7 +60,21 @@ export interface CleanCutDeps {
   getCleanCutSettings?: () => MutableCleanCutConfig | undefined;
 }
 
-type SummariserRunner = <T>(options: StructuredAgentGenerationOptions<T>) => Promise<T>;
+type SummariserRunner = <T>(
+  options: StructuredAgentGenerationOptions<T>,
+  onUsage?: (usage: AgentUsage) => void,
+) => Promise<T>;
+
+type CleanCutUsage = NonNullable<CleanCutMarker["summaryUsage"]>;
+
+function addUsage(total: CleanCutUsage | undefined, usage: AgentUsage): CleanCutUsage {
+  const next: CleanCutUsage = { ...total };
+  for (const key of ["inputTokens", "cachedInputTokens", "outputTokens", "totalCostUsd"] as const) {
+    const value = usage[key];
+    if (typeof value === "number") next[key] = (next[key] ?? 0) + value;
+  }
+  return next;
+}
 
 /**
  * Runs one summariser candidate as a hidden internal agent. It is told not to
@@ -67,7 +82,7 @@ type SummariserRunner = <T>(options: StructuredAgentGenerationOptions<T>) => Pro
  * permission prompt: every request is denied on the spot, and an attempt that
  * still does not finish is abandoned, so a cut can never hang on it.
  */
-export const runSummariserAgent: SummariserRunner = async (options) => {
+export const runSummariserAgent: SummariserRunner = async (options, onUsage) => {
   const { manager, agentConfig, prompt, schema, maxRetries, schemaName } = options;
   const agent = await manager.createAgent(agentConfig, undefined, {
     persistSession: options.persistSession,
@@ -84,6 +99,8 @@ export const runSummariserAgent: SummariserRunner = async (options) => {
               message: "Tools are unavailable. Answer from the transcript alone.",
             })
             .catch(() => undefined);
+        } else if (event.type === "turn_completed") {
+          if (event.usage) onUsage?.(event.usage);
         } else if (event.type === "turn_failed") {
           throw new Error(event.error);
         }
@@ -337,7 +354,11 @@ async function generateCleanCutSummary(
   agent: ManagedAgent,
   destination: CleanCutDestination,
   transcript: string,
-): Promise<{ summary: string; summaryModel: string | undefined }> {
+): Promise<{
+  summary: string;
+  summaryModel: string | undefined;
+  summaryUsage: CleanCutUsage | undefined;
+}> {
   const prompt = buildCleanCutSummaryPrompt({ transcript, cwd: agent.cwd });
   const baseOverrides = {
     title: "Clean cut summary",
@@ -345,6 +366,11 @@ async function generateCleanCutSummary(
   } satisfies Omit<AgentSessionConfig, "provider" | "cwd" | "model" | "thinkingOptionId">;
   // Remember which candidate answered, so the marker can name the model.
   let summaryModel: string | undefined;
+  // Every attempt is billed, failed candidates and retries included.
+  let summaryUsage: CleanCutUsage | undefined;
+  const recordUsage = (usage: AgentUsage) => {
+    summaryUsage = addUsage(summaryUsage, usage);
+  };
   const runOne = deps.runner ?? runSummariserAgent;
   const runner: SummariserRunner = async (options) => {
     // A summary model configured on another provider runs on that provider's
@@ -354,6 +380,7 @@ async function generateCleanCutSummary(
       options.agentConfig.provider === destination.provider
         ? options
         : { ...options, agentConfig: defaultAccountConfig },
+      recordUsage,
     );
     summaryModel = options.agentConfig.model;
     return result;
@@ -384,7 +411,7 @@ async function generateCleanCutSummary(
         ? { providerAccountId: destination.providerAccountId }
         : {}),
     });
-    return { summary: result.summary.trim(), summaryModel };
+    return { summary: result.summary.trim(), summaryModel, summaryUsage };
   } catch (error) {
     // Unless the owner configured a summary model elsewhere, only the
     // destination provider and account are tried: summarising on another would
@@ -442,11 +469,12 @@ export async function runCleanCut(
   const previousCut = selected[0]?.type === "compaction" ? selected[0].cleanCut : undefined;
   let summary: string;
   let summaryModel: string | undefined;
+  let summaryUsage: CleanCutUsage | undefined;
   let transcriptChars = 0;
   if (selected.some((item) => item.type === "user_message")) {
     const transcript = buildCleanCutTranscript(items);
     transcriptChars = transcript.length;
-    ({ summary, summaryModel } = await generateCleanCutSummary(
+    ({ summary, summaryModel, summaryUsage } = await generateCleanCutSummary(
       deps,
       agent,
       resolveCleanCutDestination(agent, target),
@@ -466,6 +494,7 @@ export async function runCleanCut(
     sessionId: agent.persistence?.sessionId,
     provider: agent.provider,
     model: agent.config.model,
+    contextTokens: agent.lastUsage?.contextWindowUsedTokens,
   };
   const overrides: Partial<AgentSessionConfig> = {
     ...(target.provider ? { provider: target.provider } : {}),
@@ -487,6 +516,8 @@ export async function runCleanCut(
     provider: next.provider,
     ...(next.config.model ? { model: next.config.model } : {}),
     ...(summaryModel ? { summaryModel } : {}),
+    ...(summaryUsage ? { summaryUsage } : {}),
+    ...(previous.contextTokens ? { previousContextTokens: previous.contextTokens } : {}),
     reason: input.reason ?? "manual",
   };
   await deps.agentManager.appendTimelineItem(input.agentId, {
@@ -503,6 +534,8 @@ export async function runCleanCut(
       transcriptChars,
       summaryChars: summary.length,
       summaryModel,
+      summaryUsage,
+      previousContextTokens: previous.contextTokens,
       reason: marker.reason,
     },
     "Clean cut completed",

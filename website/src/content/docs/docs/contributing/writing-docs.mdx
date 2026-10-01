@@ -63,10 +63,10 @@ theme. Never mock UI.
 ```sh
 npm ci
 npm run build:server && npm run build:daemon-web-ui
-FROGG_HOME=/tmp/frogg-docs-home node apps/cli/bin/frogg start --listen 0.0.0.0:17900 --web-ui --no-relay
-node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 --seed
+FROGG_HOME=/tmp/frogg-docs-home FROGG_WEB_UI_PORT=17901 node apps/cli/bin/frogg start --listen 0.0.0.0:17900 --web-ui --no-relay
+node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17901 --daemon-url http://127.0.0.1:17900 --seed
 node scripts/docs/capture-screenshots.mjs --list
-node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 --only app/home,app/host-providers
+node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17901 --daemon-url http://127.0.0.1:17900 --only app/home,app/host-providers
 ```
 
 `--seed` adds a demo project. Shots that need an agent timeline or a pending permission

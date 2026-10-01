@@ -158,10 +158,11 @@ Set `FROGG_EXECUTION_SERVICE=1` in the service environment to make it permanent.
 
 ## Several daemons on one machine
 
-Give each its own home and port:
+Give each its own home and ports (the web client port too, if it serves one); keep clear of
+the ports frogg and frogg beta use (9999/9998 and 9989/9988):
 
 ```sh
-FROGG_HOME=~/.frogg-work frogg start --listen 0.0.0.0:9998
+FROGG_HOME=~/.frogg-work FROGG_WEB_UI_PORT=9978 frogg start --listen 0.0.0.0:9979
 FROGG_HOME=~/.frogg-work frogg status
 ```
 

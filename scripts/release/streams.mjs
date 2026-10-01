@@ -224,15 +224,25 @@ function restamp(version) {
 
 /** Walk back past release cuts (and into a promotion's source) to the commit CI tested. */
 function testedSource(ref) {
+  return testedChain(ref).at(-1);
+}
+
+/**
+ * <ref>, each release cut beneath it, then the code commit they cut. CI only runs on a push's
+ * head, so a hand cut pushed with its code (then cut again by CI) leaves the green run on a cut.
+ */
+function testedChain(ref) {
   let commit = gitOut(["rev-parse", `${ref}^{commit}`]);
+  const chain = [commit];
   for (;;) {
     const subject = gitOut(["log", "-1", "--format=%s", commit]);
-    if (!isReleaseCutSubject(subject)) return commit;
+    if (!isReleaseCutSubject(subject)) return chain;
     const parents = gitOut(["log", "-1", "--format=%P", commit]).split(" ").filter(Boolean);
     const promoted = subject.startsWith("chore(release): promote ") && parents[1];
     const next = promoted ? parents[1] : parents[0];
-    if (!next) return commit;
+    if (!next) return chain;
     commit = next;
+    chain.push(commit);
   }
 }
 
@@ -253,6 +263,7 @@ const commands = {
   assert-tag <tag>            CI: fail unless the tag is on its stream's branch
   channel-for-ref <branch>    CI: which brand channel a branch builds (stable or beta)
   tested-source <ref>         CI: the commit whose CI run vouches for <ref>
+  tested-chain <ref>          CI: every commit whose CI run vouches for <ref>
   needs-tests <ref>           CI: "true" unless <ref> only adds release cuts to tested main code
 
 Add --skip-check to beta/promote to skip release:check (CI has already run it).
@@ -624,6 +635,12 @@ Add --skip-check to beta/promote to skip release:check (CI has already run it).
   // its own CI run: the tests that count are those on the commit they were cut from.
   "tested-source"(args) {
     process.stdout.write(`${testedSource(args[0] ?? fail("usage: tested-source <ref>"))}\n`);
+  },
+
+  "tested-chain"(args) {
+    process.stdout.write(
+      `${testedChain(args[0] ?? fail("usage: tested-chain <ref>")).join(" ")}\n`,
+    );
   },
 
   "needs-tests"(args) {

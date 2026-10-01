@@ -74,7 +74,7 @@ export class PluginsSession {
         await service.devUnlink(msg.id);
         return { success: true };
       case "plugins.dev.set_enabled.request":
-        return { policy: await service.setDeveloperMode(msg.enabled) };
+        return { policy: service.setDeveloperMode(msg.enabled) };
       case "plugins.rpc.call.request":
         return {
           result: await service.callRpc(msg.pluginId, msg.method, msg.params, this.deps.clientId),

@@ -17,7 +17,7 @@ frogg update --to 0.6.18        # pin a version, including older ones
 ```
 
 Each install updates within its own channel. `frogg` takes stable releases only; betas are
-a separate install, `frogg-beta` (service `frogg-beta-daemon`, port 9998, state in
+a separate install, `frogg-beta` (service `frogg-beta-daemon`, port 9989 and web client 9988, state in
 `~/.frogg-beta`), which takes `-beta.N` releases only. Run both on one host if you like;
 install the beta with the `install.sh` attached to any beta release. `--channel` is kept
 for scripts, but naming the other channel is an error that points you at the other install.
@@ -126,7 +126,7 @@ connected client. This is owner-only (`daemon.manage`) and advertised as
 `server_info.features.betaChannelManagement`. It powers the app's Developer settings.
 
 - **Status** (`daemon.beta_channel.get_status`): whether `frogg-beta` is installed and which
-  version (read from `~/.local/share/frogg-beta/current`), whether it answers on port 9998,
+  version (read from `~/.local/share/frogg-beta/current`), whether it answers on port 9989,
   and the newest published beta release. The newest beta is the highest-versioned release
   that is published (not a draft), marked prerelease on GitHub, and carries a channel suffix
   such as `-beta.N`. The same lookup tells the desktop app which beta build to download.

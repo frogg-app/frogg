@@ -95,6 +95,8 @@ export interface AppSettings {
   showHiddenFolders: boolean;
   /** Show the Developer settings section (beta app and beta daemons). Off by default. */
   developerOptions: boolean;
+  /** Hold animations still. Off by default; the OS reduced-motion setting is ignored. */
+  reduceMotion: boolean;
   /** Desktop-only preferences for implicit opens into the ordinary side pane. */
   openInSidePane: OpenInSidePanePreferences;
   pullRequestOpenLocation: PullRequestOpenLocation;
@@ -174,6 +176,7 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   vimKeybindings: false,
   showHiddenFolders: false,
   developerOptions: false,
+  reduceMotion: false,
   openInSidePane: DEFAULT_OPEN_IN_SIDE_PANE_PREFERENCES,
   pullRequestOpenLocation: "explorer",
   spokenAlertsAutoPlay: DEFAULT_SPOKEN_ALERTS_AUTO_PLAY,
@@ -288,6 +291,7 @@ const StoredAppSettingsSchema = z
     vimKeybindings: z.boolean().catch(false),
     showHiddenFolders: z.boolean().catch(false),
     developerOptions: z.boolean().catch(false),
+    reduceMotion: z.boolean().catch(false),
     openInSidePane: z
       .object({
         explorerFiles: z.boolean().catch(false),
