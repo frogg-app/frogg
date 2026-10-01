@@ -45,7 +45,10 @@ interface TraceRecord {
   args?: Record<string, string>;
 }
 
-function createTraceRecorder(): { trace: DaemonClientTrace; records: TraceRecord[] } {
+function createTraceRecorder(): {
+  trace: DaemonClientTrace;
+  records: TraceRecord[];
+} {
   const records: TraceRecord[] = [];
   return {
     trace: {
@@ -312,7 +315,9 @@ test("sets the complete viewed timeline subscription only when the daemon suppor
   clients.push(supportedClient, legacyClient);
 
   const supportedConnect = supportedClient.connect();
-  supportedTransport.triggerOpen({ features: { selectiveAgentTimeline: true } });
+  supportedTransport.triggerOpen({
+    features: { selectiveAgentTimeline: true },
+  });
   await supportedConnect;
   const legacyConnect = legacyClient.connect();
   legacyTransport.triggerOpen();
@@ -1116,7 +1121,13 @@ test("lists the full agent prompt index", async () => {
         requestId: "req-prompts-1",
         agentId: "agent-1",
         epoch: "epoch-1",
-        prompts: [{ seq: 1, timestamp: "2026-01-01T00:00:00.000Z", preview: "First prompt" }],
+        prompts: [
+          {
+            seq: 1,
+            timestamp: "2026-01-01T00:00:00.000Z",
+            preview: "First prompt",
+          },
+        ],
         error: null,
       },
     }),
@@ -1653,7 +1664,9 @@ test("a candidate measurement that times out under a heartbeat tick does not cou
   );
   await session.advance(5_500);
   await expect(measurementError).resolves.toEqual(
-    expect.objectContaining({ message: "Latency measurement timed out (5000ms)" }),
+    expect.objectContaining({
+      message: "Latency measurement timed out (5000ms)",
+    }),
   );
 
   // The measurement timeout must not have been recorded as a liveness failure: a
@@ -1773,7 +1786,10 @@ test("file context action RPCs correlate success and error responses", async () 
     error: null,
   });
 
-  const deletePromise = client.deleteFileEntry({ cwd: "/tmp/project", path: "src/new.ts" });
+  const deletePromise = client.deleteFileEntry({
+    cwd: "/tmp/project",
+    path: "src/new.ts",
+  });
   const deleteRequest = parseSentFrame(mock.sent.at(-1));
   expect(deleteRequest).toMatchObject({
     type: "fs.entry.delete.request",
@@ -1792,9 +1808,14 @@ test("file context action RPCs correlate success and error responses", async () 
       },
     }),
   );
-  await expect(deletePromise).resolves.toMatchObject({ success: true, error: null });
+  await expect(deletePromise).resolves.toMatchObject({
+    success: true,
+    error: null,
+  });
 
-  const discardPromise = client.checkoutDiscardChanges("/tmp/project", { paths: ["src"] });
+  const discardPromise = client.checkoutDiscardChanges("/tmp/project", {
+    paths: ["src"],
+  });
   const discardRequest = parseSentFrame(mock.sent.at(-1));
   expect(discardRequest).toMatchObject({
     type: "checkout.discard_changes.request",
@@ -1833,7 +1854,10 @@ test("a connection loss rejects an in-flight file context action", async () => {
   mock.triggerOpen();
   await connectPromise;
 
-  const pending = client.deleteFileEntry({ cwd: "/tmp/project", path: "src/file.ts" });
+  const pending = client.deleteFileEntry({
+    cwd: "/tmp/project",
+    path: "src/file.ts",
+  });
   mock.triggerClose({ code: 1006, reason: "network lost" });
 
   await expect(pending).rejects.toThrow(/network lost|disconnected|closed/i);
@@ -2091,7 +2115,10 @@ test("readFile drops an old daemon's over-budget binary chunks and reports the r
     }),
   );
   mock.triggerMessage(
-    encodeFileTransferFrame({ opcode: FileTransferOpcode.FileEnd, requestId: "req-budget" }),
+    encodeFileTransferFrame({
+      opcode: FileTransferOpcode.FileEnd,
+      requestId: "req-budget",
+    }),
   );
 
   await expect(responsePromise).rejects.toThrow("File is too large to display");
@@ -2918,7 +2945,9 @@ test("sends project.remove.request", async () => {
     }),
   );
 
-  await expect(removePromise).resolves.toEqual({ removedWorkspaceIds: ["ws-main"] });
+  await expect(removePromise).resolves.toEqual({
+    removedWorkspaceIds: ["ws-main"],
+  });
 });
 
 test("sends worktree base-ref fields in create_frogg_worktree_request", async () => {
@@ -3336,7 +3365,10 @@ test("getCheckoutDiff uses one-shot subscription protocol", async () => {
   mock.triggerOpen();
   await connectPromise;
 
-  const promise = client.getCheckoutDiff("/tmp/project", { mode: "base", baseRef: "main" });
+  const promise = client.getCheckoutDiff("/tmp/project", {
+    mode: "base",
+    baseRef: "main",
+  });
 
   expect(mock.sent).toHaveLength(1);
   const subscribeRequest = parseSentFrame(mock.sent[0]);
@@ -4023,7 +4055,10 @@ test("resubscribes checkout diff streams after reconnect", async () => {
   const internal = client as unknown as {
     checkoutDiffSubscriptions: Map<
       string,
-      { cwd: string; compare: { mode: "uncommitted" | "base"; baseRef?: string } }
+      {
+        cwd: string;
+        compare: { mode: "uncommitted" | "base"; baseRef?: string };
+      }
     >;
   };
   internal.checkoutDiffSubscriptions.set("checkout-sub-1", {
@@ -4639,7 +4674,10 @@ test("requests provider snapshots conditionally and expands the compact response
   mock.triggerOpen();
   await connectPromise;
 
-  const promise = client.getProvidersSnapshot({ cwd: "/repo", ifNoneMatch: "previous-hash" });
+  const promise = client.getProvidersSnapshot({
+    cwd: "/repo",
+    ifNoneMatch: "previous-hash",
+  });
   const request = parseSentFrame(mock.sent[0]);
   expect(request).toMatchObject({
     type: "get_providers_snapshot_request",
@@ -5949,7 +5987,12 @@ test("refuses a different daemon on the host's address and reconnects once the r
     mock.triggerMessage(
       wrapSessionMessage({
         type: "status",
-        payload: { status: "server_info", serverId, hostname: null, version: null },
+        payload: {
+          status: "server_info",
+          serverId,
+          hostname: null,
+          version: null,
+        },
       }),
     );
   };
@@ -5975,4 +6018,87 @@ test("refuses a different daemon on the host's address and reconnects once the r
   expect(client.getConnectionState().status).toBe("connected");
   expect(client.getLastServerInfoMessage()?.serverId).toBe("srv_expected");
   expect(client.lastErrorInfo).toBeNull();
+});
+
+async function connectPluginTestClient() {
+  const mock = createMockTransport();
+  const client = new DaemonClient({
+    url: "ws://test",
+    clientId: "clsk_unit_test",
+    logger: createMockLogger(),
+    reconnect: { enabled: false },
+    transportFactory: () => mock.transport,
+  });
+  clients.push(client);
+  const connectPromise = client.connect();
+  mock.triggerOpen();
+  await connectPromise;
+  return { client, mock };
+}
+
+function replyPluginFrame(
+  mock: ReturnType<typeof createMockTransport>,
+  type: string,
+  payload: Record<string, unknown>,
+) {
+  mock.triggerMessage(JSON.stringify({ type: "session", message: { type, payload } }));
+}
+
+test("plugins.uninstall resolves the payload without requestId/error", async () => {
+  const { client, mock } = await connectPluginTestClient();
+  const promise = client.pluginsUninstall("acme.jira-links");
+  const request = parseSentFrame(mock.sent[0]);
+  expect(request.type).toBe("plugins.uninstall.request");
+  expect(request.id).toBe("acme.jira-links");
+  replyPluginFrame(mock, "plugins.uninstall.response", {
+    requestId: request.requestId,
+    error: null,
+    success: true,
+  });
+  await expect(promise).resolves.toEqual({ success: true });
+});
+
+test("plugins.install throws PluginRequestError carrying code and capabilities", async () => {
+  const { client, mock } = await connectPluginTestClient();
+  const promise = client.pluginsInstall({
+    id: "acme.jira-links",
+    repoUrl: "https://example.com/index.json",
+    grantedCapabilities: ["network"],
+  });
+  const request = parseSentFrame(mock.sent[0]);
+  expect(request.grantedCapabilities).toEqual(["network"]);
+  expect(request).not.toHaveProperty("version");
+  replyPluginFrame(mock, "plugins.install.response", {
+    requestId: request.requestId,
+    error: {
+      code: "forbidden",
+      message: "Consent missing",
+      capabilities: ["agent.read"],
+    },
+    plugin: null,
+  });
+  await expect(promise).rejects.toMatchObject({
+    name: "PluginRequestError",
+    code: "forbidden",
+    capabilities: ["agent.read"],
+  });
+});
+
+test("plugins.changed and plugins.notify push events reach their handlers", async () => {
+  const { client, mock } = await connectPluginTestClient();
+  const changed: unknown[] = [];
+  const notified: unknown[] = [];
+  client.onPluginsChanged((event) => changed.push(event));
+  client.onPluginsNotify((event) => notified.push(event));
+  replyPluginFrame(mock, "plugins.changed", {
+    pluginId: "acme.x",
+    reason: "installed",
+  });
+  replyPluginFrame(mock, "plugins.notify", {
+    pluginId: "acme.x",
+    message: "Hi",
+    level: "info",
+  });
+  expect(changed).toEqual([{ pluginId: "acme.x", reason: "installed" }]);
+  expect(notified).toEqual([{ pluginId: "acme.x", message: "Hi", level: "info" }]);
 });

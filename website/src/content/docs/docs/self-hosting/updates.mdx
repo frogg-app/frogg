@@ -17,7 +17,7 @@ frogg update --to 0.6.18        # pin a version, including older ones
 ```
 
 Each install updates within its own channel. `frogg` takes stable releases only; betas are
-a separate install, `frogg-beta` (service `frogg-beta-daemon`, port 9998, state in
+a separate install, `frogg-beta` (service `frogg-beta-daemon`, port 9989 and web client 9988, state in
 `~/.frogg-beta`), which takes `-beta.N` releases only. Run both on one host if you like;
 install the beta with the `install.sh` attached to any beta release. `--channel` is kept
 for scripts, but naming the other channel is an error that points you at the other install.
@@ -118,6 +118,33 @@ Devices paired after the upgrade aren't in the backup, so pair them again. Role 
 renames made since the upgrade are lost too. With no backup, the daemon either never had a
 version 1 file or was set up on 1.5.29 or later. In that case, remove `principals.json` and
 claim the daemon again after rolling back.
+
+## Installing the beta daemon from a client
+
+A stable daemon can install, update and remove the beta daemon on its own host for a
+connected client. This is owner-only (`daemon.manage`) and advertised as
+`server_info.features.betaChannelManagement`. It powers the app's Developer settings.
+
+- **Status** (`daemon.beta_channel.get_status`): whether `frogg-beta` is installed and which
+  version (read from `~/.local/share/frogg-beta/current`), whether it answers on port 9989,
+  and the newest published beta release. The newest beta is the highest-versioned release
+  that is published (not a draft), marked prerelease on GitHub, and carries a channel suffix
+  such as `-beta.N`. The same lookup tells the desktop app which beta build to download.
+- **Install or update** (`daemon.beta_channel.install`, optionally a specific beta version):
+  downloads that release's `install.sh`, checks it against the sha256 digest GitHub records
+  for the asset, checks that its brand header is the beta build's, and runs it. The script
+  then downloads and verifies the beta bundle itself. The stable daemon's `FROGG_*`
+  environment (state directory, install directory, listen address) is removed first, so the
+  run cannot touch the stable install.
+- **Uninstall** (`daemon.beta_channel.uninstall`, optionally purging `~/.frogg-beta`): runs the
+  release's `uninstall.sh` with the same checks.
+
+A run reports progress and each installer output line on `daemon.beta_channel.run.progress`,
+and ends with `daemon.beta_channel.run.completed`. One run happens at a time. It is refused
+when the daemon is itself the beta, on Windows (there is no beta installer script; install
+the Windows beta bundle from the release page), in Docker, and for Nix installs. The status
+reports the reason. The run is a child of the stable daemon, so restarting the stable daemon
+mid-run ends it; run it again.
 
 ## Not self-updatable
 

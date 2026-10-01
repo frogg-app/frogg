@@ -3,7 +3,7 @@ import { Directory, File as FSFile, Paths } from "expo-file-system";
 import * as LegacyFileSystem from "expo-file-system/legacy";
 import { isFdroidBuild } from "@/constants/build-profile";
 import { useSettings } from "@/hooks/use-settings";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import {
   getAndroidInstallerInfo,
   installAndroidApk,

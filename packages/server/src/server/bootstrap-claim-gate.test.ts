@@ -1,4 +1,5 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
@@ -6,6 +7,18 @@ import { afterEach, describe, expect, test } from "vitest";
 
 import { parseAnyConnectionOfferFromUrl } from "@frogg/protocol/connection-offer";
 import { createTestFroggDaemon, type TestFroggDaemon } from "./test-utils/frogg-daemon.js";
+
+function freePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      const address = server.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      server.close(() => resolve(port));
+    });
+  });
+}
 
 /**
  * The test daemon binds 127.0.0.1, so a remote visitor is simulated with
@@ -48,6 +61,9 @@ function wsClose(
 describe("first-run claim gate", () => {
   let tempRoot: string | null = null;
   let daemonHandle: TestFroggDaemon | null = null;
+  // The app and the claim page come from the web client's own port; the API from the daemon's.
+  let webPort = 0;
+  const webBase = () => `http://127.0.0.1:${webPort}`;
 
   async function startDaemon(
     options: { password?: string; trustLan?: boolean } = {},
@@ -61,7 +77,7 @@ describe("first-run claim gate", () => {
     );
     daemonHandle = await createTestFroggDaemon({
       mcpEnabled: false,
-      webUi: { enabled: true, distDir },
+      webUi: { enabled: true, distDir, port: (webPort = await freePort()) },
       trustLan: options.trustLan,
       ...(options.password ? { auth: { password: options.password } } : {}),
     });
@@ -89,11 +105,11 @@ describe("first-run claim gate", () => {
       listen: `127.0.0.1:${port}`,
     });
 
-    const loopback = await fetch(`${base}/`);
+    const loopback = await fetch(`${webBase()}/`);
     expect(loopback.status).toBe(200);
     expect(await loopback.text()).toContain("the app");
 
-    const gated = await fetch(`${base}/some/deep/link`, { headers: PUBLIC });
+    const gated = await fetch(`${webBase()}/some/deep/link`, { headers: PUBLIC });
     expect(gated.status).toBe(200);
     expect(gated.headers.get("cache-control")).toContain("no-store");
     const html = await gated.text();
@@ -156,7 +172,7 @@ describe("first-run claim gate", () => {
     });
     expect(replay.status).toBe(403);
 
-    const afterClaim = await fetch(`${base}/`, { headers: PUBLIC });
+    const afterClaim = await fetch(`${webBase()}/`, { headers: PUBLIC });
     expect(await afterClaim.text()).toContain("the app");
     expect((await (await fetch(`${base}/api/identity`)).json()).pairingRequired).toBe(false);
     // Claimed means no pairing prompt, but a public client still needs its credential.
@@ -189,7 +205,7 @@ describe("first-run claim gate", () => {
 
     // Reset (what `frogg daemon reset-claim` does) brings the gate back without a restart.
     daemon.claimStore.reset();
-    expect(await (await fetch(`${base}/`, { headers: PUBLIC })).text()).toContain(
+    expect(await (await fetch(`${webBase()}/`, { headers: PUBLIC })).text()).toContain(
       "Claim this frogg daemon",
     );
   });
@@ -201,7 +217,7 @@ describe("first-run claim gate", () => {
     // No gate, no bearer: the LAN client gets the app, the API, and a WebSocket.
     const identity = await (await fetch(`${base}/api/identity`, { headers: LAN })).json();
     expect(identity).toMatchObject({ pairingRequired: false, lanTrusted: true });
-    expect(await (await fetch(`${base}/`, { headers: LAN })).text()).toContain("the app");
+    expect(await (await fetch(`${webBase()}/`, { headers: LAN })).text()).toContain("the app");
     expect((await fetch(`${base}/api/status`, { headers: LAN })).status).toBe(200);
     expect(await wsClose(port, LAN)).toBe("open");
 
@@ -209,7 +225,7 @@ describe("first-run claim gate", () => {
     expect(
       (await (await fetch(`${base}/api/identity`, { headers: PUBLIC })).json()).pairingRequired,
     ).toBe(true);
-    expect(await (await fetch(`${base}/`, { headers: PUBLIC })).text()).toContain(
+    expect(await (await fetch(`${webBase()}/`, { headers: PUBLIC })).text()).toContain(
       "Claim this frogg daemon",
     );
     expect(await wsClose(port, PUBLIC)).toEqual({ code: 4401, reason: "Pairing required" });
@@ -236,7 +252,7 @@ describe("first-run claim gate", () => {
 
     const identity = await (await fetch(`${base}/api/identity`, { headers: LAN })).json();
     expect(identity).toMatchObject({ pairingRequired: true, lanTrusted: false });
-    expect(await (await fetch(`${base}/`, { headers: LAN })).text()).toContain(
+    expect(await (await fetch(`${webBase()}/`, { headers: LAN })).text()).toContain(
       "Claim this frogg daemon",
     );
     expect((await fetch(`${base}/api/status`, { headers: LAN })).status).toBe(401);
@@ -249,7 +265,7 @@ describe("first-run claim gate", () => {
     const { port } = await startDaemon({ password: CORRECT_PASSWORD_HASH });
     const base = `http://127.0.0.1:${port}`;
     expect((await (await fetch(`${base}/api/identity`)).json()).pairingRequired).toBe(false);
-    expect(await (await fetch(`${base}/`, { headers: PUBLIC })).text()).toContain("the app");
+    expect(await (await fetch(`${webBase()}/`, { headers: PUBLIC })).text()).toContain("the app");
     expect((await fetch(`${base}/api/status`)).status).toBe(401);
     // The password is the opt-in lock: a trusted LAN client needs it too.
     expect((await fetch(`${base}/api/status`, { headers: LAN })).status).toBe(401);

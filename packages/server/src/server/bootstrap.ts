@@ -5,14 +5,25 @@ import { createServer as createHTTPServer, type IncomingMessage, type ServerResp
 import { constants, existsSync, unlinkSync } from "fs";
 import { open, rm } from "fs/promises";
 import { randomUUID } from "node:crypto";
-import { hostname as getHostname } from "node:os";
+import { daemonHostname as getHostname } from "./daemon-hostname.js";
+import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Logger } from "pino";
 import { z } from "zod";
 import { createBranchChangeRouteHandler } from "./script-route-branch-handler.js";
 
 import { parseListenString, type ListenTarget } from "./listen-target.js";
+
+/** The state homes of this host's other channel daemons (stable, beta), not this daemon's own. */
+function siblingChannelHomes(froggHome: string): string[] {
+  const self = path.resolve(froggHome);
+  return [brand.channels.stable, brand.channels.beta]
+    .map((channel) => path.join(os.homedir(), channel.homeDir))
+    .filter((home) => path.resolve(home) !== self);
+}
+
 export { parseListenString, type ListenTarget } from "./listen-target.js";
 import { createExecutionHttpServer } from "./execution-service/http-server.js";
 
@@ -76,6 +87,7 @@ export async function fanOutReconciledWorkspaceUpdates(input: {
 import { VoiceAssistantWebSocketServer } from "./websocket-server.js";
 import { WorkspaceSetupRuntime } from "./workspace-setup-runtime.js";
 import { createWorkspaceLabelService } from "./workspace-labels/index.js";
+import { ProjectTodoService } from "./project-todos/service.js";
 import { createGitHubService } from "../services/github-service.js";
 import { createFroggWorktree as createRegisteredFroggWorktree } from "./frogg-worktree-service.js";
 import { createWorkspaceProvisioningService } from "./session/workspace-provisioning/workspace-provisioning-service.js";
@@ -133,6 +145,7 @@ import { CheckoutDiffManager } from "./checkout-diff-manager.js";
 import { DaemonConfigStore, type MutableDaemonConfig } from "./daemon-config-store.js";
 import { createFroggWorktreeCommand } from "./worktree/commands.js";
 import { removeRetiredSkills } from "./retired-skills.js";
+import { SkillCatalog } from "./skills/catalog.js";
 import {
   resolveConfigFromPersisted,
   resolvePairingBaseUrl,
@@ -150,7 +163,10 @@ import {
 } from "./workspace-archive-service.js";
 import { setupAutoArchiveOnMerge } from "./auto-archive-on-merge/index.js";
 import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
+import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./agent/auto-clean-cut.js";
 import { sendPromptToAgent } from "./agent/agent-prompt.js";
+import { PluginService } from "./plugins/plugin-service.js";
+import { createPluginAgentBridge } from "./plugins/agent-bridge.js";
 import { wrapSessionMessage, type SessionOutboundMessage } from "./messages.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
 import { createConfiguredTerminalManager } from "../terminal/terminal-manager-factory.js";
@@ -160,6 +176,7 @@ import { createRelayRuntime, type RelayRuntime } from "./relay-runtime.js";
 import type { PushNotificationSender } from "./push/index.js";
 import { getOrCreateServerId } from "./server-id.js";
 import { resolveDaemonVersion } from "./daemon-version.js";
+import { isStableVersion } from "@frogg/protocol/release-version";
 import type { AgentClient, AgentProvider } from "./agent/agent-sdk-types.js";
 import type {
   FirstAgentContext,
@@ -203,7 +220,7 @@ import {
   type DaemonAuthConfig,
 } from "./auth.js";
 import { createAuthFailureLimiter } from "./auth-rate-limit.js";
-import { createWebUiMiddleware, type WebUiGate } from "./web-ui.js";
+import type { WebUiGate } from "./web-ui.js";
 import { createAccessPolicy, DEFAULT_TRUST_LAN, isLoopbackIp } from "./access-policy.js";
 import { computeSecurityPosture, updateAcknowledgedFindings } from "./security-posture.js";
 import { createClaimStore, isDaemonClaimed, type ClaimStore } from "./claim-store.js";
@@ -256,13 +273,30 @@ import {
   DEFAULT_AUTO_UPDATE_CONFIG,
 } from "./session/daemon/daemon-auto-updater.js";
 import { describeDaemonInstall } from "./session/daemon/daemon-update-install.js";
+import { BetaChannelService } from "./session/daemon/beta-channel-service.js";
+import { DevDaemonService } from "./session/daemon/dev-daemon-service.js";
+import { WEB_UI_DEFAULT_HOST, WebUiServer } from "./web-ui-server.js";
 import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
 import { createHostResources } from "./host/host-resources.js";
 import { sweepFroggDebris } from "./host/debris-sweep.js";
+import { startStaleWorktreeSweep } from "./host/worktree-inventory.js";
+import { ProviderAccountStore } from "./provider-accounts/provider-account-store.js";
+import { resolveFroggWorktreesBaseRoot } from "../utils/worktree.js";
 import { getActiveImageAttachmentDir } from "./agent/providers/provider-image-output.js";
-import type { DaemonAutoUpdateConfig } from "@frogg/protocol/messages";
+import type { DaemonAutoUpdateConfig, MutableCleanCutConfig } from "@frogg/protocol/messages";
 
 const MCP_DEBUG_BATCH_LIMIT = 10;
+
+/** Every provider config dir: each default and every added account. */
+function providerAccountDirs(froggHome: string): string[] {
+  try {
+    return new ProviderAccountStore({ froggHome })
+      .list(undefined, { includeImplicitDefault: true })
+      .map((account) => account.configDir);
+  } catch {
+    return [];
+  }
+}
 const MCP_DEBUG_SECRET = "[redacted]";
 const DOWNLOAD_OPEN_FLAGS =
   process.platform === "win32" ? constants.O_RDONLY : constants.O_RDONLY | constants.O_NOFOLLOW;
@@ -467,7 +501,11 @@ export interface FroggDaemonConfig {
     maxProcessConcurrency: number;
   };
   autoArchiveAfterMerge?: boolean;
+  /** Days an idle, clean, unreferenced worktree is kept; 0 disables the sweep. Default 7. */
+  worktreeRetentionDays?: number;
   autoResumeOnUsageLimit?: boolean;
+  /** Clean cut settings: automatic triggers, idle thresholds and summariser models. */
+  cleanCut?: MutableCleanCutConfig;
   /** `features.companion.model`; null means the backend default. */
   companionModel?: string | null;
   hostSettingsHiddenSections?: readonly HostSettingsSection[];
@@ -493,7 +531,10 @@ export interface FroggDaemonConfig {
   };
   webUi?: {
     enabled: boolean;
+    enabledPinned?: boolean;
     distDir: string | null;
+    host?: string;
+    port?: number;
   };
   appBaseUrl?: string;
   auth?: DaemonAuthConfig;
@@ -581,21 +622,48 @@ async function reconcileManagedProcessLedger(
   }
 }
 
-function mountWebUi(
-  app: express.Application,
-  config: FroggDaemonConfig,
-  logger: Logger,
-  gate: WebUiGate,
-): void {
-  app.use(
-    createWebUiMiddleware({
-      enabled: config.webUi?.enabled ?? false,
-      distDir: config.webUi?.distDir ?? null,
-      label: getHostname(),
-      logger,
-      gate,
-    }),
-  );
+function createWebUiServer(input: {
+  config: FroggDaemonConfig;
+  logger: Logger;
+  daemonPort: () => number | null;
+  gate: WebUiGate;
+  trustProxy: () => unknown;
+}): WebUiServer {
+  const { config, logger } = input;
+  const webUi = config.webUi;
+  const enabledPinned = webUi?.enabledPinned ?? false;
+  return new WebUiServer({
+    logger,
+    distDir: webUi?.distDir ?? null,
+    port: webUi?.port ?? brand.webPort,
+    daemonPort: input.daemonPort,
+    label: getHostname(),
+    gate: input.gate,
+    trustProxy: input.trustProxy,
+    settings: {
+      startOnLaunch: webUi?.enabled ?? false,
+      host: webUi?.host ?? WEB_UI_DEFAULT_HOST,
+    },
+    startOnLaunchPinned: enabledPinned,
+    saveSettings: (settings) => {
+      const persisted = loadPersistedConfig(config.froggHome, logger);
+      savePersistedConfig(
+        config.froggHome,
+        {
+          ...persisted,
+          features: {
+            ...persisted.features,
+            webUi: {
+              ...persisted.features?.webUi,
+              ...(enabledPinned ? {} : { enabled: settings.startOnLaunch }),
+              host: settings.host,
+            },
+          },
+        },
+        logger,
+      );
+    },
+  });
 }
 
 /**
@@ -738,6 +806,7 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
     },
     autoArchiveAfterMerge: config.autoArchiveAfterMerge ?? false,
     autoResumeOnUsageLimit: config.autoResumeOnUsageLimit ?? true,
+    cleanCut: resolveInitialCleanCut(config),
     companionModel: config.companionModel ?? null,
     hostSettings: {
       hiddenSections: [...(config.hostSettingsHiddenSections ?? brand.hostSettings.hiddenSections)],
@@ -752,6 +821,11 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
   }
 
   return initialConfig;
+}
+
+/** Both automatic triggers on and no overrides when the launcher resolved none. */
+function resolveInitialCleanCut(config: FroggDaemonConfig): MutableCleanCutConfig {
+  return config.cleanCut ?? { auto: { usageLimit: true, daemonRestart: true }, providers: {} };
 }
 
 export async function createFroggDaemon(
@@ -941,6 +1015,7 @@ export async function createFroggDaemon(
   });
   let wsServer: VoiceAssistantWebSocketServer | null = null;
   let autoUpdater: DaemonAutoUpdater | null = null;
+  let stopWorktreeSweep: (() => void) | null = null;
   let serviceProxyListenTarget: ListenTarget | null = null;
   const scriptHealthMonitor = new ScriptHealthMonitor({
     serviceProxy,
@@ -1006,7 +1081,10 @@ export async function createFroggDaemon(
     const origin = req.headers.origin;
     if (
       origin &&
-      (allowedOrigins.has("*") || allowedOrigins.has(origin) || publicOrigins().includes(origin))
+      (allowedOrigins.has("*") ||
+        allowedOrigins.has(origin) ||
+        publicOrigins().includes(origin) ||
+        webUiServer.isWebClientOrigin(origin, req.headers.host))
     ) {
       res.setHeader("Access-Control-Allow-Origin", origin);
       res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
@@ -1062,12 +1140,19 @@ export async function createFroggDaemon(
     pairingBaseUrl: () => appBaseUrl,
   });
 
-  mountWebUi(
-    app,
+  // The web client has its own server and port (web-ui-server.ts); the daemon's port serves none.
+  const webUiServer = createWebUiServer({
     config,
     logger,
-    createClaimGate({ auth: authConfig, claimStore, offerSource: claimOfferSource, daemonVersion }),
-  );
+    daemonPort: publicTcpPort,
+    trustProxy: () => app.get("trust proxy"),
+    gate: createClaimGate({
+      auth: authConfig,
+      claimStore,
+      offerSource: claimOfferSource,
+      daemonVersion,
+    }),
+  });
 
   app.use(
     createRequireBearerMiddleware(authConfig, (context) => {
@@ -1358,7 +1443,21 @@ export async function createFroggDaemon(
     if (git) configureGitProcessPolicy(git);
   });
   const initialAgentManagerState = providerSnapshotManager.getAgentManagerProviderState();
+  const skillCatalog = new SkillCatalog({
+    froggHome: config.froggHome,
+    brand: {
+      id: brand.id,
+      fullName: brand.fullName,
+      cliName: brand.cliName,
+      envPrefix: brand.envPrefix,
+      docsUrl: brand.links.docs ?? brand.links.website ?? "",
+    },
+    logger,
+  });
+  await skillCatalog.initialize();
+
   const agentManager = new AgentManager({
+    resolveSkillLaunchPolicy: () => skillCatalog.launchPolicy(),
     clients: initialAgentManagerState.clients,
     providerDefinitions: initialAgentManagerState.providerDefinitions,
     registry: agentStorage,
@@ -1404,6 +1503,25 @@ export async function createFroggDaemon(
   });
   await workspaceLabelService.initialize();
   logger.info({ elapsed: elapsed() }, "Workspace registries bootstrapped");
+  const todoWorkspaceRegistry = workspaceRegistry;
+  const projectTodoService = new ProjectTodoService({
+    projectRegistry,
+    workspaceRegistry: todoWorkspaceRegistry,
+    isAgentRunning: (agentId) => {
+      const agent = agentManager.getAgent(agentId);
+      return agent !== null && agent.lifecycle !== "closed";
+    },
+    resolveAgentProjectIds: async (agentId) => {
+      const workspaceId =
+        agentManager.getAgent(agentId)?.workspaceId ??
+        (await agentStorage.get(agentId))?.workspaceId;
+      const workspace = workspaceId ? await todoWorkspaceRegistry.get(workspaceId) : null;
+      return workspace ? [workspace.projectId] : [];
+    },
+    logger: logger.child({ module: "project-todos" }),
+  });
+  // Archiving an agent releases every to-do claim it holds.
+  agentManager.setAgentArchivedCallback((agentId) => projectTodoService.releaseAgent(agentId));
   const teardownArchivedWorkspaceRuntime = (workspaceId: string): void => {
     scriptRuntimeStore.removeForWorkspace(workspaceId);
     releaseWorkspaceServicePortPlan(workspaceId);
@@ -1532,10 +1650,21 @@ export async function createFroggDaemon(
     logger,
   });
 
+  const autoCleanCutDeps: AutoCleanCutDeps = {
+    agentManager,
+    providerSnapshotManager,
+    getCleanCutSettings: () => daemonConfigStore.get().cleanCut,
+    logger,
+  };
   const usageLimitAutoResume = setupUsageLimitAutoResume({
     agentManager,
     isEnabled: () => daemonConfigStore.get().autoResumeOnUsageLimit !== false,
-    resume: async (agentId, prompt) => {
+    resume: async (agentId, prompt, { limitDetectedAt }) => {
+      await maybeAutoCleanCut(autoCleanCutDeps, {
+        agentId,
+        lastProviderTurnAt: limitDetectedAt,
+        trigger: "usage_limit",
+      });
       await sendPromptToAgent({
         agentManager,
         agentStorage,
@@ -1549,6 +1678,15 @@ export async function createFroggDaemon(
   });
   daemonConfigStore.onFieldChange("autoResumeOnUsageLimit", (value) => {
     if (value === false) usageLimitAutoResume.cancelAll();
+  });
+
+  const pluginService = new PluginService({
+    froggHome: config.froggHome,
+    logger,
+    policy: brand.plugins,
+    // Beta builds are the developer channel: local plugin folders link out of the box.
+    localLinking: !isStableVersion(daemonVersion),
+    agents: createPluginAgentBridge({ agentManager, agentStorage, logger }),
   });
 
   setupAutoArchiveOnMerge({
@@ -1787,6 +1925,7 @@ export async function createFroggDaemon(
     createFroggWorktree: createAgentCommandDependencies.createFroggWorktree,
     browserToolsEnabled: browserToolsPolicy.isEnabled(),
     browserToolsBroker,
+    projectTodos: projectTodoService,
     froggHome: config.froggHome,
     worktreesRoot: config.worktreesRoot,
     callerAgentId: runtime.callerAgentId,
@@ -2165,6 +2304,17 @@ export async function createFroggDaemon(
               retainAcrossGatewayRestart: Boolean(config.executionService),
               logger,
             });
+            const betaChannelService = new BetaChannelService({
+              logger,
+              modulePath: fileURLToPath(import.meta.url),
+            });
+            const devDaemonService = new DevDaemonService({
+              logger,
+              froggHome: config.froggHome,
+              siblingWorkspaceFiles: siblingChannelHomes(config.froggHome).map((home) =>
+                path.join(home, "projects", "workspaces.json"),
+              ),
+            });
             const runningVersionRoot = updateService.installInfo.runningRoot;
             const hostResources = createHostResources({
               froggHome: config.froggHome,
@@ -2176,6 +2326,30 @@ export async function createFroggDaemon(
                 const active = getActiveImageAttachmentDir();
                 return active ? [active] : [];
               },
+              listProviderAccountDirs: () => providerAccountDirs(config.froggHome),
+              worktrees: {
+                froggHome: config.froggHome,
+                worktreesBaseRoot: resolveFroggWorktreesBaseRoot({
+                  froggHome: config.froggHome,
+                  worktreesRoot: config.worktreesRoot,
+                }),
+                retentionDays: config.worktreeRetentionDays,
+                listRepoRoots: async () =>
+                  (await projectRegistry.list()).map((project) => project.rootPath),
+                listAccountDirs: () => providerAccountDirs(config.froggHome),
+                // A project may itself be registered at a linked worktree.
+                listReferencedPaths: async () => [
+                  ...(await projectRegistry.list()).map((project) => project.rootPath),
+                  ...(await workspaceRegistry!.list())
+                    .filter((workspace) => !workspace.archivedAt)
+                    .map((workspace) => workspace.cwd),
+                  ...agentManager.listAgents().map((agent) => agent.cwd),
+                ],
+              },
+              logger,
+            });
+            stopWorktreeSweep = startStaleWorktreeSweep(hostResources.worktrees, {
+              enabled: config.worktreeRetentionDays !== 0,
               logger,
             });
             // Non-blocking: a slow or failing sweep never delays or breaks startup.
@@ -2211,6 +2385,8 @@ export async function createFroggDaemon(
               mcpBaseUrl,
               {
                 getAllowedOrigins: () => new Set([...allowedOrigins, ...publicOrigins()]),
+                isTrustedOrigin: (origin, requestHost) =>
+                  webUiServer.isWebClientOrigin(origin, requestHost),
                 getHostnames: () => configuredHostnames,
                 hostnameCheckOptions,
                 daemonStatusRpc: dependencies.serverFeatureOverrides?.daemonStatusRpc,
@@ -2255,7 +2431,11 @@ export async function createFroggDaemon(
                 },
                 desktopManaged: config.desktopManaged === true,
                 update: updateService,
+                betaChannel: betaChannelService,
+                devDaemon: devDaemonService,
+                webUi: webUiServer,
                 hostResources,
+                skills: skillCatalog,
                 getSecurityPosture,
                 setSecurityFindingAcknowledged,
                 getRelayConfig: () =>
@@ -2275,21 +2455,39 @@ export async function createFroggDaemon(
               spokenAlerts,
               companion,
             );
+            wsServer.setProjectTodoService(projectTodoService);
             wsServer.setDeviceAccessServices({
               deviceAccess: deviceAccessService,
               presence: presenceService,
             });
             wsServer.setDeviceRoleStore(deviceRoleStoreFrom(claimStore));
+            wsServer.setPluginService(pluginService);
             wsServer.beginAcceptingConnections();
+            void pluginService
+              .start()
+              .catch((err) => logger.error({ err }, "Plugin system failed to start"));
             {
               const server = wsServer;
               updateService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
+              betaChannelService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
             }
             autoUpdater.start();
             // Fire-and-forget: continue agents a previous daemon stop cut off mid-turn.
-            void resumeInterruptedAgents({ agentManager, agentStorage, logger }).catch((err) =>
-              logger.error({ err }, "Interrupted-turn resume failed"),
-            );
+            // FROGG_RESUME_INTERRUPTED_TURNS=0 turns it off for a daemon that shares provider
+            // sessions with another one (the development daemon), which must never drive them.
+            if (process.env.FROGG_RESUME_INTERRUPTED_TURNS !== "0")
+              void resumeInterruptedAgents({
+                agentManager,
+                agentStorage,
+                logger,
+                beforeResume: async (agentId, interruptedAt) => {
+                  await maybeAutoCleanCut(autoCleanCutDeps, {
+                    agentId,
+                    lastProviderTurnAt: interruptedAt,
+                    trigger: "daemon_restart",
+                  });
+                },
+              }).catch((err) => logger.error({ err }, "Interrupted-turn resume failed"));
             relayRuntime = createRelayRuntime({
               config: {
                 enabled: relayEnabled,
@@ -2340,6 +2538,7 @@ export async function createFroggDaemon(
       // model loading doesn't block the server from accepting connections.
       speechService.start();
       scriptHealthMonitor.start();
+      await webUiServer.startOnLaunch();
     } catch (error) {
       await serviceProxy.stopStandalone().catch(() => undefined);
       await agentProviderRuntime.shutdown().catch(() => undefined);
@@ -2353,6 +2552,8 @@ export async function createFroggDaemon(
 
   const stop = async () => {
     autoUpdater?.stop();
+    await pluginService.stop().catch(() => undefined);
+    stopWorktreeSweep?.();
     await hubRelationships.stop();
     workspaceReconciliation.dispose();
     scriptHealthMonitor.stop();
@@ -2384,6 +2585,7 @@ export async function createFroggDaemon(
       await wsServer.close();
     }
     await serviceProxy.stopStandalone();
+    await webUiServer.stop();
     // Force-drop remaining sockets so httpServer.close() resolves promptly.
     // We've already closed wsServer (which sent ws-layer close frames) and
     // stopped every other service, so anything still attached is a TCP

@@ -504,34 +504,46 @@ export function resolveKnownHostRoute(input: {
 
 export const SETTINGS_SECTION_SLUGS = [
   "general",
-  "companion",
   "appearance",
-  "layout",
-  "editor",
   "shortcuts",
-  "integrations",
   "notifications",
   "permissions",
-  "diagnostics",
+  "developer",
   "about",
 ] as const;
 
 export type SettingsSectionSlug = (typeof SETTINGS_SECTION_SLUGS)[number];
 
+const LEGACY_SETTINGS_SECTION_SLUGS: Record<string, SettingsSectionSlug> = {
+  // Companion and Diagnostics live inside General.
+  companion: "general",
+  diagnostics: "general",
+};
+
 export function isSettingsSectionSlug(value: string): value is SettingsSectionSlug {
   return (SETTINGS_SECTION_SLUGS as readonly string[]).includes(value);
 }
 
+export function normalizeSettingsSectionSlug(value: string): SettingsSectionSlug | null {
+  if (isSettingsSectionSlug(value)) {
+    return value;
+  }
+  return LEGACY_SETTINGS_SECTION_SLUGS[value] ?? null;
+}
+
 export const HOST_SECTION_SLUGS = [
-  "deploy",
   "projects",
-  "pair-device",
-  "devices",
-  "security",
   "agents",
   "providers",
+  "skills",
   "terminals",
+  "automation",
+  "devices",
+  "security",
   "host",
+  "updates",
+  "web-client",
+  "developer",
 ] as const;
 
 export type HostSectionSlug = (typeof HOST_SECTION_SLUGS)[number];
@@ -542,8 +554,11 @@ const LEGACY_HOST_SECTION_SLUGS: Record<string, HostSectionSlug> = {
   orchestration: "agents",
   daemon: "host",
   connections: "host",
-  metadata: "host",
-  workspaces: "host",
+  metadata: "agents",
+  workspaces: "automation",
+  // Pairing a device folded into Devices; SSH deploy into Updates.
+  "pair-device": "devices",
+  deploy: "updates",
 };
 
 export function isHostSectionSlug(value: string): value is HostSectionSlug {
@@ -598,6 +613,13 @@ export function buildProjectSettingsRoute(serverId: string, projectId: string) {
     throw new Error("buildProjectSettingsRoute requires a serverId and projectId");
   }
   return `/settings/hosts/${encodeSegment(serverId)}/projects/${encodeSegment(projectId)}` as const;
+}
+
+export function buildProjectTodosRoute(serverId: string, projectId: string) {
+  if (!serverId.trim() || !projectId.trim()) {
+    throw new Error("buildProjectTodosRoute requires a serverId and projectId");
+  }
+  return `/h/${encodeSegment(serverId)}/projects/${encodeSegment(projectId)}/todos` as const;
 }
 
 export function normalizeProjectSettingsRouteId(value: string | string[] | undefined): string {

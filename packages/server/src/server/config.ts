@@ -23,6 +23,7 @@ import type {
 } from "./agent/provider-launch-config.js";
 import { ProviderOverrideSchema } from "./agent/provider-launch-config.js";
 import { AgentProviderSchema } from "@frogg/protocol/provider-manifest";
+import type { MutableCleanCutConfig } from "@frogg/protocol/messages";
 import { hashDaemonPassword } from "./auth.js";
 import { resolveSpeechConfig } from "./speech/speech-config-resolver.js";
 import type { RequestedSpeechProviders } from "./speech/speech-types.js";
@@ -440,7 +441,11 @@ function resolveServiceProxyConfig(
 
 interface ResolvedWebUi {
   enabled: boolean;
+  /** `enabled` comes from an in-process CLI flag, so config.json cannot change it. */
+  enabledPinned: boolean;
   distDir: string | null;
+  host: string;
+  port: number;
 }
 
 function resolveWebUiConfig(
@@ -449,10 +454,12 @@ function resolveWebUiConfig(
   cli: CliConfigOverrides | undefined,
   persisted: ReturnType<typeof loadPersistedConfig>,
 ): ResolvedWebUi {
+  // Installers and service units set FROGG_WEB_UI_ENABLED; it is only the default, so the
+  // owner's choice from the app (config.json) holds across restarts.
   const enabled =
     cli?.webUiEnabled ??
-    parseBooleanEnv(env.FROGG_WEB_UI_ENABLED) ??
     persisted.features?.webUi?.enabled ??
+    parseBooleanEnv(env.FROGG_WEB_UI_ENABLED) ??
     false;
   const rawDistDir = env.FROGG_WEB_UI_DIST_DIR ?? persisted.features?.webUi?.distDir;
   const trimmedDistDir = rawDistDir?.trim();
@@ -461,7 +468,10 @@ function resolveWebUiConfig(
     : BUNDLED_WEB_UI_DIST_DIR;
   return {
     enabled,
+    enabledPinned: cli?.webUiEnabled !== undefined,
     distDir,
+    host: env.FROGG_WEB_UI_HOST?.trim() || persisted.features?.webUi?.host || "127.0.0.1",
+    port: Number(env.FROGG_WEB_UI_PORT) || persisted.features?.webUi?.port || brand.webPort,
   };
 }
 
@@ -698,6 +708,31 @@ function resolveAutoResumeOnUsageLimit(persisted: ReturnType<typeof loadPersiste
   return persisted.daemon?.autoResumeOnUsageLimit !== false;
 }
 
+/**
+ * `daemon.cleanCut`, with both automatic triggers resolved. They are on by
+ * default: a cut only happens once a conversation has sat idle past its
+ * threshold, where a summary is the cheaper resume.
+ */
+export function resolveCleanCutSetting(
+  persisted: ReturnType<typeof loadPersistedConfig>,
+): MutableCleanCutConfig {
+  const cleanCut = persisted.daemon?.cleanCut;
+  // COMPAT(cleanCutSettings): `autoCleanCutOnColdCache: false` (v1.6.2) turns
+  // off whichever trigger `cleanCut.auto` leaves unset. Remove after 2027-09-27.
+  const legacyEnabled = persisted.daemon?.autoCleanCutOnColdCache !== false;
+  return {
+    auto: {
+      usageLimit: cleanCut?.auto?.usageLimit ?? legacyEnabled,
+      daemonRestart: cleanCut?.auto?.daemonRestart ?? legacyEnabled,
+    },
+    ...(cleanCut?.idleThresholdMinutes !== undefined
+      ? { idleThresholdMinutes: cleanCut.idleThresholdMinutes }
+      : {}),
+    ...(cleanCut?.summaryModel ? { summaryModel: cleanCut.summaryModel } : {}),
+    providers: cleanCut?.providers ?? {},
+  };
+}
+
 /** `features.companion.model`, surfaced as the mutable `companionModel`; null is the default. */
 function resolveCompanionModelSetting(
   persisted: ReturnType<typeof loadPersistedConfig>,
@@ -716,7 +751,9 @@ function resolveStaticLoadConfigSettings(
       cli?.mcpInjectIntoAgents ?? persisted.daemon?.mcp?.injectIntoAgents ?? false,
     browserToolsEnabled: resolveBrowserToolsEnabled(persisted),
     autoArchiveAfterMerge: persisted.daemon?.autoArchiveAfterMerge ?? false,
+    worktreeRetentionDays: persisted.daemon?.worktreeRetentionDays,
     autoResumeOnUsageLimit: resolveAutoResumeOnUsageLimit(persisted),
+    cleanCut: resolveCleanCutSetting(persisted),
     companionModel: resolveCompanionModelSetting(persisted),
     hostSettingsHiddenSections: resolveHostSettingsHiddenSections(persisted),
     autoUpdate: resolveAutoUpdateConfig(env, persisted),
@@ -763,7 +800,9 @@ export function resolveConfigFromPersisted(
     mcpInjectIntoAgents,
     browserToolsEnabled,
     autoArchiveAfterMerge,
+    worktreeRetentionDays,
     autoResumeOnUsageLimit,
+    cleanCut,
     companionModel,
     hostSettingsHiddenSections,
     autoUpdate,
@@ -820,7 +859,9 @@ export function resolveConfigFromPersisted(
     browserToolsEnabled,
     git: resolveGitProcessConfig(env, persisted),
     autoArchiveAfterMerge,
+    worktreeRetentionDays,
     autoResumeOnUsageLimit,
+    cleanCut,
     companionModel,
     hostSettingsHiddenSections,
     autoUpdate,
@@ -1000,9 +1041,8 @@ function resolveServiceAndWebUiOverridePaths(
     paths.push("daemon.serviceProxy.publicBaseUrl");
   }
 
-  if (cli?.webUiEnabled !== undefined || parseBooleanEnv(env.FROGG_WEB_UI_ENABLED) !== undefined) {
-    paths.push("features.webUi.enabled");
-  }
+  // FROGG_WEB_UI_ENABLED is only a default (resolveWebUiConfig); the CLI flag pins it.
+  if (cli?.webUiEnabled !== undefined) paths.push("features.webUi.enabled");
   if (env.FROGG_WEB_UI_DIST_DIR !== undefined) paths.push("features.webUi.distDir");
   return paths;
 }

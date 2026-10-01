@@ -1,7 +1,7 @@
 import type { FileExplorerResponse } from "@frogg/protocol/messages";
 import type { ComponentType } from "react";
 import { ArrowUp, Folder, FolderPlus, RotateCw } from "lucide-react-native";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { shortenPath } from "@/utils/shorten-path";
 import { joinDirectoryPath, parentDirectory } from "./options";
 

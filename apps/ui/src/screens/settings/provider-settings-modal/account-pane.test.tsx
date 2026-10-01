@@ -100,7 +100,13 @@ vi.mock("lucide-react-native", () => {
     Component.displayName = `Icon(${name})`;
     return Component;
   };
-  return { Plus: icon("Plus"), Trash2: icon("Trash2"), Check: icon("Check") };
+  return {
+    Plus: icon("Plus"),
+    Trash2: icon("Trash2"),
+    Check: icon("Check"),
+    ChevronDown: icon("ChevronDown"),
+    ChevronUp: icon("ChevronUp"),
+  };
 });
 
 // The key is asserted, not the copy: wording is covered by the i18n parity test.
@@ -451,6 +457,9 @@ describe("AccountPane", () => {
     render();
 
     await act(async () => {
+      byTestId(container, "provider-account-models-toggle")?.click();
+    });
+    await act(async () => {
       byTestId(container, "provider-account-model-toggle-sonnet")?.click();
     });
 
@@ -463,6 +472,9 @@ describe("AccountPane", () => {
   it("spells allowing every model again as no restriction", async () => {
     render({ account: account({ allowedModels: ["opus"] }) });
 
+    await act(async () => {
+      byTestId(container, "provider-account-models-toggle")?.click();
+    });
     await act(async () => {
       byTestId(container, "provider-account-model-toggle-sonnet")?.click();
     });

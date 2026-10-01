@@ -17,7 +17,6 @@ import {
   checkForAppUpdate,
   downloadAndInstallUpdate,
 } from "../features/auto-updater.js";
-import { getCliInstallStatus, installCli } from "../integrations/cli-install/index.js";
 import {
   openLocalTransportSession,
   sendLocalTransportMessage,
@@ -116,8 +115,6 @@ export function createDaemonCommandHandlers(): Record<string, DesktopCommandHand
       );
     },
     get_local_daemon_version: () => getLocalDaemonVersion(),
-    install_cli: () => installCli(),
-    get_cli_install_status: () => getCliInstallStatus(),
   };
 }
 

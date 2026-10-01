@@ -17,11 +17,8 @@ interface SavedSettingsHostInput {
 const SECTION_LABELS = {
   general: "General",
   appearance: "Appearance",
-  editor: "Editor",
   shortcuts: "Shortcuts",
-  integrations: "Integrations",
   permissions: "Permissions",
-  diagnostics: "Diagnostics",
   about: "About",
 } as const;
 
@@ -29,7 +26,7 @@ export type SettingsSection = keyof typeof SECTION_LABELS;
 
 type HostSection =
   | "projects"
-  | "pair-device"
+  | "devices"
   | "agents"
   | "providers"
   | "security"

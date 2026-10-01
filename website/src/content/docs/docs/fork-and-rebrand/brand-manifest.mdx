@@ -24,6 +24,7 @@ Do not add a `$schema` key to the manifest: the strict schema rejects it.
 | `name`          | 1 to 160 characters, Unicode allowed, no control characters        | Window titles, installers, app name, release titles                    |
 | `applicationId` | Reverse DNS, 3+ lowercase segments, e.g. `com.acme.studio`         | Android package, macOS/Windows app ID, Windows install path, storage namespace |
 | `daemonPort`    | Integer, 1024 to 65535                                             | Default daemon port for installers, Docker, Nix and clients            |
+| `webPort`       | Integer, 1024 to 65535                                             | Port of the daemon's web client. Default `daemonPort - 1`               |
 | `assets.icon`   | Path to a square PNG or SVG, at least 1024 × 1024                  | Source for every generated icon                                        |
 
 ## Identity fields
@@ -376,6 +377,41 @@ would scan it — though `<cliName> pair --qr` still forces one. `--json` and `-
 never print a QR, so provisioning scripts are unaffected. See
 [provisioning](/docs/self-hosting/provisioning/).
 
+## Plugins
+
+Controls where plugins come from and what users may do with them. The daemon enforces it.
+
+```json
+"plugins": {
+  "officialRepo": true,
+  "repos": [{ "name": "Acme internal", "url": "https://acme.github.io/frogg-plugins/index.json", "publicKey": "<base64>" }],
+  "allowUserRepos": false,
+  "developerMode": "allowed",
+  "allow": ["acme.*"],
+  "deny": [],
+  "preinstalled": [{ "id": "acme.jira-links", "version": "^1" }],
+  "autoUpdate": "brand-repos"
+}
+```
+
+| Key              | Rule | Default | Meaning |
+| ---------------- | ---- | ------- | ------- |
+| `enabled`        | boolean | `true` | Off hides plugins entirely: the daemon stops advertising the feature and loads nothing |
+| `officialRepo`   | boolean | `true` | Include Frogg's official repository (its key is compiled in) |
+| `repos`          | array of `{ name, url, publicKey }` | `[]` | Brand repositories. `publicKey` is the base64 raw ed25519 key from `frogg plugins keygen` |
+| `allowUserRepos` | boolean | `false` (`true` for frogg) | Users may add repositories; their key is pinned on first add |
+| `developerMode`  | `allowed` \| `forbidden` | `allowed` | Whether beta builds can link local plugin folders (stable builds never can) |
+| `allow` / `deny` | plugin-id globs (`*`) | `[]` | Deny wins; an empty `allow` allows every id. Applies to the catalog, installs and already-installed plugins |
+| `preinstalled`   | array of `{ id, version? }` | `[]` | Installed on daemon start from brand repositories first, then the official one. `version` is exact or a range (`^1`, `~1.2`). Users cannot uninstall them. `build`-scope entries are for the brand build pipeline |
+| `autoUpdate`     | `off` \| `brand-repos` \| `all` | `brand-repos` | Background updates. Never applied when an update adds capabilities |
+
+To host a brand repository, copy `templates/plugin-repo/` from the Frogg repo into a new
+GitHub repository; its README covers keys, Pages and publishing. Its CI does not use npm
+for Frogg packages: the repository variable `FROGG_VERSION` pins a Frogg release whose
+daemon bundle supplies the `frogg` CLI (sha256-checked) and whose tag supplies the plugin
+API types. Without `FROGG_VERSION`, `FROGG_REF` names a branch, tag or commit of
+`frogg-app/frogg` to build the CLI from source.
+
 ## Channels
 
 Every brand builds twice: the **stable** build and a **beta** build that installs beside it
@@ -390,7 +426,8 @@ The beta build derives its identity from the stable one. Override any of it unde
 | ------------------- | -------------------------------- | ---------------------------- |
 | `name`, `fullName`  | `<name> Beta` (`<name> beta` for an all-lowercase name) | `Acme Studio Beta` |
 | `applicationId`     | `<applicationId>.beta`           | `com.acme.studio.beta`       |
-| `daemonPort`        | `daemonPort - 1`; must differ from stable | `10098`             |
+| `daemonPort`        | `daemonPort - 10`                | `10089`                      |
+| `webPort`           | beta `daemonPort - 1`; all four ports must differ | `10088`     |
 | `cliName`           | `<cliName>-beta`                 | `acme-beta`                  |
 | `desktopBinaryName` | `<desktopBinaryName>-beta`       | `acme-desktop-beta`          |
 | `homeDir`           | `<homeDir>-beta`                 | `.acme-beta`                 |

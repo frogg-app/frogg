@@ -3,7 +3,7 @@ import { isElectronRuntime } from "@/desktop/host";
 import { invokeDesktopCommand } from "@/desktop/electron/invoke";
 import { listenToDesktopEvent, type DesktopEventUnlisten } from "@/desktop/electron/events";
 import { isWeb } from "@/constants/platform";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export type DesktopUpdateStrategy = "tauri-signed" | "github-release" | "disabled";
 

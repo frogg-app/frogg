@@ -4,6 +4,8 @@ import { StyleSheet } from "react-native-unistyles";
 import { Trans, useTranslation } from "react-i18next";
 import { brand } from "@frogg/branding";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { useAppSettings } from "@/hooks/use-settings";
 import { openHostOverview } from "@/navigation/settings-navigation";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { useHostRuntimeIsConnected, useHosts } from "@/runtime/host-runtime";
@@ -13,6 +15,7 @@ import { DesktopUpdatesSection } from "@/desktop/updates/desktop-updates-section
 import { MobileUpdatesSection } from "@/mobile/updates/mobile-updates-section";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { settingsStyles } from "@/styles/settings";
+import { isBetaBuild } from "@/utils/app-version";
 import { openExternalUrl } from "@/utils/open-external-url";
 
 const FROGG_URL = "https://github.com/frogg-app/frogg";
@@ -45,8 +48,42 @@ export function AboutSection({ appVersion, appVersionText, isDesktopApp }: About
         <MobileUpdatesSection appVersion={appVersion} />
       )}
       <ConnectedHostsSection clientVersion={appVersion} />
+      {isBetaBuild() ? null : <DeveloperOptionsToggle />}
       <Attribution />
     </>
+  );
+}
+
+// Deliberately at the bottom of About: the Developer section installs beta builds, which
+// most people never need to see. Beta builds always show it, so they skip the toggle.
+function DeveloperOptionsToggle() {
+  const { t } = useTranslation();
+  const { settings, updateSettings } = useAppSettings();
+  const handleChange = useCallback(
+    (developerOptions: boolean) => {
+      void updateSettings({ developerOptions }).catch(() => undefined);
+    },
+    [updateSettings],
+  );
+  return (
+    <SettingsSection title={t("settings.sections.developer")}>
+      <View style={settingsStyles.card}>
+        <View style={settingsStyles.row}>
+          <View style={settingsStyles.rowContent}>
+            <Text style={settingsStyles.rowTitle}>
+              {t("settings.about.developerOptions.title")}
+            </Text>
+            <Text style={settingsStyles.rowHint}>{t("settings.about.developerOptions.hint")}</Text>
+          </View>
+          <Switch
+            value={settings.developerOptions}
+            onValueChange={handleChange}
+            accessibilityLabel={t("settings.about.developerOptions.title")}
+            testID="settings-about-developer-options"
+          />
+        </View>
+      </View>
+    </SettingsSection>
   );
 }
 

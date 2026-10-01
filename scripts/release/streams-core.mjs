@@ -38,7 +38,13 @@ function maxCore(...versions) {
  * - Otherwise a new minor line opens above both: stable 1.6.2 → 1.7.0-beta.1. `major` opens
  *   the next major instead.
  */
-export function nextBetaVersion({ developmentVersion, stableVersion, upstreamVersion, major }) {
+export function nextBetaVersion({
+  developmentVersion,
+  stableVersion,
+  upstreamVersion,
+  major,
+  minor,
+}) {
   const development = parseReleaseVersion(developmentVersion);
   const stable = stableVersion ?? null;
   const ahead = (base) => !stable || compareCore(base, stable) > 0;
@@ -68,11 +74,12 @@ export function nextBetaVersion({ developmentVersion, stableVersion, upstreamVer
     });
   }
   if (upstreamLine) return `${upstreamLine}-beta.1`;
+  // A new line opens the next patch unless --minor asks for the next minor.
   const from = core(maxCore(development.baseVersion, stable));
   return formatReleaseVersion({
     major: from.major,
-    minor: from.minor + 1,
-    patch: 0,
+    minor: minor ? from.minor + 1 : from.minor,
+    patch: minor ? 0 : from.patch + 1,
     prerelease: "beta.1",
   });
 }
@@ -98,7 +105,8 @@ export function assertStablePatch({ nextStable, developmentVersion }) {
   // Fork versions (1.9.0-rc.1.acme.1) keep upstream's core, so a patch cannot reach them.
   if (parseChannelVersion(developmentVersion)?.downstream) return;
   const development = parseReleaseVersion(developmentVersion);
-  if (development.isBeta && compareCore(nextStable, development.baseVersion) >= 0) {
+  // A stable patch may equal the beta line's base; the next beta then opens the patch after it.
+  if (development.isBeta && compareCore(nextStable, development.baseVersion) > 0) {
     throw new Error(
       `Stable ${nextStable} would reach the beta line ${development.baseVersion}. Promote it instead.`,
     );

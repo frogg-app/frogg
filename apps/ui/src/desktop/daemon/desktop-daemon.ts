@@ -340,30 +340,3 @@ export async function listenToLocalDaemonInstallEvents(
     handler(parseLocalDaemonInstallEvent(payload));
   });
 }
-
-// ---------------------------------------------------------------------------
-// Integrations
-// ---------------------------------------------------------------------------
-
-export interface InstallStatus {
-  installed: boolean;
-  path?: string;
-}
-
-function parseInstallStatus(raw: unknown): InstallStatus {
-  if (!isRecord(raw)) {
-    throw new Error("Unexpected install status response.");
-  }
-  return {
-    installed: raw.installed === true,
-    ...(typeof raw.path === "string" ? { path: raw.path } : {}),
-  };
-}
-
-export async function getCliInstallStatus(): Promise<InstallStatus> {
-  return parseInstallStatus(await invokeDesktopCommand("get_cli_install_status"));
-}
-
-export async function installCli(): Promise<InstallStatus> {
-  return parseInstallStatus(await invokeDesktopCommand("install_cli"));
-}

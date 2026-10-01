@@ -2,7 +2,7 @@
 title: Writing docs
 description: Where Frogg's documentation lives, when to update it, the style rules, components, screenshots and how to preview.
 sidebar:
-  order: 8
+  order: 10
 ---
 
 The documentation you are reading is in the repository and ships with the code. A pull
@@ -63,10 +63,10 @@ theme. Never mock UI.
 ```sh
 npm ci
 npm run build:server && npm run build:daemon-web-ui
-FROGG_HOME=/tmp/frogg-docs-home node apps/cli/bin/frogg start --listen 0.0.0.0:17900 --web-ui --no-relay
-node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 --seed
+FROGG_HOME=/tmp/frogg-docs-home FROGG_WEB_UI_PORT=17901 node apps/cli/bin/frogg start --listen 0.0.0.0:17900 --web-ui --no-relay
+node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17901 --daemon-url http://127.0.0.1:17900 --seed
 node scripts/docs/capture-screenshots.mjs --list
-node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17900 --only app/home,app/host-providers
+node scripts/docs/capture-screenshots.mjs --url http://127.0.0.1:17901 --daemon-url http://127.0.0.1:17900 --only app/home,app/host-providers
 ```
 
 `--seed` adds a demo project. Shots that need an agent timeline or a pending permission
@@ -75,6 +75,27 @@ capturing those. Keep each image under 300 KB; the script optimises PNGs.
 
 For branded screenshots, build with `FROGG_BRAND_DIR=brands/example` in a separate worktree
 and pass `--brand-tag acme`.
+
+## Diagrams
+
+Diagrams are SVGs drawn by code, in a dark and a light version, under
+`website/src/assets/docs/diagrams/`. The release-stream diagrams are in
+`scripts/docs/stream-diagrams.mjs`, the development-workflow ones in
+`scripts/docs/workflow-diagrams.mjs`, and both use the primitives in
+`scripts/docs/diagram-kit.mjs`. Edit the code, then regenerate every diagram:
+
+```sh
+node scripts/docs/stream-diagrams.mjs
+```
+
+Embed both versions so the diagram follows the reader's theme:
+
+```mdx
+import flowDark from "@/assets/docs/diagrams/dev-flow-dark.svg";
+import flowLight from "@/assets/docs/diagrams/dev-flow-light.svg";
+
+<Screenshot src={flowDark} lightSrc={flowLight} variant="bare" alt="…" />
+```
 
 ## Preview and check
 

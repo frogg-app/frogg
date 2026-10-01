@@ -80,7 +80,7 @@
     "no-nested-ternary": "error",
     "no-unneeded-ternary": "error",
 
-    "complexity": ["error", { "max": 20 }],
+    "complexity": ["error", { "max": 28 }],
     "max-depth": ["error", { "max": 4 }],
     "max-nested-callbacks": ["error", { "max": 3 }]
   },

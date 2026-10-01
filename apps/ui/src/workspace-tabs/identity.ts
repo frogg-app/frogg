@@ -66,6 +66,11 @@ function normalizeSimpleWorkspaceTabTarget(value: WorkspaceTabTarget): Workspace
       const sha = trimNonEmpty(value.sha);
       return sha ? { kind: "commit_diff", sha } : null;
     }
+    case "plugin_panel": {
+      const pluginId = trimNonEmpty(value.pluginId);
+      const panelId = trimNonEmpty(value.panelId);
+      return pluginId && panelId ? { kind: "plugin_panel", pluginId, panelId } : null;
+    }
     default:
       return null;
   }
@@ -148,6 +153,9 @@ function secondaryWorkspaceTabTargetsEqual(
   if (left.kind === "commit_diff" && right.kind === "commit_diff") {
     return left.sha === right.sha;
   }
+  if (left.kind === "plugin_panel" && right.kind === "plugin_panel") {
+    return left.pluginId === right.pluginId && left.panelId === right.panelId;
+  }
   return false;
 }
 
@@ -208,6 +216,9 @@ export function buildDeterministicWorkspaceTabId(target: WorkspaceTabTarget): st
   }
   if (target.kind === "commit_diff") {
     return `commit_diff_${target.sha}`;
+  }
+  if (target.kind === "plugin_panel") {
+    return `plugin_panel_${target.pluginId.length}_${target.pluginId}_${target.panelId}`;
   }
   if (target.kind === "working_diff") {
     return "working_diff";

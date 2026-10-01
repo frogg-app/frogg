@@ -2,10 +2,19 @@ import { brand } from "@frogg/branding";
 import type { Logger } from "pino";
 import type { AgentManager, ManagedAgent } from "./agent-manager.js";
 import type { AgentStorage, StoredAgentRecord } from "./agent-storage.js";
+import { ensureAgentLoaded } from "./agent-loading.js";
 import { sendPromptToAgent } from "./agent-prompt.js";
 
 export const DAEMON_RESTART_INTERRUPT_REASON = "daemon_restart";
-export const INTERRUPTED_TURN_MAX_AGE_MS = 60 * 60 * 1000;
+/**
+ * How old an interrupted turn may be and still resume. The limit keeps a daemon
+ * that was down for days from waking long-abandoned tasks; within a day the
+ * work is still likely wanted. It is deliberately longer than any provider's
+ * prompt cache lifetime, so a turn resumed after that lifetime gets an
+ * automatic clean cut first (see auto-clean-cut.ts) instead of re-sending the
+ * whole context at full price.
+ */
+export const INTERRUPTED_TURN_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export const INTERRUPTED_TURN_CONTINUATION_PROMPT =
   `The ${brand.name} daemon restarted while you were mid-turn, so your last tool call was killed. ` +
   "Re-check the current state and continue the task where you left off.";
@@ -41,6 +50,12 @@ export interface ResumeInterruptedAgentsDeps {
   logger: Logger;
   now?: () => number;
   sendPrompt?: typeof sendPromptToAgent;
+  /**
+   * Runs once the agent is loaded and before the continuation prompt, with the
+   * time the turn was cut off (the automatic clean cut hooks in here). Must not
+   * throw; a rejection is logged and the resume goes ahead.
+   */
+  beforeResume?: (agentId: string, interruptedAt: Date) => Promise<void>;
 }
 
 /**
@@ -75,6 +90,18 @@ export async function resumeInterruptedAgents(
     }
     if (!resumable) {
       continue;
+    }
+    if (deps.beforeResume) {
+      try {
+        await ensureAgentLoaded(record.id, {
+          agentManager: deps.agentManager,
+          agentStorage: deps.agentStorage,
+          logger,
+        });
+        await deps.beforeResume(record.id, new Date(Date.parse(record.interruptedTurn.at)));
+      } catch (error) {
+        logger.warn({ err: error, agentId: record.id }, "Pre-resume step failed; resuming anyway");
+      }
     }
     try {
       await sendPrompt({

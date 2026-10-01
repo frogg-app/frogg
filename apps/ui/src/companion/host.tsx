@@ -38,7 +38,7 @@ const sendIcon = <ThemedSend size={16} />;
 export function CompanionHost() {
   const { t } = useTranslation();
   const enabled = useSettings((settings) => settings.companionEnabled);
-  const animated = useSettings((settings) => settings.companionAnimated);
+  const animated = useSettings((settings) => settings.companionAnimated && !settings.reduceMotion);
   const isMinimized = useCompanionStore((state) => state.isMinimized);
   const session = useCompanionStore((state) => state.session);
   const open = useCompanionStore((state) => state.open);
@@ -240,7 +240,10 @@ function CompanionBody({ serverId, isAvailable, unavailableReason }: CompanionBo
 
   return (
     <View style={styles.body}>
-      <CompanionPresence onPress={pressOrb} animated={settings.companionAnimated} />
+      <CompanionPresence
+        onPress={pressOrb}
+        animated={settings.companionAnimated && !settings.reduceMotion}
+      />
 
       {session.status === "failed" ? (
         <Alert

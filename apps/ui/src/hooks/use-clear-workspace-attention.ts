@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
 

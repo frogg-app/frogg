@@ -348,7 +348,9 @@ test("the beta channel installs beside stable under its own identity", () => {
   assert.equal(beta.id, "frogg-beta");
   assert.equal(beta.name, "frogg beta");
   assert.equal(beta.applicationId, "app.frogg.frogg.beta");
-  assert.equal(beta.daemonPort, 9998);
+  assert.equal(beta.daemonPort, 9989);
+  assert.equal(beta.webPort, 9988);
+  assert.equal(beta.channels.stable.webPort, 9998);
   assert.equal(beta.cliName, "frogg-beta");
   assert.equal(beta.desktopBinaryName, "frogg-beta");
   assert.equal(beta.homeDir, ".frogg-beta");
@@ -424,4 +426,47 @@ test("a beta build ignores the stable build's inherited environment", () => {
   assert.equal(env.FROGG_HOME, "/home/me/.frogg-beta");
   assert.equal(env.FROGG_LISTEN, undefined);
   assert.equal(brandEnv(beta, { FROGG_HOME: "/stable" }, "HOME"), undefined);
+});
+
+test("plugins block defaults and overrides", () => {
+  const defaults = resolveBrandManifest(minimal).plugins;
+  assert.deepEqual(defaults, {
+    enabled: true,
+    officialRepo: true,
+    repos: [],
+    allowUserRepos: false,
+    developerMode: "allowed",
+    allow: [],
+    deny: [],
+    preinstalled: [],
+    autoUpdate: "brand-repos",
+  });
+  const key = Buffer.alloc(32, 7).toString("base64");
+  const custom = resolveBrandManifest({
+    ...minimal,
+    plugins: {
+      officialRepo: false,
+      repos: [
+        { name: "Acme internal", url: "https://plugins.acme.test/index.json", publicKey: key },
+      ],
+      developerMode: "forbidden",
+      allow: ["acme.*"],
+      preinstalled: [{ id: "acme.jira-links", version: "^1" }, { id: "acme.other" }],
+      autoUpdate: "off",
+    },
+  }).plugins;
+  assert.equal(custom.officialRepo, false);
+  assert.equal(custom.repos[0]?.publicKey, key);
+  assert.equal(custom.developerMode, "forbidden");
+  assert.deepEqual(custom.preinstalled, [
+    { id: "acme.jira-links", version: "^1" },
+    { id: "acme.other", version: null },
+  ]);
+  assert.throws(() =>
+    resolveBrandManifest({
+      ...minimal,
+      plugins: { repos: [{ name: "x", url: "https://x.test/index.json", publicKey: "short" }] },
+    }),
+  );
+  assert.throws(() => resolveBrandManifest({ ...minimal, plugins: { autoUpdate: "sometimes" } }));
 });

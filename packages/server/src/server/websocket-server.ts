@@ -3,7 +3,7 @@ import { CHAT_SUPPORTED_PROVIDERS } from "./agent/chat-profile.js";
 import { WebSocket, WebSocketServer } from "ws";
 import type { IncomingMessage, Server as HTTPServer } from "http";
 import { join } from "path";
-import { hostname as getHostname } from "node:os";
+import { daemonHostname as getHostname } from "./daemon-hostname.js";
 import { randomUUID } from "node:crypto";
 import { monitorEventLoopDelay } from "node:perf_hooks";
 import type { AgentManager, AgentMetricsSnapshot } from "./agent/agent-manager.js";
@@ -124,6 +124,8 @@ import type { CallerDevice, DeviceAccessService } from "./device-access-service.
 import type { DeviceRole } from "@frogg/protocol/device-access";
 import type { PresenceService } from "./presence-service.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
+import type { PluginService } from "./plugins/plugin-service.js";
+import type { ProjectTodoService } from "./project-todos/service.js";
 import {
   APPLICATION_SOCKET_LEASE_CHECK_INTERVAL_MS,
   ApplicationSocketLease,
@@ -215,6 +217,8 @@ interface WebSocketServerConfig {
   allowedOrigins?: Set<string>;
   hostnames?: HostnamesConfig;
   getAllowedOrigins?: () => Set<string>;
+  /** Origins trusted by rule rather than listed, such as this daemon's own web client. */
+  isTrustedOrigin?: (origin: string, requestHost: string | null) => boolean;
   getHostnames?: () => HostnamesConfig | undefined;
   /** Host-allowlist tuning shared with the HTTP allowlist (pairing-hostname opt-out). */
   hostnameCheckOptions?: HostnameCheckOptions;
@@ -630,6 +634,9 @@ export class VoiceAssistantWebSocketServer {
   private readonly projectRegistry: ProjectRegistry;
   private readonly workspaceRegistry: WorkspaceRegistry;
   private readonly workspaceLabelService: WorkspaceLabelService | null;
+  private pluginService: PluginService | null = null;
+  private unsubscribePluginEvents: (() => void) | null = null;
+  private projectTodoService: ProjectTodoService | null = null;
   private readonly checkoutDiffManager: CheckoutDiffManager;
   private readonly github: ForgeService;
   private readonly workspaceGitService: WorkspaceGitService;
@@ -916,6 +923,7 @@ export class VoiceAssistantWebSocketServer {
           wsConfig.getHostnames?.() ?? wsConfig.hostnames,
           wsConfig.hostnameCheckOptions ?? {},
           callback,
+          wsConfig.isTrustedOrigin,
         );
       },
     });
@@ -971,6 +979,7 @@ export class VoiceAssistantWebSocketServer {
     hostnames: HostnamesConfig | undefined,
     hostnameCheckOptions: HostnameCheckOptions,
     callback: (res: boolean, code?: number, message?: string) => void,
+    isTrustedOrigin?: (origin: string, requestHost: string | null) => boolean,
   ): void {
     if (this.connectionLifecycle !== "accepting") {
       callback(false, 503, "Server not ready");
@@ -991,7 +1000,13 @@ export class VoiceAssistantWebSocketServer {
     }
     const sameOrigin = isWebSocketSameOrigin(origin, requestHost);
 
-    if (!origin || allowedOrigins.has("*") || allowedOrigins.has(origin) || sameOrigin) {
+    if (
+      !origin ||
+      allowedOrigins.has("*") ||
+      allowedOrigins.has(origin) ||
+      sameOrigin ||
+      isTrustedOrigin?.(origin, requestHost) === true
+    ) {
       callback(true);
     } else {
       this.incrementRuntimeCounter("originRejected");
@@ -1073,6 +1088,21 @@ export class VoiceAssistantWebSocketServer {
    * Bootstrap hands these over once the device store exists; the daemon only
    * advertises `deviceAccess` / `sessionPresence` while it actually has them.
    */
+  /** Plugin system; advertises `features.plugins` and relays plugin push events to every session. */
+  public setPluginService(service: PluginService | null): void {
+    this.unsubscribePluginEvents?.();
+    this.pluginService = service;
+    this.unsubscribePluginEvents =
+      service?.onEvent((message) => this.broadcast({ type: "session", message })) ?? null;
+    for (const connection of this.allConnections()) {
+      this.sendToConnection(connection, this.createServerInfoMessage(connection.session));
+    }
+  }
+
+  private pluginFeatureFlags(): { plugins?: true } {
+    return this.pluginService?.enabled ? { plugins: true } : {};
+  }
+
   public setDeviceAccessServices(services: {
     deviceAccess?: DeviceAccessService | null;
     presence?: PresenceService | null;
@@ -1214,6 +1244,11 @@ export class VoiceAssistantWebSocketServer {
   }
 
   /** Wire the persisted credential-role store; enables auth.device.set_role. */
+  /** Installs the project to-do service before connections are accepted. */
+  public setProjectTodoService(service: ProjectTodoService | null): void {
+    this.projectTodoService = service;
+  }
+
   public setDeviceRoleStore(store: DeviceRoleStore | null): void {
     this.deviceRoleStore = store;
     this.broadcastCapabilitiesUpdate();
@@ -1668,6 +1703,8 @@ export class VoiceAssistantWebSocketServer {
       projectRegistry: this.projectRegistry,
       workspaceRegistry: this.workspaceRegistry,
       workspaceLabelService: this.workspaceLabelService ?? undefined,
+      pluginService: this.pluginService,
+      projectTodoService: this.projectTodoService,
       directorySync: this.directorySync,
       checkoutDiffManager: this.checkoutDiffManager,
       github: this.github,
@@ -1944,6 +1981,10 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
+  private skillsManagementFeature(): { skillsManagement?: true } {
+    return this.daemonRuntimeConfig?.skills ? { skillsManagement: true } : {};
+  }
+
   private hostResourcesFeature(): { hostResources?: true } {
     return this.daemonRuntimeConfig?.hostResources ? { hostResources: true } : {};
   }
@@ -1971,6 +2012,10 @@ export class VoiceAssistantWebSocketServer {
    */
   public broadcastSecurityPostureChanged(): void {
     this.broadcastCapabilitiesUpdate();
+  }
+
+  private supportsBetaChannelManagement(): boolean {
+    return this.daemonRuntimeConfig?.betaChannel !== undefined;
   }
 
   private buildServerInfoStatusPayload(session: Session): ServerInfoStatusPayload {
@@ -2006,6 +2051,8 @@ export class VoiceAssistantWebSocketServer {
         ciJobLogs: true,
         // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
         ...this.hostResourcesFeature(),
+        // COMPAT(skillsManagement): added in v1.6.6, remove gate after 2027-09-27.
+        ...this.skillsManagementFeature(),
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.
         providerAgentDefinitions: true,
         // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.
@@ -2025,8 +2072,22 @@ export class VoiceAssistantWebSocketServer {
         // agent's own provider can carry its history across is a per-provider
         // question the transfer answers when it is asked.
         ...(this.providerAccountsEnabled ? { agentProviderAccountTransfer: true } : {}),
+        // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+        agentCleanCut: true,
+        // COMPAT(plugins): added in v1.6.2, remove gate after 2027-09-27.
+        ...this.pluginFeatureFlags(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
+        // COMPAT(betaChannelManagement): added in v1.6.5, remove after 2027-09-27.
+        betaChannelManagement: this.supportsBetaChannelManagement(),
+        // COMPAT(daemonChannelControl): added in v1.6.7, remove after 2027-09-29.
+        ...(this.daemonRuntimeConfig?.devDaemon
+          ? { daemonChannelControl: true, devDaemonRebuild: true }
+          : {}),
+        // COMPAT(webUiControl): added in v1.6.7, remove after 2027-09-29.
+        ...(this.daemonRuntimeConfig?.webUi ? { webUiControl: true } : {}),
+        // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
+        projectTodos: this.projectTodoService !== null,
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
         workspaceCreatedAt: true,
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.

@@ -33,6 +33,20 @@ describe("detectUsageLimitFromText", () => {
   });
 
   it("detects a limit without a stated reset", () => {
-    expect(detectUsageLimitFromText("You've hit your limit", NOW)).toEqual({ resetsAt: null });
+    expect(detectUsageLimitFromText("You've hit your limit", NOW)).toEqual({
+      resetsAt: null,
+    });
+  });
+
+  it("reads Claude's wall-clock session reset", () => {
+    expect(
+      detectUsageLimitFromText("You've hit your session limit · resets 11:20am (UTC)", NOW),
+    ).toEqual({ resetsAt: "2026-09-24T11:20:00.000Z" });
+  });
+
+  it("rolls a wall-clock reset that has passed to tomorrow, in the named zone", () => {
+    expect(
+      detectUsageLimitFromText("You've hit your limit · resets 9am (Australia/Sydney)", NOW),
+    ).toEqual({ resetsAt: "2026-09-24T23:00:00.000Z" });
   });
 });

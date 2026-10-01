@@ -3,7 +3,7 @@ import type { StreamItem } from "@/types/stream";
 import { buildAgentStreamRenderModel } from "./model";
 import { layoutStream } from "./layout";
 import { resolveStreamRenderStrategy } from "./strategy-resolver";
-import { continuesTurn } from "./turn-membership";
+import { continuesResponse, continuesTurn } from "./turn-membership";
 
 function at(second: number): Date {
   return new Date(`2026-01-01T00:00:${second.toString().padStart(2, "0")}.000Z`);
@@ -127,5 +127,32 @@ describe("canonical turn membership", () => {
       completedAt: at(9),
       durationMs: 8000,
     });
+  });
+});
+
+describe("clean cut boundaries", () => {
+  const turnReply = {
+    kind: "assistant_message",
+    id: "a",
+    turnId: "t1",
+    text: "done",
+    timestamp: new Date(0),
+  } as unknown as StreamItem;
+  const cut = {
+    kind: "compaction",
+    id: "c",
+    status: "completed",
+    timestamp: new Date(0),
+    cleanCut: { summary: "s" },
+  } as unknown as StreamItem;
+  const plainCompaction = { ...cut, cleanCut: undefined } as unknown as StreamItem;
+
+  it("ends the turn and response before a clean cut", () => {
+    expect(continuesTurn(turnReply, cut)).toBe(false);
+    expect(continuesResponse(turnReply, cut)).toBe(false);
+  });
+
+  it("leaves an ordinary compaction inside the response", () => {
+    expect(continuesResponse(turnReply, plainCompaction)).toBe(true);
   });
 });

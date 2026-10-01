@@ -4,7 +4,7 @@ import {
   persistAppSettings,
   type ServiceUrlBehavior,
 } from "@/hooks/use-settings";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { openExternalUrl } from "@/utils/open-external-url";
 
 export interface OpenServiceUrlOptions {

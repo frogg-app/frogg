@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type { ToastApi } from "@/components/toast-host";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import {
   selectAgentTimelineState,
   useSessionStore,

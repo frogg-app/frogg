@@ -156,6 +156,22 @@ from an older release asks for administrator approval once while it moves to you
 - A release can require a manual upgrade from very old clients; the app says so.
 - Unpackaged development builds never update.
 
+### Install frogg beta from frogg
+
+The stable app can download and install the newest published **frogg beta** beside
+itself, and open it once installed. It never touches the stable install.
+
+- It picks the newest non-draft beta release on GitHub and the installer for your system:
+  the Windows `.exe` (x64, also used on arm64), the macOS `.dmg` for your chip, or the
+  Linux x86_64 `.AppImage`. A beta whose installer for your system has not finished
+  building is reported, not installed.
+- The download is checked against the release's `SHA256SUMS-desktop` (or `release.json`)
+  and discarded on a mismatch. A release without a checksum for the file is refused.
+- Windows runs the per-user frogg beta installer, which opens frogg beta when done. macOS
+  copies `frogg beta.app` into `/Applications` after checking its bundle id. Linux places
+  the AppImage at `~/Applications/frogg-beta.AppImage` and starts it.
+- The beta app itself does not offer this; it updates from its own Settings → Updates.
+
 Updating the app does not update your daemons. Update each daemon from its host settings
 or with `frogg update`; see [updates](/docs/self-hosting/updates/).
 

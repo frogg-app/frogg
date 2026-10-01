@@ -31,6 +31,7 @@ import { createQuitLifecycle, registerExternalQuitSignals } from "./quit-lifecyc
 import { runDesktopStartup } from "./desktop-startup.js";
 import { installAppUpdateOnQuit } from "./features/auto-updater.js";
 import { registerBrowserAutomationIpc } from "./features/browser-automation/ipc.js";
+import { registerBetaAppHandlers } from "./features/beta-app/ipc.js";
 import { registerDialogHandlers } from "./features/dialogs.js";
 import { registerEditorTargetHandlers } from "./features/editor-targets/ipc.js";
 import { setupApplicationMenu } from "./features/menu.js";
@@ -315,6 +316,7 @@ async function bootstrap(): Promise<void> {
   handleDesktopIpc("frogg:opener:openUrl", (_event, value: unknown) => openExternalUrl(value));
   registerEditorTargetHandlers();
   registerBrowserAutomationIpc();
+  registerBetaAppHandlers();
 
   // In-app "Open in new window": opens a window that lands on the given project
   // via the same open-project flow as a CLI launch (no move, no ownership).

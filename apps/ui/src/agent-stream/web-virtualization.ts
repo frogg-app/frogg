@@ -73,7 +73,7 @@ export function estimateStreamItemHeight(item: StreamItem): number {
     case "activity_log":
       return 88;
     case "compaction":
-      return 72;
+      return item.cleanCut ? 120 : 72;
     default:
       return 120;
   }

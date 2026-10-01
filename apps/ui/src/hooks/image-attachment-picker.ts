@@ -1,7 +1,7 @@
 import type { DesktopDialogBridge } from "@/desktop/host";
 import { RASTER_IMAGE_FILE_EXTENSIONS, resolveRasterImageMimeType } from "@/attachments/file-types";
 import { getFileNameFromPath } from "@/attachments/utils";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { isAbsolutePath } from "@/utils/path";
 
 export type PickedImageSource =

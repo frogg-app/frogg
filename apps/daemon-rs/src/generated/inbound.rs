@@ -103,6 +103,38 @@ pub struct Session {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum SessionMessage {
+    #[serde(rename = "plugins.list.request")]
+    PluginsListRequest(PluginsListRequest),
+    #[serde(rename = "plugins.repos.list.request")]
+    PluginsReposListRequest(PluginsReposListRequest),
+    #[serde(rename = "plugins.repos.add.request")]
+    PluginsReposAddRequest(PluginsReposAddRequest),
+    #[serde(rename = "plugins.repos.remove.request")]
+    PluginsReposRemoveRequest(PluginsReposRemoveRequest),
+    #[serde(rename = "plugins.get_catalog.request")]
+    PluginsGetCatalogRequest(PluginsGetCatalogRequest),
+    #[serde(rename = "plugins.install.request")]
+    PluginsInstallRequest(PluginsInstallRequest),
+    #[serde(rename = "plugins.uninstall.request")]
+    PluginsUninstallRequest(PluginsUninstallRequest),
+    #[serde(rename = "plugins.set_enabled.request")]
+    PluginsSetEnabledRequest(PluginsSetEnabledRequest),
+    #[serde(rename = "plugins.update.request")]
+    PluginsUpdateRequest(PluginsUpdateRequest),
+    #[serde(rename = "plugins.dev.link.request")]
+    PluginsDevLinkRequest(PluginsDevLinkRequest),
+    #[serde(rename = "plugins.dev.unlink.request")]
+    PluginsDevUnlinkRequest(PluginsDevUnlinkRequest),
+    #[serde(rename = "plugins.dev.set_enabled.request")]
+    PluginsDevSetEnabledRequest(PluginsDevSetEnabledRequest),
+    #[serde(rename = "plugins.rpc.call.request")]
+    PluginsRpcCallRequest(PluginsRpcCallRequest),
+    #[serde(rename = "plugins.get_contributions.request")]
+    PluginsGetContributionsRequest(PluginsGetContributionsRequest),
+    #[serde(rename = "plugins.settings.get.request")]
+    PluginsSettingsGetRequest(PluginsSettingsGetRequest),
+    #[serde(rename = "plugins.settings.set.request")]
+    PluginsSettingsSetRequest(PluginsSettingsSetRequest),
     #[serde(rename = "auth.device.list.request")]
     AuthDeviceListRequest(AuthDeviceListRequest),
     #[serde(rename = "auth.device.rename.request")]
@@ -225,6 +257,12 @@ pub enum SessionMessage {
     DaemonStorageListRequest(DaemonStorageListRequest),
     #[serde(rename = "daemon.storage.clean.request")]
     DaemonStorageCleanRequest(DaemonStorageCleanRequest),
+    #[serde(rename = "daemon.skills.list.request")]
+    DaemonSkillsListRequest(DaemonSkillsListRequest),
+    #[serde(rename = "daemon.skills.set_enabled.request")]
+    DaemonSkillsSetEnabledRequest(DaemonSkillsSetEnabledRequest),
+    #[serde(rename = "daemon.skills.get_content.request")]
+    DaemonSkillsGetContentRequest(DaemonSkillsGetContentRequest),
     #[serde(rename = "daemon.get_pairing_offer.request")]
     DaemonGetPairingOfferRequest(DaemonGetPairingOfferRequest),
     #[serde(rename = "daemon.get_security_posture.request")]
@@ -241,6 +279,32 @@ pub enum SessionMessage {
     DaemonUpdateStartRequest(DaemonUpdateStartRequest),
     #[serde(rename = "daemon.update.get_status.request")]
     DaemonUpdateGetStatusRequest(DaemonUpdateGetStatusRequest),
+    #[serde(rename = "daemon.beta_channel.get_status.request")]
+    DaemonBetaChannelGetStatusRequest(DaemonBetaChannelGetStatusRequest),
+    #[serde(rename = "daemon.beta_channel.install.request")]
+    DaemonBetaChannelInstallRequest(DaemonBetaChannelInstallRequest),
+    #[serde(rename = "daemon.beta_channel.uninstall.request")]
+    DaemonBetaChannelUninstallRequest(DaemonBetaChannelUninstallRequest),
+    #[serde(rename = "daemon.beta_channel.start.request")]
+    DaemonBetaChannelStartRequest(DaemonBetaChannelStartRequest),
+    #[serde(rename = "daemon.beta_channel.stop.request")]
+    DaemonBetaChannelStopRequest(DaemonBetaChannelStopRequest),
+    #[serde(rename = "daemon.dev_daemon.get_status.request")]
+    DaemonDevDaemonGetStatusRequest(DaemonDevDaemonGetStatusRequest),
+    #[serde(rename = "daemon.dev_daemon.start.request")]
+    DaemonDevDaemonStartRequest(DaemonDevDaemonStartRequest),
+    #[serde(rename = "daemon.dev_daemon.stop.request")]
+    DaemonDevDaemonStopRequest(DaemonDevDaemonStopRequest),
+    #[serde(rename = "daemon.dev_daemon.rebuild.request")]
+    DaemonDevDaemonRebuildRequest(DaemonDevDaemonRebuildRequest),
+    #[serde(rename = "daemon.web_ui.get_status.request")]
+    DaemonWebUiGetStatusRequest(DaemonWebUiGetStatusRequest),
+    #[serde(rename = "daemon.web_ui.update.request")]
+    DaemonWebUiUpdateRequest(DaemonWebUiUpdateRequest),
+    #[serde(rename = "daemon.web_ui.start.request")]
+    DaemonWebUiStartRequest(DaemonWebUiStartRequest),
+    #[serde(rename = "daemon.web_ui.stop.request")]
+    DaemonWebUiStopRequest(DaemonWebUiStopRequest),
     #[serde(rename = "hub.management.daemon.connect.request")]
     HubManagementDaemonConnectRequest(HubManagementDaemonConnectRequest),
     #[serde(rename = "hub.management.daemon.get_status.request")]
@@ -349,6 +413,8 @@ pub enum SessionMessage {
     AgentConfigApplyRequest(AgentConfigApplyRequest),
     #[serde(rename = "agent.provider_account.transfer.request")]
     AgentProviderAccountTransferRequest(AgentProviderAccountTransferRequest),
+    #[serde(rename = "agent.clean_cut.request")]
+    AgentCleanCutRequest(AgentCleanCutRequest),
     #[serde(rename = "agent.detach.request")]
     AgentDetachRequest(AgentDetachRequest),
     #[serde(rename = "agent.cancel_auto_resume.request")]
@@ -533,6 +599,24 @@ pub enum SessionMessage {
     ChatRead(ChatRead),
     #[serde(rename = "chat/wait")]
     ChatWait(ChatWait),
+    #[serde(rename = "project.todo.list.request")]
+    ProjectTodoListRequest(ProjectTodoListRequest),
+    #[serde(rename = "project.todo.get.request")]
+    ProjectTodoGetRequest(ProjectTodoGetRequest),
+    #[serde(rename = "project.todo.create.request")]
+    ProjectTodoCreateRequest(ProjectTodoCreateRequest),
+    #[serde(rename = "project.todo.update.request")]
+    ProjectTodoUpdateRequest(ProjectTodoUpdateRequest),
+    #[serde(rename = "project.todo.update_plan.request")]
+    ProjectTodoUpdatePlanRequest(ProjectTodoUpdatePlanRequest),
+    #[serde(rename = "project.todo.set_status.request")]
+    ProjectTodoSetStatusRequest(ProjectTodoSetStatusRequest),
+    #[serde(rename = "project.todo.release.request")]
+    ProjectTodoReleaseRequest(ProjectTodoReleaseRequest),
+    #[serde(rename = "project.todo.delete.request")]
+    ProjectTodoDeleteRequest(ProjectTodoDeleteRequest),
+    #[serde(rename = "project.todo.unsubscribe.request")]
+    ProjectTodoUnsubscribeRequest(ProjectTodoUnsubscribeRequest),
     #[serde(rename = "loop/run")]
     LoopRun(LoopRun),
     #[serde(rename = "loop/list")]
@@ -543,6 +627,139 @@ pub enum SessionMessage {
     LoopLogs(LoopLogs),
     #[serde(rename = "loop/stop")]
     LoopStop(LoopStop),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsReposListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsReposAddRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub url: String,
+    #[serde(rename = "publicKey", skip_serializing_if = "Option::is_none")]
+    pub public_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsReposRemoveRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub url: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsGetCatalogRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub refresh: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsInstallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(rename = "repoUrl")]
+    pub repo_url: String,
+    #[serde(rename = "grantedCapabilities")]
+    pub granted_capabilities: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsUninstallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSetEnabledRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsUpdateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+    #[serde(
+        rename = "grantedCapabilities",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub granted_capabilities: Option<Vec<String>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsDevLinkRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub path: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsDevUnlinkRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsDevSetEnabledRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsRpcCallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "pluginId")]
+    pub plugin_id: String,
+    pub method: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub params: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsGetContributionsRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSettingsGetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSettingsSetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    pub values: serde_json::Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1550,6 +1767,29 @@ pub struct DaemonStorageCleanRequest {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsSetEnabledRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonSkillsGetContentRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "skillId")]
+    pub skill_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DaemonGetPairingOfferRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
@@ -1631,6 +1871,102 @@ pub enum DaemonUpdateStartRequestChannel {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DaemonUpdateGetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelGetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelInstallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelUninstallRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub purge: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelStartRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonBetaChannelStopRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonGetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonStartRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub cwd: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonStopRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonRebuildRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub target: DaemonDevDaemonRebuildRequestTarget,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum DaemonDevDaemonRebuildRequestTarget {
+    #[serde(rename = "daemon")]
+    Daemon,
+    #[serde(rename = "web")]
+    Web,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiGetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiUpdateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "startOnLaunch", skip_serializing_if = "Option::is_none")]
+    pub start_on_launch: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStartRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonWebUiStopRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
 }
@@ -1781,6 +2117,8 @@ pub struct SetDaemonConfigRequestConfig {
     pub auto_resume_on_usage_limit: Option<bool>,
     #[serde(rename = "companionModel", skip_serializing_if = "Option::is_none")]
     pub companion_model: Option<serde_json::Value>,
+    #[serde(rename = "cleanCut", skip_serializing_if = "Option::is_none")]
+    pub clean_cut: Option<SetDaemonConfigRequestConfigCleanCut>,
     #[serde(
         rename = "enableTerminalAgentHooks",
         skip_serializing_if = "Option::is_none"
@@ -1836,6 +2174,29 @@ pub struct SetDaemonConfigRequestConfigMetadataGenerationProvidersItem {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDaemonConfigRequestConfigCleanCut {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto: Option<SetDaemonConfigRequestConfigCleanCutAuto>,
+    #[serde(
+        rename = "idleThresholdMinutes",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub idle_threshold_minutes: Option<serde_json::Value>,
+    #[serde(rename = "summaryModel", skip_serializing_if = "Option::is_none")]
+    pub summary_model: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub providers: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDaemonConfigRequestConfigCleanCutAuto {
+    #[serde(rename = "usageLimit", skip_serializing_if = "Option::is_none")]
+    pub usage_limit: Option<bool>,
+    #[serde(rename = "daemonRestart", skip_serializing_if = "Option::is_none")]
+    pub daemon_restart: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SetDaemonConfigRequestConfigTerminalProfilesItem {
     pub id: String,
     pub name: String,
@@ -1886,6 +2247,8 @@ pub enum SetDaemonConfigRequestConfigHostSettingsHiddenSectionsItem {
     Providers,
     #[serde(rename = "usage")]
     Usage,
+    #[serde(rename = "skills")]
+    Skills,
     #[serde(rename = "terminals")]
     Terminals,
     #[serde(rename = "host")]
@@ -2731,6 +3094,24 @@ pub struct AgentProviderAccountTransferRequest {
     pub agent_id: String,
     #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
     pub provider_account_id: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct AgentCleanCutRequest {
+    #[serde(rename = "agentId")]
+    pub agent_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub provider: Option<String>,
+    #[serde(rename = "providerAccountId", skip_serializing_if = "Option::is_none")]
+    pub provider_account_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub model: Option<String>,
+    #[serde(rename = "thinkingOptionId", skip_serializing_if = "Option::is_none")]
+    pub thinking_option_id: Option<String>,
+    #[serde(rename = "includeSubagents", skip_serializing_if = "Option::is_none")]
+    pub include_subagents: Option<bool>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }
@@ -3933,6 +4314,201 @@ pub struct ChatWait {
     pub after_message_id: Option<String>,
     #[serde(rename = "timeoutMs", skip_serializing_if = "Option::is_none")]
     pub timeout_ms: Option<i64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoListRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub statuses: Option<Vec<ProjectTodoListRequestStatusesItem>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subscribe: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoListRequestStatusesItem {
+    #[serde(rename = "backlog")]
+    Backlog,
+    #[serde(rename = "ready")]
+    Ready,
+    #[serde(rename = "claimed")]
+    Claimed,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "review")]
+    Review,
+    #[serde(rename = "done")]
+    Done,
+    #[serde(rename = "blocked")]
+    Blocked,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoGetRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoCreateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority: Option<ProjectTodoCreateRequestPriority>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<ProjectTodoCreateRequestStatus>,
+    #[serde(rename = "allowParallel", skip_serializing_if = "Option::is_none")]
+    pub allow_parallel: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub plan: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoCreateRequestPriority {
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "urgent")]
+    Urgent,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoCreateRequestStatus {
+    #[serde(rename = "backlog")]
+    Backlog,
+    #[serde(rename = "ready")]
+    Ready,
+    #[serde(rename = "claimed")]
+    Claimed,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "review")]
+    Review,
+    #[serde(rename = "done")]
+    Done,
+    #[serde(rename = "blocked")]
+    Blocked,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUpdateRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub priority: Option<ProjectTodoUpdateRequestPriority>,
+    #[serde(rename = "allowParallel", skip_serializing_if = "Option::is_none")]
+    pub allow_parallel: Option<bool>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoUpdateRequestPriority {
+    #[serde(rename = "low")]
+    Low,
+    #[serde(rename = "medium")]
+    Medium,
+    #[serde(rename = "high")]
+    High,
+    #[serde(rename = "urgent")]
+    Urgent,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUpdatePlanRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    pub plan: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoSetStatusRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    pub status: ProjectTodoSetStatusRequestStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ProjectTodoSetStatusRequestStatus {
+    #[serde(rename = "backlog")]
+    Backlog,
+    #[serde(rename = "ready")]
+    Ready,
+    #[serde(rename = "claimed")]
+    Claimed,
+    #[serde(rename = "in_progress")]
+    InProgress,
+    #[serde(rename = "review")]
+    Review,
+    #[serde(rename = "done")]
+    Done,
+    #[serde(rename = "blocked")]
+    Blocked,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoReleaseRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+    #[serde(rename = "agentId", skip_serializing_if = "Option::is_none")]
+    pub agent_id: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoDeleteRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
+    #[serde(rename = "todoId")]
+    pub todo_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProjectTodoUnsubscribeRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    #[serde(rename = "projectId")]
+    pub project_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

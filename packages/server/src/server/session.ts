@@ -69,7 +69,7 @@ import { loadPersistedConfig } from "./persisted-config.js";
 import { releaseWorkspaceServicePortPlan } from "./workspace-service-port-registry.js";
 import { getErrorMessage, getErrorMessageOr } from "@frogg/protocol/error-utils";
 import { getAgentStatusPriority } from "@frogg/protocol/agent-state-bucket";
-import { getParentAgentIdFromLabels } from "@frogg/protocol/agent-labels";
+import { getParentAgentIdFromLabels, PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
 import type { WorkspaceGitRuntimeSnapshot, WorkspaceGitService } from "./workspace-git-service.js";
 import type { ProjectUpdate } from "./workspace-reconciliation-service.js";
 import {
@@ -79,6 +79,10 @@ import {
 import { DirectorySyncService } from "./directory-sync/index.js";
 import type { WorkspaceLabelService } from "./workspace-labels/index.js";
 import { WorkspaceLabelsSession } from "./session/workspace-labels/workspace-labels-session.js";
+import { PluginsSession } from "./session/plugins/plugins-session.js";
+import type { PluginService } from "./plugins/plugin-service.js";
+import { ProjectTodosSession } from "./session/project-todos/project-todos-session.js";
+import type { ProjectTodoService } from "./project-todos/service.js";
 import { AgentLifecycleSession } from "./session/agent-lifecycle/agent-lifecycle-session.js";
 import { WorkspaceMetadataSession } from "./session/workspace-metadata/workspace-metadata-session.js";
 
@@ -115,6 +119,8 @@ import {
   type TimelineProjectionMode,
 } from "./agent/timeline-projection.js";
 import { buildAgentForkContextAttachment } from "./agent/activity-curator.js";
+import { runCleanCut, type CleanCutTarget } from "./agent/clean-cut.js";
+import { runCleanCutForSubagents } from "./agent/clean-cut-subagents.js";
 import { buildAgentPrompt } from "./agent/prompt-attachments.js";
 import type { StructuredGenerationDaemonConfig } from "./agent/structured-generation-providers.js";
 import {
@@ -469,6 +475,8 @@ export interface SessionOptions {
   workspaceRegistry: WorkspaceRegistry;
   directorySync?: DirectorySyncService;
   workspaceLabelService?: WorkspaceLabelService;
+  pluginService?: PluginService | null;
+  projectTodoService?: ProjectTodoService | null;
   filesystem?: SessionFileSystem;
   checkoutDiffManager: CheckoutDiffManager;
   github?: ForgeService;
@@ -724,6 +732,8 @@ export class Session {
   private workspaceUpdatesSubscription: WorkspaceUpdatesSubscriptionState | null = null;
   private readonly workspaceLabelService: WorkspaceLabelService | null;
   private readonly workspaceLabels: WorkspaceLabelsSession;
+  private readonly plugins: PluginsSession;
+  private readonly projectTodos: ProjectTodosSession;
   private readonly workspaceMetadata: WorkspaceMetadataSession;
   private projectSyncEnabled = false;
   private readonly workspaceUpdateTails = new Map<string, Promise<void>>();
@@ -796,6 +806,8 @@ export class Session {
       workspaceRegistry,
       directorySync,
       workspaceLabelService,
+      pluginService,
+      projectTodoService,
       filesystem,
       checkoutDiffManager,
       github,
@@ -886,6 +898,15 @@ export class Session {
     });
     this.workspaceLabels = new WorkspaceLabelsSession({
       service: this.workspaceLabelService,
+      emit: (message) => this.emit(message),
+    });
+    this.plugins = new PluginsSession({
+      service: pluginService,
+      clientId,
+      emit: (message) => this.emit(message),
+    });
+    this.projectTodos = new ProjectTodosSession({
+      service: projectTodoService,
       emit: (message) => this.emit(message),
     });
     this.filesystem = filesystem ?? nodeSessionFileSystem;
@@ -1055,6 +1076,45 @@ export class Session {
         transferProviderAccount: async (agentId, providerAccountId) => {
           this.assertTransferableProviderAccount(agentId, providerAccountId);
           await agentManager.transferAgentProviderAccount(agentId, providerAccountId);
+        },
+        // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+        cleanCut: async (agentId, target, { includeSubagents }) => {
+          this.assertCleanCutTarget(agentId, target);
+          const deps = {
+            agentManager,
+            providerSnapshotManager,
+            logger: this.sessionLogger,
+            getCleanCutSettings: () => this.daemonConfigStore.get().cleanCut,
+          };
+          await runCleanCut(deps, { agentId, target });
+          // COMPAT(agentCleanCutSubagents): added in v1.6.2, remove after 2027-09-27.
+          if (!includeSubagents) return undefined;
+          return runCleanCutForSubagents(
+            {
+              ...deps,
+              listStoredChildren: async (parentAgentId) =>
+                (await this.agentStorage.list())
+                  .filter(
+                    (record) =>
+                      record.labels[PARENT_AGENT_ID_LABEL] === parentAgentId &&
+                      !record.archivedAt &&
+                      !record.internal,
+                  )
+                  .map((record) => ({
+                    id: record.id,
+                    title: record.title ?? null,
+                    createdAt: new Date(record.createdAt),
+                  })),
+              loadAgent: (childId) =>
+                ensureAgentLoaded(childId, {
+                  agentManager,
+                  agentStorage: this.agentStorage,
+                  logger: this.sessionLogger,
+                }),
+              unloadAgent: (childId) => agentManager.closeAgent(childId),
+            },
+            agentId,
+          );
         },
       },
       logger: this.sessionLogger,
@@ -1946,6 +2006,31 @@ export class Session {
    * provider. `null` needs none of those checks beyond the capability — it is
    * the provider's primary config directory, which always exists.
    */
+  /**
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27. A clean cut
+   * may land on another provider, so a named account is checked against the
+   * provider the agent is moving to, not the one it runs on today.
+   */
+  private assertCleanCutTarget(agentId: string, target: CleanCutTarget): void {
+    const agent = this.agentManager.getAgent(agentId);
+    if (!agent) {
+      throw new Error(`Unknown agent "${agentId}".`);
+    }
+    const provider = target.provider ?? agent.provider;
+    if (!this.providerSnapshotManager.listRegisteredProviderIds().includes(provider)) {
+      throw new Error(`Unknown provider "${provider}".`);
+    }
+    if (typeof target.providerAccountId !== "string") {
+      return;
+    }
+    const account = this.providerAccountStore.findAccount(target.providerAccountId);
+    if (!account || account.provider !== provider) {
+      throw new Error(
+        `Unknown provider account "${target.providerAccountId}" for provider "${provider}".`,
+      );
+    }
+  }
+
   private assertTransferableProviderAccount(agentId: string, accountId: string | null): void {
     const agent = this.agentManager.getAgent(agentId);
     if (!agent) {
@@ -2288,6 +2373,15 @@ export class Session {
     }
   }
 
+  /** Messages owned by self-contained sub-sessions. */
+  private dispatchDelegatedSessionMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    return (
+      this.workspaceLabels.dispatch(msg) ??
+      this.plugins.dispatch(msg) ??
+      this.projectTodos.dispatch(msg)
+    );
+  }
+
   private async dispatchInboundMessage(msg: SessionInboundMessage, source?: object): Promise<void> {
     this.noteInboundPresenceActivity(msg);
     const promise =
@@ -2299,9 +2393,10 @@ export class Session {
       this.dispatchHubExecutionMessage(msg) ??
       this.dispatchAgentLifecycleMessage(msg) ??
       this.dispatchAgentConfigMessage(msg) ??
+      this.dispatchAgentCleanCutMessage(msg) ??
       this.dispatchCheckoutMessage(msg) ??
       this.dispatchWorkspaceRecoveryMessage(msg) ??
-      this.workspaceLabels.dispatch(msg) ??
+      this.dispatchDelegatedSessionMessage(msg) ??
       this.dispatchWorkspaceAndProjectMessage(msg) ??
       this.dispatchWorkspaceFileMessage(msg, source) ??
       this.dispatchProviderMessage(msg) ??
@@ -2611,6 +2706,35 @@ export class Session {
         return this.daemonSession.handleStorageListRequest(msg);
       case "daemon.storage.clean.request":
         return this.daemonSession.handleStorageCleanRequest(msg);
+      case "daemon.skills.list.request":
+        return this.daemonSession.handleSkillsListRequest(msg);
+      case "daemon.skills.set_enabled.request":
+        return this.daemonSession.handleSkillsSetEnabledRequest(msg);
+      case "daemon.skills.get_content.request":
+        return this.daemonSession.handleSkillsGetContentRequest(msg);
+      case "daemon.beta_channel.get_status.request":
+        return this.daemonSession.handleBetaChannelGetStatusRequest(msg);
+      case "daemon.beta_channel.install.request":
+        return this.daemonSession.handleBetaChannelInstallRequest(msg);
+      case "daemon.beta_channel.uninstall.request":
+        return this.daemonSession.handleBetaChannelUninstallRequest(msg);
+      case "daemon.beta_channel.start.request":
+        return this.daemonSession.handleBetaChannelStartRequest(msg);
+      case "daemon.beta_channel.stop.request":
+        return this.daemonSession.handleBetaChannelStopRequest(msg);
+      case "daemon.dev_daemon.get_status.request":
+        return this.daemonSession.handleDevDaemonGetStatusRequest(msg);
+      case "daemon.dev_daemon.start.request":
+        return this.daemonSession.handleDevDaemonStartRequest(msg);
+      case "daemon.dev_daemon.stop.request":
+        return this.daemonSession.handleDevDaemonStopRequest(msg);
+      case "daemon.dev_daemon.rebuild.request":
+        return this.daemonSession.handleDevDaemonRebuildRequest(msg);
+      case "daemon.web_ui.get_status.request":
+      case "daemon.web_ui.update.request":
+      case "daemon.web_ui.start.request":
+      case "daemon.web_ui.stop.request":
+        return this.daemonSession.handleWebUiRequest(msg);
       default:
         return undefined;
     }
@@ -2629,6 +2753,13 @@ export class Session {
       default:
         return undefined;
     }
+  }
+
+  // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+  private dispatchAgentCleanCutMessage(msg: SessionInboundMessage): Promise<void> | undefined {
+    return msg.type === "agent.clean_cut.request"
+      ? this.agentConfigSession.handleAgentCleanCutRequest(msg)
+      : undefined;
   }
 
   private dispatchAgentConfigMessage(msg: SessionInboundMessage): Promise<void> | undefined {
@@ -7644,6 +7775,7 @@ export class Session {
     this.unsubscribeWorkspaceMutations?.();
     this.unsubscribeWorkspaceMutations = null;
     this.workspaceLabels.close();
+    this.projectTodos.close();
     this.agentUpdates.dispose();
     await this.hubExecutionController?.cleanup();
     if (this.unsubscribeTerminalWorkspaceContributionEvents) {

@@ -184,16 +184,31 @@ function curateProjectedActivityEntries(
         flushBuffers(entries, buffers, options);
         entries.push(activityEntry(`[Error] ${item.message}`));
         break;
-      case "compaction":
+      case "compaction": {
         flushBuffers(entries, buffers, options);
-        entries.push(activityEntry("[Compacted]"));
+        const cleanCut = readCleanCutSummary(item);
+        entries.push(
+          activityEntry(
+            cleanCut
+              ? `[Clean cut: summary of the earlier conversation]\n${cleanCut}`
+              : "[Compacted]",
+          ),
+        );
         break;
+      }
     }
   }
 
   flushBuffers(entries, buffers, options);
 
   return entries;
+}
+
+function readCleanCutSummary(
+  item: Extract<AgentTimelineItem, { type: "compaction" }>,
+): string | null {
+  const summary = item.cleanCut?.summary.trim();
+  return summary ? summary : null;
 }
 
 function curateAgentActivityEntries(

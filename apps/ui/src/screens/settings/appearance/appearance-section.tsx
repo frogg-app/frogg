@@ -221,6 +221,28 @@ function ChatOutlineRow({ value, onChange }: ChatOutlineRowProps) {
   );
 }
 
+function ReduceMotionRow({ value, onChange }: ChatOutlineRowProps) {
+  const { t } = useTranslation();
+  return (
+    <View style={settingsStyles.row}>
+      <View style={settingsStyles.rowContent}>
+        <Text style={settingsStyles.rowTitle}>
+          {t("settings.appearance.motion.reduceMotion.title")}
+        </Text>
+        <Text style={settingsStyles.rowHint}>
+          {t("settings.appearance.motion.reduceMotion.description")}
+        </Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        accessibilityLabel={t("settings.appearance.motion.reduceMotion.title")}
+        testID="settings-reduce-motion"
+      />
+    </View>
+  );
+}
+
 const TOOL_CALL_DETAIL_LEVELS: readonly AppSettings["toolCallDetailLevel"][] = [
   "detailed",
   "overview",
@@ -526,6 +548,13 @@ export function AppearanceSection() {
     [updateSettings],
   );
 
+  const handleReduceMotionChange = useCallback(
+    (reduceMotion: boolean) => {
+      void updateSettings({ reduceMotion });
+    },
+    [updateSettings],
+  );
+
   const commitUiFontFamily = useCallback(
     (value: string) => {
       const sanitized = sanitizeFontFamily(value);
@@ -639,6 +668,11 @@ export function AppearanceSection() {
               onChange={handleChatOutlineChange}
             />
           ) : null}
+        </View>
+      </SettingsSection>
+      <SettingsSection title={t("settings.appearance.motion.title")}>
+        <View style={settingsStyles.card}>
+          <ReduceMotionRow value={settings.reduceMotion} onChange={handleReduceMotionChange} />
         </View>
       </SettingsSection>
       <SidebarNavSection />

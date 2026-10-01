@@ -90,6 +90,9 @@ to compare the metadata against GitHub asset sizes and digests.
 
 After publication, verify the unauthenticated Latest API and download each public
 channel manifest/JSON descriptor; check version, payload URLs, sizes and hashes.
+Stages are Development (local `dev:live`, no CI, never published; see `frogg-live-dev`) → Beta →
+Stable. Cut a beta only for a change that already ran in Development.
+
 For beta, verify explicit version routing independently of stable Latest. Do not
 mark a beta as Latest. Betas are cut only from `main` (`npm run release:beta`) and stable
 releases only from `stable` (`release:patch`, `release:promote`); fixes reach stable with

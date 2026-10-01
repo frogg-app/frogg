@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgentModelDefinition, ProviderSnapshotEntry } from "@frogg/protocol/agent-types";
 import type { AgentProviderDefinition } from "@frogg/protocol/provider-manifest";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import {
   buildProviderQualifiedDescription,
   buildProviderSelectorProviders,

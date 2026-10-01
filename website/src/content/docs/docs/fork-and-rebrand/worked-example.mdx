@@ -2,7 +2,7 @@
 title: "Worked example: Acme Studio"
 description: End-to-end walkthrough that forks Frogg, applies the brands/example brand, runs it, and prepares a release.
 sidebar:
-  order: 9
+  order: 10
 ---
 
 import { Screenshot, Steps } from "@/components/docs";
@@ -65,7 +65,7 @@ relay.
    ```
 
    ```text
-   Acme Studio: valid (com.acme.studio); updates disabled
+   Acme Studio: valid (com.acme.studio, stable channel); updates disabled
    ```
 
 </Steps>
@@ -93,7 +93,7 @@ npm run --silent brand:check -- --brand brands/acme
 ```
 
 ```text
-Acme Studio: valid (com.acme.studio); updates github-release
+Acme Studio: valid (com.acme.studio, stable channel); updates github-release
 ```
 
 Commit the brand on `main`:
@@ -115,7 +115,7 @@ npm run dev:app       # terminal 2: Expo on 10100
 Open `http://<your-host>:10100` in a browser, or run `npm run dev:desktop` for the
 Electron shell. The window, icon, favicon, accent colour and product name are Acme's.
 
-To try the production shape instead (daemon serving its own web UI):
+To try the production shape instead (daemon on 10099, its web client on 10098):
 
 ```sh
 export FROGG_BRAND_DIR=brands/acme

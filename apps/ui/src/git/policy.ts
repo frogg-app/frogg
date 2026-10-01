@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 
 import type { ActionStatus } from "@/components/ui/dropdown-menu";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import type { CheckoutPrMergeMethod, PullRequestMergeable } from "@frogg/protocol/messages";
 
 import type { MergeCapability } from "./merge-capability";

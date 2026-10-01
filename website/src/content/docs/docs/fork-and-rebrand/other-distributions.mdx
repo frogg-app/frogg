@@ -183,7 +183,8 @@ not take over the whole domain.
 
 ## Web app
 
-The daemon serves the web UI itself when started with `--web-ui` (installed services
+The daemon serves the web UI itself, from its own web client port (the brand's `webPort`,
+one below `daemonPort` by default), when started with `--web-ui` (installed services
 enable it). To host the web client separately on Cloudflare Pages:
 
 ```sh

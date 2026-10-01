@@ -6,7 +6,7 @@ import type { HostProfile } from "@/types/host-connection";
 import { buildDaemonWebSocketUrl } from "@/utils/daemon-endpoints";
 import { openExternalUrl } from "@/utils/open-external-url";
 import { isWeb } from "@/constants/platform";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 interface DownloadProgress {
   percent: number;

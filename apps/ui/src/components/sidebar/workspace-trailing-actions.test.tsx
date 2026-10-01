@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { I18nextProvider } from "react-i18next";
 import { createInstance } from "i18next";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { en } from "@/i18n/resources/en";
+import { en } from "@/localisation/resources/en";
 import type { SidebarWorkspaceEntry } from "@/hooks/use-sidebar-workspaces-list";
 import { useKeyboardShortcutsStore } from "@/stores/keyboard-shortcuts-store";
 import { MOTION_SWAP_DURATION_MS } from "@/styles/motion";

@@ -7,8 +7,8 @@ description: Monitor Frogg CI after pushes in a background agent, diagnose and f
 
 Keep development moving while one dedicated agent owns build follow-through. A skill
 is instructions, not a running service: create or resume the monitor and confirm it is
-running before claiming that future pushes are watched. Use the `frogg` skill for
-agent/workspace operations and `frogg-release` for artifact and update rules.
+running before claiming that future pushes are watched. Use the `frogg` CLI for
+agent/workspace operations and the `frogg-release` skill for artifact and update rules.
 
 ## Start or resume independently
 

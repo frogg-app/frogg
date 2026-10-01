@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { I18nextProvider } from "react-i18next";
 import { createInstance } from "i18next";
-import { en } from "@/i18n/resources/en";
+import { en } from "@/localisation/resources/en";
 import type { HostProfile } from "@/types/host-connection";
 import type { HostRuntimeSnapshot } from "@/runtime/host-runtime";
 

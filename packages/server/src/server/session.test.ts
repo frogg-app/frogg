@@ -31,6 +31,7 @@ import type { StoredAgentRecord } from "./agent/agent-storage.js";
 import type { AgentManagerEvent } from "./agent/agent-manager.js";
 import type { ProviderSnapshotManager } from "./agent/provider-snapshot-manager.js";
 import { WorkspaceLabelError, type WorkspaceLabelService } from "./workspace-labels/index.js";
+import type { ProjectTodoService } from "./project-todos/service.js";
 import { createPersistedProjectRecord } from "./workspace-registry.js";
 import { deriveProjectKey } from "./project-key.js";
 import type { SessionOptions } from "./session.js";
@@ -329,6 +330,7 @@ interface SessionForTestOptions {
   targetedMessages?: Array<{ source: object; message: SessionOutboundMessage }>;
   binaryMessages?: Uint8Array[];
   workspaceLabelService?: WorkspaceLabelService;
+  projectTodoService?: ProjectTodoService;
 }
 
 function createSessionForTest(options: SessionForTestOptions = {}): Session {
@@ -404,6 +406,7 @@ function createSessionForTest(options: SessionForTestOptions = {}): Session {
       list: vi.fn().mockResolvedValue([]),
     },
     workspaceLabelService: options.workspaceLabelService,
+    projectTodoService: options.projectTodoService,
     checkoutDiffManager: asCheckoutDiffManager(checkoutDiffManager),
     github: asGitHubService(github),
     workspaceGitService: asWorkspaceGitService(workspaceGitService),
@@ -533,6 +536,60 @@ describe("workspace label subscriptions", () => {
       seq: 2,
     });
     expect(messages.filter((message) => message.type === "workspace.label.update")).toHaveLength(1);
+  });
+});
+
+describe("project to-do routing", () => {
+  test("routes project.todo requests and pushes changes only to subscribed projects", async () => {
+    let listener: ((change: unknown) => void) | null = null;
+    const unsubscribe = vi.fn();
+    const service = {
+      subscribe: vi.fn((next: (change: unknown) => void) => {
+        listener = next;
+        return unsubscribe;
+      }),
+      list: vi.fn().mockResolvedValue({ items: [], categories: ["ui"] }),
+    } as unknown as ProjectTodoService;
+    const messages: SessionOutboundMessage[] = [];
+    const session = createSessionForTest({ messages, projectTodoService: service });
+
+    await session.handleMessage({
+      type: "project.todo.list.request",
+      requestId: "r1",
+      projectId: "p1",
+      subscribe: true,
+    });
+    expect(messages).toContainEqual({
+      type: "project.todo.list.response",
+      payload: { requestId: "r1", projectId: "p1", items: [], categories: ["ui"], error: null },
+    });
+
+    listener!({ kind: "remove", projectId: "p1", todoId: "t1" });
+    listener!({ kind: "remove", projectId: "other", todoId: "t2" });
+    expect(messages.filter((m) => m.type === "project.todo.changed")).toEqual([
+      { type: "project.todo.changed", payload: { kind: "remove", projectId: "p1", todoId: "t1" } },
+    ]);
+
+    await session.cleanup();
+    expect(unsubscribe).toHaveBeenCalledOnce();
+  });
+
+  test("answers with project_todos_unavailable when the daemon has no to-do service", async () => {
+    const messages: SessionOutboundMessage[] = [];
+    const session = createSessionForTest({ messages });
+    await session.handleMessage({
+      type: "project.todo.get.request",
+      requestId: "r1",
+      projectId: "p1",
+      todoId: "t1",
+    });
+    expect(messages).toContainEqual({
+      type: "project.todo.get.response",
+      payload: expect.objectContaining({
+        item: null,
+        error: expect.objectContaining({ code: "project_todos_unavailable" }),
+      }),
+    });
   });
 });
 

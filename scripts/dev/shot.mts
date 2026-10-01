@@ -17,6 +17,7 @@ Options
   --width <px>              viewport width (default 1400)
   --height <px>             viewport height (default 900)
   --mobile                  390x844 touch viewport
+  --live                    target npm run dev:live instead of the mock preview
   --theme <dark|light>      colour scheme (default dark)
   --click <testID>          click an element first; repeat for a sequence
   --hover <testID>          leave the pointer over an element, for hover-only UI
@@ -37,6 +38,7 @@ const { values, positionals } = parseArgs({
     width: { type: "string", default: "1400" },
     height: { type: "string", default: "900" },
     mobile: { type: "boolean", default: false },
+    live: { type: "boolean", default: false },
     theme: { type: "string", default: "dark" },
     click: { type: "string", multiple: true, default: [] },
     hover: { type: "string" },

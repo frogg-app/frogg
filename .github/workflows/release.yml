@@ -33,6 +33,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 defaults:
   run:
@@ -117,6 +118,31 @@ jobs:
       - name: Require the tag on its stream's branch
         if: inputs.only != 'android'
         run: node scripts/release/streams.mjs assert-tag "$RELEASE_TAG"
+
+      # Releases only build: tests and linters must already have passed in CI on the commit the
+      # release was cut from (main's commit for a promotion, the backport for a stable patch).
+      # CI may still be running when a tag is pushed with its branch, so this waits for it.
+      - name: Require green CI on the released code
+        if: inputs.only != 'android'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          candidates="$(node scripts/release/streams.mjs tested-source "$RELEASE_TAG") $(git rev-parse "$RELEASE_TAG^{commit}")"
+          for attempt in $(seq 1 90); do
+            pending=false
+            for sha in $candidates; do
+              runs="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$sha&per_page=20" \
+                --jq '[.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch")] | map(.status + ":" + (.conclusion // "")) | join(" ")')"
+              case " $runs " in
+                *" completed:success "*) echo "CI passed on $(git log -1 --format=%s "$sha")."; exit 0 ;;
+                *" queued:"*|*" in_progress:"*|*" waiting:"*|*" pending:"*) pending=true ;;
+              esac
+            done
+            [ "$pending" = true ] || break
+            echo "Waiting for CI on the released code..."; sleep 30
+          done
+          echo "::error::No passing CI run for the code in $RELEASE_TAG (checked: $candidates). Fix main's CI, then cut again."
+          exit 1
 
       # Secrets are detected once here; jobs that need them read the flags. The
       # docker flags are optional, and so is android_signing: when

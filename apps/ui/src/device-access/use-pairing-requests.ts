@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { DeviceRole, PendingPairingRequest } from "@frogg/protocol/device-access";
 import { useReplicaQuery } from "@/data/query";
 import { useHostRuntimeClient, useHostRuntimeSnapshot } from "@/runtime/host-runtime";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { useRefreshSecurityPosture } from "@/security/use-security-posture";
 import { devicesQueryKey, pairingRequestsQueryKey } from "./query-keys";
 import { useDeviceAccess } from "./use-device-access";

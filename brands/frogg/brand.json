@@ -63,5 +63,8 @@
   "daemon": {
     "bind": "all",
     "claimMode": false
+  },
+  "plugins": {
+    "allowUserRepos": true
   }
 }

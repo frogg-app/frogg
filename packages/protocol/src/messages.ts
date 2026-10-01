@@ -58,6 +58,27 @@ import {
 import { TOOL_CALL_ICON_NAMES } from "./agent-types.js";
 import { WORKSPACE_LABEL_COLORS } from "./workspace-labels.js";
 import {
+  ProjectTodoListRequestSchema,
+  ProjectTodoGetRequestSchema,
+  ProjectTodoCreateRequestSchema,
+  ProjectTodoUpdateRequestSchema,
+  ProjectTodoUpdatePlanRequestSchema,
+  ProjectTodoSetStatusRequestSchema,
+  ProjectTodoReleaseRequestSchema,
+  ProjectTodoDeleteRequestSchema,
+  ProjectTodoUnsubscribeRequestSchema,
+  ProjectTodoListResponseSchema,
+  ProjectTodoGetResponseSchema,
+  ProjectTodoCreateResponseSchema,
+  ProjectTodoUpdateResponseSchema,
+  ProjectTodoUpdatePlanResponseSchema,
+  ProjectTodoSetStatusResponseSchema,
+  ProjectTodoReleaseResponseSchema,
+  ProjectTodoDeleteResponseSchema,
+  ProjectTodoUnsubscribeResponseSchema,
+  ProjectTodoChangedMessageSchema,
+} from "./todos/rpc-schemas.js";
+import {
   ChatCreateRequestSchema,
   ChatListRequestSchema,
   ChatInspectRequestSchema,
@@ -85,6 +106,42 @@ import {
   LoopLogsResponseSchema,
   LoopStopResponseSchema,
 } from "./loop/rpc-schemas.js";
+import {
+  PluginsListRequestSchema,
+  PluginsReposListRequestSchema,
+  PluginsReposAddRequestSchema,
+  PluginsReposRemoveRequestSchema,
+  PluginsGetCatalogRequestSchema,
+  PluginsInstallRequestSchema,
+  PluginsUninstallRequestSchema,
+  PluginsSetEnabledRequestSchema,
+  PluginsUpdateRequestSchema,
+  PluginsDevLinkRequestSchema,
+  PluginsDevUnlinkRequestSchema,
+  PluginsDevSetEnabledRequestSchema,
+  PluginsRpcCallRequestSchema,
+  PluginsGetContributionsRequestSchema,
+  PluginsSettingsGetRequestSchema,
+  PluginsSettingsSetRequestSchema,
+  PluginsListResponseSchema,
+  PluginsReposListResponseSchema,
+  PluginsReposAddResponseSchema,
+  PluginsReposRemoveResponseSchema,
+  PluginsGetCatalogResponseSchema,
+  PluginsInstallResponseSchema,
+  PluginsUninstallResponseSchema,
+  PluginsSetEnabledResponseSchema,
+  PluginsUpdateResponseSchema,
+  PluginsDevLinkResponseSchema,
+  PluginsDevUnlinkResponseSchema,
+  PluginsDevSetEnabledResponseSchema,
+  PluginsRpcCallResponseSchema,
+  PluginsGetContributionsResponseSchema,
+  PluginsSettingsGetResponseSchema,
+  PluginsSettingsSetResponseSchema,
+  PluginsChangedMessageSchema,
+  PluginsNotifyMessageSchema,
+} from "./plugins/rpc-schemas.js";
 import {
   BrowserAutomationExecuteRequestSchema,
   BrowserAutomationExecuteResponseSchema,
@@ -168,6 +225,68 @@ const MutableMetadataGenerationConfigSchema = z
   })
   .passthrough();
 
+/**
+ * COMPAT(cleanCutSettings): added in v1.6.5, remove after 2027-09-27.
+ * Clean cut settings. Idle thresholds are whole minutes; a provider override
+ * wins over the global value, which wins over the provider's prompt cache TTL.
+ */
+export const CLEAN_CUT_IDLE_THRESHOLD_MAX_MINUTES = 30 * 24 * 60;
+const CleanCutIdleThresholdMinutesSchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(CLEAN_CUT_IDLE_THRESHOLD_MAX_MINUTES);
+
+export const CleanCutSummaryModelSchema = z.object({
+  provider: z.string().min(1).max(100),
+  model: z.string().min(1).max(200),
+  thinkingOptionId: z.string().min(1).max(100).optional(),
+});
+export type CleanCutSummaryModel = z.infer<typeof CleanCutSummaryModelSchema>;
+
+export const CleanCutProviderSettingsSchema = z.object({
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.optional(),
+  summaryModel: CleanCutSummaryModelSchema.optional(),
+});
+export type CleanCutProviderSettings = z.infer<typeof CleanCutProviderSettingsSchema>;
+
+export const MutableCleanCutConfigSchema = z.object({
+  auto: z.object({
+    /** Cut before the resume the daemon sends once a usage limit resets. */
+    usageLimit: z.boolean(),
+    /** Cut before resuming a turn a daemon restart interrupted. */
+    daemonRestart: z.boolean(),
+  }),
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.optional(),
+  summaryModel: CleanCutSummaryModelSchema.optional(),
+  providers: z.record(z.string(), CleanCutProviderSettingsSchema).default({}),
+});
+export type MutableCleanCutConfig = z.infer<typeof MutableCleanCutConfigSchema>;
+
+/** `null` clears a value back to its default; a provider set to `null` drops all its overrides. */
+export const MutableCleanCutConfigPatchSchema = z.object({
+  auto: z
+    .object({
+      usageLimit: z.boolean().optional(),
+      daemonRestart: z.boolean().optional(),
+    })
+    .optional(),
+  idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.nullable().optional(),
+  summaryModel: CleanCutSummaryModelSchema.nullable().optional(),
+  providers: z
+    .record(
+      z.string().min(1),
+      z
+        .object({
+          idleThresholdMinutes: CleanCutIdleThresholdMinutesSchema.nullable().optional(),
+          summaryModel: CleanCutSummaryModelSchema.nullable().optional(),
+        })
+        .nullable(),
+    )
+    .optional(),
+});
+export type MutableCleanCutConfigPatch = z.infer<typeof MutableCleanCutConfigPatchSchema>;
+
 export const TerminalProfileSchema = z
   .object({
     id: z.string(),
@@ -226,6 +345,9 @@ export const HostSettingsSectionSchema = z.enum([
   "agents",
   "providers",
   "usage",
+  // COMPAT(skillsManagement): added in v1.6.6 with the <brand> skills section. Apps older
+  // than that reject a config that hides it.
+  "skills",
   "terminals",
   "host",
 ]);
@@ -273,6 +395,8 @@ export const MutableDaemonConfigSchema = z
     // COMPAT(companionModel): added in v1.5.43; absent means an older daemon without the picker.
     // null is "the backend's default model".
     companionModel: z.string().nullable().optional(),
+    // COMPAT(cleanCutSettings): added in v1.6.5; absent means an older daemon without the settings.
+    cleanCut: MutableCleanCutConfigSchema.optional(),
     enableTerminalAgentHooks: z.boolean().default(false),
     appendSystemPrompt: z.string().default(""),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -297,6 +421,7 @@ export const MutableDaemonConfigPatchSchema = z
     autoArchiveAfterMerge: z.boolean().optional(),
     autoResumeOnUsageLimit: z.boolean().optional(),
     companionModel: z.string().trim().min(1).max(200).nullable().optional(),
+    cleanCut: MutableCleanCutConfigPatchSchema.optional(),
     enableTerminalAgentHooks: z.boolean().optional(),
     appendSystemPrompt: z.string().optional(),
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
@@ -803,6 +928,33 @@ export const AgentTimelineItemPayloadSchema: z.ZodType<AgentTimelineItem, unknow
     status: z.enum(["loading", "completed"]),
     trigger: z.enum(["auto", "manual"]).optional(),
     preTokens: z.number().optional(),
+    // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27. Present when
+    // this marker is a clean cut rather than a provider compaction; older clients
+    // strip it and render an ordinary compaction marker.
+    cleanCut: z
+      .object({
+        summary: z.string(),
+        previousSessionId: z.string().optional(),
+        previousProvider: z.string().optional(),
+        previousModel: z.string().optional(),
+        provider: z.string().optional(),
+        model: z.string().optional(),
+        summaryModel: z.string().optional(),
+        summaryUsage: z
+          .object({
+            inputTokens: z.number().optional(),
+            cachedInputTokens: z.number().optional(),
+            outputTokens: z.number().optional(),
+            totalCostUsd: z.number().optional(),
+          })
+          .optional(),
+        previousContextTokens: z.number().optional(),
+        // Why the cut was made: "manual" (the user asked) or "cold-cache" (the
+        // daemon cut automatically because the prompt cache had expired). A
+        // string rather than an enum so a future reason cannot fail the item.
+        reason: z.string().optional(),
+      })
+      .optional(),
   }),
   // COMPAT(pluginTimelineItems): plugins were removed after v0.7.0, but older daemons can still
   // hold these rows. Keep parsing them so a timeline page or stream frame containing one is not
@@ -1609,6 +1761,30 @@ export const DaemonStorageCleanRequestSchema = z.object({
 });
 export type DaemonStorageCleanRequest = z.infer<typeof DaemonStorageCleanRequestSchema>;
 
+/** The skills built into the product (not the user's or a project's), with whether each is on. */
+export const DaemonSkillsListRequestSchema = z.object({
+  type: z.literal("daemon.skills.list.request"),
+  requestId: z.string(),
+});
+export type DaemonSkillsListRequest = z.infer<typeof DaemonSkillsListRequestSchema>;
+
+/** Switch a skill on or off for agents started from now on. */
+export const DaemonSkillsSetEnabledRequestSchema = z.object({
+  type: z.literal("daemon.skills.set_enabled.request"),
+  requestId: z.string(),
+  skillId: z.string().min(1).max(256),
+  enabled: z.boolean(),
+});
+export type DaemonSkillsSetEnabledRequest = z.infer<typeof DaemonSkillsSetEnabledRequestSchema>;
+
+/** The full SKILL.md text of one listed skill. */
+export const DaemonSkillsGetContentRequestSchema = z.object({
+  type: z.literal("daemon.skills.get_content.request"),
+  requestId: z.string(),
+  skillId: z.string().min(1).max(256),
+});
+export type DaemonSkillsGetContentRequest = z.infer<typeof DaemonSkillsGetContentRequestSchema>;
+
 export const DaemonGetPairingOfferRequestSchema = z.object({
   type: z.literal("daemon.get_pairing_offer.request"),
   requestId: z.string(),
@@ -1645,6 +1821,99 @@ export const DaemonUpdateGetStatusRequestSchema = z.object({
   type: z.literal("daemon.update.get_status.request"),
   requestId: z.string(),
 });
+
+// Beta channel management: the stable daemon installs, updates and removes the
+// side-by-side beta daemon on its own host (self-hosting/updates.mdx).
+export const DaemonBetaChannelGetStatusRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.get_status.request"),
+  requestId: z.string(),
+});
+
+export const DaemonBetaChannelInstallRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.install.request"),
+  requestId: z.string(),
+  /** Exact beta version to install; the newest published beta when absent. */
+  version: z.string().optional(),
+});
+
+export const DaemonBetaChannelUninstallRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.uninstall.request"),
+  requestId: z.string(),
+  /** Also delete the beta daemon's state directory. */
+  purge: z.boolean().optional(),
+});
+export type DaemonBetaChannelGetStatusRequest = z.infer<
+  typeof DaemonBetaChannelGetStatusRequestSchema
+>;
+export type DaemonBetaChannelInstallRequest = z.infer<typeof DaemonBetaChannelInstallRequestSchema>;
+export type DaemonBetaChannelUninstallRequest = z.infer<
+  typeof DaemonBetaChannelUninstallRequestSchema
+>;
+
+// Start or stop the installed side-by-side beta daemon through its own CLI.
+export const DaemonBetaChannelStartRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.start.request"),
+  requestId: z.string(),
+});
+export const DaemonBetaChannelStopRequestSchema = z.object({
+  type: z.literal("daemon.beta_channel.stop.request"),
+  requestId: z.string(),
+});
+export type DaemonBetaChannelStartRequest = z.infer<typeof DaemonBetaChannelStartRequestSchema>;
+export type DaemonBetaChannelStopRequest = z.infer<typeof DaemonBetaChannelStopRequestSchema>;
+
+// Development daemon: `npm run dev:live` in a source checkout of this repo on the host, so a
+// branch can be tried against real providers before it ships as a beta.
+export const DaemonDevDaemonGetStatusRequestSchema = z.object({
+  type: z.literal("daemon.dev_daemon.get_status.request"),
+  requestId: z.string(),
+});
+export const DaemonDevDaemonStartRequestSchema = z.object({
+  type: z.literal("daemon.dev_daemon.start.request"),
+  requestId: z.string(),
+  /** The checkout to run it from; one of the status's `checkouts`. */
+  cwd: z.string(),
+});
+export const DaemonDevDaemonStopRequestSchema = z.object({
+  type: z.literal("daemon.dev_daemon.stop.request"),
+  requestId: z.string(),
+});
+export type DaemonDevDaemonGetStatusRequest = z.infer<typeof DaemonDevDaemonGetStatusRequestSchema>;
+export type DaemonDevDaemonStartRequest = z.infer<typeof DaemonDevDaemonStartRequestSchema>;
+export type DaemonDevDaemonStopRequest = z.infer<typeof DaemonDevDaemonStopRequestSchema>;
+export const DaemonDevDaemonRebuildRequestSchema = z.object({
+  type: z.literal("daemon.dev_daemon.rebuild.request"),
+  requestId: z.string(),
+  /** "daemon": build protocol and client, then restart the daemon. "web": restart the web app. */
+  target: z.enum(["daemon", "web"]),
+});
+export type DaemonDevDaemonRebuildRequest = z.infer<typeof DaemonDevDaemonRebuildRequestSchema>;
+
+// Web client: the daemon's own web server for the browser app, on its own port.
+export const DaemonWebUiGetStatusRequestSchema = z.object({
+  type: z.literal("daemon.web_ui.get_status.request"),
+  requestId: z.string(),
+});
+export const DaemonWebUiUpdateRequestSchema = z.object({
+  type: z.literal("daemon.web_ui.update.request"),
+  requestId: z.string(),
+  /** Start the web client when the daemon starts. */
+  startOnLaunch: z.boolean().optional(),
+  /** Interface address to bind; one of the status's `interfaces`. */
+  host: z.string().optional(),
+});
+export const DaemonWebUiStartRequestSchema = z.object({
+  type: z.literal("daemon.web_ui.start.request"),
+  requestId: z.string(),
+});
+export const DaemonWebUiStopRequestSchema = z.object({
+  type: z.literal("daemon.web_ui.stop.request"),
+  requestId: z.string(),
+});
+export type DaemonWebUiGetStatusRequest = z.infer<typeof DaemonWebUiGetStatusRequestSchema>;
+export type DaemonWebUiUpdateRequest = z.infer<typeof DaemonWebUiUpdateRequestSchema>;
+export type DaemonWebUiStartRequest = z.infer<typeof DaemonWebUiStartRequestSchema>;
+export type DaemonWebUiStopRequest = z.infer<typeof DaemonWebUiStopRequestSchema>;
 
 export const HubManagementDaemonConnectRequestSchema = z.object({
   type: z.literal("hub.management.daemon.connect.request"),
@@ -2196,6 +2465,58 @@ export const AgentProviderAccountTransferRequestMessageSchema = z.object({
 export const AgentProviderAccountTransferResponseMessageSchema = z.object({
   type: z.literal("agent.provider_account.transfer.response"),
   payload: AgentActionResponsePayloadSchema,
+});
+
+/**
+ * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+ *
+ * Ends the agent's provider conversation and starts a fresh one in the same
+ * workspace. A cheap model on the current provider summarises the chat side of
+ * the old conversation (messages and tool calls, never tool output); the daemon
+ * records that summary in the timeline and sends it ahead of the next user
+ * message. The old conversation stays in the timeline for the user but is not
+ * re-sent to the provider.
+ *
+ * Every target field is optional and an omitted one keeps the agent's current
+ * value, so the same request is a same-account cut, an account move, or a
+ * provider switch. `providerAccountId: null` is the provider's default account.
+ */
+export const AgentCleanCutRequestMessageSchema = z.object({
+  type: z.literal("agent.clean_cut.request"),
+  agentId: z.string(),
+  provider: z.string().optional(),
+  providerAccountId: z.string().nullable().optional(),
+  model: z.string().nullable().optional(),
+  thinkingOptionId: z.string().nullable().optional(),
+  /**
+   * COMPAT(agentCleanCutSubagents): added in v1.6.2. Also cut the agent's idle
+   * Frogg child agents (recursively), each from its own timeline and on its
+   * own provider and model. Omitted means true; false cuts only this agent.
+   */
+  includeSubagents: z.boolean().optional(),
+  requestId: z.string(),
+});
+
+/**
+ * COMPAT(agentCleanCutSubagents): added in v1.6.2. One child agent's outcome.
+ * `skipped` covers a running child, a closed one, or one with nothing new to
+ * summarise; `failed` carries the error. Neither fails the parent's cut.
+ */
+export const AgentCleanCutSubagentResultSchema = z.object({
+  agentId: z.string(),
+  parentAgentId: z.string(),
+  title: z.string().nullable(),
+  status: z.enum(["cut", "skipped", "failed"]),
+  reason: z.string().optional(),
+});
+
+export const AgentCleanCutResponseMessageSchema = z.object({
+  type: z.literal("agent.clean_cut.response"),
+  payload: AgentActionResponsePayloadSchema.extend({
+    // COMPAT(agentCleanCutSubagents): added in v1.6.2. Present when the
+    // parent's cut succeeded and its child agents were considered.
+    subagents: z.array(AgentCleanCutSubagentResultSchema).optional(),
+  }),
 });
 
 export const AgentDetachRequestMessageSchema = z.object({
@@ -3388,6 +3709,22 @@ export const HubExecutionControlRequestSchema = z.object({
 export type HubExecutionControlRequest = z.infer<typeof HubExecutionControlRequestSchema>;
 
 export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
+  PluginsListRequestSchema,
+  PluginsReposListRequestSchema,
+  PluginsReposAddRequestSchema,
+  PluginsReposRemoveRequestSchema,
+  PluginsGetCatalogRequestSchema,
+  PluginsInstallRequestSchema,
+  PluginsUninstallRequestSchema,
+  PluginsSetEnabledRequestSchema,
+  PluginsUpdateRequestSchema,
+  PluginsDevLinkRequestSchema,
+  PluginsDevUnlinkRequestSchema,
+  PluginsDevSetEnabledRequestSchema,
+  PluginsRpcCallRequestSchema,
+  PluginsGetContributionsRequestSchema,
+  PluginsSettingsGetRequestSchema,
+  PluginsSettingsSetRequestSchema,
   AuthDeviceListRequestSchema,
   AuthDeviceRenameRequestSchema,
   AuthDeviceRevokeRequestSchema,
@@ -3449,6 +3786,9 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   DaemonHostGetMetricsRequestSchema,
   DaemonStorageListRequestSchema,
   DaemonStorageCleanRequestSchema,
+  DaemonSkillsListRequestSchema,
+  DaemonSkillsSetEnabledRequestSchema,
+  DaemonSkillsGetContentRequestSchema,
   DaemonGetPairingOfferRequestSchema,
   DaemonGetSecurityPostureRequestSchema,
   DaemonSetSecurityFindingAcknowledgedRequestSchema,
@@ -3457,6 +3797,19 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   DaemonUpdateCheckRequestSchema,
   DaemonUpdateStartRequestSchema,
   DaemonUpdateGetStatusRequestSchema,
+  DaemonBetaChannelGetStatusRequestSchema,
+  DaemonBetaChannelInstallRequestSchema,
+  DaemonBetaChannelUninstallRequestSchema,
+  DaemonBetaChannelStartRequestSchema,
+  DaemonBetaChannelStopRequestSchema,
+  DaemonDevDaemonGetStatusRequestSchema,
+  DaemonDevDaemonStartRequestSchema,
+  DaemonDevDaemonStopRequestSchema,
+  DaemonDevDaemonRebuildRequestSchema,
+  DaemonWebUiGetStatusRequestSchema,
+  DaemonWebUiUpdateRequestSchema,
+  DaemonWebUiStartRequestSchema,
+  DaemonWebUiStopRequestSchema,
   HubManagementDaemonConnectRequestSchema,
   HubManagementDaemonGetStatusRequestSchema,
   HubManagementDaemonDisconnectRequestSchema,
@@ -3511,6 +3864,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   SetAgentFeatureRequestMessageSchema,
   AgentConfigApplyRequestMessageSchema,
   AgentProviderAccountTransferRequestMessageSchema,
+  AgentCleanCutRequestMessageSchema,
   AgentDetachRequestMessageSchema,
   AgentCancelAutoResumeRequestMessageSchema,
   AgentRewindRequestMessageSchema,
@@ -3603,6 +3957,15 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   ChatPostRequestSchema,
   ChatReadRequestSchema,
   ChatWaitRequestSchema,
+  ProjectTodoListRequestSchema,
+  ProjectTodoGetRequestSchema,
+  ProjectTodoCreateRequestSchema,
+  ProjectTodoUpdateRequestSchema,
+  ProjectTodoUpdatePlanRequestSchema,
+  ProjectTodoSetStatusRequestSchema,
+  ProjectTodoReleaseRequestSchema,
+  ProjectTodoDeleteRequestSchema,
+  ProjectTodoUnsubscribeRequestSchema,
   LoopRunRequestSchema,
   LoopListRequestSchema,
   LoopInspectRequestSchema,
@@ -3977,6 +4340,9 @@ export const ServerInfoStatusPayloadSchema = z
         directorySync: z.boolean().optional(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         workspaceLabels: z.boolean().optional(),
+        // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
+        // project.todo.* RPCs and the project.todo.changed push event.
+        projectTodos: z.boolean().optional(),
         // COMPAT(workspaceCreatedAt): added in v1.1.0, remove after 2027-03-14.
         // Workspace and project descriptors carry createdAt / projectCreatedAt.
         workspaceCreatedAt: z.boolean().optional(),
@@ -4001,6 +4367,12 @@ export const ServerInfoStatusPayloadSchema = z
         // agent.provider_account.transfer is available and this daemon's build of
         // the agent's provider can relocate a session between config directories.
         agentProviderAccountTransfer: z.boolean().optional(),
+        // COMPAT(plugins): added in v1.6.2, remove gate after 2027-09-27.
+        // plugins.* session RPCs, plugins.changed and plugins.notify are available.
+        plugins: z.boolean().optional(),
+        // COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+        // agent.clean_cut is available.
+        agentCleanCut: z.boolean().optional(),
         // COMPAT(spokenNotifications): added in v0.1.14, remove gate after 2027-09-03.
         spokenNotifications: z.boolean().optional(),
         // COMPAT(checkoutForgeSetAutoMerge): added in v0.2.0-beta.1. Remove the
@@ -4088,6 +4460,18 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(daemonUpdateProgressBytes): added in v1.5.11 (Frogg), remove gate after
         // 2027-09-20. Daemon reports download byte counts on daemon.update.run.progress.
         daemonUpdateProgressBytes: z.boolean().optional(),
+        // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
+        // daemon.beta_channel.* install/uninstall/status for the side-by-side beta daemon.
+        betaChannelManagement: z.boolean().optional(),
+        // COMPAT(daemonChannelControl): added in v1.6.7, remove gate after 2027-09-29.
+        // daemon.beta_channel.start/stop and daemon.dev_daemon.* for the developer settings.
+        daemonChannelControl: z.boolean().optional(),
+        // COMPAT(webUiControl): added in v1.6.7, remove gate after 2027-09-29.
+        // daemon.web_ui.* start/stop/configure the web client's own server.
+        webUiControl: z.boolean().optional(),
+        // COMPAT(devDaemonRebuild): added in v1.6.7, remove gate after 2027-09-29.
+        // daemon.dev_daemon.rebuild and the rebuild fields on the development daemon status.
+        devDaemonRebuild: z.boolean().optional(),
         // COMPAT(agentForkContext): added in v0.1.102, remove gate after 2026-12-28.
         agentForkContext: z.boolean().optional(),
         // COMPAT(agentForkContextCursor): added in v0.1.108, remove gate after 2027-01-14.
@@ -4167,6 +4551,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
         // daemon.host.get_metrics, daemon.storage.list and daemon.storage.clean are available.
         hostResources: z.boolean().optional(),
+        // COMPAT(skillsManagement): added in v1.6.6, remove gate after 2027-09-27.
+        // daemon.skills.list, daemon.skills.set_enabled and daemon.skills.get_content are available.
+        skillsManagement: z.boolean().optional(),
       })
       .optional(),
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
@@ -4175,7 +4562,11 @@ export const ServerInfoStatusPayloadSchema = z
     // COMPAT(deviceAccess): added in v1.6.0. The paired device this connection
     // authenticated as; absent for credential-less (loopback / trusted LAN) connections.
     device: z
-      .object({ id: z.string(), name: z.string(), role: z.enum(["owner", "operator", "viewer"]) })
+      .object({
+        id: z.string(),
+        name: z.string(),
+        role: z.enum(["owner", "operator", "viewer"]),
+      })
       .optional(),
   })
   .passthrough()
@@ -5343,7 +5734,7 @@ export const DaemonHostGetMetricsResponseSchema = z.object({
 });
 
 export const OwnedStorageCategorySchema = z.object({
-  /** Stable id (logs, agents, projects, worktrees, uploads, project_import_staging, tts_cache, models, daemon_versions, temp); unknown ids may appear. */
+  /** Stable id (logs, agents, projects, worktrees, agent_worktrees, provider_accounts, uploads, project_import_staging, tts_cache, models, daemon_versions, temp); unknown ids may appear. */
   id: z.string(),
   path: z.string().nullable(),
   exists: z.boolean(),
@@ -5374,6 +5765,55 @@ export const DaemonStorageCleanResponseSchema = z.object({
     categoryId: z.string(),
     bytesFreed: z.number(),
     removedCount: z.number(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const SkillLocationSchema = z.object({
+  /** built_in today; kept open so other sources can be added without a wire change. */
+  scope: z.string(),
+  path: z.string(),
+  /** Providers that load this copy (claude, codex); unknown ids may appear. */
+  providers: z.array(z.string()),
+});
+export type SkillLocation = z.infer<typeof SkillLocationSchema>;
+
+export const SkillEntrySchema = z.object({
+  /** Stable key for set_enabled/get_content: the skill's short name, e.g. `delegate`. */
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  enabled: z.boolean(),
+  /** built_in today. */
+  scope: z.string(),
+  locations: z.array(SkillLocationSchema),
+});
+export type SkillEntry = z.infer<typeof SkillEntrySchema>;
+
+export const DaemonSkillsListResponseSchema = z.object({
+  type: z.literal("daemon.skills.list.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skills: z.array(SkillEntrySchema),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonSkillsSetEnabledResponseSchema = z.object({
+  type: z.literal("daemon.skills.set_enabled.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skill: SkillEntrySchema.nullable(),
+    error: z.string().nullable(),
+  }),
+});
+
+export const DaemonSkillsGetContentResponseSchema = z.object({
+  type: z.literal("daemon.skills.get_content.response"),
+  payload: z.object({
+    requestId: z.string(),
+    skillId: z.string(),
+    content: z.string().nullable(),
     error: z.string().nullable(),
   }),
 });
@@ -5566,6 +6006,258 @@ export const DaemonUpdateRunProgressMessageSchema = z.object({
   payload: DaemonUpdateRunSchema,
 });
 export type DaemonUpdateRunProgressMessage = z.infer<typeof DaemonUpdateRunProgressMessageSchema>;
+
+/**
+ * A beta channel install or uninstall run. `action` and `phase` stay plain
+ * strings so a later daemon can add values without breaking older apps.
+ * Current actions: install, uninstall. Current phases: resolve, download,
+ * verify, install, uninstall, done, failed.
+ */
+export const DaemonBetaChannelRunSchema = z.object({
+  runId: z.string(),
+  action: z.string(),
+  targetVersion: z.string().nullable(),
+  phase: z.string(),
+  message: z.string().nullable(),
+  startedAt: z.string(),
+  at: z.string(),
+});
+export type DaemonBetaChannelRun = z.infer<typeof DaemonBetaChannelRunSchema>;
+
+export const DaemonBetaChannelStatusSchema = z.object({
+  /** Install/uninstall can run on this host; `reason` says why not when false. */
+  supported: z.boolean(),
+  reason: z.string().nullable(),
+  /** This daemon is itself the beta build. */
+  selfIsBeta: z.boolean(),
+  platform: z.string(),
+  installed: z.boolean(),
+  installedVersion: z.string().nullable(),
+  installDir: z.string().nullable(),
+  running: z.boolean(),
+  runningVersion: z.string().nullable(),
+  port: z.number(),
+  /** Port of the beta's web client, and whether it answers on any of this host's addresses. */
+  webPort: z.number().optional(),
+  webRunning: z.boolean().optional(),
+  serviceName: z.string(),
+  cliName: z.string(),
+  homeDir: z.string(),
+  /** Newest published beta release; null when the lookup failed (`latestError`). */
+  latestVersion: z.string().nullable(),
+  latestReleaseUrl: z.string().nullable(),
+  latestPublishedAt: z.string().nullable(),
+  latestError: z.string().nullable(),
+  run: DaemonBetaChannelRunSchema.nullable(),
+});
+export type DaemonBetaChannelStatus = z.infer<typeof DaemonBetaChannelStatusSchema>;
+
+export const DaemonBetaChannelGetStatusResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.get_status.response"),
+  payload: DaemonBetaChannelStatusSchema.extend({
+    requestId: z.string(),
+    error: z.string().nullable(),
+  }),
+});
+export type DaemonBetaChannelGetStatusResponse = z.infer<
+  typeof DaemonBetaChannelGetStatusResponseSchema
+>;
+
+const DaemonBetaChannelRunStartPayloadSchema = z.object({
+  requestId: z.string(),
+  accepted: z.boolean(),
+  runId: z.string().nullable(),
+  targetVersion: z.string().nullable(),
+  error: z.string().nullable(),
+});
+
+export const DaemonBetaChannelInstallResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.install.response"),
+  payload: DaemonBetaChannelRunStartPayloadSchema,
+});
+export type DaemonBetaChannelInstallResponse = z.infer<
+  typeof DaemonBetaChannelInstallResponseSchema
+>;
+
+export const DaemonBetaChannelUninstallResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.uninstall.response"),
+  payload: DaemonBetaChannelRunStartPayloadSchema,
+});
+export type DaemonBetaChannelUninstallResponse = z.infer<
+  typeof DaemonBetaChannelUninstallResponseSchema
+>;
+
+const DaemonControlResultPayloadSchema = z.object({
+  requestId: z.string(),
+  error: z.string().nullable(),
+});
+
+export const DaemonBetaChannelStartResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.start.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonBetaChannelStartResponse = z.infer<typeof DaemonBetaChannelStartResponseSchema>;
+
+export const DaemonBetaChannelStopResponseSchema = z.object({
+  type: z.literal("daemon.beta_channel.stop.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonBetaChannelStopResponse = z.infer<typeof DaemonBetaChannelStopResponseSchema>;
+
+export const DaemonDevDaemonCheckoutSchema = z.object({
+  cwd: z.string(),
+  /** Workspace title or folder name. */
+  name: z.string(),
+  branch: z.string().nullable(),
+});
+export type DaemonDevDaemonCheckout = z.infer<typeof DaemonDevDaemonCheckoutSchema>;
+
+export const DaemonDevDaemonStatusSchema = z.object({
+  /** A development daemon can be launched here; `reason` says why not when false. */
+  supported: z.boolean(),
+  reason: z.string().nullable(),
+  /** Launched and its process is still alive. */
+  running: z.boolean(),
+  /** Its daemon answers on `daemonPort`. */
+  ready: z.boolean(),
+  cwd: z.string().nullable(),
+  branch: z.string().nullable(),
+  startedAt: z.string().nullable(),
+  daemonPort: z.number(),
+  /** Port of its web app; open it at the host's address. */
+  webPort: z.number(),
+  logPath: z.string().nullable(),
+  /** Source checkouts of this repo among the host's workspaces. */
+  checkouts: z.array(DaemonDevDaemonCheckoutSchema),
+  /** Its web app answers on `webPort`. */
+  webReady: z.boolean().optional(),
+  /** Why the daemon or web app is out of date and needs a rebuild; empty when current. */
+  daemonStale: z.array(z.string()).optional(),
+  webStale: z.array(z.string()).optional(),
+  /** A rebuild in progress: "daemon" or "web". */
+  busy: z.string().nullable().optional(),
+  /** Why the last rebuild failed. */
+  lastError: z.string().nullable().optional(),
+  /** Commits on origin/main the checkout does not have. */
+  behindMain: z.number().nullable().optional(),
+  /** This daemon is the development daemon: it can rebuild itself, not start or stop. */
+  isSelf: z.boolean().optional(),
+  /** Its launcher accepts rebuild requests. */
+  canRebuild: z.boolean().optional(),
+});
+export type DaemonDevDaemonStatus = z.infer<typeof DaemonDevDaemonStatusSchema>;
+
+export const DaemonDevDaemonGetStatusResponseSchema = z.object({
+  type: z.literal("daemon.dev_daemon.get_status.response"),
+  payload: DaemonDevDaemonStatusSchema.extend({
+    requestId: z.string(),
+    error: z.string().nullable(),
+  }),
+});
+export type DaemonDevDaemonGetStatusResponse = z.infer<
+  typeof DaemonDevDaemonGetStatusResponseSchema
+>;
+
+export const DaemonDevDaemonStartResponseSchema = z.object({
+  type: z.literal("daemon.dev_daemon.start.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonDevDaemonStartResponse = z.infer<typeof DaemonDevDaemonStartResponseSchema>;
+
+export const DaemonDevDaemonStopResponseSchema = z.object({
+  type: z.literal("daemon.dev_daemon.stop.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonDevDaemonStopResponse = z.infer<typeof DaemonDevDaemonStopResponseSchema>;
+
+export const DaemonDevDaemonRebuildResponseSchema = z.object({
+  type: z.literal("daemon.dev_daemon.rebuild.response"),
+  payload: DaemonControlResultPayloadSchema,
+});
+export type DaemonDevDaemonRebuildResponse = z.infer<typeof DaemonDevDaemonRebuildResponseSchema>;
+
+export const DaemonWebUiInterfaceSchema = z.object({
+  address: z.string(),
+  /** Interface name; "loopback" and "all" for 127.0.0.1 and 0.0.0.0. */
+  name: z.string(),
+});
+export type DaemonWebUiInterface = z.infer<typeof DaemonWebUiInterfaceSchema>;
+
+export const DaemonWebUiStatusSchema = z.object({
+  /** This daemon has a web client build to serve. */
+  available: z.boolean(),
+  running: z.boolean(),
+  /** Bound interface while running, else the configured one. */
+  host: z.string(),
+  port: z.number(),
+  startOnLaunch: z.boolean(),
+  /** Start-on-launch is set by the daemon's environment or command line. */
+  startOnLaunchPinned: z.boolean(),
+  interfaces: z.array(DaemonWebUiInterfaceSchema),
+  /** Why the last start failed, if it did. */
+  lastError: z.string().nullable(),
+});
+export type DaemonWebUiStatus = z.infer<typeof DaemonWebUiStatusSchema>;
+
+const DaemonWebUiStatusPayloadSchema = DaemonWebUiStatusSchema.extend({
+  requestId: z.string(),
+  error: z.string().nullable(),
+});
+
+export const DaemonWebUiGetStatusResponseSchema = z.object({
+  type: z.literal("daemon.web_ui.get_status.response"),
+  payload: DaemonWebUiStatusPayloadSchema,
+});
+export type DaemonWebUiGetStatusResponse = z.infer<typeof DaemonWebUiGetStatusResponseSchema>;
+
+// Every web client action answers with the resulting status, and the action's error if any.
+export const DaemonWebUiUpdateResponseSchema = z.object({
+  type: z.literal("daemon.web_ui.update.response"),
+  payload: DaemonWebUiStatusPayloadSchema,
+});
+export type DaemonWebUiUpdateResponse = z.infer<typeof DaemonWebUiUpdateResponseSchema>;
+
+export const DaemonWebUiStartResponseSchema = z.object({
+  type: z.literal("daemon.web_ui.start.response"),
+  payload: DaemonWebUiStatusPayloadSchema,
+});
+export type DaemonWebUiStartResponse = z.infer<typeof DaemonWebUiStartResponseSchema>;
+
+export const DaemonWebUiStopResponseSchema = z.object({
+  type: z.literal("daemon.web_ui.stop.response"),
+  payload: DaemonWebUiStatusPayloadSchema,
+});
+export type DaemonWebUiStopResponse = z.infer<typeof DaemonWebUiStopResponseSchema>;
+
+// Broadcast to every owner session while a beta channel run is in flight; not correlated.
+export const DaemonBetaChannelRunProgressMessageSchema = z.object({
+  type: z.literal("daemon.beta_channel.run.progress"),
+  payload: z.object({
+    run: DaemonBetaChannelRunSchema,
+    /** One line of installer output, when this event carries one. */
+    logLine: z.string().optional(),
+  }),
+});
+export type DaemonBetaChannelRunProgressMessage = z.infer<
+  typeof DaemonBetaChannelRunProgressMessageSchema
+>;
+
+// Final event of a beta channel run.
+export const DaemonBetaChannelRunCompletedMessageSchema = z.object({
+  type: z.literal("daemon.beta_channel.run.completed"),
+  payload: z.object({
+    runId: z.string(),
+    action: z.string(),
+    status: z.enum(["succeeded", "failed"]),
+    /** Installed beta version after an install; null after uninstall or failure. */
+    version: z.string().nullable(),
+    error: z.string().nullable(),
+    at: z.string(),
+  }),
+});
+export type DaemonBetaChannelRunCompletedMessage = z.infer<
+  typeof DaemonBetaChannelRunCompletedMessageSchema
+>;
 
 export const DiagnosticsResponseSchema = z.object({
   type: z.literal("diagnostics.response"),
@@ -7391,6 +8083,24 @@ export function parseHubExecutionOutboundMessage(value: unknown): HubExecutionOu
 export type DaemonUpdateProgressMessage = z.infer<typeof DaemonUpdateProgressMessageSchema>;
 
 export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
+  PluginsListResponseSchema,
+  PluginsReposListResponseSchema,
+  PluginsReposAddResponseSchema,
+  PluginsReposRemoveResponseSchema,
+  PluginsGetCatalogResponseSchema,
+  PluginsInstallResponseSchema,
+  PluginsUninstallResponseSchema,
+  PluginsSetEnabledResponseSchema,
+  PluginsUpdateResponseSchema,
+  PluginsDevLinkResponseSchema,
+  PluginsDevUnlinkResponseSchema,
+  PluginsDevSetEnabledResponseSchema,
+  PluginsRpcCallResponseSchema,
+  PluginsGetContributionsResponseSchema,
+  PluginsSettingsGetResponseSchema,
+  PluginsSettingsSetResponseSchema,
+  PluginsChangedMessageSchema,
+  PluginsNotifyMessageSchema,
   AuthDeviceListResponseSchema,
   AuthDeviceRenameResponseSchema,
   AuthDeviceRevokeResponseSchema,
@@ -7495,6 +8205,9 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   DaemonHostGetMetricsResponseSchema,
   DaemonStorageListResponseSchema,
   DaemonStorageCleanResponseSchema,
+  DaemonSkillsListResponseSchema,
+  DaemonSkillsSetEnabledResponseSchema,
+  DaemonSkillsGetContentResponseSchema,
   DaemonGetPairingOfferResponseSchema,
   DaemonGetSecurityPostureResponseSchema,
   DaemonSetSecurityFindingAcknowledgedResponseSchema,
@@ -7515,6 +8228,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   SetAgentFeatureResponseMessageSchema,
   AgentConfigApplyResponseMessageSchema,
   AgentProviderAccountTransferResponseMessageSchema,
+  AgentCleanCutResponseMessageSchema,
   AgentDetachResponseMessageSchema,
   AgentCancelAutoResumeResponseMessageSchema,
   AgentRewindResponseMessageSchema,
@@ -7622,6 +8336,16 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   ChatPostResponseSchema,
   ChatReadResponseSchema,
   ChatWaitResponseSchema,
+  ProjectTodoListResponseSchema,
+  ProjectTodoGetResponseSchema,
+  ProjectTodoCreateResponseSchema,
+  ProjectTodoUpdateResponseSchema,
+  ProjectTodoUpdatePlanResponseSchema,
+  ProjectTodoSetStatusResponseSchema,
+  ProjectTodoReleaseResponseSchema,
+  ProjectTodoDeleteResponseSchema,
+  ProjectTodoUnsubscribeResponseSchema,
+  ProjectTodoChangedMessageSchema,
   LoopRunResponseSchema,
   LoopListResponseSchema,
   LoopInspectResponseSchema,
@@ -7633,6 +8357,21 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   DaemonUpdateStartResponseSchema,
   DaemonUpdateGetStatusResponseSchema,
   DaemonUpdateRunProgressMessageSchema,
+  DaemonBetaChannelGetStatusResponseSchema,
+  DaemonBetaChannelInstallResponseSchema,
+  DaemonBetaChannelUninstallResponseSchema,
+  DaemonBetaChannelStartResponseSchema,
+  DaemonBetaChannelStopResponseSchema,
+  DaemonDevDaemonGetStatusResponseSchema,
+  DaemonDevDaemonStartResponseSchema,
+  DaemonDevDaemonStopResponseSchema,
+  DaemonDevDaemonRebuildResponseSchema,
+  DaemonWebUiGetStatusResponseSchema,
+  DaemonWebUiUpdateResponseSchema,
+  DaemonWebUiStartResponseSchema,
+  DaemonWebUiStopResponseSchema,
+  DaemonBetaChannelRunProgressMessageSchema,
+  DaemonBetaChannelRunCompletedMessageSchema,
 ]);
 
 export type SessionOutboundMessage = z.infer<typeof SessionOutboundMessageSchema>;
@@ -7747,6 +8486,8 @@ export type AgentConfigApplyResponseMessage = z.infer<typeof AgentConfigApplyRes
 export type AgentProviderAccountTransferResponseMessage = z.infer<
   typeof AgentProviderAccountTransferResponseMessageSchema
 >;
+export type AgentCleanCutResponseMessage = z.infer<typeof AgentCleanCutResponseMessageSchema>;
+export type AgentCleanCutSubagentResult = z.infer<typeof AgentCleanCutSubagentResultSchema>;
 export type AgentDetachResponseMessage = z.infer<typeof AgentDetachResponseMessageSchema>;
 export type AgentCancelAutoResumeResponseMessage = z.infer<
   typeof AgentCancelAutoResumeResponseMessageSchema
@@ -7791,6 +8532,9 @@ export type DaemonGetStatusResponse = z.infer<typeof DaemonGetStatusResponseSche
 export type DaemonHostGetMetricsResponse = z.infer<typeof DaemonHostGetMetricsResponseSchema>;
 export type DaemonStorageListResponse = z.infer<typeof DaemonStorageListResponseSchema>;
 export type DaemonStorageCleanResponse = z.infer<typeof DaemonStorageCleanResponseSchema>;
+export type DaemonSkillsListResponse = z.infer<typeof DaemonSkillsListResponseSchema>;
+export type DaemonSkillsSetEnabledResponse = z.infer<typeof DaemonSkillsSetEnabledResponseSchema>;
+export type DaemonSkillsGetContentResponse = z.infer<typeof DaemonSkillsGetContentResponseSchema>;
 export type DaemonGetPairingOfferResponse = z.infer<typeof DaemonGetPairingOfferResponseSchema>;
 export type DaemonGetSecurityPostureResponse = z.infer<
   typeof DaemonGetSecurityPostureResponseSchema
@@ -7995,6 +8739,7 @@ export type AgentConfigApplyRequestMessage = z.infer<typeof AgentConfigApplyRequ
 export type AgentProviderAccountTransferRequestMessage = z.infer<
   typeof AgentProviderAccountTransferRequestMessageSchema
 >;
+export type AgentCleanCutRequestMessage = z.infer<typeof AgentCleanCutRequestMessageSchema>;
 export type AgentDetachRequestMessage = z.infer<typeof AgentDetachRequestMessageSchema>;
 export type AgentCancelAutoResumeRequestMessage = z.infer<
   typeof AgentCancelAutoResumeRequestMessageSchema
@@ -8326,3 +9071,5 @@ export function parseServerInfoStatusPayload(payload: unknown): ServerInfoStatus
 }
 
 export * from "./device-access-rpc.js";
+export * from "./plugins/rpc-schemas.js";
+export * from "./todos/rpc-schemas.js";

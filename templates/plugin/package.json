@@ -1,0 +1,14 @@
+{
+  "name": "{{id}}",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/daemon.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/daemon.js",
+    "typecheck": "tsc -p ."
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.6.0"
+  }
+}

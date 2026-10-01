@@ -26,6 +26,10 @@ const palette = z.strictObject({
   accentBright: color.optional(),
 });
 const assetPath = z.string().min(1);
+const pluginPublicKey = z
+  .string()
+  .regex(/^[A-Za-z0-9+/]{43}=$/, "expected base64 ed25519 public key");
+const pluginIdGlob = z.string().regex(/^[a-z0-9.*-]+$/);
 /** Windows installer copy: `{name}` expands to the brand name. */
 const installerCopy = text.max(80);
 const installer = z.strictObject({
@@ -67,6 +71,7 @@ export const HOST_SETTINGS_SECTIONS = [
   // Retired: folded into Providers. Still accepted so existing brand.json and
   // config.json files parse; the app ignores it.
   "usage",
+  "skills",
   "terminals",
   "host",
 ] as const;
@@ -91,7 +96,7 @@ export type ReleaseChannel = (typeof RELEASE_CHANNELS)[number];
 /**
  * Identity overrides for the beta channel build. Every field is optional: by default the beta
  * build derives a separate identity from the stable one (`<id>-beta`, `<applicationId>.beta`,
- * the next port down, `~/.<id>-beta`, ...) so both install side by side on one machine, and its
+ * ports ten below stable's, `~/.<id>-beta`, ...) so both install side by side on one machine, and its
  * icons carry a "beta" badge.
  */
 const channelOverrides = z.strictObject({
@@ -99,6 +104,7 @@ const channelOverrides = z.strictObject({
   fullName: text.optional(),
   applicationId: applicationId.optional(),
   daemonPort: daemonPort.optional(),
+  webPort: daemonPort.optional(),
   cliName: slug.optional(),
   desktopBinaryName: slug.optional(),
   homeDir: z
@@ -129,6 +135,8 @@ export const BrandManifestSchema = z.strictObject({
   name: text,
   applicationId,
   daemonPort,
+  /** Port of the daemon's web client server. Default: one below `daemonPort`. */
+  webPort: daemonPort.optional(),
   fullName: text.optional(),
   description: text.optional(),
   publisher: text.optional(),
@@ -243,6 +251,38 @@ export const BrandManifestSchema = z.strictObject({
     })
     .optional(),
   mobile: z.strictObject({ enabled: z.boolean().optional() }).optional(),
+  plugins: z
+    .strictObject({
+      enabled: z.boolean().optional(),
+      // Frogg's official repository (frogg-plugins).
+      officialRepo: z.boolean().optional(),
+      repos: z
+        .array(
+          z.strictObject({
+            name: text,
+            url,
+            // base64 of the repo's raw 32-byte ed25519 public key.
+            publicKey: pluginPublicKey,
+          }),
+        )
+        .optional(),
+      allowUserRepos: z.boolean().optional(),
+      developerMode: z.enum(["allowed", "forbidden"]).optional(),
+      // Plugin id globs; `*` matches any run of characters. Deny wins.
+      allow: z.array(pluginIdGlob).optional(),
+      deny: z.array(pluginIdGlob).optional(),
+      preinstalled: z
+        .array(
+          z.strictObject({
+            id: z.string().regex(/^[a-z0-9]+(\.[a-z0-9-]+)+$/),
+            // Exact version or range (^1, ~1.2, *). Default newest.
+            version: z.string().min(1).optional(),
+          }),
+        )
+        .optional(),
+      autoUpdate: z.enum(["off", "brand-repos", "all"]).optional(),
+    })
+    .optional(),
   channels: z.strictObject({ beta: channelOverrides.optional() }).optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
@@ -299,6 +339,7 @@ export function resolveBrandManifest(input: unknown, options: ResolveBrandOption
     // which stops printing a pairing QR nobody could scan; nothing else in the
     // daemon or the apps reads it.
     mobile: { enabled: manifest.mobile?.enabled ?? true },
+    plugins: resolvePlugins(manifest),
     channel,
     /** Built from the upstream frogg brand, whichever channel. Selects frogg's own theme. */
     stockFrogg: stock,
@@ -321,8 +362,11 @@ function channelSummary(manifest: BrandManifest) {
     cliName: identity.cliName,
     scheme: identity.scheme,
     daemonPort: identity.daemonPort,
+    webPort: identity.webPort,
     homeDir: identity.homeDir,
     serviceName: identity.serviceName,
+    /** Desktop installer file prefix, so a build can find its sibling's release assets. */
+    artifactPrefix: identity.artifactPrefix,
   };
 }
 
@@ -341,13 +385,16 @@ function betaManifest(base: BrandManifest): BrandManifest {
   const stable = resolveIdentity(base);
   const id = `${base.id}-beta`;
   const appId = overrides.applicationId ?? `${base.applicationId}.beta`;
+  const betaDaemonPort =
+    overrides.daemonPort ?? (base.daemonPort > 1035 ? base.daemonPort - 10 : base.daemonPort + 10);
   const derived = {
     ...base,
     id,
     name: overrides.name ?? betaName(base.name),
     fullName: overrides.fullName ?? (base.fullName ? betaName(base.fullName) : undefined),
     applicationId: appId,
-    daemonPort: overrides.daemonPort ?? (base.daemonPort > 1024 ? base.daemonPort - 1 : 1025),
+    daemonPort: betaDaemonPort,
+    webPort: overrides.webPort ?? betaDaemonPort - 1,
     cliName: overrides.cliName ?? `${stable.cliName}-beta`,
     desktopBinaryName: overrides.desktopBinaryName ?? `${stable.desktopBinaryName}-beta`,
     homeDir: overrides.homeDir ?? `${stable.homeDir}-beta`,
@@ -371,6 +418,17 @@ function betaManifest(base: BrandManifest): BrandManifest {
   }
   if (parsed.data.daemonPort === base.daemonPort) {
     throw new Error("channels.beta.daemonPort must differ from the stable daemonPort");
+  }
+  const ports = [
+    stable.daemonPort,
+    stable.webPort,
+    parsed.data.daemonPort,
+    resolveIdentity(parsed.data).webPort,
+  ];
+  if (new Set(ports).size !== ports.length) {
+    throw new Error(
+      `The stable and beta daemon and web ports must all differ (got ${ports.join(", ")}); set webPort / channels.beta.webPort`,
+    );
   }
   return parsed.data;
 }
@@ -548,6 +606,26 @@ function resolvePairing(manifest: BrandManifest) {
   return { autoConfirmLocal: manifest.pairing?.autoConfirmLocal ?? false };
 }
 
+/**
+ * Plugin distribution policy. Defaults: enabled, official repo on, no user repos,
+ * developer mode allowed, auto-update from brand repos. `build`-scope entries in
+ * `preinstalled` are applied by the brand build pipeline, not by the daemon.
+ */
+function resolvePlugins(manifest: BrandManifest) {
+  const p = manifest.plugins ?? {};
+  return {
+    enabled: p.enabled ?? true,
+    officialRepo: p.officialRepo ?? true,
+    repos: (p.repos ?? []).map((r) => ({ name: r.name, url: r.url, publicKey: r.publicKey })),
+    allowUserRepos: p.allowUserRepos ?? false,
+    developerMode: p.developerMode ?? ("allowed" as "allowed" | "forbidden"),
+    allow: p.allow ?? [],
+    deny: p.deny ?? [],
+    preinstalled: (p.preinstalled ?? []).map((e) => ({ id: e.id, version: e.version ?? null })),
+    autoUpdate: p.autoUpdate ?? ("brand-repos" as "off" | "brand-repos" | "all"),
+  };
+}
+
 function resolveIdentity(manifest: BrandManifest) {
   const id = manifest.id;
   const cliName = manifest.cliName ?? id;
@@ -560,6 +638,7 @@ function resolveIdentity(manifest: BrandManifest) {
     publisher: manifest.publisher ?? manifest.name,
     applicationId: manifest.applicationId,
     daemonPort: manifest.daemonPort,
+    webPort: manifest.webPort ?? (manifest.daemonPort > 1024 ? manifest.daemonPort - 1 : 1025),
     cliName,
     desktopBinaryName: manifest.desktopBinaryName ?? (id === "frogg" ? cliName : `${id}-desktop`),
     homeDir: manifest.homeDir ?? `.${id}`,

@@ -2,6 +2,7 @@
 <defs>
 <marker id="arrow-stable" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#4cc38a"/></marker>
 <marker id="arrow-beta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f5a524"/></marker>
+<marker id="arrow-dev" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#60a5fa"/></marker>
 <marker id="arrow-upstream" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker>
 <marker id="arrow-backport" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#e0a95b"/></marker>
 <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a3adab"/></marker>
@@ -30,7 +31,7 @@
 <text x="660" y="164" font-size="17.6" font-weight="400" fill="#a3adab" text-anchor="start">App</text>
 <text x="790" y="164" font-size="17.6" font-weight="400" fill="#f4f7f6" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg beta</text>
 <text x="660" y="194" font-size="17.6" font-weight="400" fill="#a3adab" text-anchor="start">Daemon</text>
-<text x="790" y="194" font-size="17.6" font-weight="400" fill="#f4f7f6" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg-beta-daemon :9998</text>
+<text x="790" y="194" font-size="17.6" font-weight="400" fill="#f4f7f6" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">frogg-beta-daemon :9989</text>
 <text x="660" y="224" font-size="17.6" font-weight="400" fill="#a3adab" text-anchor="start">Data</text>
 <text x="790" y="224" font-size="17.6" font-weight="400" fill="#f4f7f6" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">~/.frogg-beta</text>
 <text x="660" y="254" font-size="17.6" font-weight="400" fill="#a3adab" text-anchor="start">CLI</text>

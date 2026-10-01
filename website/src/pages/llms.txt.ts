@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { getCollection } from "astro:content";
 import { markdownPath, sortDocs } from "../lib/docs-markdown";
 
-/** https://llmstxt.org index of the docs. The in-app frogg-help skill reads this first. */
+/** https://llmstxt.org index of the docs. Agents read this first. */
 export const GET: APIRoute = async ({ site }) => {
   const docs = sortDocs(await getCollection("docs"));
   const base = site?.origin ?? "https://frogg.app";

@@ -64,6 +64,11 @@ concurrently. If the deps are already built and you just want the watchers:
 FROGG_SKIP_DEV_SERVER_BUILD=1 npm run dev:server
 ```
 
+### Test a feature before it ships
+
+Never cut a beta just to see a change run. `npm run dev:live` runs the branch's daemon and web
+app with real providers; see the `frogg-live-dev` skill for rungs, ports and reload behaviour.
+
 ### This VM is headless and shared
 
 - The dev scripts already bind `0.0.0.0`. Never "fix" that to `127.0.0.1` — a loopback-bound

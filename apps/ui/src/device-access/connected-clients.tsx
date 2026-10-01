@@ -22,7 +22,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Field, FormTextInput as TextInput } from "@/components/ui/form-field";
 import type { EditingTextInputHandle } from "@/components/ui/text-input";
 import { useFetchQuery } from "@/data/query";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import { useHostFeature } from "@/runtime/host-features";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";

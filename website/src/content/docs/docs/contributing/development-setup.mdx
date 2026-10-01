@@ -2,7 +2,7 @@
 title: Development setup
 description: Install dependencies, build the workspaces in order, run the dev daemon and clients, and check a change before you push.
 sidebar:
-  order: 2
+  order: 3
 ---
 
 import { Steps } from "@/components/docs";
@@ -93,6 +93,8 @@ npm run dev:app      # Expo (Metro) on port 8081, pointed at the dev daemon
   daemon watcher and Metro together in one PowerShell terminal.
 
 The dev daemon and Expo bind `0.0.0.0` so they are reachable from other machines on the LAN.
+To run any of these under a custom brand, use `npm run brand:dev`
+([run the brand locally](/docs/fork-and-rebrand/branded-development/#run-the-brand-locally)).
 
 Ports 6768 and 8081 are the defaults for the official brand. A custom brand selected with
 `FROGG_BRAND_DIR` uses its `daemonPort` and `daemonPort + 1` instead. Port 9999 is the default
@@ -110,7 +112,8 @@ npm run preview -- --keep  # keep the previous run's daemon state
 ```
 
 It prints a LAN URL (port 7800 by default, or `PREVIEW_PORT`; the daemon uses the next port).
-Edits under `apps/ui` reload in the open page. Server changes need a restart of the preview.
+Edits under `apps/ui` reload in the open page. Server changes need a restart of the preview;
+use `npm run dev:live` when you are iterating on the daemon.
 
 With the preview running, `npm run shot` captures a screen with headless Chromium in a few
 seconds and writes it to `.dev/shots/`:
@@ -125,6 +128,34 @@ npm run shot -- --help                          # every target and option
 
 Targets are `chat`, `chat2`, `settings/<section>`, `host/<section>`, or any app route. `--click`
 takes test IDs and can repeat to walk through a flow before the capture.
+
+## Test a feature end to end
+
+`npm run dev:live` runs this checkout's daemon and web app together against your real provider
+logins, so a feature can be tried before it ships as a beta:
+
+```bash
+npm run dev:live
+```
+
+- It prints a LAN URL for the web app (port 7820 by default, or `PREVIEW_PORT`) and the daemon
+  endpoint (the next port). Open the URL in any browser, or add the endpoint as a host in an
+  installed Frogg app to drive the branch's daemon from the real client.
+- Daemon state lives in `.dev/live/home` and survives restarts. Nothing is seeded.
+- Edits under `apps/ui` hot-reload. Edits under `packages/server/src` restart the daemon in a few
+  seconds, and so does rebuilding `packages/protocol` or `packages/client` (`npm run build:client`).
+- `npm run shot -- --live` and `npm run probe -- --live` target it instead of the preview.
+
+Which rung to use (the [development workflow](/docs/contributing/development-workflow/#test-locally-before-a-beta)
+shows the whole ladder):
+
+| Change touches                       | Test it with                                                   |
+| ------------------------------------ | -------------------------------------------------------------- |
+| UI layout, copy, styling             | `npm run preview`, then `npm run shot` / `npm run probe`       |
+| A feature end to end, real providers | `npm run dev:live`, open the printed URL or add it as a host   |
+| Daemon behaviour behind an app build | `npm run dev:live`, add its daemon endpoint as a host in the installed app |
+| Electron shell, native bridge        | `npm run dev:desktop` on a machine with a display              |
+| Packaging, installers, auto-update   | a beta build; nothing local covers these                       |
 
 ## Dev state
 
@@ -179,18 +210,11 @@ The repo's own `frogg.json` configures worktrees created by a Frogg daemon. See
 `scripts/dev/seed-worktree-dev-state.mjs` (copies the source checkout's `.dev/frogg-home` and
 `packages/server/.env`), `npm run build:server`, and the `@frogg/expo-two-way-audio` build.
 
-| Script          | Type    | What it runs                                                              |
-| --------------- | ------- | ------------------------------------------------------------------------- |
-| `daemon`        | service | `scripts/dev/dev-daemon.sh` on `FROGG_PORT`, skipping the deps build        |
-| `app`           | service | `scripts/dev/dev-app.sh` with Metro on `FROGG_PORT`, pointed at the `daemon` service |
-| `desktop`       | service | `./packages/desktop/scripts/dev.sh`                                       |
-| `ios-simulator` | service | `scripts/mobile/frogg-ios-simulator-service.sh` (macOS only)                |
-| `typecheck`     | script  | `npm run typecheck`                                                       |
-
-:::caution
-The `desktop` service points at `packages/desktop/scripts/dev.sh`, which does not exist in the
-repo. Use `npm run dev:desktop` instead until the entry is fixed.
-:::
+Its only script is `typecheck` (`npm run typecheck`). To try a branch with real providers, run
+`npm run dev:live` in the worktree (daemon on 9899, web app on 9898), or launch and manage it from
+the app: with [developer options](/docs/using-frogg/developer-options/) on, the dev bar at the
+top of the sidebar shows whether the development daemon and web app are running, and starts,
+stops, rebuilds and restarts them.
 
 ## Check a change
 

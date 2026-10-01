@@ -1,4 +1,5 @@
 import { brand } from "@frogg/branding";
+import { brandEnv } from "@frogg/branding/identity";
 import { Command, Option } from "commander";
 import chalk from "chalk";
 import { resolveCliVersion } from "../../../version.js";
@@ -103,7 +104,8 @@ async function runApply(options: SelfUpdateCommandOptions): Promise<number> {
     installDir,
     home: options.home,
     listen:
-      process.env.FROGG_LISTEN?.trim() || resolveLocalDaemonState({ home: options.home }).listen,
+      brandEnv(brand, process.env, "LISTEN") ||
+      resolveLocalDaemonState({ home: options.home }).listen,
     platform: process.platform,
   });
   const outcome = await applyUpdate(

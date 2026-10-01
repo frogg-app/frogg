@@ -4,7 +4,7 @@ import {
   type WorkspaceLabelDefinition,
 } from "@frogg/protocol/workspace-labels";
 import { buildWorkspaceLabelPickerRows, type WorkspaceLabelPickerRow } from "./picker-model";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 type Listener = () => void;
 

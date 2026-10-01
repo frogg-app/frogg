@@ -55,6 +55,17 @@ import {
   type ServerInfoStatusPayload,
 } from "@frogg/protocol/messages";
 import type { AuthDeviceSetRoleResponse } from "@frogg/protocol/messages";
+import type {
+  PluginCatalogEntry,
+  PluginContributionSet,
+  PluginError,
+  PluginInstalled,
+  PluginPolicy,
+  PluginRepo,
+  PluginsChangedMessage,
+  PluginsNotifyMessage,
+} from "@frogg/protocol/messages";
+import type { AgentCleanCutSubagentResult } from "@frogg/protocol/messages";
 import { validateWSOutboundMessage } from "@frogg/protocol/validation/ws-outbound";
 import type {
   CompanionNotebook,
@@ -145,6 +156,9 @@ import type {
   DaemonHostGetMetricsResponse,
   DaemonStorageCleanResponse,
   DaemonStorageListResponse,
+  DaemonSkillsListResponse,
+  DaemonSkillsSetEnabledResponse,
+  DaemonSkillsGetContentResponse,
   DaemonGetPairingOfferResponse,
   DaemonGetSecurityPostureResponse,
   DaemonSetSecurityFindingAcknowledgedResponse,
@@ -152,6 +166,13 @@ import type {
   DaemonUpdateChannel,
   DaemonUpdateCheckResponse,
   DaemonUpdateGetStatusResponse,
+  DaemonBetaChannelGetStatusResponse,
+  DaemonBetaChannelInstallResponse,
+  DaemonBetaChannelUninstallResponse,
+  DaemonBetaChannelStartResponse,
+  DaemonDevDaemonGetStatusResponse,
+  DaemonDevDaemonStartResponse,
+  DaemonWebUiGetStatusResponse,
   DaemonUpdateStartResponse,
   DiagnosticsResponse,
   AgentRewindResponseMessage,
@@ -218,6 +239,18 @@ import type {
   BrowserAutomationExecuteRequest,
   BrowserAutomationExecuteResponse,
 } from "@frogg/protocol/browser-automation/rpc-schemas";
+
+export type DaemonBetaChannelStatusPayload = DaemonBetaChannelGetStatusResponse["payload"];
+export type DaemonDevDaemonStatusPayload = DaemonDevDaemonGetStatusResponse["payload"];
+/** Web client status; every web client action answers with it and its own `error`. */
+export type DaemonWebUiStatusPayload = DaemonWebUiGetStatusResponse["payload"];
+/** Start/stop of the beta or development daemon: `error` is null on success. */
+export type DaemonControlResultPayload =
+  | DaemonBetaChannelStartResponse["payload"]
+  | DaemonDevDaemonStartResponse["payload"];
+export type DaemonBetaChannelRunStartPayload =
+  | DaemonBetaChannelInstallResponse["payload"]
+  | DaemonBetaChannelUninstallResponse["payload"];
 
 export interface Logger {
   debug(obj: object, msg?: string): void;
@@ -505,6 +538,38 @@ type CheckoutRefreshPayload = CheckoutRefreshResponse["payload"];
 type CheckoutPrCreatePayload = CheckoutPrCreateResponse["payload"];
 type CheckoutPrMergePayload = CheckoutPrMergeResponse["payload"];
 type CheckoutForgeSetAutoMergePayload = CheckoutForgeSetAutoMergeResponse["payload"];
+
+/** A plugins.* RPC that answered with `payload.error`. `code` is one of the contract codes. */
+export class PluginRequestError extends Error {
+  readonly code: string;
+  readonly capabilities: string[] | undefined;
+  constructor(error: PluginError) {
+    super(error.message);
+    this.name = "PluginRequestError";
+    this.code = error.code;
+    this.capabilities = error.capabilities;
+  }
+}
+
+function unwrapPluginPayload<T extends { requestId: string; error: PluginError | null }>(
+  payload: T,
+): Omit<T, "requestId" | "error"> {
+  if (payload.error) {
+    throw new PluginRequestError(payload.error);
+  }
+  const { requestId: _requestId, error: _error, ...rest } = payload;
+  return rest;
+}
+
+export type PluginsChangedEvent = PluginsChangedMessage["payload"];
+export type PluginsNotifyEvent = PluginsNotifyMessage["payload"];
+export type {
+  PluginCatalogEntry,
+  PluginContributionSet,
+  PluginInstalled,
+  PluginPolicy,
+  PluginRepo,
+};
 export type CheckoutCiListRunsPayload = CheckoutCiListRunsResponse["payload"];
 export type CheckoutStreamsGetGraphPayload = CheckoutStreamsGetGraphResponse["payload"];
 type CheckoutGithubSetAutoMergePayload = CheckoutGithubSetAutoMergeResponse["payload"];
@@ -579,6 +644,9 @@ type ProviderAccountSetPreferencesPayload = ProviderAccountSetPreferencesRespons
 type DaemonStatusPayload = DaemonGetStatusResponse["payload"];
 type DaemonHostMetricsPayload = DaemonHostGetMetricsResponse["payload"];
 type DaemonStorageListPayload = DaemonStorageListResponse["payload"];
+type DaemonSkillsListPayload = DaemonSkillsListResponse["payload"];
+type DaemonSkillsSetEnabledPayload = DaemonSkillsSetEnabledResponse["payload"];
+type DaemonSkillsGetContentPayload = DaemonSkillsGetContentResponse["payload"];
 type DaemonStorageCleanPayload = DaemonStorageCleanResponse["payload"];
 type DaemonPairingOfferPayload = DaemonGetPairingOfferResponse["payload"];
 type DaemonSecurityPosturePayload = DaemonGetSecurityPostureResponse["payload"];
@@ -793,6 +861,33 @@ export type WorkspaceLabelDeleteInspectPayload = Extract<
   SessionOutboundMessage,
   { type: "workspace.label.delete.inspect.response" }
 >["payload"];
+type ProjectTodoOperation =
+  | "list"
+  | "get"
+  | "create"
+  | "update"
+  | "update_plan"
+  | "set_status"
+  | "release"
+  | "delete"
+  | "unsubscribe";
+type ProjectTodoRequest<T extends `project.todo.${string}.request`> = Omit<
+  Extract<SessionInboundMessage, { type: T }>,
+  "type" | "requestId"
+> & { requestId?: string };
+type ProjectTodoResponsePayload<T extends `project.todo.${string}.response`> = Extract<
+  SessionOutboundMessage,
+  { type: T }
+>["payload"];
+export type ProjectTodoListPayload = ProjectTodoResponsePayload<"project.todo.list.response">;
+export type ProjectTodoItemPayload = ProjectTodoResponsePayload<"project.todo.get.response">;
+export type ProjectTodoDeletePayload = ProjectTodoResponsePayload<"project.todo.delete.response">;
+export type ProjectTodoUnsubscribePayload =
+  ProjectTodoResponsePayload<"project.todo.unsubscribe.response">;
+export type ProjectTodoChangedPayload = Extract<
+  SessionOutboundMessage,
+  { type: "project.todo.changed" }
+>["payload"];
 export type ProjectListPayload = Extract<
   SessionOutboundMessage,
   { type: "project.list.response" }
@@ -952,6 +1047,10 @@ const DEFAULT_RECONNECT_BASE_DELAY_MS = 1500;
 const DEFAULT_RECONNECT_MAX_DELAY_MS = 30000;
 const DEFAULT_SESSION_RPC_TIMEOUT_MS = 60_000;
 const PUSH_TOKEN_REVOCATION_TIMEOUT_MS = 2_000;
+/** A clean cut waits for a model to write the summary before it answers. */
+const CLEAN_CUT_TIMEOUT_MS = 5 * 60_000;
+/** Beta CLI start/stop can take up to a minute on the daemon side. */
+const DAEMON_CONTROL_TIMEOUT_MS = 90_000;
 // Synthesis may still be running when the app asks; the daemon waits up to 30s for it.
 const NOTIFICATION_AUDIO_TIMEOUT_MS = 45_000;
 const DEFAULT_CONNECT_TIMEOUT_MS = 15_000;
@@ -1120,7 +1219,10 @@ export class DaemonClient {
   private connectReject: ((error: Error) => void) | null = null;
   private lastErrorValue: string | null = null;
   /** Paired with the exact `lastErrorValue` it describes; stale once that changes. */
-  private lastErrorInfoValue: { message: string; info: DaemonClientErrorInfo } | null = null;
+  private lastErrorInfoValue: {
+    message: string;
+    info: DaemonClientErrorInfo;
+  } | null = null;
   private connectionState: ConnectionState = { status: "idle" };
   private checkoutDiffSubscriptions = new Map<
     string,
@@ -2298,6 +2400,74 @@ export class DaemonClient {
     });
   }
 
+  // Project to-dos. Gate callers on `serverInfo.features.projectTodos`.
+  private sendProjectTodoRequest<TOp extends ProjectTodoOperation>(
+    op: TOp,
+    options: ProjectTodoRequest<`project.todo.${TOp}.request`>,
+  ): Promise<CorrelatedResponsePayload<`project.todo.${TOp}.response` & CorrelatedResponseType>> {
+    const { requestId, ...fields } = options;
+    return this.sendNamespacedCorrelatedSessionRequest<
+      `project.todo.${TOp}.response` & CorrelatedResponseType
+    >({
+      requestId,
+      message: { ...(fields as Record<string, unknown>), type: `project.todo.${op}.request` },
+    });
+  }
+
+  listProjectTodos(
+    options: ProjectTodoRequest<"project.todo.list.request">,
+  ): Promise<ProjectTodoListPayload> {
+    return this.sendProjectTodoRequest("list", options);
+  }
+
+  getProjectTodo(
+    options: ProjectTodoRequest<"project.todo.get.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("get", options);
+  }
+
+  createProjectTodo(
+    options: ProjectTodoRequest<"project.todo.create.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("create", options);
+  }
+
+  updateProjectTodo(
+    options: ProjectTodoRequest<"project.todo.update.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("update", options);
+  }
+
+  updateProjectTodoPlan(
+    options: ProjectTodoRequest<"project.todo.update_plan.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("update_plan", options);
+  }
+
+  setProjectTodoStatus(
+    options: ProjectTodoRequest<"project.todo.set_status.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("set_status", options);
+  }
+
+  releaseProjectTodo(
+    options: ProjectTodoRequest<"project.todo.release.request">,
+  ): Promise<ProjectTodoItemPayload> {
+    return this.sendProjectTodoRequest("release", options);
+  }
+
+  deleteProjectTodo(
+    options: ProjectTodoRequest<"project.todo.delete.request">,
+  ): Promise<ProjectTodoDeletePayload> {
+    return this.sendProjectTodoRequest("delete", options);
+  }
+
+  unsubscribeProjectTodos(
+    options: ProjectTodoRequest<"project.todo.unsubscribe.request">,
+  ): Promise<ProjectTodoUnsubscribePayload> {
+    return this.sendProjectTodoRequest("unsubscribe", options);
+  }
+
   inspectWorkspaceLabelDelete(options: {
     name: string;
     requestId?: string;
@@ -2350,7 +2520,11 @@ export class DaemonClient {
     const requestId = crypto.randomUUID();
     return this.sendNamespacedCorrelatedSessionRequest<"project.import.prepare.response">({
       requestId,
-      message: { type: "project.import.prepare.request", requestId, ...input },
+      message: {
+        type: "project.import.prepare.request",
+        requestId,
+        ...input,
+      },
       timeout: 120_000,
     });
   }
@@ -2375,7 +2549,11 @@ export class DaemonClient {
     const requestId = crypto.randomUUID();
     return this.sendNamespacedCorrelatedSessionRequest<"project.import.preview.response">({
       requestId,
-      message: { type: "project.import.preview.request", requestId, importId },
+      message: {
+        type: "project.import.preview.request",
+        requestId,
+        importId,
+      },
       timeout: 120_000,
     });
   }
@@ -2384,7 +2562,12 @@ export class DaemonClient {
     const requestId = crypto.randomUUID();
     return this.sendNamespacedCorrelatedSessionRequest<"project.import.commit.response">({
       requestId,
-      message: { type: "project.import.commit.request", requestId, importId, sessionIds },
+      message: {
+        type: "project.import.commit.request",
+        requestId,
+        importId,
+        sessionIds,
+      },
       timeout: 120_000,
     });
   }
@@ -2411,7 +2594,13 @@ export class DaemonClient {
     const requestId = crypto.randomUUID();
     return this.sendNamespacedCorrelatedSessionRequest<"project.import.read.response">({
       requestId,
-      message: { type: "project.import.read.request", requestId, projectId, id, offset },
+      message: {
+        type: "project.import.read.request",
+        requestId,
+        projectId,
+        id,
+        offset,
+      },
       timeout: 120_000,
     });
   }
@@ -3529,6 +3718,53 @@ export class DaemonClient {
     return payload.notice ?? null;
   }
 
+  /**
+   * COMPAT(agentCleanCut): added in v1.6.2, remove after 2027-09-27.
+   *
+   * Ends the agent's provider conversation and starts a fresh one primed with a
+   * cheap summary of it. Omitted target fields keep the agent's current value,
+   * so the same call is a same-account cut, an account move or a provider
+   * switch. Waits for the summary, hence the long timeout. Gated on
+   * `server_info.features.agentCleanCut`.
+   */
+  async cleanCutAgent(
+    agentId: string,
+    target: {
+      provider?: string;
+      providerAccountId?: string | null;
+      model?: string | null;
+      thinkingOptionId?: string | null;
+    } = {},
+  ): Promise<{ subagents: AgentCleanCutSubagentResult[] }> {
+    const requestId = this.createRequestId();
+    const message = SessionInboundMessageSchema.parse({
+      type: "agent.clean_cut.request",
+      agentId,
+      ...target,
+      requestId,
+    });
+    const payload = await this.sendRequest({
+      requestId,
+      message,
+      timeout: CLEAN_CUT_TIMEOUT_MS,
+      options: { skipQueue: true },
+      select: (msg) => {
+        if (msg.type !== "agent.clean_cut.response") {
+          return null;
+        }
+        if (msg.payload.requestId !== requestId) {
+          return null;
+        }
+        return msg.payload;
+      },
+    });
+    if (!payload.accepted) {
+      throw new Error(payload.error ?? "cleanCutAgent rejected");
+    }
+    // COMPAT(agentCleanCutSubagents): older daemons omit the list.
+    return { subagents: payload.subagents ?? [] };
+  }
+
   async restartServer(reason?: string, requestId?: string): Promise<RestartRequestedStatusPayload> {
     const resolvedRequestId = this.createRequestId(requestId);
     const message = SessionInboundMessageSchema.parse({
@@ -4335,6 +4571,213 @@ export class DaemonClient {
       // A fetch of origin and upstream can take a while on a slow link.
       timeout: 120_000,
     });
+  }
+
+  // ============================================================================
+  // Plugins (gated on server_info.features.plugins; callers check supportsPlugins())
+  // Every method throws PluginRequestError when the daemon answers with an error.
+  // ============================================================================
+
+  supportsPlugins(): boolean {
+    return this.lastServerInfoMessage?.features?.plugins === true;
+  }
+
+  async pluginsList(): Promise<{
+    plugins: PluginInstalled[];
+    policy: PluginPolicy;
+  }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.list.response">({
+        message: { type: "plugins.list.request" },
+      }),
+    );
+  }
+
+  async pluginsReposList(): Promise<{ repos: PluginRepo[] }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.repos.list.response">({
+        message: { type: "plugins.repos.list.request" },
+      }),
+    );
+  }
+
+  async pluginsReposAdd(input: {
+    url: string;
+    publicKey?: string;
+    name?: string;
+  }): Promise<{ repo: PluginRepo | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.repos.add.response">({
+        message: {
+          type: "plugins.repos.add.request",
+          url: input.url,
+          ...(input.publicKey ? { publicKey: input.publicKey } : {}),
+          ...(input.name ? { name: input.name } : {}),
+        },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsReposRemove(url: string): Promise<{ success: boolean }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.repos.remove.response">({
+        message: { type: "plugins.repos.remove.request", url },
+      }),
+    );
+  }
+
+  async pluginsGetCatalog(
+    options: { refresh?: boolean } = {},
+  ): Promise<{ plugins: PluginCatalogEntry[]; repos: PluginRepo[] }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.get_catalog.response">({
+        message: {
+          type: "plugins.get_catalog.request",
+          ...(options.refresh ? { refresh: true } : {}),
+        },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsInstall(input: {
+    id: string;
+    version?: string;
+    repoUrl: string;
+    grantedCapabilities: string[];
+  }): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.install.response">({
+        message: {
+          type: "plugins.install.request",
+          id: input.id,
+          repoUrl: input.repoUrl,
+          grantedCapabilities: input.grantedCapabilities,
+          ...(input.version ? { version: input.version } : {}),
+        },
+        timeout: 120_000,
+      }),
+    );
+  }
+
+  async pluginsUninstall(id: string): Promise<{ success: boolean }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.uninstall.response">({
+        message: { type: "plugins.uninstall.request", id },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsSetEnabled(
+    id: string,
+    enabled: boolean,
+  ): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.set_enabled.response">({
+        message: { type: "plugins.set_enabled.request", id, enabled },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsUpdate(input: {
+    id: string;
+    version?: string;
+    grantedCapabilities?: string[];
+  }): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.update.response">({
+        message: {
+          type: "plugins.update.request",
+          id: input.id,
+          ...(input.version ? { version: input.version } : {}),
+          ...(input.grantedCapabilities ? { grantedCapabilities: input.grantedCapabilities } : {}),
+        },
+        timeout: 120_000,
+      }),
+    );
+  }
+
+  async pluginsDevLink(path: string): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.dev.link.response">({
+        message: { type: "plugins.dev.link.request", path },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsDevUnlink(id: string): Promise<{ success: boolean }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.dev.unlink.response">({
+        message: { type: "plugins.dev.unlink.request", id },
+      }),
+    );
+  }
+
+  async pluginsDevSetEnabled(enabled: boolean): Promise<{ policy: PluginPolicy }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.dev.set_enabled.response">({
+        message: { type: "plugins.dev.set_enabled.request", enabled },
+      }),
+    );
+  }
+
+  async pluginsRpcCall(input: {
+    pluginId: string;
+    method: string;
+    params?: unknown;
+  }): Promise<{ result?: unknown }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.rpc.call.response">({
+        message: {
+          type: "plugins.rpc.call.request",
+          pluginId: input.pluginId,
+          method: input.method,
+          ...(input.params === undefined ? {} : { params: input.params }),
+        },
+        timeout: 60_000,
+      }),
+    );
+  }
+
+  async pluginsGetContributions(): Promise<{
+    contributions: PluginContributionSet[];
+  }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.get_contributions.response">({
+        message: { type: "plugins.get_contributions.request" },
+      }),
+    );
+  }
+
+  async pluginsSettingsGet(id: string) {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.settings.get.response">({
+        message: { type: "plugins.settings.get.request", id },
+      }),
+    );
+  }
+
+  async pluginsSettingsSet(
+    id: string,
+    values: Record<string, unknown>,
+  ): Promise<{ success: boolean }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.settings.set.response">({
+        message: { type: "plugins.settings.set.request", id, values },
+      }),
+    );
+  }
+
+  onPluginsChanged(handler: (event: PluginsChangedEvent) => void): () => void {
+    return this.on("plugins.changed", (message) => handler(message.payload));
+  }
+
+  onPluginsNotify(handler: (event: PluginsNotifyEvent) => void): () => void {
+    return this.on("plugins.notify", (message) => handler(message.payload));
   }
 
   async checkoutForgeSetAutoMerge(
@@ -5163,6 +5606,141 @@ export class DaemonClient {
     });
   }
 
+  /** Side-by-side beta daemon on this host: installed/running state and the newest beta release. */
+  async getBetaChannelStatus(requestId?: string): Promise<DaemonBetaChannelStatusPayload> {
+    this.requireBetaChannelManagementSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.get_status.response">({
+      requestId,
+      message: { type: "daemon.beta_channel.get_status.request" },
+      timeout: 60_000,
+    });
+  }
+
+  /**
+   * Installs or updates the beta daemon (newest beta, or `version`). Returns once the run
+   * is accepted; follow `daemon.beta_channel.run.progress` and `.run.completed`.
+   */
+  async installBetaChannel(
+    options: { version?: string; requestId?: string } = {},
+  ): Promise<DaemonBetaChannelRunStartPayload> {
+    this.requireBetaChannelManagementSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.install.response">({
+      requestId: options.requestId,
+      message: {
+        type: "daemon.beta_channel.install.request",
+        ...(options.version ? { version: options.version } : {}),
+      },
+    });
+  }
+
+  /** Removes the beta daemon; `purge` also deletes its state directory. */
+  async uninstallBetaChannel(
+    options: { purge?: boolean; requestId?: string } = {},
+  ): Promise<DaemonBetaChannelRunStartPayload> {
+    this.requireBetaChannelManagementSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.uninstall.response">({
+      requestId: options.requestId,
+      message: {
+        type: "daemon.beta_channel.uninstall.request",
+        ...(options.purge ? { purge: true } : {}),
+      },
+    });
+  }
+
+  async startBetaChannel(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.start.response">({
+      requestId,
+      message: { type: "daemon.beta_channel.start.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async stopBetaChannel(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.stop.response">({
+      requestId,
+      message: { type: "daemon.beta_channel.stop.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async getDevDaemonStatus(requestId?: string): Promise<DaemonDevDaemonStatusPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.get_status.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.get_status.request" },
+    });
+  }
+
+  async startDevDaemon(cwd: string, requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.start.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.start.request", cwd },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  /** "daemon": build protocol and client, then restart the daemon. "web": restart the web app. */
+  async rebuildDevDaemon(
+    target: "daemon" | "web",
+    requestId?: string,
+  ): Promise<DaemonControlResultPayload> {
+    // COMPAT(devDaemonRebuild): added in v1.6.7, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.devDaemonRebuild !== true) {
+      throw new Error("Update the host to rebuild the development daemon from the app.");
+    }
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.rebuild.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.rebuild.request", target },
+    });
+  }
+
+  async stopDevDaemon(requestId?: string): Promise<DaemonControlResultPayload> {
+    this.requireDaemonChannelControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.stop.response">({
+      requestId,
+      message: { type: "daemon.dev_daemon.stop.request" },
+      timeout: DAEMON_CONTROL_TIMEOUT_MS,
+    });
+  }
+
+  async getWebUiStatus(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.get_status.response">({
+      requestId,
+      message: { type: "daemon.web_ui.get_status.request" },
+    });
+  }
+
+  async updateWebUi(
+    input: { startOnLaunch?: boolean; host?: string },
+    requestId?: string,
+  ): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.update.response">({
+      requestId,
+      message: { type: "daemon.web_ui.update.request", ...input },
+    });
+  }
+
+  async startWebUi(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.start.response">({
+      requestId,
+      message: { type: "daemon.web_ui.start.request" },
+    });
+  }
+
+  async stopWebUi(requestId?: string): Promise<DaemonWebUiStatusPayload> {
+    this.requireWebUiControlSupport();
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.web_ui.stop.response">({
+      requestId,
+      message: { type: "daemon.web_ui.stop.request" },
+    });
+  }
+
   async connectHub(
     hubUrl: string,
     token: string,
@@ -5249,7 +5827,10 @@ export class DaemonClient {
     return this.sendNamespacedCorrelatedSessionRequest<"daemon.set_security_finding_acknowledged.response">(
       {
         requestId,
-        message: { type: "daemon.set_security_finding_acknowledged.request", ...input },
+        message: {
+          type: "daemon.set_security_finding_acknowledged.request",
+          ...input,
+        },
       },
     );
   }
@@ -5280,7 +5861,8 @@ export class DaemonClient {
         type: "daemon.storage.list.request",
         ...(options?.refresh ? { refresh: true } : {}),
       },
-      timeout: options?.timeout ?? 60_000,
+      // Sizing every worktree of every known repository is disk-bound.
+      timeout: options?.timeout ?? 300_000,
     });
   }
 
@@ -5292,7 +5874,46 @@ export class DaemonClient {
     return this.sendNamespacedCorrelatedSessionRequest<"daemon.storage.clean.response">({
       requestId: options?.requestId,
       message: { type: "daemon.storage.clean.request", categoryId },
-      timeout: options?.timeout ?? 120_000,
+      timeout: options?.timeout ?? 600_000,
+    });
+  }
+
+  // --- skills (features.skillsManagement) ----------------------------------
+
+  /** Every skill the host's agents can see, with whether it is switched on. */
+  async listSkills(options?: {
+    requestId?: string;
+    timeout?: number;
+  }): Promise<DaemonSkillsListPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.skills.list.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.skills.list.request" },
+      timeout: options?.timeout ?? 30_000,
+    });
+  }
+
+  /** Switch a skill on or off for agents started from now on (owner: daemon.manage). */
+  async setSkillEnabled(
+    skillId: string,
+    enabled: boolean,
+    options?: { requestId?: string; timeout?: number },
+  ): Promise<DaemonSkillsSetEnabledPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.skills.set_enabled.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.skills.set_enabled.request", skillId, enabled },
+      timeout: options?.timeout ?? 30_000,
+    });
+  }
+
+  /** The full SKILL.md text of one listed skill. */
+  async getSkillContent(
+    skillId: string,
+    options?: { requestId?: string; timeout?: number },
+  ): Promise<DaemonSkillsGetContentPayload> {
+    return this.sendNamespacedCorrelatedSessionRequest<"daemon.skills.get_content.response">({
+      requestId: options?.requestId,
+      message: { type: "daemon.skills.get_content.request", skillId },
+      timeout: options?.timeout ?? 30_000,
     });
   }
 
@@ -5399,7 +6020,11 @@ export class DaemonClient {
   // --- presence (features.sessionPresence) ----------------------------------
 
   async reportPresence(
-    input: { target: PresenceTarget; state: PresenceReportState; deviceName?: string },
+    input: {
+      target: PresenceTarget;
+      state: PresenceReportState;
+      deviceName?: string;
+    },
     requestId?: string,
   ): Promise<PresenceReportPayload> {
     return this.sendNamespacedCorrelatedSessionRequest<"presence.report.response">({
@@ -6211,6 +6836,27 @@ export class DaemonClient {
     // COMPAT(hubRelationship): added in v0.1.X, drop the gate when floor >= v0.1.X.
     if (this.lastServerInfoMessage?.features?.hubRelationship !== true) {
       throw new Error("Update the host to use Hub relationship management.");
+    }
+  }
+
+  private requireBetaChannelManagementSupport(): void {
+    // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
+    if (this.lastServerInfoMessage?.features?.betaChannelManagement !== true) {
+      throw new Error("Update the host to manage the beta daemon from the app.");
+    }
+  }
+
+  private requireWebUiControlSupport(): void {
+    // COMPAT(webUiControl): added in v1.6.7, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.webUiControl !== true) {
+      throw new Error("Update the host to manage its web client from the app.");
+    }
+  }
+
+  private requireDaemonChannelControlSupport(): void {
+    // COMPAT(daemonChannelControl): added in v1.6.7, remove gate after 2027-09-29.
+    if (this.lastServerInfoMessage?.features?.daemonChannelControl !== true) {
+      throw new Error("Update the host to start and stop the beta and development daemons.");
     }
   }
 

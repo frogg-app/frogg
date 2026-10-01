@@ -28,7 +28,15 @@ export interface UsageLimitAutoResumeOptions {
     "subscribe" | "getAgent" | "setAgentAutoResume" | "getLastAssistantMessage"
   >;
   isEnabled: () => boolean;
-  resume: (agentId: string, prompt: string) => Promise<void>;
+  /**
+   * `limitDetectedAt` is when the refused turn was seen: the latest the
+   * provider can have last served this conversation, so its prompt cache age.
+   */
+  resume: (
+    agentId: string,
+    prompt: string,
+    context: { limitDetectedAt: Date | null },
+  ) => Promise<void>;
   logger: Logger;
   now?: () => Date;
   timers?: Timers;
@@ -91,6 +99,23 @@ export function setupUsageLimitAutoResume(
   function schedule(agentId: string, signal: UsageLimitSignal): void {
     const agent = options.agentManager.getAgent(agentId);
     if (!agent || agent.internal || agent.lifecycle === "closed") return;
+    // Claude sends the reset time once, on its rate-limit event; a turn refused
+    // straight after (a background task finishing) carries only the notice.
+    // That is the same limit, not new information: keep the known reset
+    // rather than replacing it with the unknown-reset guess.
+    const queued = agent.autoResume;
+    if (
+      !signal.resetsAt &&
+      pending.has(agentId) &&
+      queued?.resetsAt &&
+      queued.resetsAt.getTime() > now().getTime()
+    ) {
+      log.info(
+        { agentId, resumeAt: queued.resumeAt.toISOString() },
+        "Usage limit repeated without a reset time; keeping the queued resume",
+      );
+      return;
+    }
     const count = (attempts.get(agentId) ?? 0) + 1;
     if (count > AUTO_RESUME_MAX_ATTEMPTS) {
       log.warn({ agentId }, "Usage limit persisted across auto-resumes; giving up");
@@ -120,10 +145,11 @@ export function setupUsageLimitAutoResume(
   function fire(agentId: string): void {
     pending.delete(agentId);
     const agent = options.agentManager.getAgent(agentId);
+    const limitDetectedAt = agent?.autoResume?.detectedAt ?? null;
     options.agentManager.setAgentAutoResume(agentId, null);
     if (!agent || agent.lifecycle === "closed" || agent.lifecycle === "running") return;
     if (!options.isEnabled()) return;
-    options.resume(agentId, AUTO_RESUME_PROMPT).catch((error: unknown) => {
+    options.resume(agentId, AUTO_RESUME_PROMPT, { limitDetectedAt }).catch((error: unknown) => {
       log.warn({ err: error, agentId }, "Auto-resume prompt failed");
     });
   }
@@ -132,7 +158,17 @@ export function setupUsageLimitAutoResume(
     agentId: string,
     event: Extract<AgentStreamEvent, { type: "turn_completed" | "turn_failed" }>,
   ): Promise<UsageLimitSignal | null> {
-    if (event.usageLimit) return event.usageLimit;
+    if (event.usageLimit?.resetsAt) return event.usageLimit;
+    // A structured signal without a reset time still leaves the notice text to read one from.
+    const fromText = await detectFromText(agentId, event);
+    if (fromText?.resetsAt) return fromText;
+    return event.usageLimit ?? fromText;
+  }
+
+  async function detectFromText(
+    agentId: string,
+    event: Extract<AgentStreamEvent, { type: "turn_completed" | "turn_failed" }>,
+  ): Promise<UsageLimitSignal | null> {
     if (event.type === "turn_failed") {
       return (
         detectUsageLimitFromText(event.error, now()) ??

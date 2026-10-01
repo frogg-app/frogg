@@ -11,6 +11,7 @@ import {
   findDaemonConflictGroups,
   type DaemonConflictGroup,
 } from "./daemon-conflicts";
+import { confirmDialog } from "@/utils/confirm-dialog";
 import { useDaemonVersions } from "./use-daemon-versions";
 
 /**
@@ -92,32 +93,29 @@ function DaemonRow({
     return preferred ? describeConnectionEndpoint(preferred) : profile.serverId;
   }, [profile]);
 
-  const handleShutdown = useCallback(() => {
+  const handleShutdown = useCallback(async () => {
     if (!client) return;
-    RNAlert.alert(
-      t("settings.host.daemonConflict.shutdownTitle"),
-      t("settings.host.daemonConflict.shutdownMessage", { name: profile.label }),
-      [
-        { text: t("common.cancel"), style: "cancel" },
-        {
-          text: t("settings.host.daemonConflict.shutdownConfirm"),
-          style: "destructive",
-          onPress: () => {
-            setIsShuttingDown(true);
-            void client
-              .shutdownServer()
-              .catch((error: unknown) => {
-                console.error("[DaemonConflict] Failed to shut down daemon", error);
-                RNAlert.alert(
-                  t("settings.host.daemonConflict.shutdownFailedTitle"),
-                  t("settings.host.daemonConflict.shutdownFailedMessage"),
-                );
-              })
-              .finally(() => setIsShuttingDown(false));
-          },
-        },
-      ],
-    );
+    // RN's Alert.alert is a no-op on web and desktop; confirmDialog renders everywhere.
+    const confirmed = await confirmDialog({
+      title: t("settings.host.daemonConflict.shutdownTitle"),
+      message: t("settings.host.daemonConflict.shutdownMessage", { name: profile.label }),
+      confirmLabel: t("settings.host.daemonConflict.shutdownConfirm"),
+      cancelLabel: t("common.actions.cancel"),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setIsShuttingDown(true);
+    try {
+      await client.shutdownServer();
+    } catch (error) {
+      console.error("[DaemonConflict] Failed to shut down daemon", error);
+      RNAlert.alert(
+        t("settings.host.daemonConflict.shutdownFailedTitle"),
+        t("settings.host.daemonConflict.shutdownFailedMessage"),
+      );
+    } finally {
+      setIsShuttingDown(false);
+    }
   }, [client, profile.label, t]);
 
   return (

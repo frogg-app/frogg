@@ -6,6 +6,12 @@ import {
   type AppReleaseChannel,
   type AppUpdateCheckIntent,
 } from "./app-update-rollout.js";
+import { isUpdateRateLimitError, UPDATE_RATE_LIMITED_MESSAGE } from "./app-update-config.js";
+
+// GitHub's secondary rate limit asks for a few minutes, "in some cases up to an
+// hour". Each further 429 doubles the pause, up to that hour.
+const RATE_LIMIT_BACKOFF_MS = 5 * 60_000;
+const RATE_LIMIT_BACKOFF_MAX_MS = 60 * 60_000;
 
 export interface AppUpdateCheckResult {
   strategy?: "disabled" | "github-release";
@@ -127,6 +133,12 @@ async function performQuitAndInstall(
   runtime.quitAndInstall(/* isSilent */ false, /* isForceRunAfter */ restart);
 }
 
+function isRateLimited(error: unknown): boolean {
+  return (
+    isUpdateRateLimitError(error) || (error instanceof Error && isUpdateRateLimitError(error.cause))
+  );
+}
+
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && typeof error.message === "string") {
     return error.message;
@@ -150,6 +162,8 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
   let preparingUpdateVersion: string | null = null;
   let checkQueue: Promise<void> = Promise.resolve();
   let lastNotifiedState: string | null = null;
+  let rateLimitedUntil = 0;
+  let rateLimitBackoffMs = 0;
 
   function isReadyToInstallVersion(version: string): boolean {
     return downloadedUpdateVersion === version;
@@ -297,10 +311,22 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
     }
 
     return runCheckExclusively(async () => {
+      // Once GitHub has answered 429, every request made before the pause ends
+      // only extends it, so answer from here instead of going to the network.
+      if (deps.now() < rateLimitedUntil) {
+        return buildCheckResult({
+          currentVersion,
+          hasUpdate: false,
+          readyToInstall: false,
+          errorMessage: UPDATE_RATE_LIMITED_MESSAGE,
+        });
+      }
+
       configureRuntime(releaseChannel, intent);
 
       try {
         const result = await deps.runtime.checkForUpdates();
+        rateLimitBackoffMs = 0;
         if (!result || !result.updateInfo) {
           clearUpdateState();
           return buildCheckResult({
@@ -356,6 +382,13 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
           readyToInstall: false,
         });
       } catch (error) {
+        if (isRateLimited(error)) {
+          rateLimitBackoffMs = Math.min(
+            rateLimitBackoffMs ? rateLimitBackoffMs * 2 : RATE_LIMIT_BACKOFF_MS,
+            RATE_LIMIT_BACKOFF_MAX_MS,
+          );
+          rateLimitedUntil = deps.now() + rateLimitBackoffMs;
+        }
         deps.reportCheckError?.(error);
         return buildCheckResult({
           currentVersion,

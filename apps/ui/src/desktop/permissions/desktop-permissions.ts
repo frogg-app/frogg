@@ -1,6 +1,6 @@
 import { type DesktopHostBridge, getDesktopHost } from "@/desktop/host";
 import { isNative, isWeb } from "@/constants/platform";
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 
 export type DesktopPermissionKind = "notifications" | "microphone";
 

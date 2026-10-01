@@ -1,4 +1,4 @@
-import { i18n } from "@/i18n/i18next";
+import { i18n } from "@/localisation/i18next";
 import type { ProviderSnapshotAccount } from "@frogg/protocol/agent-types";
 import {
   PROVIDER_ACCOUNT_DEFAULT_NAME,
