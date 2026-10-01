@@ -31,6 +31,9 @@ import { AddProjectFlowHost } from "@/components/add-project-flow-host";
 import { AppearanceStyleBoundary } from "@/components/appearance-style-boundary";
 import { WorktreeSetupCalloutSource } from "@/components/worktree-setup-callout-source";
 import { DownloadToast } from "@/components/download-toast";
+import { DesignSwitcher } from "@/design/design-switcher";
+import { DESIGN_PREVIEW_ENABLED } from "@/design/design-preview-store";
+import { DesignSlot } from "@/design/layouts/design-slot";
 import { QuittingOverlay } from "@/components/quitting-overlay";
 import { KeyboardShortcutsDialog } from "@/components/keyboard-shortcuts-dialog";
 import { CompanionHost } from "@/companion/host";
@@ -45,7 +48,14 @@ import { LeftSidebar } from "@/components/left-sidebar";
 import { WindowSidebarMenuToggle } from "@/components/headers/menu-header";
 import { DesktopWindowControls } from "@/components/desktop/window-controls";
 import { WindowTitlebarDragStrip } from "@/components/desktop/titlebar-drag-region";
+import {
+  AppFrameContent,
+  AppFrameRow,
+  appFrameSidebarOffset,
+  appSurfaceStyle,
+} from "@/components/desktop/app-frame";
 import { SidebarModelProvider } from "@/components/sidebar/sidebar-model";
+import { themeOf } from "@/styles/design-theme";
 import { WorkspacePinShortcutHandler } from "@/components/workspace-pin-shortcut-handler";
 import { WorkspaceRenameHost } from "@/components/workspace-rename-host";
 import { CompactExplorerSidebarHost } from "@/components/compact-explorer-sidebar-host";
@@ -438,8 +448,28 @@ function QueryProvider({ children }: { children: ReactNode }) {
   return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
-const rowStyle = { flex: 1, flexDirection: "row" } as const;
 const flexStyle = { flex: 1 } as const;
+const EMPTY_SLOT_PROPS = {} as const;
+
+function SidebarSlot({ active }: { active: boolean }) {
+  const props = useMemo(() => ({ active }), [active]);
+  return (
+    <DesignSlot name="sidebar" props={props}>
+      <LeftSidebar active={active} />
+    </DesignSlot>
+  );
+}
+
+/** Stacks a direction's top bar and mobile tab bar around the app's sidebar and content. */
+function DesignFrameColumn({ compact, children }: { compact: boolean; children: ReactNode }) {
+  return (
+    <View style={flexStyle}>
+      <DesignSlot name="topBar" props={EMPTY_SLOT_PROPS} />
+      {children}
+      {compact ? <DesignSlot name="mobileNav" props={EMPTY_SLOT_PROPS} /> : null}
+    </View>
+  );
+}
 const MOBILE_WEB_GESTURE_TOUCH_ACTION = isWeb ? "auto" : "pan-y";
 
 interface AppContainerProps {
@@ -540,7 +570,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
     />
   );
   const workspaceChrome = (
-    <View style={rowStyle}>
+    <AppFrameRow enabled={!isCompactLayout}>
       {!isCompactLayout ? (
         <WindowChromeRegion corners={appChromeLayout.sidebarCorners}>
           {sidebarChrome}
@@ -557,16 +587,17 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
         </CompactExplorerSidebarHost>
       ) : (
         <WindowChromeRegion corners={appChromeLayout.contentCorners}>
-          <View style={flexStyle}>{children}</View>
+          <AppFrameContent enabled={!isCompactLayout}>{children}</AppFrameContent>
         </WindowChromeRegion>
       )}
-    </View>
+      {!isCompactLayout ? <DesignSlot name="aside" props={EMPTY_SLOT_PROPS} /> : null}
+    </AppFrameRow>
   );
 
   const surface = (
-    <View style={layoutStyles.surfaceFill}>
+    <View style={isCompactLayout ? layoutStyles.surfaceFill : layoutStyles.appSurfaceFramed}>
       <WindowTitlebarDragStrip />
-      {workspaceChrome}
+      <DesignFrameColumn compact={isCompactLayout}>{workspaceChrome}</DesignFrameColumn>
       {!isCompactLayout && appChromeLayout.sidebarToggleOwner === "window" ? (
         <WindowChromeRegion corners="top-left">
           <WindowChromeSafeArea
@@ -583,6 +614,7 @@ function AppContainer({ children, chromeEnabled: chromeEnabledOverride }: AppCon
       <FloatingPanelPortalHost />
       {isCompactLayout ? sidebarChrome : null}
       <DownloadToast />
+      {DESIGN_PREVIEW_ENABLED ? <DesignSwitcher /> : null}
       <RosettaCalloutSource />
       <UpdateCalloutSource />
       <MobileUpdateCalloutSource />
@@ -634,7 +666,7 @@ function SidebarChrome({
   const active = visible && (isCompactLayout ? isMobileActive : isDesktopOpen);
   return (
     <SidebarModelProvider active={active}>
-      {mounted ? <LeftSidebar active={active} /> : null}
+      {mounted ? <SidebarSlot active={active} /> : null}
       <WorkspaceShortcutTargetsSubscriber enabled={keyboardShortcutsEnabled} />
       <CommandCenterHideActions />
     </SidebarModelProvider>
@@ -964,15 +996,18 @@ export default function RootLayout() {
   );
 }
 
-const layoutStyles = StyleSheet.create((theme) => ({
+const layoutStyles = StyleSheet.create((theme, rt) => ({
   surfaceFill: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
   },
+  // Behind a framed layout (inset/floating) the window itself is the frame colour.
+  appSurfaceFramed: { ...appSurfaceStyle(theme, themeOf(rt.themeName)) },
+  // Desktop only; follows the sidebar's brand row when a frame insets the sidebar.
   windowSidebarToggle: {
     position: "absolute",
-    top: 1,
-    left: 0,
+    top: 1 + appFrameSidebarOffset(themeOf(rt.themeName)).top,
+    left: appFrameSidebarOffset(themeOf(rt.themeName)).left,
     zIndex: 20,
     height: HEADER_INNER_HEIGHT,
     flexDirection: "row",

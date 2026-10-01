@@ -1,7 +1,10 @@
 import { useMemo } from "react";
 import { brand } from "@frogg/branding";
 import type { HostSettingsSection } from "@frogg/protocol/messages";
+import { getIsElectron, isWeb } from "@/constants/platform";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
+import { useSettings } from "@/hooks/use-settings";
+import { isBetaBuild } from "@/utils/app-version";
 import { HOST_SECTION_ITEMS, type HostSectionItem } from "@/screens/settings/section-items";
 import { isHostSectionSlug, type HostSectionSlug } from "@/utils/host-routes";
 
@@ -39,9 +42,28 @@ export function useHiddenHostSections(serverId: string | null): readonly HostSec
   return useMemo(() => resolveHiddenHostSections(daemonHiddenSections), [daemonHiddenSections]);
 }
 
+/**
+ * Pairing a device was its own section before it folded into Devices; a daemon
+ * that still hides `pair-device` hides the pairing card there instead.
+ */
+export function useHostPairingHidden(serverId: string | null): boolean {
+  const { config } = useDaemonConfig(serverId);
+  const hidden: readonly string[] =
+    config?.hostSettings?.hiddenSections ?? brand.hostSettings.hiddenSections;
+  return hidden.includes("pair-device");
+}
+
 export function useVisibleHostSectionItems(serverId: string | null): HostSectionItem[] {
   const hidden = useHiddenHostSections(serverId);
-  return useMemo(() => visibleHostSectionItems(hidden), [hidden]);
+  const developerOptions = useSettings((settings) => settings.developerOptions) || isBetaBuild();
+  return useMemo(() => {
+    const items = visibleHostSectionItems(hidden).filter(
+      (item) => developerOptions || item.id !== "developer",
+    );
+    // The browser app is served by the web client itself; a page must not be able to switch
+    // off the server that serves it, so only other clients get the section.
+    return isWeb && !getIsElectron() ? items.filter((item) => item.id !== "web-client") : items;
+  }, [developerOptions, hidden]);
 }
 
 /**

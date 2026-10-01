@@ -1,3 +1,4 @@
+import { panelKeyChrome, panelTerminalFrame, panelTheme } from "@/workspace/panel-chrome";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useRetainedPanelActive } from "@/components/retained-panel";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -1116,7 +1117,7 @@ export function TerminalPane({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     minHeight: 0,
@@ -1127,6 +1128,7 @@ const styles = StyleSheet.create((theme) => ({
     minHeight: 0,
     position: "relative",
     backgroundColor: theme.colors.background,
+    ...panelTerminalFrame(panelTheme(theme, rt.themeName)),
   },
   terminalGestureContainer: {
     flex: 1,
@@ -1156,7 +1158,7 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.sm,
   },
   keyboardContainer: {
-    borderTopWidth: 1,
+    borderTopWidth: panelTheme(theme, rt.themeName).design.borderless ? 0 : 1,
     borderTopColor: theme.colors.border,
     backgroundColor: theme.colors.surface0,
     paddingHorizontal: theme.spacing[2],
@@ -1181,6 +1183,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     paddingHorizontal: theme.spacing[1],
     backgroundColor: theme.colors.surface1,
+    ...panelKeyChrome(panelTheme(theme, rt.themeName), theme.borderRadius.md),
   },
   keyButtonHovered: {
     backgroundColor: theme.colors.surface2,

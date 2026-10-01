@@ -50,14 +50,27 @@ export function HostWebClientSection({ serverId }: { serverId: string }) {
   const isConnected = useHostRuntimeIsConnected(serverId);
   // The browser app is served by this very server; only other clients manage it.
   if (isWeb && !getIsElectron()) return null;
-  if (!supported || !isConnected) return null;
+  let body = <WebClientCard serverId={serverId} />;
+  if (!isConnected || !supported) {
+    body = (
+      <View style={settingsStyles.card}>
+        <View style={settingsStyles.row}>
+          <Text style={settingsStyles.rowHint}>
+            {isConnected
+              ? t("settings.host.webClient.needsUpdate")
+              : t("settings.host.webClient.offline")}
+          </Text>
+        </View>
+      </View>
+    );
+  }
   return (
     <SettingsSection
       title={t("settings.host.webClient.title")}
       info={t("settings.host.webClient.info")}
       testID="host-page-web-client"
     >
-      <WebClientCard serverId={serverId} />
+      {body}
     </SettingsSection>
   );
 }

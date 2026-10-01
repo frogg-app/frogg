@@ -1,9 +1,9 @@
 /**
  * COMPAT(devDaemonRebuild): added in v1.6.7.
  *
- * The development daemon at a glance, for developer options: one pill for the dev daemon and one
- * for its web app, each with a status dot (running, out of date, rebuilding, stopped) and a menu
- * to start, stop, rebuild and restart it. It talks to the first connected host that manages a
+ * The development daemon at a glance, for developer options: a "Dev" menu at the top of the main
+ * panel whose trigger carries a status dot each for the dev daemon and its web app (running, out
+ * of date, rebuilding, stopped), and whose sections start, stop, rebuild and restart them. It talks to the first connected host that manages a
  * development daemon, which is the development daemon itself when this is its web app.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -15,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -30,7 +31,7 @@ const POLL_MS = 4000;
 
 type Tone = "running" | "stale" | "busy" | "stopped";
 
-interface DevBarItem {
+interface DevMenuItem {
   id: string;
   label: string;
   description?: string;
@@ -42,7 +43,7 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function DevBar() {
+export function DevMenu() {
   const developerOptions = useSettings((settings) => settings.developerOptions) || isBetaBuild();
   const hosts = useHosts();
   const serverId = useSessionStore((state) => {
@@ -54,10 +55,10 @@ export function DevBar() {
   });
   const host = hosts.find((candidate) => candidate.serverId === serverId) ?? null;
   if (!developerOptions || !host) return null;
-  return <DevBarForHost host={host} />;
+  return <DevMenuForHost host={host} />;
 }
 
-function DevBarForHost({ host }: { host: HostProfile }) {
+function DevMenuForHost({ host }: { host: HostProfile }) {
   const { t } = useTranslation();
   const client = useHostRuntimeClient(host.serverId);
   const [status, setStatus] = useState<DaemonDevDaemonStatusPayload | null>(null);
@@ -105,9 +106,32 @@ function DevBarForHost({ host }: { host: HostProfile }) {
     [refresh],
   );
 
-  const daemonItems = useMemo<DevBarItem[]>(() => {
+  // dev:live runs the daemon and its web app together, so one block starts and stops both.
+  const lifecycleItems = useMemo<DevMenuItem[]>(() => {
+    if (!status || !client || status.isSelf) return [];
+    if (status.running) {
+      return [
+        {
+          id: "stop",
+          label: t("devBar.stop"),
+          onSelect: () => void run("daemon", () => client.stopDevDaemon()),
+        },
+      ];
+    }
+    if (status.checkouts.length === 0) {
+      return [{ id: "no-checkouts", label: t("devBar.noCheckouts"), disabled: true }];
+    }
+    return status.checkouts.map((checkout) => ({
+      id: `start-${checkout.cwd}`,
+      label: t("devBar.startIn", { name: checkout.name }),
+      description: checkout.branch ?? checkout.cwd,
+      onSelect: () => void run("daemon", () => client.startDevDaemon(checkout.cwd)),
+    }));
+  }, [client, run, status, t]);
+
+  const daemonItems = useMemo<DevMenuItem[]>(() => {
     if (!status || !client) return [];
-    const items: DevBarItem[] = [];
+    const items: DevMenuItem[] = [];
     if (status.canRebuild) {
       items.push({
         id: "rebuild-daemon",
@@ -116,30 +140,13 @@ function DevBarForHost({ host }: { host: HostProfile }) {
         onSelect: () => void run("daemon", () => client.rebuildDevDaemon("daemon")),
       });
     }
-    if (!status.isSelf && status.running) {
-      items.push({
-        id: "stop",
-        label: t("devBar.stop"),
-        onSelect: () => void run("daemon", () => client.stopDevDaemon()),
-      });
-    }
-    if (!status.isSelf && !status.running) {
-      for (const checkout of status.checkouts) {
-        items.push({
-          id: `start-${checkout.cwd}`,
-          label: t("devBar.startIn", { name: checkout.name }),
-          description: checkout.branch ?? checkout.cwd,
-          onSelect: () => void run("daemon", () => client.startDevDaemon(checkout.cwd)),
-        });
-      }
-    }
     return items;
   }, [client, run, status, t]);
 
   const webUrl = status?.webReady ? siblingDaemonWebUrl(host, status.webPort) : null;
-  const webItems = useMemo<DevBarItem[]>(() => {
+  const webItems = useMemo<DevMenuItem[]>(() => {
     if (!status || !client) return [];
-    const items: DevBarItem[] = [];
+    const items: DevMenuItem[] = [];
     if (webUrl) {
       items.push({
         id: "open-web",
@@ -177,82 +184,46 @@ function DevBarForHost({ host }: { host: HostProfile }) {
     ...(status.behindMain ? [t("devBar.behindMain", { count: status.behindMain })] : []),
   ];
 
-  return (
-    <View style={styles.bar} testID="dev-bar">
-      <DevPill
-        testID="dev-bar-daemon"
-        label={t("devBar.daemon")}
-        tone={daemonTone}
-        title={status.branch ?? status.cwd ?? t("devBar.daemon")}
-        stale={status.daemonStale ?? []}
-        notes={notes}
-        items={daemonItems}
-      />
-      <DevPill
-        testID="dev-bar-web"
-        label={t("devBar.web")}
-        tone={webTone}
-        title={t("devBar.web")}
-        stale={status.webStale ?? []}
-        notes={[]}
-        items={webItems}
-      />
-    </View>
-  );
-}
+  const daemonDotStyle = [styles.dot, dotTones[daemonTone]];
+  const webDotStyle = [styles.dot, dotTones[webTone]];
 
-function toneOf(input: { busy: boolean; running: boolean; stale: boolean }): Tone {
-  if (input.busy) return "busy";
-  if (!input.running) return "stopped";
-  return input.stale ? "stale" : "running";
-}
-
-function DevPill({
-  testID,
-  label,
-  tone,
-  title,
-  stale,
-  notes,
-  items,
-}: {
-  testID: string;
-  label: string;
-  tone: Tone;
-  title: string;
-  stale: string[];
-  notes: string[];
-  items: DevBarItem[];
-}) {
-  const { t } = useTranslation();
-  const dotStyle = useMemo(() => [styles.dot, dotTones[tone]], [tone]);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
         accessibilityRole="button"
-        accessibilityLabel={`${label}: ${t(`devBar.tone.${tone}`)}`}
-        testID={testID}
-        style={styles.pill}
+        accessibilityLabel={`${t("devBar.daemon")}: ${t(`devBar.tone.${daemonTone}`)}, ${t("devBar.web")}: ${t(`devBar.tone.${webTone}`)}`}
+        testID="dev-menu"
+        style={styles.trigger}
       >
-        <View style={dotStyle} />
-        <Text style={styles.pillText} numberOfLines={1}>
-          {label}
+        <View style={daemonDotStyle} />
+        <View style={webDotStyle} />
+        <Text style={styles.triggerText} numberOfLines={1}>
+          {t("devBar.menu")}
         </Text>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" offset={6} minWidth={240} sheetTitle={title}>
-        <DropdownMenuItem disabled description={stale.join(" · ") || undefined}>
-          {t(`devBar.tone.${tone}`)}
-        </DropdownMenuItem>
-        {notes.map((note) => (
-          <DropdownMenuItem key={note} disabled>
-            {note}
-          </DropdownMenuItem>
-        ))}
-        {items.length > 0 ? <DropdownMenuSeparator /> : null}
-        {items.map((item) => (
+      <DropdownMenuContent align="end" offset={6} minWidth={260} sheetTitle={t("devBar.menu")}>
+        <DevMenuSection
+          testID="dev-menu-daemon"
+          label={status.branch ? `${t("devBar.daemon")} · ${status.branch}` : t("devBar.daemon")}
+          tone={daemonTone}
+          stale={status.daemonStale ?? []}
+          notes={notes}
+          items={daemonItems}
+        />
+        <DropdownMenuSeparator />
+        <DevMenuSection
+          testID="dev-menu-web"
+          label={t("devBar.web")}
+          tone={webTone}
+          stale={status.webStale ?? []}
+          notes={[]}
+          items={webItems}
+        />
+        {lifecycleItems.length > 0 ? <DropdownMenuSeparator /> : null}
+        {lifecycleItems.map((item) => (
           <DropdownMenuItem
             key={item.id}
-            testID={`${testID}-${item.id}`}
+            testID={`dev-menu-${item.id}`}
             disabled={item.disabled}
             description={item.description}
             onSelect={item.onSelect}
@@ -265,15 +236,56 @@ function DevPill({
   );
 }
 
+function toneOf(input: { busy: boolean; running: boolean; stale: boolean }): Tone {
+  if (input.busy) return "busy";
+  if (!input.running) return "stopped";
+  return input.stale ? "stale" : "running";
+}
+
+function DevMenuSection({
+  testID,
+  label,
+  tone,
+  stale,
+  notes,
+  items,
+}: {
+  testID: string;
+  label: string;
+  tone: Tone;
+  stale: string[];
+  notes: string[];
+  items: DevMenuItem[];
+}) {
+  const { t } = useTranslation();
+  return (
+    <>
+      <DropdownMenuLabel testID={testID}>{label}</DropdownMenuLabel>
+      <DropdownMenuItem disabled description={stale.join(" · ") || undefined}>
+        {t(`devBar.tone.${tone}`)}
+      </DropdownMenuItem>
+      {notes.map((note) => (
+        <DropdownMenuItem key={note} disabled>
+          {note}
+        </DropdownMenuItem>
+      ))}
+      {items.map((item) => (
+        <DropdownMenuItem
+          key={item.id}
+          testID={`${testID}-${item.id}`}
+          disabled={item.disabled}
+          description={item.description}
+          onSelect={item.onSelect}
+        >
+          {item.label}
+        </DropdownMenuItem>
+      ))}
+    </>
+  );
+}
+
 const styles = StyleSheet.create((theme) => ({
-  bar: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing[2],
-    paddingHorizontal: theme.spacing[3],
-    paddingBottom: theme.spacing[2],
-  },
-  pill: {
+  trigger: {
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[1],
@@ -283,9 +295,10 @@ const styles = StyleSheet.create((theme) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
-  pillText: {
+  triggerText: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,
+    marginLeft: 2,
   },
   dot: {
     width: 6,

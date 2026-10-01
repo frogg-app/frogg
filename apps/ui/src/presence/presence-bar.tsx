@@ -11,11 +11,12 @@
  * failed — presence is chrome and must never make a chat look broken.
  */
 import React, { memo, useEffect, useRef } from "react";
+import { themeOf } from "@/styles/design-theme";
+import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { Animated, Easing, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
-import { MAX_CONTENT_WIDTH } from "@/constants/layout";
 import type { Theme } from "@/styles/theme";
 import { usePresence } from "@/presence/use-presence";
 import { presenceActivityLabelKey } from "@/presence/labels";
@@ -217,7 +218,7 @@ export const PresenceAvatar = memo(function PresenceAvatar({
 
 const AVATAR_SIZE = 20;
 
-const styles = StyleSheet.create((theme: Theme) => ({
+const styles = StyleSheet.create((theme: Theme, rt) => ({
   rail: {
     width: "100%",
     alignItems: "center",
@@ -225,7 +226,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
   },
   row: {
     width: "100%",
-    maxWidth: MAX_CONTENT_WIDTH,
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],

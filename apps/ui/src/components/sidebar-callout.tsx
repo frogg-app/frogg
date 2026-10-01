@@ -3,6 +3,7 @@ import { useCallback, useMemo, type ReactNode } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
+import { designOf } from "@/styles/design-theme";
 
 export type SidebarCalloutActionVariant = "primary" | "secondary";
 
@@ -144,16 +145,18 @@ function SidebarCalloutActionButton({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     width: "100%",
     paddingVertical: theme.spacing[3],
     paddingHorizontal: theme.spacing[4],
-    borderTopWidth: theme.borderWidth[1],
+    // Borderless design directions separate the callout by tint and spacing, not a rule.
+    borderTopWidth: designOf(rt.themeName).borderless ? 0 : theme.borderWidth[1],
     borderTopColor: theme.colors.border,
     gap: theme.spacing[2],
   },
   containerError: {
+    borderTopWidth: theme.borderWidth[1],
     borderTopColor: theme.colors.destructive,
   },
   dismissButton: {

@@ -32,7 +32,8 @@ const { runtime, theme } = vi.hoisted(() => ({
 
 vi.mock("react-native-unistyles", () => ({
   StyleSheet: {
-    create: (factory: unknown) => (typeof factory === "function" ? factory(theme) : factory),
+    create: (factory: unknown) =>
+      typeof factory === "function" ? factory(theme, { themeName: "light" }) : factory,
   },
   useUnistyles: () => ({ theme, rt: runtime }),
   withUnistyles: (component: unknown) => component,

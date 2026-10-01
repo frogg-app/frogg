@@ -1,7 +1,10 @@
 import { useMemo, type ReactNode } from "react";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
+import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet } from "react-native-unistyles";
 import { SettingsInfoTip } from "@/screens/settings/settings-info-tip";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import { settingsTreatment } from "@/styles/settings-treatment";
 
 interface SettingsGroupProps {
   title: string;
@@ -31,7 +34,9 @@ export function SettingsGroup({
     <View style={groupStyle} testID={testID}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{title}</Text>
+          <Text dataSet={DESIGN_FONT_DATASET} style={styles.title}>
+            {title}
+          </Text>
           {info ? (
             <SettingsInfoTip
               title={title}
@@ -47,7 +52,7 @@ export function SettingsGroup({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   group: {
     marginBottom: theme.spacing[8],
   },
@@ -67,5 +72,6 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foreground,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
+    ...settingsTreatment(designThemeOf(theme, rt.themeName)).groupTitle,
   },
 }));

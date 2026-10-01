@@ -11,8 +11,8 @@ import SettingsScreen from "@/screens/settings-screen";
 import { useSettingsModalStore } from "@/settings-modal/store";
 import { NoWindowDragRegion, WindowChromeRegion } from "@/utils/desktop-window";
 
-const SETTINGS_MODAL_MAX_WIDTH = 1100;
-const SETTINGS_MODAL_MAX_HEIGHT = 760;
+const SETTINGS_MODAL_MAX_WIDTH = 1200;
+const SETTINGS_MODAL_MAX_HEIGHT = 900;
 
 /**
  * Mounts once in the app container. On wide layouts it presents the settings
@@ -78,10 +78,10 @@ export function SettingsModalHost() {
 
 const styles = StyleSheet.create({
   card: {
-    width: "80%",
+    width: "85%",
     minWidth: SETTINGS_DESKTOP_SPLIT_MIN_WIDTH,
     maxWidth: SETTINGS_MODAL_MAX_WIDTH,
-    height: "80%",
+    height: "88%",
     maxHeight: SETTINGS_MODAL_MAX_HEIGHT,
     overflow: "hidden",
   },

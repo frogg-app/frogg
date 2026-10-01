@@ -43,6 +43,8 @@ interface DownloadState {
       mimeType: string | null;
       error: string | null;
     }>;
+    /** Reads the file over the session; used when the host has no HTTP route (socket, SSH, relay). */
+    readFile?: (path: string) => Promise<{ bytes: Uint8Array; mime: string }>;
   }) => Promise<void>;
 
   updateProgress: (id: string, progress: DownloadProgress) => void;
@@ -67,6 +69,7 @@ export const useDownloadStore = create<DownloadState>()((set, get) => ({
     path,
     daemonProfile,
     requestFileDownloadToken,
+    readFile,
   }) => {
     const id = generateDownloadId();
     const download: Download = {
@@ -84,14 +87,20 @@ export const useDownloadStore = create<DownloadState>()((set, get) => ({
     }));
 
     try {
+      const downloadTarget = resolveDaemonDownloadTarget(daemonProfile);
+      if (!downloadTarget.baseUrl) {
+        if (!readFile) {
+          throw new Error(i18n.t("downloads.hostUnavailable"));
+        }
+        const file = await readFile(path);
+        await saveFileBytes(file.bytes, file.mime, fileName);
+        get().completeDownload(id);
+        return;
+      }
+
       const tokenResponse = await requestFileDownloadToken(path);
       if (tokenResponse.error || !tokenResponse.token) {
         throw new Error(tokenResponse.error ?? i18n.t("downloads.requestTokenFailed"));
-      }
-
-      const downloadTarget = resolveDaemonDownloadTarget(daemonProfile);
-      if (!downloadTarget.baseUrl) {
-        throw new Error(i18n.t("downloads.hostUnavailable"));
       }
 
       const resolvedFileName = tokenResponse.fileName ?? fileName;
@@ -299,6 +308,36 @@ function buildDownloadUrl(
   return url.toString();
 }
 
+async function saveFileBytes(bytes: Uint8Array, mime: string, fileName: string): Promise<void> {
+  if (isWeb) {
+    if (typeof document === "undefined") {
+      throw new Error(i18n.t("downloads.browserUnavailable"));
+    }
+    clickBlobDownload(new Blob([bytes as BlobPart], { type: mime }), fileName);
+    return;
+  }
+  const targetFile = resolveDownloadTargetFile(fileName);
+  targetFile.write(bytes);
+  if (await Sharing.isAvailableAsync()) {
+    await Sharing.shareAsync(targetFile.uri, {
+      mimeType: mime,
+      dialogTitle: i18n.t("downloads.shareFileNamed", { fileName }),
+    });
+  }
+}
+
+function clickBlobDownload(blob: Blob, fileName: string): void {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = objectUrl;
+  link.download = sanitizeDownloadFileName(fileName);
+  link.rel = "noopener";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(objectUrl);
+}
+
 async function triggerBrowserDownload(url: string, fileName: string): Promise<void> {
   if (typeof document === "undefined") {
     if (typeof window !== "undefined") {
@@ -313,16 +352,7 @@ async function triggerBrowserDownload(url: string, fileName: string): Promise<vo
   if (!response.ok) {
     throw new Error(`${i18n.t("downloads.failed")} (${response.status})`);
   }
-  const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = objectUrl;
-  link.download = sanitizeDownloadFileName(fileName);
-  link.rel = "noopener";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(objectUrl);
+  clickBlobDownload(await response.blob(), fileName);
 }
 
 function resolveDownloadTargetFile(fileName: string): FSFile {

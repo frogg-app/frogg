@@ -2,6 +2,7 @@ import { useSettings } from "@/hooks/use-settings";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
+import { radiusOf } from "@/components/ui/design-surface";
 import { StyleSheet } from "react-native-unistyles";
 import { getIsElectronRuntime } from "@/constants/layout";
 import { AdaptiveModalSheet, type SheetHeader } from "@/components/adaptive-modal-sheet";
@@ -105,7 +106,7 @@ export function KeyboardShortcutsDialog() {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   content: {
     gap: theme.spacing[4],
   },
@@ -120,7 +121,7 @@ const styles = StyleSheet.create((theme) => ({
   rows: {
     borderWidth: theme.borderWidth[1],
     borderColor: theme.colors.surface2,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: radiusOf(rt.themeName, "lg"),
     overflow: "hidden",
   },
   row: {

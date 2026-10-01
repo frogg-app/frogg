@@ -4,12 +4,14 @@ import type { TranslationResources } from "./en";
 
 export const zhCN: TranslationResources = {
   devBar: {
+    menu: "开发",
     daemon: "开发守护进程",
     web: "开发 Web",
     rebuildDaemon: "重新构建并重启",
     restartWeb: "清除缓存后重启",
     openWeb: "打开",
     stop: "停止",
+    noCheckouts: "此主机上没有 Frogg 源码检出。将仓库添加为项目即可在此启动。",
     startIn: "在 {{name}} 中启动",
     lastError: "上次构建失败：{{error}}",
     behindMain_one: "落后 main {{count}} 个提交",
@@ -1862,6 +1864,7 @@ export const zhCN: TranslationResources = {
     },
   },
   openProject: {
+    greeting: "我们要做些什么？",
     chooseHost: {
       importSession: "从主机导入",
       setupProviders: "选择主机",
@@ -3038,6 +3041,16 @@ export const zhCN: TranslationResources = {
       developer: "开发者",
       about: "关于",
     },
+    navGroups: {
+      app: "应用",
+      voice: "语音和提醒",
+      system: "系统",
+    },
+    hostGroups: {
+      workspace: "工作区",
+      access: "访问",
+      daemon: "守护进程",
+    },
     notifications: {
       title: "通知",
       permission: "通知权限",
@@ -3062,9 +3075,12 @@ export const zhCN: TranslationResources = {
       providers: "Providers",
       skills: "{{brandFullName}} 技能",
       usage: "使用情况",
+      webClient: "Web 客户端",
       terminals: "Terminals",
       host: "概览",
       deploy: "部署",
+      automation: "自动化",
+      updates: "更新",
     },
     metadataGeneration: {
       title: "元数据生成",
@@ -3254,8 +3270,36 @@ export const zhCN: TranslationResources = {
         stop: "停止",
         openWebUi: "打开 Web 界面",
       },
+      manageOnHost: "在每台主机的“开发者”标签页中启动、停止和安装它们。",
+      manage: "管理",
+      sections: {
+        betaDaemon: "测试版守护进程",
+        devDaemon: "开发守护进程",
+        app: "应用",
+        daemons: "守护进程",
+      },
+      channels: {
+        stable: {
+          title: "稳定版",
+          info: "大家都在使用的正式版应用和守护进程。每个渠道并排安装,拥有各自的端口、数据和设置。",
+        },
+        beta: {
+          title: "测试版",
+          info: "在发布到稳定版之前在这里测试的预发布版本。测试版应用和守护进程与稳定版并排运行,不会触碰其数据。",
+        },
+        development: {
+          title: "开发",
+          info: "从主机上的源码检出运行的守护进程和 Web 应用,用于在变更成为测试版之前试用。",
+        },
+      },
+      stable: {
+        thisApp: "本应用 · {{version}}",
+        appSeparate: "单独安装。这是测试版应用。",
+        daemonInfo: "本应用在每台主机上连接的守护进程。稳定版守护进程默认监听端口 {{port}}。",
+        connected: "已连接 · {{version}}",
+        viaBeta: "此连接指向测试版守护进程。稳定版守护进程监听端口 {{port}}。",
+      },
       devDaemon: {
-        title: "开发守护进程",
         info: "在主机上的源码检出目录中运行 npm run dev:live：该检出的守护进程在独立端口上运行，使用主机的账户、项目和对话，并启动其 Web 应用。同一时间只运行一个。",
         needsUpdate: "请更新主机以启动开发守护进程。",
         loadFailed: "无法读取开发守护进程状态：{{error}}",
@@ -3297,14 +3341,16 @@ export const zhCN: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "主机上的测试版守护进程",
         info: "主机可以在稳定版旁运行测试版守护进程，使用独立的端口和数据。安装和移除需要所有者角色。",
         noHosts: "尚未添加主机。",
         offline: "离线",
         needsUpdate: "更新此主机以管理测试版。",
         loadFailed: "无法加载测试版状态：{{error}}",
         unsupported: "此主机不可用：{{reason}}",
-        selfIsBeta: "此主机的守护进程就是测试版。",
+        stopSelfConfirmTitle: "停止测试版守护进程?",
+        stopSelfConfirmMessage:
+          "本应用通过测试版守护进程连接 {{host}},连接将会断开。请从该主机的稳定版守护进程重新启动它。",
+        selfConnected: "已连接 · {{version}},端口 {{port}}",
         installed: "已安装测试版 {{version}}",
         notInstalled: "未安装测试版",
         running: "正在端口 {{port}} 上运行",
@@ -3570,6 +3616,8 @@ export const zhCN: TranslationResources = {
         },
       },
       webClient: {
+        offline: "主机已离线。",
+        needsUpdate: "请更新主机以管理其 Web 客户端。",
         title: "Web 客户端",
         info: "主机为浏览器版应用提供的 Web 服务器，使用独立于守护进程的端口。它只提供应用本身，页面的其他操作都连接到守护进程。",
         running: "正在端口 {{port}} 上运行",
@@ -3585,6 +3633,12 @@ export const zhCN: TranslationResources = {
         noInterfaces: "未找到网络接口。",
         unavailable: "此守护进程不包含 Web 客户端。",
         loadFailed: "无法读取 Web 客户端状态：{{error}}",
+      },
+      automation: {
+        unavailable: "连接到此主机以管理其自动化。",
+      },
+      terminalAgents: {
+        title: "终端代理",
       },
       resources: {
         title: "资源",

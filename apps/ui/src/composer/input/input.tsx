@@ -1,4 +1,6 @@
 import { formatTokenCount } from "@/components/context-window-meter.utils";
+import { themeOf } from "@/styles/design-theme";
+import { composerSurfaceStyle, controlRadius } from "@/agent-stream/conversation-design";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import {
   View,
@@ -2097,7 +2099,7 @@ export const MessageInput = forwardRef<MessageInputRef, MessageInputProps>(
   },
 );
 
-const styles = StyleSheet.create((theme: Theme) => ({
+const styles = StyleSheet.create((theme: Theme, rt) => ({
   container: {
     flexShrink: 1,
     position: "relative",
@@ -2192,6 +2194,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
       xs: theme.spacing[3],
       md: theme.spacing[4],
     },
+    ...composerSurfaceStyle(themeOf(rt.themeName)),
     ...(isWeb
       ? {
           transitionProperty: "border-color",
@@ -2287,7 +2290,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
   sendButton: {
     width: 28,
     height: 28,
-    borderRadius: theme.borderRadius.full,
+    borderRadius: controlRadius(themeOf(rt.themeName), "full"),
     backgroundColor: theme.colors.accent,
     alignItems: "center",
     justifyContent: "center",
@@ -2297,7 +2300,7 @@ const styles = StyleSheet.create((theme: Theme) => ({
     width: "auto",
     minWidth: 28,
     paddingHorizontal: theme.spacing[3],
-    borderRadius: theme.borderRadius.full,
+    borderRadius: controlRadius(themeOf(rt.themeName), "full"),
   },
   // COMPAT(agentCleanCut): amber, like the notice above it, so a queued send
   // does not look like an instant one.

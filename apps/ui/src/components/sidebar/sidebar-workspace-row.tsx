@@ -23,6 +23,7 @@ import {
 } from "@/components/sidebar/sidebar-workspace-row-content";
 import { SidebarWorkspaceTrailingActions } from "@/components/sidebar/workspace-trailing-actions";
 import { getSidebarRowBackdrop } from "@/components/sidebar/sidebar-row-backdrop";
+import { resolveShellDesign, sidebarRowBox } from "@/components/sidebar/shell-design";
 import { selectWorkspaceServiceSummary } from "@/components/sidebar/workspace-meta-row";
 import { useSidebarWorkspaceTrailing } from "@/components/sidebar/workspace-trailing";
 
@@ -353,7 +354,7 @@ function getWorkspaceRowStyle({
 
 export const MemoSidebarWorkspaceRow = memo(SidebarWorkspaceRow);
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   workspaceRowContainer: {
     position: "relative",
   },
@@ -369,6 +370,7 @@ const styles = StyleSheet.create((theme) => ({
     justifyContent: "center",
     gap: theme.spacing[1],
     userSelect: "none",
+    ...sidebarRowBox(theme, rt.themeName),
   },
   workspaceRowHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
@@ -384,9 +386,7 @@ const styles = StyleSheet.create((theme) => ({
     zIndex: 3,
     ...theme.shadow.md,
   },
-  sidebarRowSelected: {
-    backgroundColor: theme.colors.surfaceSidebarSelected,
-  },
+  sidebarRowSelected: { ...resolveShellDesign(theme, rt.themeName).selected },
   workspaceCreatingText: {
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,

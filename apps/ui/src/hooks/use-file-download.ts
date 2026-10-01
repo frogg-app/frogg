@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { useHosts } from "@/runtime/host-runtime";
+import { useHostRuntimeClient, useHosts } from "@/runtime/host-runtime";
 import { useDownloadStore } from "@/stores/download-store";
 import { useFileExplorerActions } from "@/hooks/use-file-explorer-actions";
 
@@ -36,6 +36,7 @@ export function useFileDownload({
     workspaceRoot: normalizedWorkspaceRoot,
   });
   const startDownload = useDownloadStore((state) => state.startDownload);
+  const client = useHostRuntimeClient(serverId);
 
   return useCallback(
     ({ fileName, path }) => {
@@ -49,8 +50,19 @@ export function useFileDownload({
         path,
         daemonProfile,
         requestFileDownloadToken: (targetPath) => requestFileDownloadToken(targetPath),
+        readFile: client
+          ? (targetPath) => client.readFile(normalizedWorkspaceRoot, targetPath)
+          : undefined,
       });
     },
-    [daemonProfile, requestFileDownloadToken, serverId, startDownload, workspaceScopeId],
+    [
+      client,
+      normalizedWorkspaceRoot,
+      daemonProfile,
+      requestFileDownloadToken,
+      serverId,
+      startDownload,
+      workspaceScopeId,
+    ],
   );
 }

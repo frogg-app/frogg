@@ -49,6 +49,7 @@ import {
 import { panelSupportsHost } from "@/panels/panel-manifest";
 import type { PanelIconProps } from "@/panels/panel-registry";
 import { SPACING, type Theme } from "@/styles/theme";
+import { panelTabChrome, panelTheme } from "@/workspace/panel-chrome";
 import type { SurfaceBackdrop } from "@/styles/surface-backdrop";
 import {
   HorizontalScrollBoundaryShades,
@@ -519,7 +520,16 @@ export function ExplorerSidebarTabRail({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+function tabChrome(theme: Theme) {
+  return panelTabChrome(theme, {
+    radius: theme.borderRadius.md,
+    hovered: theme.colors.interactionHighlight,
+    active: theme.colors.interactionHighlight,
+    activeUnfocused: theme.colors.interactionHighlight,
+  });
+}
+
+const styles = StyleSheet.create((theme, rt) => ({
   track: {
     minWidth: 0,
     height: WORKSPACE_SECONDARY_HEADER_HEIGHT,
@@ -551,18 +561,15 @@ const styles = StyleSheet.create((theme) => ({
     flexDirection: "row",
     alignItems: "center",
     userSelect: "none",
+    ...tabChrome(panelTheme(theme, rt.themeName)).tab,
   },
   labelSlot: {
     alignSelf: "stretch",
     overflow: "hidden",
     justifyContent: "center",
   },
-  tabHovered: {
-    backgroundColor: theme.colors.interactionHighlight,
-  },
-  tabActive: {
-    backgroundColor: theme.colors.interactionHighlight,
-  },
+  tabHovered: { ...tabChrome(panelTheme(theme, rt.themeName)).hovered },
+  tabActive: { ...tabChrome(panelTheme(theme, rt.themeName)).active },
   tabLabel: {
     // Absolute so the label keeps its natural width while the slot around it animates.
     position: "absolute",
@@ -572,10 +579,9 @@ const styles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     userSelect: "none",
+    ...tabChrome(panelTheme(theme, rt.themeName)).label,
   },
-  tabLabelActive: {
-    color: theme.colors.foreground,
-  },
+  tabLabelActive: { ...tabChrome(panelTheme(theme, rt.themeName)).labelActive },
   tabDragging: {
     opacity: 0.3,
   },

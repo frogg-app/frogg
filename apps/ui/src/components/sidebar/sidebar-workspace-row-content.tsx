@@ -27,6 +27,7 @@ import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sideba
 import { useWorkspaceLabelDefinitions } from "@/workspace-labels";
 
 import { SidebarWorkspaceAgents } from "./agents/tree";
+import { resolveShellDesign, sidebarRowText } from "./shell-design";
 import { WorkspaceAgentTreeScope } from "./agents/workspace-tree";
 
 const foregroundMutedColorMapping = (theme: Theme) => ({
@@ -288,7 +289,7 @@ function getStatusDotColorStyle(bucket: SidebarStateBucket) {
   }
 }
 
-export const sidebarWorkspaceRowStyles = StyleSheet.create((theme) => ({
+export const sidebarWorkspaceRowStyles = StyleSheet.create((theme, rt) => ({
   // How far a workspace row sits inside the group header above it — a project row or a
   // status group header. Both groupings share this one indent, so every grouped workspace row
   // in the sidebar sits on the same rail regardless of how the list is grouped. Pinned rows
@@ -298,7 +299,7 @@ export const sidebarWorkspaceRowStyles = StyleSheet.create((theme) => ({
   // backgrounds have to keep spanning the group's full width. Indenting the container instead
   // pulls the highlight in with the content and the row stops lining up with its header.
   rowIndented: {
-    paddingLeft: theme.spacing[2] + theme.spacing[2],
+    paddingLeft: resolveShellDesign(theme, rt.themeName).rowPaddingHorizontal + theme.spacing[2],
   },
   rowRight: {
     flexDirection: "row",
@@ -357,7 +358,7 @@ export function SidebarWorkspaceShortcutBadge({ number }: { number: number }) {
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   workspaceRowContent: {
     position: "relative",
   },
@@ -385,7 +386,7 @@ const styles = StyleSheet.create((theme) => ({
   workspaceStatusDot: {
     position: "relative",
     width: theme.iconSize.md,
-    height: 20,
+    height: resolveShellDesign(theme, rt.themeName).rowTextLineHeight,
     borderRadius: theme.borderRadius.full,
     flexShrink: 0,
     alignItems: "center",
@@ -423,6 +424,7 @@ const styles = StyleSheet.create((theme) => ({
     opacity: 0.76,
     flex: 1,
     minWidth: 0,
+    ...sidebarRowText(theme, rt.themeName),
   },
   workspaceBranchTextCreating: {
     opacity: 0.92,

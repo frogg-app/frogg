@@ -4,12 +4,15 @@ import type { TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
   devBar: {
+    menu: "開発",
     daemon: "開発デーモン",
     web: "開発 Web",
     rebuildDaemon: "ビルドして再起動",
     restartWeb: "キャッシュを消して再起動",
     openWeb: "開く",
     stop: "停止",
+    noCheckouts:
+      "このホストに Frogg のソースのチェックアウトがありません。ここで起動するにはリポジトリをプロジェクトとして追加してください。",
     startIn: "{{name}} で起動",
     lastError: "前回のビルドに失敗しました: {{error}}",
     behindMain_one: "main より {{count}} コミット遅れています",
@@ -1909,6 +1912,7 @@ export const ja: TranslationResources = {
     },
   },
   openProject: {
+    greeting: "何に取り組みますか？",
     chooseHost: {
       importSession: "ホストからインポート",
       setupProviders: "ホストを選択",
@@ -3130,6 +3134,16 @@ export const ja: TranslationResources = {
       developer: "開発者",
       about: "アプリ情報",
     },
+    navGroups: {
+      app: "アプリ",
+      voice: "音声とアラート",
+      system: "システム",
+    },
+    hostGroups: {
+      workspace: "ワークスペース",
+      access: "アクセス",
+      daemon: "デーモン",
+    },
     notifications: {
       title: "通知",
       permission: "通知の権限",
@@ -3154,9 +3168,12 @@ export const ja: TranslationResources = {
       providers: "プロバイダー",
       skills: "{{brandFullName}} スキル",
       usage: "使用状況",
+      webClient: "Web クライアント",
       terminals: "ターミナル",
       host: "概要",
       deploy: "デプロイ",
+      automation: "自動化",
+      updates: "アップデート",
     },
     metadataGeneration: {
       title: "メタデータ生成",
@@ -3352,8 +3369,37 @@ export const ja: TranslationResources = {
         stop: "停止",
         openWebUi: "Web UI を開く",
       },
+      manageOnHost: "各ホストの「開発者」タブで起動・停止・インストールします。",
+      manage: "管理",
+      sections: {
+        betaDaemon: "ベータ版デーモン",
+        devDaemon: "開発用デーモン",
+        app: "アプリ",
+        daemons: "デーモン",
+      },
+      channels: {
+        stable: {
+          title: "安定版",
+          info: "誰もが使うリリース済みのアプリとデーモン。各チャネルは互いに並べてインストールされ、ポート・データ・設定はそれぞれ独立しています。",
+        },
+        beta: {
+          title: "ベータ",
+          info: "安定版に出る前にここで試すプレリリース版。ベータのアプリとデーモンは安定版のデータに触れずに並行して動きます。",
+        },
+        development: {
+          title: "開発",
+          info: "ホスト上のソースチェックアウトから動かすデーモンと Web アプリ。ベータになる前の変更を試すためのものです。",
+        },
+      },
+      stable: {
+        thisApp: "このアプリ · {{version}}",
+        appSeparate: "別にインストールされます。これはベータ版アプリです。",
+        daemonInfo:
+          "このアプリが各ホストで接続するデーモン。安定版デーモンの既定ポートは {{port}} です。",
+        connected: "接続中 · {{version}}",
+        viaBeta: "この接続はベータ版デーモンです。安定版デーモンはポート {{port}} で待ち受けます。",
+      },
       devDaemon: {
-        title: "開発用デーモン",
         info: "ホスト上のソースのチェックアウトで npm run dev:live を実行します。そのチェックアウトのデーモンが専用ポートで、ホストのアカウント・プロジェクト・会話とともに動作し、Web アプリも起動します。同時に動かせるのは 1 つだけです。",
         needsUpdate: "開発用デーモンを起動するにはホストを更新してください。",
         loadFailed: "開発用デーモンの状態を読み取れませんでした: {{error}}",
@@ -3397,14 +3443,16 @@ export const ja: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "ホストのベータ版デーモン",
         info: "ホストでは安定版の横でベータ版デーモンを、別のポートと別のデータで実行できます。インストールと削除にはオーナー権限が必要です。",
         noHosts: "ホストが追加されていません。",
         offline: "オフライン",
         needsUpdate: "ベータを管理するにはこのホストを更新してください。",
         loadFailed: "ベータの状態を読み込めませんでした: {{error}}",
         unsupported: "このホストでは利用できません: {{reason}}",
-        selfIsBeta: "このホストのデーモンはベータ版です。",
+        stopSelfConfirmTitle: "ベータ版デーモンを停止しますか?",
+        stopSelfConfirmMessage:
+          "このアプリはベータ版デーモン経由で {{host}} に接続しているため、接続が切れます。ホストの安定版デーモンから再起動してください。",
+        selfConnected: "接続中 · {{version}}(ポート {{port}})",
         installed: "ベータ {{version}} インストール済み",
         notInstalled: "ベータは未インストール",
         running: "ポート {{port}} で実行中",
@@ -3676,6 +3724,8 @@ export const ja: TranslationResources = {
         },
       },
       webClient: {
+        offline: "ホストはオフラインです。",
+        needsUpdate: "Web クライアントを管理するにはホストを更新してください。",
         title: "Web クライアント",
         info: "ブラウザ版アプリ用のホストの Web サーバーです。デーモンとは別のポートで動作し、アプリの配信だけを行います。ページはそれ以外のすべてでデーモンに接続します。",
         running: "ポート {{port}} で実行中",
@@ -3691,6 +3741,12 @@ export const ja: TranslationResources = {
         noInterfaces: "インターフェースが見つかりません。",
         unavailable: "このデーモンには Web クライアントが含まれていません。",
         loadFailed: "Web クライアントの状態を読み取れませんでした: {{error}}",
+      },
+      automation: {
+        unavailable: "自動化を管理するにはこのホストに接続してください。",
+      },
+      terminalAgents: {
+        title: "ターミナルエージェント",
       },
       resources: {
         title: "リソース",

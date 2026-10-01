@@ -10,6 +10,8 @@ import {
 } from "@/git/check-presentation.view";
 import { ChevronDown, ChevronRight } from "lucide-react-native";
 import type { Theme } from "@/styles/theme";
+import { panelMetaText, panelSectionTitle, panelTheme } from "@/workspace/panel-chrome";
+import { usePanelHeadingDataSet } from "@/workspace/use-panel-meta-dataset";
 
 const ThemedChevronDown = withUnistyles(ChevronDown);
 const ThemedChevronRight = withUnistyles(ChevronRight);
@@ -38,6 +40,7 @@ export function Section({
   children,
   accessibilityLabel,
 }: SectionProps) {
+  const headingDataSet = usePanelHeadingDataSet();
   return (
     <View>
       <Pressable
@@ -50,7 +53,9 @@ export function Section({
         ) : (
           <ThemedChevronRight size={14} uniProps={foregroundMutedColorMapping} />
         )}
-        <Text style={sectionKitStyles.sectionTitle}>{title}</Text>
+        <Text style={sectionKitStyles.sectionTitle} dataSet={headingDataSet}>
+          {title}
+        </Text>
         <View style={sectionKitStyles.summaryWrap}>{summary}</View>
       </Pressable>
       {open ? <View style={sectionKitStyles.sectionBody}>{children}</View> : null}
@@ -105,7 +110,7 @@ export function CheckPresentationSummaryPill({
   );
 }
 
-export const sectionKitStyles = StyleSheet.create((theme) => ({
+export const sectionKitStyles = StyleSheet.create((theme, rt) => ({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -117,6 +122,7 @@ export const sectionKitStyles = StyleSheet.create((theme) => ({
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.medium,
     color: theme.colors.foregroundMuted,
+    ...panelSectionTitle(panelTheme(theme, rt.themeName)),
   },
   sectionBody: {
     paddingBottom: theme.spacing[3],
@@ -189,5 +195,6 @@ export const sectionKitStyles = StyleSheet.create((theme) => ({
   checkDuration: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
+    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
 }));

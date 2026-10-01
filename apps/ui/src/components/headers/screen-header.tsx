@@ -15,6 +15,8 @@ import {
   TitlebarDragRegion,
   titlebarDragSurfaceStyle,
 } from "@/components/desktop/titlebar-drag-region";
+import { resolveShellDesign } from "@/components/sidebar/shell-design";
+import { DevMenu } from "@/components/dev-menu";
 
 interface ScreenHeaderProps {
   left?: ReactNode;
@@ -64,6 +66,7 @@ export function ScreenHeader({
   const rowStyle = useMemo(
     () => [
       styles.row,
+      styles.rowDesign,
       borderless && styles.borderless,
       isWindowChromeHeader && (titlebarDragSurfaceStyle as ViewStyle),
     ],
@@ -84,14 +87,18 @@ export function ScreenHeader({
         >
           <TitlebarDragRegion />
           <View style={leftCombinedStyle}>{left}</View>
-          <View style={rightCombinedStyle}>{right}</View>
+          <View style={rightCombinedStyle}>
+            {/* Developer-only; the main panel's top bar, not headers inside modals. */}
+            {isWindowChromeHeader && !isMobile ? <DevMenu /> : null}
+            {right}
+          </View>
         </WindowChromeSafeArea>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   header: {
     backgroundColor: theme.colors.surface0,
   },
@@ -108,6 +115,12 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: theme.borderWidth[1],
     borderBottomColor: theme.colors.border,
     userSelect: "none",
+  },
+  // The direction's header edge; a sibling of `row` because `row` has breakpoints.
+  rowDesign: {
+    borderBottomColor: resolveShellDesign(theme, rt.themeName).headerBorder
+      ? theme.colors.border
+      : "transparent",
   },
   left: {
     flex: 1,

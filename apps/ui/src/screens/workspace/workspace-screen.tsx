@@ -1,3 +1,4 @@
+import { useDesignChrome } from "@/design/layouts/design-slot";
 import { i18n } from "@/localisation/i18next";
 import { describeHostConnectionError } from "@/runtime/host-connection-error";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -1030,20 +1031,26 @@ function WorkspaceHeaderTitleBar({
   onViewScriptTerminal,
   onOpenUrlInBrowserTab,
 }: WorkspaceHeaderTitleBarProps) {
+  const { hidesWorkspaceTitle } = useDesignChrome();
+  const titleHiddenByDesign = Boolean(hidesWorkspaceTitle) && !isMobile;
   return (
     <View style={styles.headerTitleContainer}>
-      {isLoading ? (
+      {isLoading && !titleHiddenByDesign ? (
         <View style={styles.headerTitleTextGroup}>
           <View style={styles.headerTitleSkeleton} />
         </View>
       ) : (
         <View style={styles.headerTitleTextGroup}>
-          <ScreenTitle testID="workspace-header-title">{title}</ScreenTitle>
-          <WorkspaceHeaderProjectRow
-            subtitle={subtitle}
-            isSubtitleDistinct={isSubtitleDistinct}
-            serverId={normalizedServerId}
-          />
+          {titleHiddenByDesign ? null : (
+            <>
+              <ScreenTitle testID="workspace-header-title">{title}</ScreenTitle>
+              <WorkspaceHeaderProjectRow
+                subtitle={subtitle}
+                isSubtitleDistinct={isSubtitleDistinct}
+                serverId={normalizedServerId}
+              />
+            </>
+          )}
         </View>
       )}
       <View style={styles.compactHeaderMenuCluster}>

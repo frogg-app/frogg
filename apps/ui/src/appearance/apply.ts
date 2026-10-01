@@ -1,15 +1,10 @@
 import { UnistylesRuntime } from "react-native-unistyles";
 import { resolveSyntaxColors, type SyntaxThemeId } from "@frogg/highlight";
-import {
-  DEFAULT_UI_FONT_STACK,
-  DEFAULT_MONO_FONT_STACK,
-  FONT_SIZE,
-  REGISTERED_THEMES,
-  type Theme,
-} from "@/styles/theme";
+import { FONT_SIZE, type Theme } from "@/styles/theme";
+import { ALL_REGISTERED_THEMES } from "@/styles/design-variants";
 import { applyRootUiFont } from "./apply-root-font";
 
-const ALL_THEME_KEYS = Object.keys(REGISTERED_THEMES) as (keyof typeof REGISTERED_THEMES)[];
+const ALL_THEME_KEYS = Object.keys(ALL_REGISTERED_THEMES) as (keyof typeof ALL_REGISTERED_THEMES)[];
 
 export interface AppearanceInput {
   uiFontFamily: string; // "" -> default stack
@@ -60,8 +55,9 @@ function scaleFontSize(
  * `...t` first.
  */
 export function applyAppearance(input: AppearanceInput): void {
-  const ui = input.uiFontFamily.trim() || DEFAULT_UI_FONT_STACK;
-  const mono = input.monoFontFamily.trim() || DEFAULT_MONO_FONT_STACK;
+  // An empty family means "the theme's default", which a design variant may set.
+  const uiOverride = input.uiFontFamily.trim();
+  const monoOverride = input.monoFontFamily.trim();
   const diffLineHeight = Math.round(input.codeFontSize * 1.5); // couple to code size
   const activeTheme = UnistylesRuntime.themeName;
   // Unistyles web emits after each registry patch. Updating the mounted theme
@@ -73,7 +69,10 @@ export function applyAppearance(input: AppearanceInput): void {
 
   for (const key of themeKeys) {
     UnistylesRuntime.updateTheme(key, (t) => {
-      const fontFamily = { ui, mono };
+      const fontFamily = {
+        ui: uiOverride || t.design.uiFontFamily,
+        mono: monoOverride || t.design.monoFontFamily,
+      };
       const fontSize = scaleFontSize(
         input.uiBaseFontSize,
         input.contentFontSize,
@@ -101,5 +100,8 @@ export function applyAppearance(input: AppearanceInput): void {
 
   // Web: apply the UI font app-wide (RN-web stamps a default font on every text
   // element, so it can't be done through the theme alone). No-op on native.
-  applyRootUiFont(ui);
+  const active = activeTheme ? ALL_REGISTERED_THEMES[activeTheme] : null;
+  applyRootUiFont(
+    uiOverride || active?.design.uiFontFamily || ALL_REGISTERED_THEMES.dark.design.uiFontFamily,
+  );
 }

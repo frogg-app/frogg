@@ -1,6 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { Fragment, useCallback, useMemo } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { Pressable, ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
+import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { brand } from "@frogg/branding";
 import { useTranslation } from "react-i18next";
@@ -10,9 +11,13 @@ import { useKeyboardShortcutsAvailable } from "@/keyboard/availability";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 import { resolveSettingsScope, type SettingsView } from "@/navigation/settings-navigation";
 import { ICON_SIZE, type Theme } from "@/styles/theme";
-import { visibleSettingsSections } from "@/screens/settings/section-items";
+import {
+  HOST_SECTION_GROUP_LABEL_KEYS,
+  SETTINGS_SECTION_GROUP_LABEL_KEYS,
+  visibleSettingsSections,
+} from "@/screens/settings/section-items";
+import { settingsNavTreatment } from "@/styles/settings-nav-treatment";
 import { useVisibleHostSectionItems } from "@/screens/settings/host-section-visibility";
-import { useHosts } from "@/runtime/host-runtime";
 import { useSettings } from "@/hooks/use-settings";
 import type { SecuritySeverity } from "@/security/posture";
 import { SecurityDot } from "@/security/security-dot";
@@ -136,6 +141,31 @@ function SidebarHostSectionButton({
   );
 }
 
+/** Small caps label above the first item of each sidebar group. */
+function SidebarGroupHeader({ label, isFirst }: { label: string; isFirst: boolean }) {
+  return (
+    <Text
+      accessibilityRole="header"
+      style={[sidebarStyles.groupHeader, isFirst && sidebarStyles.groupHeaderFirst]}
+      numberOfLines={1}
+    >
+      {label}
+    </Text>
+  );
+}
+
+/** Pairs each item with the header to show above it, if it starts a new group. */
+function withGroupHeaders<T extends { group: G }, G extends string>(
+  items: readonly T[],
+  labelKeys: Record<G, string>,
+): { item: T; headerKey: string | null; isFirst: boolean }[] {
+  return items.map((item, index) => ({
+    item,
+    headerKey: index === 0 || items[index - 1]?.group !== item.group ? labelKeys[item.group] : null,
+    isFirst: index === 0,
+  }));
+}
+
 export interface SettingsSidebarProps {
   view: SettingsView;
   onSelectSection: (section: SettingsSectionSlug) => void;
@@ -166,15 +196,7 @@ export function SettingsSidebar({
   const hostSectionItems = useVisibleHostSectionItems(
     scope.kind === "host" ? scope.serverId : null,
   );
-  const hosts = useHosts();
   const securityPosture = useSecurityPosture(scope.kind === "host" ? scope.serverId : "");
-  const hostHasRemoteSsh =
-    scope.kind === "host" &&
-    hosts.some(
-      (host) =>
-        host.serverId === scope.serverId &&
-        host.connections.some((connection) => connection.type === "remoteSsh"),
-    );
 
   let sidebarBody: ReactNode;
   if (scope.kind === "host") {
@@ -182,14 +204,15 @@ export function SettingsSidebar({
     if (view.kind === "host") selectedHostSection = view.section;
     if (view.kind === "project") selectedHostSection = "projects";
     sidebarBody = (
-      <View style={sidebarStyles.list}>
-        {hostSectionItems
-          .filter((item) => item.id !== "deploy" || hostHasRemoteSsh)
+      <View style={isDesktop ? sidebarStyles.list : sidebarStyles.mobileList}>
+        {withGroupHeaders(
           // Only an owner on a daemon that reports its posture has anything to see here.
-          .filter((item) => item.id !== "security" || securityPosture.available)
-          .map((item) => (
+          hostSectionItems.filter((item) => item.id !== "security" || securityPosture.available),
+          HOST_SECTION_GROUP_LABEL_KEYS,
+        ).map(({ item, headerKey, isFirst }) => (
+          <Fragment key={item.id}>
+            {headerKey ? <SidebarGroupHeader label={t(headerKey)} isFirst={isFirst} /> : null}
             <SidebarHostSectionButton
-              key={item.id}
               itemId={item.id}
               label={t(item.labelKey)}
               icon={item.icon}
@@ -197,7 +220,8 @@ export function SettingsSidebar({
               onSelect={onSelectHostSection}
               securitySeverity={item.id === "security" ? securityPosture.severity : null}
             />
-          ))}
+          </Fragment>
+        ))}
       </View>
     );
   } else {
@@ -208,17 +232,21 @@ export function SettingsSidebar({
       developerOptions,
     });
     sidebarBody = (
-      <View style={sidebarStyles.list}>
-        {items.map((item) => (
-          <SidebarSectionButton
-            key={item.id}
-            itemId={item.id}
-            label={t(item.labelKey)}
-            icon={item.icon}
-            isSelected={selectedSectionId === item.id}
-            onSelect={onSelectSection}
-          />
-        ))}
+      <View style={isDesktop ? sidebarStyles.list : sidebarStyles.mobileList}>
+        {withGroupHeaders(items, SETTINGS_SECTION_GROUP_LABEL_KEYS).map(
+          ({ item, headerKey, isFirst }) => (
+            <Fragment key={item.id}>
+              {headerKey ? <SidebarGroupHeader label={t(headerKey)} isFirst={isFirst} /> : null}
+              <SidebarSectionButton
+                itemId={item.id}
+                label={t(item.labelKey)}
+                icon={item.icon}
+                isSelected={selectedSectionId === item.id}
+                onSelect={onSelectSection}
+              />
+            </Fragment>
+          ),
+        )}
       </View>
     );
   }
@@ -261,12 +289,13 @@ function SettingsSidebarFooter() {
   );
 }
 
-const sidebarStyles = StyleSheet.create((theme) => ({
+const sidebarStyles = StyleSheet.create((theme, rt) => ({
   desktopContainer: {
     width: SETTINGS_DESKTOP_SIDEBAR_WIDTH,
     borderRightWidth: 1,
     borderRightColor: theme.colors.border,
     backgroundColor: theme.colors.surfaceSidebar,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).desktopContainer,
   },
   scrollBody: {
     flex: 1,
@@ -279,6 +308,13 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[2],
     gap: theme.spacing[1],
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).list,
+  },
+  mobileList: {
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[2],
+    gap: theme.spacing[1],
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).mobileList,
   },
   item: {
     flexDirection: "row",
@@ -288,18 +324,34 @@ const sidebarStyles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius.lg,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).item,
   },
   itemHovered: {
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
   itemSelected: {
     backgroundColor: theme.colors.surfaceSidebarHover,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).itemSelected,
   },
   label: {
     fontSize: theme.fontSize.base,
     color: theme.colors.foregroundMuted,
     fontWeight: theme.fontWeight.normal,
     flex: 1,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).label,
+  },
+  groupHeader: {
+    fontSize: theme.fontSize.sm - 1,
+    fontWeight: theme.fontWeight.medium,
+    color: theme.colors.foregroundMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    paddingHorizontal: theme.spacing[2],
+    paddingTop: theme.spacing[4],
+    paddingBottom: theme.spacing[1],
+  },
+  groupHeaderFirst: {
+    paddingTop: theme.spacing[1],
   },
   footer: {
     flexDirection: "row",
@@ -320,5 +372,6 @@ const sidebarStyles = StyleSheet.create((theme) => ({
   },
   labelSelected: {
     color: theme.colors.foreground,
+    ...settingsNavTreatment(designThemeOf(theme, rt.themeName)).labelSelected,
   },
 }));

@@ -43,7 +43,13 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
 
-function createService(overrides: { alive?: Set<number>; env?: NodeJS.ProcessEnv } = {}) {
+function createService(
+  overrides: {
+    alive?: Set<number>;
+    env?: NodeJS.ProcessEnv;
+    siblingWorkspaceFiles?: string[];
+  } = {},
+) {
   const alive = overrides.alive ?? new Set<number>();
   const spawnLauncher = vi.fn((_cwd: string, _env: NodeJS.ProcessEnv, _log: string) => {
     alive.add(4242);
@@ -55,6 +61,7 @@ function createService(overrides: { alive?: Set<number>; env?: NodeJS.ProcessEnv
   const service = new DevDaemonService({
     logger: createTestLogger(),
     froggHome: home,
+    siblingWorkspaceFiles: overrides.siblingWorkspaceFiles,
     platform: "linux",
     env: overrides.env ?? { FROGG_HOME: "/stable", FROGG_LISTEN: "0.0.0.0:9999", PATH: "/bin" },
     spawnLauncher,
@@ -82,6 +89,25 @@ describe("DevDaemonService", () => {
 
     expect(status.checkouts).toEqual([{ cwd: checkout, name: "frogg", branch: "feature" }]);
     expect(status).toMatchObject({ supported: true, running: false, daemonPort: DEV_DAEMON_PORT });
+  });
+
+  test("also offers the checkouts in a sibling channel's workspace registry", async () => {
+    const checkout = await makeCheckout("frogg");
+    const registry = path.join(root, "stable-workspaces.json");
+    await writeFile(
+      registry,
+      JSON.stringify([
+        { cwd: checkout, title: null, displayName: "frogg", branch: "main", archivedAt: null },
+        { cwd: path.join(root, "missing"), displayName: "missing", archivedAt: null },
+      ]),
+    );
+    const { service } = createService({
+      siblingWorkspaceFiles: [registry, path.join(root, "absent.json")],
+    });
+
+    const status = await service.status([]);
+
+    expect(status.checkouts).toEqual([{ cwd: checkout, name: "frogg", branch: "main" }]);
   });
 
   test("launches dev:live without the stable daemon's own settings and records it", async () => {

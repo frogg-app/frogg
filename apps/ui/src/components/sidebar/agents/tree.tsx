@@ -35,6 +35,8 @@ import { useSettings } from "@/hooks/use-settings";
 import { SidebarAccountIndicator } from "@/components/sidebar/workspace-account";
 import { useSidebarAgents, type ChildDiscovery } from "./provider";
 import type { Theme } from "@/styles/theme";
+import { resolveShellRows } from "@/components/sidebar/shell-rows";
+import { resolveShellDesign } from "@/components/sidebar/shell-design";
 import type { SidebarAgentNode } from "./model";
 import { useWorkspaceAgentTree } from "./workspace-tree";
 
@@ -283,7 +285,7 @@ function ChildDiscoveryStatus({
   return null;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   // The tree hangs below the workspace row rather than inside it, so it has to repeat the
   // row's own trailing padding; without it every agent row's right edge sat 12px proud of the
   // session row it belongs to.
@@ -306,7 +308,7 @@ const styles = StyleSheet.create((theme) => ({
   link: {
     flex: 1,
     minWidth: 0,
-    minHeight: 28,
+    // Height and radius follow the design direction (28 / md in `current`).
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],
@@ -315,7 +317,7 @@ const styles = StyleSheet.create((theme) => ({
     // No trailing padding: the row's gap already separates the account from what follows, and
     // padding here would push the account in past the workspace row's account above it.
     paddingRight: 0,
-    borderRadius: theme.borderRadius.md,
+    ...resolveShellRows(rt.themeName).childRow,
   },
   labels: {
     flex: 1,
@@ -325,14 +327,17 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
   },
   label: {
-    fontSize: theme.fontSize.sm,
+    ...resolveShellRows(rt.themeName).childText,
     color: theme.colors.foreground,
     flexShrink: 1,
     minWidth: 0,
   },
-  detail: { fontSize: theme.fontSize.sm, color: theme.colors.foregroundMuted },
+  detail: {
+    color: theme.colors.foregroundMuted,
+    fontSize: resolveShellRows(rt.themeName).childText.fontSize,
+  },
   subtitle: { flex: 1, flexBasis: 0, minWidth: 0 },
   children: { paddingLeft: theme.spacing[4] },
   hovered: { backgroundColor: theme.colors.surfaceSidebarHover },
-  selected: { backgroundColor: theme.colors.surfaceSidebarSelected },
+  selected: { ...resolveShellDesign(theme, rt.themeName).selected },
 }));

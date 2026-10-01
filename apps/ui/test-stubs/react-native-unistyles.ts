@@ -1,5 +1,8 @@
+import { CURRENT_DESIGN } from "@/styles/theme";
+
 const testTheme = {
   colorScheme: "light",
+  design: CURRENT_DESIGN,
   colors: {
     foreground: "#111111",
     foregroundMuted: "#666666",
@@ -75,7 +78,10 @@ const testTheme = {
   },
 };
 
-type StyleFactory<T> = (theme: typeof testTheme) => T;
+// Factories get the runtime too; `themeName` resolves design tokens via `designOf`/`themeOf`.
+const testRuntime = { themeName: "light", insets: { top: 0, bottom: 0, left: 0, right: 0 } };
+
+type StyleFactory<T> = (theme: typeof testTheme, rt: typeof testRuntime) => T;
 
 function isStyleFactory<T>(styles: T | StyleFactory<T>): styles is StyleFactory<T> {
   return typeof styles === "function";
@@ -83,14 +89,14 @@ function isStyleFactory<T>(styles: T | StyleFactory<T>): styles is StyleFactory<
 
 export const StyleSheet = {
   create: <T>(styles: T | StyleFactory<T>): T =>
-    isStyleFactory(styles) ? styles(testTheme) : styles,
+    isStyleFactory(styles) ? styles(testTheme, testRuntime) : styles,
 };
 
 export const withUnistyles = <T>(Component: T): T => Component;
 
 export const useUnistyles = () => ({
   theme: testTheme,
-  rt: {},
+  rt: testRuntime,
   breakpoint: undefined,
 });
 

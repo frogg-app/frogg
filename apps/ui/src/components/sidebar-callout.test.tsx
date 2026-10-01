@@ -37,7 +37,9 @@ const { theme } = vi.hoisted(() => ({
 vi.mock("react-native-unistyles", () => ({
   StyleSheet: {
     create: (factory: unknown) =>
-      typeof factory === "function" ? (factory as (t: typeof theme) => unknown)(theme) : factory,
+      typeof factory === "function"
+        ? (factory as (t: typeof theme, rt: unknown) => unknown)(theme, { themeName: "light" })
+        : factory,
   },
   useUnistyles: () => ({ theme }),
 }));

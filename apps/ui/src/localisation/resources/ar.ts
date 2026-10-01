@@ -4,12 +4,14 @@ import type { TranslationResources } from "./en";
 
 export const ar: TranslationResources = {
   devBar: {
+    menu: "التطوير",
     daemon: "خادم التطوير",
     web: "ويب التطوير",
     rebuildDaemon: "إعادة البناء وإعادة التشغيل",
     restartWeb: "إعادة التشغيل مع مسح الذاكرة المؤقتة",
     openWeb: "فتح",
     stop: "إيقاف",
+    noCheckouts: "لا توجد نسخة من مصدر Frogg على هذا المضيف. أضف المستودع كمشروع لتشغيله هنا.",
     startIn: "التشغيل في {{name}}",
     lastError: "فشلت آخر إعادة بناء: {{error}}",
     behindMain_one: "إيداعات متأخرة عن main: {{count}}",
@@ -1885,6 +1887,7 @@ export const ar: TranslationResources = {
     },
   },
   openProject: {
+    greeting: "على ماذا سنعمل؟",
     chooseHost: {
       importSession: "استيراد من المضيف",
       setupProviders: "اختر المضيف",
@@ -3084,6 +3087,16 @@ export const ar: TranslationResources = {
       developer: "المطوّر",
       about: "عن",
     },
+    navGroups: {
+      app: "التطبيق",
+      voice: "الصوت والتنبيهات",
+      system: "النظام",
+    },
+    hostGroups: {
+      workspace: "مساحة العمل",
+      access: "الوصول",
+      daemon: "الخدمة الخلفية",
+    },
     notifications: {
       title: "الإشعارات",
       permission: "إذن الإشعارات",
@@ -3108,9 +3121,12 @@ export const ar: TranslationResources = {
       providers: "مقدمي الخدمات",
       skills: "مهارات {{brandFullName}}",
       usage: "الاستخدام",
+      webClient: "عميل الويب",
       terminals: "Terminals",
       host: "نظرة عامة",
       deploy: "النشر",
+      automation: "الأتمتة",
+      updates: "التحديثات",
     },
     metadataGeneration: {
       title: "إنشاء البيانات الوصفية",
@@ -3306,8 +3322,37 @@ export const ar: TranslationResources = {
         stop: "إيقاف",
         openWebUi: "فتح واجهة الويب",
       },
+      manageOnHost: "شغّلها وأوقفها وثبّتها من تبويب المطوّر لكل مضيف.",
+      manage: "إدارة",
+      sections: {
+        betaDaemon: "الخادم التجريبي",
+        devDaemon: "خادم التطوير",
+        app: "التطبيق",
+        daemons: "الخوادم",
+      },
+      channels: {
+        stable: {
+          title: "المستقر",
+          info: "التطبيق والخادم المنشوران اللذان يستخدمهما الجميع. تُثبَّت كل قناة بجانب الأخرى، بمنفذ وبيانات وإعدادات خاصة بها.",
+        },
+        beta: {
+          title: "التجريبي",
+          info: "إصدارات تمهيدية تُختبر هنا قبل وصولها إلى المستقر. يعمل التطبيق والخادم التجريبيان بجانب المستقرين دون المساس ببياناتهما.",
+        },
+        development: {
+          title: "التطوير",
+          info: "خادم وتطبيق ويب يعملان من نسخة المصدر على مضيف، لتجربة التغييرات قبل أن تصبح إصدارًا تجريبيًا.",
+        },
+      },
+      stable: {
+        thisApp: "هذا التطبيق · {{version}}",
+        appSeparate: "يُثبَّت بشكل منفصل. هذا هو التطبيق التجريبي.",
+        daemonInfo:
+          "الخادم الذي يتصل به هذا التطبيق على كل مضيف. يستمع الخادم المستقر على المنفذ {{port}} افتراضيًا.",
+        connected: "متصل · {{version}}",
+        viaBeta: "هذا الاتصال بالخادم التجريبي. يستمع الخادم المستقر على المنفذ {{port}}.",
+      },
       devDaemon: {
-        title: "خادم التطوير",
         info: "يشغّل npm run dev:live من نسخة مصدرية على المضيف: خادم تلك النسخة على منفذه الخاص، مع حسابات المضيف ومشاريعه ومحادثاته، وتطبيق الويب الخاص به. يعمل خادم واحد فقط في كل مرة.",
         needsUpdate: "حدّث المضيف لتشغيل خادم التطوير.",
         loadFailed: "تعذّرت قراءة حالة خادم التطوير: {{error}}",
@@ -3349,14 +3394,16 @@ export const ar: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "الخادم التجريبي على المضيفين",
         info: "يمكن للمضيف تشغيل خادم تجريبي بجانب الخادم المستقر، على منفذه الخاص وببياناته الخاصة. يتطلب تثبيته وإزالته دور المالك.",
         noHosts: "لم تتم إضافة أي مضيف.",
         offline: "غير متصل",
         needsUpdate: "حدّث هذا المضيف لإدارة الإصدارات التجريبية.",
         loadFailed: "تعذّر تحميل حالة الإصدار التجريبي: {{error}}",
         unsupported: "غير متاح على هذا المضيف: {{reason}}",
-        selfIsBeta: "خادم هذا المضيف هو الإصدار التجريبي.",
+        stopSelfConfirmTitle: "إيقاف الخادم التجريبي؟",
+        stopSelfConfirmMessage:
+          "يتصل هذا التطبيق بـ {{host}} عبر الخادم التجريبي، لذا سينقطع الاتصال. أعد تشغيله من الخادم المستقر على المضيف.",
+        selfConnected: "متصل · {{version}} على المنفذ {{port}}",
         installed: "الإصدار التجريبي {{version}} مثبّت",
         notInstalled: "الإصدار التجريبي غير مثبّت",
         running: "يعمل على المنفذ {{port}}",
@@ -3625,6 +3672,8 @@ export const ar: TranslationResources = {
         },
       },
       webClient: {
+        offline: "المضيف غير متصل.",
+        needsUpdate: "حدّث المضيف لإدارة عميل الويب الخاص به.",
         title: "عميل الويب",
         info: "خادم الويب الخاص بالمضيف لتطبيق المتصفح، على منفذه الخاص بجانب منفذ الخادم الخلفي. يقدّم التطبيق فقط، وتتصل الصفحة بالخادم الخلفي لكل ما عدا ذلك.",
         running: "يعمل على المنفذ {{port}}",
@@ -3640,6 +3689,12 @@ export const ar: TranslationResources = {
         noInterfaces: "لم يتم العثور على واجهات.",
         unavailable: "لا يتضمن هذا الخادم الخلفي عميل الويب.",
         loadFailed: "تعذّرت قراءة حالة عميل الويب: {{error}}",
+      },
+      automation: {
+        unavailable: "اتصل بهذا المضيف لإدارة الأتمتة الخاصة به.",
+      },
+      terminalAgents: {
+        title: "وكلاء الطرفية",
       },
       resources: {
         title: "الموارد",

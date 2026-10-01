@@ -234,7 +234,7 @@ function FindingFix({
 }) {
   const { t } = useTranslation();
   const openPairDevice = useCallback(
-    () => navigateSettings({ kind: "host", serverId, section: "pair-device" }),
+    () => navigateSettings({ kind: "host", serverId, section: "devices" }),
     [serverId],
   );
   const openDevices = useCallback(

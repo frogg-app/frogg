@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
@@ -11,6 +11,7 @@ import type { SessionOutboundMessage } from "../../messages.js";
 import {
   BetaChannelService,
   parseScriptHeader,
+  repairStaleBetaServiceListen,
   sha256Hex,
   type BetaChannelServiceOptions,
   type SpawnInstallerScript,
@@ -317,5 +318,76 @@ describe("BetaChannelService.uninstall", () => {
     expect(spawn.calls[0]?.env.FROGG_BETA_PURGE).toBe("1");
     const completed = messages.find((m) => m.type === "daemon.beta_channel.run.completed");
     expect(completed?.payload).toMatchObject({ action: "uninstall", status: "succeeded" });
+  });
+});
+
+describe("repairStaleBetaServiceListen", () => {
+  const unit = (listen: string) =>
+    `[Service]\nExecStart=/x daemon start\nEnvironment=FROGG_BETA_LISTEN=${listen}\nEnvironment=FROGG_BETA_WEB_UI_ENABLED=true\n`;
+  const input = { envKey: "FROGG_BETA_LISTEN", stalePort: 9998, port: 9989 };
+
+  test("moves a unit on the retired port to the beta's port, keeping the bind host", () => {
+    expect(repairStaleBetaServiceListen(unit("0.0.0.0:9998"), input)).toBe(unit("0.0.0.0:9989"));
+  });
+
+  test("leaves a port chosen on purpose, or one already right, alone", () => {
+    expect(repairStaleBetaServiceListen(unit("0.0.0.0:7000"), input)).toBeNull();
+    expect(repairStaleBetaServiceListen(unit("0.0.0.0:9989"), input)).toBeNull();
+    expect(repairStaleBetaServiceListen(unit("0.0.0.0:99980"), input)).toBeNull();
+  });
+});
+
+describe("BetaChannelService beta-side control and repair", () => {
+  test("a beta daemon stops itself through its own CLI after replying", async () => {
+    const homedir = makeDir();
+    installBeta(homedir, "1.6.7-beta.3");
+    const cli = path.join(homedir, ".local", "share", beta.id, "current", "bin", beta.cliName);
+    mkdirSync(path.dirname(cli), { recursive: true });
+    writeFileSync(cli, "");
+    const spawn = fakeSpawn();
+    const { service } = makeService({
+      selfChannel: "beta",
+      homedir,
+      spawnScript: spawn.spawnScript,
+    });
+
+    expect(await service.setRunning(true)).toBeNull();
+    expect(await service.setRunning(false)).toBeNull();
+    expect(spawn.calls).toHaveLength(0);
+    await new Promise((resolve) => setTimeout(resolve, 700));
+    expect(spawn.calls).toEqual([
+      expect.objectContaining({ command: cli, args: ["daemon", "stop"] }),
+    ]);
+    expect(spawn.calls[0]!.env.FROGG_LISTEN).toBeUndefined();
+  });
+
+  test("the stable daemon moves a beta unit off the stable web client's port", async () => {
+    const homedir = makeDir();
+    const unitDir = path.join(homedir, ".config", "systemd", "user");
+    mkdirSync(unitDir, { recursive: true });
+    const unit = path.join(unitDir, `${beta.serviceName}.service`);
+    const envKey = `${brand.channels.stable.id.toUpperCase()}_BETA_LISTEN`;
+    writeFileSync(
+      unit,
+      `[Service]\nEnvironment=${envKey}=0.0.0.0:${brand.channels.stable.webPort}\n`,
+    );
+    const systemctl: string[][] = [];
+    const { service } = makeService({
+      homedir,
+      runSystemctl: (args) => {
+        systemctl.push(args);
+        return 0;
+      },
+    });
+
+    await service.status();
+    await service.status();
+
+    expect(readFileSync(unit, "utf8")).toContain(`${envKey}=0.0.0.0:${beta.daemonPort}`);
+    expect(systemctl).toEqual([
+      ["daemon-reload"],
+      ["is-active", "--quiet", beta.serviceName],
+      ["restart", beta.serviceName],
+    ]);
   });
 });

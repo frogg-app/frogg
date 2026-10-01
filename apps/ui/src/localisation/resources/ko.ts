@@ -4,12 +4,15 @@ import type { TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
   devBar: {
+    menu: "개발",
     daemon: "개발 데몬",
     web: "개발 웹",
     rebuildDaemon: "빌드 후 재시작",
     restartWeb: "캐시를 지우고 재시작",
     openWeb: "열기",
     stop: "중지",
+    noCheckouts:
+      "이 호스트에 Frogg 소스 체크아웃이 없습니다. 여기서 시작하려면 저장소를 프로젝트로 추가하세요.",
     startIn: "{{name}}에서 시작",
     lastError: "마지막 빌드 실패: {{error}}",
     behindMain_one: "main보다 커밋 {{count}}개 뒤처짐",
@@ -1901,6 +1904,7 @@ export const ko: TranslationResources = {
     },
   },
   openProject: {
+    greeting: "무엇을 작업할까요?",
     chooseHost: {
       importSession: "호스트에서 가져오기",
       setupProviders: "호스트 선택",
@@ -3108,6 +3112,16 @@ export const ko: TranslationResources = {
       developer: "개발자",
       about: "정보",
     },
+    navGroups: {
+      app: "앱",
+      voice: "음성 및 알림",
+      system: "시스템",
+    },
+    hostGroups: {
+      workspace: "작업 공간",
+      access: "액세스",
+      daemon: "데몬",
+    },
     notifications: {
       title: "알림",
       permission: "알림 권한",
@@ -3132,9 +3146,12 @@ export const ko: TranslationResources = {
       providers: "프로바이더",
       skills: "{{brandFullName}} 스킬",
       usage: "사용량",
+      webClient: "웹 클라이언트",
       terminals: "터미널",
       host: "개요",
       deploy: "배포",
+      automation: "자동화",
+      updates: "업데이트",
     },
     metadataGeneration: {
       title: "메타데이터 생성",
@@ -3331,8 +3348,37 @@ export const ko: TranslationResources = {
         stop: "중지",
         openWebUi: "웹 UI 열기",
       },
+      manageOnHost: "각 호스트의 개발자 탭에서 시작, 중지, 설치합니다.",
+      manage: "관리",
+      sections: {
+        betaDaemon: "베타 데몬",
+        devDaemon: "개발 데몬",
+        app: "앱",
+        daemons: "데몬",
+      },
+      channels: {
+        stable: {
+          title: "안정판",
+          info: "모두가 사용하는 출시된 앱과 데몬입니다. 각 채널은 서로 나란히 설치되며 포트, 데이터, 설정이 따로 있습니다.",
+        },
+        beta: {
+          title: "베타",
+          info: "안정판으로 나가기 전에 여기서 테스트하는 사전 출시 빌드입니다. 베타 앱과 데몬은 안정판 데이터를 건드리지 않고 나란히 실행됩니다.",
+        },
+        development: {
+          title: "개발",
+          info: "호스트의 소스 체크아웃에서 실행하는 데몬과 웹 앱으로, 베타가 되기 전에 변경 사항을 시험합니다.",
+        },
+      },
+      stable: {
+        thisApp: "이 앱 · {{version}}",
+        appSeparate: "별도로 설치됩니다. 이 앱은 베타 앱입니다.",
+        daemonInfo:
+          "이 앱이 각 호스트에서 연결하는 데몬입니다. 안정판 데몬은 기본적으로 {{port}} 포트를 사용합니다.",
+        connected: "연결됨 · {{version}}",
+        viaBeta: "이 연결은 베타 데몬입니다. 안정판 데몬은 {{port}} 포트를 사용합니다.",
+      },
       devDaemon: {
-        title: "개발용 데몬",
         info: "호스트의 소스 체크아웃에서 npm run dev:live를 실행합니다. 해당 체크아웃의 데몬이 별도 포트에서 호스트의 계정, 프로젝트, 대화와 함께 실행되고 웹 앱도 함께 시작됩니다. 한 번에 하나만 실행됩니다.",
         needsUpdate: "개발용 데몬을 실행하려면 호스트를 업데이트하세요.",
         loadFailed: "개발용 데몬 상태를 읽지 못했습니다: {{error}}",
@@ -3374,14 +3420,16 @@ export const ko: TranslationResources = {
         },
       },
       betaDaemon: {
-        title: "호스트의 베타 데몬",
         info: "호스트는 안정 버전 옆에서 별도 포트와 별도 데이터로 베타 데몬을 실행할 수 있습니다. 설치와 제거에는 소유자 역할이 필요합니다.",
         noHosts: "추가된 호스트가 없습니다.",
         offline: "오프라인",
         needsUpdate: "베타를 관리하려면 이 호스트를 업데이트하세요.",
         loadFailed: "베타 상태를 불러올 수 없습니다: {{error}}",
         unsupported: "이 호스트에서는 사용할 수 없습니다: {{reason}}",
-        selfIsBeta: "이 호스트의 데몬은 베타입니다.",
+        stopSelfConfirmTitle: "베타 데몬을 중지할까요?",
+        stopSelfConfirmMessage:
+          "이 앱은 베타 데몬을 통해 {{host}}에 연결되어 있어 연결이 끊어집니다. 호스트의 안정판 데몬에서 다시 시작하세요.",
+        selfConnected: "연결됨 · {{version}}, 포트 {{port}}",
         installed: "베타 {{version}} 설치됨",
         notInstalled: "베타가 설치되지 않음",
         running: "포트 {{port}}에서 실행 중",
@@ -3650,6 +3698,8 @@ export const ko: TranslationResources = {
         },
       },
       webClient: {
+        offline: "호스트가 오프라인입니다.",
+        needsUpdate: "웹 클라이언트를 관리하려면 호스트를 업데이트하세요.",
         title: "웹 클라이언트",
         info: "브라우저 앱을 위한 호스트의 웹 서버로, 데몬과 별도의 포트에서 실행됩니다. 앱만 제공하며, 페이지는 나머지 모든 작업을 데몬에 연결해 처리합니다.",
         running: "포트 {{port}}에서 실행 중",
@@ -3665,6 +3715,12 @@ export const ko: TranslationResources = {
         noInterfaces: "인터페이스를 찾을 수 없습니다.",
         unavailable: "이 데몬에는 웹 클라이언트가 포함되어 있지 않습니다.",
         loadFailed: "웹 클라이언트 상태를 읽지 못했습니다: {{error}}",
+      },
+      automation: {
+        unavailable: "자동화를 관리하려면 이 호스트에 연결하세요.",
+      },
+      terminalAgents: {
+        title: "터미널 에이전트",
       },
       resources: {
         title: "리소스",

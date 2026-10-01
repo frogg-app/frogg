@@ -1,3 +1,5 @@
+import type { Theme } from "@/styles/theme";
+import { panelHeaderEdge, panelTabChrome, panelTheme } from "@/workspace/panel-chrome";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View, Text, Pressable, type LayoutChangeEvent } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
@@ -394,7 +396,7 @@ function ExplorerSidebarContent({
       <WindowChromeSafeArea
         placement="inline"
         horizontalPadding={theme.spacing[2]}
-        style={styles.header}
+        style={headerStyle()}
         dataSet={TITLEBAR_DRAG_SURFACE_DATASET}
         testID="explorer-header"
       >
@@ -581,7 +583,16 @@ function FilesPane({
 
 const PrTabContent = PullRequestContent;
 
-const styles = StyleSheet.create((theme) => ({
+function tabChrome(theme: Theme) {
+  return panelTabChrome(theme, {
+    radius: theme.borderRadius.md,
+    hovered: theme.colors.surfaceSidebarHover,
+    active: theme.colors.surfaceSidebarHover,
+    activeUnfocused: theme.colors.surfaceSidebarHover,
+  });
+}
+
+const styles = StyleSheet.create((theme, rt) => ({
   nativeDock: {
     position: "relative",
     height: "100%",
@@ -611,6 +622,10 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
+  // Kept apart from `header` so its breakpoint height keeps Unistyles' narrowed style type.
+  headerEdge: {
+    ...panelHeaderEdge(panelTheme(theme, rt.themeName)),
+  },
   // Takes the header's spare width rather than its own content's, so the strip can be
   // measured against the room it actually has. `minWidth: 0` lets it shrink below the tabs'
   // natural width instead of pushing the close button off the header.
@@ -629,23 +644,21 @@ const styles = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[2],
     paddingHorizontal: theme.spacing[3],
     borderRadius: theme.borderRadius.md,
+    ...tabChrome(panelTheme(theme, rt.themeName)).tab,
   },
   // No label to sit beside, so the icon keeps only its own padding and the tab stays square.
   tabIconOnly: {
     paddingHorizontal: theme.spacing[3],
     gap: 0,
   },
-  tabActive: {
-    backgroundColor: theme.colors.surfaceSidebarHover,
-  },
+  tabActive: { ...tabChrome(panelTheme(theme, rt.themeName)).active },
   tabText: {
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foregroundMuted,
+    ...tabChrome(panelTheme(theme, rt.themeName)).label,
   },
-  tabTextActive: {
-    color: theme.colors.foreground,
-  },
+  tabTextActive: { ...tabChrome(panelTheme(theme, rt.themeName)).labelActive },
   tabTextMuted: {
     opacity: 0.8,
   },
@@ -668,3 +681,6 @@ const styles = StyleSheet.create((theme) => ({
     minHeight: 0,
   },
 }));
+
+// Composed at render: reading style proxies at module scope is not allowed.
+const headerStyle = () => [styles.header, styles.headerEdge];

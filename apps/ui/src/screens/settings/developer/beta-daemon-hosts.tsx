@@ -6,8 +6,7 @@ import type { DaemonBetaChannelStatusPayload } from "@frogg/client";
 import { Alert as InlineAlert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useHostRuntimeClient, useHostRuntimeIsConnected, useHosts } from "@/runtime/host-runtime";
-import { SettingsSection } from "@/screens/settings/settings-section";
+import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
 import type { HostProfile } from "@/types/host-connection";
@@ -40,32 +39,16 @@ type StatusState =
   | { kind: "loaded"; status: DaemonBetaChannelStatusPayload }
   | { kind: "error"; message: string };
 
-/** Every added host, each with the side-by-side beta daemon it can install and remove. */
-export function BetaDaemonHostsSection() {
-  const { t } = useTranslation();
-  const hosts = useHosts();
-  return (
-    <SettingsSection
-      title={t("settings.developer.betaDaemon.title")}
-      info={t("settings.developer.betaDaemon.info")}
-      testID="developer-beta-daemon"
-    >
-      <View style={settingsStyles.card}>
-        {hosts.length === 0 ? (
-          <View style={settingsStyles.row}>
-            <Text style={settingsStyles.rowHint}>{t("settings.developer.betaDaemon.noHosts")}</Text>
-          </View>
-        ) : (
-          hosts.map((host, index) => (
-            <BetaDaemonHostRow key={host.serverId} host={host} showBorder={index > 0} />
-          ))
-        )}
-      </View>
-    </SettingsSection>
-  );
-}
-
-function BetaDaemonHostRow({ host, showBorder }: { host: HostProfile; showBorder: boolean }) {
+export function BetaDaemonHostRow({
+  host,
+  showBorder,
+  showLabel = true,
+}: {
+  host: HostProfile;
+  showBorder: boolean;
+  /** Off on the host's own page, where the host is already the page's subject. */
+  showLabel?: boolean;
+}) {
   const { t } = useTranslation();
   const isConnected = useHostRuntimeIsConnected(host.serverId);
   const supported = useSessionStore(
@@ -89,9 +72,11 @@ function BetaDaemonHostRow({ host, showBorder }: { host: HostProfile; showBorder
 
   return (
     <View style={rowStyle} testID={`developer-beta-daemon-host-${host.serverId}`}>
-      <Text style={settingsStyles.rowTitle} numberOfLines={1}>
-        {host.label}
-      </Text>
+      {showLabel ? (
+        <Text style={settingsStyles.rowTitle} numberOfLines={1}>
+          {host.label}
+        </Text>
+      ) : null}
       {body}
     </View>
   );
@@ -223,7 +208,20 @@ function BetaDaemonHostManager({ host }: { host: HostProfile }) {
     [client, refresh],
   );
   const handleStart = useCallback(() => void handleSetRunning(true), [handleSetRunning]);
-  const handleStop = useCallback(() => void handleSetRunning(false), [handleSetRunning]);
+  const selfIsBeta = statusState.kind === "loaded" && statusState.status.selfIsBeta;
+  const handleStop = useCallback(async () => {
+    // Stopping the daemon this connection runs through drops the connection with it.
+    if (selfIsBeta) {
+      const confirmed = await confirmDialog({
+        title: t("settings.developer.betaDaemon.stopSelfConfirmTitle"),
+        message: t("settings.developer.betaDaemon.stopSelfConfirmMessage", { host: hostLabel }),
+        confirmLabel: t("settings.developer.daemonControl.stop"),
+        destructive: true,
+      });
+      if (!confirmed || !mounted.current) return;
+    }
+    void handleSetRunning(false);
+  }, [handleSetRunning, hostLabel, selfIsBeta, t]);
 
   const handleToggleLog = useCallback(() => setShowLog((current) => !current), []);
   const handleRetry = useCallback(() => {
@@ -252,8 +250,8 @@ function BetaDaemonHostManager({ host }: { host: HostProfile }) {
     status.webRunning && status.webPort ? siblingDaemonWebUrl(host, status.webPort) : null;
   return (
     <View style={styles.manager}>
-      <StatusLines status={status} />
-      {canControl && status.supported && status.installed ? (
+      <StatusLines status={status} serverId={serverId} />
+      {canControl && (status.supported || status.selfIsBeta) && status.installed ? (
         <View style={styles.actions}>
           {status.running ? (
             <Button
@@ -335,21 +333,40 @@ function BetaDaemonHostManager({ host }: { host: HostProfile }) {
   );
 }
 
-function StatusLines({ status }: { status: DaemonBetaChannelStatusPayload }) {
+function StatusLines({
+  status,
+  serverId,
+}: {
+  status: DaemonBetaChannelStatusPayload;
+  serverId: string;
+}) {
   const { t } = useTranslation();
+  const connectedVersion = useSessionStore(
+    (state) => state.sessions[serverId]?.serverInfo?.version ?? null,
+  );
   const lines: string[] = [];
-  if (status.selfIsBeta) lines.push(t("settings.developer.betaDaemon.selfIsBeta"));
-  if (!status.supported) {
+  if (status.selfIsBeta) {
+    // This connection is the beta daemon: it can't manage itself, so say what it is and leave
+    // install and removal to the stable daemon.
+    lines.push(
+      t("settings.developer.betaDaemon.selfConnected", {
+        version: connectedVersion ?? "?",
+        port: status.port,
+      }),
+    );
+  } else if (!status.supported) {
     lines.push(
       t("settings.developer.betaDaemon.unsupported", { reason: status.reason ?? status.platform }),
     );
   }
-  lines.push(
-    status.installed
-      ? t("settings.developer.betaDaemon.installed", { version: status.installedVersion ?? "?" })
-      : t("settings.developer.betaDaemon.notInstalled"),
-  );
-  if (status.installed) {
+  if (!status.selfIsBeta) {
+    lines.push(
+      status.installed
+        ? t("settings.developer.betaDaemon.installed", { version: status.installedVersion ?? "?" })
+        : t("settings.developer.betaDaemon.notInstalled"),
+    );
+  }
+  if (status.installed && !status.selfIsBeta) {
     lines.push(
       status.running
         ? t("settings.developer.betaDaemon.running", { port: status.port })

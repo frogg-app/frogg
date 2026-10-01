@@ -1,4 +1,3 @@
-import { DevBar } from "@/components/dev-bar";
 import { router } from "expo-router";
 import { FolderPlus, GitBranch, Settings, X } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
@@ -25,6 +24,7 @@ import {
   SIDEBAR_RESIZE_FAIL_OFFSET,
 } from "@/components/sidebar-resize-handle-layout";
 import { SidebarHeaderRow } from "@/components/sidebar/sidebar-header-row";
+import { APP_FRAME_GAP } from "@/components/desktop/app-frame";
 import { SidebarDisplayPreferencesMenu } from "@/components/sidebar/display-preferences/menu";
 import { SidebarWorkspaceDrafts } from "@/components/sidebar/sidebar-workspace-drafts";
 import { SidebarBrandHeader } from "@/components/sidebar/sidebar-brand-header";
@@ -61,6 +61,12 @@ import { SidebarAgentListSkeleton } from "./sidebar-agent-list-skeleton";
 import { SidebarCalloutSlot } from "./sidebar-callout-slot";
 import { SidebarWorkspaceList } from "./sidebar-workspace-list";
 import { SidebarChatList } from "./sidebar/chats/sidebar-chat-list";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
+import {
+  desktopSidebarSurface,
+  resolveShellDesign,
+  sidebarDividerColor,
+} from "./sidebar/shell-design";
 import {
   SidebarSectionBar,
   SidebarSectionTransition,
@@ -294,6 +300,37 @@ function SidebarFooter({
   );
 }
 
+const MOBILE_FLOATING_DRAWER_PEEK = 48;
+
+/**
+ * A floating frame (Soft) draws the mobile drawer as a rounded card held off the screen edges and
+ * the safe area by the frame gap, leaving a strip of the dimmed page visible on the right as the
+ * tap-to-close target. Overrides the overlay panel's full-bleed geometry; its slide transform is
+ * unchanged.
+ */
+function mobileFloatingDrawerStyle({
+  insetsTop,
+  insetsBottom,
+  windowWidth,
+  radius,
+  backgroundColor,
+}: {
+  insetsTop: number;
+  insetsBottom: number;
+  windowWidth: number;
+  radius: number;
+  backgroundColor: string;
+}) {
+  return {
+    top: insetsTop + APP_FRAME_GAP,
+    bottom: insetsBottom + APP_FRAME_GAP,
+    left: APP_FRAME_GAP,
+    width: windowWidth - APP_FRAME_GAP - MOBILE_FLOATING_DRAWER_PEEK,
+    borderRadius: radius,
+    backgroundColor,
+  };
+}
+
 function MobileSidebar({
   active,
   theme,
@@ -330,13 +367,25 @@ function MobileSidebar({
     closeSidebar();
   }, [closeSidebar]);
 
+  const { width: windowWidth } = useWindowDimensions();
+  const floating = theme.design.frame === "floating";
+  const floatingRadius = theme.borderRadius["2xl"];
   const mobileSidebarInsetStyle = useMemo(
-    () => ({
-      paddingTop: insetsTop,
-      paddingBottom: insetsBottom,
-      backgroundColor: theme.colors.surfaceSidebar,
-    }),
-    [insetsTop, insetsBottom, theme.colors.surfaceSidebar],
+    () =>
+      floating
+        ? mobileFloatingDrawerStyle({
+            insetsTop,
+            insetsBottom,
+            windowWidth,
+            radius: floatingRadius,
+            backgroundColor: theme.colors.surfaceSidebar,
+          })
+        : {
+            paddingTop: insetsTop,
+            paddingBottom: insetsBottom,
+            backgroundColor: theme.colors.surfaceSidebar,
+          },
+    [floating, floatingRadius, insetsTop, insetsBottom, theme.colors.surfaceSidebar, windowWidth],
   );
 
   return (
@@ -547,7 +596,6 @@ function DesktopSidebar({
             ) : null}
           </View>
         </View>
-        <DevBar />
 
         {chatsSupported ? <SidebarSectionBar /> : null}
         <SidebarSectionTransition section={section}>
@@ -603,7 +651,9 @@ function WorkspacesSectionHeader() {
   if (useAnyHostSupportsChats()) return null;
   return (
     <View style={styles.workspacesSectionHeader}>
-      <Text style={styles.workspacesSectionTitle}>{t("sidebar.sections.projects")}</Text>
+      <Text style={styles.workspacesSectionTitle} dataSet={DESIGN_FONT_DATASET}>
+        {t("sidebar.sections.projects")}
+      </Text>
       <View style={styles.workspacesSectionActions}>
         <Tooltip delayDuration={300}>
           <TooltipTrigger asChild>
@@ -636,14 +686,14 @@ const staticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   mobileBrandRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[2],
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: sidebarDividerColor(theme, rt.themeName),
   },
   workspacesSectionHeader: {
     flexDirection: "row",
@@ -662,6 +712,7 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.normal,
+    ...resolveShellDesign(theme, rt.themeName).sectionLabel,
   },
   workspacesSectionActions: {
     flexDirection: "row",
@@ -692,11 +743,7 @@ const styles = StyleSheet.create((theme) => ({
     borderRadius: theme.borderRadius.lg,
     backgroundColor: theme.colors.surfaceSidebar,
   },
-  desktopSidebarBorder: {
-    borderRightWidth: 1,
-    borderRightColor: theme.colors.border,
-    backgroundColor: theme.colors.surfaceSidebar,
-  },
+  desktopSidebarBorder: { ...desktopSidebarSurface(theme, rt.themeName) },
   sidebarDragArea: {
     position: "relative",
   },
@@ -711,7 +758,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[2],
     paddingHorizontal: theme.spacing[4],
     borderBottomWidth: theme.borderWidth[1],
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: sidebarDividerColor(theme, rt.themeName),
   },
   desktopChromeRowBelowLights: {
     paddingLeft: DESKTOP_TRAFFIC_LIGHT_WIDTH,
@@ -737,7 +784,7 @@ const styles = StyleSheet.create((theme) => ({
     gap: 2,
     paddingVertical: theme.spacing[2],
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: sidebarDividerColor(theme, rt.themeName),
   },
   tooltipRow: {
     flexDirection: "row",

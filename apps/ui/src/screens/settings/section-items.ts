@@ -11,14 +11,31 @@ import {
   Shield,
   FolderGit2,
   SquareTerminal,
-  Smartphone,
   MonitorSmartphone,
   Rocket,
   ShieldCheck,
   Wrench,
   Sparkles,
+  Globe,
+  Workflow,
 } from "lucide-react-native";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
+
+/** Sidebar group a section is listed under; a header shows where the group changes. */
+export type SettingsSectionGroup = "app" | "voice" | "system";
+export type HostSectionGroup = "workspace" | "access" | "daemon";
+
+export const SETTINGS_SECTION_GROUP_LABEL_KEYS: Record<SettingsSectionGroup, string> = {
+  app: "settings.navGroups.app",
+  voice: "settings.navGroups.voice",
+  system: "settings.navGroups.system",
+};
+
+export const HOST_SECTION_GROUP_LABEL_KEYS: Record<HostSectionGroup, string> = {
+  workspace: "settings.hostGroups.workspace",
+  access: "settings.hostGroups.access",
+  daemon: "settings.hostGroups.daemon",
+};
 
 /** Runtime facts that decide which app settings sections are shown. */
 export interface SettingsSectionContext {
@@ -30,6 +47,7 @@ export interface SettingsSectionContext {
 
 export interface SidebarSectionItem {
   id: SettingsSectionSlug;
+  group: SettingsSectionGroup;
   labelKey: string;
   icon: ComponentType<{ size: number; color: string }>;
   /** Omit to always show. Add conditional sections (for example a hidden one) here. */
@@ -41,33 +59,37 @@ export interface SidebarSectionItem {
 // pins this list so a merge cannot quietly bring a section back. Developer only
 // shows with About's "Developer options" switch on. About stays last.
 export const SIDEBAR_SECTION_ITEMS: SidebarSectionItem[] = [
-  { id: "general", labelKey: "settings.sections.general", icon: Settings },
-  { id: "appearance", labelKey: "settings.sections.appearance", icon: Palette },
+  { id: "general", group: "app", labelKey: "settings.sections.general", icon: Settings },
+  { id: "appearance", group: "app", labelKey: "settings.sections.appearance", icon: Palette },
   {
     id: "shortcuts",
+    group: "app",
     labelKey: "settings.sections.shortcuts",
     icon: Keyboard,
     isVisible: (context) => context.shortcutsAvailable,
   },
   {
     id: "notifications",
+    group: "voice",
     labelKey: "settings.sections.notifications",
     icon: Bell,
     isVisible: (context) => context.isDesktopApp,
   },
   {
     id: "permissions",
+    group: "system",
     labelKey: "settings.sections.permissions",
     icon: Shield,
     isVisible: (context) => context.isDesktopApp,
   },
   {
     id: "developer",
+    group: "system",
     labelKey: "settings.sections.developer",
     icon: Wrench,
     isVisible: (context) => context.developerOptions,
   },
-  { id: "about", labelKey: "settings.sections.about", icon: Info },
+  { id: "about", group: "system", labelKey: "settings.sections.about", icon: Info },
 ];
 
 export function visibleSettingsSections(context: SettingsSectionContext): SidebarSectionItem[] {
@@ -83,39 +105,57 @@ export function isSettingsSectionVisible(
 
 export interface HostSectionItem {
   id: HostSectionSlug;
+  group: HostSectionGroup;
   labelKey: string;
   icon: ComponentType<{ size: number; color: string }>;
 }
 
 export const HOST_SECTION_ITEMS: HostSectionItem[] = [
-  { id: "host", labelKey: "settings.hostSections.host", icon: Server },
-  {
-    id: "security",
-    labelKey: "settings.hostSections.security",
-    icon: ShieldCheck,
-  },
-  { id: "deploy", labelKey: "settings.hostSections.deploy", icon: Rocket },
   {
     id: "projects",
+    group: "workspace",
     labelKey: "settings.hostSections.projects",
     icon: FolderGit2,
   },
+  { id: "agents", group: "workspace", labelKey: "settings.hostSections.agents", icon: Bot },
   {
-    id: "pair-device",
-    labelKey: "openProject.tiles.pairDevice.title",
-    icon: Smartphone,
+    id: "providers",
+    group: "workspace",
+    labelKey: "settings.hostSections.providers",
+    icon: Boxes,
   },
-  {
-    id: "devices",
-    labelKey: "settings.hostSections.devices",
-    icon: MonitorSmartphone,
-  },
-  { id: "agents", labelKey: "settings.hostSections.agents", icon: Bot },
-  { id: "providers", labelKey: "settings.hostSections.providers", icon: Boxes },
-  { id: "skills", labelKey: "settings.hostSections.skills", icon: Sparkles },
+  { id: "skills", group: "workspace", labelKey: "settings.hostSections.skills", icon: Sparkles },
   {
     id: "terminals",
+    group: "workspace",
     labelKey: "settings.hostSections.terminals",
     icon: SquareTerminal,
   },
+  {
+    id: "automation",
+    group: "workspace",
+    labelKey: "settings.hostSections.automation",
+    icon: Workflow,
+  },
+  {
+    id: "devices",
+    group: "access",
+    labelKey: "settings.hostSections.devices",
+    icon: MonitorSmartphone,
+  },
+  {
+    id: "security",
+    group: "access",
+    labelKey: "settings.hostSections.security",
+    icon: ShieldCheck,
+  },
+  {
+    id: "web-client",
+    group: "access",
+    labelKey: "settings.hostSections.webClient",
+    icon: Globe,
+  },
+  { id: "host", group: "daemon", labelKey: "settings.hostSections.host", icon: Server },
+  { id: "updates", group: "daemon", labelKey: "settings.hostSections.updates", icon: Rocket },
+  { id: "developer", group: "daemon", labelKey: "settings.sections.developer", icon: Wrench },
 ];

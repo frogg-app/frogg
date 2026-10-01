@@ -4,6 +4,8 @@ import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import type { LucideIcon } from "lucide-react-native";
 import { HEADER_INNER_HEIGHT, HEADER_INNER_HEIGHT_MOBILE } from "@/constants/layout";
 import { ICON_SIZE } from "@/styles/theme";
+import { resolveShellRows } from "@/components/sidebar/shell-rows";
+import { sidebarDividerColor } from "@/components/sidebar/shell-design";
 import type { Theme } from "@/styles/theme";
 import { Shortcut } from "@/components/ui/shortcut";
 import { MenuTrigger } from "@/components/ui/menu";
@@ -55,7 +57,8 @@ export function SidebarHeaderRow({
   const ThemedIcon = useMemo(() => withUnistyles(Icon), [Icon]);
 
   const containerStyle = useMemo(
-    () => (variant === "compact" ? styles.containerCompact : styles.container),
+    () =>
+      variant === "compact" ? styles.containerCompact : [styles.container, styles.containerDesign],
     [variant],
   );
 
@@ -167,7 +170,7 @@ function SidebarHeaderRowLabel({
   return <Text style={labelStyle}>{label}</Text>;
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   container: {
     height: {
       xs: HEADER_INNER_HEIGHT_MOBILE,
@@ -178,6 +181,10 @@ const styles = StyleSheet.create((theme) => ({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     userSelect: "none",
+  },
+  // A sibling of `container` because `container` has breakpoints.
+  containerDesign: {
+    borderBottomColor: sidebarDividerColor(theme, rt.themeName),
   },
   containerCompact: {
     paddingHorizontal: theme.spacing[2],
@@ -198,16 +205,16 @@ const styles = StyleSheet.create((theme) => ({
   // Compact header entries (Home / Search / History) sit tighter than the
   // workspace-row shape the base button mirrors.
   buttonCompact: {
-    minHeight: 32,
-    paddingVertical: theme.spacing[1.5],
     // Match the project rows' inner padding so the icons align on one vertical
     // edge with the workspace list below (base button uses a wider spacing[3]).
     paddingHorizontal: theme.spacing[2],
+    // Height, padding and radius follow the design direction (32 / 6 / lg in `current`).
+    ...resolveShellRows(rt.themeName).navRow,
   },
   iconButton: {
     width: 32,
     height: 32,
-    borderRadius: theme.borderRadius.lg,
+    borderRadius: resolveShellRows(rt.themeName).iconButtonRadius,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -224,9 +231,8 @@ const styles = StyleSheet.create((theme) => ({
     backgroundColor: theme.colors.surfaceSidebarHover,
   },
   label: {
-    fontSize: theme.fontSize.base,
-    fontWeight: theme.fontWeight.normal,
     color: theme.colors.foregroundMuted,
+    ...resolveShellRows(rt.themeName).navText,
   },
   labelHighlighted: {
     color: theme.colors.foreground,

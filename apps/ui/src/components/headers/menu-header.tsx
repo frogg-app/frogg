@@ -8,6 +8,7 @@ import { ScreenTitle } from "./screen-title";
 import { HeaderToggleButton, headerIconSlotStyle } from "./header-toggle-button";
 import { selectIsAgentListOpen, usePanelStore } from "@/stores/panel-store";
 import { useIsCompactFormFactor } from "@/constants/layout";
+import { useDesignChrome } from "@/design/layouts/design-slot";
 import { getShortcutOs } from "@/utils/shortcut-platform";
 import { useHasWindowChromeObstruction, useOwnsWindowChromeCorner } from "@/utils/desktop-window";
 import { iconButtonChromeGlyphSize } from "@/components/ui/icon-button-chrome";
@@ -106,6 +107,7 @@ function SidebarMenuToggleButton({
 
 export function SidebarMenuToggle({ style, ...props }: SidebarMenuToggleProps = {}) {
   const isMobile = useIsCompactFormFactor();
+  const hiddenByDesign = useSidebarToggleOwnedByDesign();
   const ownsTopLeft = useOwnsWindowChromeCorner("top-left");
   const hasTopLeftWindowControls = useHasWindowChromeObstruction("top-left");
   const resolvedStyle = useMemo(() => [styles.leadingToggle, style], [style]);
@@ -114,7 +116,7 @@ export function SidebarMenuToggle({ style, ...props }: SidebarMenuToggleProps = 
     [resolvedStyle],
   );
 
-  if (!isMobile && !ownsTopLeft) {
+  if (!isMobile && (!ownsTopLeft || hiddenByDesign)) {
     return null;
   }
 
@@ -131,6 +133,8 @@ export function SidebarMenuToggle({ style, ...props }: SidebarMenuToggleProps = 
 
 export function WindowSidebarMenuToggle({ style, ...props }: SidebarMenuToggleProps = {}) {
   const resolvedStyle = useMemo(() => [styles.leadingToggle, style], [style]);
+  const hiddenByDesign = useSidebarToggleOwnedByDesign();
+  if (hiddenByDesign) return null;
   return (
     <SidebarMenuToggleButton
       {...props}
@@ -139,6 +143,13 @@ export function WindowSidebarMenuToggle({ style, ...props }: SidebarMenuTogglePr
       resolvedStyle={resolvedStyle}
     />
   );
+}
+
+/** A design direction whose open sidebar carries its own collapse control hides this one. */
+function useSidebarToggleOwnedByDesign(): boolean {
+  const { ownsSidebarToggle } = useDesignChrome();
+  const sidebarOpen = usePanelStore((state) => state.desktop.agentListOpen);
+  return Boolean(ownsSidebarToggle) && sidebarOpen;
 }
 
 export function MenuHeader({ title, rightContent, borderless }: MenuHeaderProps) {

@@ -3,13 +3,13 @@ import type { ComponentType, ReactNode } from "react";
 import { ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
 import { EditingTextInput as TextInput } from "@/components/ui/text-input";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Buffer } from "buffer";
 import { FolderGit2 } from "lucide-react-native";
 import { DropdownTrigger } from "@/components/ui/dropdown-trigger";
-import { ScreenTitle } from "@/components/headers/screen-title";
 import { HeaderIconBadge } from "@/components/headers/header-icon-badge";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { AppearanceSection } from "@/screens/settings/appearance/appearance-section";
@@ -45,7 +45,9 @@ import { isElectronRuntime } from "@/desktop/host";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { isBetaBuild, resolveAppVersion } from "@/utils/app-version";
 import { useAppDiagnosticStore } from "@/diagnostics/store";
+import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { settingsStyles } from "@/styles/settings";
+import { settingsTreatment } from "@/styles/settings-treatment";
 import { THINKING_TONE_NATIVE_PCM_BASE64 } from "@/utils/thinking-tone.native-pcm";
 import { useVoiceAudioEngineOptional } from "@/contexts/voice-context";
 import {
@@ -56,15 +58,17 @@ import {
   type SupportedLocale,
 } from "@/localisation/locales";
 import {
-  HostPairDevicePage,
+  HostAutomationPage,
   HostDevicesPage,
   HostAgentsPage,
   HostSettingsPage,
-  HostDeployPage,
+  HostUpdatesPage,
   HostProvidersPage,
   HostTerminalsPage,
 } from "@/screens/settings/host-page";
 import { HostSkillsSection } from "@/screens/settings/skills-section";
+import { HostWebClientSection } from "@/screens/settings/host-web-client-section";
+import { HostDeveloperPage } from "@/screens/settings/developer/host-developer-page";
 import ProjectsScreen from "@/screens/projects-screen";
 import ProjectSettingsScreen from "@/screens/project-settings-screen";
 import { useIsCompactFormFactor } from "@/constants/layout";
@@ -97,12 +101,12 @@ function renderHostSettingsContent(
   onHostRemoved: () => void,
 ): ReactNode {
   switch (view.section) {
-    case "deploy":
-      return <HostDeployPage serverId={view.serverId} />;
+    case "updates":
+      return <HostUpdatesPage serverId={view.serverId} />;
+    case "automation":
+      return <HostAutomationPage serverId={view.serverId} />;
     case "projects":
       return <ProjectsScreen serverId={view.serverId} />;
-    case "pair-device":
-      return <HostPairDevicePage serverId={view.serverId} />;
     case "devices":
       return <HostDevicesPage serverId={view.serverId} />;
     case "security":
@@ -115,6 +119,10 @@ function renderHostSettingsContent(
       return <HostSkillsSection serverId={view.serverId} />;
     case "terminals":
       return <HostTerminalsPage serverId={view.serverId} />;
+    case "web-client":
+      return <HostWebClientSection serverId={view.serverId} />;
+    case "developer":
+      return <HostDeveloperPage serverId={view.serverId} />;
     case "host":
       return <HostSettingsPage serverId={view.serverId} onHostRemoved={onHostRemoved} />;
   }
@@ -823,7 +831,14 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
       <HeaderIconBadge>
         <detailHeader.Icon size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
       </HeaderIconBadge>
-      <ScreenTitle testID="settings-detail-header-title">{detailHeader.title}</ScreenTitle>
+      <Text
+        testID="settings-detail-header-title"
+        dataSet={DESIGN_FONT_DATASET}
+        numberOfLines={1}
+        style={desktopPageTitleStyle()}
+      >
+        {detailHeader.title}
+      </Text>
       {detailHeader.titleAccessory}
     </>
   ) : null;
@@ -939,7 +954,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
 // Styles
 // ---------------------------------------------------------------------------
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   loadingContainer: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -953,6 +968,7 @@ const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
+    ...settingsTreatment(designThemeOf(theme, rt.themeName)).page,
   },
   scrollView: {
     flex: 1,
@@ -962,7 +978,9 @@ const styles = StyleSheet.create((theme) => ({
     paddingTop: theme.spacing[6],
     width: "100%",
     maxWidth: 720,
-    alignSelf: "center",
+    // Anchored beside the nav rather than floating mid-pane on a wide modal.
+    alignSelf: "flex-start",
+    ...settingsTreatment(designThemeOf(theme, rt.themeName)).content,
   },
   themeTrigger: {
     flexDirection: "row",
@@ -1003,7 +1021,7 @@ const styles = StyleSheet.create((theme) => ({
   },
 }));
 
-const desktopStyles = StyleSheet.create((theme) => ({
+const desktopStyles = StyleSheet.create((theme, rt) => ({
   row: {
     flex: 1,
     flexDirection: "row",
@@ -1014,4 +1032,22 @@ const desktopStyles = StyleSheet.create((theme) => ({
   detailLeft: {
     gap: theme.spacing[2],
   },
+  // ScreenTitle's typography, plus the direction's display face (hence the font dataset tag).
+  pageTitle: {
+    flexShrink: 1,
+    minWidth: 0,
+    fontSize: theme.fontSize.base,
+    fontWeight: {
+      xs: "400",
+      md: "300",
+    },
+    color: theme.colors.foreground,
+  },
+  // Kept apart from `pageTitle` so its breakpoint weight keeps Unistyles' narrowed style type.
+  pageTitleDesign: {
+    ...settingsTreatment(designThemeOf(theme, rt.themeName)).pageTitle,
+  },
 }));
+
+// Composed at render: reading style proxies at module scope is not allowed.
+const desktopPageTitleStyle = () => [desktopStyles.pageTitle, desktopStyles.pageTitleDesign];

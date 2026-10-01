@@ -29,7 +29,11 @@ import { MarkdownTableCellText } from "@/components/markdown-text-selection";
 import { getMarkdownListMarker, getMarkdownListSpacing } from "@/utils/markdown-list";
 import { markdownNodeContainsType } from "@/utils/markdown-ast";
 import { createMarkdownParser } from "@/utils/markdown-parser";
-import { createCompactMarkdownStyles, createMarkdownStyles } from "@/styles/markdown-styles";
+import {
+  createCompactMarkdownStyles,
+  createMarkdownStyles,
+  withDesignProse,
+} from "@/styles/markdown-styles";
 import type { Theme } from "@/styles/theme";
 import { openExternalUrl } from "@/utils/open-external-url";
 import { isNative } from "@/constants/platform";
@@ -62,6 +66,10 @@ function markdownStyleMapping(theme: Theme): Partial<MarkdownWithStableRendererP
   return { style: createMarkdownStyles(theme) };
 }
 
+function proseMarkdownStyleMapping(theme: Theme): Partial<MarkdownWithStableRendererProps> {
+  return { style: withDesignProse(createMarkdownStyles(theme), theme) };
+}
+
 function compactMarkdownStyleMapping(theme: Theme): Partial<MarkdownWithStableRendererProps> {
   return { style: createCompactMarkdownStyles(theme) };
 }
@@ -74,6 +82,8 @@ const MARKDOWN_LIST_ITEM_CONTENT_FLEX: ViewStyle = { flex: 1, flexShrink: 1, min
 export interface MarkdownRendererProps {
   text: string;
   compact?: boolean;
+  /** Assistant prose: drawn in the design's content face when it has one. */
+  prose?: boolean;
   rules?: RenderRules;
   markdownit?: ReturnType<typeof MarkdownIt>;
   onLinkPress?: (url: string) => boolean;
@@ -85,6 +95,7 @@ export interface MarkdownRendererProps {
 export function MarkdownRenderer({
   text,
   compact = false,
+  prose = false,
   rules,
   markdownit = defaultMarkdownParser,
   onLinkPress,
@@ -100,6 +111,7 @@ export function MarkdownRenderer({
   const rendererProps = useMemo(
     () => ({
       compact,
+      prose,
       rules: markdownRules,
       markdownit,
       onLinkPress,
@@ -109,6 +121,7 @@ export function MarkdownRenderer({
     [
       allowedImageHandlers,
       compact,
+      prose,
       markdownRules,
       markdownit,
       onLinkPress,
@@ -194,13 +207,14 @@ function MarkdownPart({
 function MarkdownFragment({
   text,
   compact,
+  prose,
   rules,
   markdownit,
   onLinkPress,
   allowedImageHandlers,
   topLevelMaxExceededItem,
 }: MarkdownRendererProps & { rules: RenderRules }) {
-  const uniProps = compact ? compactMarkdownStyleMapping : markdownStyleMapping;
+  const uniProps = resolveStyleMapping({ compact, prose });
   return (
     <ThemedMarkdown
       uniProps={uniProps}
@@ -213,6 +227,13 @@ function MarkdownFragment({
       {text}
     </ThemedMarkdown>
   );
+}
+
+function resolveStyleMapping(input: { compact?: boolean; prose?: boolean }) {
+  if (input.compact) {
+    return compactMarkdownStyleMapping;
+  }
+  return input.prose ? proseMarkdownStyleMapping : markdownStyleMapping;
 }
 
 function useNaturalImageDimensions(part: MarkdownInlineImagePart): {

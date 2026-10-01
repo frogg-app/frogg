@@ -1,7 +1,7 @@
 import { brand } from "@frogg/branding";
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import http from "node:http";
 import net from "node:net";
@@ -61,6 +61,30 @@ export interface BetaChannelServiceOptions {
   now?: () => Date;
   runTimeoutMs?: number;
   latestCacheMs?: number;
+  /** Runs `systemctl --user …` for the service port repair; returns the exit status. */
+  runSystemctl?: (args: string[]) => number | null;
+}
+
+/**
+ * The beta's systemd unit with a stale listen port rewritten, or null when it needs nothing.
+ *
+ * Betas installed before the web client got its own port were given the stable daemon's port
+ * minus one — which is now the stable web client's port. Such a unit keeps that address across
+ * updates (the installer only writes the unit on install), so the beta and stable web client
+ * fight for it and clients looking on the beta port find nothing. Only that retired address is
+ * rewritten; any other port was chosen on purpose and is left alone.
+ */
+export function repairStaleBetaServiceListen(
+  contents: string,
+  input: { envKey: string; stalePort: number; port: number },
+): string | null {
+  if (input.stalePort === input.port) return null;
+  const pattern = new RegExp(
+    `^(Environment="?${input.envKey}=[^:\\s"]*:)${input.stalePort}("?)$`,
+    "m",
+  );
+  if (!pattern.test(contents)) return null;
+  return contents.replace(pattern, `$1${input.port}$2`);
 }
 
 export type BetaChannelStatusPayload = DaemonBetaChannelStatus;
@@ -171,6 +195,9 @@ export async function probeListening(port: number): Promise<boolean> {
   return results.includes(true);
 }
 
+/** How long a self-stop waits, so the stop reply reaches the client first. */
+const SELF_STOP_DELAY_MS = 500;
+
 export class BetaChannelService {
   private readonly logger: pino.Logger;
   private readonly env: NodeJS.ProcessEnv;
@@ -187,6 +214,8 @@ export class BetaChannelService {
   private readonly now: () => Date;
   private readonly runTimeoutMs: number;
   private readonly latestCacheMs: number;
+  private readonly runSystemctl: (args: string[]) => number | null;
+  private servicePortChecked = false;
   private broadcaster: ((msg: SessionOutboundMessage) => void) | null = null;
   private run: DaemonBetaChannelRun | null = null;
   private completion: Promise<void> | null = null;
@@ -210,6 +239,46 @@ export class BetaChannelService {
     this.now = options.now ?? (() => new Date());
     this.runTimeoutMs = options.runTimeoutMs ?? DEFAULT_RUN_TIMEOUT_MS;
     this.latestCacheMs = options.latestCacheMs ?? DEFAULT_LATEST_CACHE_MS;
+    this.runSystemctl =
+      options.runSystemctl ??
+      ((args) => spawnSync("systemctl", ["--user", ...args], { stdio: "ignore" }).status);
+  }
+
+  /**
+   * Moves a beta service still on the retired port (see repairStaleBetaServiceListen) to the
+   * beta's port, and restarts it if it was running. Once per daemon run; Linux user units only.
+   */
+  private repairServicePort(): void {
+    if (this.servicePortChecked) return;
+    this.servicePortChecked = true;
+    if (this.selfChannel !== "stable" || this.platform !== "linux") return;
+    const configHome = this.env.XDG_CONFIG_HOME || path.join(this.homedir, ".config");
+    const unit = path.join(configHome, "systemd", "user", `${this.beta.serviceName}.service`);
+    let contents: string;
+    try {
+      contents = readFileSync(unit, "utf8");
+    } catch {
+      return;
+    }
+    const repaired = repairStaleBetaServiceListen(contents, {
+      envKey: `${brand.channels.stable.id.toUpperCase()}_BETA_LISTEN`,
+      stalePort: brand.channels.stable.webPort,
+      port: this.beta.daemonPort,
+    });
+    if (repaired === null) return;
+    try {
+      writeFileSync(unit, repaired);
+      this.runSystemctl(["daemon-reload"]);
+      if (this.runSystemctl(["is-active", "--quiet", this.beta.serviceName]) === 0) {
+        this.runSystemctl(["restart", this.beta.serviceName]);
+      }
+      this.logger.info(
+        { unit, port: this.beta.daemonPort },
+        "Moved the beta service off the stable web client's port",
+      );
+    } catch (error) {
+      this.logger.warn({ err: error, unit }, "Could not repair the beta service's port");
+    }
   }
 
   setBroadcaster(broadcaster: (msg: SessionOutboundMessage) => void): void {
@@ -286,6 +355,7 @@ export class BetaChannelService {
   }
 
   async status(): Promise<BetaChannelStatusPayload> {
+    this.repairServicePort();
     const reason = this.unsupportedReason();
     const selfIsBeta = this.selfChannel === "beta";
     const installedVersion = selfIsBeta ? null : this.readInstalledVersion();
@@ -331,6 +401,7 @@ export class BetaChannelService {
    * supervises it. Returns an error message, or null on success.
    */
   async setRunning(running: boolean): Promise<string | null> {
+    if (this.selfChannel === "beta") return this.setSelfRunning(running);
     const reason = this.unsupportedReason();
     if (reason) return reason;
     if (this.readInstalledVersion() === null)
@@ -371,6 +442,28 @@ export class BetaChannelService {
     } catch (error) {
       return error instanceof Error ? error.message : String(error);
     }
+  }
+
+  /**
+   * This daemon is the beta: it is already running, and stopping it goes through its own CLI a
+   * moment after the reply, so the client hears back before the connection drops.
+   */
+  private setSelfRunning(running: boolean): string | null {
+    if (running) return null;
+    const cli = path.join(this.installDir, "current", "bin", this.beta.cliName);
+    if (!existsSync(cli))
+      return `${this.beta.name} is not an installed daemon; stop it where it was started.`;
+    const betaPrefix = `${brand.channels.stable.id.toUpperCase()}_BETA`;
+    const env = scrubInstallerEnv(this.env, ["FROGG", brand.envPrefix, betaPrefix]);
+    setTimeout(() => {
+      try {
+        const child = this.spawnScript(cli, ["daemon", "stop"], { env, cwd: this.homedir });
+        child.once("error", (error) => this.logger.warn({ err: error }, "Self-stop failed"));
+      } catch (error) {
+        this.logger.warn({ err: error }, "Self-stop failed");
+      }
+    }, SELF_STOP_DELAY_MS);
+    return null;
   }
 
   private start(

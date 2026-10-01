@@ -1,7 +1,9 @@
 import React, { memo, useCallback, useMemo, type ReactNode } from "react";
+import { themeOf } from "@/styles/design-theme";
+import { metaTextStyle, readingColumnMaxWidth, workingIndicatorColor } from "./conversation-design";
+import { MonoMetaView } from "./design-scopes";
 import { View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { MAX_CONTENT_WIDTH } from "@/constants/layout";
 import { SPACING, type Theme } from "@/styles/theme";
 import type { TurnTiming } from "@/timeline/turn-time";
 import type { StreamItem } from "@/types/stream";
@@ -22,7 +24,7 @@ import { SyncedLoader } from "@/components/synced-loader";
 import { useRetainedPanelActive } from "@/components/retained-panel";
 
 const ThemedSyncedLoader = withUnistyles(SyncedLoader);
-const workingIndicatorColorMapping = (theme: Theme) => ({ color: theme.colors.foreground });
+const workingIndicatorColorMapping = (theme: Theme) => ({ color: workingIndicatorColor(theme) });
 export const TURN_FOOTER_BOTTOM_SPACING = SPACING[8];
 
 export type TurnContentStrategy = StreamStrategy;
@@ -122,7 +124,7 @@ const WorkingIndicator = memo(function WorkingIndicator({
 }) {
   const active = useRetainedPanelActive();
   return (
-    <View style={stylesheet.turnFooterContent}>
+    <MonoMetaView style={stylesheet.turnFooterContent}>
       <View style={stylesheet.workingLoader}>
         <ThemedSyncedLoader size={14} uniProps={workingIndicatorColorMapping} />
       </View>
@@ -136,7 +138,7 @@ const WorkingIndicator = memo(function WorkingIndicator({
           testID="turn-working-elapsed"
         />
       ) : null}
-    </View>
+    </MonoMetaView>
   );
 });
 
@@ -212,10 +214,10 @@ function TurnFooterRow({ children }: { children: ReactNode }) {
   return <View style={rowStyle}>{children}</View>;
 }
 
-const stylesheet = StyleSheet.create((theme) => ({
+const stylesheet = StyleSheet.create((theme, rt) => ({
   streamItemWrapper: {
     width: "100%",
-    maxWidth: MAX_CONTENT_WIDTH,
+    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
     alignSelf: "center",
     paddingHorizontal: theme.spacing[2],
   },
@@ -240,6 +242,7 @@ const stylesheet = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: STREAM_METADATA_FONT_SIZE,
     fontVariant: ["tabular-nums"],
+    ...metaTextStyle(themeOf(rt.themeName)),
   },
   workingLoader: {
     marginLeft: -2,

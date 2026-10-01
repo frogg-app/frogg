@@ -23,6 +23,7 @@ import {
 } from "@frogg/protocol/terminal-profiles";
 import { ProviderAgentDefinitionsSection } from "@/agent-definitions";
 import { MetadataGenerationPage } from "@/screens/settings/metadata-generation-page";
+import { useHostPairingHidden } from "@/screens/settings/host-section-visibility";
 import { AdaptiveModalSheet, type SheetHeader } from "@/components/adaptive-modal-sheet";
 import { SettingsTextAreaCard } from "@/components/settings-textarea";
 import { Alert as InlineAlert } from "@/components/ui/alert";
@@ -72,7 +73,6 @@ import { HostAppearanceSection } from "@/screens/settings/host-appearance-sectio
 import { HostDaemonUpdateSection } from "@/screens/settings/host-daemon-update-section";
 import { HostSshDeploySection } from "@/screens/settings/host-ssh-deploy-section";
 import { HostResourcesSection } from "@/screens/settings/host-resources-section";
-import { HostWebClientSection } from "@/screens/settings/host-web-client-section";
 import { CleanCutSection } from "@/screens/settings/clean-cut-section";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { useSessionStore } from "@/stores/session-store";
@@ -172,22 +172,6 @@ function openAddHostMethods(): void {
   openAddHostFlow("methods");
 }
 
-export function HostPairDevicePage({ serverId }: { serverId: string }) {
-  const { t } = useTranslation();
-  const host = useHostProfile(serverId);
-
-  if (!host) {
-    return <HostNotFound />;
-  }
-
-  return (
-    <SettingsSection title={t("settings.host.pairDevices.title")}>
-      <PairDeviceRow serverId={serverId} />
-      <RelayEndpointCard serverId={serverId} />
-    </SettingsSection>
-  );
-}
-
 /**
  * Who can reach this daemon. Every block gates itself on what the daemon
  * advertises and on this device's own role, so an operator or a viewer sees
@@ -197,6 +181,7 @@ export function HostDevicesPage({ serverId }: { serverId: string }) {
   const { t } = useTranslation();
   const host = useHostProfile(serverId);
   const access = useDeviceAccess(serverId);
+  const pairingHidden = useHostPairingHidden(serverId);
 
   if (!host) {
     return <HostNotFound />;
@@ -204,6 +189,13 @@ export function HostDevicesPage({ serverId }: { serverId: string }) {
 
   return (
     <View>
+      {pairingHidden ? null : (
+        <SettingsSection title={t("settings.host.pairDevices.title")} testID="host-devices-pair">
+          <PairDeviceRow serverId={serverId} />
+          <RelayEndpointCard serverId={serverId} />
+        </SettingsSection>
+      )}
+
       <SettingsSection title={t("deviceAccess.callerRole.title")} testID="host-devices-caller-role">
         <CallerRoleCard serverId={serverId} />
       </SettingsSection>
@@ -282,6 +274,7 @@ export function HostAgentsPage({ serverId }: { serverId: string }) {
           <Text style={styles.emptyText}>{t("settings.host.agents.unavailable")}</Text>
         </View>
       )}
+      {isConnected ? <MetadataGenerationPage serverId={serverId} /> : null}
     </View>
   );
 }
@@ -302,11 +295,54 @@ export function HostProvidersPage({ serverId }: { serverId: string }) {
   );
 }
 
-/** Deployment is separate from Overview so an SSH host's lifecycle is explicit. */
-export function HostDeployPage({ serverId }: { serverId: string }) {
+/** Workspace housekeeping the daemon does on its own. */
+export function HostAutomationPage({ serverId }: { serverId: string }) {
+  const { t } = useTranslation();
   const host = useHostProfile(serverId);
-  if (!host) return <HostNotFound />;
-  return <HostSshDeploySection host={host} />;
+  const isConnected = useHostRuntimeIsConnected(serverId);
+
+  if (!host) {
+    return <HostNotFound />;
+  }
+
+  if (!isConnected) {
+    return (
+      <View style={[settingsStyles.card, styles.emptyCard]}>
+        <Text style={styles.emptyText}>{t("settings.host.automation.unavailable")}</Text>
+      </View>
+    );
+  }
+
+  return (
+    <SettingsSection title={t("settings.hostSections.workspaces")}>
+      <AutoArchiveMergedWorkspacesCard serverId={serverId} />
+      <AutoResumeOnUsageLimitCard serverId={serverId} />
+    </SettingsSection>
+  );
+}
+
+/** The daemon's lifecycle: its version, how it updates, and how it is deployed or run. */
+export function HostUpdatesPage({ serverId }: { serverId: string }) {
+  const host = useHostProfile(serverId);
+  const isLocalDaemon = useIsLocalDaemon(serverId);
+
+  if (!host) {
+    return <HostNotFound />;
+  }
+
+  return (
+    <View>
+      {isLocalDaemon ? <LocalDaemonSection /> : null}
+
+      {!isLocalDaemon ? <UpdateDaemonCard key={host.serverId} host={host} /> : null}
+
+      {/* Any transport: the daemon itself reports whether it can self-update. */}
+      <HostDaemonUpdateSection key={`self-update-${host.serverId}`} host={host} />
+
+      {/* Only for a host reached over SSH, in the desktop app. */}
+      <HostSshDeploySection host={host} />
+    </View>
+  );
 }
 
 function HostProviderUsage({ serverId }: { serverId: string }) {
@@ -339,10 +375,8 @@ export function HostSettingsPage({
   serverId: string;
   onHostRemoved?: () => void;
 }) {
-  const { t } = useTranslation();
   const host = useHostProfile(serverId);
   const isLocalDaemon = useIsLocalDaemon(serverId);
-  const isConnected = useHostRuntimeIsConnected(serverId);
 
   if (!host) {
     return <HostNotFound />;
@@ -362,28 +396,10 @@ export function HostSettingsPage({
 
       <HostAppearanceSection host={host} />
 
-      {isLocalDaemon ? <LocalDaemonSection /> : null}
-
-      {!isLocalDaemon ? <UpdateDaemonCard key={host.serverId} host={host} /> : null}
-
-      {/* Any transport: the daemon itself reports whether it can self-update. */}
-      <HostDaemonUpdateSection key={`self-update-${host.serverId}`} host={host} />
-
       <DaemonConflictWarning serverId={serverId} />
       <ConnectionsSection host={host} />
 
-      <HostWebClientSection serverId={serverId} />
-
       <HostResourcesSection serverId={serverId} />
-
-      {isConnected ? (
-        <SettingsSection title={t("settings.hostSections.workspaces")}>
-          <AutoArchiveMergedWorkspacesCard serverId={serverId} />
-          <AutoResumeOnUsageLimitCard serverId={serverId} />
-        </SettingsSection>
-      ) : null}
-
-      {isConnected ? <MetadataGenerationPage serverId={serverId} /> : null}
 
       <RemoveHostSection host={host} isLocalDaemon={isLocalDaemon} onRemoved={onHostRemoved} />
     </View>
@@ -1883,6 +1899,7 @@ function TerminalProfilesSection({ serverId }: { serverId: string }) {
 }
 
 export function HostTerminalsPage({ serverId }: { serverId: string }) {
+  const { t } = useTranslation();
   const host = useHostProfile(serverId);
 
   if (!host) {
@@ -1891,7 +1908,7 @@ export function HostTerminalsPage({ serverId }: { serverId: string }) {
 
   return (
     <View>
-      <SettingsSection title="Terminal agents">
+      <SettingsSection title={t("settings.host.terminalAgents.title")}>
         <EnableTerminalAgentHooksCard serverId={serverId} />
       </SettingsSection>
       <TerminalProfilesSection serverId={serverId} />

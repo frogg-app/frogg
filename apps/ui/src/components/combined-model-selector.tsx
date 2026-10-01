@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MonoMetaText } from "@/agent-stream/design-scopes";
+import { composerControlStyle, composerControlTextStyle } from "@/agent-stream/conversation-design";
+import { themeOf } from "@/styles/design-theme";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -142,13 +145,14 @@ export function CombinedModelSelector({
       }
       return [
         styles.trigger,
+        toolbar ? styles.triggerToolbar : null,
         Boolean(hovered) && styles.triggerHovered,
         (pressed || isOpen) && styles.triggerPressed,
         disabled && styles.triggerDisabled,
         renderTrigger ? styles.customTriggerWrapper : null,
       ];
     },
-    [disabled, isOpen, renderTrigger, triggerFill],
+    [disabled, isOpen, renderTrigger, toolbar, triggerFill],
   );
 
   const selectorBody = isContentReady ? (
@@ -214,9 +218,13 @@ export function CombinedModelSelector({
               />
             </View>
           ) : null}
-          <Text style={styles.triggerText} numberOfLines={1} ellipsizeMode="tail">
+          <MonoMetaText
+            style={toolbar ? styles.triggerTextToolbar : styles.triggerText}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {browser.triggerLabel}
-          </Text>
+          </MonoMetaText>
         </ComboboxTrigger>
       )}
       <Combobox
@@ -241,7 +249,7 @@ export function CombinedModelSelector({
   );
 }
 
-const styles = StyleSheet.create((theme) => ({
+const styles = StyleSheet.create((theme, rt) => ({
   mobileBrowserContent: {
     paddingHorizontal: 0,
   },
@@ -255,6 +263,10 @@ const styles = StyleSheet.create((theme) => ({
     gap: theme.spacing[1],
     paddingHorizontal: theme.spacing[2],
     borderRadius: theme.borderRadius["2xl"],
+  },
+  // The composer toolbar chip follows the design's composer controls (see AgentControlTrigger).
+  triggerToolbar: {
+    ...composerControlStyle(themeOf(rt.themeName)),
   },
   triggerHovered: {
     backgroundColor: theme.colors.surface2,
@@ -281,6 +293,14 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
+  },
+  triggerTextToolbar: {
+    minWidth: 0,
+    flexShrink: 1,
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.normal,
+    ...composerControlTextStyle(themeOf(rt.themeName)),
   },
   customTriggerWrapper: {
     paddingHorizontal: 0,

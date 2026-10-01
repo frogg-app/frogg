@@ -161,7 +161,7 @@ describe("HostSecurityCard", () => {
     expect(runtime.navigate).toHaveBeenCalledWith({
       kind: "host",
       serverId: SERVER,
-      section: "pair-device",
+      section: "devices",
     });
     await waitFor(() => expect(runtime.client?.getDaemonSecurityPosture).toHaveBeenCalled());
   });
