@@ -1349,6 +1349,7 @@ export const zhCN: TranslationResources = {
       undo: "撤销",
     },
     workspaceDraft: "新建会话（草稿）",
+    workspaceDraftDiscard: "丢弃草稿",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "账号：{{value}}",
     hostsMenu: {

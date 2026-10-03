@@ -1372,6 +1372,7 @@ export const ko: TranslationResources = {
       undo: "실행 취소",
     },
     workspaceDraft: "새 작업 공간 (초안)",
+    workspaceDraftDiscard: "초안 삭제",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "계정: {{value}}",
     hostsMenu: {

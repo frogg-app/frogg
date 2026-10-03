@@ -1399,6 +1399,7 @@ export const fr: TranslationResources = {
       undo: "Annuler",
     },
     workspaceDraft: "Nouvelle session (brouillon)",
+    workspaceDraftDiscard: "Supprimer le brouillon",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Compte : {{value}}",
     hostsMenu: {

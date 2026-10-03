@@ -1381,6 +1381,7 @@ export const ru: TranslationResources = {
       undo: "Отменить",
     },
     workspaceDraft: "Новая сессия (черновик)",
+    workspaceDraftDiscard: "Удалить черновик",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Аккаунт: {{value}}",
     hostsMenu: {

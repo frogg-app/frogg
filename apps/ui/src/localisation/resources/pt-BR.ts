@@ -1390,6 +1390,7 @@ export const ptBR: TranslationResources = {
       undo: "Desfazer",
     },
     workspaceDraft: "Novo espaço de trabalho (rascunho)",
+    workspaceDraftDiscard: "Descartar rascunho",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Conta: {{value}}",
     hostsMenu: {

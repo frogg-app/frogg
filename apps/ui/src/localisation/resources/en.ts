@@ -1375,6 +1375,7 @@ export const en = {
       undo: "Undo",
     },
     workspaceDraft: "New session (draft)",
+    workspaceDraftDiscard: "Discard draft",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Account: {{value}}",
     hostsMenu: {

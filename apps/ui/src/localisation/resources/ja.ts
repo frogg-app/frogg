@@ -1379,6 +1379,7 @@ export const ja: TranslationResources = {
       undo: "元に戻す",
     },
     workspaceDraft: "新しいセッション（下書き）",
+    workspaceDraftDiscard: "下書きを破棄",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "アカウント: {{value}}",
     hostsMenu: {

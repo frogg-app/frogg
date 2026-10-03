@@ -1361,6 +1361,7 @@ export const ar: TranslationResources = {
       undo: "تراجع",
     },
     workspaceDraft: "جلسة جديدة (مسودة)",
+    workspaceDraftDiscard: "تجاهل المسودة",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "الحساب: {{value}}",
     hostsMenu: {

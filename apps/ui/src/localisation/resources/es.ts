@@ -1399,6 +1399,7 @@ export const es: TranslationResources = {
       undo: "Deshacer",
     },
     workspaceDraft: "Nueva sesión (borrador)",
+    workspaceDraftDiscard: "Descartar borrador",
     // COMPAT(perAgentProviderAccounts): added in v1.4.0, remove after 2027-09-17.
     workspaceAccount: "Cuenta: {{value}}",
     hostsMenu: {
