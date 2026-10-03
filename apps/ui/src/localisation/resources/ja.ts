@@ -4,16 +4,21 @@ import type { TranslationResources } from "./en";
 
 export const ja: TranslationResources = {
   devBar: {
+    title: "開発ビルド",
+    launch: "開発ビルドを起動",
+    launching: "開発ビルドを起動中…",
+    launchHint: "このワークツリーのデーモンと Web アプリを専用ポートで実行します",
+    others: "その他の開発ビルド",
+    openNamed: "{{name}} を開く",
+    stopNamed: "{{name}} を停止",
+    badgeLabel: "開発ビルド実行中",
     menu: "開発",
     daemon: "開発デーモン",
     web: "開発 Web",
     rebuildDaemon: "ビルドして再起動",
     restartWeb: "キャッシュを消して再起動",
     openWeb: "開く",
-    stop: "停止",
-    noCheckouts:
-      "このホストに Frogg のソースのチェックアウトがありません。ここで起動するにはリポジトリをプロジェクトとして追加してください。",
-    startIn: "{{name}} で起動",
+    stop: "開発ビルドを停止",
     lastError: "前回のビルドに失敗しました: {{error}}",
     behindMain_one: "main より {{count}} コミット遅れています",
     behindMain_other: "main より {{count}} コミット遅れています",
@@ -21,7 +26,7 @@ export const ja: TranslationResources = {
       running: "実行中",
       stale: "古くなっています",
       busy: "ビルド中…",
-      stopped: "停止中",
+      starting: "起動中…",
     },
   },
   releaseStreams: {
@@ -3421,16 +3426,14 @@ export const ja: TranslationResources = {
         viaBeta: "この接続はベータ版デーモンです。安定版デーモンはポート {{port}} で待ち受けます。",
       },
       devDaemon: {
-        info: "ホスト上のソースのチェックアウトで npm run dev:live を実行します。そのチェックアウトのデーモンが専用ポートで、ホストのアカウント・プロジェクト・会話とともに動作し、Web アプリも起動します。同時に動かせるのは 1 つだけです。",
+        info: "ホスト上のソースのチェックアウトで npm run dev:live を実行します。そのチェックアウトのデーモンが空いているポートで、ホストのアカウント・プロジェクト・会話とともに動作し、Web アプリも起動します。チェックアウトごとに 1 つ、複数を同時に実行できます。",
         needsUpdate: "開発用デーモンを起動するにはホストを更新してください。",
         loadFailed: "開発用デーモンの状態を読み取れませんでした: {{error}}",
         running: "ポート {{port}} で実行中",
-        starting: "ポート {{port}} で起動中…",
-        stopped: "停止中",
+        starting: "起動中…",
         noCheckouts:
           "このホストのワークスペースに、このリポジトリのソースのチェックアウトがありません。",
         launch: "起動",
-        log: "ログ: {{path}}",
       },
       betaApp: {
         title: "ベータ版アプリ",

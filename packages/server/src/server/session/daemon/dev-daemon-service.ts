@@ -2,30 +2,33 @@ import { brand } from "@frogg/branding";
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, openSync, closeSync, readFileSync } from "node:fs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
-import http from "node:http";
 import path from "node:path";
 import { stripVTControlCharacters } from "node:util";
 import type pino from "pino";
-import type { DaemonDevDaemonCheckout, DaemonDevDaemonStatus } from "@frogg/protocol/messages";
+import type {
+  DaemonDevBuild,
+  DaemonDevDaemonCheckout,
+  DaemonDevDaemonStatus,
+} from "@frogg/protocol/messages";
 import type { PersistedWorkspaceRecord } from "../../workspace-registry.js";
 
 /**
- * Launches and stops the development daemon: `npm run dev:live` in a source checkout of this
- * repo, which runs that checkout's daemon on DEV_DAEMON_PORT and its web app on DEV_WEB_PORT.
- * One at a time; launching another checkout stops the running one first. The launcher runs in
- * its own process group so stopping it takes the daemon and web app with it.
+ * Launches and stops dev builds: `npm run dev:live` in a source checkout of this repo, which runs
+ * that checkout's daemon and web app on free ports it picks and reports through its control
+ * endpoint. One per checkout, any number at once. Each launcher runs in its own process group so
+ * stopping it takes its daemon and web app with it.
  */
 
-export const DEV_DAEMON_PORT = 9899;
-export const DEV_WEB_PORT = 9898;
 const STOP_TIMEOUT_MS = 10_000;
-const PROBE_TIMEOUT_MS = 1500;
 const CONTROL_TIMEOUT_MS = 3000;
 
 interface LauncherControl {
   url: string;
   token: string;
   pid: number;
+  /** Absent from launchers older than per-checkout ports. */
+  daemonPort?: number;
+  webPort?: number;
 }
 
 /** What `dev:live`'s control endpoint reports (scripts/dev/preview.mts `controlStatus`). */
@@ -36,15 +39,16 @@ interface LauncherStatus {
   lastError: string | null;
   behindMain: number | null;
   branch: string;
+  daemonPort?: number;
+  webPort?: number;
 }
 /** A launcher that dies this soon failed to start; its log says why. */
 const STARTUP_CHECK_MS = 4000;
 
-interface DevDaemonState {
+/** Written beside the checkout's control file by `start`, before the launcher writes its own. */
+interface LaunchRecord {
   pid: number;
-  cwd: string;
   startedAt: string;
-  logPath: string;
 }
 
 export type SpawnDevLauncher = (
@@ -55,7 +59,6 @@ export type SpawnDevLauncher = (
 
 export interface DevDaemonServiceOptions {
   logger: pino.Logger;
-  froggHome: string;
   /**
    * The workspace registries of this host's other channels (stable, beta). Their checkouts are
    * offered too: a beta daemon has its own projects, but the frogg checkout usually lives in the
@@ -67,7 +70,6 @@ export interface DevDaemonServiceOptions {
   spawnLauncher?: SpawnDevLauncher;
   isAlive?: (pid: number) => boolean;
   killGroup?: (pid: number, signal: NodeJS.Signals) => void;
-  probe?: (port: number) => Promise<boolean>;
   fetchImpl?: typeof fetch;
   now?: () => Date;
   startupCheckMs?: number;
@@ -94,20 +96,6 @@ function processIsAlive(pid: number): boolean {
   } catch {
     return false;
   }
-}
-
-function probeStatus(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const request = http.get(
-      { host: "127.0.0.1", port, path: "/api/status", timeout: PROBE_TIMEOUT_MS },
-      (response) => {
-        response.resume();
-        resolve(response.statusCode === 200);
-      },
-    );
-    request.on("timeout", () => request.destroy());
-    request.on("error", () => resolve(false));
-  });
 }
 
 /** `: <last error line>` from the launcher log, or "" when there is none. */
@@ -139,26 +127,94 @@ export function isDevCheckout(cwd: string): boolean {
   }
 }
 
+/** What a dev build's launcher reports; a launcher still starting has reported nothing yet. */
+function launcherFields(
+  launcher: LauncherStatus | null,
+  control: LauncherControl | null,
+  branch: string | null,
+) {
+  if (!launcher) {
+    return {
+      branch,
+      daemonPort: control?.daemonPort ?? null,
+      webPort: control?.webPort ?? null,
+      ready: false,
+      webReady: false,
+      daemonStale: [],
+      webStale: [],
+      busy: null,
+      lastError: null,
+      behindMain: null,
+    };
+  }
+  return {
+    branch: launcher.branch,
+    daemonPort: launcher.daemonPort ?? control?.daemonPort ?? null,
+    webPort: launcher.webPort ?? control?.webPort ?? null,
+    ready: launcher.daemon.running,
+    webReady: launcher.web.running,
+    daemonStale: launcher.daemon.stale,
+    webStale: launcher.web.stale,
+    busy: launcher.busy,
+    lastError: launcher.lastError,
+    behindMain: launcher.behindMain,
+  };
+}
+
+/** COMPAT(devBuilds): the single dev build clients older than `instances` read. */
+function legacyFields(build: DaemonDevBuild) {
+  return {
+    running: true,
+    ready: build.ready,
+    cwd: build.cwd,
+    branch: build.branch,
+    startedAt: build.startedAt,
+    daemonPort: build.daemonPort ?? 0,
+    webPort: build.webPort ?? 0,
+    logPath: build.logPath,
+    canRebuild: build.canRebuild,
+    webReady: build.webReady,
+    daemonStale: build.daemonStale,
+    webStale: build.webStale,
+    busy: build.busy,
+    lastError: build.lastError,
+    behindMain: build.behindMain,
+  };
+}
+
+const NO_LEGACY_BUILD = {
+  running: false,
+  ready: false,
+  cwd: null,
+  branch: null,
+  startedAt: null,
+  daemonPort: 0,
+  webPort: 0,
+  logPath: null,
+  canRebuild: false,
+};
+
+function liveDir(cwd: string): string {
+  return path.join(cwd, ".dev", "live");
+}
+
 export class DevDaemonService {
   private readonly logger: pino.Logger;
-  private readonly statePath: string;
   private readonly env: NodeJS.ProcessEnv;
   private readonly platform: NodeJS.Platform;
   private readonly spawnLauncher: SpawnDevLauncher;
   private readonly isAlive: (pid: number) => boolean;
   private readonly killGroup: (pid: number, signal: NodeJS.Signals) => void;
-  private readonly probe: (port: number) => Promise<boolean>;
   private readonly fetchImpl: typeof fetch | undefined;
   private readonly now: () => Date;
-  /** Checkouts seen by the last status call, where a hand-started launcher may be running. */
-  private knownCheckouts: string[] = [];
   private readonly startupCheckMs: number;
   private readonly siblingWorkspaceFiles: string[];
+  /** Checkouts seen by the last status call, so a bare `stop` can find every running build. */
+  private knownCheckouts = new Set<string>();
 
   constructor(options: DevDaemonServiceOptions) {
     this.siblingWorkspaceFiles = options.siblingWorkspaceFiles ?? [];
     this.logger = options.logger.child({ module: "dev-daemon" });
-    this.statePath = path.join(options.froggHome, "dev-daemon.json");
     this.env = options.env ?? process.env;
     this.platform = options.platform ?? process.platform;
     this.spawnLauncher = options.spawnLauncher ?? defaultSpawnLauncher;
@@ -173,23 +229,24 @@ export class DevDaemonService {
           process.kill(pid, signal);
         }
       });
-    this.probe = options.probe ?? probeStatus;
     this.fetchImpl = options.fetchImpl;
     this.now = options.now ?? (() => new Date());
     this.startupCheckMs = options.startupCheckMs ?? STARTUP_CHECK_MS;
   }
 
   unsupportedReason(): string | null {
-    if (this.platform === "win32") return "Launching a development daemon needs Linux or macOS.";
+    if (this.platform === "win32") return "Launching a dev build needs Linux or macOS.";
     return null;
   }
 
-  /** This daemon is the development daemon: `dev:live` hands it its launcher's control file. */
+  /** This daemon is a dev build: `dev:live` hands it its launcher's control file. */
   private get isSelf(): boolean {
-    return (
-      Boolean(this.env.FROGG_DEV_CONTROL_FILE) ||
-      Boolean(this.env.FROGG_LISTEN?.endsWith(`:${DEV_DAEMON_PORT}`))
-    );
+    return Boolean(this.env.FROGG_DEV_CONTROL_FILE);
+  }
+
+  private get selfRoot(): string | null {
+    const file = this.env.FROGG_DEV_CONTROL_FILE;
+    return this.env.FROGG_DEV_ROOT ?? (file ? path.resolve(path.dirname(file), "..", "..") : null);
   }
 
   /** The launcher's control endpoint (scripts/dev/preview.mts), while that launcher runs. */
@@ -205,12 +262,27 @@ export class DevDaemonService {
   }
 
   private controlFor(cwd: string): LauncherControl | null {
-    return this.readControl(path.join(cwd, ".dev", "live", "control.json"));
+    if (this.isSelf && cwd === this.selfRoot) {
+      const file = this.env.FROGG_DEV_CONTROL_FILE;
+      return file ? this.readControl(file) : null;
+    }
+    return this.readControl(path.join(liveDir(cwd), "control.json"));
   }
 
-  private selfControl(): LauncherControl | null {
-    const file = this.env.FROGG_DEV_CONTROL_FILE;
-    return file ? this.readControl(file) : null;
+  private launchRecord(cwd: string): LaunchRecord | null {
+    try {
+      const record = JSON.parse(
+        readFileSync(path.join(liveDir(cwd), "launcher.json"), "utf8"),
+      ) as LaunchRecord;
+      return typeof record.pid === "number" && this.isAlive(record.pid) ? record : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /** The launcher running in `cwd`, whether this daemon started it or someone ran it by hand. */
+  private launcherPid(cwd: string): number | null {
+    return this.controlFor(cwd)?.pid ?? this.launchRecord(cwd)?.pid ?? null;
   }
 
   private async fetchLauncherStatus(control: LauncherControl): Promise<LauncherStatus | null> {
@@ -225,11 +297,18 @@ export class DevDaemonService {
     }
   }
 
-  /** Asks the launcher to rebuild. Returns an error message, or null once it has accepted. */
-  async rebuild(target: "daemon" | "web"): Promise<string | null> {
-    const state = this.isSelf ? null : this.liveState();
-    const control = this.isSelf ? this.selfControl() : state && this.controlFor(state.cwd);
-    if (!control) return "The development daemon's launcher is not running.";
+  /**
+   * Asks a launcher to rebuild: the one in `cwd`, else this daemon's own, else the only one
+   * running. Returns an error message, or null once it has accepted.
+   */
+  async rebuild(target: "daemon" | "web", cwd?: string): Promise<string | null> {
+    const resolved =
+      cwd ??
+      this.selfRoot ??
+      [...this.knownCheckouts].find((candidate) => this.controlFor(candidate)) ??
+      null;
+    const control = resolved ? this.controlFor(resolved) : null;
+    if (!control) return "That dev build's launcher is not running.";
     try {
       const response = await (this.fetchImpl ?? fetch)(`${control.url}/rebuild?target=${target}`, {
         method: "POST",
@@ -237,40 +316,13 @@ export class DevDaemonService {
         signal: AbortSignal.timeout(CONTROL_TIMEOUT_MS),
       });
       if (response.ok) return null;
-      const body = (await response.json().catch(() => ({}))) as { error?: string };
+      const body = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
       return body.error ?? `The launcher answered ${response.status}.`;
     } catch (error) {
       return error instanceof Error ? error.message : String(error);
     }
-  }
-
-  private readState(): DevDaemonState | null {
-    try {
-      const state = JSON.parse(readFileSync(this.statePath, "utf8")) as DevDaemonState;
-      return typeof state.pid === "number" ? state : null;
-    } catch {
-      return null;
-    }
-  }
-
-  private liveState(): DevDaemonState | null {
-    const state = this.readState();
-    return state && this.isAlive(state.pid) ? state : null;
-  }
-
-  /** A `dev:live` started by hand in one of the checkouts, which this daemon did not launch. */
-  private adoptedState(checkouts: Iterable<string>): DevDaemonState | null {
-    for (const cwd of checkouts) {
-      const control = this.controlFor(cwd);
-      if (!control) continue;
-      return {
-        pid: control.pid,
-        cwd,
-        startedAt: "",
-        logPath: path.join(cwd, ".dev", "live", "launcher.log"),
-      };
-    }
-    return null;
   }
 
   /** The other channels' workspaces, read straight from their registry files; unreadable ones are skipped. */
@@ -316,126 +368,128 @@ export class DevDaemonService {
         branch: workspace.branch ?? null,
       });
     }
-    this.knownCheckouts = [...checkouts.keys()];
-    const isSelf = this.isSelf;
-    const state = isSelf ? null : (this.liveState() ?? this.adoptedState(checkouts.keys()));
-    const control = isSelf ? this.selfControl() : state && this.controlFor(state.cwd);
-    const launcher = control ? await this.fetchLauncherStatus(control) : null;
-    const running = isSelf || state !== null;
-    const selfRoot = isSelf ? (this.env.FROGG_DEV_ROOT ?? null) : null;
+    const selfRoot = this.isSelf ? this.selfRoot : null;
+    if (selfRoot && !checkouts.has(selfRoot)) {
+      checkouts.set(selfRoot, {
+        cwd: selfRoot,
+        name: path.basename(selfRoot),
+        branch: null,
+      });
+    }
+    this.knownCheckouts = new Set(checkouts.keys());
+    const instances = (
+      await Promise.all([...checkouts.values()].map((checkout) => this.instance(checkout)))
+    ).filter((instance): instance is DaemonDevBuild => instance !== null);
+    // Older clients read one dev build from the top-level fields: this daemon's own, else the first.
+    const primary = instances.find((instance) => instance.cwd === selfRoot) ?? instances[0];
     return {
       supported: reason === null,
       reason,
-      running,
-      cwd: state?.cwd ?? selfRoot,
-      branch: launcher?.branch ?? (state ? (checkouts.get(state.cwd)?.branch ?? null) : null),
-      startedAt: state?.startedAt || null,
-      daemonPort: DEV_DAEMON_PORT,
-      webPort: DEV_WEB_PORT,
-      logPath: state?.logPath ?? null,
       checkouts: [...checkouts.values()],
-      isSelf,
-      canRebuild: control !== null,
-      ...(await this.launcherFields(launcher, running)),
+      isSelf: this.isSelf,
+      ...(primary ? legacyFields(primary) : NO_LEGACY_BUILD),
+      selfCwd: selfRoot,
+      instances,
     };
   }
 
-  private async launcherFields(launcher: LauncherStatus | null, running: boolean) {
-    if (!launcher) {
-      return {
-        ready: running && (await this.probe(DEV_DAEMON_PORT)),
-        webReady: running && (await this.probe(DEV_WEB_PORT)),
-        daemonStale: [],
-        webStale: [],
-        busy: null,
-        lastError: null,
-        behindMain: null,
-      };
-    }
+  private async instance(checkout: DaemonDevDaemonCheckout): Promise<DaemonDevBuild | null> {
+    const control = this.controlFor(checkout.cwd);
+    const record = this.launchRecord(checkout.cwd);
+    if (!control && !record) return null;
+    const launcher = control ? await this.fetchLauncherStatus(control) : null;
     return {
-      ready: launcher.daemon.running,
-      webReady: launcher.web.running,
-      daemonStale: launcher.daemon.stale,
-      webStale: launcher.web.stale,
-      busy: launcher.busy,
-      lastError: launcher.lastError,
-      behindMain: launcher.behindMain,
+      cwd: checkout.cwd,
+      name: checkout.name,
+      startedAt: record?.startedAt ?? null,
+      logPath: path.join(liveDir(checkout.cwd), "launcher.log"),
+      canRebuild: control !== null,
+      ...launcherFields(launcher, control, checkout.branch),
     };
   }
 
-  /** Returns an error message, or null once the launcher is running. */
+  /** Returns an error message, or null once the launcher is running (or already was). */
   async start(cwd: string): Promise<string | null> {
     const reason = this.unsupportedReason();
     if (reason) return reason;
-    if (this.isSelf)
-      return "This is the development daemon; start another one from the stable or beta daemon.";
     if (!isDevCheckout(cwd)) return `${cwd} is not a ${brand.name} source checkout.`;
     if (!existsSync(path.join(cwd, "node_modules"))) {
       return `${cwd} has no node_modules; run npm ci there first.`;
     }
-    const stopError = await this.stop();
-    if (stopError) return stopError;
+    if (this.launcherPid(cwd) !== null) return null;
 
-    const logDir = path.join(cwd, ".dev", "live");
+    const logDir = liveDir(cwd);
     await mkdir(logDir, { recursive: true });
     const logPath = path.join(logDir, "launcher.log");
+    const recordPath = path.join(logDir, "launcher.json");
     // Nothing aimed at this daemon (its home, listen address, production mode) may reach the
-    // launcher, which sets its own.
+    // launcher, which sets its own and picks its own ports.
     const env: NodeJS.ProcessEnv = {};
     for (const [key, value] of Object.entries(this.env)) {
       if (key.startsWith("FROGG_") || key.startsWith(`${brand.envPrefix}_`)) continue;
-      if (key === "NODE_ENV") continue;
+      if (key === "NODE_ENV" || key === "PREVIEW_PORT" || key === "LIVE_DAEMON_PORT") continue;
       env[key] = value;
     }
-    env.LIVE_DAEMON_PORT = String(DEV_DAEMON_PORT);
-    env.PREVIEW_PORT = String(DEV_WEB_PORT);
     try {
       const child = this.spawnLauncher(cwd, env, logPath);
-      if (!child.pid) return "The development daemon did not start.";
+      if (!child.pid) return "The dev build did not start.";
       child.unref();
-      const state: DevDaemonState = {
+      const record: LaunchRecord = {
         pid: child.pid,
-        cwd,
         startedAt: this.now().toISOString(),
-        logPath,
       };
-      await writeFile(this.statePath, JSON.stringify(state));
+      await writeFile(recordPath, JSON.stringify(record));
       const deadline = Date.now() + this.startupCheckMs;
       while (Date.now() < deadline && this.isAlive(child.pid)) {
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
       if (!this.isAlive(child.pid)) {
-        await rm(this.statePath, { force: true });
-        return `The development daemon exited while starting${lastLogLine(logPath)}`;
+        await rm(recordPath, { force: true });
+        return `The dev build exited while starting${lastLogLine(logPath)}`;
       }
-      this.logger.info({ cwd, pid: child.pid }, "development daemon launched");
+      this.logger.info({ cwd, pid: child.pid }, "dev build launched");
       return null;
     } catch (error) {
       return error instanceof Error ? error.message : String(error);
     }
   }
 
-  /** Stops the running launcher and everything it started. Returns an error message or null. */
-  async stop(): Promise<string | null> {
-    if (this.isSelf)
-      return "This is the development daemon; stop it from the stable or beta daemon.";
-    const state = this.liveState() ?? this.adoptedState(this.knownCheckouts);
-    if (state) {
+  /**
+   * Stops the dev build in `cwd`, or every one this daemon knows of when `cwd` is omitted (what
+   * older clients send). A dev build cannot stop itself. Returns an error message or null.
+   */
+  async stop(cwd?: string): Promise<string | null> {
+    const selfRoot = this.isSelf ? this.selfRoot : null;
+    if (cwd !== undefined && cwd === selfRoot) {
+      return "This is that dev build; stop it from the stable or beta daemon.";
+    }
+    const targets = cwd !== undefined ? [cwd] : [...this.knownCheckouts];
+    for (const target of targets) {
+      if (target === selfRoot) continue;
+      const error = await this.stopOne(target);
+      if (error) return error;
+    }
+    return null;
+  }
+
+  private async stopOne(cwd: string): Promise<string | null> {
+    const pid = this.launcherPid(cwd);
+    if (pid !== null) {
       try {
-        this.killGroup(state.pid, "SIGTERM");
+        this.killGroup(pid, "SIGTERM");
         const deadline = Date.now() + STOP_TIMEOUT_MS;
-        while (this.isAlive(state.pid) && Date.now() < deadline) {
+        while (this.isAlive(pid) && Date.now() < deadline) {
           await new Promise((resolve) => setTimeout(resolve, 200));
         }
-        if (this.isAlive(state.pid)) this.killGroup(state.pid, "SIGKILL");
+        if (this.isAlive(pid)) this.killGroup(pid, "SIGKILL");
       } catch (error) {
-        if (this.isAlive(state.pid)) {
+        if (this.isAlive(pid)) {
           return error instanceof Error ? error.message : String(error);
         }
       }
-      this.logger.info({ cwd: state.cwd, pid: state.pid }, "development daemon stopped");
+      this.logger.info({ cwd, pid }, "dev build stopped");
     }
-    await rm(this.statePath, { force: true });
+    await rm(path.join(liveDir(cwd), "launcher.json"), { force: true });
     return null;
   }
 }

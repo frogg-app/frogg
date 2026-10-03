@@ -91,7 +91,7 @@ commands frogg beta's agents run do not see frogg beta's internal settings.
 
 3. For work that is not released yet, run a development daemon from a worktree with
    `npm run dev:live`, or launch one from **Settings → Developer**. It uses its own home and
-   ports (daemon `9899`, web `9898`), so it does not touch either install.
+   free ports, so it does not touch either install, and each worktree can run its own.
 
 Stable and beta are separate daemons with separate projects, sessions and pairings. A
 frogg client can still add the frogg beta daemon as a host (`localhost:9989`) if you want

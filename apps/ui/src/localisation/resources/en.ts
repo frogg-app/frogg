@@ -2,16 +2,21 @@ import { projectImportCopies } from "./project-import";
 import { pluginsCopies } from "./plugins";
 export const en = {
   devBar: {
+    title: "Dev build",
+    launch: "Launch dev build",
+    launching: "Launching dev build…",
+    launchHint: "Runs this worktree's daemon and web app on their own ports",
+    others: "Other dev builds",
+    openNamed: "Open {{name}}",
+    stopNamed: "Stop {{name}}",
+    badgeLabel: "Dev build running",
     menu: "Dev",
     daemon: "Dev daemon",
     web: "Dev web",
     rebuildDaemon: "Rebuild and restart",
     restartWeb: "Restart with a clear cache",
     openWeb: "Open",
-    stop: "Stop",
-    noCheckouts:
-      "No Frogg source checkout on this host. Add the repo as a project to start one here.",
-    startIn: "Start in {{name}}",
+    stop: "Stop dev build",
     lastError: "Last rebuild failed: {{error}}",
     behindMain_one: "{{count}} commit behind main",
     behindMain_other: "{{count}} commits behind main",
@@ -19,7 +24,7 @@ export const en = {
       running: "Running",
       stale: "Out of date",
       busy: "Rebuilding…",
-      stopped: "Stopped",
+      starting: "Starting…",
     },
   },
   releaseStreams: {
@@ -3407,15 +3412,13 @@ export const en = {
           "This connection is to the beta daemon. The stable daemon listens on port {{port}}.",
       },
       devDaemon: {
-        info: "Runs npm run dev:live from a source checkout on the host: that checkout's daemon on its own port, with the host's accounts, projects and conversations, and its web app. One runs at a time.",
+        info: "Runs npm run dev:live from a source checkout on the host: that checkout's daemon on free ports, with the host's accounts, projects and conversations, and its web app. One per checkout; several can run at once.",
         needsUpdate: "Update the host to launch a development daemon.",
         loadFailed: "Couldn't read the development daemon status: {{error}}",
         running: "Running on port {{port}}",
-        starting: "Starting on port {{port}}…",
-        stopped: "Not running",
+        starting: "Starting…",
         noCheckouts: "No source checkout of this repo among this host's workspaces.",
         launch: "Launch",
-        log: "Log: {{path}}",
       },
       betaApp: {
         title: "Beta app",

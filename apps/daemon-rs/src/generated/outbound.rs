@@ -13464,6 +13464,10 @@ pub struct DaemonDevDaemonGetStatusResponsePayload {
     pub is_self: Option<bool>,
     #[serde(rename = "canRebuild", skip_serializing_if = "Option::is_none")]
     pub can_rebuild: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub instances: Option<Vec<DaemonDevDaemonGetStatusResponsePayloadInstancesItem>>,
+    #[serde(rename = "selfCwd", skip_serializing_if = "Option::is_none")]
+    pub self_cwd: Option<String>,
     #[serde(rename = "requestId")]
     pub request_id: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -13476,6 +13480,37 @@ pub struct DaemonDevDaemonGetStatusResponsePayloadCheckoutsItem {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub branch: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DaemonDevDaemonGetStatusResponsePayloadInstancesItem {
+    pub cwd: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub branch: Option<String>,
+    #[serde(rename = "startedAt", skip_serializing_if = "Option::is_none")]
+    pub started_at: Option<String>,
+    #[serde(rename = "daemonPort", skip_serializing_if = "Option::is_none")]
+    pub daemon_port: Option<f64>,
+    #[serde(rename = "webPort", skip_serializing_if = "Option::is_none")]
+    pub web_port: Option<f64>,
+    #[serde(rename = "logPath", skip_serializing_if = "Option::is_none")]
+    pub log_path: Option<String>,
+    pub ready: bool,
+    #[serde(rename = "webReady")]
+    pub web_ready: bool,
+    #[serde(rename = "daemonStale")]
+    pub daemon_stale: Vec<String>,
+    #[serde(rename = "webStale")]
+    pub web_stale: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub busy: Option<String>,
+    #[serde(rename = "lastError", skip_serializing_if = "Option::is_none")]
+    pub last_error: Option<String>,
+    #[serde(rename = "behindMain", skip_serializing_if = "Option::is_none")]
+    pub behind_main: Option<f64>,
+    #[serde(rename = "canRebuild")]
+    pub can_rebuild: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

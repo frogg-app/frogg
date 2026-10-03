@@ -3972,6 +3972,9 @@
                 },
                 "requestId": {
                   "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -3995,6 +3998,9 @@
                     "daemon",
                     "web"
                   ]
+                },
+                "cwd": {
+                  "type": "string"
                 }
               },
               "required": [

@@ -3,7 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import type { DaemonDevDaemonStatusPayload } from "@frogg/client";
-import type { DaemonDevDaemonCheckout } from "@frogg/protocol/messages";
+import type { DaemonDevBuild, DaemonDevDaemonCheckout } from "@frogg/protocol/messages";
+import { devBuildsOf } from "@/components/dev-builds/use-dev-builds";
 import { Alert as InlineAlert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
@@ -100,8 +101,8 @@ function DevDaemonHostManager({ host }: { host: HostProfile }) {
     void refresh();
   }, [refresh]);
 
-  const starting =
-    statusState.kind === "loaded" && statusState.status.running && !statusState.status.ready;
+  const instances = statusState.kind === "loaded" ? devBuildsOf(statusState.status) : [];
+  const starting = instances.some((instance) => !instance.ready);
   useEffect(() => {
     if (!starting) return;
     const timer = setInterval(() => void refresh(), STARTING_POLL_MS);
@@ -133,7 +134,7 @@ function DevDaemonHostManager({ host }: { host: HostProfile }) {
   );
   const handleStop = useCallback(
     (cwd: string) => {
-      if (client) void run(cwd, () => client.stopDevDaemon());
+      if (client) void run(cwd, () => client.stopDevDaemon(cwd));
     },
     [client, run],
   );
@@ -153,23 +154,8 @@ function DevDaemonHostManager({ host }: { host: HostProfile }) {
   if (!status.supported) {
     return <Text style={settingsStyles.rowHint}>{status.reason}</Text>;
   }
-  const webUrl = status.ready ? siblingDaemonWebUrl(host, status.webPort) : null;
-
   return (
     <View style={styles.manager}>
-      <Text style={settingsStyles.rowHint}>
-        {status.running
-          ? t(
-              status.ready
-                ? "settings.developer.devDaemon.running"
-                : "settings.developer.devDaemon.starting",
-              { port: status.daemonPort },
-            )
-          : t("settings.developer.devDaemon.stopped")}
-      </Text>
-      {webUrl ? (
-        <OpenWebUiButton url={webUrl} testID={`developer-dev-daemon-open-${host.serverId}`} />
-      ) : null}
       {status.checkouts.length === 0 ? (
         <Text style={settingsStyles.rowHint}>{t("settings.developer.devDaemon.noCheckouts")}</Text>
       ) : (
@@ -177,8 +163,10 @@ function DevDaemonHostManager({ host }: { host: HostProfile }) {
           {status.checkouts.map((checkout) => (
             <CheckoutRow
               key={checkout.cwd}
+              host={host}
               checkout={checkout}
-              active={status.running && status.cwd === checkout.cwd}
+              build={instances.find((instance) => instance.cwd === checkout.cwd) ?? null}
+              isSelf={status.selfCwd === checkout.cwd}
               busy={busyCwd === checkout.cwd}
               disabled={busyCwd !== null}
               onLaunch={handleLaunch}
@@ -187,32 +175,33 @@ function DevDaemonHostManager({ host }: { host: HostProfile }) {
           ))}
         </View>
       )}
-      {status.running && status.logPath ? (
-        <Text style={settingsStyles.rowHint} selectable>
-          {t("settings.developer.devDaemon.log", { path: status.logPath })}
-        </Text>
-      ) : null}
       {actionError ? <InlineAlert variant="error" description={actionError} /> : null}
     </View>
   );
 }
 
 function CheckoutRow({
+  host,
   checkout,
-  active,
+  build,
+  isSelf,
   busy,
   disabled,
   onLaunch,
   onStop,
 }: {
+  host: HostProfile;
   checkout: DaemonDevDaemonCheckout;
-  active: boolean;
+  build: DaemonDevBuild | null;
+  isSelf: boolean;
   busy: boolean;
   disabled: boolean;
   onLaunch: (cwd: string) => void;
   onStop: (cwd: string) => void;
 }) {
   const { t } = useTranslation();
+  const active = build !== null;
+  const webUrl = build?.webReady && build.webPort ? siblingDaemonWebUrl(host, build.webPort) : null;
   const handlePress = useCallback(
     () => (active ? onStop(checkout.cwd) : onLaunch(checkout.cwd)),
     [active, checkout.cwd, onLaunch, onStop],
@@ -226,19 +215,31 @@ function CheckoutRow({
         <Text style={settingsStyles.rowHint} numberOfLines={1}>
           {checkout.branch ? `${checkout.branch} · ${checkout.cwd}` : checkout.cwd}
         </Text>
+        {build ? (
+          <Text style={settingsStyles.rowHint} numberOfLines={1}>
+            {build.ready && build.daemonPort
+              ? t("settings.developer.devDaemon.running", { port: build.daemonPort })
+              : t("settings.developer.devDaemon.starting")}
+          </Text>
+        ) : null}
       </View>
-      <Button
-        variant={active ? "outline" : "default"}
-        size="sm"
-        loading={busy}
-        disabled={disabled}
-        onPress={handlePress}
-        testID={`developer-dev-daemon-${active ? "stop" : "launch"}-${checkout.cwd}`}
-      >
-        {active
-          ? t("settings.developer.daemonControl.stop")
-          : t("settings.developer.devDaemon.launch")}
-      </Button>
+      {webUrl ? (
+        <OpenWebUiButton url={webUrl} testID={`developer-dev-daemon-open-${checkout.cwd}`} />
+      ) : null}
+      {isSelf ? null : (
+        <Button
+          variant={active ? "outline" : "default"}
+          size="sm"
+          loading={busy}
+          disabled={disabled}
+          onPress={handlePress}
+          testID={`developer-dev-daemon-${active ? "stop" : "launch"}-${checkout.cwd}`}
+        >
+          {active
+            ? t("settings.developer.daemonControl.stop")
+            : t("settings.developer.devDaemon.launch")}
+        </Button>
+      )}
     </View>
   );
 }

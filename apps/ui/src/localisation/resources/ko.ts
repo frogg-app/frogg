@@ -4,16 +4,21 @@ import type { TranslationResources } from "./en";
 
 export const ko: TranslationResources = {
   devBar: {
+    title: "개발 빌드",
+    launch: "개발 빌드 실행",
+    launching: "개발 빌드 실행 중…",
+    launchHint: "이 워크트리의 데몬과 웹 앱을 자체 포트에서 실행합니다",
+    others: "다른 개발 빌드",
+    openNamed: "{{name}} 열기",
+    stopNamed: "{{name}} 중지",
+    badgeLabel: "개발 빌드 실행 중",
     menu: "개발",
     daemon: "개발 데몬",
     web: "개발 웹",
     rebuildDaemon: "빌드 후 재시작",
     restartWeb: "캐시를 지우고 재시작",
     openWeb: "열기",
-    stop: "중지",
-    noCheckouts:
-      "이 호스트에 Frogg 소스 체크아웃이 없습니다. 여기서 시작하려면 저장소를 프로젝트로 추가하세요.",
-    startIn: "{{name}}에서 시작",
+    stop: "개발 빌드 중지",
     lastError: "마지막 빌드 실패: {{error}}",
     behindMain_one: "main보다 커밋 {{count}}개 뒤처짐",
     behindMain_other: "main보다 커밋 {{count}}개 뒤처짐",
@@ -21,7 +26,7 @@ export const ko: TranslationResources = {
       running: "실행 중",
       stale: "오래됨",
       busy: "빌드 중…",
-      stopped: "중지됨",
+      starting: "시작 중…",
     },
   },
   releaseStreams: {
@@ -3400,15 +3405,13 @@ export const ko: TranslationResources = {
         viaBeta: "이 연결은 베타 데몬입니다. 안정판 데몬은 {{port}} 포트를 사용합니다.",
       },
       devDaemon: {
-        info: "호스트의 소스 체크아웃에서 npm run dev:live를 실행합니다. 해당 체크아웃의 데몬이 별도 포트에서 호스트의 계정, 프로젝트, 대화와 함께 실행되고 웹 앱도 함께 시작됩니다. 한 번에 하나만 실행됩니다.",
+        info: "호스트의 소스 체크아웃에서 npm run dev:live를 실행합니다. 해당 체크아웃의 데몬이 빈 포트에서 호스트의 계정, 프로젝트, 대화와 함께 실행되고 웹 앱도 함께 시작됩니다. 체크아웃마다 하나씩, 여러 개를 동시에 실행할 수 있습니다.",
         needsUpdate: "개발용 데몬을 실행하려면 호스트를 업데이트하세요.",
         loadFailed: "개발용 데몬 상태를 읽지 못했습니다: {{error}}",
         running: "포트 {{port}}에서 실행 중",
-        starting: "포트 {{port}}에서 시작하는 중…",
-        stopped: "실행 중 아님",
+        starting: "시작하는 중…",
         noCheckouts: "이 호스트의 워크스페이스 중 이 저장소의 소스 체크아웃이 없습니다.",
         launch: "실행",
-        log: "로그: {{path}}",
       },
       betaApp: {
         title: "베타 앱",

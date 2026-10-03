@@ -1862,8 +1862,8 @@ export const DaemonBetaChannelStopRequestSchema = z.object({
 export type DaemonBetaChannelStartRequest = z.infer<typeof DaemonBetaChannelStartRequestSchema>;
 export type DaemonBetaChannelStopRequest = z.infer<typeof DaemonBetaChannelStopRequestSchema>;
 
-// Development daemon: `npm run dev:live` in a source checkout of this repo on the host, so a
-// branch can be tried against real providers before it ships as a beta.
+// Dev builds: `npm run dev:live` in a source checkout of this repo on the host, so a branch can
+// be tried against real providers before it ships as a beta. One per checkout, several at once.
 export const DaemonDevDaemonGetStatusRequestSchema = z.object({
   type: z.literal("daemon.dev_daemon.get_status.request"),
   requestId: z.string(),
@@ -1877,6 +1877,8 @@ export const DaemonDevDaemonStartRequestSchema = z.object({
 export const DaemonDevDaemonStopRequestSchema = z.object({
   type: z.literal("daemon.dev_daemon.stop.request"),
   requestId: z.string(),
+  /** The checkout whose dev build to stop; every one when omitted. */
+  cwd: z.string().optional(),
 });
 export type DaemonDevDaemonGetStatusRequest = z.infer<typeof DaemonDevDaemonGetStatusRequestSchema>;
 export type DaemonDevDaemonStartRequest = z.infer<typeof DaemonDevDaemonStartRequestSchema>;
@@ -1886,6 +1888,8 @@ export const DaemonDevDaemonRebuildRequestSchema = z.object({
   requestId: z.string(),
   /** "daemon": build protocol and client, then restart the daemon. "web": restart the web app. */
   target: z.enum(["daemon", "web"]),
+  /** The checkout whose dev build to rebuild; the answering dev build's own when omitted. */
+  cwd: z.string().optional(),
 });
 export type DaemonDevDaemonRebuildRequest = z.infer<typeof DaemonDevDaemonRebuildRequestSchema>;
 
@@ -6112,6 +6116,33 @@ export const DaemonDevDaemonCheckoutSchema = z.object({
 });
 export type DaemonDevDaemonCheckout = z.infer<typeof DaemonDevDaemonCheckoutSchema>;
 
+/** One running dev build. Ports are null until its launcher reports them. */
+export const DaemonDevBuildSchema = z.object({
+  cwd: z.string(),
+  name: z.string(),
+  branch: z.string().nullable(),
+  startedAt: z.string().nullable(),
+  daemonPort: z.number().nullable(),
+  webPort: z.number().nullable(),
+  logPath: z.string().nullable(),
+  /** Its daemon and web app answer on their ports. */
+  ready: z.boolean(),
+  webReady: z.boolean(),
+  /** Why the daemon or web app is out of date and needs a rebuild; empty when current. */
+  daemonStale: z.array(z.string()),
+  webStale: z.array(z.string()),
+  /** A rebuild in progress: "daemon" or "web". */
+  busy: z.string().nullable(),
+  lastError: z.string().nullable(),
+  behindMain: z.number().nullable(),
+  canRebuild: z.boolean(),
+});
+export type DaemonDevBuild = z.infer<typeof DaemonDevBuildSchema>;
+
+/**
+ * The top-level single-build fields describe one dev build (the answering daemon's own, else the
+ * first) for clients older than `instances`.
+ */
 export const DaemonDevDaemonStatusSchema = z.object({
   /** A development daemon can be launched here; `reason` says why not when false. */
   supported: z.boolean(),
@@ -6144,6 +6175,10 @@ export const DaemonDevDaemonStatusSchema = z.object({
   isSelf: z.boolean().optional(),
   /** Its launcher accepts rebuild requests. */
   canRebuild: z.boolean().optional(),
+  /** COMPAT(devBuilds): added in v1.6.10. Every running dev build, one per checkout. */
+  instances: z.array(DaemonDevBuildSchema).optional(),
+  /** The checkout the answering daemon is the dev build of, when it is one. */
+  selfCwd: z.string().nullable().optional(),
 });
 export type DaemonDevDaemonStatus = z.infer<typeof DaemonDevDaemonStatusSchema>;
 

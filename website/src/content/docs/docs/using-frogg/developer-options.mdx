@@ -87,11 +87,16 @@ reinstall it to move it to 9989.
 
 **Development daemon** runs `npm run dev:live` from a source checkout of frogg on a host, so a
 branch can be tried with real providers before it ships as a beta. It lists every workspace on
-the host that is such a checkout, with its branch. **Launch** starts that checkout's daemon on
-port 9899 and its web app on port 9898; launching another checkout stops the running one
-first. **Stop** ends it, and **Open web UI** opens the web app once the daemon answers.
+the host that is such a checkout, with its branch. **Launch** starts that checkout's daemon and
+web app on free ports; each checkout runs its own, so several can run at once. **Stop** ends
+one, and **Open web UI** opens its web app once it answers.
 
-The development daemon names itself `<hostname>-DEVELOPMENT` and starts with a copy of the
+The quicker way is the **Dev** menu in the top bar, which follows the session in view: when its
+worktree is a source checkout it offers **Launch dev build**, and once that runs it shows the
+daemon and web app status and rebuilds, restarts, opens and stops it. Dev builds running for
+other sessions are listed below, and their sidebar rows carry a **Dev** badge.
+
+A dev build names itself `<hostname>-DEV-<checkout folder>` and starts with a copy of the
 host daemon's provider accounts, projects and conversations, so nothing needs signing in
 again. Continue a conversation in one daemon at a time: both write to the same provider
 session. The launcher's output goes to `.dev/live/launcher.log` in the checkout, and a launch

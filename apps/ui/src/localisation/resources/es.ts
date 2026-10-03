@@ -4,16 +4,21 @@ import type { TranslationResources } from "./en";
 
 export const es: TranslationResources = {
   devBar: {
+    title: "Build de desarrollo",
+    launch: "Lanzar build de desarrollo",
+    launching: "Lanzando build de desarrollo…",
+    launchHint: "Ejecuta el daemon y la app web de este worktree en sus propios puertos",
+    others: "Otros builds de desarrollo",
+    openNamed: "Abrir {{name}}",
+    stopNamed: "Detener {{name}}",
+    badgeLabel: "Build de desarrollo en ejecución",
     menu: "Dev",
     daemon: "Daemon dev",
     web: "Web dev",
     rebuildDaemon: "Recompilar y reiniciar",
     restartWeb: "Reiniciar con la caché vacía",
     openWeb: "Abrir",
-    stop: "Detener",
-    noCheckouts:
-      "No hay ningún checkout del código de Frogg en este host. Añade el repositorio como proyecto para iniciar uno aquí.",
-    startIn: "Iniciar en {{name}}",
+    stop: "Detener build de desarrollo",
     lastError: "La última recompilación falló: {{error}}",
     behindMain_one: "{{count}} commit por detrás de main",
     behindMain_other: "{{count}} commits por detrás de main",
@@ -21,7 +26,7 @@ export const es: TranslationResources = {
       running: "En ejecución",
       stale: "Desactualizado",
       busy: "Recompilando…",
-      stopped: "Detenido",
+      starting: "Iniciando…",
     },
   },
   releaseStreams: {
@@ -3458,16 +3463,14 @@ export const es: TranslationResources = {
           "Esta conexión es al daemon beta. El daemon estable escucha en el puerto {{port}}.",
       },
       devDaemon: {
-        info: "Ejecuta npm run dev:live desde una copia del código fuente en el host: el daemon de esa copia en su propio puerto, con las cuentas, proyectos y conversaciones del host, y su aplicación web. Solo se ejecuta uno a la vez.",
+        info: "Ejecuta npm run dev:live desde una copia del código fuente en el host: el daemon de esa copia en puertos libres, con las cuentas, proyectos y conversaciones del host, y su aplicación web. Uno por copia; pueden ejecutarse varios a la vez.",
         needsUpdate: "Actualiza el host para iniciar un daemon de desarrollo.",
         loadFailed: "No se pudo leer el estado del daemon de desarrollo: {{error}}",
         running: "En ejecución en el puerto {{port}}",
-        starting: "Iniciando en el puerto {{port}}…",
-        stopped: "Detenido",
+        starting: "Iniciando…",
         noCheckouts:
           "Ningún espacio de trabajo de este host es una copia del código fuente de este repositorio.",
         launch: "Iniciar",
-        log: "Registro: {{path}}",
       },
       betaApp: {
         title: "App beta",

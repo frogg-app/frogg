@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Dev builds per session.** The **Dev** menu in the top bar now follows the session in view:
+  **Launch dev build** runs `dev:live` in that session's worktree, and the menu then shows,
+  rebuilds, restarts, opens and stops that build, with other running dev builds listed below.
+  Each worktree runs its own on free ports (reused across runs when free), so several run at
+  once; sidebar rows with one running carry a **Dev** badge. `dev:live` no longer defaults to
+  9899/9898, names itself `<hostname>-DEV-<checkout folder>` and uses a per-checkout server id.
+  `daemon.dev_daemon.get_status` adds `instances` and `selfCwd`; `stop` and `rebuild` take an
+  optional `cwd` (a bare `stop` from an older client stops every dev build).
+
 - **Clean cut from a reply.** A scissors button next to copy and fork on each finished turn
   makes a clean cut on the same account and model: a fresh conversation primed with a summary.
 - **Dev bar.** With developer options on, the sidebar shows the development daemon and its web

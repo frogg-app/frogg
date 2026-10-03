@@ -1,16 +1,18 @@
 /**
  * COMPAT(devDaemonRebuild): added in v1.6.7.
  *
- * The development daemon at a glance, for developer options: a "Dev" menu at the top of the main
- * panel whose trigger carries a status dot each for the dev daemon and its web app (running, out
- * of date, rebuilding, stopped), and whose sections start, stop, rebuild and restart them. It talks to the first connected host that manages a
- * development daemon, which is the development daemon itself when this is its web app.
+ * Dev builds at a glance, for developer options: a "Dev" menu in the main panel's top bar,
+ * scoped to the session in view. When that session's worktree is a source checkout it offers to
+ * launch a dev build there; once one runs, the trigger carries its daemon and web app status and
+ * the menu opens, rebuilds, restarts and stops it. Dev builds running for other sessions are
+ * listed below. In a dev build's own web app it manages that build.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
-import type { DaemonDevDaemonStatusPayload } from "@frogg/client";
+import type { DaemonClient } from "@frogg/client/internal/daemon-client";
+import type { DaemonDevBuild } from "@frogg/protocol/messages";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,51 +21,70 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useSettings } from "@/hooks/use-settings";
-import { useHostRuntimeClient, useHosts } from "@/runtime/host-runtime";
+import { useHosts } from "@/runtime/host-runtime";
 import { siblingDaemonWebUrl } from "@/screens/settings/developer/daemon-web-url";
+import { useActiveWorkspaceSelection } from "@/stores/navigation-active-workspace-store";
 import { useSessionStore } from "@/stores/session-store";
+import { useWorkspace } from "@/stores/session-store-hooks";
 import type { HostProfile } from "@/types/host-connection";
-import { isBetaBuild } from "@/utils/app-version";
 import { openExternalUrl } from "@/utils/open-external-url";
+import { devBuildDotTones } from "./dev-builds/dev-build-dot";
+import {
+  devBuildTone,
+  useDevBuilds,
+  useDevBuildsEnabled,
+  type DevBuildTone,
+} from "./dev-builds/use-dev-builds";
 
-const POLL_MS = 4000;
-
-type Tone = "running" | "stale" | "busy" | "stopped";
-
-interface DevMenuItem {
-  id: string;
-  label: string;
-  description?: string;
-  disabled?: boolean;
-  onSelect?: () => void;
-}
+type DevAction = "launch" | "stop" | "rebuildDaemon" | "restartWeb";
+type Perform = (action: DevAction, cwd: string) => void;
+type Pending = { cwd: string; action: DevAction } | null;
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function DevMenu() {
-  const developerOptions = useSettings((settings) => settings.developerOptions) || isBetaBuild();
-  const hosts = useHosts();
-  const serverId = useSessionStore((state) => {
-    for (const host of hosts) {
-      const session = state.sessions[host.serverId];
-      if (session?.serverInfo?.features?.devDaemonRebuild === true) return host.serverId;
-    }
-    return null;
-  });
-  const host = hosts.find((candidate) => candidate.serverId === serverId) ?? null;
-  if (!developerOptions || !host) return null;
-  return <DevMenuForHost host={host} />;
+function invoke(client: DaemonClient, action: DevAction, cwd: string) {
+  switch (action) {
+    case "launch":
+      return client.startDevDaemon(cwd);
+    case "stop":
+      return client.stopDevDaemon(cwd);
+    case "rebuildDaemon":
+      return client.rebuildDevDaemon("daemon", cwd);
+    case "restartWeb":
+      return client.rebuildDevDaemon("web", cwd);
+  }
 }
 
-function DevMenuForHost({ host }: { host: HostProfile }) {
+function webUrlOf(host: HostProfile, build: DaemonDevBuild): string | null {
+  return build.webReady && build.webPort ? siblingDaemonWebUrl(host, build.webPort) : null;
+}
+
+export function DevMenu() {
+  const enabled = useDevBuildsEnabled();
+  const hosts = useHosts();
+  const selection = useActiveWorkspaceSelection();
+  const workspace = useWorkspace(selection?.serverId ?? null, selection?.workspaceId ?? null);
+  // The session's own host when it launches dev builds, else the first that does (in a dev
+  // build's web app, the dev build itself).
+  const serverId = useSessionStore((state) => {
+    const manages = (id: string) =>
+      state.sessions[id]?.serverInfo?.features?.devDaemonRebuild === true;
+    if (selection && manages(selection.serverId)) return selection.serverId;
+    return hosts.find((host) => manages(host.serverId))?.serverId ?? null;
+  });
+  const host = hosts.find((candidate) => candidate.serverId === serverId) ?? null;
+  if (!enabled || !host) return null;
+  const cwd = selection?.serverId === host.serverId ? workspace?.workspaceDirectory || null : null;
+  return <DevMenuForHost host={host} cwd={cwd} />;
+}
+
+function DevMenuForHost({ host, cwd }: { host: HostProfile; cwd: string | null }) {
   const { t } = useTranslation();
-  const client = useHostRuntimeClient(host.serverId);
-  const [status, setStatus] = useState<DaemonDevDaemonStatusPayload | null>(null);
+  const { snapshot, refresh, client } = useDevBuilds(host.serverId);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [pending, setPending] = useState<string | null>(null);
+  const [pending, setPending] = useState<Pending>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -73,214 +94,327 @@ function DevMenuForHost({ host }: { host: HostProfile }) {
     };
   }, []);
 
-  const refresh = useCallback(async () => {
-    if (!client) return;
-    try {
-      const next = await client.getDevDaemonStatus();
-      if (mounted.current) setStatus(next);
-    } catch {
-      // A rebuild restarts the daemon this may be talking to; the next poll catches up.
-    }
-  }, [client]);
-
-  useEffect(() => {
-    void refresh();
-    const timer = setInterval(() => void refresh(), POLL_MS);
-    return () => clearInterval(timer);
-  }, [refresh]);
-
-  const run = useCallback(
-    async (id: string, action: () => Promise<{ error: string | null }>) => {
-      setPending(id);
+  const perform = useCallback<Perform>(
+    (action, target) => {
+      if (!client) return;
+      setPending({ cwd: target, action });
       setActionError(null);
-      try {
-        const result = await action();
-        if (mounted.current && result.error) setActionError(result.error);
-      } catch (error) {
-        if (mounted.current) setActionError(errorText(error));
-      }
-      if (!mounted.current) return;
-      setPending(null);
-      void refresh();
+      void (async () => {
+        try {
+          const result = await invoke(client, action, target);
+          if (mounted.current && result.error) setActionError(result.error);
+        } catch (error) {
+          if (mounted.current) setActionError(errorText(error));
+        }
+        if (!mounted.current) return;
+        setPending(null);
+        refresh();
+      })();
     },
-    [refresh],
+    [client, refresh],
   );
 
-  // dev:live runs the daemon and its web app together, so one block starts and stops both.
-  const lifecycleItems = useMemo<DevMenuItem[]>(() => {
-    if (!status || !client || status.isSelf) return [];
-    if (status.running) {
-      return [
-        {
-          id: "stop",
-          label: t("devBar.stop"),
-          onSelect: () => void run("daemon", () => client.stopDevDaemon()),
-        },
-      ];
-    }
-    if (status.checkouts.length === 0) {
-      return [{ id: "no-checkouts", label: t("devBar.noCheckouts"), disabled: true }];
-    }
-    return status.checkouts.map((checkout) => ({
-      id: `start-${checkout.cwd}`,
-      label: t("devBar.startIn", { name: checkout.name }),
-      description: checkout.branch ?? checkout.cwd,
-      onSelect: () => void run("daemon", () => client.startDevDaemon(checkout.cwd)),
-    }));
-  }, [client, run, status, t]);
-
-  const daemonItems = useMemo<DevMenuItem[]>(() => {
-    if (!status || !client) return [];
-    const items: DevMenuItem[] = [];
-    if (status.canRebuild) {
-      items.push({
-        id: "rebuild-daemon",
-        label: t("devBar.rebuildDaemon"),
-        disabled: Boolean(status.busy),
-        onSelect: () => void run("daemon", () => client.rebuildDevDaemon("daemon")),
-      });
-    }
-    return items;
-  }, [client, run, status, t]);
-
-  const webUrl = status?.webReady ? siblingDaemonWebUrl(host, status.webPort) : null;
-  const webItems = useMemo<DevMenuItem[]>(() => {
-    if (!status || !client) return [];
-    const items: DevMenuItem[] = [];
-    if (webUrl) {
-      items.push({
-        id: "open-web",
-        label: t("devBar.openWeb"),
-        onSelect: () => void openExternalUrl(webUrl),
-      });
-    }
-    if (status.canRebuild) {
-      items.push({
-        id: "restart-web",
-        label: t("devBar.restartWeb"),
-        disabled: Boolean(status.busy),
-        onSelect: () => void run("web", () => client.rebuildDevDaemon("web")),
-      });
-    }
-    return items;
-  }, [client, run, status, t, webUrl]);
-
-  if (!status?.supported) return null;
-
-  const busy = status.busy ?? pending;
-  const daemonTone: Tone = toneOf({
-    busy: busy === "daemon",
-    running: status.running && Boolean(status.ready),
-    stale: (status.daemonStale ?? []).length > 0,
-  });
-  const webTone: Tone = toneOf({
-    busy: busy === "web",
-    running: Boolean(status.webReady),
-    stale: (status.webStale ?? []).length > 0,
-  });
-  const notes = [
-    ...(status.lastError ? [t("devBar.lastError", { error: status.lastError })] : []),
-    ...(actionError ? [actionError] : []),
-    ...(status.behindMain ? [t("devBar.behindMain", { count: status.behindMain })] : []),
-  ];
-
-  const daemonDotStyle = [styles.dot, dotTones[daemonTone]];
-  const webDotStyle = [styles.dot, dotTones[webTone]];
+  if (!snapshot?.status.supported || !client) return null;
+  const { status, instances } = snapshot;
+  // In a dev build's web app, the session in view belongs to it; manage the build itself.
+  const scope = status.selfCwd ?? cwd;
+  const current = instances.find((instance) => instance.cwd === scope) ?? null;
+  const launchCwd =
+    !current && scope && status.checkouts.some((checkout) => checkout.cwd === scope) ? scope : null;
+  const others = instances.filter((instance) => instance !== current);
+  if (!current && !launchCwd && others.length === 0) return null;
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        accessibilityRole="button"
-        accessibilityLabel={`${t("devBar.daemon")}: ${t(`devBar.tone.${daemonTone}`)}, ${t("devBar.web")}: ${t(`devBar.tone.${webTone}`)}`}
-        testID="dev-menu"
-        style={styles.trigger}
-      >
-        <View style={daemonDotStyle} />
-        <View style={webDotStyle} />
-        <Text style={styles.triggerText} numberOfLines={1}>
-          {t("devBar.menu")}
-        </Text>
-      </DropdownMenuTrigger>
+      <DevMenuTrigger build={current} pending={pending} />
       <DropdownMenuContent align="end" offset={6} minWidth={260} sheetTitle={t("devBar.menu")}>
-        <DevMenuSection
-          testID="dev-menu-daemon"
-          label={status.branch ? `${t("devBar.daemon")} · ${status.branch}` : t("devBar.daemon")}
-          tone={daemonTone}
-          stale={status.daemonStale ?? []}
-          notes={notes}
-          items={daemonItems}
+        {launchCwd ? (
+          <LaunchItem
+            cwd={launchCwd}
+            pending={pending}
+            actionError={actionError}
+            perform={perform}
+          />
+        ) : null}
+        {current ? (
+          <CurrentBuild
+            host={host}
+            build={current}
+            isSelf={status.selfCwd === current.cwd}
+            pending={pending}
+            actionError={actionError}
+            perform={perform}
+          />
+        ) : null}
+        <OtherBuilds
+          host={host}
+          builds={others}
+          selfCwd={status.selfCwd ?? null}
+          separate={Boolean(current || launchCwd)}
+          perform={perform}
         />
-        <DropdownMenuSeparator />
-        <DevMenuSection
-          testID="dev-menu-web"
-          label={t("devBar.web")}
-          tone={webTone}
-          stale={status.webStale ?? []}
-          notes={[]}
-          items={webItems}
-        />
-        {lifecycleItems.length > 0 ? <DropdownMenuSeparator /> : null}
-        {lifecycleItems.map((item) => (
-          <DropdownMenuItem
-            key={item.id}
-            testID={`dev-menu-${item.id}`}
-            disabled={item.disabled}
-            description={item.description}
-            onSelect={item.onSelect}
-          >
-            {item.label}
-          </DropdownMenuItem>
-        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-function toneOf(input: { busy: boolean; running: boolean; stale: boolean }): Tone {
-  if (input.busy) return "busy";
-  if (!input.running) return "stopped";
-  return input.stale ? "stale" : "running";
+function tonesOf(
+  build: DaemonDevBuild,
+  pending: Pending,
+): { daemon: DevBuildTone; web: DevBuildTone } {
+  const pendingTarget = pending?.action === "restartWeb" ? "web" : "daemon";
+  const busy = build.busy ?? (pending?.cwd === build.cwd ? pendingTarget : null);
+  return {
+    daemon: devBuildTone({
+      busy: busy === "daemon",
+      running: build.ready,
+      stale: build.daemonStale.length > 0,
+    }),
+    web: devBuildTone({
+      busy: busy === "web",
+      running: build.webReady,
+      stale: build.webStale.length > 0,
+    }),
+  };
 }
 
-function DevMenuSection({
-  testID,
-  label,
-  tone,
-  stale,
-  notes,
-  items,
+function DevMenuTrigger({ build, pending }: { build: DaemonDevBuild | null; pending: Pending }) {
+  const { t } = useTranslation();
+  const tones = build ? tonesOf(build, pending) : null;
+  const label = tones
+    ? `${t("devBar.daemon")}: ${t(`devBar.tone.${tones.daemon}`)}, ${t("devBar.web")}: ${t(`devBar.tone.${tones.web}`)}`
+    : t("devBar.menu");
+  return (
+    <DropdownMenuTrigger
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      testID="dev-menu"
+      style={styles.trigger}
+    >
+      {tones ? <View style={[styles.dot, devBuildDotTones[tones.daemon]]} /> : null}
+      {tones ? <View style={[styles.dot, devBuildDotTones[tones.web]]} /> : null}
+      <Text style={styles.triggerText} numberOfLines={1}>
+        {t("devBar.menu")}
+      </Text>
+    </DropdownMenuTrigger>
+  );
+}
+
+function LaunchItem({
+  cwd,
+  pending,
+  actionError,
+  perform,
 }: {
-  testID: string;
-  label: string;
-  tone: Tone;
-  stale: string[];
-  notes: string[];
-  items: DevMenuItem[];
+  cwd: string;
+  pending: Pending;
+  actionError: string | null;
+  perform: Perform;
 }) {
   const { t } = useTranslation();
   return (
     <>
-      <DropdownMenuLabel testID={testID}>{label}</DropdownMenuLabel>
-      <DropdownMenuItem disabled description={stale.join(" · ") || undefined}>
-        {t(`devBar.tone.${tone}`)}
+      <ActionItem
+        action="launch"
+        cwd={cwd}
+        perform={perform}
+        testID="dev-menu-launch"
+        description={t("devBar.launchHint")}
+        disabled={pending !== null}
+      >
+        {pending?.cwd === cwd ? t("devBar.launching") : t("devBar.launch")}
+      </ActionItem>
+      {actionError ? <DropdownMenuItem disabled>{actionError}</DropdownMenuItem> : null}
+    </>
+  );
+}
+
+function CurrentBuild({
+  host,
+  build,
+  isSelf,
+  pending,
+  actionError,
+  perform,
+}: {
+  host: HostProfile;
+  build: DaemonDevBuild;
+  isSelf: boolean;
+  pending: Pending;
+  actionError: string | null;
+  perform: Perform;
+}) {
+  const { t } = useTranslation();
+  const tones = tonesOf(build, pending);
+  const webUrl = webUrlOf(host, build);
+  const stale = [...new Set([...build.daemonStale, ...build.webStale])].join(" · ");
+  const notes = [
+    ...(build.lastError ? [t("devBar.lastError", { error: build.lastError })] : []),
+    ...(actionError ? [actionError] : []),
+    ...(build.behindMain ? [t("devBar.behindMain", { count: build.behindMain })] : []),
+  ];
+  return (
+    <>
+      <DropdownMenuLabel testID="dev-menu-current">
+        {build.branch ? `${t("devBar.title")} · ${build.branch}` : t("devBar.title")}
+      </DropdownMenuLabel>
+      <DropdownMenuItem disabled description={stale || undefined}>
+        {`${t("devBar.daemon")}: ${t(`devBar.tone.${tones.daemon}`)} · ${t("devBar.web")}: ${t(`devBar.tone.${tones.web}`)}`}
       </DropdownMenuItem>
       {notes.map((note) => (
         <DropdownMenuItem key={note} disabled>
           {note}
         </DropdownMenuItem>
       ))}
-      {items.map((item) => (
-        <DropdownMenuItem
-          key={item.id}
-          testID={`${testID}-${item.id}`}
-          disabled={item.disabled}
-          description={item.description}
-          onSelect={item.onSelect}
+      {webUrl ? (
+        <OpenItem url={webUrl} description={webUrl} testID="dev-menu-open-web">
+          {t("devBar.openWeb")}
+        </OpenItem>
+      ) : null}
+      {build.canRebuild ? (
+        <ActionItem
+          action="rebuildDaemon"
+          cwd={build.cwd}
+          perform={perform}
+          testID="dev-menu-rebuild-daemon"
+          disabled={Boolean(build.busy)}
         >
-          {item.label}
-        </DropdownMenuItem>
+          {t("devBar.rebuildDaemon")}
+        </ActionItem>
+      ) : null}
+      {build.canRebuild ? (
+        <ActionItem
+          action="restartWeb"
+          cwd={build.cwd}
+          perform={perform}
+          testID="dev-menu-restart-web"
+          disabled={Boolean(build.busy)}
+        >
+          {t("devBar.restartWeb")}
+        </ActionItem>
+      ) : null}
+      {isSelf ? null : (
+        <ActionItem action="stop" cwd={build.cwd} perform={perform} testID="dev-menu-stop">
+          {t("devBar.stop")}
+        </ActionItem>
+      )}
+    </>
+  );
+}
+
+function OtherBuilds({
+  host,
+  builds,
+  selfCwd,
+  separate,
+  perform,
+}: {
+  host: HostProfile;
+  builds: DaemonDevBuild[];
+  selfCwd: string | null;
+  separate: boolean;
+  perform: Perform;
+}) {
+  const { t } = useTranslation();
+  if (builds.length === 0) return null;
+  return (
+    <>
+      {separate ? <DropdownMenuSeparator /> : null}
+      <DropdownMenuLabel testID="dev-menu-others">{t("devBar.others")}</DropdownMenuLabel>
+      {builds.map((build) => (
+        <OtherBuild
+          key={build.cwd}
+          host={host}
+          build={build}
+          canStop={selfCwd !== build.cwd}
+          perform={perform}
+        />
       ))}
     </>
+  );
+}
+
+function OtherBuild({
+  host,
+  build,
+  canStop,
+  perform,
+}: {
+  host: HostProfile;
+  build: DaemonDevBuild;
+  canStop: boolean;
+  perform: Perform;
+}) {
+  const { t } = useTranslation();
+  const webUrl = webUrlOf(host, build);
+  const description = build.branch ?? build.cwd;
+  return (
+    <>
+      {webUrl ? (
+        <OpenItem url={webUrl} description={description}>
+          {t("devBar.openNamed", { name: build.name })}
+        </OpenItem>
+      ) : null}
+      {canStop ? (
+        <ActionItem
+          action="stop"
+          cwd={build.cwd}
+          perform={perform}
+          description={webUrl ? undefined : description}
+        >
+          {t("devBar.stopNamed", { name: build.name })}
+        </ActionItem>
+      ) : null}
+    </>
+  );
+}
+
+function ActionItem({
+  action,
+  cwd,
+  perform,
+  testID,
+  description,
+  disabled,
+  children,
+}: {
+  action: DevAction;
+  cwd: string;
+  perform: Perform;
+  testID?: string;
+  description?: string;
+  disabled?: boolean;
+  children: string;
+}) {
+  const handleSelect = useCallback(() => perform(action, cwd), [action, cwd, perform]);
+  return (
+    <DropdownMenuItem
+      testID={testID}
+      description={description}
+      disabled={disabled}
+      onSelect={handleSelect}
+    >
+      {children}
+    </DropdownMenuItem>
+  );
+}
+
+function OpenItem({
+  url,
+  description,
+  testID,
+  children,
+}: {
+  url: string;
+  description?: string;
+  testID?: string;
+  children: string;
+}) {
+  const handleSelect = useCallback(() => void openExternalUrl(url), [url]);
+  return (
+    <DropdownMenuItem testID={testID} description={description} onSelect={handleSelect}>
+      {children}
+    </DropdownMenuItem>
   );
 }
 
@@ -305,11 +439,4 @@ const styles = StyleSheet.create((theme) => ({
     height: 6,
     borderRadius: 3,
   },
-}));
-
-const dotTones = StyleSheet.create((theme) => ({
-  running: { backgroundColor: theme.colors.statusDotSuccess },
-  stale: { backgroundColor: theme.colors.statusDotWarning },
-  busy: { backgroundColor: theme.colors.statusDotRunning },
-  stopped: { backgroundColor: theme.colors.foregroundMuted },
 }));

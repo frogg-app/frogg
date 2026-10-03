@@ -4,16 +4,21 @@ import type { TranslationResources } from "./en";
 
 export const fr: TranslationResources = {
   devBar: {
+    title: "Build de dév",
+    launch: "Lancer un build de dév",
+    launching: "Lancement du build de dév…",
+    launchHint: "Exécute le daemon et l'app web de ce worktree sur leurs propres ports",
+    others: "Autres builds de dév",
+    openNamed: "Ouvrir {{name}}",
+    stopNamed: "Arrêter {{name}}",
+    badgeLabel: "Build de dév en cours",
     menu: "Dév",
     daemon: "Démon dev",
     web: "Web dev",
     rebuildDaemon: "Recompiler et redémarrer",
     restartWeb: "Redémarrer avec un cache vide",
     openWeb: "Ouvrir",
-    stop: "Arrêter",
-    noCheckouts:
-      "Aucun checkout des sources de Frogg sur cet hôte. Ajoutez le dépôt comme projet pour en démarrer un ici.",
-    startIn: "Démarrer dans {{name}}",
+    stop: "Arrêter le build de dév",
     lastError: "La dernière recompilation a échoué : {{error}}",
     behindMain_one: "{{count}} commit de retard sur main",
     behindMain_other: "{{count}} commits de retard sur main",
@@ -21,7 +26,7 @@ export const fr: TranslationResources = {
       running: "En cours",
       stale: "Obsolète",
       busy: "Recompilation…",
-      stopped: "Arrêté",
+      starting: "Démarrage…",
     },
   },
   releaseStreams: {
@@ -3465,15 +3470,13 @@ export const fr: TranslationResources = {
           "Cette connexion mène au daemon bêta. Le daemon stable écoute sur le port {{port}}.",
       },
       devDaemon: {
-        info: "Exécute npm run dev:live depuis une copie des sources sur l'hôte : le démon de cette copie sur son propre port, avec les comptes, projets et conversations de l'hôte, et son application web. Un seul à la fois.",
+        info: "Exécute npm run dev:live depuis une copie des sources sur l'hôte : le démon de cette copie sur des ports libres, avec les comptes, projets et conversations de l'hôte, et son application web. Un par copie ; plusieurs peuvent tourner en même temps.",
         needsUpdate: "Mettez à jour l'hôte pour lancer un démon de développement.",
         loadFailed: "Impossible de lire l'état du démon de développement : {{error}}",
         running: "En cours d'exécution sur le port {{port}}",
-        starting: "Démarrage sur le port {{port}}…",
-        stopped: "Arrêté",
+        starting: "Démarrage…",
         noCheckouts: "Aucun espace de travail de cet hôte n'est une copie des sources de ce dépôt.",
         launch: "Lancer",
-        log: "Journal : {{path}}",
       },
       betaApp: {
         title: "App bêta",

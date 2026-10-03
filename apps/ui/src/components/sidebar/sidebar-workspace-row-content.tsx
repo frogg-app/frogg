@@ -23,6 +23,7 @@ import {
 } from "@/utils/status-indicator-geometry";
 import { shouldRenderSyncedStatusLoader } from "@/utils/status-loader";
 import { StatusRing } from "@/components/status-ring";
+import { DevBuildBadge } from "@/components/dev-builds/dev-build-badge";
 import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sidebar-workspace-title";
 import { useWorkspaceLabelDefinitions } from "@/workspace-labels";
 
@@ -173,6 +174,10 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
             <Text style={workspaceBranchTextStyle} numberOfLines={1}>
               {workspaceLabel}
             </Text>
+            <DevBuildBadge
+              serverId={workspace.serverId}
+              cwd={workspace.workspaceDirectory || null}
+            />
             {/* The trailing cluster (SidebarWorkspaceTrailingActions) owns its own order:
                 metadata, account, disclosure, then the actions column at the right edge. */}
             <View style={sidebarWorkspaceRowStyles.rowRight}>{children}</View>

@@ -28,15 +28,15 @@ Prerequisites once per worktree: `npm ci` (wait for worktree setup to finish; a 
 Run it as a **background task**, not under `timeout`:
 
 ```bash
-npm run dev:live            # web 9898, daemon 9899 (PREVIEW_PORT, LIVE_DAEMON_PORT)
-PREVIEW_PORT=9878 LIVE_DAEMON_PORT=9879 npm run dev:live   # another worktree is on 9898/9899
+npm run dev:live            # picks free ports per worktree (reuses last run's when free)
+PREVIEW_PORT=9878 LIVE_DAEMON_PORT=9879 npm run dev:live   # pin them
 ```
 
 Wait for the banner, then give the user both lines verbatim:
 
 ```
-Live:     http://<lan-ip>:9898
-Daemon:   <lan-ip>:9899  (real providers, home .dev/live/home)
+Live:     http://<lan-ip>:<web-port>
+Daemon:   <lan-ip>:<daemon-port>  (real providers, home .dev/live/home)
 ```
 
 - **Web:** the URL opens in any browser on the LAN. Never hand out `localhost`; the VM is headless.
@@ -65,7 +65,7 @@ Clients reconnect on their own after a daemon restart. A running agent turn is c
   sessions behind those conversations are shared with the installed daemon: continue a
   conversation in one daemon at a time. `FROGG_LIVE_SOURCE_HOME=<dir>` picks another
   source; `=none` skips the import.
-- The daemon names itself `<hostname>-DEVELOPMENT` (`FROGG_HOSTNAME`), so it can't be mistaken
+- The daemon names itself `<hostname>-DEV-<checkout folder>` (`FROGG_HOSTNAME`), so it can't be mistaken
   for the installed daemon in a host list.
 - It never touches the installed stable daemon (9999, `~/.frogg`) or the side-by-side beta
   daemon. It is not "the deployed beta"; deployed daemons run release builds, not this branch.
