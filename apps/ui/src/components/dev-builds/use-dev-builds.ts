@@ -2,6 +2,7 @@
  * Dev builds on a host, polled once per host however many components read them: the top bar's
  * Dev menu and every sidebar row that may carry a dev build badge.
  */
+import { isDev } from "@/constants/platform";
 import { useCallback, useSyncExternalStore } from "react";
 import type { DaemonDevDaemonStatusPayload } from "@frogg/client";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
@@ -9,7 +10,6 @@ import type { DaemonDevBuild } from "@frogg/protocol/messages";
 import { useAppSettings } from "@/hooks/use-settings";
 import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import { useSessionStore } from "@/stores/session-store";
-import { isBetaBuild } from "@/utils/app-version";
 
 const POLL_MS = 4000;
 
@@ -88,9 +88,9 @@ function subscribe(serverId: string, client: DaemonClient, listener: () => void)
   };
 }
 
-/** Developer options are on (always, in a beta build). */
+/** Developer options are on (always, in a development build). */
 export function useDevBuildsEnabled(): boolean {
-  return useAppSettings().settings.developerOptions || isBetaBuild();
+  return useAppSettings().settings.developerOptions || isDev;
 }
 
 /** The host launches dev builds. */

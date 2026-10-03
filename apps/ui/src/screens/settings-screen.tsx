@@ -1,3 +1,4 @@
+import { isDev } from "@/constants/platform";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
@@ -43,7 +44,7 @@ import { VoiceAlertsSection } from "@/screens/settings/voice-alerts-section";
 import { BrowserDataSection } from "@/desktop/browser/settings/browser-data-section";
 import { isElectronRuntime } from "@/desktop/host";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
-import { isBetaBuild, resolveAppVersion } from "@/utils/app-version";
+import { resolveAppVersion } from "@/utils/app-version";
 import { useAppDiagnosticStore } from "@/diagnostics/store";
 import { settingsStyles } from "@/styles/settings";
 import { THINKING_TONE_NATIVE_PCM_BASE64 } from "@/utils/thinking-tone.native-pcm";
@@ -802,7 +803,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
         case "permissions":
           return isDesktopApp ? <DesktopPermissionsSection /> : null;
         case "developer":
-          return settings.developerOptions || isBetaBuild() ? <DeveloperSection /> : null;
+          return settings.developerOptions || isDev ? <DeveloperSection /> : null;
         case "about":
           return (
             <AboutSection

@@ -46,8 +46,7 @@ export function resolveAppVersion(): string | null {
 }
 
 /**
- * Beta (prerelease) builds are the developer channel: developer options are always on and
- * cannot be switched off there.
+ * Beta (prerelease) builds: the update channel follows the version.
  */
 export function isBetaBuild(): boolean {
   const version = resolveAppVersion();

@@ -1,3 +1,4 @@
+import { isDev } from "@/constants/platform";
 import { Fragment, useCallback, useMemo } from "react";
 import type { ComponentType, ReactNode } from "react";
 import { Pressable, ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
@@ -22,7 +23,7 @@ import { SecurityDot } from "@/security/security-dot";
 import { useSecurityPosture } from "@/security/use-security-posture";
 import { BrandLogo } from "@/components/icons/brand-logo";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
-import { isBetaBuild, resolveAppVersion } from "@/utils/app-version";
+import { resolveAppVersion } from "@/utils/app-version";
 
 type SidebarIcon = ComponentType<{ size: number; color: string }>;
 
@@ -186,7 +187,7 @@ export function SettingsSidebar({
   const { t } = useTranslation();
   const isDesktopApp = isElectronRuntime();
   const shortcutsAvailable = useKeyboardShortcutsAvailable();
-  const developerOptions = useSettings((settings) => settings.developerOptions) || isBetaBuild();
+  const developerOptions = useSettings((settings) => settings.developerOptions) || isDev;
   const scope = resolveSettingsScope(view);
   const isDesktop = layout === "desktop";
   // A host decides which of its own sections this app offers, so the list is
