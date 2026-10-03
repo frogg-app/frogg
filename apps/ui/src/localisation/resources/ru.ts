@@ -1939,7 +1939,6 @@ export const ru: TranslationResources = {
     },
   },
   openProject: {
-    greeting: "Над чем поработаем?",
     chooseHost: {
       importSession: "Импорт с хоста",
       setupProviders: "Выберите хост",

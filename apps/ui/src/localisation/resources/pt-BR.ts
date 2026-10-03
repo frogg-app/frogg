@@ -1944,7 +1944,6 @@ export const ptBR: TranslationResources = {
     },
   },
   openProject: {
-    greeting: "No que vamos trabalhar?",
     chooseHost: {
       importSession: "Importar do host",
       setupProviders: "Escolher host",

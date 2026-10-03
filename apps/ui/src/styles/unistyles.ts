@@ -1,8 +1,8 @@
 import { StyleSheet } from "react-native-unistyles";
-import { ALL_REGISTERED_THEMES } from "./design-variants";
+import { REGISTERED_THEMES } from "./theme";
 
 StyleSheet.configure({
-  themes: ALL_REGISTERED_THEMES,
+  themes: REGISTERED_THEMES,
   breakpoints: {
     xs: 0,
     sm: 576,
@@ -16,7 +16,7 @@ StyleSheet.configure({
 });
 
 // Type augmentation for TypeScript
-type AppThemes = typeof ALL_REGISTERED_THEMES;
+type AppThemes = typeof REGISTERED_THEMES;
 
 interface AppBreakpoints {
   xs: number;

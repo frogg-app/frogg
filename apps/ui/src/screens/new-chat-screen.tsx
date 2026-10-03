@@ -2,9 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { StyleSheet as RNStyleSheet, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
-import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
-import { themeOf } from "@/styles/design-theme";
-import { entryPageTitle, entryTitleBlock } from "@/home/entry-design";
 import { Composer } from "@/composer";
 import type { MessagePayload } from "@/composer/types";
 import {
@@ -222,10 +219,8 @@ export function NewChatScreen({ serverId }: { serverId: string }) {
       <View style={[styles.content, isCompact ? styles.contentCompact : styles.contentCentered]}>
         <TitlebarDragRegion />
         <View style={staticStyles.centered}>
-          <View style={titleContainerStyle()}>
-            <Text style={titleStyle()} dataSet={DESIGN_FONT_DATASET} accessibilityRole="header">
-              {t(`newChat.titles.${titleKey}`)}
-            </Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.title}>{t(`newChat.titles.${titleKey}`)}</Text>
           </View>
           <Composer
             externalKeyboardShift
@@ -262,7 +257,7 @@ const staticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -290,15 +285,4 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foreground,
   },
-  titleDesign: {
-    ...entryPageTitle(themeOf(rt.themeName)),
-  },
-  titleContainerDesign: {
-    ...entryTitleBlock(themeOf(rt.themeName)),
-  },
 }));
-
-// Composed at render: reading style proxies at module scope is not allowed.
-const titleContainerStyle = () => [styles.titleContainer, styles.titleContainerDesign];
-// Composed at render: reading style proxies at module scope is not allowed.
-const titleStyle = () => [styles.title, styles.titleDesign];

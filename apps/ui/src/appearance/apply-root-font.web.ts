@@ -9,7 +9,7 @@
 // subtree excluded via `:not([data-pmono] *)`) so they keep their monospace font.
 const STYLE_ID = "frogg-ui-font";
 const RULE =
-  ":is(#root, #overlay-root) *:not([data-pmono]):not([data-pmono] *):not([data-pfont]):not([data-pfont] *){font-family:var(--frogg-ui-font);}";
+  ":is(#root, #overlay-root) *:not([data-pmono]):not([data-pmono] *){font-family:var(--frogg-ui-font);}";
 
 export function applyRootUiFont(uiFontStack: string): void {
   if (typeof document === "undefined") return;

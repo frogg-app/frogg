@@ -12,9 +12,8 @@ import Animated, {
   useDerivedValue,
   withTiming,
 } from "react-native-reanimated";
-import { controlGeometryOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { switchGeometry } from "@/components/ui/control-geometry";
+import { createControlGeometry, switchGeometry } from "@/components/ui/control-geometry";
 import type { Theme } from "@/styles/theme";
 
 interface SwitchProps {
@@ -114,30 +113,34 @@ export function Switch({
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
-  switchControl: {
-    ...controlGeometryOf(theme, rt.themeName).switchControl,
-  },
-  switchTrack: {
-    width: switchGeometry.trackWidth,
-    height: switchGeometry.trackHeight,
-    borderRadius: switchGeometry.trackHeight / 2,
-    padding: (switchGeometry.trackHeight - switchGeometry.thumbSize) / 2,
-    justifyContent: "center",
-  },
-  switchThumb: {
-    width: switchGeometry.thumbSize,
-    height: switchGeometry.thumbSize,
-    borderRadius: switchGeometry.thumbSize / 2,
-  },
-  thumb: {
-    shadowColor: "rgba(0, 0, 0, 0.25)",
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 2,
-    shadowOpacity: 1,
-    elevation: 2,
-  },
-  disabled: {
-    opacity: theme.opacity[50],
-  },
-}));
+const styles = StyleSheet.create((theme) => {
+  const geometry = createControlGeometry(theme);
+
+  return {
+    switchControl: {
+      ...geometry.switchControl,
+    },
+    switchTrack: {
+      width: switchGeometry.trackWidth,
+      height: switchGeometry.trackHeight,
+      borderRadius: switchGeometry.trackHeight / 2,
+      padding: (switchGeometry.trackHeight - switchGeometry.thumbSize) / 2,
+      justifyContent: "center",
+    },
+    switchThumb: {
+      width: switchGeometry.thumbSize,
+      height: switchGeometry.thumbSize,
+      borderRadius: switchGeometry.thumbSize / 2,
+    },
+    thumb: {
+      shadowColor: "rgba(0, 0, 0, 0.25)",
+      shadowOffset: { width: 0, height: 1 },
+      shadowRadius: 2,
+      shadowOpacity: 1,
+      elevation: 2,
+    },
+    disabled: {
+      opacity: theme.opacity[50],
+    },
+  };
+});

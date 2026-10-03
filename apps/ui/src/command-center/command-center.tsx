@@ -13,9 +13,7 @@ import {
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, ChevronRight, Folder, X } from "lucide-react-native";
-import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { commandCenterTreatment } from "@/command-center/command-center-treatment";
 import {
   BottomSheetBackdrop,
   BottomSheetFlatList,
@@ -852,19 +850,14 @@ function ScopeChip({ label, onRemove }: { label: string; onRemove(): void }) {
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   overlay: {
     flex: 1,
     justifyContent: "flex-start",
     alignItems: "center",
     paddingTop: theme.spacing[12],
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).overlay,
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).backdrop,
-  },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0, 0, 0, 0.5)" },
   panel: {
     width: 640,
     height: 560,
@@ -876,14 +869,12 @@ const styles = StyleSheet.create((theme, rt) => ({
     overflow: "hidden",
     backgroundColor: theme.colors.surface0,
     ...theme.shadow.lg,
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).panel,
   },
   header: {
     paddingHorizontal: theme.spacing[4],
     paddingVertical: theme.spacing[3],
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).header,
   },
   bottomSheetHeader: {
     paddingHorizontal: theme.spacing[4],
@@ -896,7 +887,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingVertical: theme.spacing[1],
     color: theme.colors.foreground,
     outlineWidth: 0,
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).input,
   },
   growingInput: { flex: 1, minWidth: 0 },
   searchRow: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
@@ -926,26 +916,16 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingBottom: theme.spacing[2],
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).sectionLabel,
   },
   sectionDivider: {
     height: 1,
     marginTop: theme.spacing[2],
     marginBottom: theme.spacing[2],
     backgroundColor: theme.colors.border,
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).divider,
   },
-  row: {
-    height: 36,
-    paddingHorizontal: theme.spacing[4],
-    paddingVertical: theme.spacing[2],
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).row,
-  },
+  row: { height: 36, paddingHorizontal: theme.spacing[4], paddingVertical: theme.spacing[2] },
   tallRow: { height: 56 },
-  activeRow: {
-    backgroundColor: theme.colors.surface1,
-    ...commandCenterTreatment(designThemeOf(theme, rt.themeName)).activeRow,
-  },
+  activeRow: { backgroundColor: theme.colors.surface1 },
   rowContent: {
     flexDirection: "row",
     alignItems: "center",

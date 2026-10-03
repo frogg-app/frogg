@@ -8,10 +8,10 @@ import {
   type TargetedEvent,
 } from "react-native";
 import { ChevronDown } from "lucide-react-native";
-import { controlGeometryOf } from "@/components/ui/design-surface";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { Combobox, ComboboxItem, type ComboboxOption } from "@/components/ui/combobox";
 import {
+  createControlGeometry,
   resolveControlInteractionStyles,
   type FieldControlSize,
 } from "@/components/ui/control-geometry";
@@ -341,50 +341,54 @@ export function SelectField<TValue>({
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
-  trigger: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing[2],
-    ...controlGeometryOf(theme, rt.themeName).fieldSurface,
-  },
-  triggerSm: {
-    ...controlGeometryOf(theme, rt.themeName).fieldControlSm,
-  },
-  triggerMd: {
-    ...controlGeometryOf(theme, rt.themeName).fieldControlMd,
-  },
-  controlRest: {
-    ...controlGeometryOf(theme, rt.themeName).controlRest,
-  },
-  controlHover: {
-    ...controlGeometryOf(theme, rt.themeName).controlHover,
-  },
-  controlActive: {
-    ...controlGeometryOf(theme, rt.themeName).controlActive,
-  },
-  controlDisabled: {
-    ...controlGeometryOf(theme, rt.themeName).controlDisabled,
-  },
-  triggerText: {
-    flex: 1,
-    minWidth: 0,
-    color: theme.colors.foreground,
-  },
-  placeholderText: {
-    flex: 1,
-    minWidth: 0,
-    color: theme.colors.foregroundMuted,
-  },
-  triggerTextSm: {
-    ...controlGeometryOf(theme, rt.themeName).fieldTextSm,
-  },
-  triggerTextMd: {
-    ...controlGeometryOf(theme, rt.themeName).fieldTextMd,
-  },
-  spinnerSlot: {
-    flexShrink: 0,
-    width: ICON_SIZE.md,
-    alignItems: "center",
-  },
-}));
+const styles = StyleSheet.create((theme) => {
+  const geometry = createControlGeometry(theme);
+
+  return {
+    trigger: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: theme.spacing[2],
+      backgroundColor: theme.colors.surface2,
+    },
+    triggerSm: {
+      ...geometry.fieldControlSm,
+    },
+    triggerMd: {
+      ...geometry.fieldControlMd,
+    },
+    controlRest: {
+      ...geometry.controlRest,
+    },
+    controlHover: {
+      ...geometry.controlHover,
+    },
+    controlActive: {
+      ...geometry.controlActive,
+    },
+    controlDisabled: {
+      ...geometry.controlDisabled,
+    },
+    triggerText: {
+      flex: 1,
+      minWidth: 0,
+      color: theme.colors.foreground,
+    },
+    placeholderText: {
+      flex: 1,
+      minWidth: 0,
+      color: theme.colors.foregroundMuted,
+    },
+    triggerTextSm: {
+      ...geometry.fieldTextSm,
+    },
+    triggerTextMd: {
+      ...geometry.fieldTextMd,
+    },
+    spinnerSlot: {
+      flexShrink: 0,
+      width: ICON_SIZE.md,
+      alignItems: "center",
+    },
+  };
+});

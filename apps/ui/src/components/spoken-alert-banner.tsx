@@ -1,6 +1,4 @@
 import { useCallback } from "react";
-import { themeOf } from "@/styles/design-theme";
-import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
@@ -11,6 +9,7 @@ import { alertKey } from "@/spoken-alerts/state";
 import { useSpokenAlertsStore } from "@/spoken-alerts/store";
 import { useSpokenAlertPlayer } from "@/spoken-alerts/use-spoken-alert-player";
 import { useWorkspaceVoiceAlertsEnabled } from "@/stores/workspace-voice-alerts-store";
+import { MAX_CONTENT_WIDTH } from "@/constants/layout";
 
 interface SpokenAlertBannerProps {
   serverId: string;
@@ -117,7 +116,7 @@ export function SpokenAlertBanner({ serverId, agentId, workspaceId }: SpokenAler
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   // Matches the composer: the same outer gutter and content cap, so the banner lines up with
   // the chat column instead of spanning the whole pane.
   wrapper: {
@@ -128,7 +127,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   container: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
+    maxWidth: MAX_CONTENT_WIDTH,
     padding: theme.spacing[3],
     gap: theme.spacing[2],
     borderRadius: theme.borderRadius.xl,

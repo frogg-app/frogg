@@ -1,6 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { themeOf } from "@/styles/design-theme";
-import { designThemeKey } from "@/styles/design-variants";
 import { darkTheme, lightTheme } from "@/styles/theme";
 import { hexColorWithAlpha } from "@/utils/color";
 import { codeLineNumberTone, codeTextColor, createDiffPalette, retainDiffPalette } from "./palette";
@@ -46,25 +44,6 @@ describe.each([lightTheme, darkTheme])("semantic diff colors", (theme) => {
     expect(created.deletion).toBe(theme.colors.statusDanger);
     expect(created.additionBackground).toBe(hexColorWithAlpha(theme.colors.statusSuccess, 0.15));
     expect(created.deletionBackground).toBe(hexColorWithAlpha(theme.colors.statusDanger, 0.1));
-  });
-});
-
-describe("design-direction diff chrome", () => {
-  it("strengthens change tints on dark refresh grounds and bands headers in surface2", () => {
-    const theme = themeOf(designThemeKey("mono", "dark"));
-    const created = createDiffPalette(theme);
-
-    expect(created.additionBackground).toBe(hexColorWithAlpha(theme.colors.statusSuccess, 0.2));
-    expect(created.deletionBackground).toBe(hexColorWithAlpha(theme.colors.statusDanger, 0.17));
-    expect(created.headerSurface).toBe(theme.colors.surface2);
-  });
-
-  it("keeps Focus header bands flush with the diff surface", () => {
-    const theme = themeOf(designThemeKey("focus", "light"));
-    const created = createDiffPalette(theme);
-
-    expect(created.headerSurface).toBe(theme.colors.surface0);
-    expect(created.additionBackground).toBe(hexColorWithAlpha(theme.colors.statusSuccess, 0.14));
   });
 });
 

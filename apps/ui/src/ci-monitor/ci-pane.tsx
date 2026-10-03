@@ -42,13 +42,6 @@ import {
 } from "./model";
 import { useCiNow, useCiRuns, type CiRunsState } from "./use-ci-runs";
 import { useCiJobLogToChat, type CiJobLogToChat } from "./use-ci-job-log-to-chat";
-import {
-  panelListItemChrome,
-  panelMetaText,
-  panelStatusDot,
-  panelTheme,
-} from "@/workspace/panel-chrome";
-import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 /** How a job row attaches its log to the focused chat; null where that is not possible. */
 const CiJobLogContext = createContext<CiJobLogToChat | null>(null);
@@ -293,7 +286,6 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
     .filter(Boolean)
     .join(" · ");
   const started = run.startedAt === null ? null : formatRunStart(run.startedAt, now);
-  const metaDataSet = usePanelMetaDataSet();
   return (
     <View style={styles.run} testID="ci-run">
       <Pressable onPress={toggle} style={runHeaderStyle} accessibilityRole="button">
@@ -301,12 +293,7 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
         <View style={styles.runText}>
           <Text style={styles.runTitle} numberOfLines={1}>
             {run.pipeline}
-            {run.number !== null ? (
-              <Text style={styles.runNumber} dataSet={metaDataSet}>
-                {" "}
-                #{run.number}
-              </Text>
-            ) : null}
+            {run.number !== null ? <Text style={styles.runNumber}> #{run.number}</Text> : null}
           </Text>
           <View
             style={styles.runMeta}
@@ -315,16 +302,11 @@ function RunBlock({ run, now }: { run: CiRun; now: number }) {
             <View style={styles.runMetaIcon}>
               <CiProviderIcon provider={run.provider} size={ICON_SIZE.xs} />
             </View>
-            <Text style={styles.runMetaText} numberOfLines={1} dataSet={metaDataSet}>
+            <Text style={styles.runMetaText} numberOfLines={1}>
               {meta}
             </Text>
             {started ? (
-              <Text
-                style={styles.runStarted}
-                numberOfLines={1}
-                testID="ci-run-started"
-                dataSet={metaDataSet}
-              >
+              <Text style={styles.runStarted} numberOfLines={1} testID="ci-run-started">
                 {started}
               </Text>
             ) : null}
@@ -535,9 +517,9 @@ function jobRowStyle({ hovered }: { hovered?: boolean }) {
   return [sectionKitStyles.checkRow, Boolean(hovered) && styles.hover];
 }
 
-const RUNNER_DOT_SIZE = 6;
+const RUNNER_DOT = { width: 6, height: 6, borderRadius: 3 } as const;
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   toolbar: {
     flexDirection: "row",
     alignItems: "center",
@@ -590,7 +572,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     paddingBottom: theme.spacing[2],
-    ...panelListItemChrome(panelTheme(theme, rt.themeName)),
   },
   runHeader: {
     flexDirection: "row",
@@ -613,7 +594,6 @@ const styles = StyleSheet.create((theme, rt) => ({
   runNumber: {
     fontWeight: theme.fontWeight.normal,
     color: theme.colors.foregroundMuted,
-    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   runMeta: {
     flexDirection: "row",
@@ -630,13 +610,11 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
     fontVariant: ["tabular-nums"],
-    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   runMetaText: {
     flexShrink: 1,
     fontSize: theme.fontSize.sm,
     color: theme.colors.foregroundMuted,
-    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   runBar: {
     paddingHorizontal: theme.spacing[3],
@@ -693,10 +671,12 @@ const styles = StyleSheet.create((theme, rt) => ({
     minWidth: 0,
   },
   runnerDotBusy: {
-    ...panelStatusDot(panelTheme(theme, rt.themeName), "statusDotWarning", RUNNER_DOT_SIZE),
+    ...RUNNER_DOT,
+    backgroundColor: theme.colors.statusDotWarning,
   },
   runnerDotIdle: {
-    ...panelStatusDot(panelTheme(theme, rt.themeName), "statusDotSuccess", RUNNER_DOT_SIZE),
+    ...RUNNER_DOT,
+    backgroundColor: theme.colors.statusDotSuccess,
   },
   hover: {
     backgroundColor: theme.colors.surfaceSidebarHover,

@@ -1,12 +1,10 @@
 import { useCallback, useMemo, useState } from "react";
-import { themeOf } from "@/styles/design-theme";
-import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { View, Text } from "react-native";
 import { useTranslation } from "react-i18next";
 import { StyleSheet } from "react-native-unistyles";
 import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { FOOTER_HEIGHT } from "@/constants/layout";
+import { FOOTER_HEIGHT, MAX_CONTENT_WIDTH } from "@/constants/layout";
 import { useHostRuntimeClient, useHostRuntimeIsConnected } from "@/runtime/host-runtime";
 import { useKeyboardShiftStyle } from "@/hooks/use-keyboard-shift-style";
 import { Button } from "@/components/ui/button";
@@ -73,7 +71,7 @@ export function ArchivedAgentCallout({ serverId, agentId }: ArchivedAgentCallout
   );
 }
 
-const styles = StyleSheet.create((theme: Theme, rt) => ({
+const styles = StyleSheet.create((theme: Theme) => ({
   container: {
     flexDirection: "column",
     position: "relative",
@@ -89,7 +87,7 @@ const styles = StyleSheet.create((theme: Theme, rt) => ({
   },
   inputAreaContent: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
+    maxWidth: MAX_CONTENT_WIDTH,
   },
   callout: {
     flexDirection: "row",

@@ -26,7 +26,6 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { EditingTextInputHandle } from "@/components/ui/text-input";
-import { radiusOf } from "@/components/ui/design-surface";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useIsCompactInteraction } from "@/constants/layout";
 import {
@@ -1666,7 +1665,7 @@ export function Combobox({
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   mobileSheetFrame: {
     flex: 1,
     minHeight: 0,
@@ -1802,7 +1801,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   desktopContainer: {
     backgroundColor: theme.colors.surface0,
-    borderRadius: radiusOf(rt.themeName, "lg"),
+    borderRadius: theme.borderRadius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
     ...theme.shadow.md,

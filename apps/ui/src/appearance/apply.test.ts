@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { darkHighlightColors, resolveSyntaxColors } from "@frogg/highlight";
-import { DEFAULT_MONO_FONT_STACK, DEFAULT_UI_FONT_STACK } from "@/styles/theme";
-import { ALL_REGISTERED_THEMES } from "@/styles/design-variants";
+import { DEFAULT_UI_FONT_STACK, REGISTERED_THEMES } from "@/styles/theme";
 import { applyAppearance, type AppearanceInput } from "./apply";
 
 // Override the global react-native-unistyles mock (vitest.setup.ts) so that
@@ -15,7 +14,7 @@ const { runtime, updateTheme } = vi.hoisted(() => {
 });
 vi.mock("react-native-unistyles", () => ({ UnistylesRuntime: runtime }));
 
-const ALL_THEME_KEYS = Object.keys(ALL_REGISTERED_THEMES);
+const ALL_THEME_KEYS = Object.keys(REGISTERED_THEMES);
 
 // The signature of the updater passed to UnistylesRuntime.updateTheme.
 type ThemeUpdater = (theme: FakeTheme) => FakeTheme;
@@ -39,7 +38,6 @@ interface FakeTheme {
   };
   lineHeight: { diff: number };
   colors: { foreground: string; syntax: Record<string, string> };
-  design: { uiFontFamily: string; monoFontFamily: string };
 }
 
 function makeFakeTheme(): FakeTheme {
@@ -59,7 +57,6 @@ function makeFakeTheme(): FakeTheme {
     },
     lineHeight: { diff: 22 },
     colors: { foreground: "#fff", syntax: {} },
-    design: { uiFontFamily: DEFAULT_UI_FONT_STACK, monoFontFamily: DEFAULT_MONO_FONT_STACK },
   };
 }
 

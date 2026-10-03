@@ -35,8 +35,6 @@ import {
 } from "./model";
 import { StreamGraph, type StreamGraphLabels } from "./stream-graph";
 import { useReleaseStreams } from "./use-release-streams";
-import { panelCardChrome, panelSectionTitle, panelTheme } from "@/workspace/panel-chrome";
-import { usePanelHeadingDataSet } from "@/workspace/use-panel-meta-dataset";
 
 const ThemedRotateCw = withUnistyles(RotateCw);
 const ThemedLoadingSpinner = withUnistyles(LoadingSpinner);
@@ -171,7 +169,6 @@ function StreamsContent({ data }: { data: StreamsGraphPayload }) {
     [t],
   );
   const stableMissing = data.streams.find((stream) => stream.id === "stable")?.exists === false;
-  const headingDataSet = usePanelHeadingDataSet();
 
   return (
     <View style={styles.body}>
@@ -204,9 +201,7 @@ function StreamsContent({ data }: { data: StreamsGraphPayload }) {
         </View>
       ) : null}
 
-      <Text style={styles.sectionTitle} dataSet={headingDataSet}>
-        {t("releaseStreams.flows.title")}
-      </Text>
+      <Text style={styles.sectionTitle}>{t("releaseStreams.flows.title")}</Text>
       <FlowList data={data} />
 
       <ChangeList data={data} streams={streams} />
@@ -388,12 +383,9 @@ function ChangeList({ data, streams }: { data: StreamsGraphPayload; streams: Rel
     [t],
   );
   const columns = streams.filter((stream) => stream.exists || stream.releases.length > 0);
-  const headingDataSet = usePanelHeadingDataSet();
   return (
     <View>
-      <Text style={styles.sectionTitle} dataSet={headingDataSet}>
-        {t("releaseStreams.changes.title")}
-      </Text>
+      <Text style={styles.sectionTitle}>{t("releaseStreams.changes.title")}</Text>
       <View style={styles.changeControls}>
         <SegmentedControl size="sm" value={filter} onValueChange={setFilter} options={options} />
         <View style={styles.search}>
@@ -491,7 +483,7 @@ function iconButtonStyle({ hovered }: { hovered?: boolean }) {
 const SWATCH = { width: 10, height: 10, borderRadius: 5 } as const;
 const LINE_SWATCH = { width: 14, height: 0, borderTopWidth: 2 } as const;
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   scroll: { flex: 1 },
   content: { flexGrow: 1, paddingBottom: theme.spacing[6] },
   toolbar: {
@@ -523,7 +515,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontWeight: theme.fontWeight.semibold,
     color: theme.colors.foreground,
     marginTop: theme.spacing[2],
-    ...panelSectionTitle(panelTheme(theme, rt.themeName)),
   },
   setup: {
     gap: theme.spacing[2],
@@ -532,7 +523,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderWidth: 1,
     borderColor: theme.colors.borderAccent,
     backgroundColor: theme.colors.surface1,
-    ...panelCardChrome(panelTheme(theme, rt.themeName)),
   },
   setupTitle: {
     fontSize: theme.fontSize.base,
@@ -550,7 +540,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderWidth: 1,
     borderColor: theme.colors.border,
     backgroundColor: theme.colors.surface1,
-    ...panelCardChrome(panelTheme(theme, rt.themeName)),
   },
   cardHeader: {
     flexDirection: "row",
@@ -586,7 +575,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderColor: theme.colors.border,
     paddingVertical: theme.spacing[2],
     gap: theme.spacing[2],
-    ...panelCardChrome(panelTheme(theme, rt.themeName)),
   },
   legend: {
     flexDirection: "row",
@@ -617,10 +605,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderRadius: theme.borderRadius.lg,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    ...panelCardChrome(panelTheme(theme, rt.themeName)),
-    ...(panelTheme(theme, rt.themeName).design.borderless
-      ? { backgroundColor: theme.colors.surface1 }
-      : null),
   },
   flowCardWarn: { borderColor: theme.colors.statusWarning },
   flowHeader: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
@@ -663,9 +647,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingVertical: theme.spacing[2],
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    ...(panelTheme(theme, rt.themeName).design.borderless
-      ? { borderBottomColor: theme.colors.borderAccent }
-      : null),
   },
   changeHeader: { flexDirection: "row", alignItems: "center", gap: theme.spacing[2] },
   changeSubject: { flex: 1, fontSize: theme.fontSize.base, color: theme.colors.foreground },

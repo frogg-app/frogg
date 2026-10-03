@@ -20,7 +20,6 @@ import {
   type ViewStyle,
 } from "react-native";
 import { Keyframe, runOnJS } from "react-native-reanimated";
-import { radiusOf } from "@/components/ui/design-surface";
 import { StyleSheet } from "react-native-unistyles";
 import { FloatingScrollView, FloatingSurface } from "@/components/ui/floating";
 import { isWeb } from "@/constants/platform";
@@ -514,7 +513,7 @@ export function MenuOverlay({
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   overlay: {
     flex: 1,
   },
@@ -533,7 +532,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.surface1,
     borderWidth: 1,
     borderColor: theme.colors.borderAccent,
-    borderRadius: radiusOf(rt.themeName, "lg"),
+    borderRadius: theme.borderRadius.lg,
     overflow: "hidden",
     ...theme.shadow.md,
   },
