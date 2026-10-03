@@ -105,7 +105,6 @@ import { PullRequestStateIcon } from "@/git/pull-request-state-icon";
 import { openExternalUrl } from "@/utils/open-external-url";
 import { openWorkspacePullRequest } from "@/workspace-tabs/open-supporting-view";
 import type { PullRequestOpenLocation } from "@/hooks/use-settings";
-import { panelCardChrome, panelTheme } from "@/workspace/panel-chrome";
 
 export type { GitActionId, GitAction, GitActions } from "@/git/policy";
 
@@ -2069,7 +2068,7 @@ export function ChangesSurface({
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     minHeight: 0,
@@ -2114,7 +2113,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderColor: theme.colors.border,
     borderRadius: theme.borderRadius.md,
     backgroundColor: theme.colors.surface1,
-    ...panelCardChrome(panelTheme(theme, rt.themeName)),
   },
   forgeSetupCalloutText: {
     fontSize: theme.fontSize.sm,

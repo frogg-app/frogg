@@ -56,10 +56,7 @@ const {
 }));
 
 vi.mock("react-native", () => ({
-  Platform: {
-    OS: "web",
-    select: (options: Record<string, unknown>) => options.web ?? options.default,
-  },
+  Platform: { OS: "web" },
   View: ({ children, testID }: { children?: React.ReactNode; testID?: string }) =>
     React.createElement("div", { "data-testid": testID }, children),
   Text: ({ children }: { children?: React.ReactNode }) =>
@@ -111,9 +108,7 @@ vi.mock("react-native", () => ({
 vi.mock("react-native-unistyles", () => ({
   StyleSheet: {
     create: (factory: unknown) =>
-      typeof factory === "function"
-        ? (factory as (t: typeof theme, rt: unknown) => unknown)(theme, { themeName: "dark" })
-        : factory,
+      typeof factory === "function" ? (factory as (t: typeof theme) => unknown)(theme) : factory,
   },
   useUnistyles: () => ({ theme, rt: { breakpoint: "md" } }),
 }));

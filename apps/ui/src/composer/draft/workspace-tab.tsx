@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { themeOf } from "@/styles/design-theme";
-import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { Keyboard, ScrollView, StyleSheet as RNStyleSheet, Text, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import ReanimatedAnimated from "react-native-reanimated";
@@ -45,7 +43,11 @@ import {
   useWorkspaceAttachmentsStore,
 } from "@/attachments/workspace-attachments-store";
 import type { UserMessageImageAttachment } from "@/types/stream";
-import { COMPACT_FORM_FACTOR_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
+import {
+  COMPACT_FORM_FACTOR_WIDTH,
+  MAX_CONTENT_WIDTH,
+  useIsCompactFormFactor,
+} from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
 import {
   buildWorkspaceTabPersistenceKey,
@@ -742,7 +744,7 @@ const animatedStaticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     width: "100%",
@@ -780,7 +782,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   importPillContent: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
+    maxWidth: MAX_CONTENT_WIDTH,
     flexDirection: "row",
   },
   errorContainer: {

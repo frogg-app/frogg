@@ -291,16 +291,6 @@ function serializeInlineScriptJson(value: unknown): string {
     .replace(/&/g, "\\u0026");
 }
 
-/**
- * Clients parse the hint's `listen` as host:port, and a Host header omits the port when it is the
- * scheme's default (a reverse proxy or tunnel on 443). Spell the default out so the hint parses.
- */
-export function withDefaultPort(host: string, useTls: boolean): string {
-  if (!host) return host;
-  const hasPort = host.startsWith("[") ? /\]:\d+$/.test(host) : /:\d+$/.test(host);
-  return hasPort ? host : `${host}:${useTls ? 443 : 80}`;
-}
-
 function injectConnectionHint(
   html: string,
   req: Parameters<RequestHandler>[0],
@@ -309,7 +299,7 @@ function injectConnectionHint(
   const host = typeof req.headers.host === "string" ? req.headers.host : "";
   const useTls = req.protocol === "https";
   const hint = {
-    listen: withDefaultPort(host, useTls),
+    listen: host,
     useTls,
     label,
   };

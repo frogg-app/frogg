@@ -1,6 +1,4 @@
 import { AttachmentSizeError, MAX_FILE_SIZE_BYTES } from "@/attachments/file-size";
-import { themeOf } from "@/styles/design-theme";
-import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { useCompanionStore } from "@/companion/store";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { CONNECTION_NOTICE_SHOW_DELAY_MS } from "@/components/connection-notice-model";
@@ -41,7 +39,7 @@ import {
 } from "lucide-react-native";
 import * as Clipboard from "expo-clipboard";
 import Animated from "react-native-reanimated";
-import { FOOTER_HEIGHT } from "@/constants/layout";
+import { FOOTER_HEIGHT, MAX_CONTENT_WIDTH } from "@/constants/layout";
 import {
   AgentControls,
   DraftAgentControls,
@@ -2517,7 +2515,7 @@ const animatedStaticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme: Theme, rt) => ({
+const styles = StyleSheet.create((theme: Theme) => ({
   borderSeparator: {
     height: theme.borderWidth[1],
     backgroundColor: theme.colors.border,
@@ -2539,7 +2537,7 @@ const styles = StyleSheet.create((theme: Theme, rt) => ({
   inputAreaContent: {
     flexShrink: 1,
     width: "100%",
-    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
+    maxWidth: MAX_CONTENT_WIDTH,
     gap: theme.spacing[3],
   },
   messageInputContainer: {

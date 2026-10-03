@@ -4,8 +4,6 @@ import { Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { themeOf } from "@/styles/design-theme";
-import { entryColumn } from "@/home/entry-design";
 import { hostAddDeepLinkEndpoint } from "@frogg/protocol/host-add-deep-link";
 import { BackHeader } from "@/components/headers/back-header";
 import { Button } from "@/components/ui/button";
@@ -20,7 +18,7 @@ import type { Theme } from "@/styles/theme";
 const ThemedSpinner = withUnistyles(LoadingSpinner);
 const mutedSpinnerMapping = (theme: Theme) => ({ color: theme.colors.foregroundMuted });
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -30,9 +28,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.spacing[6],
     paddingBottom: theme.spacing[6],
     gap: theme.spacing[4],
-  },
-  bodyDesign: {
-    ...entryColumn(themeOf(rt.themeName)),
   },
   helper: {
     color: theme.colors.foregroundMuted,
@@ -120,10 +115,7 @@ export default function HostAddScreen() {
   }, [add]);
 
   // The safe-area inset is runtime-only, so it rides on margin; the theme padding stays in the sheet.
-  const bodyStyle = useMemo(
-    () => [styles.body, styles.bodyDesign, { marginBottom: insets.bottom }],
-    [insets.bottom],
-  );
+  const bodyStyle = useMemo(() => [styles.body, { marginBottom: insets.bottom }], [insets.bottom]);
 
   return (
     <View style={styles.container} testID="host-add-screen">

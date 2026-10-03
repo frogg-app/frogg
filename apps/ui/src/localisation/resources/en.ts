@@ -1904,7 +1904,6 @@ export const en = {
     },
   },
   openProject: {
-    greeting: "What should we work on?",
     chooseHost: {
       importSession: "Import from host",
       setupProviders: "Choose host",

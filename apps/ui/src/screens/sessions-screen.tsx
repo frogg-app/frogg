@@ -3,11 +3,10 @@ import { View, Text } from "react-native";
 import { useIsFocused } from "@react-navigation/native";
 import { router } from "expo-router";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
-import { themeOf } from "@/styles/design-theme";
-import { EntryPageHeader } from "@/home/entry-page-title";
 import { ChevronLeft } from "lucide-react-native";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
+import { MenuHeader } from "@/components/headers/menu-header";
 import { Button } from "@/components/ui/button";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { AgentList } from "@/components/agent-list";
@@ -304,7 +303,7 @@ function SessionsScreenContent({ projectKey = null, serverId = null }: SessionsS
 
   return (
     <View style={styles.container}>
-      <EntryPageHeader title={resolveTitle(t, projectLabel)} testID="sessions-page-title" />
+      <MenuHeader title={resolveTitle(t, projectLabel)} />
       {showFilterRow ? (
         <SessionsFilterRow
           showSearch={isSearchSupported}
@@ -357,15 +356,12 @@ function SessionsScreenContent({ projectKey = null, serverId = null }: SessionsS
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
   },
   filterContainer: {
-    width: "100%",
-    maxWidth: themeOf(rt.themeName).design.contentMaxWidth ?? undefined,
-    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing[2],
@@ -400,9 +396,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.fontSize.base,
   },
   errorsBannerWrap: {
-    width: "100%",
-    maxWidth: themeOf(rt.themeName).design.contentMaxWidth ?? undefined,
-    alignSelf: "center",
     paddingHorizontal: {
       xs: theme.spacing[3],
       md: theme.spacing[6],

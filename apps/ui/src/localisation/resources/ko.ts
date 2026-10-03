@@ -1904,7 +1904,6 @@ export const ko: TranslationResources = {
     },
   },
   openProject: {
-    greeting: "무엇을 작업할까요?",
     chooseHost: {
       importSession: "호스트에서 가져오기",
       setupProviders: "호스트 선택",

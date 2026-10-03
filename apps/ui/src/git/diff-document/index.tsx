@@ -47,8 +47,7 @@ function ThemedDiffDocument(props: ThemedDiffDocumentProps) {
 const StyledDiffDocument = withUnistyles(ThemedDiffDocument, (theme) => ({
   palette: createDiffPalette(theme),
   headerTypography: {
-    // File paths are metadata: the Mono direction paints them in its mono face.
-    family: theme.design.monoMeta ? theme.fontFamily.mono : theme.fontFamily.ui,
+    family: theme.fontFamily.ui,
     size: theme.fontSize.base,
     statSize: theme.fontSize.sm,
   },

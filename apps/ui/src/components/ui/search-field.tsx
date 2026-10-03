@@ -2,8 +2,6 @@ import { useCallback, useRef, useState, type ReactElement } from "react";
 import { Pressable, View } from "react-native";
 import { Search, X } from "lucide-react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { designControlRadius } from "@/components/ui/control-geometry";
-import { designThemeOf } from "@/components/ui/design-surface";
 import type { Theme } from "@/styles/theme";
 import {
   EditingTextInput as TextInput,
@@ -90,7 +88,7 @@ export function SearchField({
 
 const SEARCH_FIELD_MAX_WIDTH = 420;
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   field: {
     flexDirection: "row",
     alignItems: "center",
@@ -100,7 +98,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     maxWidth: SEARCH_FIELD_MAX_WIDTH,
     paddingVertical: theme.spacing[1.5],
     paddingHorizontal: theme.spacing[3],
-    borderRadius: designControlRadius(designThemeOf(theme, rt.themeName), theme.borderRadius.md),
+    borderRadius: theme.borderRadius.md,
     backgroundColor: theme.colors.surface1,
     borderWidth: theme.borderWidth[1],
     borderColor: theme.colors.border,

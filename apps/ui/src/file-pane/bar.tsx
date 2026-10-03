@@ -1,5 +1,3 @@
-import { panelMetaText, panelTheme } from "@/workspace/panel-chrome";
-import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 import { Text, View } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
@@ -33,7 +31,6 @@ export function FilePanelBar({
   conflict?: FileConflictAlertState;
 }) {
   const { t } = useTranslation();
-  const metaDataSet = usePanelMetaDataSet();
   const previewModes = [
     {
       value: "preview" as const,
@@ -49,7 +46,6 @@ export function FilePanelBar({
           <View style={styles.metadata}>
             <Text
               style={styles.whisper}
-              dataSet={metaDataSet}
               accessibilityLabel={t("panels.file.editor.fileSize", { size: formatFileSize(size) })}
             >
               {formatFileSize(size)}
@@ -57,7 +53,6 @@ export function FilePanelBar({
             {lineCount !== undefined ? (
               <Text
                 style={styles.whisper}
-                dataSet={metaDataSet}
                 accessibilityLabel={t("panels.file.editor.lines", { count: lineCount })}
               >
                 {t("panels.file.editor.lines", { count: lineCount })}
@@ -98,7 +93,6 @@ export function FilePanelBar({
             {cursor ? (
               <Text
                 style={styles.whisper}
-                dataSet={metaDataSet}
                 accessibilityLabel={t("panels.file.editor.cursor", cursor)}
               >
                 Ln {cursor.line}, Col {cursor.column}
@@ -127,7 +121,7 @@ function formatFileSize(size: number): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   chrome: {
     flexShrink: 0,
   },
@@ -146,11 +140,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.spacing[2],
   },
   secondary: { color: theme.colors.foregroundMuted, fontSize: theme.fontSize.sm },
-  whisper: {
-    color: theme.colors.foregroundExtraMuted,
-    fontSize: theme.fontSize.sm,
-    ...panelMetaText(panelTheme(theme, rt.themeName)),
-  },
+  whisper: { color: theme.colors.foregroundExtraMuted, fontSize: theme.fontSize.sm },
   error: { color: theme.colors.palette.red[300], fontSize: theme.fontSize.sm },
   dirtyDot: {
     width: 6,

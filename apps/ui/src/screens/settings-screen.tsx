@@ -3,13 +3,13 @@ import type { ComponentType, ReactNode } from "react";
 import { ScrollView, Text, View, type PressableStateCallbackType } from "react-native";
 import { EditingTextInput as TextInput } from "@/components/ui/text-input";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { Buffer } from "buffer";
 import { FolderGit2 } from "lucide-react-native";
 import { DropdownTrigger } from "@/components/ui/dropdown-trigger";
+import { ScreenTitle } from "@/components/headers/screen-title";
 import { HeaderIconBadge } from "@/components/headers/header-icon-badge";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { AppearanceSection } from "@/screens/settings/appearance/appearance-section";
@@ -45,9 +45,7 @@ import { isElectronRuntime } from "@/desktop/host";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { isBetaBuild, resolveAppVersion } from "@/utils/app-version";
 import { useAppDiagnosticStore } from "@/diagnostics/store";
-import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { settingsStyles } from "@/styles/settings";
-import { settingsTreatment } from "@/styles/settings-treatment";
 import { THINKING_TONE_NATIVE_PCM_BASE64 } from "@/utils/thinking-tone.native-pcm";
 import { useVoiceAudioEngineOptional } from "@/contexts/voice-context";
 import {
@@ -831,14 +829,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
       <HeaderIconBadge>
         <detailHeader.Icon size={theme.iconSize.md} color={theme.colors.foregroundMuted} />
       </HeaderIconBadge>
-      <Text
-        testID="settings-detail-header-title"
-        dataSet={DESIGN_FONT_DATASET}
-        numberOfLines={1}
-        style={desktopPageTitleStyle()}
-      >
-        {detailHeader.title}
-      </Text>
+      <ScreenTitle testID="settings-detail-header-title">{detailHeader.title}</ScreenTitle>
       {detailHeader.titleAccessory}
     </>
   ) : null;
@@ -954,7 +945,7 @@ export default function SettingsScreen({ view, openAddHostIntent = null }: Setti
 // Styles
 // ---------------------------------------------------------------------------
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   loadingContainer: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -968,7 +959,6 @@ const styles = StyleSheet.create((theme, rt) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
-    ...settingsTreatment(designThemeOf(theme, rt.themeName)).page,
   },
   scrollView: {
     flex: 1,
@@ -980,7 +970,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     maxWidth: 720,
     // Anchored beside the nav rather than floating mid-pane on a wide modal.
     alignSelf: "flex-start",
-    ...settingsTreatment(designThemeOf(theme, rt.themeName)).content,
   },
   themeTrigger: {
     flexDirection: "row",
@@ -1021,7 +1010,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
 }));
 
-const desktopStyles = StyleSheet.create((theme, rt) => ({
+const desktopStyles = StyleSheet.create((theme) => ({
   row: {
     flex: 1,
     flexDirection: "row",
@@ -1032,22 +1021,4 @@ const desktopStyles = StyleSheet.create((theme, rt) => ({
   detailLeft: {
     gap: theme.spacing[2],
   },
-  // ScreenTitle's typography, plus the direction's display face (hence the font dataset tag).
-  pageTitle: {
-    flexShrink: 1,
-    minWidth: 0,
-    fontSize: theme.fontSize.base,
-    fontWeight: {
-      xs: "400",
-      md: "300",
-    },
-    color: theme.colors.foreground,
-  },
-  // Kept apart from `pageTitle` so its breakpoint weight keeps Unistyles' narrowed style type.
-  pageTitleDesign: {
-    ...settingsTreatment(designThemeOf(theme, rt.themeName)).pageTitle,
-  },
 }));
-
-// Composed at render: reading style proxies at module scope is not allowed.
-const desktopPageTitleStyle = () => [desktopStyles.pageTitle, desktopStyles.pageTitleDesign];

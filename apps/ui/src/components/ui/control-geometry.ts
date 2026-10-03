@@ -115,64 +115,29 @@ export function resolveControlInteractionStyles(
   ];
 }
 
-/** Compact-density heights (Inset). The tight row stays at 28 so split buttons that pin
- * `buttonControlHeight.xs` still line up with the Buttons beside them. */
-const DENSE_CONTROL_HEIGHTS: typeof CONTROL_HEIGHTS = { tight: 28, compact: 30, field: 36 };
-
-/** Control heights for the active design: only a compact-density direction shrinks them. */
-export function designControlHeights(theme: Theme): typeof CONTROL_HEIGHTS {
-  const design = theme.design;
-  if (design && design.variant !== "current" && design.density === "compact") {
-    return DENSE_CONTROL_HEIGHTS;
-  }
-  return CONTROL_HEIGHTS;
-}
-
-/**
- * Corner radius for a button, field, or segment. `current` keeps its size-based ramp; a design
- * direction uses its single `controlRadius` (999 = pill), so every control shares one shape.
- */
-export function designControlRadius(theme: Theme, currentRadius: number): number {
-  const design = theme.design;
-  if (!design || design.variant === "current") return currentRadius;
-  return design.controlRadius;
-}
-
-/** Resting field border: directions with hairlines (Inset, Mono) outline inputs at rest. */
-function fieldRestBorderColor(theme: Theme): string {
-  const design = theme.design;
-  if (!design || design.variant === "current" || design.borderless) return "transparent";
-  return theme.colors.border;
-}
-
-/** Field fill: Mono draws inputs as outlined page-colour boxes; everyone else tints them. */
-function fieldSurfaceColor(theme: Theme): string {
-  if (theme.design?.variant === "mono") return theme.colors.surface0;
-  if (theme.design?.variant === "focus") return theme.colors.surface1;
-  return theme.colors.surface2;
-}
-
 export function createControlGeometry(theme: Theme) {
   const controlBorderWidth = theme.borderWidth[1];
-  const heights = designControlHeights(theme);
-  const radius = (currentRadius: number) => designControlRadius(theme, currentRadius);
   const fieldTextSmLineHeight = fieldLineHeight(theme.fontSize.base);
   const fieldTextMdLineHeight = fieldLineHeight(theme.fontSize.base);
   const fieldControlSm = {
-    minHeight: heights.compact,
+    minHeight: CONTROL_HEIGHTS.compact,
     paddingHorizontal: theme.spacing[3],
     paddingVertical: fieldVerticalPadding(
-      heights.compact,
+      CONTROL_HEIGHTS.compact,
       fieldTextSmLineHeight,
       controlBorderWidth,
     ),
-    borderRadius: radius(theme.borderRadius.md),
+    borderRadius: theme.borderRadius.md,
   };
   const fieldControlMd = {
-    minHeight: heights.field,
+    minHeight: CONTROL_HEIGHTS.field,
     paddingHorizontal: theme.spacing[4],
-    paddingVertical: fieldVerticalPadding(heights.field, fieldTextMdLineHeight, controlBorderWidth),
-    borderRadius: radius(theme.borderRadius.lg),
+    paddingVertical: fieldVerticalPadding(
+      CONTROL_HEIGHTS.field,
+      fieldTextMdLineHeight,
+      controlBorderWidth,
+    ),
+    borderRadius: theme.borderRadius.lg,
   };
   const fieldTextSm = {
     fontSize: theme.fontSize.base,
@@ -183,30 +148,30 @@ export function createControlGeometry(theme: Theme) {
     lineHeight: fieldTextMdLineHeight,
   };
   const switchControl = {
-    minHeight: heights.compact,
+    minHeight: CONTROL_HEIGHTS.compact,
     justifyContent: CONTROL_CENTER_JUSTIFY_CONTENT,
   } satisfies { minHeight: number; justifyContent: "center" };
 
   return {
     buttonXs: {
-      minHeight: heights.tight,
+      minHeight: buttonControlHeight.xs,
       paddingHorizontal: theme.spacing[3],
-      borderRadius: radius(theme.borderRadius.md),
+      borderRadius: theme.borderRadius.md,
     },
     buttonSm: {
-      minHeight: heights.compact,
+      minHeight: buttonControlHeight.sm,
       paddingHorizontal: theme.spacing[3],
-      borderRadius: radius(theme.borderRadius.md),
+      borderRadius: theme.borderRadius.md,
     },
     buttonMd: {
-      minHeight: heights.field,
+      minHeight: buttonControlHeight.md,
       paddingHorizontal: theme.spacing[4],
-      borderRadius: radius(theme.borderRadius.lg),
+      borderRadius: theme.borderRadius.lg,
     },
     buttonLg: {
-      minHeight: heights.field,
+      minHeight: buttonControlHeight.lg,
       paddingHorizontal: theme.spacing[6],
-      borderRadius: radius(theme.borderRadius.xl),
+      borderRadius: theme.borderRadius.xl,
     },
     buttonText: {
       fontSize: theme.fontSize.base,
@@ -228,12 +193,11 @@ export function createControlGeometry(theme: Theme) {
     },
     fieldControlSm,
     fieldControlMd,
-    fieldSurface: { backgroundColor: fieldSurfaceColor(theme) },
     fieldTextSm,
     fieldTextMd,
     controlRest: {
       borderWidth: controlBorderWidth,
-      borderColor: fieldRestBorderColor(theme),
+      borderColor: "transparent",
       outlineWidth: 0,
       outlineColor: "transparent",
     },
@@ -255,31 +219,31 @@ export function createControlGeometry(theme: Theme) {
     },
     switchControl,
     segmentedContainerXs: {
-      minHeight: heights.tight,
+      minHeight: CONTROL_HEIGHTS.tight,
       padding: 0,
     },
     segmentedContainerSm: {
-      minHeight: heights.compact,
+      minHeight: CONTROL_HEIGHTS.compact,
       padding: 0,
     },
     segmentedContainerMd: {
-      minHeight: heights.field,
+      minHeight: CONTROL_HEIGHTS.field,
       padding: 0,
     },
     segmentedSegmentXs: {
-      minHeight: heights.tight - SEGMENTED_TIGHT_INSET * 2,
+      minHeight: CONTROL_HEIGHTS.tight - SEGMENTED_TIGHT_INSET * 2,
       paddingHorizontal: theme.spacing[2],
-      borderRadius: radius(theme.borderRadius.md),
+      borderRadius: theme.borderRadius.md,
     },
     segmentedSegmentSm: {
-      minHeight: heights.compact - SEGMENTED_COMPACT_INSET * 2,
+      minHeight: CONTROL_HEIGHTS.compact - SEGMENTED_COMPACT_INSET * 2,
       paddingHorizontal: theme.spacing[2],
-      borderRadius: radius(theme.borderRadius.md),
+      borderRadius: theme.borderRadius.md,
     },
     segmentedSegmentMd: {
-      minHeight: heights.field - SEGMENTED_FIELD_INSET * 2,
+      minHeight: CONTROL_HEIGHTS.field - SEGMENTED_FIELD_INSET * 2,
       paddingHorizontal: theme.spacing[3],
-      borderRadius: radius(theme.borderRadius.lg),
+      borderRadius: theme.borderRadius.lg,
     },
     segmentedLabelXs: {
       fontSize: theme.fontSize.sm,

@@ -1,7 +1,6 @@
 import { AlertTriangle, CheckCircle2, Info, XCircle, type LucideIcon } from "lucide-react-native";
 import { type ReactNode, useMemo } from "react";
 import { Text, View } from "react-native";
-import { radiusOf } from "@/components/ui/design-surface";
 import { StyleSheet, useUnistyles } from "react-native-unistyles";
 
 export type AlertVariant = "default" | "info" | "success" | "warning" | "error";
@@ -81,7 +80,7 @@ function resolveAccentColor(
   return null;
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   container: {
     flexDirection: "row",
     alignItems: "flex-start",
@@ -89,7 +88,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     borderWidth: theme.borderWidth[1],
     borderColor: theme.colors.border,
     backgroundColor: "transparent",
-    borderRadius: radiusOf(rt.themeName, "xl"),
+    borderRadius: theme.borderRadius.xl,
     paddingVertical: theme.spacing[3],
     paddingHorizontal: theme.spacing[4],
   },

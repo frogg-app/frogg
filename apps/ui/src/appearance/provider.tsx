@@ -1,11 +1,7 @@
 import { type ReactNode, useEffect } from "react";
-import { useColorScheme } from "react-native";
 import { UnistylesRuntime } from "react-native-unistyles";
 import { useAppSettings, type AppSettings } from "@/hooks/use-settings";
-import { THEME_TO_UNISTYLES, type DesignVariantId } from "@/styles/theme";
-import { designThemeKey } from "@/styles/design-variants";
-import { useDesignPreviewStore, type DesignSchemePreference } from "@/design/design-preview-store";
-import { loadDesignWebFonts } from "@/design/load-web-fonts";
+import { THEME_TO_UNISTYLES } from "@/styles/theme";
 import { applyAppearance } from "./apply";
 
 function applyTheme(preference: AppSettings["theme"]): void {
@@ -18,29 +14,12 @@ function applyTheme(preference: AppSettings["theme"]): void {
   UnistylesRuntime.setTheme(THEME_TO_UNISTYLES[preference]);
 }
 
-function applyDesignVariant(
-  variant: Exclude<DesignVariantId, "current">,
-  scheme: DesignSchemePreference,
-  systemScheme: "light" | "dark",
-): void {
-  UnistylesRuntime.setAdaptiveThemes(false);
-  UnistylesRuntime.setTheme(designThemeKey(variant, scheme === "auto" ? systemScheme : scheme));
-}
-
 export function AppearanceProvider({ children }: { children: ReactNode }) {
   const { settings, isLoading } = useAppSettings();
-  const designVariant = useDesignPreviewStore((state) => state.variant);
-  const designScheme = useDesignPreviewStore((state) => state.scheme);
-  const systemScheme = useColorScheme() === "light" ? "light" : "dark";
 
   useEffect(() => {
     if (isLoading) return;
-    if (designVariant === "current") {
-      applyTheme(settings.theme);
-    } else {
-      loadDesignWebFonts(designVariant);
-      applyDesignVariant(designVariant, designScheme, systemScheme);
-    }
+    applyTheme(settings.theme);
     applyAppearance({
       uiFontFamily: settings.uiFontFamily,
       monoFontFamily: settings.monoFontFamily,
@@ -51,9 +30,6 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
     });
   }, [
     isLoading,
-    designVariant,
-    designScheme,
-    systemScheme,
     settings.theme,
     settings.uiFontFamily,
     settings.monoFontFamily,

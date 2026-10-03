@@ -1887,7 +1887,6 @@ export const ar: TranslationResources = {
     },
   },
   openProject: {
-    greeting: "على ماذا سنعمل؟",
     chooseHost: {
       importSession: "استيراد من المضيف",
       setupProviders: "اختر المضيف",

@@ -1,7 +1,5 @@
 import { CleanCutMarker } from "@/agent-stream/clean-cut-marker";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { themeOf } from "@/styles/design-theme";
-import { readingColumnMaxWidth } from "./conversation-design";
 import React, {
   forwardRef,
   memo,
@@ -25,7 +23,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { useIsCompactFormFactor } from "@/constants/layout";
+import { MAX_CONTENT_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
 import { useMutation } from "@tanstack/react-query";
 import Animated, { FadeIn, FadeOut } from "react-native-reanimated";
 import { Check, ChevronDown, X } from "lucide-react-native";
@@ -1594,14 +1592,14 @@ function PermissionRequestCard({
   );
 }
 
-const stylesheet = StyleSheet.create((theme, rt) => ({
+const stylesheet = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
   },
   contentWrapper: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
+    maxWidth: MAX_CONTENT_WIDTH,
     alignSelf: "center",
     paddingHorizontal: theme.spacing[2],
   },
@@ -1622,7 +1620,7 @@ const stylesheet = StyleSheet.create((theme, rt) => ({
   },
   streamItemWrapper: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
+    maxWidth: MAX_CONTENT_WIDTH,
     alignSelf: "center",
     paddingHorizontal: theme.spacing[2],
   },
