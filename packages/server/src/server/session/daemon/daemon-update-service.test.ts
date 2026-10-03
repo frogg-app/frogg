@@ -1,10 +1,9 @@
 import { EventEmitter } from "node:events";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import type { ChildProcess } from "node:child_process";
-import { brand } from "@frogg/branding";
 import pino from "pino";
 import { afterEach, describe, expect, test } from "vitest";
 import type { SessionOutboundMessage } from "../../messages.js";
@@ -116,6 +115,20 @@ describe("describeDaemonInstall", () => {
     expect(findVersionRoot("/nowhere/x.js", path.join(installDir, "versions"))).toBeNull();
   });
 
+  test("accepts a beta bundle whose launcher is bin/frogg-beta", () => {
+    const { installDir, moduleUrl } = makeVersionedInstall("1.6.10-beta.5");
+    const binDir = path.join(installDir, "versions", "1.6.10-beta.5", "bin");
+    renameSync(path.join(binDir, "frogg"), path.join(binDir, "frogg-beta"));
+    const info = describeDaemonInstall({
+      env: { FROGG_INSTALL_DIR: installDir },
+      desktopManaged: false,
+      moduleUrl,
+      platform: "linux",
+    });
+    expect(info.updatable).toBe(true);
+    expect(info.cliLauncher).toBe(path.join(binDir, "frogg-beta"));
+  });
+
   test("explains why Docker, desktop-managed, and dev checkouts cannot self-update", () => {
     const installDir = makeDir();
     expect(
@@ -182,7 +195,7 @@ describe("DaemonUpdateService", () => {
     const result = await pending;
     expect(result).toMatchObject({
       updatable: true,
-      channel: brand.channel,
+      channel: "beta",
       latestVersion: "0.1.14",
       updateAvailable: true,
       releaseUrl: "https://r",
@@ -199,7 +212,7 @@ describe("DaemonUpdateService", () => {
       installDir,
       "--check",
       "--channel",
-      brand.channel,
+      "beta",
     ]);
     expect(calls[0]?.env).toMatchObject({
       FROGG_HOME: path.join(installDir, "home"),
