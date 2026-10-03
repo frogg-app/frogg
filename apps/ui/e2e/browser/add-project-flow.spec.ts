@@ -195,6 +195,9 @@ test.describe("Add Project command-center flow", () => {
         await chooseAddProjectMethod(page, "new-directory");
         await addProjectFlowInput(page).fill(parentDirectory);
         await page.keyboard.press("Enter");
+        const createHere = page.getByTestId("add-project-flow-choose-directory");
+        await expect(createHere).toContainText(parentDirectory);
+        await createHere.click();
         await expectAddProjectPage(page, "new-directory-name");
         await page.keyboard.type(directoryName);
         await page.keyboard.press("Enter");
@@ -331,6 +334,9 @@ test.describe("Add Project command-center flow", () => {
 
       await page.keyboard.type(parentDirectory);
       await page.keyboard.press("Enter");
+      const createHere = page.getByTestId("add-project-flow-choose-directory");
+      await expect(createHere).toContainText(parentDirectory);
+      await createHere.click();
       await expectAddProjectPage(page, "new-directory-name");
       await page.keyboard.type("../invalid");
       await page.keyboard.press("Enter");
@@ -343,7 +349,9 @@ test.describe("Add Project command-center flow", () => {
       await addProjectFlowInput(page).fill(directoryName);
       await addProjectFlowBack(page).click();
       await expectAddProjectPage(page, "new-directory-parent");
-      await expect(addProjectFlowInput(page)).toHaveValue(parentDirectory);
+      await expect(page.getByTestId("add-project-flow-path-bar-input")).toHaveValue(
+        parentDirectory,
+      );
       await page.keyboard.press("Enter");
       await expectAddProjectPage(page, "new-directory-name");
       await expect(addProjectFlowInput(page)).toHaveValue(directoryName);

@@ -17,6 +17,8 @@ interface DirectoryBrowserInput {
   navigate: (path: string) => void;
   choose: (path: string) => void;
   retry: () => void;
+  /** Overrides the "Use this directory" row title. */
+  chooseTitle?: string;
 }
 
 interface DirectoryBrowserRow {
@@ -54,7 +56,7 @@ export function buildDirectoryBrowserRows(input: DirectoryBrowserInput): Directo
   const rows: DirectoryBrowserRow[] = [
     {
       id: `choose:${currentPath}`,
-      title: i18n.t("directoryBrowser.choose"),
+      title: input.chooseTitle ?? i18n.t("directoryBrowser.choose"),
       subtitle: shortenPath(currentPath),
       icon: FolderPlus,
       pinned: true,

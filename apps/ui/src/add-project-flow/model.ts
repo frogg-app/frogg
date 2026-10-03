@@ -44,7 +44,7 @@ export type AddProjectPage =
       repository: GithubRepositoryChoice;
       isSubmitting: boolean;
     } & SearchPageState)
-  | ({ kind: "new-directory-parent"; hostId: string } & SearchPageState)
+  | ({ kind: "new-directory-parent"; hostId: string; directory: string } & SearchPageState)
   | {
       kind: "new-directory-name";
       hostId: string;
@@ -180,6 +180,16 @@ export function shouldFallBackToHomeDirectory(input: {
   return input.browsedDirectory === input.brandDirectory;
 }
 
+export type DirectoryBrowserPage = Extract<
+  AddProjectPage,
+  { kind: "directory-search" | "new-directory-parent" }
+>;
+
+/** Pages that browse the host's directories with the path bar and listing. */
+export function isDirectoryBrowserPage(page: AddProjectPage): page is DirectoryBrowserPage {
+  return page.kind === "directory-search" || page.kind === "new-directory-parent";
+}
+
 export function openDirectorySearchPage(
   state: AddProjectFlowState,
   hostId: string,
@@ -220,7 +230,11 @@ export function openNewDirectoryParentPage(
   state: AddProjectFlowState,
   hostId: string,
 ): AddProjectFlowState {
-  return pushAddProjectPage(state, { ...searchPage("new-directory-parent"), hostId });
+  return pushAddProjectPage(state, {
+    ...searchPage("new-directory-parent"),
+    directory: brandProjectDirectory(),
+    hostId,
+  });
 }
 
 export function openNewDirectoryNamePage(
@@ -250,7 +264,7 @@ export function setAddProjectPageInput(
       return { ...current, name: value, activeIndex: 0, error: null };
     }
     if (current.kind === "method") return current;
-    if (current.kind === "directory-search") {
+    if (isDirectoryBrowserPage(current)) {
       return { ...current, query: value, activeIndex: value.trim() ? -1 : 0, error: null };
     }
     return { ...current, query: value, activeIndex: 0, error: null };
