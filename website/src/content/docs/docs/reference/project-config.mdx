@@ -43,6 +43,7 @@ An invalid entry is ignored rather than failing the workspace, so check the app 
 | `teardown`     | string or string[]     | When Frogg removes the worktree |
 | `terminals`    | `[{ name?, command }]` | Terminals opened in a new worktree |
 | `servicePorts` | `{ range }` or `{ portScript }` | How service ports are chosen |
+| `baseBranch`   | string                 | Branch new worktrees start from when none is picked. Defaults to the repository's default branch (origin/HEAD). Frogg uses the origin copy, falling back to the local branch if it hasn't been fetched. Also editable in project settings |
 
 Setup and teardown commands receive:
 

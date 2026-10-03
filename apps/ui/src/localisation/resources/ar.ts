@@ -4385,6 +4385,9 @@ export const ar: TranslationResources = {
           "تستخدم أشجار العمل الجديدة نص الإعداد البرمجي من الفرع الأساسي الذي تحدده.",
         teardown: "هدم",
         teardownAccessibility: "أوامر هدم شجرة العمل",
+        baseBranch: "الفرع الأساسي الافتراضي",
+        baseBranchAccessibility: "الفرع الأساسي الافتراضي لأشجار العمل الجديدة",
+        baseBranchPlaceholder: "الفرع الافتراضي للمستودع",
       },
       scripts: {
         title: "البرامج النصية",

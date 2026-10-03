@@ -4451,6 +4451,9 @@ export const ja: TranslationResources = {
           "新しいワークツリーでは、選択したベースブランチのセットアップスクリプトが使われます。",
         teardown: "削除時",
         teardownAccessibility: "ワークツリー削除時のコマンド",
+        baseBranch: "デフォルトのベースブランチ",
+        baseBranchAccessibility: "新しいワークツリーのデフォルトのベースブランチ",
+        baseBranchPlaceholder: "リポジトリのデフォルトブランチ",
       },
       scripts: {
         title: "スクリプト",

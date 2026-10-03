@@ -4428,6 +4428,9 @@ export const en = {
           "New worktrees use the setup script from the base branch you select.",
         teardown: "Teardown",
         teardownAccessibility: "Worktree teardown commands",
+        baseBranch: "Default base branch",
+        baseBranchAccessibility: "Default base branch for new worktrees",
+        baseBranchPlaceholder: "Repository default branch",
       },
       scripts: {
         title: "Scripts",

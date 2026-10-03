@@ -11144,6 +11144,8 @@ if(__ui_4175.length===0){__u_4171=true;}else{if(typeof __msg==="function"){for(v
 if(__o_4163["terminals"]!==undefined){}
 if(__o_4163["servicePorts"]!==undefined){var __rf_r164=__rf[164].safeParse(__o_4163["servicePorts"]);if(!__rf_r164.success){var __rf_i164=__rf_r164.error.issues;for(var __rf_j164=0;__rf_j164<__rf_i164.length;__rf_j164++){__ui_4158.push(Object.assign({},__rf_i164[__rf_j164],{path:["message"].concat("payload").concat("config").concat("worktree").concat("servicePorts").concat(__rf_i164[__rf_j164].path)}));}}else{__o_4163["servicePorts"]=__rf_r164.data;}
 }
+if(__o_4163["baseBranch"]!==undefined){if(typeof __o_4163["baseBranch"]!=="string"){__ui_4158.push({code:"invalid_type",expected:"string",input:__o_4163["baseBranch"],path:["message"].concat("payload").concat("config").concat("worktree").concat("baseBranch")});}
+}
 __o_4162["worktree"]=__o_4163;}
 }
 if(__o_4162["scripts"]!==undefined){if(typeof __o_4162["scripts"]!=="object"||__o_4162["scripts"]===null||Array.isArray(__o_4162["scripts"])){__ui_4158.push({code:"invalid_type",expected:"record",input:__o_4162["scripts"],path:["message"].concat("payload").concat("config").concat("scripts")});}else{var __rk_4178=Object.keys(__o_4162["scripts"]);for(var __ri_4179=0;__ri_4179<__rk_4178.length;__ri_4179++){var __rkey_4180=__rk_4178[__ri_4179];var __rki_4181=[];if(typeof __rkey_4180!=="string"){__rki_4181.push({code:"invalid_type",expected:"string",input:__rkey_4180,path:["message"].concat("payload").concat("config").concat("scripts").concat(__rkey_4180)});}
@@ -11257,6 +11259,8 @@ if(__ui_4228.length===0){__u_4224=true;}else{if(typeof __msg==="function"){for(v
 }
 if(__o_4216["terminals"]!==undefined){}
 if(__o_4216["servicePorts"]!==undefined){var __rf_r165=__rf[165].safeParse(__o_4216["servicePorts"]);if(!__rf_r165.success){var __rf_i165=__rf_r165.error.issues;for(var __rf_j165=0;__rf_j165<__rf_i165.length;__rf_j165++){__ui_4211.push(Object.assign({},__rf_i165[__rf_j165],{path:["message"].concat("payload").concat("config").concat("worktree").concat("servicePorts").concat(__rf_i165[__rf_j165].path)}));}}else{__o_4216["servicePorts"]=__rf_r165.data;}
+}
+if(__o_4216["baseBranch"]!==undefined){if(typeof __o_4216["baseBranch"]!=="string"){__ui_4211.push({code:"invalid_type",expected:"string",input:__o_4216["baseBranch"],path:["message"].concat("payload").concat("config").concat("worktree").concat("baseBranch")});}
 }
 __o_4215["worktree"]=__o_4216;}
 }

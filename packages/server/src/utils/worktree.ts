@@ -1624,12 +1624,19 @@ async function resolveBaseBranchForWorktree(
   }
 
   if (exactRef) {
-    try {
-      await runGitCommand(["rev-parse", "--verify", exactRef], { cwd });
-      return exactRef;
-    } catch {
-      throw new Error(`Base branch not found: ${normalized}`);
+    // A remote-tracking ref that was never fetched falls back to the local branch of the
+    // same name, so a default base of origin/main still works before the first fetch.
+    const remoteMatch = /^refs\/remotes\/[^/]+\/(.+)$/.exec(exactRef);
+    const exactCandidates = remoteMatch ? [exactRef, `refs/heads/${remoteMatch[1]}`] : [exactRef];
+    for (const candidate of exactCandidates) {
+      try {
+        await runGitCommand(["rev-parse", "--verify", candidate], { cwd });
+        return candidate;
+      } catch {
+        // Try the local fallback.
+      }
     }
+    throw new Error(`Base branch not found: ${normalized}`);
   }
 
   const candidates = [`refs/heads/${requested}`, `refs/remotes/origin/${requested}`, requested];

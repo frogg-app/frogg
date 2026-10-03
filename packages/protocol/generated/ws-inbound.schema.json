@@ -4698,6 +4698,9 @@
                             }
                           },
                           "additionalProperties": false
+                        },
+                        "baseBranch": {
+                          "type": "string"
                         }
                       },
                       "additionalProperties": {}

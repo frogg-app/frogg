@@ -4318,6 +4318,9 @@ export const zhCN: TranslationResources = {
         uncommittedDescription: "新工作树使用所选基础分支中的设置脚本。",
         teardown: "Teardown",
         teardownAccessibility: "Worktree teardown 命令",
+        baseBranch: "默认基础分支",
+        baseBranchAccessibility: "新 worktree 的默认基础分支",
+        baseBranchPlaceholder: "仓库默认分支",
       },
       scripts: {
         title: "Scripts",

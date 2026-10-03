@@ -4488,6 +4488,9 @@ export const es: TranslationResources = {
           "Los árboles de trabajo nuevos usan el script de configuración de la rama base que selecciones.",
         teardown: "Demoler",
         teardownAccessibility: "Comandos de desmontaje del árbol de trabajo",
+        baseBranch: "Rama base predeterminada",
+        baseBranchAccessibility: "Rama base predeterminada para nuevos árboles de trabajo",
+        baseBranchPlaceholder: "Rama predeterminada del repositorio",
       },
       scripts: {
         title: "Scripts",

@@ -9,6 +9,7 @@ function emptyDraft(): ProjectConfigDraft {
     setupOriginalKind: "missing",
     teardownText: "",
     teardownOriginalKind: "missing",
+    baseBranchText: "",
     scripts: [],
     metadataPrompts: {
       branchName: "",
@@ -18,6 +19,20 @@ function emptyDraft(): ProjectConfigDraft {
     metadataGenerationBase: undefined,
   };
 }
+
+describe("worktree base branch", () => {
+  it("round-trips and clears baseBranch", () => {
+    const base: FroggConfigRaw = { worktree: { setup: "npm ci", baseBranch: "develop" } };
+    const draft = configToDraft(base);
+    expect(draft.baseBranchText).toBe("develop");
+    expect(applyDraftToConfig({ draft: { ...draft, baseBranchText: " main " }, base })).toEqual({
+      worktree: { setup: "npm ci", baseBranch: "main" },
+    });
+    expect(applyDraftToConfig({ draft: { ...draft, baseBranchText: "" }, base })).toEqual({
+      worktree: { setup: "npm ci" },
+    });
+  });
+});
 
 describe("configToDraft", () => {
   it("returns an empty draft for null config", () => {

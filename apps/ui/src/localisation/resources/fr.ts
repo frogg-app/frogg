@@ -4496,6 +4496,9 @@ export const fr: TranslationResources = {
           "Les nouveaux worktrees utilisent le script de configuration de la branche de base sélectionnée.",
         teardown: "Démolir",
         teardownAccessibility: "Commandes de démontage de Worktree",
+        baseBranch: "Branche de base par défaut",
+        baseBranchAccessibility: "Branche de base par défaut des nouveaux worktrees",
+        baseBranchPlaceholder: "Branche par défaut du dépôt",
       },
       scripts: {
         title: "Scripts",

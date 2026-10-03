@@ -4464,6 +4464,9 @@ export const ptBR: TranslationResources = {
           "Novos worktrees usam o script de configuração do branch base selecionado.",
         teardown: "Desmontagem",
         teardownAccessibility: "Comandos de desmontagem do worktree",
+        baseBranch: "Branch base padrão",
+        baseBranchAccessibility: "Branch base padrão para novos worktrees",
+        baseBranchPlaceholder: "Branch padrão do repositório",
       },
       scripts: {
         title: "Scripts",

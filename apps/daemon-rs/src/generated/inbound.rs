@@ -2298,6 +2298,8 @@ pub struct WriteProjectConfigRequestConfigWorktree {
     pub terminals: Option<serde_json::Value>,
     #[serde(rename = "servicePorts", skip_serializing_if = "Option::is_none")]
     pub service_ports: Option<WriteProjectConfigRequestConfigWorktreeServicePorts>,
+    #[serde(rename = "baseBranch", skip_serializing_if = "Option::is_none")]
+    pub base_branch: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

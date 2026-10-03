@@ -38148,6 +38148,9 @@
                                         }
                                       },
                                       "additionalProperties": false
+                                    },
+                                    "baseBranch": {
+                                      "type": "string"
                                     }
                                   },
                                   "additionalProperties": {}
@@ -38511,6 +38514,9 @@
                                     }
                                   },
                                   "additionalProperties": false
+                                },
+                                "baseBranch": {
+                                  "type": "string"
                                 }
                               },
                               "additionalProperties": {}

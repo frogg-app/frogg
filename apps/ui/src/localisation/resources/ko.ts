@@ -4413,6 +4413,9 @@ export const ko: TranslationResources = {
         uncommittedDescription: "새 워크트리는 선택한 기본 브랜치의 설정 스크립트를 사용합니다.",
         teardown: "정리",
         teardownAccessibility: "워크트리 정리 명령",
+        baseBranch: "기본 베이스 브랜치",
+        baseBranchAccessibility: "새 워크트리의 기본 베이스 브랜치",
+        baseBranchPlaceholder: "저장소 기본 브랜치",
       },
       scripts: {
         title: "스크립트",

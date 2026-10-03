@@ -1755,6 +1755,17 @@ function NewWorkspaceForm({
     cwd: selectedSourceDirectory ?? "",
   });
 
+  // Shares the project settings screen's cache entry, so a saved base branch applies at once.
+  const projectConfigQuery = useQuery({
+    queryKey: ["project-config", selectedServerId, selectedSourceDirectory ?? ""],
+    queryFn: () => withConnectedClient().readProjectConfig(selectedSourceDirectory ?? ""),
+    enabled: clientReady && hasSelectedSourceDirectory,
+    retry: false,
+  });
+  const configuredBaseBranch = projectConfigQuery.data?.ok
+    ? (projectConfigQuery.data.config?.worktree?.baseBranch ?? null)
+    : null;
+
   const worktreeSupport = selectedProject
     ? getWorktreeSupportForHostProject({ project: selectedProject, serverId: selectedServerId })
     : "unsupported";
@@ -1836,8 +1847,10 @@ function NewWorkspaceForm({
   }, [forgeSearchAuthenticated, githubPrSearchQuery.data?.items]);
 
   const baseItem = useMemo(
-    () => selectedItem ?? (checkoutStatus ? defaultBasePickerItem(checkoutStatus) : null),
-    [checkoutStatus, selectedItem],
+    () =>
+      selectedItem ??
+      (checkoutStatus ? defaultBasePickerItem(checkoutStatus, configuredBaseBranch) : null),
+    [checkoutStatus, configuredBaseBranch, selectedItem],
   );
   const { options, itemById, selectedOptionId }: PickerOptionData = useMemo(
     () =>
@@ -2063,7 +2076,7 @@ function NewWorkspaceForm({
         : null;
       const checkoutRequest = checkoutStatusForCreate
         ? pickerItemToCheckoutRequest(
-            selectedItem ?? defaultBasePickerItem(checkoutStatusForCreate),
+            selectedItem ?? defaultBasePickerItem(checkoutStatusForCreate, configuredBaseBranch),
           )
         : undefined;
       const normalizedWorkspace = supportsWorkspaceMultiplicity
@@ -2092,6 +2105,7 @@ function NewWorkspaceForm({
     },
     [
       buildCreateWorktreeInput,
+      configuredBaseBranch,
       createdWorkspace,
       effectiveIsolation,
       mergeWorkspaces,

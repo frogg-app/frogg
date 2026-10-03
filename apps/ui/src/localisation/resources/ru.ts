@@ -4466,6 +4466,9 @@ export const ru: TranslationResources = {
           "Новые worktree используют скрипт настройки из выбранной базовой ветки.",
         teardown: "Удаление",
         teardownAccessibility: "Команды удаления worktree",
+        baseBranch: "Базовая ветка по умолчанию",
+        baseBranchAccessibility: "Базовая ветка по умолчанию для новых worktree",
+        baseBranchPlaceholder: "Ветка репозитория по умолчанию",
       },
       scripts: {
         title: "Скрипты",
