@@ -9,12 +9,11 @@ import {
   openAddProjectFlow,
   openDirectorySearchPage,
   openGithubLocationPage,
-  openNewDirectoryNamePage,
   openNewDirectoryParentPage,
+  isDirectoryExplorerPage,
   setAddProjectActiveIndex,
   setAddProjectPageInput,
   shouldFallBackToHomeDirectory,
-  setNewDirectoryName,
   type AddProjectHost,
 } from "./model";
 import {
@@ -79,6 +78,11 @@ describe("Add Project navigation", () => {
     state = backAddProjectPage(state)!;
     state = openDirectorySearchPage(state, HOST.serverId);
     expect(currentAddProjectPage(state)).toMatchObject({ directory, query: "" });
+    state = backAddProjectPage(state)!;
+    state = openNewDirectoryParentPage(state, HOST.serverId);
+    const parentPage = currentAddProjectPage(state);
+    expect(parentPage).toMatchObject({ kind: "new-directory-parent", directory });
+    expect(isDirectoryExplorerPage(parentPage)).toBe(true);
   });
 
   it("skips a single connected host without adding it to history", () => {
@@ -117,21 +121,6 @@ describe("Add Project navigation", () => {
     expect(moveAddProjectActiveIndex(2, 3, "next")).toBe(0);
     expect(moveAddProjectActiveIndex(0, 3, "previous")).toBe(2);
     expect(moveAddProjectSelection(0, [true, false, true], "next")).toBe(2);
-  });
-
-  it("restores a directory name after returning to and reselecting its parent", () => {
-    let state = openAddProjectFlow({ hosts: [HOST] });
-    state = openNewDirectoryParentPage(state, HOST.serverId);
-    state = openNewDirectoryNamePage(state, HOST.serverId, "~/dev");
-    state = setNewDirectoryName(state, "command-center");
-    state = backAddProjectPage(state) ?? state;
-    state = openNewDirectoryNamePage(state, HOST.serverId, "~/dev");
-
-    expect(currentAddProjectPage(state)).toMatchObject({
-      kind: "new-directory-name",
-      parentPath: "~/dev",
-      name: "command-center",
-    });
   });
 
   it("restores the GitHub destination query and active parent when reopening a repository", () => {
