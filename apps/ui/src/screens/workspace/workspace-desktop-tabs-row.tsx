@@ -66,7 +66,6 @@ import {
 import type { WorkspaceTabDescriptor } from "@/screens/workspace/workspace-tabs-types";
 import type { SurfaceBackdrop } from "@/styles/surface-backdrop";
 import type { Theme } from "@/styles/theme";
-import { panelHeaderEdge, panelTabChrome, panelTheme } from "@/workspace/panel-chrome";
 import { RenderProfile } from "@/utils/render-profiler";
 import { TrailingActionScrim } from "@/components/ui/trailing-action-scrim";
 import { useKeyboardActionHandler } from "@/hooks/use-keyboard-action-handler";
@@ -1470,22 +1469,12 @@ function ResolvedDesktopTabChip({
   );
 }
 
-function tabChrome(theme: Theme) {
-  return panelTabChrome(theme, {
-    radius: theme.borderRadius.md,
-    hovered: theme.colors.surface1,
-    active: theme.colors.surface2,
-    activeUnfocused: theme.colors.surface1,
-  });
-}
-
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   tabsContainer: {
     minWidth: 0,
     height: WORKSPACE_SECONDARY_HEADER_HEIGHT,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    ...panelHeaderEdge(panelTheme(theme, rt.themeName)),
     backgroundColor: theme.colors.surface0,
     flexDirection: "row",
     alignItems: "center",
@@ -1539,11 +1528,16 @@ const styles = StyleSheet.create((theme, rt) => ({
     alignItems: "center",
     gap: theme.spacing[1],
     userSelect: "none",
-    ...tabChrome(panelTheme(theme, rt.themeName)).tab,
   },
-  tabHovered: { ...tabChrome(panelTheme(theme, rt.themeName)).hovered },
-  tabActive: { ...tabChrome(panelTheme(theme, rt.themeName)).active },
-  tabActiveUnfocused: { ...tabChrome(panelTheme(theme, rt.themeName)).activeUnfocused },
+  tabHovered: {
+    backgroundColor: theme.colors.surface1,
+  },
+  tabActive: {
+    backgroundColor: theme.colors.surface2,
+  },
+  tabActiveUnfocused: {
+    backgroundColor: theme.colors.surface1,
+  },
   tabHoverFrame: {
     position: "relative",
   },
@@ -1592,7 +1586,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     userSelect: "none",
-    ...tabChrome(panelTheme(theme, rt.themeName)).label,
   },
   tabLabelMeasurements: {
     position: "absolute",
@@ -1615,7 +1608,9 @@ const styles = StyleSheet.create((theme, rt) => ({
     backgroundColor: theme.colors.surface3,
     opacity: 0.9,
   },
-  tabLabelActive: { ...tabChrome(panelTheme(theme, rt.themeName)).labelActive },
+  tabLabelActive: {
+    color: theme.colors.foreground,
+  },
   tabTrailingOverlay: {
     position: "absolute",
     top: 0,

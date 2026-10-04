@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test, expect } from "../support/fixtures";
@@ -14,6 +14,8 @@ import {
   expectNewWorkspaceForAddedProject,
   openAddProjectFlow,
   openAddProjectHostSelection,
+  explorerEntry,
+  explorerGoTo,
 } from "../support/helpers/add-project-flow";
 import { gotoAppShell } from "../support/helpers/app";
 import {
@@ -193,11 +195,9 @@ test.describe("Add Project command-center flow", () => {
           `Create an empty directory on ${SECONDARY_HOST_LABEL}`,
         );
         await chooseAddProjectMethod(page, "new-directory");
-        await addProjectFlowInput(page).fill(parentDirectory);
-        await page.keyboard.press("Enter");
-        await expectAddProjectPage(page, "new-directory-name");
-        await page.keyboard.type(directoryName);
-        await page.keyboard.press("Enter");
+        await explorerGoTo(page, parentDirectory);
+        await page.getByTestId("directory-explorer-name").fill(directoryName);
+        await page.getByTestId("directory-explorer-primary").click();
 
         const projectId = await expectOpenedProject(page, directoryName);
         await expectNewWorkspaceForAddedProject(page, {
@@ -223,13 +223,16 @@ test.describe("Add Project command-center flow", () => {
 
     await page.keyboard.press("Enter");
     await expectAddProjectPage(page, "directory-search");
-    await addProjectFlowInput(page).fill(projectPickerFixture.projectPath);
-    await page.getByTestId("add-project-flow-navigate-directory").click();
-    await expect(addProjectFlow(page)).toContainText(projectPickerFixture.projectName, {
-      timeout: 30_000,
-    });
-    await expect(page.getByTestId("add-project-flow-choose-directory")).toBeEnabled();
+    // A typed path in the filter field offers "Go to" and Enter follows it.
+    await page.keyboard.type(projectPickerFixture.projectPath);
+    await expect(page.getByTestId("directory-explorer-go-to")).toBeVisible();
     await page.keyboard.press("Enter");
+    await expect(page.getByTestId("directory-explorer-path-bar")).toContainText(
+      projectPickerFixture.projectName,
+      { timeout: 30_000 },
+    );
+    await expect(page.getByTestId("directory-explorer-primary")).toBeEnabled();
+    await page.keyboard.press("Control+Enter");
 
     const projectId = await expectOpenedProject(page, projectPickerFixture.projectName);
     projectPickerFixture.rememberProjectId(projectId);
@@ -242,7 +245,7 @@ test.describe("Add Project command-center flow", () => {
     await expectProjectHasNoWorkspaces(projectId);
   });
 
-  test("directory browsing starts at home, navigates children, and recovers from a failed path", async ({
+  test("directory explorer navigates by keyboard, breadcrumbs and double-click, and recovers from a failed path", async ({
     page,
   }) => {
     const root = await mkdtemp(path.join(tmpdir(), "frogg-e2e-browse-"));
@@ -250,46 +253,42 @@ test.describe("Add Project command-center flow", () => {
     const missing = path.join(root, "missing");
     try {
       await mkdir(path.join(child, "grandchild"), { recursive: true });
+      await writeFile(path.join(root, "notes.txt"), "");
       await gotoAppShell(page);
       await openAddProjectFlow(page);
       await chooseAddProjectMethod(page, "directory-search");
-      const choose = page.getByTestId("add-project-flow-choose-directory");
-      await expect(choose).toBeEnabled();
-      await addProjectFlowInput(page).fill("~");
-      await page.getByTestId("add-project-flow-navigate-directory").click();
-      await expect(addProjectFlowInput(page)).toHaveValue("");
-      await expect(choose).toBeEnabled();
-      await expect(choose).toContainText("~");
+      const primary = page.getByTestId("directory-explorer-primary");
+      await expect(primary).toBeEnabled();
 
-      await addProjectFlowInput(page).fill(root);
-      await page.keyboard.press("Enter");
-      await expect(choose).toContainText(root);
-      const childRow = page.getByTestId(`add-project-flow-path-${encodeURIComponent(child)}`);
+      await explorerGoTo(page, root);
+      const childRow = explorerEntry(page, child);
       await expect(childRow).toBeVisible();
-      await expect(
-        page.getByTestId(
-          `add-project-flow-path-${encodeURIComponent(path.join(child, "grandchild"))}`,
-        ),
-      ).toHaveCount(0);
+      await expect(explorerEntry(page, path.join(root, "notes.txt"))).toBeDisabled();
+      await expect(explorerEntry(page, path.join(child, "grandchild"))).toHaveCount(0);
+
+      // Single click selects; double-click opens.
       await childRow.click();
-      await expect(choose).toContainText(child);
-      await page.getByTestId("add-project-flow-parent-directory").click();
+      await expect(page.getByTestId("directory-explorer-path-bar")).not.toContainText("grandchild");
+      await childRow.dblclick();
+      await expect(explorerEntry(page, path.join(child, "grandchild"))).toBeVisible();
+
+      // Backspace goes up; arrows + Enter open.
+      await page.getByTestId("directory-explorer-filter").focus();
+      await page.keyboard.press("Backspace");
+      await expect(childRow).toBeVisible();
+      await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("Enter");
+      await expect(explorerEntry(page, path.join(child, "grandchild"))).toBeVisible();
+      await page.getByTestId(`directory-explorer-crumb-${encodeURIComponent(root)}`).click();
       await expect(childRow).toBeVisible();
 
-      await addProjectFlowInput(page).fill(missing);
-      await page.keyboard.press("Enter");
-      await expect(page.getByTestId("add-project-flow-query-error")).toBeVisible();
-      await expect(choose).toBeDisabled();
-      await expect(childRow).toHaveCount(0);
+      await explorerGoTo(page, missing);
+      await expect(page.getByTestId("directory-explorer-error")).toBeVisible();
+      await expect(primary).toBeDisabled();
       await mkdir(missing);
-      await page.getByTestId("add-project-flow-retry-directory").click();
-      await expect(choose).toBeEnabled();
-      await expect(choose).toContainText(missing);
-      await expect(page.getByTestId("add-project-flow-query-error")).toHaveCount(0);
-      await addProjectFlowBack(page).click();
-      await chooseAddProjectMethod(page, "directory-search");
-      await expect(choose).toBeEnabled();
-      await expect(choose).toContainText("~");
+      await page.getByTestId("directory-explorer-retry").click();
+      await expect(primary).toBeEnabled();
+      await expect(page.getByTestId("directory-explorer-error")).toHaveCount(0);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -316,7 +315,7 @@ test.describe("Add Project command-center flow", () => {
     await expect(addProjectFlowInput(page)).toHaveValue(remote);
   });
 
-  test("New directory validates the name, restores parent and name state, then creates a Project", async ({
+  test("New directory validates the name in the explorer, then creates a Project", async ({
     page,
   }) => {
     const parentDirectory = await mkdtemp(path.join(tmpdir(), "frogg-e2e-new-project-"));
@@ -328,26 +327,19 @@ test.describe("Add Project command-center flow", () => {
       await gotoAppShell(page);
       await openAddProjectFlow(page);
       await chooseAddProjectMethod(page, "new-directory");
+      await explorerGoTo(page, parentDirectory);
 
-      await page.keyboard.type(parentDirectory);
-      await page.keyboard.press("Enter");
-      await expectAddProjectPage(page, "new-directory-name");
-      await page.keyboard.type("../invalid");
-      await page.keyboard.press("Enter");
-
-      const error = page.getByTestId("add-project-flow-error");
+      const name = page.getByTestId("directory-explorer-name");
+      await name.fill("../invalid");
+      await name.press("Enter");
+      const error = page.getByTestId("directory-explorer-name-error");
       await expect(error).toBeVisible();
-      await expect(error).toContainText(/name|separator|directory/i);
-      await expectAddProjectPage(page, "new-directory-name");
+      await expect(error).toContainText(/name|slash/i);
 
-      await addProjectFlowInput(page).fill(directoryName);
-      await addProjectFlowBack(page).click();
-      await expectAddProjectPage(page, "new-directory-parent");
-      await expect(addProjectFlowInput(page)).toHaveValue(parentDirectory);
-      await page.keyboard.press("Enter");
-      await expectAddProjectPage(page, "new-directory-name");
-      await expect(addProjectFlowInput(page)).toHaveValue(directoryName);
-      await page.keyboard.press("Enter");
+      await name.fill(directoryName);
+      await expect(error).toHaveCount(0);
+      await expect(page.getByTestId("directory-explorer-destination")).toContainText(directoryName);
+      await name.press("Enter");
 
       projectId = await expectOpenedProject(page, directoryName);
       await expectNewWorkspaceForAddedProject(page, {

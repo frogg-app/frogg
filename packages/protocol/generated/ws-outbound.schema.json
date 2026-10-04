@@ -38148,6 +38148,9 @@
                                         }
                                       },
                                       "additionalProperties": false
+                                    },
+                                    "baseBranch": {
+                                      "type": "string"
                                     }
                                   },
                                   "additionalProperties": {}
@@ -38511,6 +38514,9 @@
                                     }
                                   },
                                   "additionalProperties": false
+                                },
+                                "baseBranch": {
+                                  "type": "string"
                                 }
                               },
                               "additionalProperties": {}
@@ -60158,6 +60164,113 @@
                     },
                     "canRebuild": {
                       "type": "boolean"
+                    },
+                    "instances": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cwd": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "branch": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "startedAt": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "daemonPort": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "webPort": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "logPath": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "ready": {
+                            "type": "boolean"
+                          },
+                          "webReady": {
+                            "type": "boolean"
+                          },
+                          "daemonStale": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "webStale": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "busy": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "lastError": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "behindMain": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "canRebuild": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "cwd",
+                          "name",
+                          "branch",
+                          "startedAt",
+                          "daemonPort",
+                          "webPort",
+                          "logPath",
+                          "ready",
+                          "webReady",
+                          "daemonStale",
+                          "webStale",
+                          "busy",
+                          "lastError",
+                          "behindMain",
+                          "canRebuild"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "selfCwd": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     },
                     "requestId": {
                       "type": "string"

@@ -1,11 +1,10 @@
 import { ProjectImportDialog } from "@/project-import/dialog";
-import { buildDirectoryBrowserRows } from "@/add-project-flow/directory-browser";
+import { DirectoryExplorer, type DirectoryExplorerHandle } from "@/components/directory-explorer";
 import { i18n } from "@/localisation/i18next";
 import { router } from "expo-router";
 import type { WorkspaceProjectDescriptorPayload } from "@frogg/protocol/messages";
 import {
   ArrowLeft,
-  Folder,
   FolderOpen,
   FolderPlus,
   Github,
@@ -43,17 +42,14 @@ import {
   currentAddProjectPage,
   moveAddProjectSelection,
   openAddProjectFlow,
-  brandProjectDirectory,
   HOME_DIRECTORY,
   openDirectorySearchPage,
   openGithubLocationPage,
   openGithubSearchPage,
-  openNewDirectoryNamePage,
+  isDirectoryExplorerPage,
   openNewDirectoryParentPage,
   setAddProjectActiveIndex,
   setAddProjectPageInput,
-  shouldFallBackToHomeDirectory,
-  setNewDirectoryName,
   updateCurrentAddProjectPage,
   type AddProjectFlowState,
   type AddProjectHost,
@@ -67,7 +63,6 @@ import {
   buildManualGithubRepositoryChoices,
   buildSuggestedParentDirectories,
   filterAddProjectHosts,
-  joinDirectoryPath,
   pathBaseName,
   type AddProjectMethodId,
 } from "@/add-project-flow/options";
@@ -143,6 +138,8 @@ const lastCloneParentByHost = new Map<string, string>();
 const EMPTY_PATHS: string[] = [];
 const NAVIGATION_HINT_KEYS = ["Up", "Down"];
 const SELECT_HINT_KEYS = ["Enter"];
+const EXPLORER_UP_HINT_KEYS = ["Backspace"];
+const EXPLORER_PRIMARY_HINT_KEYS = ["mod", "Enter"];
 const ESCAPE_HINT_KEYS = ["Esc"];
 
 function FlowBackButton({ onPress }: { onPress: () => void }) {
@@ -174,13 +171,11 @@ function methodIcon(method: AddProjectMethodId): FlowRowOption["icon"] {
 
 function progressText(page: AddProjectPage): string {
   if (page.kind === "github-location") return "Cloning project...";
-  if (page.kind === "new-directory-name") return "Creating directory...";
   return "Adding project...";
 }
 
 function emptyText(page: AddProjectPage, host: AddProjectHost | null): string {
   if (page.kind === "host") return "No connected hosts";
-  if (page.kind === "directory-search") return i18n.t("directoryBrowser.empty");
   if (page.kind === "github-search") return "Enter a GitHub URL or owner/repo";
   if (page.kind === "method") return addProjectMethodEmptyText(host);
   return "No matching options";
@@ -213,38 +208,34 @@ function pageTitle(page: AddProjectPage): string {
     case "method":
       return "Add project";
     case "directory-search":
-      return "Search for directory";
+      return i18n.t("directoryBrowser.selectTitle");
     case "github-search":
       return "Clone from GitHub";
     case "github-location":
       return "Choose destination";
     case "new-directory-parent":
-      return "Choose parent directory";
-    case "new-directory-name":
-      return "Name directory";
+      return i18n.t("directoryBrowser.createTitle");
   }
 }
 
-type AddProjectInputPage = Exclude<AddProjectPage, { kind: "method" }>;
+type AddProjectInputPage = Exclude<
+  AddProjectPage,
+  { kind: "method" | "directory-search" | "new-directory-parent" }
+>;
 
 function pagePlaceholder(page: AddProjectInputPage): string {
   switch (page.kind) {
     case "host":
       return "Search hosts...";
-    case "directory-search":
-      return i18n.t("directoryBrowser.placeholder");
     case "github-search":
       return "Search or enter a GitHub repository...";
     case "github-location":
-    case "new-directory-parent":
       return "Search parent directories or enter a path...";
-    case "new-directory-name":
-      return "Directory name";
   }
 }
 
-function pageInput(page: AddProjectInputPage): string {
-  return page.kind === "new-directory-name" ? page.name : page.query;
+function pageInput(page: AddProjectPage): string {
+  return "query" in page && !isDirectoryExplorerPage(page) ? page.query : "";
 }
 
 function pathTestId(path: string): string {
@@ -309,72 +300,6 @@ function setPageStatus(
 ): AddProjectFlowState {
   return updateCurrentAddProjectPage(state, (page) =>
     page.kind === kind ? { ...page, ...input } : page,
-  );
-}
-
-interface DirectoryPathBarProps {
-  path: string;
-  editable: boolean;
-  onNavigate: (path: string) => void;
-  onFocusChange: (focused: boolean) => void;
-}
-
-/**
- * The address bar for the directory browser: it shows where browsing currently
- * is — the resolved absolute path, not the `~` the flow started from — and
- * takes a typed or pasted path directly. Editing it never filters the list;
- * that is what the field below it does.
- */
-function DirectoryPathBar({ path, editable, onNavigate, onFocusChange }: DirectoryPathBarProps) {
-  const inputRef = useRef<EditingTextInputHandle>(null);
-
-  // The listing resolves `~` and every parent/child hop server-side, so the
-  // field follows the browser rather than holding whatever was typed last.
-  useEffect(() => {
-    if (!inputRef.current?.isFocused()) inputRef.current?.replaceText(path);
-  }, [path]);
-
-  const submit = useCallback(() => {
-    const value = inputRef.current?.getText().trim() ?? "";
-    if (!value || value === path) return;
-    onNavigate(value);
-  }, [onNavigate, path]);
-
-  const handleFocus = useCallback(() => onFocusChange(true), [onFocusChange]);
-  const handleBlur = useCallback(() => {
-    onFocusChange(false);
-    inputRef.current?.replaceText(path);
-  }, [onFocusChange, path]);
-
-  const handleKeyPress = useCallback(
-    ({ nativeEvent: { key } }: { nativeEvent: { key: string } }) => {
-      if (key !== "Escape") return;
-      inputRef.current?.replaceText(path);
-      inputRef.current?.blur();
-    },
-    [path],
-  );
-
-  return (
-    <View style={styles.pathBar} testID="add-project-flow-path-bar">
-      <MutedFlowIcon icon={FolderOpen} size={14} />
-      <ThemedTextInput
-        ref={inputRef}
-        initialValue={path}
-        style={styles.pathBarInput}
-        placeholder={i18n.t("directoryBrowser.pathPlaceholder")}
-        accessibilityLabel={i18n.t("directoryBrowser.pathLabel")}
-        autoCapitalize="none"
-        autoCorrect={false}
-        editable={editable}
-        returnKeyType="go"
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        onKeyPress={handleKeyPress}
-        onSubmitEditing={submit}
-        testID="add-project-flow-path-bar-input"
-      />
-    </View>
   );
 }
 
@@ -449,9 +374,11 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const inputRef = useRef<EditingTextInputHandle>(null);
   const submissionInFlightRef = useRef(false);
   const browseInFlightRef = useRef(false);
-  const query = page.kind === "new-directory-name" || page.kind === "method" ? "" : page.query;
-  const pageInputValueRef = useRef(page.kind === "method" ? "" : pageInput(page));
-  pageInputValueRef.current = page.kind === "method" ? "" : pageInput(page);
+  const explorerRef = useRef<DirectoryExplorerHandle>(null);
+  const explorerPage = isDirectoryExplorerPage(page);
+  const query = pageInput(page);
+  const pageInputValueRef = useRef(query);
+  pageInputValueRef.current = query;
   const [debouncedQuery, setDebouncedQuery] = useState(query);
 
   useEffect(() => {
@@ -471,21 +398,7 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
     return () => clearTimeout(timer);
   }, [page.kind]);
 
-  const searchesDirectories =
-    page.kind === "github-location" || page.kind === "new-directory-parent";
-  const browsedPath = page.kind === "directory-search" ? page.directory : "~";
-  const directoryListing = useFetchQuery({
-    queryKey: ["add-project-directory-listing", hostId, browsedPath],
-    queryFn: async () => {
-      if (!client) throw new Error("Host is unavailable");
-      return client.listDirectory(browsedPath, ".");
-    },
-    enabled: Boolean(client && page.kind === "directory-search"),
-    dataShape: "value",
-    retry: false,
-    staleTimeMs: 0,
-  });
-  const refetchDirectory = directoryListing.refetch;
+  const searchesDirectories = page.kind === "github-location";
   const directoryQuery = useFetchQuery({
     queryKey: ["add-project-flow-directories", hostId, debouncedQuery, showHiddenFolders],
     queryFn: async () => {
@@ -548,6 +461,7 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
 
   const openAddedProject = useCallback(
     async (path: string, sourceKind: "directory-search" | "method") => {
+      // Path and reason are runtime values; the wrapper copy below predates localisation.
       if (!hostId || submissionInFlightRef.current) return;
       submissionInFlightRef.current = true;
       setState((current) =>
@@ -615,41 +529,6 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const directoryPaths = useMemo(
     () => (directoryQuery.data?.query === query ? directoryQuery.data.paths : EMPTY_PATHS),
     [directoryQuery.data, query],
-  );
-  const browseDirectory = useCallback((path: string) => {
-    inputRef.current?.replaceText("");
-    setState((current) =>
-      updateCurrentAddProjectPage(current, (currentPage) =>
-        currentPage.kind === "directory-search"
-          ? { ...currentPage, directory: path, query: "", activeIndex: 0, error: null }
-          : currentPage,
-      ),
-    );
-  }, []);
-  // A brand can point browsing at a provisioned root (brandProjectDirectory).
-  // Not every host has it — a sandbox that was never set up, a developer's own
-  // laptop — so a failed listing of the untouched default drops back to the
-  // daemon's home directory instead of stranding the user on an error row.
-  const pathBarFocusedRef = useRef(false);
-  const handlePathBarFocusChange = useCallback((focused: boolean) => {
-    pathBarFocusedRef.current = focused;
-  }, []);
-  const brandDirectory = brandProjectDirectory();
-  const listingFailed = directoryListing.isError;
-  const browsedDirectory = page.kind === "directory-search" ? page.directory : null;
-  useEffect(() => {
-    if (!shouldFallBackToHomeDirectory({ listingFailed, browsedDirectory, brandDirectory })) return;
-    browseDirectory(HOME_DIRECTORY);
-  }, [brandDirectory, browseDirectory, browsedDirectory, listingFailed]);
-
-  const pathOptions = useMemo(
-    () =>
-      buildProjectPickerOptions({
-        recommendedPaths,
-        serverPaths: directoryPaths,
-        query,
-      }),
-    [directoryPaths, query, recommendedPaths],
   );
   const cloneRepository = useCallback(
     async (locationPage: GithubLocationPage, parentPath: string) => {
@@ -727,19 +606,6 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
         select: () => selectMethod(method.id),
       }));
     }
-    if (page.kind === "directory-search") {
-      return buildDirectoryBrowserRows({
-        directory: page.directory,
-        query: page.query,
-        listing: directoryListing.data,
-        pending: directoryListing.isFetching,
-        showHiddenFolders,
-        failed: directoryListing.isError,
-        navigate: browseDirectory,
-        choose: (path) => void openAddedProject(path, "directory-search"),
-        retry: () => void refetchDirectory(),
-      });
-    }
     if (page.kind === "github-search") {
       const search = githubQuery.data?.query === page.query ? githubQuery.data.payload : null;
       const repositories = search?.repositories ?? [];
@@ -791,33 +657,14 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
         select: () => void cloneRepository(page, option.path),
       }));
     }
-    if (page.kind === "new-directory-parent") {
-      return pathOptions.map((option) => ({
-        id: option.path,
-        title: shortenPath(option.path),
-        subtitle: option.kind === "path" ? "Use this parent" : option.path,
-        icon: Folder,
-        testID: pathTestId(option.path),
-        select: () =>
-          setState((current) => openNewDirectoryNamePage(current, page.hostId, option.path)),
-      }));
-    }
     return [];
   }, [
     cloneRepository,
     directoryPaths,
-    directoryListing.data,
-    directoryListing.isError,
-    directoryListing.isFetching,
-    refetchDirectory,
-    showHiddenFolders,
     githubQuery.data,
     host,
     onClose,
-    openAddedProject,
-    browseDirectory,
     page,
-    pathOptions,
     recommendedPaths,
     selectMethod,
     state.hosts,
@@ -828,62 +675,69 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const requestedIndex = Math.min(preferredIndex, rows.length - 1);
   const firstSelectableIndex = rows.findIndex((row) => !row.disabled);
   const activeIndex = rows[requestedIndex]?.disabled ? firstSelectableIndex : requestedIndex;
-  const createDirectory = useCallback(async () => {
-    if (page.kind !== "new-directory-name" || !client) return;
-    const name = page.name.trim();
-    if (!name || name === "." || name === ".." || /[\\/]/.test(name)) {
+  const createDirectory = useCallback(
+    async (parentPath: string, name: string) => {
+      if (page.kind !== "new-directory-parent" || !client) return;
+      if (submissionInFlightRef.current) return;
+      submissionInFlightRef.current = true;
       setState((current) =>
-        setPageStatus(current, "new-directory-name", { error: "Enter a directory name" }),
+        setPageStatus(current, "new-directory-parent", { isSubmitting: true, error: null }),
       );
-      return;
-    }
-    if (submissionInFlightRef.current) return;
-    submissionInFlightRef.current = true;
-    setState((current) =>
-      setPageStatus(current, "new-directory-name", { isSubmitting: true, error: null }),
-    );
-    try {
-      const payload = await client.createProjectDirectory({
-        parentPath: page.parentPath,
-        name,
-      });
-      if (payload.error || !payload.project) {
+      try {
+        const payload = await client.createProjectDirectory({
+          parentPath,
+          name,
+        });
+        if (payload.error || !payload.project) {
+          setState((current) =>
+            setPageStatus(current, "new-directory-parent", {
+              isSubmitting: false,
+              error: payload.error ?? "Unable to create directory",
+            }),
+          );
+          return;
+        }
+        registerProjectDescriptor({
+          serverId: page.hostId,
+          project: payload.project,
+          upsertProject,
+          setHasHydratedWorkspaces,
+        });
+        openNewWorkspaceForProject(page.hostId, payload.project);
+      } catch {
         setState((current) =>
-          setPageStatus(current, "new-directory-name", {
+          setPageStatus(current, "new-directory-parent", {
             isSubmitting: false,
-            error: payload.error ?? "Unable to create directory",
+            error: "Unable to create directory",
           }),
         );
-        return;
+      } finally {
+        submissionInFlightRef.current = false;
       }
-      registerProjectDescriptor({
-        serverId: page.hostId,
-        project: payload.project,
-        upsertProject,
-        setHasHydratedWorkspaces,
-      });
-      openNewWorkspaceForProject(page.hostId, payload.project);
-    } catch {
-      setState((current) =>
-        setPageStatus(current, "new-directory-name", {
-          isSubmitting: false,
-          error: "Unable to create directory",
-        }),
-      );
-    } finally {
-      submissionInFlightRef.current = false;
-    }
-  }, [client, openNewWorkspaceForProject, page, setHasHydratedWorkspaces, upsertProject]);
+    },
+    [client, openNewWorkspaceForProject, page, setHasHydratedWorkspaces, upsertProject],
+  );
+  const selectExplorerDirectory = useCallback(
+    (path: string) => void openAddedProject(path, "directory-search"),
+    [openAddedProject],
+  );
+  const createExplorerDirectory = useCallback(
+    (parentPath: string, name: string) => void createDirectory(parentPath, name),
+    [createDirectory],
+  );
+  const dismissPageError = useCallback(() => {
+    setState((current) =>
+      updateCurrentAddProjectPage(current, (currentPage) =>
+        currentPage.error ? { ...currentPage, error: null } : currentPage,
+      ),
+    );
+  }, []);
 
   const submitActive = useCallback(() => {
     if ("isSubmitting" in page && page.isSubmitting) return;
-    if (page.kind === "new-directory-name") {
-      void createDirectory();
-      return;
-    }
     const option = rows[activeIndex];
     if (option && !option.disabled) option.select();
-  }, [activeIndex, createDirectory, page, rows]);
+  }, [activeIndex, page, rows]);
 
   const handleKey = useCallback(
     (key: string): boolean => {
@@ -910,10 +764,13 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   const modalLayer = useGlobalWebOverlayLayer("modal", isWeb);
   const handleWebOverlayKeyDown = useCallback(
     (event: KeyboardEvent) => {
-      // The path bar owns Enter (navigate) and Escape (revert) while focused;
-      // the overlay would otherwise submit the highlighted row instead.
-      if (pathBarFocusedRef.current) return false;
-      if (!handleKey(event.key)) return false;
+      // The explorer owns its keys (open, up, filter, primary action); only an
+      // Escape it leaves unhandled steps back through the flow.
+      const explorer = explorerRef.current;
+      const handled = explorer
+        ? explorer.handleKey(event) || (event.key === "Escape" && handleKey("Escape"))
+        : handleKey(event.key);
+      if (!handled) return false;
       event.preventDefault();
       return true;
     },
@@ -935,11 +792,7 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
   );
 
   const handleInputChange = useCallback((value: string) => {
-    setState((current) =>
-      currentAddProjectPage(current).kind === "new-directory-name"
-        ? setNewDirectoryName(current, value)
-        : setAddProjectPageInput(current, value),
-    );
+    setState((current) => setAddProjectPageInput(current, value));
   }, []);
   const isSubmitting = "isSubmitting" in page && page.isSubmitting;
   const currentGithubSearch =
@@ -947,26 +800,17 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
       ? githubQuery.data.payload
       : null;
   const loading =
-    (page.kind === "directory-search" && directoryListing.isFetching) ||
     (searchesDirectories && (query !== debouncedQuery || directoryQuery.isFetching)) ||
     (page.kind === "github-search" &&
       host?.canSearchGithubRepositories === true &&
       (query !== debouncedQuery || githubQuery.isFetching));
-  const directoryError = directoryListing.isError ? i18n.t("directoryBrowser.failed") : null;
-  const queryError =
-    page.kind === "directory-search"
-      ? directoryError
-      : queryErrorText({
-          searchesDirectories,
-          directoryFailed: directoryQuery.isError,
-          githubFailed: page.kind === "github-search" && githubQuery.isError,
-          githubAvailable: currentGithubSearch?.available ?? null,
-          githubError: currentGithubSearch?.error ?? null,
-        });
-  const preview =
-    page.kind === "new-directory-name" && page.name.trim()
-      ? joinDirectoryPath(page.parentPath, page.name.trim())
-      : null;
+  const queryError = queryErrorText({
+    searchesDirectories,
+    directoryFailed: directoryQuery.isError,
+    githubFailed: page.kind === "github-search" && githubQuery.isError,
+    githubAvailable: currentGithubSearch?.available ?? null,
+    githubError: currentGithubSearch?.error ?? null,
+  });
 
   if (importVisible && client && host)
     return <ProjectImportDialog client={client} hostLabel={host.label} onClose={closeImport} />;
@@ -1012,17 +856,7 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
                 testID="add-project-flow-keyboard-capture"
               />
             ) : null}
-            {page.kind === "directory-search" ? (
-              <DirectoryPathBar
-                // COMPAT(directoryAbsolutePath): older 0.6 daemons omit the
-                // resolved path, so the browsed value stands in until they do.
-                path={directoryListing.data?.absolutePath ?? page.directory}
-                editable={!isSubmitting}
-                onNavigate={browseDirectory}
-                onFocusChange={handlePathBarFocusChange}
-              />
-            ) : null}
-            {page.kind !== "method" ? (
+            {page.kind !== "method" && !explorerPage ? (
               <ThemedTextInput
                 ref={inputRef}
                 initialValue={pageInput(page)}
@@ -1039,69 +873,87 @@ export function AddProjectFlow({ request, onClose }: AddProjectFlowProps) {
               />
             ) : null}
           </View>
-          {page.kind === "directory-search" && !isSubmitting ? (
-            <View style={styles.pinnedRows} testID="add-project-flow-pinned-directories">
-              {rows.map((option, index) =>
-                option.pinned ? (
-                  <FlowRow key={option.id} option={option} active={index === activeIndex} />
-                ) : null,
-              )}
-            </View>
-          ) : null}
-          <ScrollView
-            style={styles.results}
-            contentContainerStyle={styles.resultsContent}
-            keyboardShouldPersistTaps="always"
-            showsVerticalScrollIndicator={false}
-            testID="add-project-flow-results"
-          >
-            {preview ? (
-              <Text style={styles.preview} testID="add-project-flow-path-preview">
-                {shortenPath(preview)}
-              </Text>
-            ) : null}
-            {isSubmitting ? (
-              <Text style={styles.stateText} testID="add-project-flow-progress">
-                {progressText(page)}
-              </Text>
-            ) : null}
-            {!isSubmitting && page.error ? (
-              <Text style={styles.errorText} testID="add-project-flow-error">
-                {page.error}
-              </Text>
-            ) : null}
-            {!isSubmitting && queryError ? (
-              <Text style={styles.errorText} testID="add-project-flow-query-error">
-                {queryError}
-              </Text>
-            ) : null}
-            {!isSubmitting && loading ? (
-              <Text style={styles.stateText} testID="add-project-flow-loading">
-                Loading...
-              </Text>
-            ) : null}
-            {!isSubmitting &&
-            (!loading || page.kind === "github-search" || page.kind === "directory-search") &&
-            (!queryError || page.kind === "github-search" || page.kind === "directory-search")
-              ? rows.map((option, index) =>
-                  option.pinned ? null : (
+          {explorerPage && hostId ? (
+            <DirectoryExplorer
+              // A fresh explorer per page keeps each flow's location and drafts separate.
+              key={`${page.kind}:${hostId}`}
+              ref={explorerRef}
+              hostId={hostId}
+              client={client}
+              initialPath={page.directory}
+              fallbackPath={HOME_DIRECTORY}
+              initialShowHidden={showHiddenFolders}
+              mode={page.kind === "new-directory-parent" ? "create" : "select"}
+              busy={page.isSubmitting}
+              error={page.error}
+              onSelect={selectExplorerDirectory}
+              onCreate={createExplorerDirectory}
+              onDismissError={dismissPageError}
+            />
+          ) : (
+            <ScrollView
+              style={styles.results}
+              contentContainerStyle={styles.resultsContent}
+              keyboardShouldPersistTaps="always"
+              showsVerticalScrollIndicator={false}
+              testID="add-project-flow-results"
+            >
+              {isSubmitting ? (
+                <Text style={styles.stateText} testID="add-project-flow-progress">
+                  {progressText(page)}
+                </Text>
+              ) : null}
+              {!isSubmitting && page.error ? (
+                <Text style={styles.errorText} testID="add-project-flow-error">
+                  {page.error}
+                </Text>
+              ) : null}
+              {!isSubmitting && queryError ? (
+                <Text style={styles.errorText} testID="add-project-flow-query-error">
+                  {queryError}
+                </Text>
+              ) : null}
+              {!isSubmitting && loading ? (
+                <Text style={styles.stateText} testID="add-project-flow-loading">
+                  Loading...
+                </Text>
+              ) : null}
+              {!isSubmitting &&
+              (!loading || page.kind === "github-search") &&
+              (!queryError || page.kind === "github-search")
+                ? rows.map((option, index) => (
                     <FlowRow key={option.id} option={option} active={index === activeIndex} />
-                  ),
-                )
-              : null}
-            {!isSubmitting &&
-            !loading &&
-            !queryError &&
-            rows.every((option) => option.pinned) &&
-            page.kind !== "new-directory-name" ? (
-              <Text style={styles.stateText} testID="add-project-flow-empty">
-                {emptyText(page, host ?? null)}
-              </Text>
-            ) : null}
-          </ScrollView>
+                  ))
+                : null}
+              {!isSubmitting && !loading && !queryError && rows.length === 0 ? (
+                <Text style={styles.stateText} testID="add-project-flow-empty">
+                  {emptyText(page, host ?? null)}
+                </Text>
+              ) : null}
+            </ScrollView>
+          )}
           <View style={styles.footer} testID="add-project-flow-footer">
-            <FlowHint keys={NAVIGATION_HINT_KEYS} action="Navigate" />
-            <FlowHint keys={SELECT_HINT_KEYS} action="Select" />
+            <FlowHint
+              keys={NAVIGATION_HINT_KEYS}
+              action={i18n.t("directoryBrowser.hintNavigate")}
+            />
+            <FlowHint
+              keys={SELECT_HINT_KEYS}
+              action={explorerPage ? i18n.t("directoryBrowser.hintOpen") : "Select"}
+            />
+            {explorerPage ? (
+              <>
+                <FlowHint keys={EXPLORER_UP_HINT_KEYS} action={i18n.t("directoryBrowser.hintUp")} />
+                <FlowHint
+                  keys={EXPLORER_PRIMARY_HINT_KEYS}
+                  action={
+                    page.kind === "new-directory-parent"
+                      ? i18n.t("directoryBrowser.hintCreate")
+                      : i18n.t("directoryBrowser.hintSelect")
+                  }
+                />
+              </>
+            ) : null}
             <FlowHint keys={ESCAPE_HINT_KEYS} action={state.pages.length > 1 ? "Back" : "Close"} />
           </View>
         </View>

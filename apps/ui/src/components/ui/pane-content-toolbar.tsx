@@ -19,7 +19,6 @@ import {
   smallIconButtonChromeFrameSize,
 } from "@/components/ui/icon-button-chrome";
 import { WORKSPACE_PANE_TRAILING_GLYPH_RAIL } from "@/components/tree-primitives";
-import { panelHeaderEdge, panelTheme } from "@/workspace/panel-chrome";
 
 const PaneToolbarAccessoryContext = createContext<ReactNode>(null);
 
@@ -206,13 +205,12 @@ export function paneContentToolbarIconButtonStyle(
   ];
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   toolbar: {
     height: WORKSPACE_SECONDARY_HEADER_HEIGHT,
     backgroundColor: theme.colors.surface0,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
-    ...panelHeaderEdge(panelTheme(theme, rt.themeName)),
     flexShrink: 0,
   },
   controls: {

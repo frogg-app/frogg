@@ -49,6 +49,11 @@ export const FroggWorktreeConfigRawSchema = z
     teardown: FroggLifecycleCommandRawSchema.optional(),
     terminals: z.unknown().optional(),
     servicePorts: FroggServicePortAllocationSchema.optional(),
+    /**
+     * Branch new worktrees start from when the user picks nothing. Unset means the
+     * repository's default branch (origin/HEAD).
+     */
+    baseBranch: z.string().optional(),
   })
   .passthrough();
 
@@ -130,6 +135,7 @@ export const FroggConfigRawSchema = z
 export const WorktreeConfigSchema = FroggWorktreeConfigRawSchema.extend({
   setup: z.unknown().optional().transform(normalizeLifecycleCommands),
   teardown: z.unknown().optional().transform(normalizeLifecycleCommands),
+  baseBranch: z.string().trim().min(1).optional().catch(undefined),
 })
   .passthrough()
   .catch({ setup: [], teardown: [] });

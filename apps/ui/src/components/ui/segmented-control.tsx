@@ -1,10 +1,12 @@
 import { useCallback, useMemo, type ReactNode } from "react";
 import { Pressable, Text, View, type PressableStateCallbackType } from "react-native";
 import type { StyleProp, TextStyle, ViewStyle } from "react-native";
-import type { TextFragment, ViewFragment } from "@/styles/style-fragment";
 import { StyleSheet, withUnistyles } from "react-native-unistyles";
-import { controlGeometryOf, designThemeOf } from "@/components/ui/design-surface";
-import { segmentedIconSize, type SegmentedControlSize } from "@/components/ui/control-geometry";
+import {
+  createControlGeometry,
+  segmentedIconSize,
+  type SegmentedControlSize,
+} from "@/components/ui/control-geometry";
 import type { Theme } from "@/styles/theme";
 
 type SegmentedControlIconRenderer = (props: { color: string; size: number }) => ReactNode;
@@ -39,60 +41,6 @@ function SegmentIcon({ icon, iconSize, iconColor }: SegmentIconProps) {
 
 const ThemedSegmentIcon = withUnistyles(SegmentIcon);
 
-interface SegmentedTreatment {
-  track: ViewFragment;
-  selected: ViewFragment;
-  hover: ViewFragment;
-  labelSelected: TextFragment;
-}
-
-/**
- * Directions draw the control as a track holding a raised selected segment; `current` keeps the
- * bare row of segments. The track padding equals the segment inset, so heights are unchanged.
- */
-function segmentedTreatment(theme: Theme): SegmentedTreatment {
-  const c = theme.colors;
-  const dark = theme.colorScheme === "dark";
-  const radius = theme.design.controlRadius;
-  const raised = dark ? c.surface4 : c.surface0;
-  switch (theme.design.variant) {
-    case "current":
-      return {
-        track: {},
-        selected: { backgroundColor: c.surface3 },
-        hover: { backgroundColor: c.surface2 },
-        labelSelected: {},
-      };
-    case "mono":
-    case "inset":
-      return {
-        track: {
-          padding: 2,
-          borderRadius: radius,
-          borderWidth: 1,
-          borderColor: c.border,
-          backgroundColor: theme.design.variant === "inset" ? c.surface1 : c.surface0,
-          gap: 2,
-        },
-        selected: { backgroundColor: c.surface3 },
-        hover: { backgroundColor: c.surface2 },
-        labelSelected: { fontWeight: theme.fontWeight.medium },
-      };
-    case "soft":
-    case "paper":
-    case "focus":
-      return {
-        track: { padding: 2, borderRadius: radius, backgroundColor: c.surface2, gap: 2 },
-        selected: { backgroundColor: raised, ...theme.shadow.sm },
-        hover: { backgroundColor: c.surface3 },
-        labelSelected: {
-          fontWeight:
-            theme.design.variant === "soft" ? theme.fontWeight.semibold : theme.fontWeight.medium,
-        },
-      };
-  }
-}
-
 const selectedIconMapping = (theme: Theme) => ({ iconColor: theme.colors.foreground });
 const mutedIconMapping = (theme: Theme) => ({ iconColor: theme.colors.foregroundMuted });
 
@@ -116,7 +64,7 @@ export function SegmentedControl<T extends string>({
   const iconSize = segmentedIconSize[size];
 
   const containerStyle = useMemo(
-    () => [styles.container, containerSizeStyle, styles.track, style],
+    () => [styles.container, containerSizeStyle, style],
     [containerSizeStyle, style],
   );
 
@@ -212,72 +160,72 @@ function SegmentItem<T extends string>({
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
-  container: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "transparent",
-    gap: theme.spacing[1],
-  },
-  containerXs: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedContainerXs,
-  },
-  containerSm: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedContainerSm,
-  },
-  containerMd: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedContainerMd,
-  },
-  segment: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    gap: theme.spacing[1],
-  },
-  segmentXs: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedSegmentXs,
-  },
-  segmentSm: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedSegmentSm,
-  },
-  segmentMd: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedSegmentMd,
-  },
-  track: {
-    ...segmentedTreatment(designThemeOf(theme, rt.themeName)).track,
-  },
-  segmentSelected: {
-    ...segmentedTreatment(designThemeOf(theme, rt.themeName)).selected,
-  },
-  segmentHover: {
-    ...segmentedTreatment(designThemeOf(theme, rt.themeName)).hover,
-  },
-  segmentPressed: {
-    backgroundColor: theme.colors.surface3,
-  },
-  segmentDisabled: {
-    opacity: theme.opacity[50],
-  },
-  iconContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    color: theme.colors.foregroundMuted,
-    fontWeight: theme.fontWeight.normal,
-  },
-  labelXs: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedLabelXs,
-  },
-  labelSm: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedLabelSm,
-  },
-  labelMd: {
-    ...controlGeometryOf(theme, rt.themeName).segmentedLabelMd,
-  },
-  labelSelected: {
-    color: theme.colors.foreground,
-    ...segmentedTreatment(designThemeOf(theme, rt.themeName)).labelSelected,
-  },
-}));
+const styles = StyleSheet.create((theme) => {
+  const geometry = createControlGeometry(theme);
+
+  return {
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: "transparent",
+      gap: theme.spacing[1],
+    },
+    containerXs: {
+      ...geometry.segmentedContainerXs,
+    },
+    containerSm: {
+      ...geometry.segmentedContainerSm,
+    },
+    containerMd: {
+      ...geometry.segmentedContainerMd,
+    },
+    segment: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+      gap: theme.spacing[1],
+    },
+    segmentXs: {
+      ...geometry.segmentedSegmentXs,
+    },
+    segmentSm: {
+      ...geometry.segmentedSegmentSm,
+    },
+    segmentMd: {
+      ...geometry.segmentedSegmentMd,
+    },
+    segmentSelected: {
+      backgroundColor: theme.colors.surface3,
+    },
+    segmentHover: {
+      backgroundColor: theme.colors.surface2,
+    },
+    segmentPressed: {
+      backgroundColor: theme.colors.surface3,
+    },
+    segmentDisabled: {
+      opacity: theme.opacity[50],
+    },
+    iconContainer: {
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    label: {
+      color: theme.colors.foregroundMuted,
+      fontWeight: theme.fontWeight.normal,
+    },
+    labelXs: {
+      ...geometry.segmentedLabelXs,
+    },
+    labelSm: {
+      ...geometry.segmentedLabelSm,
+    },
+    labelMd: {
+      ...geometry.segmentedLabelMd,
+    },
+    labelSelected: {
+      color: theme.colors.foreground,
+    },
+  };
+});

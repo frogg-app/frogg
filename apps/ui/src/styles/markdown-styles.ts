@@ -357,46 +357,6 @@ export function createMarkdownStyles(theme: Theme) {
   };
 }
 
-const PROSE_HEADINGS = new Set(["heading1", "heading2", "heading3", "heading4"]);
-const RULED_HEADINGS = new Set(["heading1", "heading2"]);
-
-/**
- * Assistant prose in a design's type: body text in `contentFontFamily` (styles that already name
- * a face, like inline code and fences, keep it), headings with the design's heading weight and
- * tracking, and no rule under large headings in borderless designs. Needs a REAL theme (uniProps
- * mapping or `themeOf`); `current` returns the styles unchanged.
- */
-export function withDesignProse<T extends Record<string, object>>(styles: T, theme: Theme): T {
-  const design = theme.design;
-  if (design.variant === "current") {
-    return styles;
-  }
-  const bodyFont = design.contentFontFamily;
-  // The heading face only applies inside the prose font scope, which exists when the design has
-  // a content face; elsewhere the web UI-font rule would override it anyway.
-  const headingFont = bodyFont === null ? null : design.headingFontFamily;
-  const next: Record<string, object> = {};
-  for (const [key, style] of Object.entries(styles)) {
-    let value: object = style;
-    if (bodyFont !== null && !("fontFamily" in style)) {
-      value = { ...value, fontFamily: bodyFont };
-    }
-    if (PROSE_HEADINGS.has(key)) {
-      value = {
-        ...value,
-        fontWeight: design.headingWeight,
-        letterSpacing: design.headingLetterSpacing,
-        ...(headingFont === null ? {} : { fontFamily: headingFont }),
-      };
-    }
-    if (design.borderless && RULED_HEADINGS.has(key)) {
-      value = { ...value, borderBottomWidth: 0, paddingBottom: 0 };
-    }
-    next[key] = value;
-  }
-  return next as T;
-}
-
 /**
  * Creates a smaller variant of markdown styles for compact UI elements
  * like thought bubbles, tooltips, or side panels.

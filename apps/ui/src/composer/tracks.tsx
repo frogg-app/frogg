@@ -1,6 +1,4 @@
 import { useCallback, useMemo, useState, type ReactElement, type ReactNode } from "react";
-import { themeOf } from "@/styles/design-theme";
-import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
 import {
@@ -13,6 +11,7 @@ import {
 } from "@/components/ui/menu";
 import { StatusRing } from "@/components/status-ring";
 import { STATUS_RING_HALO_INSET } from "@/components/status-ring/geometry";
+import { MAX_CONTENT_WIDTH } from "@/constants/layout";
 import { isWeb } from "@/constants/platform";
 import { getStatusDotColor } from "@/utils/status-dot-color";
 import { STATUS_INDICATOR_FILLED_DOT_SIZE } from "@/utils/status-indicator-geometry";
@@ -332,7 +331,7 @@ function dotColorStyle(bucket: Exclude<SidebarStateBucket, "running">) {
   }
 }
 
-const styles = StyleSheet.create((theme, rt) => {
+const styles = StyleSheet.create((theme) => {
   // Colours come from the one bucket-to-colour map so the pill cannot drift from the status dots
   // everywhere else, and are baked into each variant so the style prop stays a stable object.
   const statusDot = (bucket: Exclude<SidebarStateBucket, "running">) => ({
@@ -355,11 +354,11 @@ const styles = StyleSheet.create((theme, rt) => {
       },
     },
     // Box-none column laid out exactly like the composer's input area (full width, the same
-    // horizontal padding, content capped at the reading column and centred), so the first pill
+    // horizontal padding, content capped at MAX_CONTENT_WIDTH and centred), so the first pill
     // sits flush with the composer's left edge at every pane width.
     lane: {
       width: "100%",
-      maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)) + theme.spacing[4] * 2,
+      maxWidth: MAX_CONTENT_WIDTH + theme.spacing[4] * 2,
       paddingHorizontal: theme.spacing[4],
       alignItems: "flex-start",
     },
@@ -373,7 +372,7 @@ const styles = StyleSheet.create((theme, rt) => {
     // row — including the empty space — because a ScrollView must own touches to support
     // drag-to-scroll and can't be box-none like the old View.
     trackScroll: {
-      maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
+      maxWidth: MAX_CONTENT_WIDTH,
       flexShrink: 1,
       minWidth: 0,
       flexGrow: 0,

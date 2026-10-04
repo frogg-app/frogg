@@ -1,7 +1,4 @@
-import { DesignSlot } from "@/design/layouts/design-slot";
 import { Button } from "@/components/ui/button";
-import { themeOf } from "@/styles/design-theme";
-import { readingColumnMaxWidth } from "@/agent-stream/conversation-design";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import type { TFunction } from "i18next";
@@ -44,7 +41,11 @@ import {
 } from "@/components/toast-host";
 import type { WorkspaceComposerAttachment } from "@/attachments/types";
 import { useWorkspaceAttachmentScopeKey } from "@/attachments/workspace-attachments-store";
-import { COMPACT_FORM_FACTOR_WIDTH, useIsCompactFormFactor } from "@/constants/layout";
+import {
+  COMPACT_FORM_FACTOR_WIDTH,
+  MAX_CONTENT_WIDTH,
+  useIsCompactFormFactor,
+} from "@/constants/layout";
 import { isNative, isWeb } from "@/constants/platform";
 import { useAgentAttentionClear } from "@/hooks/use-agent-attention-clear";
 import { SpokenAlertBanner } from "@/components/spoken-alert-banner";
@@ -757,25 +758,17 @@ function AgentPanelBody({
   }
 
   return (
-    <View style={styles.container}>
-      <ConversationTopSlot serverId={serverId} agentId={agent.id} />
-      <ChatAgentContent
-        serverId={serverId}
-        workspaceId={workspaceId}
-        agentId={agentId}
-        isPaneFocused={isPaneFocused}
-        client={client}
-        isConnected={isConnected}
-        connectionStatus={connectionStatus}
-        onOpenWorkspaceFile={onOpenWorkspaceFile}
-      />
-    </View>
+    <ChatAgentContent
+      serverId={serverId}
+      workspaceId={workspaceId}
+      agentId={agentId}
+      isPaneFocused={isPaneFocused}
+      client={client}
+      isConnected={isConnected}
+      connectionStatus={connectionStatus}
+      onOpenWorkspaceFile={onOpenWorkspaceFile}
+    />
   );
-}
-
-function ConversationTopSlot({ serverId, agentId }: { serverId: string; agentId: string }) {
-  const props = useMemo(() => ({ serverId, agentId }), [serverId, agentId]);
-  return <DesignSlot name="conversationTop" props={props} />;
 }
 
 function ChatAgentContent({
@@ -1815,7 +1808,7 @@ const animatedStaticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   root: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -1837,7 +1830,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   timelineSyncCalloutContent: {
     width: "100%",
-    maxWidth: readingColumnMaxWidth(themeOf(rt.themeName)),
+    maxWidth: MAX_CONTENT_WIDTH,
   },
   timelineSyncCallout: {
     flexDirection: "row",

@@ -7,19 +7,20 @@
 //
 //   npm run dev:live                # --live: real providers, persistent home, no demo seeding
 //
-// Ports: PREVIEW_PORT (web, default 7800) and PREVIEW_PORT + 1 (daemon). With --live, the
-// development channel's own pair: web 9898 and daemon 9899 (PREVIEW_PORT, LIVE_DAEMON_PORT).
+// Ports: PREVIEW_PORT (web, default 7800) and PREVIEW_PORT + 1 (daemon). With --live, each
+// checkout picks its own free pair (reusing last run's when still free), so several worktrees can
+// run dev builds at once; PREVIEW_PORT and LIVE_DAEMON_PORT pin them.
 // `npm run shot` reads .dev/preview/state.json to screenshot the running preview.
 //
 // --live is the stack for trying a feature end to end before it ships as a beta: the daemon runs
 // this checkout's source against your real provider logins, its home (.dev/live/home) survives
 // restarts, and it restarts itself when packages/server/src or a rebuilt protocol/client dist
 // changes. It imports the installed daemon's provider accounts and projects on each start, and
-// names itself <hostname>-DEVELOPMENT. Add its daemon endpoint as a host in an installed Frogg app to drive it from there.
+// names itself <hostname>-DEV-<checkout folder>. Add its daemon endpoint as a host in an installed Frogg app to drive it from there.
 import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync, watch } from "node:fs";
 import { createServer } from "node:http";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { copyFile, cp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
@@ -33,15 +34,55 @@ const previewDir = path.join(root, live ? ".dev/live" : ".dev/preview");
 const home = path.join(previewDir, "home");
 const repo = path.join(previewDir, "demo-repo");
 const keep = live || process.argv.includes("--keep");
-const webPort = Number(process.env.PREVIEW_PORT ?? (live ? 9898 : 7800));
-// Each channel has a fixed daemon and web port: stable 9999/9998, beta 9989/9988, development
-// 9899/9898. A host added in the installed app keeps working across runs.
-const daemonPort = live ? Number(process.env.LIVE_DAEMON_PORT ?? 9899) : webPort + 1;
+const portsFile = path.join(previewDir, "ports.json");
+const lastPorts = (() => {
+  try {
+    return JSON.parse(readFileSync(portsFile, "utf8")) as { web?: number; daemon?: number };
+  } catch {
+    return {};
+  }
+})();
+async function resolvePorts(): Promise<{ web: number; daemon: number }> {
+  if (!live) {
+    const web = Number(process.env.PREVIEW_PORT ?? 7800);
+    return { web, daemon: web + 1 };
+  }
+  const web = process.env.PREVIEW_PORT
+    ? Number(process.env.PREVIEW_PORT)
+    : await pickPort(lastPorts.web);
+  const daemon = process.env.LIVE_DAEMON_PORT
+    ? Number(process.env.LIVE_DAEMON_PORT)
+    : await pickPort(lastPorts.daemon, web);
+  return { web, daemon };
+}
+const { web: webPort, daemon: daemonPort } = await resolvePorts();
 const lanIp =
   Object.values(os.networkInterfaces())
     .flat()
     .find((entry) => entry && entry.family === "IPv4" && !entry.internal)?.address ?? "127.0.0.1";
-const serverId = live ? "srv_live" : "srv_preview";
+// Per checkout, so an app holding several dev builds as hosts keeps them apart.
+const serverId = live
+  ? `srv_live_${createHash("sha256").update(root).digest("hex").slice(0, 10)}`
+  : "srv_preview";
+
+/** `preferred` when it is free, else any free port other than `avoid`. */
+async function pickPort(preferred: number | undefined, avoid?: number): Promise<number> {
+  const tryListen = (port: number) =>
+    new Promise<number | null>((resolve) => {
+      const server = net.createServer();
+      server.once("error", () => resolve(null));
+      server.listen(port, "0.0.0.0", () => {
+        const address = server.address();
+        const bound = typeof address === "object" && address ? address.port : null;
+        server.close(() => resolve(bound));
+      });
+    });
+  if (preferred && preferred !== avoid && (await tryListen(preferred))) return preferred;
+  for (;;) {
+    const port = await tryListen(0);
+    if (port && port !== avoid) return port;
+  }
+}
 const children: ChildProcess[] = [];
 
 function log(message: string): void {
@@ -114,7 +155,7 @@ const daemonEnv: NodeJS.ProcessEnv = {
   FROGG_INSTALL_DIR: undefined,
   FROGG_NODE_ENV: undefined,
   // A development daemon must never pass for the installed one in a host list.
-  ...(live ? { FROGG_HOSTNAME: `${os.hostname()}-DEVELOPMENT` } : {}),
+  ...(live ? { FROGG_HOSTNAME: `${os.hostname()}-DEV-${path.basename(root)}` } : {}),
 };
 // A custom brand's daemon drops inherited FROGG_* settings and reads its own prefix (ACME_HOME),
 // so hand it the same settings under that prefix. branded-run has prepared the brand already.
@@ -654,7 +695,14 @@ async function startControlServer(): Promise<void> {
   const port = typeof address === "object" && address ? address.port : 0;
   await writeFile(
     controlFile,
-    JSON.stringify({ url: `http://127.0.0.1:${port}`, token, pid: process.pid, cwd: root }),
+    JSON.stringify({
+      url: `http://127.0.0.1:${port}`,
+      token,
+      pid: process.pid,
+      cwd: root,
+      daemonPort,
+      webPort,
+    }),
   );
 }
 
@@ -669,12 +717,16 @@ async function main(): Promise<void> {
     execSync("npm run build:server-deps", { cwd: root, stdio: "inherit" });
   }
 
-  if (live) await importInstalledHome();
+  if (live) {
+    // Up first, so whoever launched this sees its ports while the daemon and web app start.
+    await startControlServer();
+    await writeFile(portsFile, JSON.stringify({ web: webPort, daemon: daemonPort }));
+    await importInstalledHome();
+  }
   log("starting daemon…");
   startDaemon();
   log("starting web app…");
   startWeb();
-  if (live) await startControlServer();
 
   await writeFile(pidFile, JSON.stringify(children.map((child) => child.pid)));
   await waitForPort(daemonPort, "daemon", 120_000);

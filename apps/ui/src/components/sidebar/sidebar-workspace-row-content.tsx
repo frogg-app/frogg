@@ -23,11 +23,11 @@ import {
 } from "@/utils/status-indicator-geometry";
 import { shouldRenderSyncedStatusLoader } from "@/utils/status-loader";
 import { StatusRing } from "@/components/status-ring";
+import { DevBuildBadge } from "@/components/dev-builds/dev-build-badge";
 import { resolveSidebarWorkspacePrimaryLabel } from "@/components/sidebar/sidebar-workspace-title";
 import { useWorkspaceLabelDefinitions } from "@/workspace-labels";
 
 import { SidebarWorkspaceAgents } from "./agents/tree";
-import { resolveShellDesign, sidebarRowText } from "./shell-design";
 import { WorkspaceAgentTreeScope } from "./agents/workspace-tree";
 
 const foregroundMutedColorMapping = (theme: Theme) => ({
@@ -174,6 +174,10 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
             <Text style={workspaceBranchTextStyle} numberOfLines={1}>
               {workspaceLabel}
             </Text>
+            <DevBuildBadge
+              serverId={workspace.serverId}
+              cwd={workspace.workspaceDirectory || null}
+            />
             {/* The trailing cluster (SidebarWorkspaceTrailingActions) owns its own order:
                 metadata, account, disclosure, then the actions column at the right edge. */}
             <View style={sidebarWorkspaceRowStyles.rowRight}>{children}</View>
@@ -289,7 +293,7 @@ function getStatusDotColorStyle(bucket: SidebarStateBucket) {
   }
 }
 
-export const sidebarWorkspaceRowStyles = StyleSheet.create((theme, rt) => ({
+export const sidebarWorkspaceRowStyles = StyleSheet.create((theme) => ({
   // How far a workspace row sits inside the group header above it — a project row or a
   // status group header. Both groupings share this one indent, so every grouped workspace row
   // in the sidebar sits on the same rail regardless of how the list is grouped. Pinned rows
@@ -299,7 +303,7 @@ export const sidebarWorkspaceRowStyles = StyleSheet.create((theme, rt) => ({
   // backgrounds have to keep spanning the group's full width. Indenting the container instead
   // pulls the highlight in with the content and the row stops lining up with its header.
   rowIndented: {
-    paddingLeft: resolveShellDesign(theme, rt.themeName).rowPaddingHorizontal + theme.spacing[2],
+    paddingLeft: theme.spacing[2] + theme.spacing[2],
   },
   rowRight: {
     flexDirection: "row",
@@ -358,7 +362,7 @@ export function SidebarWorkspaceShortcutBadge({ number }: { number: number }) {
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   workspaceRowContent: {
     position: "relative",
   },
@@ -386,7 +390,7 @@ const styles = StyleSheet.create((theme, rt) => ({
   workspaceStatusDot: {
     position: "relative",
     width: theme.iconSize.md,
-    height: resolveShellDesign(theme, rt.themeName).rowTextLineHeight,
+    height: 20,
     borderRadius: theme.borderRadius.full,
     flexShrink: 0,
     alignItems: "center",
@@ -424,7 +428,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     opacity: 0.76,
     flex: 1,
     minWidth: 0,
-    ...sidebarRowText(theme, rt.themeName),
   },
   workspaceBranchTextCreating: {
     opacity: 0.92,

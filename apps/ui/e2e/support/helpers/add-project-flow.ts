@@ -6,8 +6,7 @@ export type AddProjectFlowPage =
   | "directory-search"
   | "github-search"
   | "github-location"
-  | "new-directory-parent"
-  | "new-directory-name";
+  | "new-directory-parent";
 
 export type AddProjectMethod = "directory-search" | "browse" | "github" | "new-directory";
 
@@ -89,4 +88,18 @@ export async function expectNewWorkspaceForAddedProject(
     input.projectName,
     { timeout: 30_000 },
   );
+}
+
+export async function explorerGoTo(page: Page, directory: string): Promise<void> {
+  await page.getByTestId("directory-explorer-edit-path").click();
+  const input = page.getByTestId("directory-explorer-path-input");
+  await input.fill(directory);
+  await input.press("Enter");
+  const segments = directory.split(/[\\/]/).filter(Boolean);
+  const leaf = segments.at(-1) ?? directory;
+  await expect(page.getByTestId("directory-explorer-path-bar")).toContainText(leaf);
+}
+
+export function explorerEntry(page: Page, entryPath: string): Locator {
+  return page.getByTestId(`directory-explorer-entry-${encodeURIComponent(entryPath)}`);
 }

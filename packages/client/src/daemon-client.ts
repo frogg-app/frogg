@@ -5685,6 +5685,7 @@ export class DaemonClient {
   /** "daemon": build protocol and client, then restart the daemon. "web": restart the web app. */
   async rebuildDevDaemon(
     target: "daemon" | "web",
+    cwd?: string,
     requestId?: string,
   ): Promise<DaemonControlResultPayload> {
     // COMPAT(devDaemonRebuild): added in v1.6.7, remove gate after 2027-09-29.
@@ -5693,15 +5694,16 @@ export class DaemonClient {
     }
     return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.rebuild.response">({
       requestId,
-      message: { type: "daemon.dev_daemon.rebuild.request", target },
+      message: { type: "daemon.dev_daemon.rebuild.request", target, ...(cwd ? { cwd } : {}) },
     });
   }
 
-  async stopDevDaemon(requestId?: string): Promise<DaemonControlResultPayload> {
+  /** Stops the dev build in `cwd`; every one when omitted (all an older host can do). */
+  async stopDevDaemon(cwd?: string, requestId?: string): Promise<DaemonControlResultPayload> {
     this.requireDaemonChannelControlSupport();
     return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.stop.response">({
       requestId,
-      message: { type: "daemon.dev_daemon.stop.request" },
+      message: { type: "daemon.dev_daemon.stop.request", ...(cwd ? { cwd } : {}) },
       timeout: DAEMON_CONTROL_TIMEOUT_MS,
     });
   }

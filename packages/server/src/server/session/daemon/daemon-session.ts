@@ -687,7 +687,7 @@ export class DaemonSession {
     msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.rebuild.request" }>,
   ): Promise<void> {
     const service = this.daemonRuntimeConfig?.devDaemon;
-    const error = service ? await service.rebuild(msg.target) : DEV_DAEMON_UNAVAILABLE;
+    const error = service ? await service.rebuild(msg.target, msg.cwd) : DEV_DAEMON_UNAVAILABLE;
     this.host.emit({
       type: "daemon.dev_daemon.rebuild.response",
       payload: { requestId: msg.requestId, error },
@@ -698,7 +698,7 @@ export class DaemonSession {
     msg: Extract<SessionInboundMessage, { type: "daemon.dev_daemon.stop.request" }>,
   ): Promise<void> {
     const service = this.daemonRuntimeConfig?.devDaemon;
-    const error = service ? await service.stop() : DEV_DAEMON_UNAVAILABLE;
+    const error = service ? await service.stop(msg.cwd) : DEV_DAEMON_UNAVAILABLE;
     this.host.emit({
       type: "daemon.dev_daemon.stop.response",
       payload: { requestId: msg.requestId, error },

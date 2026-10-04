@@ -25,6 +25,7 @@ export interface ProjectConfigDraft {
   setupOriginalKind: LifecycleOriginalKind;
   teardownText: string;
   teardownOriginalKind: LifecycleOriginalKind;
+  baseBranchText: string;
   scripts: ProjectScriptDraft[];
   metadataPrompts: Record<MetadataPromptKey, string>;
   metadataGenerationBase: FroggMetadataGeneration | undefined;
@@ -140,6 +141,7 @@ export function configToDraft(config: FroggConfigRaw | null | undefined): Projec
     setupOriginalKind: setup.kind,
     teardownText: teardown.text,
     teardownOriginalKind: teardown.kind,
+    baseBranchText: typeof worktree.baseBranch === "string" ? worktree.baseBranch : "",
     scripts,
     metadataPrompts,
     metadataGenerationBase: metadataGeneration,
@@ -170,6 +172,12 @@ export function applyDraftToConfig(input: ApplyDraftInput): FroggConfigRaw {
     delete nextWorktree.teardown;
   } else {
     nextWorktree.teardown = nextTeardown;
+  }
+  const nextBaseBranch = input.draft.baseBranchText.trim();
+  if (nextBaseBranch.length === 0) {
+    delete nextWorktree.baseBranch;
+  } else {
+    nextWorktree.baseBranch = nextBaseBranch;
   }
 
   const nextScripts: Record<string, FroggScriptEntryRaw> = {};

@@ -1,3 +1,4 @@
+import { isDev } from "@/constants/platform";
 import { useCallback, useMemo } from "react";
 import { Text, View } from "react-native";
 import { StyleSheet } from "react-native-unistyles";
@@ -15,7 +16,6 @@ import { DesktopUpdatesSection } from "@/desktop/updates/desktop-updates-section
 import { MobileUpdatesSection } from "@/mobile/updates/mobile-updates-section";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { settingsStyles } from "@/styles/settings";
-import { isBetaBuild } from "@/utils/app-version";
 import { openExternalUrl } from "@/utils/open-external-url";
 
 const FROGG_URL = "https://github.com/frogg-app/frogg";
@@ -48,14 +48,14 @@ export function AboutSection({ appVersion, appVersionText, isDesktopApp }: About
         <MobileUpdatesSection appVersion={appVersion} />
       )}
       <ConnectedHostsSection clientVersion={appVersion} />
-      {isBetaBuild() ? null : <DeveloperOptionsToggle />}
+      {isDev ? null : <DeveloperOptionsToggle />}
       <Attribution />
     </>
   );
 }
 
 // Deliberately at the bottom of About: the Developer section installs beta builds, which
-// most people never need to see. Beta builds always show it, so they skip the toggle.
+// most people never need to see. Development builds always show it, so they skip the toggle.
 function DeveloperOptionsToggle() {
   const { t } = useTranslation();
   const { settings, updateSettings } = useAppSettings();

@@ -104,14 +104,30 @@ export function describeDaemonInstall(input: DescribeDaemonInstallInput): Daemon
       reason: `${installDir} has no current link; re-run deploy/install.sh once to repair the layout.`,
     };
   }
-  const launcher = path.join(runningRoot, "bin", platform === "win32" ? "frogg.cmd" : "frogg");
+  const candidates = launcherCandidates(runningRoot, platform);
+  const launcher = candidates.find((candidate) => existsSync(candidate)) ?? null;
   return {
     installDir,
-    updatable: existsSync(launcher),
-    reason: existsSync(launcher) ? null : `${launcher} is missing`,
+    updatable: launcher !== null,
+    reason: launcher ? null : `No launcher found; looked for ${candidates.join(", ")}`,
     runningRoot,
-    cliLauncher: existsSync(launcher) ? launcher : null,
+    cliLauncher: launcher,
   };
+}
+
+/**
+ * Launchers a versioned install may ship, preferring this build's own CLI name.
+ * Beta bundles ship `bin/frogg-beta`, stable ones `bin/frogg`; accept either so
+ * a bundle is never reported as not updatable over its launcher's name.
+ */
+export function launcherCandidates(runningRoot: string, platform: NodeJS.Platform): string[] {
+  const names = [
+    brand.cliName,
+    ...Object.values(brand.channels ?? {}).map((channel) => channel.cliName),
+    "frogg",
+  ];
+  const ext = platform === "win32" ? ".cmd" : "";
+  return [...new Set(names)].map((name) => path.join(runningRoot, "bin", `${name}${ext}`));
 }
 
 /** `<installDir>/last-update.json`, written by the self-update supervisor. */

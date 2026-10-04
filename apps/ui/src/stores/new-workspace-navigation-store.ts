@@ -48,6 +48,7 @@ interface NewWorkspaceNavigationState {
   drafts: Record<string, NewWorkspaceNavigationDraft>;
   submissions: Record<string, DraftSubmission>;
   remember: (key: string, draft: NewWorkspaceNavigationDraft) => void;
+  discard: (key: string) => void;
   begin: (
     key: string,
     generation: string,
@@ -84,6 +85,12 @@ export const useNewWorkspaceNavigationStore = create<NewWorkspaceNavigationState
       )
         return state;
       return { drafts: { ...state.drafts, [key]: draft } };
+    }),
+  discard: (key) =>
+    set((state) => {
+      if (!state.drafts[key]) return state;
+      const { [key]: _removed, ...drafts } = state.drafts;
+      return { drafts };
     }),
   begin: (key, generation, pendingAction) => {
     const state = get();

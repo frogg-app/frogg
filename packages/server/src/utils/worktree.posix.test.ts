@@ -644,6 +644,21 @@ describe.skipIf(isPlatform("win32"))("worktree POSIX-only", () => {
       expect(readFileSync(join(result.worktreePath, "file.txt"), "utf8")).toBe("from-local-only\n");
     });
 
+    it("falls back to the local branch when an exact origin ref was never fetched", async () => {
+      execFileSync("git", ["branch", "local-only-base"], { cwd: repoDir });
+
+      const result = await createLegacyWorktreeForTest({
+        branchName: "unfetched-origin-feature",
+        cwd: repoDir,
+        baseBranch: "refs/remotes/origin/local-only-base",
+        worktreeSlug: "unfetched-origin-feature",
+        runSetup: false,
+        froggHome,
+      });
+
+      expect(existsSync(result.worktreePath)).toBe(true);
+    });
+
     it("throws when neither origin/{branch} nor local {branch} exists", async () => {
       await expect(
         createLegacyWorktreeForTest({

@@ -1,118 +1,95 @@
-import { describe, expect, it, vi } from "vitest";
-import { buildDirectoryBrowserRows, directoryNavigationTarget } from "./directory-browser";
-import { parentDirectory } from "./options";
+import { describe, expect, it } from "vitest";
+import {
+  breadcrumbSegments,
+  directoryNavigationTarget,
+  isDoubleActivation,
+  moveDirectorySelection,
+  newDirectoryNameError,
+  visibleDirectoryEntries,
+} from "./directory-browser";
 
-vi.mock("lucide-react-native", () => ({
-  ArrowUp: () => null,
-  Folder: () => null,
-  FolderPlus: () => null,
-  RotateCw: () => null,
-}));
-
-const listing = {
-  path: ".",
-  absolutePath: "/home/dev",
-  entries: [
-    { name: "beta", kind: "directory" as const, path: "beta", size: 0, modifiedAt: "" },
-    { name: "alpha", kind: "directory" as const, path: "alpha", size: 0, modifiedAt: "" },
-    { name: ".config", kind: "directory" as const, path: ".config", size: 0, modifiedAt: "" },
-    { name: "alpha.txt", kind: "file" as const, path: "alpha.txt", size: 0, modifiedAt: "" },
-  ],
-};
-function input(overrides = {}) {
-  return {
-    directory: "~",
-    query: "",
-    listing,
-    pending: false,
-    showHiddenFolders: false,
-    failed: false,
-    navigate: vi.fn(),
-    choose: vi.fn(),
-    retry: vi.fn(),
-    ...overrides,
-  };
+function entry(name: string, kind: "file" | "directory" = "directory") {
+  return { name, kind, path: name, size: 0, modifiedAt: "" };
 }
 
-describe("directory browsing", () => {
-  it("pins choosing and parent navigation above sorted immediate subdirectories", () => {
-    const context = input();
-    const rows = buildDirectoryBrowserRows(context);
-    expect(rows.map(({ id, pinned }) => ({ id, pinned: pinned === true }))).toEqual([
-      { id: "choose:/home/dev", pinned: true },
-      { id: "parent:/home", pinned: true },
-      { id: "/home/dev/alpha", pinned: false },
-      { id: "/home/dev/beta", pinned: false },
-    ]);
-    rows[2]!.select();
-    expect(context.navigate).toHaveBeenCalledWith("/home/dev/alpha");
-    expect(context.choose).not.toHaveBeenCalled();
-  });
-  it("hides dot-prefixed folders by default and shows them when enabled", () => {
-    expect(buildDirectoryBrowserRows(input({ query: "conf" })).map((row) => row.id)).toEqual([
-      "choose:/home/dev",
-      "parent:/home",
-    ]);
+const entries = [
+  entry("beta"),
+  entry("Alpha"),
+  entry("item10"),
+  entry("item2"),
+  entry(".config"),
+  entry("alpha.txt", "file"),
+  entry("README.md", "file"),
+];
+
+describe("directory explorer model", () => {
+  it("lists folders before files in natural, case-insensitive order", () => {
     expect(
-      buildDirectoryBrowserRows(input({ showHiddenFolders: true })).map((row) => row.id),
-    ).toEqual([
-      "choose:/home/dev",
-      "parent:/home",
-      "/home/dev/.config",
-      "/home/dev/alpha",
-      "/home/dev/beta",
-    ]);
+      visibleDirectoryEntries(entries, { showHidden: false, filter: "" }).map((e) => e.name),
+    ).toEqual(["Alpha", "beta", "item2", "item10", "alpha.txt", "README.md"]);
   });
-  it("still navigates into an explicitly typed hidden path", () => {
-    const context = input({ query: "~/.config" });
-    const rows = buildDirectoryBrowserRows(context);
-    rows.at(-1)!.select();
-    expect(context.navigate).toHaveBeenCalledWith("~/.config");
-  });
-  it("filters child names without filtering pinned actions", () => {
-    expect(buildDirectoryBrowserRows(input({ query: "ALP" })).map((row) => row.id)).toEqual([
-      "choose:/home/dev",
-      "parent:/home",
-      "/home/dev/alpha",
-    ]);
-  });
-  it("navigates home again when typing tilde, clears the query and refreshes", () => {
-    const context = input({ query: "~" });
-    const rows = buildDirectoryBrowserRows(context);
-    rows[2]!.select();
-    expect(context.navigate).toHaveBeenCalledWith("~");
-    expect(context.retry).toHaveBeenCalledOnce();
-    expect(context.choose).not.toHaveBeenCalled();
-  });
-  it("keeps cached children unselectable while refreshing and disables choosing", () => {
-    const rows = buildDirectoryBrowserRows(input({ pending: true }));
-    expect(rows.map((row) => row.id)).toEqual(["choose:/home/dev", "parent:/home"]);
-    expect(rows[0]!.disabled).toBe(true);
-  });
-  it("offers retry and parent navigation after a failed listing", () => {
-    const context = input({ failed: true });
-    const rows = buildDirectoryBrowserRows(context);
-    expect(rows.map((row) => row.id)).toEqual(["choose:/home/dev", "parent:/home", "retry"]);
-    rows[2]!.select();
-    expect(context.retry).toHaveBeenCalledOnce();
-  });
-  it("accepts a listing from a daemon without the optional absolute path", () => {
-    const rows = buildDirectoryBrowserRows(
-      input({ listing: { path: ".", entries: listing.entries } }),
+
+  it("shows dot-prefixed entries only when hidden items are enabled", () => {
+    const names = visibleDirectoryEntries(entries, { showHidden: true, filter: "" }).map(
+      (e) => e.name,
     );
-    expect(rows.map((row) => row.id)).toEqual(["choose:~", "~/alpha", "~/beta"]);
+    expect(names[0]).toBe(".config");
   });
-  it.each(["/", "C:\\", "C:/", "\\\\server\\share\\"])("omits parent at root %s", (root) => {
-    expect(parentDirectory(root)).toBeNull();
+
+  it("filters the current folder by name and ignores path-like input", () => {
+    expect(
+      visibleDirectoryEntries(entries, { showHidden: false, filter: "ALP" }).map((e) => e.name),
+    ).toEqual(["Alpha", "alpha.txt"]);
+    expect(visibleDirectoryEntries(entries, { showHidden: false, filter: "~/" })).toHaveLength(6);
   });
-  it.each([
-    ["/home/dev", "~", "~"],
-    ["/home/dev", "../other", "/home/dev/../other"],
-    ["/home/dev", "child/grandchild", "/home/dev/child/grandchild"],
-    ["C:\\Users\\dev", "C:\\projects", "C:\\projects"],
-    ["C:\\Users\\dev", "\\\\server\\share", "\\\\server\\share"],
-    ["/home/dev", "alpha", null],
-  ])("resolves navigation from %s with %s", (current, query, target) => {
-    expect(directoryNavigationTarget(current, query)).toBe(target);
+
+  it("builds clickable breadcrumbs for POSIX, Windows, UNC and home paths", () => {
+    expect(breadcrumbSegments("/home/dev")).toEqual([
+      { label: "/", path: "/" },
+      { label: "home", path: "/home" },
+      { label: "dev", path: "/home/dev" },
+    ]);
+    expect(breadcrumbSegments("/")).toEqual([{ label: "/", path: "/" }]);
+    expect(breadcrumbSegments("C:\\Users\\dev")).toEqual([
+      { label: "C:", path: "C:\\" },
+      { label: "Users", path: "C:\\Users" },
+      { label: "dev", path: "C:\\Users\\dev" },
+    ]);
+    expect(breadcrumbSegments("\\\\server\\share\\repo").map((s) => s.path)).toEqual([
+      "\\\\server\\share",
+      "\\\\server\\share\\repo",
+    ]);
+    expect(breadcrumbSegments("~")).toEqual([{ label: "~", path: "~" }]);
+  });
+
+  it("recognises typed paths as navigation targets", () => {
+    expect(directoryNavigationTarget("/home/dev", "~/src")).toBe("~/src");
+    expect(directoryNavigationTarget("/home/dev", "C:\\work")).toBe("C:\\work");
+    expect(directoryNavigationTarget("/home/dev", "..")).toBe("/home/dev/..");
+    expect(directoryNavigationTarget("/home/dev", "src/app")).toBe("/home/dev/src/app");
+    expect(directoryNavigationTarget("/home/dev", "src")).toBeNull();
+  });
+
+  it("validates new folder names as a single path segment", () => {
+    expect(newDirectoryNameError("  ")).toBe("empty");
+    expect(newDirectoryNameError("../x")).toBe("invalid");
+    expect(newDirectoryNameError("..")).toBe("invalid");
+    expect(newDirectoryNameError("app")).toBeNull();
+  });
+
+  it("moves the highlight without wrapping and enters from either end", () => {
+    expect(moveDirectorySelection(-1, 3, "next")).toBe(0);
+    expect(moveDirectorySelection(-1, 3, "previous")).toBe(2);
+    expect(moveDirectorySelection(2, 3, "next")).toBe(2);
+    expect(moveDirectorySelection(0, 3, "previous")).toBe(0);
+    expect(moveDirectorySelection(1, 3, "last")).toBe(2);
+    expect(moveDirectorySelection(0, 0, "next")).toBe(-1);
+  });
+
+  it("treats a quick second press on the same row as a double-click", () => {
+    expect(isDoubleActivation({ id: "a", at: 1000 }, "a", 1300)).toBe(true);
+    expect(isDoubleActivation({ id: "a", at: 1000 }, "a", 1500)).toBe(false);
+    expect(isDoubleActivation({ id: "a", at: 1000 }, "b", 1100)).toBe(false);
+    expect(isDoubleActivation(null, "a", 1000)).toBe(false);
   });
 });

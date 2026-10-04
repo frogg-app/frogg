@@ -211,10 +211,12 @@ The repo's own `frogg.json` configures worktrees created by a Frogg daemon. See
 `packages/server/.env`), `npm run build:server`, and the `@frogg/expo-two-way-audio` build.
 
 Its only script is `typecheck` (`npm run typecheck`). To try a branch with real providers, run
-`npm run dev:live` in the worktree (daemon on 9899, web app on 9898), or launch and manage it from
-the app: with [developer options](/docs/using-frogg/developer-options/) on, the dev bar at the
-top of the sidebar shows whether the development daemon and web app are running, and starts,
-stops, rebuilds and restarts them.
+`npm run dev:live` in the worktree (it picks free ports for its daemon and web app and prints
+them), or launch it from the app: with [developer options](/docs/using-frogg/developer-options/)
+on, the **Dev** menu in the top bar offers **Launch dev build** for the session's worktree, then
+shows its daemon and web app status and rebuilds, restarts, opens and stops it. Each worktree
+runs its own dev build, so several can run at once; sidebar rows with one running carry a
+**Dev** badge.
 
 ## Check a change
 

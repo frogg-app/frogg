@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:events";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
@@ -114,6 +114,20 @@ describe("describeDaemonInstall", () => {
     expect(info.runningRoot).toBe(path.join(installDir, "versions", "0.1.13"));
     expect(info.cliLauncher).toBe(path.join(installDir, "versions", "0.1.13", "bin", "frogg"));
     expect(findVersionRoot("/nowhere/x.js", path.join(installDir, "versions"))).toBeNull();
+  });
+
+  test("accepts a beta bundle whose launcher is bin/frogg-beta", () => {
+    const { installDir, moduleUrl } = makeVersionedInstall("1.6.10-beta.5");
+    const binDir = path.join(installDir, "versions", "1.6.10-beta.5", "bin");
+    renameSync(path.join(binDir, "frogg"), path.join(binDir, "frogg-beta"));
+    const info = describeDaemonInstall({
+      env: { FROGG_INSTALL_DIR: installDir },
+      desktopManaged: false,
+      moduleUrl,
+      platform: "linux",
+    });
+    expect(info.updatable).toBe(true);
+    expect(info.cliLauncher).toBe(path.join(binDir, "frogg-beta"));
   });
 
   test("explains why Docker, desktop-managed, and dev checkouts cannot self-update", () => {

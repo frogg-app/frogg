@@ -22,6 +22,12 @@ echo "  Listen:  ${FROGG_LISTEN}"
 echo "══════════════════════════════════════════════════════"
 
 export FROGG_CORS_ORIGINS="${FROGG_CORS_ORIGINS:-*}"
+
+# The dev daemon trusts LAN clients whatever the brand default, so devices on the network
+# connect without pairing. Set <PREFIX>_TRUST_LAN=false to opt out.
+brand_prefix="$(node -p 'require(process.argv[1]).envPrefix.replace(/_+$/, "")' "$(default_dev_frogg_root)/.generated/branding/brand.json")"
+trust_lan_var="${brand_prefix}_TRUST_LAN"
+export "$trust_lan_var=${!trust_lan_var:-true}"
 export FROGG_NODE_INSPECT="${FROGG_NODE_INSPECT:---inspect=0}"
 
 if [ "${FROGG_SKIP_DEV_SERVER_BUILD:-0}" = "1" ]; then

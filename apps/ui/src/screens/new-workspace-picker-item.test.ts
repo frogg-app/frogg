@@ -340,3 +340,50 @@ describe("defaultBasePickerItem", () => {
     expect(defaultBasePickerItem({ currentBranch: null })).toBeNull();
   });
 });
+
+describe("defaultBasePickerItem preferred base", () => {
+  const featureCheckout = {
+    currentBranch: "design/ui-refresh",
+    upstreamRef: "refs/remotes/origin/design/ui-refresh",
+    baseRef: "main",
+    hasRemote: true,
+  };
+
+  it("prefers the repository default branch over the checked-out branch", () => {
+    expect(defaultBasePickerItem(featureCheckout)).toMatchObject({
+      refName: "refs/remotes/origin/main",
+      name: "main",
+    });
+  });
+
+  it("prefers the project's configured base branch", () => {
+    expect(defaultBasePickerItem(featureCheckout, "develop")).toMatchObject({
+      refName: "refs/remotes/origin/develop",
+      name: "develop",
+    });
+  });
+
+  it("uses the exact upstream when the default is the checked-out branch", () => {
+    expect(
+      defaultBasePickerItem({
+        currentBranch: "main",
+        upstreamRef: "refs/remotes/upstream/main",
+        baseRef: "main",
+        hasRemote: true,
+      }),
+    ).toMatchObject({ refName: "refs/remotes/upstream/main" });
+  });
+
+  it("stays local without a remote", () => {
+    expect(
+      defaultBasePickerItem({ currentBranch: "feature", baseRef: "main", hasRemote: false }),
+    ).toMatchObject({ refName: "refs/heads/main" });
+  });
+
+  it("passes a configured full ref through", () => {
+    expect(defaultBasePickerItem(featureCheckout, "refs/heads/release")).toMatchObject({
+      refName: "refs/heads/release",
+      name: "release",
+    });
+  });
+});

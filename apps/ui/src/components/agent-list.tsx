@@ -25,11 +25,6 @@ import { HighlightedText } from "@/components/ui/highlighted-text";
 import { StatusBadge, type StatusBadgeVariant } from "@/components/ui/status-badge";
 import type { AgentSearchMatch } from "@frogg/protocol/messages";
 import type { MatchRange } from "@frogg/protocol/search/text-match";
-import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
-import type { Theme } from "@/styles/theme";
-import { themeOf } from "@/styles/design-theme";
-import { designTextFont } from "@/styles/settings-treatment";
-import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 interface AgentListProps {
   agents: AggregatedAgent[];
@@ -230,7 +225,6 @@ function SessionRow({
   onLongPress: (agent: AggregatedAgent) => void;
 }) {
   const { theme } = useUnistyles();
-  const metaDataSet = usePanelMetaDataSet();
   const { t } = useTranslation();
   const timeAgo = formatTimeAgo(agent.lastActivityAt);
   const agentKey = `${agent.serverId}:${agent.id}`;
@@ -330,9 +324,7 @@ function SessionRow({
               testID={`agent-row-workspace-${agent.serverId}-${agent.id}`}
             />
             <Text style={styles.sessionMetaSeparator}>·</Text>
-            <Text style={styles.sessionMetaTime} dataSet={metaDataSet}>
-              {timeAgo}
-            </Text>
+            <Text style={styles.sessionMetaText}>{timeAgo}</Text>
             {showHostColumn && agent.serverLabel ? (
               <>
                 <Text style={styles.sessionMetaSeparator}>·</Text>
@@ -345,11 +337,11 @@ function SessionRow({
         ) : null}
       </View>
       {!isMobile ? (
-        <View style={styles.rowColumns} dataSet={metaDataSet}>
+        <View style={styles.rowColumns}>
           <HighlightedText
             text={projectName}
             ranges={rangesFor("project")}
-            style={styles.columnMetaProject}
+            style={styles.columnMeta}
             numberOfLines={1}
             testID={`agent-row-project-${agent.serverId}-${agent.id}`}
           />
@@ -361,7 +353,7 @@ function SessionRow({
           <HighlightedText
             text={branch}
             ranges={rangesFor("branch")}
-            style={styles.columnMetaBranch}
+            style={styles.columnMeta}
             numberOfLines={1}
             testID={`agent-row-branch-${agent.serverId}-${agent.id}`}
           />
@@ -492,9 +484,7 @@ export function AgentList({
       if (item.type === "header") {
         return (
           <View style={styles.sectionHeading}>
-            <Text style={styles.sectionTitle} dataSet={DESIGN_FONT_DATASET}>
-              {formatDateSectionLabel(t, item.section)}
-            </Text>
+            <Text style={styles.sectionTitle}>{formatDateSectionLabel(t, item.section)}</Text>
           </View>
         );
       }
@@ -604,295 +594,199 @@ export function AgentList({
   );
 }
 
-const SECTION_TITLE = {
-  current: { size: "base", weight: "500", transform: "none", spacing: 0 },
-  inset: { size: "sm", weight: "500", transform: "none", spacing: 0 },
-  mono: { size: "sm", weight: "500", transform: "uppercase", spacing: 0.8 },
-  paper: { size: "xl", weight: "500", transform: "none", spacing: -0.2 },
-  focus: { size: "sm", weight: "500", transform: "none", spacing: 0 },
-  soft: { size: "lg", weight: "700", transform: "none", spacing: -0.2 },
-} as const;
-
-const ROW_PADDING = {
-  current: 2,
-  inset: 1.5,
-  mono: 3,
-  paper: 3,
-  focus: 3,
-  soft: 3,
-} as const;
-
-// Every direction-dependent value below reads the REAL theme (`themeOf(rt.themeName)`, referenced
-// inside the style value) so a live direction switch on web recomputes it.
-
-function rowShape(theme: Theme) {
-  const variant = theme.design.variant;
-  if (variant === "mono") {
-    // A dashboard table: square rows on hairline dividers.
-    return {
-      borderRadius: 0,
-      marginBottom: 0,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border,
-    };
-  }
-  if (variant === "soft") {
-    return {
-      borderRadius: theme.borderRadius.xl,
-      marginBottom: theme.spacing[1],
-      backgroundColor: { xs: theme.colors.surface1, md: "transparent" },
-    };
-  }
-  if (variant === "current") {
-    return {
-      borderRadius: { xs: theme.borderRadius.lg, md: 0 },
-      marginBottom: { xs: theme.spacing[1], md: 0 },
-    };
-  }
-  return { borderRadius: theme.borderRadius.lg, marginBottom: 0 };
-}
-
-function metaFont(theme: Theme, size: number) {
-  return theme.design.monoMeta
-    ? { fontFamily: theme.design.monoFontFamily, fontSize: theme.fontSize.sm }
-    : { fontSize: size };
-}
-
-function sectionTitleFont(theme: Theme) {
-  const spec = SECTION_TITLE[theme.design.variant] ?? SECTION_TITLE.current;
-  const face =
-    theme.design.variant === "mono"
-      ? designTextFont(theme, theme.design.monoFontFamily)
-      : designTextFont(theme, theme.design.headingFontFamily);
-  return {
-    ...face,
-    fontSize: theme.fontSize[spec.size],
-    fontWeight: spec.weight,
-    textTransform: spec.transform,
-    letterSpacing: spec.spacing,
-    color:
-      theme.design.variant === "paper" || theme.design.variant === "soft"
-        ? theme.colors.foreground
-        : theme.colors.foregroundMuted,
-  };
-}
-
-// Project and branch columns narrow inside a capped reading column so titles keep their room.
-function metaColumnWidth(theme: Theme): number {
-  return theme.design.contentMaxWidth ? 112 : 132;
-}
-
-function rowTextSize(theme: Theme): number {
-  return theme.design.variant === "inset" ? 13 : theme.fontSize.base;
-}
-
-const styles = StyleSheet.create((theme, rt) => {
-  return {
-    list: {
-      flex: 1,
-      minHeight: 0,
+const styles = StyleSheet.create((theme) => ({
+  list: {
+    flex: 1,
+    minHeight: 0,
+  },
+  listContent: {
+    paddingHorizontal: {
+      xs: theme.spacing[3],
+      md: theme.spacing[6],
     },
-    listContent: {
-      width: "100%",
-      maxWidth: themeOf(rt.themeName).design.contentMaxWidth ?? undefined,
-      alignSelf: "center",
-      paddingHorizontal: {
-        xs: theme.spacing[3],
-        md: theme.spacing[6],
-      },
-      paddingTop: theme.spacing[4],
-      paddingBottom: theme.spacing[6],
-      gap: themeOf(rt.themeName).design.variant === "mono" ? 0 : theme.spacing[1],
+    paddingTop: theme.spacing[4],
+    paddingBottom: theme.spacing[6],
+    gap: theme.spacing[1],
+  },
+  sectionHeading: {
+    marginTop: theme.spacing[2],
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[3],
+    paddingHorizontal: theme.spacing[3],
+    marginBottom: theme.spacing[2],
+  },
+  sectionTitle: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.medium,
+    color: theme.colors.foregroundMuted,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: theme.spacing[2],
+    paddingHorizontal: theme.spacing[3],
+    borderRadius: {
+      xs: theme.borderRadius.lg,
+      md: 0,
     },
-    sectionHeading: {
-      marginTop:
-        themeOf(rt.themeName).design.variant === "current" ? theme.spacing[2] : theme.spacing[4],
-      flexDirection: "row",
-      alignItems: "center",
-      gap: theme.spacing[3],
-      paddingHorizontal: theme.spacing[3],
-      marginBottom: theme.spacing[2],
+    marginBottom: {
+      xs: theme.spacing[1],
+      md: 0,
     },
-    sectionTitle: {
-      ...sectionTitleFont(themeOf(rt.themeName)),
-    },
-    row: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingVertical:
-        theme.spacing[ROW_PADDING[themeOf(rt.themeName).design.variant] ?? ROW_PADDING.current],
-      paddingHorizontal: theme.spacing[3],
-      ...rowShape(themeOf(rt.themeName)),
-    },
-    rowContent: {
-      flex: 1,
-      minWidth: 0,
-      overflow: "hidden",
-    },
-    rowTitleRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      flexWrap: "nowrap",
-      gap: theme.spacing[2],
-      overflow: "hidden",
-    },
-    providerIconWrap: {
-      width: theme.iconSize.md,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    workspaceTitleText: {
-      flexShrink: 0,
-      maxWidth: 220,
-      fontSize: theme.fontSize.base,
-      color: theme.colors.foregroundMuted,
-    },
-    rowMetaRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      flexWrap: "wrap",
-      gap: theme.spacing[1],
-      marginTop: 2,
-    },
-    rowTrailing: {
-      marginLeft: theme.spacing[2],
-    },
-    rowSelected: {
-      backgroundColor: theme.colors.surface2,
-    },
-    rowHovered: {
-      backgroundColor: theme.colors.surface1,
-    },
-    rowPressed: {
-      backgroundColor: theme.colors.surface2,
-    },
-    sessionTitle: {
-      flexShrink: 1,
-      minWidth: 0,
-      fontSize: rowTextSize(themeOf(rt.themeName)),
-      fontWeight: "400",
-      color: theme.colors.foreground,
-      opacity: 0.86,
-    },
-    sessionTitleHighlighted: {
-      opacity: 1,
-    },
-    sessionMetaText: {
-      maxWidth: "100%",
-      fontSize: rowTextSize(themeOf(rt.themeName)),
-      color: theme.colors.foregroundMuted,
-    },
-    sessionMetaTime: {
-      color: theme.colors.foregroundMuted,
-      ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
-    },
-    sessionMetaSeparator: {
-      fontSize: theme.fontSize.base,
-      color: theme.colors.foregroundMuted,
-      opacity: 0.7,
-    },
-    rowColumns: {
-      flexDirection: "row",
-      alignItems: "center",
-      flexShrink: 0,
-      gap: theme.spacing[3],
-    },
-    columnMetaProject: {
-      fontSize: rowTextSize(themeOf(rt.themeName)),
-      // Inside the mono-tagged columns the web UI-font rule no longer reaches the project name.
-      fontFamily: themeOf(rt.themeName).design.monoMeta
-        ? themeOf(rt.themeName).design.uiFontFamily
-        : undefined,
-      color: theme.colors.foregroundMuted,
-      flexShrink: 0,
-      width: metaColumnWidth(themeOf(rt.themeName)),
-    },
-    columnMetaBranch: {
-      ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
-      color: theme.colors.foregroundMuted,
-      flexShrink: 0,
-      width: metaColumnWidth(themeOf(rt.themeName)),
-    },
-    columnMetaFixed: {
-      ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
-      color: theme.colors.foregroundMuted,
-      flexShrink: 0,
-      width: 72,
-      textAlign: "right" as const,
-    },
-    columnMetaHost: {
-      ...metaFont(themeOf(rt.themeName), rowTextSize(themeOf(rt.themeName))),
-      color: theme.colors.foregroundMuted,
-      flexShrink: 0,
-      // A capped reading column (Paper, Focus, Soft) has no room for the host column.
-      display: themeOf(rt.themeName).design.contentMaxWidth ? "none" : "flex",
-      width: 120,
-      marginLeft: theme.spacing[4],
-      textAlign: "right" as const,
-    },
-    sheetOverlay: {
-      flex: 1,
-      justifyContent: "flex-end",
-    },
-    sheetBackdrop: {
-      position: "absolute",
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0,
-      backgroundColor: "rgba(0,0,0,0.35)",
-    },
-    sheetContainer: {
-      backgroundColor: theme.colors.surface2,
-      borderTopLeftRadius: theme.borderRadius["2xl"],
-      borderTopRightRadius: theme.borderRadius["2xl"],
-      paddingHorizontal: theme.spacing[6],
-      paddingTop: theme.spacing[4],
-      gap: theme.spacing[4],
-    },
-    sheetHandle: {
-      alignSelf: "center",
-      width: 40,
-      height: 4,
-      borderRadius: theme.borderRadius.full,
-      backgroundColor: theme.colors.foregroundMuted,
-      opacity: 0.3,
-    },
-    sheetTitle: {
-      fontSize: theme.fontSize.base,
-      fontWeight: theme.fontWeight.semibold,
-      color: theme.colors.foreground,
-      textAlign: "center",
-    },
-    sheetButtonRow: {
-      flexDirection: "row",
-      gap: theme.spacing[3],
-    },
-    sheetButton: {
-      flex: 1,
-      borderRadius: theme.borderRadius.lg,
-      paddingVertical: theme.spacing[4],
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    sheetArchiveButton: {
-      backgroundColor: theme.colors.primary,
-    },
-    sheetArchiveText: {
-      color: theme.colors.primaryForeground,
-      fontWeight: theme.fontWeight.semibold,
-      fontSize: theme.fontSize.base,
-    },
-    sheetArchiveTextDisabled: {
-      opacity: 0.5,
-    },
-    sheetCancelButton: {
-      backgroundColor: theme.colors.surface1,
-    },
-    sheetCancelText: {
-      color: theme.colors.foreground,
-      fontWeight: theme.fontWeight.semibold,
-      fontSize: theme.fontSize.base,
-    },
-  };
-});
+  },
+  rowContent: {
+    flex: 1,
+    minWidth: 0,
+    overflow: "hidden",
+  },
+  rowTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "nowrap",
+    gap: theme.spacing[2],
+    overflow: "hidden",
+  },
+  providerIconWrap: {
+    width: theme.iconSize.md,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  workspaceTitleText: {
+    flexShrink: 0,
+    maxWidth: 220,
+    fontSize: theme.fontSize.base,
+    color: theme.colors.foregroundMuted,
+  },
+  rowMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: theme.spacing[1],
+    marginTop: 2,
+  },
+  rowTrailing: {
+    marginLeft: theme.spacing[2],
+  },
+  rowSelected: {
+    backgroundColor: theme.colors.surface2,
+  },
+  rowHovered: {
+    backgroundColor: theme.colors.surface1,
+  },
+  rowPressed: {
+    backgroundColor: theme.colors.surface2,
+  },
+  sessionTitle: {
+    flexShrink: 1,
+    minWidth: 0,
+    fontSize: theme.fontSize.base,
+    fontWeight: "400",
+    color: theme.colors.foreground,
+    opacity: 0.86,
+  },
+  sessionTitleHighlighted: {
+    opacity: 1,
+  },
+  sessionMetaText: {
+    maxWidth: "100%",
+    fontSize: theme.fontSize.base,
+    color: theme.colors.foregroundMuted,
+  },
+  sessionMetaSeparator: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.foregroundMuted,
+    opacity: 0.7,
+  },
+  rowColumns: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexShrink: 0,
+    gap: theme.spacing[3],
+  },
+  columnMeta: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.foregroundMuted,
+    flexShrink: 0,
+    width: 132,
+  },
+  columnMetaFixed: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.foregroundMuted,
+    flexShrink: 0,
+    width: 72,
+    textAlign: "right" as const,
+  },
+  columnMetaHost: {
+    fontSize: theme.fontSize.base,
+    color: theme.colors.foregroundMuted,
+    flexShrink: 0,
+    width: 120,
+    marginLeft: theme.spacing[4],
+    textAlign: "right" as const,
+  },
+  sheetOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  sheetBackdrop: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  sheetContainer: {
+    backgroundColor: theme.colors.surface2,
+    borderTopLeftRadius: theme.borderRadius["2xl"],
+    borderTopRightRadius: theme.borderRadius["2xl"],
+    paddingHorizontal: theme.spacing[6],
+    paddingTop: theme.spacing[4],
+    gap: theme.spacing[4],
+  },
+  sheetHandle: {
+    alignSelf: "center",
+    width: 40,
+    height: 4,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: theme.colors.foregroundMuted,
+    opacity: 0.3,
+  },
+  sheetTitle: {
+    fontSize: theme.fontSize.base,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.colors.foreground,
+    textAlign: "center",
+  },
+  sheetButtonRow: {
+    flexDirection: "row",
+    gap: theme.spacing[3],
+  },
+  sheetButton: {
+    flex: 1,
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing[4],
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetArchiveButton: {
+    backgroundColor: theme.colors.primary,
+  },
+  sheetArchiveText: {
+    color: theme.colors.primaryForeground,
+    fontWeight: theme.fontWeight.semibold,
+    fontSize: theme.fontSize.base,
+  },
+  sheetArchiveTextDisabled: {
+    opacity: 0.5,
+  },
+  sheetCancelButton: {
+    backgroundColor: theme.colors.surface1,
+  },
+  sheetCancelText: {
+    color: theme.colors.foreground,
+    fontWeight: theme.fontWeight.semibold,
+    fontSize: theme.fontSize.base,
+  },
+}));

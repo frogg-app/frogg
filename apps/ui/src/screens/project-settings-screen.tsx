@@ -560,6 +560,10 @@ function ProjectConfigForm({
     (text: string) => updateDraft((d) => ({ ...d, setupText: text })),
     [updateDraft],
   );
+  const handleBaseBranchChange = useCallback(
+    (text: string) => updateDraft((d) => ({ ...d, baseBranchText: text })),
+    [updateDraft],
+  );
   const handleTeardownChange = useCallback(
     (text: string) => updateDraft((d) => ({ ...d, teardownText: text })),
     [updateDraft],
@@ -710,6 +714,23 @@ function ProjectConfigForm({
         info={t("settings.project.worktree.info")}
         testID="worktree-group"
       >
+        <SettingsSection
+          title={t("settings.project.worktree.baseBranch")}
+          testID="worktree-base-branch-section"
+        >
+          <TextInput
+            testID="worktree-base-branch-input"
+            accessibilityLabel={t("settings.project.worktree.baseBranchAccessibility")}
+            initialValue={draft.baseBranchText}
+            onChangeText={handleBaseBranchChange}
+            placeholder={t("settings.project.worktree.baseBranchPlaceholder")}
+            placeholderTextColor={styles.placeholderColor.color}
+            autoCapitalize="none"
+            autoCorrect={false}
+            style={styles.modalInput}
+          />
+        </SettingsSection>
+
         <SettingsSection
           title={t("settings.project.worktree.setup")}
           testID="worktree-setup-section"

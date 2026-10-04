@@ -23,7 +23,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSessionStore } from "@/stores/session-store";
 import { type SidebarSection, useSidebarSectionStore } from "@/stores/sidebar-section-store";
 import type { Theme } from "@/styles/theme";
-import { sidebarSectionPill } from "@/components/sidebar/shell-rows";
 
 /** True when any known host can run chats (features.chats). */
 export function useAnyHostSupportsChats(): boolean {
@@ -269,7 +268,7 @@ const staticStyles = RNStyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   // Insets match the project rows so the first tab's icon sits on the row icon rail.
   bar: {
     flexDirection: "row",
@@ -289,7 +288,9 @@ const styles = StyleSheet.create((theme, rt) => ({
   },
   pillSurface: {
     flex: 1,
-    ...sidebarSectionPill(theme, rt.themeName).surface,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.surface2,
+    boxShadow: "0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 1px 2px rgba(0, 0, 0, 0.3)",
   },
   tab: {
     flexDirection: "row",
@@ -297,7 +298,7 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: 6,
     height: 28,
     paddingHorizontal: 10,
-    borderRadius: sidebarSectionPill(theme, rt.themeName).tabRadius,
+    borderRadius: theme.borderRadius.md,
   },
   tabHovered: {
     backgroundColor: theme.colors.surface1,

@@ -1,10 +1,10 @@
+import { isDev } from "@/constants/platform";
 import { useMemo } from "react";
 import { brand } from "@frogg/branding";
 import type { HostSettingsSection } from "@frogg/protocol/messages";
 import { getIsElectron, isWeb } from "@/constants/platform";
 import { useDaemonConfig } from "@/hooks/use-daemon-config";
 import { useSettings } from "@/hooks/use-settings";
-import { isBetaBuild } from "@/utils/app-version";
 import { HOST_SECTION_ITEMS, type HostSectionItem } from "@/screens/settings/section-items";
 import { isHostSectionSlug, type HostSectionSlug } from "@/utils/host-routes";
 
@@ -55,7 +55,7 @@ export function useHostPairingHidden(serverId: string | null): boolean {
 
 export function useVisibleHostSectionItems(serverId: string | null): HostSectionItem[] {
   const hidden = useHiddenHostSections(serverId);
-  const developerOptions = useSettings((settings) => settings.developerOptions) || isBetaBuild();
+  const developerOptions = useSettings((settings) => settings.developerOptions) || isDev;
   return useMemo(() => {
     const items = visibleHostSectionItems(hidden).filter(
       (item) => developerOptions || item.id !== "developer",

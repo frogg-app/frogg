@@ -30,8 +30,6 @@ import {
 } from "@/git/file-header-presentation";
 import type { ParsedDiffFile } from "@/git/use-diff-query";
 import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
-import { panelMetaText, panelTheme } from "@/workspace/panel-chrome";
-import { usePanelMetaDataSet } from "@/workspace/use-panel-meta-dataset";
 
 export interface FileHeaderProps {
   file: ParsedDiffFile;
@@ -251,7 +249,6 @@ export const FileHeader = memo(function FileHeader({
   );
   const fileName = fileNameForPath(file.path);
   const nameStyle = fileHeaderNameStyle(showsBodyState, hover.isHovered);
-  const metaDataSet = usePanelMetaDataSet();
   const changeIcon = <FileChangeIcon change={fileChange(file)} />;
   const content = (
     <View
@@ -268,7 +265,7 @@ export const FileHeader = memo(function FileHeader({
           {fileName}
         </Text>
         {showDir ? (
-          <Text style={styles.directory} numberOfLines={1} dataSet={metaDataSet}>
+          <Text style={styles.directory} numberOfLines={1}>
             {directorySuffix(file.path)}
           </Text>
         ) : (
@@ -362,7 +359,7 @@ export const FileHeader = memo(function FileHeader({
   );
 });
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   container: { width: "100%", overflow: "hidden", userSelect: "none" },
   documentContainer: {
     height: 30,
@@ -448,7 +445,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     flex: 1,
     minWidth: 0,
     userSelect: "none",
-    ...panelMetaText(panelTheme(theme, rt.themeName)),
   },
   directorySpacer: { flex: 1, minWidth: 0 },
   tooltip: { color: theme.colors.popoverForeground, fontSize: theme.fontSize.base },

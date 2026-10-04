@@ -2310,7 +2310,6 @@ export async function createFroggDaemon(
             });
             const devDaemonService = new DevDaemonService({
               logger,
-              froggHome: config.froggHome,
               siblingWorkspaceFiles: siblingChannelHomes(config.froggHome).map((home) =>
                 path.join(home, "projects", "workspaces.json"),
               ),

@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  createCompactMarkdownStyles,
-  createMarkdownStyles,
-  withDesignProse,
-} from "./markdown-styles";
-import { DESIGN_VARIANT_THEMES } from "./design-variants";
+import { createCompactMarkdownStyles, createMarkdownStyles } from "./markdown-styles";
 import { darkTheme } from "./theme";
 
 describe("createMarkdownStyles", () => {
@@ -143,38 +138,5 @@ describe("createMarkdownStyles", () => {
     });
     expect(styles.paragraph.marginBottom).toBe(darkTheme.spacing[3]);
     expect(styles.text).not.toHaveProperty("color");
-  });
-});
-
-describe("withDesignProse", () => {
-  it("leaves the current design's prose untouched", () => {
-    const styles = createMarkdownStyles(darkTheme);
-    expect(withDesignProse(styles, darkTheme)).toBe(styles);
-  });
-
-  it("draws Paper prose and headings in its serif, without heading rules", () => {
-    const paper = DESIGN_VARIANT_THEMES.paperLight;
-    const styles = withDesignProse(createMarkdownStyles(paper), paper);
-
-    expect(styles.paragraph).toMatchObject({ fontFamily: paper.design.contentFontFamily });
-    expect(styles.heading1).toMatchObject({
-      fontFamily: paper.design.headingFontFamily,
-      fontWeight: paper.design.headingWeight,
-      letterSpacing: paper.design.headingLetterSpacing,
-      borderBottomWidth: 0,
-    });
-    // Inline code keeps its own mono face.
-    expect(styles.code_inline).toMatchObject({ fontFamily: paper.fontFamily.mono });
-  });
-
-  it("keeps Mono prose in the UI face but tightens its headings", () => {
-    const mono = DESIGN_VARIANT_THEMES.monoDark;
-    const styles = withDesignProse(createMarkdownStyles(mono), mono);
-
-    expect(styles.paragraph).not.toHaveProperty("fontFamily");
-    expect(styles.heading2).toMatchObject({
-      letterSpacing: mono.design.headingLetterSpacing,
-      borderBottomWidth: 1,
-    });
   });
 });

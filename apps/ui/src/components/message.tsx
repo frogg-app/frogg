@@ -1,5 +1,4 @@
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { themeOf } from "@/styles/design-theme";
 import { TaskListRow } from "@/components/task-list-row";
 import {
   View,
@@ -109,15 +108,6 @@ import {
 import { AttachmentLightbox, type ImageLightboxSource } from "@/components/attachment-lightbox";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { isWeb, isNative } from "@/constants/platform";
-import {
-  metaTextStyle,
-  toolRowDesign,
-  userMessageContentStyle,
-  userMessageRowStyle,
-  userMessageSurfaceStyle,
-  userMessageTextStyle,
-} from "@/agent-stream/conversation-design";
-import { MonoMetaText, MonoMetaView, ProseFontScope } from "@/agent-stream/design-scopes";
 import type { AgentCapabilityFlags } from "@frogg/protocol/agent-types";
 import { RewindMenu, type RewindMode } from "@/components/rewind/rewind-menu";
 import { useRewindAgentMutation } from "@/components/rewind/use-rewind-agent-mutation";
@@ -345,18 +335,16 @@ function shouldStopDetailWheelPropagation(detailRoot: HTMLElement, event: WheelE
   return canScrollHorizontally;
 }
 
-const userMessageStylesheet = StyleSheet.create((theme, rt) => ({
+const userMessageStylesheet = StyleSheet.create((theme) => ({
   container: {
     flexDirection: "row",
     justifyContent: "flex-end",
     ...(isWeb ? { userSelect: "text" as const } : {}),
-    ...userMessageRowStyle(themeOf(rt.themeName)),
   },
   content: {
     alignItems: "flex-end",
     maxWidth: "100%",
     cursor: "auto",
-    ...userMessageContentStyle(themeOf(rt.themeName)),
   },
   containerSpacing: {
     marginBottom: theme.spacing[1],
@@ -375,7 +363,6 @@ const userMessageStylesheet = StyleSheet.create((theme, rt) => ({
     paddingVertical: theme.spacing[4],
     minWidth: 0,
     flexShrink: 1,
-    ...userMessageSurfaceStyle(themeOf(rt.themeName)),
   },
   text: {
     color: theme.colors.foreground,
@@ -386,7 +373,6 @@ const userMessageStylesheet = StyleSheet.create((theme, rt) => ({
           overflowWrap: "anywhere" as const,
         }
       : {}),
-    ...userMessageTextStyle(themeOf(rt.themeName)),
   },
   imagePreviewContainer: {
     flexDirection: "row",
@@ -425,7 +411,6 @@ const userMessageStylesheet = StyleSheet.create((theme, rt) => ({
   timestampText: {
     color: theme.colors.foregroundMuted,
     fontSize: STREAM_METADATA_FONT_SIZE,
-    ...metaTextStyle(themeOf(rt.themeName)),
   },
 }));
 
@@ -576,12 +561,9 @@ export const UserMessage = memo(function UserMessage({
             pointerEvents={showTrailingRow ? "auto" : "none"}
             testID="user-message-trailing-row"
           >
-            <MonoMetaText
-              style={userMessageStylesheet.timestampText}
-              testID="user-message-timestamp"
-            >
+            <Text style={userMessageStylesheet.timestampText} testID="user-message-timestamp">
               {formattedTimestamp}
-            </MonoMetaText>
+            </Text>
             {capabilities && messageId ? (
               <RewindMenu
                 capabilities={capabilities}
@@ -610,7 +592,7 @@ interface AssistantTurnFooterProps {
   onFork?: (target: AssistantForkTarget) => Promise<void> | void;
 }
 
-const assistantTurnFooterStylesheet = StyleSheet.create((theme, rt) => ({
+const assistantTurnFooterStylesheet = StyleSheet.create((theme) => ({
   container: {
     flexDirection: "row",
     alignItems: "center",
@@ -630,7 +612,6 @@ const assistantTurnFooterStylesheet = StyleSheet.create((theme, rt) => ({
     color: theme.colors.foregroundMuted,
     fontSize: STREAM_METADATA_FONT_SIZE,
     opacity: 0,
-    ...metaTextStyle(themeOf(rt.themeName)),
   },
   labelOverlay: {
     position: "absolute",
@@ -638,7 +619,6 @@ const assistantTurnFooterStylesheet = StyleSheet.create((theme, rt) => ({
     left: 0,
     color: theme.colors.foregroundMuted,
     fontSize: STREAM_METADATA_FONT_SIZE,
-    ...metaTextStyle(themeOf(rt.themeName)),
   },
 }));
 
@@ -721,7 +701,7 @@ export const AssistantTurnFooter = memo(function AssistantTurnFooter({
           accessibilityRole={canSwap ? "button" : undefined}
           accessibilityLabel={canSwap ? `${durationLabel}, ended ${timestampLabel}` : primaryLabel}
         >
-          <MonoMetaView style={assistantTurnFooterStylesheet.labelWrapper}>
+          <View style={assistantTurnFooterStylesheet.labelWrapper}>
             {/* Sizer reserves space for whichever label is longer so the
                 container width is stable across hover transitions. */}
             <Text style={assistantTurnFooterStylesheet.labelSizer} aria-hidden>
@@ -730,7 +710,7 @@ export const AssistantTurnFooter = memo(function AssistantTurnFooter({
             <Text style={assistantTurnFooterStylesheet.labelOverlay}>
               {showTimestamp ? timestampLabel : primaryLabel}
             </Text>
-          </MonoMetaView>
+          </View>
         </Pressable>
       ) : null}
     </View>
@@ -1128,10 +1108,9 @@ export const TurnCopyButton = memo(function TurnCopyButton({
   );
 });
 
-const expandableBadgeStylesheet = StyleSheet.create((theme, rt) => ({
+const expandableBadgeStylesheet = StyleSheet.create((theme) => ({
   container: {
     marginHorizontal: -13,
-    ...toolRowDesign(themeOf(rt.themeName)).container,
   },
   containerSpacing: {
     marginBottom: theme.spacing[1],
@@ -1146,7 +1125,6 @@ const expandableBadgeStylesheet = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.spacing[2],
     paddingVertical: theme.spacing[1],
     overflow: "hidden",
-    ...toolRowDesign(themeOf(rt.themeName)).pressable,
   },
   pressablePressed: {
     opacity: 0.9,
@@ -1160,7 +1138,6 @@ const expandableBadgeStylesheet = StyleSheet.create((theme, rt) => ({
     flexDirection: "row",
     alignItems: "center",
     overflow: "hidden",
-    ...toolRowDesign(themeOf(rt.themeName)).labelRow,
   },
   iconBadge: {
     width: 22,
@@ -1176,7 +1153,6 @@ const expandableBadgeStylesheet = StyleSheet.create((theme, rt) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     flexShrink: 0,
-    ...toolRowDesign(themeOf(rt.themeName)).label,
   },
   labelActive: {
     color: theme.colors.foreground,
@@ -1192,7 +1168,6 @@ const expandableBadgeStylesheet = StyleSheet.create((theme, rt) => ({
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
     marginLeft: theme.spacing[2],
-    ...toolRowDesign(themeOf(rt.themeName)).label,
   },
   secondaryLabelActive: {
     color: theme.colors.foreground,
@@ -1201,7 +1176,6 @@ const expandableBadgeStylesheet = StyleSheet.create((theme, rt) => ({
     color: "transparent",
     fontSize: theme.fontSize.base,
     fontWeight: theme.fontWeight.normal,
-    ...toolRowDesign(themeOf(rt.themeName)).label,
   },
   spacer: {
     flex: 1,
@@ -1234,7 +1208,6 @@ const expandableBadgeStylesheet = StyleSheet.create((theme, rt) => ({
   },
   pressableExpanded: {
     backgroundColor: theme.colors.surface1,
-    ...toolRowDesign(themeOf(rt.themeName)).pressableExpanded,
   },
   pressableExpandedAttached: {
     borderColor: theme.colors.border,
@@ -1429,7 +1402,6 @@ interface MemoizedMarkdownBlockProps {
   rules: RenderRules;
   parser: MarkdownIt;
   onLinkPress: (url: string) => boolean;
-  prose?: boolean;
 }
 
 const MemoizedMarkdownBlock = React.memo(function MemoizedMarkdownBlock({
@@ -1437,12 +1409,10 @@ const MemoizedMarkdownBlock = React.memo(function MemoizedMarkdownBlock({
   rules,
   parser,
   onLinkPress,
-  prose,
 }: MemoizedMarkdownBlockProps) {
   return (
     <MarkdownRenderer
       text={text}
-      prose={prose}
       enableHtmlish={false}
       rules={rules}
       markdownit={parser}
@@ -2027,23 +1997,20 @@ export const AssistantMessage = memo(function AssistantMessage({
 
   return (
     <View testID="assistant-message" dataSet={revealDataSet} style={assistantContainerStyle}>
-      <ProseFontScope>
-        {keyedBlocks.map(({ key, block }, index) => (
-          <AssistantMessageBlockContainer
-            key={key}
-            block={block}
-            marginBottom={index < keyedBlocks.length - 1 ? 12 : 0}
-          >
-            <MemoizedMarkdownBlock
-              text={block}
-              rules={markdownRules}
-              parser={markdownParser}
-              onLinkPress={handleMarkdownLinkPress}
-              prose
-            />
-          </AssistantMessageBlockContainer>
-        ))}
-      </ProseFontScope>
+      {keyedBlocks.map(({ key, block }, index) => (
+        <AssistantMessageBlockContainer
+          key={key}
+          block={block}
+          marginBottom={index < keyedBlocks.length - 1 ? 12 : 0}
+        >
+          <MemoizedMarkdownBlock
+            text={block}
+            rules={markdownRules}
+            parser={markdownParser}
+            onLinkPress={handleMarkdownLinkPress}
+          />
+        </AssistantMessageBlockContainer>
+      ))}
       {fullMessageByteLength !== null ? (
         <Text
           testID="assistant-message-capped-notice"
@@ -2575,7 +2542,7 @@ function ExpandableBadgeLabelRow({
 }: ExpandableBadgeLabelRowProps) {
   const { t } = useTranslation();
   return (
-    <MonoMetaView
+    <View
       style={expandableBadgeStylesheet.labelRow}
       onLayout={shouldMeasureNativeShimmer ? onLabelRowLayout : undefined}
     >
@@ -2629,7 +2596,7 @@ function ExpandableBadgeLabelRow({
           gradientId={nativeGradientId}
         />
       ) : null}
-    </MonoMetaView>
+    </View>
   );
 }
 

@@ -36,7 +36,17 @@ other session.
 ## Add a project
 
 - App: **Add project** in the sidebar, then choose a folder on the daemon host.
-  Folders whose names start with `.` are hidden from folder lists and suggestions, including when choosing where to create or clone a project. Turn on **Settings > General > Show hidden folders** to list them, or type a path such as `~/.config` to open one directly.
+  **Choose project folder** and **New directory** open the same folder browser:
+  - The path bar shows clickable breadcrumbs. Click the pencil, the empty part of the bar, or
+    press Ctrl/Cmd+L to type or paste a path, then press Enter.
+  - Folders are listed before files; files are shown dimmed for context and can't be chosen.
+  - With a mouse, click selects a folder and double-click opens it. On touch, tap opens it.
+  - Keyboard: type to filter the current folder, arrow keys to move, Enter to open,
+    Backspace (with an empty filter) or Alt+Up to go up, Esc to clear the filter or go back.
+    Typing a path such as `~/src` into the filter offers **Go to** that path.
+  - **Select this folder** (Ctrl/Cmd+Enter) adds the folder you are in. For **New directory**,
+    enter a name and choose **Create here**.
+  Folders whose names start with `.` are hidden by default, following **Settings > General > Show hidden folders**. The eye button (or Ctrl/Cmd+Shift+.) toggles them for the current browser, and you can always type a path such as `~/.config` to open one directly.
 - CLI: `frogg project create /path/to/repo`.
 
 Starting an agent, session, terminal or script in a directory does not register it as a

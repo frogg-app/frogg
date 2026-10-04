@@ -4,8 +4,6 @@ import { Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StyleSheet } from "react-native-unistyles";
-import { themeOf } from "@/styles/design-theme";
-import { entryColumn } from "@/home/entry-design";
 import { BackHeader } from "@/components/headers/back-header";
 import { Alert } from "@/components/ui/alert";
 import { ClaimOfferPanel } from "@/components/claim-offer-panel";
@@ -24,7 +22,7 @@ import { buildHostRootRoute, buildOpenProjectRoute } from "@/utils/host-routes";
 
 const NO_VERIFICATION = { status: "none" } as const;
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.surface0,
@@ -34,9 +32,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     paddingHorizontal: theme.spacing[6],
     paddingBottom: theme.spacing[6],
     gap: theme.spacing[4],
-  },
-  bodyDesign: {
-    ...entryColumn(themeOf(rt.themeName)),
   },
   helper: {
     color: theme.colors.foregroundMuted,
@@ -118,10 +113,7 @@ export default function PairOfferScreen() {
   );
 
   // The safe-area inset is runtime-only, so it rides on margin; the theme padding stays in the sheet.
-  const bodyStyle = useMemo(
-    () => [styles.body, styles.bodyDesign, { marginBottom: insets.bottom }],
-    [insets.bottom],
-  );
+  const bodyStyle = useMemo(() => [styles.body, { marginBottom: insets.bottom }], [insets.bottom]);
 
   let content;
   if (!target) {

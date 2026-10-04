@@ -1926,6 +1926,8 @@ pub struct DaemonDevDaemonStartRequest {
 pub struct DaemonDevDaemonStopRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cwd: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1933,6 +1935,8 @@ pub struct DaemonDevDaemonRebuildRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
     pub target: DaemonDevDaemonRebuildRequestTarget,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cwd: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2298,6 +2302,8 @@ pub struct WriteProjectConfigRequestConfigWorktree {
     pub terminals: Option<serde_json::Value>,
     #[serde(rename = "servicePorts", skip_serializing_if = "Option::is_none")]
     pub service_ports: Option<WriteProjectConfigRequestConfigWorktreeServicePorts>,
+    #[serde(rename = "baseBranch", skip_serializing_if = "Option::is_none")]
+    pub base_branch: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

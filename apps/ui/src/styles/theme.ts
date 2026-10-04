@@ -632,8 +632,6 @@ export const DEFAULT_MONO_FONT_STACK: string = Platform.select({
 // `number`/`string` (not narrowed by `as const`) so the appearance updater can patch
 // them at runtime via `UnistylesRuntime.updateTheme`. The remaining tokens keep their
 // literal types.
-//
-// `borderRadius` is widened to `number` so design variants can reshape the radius ramp.
 interface CommonTheme {
   spacing: typeof SPACING;
   fontSize: Record<keyof typeof FONT_SIZE, number>;
@@ -641,72 +639,10 @@ interface CommonTheme {
   lineHeight: Record<keyof typeof LINE_HEIGHT, number>;
   iconSize: typeof ICON_SIZE;
   fontWeight: typeof FONT_WEIGHT;
-  borderRadius: Record<keyof typeof BORDER_RADIUS, number>;
+  borderRadius: typeof BORDER_RADIUS;
   borderWidth: typeof BORDER_WIDTH;
   opacity: typeof OPACITY;
-  design: DesignTokens;
 }
-
-// ---------------------------------------------------------------------------
-// Design variant tokens (UI refresh exploration)
-// ---------------------------------------------------------------------------
-
-export type DesignVariantId = "current" | "inset" | "mono" | "paper" | "focus" | "soft";
-
-/**
- * Structural tokens a design variant sets on top of colors, radii and shadows. Components read
- * them from `theme.design` to change shape, not just paint: how the app frame is laid out, how
- * the composer and user messages are drawn, and how dense rows are. `current` reproduces the
- * shipping design exactly, so every consumer must treat the `current` values as "no change".
- */
-export interface DesignTokens {
-  variant: DesignVariantId;
-  /** flat: sidebar and content share one plane. inset: content is a rounded card inset on the
-   * sidebar-coloured frame. floating: sidebar and content are both separate rounded cards. */
-  frame: "flat" | "inset" | "floating";
-  /** box: bordered rectangle. floating: raised card with shadow. pill: fully rounded bar. */
-  composer: "box" | "floating" | "pill";
-  /** bubble: tinted bubble. plain: no container, marked by a rule/label. card: bordered card. */
-  userMessage: "bubble" | "plain" | "card";
-  density: "compact" | "regular" | "comfortable";
-  /** Prefer tint and spacing over hairlines where a border is only decorative. */
-  borderless: boolean;
-  /** Render metadata (timestamps, branch names, counts) in the mono family. */
-  monoMeta: boolean;
-  /** Cap the reading column of timelines and forms, in px; null = full width. */
-  contentMaxWidth: number | null;
-  /** Radius for buttons, inputs and chips. */
-  controlRadius: number;
-  /** Default UI/mono stacks for this variant; a user-chosen font still wins. */
-  uiFontFamily: string;
-  monoFontFamily: string;
-  /** Display face for page titles and section headings. Tag the Text with
-   * `DESIGN_FONT_DATASET` on web so the global UI-font rule leaves it alone. */
-  headingFontFamily: string;
-  /** Face for assistant prose; null = UI font. Same dataset rule as headings. */
-  contentFontFamily: string | null;
-  /** Letter spacing for headings (display faces often want it tight). */
-  headingLetterSpacing: number;
-  headingWeight: "500" | "600" | "700";
-}
-
-export const CURRENT_DESIGN: DesignTokens = {
-  variant: "current",
-  frame: "flat",
-  composer: "box",
-  userMessage: "bubble",
-  density: "regular",
-  borderless: false,
-  monoMeta: false,
-  contentMaxWidth: null,
-  controlRadius: BORDER_RADIUS.lg,
-  uiFontFamily: DEFAULT_UI_FONT_STACK,
-  monoFontFamily: DEFAULT_MONO_FONT_STACK,
-  headingFontFamily: DEFAULT_UI_FONT_STACK,
-  contentFontFamily: null,
-  headingLetterSpacing: 0,
-  headingWeight: "600",
-};
 
 const commonTheme: CommonTheme = {
   spacing: SPACING,
@@ -718,40 +654,9 @@ const commonTheme: CommonTheme = {
   borderRadius: BORDER_RADIUS,
   borderWidth: BORDER_WIDTH,
   opacity: OPACITY,
-  design: CURRENT_DESIGN,
 };
 
-interface ShadowLevel {
-  shadowColor: string;
-  shadowOffset: { width: number; height: number };
-  shadowRadius: number;
-  elevation: number;
-}
-
-export interface ShadowScale {
-  sm: ShadowLevel;
-  md: ShadowLevel;
-  lg: ShadowLevel;
-}
-
-/** What a design variant may replace on top of the shared tokens. */
-export interface ThemeOverrides {
-  borderRadius?: CommonTheme["borderRadius"];
-  shadow?: ShadowScale;
-  design?: DesignTokens;
-}
-
-function applyOverrides(overrides: ThemeOverrides | undefined) {
-  const design = overrides?.design ?? commonTheme.design;
-  return {
-    ...commonTheme,
-    fontFamily: { ui: design.uiFontFamily, mono: design.monoFontFamily },
-    borderRadius: overrides?.borderRadius ?? commonTheme.borderRadius,
-    design,
-  };
-}
-
-const darkShadow: ShadowScale = {
+const darkShadow = {
   sm: {
     shadowColor: "rgba(0, 0, 0, 0.25)",
     shadowOffset: { width: 0, height: 2 },
@@ -770,12 +675,9 @@ const darkShadow: ShadowScale = {
     shadowRadius: 24,
     elevation: 8,
   },
-};
+} as const;
 
-export function buildDarkTheme(
-  semanticColors: ReturnType<typeof buildDarkSemanticColors>,
-  overrides?: ThemeOverrides,
-) {
+export function buildDarkTheme(semanticColors: ReturnType<typeof buildDarkSemanticColors>) {
   return {
     colorScheme: "dark" as const,
     colors: {
@@ -783,9 +685,9 @@ export function buildDarkTheme(
       palette: baseColors,
       syntax: darkHighlightColors,
     },
-    shadow: overrides?.shadow ?? darkShadow,
-    ...applyOverrides(overrides),
-  };
+    shadow: darkShadow,
+    ...commonTheme,
+  } as const;
 }
 
 export const darkTheme = buildDarkTheme(
@@ -828,7 +730,7 @@ const pureBlackDarkColors = buildDarkSemanticColors({
 
 export const darkPureBlackTheme = buildDarkTheme(pureBlackDarkColors);
 
-const lightShadow: ShadowScale = {
+const lightShadow = {
   sm: {
     shadowColor: "rgba(0, 0, 0, 0.02)",
     shadowOffset: { width: 0, height: 2 },
@@ -847,12 +749,9 @@ const lightShadow: ShadowScale = {
     shadowRadius: 24,
     elevation: 8,
   },
-};
+} as const;
 
-export function buildLightTheme(
-  semanticColors: ReturnType<typeof buildLightSemanticColors>,
-  overrides?: ThemeOverrides,
-) {
+export function buildLightTheme(semanticColors: ReturnType<typeof buildLightSemanticColors>) {
   return {
     colorScheme: "light" as const,
     colors: {
@@ -860,9 +759,9 @@ export function buildLightTheme(
       palette: baseColors,
       syntax: lightHighlightColors,
     },
-    shadow: overrides?.shadow ?? lightShadow,
-    ...applyOverrides(overrides),
-  };
+    shadow: lightShadow,
+    ...commonTheme,
+  } as const;
 }
 
 export const lightTheme = buildLightTheme(

@@ -1,11 +1,8 @@
 import { useMemo, type ReactNode } from "react";
 import { Text, View, type StyleProp, type ViewStyle } from "react-native";
-import { designThemeOf } from "@/components/ui/design-surface";
 import { StyleSheet } from "react-native-unistyles";
 import { SettingsInfoTip } from "@/screens/settings/settings-info-tip";
-import { DESIGN_FONT_DATASET } from "@/styles/code-surface";
 import { settingsStyles } from "@/styles/settings";
-import { settingsTreatment } from "@/styles/settings-treatment";
 
 interface SettingsSectionProps {
   title: string;
@@ -47,9 +44,7 @@ export function SettingsSection({
     <View style={sectionStyle} testID={testID}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text dataSet={DESIGN_FONT_DATASET} style={settingsStyles.sectionHeaderTitle}>
-            {title}
-          </Text>
+          <Text style={settingsStyles.sectionHeaderTitle}>{title}</Text>
           {info ? (
             <SettingsInfoTip
               title={title}
@@ -65,7 +60,7 @@ export function SettingsSection({
   );
 }
 
-const styles = StyleSheet.create((theme, rt) => ({
+const styles = StyleSheet.create((theme) => ({
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -73,7 +68,6 @@ const styles = StyleSheet.create((theme, rt) => ({
     gap: theme.spacing[2],
     marginBottom: theme.spacing[3],
     marginLeft: theme.spacing[1],
-    ...settingsTreatment(designThemeOf(theme, rt.themeName)).sectionHeader,
   },
   titleRow: {
     flexDirection: "row",

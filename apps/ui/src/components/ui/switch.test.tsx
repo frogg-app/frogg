@@ -77,8 +77,7 @@ vi.mock("react-native", () => ({
 
 vi.mock("react-native-unistyles", () => ({
   StyleSheet: {
-    create: (factory: unknown) =>
-      typeof factory === "function" ? factory(theme, { themeName: "dark" }) : factory,
+    create: (factory: unknown) => (typeof factory === "function" ? factory(theme) : factory),
   },
   withUnistyles:
     (
