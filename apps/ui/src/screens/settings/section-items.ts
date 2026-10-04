@@ -111,6 +111,9 @@ export interface HostSectionItem {
 }
 
 export const HOST_SECTION_ITEMS: HostSectionItem[] = [
+  { id: "host", group: "daemon", labelKey: "settings.hostSections.host", icon: Server },
+  { id: "updates", group: "daemon", labelKey: "settings.hostSections.updates", icon: Rocket },
+  { id: "developer", group: "daemon", labelKey: "settings.sections.developer", icon: Wrench },
   {
     id: "projects",
     group: "workspace",
@@ -155,7 +158,4 @@ export const HOST_SECTION_ITEMS: HostSectionItem[] = [
     labelKey: "settings.hostSections.webClient",
     icon: Globe,
   },
-  { id: "host", group: "daemon", labelKey: "settings.hostSections.host", icon: Server },
-  { id: "updates", group: "daemon", labelKey: "settings.hostSections.updates", icon: Rocket },
-  { id: "developer", group: "daemon", labelKey: "settings.sections.developer", icon: Wrench },
 ];
