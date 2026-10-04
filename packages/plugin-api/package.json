@@ -1,6 +1,6 @@
 {
   "name": "@frogg/plugin-api",
-  "version": "1.6.10-beta.9",
+  "version": "1.6.11-beta.1",
   "description": "Types for Frogg plugins (API v1). Types only; no runtime code.",
   "license": "Apache-2.0",
   "files": [
