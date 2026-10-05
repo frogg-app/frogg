@@ -1,0 +1,668 @@
+[
+  {
+    "id": "sessions",
+    "g": "Shell & rail tools",
+    "c": "Sessions: attention-sorted inbox, fleet bar, gliding brackets, live session with plan + subagents",
+    "m": false
+  },
+  {
+    "id": "tool-search",
+    "g": "Shell & rail tools",
+    "c": "Search: code and conversation results in one list; main shows the match in context",
+    "m": false
+  },
+  {
+    "id": "tool-files",
+    "g": "Shell & rail tools",
+    "c": "Files: session worktree tree with git status; editor with change gutter and vim status",
+    "m": false
+  },
+  {
+    "id": "tool-scm",
+    "g": "Shell & rail tools",
+    "c": "Source control: branch card, commit box, staged/changes, session commits; split diff with review comments",
+    "m": false
+  },
+  {
+    "id": "tool-prs",
+    "g": "Shell & rail tools",
+    "c": "PRs & CI: this session’s PR with checks, reviews, activity and merge rules",
+    "m": false
+  },
+  {
+    "id": "tool-terminals",
+    "g": "Shell & rail tools",
+    "c": "Terminals & services: session terminals, frogg.json scripts with URLs, setup log; split terminals",
+    "m": false
+  },
+  {
+    "id": "tool-tasks",
+    "g": "Shell & rail tools",
+    "c": "Tasks: project to-do board with agent claims; agent plan lives in the side tab",
+    "m": false
+  },
+  {
+    "id": "tool-tasks-todos",
+    "g": "Shell & rail tools",
+    "c": "Tasks › Project to-dos list grouped by category, with priority and claims",
+    "m": false
+  },
+  {
+    "id": "tool-hosts",
+    "g": "Shell & rail tools",
+    "c": "Hosts & devices: host health, who is connected, pairing request, security, storage, daemon",
+    "m": false
+  },
+  {
+    "id": "tool-usage",
+    "g": "Shell & rail tools",
+    "c": "Usage & limits: every account’s windows in the side, account detail with history and limit behaviour",
+    "m": false
+  },
+  {
+    "id": "tool-plugins",
+    "g": "Shell & rail tools",
+    "c": "Plugins: installed list with status/tier; detail shows what the plugin adds and its permissions",
+    "m": false
+  },
+  {
+    "id": "tool-inbox",
+    "g": "Shell & rail tools",
+    "c": "Inbox (new): persisted notifications grouped by urgency; act on a permission without opening the session",
+    "m": false
+  },
+  {
+    "id": "palette",
+    "g": "Shell & rail tools",
+    "c": "⌘K palette: sessions, commands, settings and tools in one list",
+    "m": false
+  },
+  {
+    "id": "palette-settings",
+    "g": "Shell & rail tools",
+    "c": "⌘K palette mixing commands and settings; keywords match inside pages (“mode”)",
+    "m": false
+  },
+  {
+    "id": "scope-menu",
+    "g": "Sessions & chat",
+    "c": "Scope switcher replaces project icons: all projects, one project, Chats, History",
+    "m": false
+  },
+  {
+    "id": "scope-project",
+    "g": "Sessions & chat",
+    "c": "Scoped to one project: fleet bar and groups follow the scope",
+    "m": false
+  },
+  {
+    "id": "display-menu",
+    "g": "Sessions & chat",
+    "c": "Display options: group, sort, title, row fields, filters",
+    "m": false
+  },
+  {
+    "id": "session-menu",
+    "g": "Sessions & chat",
+    "c": "Session actions menu (also on row right-click), including plugin actions",
+    "m": false
+  },
+  {
+    "id": "session-drawer",
+    "g": "Sessions & chat",
+    "c": "Changes drawer (\\) slides in beside the chat",
+    "m": false
+  },
+  {
+    "id": "session-failed",
+    "g": "Sessions & chat",
+    "c": "Failed session: failing test inline with the error",
+    "m": false
+  },
+  {
+    "id": "session-done",
+    "g": "Sessions & chat",
+    "c": "Ready to review: finished turn with diff summary and Create PR",
+    "m": false
+  },
+  {
+    "id": "chats",
+    "g": "Sessions & chat",
+    "c": "Chats scope: project-less chats by date, read-only sandbox",
+    "m": false
+  },
+  {
+    "id": "history",
+    "g": "Sessions & chat",
+    "c": "History scope: archived sessions across hosts with Restore",
+    "m": false
+  },
+  {
+    "id": "new-session",
+    "g": "Sessions & chat",
+    "c": "New session sheet: project, host, isolation, start ref, agent controls, prompt",
+    "m": false
+  },
+  {
+    "id": "import",
+    "g": "Sessions & chat",
+    "c": "Import conversations from a host’s providers or files",
+    "m": false
+  },
+  {
+    "id": "clean-cut",
+    "g": "Sessions & chat",
+    "c": "Clean-cut divider in the transcript with cost and summary model",
+    "m": false
+  },
+  {
+    "id": "tab-menu",
+    "g": "Sessions & chat",
+    "c": "Tab context menu: reload agent, copy resume command, split, close variants",
+    "m": false
+  },
+  {
+    "id": "composer-model",
+    "g": "Composer",
+    "c": "Model picker: grouped by provider, thinking level, provider features",
+    "m": false
+  },
+  {
+    "id": "composer-mode",
+    "g": "Composer",
+    "c": "Permission mode picker with the shared vocabulary; native name shown beside",
+    "m": false
+  },
+  {
+    "id": "composer-attach",
+    "g": "Composer",
+    "c": "Attach menu: files, images, issues/PRs, CI logs, review comments, plugin actions",
+    "m": false
+  },
+  {
+    "id": "composer-slash",
+    "g": "Composer",
+    "c": "Slash commands and skills autocomplete",
+    "m": false
+  },
+  {
+    "id": "composer-account",
+    "g": "Composer",
+    "c": "Account menu: locked once started, move or clean-cut to another account",
+    "m": false
+  },
+  {
+    "id": "composer-notices",
+    "g": "Composer",
+    "c": "Composer notices: stale cache warning, auto-resume countdown, queued message",
+    "m": false
+  },
+  {
+    "id": "account-transfer",
+    "g": "Composer",
+    "c": "Move conversation to another account: full history vs clean cut vs switch provider",
+    "m": false
+  },
+  {
+    "id": "approval-command",
+    "g": "Approvals",
+    "c": "Command approval inline in the chat; A approves, Esc denies, row Approve in the inbox",
+    "m": false
+  },
+  {
+    "id": "approval-plan",
+    "g": "Approvals",
+    "c": "Plan review: Implement / Edit / Reject with scope summary",
+    "m": false
+  },
+  {
+    "id": "approval-question",
+    "g": "Approvals",
+    "c": "Agent question card with options and Other…",
+    "m": false
+  },
+  {
+    "id": "approval-inbox",
+    "g": "Approvals",
+    "c": "Approve from the Inbox with context and delivery record",
+    "m": false
+  },
+  {
+    "id": "scm-branch",
+    "g": "Source control, PRs & CI",
+    "c": "Branch switcher: branches and PRs, stash-and-switch warning",
+    "m": false
+  },
+  {
+    "id": "scm-more",
+    "g": "Source control, PRs & CI",
+    "c": "All git actions with disabled reasons inline",
+    "m": false
+  },
+  {
+    "id": "pr-merge-menu",
+    "g": "Source control, PRs & CI",
+    "c": "Merge strategies and auto-merge with the blocking reason",
+    "m": false
+  },
+  {
+    "id": "ci-run",
+    "g": "Source control, PRs & CI",
+    "c": "CI run: jobs, failing log, Add log to chat, runners in the side",
+    "m": false
+  },
+  {
+    "id": "release-streams",
+    "g": "Source control, PRs & CI",
+    "c": "Release streams (developer mode): stream lanes and waiting changes",
+    "m": false
+  },
+  {
+    "id": "file-menu",
+    "g": "Terminals & files",
+    "c": "File context menu: open in editor, add to chat, copy paths, rename, discard, delete",
+    "m": false
+  },
+  {
+    "id": "editor-menu",
+    "g": "Terminals & files",
+    "c": "Open in external editor",
+    "m": false
+  },
+  {
+    "id": "new-tab",
+    "g": "Terminals & files",
+    "c": "New tab launcher: agent, terminal profiles, browser",
+    "m": false
+  },
+  {
+    "id": "service-url",
+    "g": "Terminals & files",
+    "c": "Opening a service URL: in Frogg, external browser or copy",
+    "m": false
+  },
+  {
+    "id": "add-host",
+    "g": "Hosts & pairing",
+    "c": "Add a host: five methods, one confirm step (replaces six pairing flows)",
+    "m": false
+  },
+  {
+    "id": "pair-confirm",
+    "g": "Hosts & pairing",
+    "c": "Pair / claim confirm: fingerprint, role, expiry",
+    "m": false
+  },
+  {
+    "id": "pair-device",
+    "g": "Hosts & pairing",
+    "c": "Pair a device: QR, code and link are one offer; role picked up front",
+    "m": false
+  },
+  {
+    "id": "deploy",
+    "g": "Hosts & pairing",
+    "c": "Install on a server over SSH with step log",
+    "m": false
+  },
+  {
+    "id": "host-offline",
+    "g": "Hosts & pairing",
+    "c": "Unreachable host with retry, redeploy and remove",
+    "m": false
+  },
+  {
+    "id": "provider-detail",
+    "g": "Providers, accounts & usage",
+    "c": "Provider detail: version, defaults, shared mode names, danger zone",
+    "m": false
+  },
+  {
+    "id": "add-account",
+    "g": "Providers, accounts & usage",
+    "c": "Add a provider account with shared folders",
+    "m": false
+  },
+  {
+    "id": "settings-appearance",
+    "g": "Settings",
+    "c": "You › Appearance",
+    "m": false
+  },
+  {
+    "id": "settings-chat",
+    "g": "Settings",
+    "c": "You › Chat & composer",
+    "m": false
+  },
+  {
+    "id": "settings-editor",
+    "g": "Settings",
+    "c": "You › Files, editor & terminal",
+    "m": false
+  },
+  {
+    "id": "settings-keys",
+    "g": "Settings",
+    "c": "You › Keyboard shortcuts",
+    "m": false
+  },
+  {
+    "id": "settings-notify",
+    "g": "Settings",
+    "c": "You › Notifications & inbox",
+    "m": false
+  },
+  {
+    "id": "settings-voice",
+    "g": "Settings",
+    "c": "You › Voice & Companion",
+    "m": false
+  },
+  {
+    "id": "settings-providers",
+    "g": "Settings",
+    "c": "Agents › Providers & models",
+    "m": false
+  },
+  {
+    "id": "settings-accounts",
+    "g": "Settings",
+    "c": "Agents › Accounts",
+    "m": false
+  },
+  {
+    "id": "settings-modes",
+    "g": "Settings",
+    "c": "Agents › Permission modes",
+    "m": false
+  },
+  {
+    "id": "settings-usage",
+    "g": "Settings",
+    "c": "Agents › Usage & limits",
+    "m": false
+  },
+  {
+    "id": "settings-context",
+    "g": "Settings",
+    "c": "Agents › Context & clean cut",
+    "m": false
+  },
+  {
+    "id": "settings-orchestration",
+    "g": "Settings",
+    "c": "Agents › Tools, skills & prompts",
+    "m": false
+  },
+  {
+    "id": "settings-host",
+    "g": "Settings",
+    "c": "Host › Overview & connections",
+    "m": false
+  },
+  {
+    "id": "settings-devices",
+    "g": "Settings",
+    "c": "Host › Devices & access",
+    "m": false
+  },
+  {
+    "id": "settings-security",
+    "g": "Settings",
+    "c": "Host › Security",
+    "m": false
+  },
+  {
+    "id": "settings-automation",
+    "g": "Settings",
+    "c": "Host › Automation",
+    "m": false
+  },
+  {
+    "id": "settings-labels",
+    "g": "Settings",
+    "c": "Host › Session labels",
+    "m": false
+  },
+  {
+    "id": "settings-terminals",
+    "g": "Settings",
+    "c": "Host › Terminal profiles",
+    "m": false
+  },
+  {
+    "id": "settings-resources",
+    "g": "Settings",
+    "c": "Host › Resources & storage",
+    "m": false
+  },
+  {
+    "id": "settings-daemon",
+    "g": "Settings",
+    "c": "Host › Daemon & updates",
+    "m": false
+  },
+  {
+    "id": "settings-worktrees",
+    "g": "Settings",
+    "c": "Project › Worktrees",
+    "m": false
+  },
+  {
+    "id": "settings-scripts",
+    "g": "Settings",
+    "c": "Project › Scripts & services",
+    "m": false
+  },
+  {
+    "id": "settings-ci",
+    "g": "Settings",
+    "c": "Project › CI & release streams",
+    "m": false
+  },
+  {
+    "id": "settings-metadata",
+    "g": "Settings",
+    "c": "Project › Generated text",
+    "m": false
+  },
+  {
+    "id": "settings-plugins",
+    "g": "Settings",
+    "c": "App › Plugins",
+    "m": false
+  },
+  {
+    "id": "settings-updates",
+    "g": "Settings",
+    "c": "App › App updates",
+    "m": false
+  },
+  {
+    "id": "settings-about",
+    "g": "Settings",
+    "c": "App › About & diagnostics",
+    "m": false
+  },
+  {
+    "id": "settings-developer",
+    "g": "Settings",
+    "c": "App › Developer",
+    "m": false
+  },
+  {
+    "id": "plugins-browse",
+    "g": "Plugins",
+    "c": "Browse the catalog across sources",
+    "m": false
+  },
+  {
+    "id": "plugins-sources",
+    "g": "Plugins",
+    "c": "Sources: repositories with pinned keys and linked local plugins",
+    "m": false
+  },
+  {
+    "id": "plugin-consent",
+    "g": "Plugins",
+    "c": "Install consent: capabilities and the not-sandboxed warning",
+    "m": false
+  },
+  {
+    "id": "plugin-panel",
+    "g": "Plugins",
+    "c": "Plugin-contributed rail tool (Sentry list panel) using the same side + main frame",
+    "m": false
+  },
+  {
+    "id": "plugin-panel-form",
+    "g": "Plugins",
+    "c": "Second plugin rail tool (Linear) with a plugin form",
+    "m": false
+  },
+  {
+    "id": "toasts",
+    "g": "Notifications & inbox",
+    "c": "Toasts are transient copies of Inbox items (approve with undo, CI failed, update)",
+    "m": false
+  },
+  {
+    "id": "banners",
+    "g": "Notifications & inbox",
+    "c": "Banners for host-wide conditions: version mismatch, reconnecting, storage",
+    "m": false
+  },
+  {
+    "id": "spoken-alert",
+    "g": "Notifications & inbox",
+    "c": "Spoken alert with voice reply (Allow / Deny / Send as message)",
+    "m": false
+  },
+  {
+    "id": "welcome",
+    "g": "Onboarding",
+    "c": "First run: where agents run, provider check, three steps",
+    "m": false
+  },
+  {
+    "id": "home",
+    "g": "Onboarding",
+    "c": "Start screen: add project, import, providers, pair, or a project-less chat",
+    "m": false
+  },
+  {
+    "id": "add-project",
+    "g": "Onboarding",
+    "c": "Add a project: browse the host’s folders",
+    "m": false
+  },
+  {
+    "id": "companion",
+    "g": "Onboarding",
+    "c": "Companion voice overlay (preview), from the rail",
+    "m": false
+  },
+  {
+    "id": "archive-confirm",
+    "g": "Modals & confirmations",
+    "c": "Archive with uncommitted/unpushed summary and a safer alternative",
+    "m": false
+  },
+  {
+    "id": "remove-host",
+    "g": "Modals & confirmations",
+    "c": "Typed confirmation for removing a host",
+    "m": false
+  },
+  {
+    "id": "rewind",
+    "g": "Modals & confirmations",
+    "c": "Rewind conversation, files or both, with Fork instead",
+    "m": false
+  },
+  {
+    "id": "labels",
+    "g": "Modals & confirmations",
+    "c": "Labels picker from the session menu",
+    "m": false
+  },
+  {
+    "id": "shortcuts",
+    "g": "Modals & confirmations",
+    "c": "Shortcut sheet (?)",
+    "m": false
+  },
+  {
+    "id": "todo-new",
+    "g": "Modals & confirmations",
+    "c": "New project to-do",
+    "m": false
+  },
+  {
+    "id": "empty-sessions",
+    "g": "Empty & error states",
+    "c": "Project with no sessions",
+    "m": false
+  },
+  {
+    "id": "empty-diff",
+    "g": "Empty & error states",
+    "c": "No changes yet / no CI configured",
+    "m": false
+  },
+  {
+    "id": "error-boundary",
+    "g": "Empty & error states",
+    "c": "Crash screen with retry and copyable details",
+    "m": false
+  },
+  {
+    "id": "session-offline",
+    "g": "Empty & error states",
+    "c": "Session on an unreachable host shows saved activity",
+    "m": false
+  },
+  {
+    "id": "m-sessions",
+    "g": "Mobile",
+    "c": "Mobile: inbox with bottom tool bar",
+    "m": true
+  },
+  {
+    "id": "m-chat",
+    "g": "Mobile",
+    "c": "Mobile: session with approval card",
+    "m": true
+  },
+  {
+    "id": "m-more",
+    "g": "Mobile",
+    "c": "Mobile: More sheet lists every other tool, including plugin tools",
+    "m": true
+  },
+  {
+    "id": "m-inbox",
+    "g": "Mobile",
+    "c": "Mobile: Inbox",
+    "m": true
+  },
+  {
+    "id": "m-scm",
+    "g": "Mobile",
+    "c": "Mobile: Source control",
+    "m": true
+  },
+  {
+    "id": "m-settings",
+    "g": "Mobile",
+    "c": "Mobile: settings tree",
+    "m": true
+  },
+  {
+    "id": "m-settings-page",
+    "g": "Mobile",
+    "c": "Mobile: a settings page (Permission modes)",
+    "m": true
+  }
+]
