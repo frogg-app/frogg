@@ -152,6 +152,12 @@
                           "preinstalled": {
                             "type": "boolean"
                           },
+                          "features": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
                           "installedAt": {
                             "type": [
                               "string",
@@ -916,6 +922,12 @@
                             "preinstalled": {
                               "type": "boolean"
                             },
+                            "features": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
                             "installedAt": {
                               "type": [
                                 "string",
@@ -1154,6 +1166,12 @@
                             "preinstalled": {
                               "type": "boolean"
                             },
+                            "features": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
                             "installedAt": {
                               "type": [
                                 "string",
@@ -1332,6 +1350,12 @@
                             "preinstalled": {
                               "type": "boolean"
                             },
+                            "features": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
                             "installedAt": {
                               "type": [
                                 "string",
@@ -1509,6 +1533,12 @@
                             },
                             "preinstalled": {
                               "type": "boolean"
+                            },
+                            "features": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
                             },
                             "installedAt": {
                               "type": [

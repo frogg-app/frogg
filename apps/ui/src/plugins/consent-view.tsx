@@ -4,6 +4,7 @@ import { Text, View } from "react-native";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useSettings } from "@/hooks/use-settings";
 import { describeCapability, PluginTierBadge } from "./badges";
 import { describePluginError } from "./errors";
 import { usePluginsModalStore, type PluginsView } from "./modal-store";
@@ -64,6 +65,7 @@ export function ConsentView({
   const setView = usePluginsModalStore((state) => state.setView);
   const setTab = usePluginsModalStore((state) => state.setTab);
   const mutation = usePluginMutation(serverId, submit);
+  const { updateSettings } = useSettings();
   const request = toRequest(view);
   const shown = view.mode === "install" ? request.capabilities : view.addedCapabilities;
   const tier = view.mode === "install" ? view.entry.tier : view.plugin.source;
@@ -72,12 +74,16 @@ export function ConsentView({
   const cancel = useCallback(() => setView({ kind: "tabs" }), [setView]);
   const confirm = useCallback(() => {
     mutation.mutate(request, {
-      onSuccess: () => {
+      onSuccess: (result) => {
+        // Installing the Companion plugin is the opt-in, so this device turns it on too.
+        if (result.plugin?.features?.includes("companion")) {
+          void updateSettings({ companionEnabled: true });
+        }
         setTab("installed");
         setView({ kind: "tabs" });
       },
     });
-  }, [mutation, request, setTab, setView]);
+  }, [mutation, request, setTab, setView, updateSettings]);
 
   return (
     <View style={styles.list} testID="plugins-consent">

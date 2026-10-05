@@ -2585,6 +2585,12 @@ export const zhCN: TranslationResources = {
     },
   },
   companion: {
+    plugin: {
+      required: "此主机未安装 伙伴插件",
+      description: "安装插件后，主机即可运行伙伴。无需额外权限。",
+      install: "安装插件",
+      installing: "正在安装…",
+    },
     behavior: {
       nextSession: "更改将在下次启动 Companion 时生效。",
       verbosity: "回复长度",

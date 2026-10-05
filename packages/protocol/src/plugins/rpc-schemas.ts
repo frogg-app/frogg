@@ -66,6 +66,8 @@ export const PluginInstalledSchema = z.object({
   updateAvailable: z.string().nullable(),
   /** Installed by brand `preinstalled`; cannot be uninstalled. */
   preinstalled: z.boolean(),
+  /** Built-in features this plugin switches on (`contributes.features`) while enabled. */
+  features: z.array(z.string()).optional(),
   installedAt: z.string().nullable(),
 });
 export type PluginInstalled = z.infer<typeof PluginInstalledSchema>;

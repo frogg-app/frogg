@@ -2627,6 +2627,12 @@ export const ar: TranslationResources = {
     },
   },
   companion: {
+    plugin: {
+      required: "إضافة الرفيق غير مثبتة على هذا المضيف",
+      description: "يشغّل المضيف الرفيق بعد تثبيت الإضافة. لا تحتاج إلى أذونات إضافية.",
+      install: "تثبيت الإضافة",
+      installing: "جارٍ التثبيت…",
+    },
     behavior: {
       nextSession: "تُطبَّق التغييرات عند بدء Companion في المرة القادمة.",
       verbosity: "طول الرد",

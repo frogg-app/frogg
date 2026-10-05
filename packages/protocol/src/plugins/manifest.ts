@@ -130,6 +130,16 @@ export const PluginSettingFieldSchema = z.object({
     .optional(),
 });
 
+/**
+ * Built-in features a plugin can switch on. The code ships with the host; installing the
+ * plugin is the opt-in, so the feature reaches a host through the plugin pipeline (ad-hoc
+ * download, consent, enable/disable) without its code living in the plugin. Honoured only
+ * for official and brand plugins, and dev links in developer mode.
+ */
+export const PLUGIN_BUILTIN_FEATURES = ["companion"] as const;
+export const PluginBuiltinFeatureSchema = z.enum(PLUGIN_BUILTIN_FEATURES);
+export type PluginBuiltinFeature = z.infer<typeof PluginBuiltinFeatureSchema>;
+
 export const PluginContributesSchema = z.object({
   commands: z.array(PluginCommandContributionSchema).max(50).optional(),
   sessionActions: z.array(PluginSessionActionContributionSchema).max(20).optional(),
@@ -137,6 +147,7 @@ export const PluginContributesSchema = z.object({
   views: z.array(PluginViewContributionSchema).max(20).optional(),
   composerActions: z.array(PluginComposerActionContributionSchema).max(10).optional(),
   settings: z.array(PluginSettingFieldSchema).max(100).optional(),
+  features: z.array(PluginBuiltinFeatureSchema).max(PLUGIN_BUILTIN_FEATURES.length).optional(),
 });
 export type PluginContributes = z.infer<typeof PluginContributesSchema>;
 
@@ -261,6 +272,7 @@ function contributionIssues(
     views: (c.views ?? []).map((x) => x.id),
     composerActions: (c.composerActions ?? []).map((x) => x.id),
     settings: (c.settings ?? []).map((x) => x.key),
+    features: [...(c.features ?? [])],
   };
   for (const [key, ids] of Object.entries(idLists)) {
     if (new Set(ids).size !== ids.length)

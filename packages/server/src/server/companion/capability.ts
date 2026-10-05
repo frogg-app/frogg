@@ -8,6 +8,33 @@ import {
 import { resolveCompanionModelConfig, isCompanionNativeVoiceAvailable } from "./model-config.js";
 
 export const COMPANION_DISABLED_MESSAGE = "The Companion is turned off on this daemon.";
+export const COMPANION_PLUGIN_ID = "frogg.companion";
+export const COMPANION_PLUGIN_REQUIRED_MESSAGE =
+  "Install the Companion plugin on this daemon to use the Companion.";
+
+export interface CompanionPluginGate {
+  /** An enabled, trusted plugin contributes the `companion` feature. */
+  unlocked: boolean;
+  /** Where the app installs it from; null when this build has no repo that ships it. */
+  source: { id: string; repoUrl: string } | null;
+}
+
+/**
+ * The Companion's code ships with the daemon but stays off until the Companion plugin is
+ * installed and enabled, so a daemon only runs it on hosts that opted in. A lock wins over
+ * any other reason: installing the plugin is the first step either way.
+ */
+export function applyCompanionPluginGate(
+  capability: ServerCapabilityState,
+  gate: CompanionPluginGate,
+): ServerCapabilityState {
+  if (gate.unlocked) return capability;
+  return {
+    enabled: false,
+    reason: COMPANION_PLUGIN_REQUIRED_MESSAGE,
+    ...(gate.source ? { plugin: gate.source } : {}),
+  };
+}
 
 export interface CompanionCapabilityInputs {
   env: NodeJS.ProcessEnv;

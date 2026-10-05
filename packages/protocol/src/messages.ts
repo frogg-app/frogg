@@ -4272,6 +4272,11 @@ export const DictationStreamErrorMessageSchema = z.object({
 export const ServerCapabilityStateSchema = z.object({
   enabled: z.boolean(),
   reason: z.string(),
+  /**
+   * Set when the feature is off only because its plugin is not installed and enabled:
+   * installing this plugin from this repo (no capabilities to grant) switches it on.
+   */
+  plugin: z.object({ id: z.string(), repoUrl: z.string() }).optional(),
 });
 
 export const ServerVoiceCapabilitiesSchema = z.object({

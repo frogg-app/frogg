@@ -103,7 +103,11 @@ import {
   isSpokenNotificationsEnabled,
 } from "./notifications/spoken-alerts.js";
 import { createTtsCache } from "./notifications/tts-cache.js";
-import { resolveCompanionCapability } from "./companion/capability.js";
+import {
+  COMPANION_PLUGIN_ID,
+  applyCompanionPluginGate,
+  resolveCompanionCapability,
+} from "./companion/capability.js";
 import {
   resolveCompanionModelConfig,
   isCompanionNativeVoiceAvailable,
@@ -2111,6 +2115,15 @@ export async function createFroggDaemon(
     env: process.env,
     persisted: companionPersisted,
   });
+  // The plugin system starts after listen, so the Companion begins locked and unlocks on the
+  // first plugins.changed once its plugin loads.
+  let companionBaseCapability = resolveCompanionCapability(companionModelInputs);
+  const gatedCompanionCapability = () =>
+    applyCompanionPluginGate(companionBaseCapability, {
+      // A build with plugins switched off keeps the Companion as a plain built-in.
+      unlocked: !pluginService.enabled || pluginService.isFeatureUnlocked("companion"),
+      source: pluginService.featurePluginSource(COMPANION_PLUGIN_ID),
+    });
   const companion: CompanionRuntime = {
     speechReadiness: () => speechService.getReadiness().realtimeVoice,
     acceptedMessages: new CompanionMessageReceipts(
@@ -2118,7 +2131,7 @@ export async function createFroggDaemon(
     ),
     cwd: config.froggHome,
     nativeVoicePreview: isCompanionNativeVoiceAvailable(companionModelInputs),
-    capability: resolveCompanionCapability(companionModelInputs),
+    capability: gatedCompanionCapability(),
     modelConfig: resolveCompanionModelConfig(companionModelInputs),
     notebook: new CompanionNotebookStore({ filePath: companionNotebookPath(config.froggHome) }),
     fillers: companionFillers,
@@ -2190,7 +2203,8 @@ export async function createFroggDaemon(
       });
       companion.nativeVoicePreview = isCompanionNativeVoiceAvailable(inputs);
       companion.modelConfig = resolveCompanionModelConfig(inputs);
-      companion.capability = resolveCompanionCapability(inputs);
+      companionBaseCapability = resolveCompanionCapability(inputs);
+      companion.capability = gatedCompanionCapability();
       companionRefreshedAt = Date.now();
     })();
     try {
@@ -2199,6 +2213,18 @@ export async function createFroggDaemon(
       companionRefresh = null;
     }
   };
+  pluginService.onEvent((event) => {
+    if (event.type !== "plugins.changed") return;
+    const next = gatedCompanionCapability();
+    if (
+      next.enabled === companion.capability.enabled &&
+      next.reason === companion.capability.reason &&
+      next.plugin?.repoUrl === companion.capability.plugin?.repoUrl
+    )
+      return;
+    companion.capability = next;
+    companion.onCapabilityChange?.();
+  });
   companion.jobs = new CompanionDeferredJobs({
     run: companion.runDeferredJob,
     logger,

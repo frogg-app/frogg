@@ -8,6 +8,7 @@ import {
   SUPPORTED_PLUGIN_API_VERSIONS,
   addedCapabilities,
   isSupportedPluginApiVersion,
+  type PluginBuiltinFeature,
   type PluginManifest,
   type PluginSettingValue,
 } from "@frogg/protocol/plugins/manifest";
@@ -186,6 +187,7 @@ export class PluginService {
           await this.loadDevLink(link.path).catch(() => undefined);
       }
     });
+    this.changed(null, "loaded");
     void this.installPreinstalled().catch((err) =>
       this.logger.warn({ err }, "preinstalling plugins failed"),
     );
@@ -454,6 +456,7 @@ export class PluginService {
       grantedCapabilities: [...this.granted(p)],
       updateAvailable: p.dev || !p.record ? null : this.cachedUpdate(p.record),
       preinstalled: p.record?.preinstalled === true,
+      features: [...(m.contributes?.features ?? [])],
       installedAt: p.record?.installedAt ?? null,
     };
   }
@@ -1045,6 +1048,31 @@ export class PluginService {
     const p = this.require(pluginId);
     if (!p.runtime) throw new PluginServiceError("not_active", `Plugin ${pluginId} is ${p.status}`);
     return p.runtime.call(method, params, clientId ? { clientId } : {});
+  }
+
+  // --------------------------------------------------------- built-in features
+
+  /** Official and brand installs, and dev links while developer mode is active. */
+  private mayUnlockFeatures(p: LoadedPlugin): boolean {
+    if (p.dev) return this.devModeActive();
+    return p.record?.tier === "official" || p.record?.tier === "brand";
+  }
+
+  /** Whether an enabled, trusted plugin switches on this built-in feature. */
+  isFeatureUnlocked(feature: PluginBuiltinFeature): boolean {
+    if (!this.enabled) return false;
+    for (const p of this.plugins.values()) {
+      if (p.status !== "active" || !this.mayUnlockFeatures(p)) continue;
+      if (p.manifest.contributes?.features?.includes(feature)) return true;
+    }
+    return false;
+  }
+
+  /** Where a client installs the plugin for a feature, or null when this build cannot. */
+  featurePluginSource(pluginId: string): { id: string; repoUrl: string } | null {
+    if (!this.enabled || !this.isAllowed(pluginId)) return null;
+    const repo = this.repos().find((r) => r.tier === "official");
+    return repo ? { id: pluginId, repoUrl: repo.url } : null;
   }
 
   getContributions(): PluginContributionSet[] {

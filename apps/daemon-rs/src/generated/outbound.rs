@@ -647,6 +647,8 @@ pub struct PluginsListResponsePayloadPluginsItem {
     #[serde(rename = "updateAvailable", skip_serializing_if = "Option::is_none")]
     pub update_available: Option<String>,
     pub preinstalled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub features: Option<Vec<String>>,
     #[serde(rename = "installedAt", skip_serializing_if = "Option::is_none")]
     pub installed_at: Option<String>,
 }

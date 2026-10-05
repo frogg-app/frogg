@@ -2672,6 +2672,13 @@ export const ru: TranslationResources = {
     },
   },
   companion: {
+    plugin: {
+      required: "Плагин «Компаньон» не установлен на этом хосте",
+      description:
+        "Хост запускает Компаньона после установки плагина. Дополнительные разрешения не нужны.",
+      install: "Установить плагин",
+      installing: "Установка…",
+    },
     behavior: {
       nextSession: "Изменения применятся при следующем запуске Companion.",
       verbosity: "Длина ответов",

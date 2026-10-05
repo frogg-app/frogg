@@ -2647,6 +2647,13 @@ export const ko: TranslationResources = {
     },
   },
   companion: {
+    plugin: {
+      required: "이 호스트에 컴패니언 플러그인이 설치되어 있지 않습니다",
+      description:
+        "플러그인을 설치하면 호스트에서 컴패니언이 실행됩니다. 추가 권한은 필요하지 않습니다.",
+      install: "플러그인 설치",
+      installing: "설치 중…",
+    },
     behavior: {
       nextSession: "변경 사항은 다음 Companion 시작 시 적용됩니다.",
       verbosity: "답변 길이",

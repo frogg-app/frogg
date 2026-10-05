@@ -56,6 +56,13 @@ export function getCompanionReadinessState(params: {
   return capabilities?.companion ?? null;
 }
 
+/** The plugin the host needs before it runs the Companion, or null when none is missing. */
+export function getCompanionPluginRequirement(params: {
+  serverInfo: DaemonServerInfo | null | undefined;
+}): { id: string; repoUrl: string } | null {
+  return getCompanionReadinessState(params)?.plugin ?? null;
+}
+
 export function resolveCompanionUnavailableMessage(params: {
   serverInfo: DaemonServerInfo | null | undefined;
 }): string | null {

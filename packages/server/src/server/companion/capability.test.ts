@@ -1,7 +1,11 @@
 import { describe, expect, test } from "vitest";
 
 import { PersistedConfigSchema } from "../persisted-config.js";
-import { resolveCompanionCapability } from "./capability.js";
+import {
+  COMPANION_PLUGIN_REQUIRED_MESSAGE,
+  applyCompanionPluginGate,
+  resolveCompanionCapability,
+} from "./capability.js";
 
 const BACKEND_MISSING_REASON =
   "Sign in to Claude Code or Codex on this daemon. API usage requires explicitly selecting the API backend.";
@@ -113,5 +117,23 @@ describe("resolveCompanionCapability", () => {
       enabled: false,
       reason: DISABLED_REASON,
     });
+  });
+});
+
+describe("applyCompanionPluginGate", () => {
+  const source = { id: "frogg.companion", repoUrl: "https://example.test/index.json" };
+
+  test("passes the capability through once the plugin unlocks it", () => {
+    const capability = { enabled: false, reason: "No model" };
+    expect(applyCompanionPluginGate(capability, { unlocked: true, source })).toBe(capability);
+  });
+
+  test("locks the Companion and names the plugin to install", () => {
+    expect(
+      applyCompanionPluginGate({ enabled: true, reason: "" }, { unlocked: false, source }),
+    ).toEqual({ enabled: false, reason: COMPANION_PLUGIN_REQUIRED_MESSAGE, plugin: source });
+    expect(
+      applyCompanionPluginGate({ enabled: true, reason: "" }, { unlocked: false, source: null }),
+    ).toEqual({ enabled: false, reason: COMPANION_PLUGIN_REQUIRED_MESSAGE });
   });
 });

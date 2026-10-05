@@ -2702,6 +2702,13 @@ export const fr: TranslationResources = {
     },
   },
   companion: {
+    plugin: {
+      required: "Le plugin Compagnon n’est pas installé sur cet hôte",
+      description:
+        "L’hôte exécute Compagnon une fois son plugin installé. Aucune autorisation supplémentaire n’est requise.",
+      install: "Installer le plugin",
+      installing: "Installation…",
+    },
     behavior: {
       nextSession: "Les modifications s’appliquent au prochain démarrage de Companion.",
       verbosity: "Longueur des réponses",

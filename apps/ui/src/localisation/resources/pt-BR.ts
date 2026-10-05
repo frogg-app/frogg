@@ -2680,6 +2680,13 @@ export const ptBR: TranslationResources = {
     },
   },
   companion: {
+    plugin: {
+      required: "O plugin do Companheiro não está instalado neste host",
+      description:
+        "O host executa o Companheiro quando o plugin está instalado. Ele não precisa de permissões extras.",
+      install: "Instalar plugin",
+      installing: "Instalando…",
+    },
     behavior: {
       nextSession: "As alterações valem ao iniciar o Companion novamente.",
       verbosity: "Tamanho das respostas",
