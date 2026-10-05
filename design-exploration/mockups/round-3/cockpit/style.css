@@ -1,0 +1,4 @@
+/* Rail scopes the explorer tree; tabs, toggleable right pane, terminal panel, status bar. */
+.side {
+  width: 270px;
+}

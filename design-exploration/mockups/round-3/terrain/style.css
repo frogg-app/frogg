@@ -1,0 +1,55 @@
+/* Bracket+Rail function with Studio's live terrain as the one branded moment: the session header. */
+.band {
+  position: relative;
+  flex: none;
+  height: 118px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: radial-gradient(60% 90% at 50% 100%, #25b5c840, transparent 70%), var(--bg);
+  transition: height 0.5s var(--ease);
+}
+.compact .band {
+  height: 72px;
+}
+#facets {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 2s var(--ease);
+}
+#facets.is-live {
+  opacity: 0.75;
+}
+.veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, #080b0d33, #080b0d99 60%, #080b0dee),
+    radial-gradient(60% 100% at 20% 60%, #080b0dcc, transparent 75%);
+}
+.band-c {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: none;
+  border: 0;
+  padding: 10px 24px 12px;
+}
+.band-c h1 {
+  font-size: 22px;
+  transition: font-size 0.5s var(--ease);
+}
+.compact .band-c h1 {
+  font-size: 17px;
+}
+.compact .band-c .meta {
+  display: none;
+}
+.band-c .btn.ghost {
+  background: #080b0d88;
+  backdrop-filter: blur(8px);
+}

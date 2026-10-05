@@ -134,6 +134,11 @@
         font-size: 12px;
         color: #888;
       }
+      .section {
+        font-size: 24px;
+        margin: 44px 0 4px;
+        letter-spacing: -0.02em;
+      }
       .general {
         margin-top: 28px;
         background: #fff;
@@ -162,6 +167,15 @@
         <a href="../round-1/index.html">Round 1</a>
       </p>
       <div class="grid" id="grid"></div>
+      <h2 class="section" id="remix">Remix: developer-first mixes</h2>
+      <p class="lede">
+        Six mixes built from the parts above, with function first: an attention-sorted inbox with
+        inline approve (A), a fleet bar, session tabs (1–9), a terminal panel (`), a Changes /
+        Terminal / CI pane (\), a status bar showing what needs you, ⌘K, and j/k everywhere.
+        Branding stays light but present: project shards, the frogg mark in the rail and status bar,
+        cut corners, cyan, and gliding selection.
+      </p>
+      <div class="grid" id="grid2"></div>
       <div class="general">
         <b>General notes</b> (cross-direction: mix-and-match, things to keep or kill)<textarea
           data-k="general"
@@ -243,16 +257,73 @@
           }
         })
         .catch(() => {});
-      document.getElementById("grid").innerHTML = D.map(
-        (d) => `<div class="card">
+      const card = (d) => `<div class="card">
   <div class="swatch" style="background:${d.bg};${d.dark ? "color:#1c1c1f" : ""}"><h2>${d.name}</h2><small>${d.arch.split(" · ")[0]}</small></div>
   <div class="body"><p>${d.idea}</p>
   <dl><dt>Layout</dt><dd>${d.arch}</dd><dt>Tests</dt><dd>${d.q}</dd><dt>Look</dt><dd>${d.vis}</dd></dl>
   <div class="links"><a href="${d.id}/index.html">Open desktop</a><a class="alt" href="_shared/phone.html?d=${d.id}">Mobile view</a></div>
   <div class="rate" data-r="${d.id}">${["Love", "Maybe", "No"].map((v) => `<button data-v="${v}">${v}</button>`).join("")}</div>
   <textarea data-k="${d.id}" placeholder="Notes on ${d.name}: what to keep, kill, or steal into another direction…"></textarea>
-  <span class="save" data-s="${d.id}"></span></div></div>`,
-      ).join("");
+  <span class="save" data-s="${d.id}"></span></div></div>`;
+      const D2 = [
+        {
+          id: "workbench",
+          name: "Workbench",
+          bg: "linear-gradient(90deg,#0c1114 0 26%,#080b0d 26%) ,#080b0d",
+          arch: "Bracket inbox + Slate frame · inbox / tabs + chat + fixed changes pane / terminal / status bar",
+          idea: "The full-IDE workbench. Bracket’s attention inbox and fleet bar replace the file explorer. Open sessions are tabs. Changes, Terminal and CI are always visible on the right, there’s a terminal panel underneath, and the status bar shows branch, diff, quotas and a ‘2 need you’ jump.",
+          q: "Everything on screen at once: the most capable, but is it too dense?",
+          vis: "Dark · Bracket + Slate + Facet parts",
+        },
+        {
+          id: "cockpit",
+          name: "Cockpit",
+          bg: "linear-gradient(90deg,#080b0d 0 6%,#0c1114 6% 26%,#080b0d 26%)",
+          arch: "Prism rail + Slate explorer tree · rail / tree / tabs + chat + toggle pane / terminal / status bar",
+          idea: "VS Code muscle memory with Prism’s rail scoping the explorer to a project or to Needs you. The tree has an Attention section above the project folders. The right pane opens on demand (\\ or the header buttons), so the chat gets the width by default.",
+          q: "Is a tree (sessions as files) easier than an inbox once there are many sessions?",
+          vis: "Dark · Prism + Slate + Facet parts",
+        },
+        {
+          id: "split",
+          name: "Split",
+          bg: "linear-gradient(90deg,#080b0d 0 6%,#0c1114 6% 28%,#0e1418 28% 64%,#080b0d 64%)",
+          arch: "Bracket + Rail · rail / inbox / two sessions side by side / status bar",
+          idea: "Two live sessions next to each other: keep one streaming while you answer an approval in the other, each with its own composer. Uses the inventory’s split feature with the Bracket + Rail inbox.",
+          q: "Is side-by-side something you’d use daily, or an occasional mode?",
+          vis: "Dark · Bracket + Prism parts, second pane recessed",
+        },
+        {
+          id: "terrain",
+          name: "Terrain",
+          bg: "radial-gradient(60% 90% at 60% 100%,#25b5c855,transparent 70%),linear-gradient(90deg,#080b0d 0 6%,#0c1114 6% 28%,#080b0d 28%)",
+          arch: "Bracket + Rail + Studio · rail / inbox / terrain session header + chat + toggle pane",
+          idea: "Bracket + Rail’s working layout, with one strong brand moment: the session header is Studio’s live frogg.dev terrain. It reacts to the cursor and shrinks to a slim bar as soon as you scroll, so it never costs reading space.",
+          q: "Does one signature brand moment beat branding spread across the whole UI?",
+          vis: "Dark · Bracket + Prism + Studio terrain",
+        },
+        {
+          id: "daylight",
+          name: "Daylight",
+          bg: "linear-gradient(90deg,#0b1a22 0 6%,#ffffff 6% 28%,#f4f7f8 28%)",
+          dark: true,
+          arch: "Light remix · Prism rail / Bracket inbox / tabs + chat + fixed pane / status bar",
+          idea: "Workbench’s function in Prism’s light palette, with the dark rail and status bar framing it. Bracket’s corner brackets switch to deep blue, and tabs get a deep-blue top edge.",
+          q: "Do you want a first-class light theme with this structure?",
+          vis: "Light · Prism palette with Bracket + Slate + Facet parts",
+        },
+        {
+          id: "focus",
+          name: "Focus",
+          bg: "linear-gradient(180deg,#080b0d 0 8%,#0c1114 8% 94%,#061a22 94%)",
+          arch: "Keyboard-first · Tab-summoned inbox drawer / tabs / full-width chat / status bar",
+          idea: "The most room for the conversation. The inbox is a drawer you open with Tab and close by picking a session or pressing Esc. Open work lives in tabs (1–9), the right pane opens on demand, and the status bar keeps ‘needs you’ and running counts in view.",
+          q: "Is hiding the list behind a key fine once the status bar tells you what needs you?",
+          vis: "Dark · Bracket inbox as drawer + Slate tabs/status",
+        },
+      ];
+      document.getElementById("grid").innerHTML = D.map(card).join("");
+      document.getElementById("grid2").innerHTML = D2.map(card).join("");
       function fill() {
         document
           .querySelectorAll("textarea[data-k]")

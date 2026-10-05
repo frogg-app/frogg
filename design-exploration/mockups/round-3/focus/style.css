@@ -1,0 +1,73 @@
+/* Maximum room for the conversation: sessions live in a Tab-summoned drawer, open work in tabs, state in the status bar. */
+.topbar {
+  display: flex;
+  align-items: flex-end;
+  background: var(--bg);
+  flex: none;
+}
+.dbtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  font: 600 12.5px var(--display);
+  color: var(--muted);
+  border-right: 1px solid var(--line);
+}
+.dbtn:hover {
+  color: var(--text);
+}
+.topbar .tabs {
+  flex: 1;
+}
+.drawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 26px;
+  z-index: 40;
+  display: flex;
+  transform: translateX(-102%);
+  transition: transform 0.45s var(--ease);
+  box-shadow: 30px 0 80px -20px #000c;
+}
+.drawer .side {
+  height: 100%;
+}
+.drawer-open .drawer {
+  transform: none;
+}
+.drawer-scrim {
+  position: fixed;
+  inset: 0 0 26px;
+  z-index: 39;
+  background: #04070988;
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease);
+}
+.drawer-open .drawer-scrim {
+  opacity: 1;
+  pointer-events: auto;
+}
+.chat {
+  max-width: 860px;
+}
+.dock > div {
+  max-width: 860px;
+}
+@media (max-width: 720px) {
+  .drawer {
+    transform: none;
+    position: static;
+  }
+  .drawer-scrim,
+  .topbar {
+    display: none;
+  }
+  body[data-mview="chat"] .drawer {
+    display: none;
+  }
+}

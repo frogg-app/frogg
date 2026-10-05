@@ -1,0 +1,33 @@
+/* Two sessions side by side: handle an approval in one while watching the other stream. */
+.half {
+  flex: 1 1 0;
+}
+.half + .half {
+  border-left: 1px solid var(--line);
+}
+.second {
+  background: var(--bg);
+}
+.second .sh {
+  background: var(--bg);
+}
+.second .sh h1 {
+  font-size: 16px;
+}
+.half .scroll {
+  padding: 14px 18px;
+}
+.half .dock {
+  padding: 6px 18px 12px;
+}
+.half .chat {
+  max-width: none;
+}
+.second .meta span:first-child {
+  color: var(--amber);
+}
+@media (max-width: 1100px) {
+  .second {
+    display: none;
+  }
+}
