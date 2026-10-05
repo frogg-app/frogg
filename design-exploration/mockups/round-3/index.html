@@ -150,7 +150,7 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>Round 3 — one language, five IDE layouts</h1>
+      <h1>Round 3 — one language, six IDE layouts</h1>
       <p class="lede">
         Back on the IDE side: standard places for everything, clear labels, nothing to learn. The
         look comes from the frogg.dev site: near-black with grain, cyan into deep blue, faceted
@@ -221,6 +221,15 @@
           idea: "A direct port of frogg.dev. Glass nav, the site’s segmented filter chips (lists reflow smoothly when you filter), and rounded rows whose gradient border lights up under the cursor. The session header is the site’s live low-poly WebGL terrain, which reacts to the pointer and shrinks as you scroll. Pill buttons glow cyan, stats count up, and Overview shows sessions as the site’s project cards, with spotlight and tilt.",
           q: "Is the marketing site’s exact look right for the app, or is it too much for all-day use?",
           vis: "Rounded 14–20px, glass, gradient borders, glowing status pills · Space Grotesk + Inter + JetBrains Mono · WebGL terrain, smooth reflow, tilt, count-up",
+        },
+        {
+          id: "bracket-rail",
+          name: "Bracket + Rail",
+          bg: "linear-gradient(90deg,#080b0d 0 12%,#0c1114 12%), linear-gradient(90deg,#f5b84a 0 20%,#ff6b6b 20% 35%,#3fcf8e 35% 55%,#25b5c8 55% 75%,#ffffff22 75%) 0 100%/100% 8px no-repeat",
+          arch: "Project rail / attention-sorted inbox / chat + slide-out changes",
+          idea: "Bracket’s inbox, fleet bar and gliding corner brackets, with Prism’s project rail added on the left in the dark theme. The rail sets the scope: All, Needs you (with a count), or a single project shown by its shard, with a small ▲ when something in it is running. The inbox, fleet bar and counts all follow the scope you pick.",
+          q: "Does adding project scope to the attention-first inbox give the best of both?",
+          vis: "Dark, chamfered rail tiles that sharpen when active · same fonts · bracket glide, rail tooltips slide in",
         },
       ];
       const KEY = "frogg-r3-feedback";
