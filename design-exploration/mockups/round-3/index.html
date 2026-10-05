@@ -32,7 +32,7 @@
       }
       .grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
         gap: 20px;
       }
       .card {
@@ -133,6 +133,27 @@
       .save {
         font-size: 12px;
         color: #888;
+      }
+      .shot {
+        display: block;
+        position: relative;
+        background: #0b0e10;
+        border-bottom: 1px solid #e3e3de;
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .shot span {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        font-size: 11px;
+        padding: 3px 8px;
+        border-radius: 99px;
+        background: #000a;
+        color: #fff;
       }
       .section {
         font-size: 24px;
@@ -259,6 +280,7 @@
         .catch(() => {});
       const card = (d) => `<div class="card">
   <div class="swatch" style="background:${d.bg};${d.dark ? "color:#1c1c1f" : ""}"><h2>${d.name}</h2><small>${d.arch.split(" · ")[0]}</small></div>
+  <a class="shot" href="shots/${d.id}.jpg" target="_blank" rel="noopener"><img src="shots/${d.id}.jpg" alt="${d.name} at desktop size, 1440×900" loading="lazy" width="1440" height="900" /><span>Desktop render · tap to enlarge</span></a>
   <div class="body"><p>${d.idea}</p>
   <dl><dt>Layout</dt><dd>${d.arch}</dd><dt>Tests</dt><dd>${d.q}</dd><dt>Look</dt><dd>${d.vis}</dd></dl>
   <div class="links"><a href="${d.id}/index.html">Open desktop</a><a class="alt" href="_shared/phone.html?d=${d.id}">Mobile view</a></div>
