@@ -7739,6 +7739,8 @@ pub struct DaemonStorageListResponsePayload {
     pub computed_at: Option<String>,
     pub categories: Vec<DaemonStorageListResponsePayloadCategoriesItem>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub alert: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
 
@@ -8243,6 +8245,8 @@ pub struct GetDaemonConfigResponsePayloadConfig {
     pub auto_update: Option<GetDaemonConfigResponsePayloadConfigAutoUpdate>,
     #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
     pub host_settings: Option<GetDaemonConfigResponsePayloadConfigHostSettings>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage: Option<GetDaemonConfigResponsePayloadConfigStorage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8387,6 +8391,32 @@ pub enum GetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
     Terminals,
     #[serde(rename = "host")]
     Host,
+    #[serde(rename = "resources")]
+    Resources,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GetDaemonConfigResponsePayloadConfigStorage {
+    pub alerts: GetDaemonConfigResponsePayloadConfigStorageAlerts,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct GetDaemonConfigResponsePayloadConfigStorageAlerts {
+    pub enabled: bool,
+    #[serde(rename = "warnBytes")]
+    pub warn_bytes: i64,
+    #[serde(rename = "criticalBytes")]
+    pub critical_bytes: i64,
+    #[serde(rename = "notifyAt")]
+    pub notify_at: GetDaemonConfigResponsePayloadConfigStorageAlertsNotifyAt,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum GetDaemonConfigResponsePayloadConfigStorageAlertsNotifyAt {
+    #[serde(rename = "warn")]
+    Warn,
+    #[serde(rename = "critical")]
+    Critical,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8447,6 +8477,8 @@ pub struct SetDaemonConfigResponsePayloadConfig {
     pub auto_update: Option<SetDaemonConfigResponsePayloadConfigAutoUpdate>,
     #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
     pub host_settings: Option<SetDaemonConfigResponsePayloadConfigHostSettings>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub storage: Option<SetDaemonConfigResponsePayloadConfigStorage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8591,6 +8623,32 @@ pub enum SetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
     Terminals,
     #[serde(rename = "host")]
     Host,
+    #[serde(rename = "resources")]
+    Resources,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDaemonConfigResponsePayloadConfigStorage {
+    pub alerts: SetDaemonConfigResponsePayloadConfigStorageAlerts,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SetDaemonConfigResponsePayloadConfigStorageAlerts {
+    pub enabled: bool,
+    #[serde(rename = "warnBytes")]
+    pub warn_bytes: i64,
+    #[serde(rename = "criticalBytes")]
+    pub critical_bytes: i64,
+    #[serde(rename = "notifyAt")]
+    pub notify_at: SetDaemonConfigResponsePayloadConfigStorageAlertsNotifyAt,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum SetDaemonConfigResponsePayloadConfigStorageAlertsNotifyAt {
+    #[serde(rename = "warn")]
+    Warn,
+    #[serde(rename = "critical")]
+    Critical,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

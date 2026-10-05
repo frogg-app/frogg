@@ -1,4 +1,10 @@
-import type { OwnedStorageCategory } from "@frogg/protocol/messages";
+import {
+  STORAGE_ALERT_MIN_THRESHOLD_BYTES,
+  StorageAlertStatusPayloadSchema,
+  type StorageAlert,
+  type OwnedStorageCategory,
+  type StorageAlertLevel,
+} from "@frogg/protocol/messages";
 import { formatBytes } from "./daemon-update-progress";
 
 /**
@@ -106,6 +112,57 @@ export function totalStorageBytes(categories: readonly OwnedStorageCategory[]): 
     bytes: categories.reduce((sum, c) => sum + (c.exists ? c.bytes : 0), 0),
     truncated: categories.some((c) => c.truncated),
   };
+}
+
+const GIB = 1024 ** 3;
+export const STORAGE_ALERT_MIN_GIB = Math.round(STORAGE_ALERT_MIN_THRESHOLD_BYTES / GIB);
+/** 10 TiB: past any real Frogg home, and keeps a mistyped number from reading as "never". */
+export const STORAGE_ALERT_MAX_GIB = 10_240;
+
+export function bytesToGib(bytes: number): number {
+  return Math.round(bytes / GIB);
+}
+
+export type GibDraft = { bytes: number } | { invalid: true };
+
+/** Whole GiB within the daemon's bounds; a threshold cannot be cleared, only moved. */
+export function parseGibDraft(draft: string): GibDraft {
+  const trimmed = draft.trim();
+  if (!/^\d+$/.test(trimmed)) return { invalid: true };
+  const gib = Number.parseInt(trimmed, 10);
+  if (gib < STORAGE_ALERT_MIN_GIB || gib > STORAGE_ALERT_MAX_GIB) return { invalid: true };
+  return { bytes: gib * GIB };
+}
+
+/** The `storage_alert` status, or null for any other status: the wire type is open. */
+export function parseStorageAlertStatus(
+  payload: unknown,
+): { alert: StorageAlert; previousLevel: StorageAlertLevel } | null {
+  const parsed = StorageAlertStatusPayloadSchema.safeParse(payload);
+  return parsed.success
+    ? { alert: parsed.data.alert, previousLevel: parsed.data.previousLevel }
+    : null;
+}
+
+const LEVEL_RANK: Record<StorageAlertLevel, number> = {
+  ok: 0,
+  warn: 1,
+  critical: 2,
+};
+
+/** True when a level change is a rise; a recovery is shown but never notified. */
+export function isStorageAlertRise(
+  level: StorageAlertLevel,
+  previousLevel: StorageAlertLevel,
+): boolean {
+  return LEVEL_RANK[level] > LEVEL_RANK[previousLevel];
+}
+
+/** `ok` has nothing to say, so it gets no banner. */
+export function storageAlertVariant(level: StorageAlertLevel): "warning" | "error" | null {
+  if (level === "critical") return "error";
+  if (level === "warn") return "warning";
+  return null;
 }
 
 /** Clean is offered only when the daemon says so and there is something to free. */

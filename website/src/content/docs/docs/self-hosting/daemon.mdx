@@ -78,7 +78,7 @@ live process holds, and logs what it removed. A sweep failure never stops the da
 
 ### Resources in the app
 
-Host settings → **Host** has a **Resources** section when the daemon supports it
+Host settings → **Resources** is its own section when the daemon supports it
 (`features.hostResources`; older daemons hide it):
 
 - **Live load.** Host CPU (with core count and load average where the OS reports one),
@@ -96,10 +96,16 @@ Host settings → **Host** has a **Resources** section when the daemon supports 
     found even when they are not registered projects.
   - **Provider accounts** is the combined size of each provider's default config directory
     (`~/.claude`, `~/.codex`, …) and every added account's directory.
-- **Clean.** Owners can clean five areas after a confirmation: rotated logs (never the live
+- **Clean.** Five areas can be cleaned after a confirmation: rotated logs (never the live
   `daemon.log`), the spoken alert cache (`tts-cache`), stale temp debris, and stale Frogg and
   agent worktrees. The result shows what was freed, then the list remeasures. Other areas are
   shown for size only.
+  - Stale Frogg worktrees, agent worktrees and temp debris need **write** permission, so any
+    operator can clear the scratch space the work leaves behind. Rotated logs and the speech
+    cache describe the daemon rather than the work and still need owner.
+- **Storage alerts.** The daemon measures its owned storage hourly and raises a level when the
+  total passes a threshold: a warning banner here, and a notification on each step up. Only the
+  host's owner can change the thresholds.
 
 ### Stale worktrees
 
@@ -114,7 +120,27 @@ The daemon removes stale worktrees 5 minutes after start and every 6 hours. Set
 turn off the automatic sweep and the idle rule (merged worktrees can still be cleaned by hand).
 The setting is read at startup.
 
-Viewers see metrics only; storage sizes need the operator role and cleaning needs owner. See
+### Storage alerts
+
+`daemon.storage.alerts` in `config.json` controls the growing-storage alert. Thresholds are
+bytes, measured against the total of the owned-storage areas, and are editable in Host
+settings → **Resources** by the host's owner:
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `enabled` | `true` | Off still measures and shows sizes; it just never raises a level. |
+| `warnBytes` | 20 GiB | At or above this, the level is `warn`. Minimum 1 GiB. |
+| `criticalBytes` | 50 GiB | At or above this, the level is `critical`. A value at or below `warnBytes` is treated as the higher of the two. |
+| `notifyAt` | `warn` | The lowest level that sends a notification. `critical` keeps warnings to the banner. |
+
+A level change is broadcast to connected clients, which show the banner and raise an OS
+notification; push covers clients that are away. A recovery back down a level is shown but
+never notified. Cleaning a storage area remeasures immediately, so the level drops as soon as
+the space is freed.
+
+Viewers see metrics only; storage sizes need the operator role. Clearing stale worktrees,
+agent worktrees and temp debris needs write permission (operator); the remaining areas and the
+alert thresholds need owner. See
 [device roles](/docs/getting-started/connect-and-pair/#device-roles).
 
 ## Logs

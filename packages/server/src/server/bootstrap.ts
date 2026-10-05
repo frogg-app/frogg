@@ -280,10 +280,16 @@ import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
 import { createHostResources } from "./host/host-resources.js";
 import { sweepFroggDebris } from "./host/debris-sweep.js";
 import { startStaleWorktreeSweep } from "./host/worktree-inventory.js";
+import { StorageAlertMonitor } from "./host/storage-alerts.js";
 import { ProviderAccountStore } from "./provider-accounts/provider-account-store.js";
 import { resolveFroggWorktreesBaseRoot } from "../utils/worktree.js";
 import { getActiveImageAttachmentDir } from "./agent/providers/provider-image-output.js";
-import type { DaemonAutoUpdateConfig, MutableCleanCutConfig } from "@frogg/protocol/messages";
+import type {
+  DaemonAutoUpdateConfig,
+  MutableCleanCutConfig,
+  MutableStorageAlertsConfig,
+} from "@frogg/protocol/messages";
+import { DEFAULT_STORAGE_ALERTS } from "@frogg/protocol/messages";
 
 const MCP_DEBUG_BATCH_LIMIT = 10;
 
@@ -509,6 +515,8 @@ export interface FroggDaemonConfig {
   /** `features.companion.model`; null means the backend default. */
   companionModel?: string | null;
   hostSettingsHiddenSections?: readonly HostSettingsSection[];
+  /** Thresholds for the growing-storage alert. */
+  storageAlerts?: MutableStorageAlertsConfig;
   autoUpdate?: DaemonAutoUpdateConfig;
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
@@ -811,6 +819,7 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
     hostSettings: {
       hiddenSections: [...(config.hostSettingsHiddenSections ?? brand.hostSettings.hiddenSections)],
     },
+    storage: { alerts: config.storageAlerts ?? DEFAULT_STORAGE_ALERTS },
     autoUpdate: resolveAutoUpdate(config),
     enableTerminalAgentHooks: config.enableTerminalAgentHooks ?? false,
     appendSystemPrompt: config.appendSystemPrompt ?? "",
@@ -821,6 +830,11 @@ function createInitialMutableDaemonConfig(config: FroggDaemonConfig): MutableDae
   }
 
   return initialConfig;
+}
+
+/** The effective alert thresholds, defaulted for a config written before they existed. */
+function resolveStorageAlerts(config: MutableDaemonConfig): MutableStorageAlertsConfig {
+  return { ...DEFAULT_STORAGE_ALERTS, ...config.storage?.alerts };
 }
 
 /** Both automatic triggers on and no overrides when the launcher resolved none. */
@@ -1016,6 +1030,7 @@ export async function createFroggDaemon(
   let wsServer: VoiceAssistantWebSocketServer | null = null;
   let autoUpdater: DaemonAutoUpdater | null = null;
   let stopWorktreeSweep: (() => void) | null = null;
+  let storageAlertMonitor: StorageAlertMonitor | null = null;
   let serviceProxyListenTarget: ListenTarget | null = null;
   const scriptHealthMonitor = new ScriptHealthMonitor({
     serviceProxy,
@@ -2435,6 +2450,7 @@ export async function createFroggDaemon(
                 webUi: webUiServer,
                 hostResources,
                 skills: skillCatalog,
+                getStorageAlerts: () => resolveStorageAlerts(daemonConfigStore.get()),
                 getSecurityPosture,
                 setSecurityFindingAcknowledged,
                 getRelayConfig: () =>
@@ -2469,6 +2485,18 @@ export async function createFroggDaemon(
               const server = wsServer;
               updateService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
               betaChannelService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
+            }
+            {
+              const server = wsServer;
+              storageAlertMonitor = new StorageAlertMonitor({
+                storage: hostResources.storage,
+                getAlerts: () => resolveStorageAlerts(daemonConfigStore.get()),
+                onLevelChange: (alert, previousLevel) =>
+                  server.broadcastStorageAlert(alert, previousLevel),
+                logger: logger.child({ module: "storage-alerts" }),
+              });
+              hostResources.storageAlerts = storageAlertMonitor;
+              storageAlertMonitor.start();
             }
             autoUpdater.start();
             // Fire-and-forget: continue agents a previous daemon stop cut off mid-turn.
@@ -2553,6 +2581,7 @@ export async function createFroggDaemon(
     autoUpdater?.stop();
     await pluginService.stop().catch(() => undefined);
     stopWorktreeSweep?.();
+    storageAlertMonitor?.stop();
     await hubRelationships.stop();
     workspaceReconciliation.dispose();
     scriptHealthMonitor.stop();

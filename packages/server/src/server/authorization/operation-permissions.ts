@@ -99,7 +99,10 @@ const INBOUND_PERMISSION = {
   "daemon.skills.get_content.request": "daemon.read",
   "daemon.skills.list.request": "daemon.read",
   "daemon.skills.set_enabled.request": "daemon.manage",
-  "daemon.storage.clean.request": "daemon.manage",
+  // Clearing stale worktrees and agent storage is work, not daemon
+  // administration; the handler keeps the daemon-only categories behind
+  // `daemon.manage` (see daemon-session.ts).
+  "daemon.storage.clean.request": "workspace.write",
   "daemon.storage.list.request": "daemon.read",
   "daemon.update.request": "daemon.manage",
   "daemon.update.check.request": "daemon.manage",
@@ -381,7 +384,7 @@ const OUTBOUND_PERMISSION = {
   "daemon.skills.get_content.response": "daemon.read",
   "daemon.skills.list.response": "daemon.read",
   "daemon.skills.set_enabled.response": "daemon.manage",
-  "daemon.storage.clean.response": "daemon.manage",
+  "daemon.storage.clean.response": "workspace.write",
   "daemon.storage.list.response": "daemon.read",
   "daemon.update.progress": "daemon.manage",
   "daemon.update.response": "daemon.manage",

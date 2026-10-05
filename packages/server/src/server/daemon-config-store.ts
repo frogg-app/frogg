@@ -8,7 +8,11 @@ import {
   MutableDaemonConfigSchema,
   MutableDaemonConfigPatchSchema,
 } from "@frogg/protocol/messages";
-import type { HostSettingsSection, MutableCleanCutConfigPatch } from "@frogg/protocol/messages";
+import type {
+  HostSettingsSection,
+  MutableCleanCutConfigPatch,
+  MutableStorageAlertsConfig,
+} from "@frogg/protocol/messages";
 
 export type { MutableDaemonConfig, MutableDaemonConfigPatch } from "@frogg/protocol/messages";
 
@@ -28,6 +32,7 @@ interface SupportedMutableConfigPatch {
   companionModel?: string | null;
   cleanCut?: MutableCleanCutConfigPatch;
   hostSettings?: { hiddenSections?: HostSettingsSection[] };
+  storage?: { alerts?: Partial<MutableStorageAlertsConfig> };
   autoUpdate?: Partial<NonNullable<MutableDaemonConfig["autoUpdate"]>>;
   enableTerminalAgentHooks?: boolean;
   appendSystemPrompt?: string;
@@ -191,6 +196,7 @@ const RELOADABLE_PATHS = [
   "daemon.cleanCut",
   "features.companion.model",
   "daemon.hostSettings.hiddenSections",
+  "daemon.storage.alerts",
   "daemon.autoUpdate",
   "daemon.enableTerminalAgentHooks",
   "daemon.appendSystemPrompt",
@@ -222,6 +228,7 @@ const PERSISTED_TO_MUTABLE_PATH = new Map<string, string>([
   ["daemon.cleanCut", "cleanCut"],
   ["features.companion.model", "companionModel"],
   ["daemon.hostSettings.hiddenSections", "hostSettings.hiddenSections"],
+  ["daemon.storage.alerts", "storage.alerts"],
   ["daemon.autoUpdate", "autoUpdate"],
   ["daemon.enableTerminalAgentHooks", "enableTerminalAgentHooks"],
   ["daemon.appendSystemPrompt", "appendSystemPrompt"],
@@ -297,6 +304,7 @@ function pickSupportedPatchFields(patch: MutableDaemonConfigPatch): SupportedMut
     ...(patch.hostSettings?.hiddenSections !== undefined
       ? { hostSettings: { hiddenSections: patch.hostSettings.hiddenSections } }
       : {}),
+    ...(patch.storage?.alerts !== undefined ? { storage: { alerts: patch.storage.alerts } } : {}),
     ...(patch.autoArchiveAfterMerge !== undefined
       ? { autoArchiveAfterMerge: patch.autoArchiveAfterMerge }
       : {}),
@@ -796,6 +804,9 @@ function mergeMutableDaemonPatch(
   }
   if (patch.hostSettings?.hiddenSections !== undefined) {
     next.hostSettings = { hiddenSections: patch.hostSettings.hiddenSections };
+  }
+  if (patch.storage?.alerts !== undefined) {
+    next.storage = { alerts: { ...next.storage?.alerts, ...patch.storage.alerts } };
   }
   if (patch.autoArchiveAfterMerge !== undefined) {
     next.autoArchiveAfterMerge = patch.autoArchiveAfterMerge;

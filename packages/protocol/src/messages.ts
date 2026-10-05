@@ -287,6 +287,61 @@ export const MutableCleanCutConfigPatchSchema = z.object({
 });
 export type MutableCleanCutConfigPatch = z.infer<typeof MutableCleanCutConfigPatchSchema>;
 
+/**
+ * COMPAT(storageAlerts): added in v1.6.11, remove after 2028-10-04.
+ * When to warn that Frogg-owned storage is growing. Thresholds are bytes
+ * measured against the total of the owned-storage categories; `criticalBytes`
+ * is expected above `warnBytes`, and a daemon that sees them the other way
+ * round treats the higher of the two as critical.
+ */
+export const STORAGE_ALERT_MIN_THRESHOLD_BYTES = 1024 ** 3;
+const StorageAlertThresholdSchema = z.number().int().min(STORAGE_ALERT_MIN_THRESHOLD_BYTES);
+
+export const StorageAlertLevelSchema = z.enum(["ok", "warn", "critical"]);
+export type StorageAlertLevel = z.infer<typeof StorageAlertLevelSchema>;
+
+export const MutableStorageAlertsConfigSchema = z
+  .object({
+    enabled: z.boolean(),
+    warnBytes: StorageAlertThresholdSchema,
+    criticalBytes: StorageAlertThresholdSchema,
+    /** Lowest level that raises a notification; `critical` stays quiet at `warn`. */
+    notifyAt: z.enum(["warn", "critical"]),
+  })
+  .passthrough();
+export type MutableStorageAlertsConfig = z.infer<typeof MutableStorageAlertsConfigSchema>;
+
+/** Defaults a fresh daemon starts with: warn at 20 GiB, critical at 50 GiB. */
+export const DEFAULT_STORAGE_ALERTS: MutableStorageAlertsConfig = {
+  enabled: true,
+  warnBytes: 20 * 1024 ** 3,
+  criticalBytes: 50 * 1024 ** 3,
+  notifyAt: "warn",
+};
+
+export const MutableStorageConfigSchema = z
+  .object({ alerts: MutableStorageAlertsConfigSchema })
+  .passthrough();
+export type MutableStorageConfig = z.infer<typeof MutableStorageConfigSchema>;
+
+export const MutableStorageConfigPatchSchema = z
+  .object({ alerts: MutableStorageAlertsConfigSchema.partial().optional() })
+  .passthrough();
+
+/** The level Frogg-owned storage sits at, with the totals it was judged on. */
+export const StorageAlertSchema = z.object({
+  level: StorageAlertLevelSchema,
+  totalBytes: z.number(),
+  /** A measurement walk hit its cap, so `totalBytes` is a lower bound. */
+  truncated: z.boolean(),
+  /** What cleaning every cleanable category would free now. */
+  reclaimableBytes: z.number(),
+  warnBytes: z.number(),
+  criticalBytes: z.number(),
+  computedAt: z.string(),
+});
+export type StorageAlert = z.infer<typeof StorageAlertSchema>;
+
 export const TerminalProfileSchema = z
   .object({
     id: z.string(),
@@ -350,6 +405,9 @@ export const HostSettingsSectionSchema = z.enum([
   "skills",
   "terminals",
   "host",
+  // COMPAT(hostResourcesSection): added in v1.6.11 with the Resources section.
+  // Apps older than that reject a config that hides it.
+  "resources",
 ]);
 export type HostSettingsSection = z.infer<typeof HostSettingsSectionSchema>;
 
@@ -405,6 +463,9 @@ export const MutableDaemonConfigSchema = z
     // COMPAT(hostSettingsSections): optional so an older
     // daemon simply says nothing and the app falls back to the brand default.
     hostSettings: MutableHostSettingsConfigSchema.optional(),
+    // COMPAT(storageAlerts): added in v1.6.11; absent means an older daemon
+    // without the growing-storage alert.
+    storage: MutableStorageConfigSchema.optional(),
   })
   .passthrough();
 
@@ -427,6 +488,7 @@ export const MutableDaemonConfigPatchSchema = z
     terminalProfiles: z.array(TerminalProfileSchema).optional(),
     autoUpdate: DaemonAutoUpdateConfigSchema.partial().optional(),
     hostSettings: MutableHostSettingsConfigSchema.partial().optional(),
+    storage: MutableStorageConfigPatchSchema.optional(),
   })
   .partial()
   .passthrough();
@@ -4558,6 +4620,9 @@ export const ServerInfoStatusPayloadSchema = z
         // COMPAT(skillsManagement): added in v1.6.6, remove gate after 2027-09-27.
         // daemon.skills.list, daemon.skills.set_enabled and daemon.skills.get_content are available.
         skillsManagement: z.boolean().optional(),
+        // COMPAT(storageAlerts): added in v1.6.11, remove gate after 2028-10-04.
+        // `daemon.storage` config and the storage_alert status are available.
+        storageAlerts: z.boolean().optional(),
       })
       .optional(),
     // COMPAT(securityPosture): added in v1.6.0. Present for owner connections
@@ -4665,6 +4730,19 @@ export const DaemonConfigChangedStatusPayloadSchema = z
   })
   .passthrough();
 
+/**
+ * Frogg-owned storage crossed into a new alert level. Broadcast on the level
+ * change, not on every measurement, so a client can notify once per step.
+ */
+export const StorageAlertStatusPayloadSchema = z
+  .object({
+    status: z.literal("storage_alert"),
+    alert: StorageAlertSchema,
+    /** The level this replaces, so a client can tell a rise from a recovery. */
+    previousLevel: StorageAlertLevelSchema,
+  })
+  .passthrough();
+
 export const KnownStatusPayloadSchema = z.discriminatedUnion("status", [
   AgentCreatedStatusPayloadSchema,
   AgentCreateFailedStatusPayloadSchema,
@@ -4673,6 +4751,7 @@ export const KnownStatusPayloadSchema = z.discriminatedUnion("status", [
   ShutdownRequestedStatusPayloadSchema,
   RestartRequestedStatusPayloadSchema,
   DaemonConfigChangedStatusPayloadSchema,
+  StorageAlertStatusPayloadSchema,
 ]);
 
 export type KnownStatusPayload = z.infer<typeof KnownStatusPayloadSchema>;
@@ -5758,6 +5837,8 @@ export const DaemonStorageListResponseSchema = z.object({
     requestId: z.string(),
     computedAt: z.string().nullable(),
     categories: z.array(OwnedStorageCategorySchema),
+    // COMPAT(storageAlerts): added in v1.6.11; absent from an older daemon.
+    alert: StorageAlertSchema.nullable().optional(),
     error: z.string().nullable(),
   }),
 });

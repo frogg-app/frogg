@@ -152,7 +152,7 @@ file writes):
 | Role | Can |
 | ---- | --- |
 | `owner` | Everything: daemon settings and updates, provider accounts, pairing codes, approving and revoking devices, setting roles, password and claim settings |
-| `operator` | Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions. No daemon settings, no device management. Terminals and agents run as the daemon user, so an operator is owner-equivalent on the host |
+| `operator` | Drive work: agent chats, terminals, workspace scripts, file edits, git and forge actions, and clearing the scratch space work leaves behind (stale worktrees, agent worktrees, temp debris). No daemon settings, no device management. Terminals and agents run as the daemon user, so an operator is owner-equivalent on the host |
 | `viewer` | Read-only: sessions, timelines, terminal output, file browsing and diffs, limited to files inside registered workspaces and worktrees. No input, no command execution, no writes |
 
 A viewer is an authenticated, paired device. Its read access to every workspace's diffs and

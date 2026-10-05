@@ -58,6 +58,8 @@ import {
   type PushNotificationSender,
 } from "./push/index.js";
 import { composeSpokenNotificationText } from "./notifications/spoken-text.js";
+import type { StorageAlert, StorageAlertLevel } from "@frogg/protocol/messages";
+import { formatStorageAlertNotification, isAtOrAbove } from "./host/storage-alerts.js";
 import type { SpokenAlertService } from "./notifications/spoken-alerts.js";
 import type { ScriptHealthState } from "./script-health-monitor.js";
 import type { ServiceProxySubsystem } from "./service-proxy.js";
@@ -1989,6 +1991,33 @@ export class VoiceAssistantWebSocketServer {
     return this.daemonRuntimeConfig?.hostResources ? { hostResources: true } : {};
   }
 
+  private storageAlertsFeature(): { storageAlerts?: true } {
+    return this.daemonRuntimeConfig?.hostResources?.storageAlerts ? { storageAlerts: true } : {};
+  }
+
+  /**
+   * Frogg-owned storage changed alert level. Connected clients get the status;
+   * push covers the ones that are away, and only from the level the owner asked
+   * to hear about, so the quieter setting stays quiet.
+   */
+  public broadcastStorageAlert(alert: StorageAlert, previousLevel: StorageAlertLevel): void {
+    this.broadcast(
+      wrapSessionMessage({
+        type: "status",
+        payload: { status: "storage_alert", alert, previousLevel },
+      }),
+    );
+    const notifyAt = this.daemonRuntimeConfig?.getStorageAlerts?.().notifyAt ?? "warn";
+    const rising = isAtOrAbove(alert.level, previousLevel);
+    if (!rising || !isAtOrAbove(alert.level, notifyAt)) return;
+    const notification = formatStorageAlertNotification(alert, getHostname() ?? this.serverId);
+    void this.pushNotificationSender
+      .send({ ...notification, data: { serverId: this.serverId, kind: "storage_alert" } })
+      .catch((err) => {
+        this.logger.warn({ err }, "Failed to send storage alert push notification");
+      });
+  }
+
   private securityPostureFeature(): { securityPosture?: true; securityAcknowledge?: true } {
     const runtime = this.daemonRuntimeConfig;
     return {
@@ -2053,6 +2082,8 @@ export class VoiceAssistantWebSocketServer {
         ...this.hostResourcesFeature(),
         // COMPAT(skillsManagement): added in v1.6.6, remove gate after 2027-09-27.
         ...this.skillsManagementFeature(),
+        // COMPAT(storageAlerts): added in v1.6.11, remove gate after 2028-10-04.
+        ...this.storageAlertsFeature(),
         // COMPAT(providerAgentDefinitions): added in v0.6.20, remove after 2027-09-13.
         providerAgentDefinitions: true,
         // COMPAT(providerAccounts): added in v1.1.2, remove after 2027-09-17.

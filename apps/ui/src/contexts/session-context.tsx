@@ -48,6 +48,12 @@ import {
 } from "@/stores/session-store";
 import { useWorkspaceSetupStore } from "@/stores/workspace-setup-store";
 import { sendOsNotification } from "@/utils/os-notifications";
+import { i18n } from "@/localisation/i18next";
+import { formatBytes } from "@/screens/settings/daemon-update-progress";
+import {
+  isStorageAlertRise,
+  parseStorageAlertStatus,
+} from "@/screens/settings/host-resources-view";
 import { getIsAppActivelyVisible, getIsAppVisible } from "@/utils/app-visibility";
 import {
   getInitKey,
@@ -836,6 +842,32 @@ function SessionProviderInternal({ children, serverId, client }: SessionProvider
       companionRuntime.handleNotebook(message.payload.notebook.entries);
     });
 
+    // A level change is already filtered daemon-side to the owner's `notifyAt`,
+    // and a recovery (back down a level) is reported but not notified.
+    const unsubStorageAlert = client.on("status", (message) => {
+      const parsed = parseStorageAlertStatus(message.payload);
+      if (!parsed) return;
+      const { alert, previousLevel } = parsed;
+      if (alert.level === "ok" || !isStorageAlertRise(alert.level, previousLevel)) return;
+      void sendOsNotification({
+        title: i18n.t(
+          alert.level === "critical"
+            ? "settings.host.resources.alerts.notifyCriticalTitle"
+            : "settings.host.resources.alerts.notifyWarnTitle",
+        ),
+        body:
+          alert.reclaimableBytes > 0
+            ? i18n.t("settings.host.resources.alerts.notifyBodyReclaimable", {
+                size: formatBytes(alert.totalBytes),
+                reclaimable: formatBytes(alert.reclaimableBytes),
+              })
+            : i18n.t("settings.host.resources.alerts.notifyBody", {
+                size: formatBytes(alert.totalBytes),
+              }),
+        data: { serverId, section: "resources" },
+      });
+    });
+
     const unsubTerminalAttention = client.on("terminal_attention_required", (message) => {
       if (message.type !== "terminal_attention_required") {
         return;
@@ -879,6 +911,7 @@ function SessionProviderInternal({ children, serverId, client }: SessionProvider
       unsubTranscription();
       unsubVoiceInputState();
       unsubTerminalAttention();
+      unsubStorageAlert();
     };
   }, [
     client,

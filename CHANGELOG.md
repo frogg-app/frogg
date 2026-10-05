@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **Resources is its own host settings section.** Live host load and the size of each
+  Frogg-owned storage area move out of the host Overview into a **Resources** section under the
+  Daemon group, alongside new storage alerts. Clearing stale worktrees, agent worktrees and
+  temp debris now needs write permission rather than owner, so any operator can reclaim the
+  scratch space the work leaves behind; rotated logs and the speech cache still need owner. The
+  daemon measures its storage hourly and raises a warning or critical level against
+  `daemon.storage.alerts` (`enabled`, `warnBytes` 20 GiB, `criticalBytes` 50 GiB, `notifyAt`),
+  editable in that section by the host's owner: a banner for everyone connected and a
+  notification on each step up, push included. New `storage_alert` status and `features.storageAlerts`;
+  `daemon.storage.list` now reports the level with the sizes.
+
 - **Dev builds per session.** The **Dev** menu in the top bar now follows the session in view:
   **Launch dev build** runs `dev:live` in that session's worktree, and the menu then shows,
   rebuilds, restarts, opens and stops that build, with other running dev builds listed below.

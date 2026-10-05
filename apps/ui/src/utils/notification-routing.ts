@@ -1,5 +1,10 @@
 import type { Href } from "expo-router";
-import { buildHostRootRoute, buildHostWorkspaceOpenRoute } from "@/utils/host-routes";
+import {
+  buildHostRootRoute,
+  buildHostWorkspaceOpenRoute,
+  buildSettingsHostSectionRoute,
+  isHostSectionSlug,
+} from "@/utils/host-routes";
 
 type NotificationData = Record<string, unknown> | null | undefined;
 type NotificationRoute = Extract<Href, string>;
@@ -34,6 +39,11 @@ export function buildNotificationRoute(data: NotificationData): NotificationRout
   }
   if (serverId && workspaceId && terminalId) {
     return buildHostWorkspaceOpenRoute(serverId, workspaceId, `terminal:${terminalId}`);
+  }
+  // A host notification that names a settings section (a storage alert) opens it.
+  const section = readNonEmptyString(data, "section");
+  if (serverId && section && isHostSectionSlug(section)) {
+    return buildSettingsHostSectionRoute(serverId, section);
   }
   if (serverId) {
     return buildHostRootRoute(serverId);

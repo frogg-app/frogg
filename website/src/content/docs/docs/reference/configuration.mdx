@@ -82,7 +82,8 @@ See [security and access](/docs/self-hosting/security/) for how these combine.
 | `daemon.autoResumeOnUsageLimit`   | boolean | `true`  | When a session hits its provider usage limit, send a resume prompt a minute after the limit resets. The composer shows a countdown that cancels it |
 | `daemon.autoCleanCutOnColdCache`  | boolean | `true`  | Legacy switch: `false` turns off both [automatic clean cut](/docs/using-frogg/clean-cut/#settings) triggers. Prefer `daemon.cleanCut` |
 | `daemon.cleanCut`                 | object  | —       | [Automatic clean cut settings](/docs/using-frogg/clean-cut/#settings): `auto.usageLimit`, `auto.daemonRestart`, `idleThresholdMinutes`, `summaryModel`, and per-provider `providers` overrides. Editable in Settings; applied live |
-| `daemon.hostSettings.hiddenSections` | string[] | brand default | Host settings sections the app does not offer for this daemon: any of `projects`, `pair-device`, `devices`, `agents`, `providers`, `skills`, `terminals`, `host`. `usage` is still accepted but ignored: usage now lives under Providers. **Security** cannot be hidden |
+| `daemon.hostSettings.hiddenSections` | string[] | brand default | Host settings sections the app does not offer for this daemon: any of `projects`, `pair-device`, `devices`, `agents`, `providers`, `skills`, `terminals`, `host`, `resources`. `usage` is still accepted but ignored: usage now lives under Providers. **Security** cannot be hidden |
+| `daemon.storage.alerts`           | object  | —       | [Growing-storage alerts](/docs/self-hosting/daemon/#storage-alerts): `enabled`, `warnBytes` (20 GiB), `criticalBytes` (50 GiB), `notifyAt` (`warn` or `critical`). Editable in Host settings → Resources by the owner; applied live |
 | `daemon.enableTerminalAgentHooks` | boolean | `false` | Install activity hooks for agent CLIs started in terminals |
 | `daemon.terminalProfiles`         | array   | built-in profiles | `[{ id, name, command, args?, icon? }]`. `[]` means none |
 | `daemon.git.maxProcessesPerSecond` | integer | `2048` | Git process spawn rate limit |
@@ -283,7 +284,8 @@ These are credentials for voice features, not agent providers.
 `daemon.relay.endpoint`, `daemon.relay.useTls`, `daemon.mcp.*`,
 `daemon.browserTools.enabled`, `daemon.hostnames`, `daemon.cors.allowedOrigins`,
 `daemon.trustedProxies`, `daemon.auth.trustLan`, `daemon.auth.claimMode`, `daemon.git.*`,
-`daemon.autoArchiveAfterMerge`, `daemon.autoResumeOnUsageLimit`, `daemon.hostSettings.hiddenSections`, `daemon.autoUpdate`, `daemon.enableTerminalAgentHooks`,
+`daemon.autoArchiveAfterMerge`, `daemon.autoResumeOnUsageLimit`, `daemon.hostSettings.hiddenSections`,
+`daemon.storage.alerts`, `daemon.autoUpdate`, `daemon.enableTerminalAgentHooks`,
 `daemon.appendSystemPrompt`, `daemon.terminalProfiles`,
 `app.pairingBaseUrl` and `agents.*`.
 

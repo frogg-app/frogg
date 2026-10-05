@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { OwnedStorageCategory } from "@frogg/protocol/messages";
 import {
+  STORAGE_ALERT_MAX_GIB,
+  STORAGE_ALERT_MIN_GIB,
+  bytesToGib,
   canCleanCategory,
+  isStorageAlertRise,
+  parseGibDraft,
+  parseStorageAlertStatus,
+  storageAlertVariant,
   formatCategorySize,
   formatLoadAverage,
   formatPercent,
@@ -96,5 +103,49 @@ describe("host resources view", () => {
     expect(
       canCleanCategory(category({ cleanable: true, exists: false, reclaimableBytes: 5 })),
     ).toBe(false);
+  });
+});
+
+describe("storage alerts", () => {
+  const GIB = 1024 ** 3;
+
+  it("parses whole GiB within the daemon's bounds and rejects anything else", () => {
+    expect(parseGibDraft("20")).toEqual({ bytes: 20 * GIB });
+    expect(parseGibDraft(" 20 ")).toEqual({ bytes: 20 * GIB });
+    expect(parseGibDraft("")).toEqual({ invalid: true });
+    expect(parseGibDraft("20.5")).toEqual({ invalid: true });
+    expect(parseGibDraft(String(STORAGE_ALERT_MIN_GIB - 1))).toEqual({ invalid: true });
+    expect(parseGibDraft(String(STORAGE_ALERT_MAX_GIB + 1))).toEqual({ invalid: true });
+    expect(bytesToGib(20 * GIB)).toBe(20);
+  });
+
+  it("gives a banner variant to each raised level and none to ok", () => {
+    expect(storageAlertVariant("ok")).toBeNull();
+    expect(storageAlertVariant("warn")).toBe("warning");
+    expect(storageAlertVariant("critical")).toBe("error");
+  });
+
+  it("treats only a rise as worth notifying", () => {
+    expect(isStorageAlertRise("warn", "ok")).toBe(true);
+    expect(isStorageAlertRise("critical", "warn")).toBe(true);
+    expect(isStorageAlertRise("warn", "critical")).toBe(false);
+    expect(isStorageAlertRise("warn", "warn")).toBe(false);
+  });
+
+  it("reads a storage_alert status and ignores any other status", () => {
+    const alert = {
+      level: "warn",
+      totalBytes: 21 * GIB,
+      truncated: false,
+      reclaimableBytes: GIB,
+      warnBytes: 20 * GIB,
+      criticalBytes: 50 * GIB,
+      computedAt: "2026-10-04T00:00:00.000Z",
+    };
+    expect(
+      parseStorageAlertStatus({ status: "storage_alert", alert, previousLevel: "ok" }),
+    ).toEqual({ alert, previousLevel: "ok" });
+    expect(parseStorageAlertStatus({ status: "daemon_config_changed", config: {} })).toBeNull();
+    expect(parseStorageAlertStatus({ status: "storage_alert" })).toBeNull();
   });
 });

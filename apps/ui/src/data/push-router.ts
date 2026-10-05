@@ -291,6 +291,7 @@ export function mountServerDataPushRouter(input: PushRouterInput): () => void {
   });
   const unsubscribeDaemonConfig = input.client.on("status", (message) => {
     applyDaemonConfigStatus({ queryClient: input.queryClient, serverId: input.serverId, message });
+    applyStorageAlertStatus({ queryClient: input.queryClient, serverId: input.serverId, message });
   });
   const unsubscribeCheckoutDiffUpdate = input.client.on("checkout_diff_update", (message) => {
     applyCheckoutDiffUpdate({
@@ -428,6 +429,21 @@ function applyDaemonConfigStatus(input: {
   );
   void input.queryClient.invalidateQueries({
     queryKey: daemonPairingOfferQueryKey(input.serverId),
+  });
+}
+
+/**
+ * A storage alert level change means the sizes behind it moved, so the host's
+ * storage view is refetched rather than waiting out its stale time.
+ */
+function applyStorageAlertStatus(input: {
+  queryClient: QueryClient;
+  serverId: string;
+  message: StatusMessage;
+}): void {
+  if (input.message.payload.status !== "storage_alert") return;
+  void input.queryClient.invalidateQueries({
+    queryKey: ["host-resources", input.serverId, "storage"],
   });
 }
 

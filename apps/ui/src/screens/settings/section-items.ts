@@ -18,6 +18,7 @@ import {
   Sparkles,
   Globe,
   Workflow,
+  HardDrive,
 } from "lucide-react-native";
 import type { HostSectionSlug, SettingsSectionSlug } from "@/utils/host-routes";
 
@@ -112,6 +113,12 @@ export interface HostSectionItem {
 
 export const HOST_SECTION_ITEMS: HostSectionItem[] = [
   { id: "host", group: "daemon", labelKey: "settings.hostSections.host", icon: Server },
+  {
+    id: "resources",
+    group: "daemon",
+    labelKey: "settings.hostSections.resources",
+    icon: HardDrive,
+  },
   { id: "updates", group: "daemon", labelKey: "settings.hostSections.updates", icon: Rocket },
   { id: "developer", group: "daemon", labelKey: "settings.sections.developer", icon: Wrench },
   {

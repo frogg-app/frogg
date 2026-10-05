@@ -14,7 +14,9 @@ import { ensurePrivateFile, writePrivateFileAtomicSync } from "./private-files.j
 import {
   CleanCutProviderSettingsSchema,
   CleanCutSummaryModelSchema,
+  DEFAULT_STORAGE_ALERTS,
   HostSettingsSectionSchema,
+  MutableStorageAlertsConfigSchema,
   TerminalProfileSchema,
 } from "@frogg/protocol/messages";
 import { FroggServicePortAllocationSchema } from "@frogg/protocol/frogg-config-schema";
@@ -371,6 +373,14 @@ export const PersistedConfigSchema = z
           })
           .strict()
           .optional(),
+        // COMPAT(storageAlerts): added in v1.6.11. Thresholds for the
+        // growing-storage alert; absent means the defaults below.
+        storage: z
+          .object({
+            alerts: MutableStorageAlertsConfigSchema.partial().optional(),
+          })
+          .strict()
+          .optional(),
         autoUpdate: z
           .object({
             enabled: z.boolean().optional(),
@@ -498,6 +508,7 @@ const DEFAULT_PERSISTED_CONFIG = PersistedConfigSchema.parse({
     // The brand decides which host settings sections a fresh install offers;
     // the admin of this host owns the value from here on.
     hostSettings: { hiddenSections: brand.hostSettings.hiddenSections },
+    storage: { alerts: DEFAULT_STORAGE_ALERTS },
     enableTerminalAgentHooks: false,
     appendSystemPrompt: "",
     autoUpdate: {

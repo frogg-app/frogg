@@ -36076,6 +36076,54 @@
                         "additionalProperties": false
                       }
                     },
+                    "alert": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "level": {
+                              "type": "string",
+                              "enum": [
+                                "ok",
+                                "warn",
+                                "critical"
+                              ]
+                            },
+                            "totalBytes": {
+                              "type": "number"
+                            },
+                            "truncated": {
+                              "type": "boolean"
+                            },
+                            "reclaimableBytes": {
+                              "type": "number"
+                            },
+                            "warnBytes": {
+                              "type": "number"
+                            },
+                            "criticalBytes": {
+                              "type": "number"
+                            },
+                            "computedAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "level",
+                            "totalBytes",
+                            "truncated",
+                            "reclaimableBytes",
+                            "warnBytes",
+                            "criticalBytes",
+                            "computedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "error": {
                       "type": [
                         "string",
@@ -37559,7 +37607,8 @@
                                   "usage",
                                   "skills",
                                   "terminals",
-                                  "host"
+                                  "host",
+                                  "resources"
                                 ]
                               }
                             }
@@ -37568,6 +37617,47 @@
                             "hiddenSections"
                           ],
                           "additionalProperties": false
+                        },
+                        "storage": {
+                          "type": "object",
+                          "properties": {
+                            "alerts": {
+                              "type": "object",
+                              "properties": {
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "warnBytes": {
+                                  "type": "integer",
+                                  "minimum": 1073741824,
+                                  "maximum": 9007199254740991
+                                },
+                                "criticalBytes": {
+                                  "type": "integer",
+                                  "minimum": 1073741824,
+                                  "maximum": 9007199254740991
+                                },
+                                "notifyAt": {
+                                  "type": "string",
+                                  "enum": [
+                                    "warn",
+                                    "critical"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "enabled",
+                                "warnBytes",
+                                "criticalBytes",
+                                "notifyAt"
+                              ],
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "alerts"
+                          ],
+                          "additionalProperties": {}
                         }
                       },
                       "required": [
@@ -38042,7 +38132,8 @@
                                   "usage",
                                   "skills",
                                   "terminals",
-                                  "host"
+                                  "host",
+                                  "resources"
                                 ]
                               }
                             }
@@ -38051,6 +38142,47 @@
                             "hiddenSections"
                           ],
                           "additionalProperties": false
+                        },
+                        "storage": {
+                          "type": "object",
+                          "properties": {
+                            "alerts": {
+                              "type": "object",
+                              "properties": {
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "warnBytes": {
+                                  "type": "integer",
+                                  "minimum": 1073741824,
+                                  "maximum": 9007199254740991
+                                },
+                                "criticalBytes": {
+                                  "type": "integer",
+                                  "minimum": 1073741824,
+                                  "maximum": 9007199254740991
+                                },
+                                "notifyAt": {
+                                  "type": "string",
+                                  "enum": [
+                                    "warn",
+                                    "critical"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "enabled",
+                                "warnBytes",
+                                "criticalBytes",
+                                "notifyAt"
+                              ],
+                              "additionalProperties": {}
+                            }
+                          },
+                          "required": [
+                            "alerts"
+                          ],
+                          "additionalProperties": {}
                         }
                       },
                       "required": [

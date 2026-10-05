@@ -142,7 +142,7 @@ const INBOUND_ROLE = {
   "daemon.skills.get_content.request": "operator",
   "daemon.skills.list.request": "operator",
   "daemon.skills.set_enabled.request": "owner",
-  "daemon.storage.clean.request": "owner",
+  "daemon.storage.clean.request": "operator",
   "daemon.storage.list.request": "operator",
   "daemon.update.check.request": "owner",
   "daemon.update.get_status.request": "owner",
@@ -365,6 +365,7 @@ export function minimumRoleForPermission(permission: DaemonPermission): DeviceRo
  */
 const STATUS_ROLE_OVERRIDES: Partial<Record<string, DeviceRole>> = {
   daemon_config_changed: "operator",
+  storage_alert: "operator",
 };
 
 export function requiredRoleForOutbound(

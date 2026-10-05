@@ -541,6 +541,7 @@ export const HOST_SECTION_SLUGS = [
   "devices",
   "security",
   "host",
+  "resources",
   "updates",
   "web-client",
   "developer",

@@ -17,8 +17,14 @@ import type { DaemonUpdateService } from "./daemon-update-service.js";
 import type { BetaChannelService, BetaChannelStartResult } from "./beta-channel-service.js";
 import type { DevDaemonService } from "./dev-daemon-service.js";
 import type { WebUiServer } from "../../web-ui-server.js";
-import type { SecurityPosture } from "@frogg/protocol/messages";
+import type { MutableStorageAlertsConfig, SecurityPosture } from "@frogg/protocol/messages";
+import { DEFAULT_STORAGE_ALERTS } from "@frogg/protocol/messages";
 import type { HostResources } from "../../host/host-resources.js";
+import {
+  WRITE_CLEANABLE_STORAGE_CATEGORIES,
+  type StorageCategoryId,
+} from "../../host/owned-storage.js";
+import { evaluateStorageAlert } from "../../host/storage-alerts.js";
 import type { SkillCatalog } from "../../skills/catalog.js";
 
 export interface DaemonRuntimeConfig {
@@ -40,6 +46,8 @@ export interface DaemonRuntimeConfig {
   hostResources?: HostResources;
   /** Skills the host's agents see and which are switched off; absent without bootstrap wiring. */
   skills?: SkillCatalog;
+  /** `daemon.storage.alerts`; absent means the protocol defaults. */
+  getStorageAlerts?(): MutableStorageAlertsConfig;
   /** Persist a warning as intended (or undo it); throws for a critical finding. */
   setSecurityFindingAcknowledged?(findingId: string, acknowledged: boolean): SecurityPosture;
   getRelayConfig(): {
@@ -279,6 +287,10 @@ export class DaemonSession {
     }
   }
 
+  private getStorageAlerts(): MutableStorageAlertsConfig {
+    return this.daemonRuntimeConfig?.getStorageAlerts?.() ?? DEFAULT_STORAGE_ALERTS;
+  }
+
   async handleStorageListRequest(
     msg: Extract<SessionInboundMessage, { type: "daemon.storage.list.request" }>,
   ): Promise<void> {
@@ -292,6 +304,7 @@ export class DaemonSession {
           requestId: msg.requestId,
           computedAt: report.computedAt,
           categories: report.categories,
+          alert: evaluateStorageAlert(report, this.getStorageAlerts()),
           error: null,
         },
       });
@@ -309,13 +322,26 @@ export class DaemonSession {
     }
   }
 
+  /**
+   * Clearing the scratch space the work leaves behind (stale worktrees, agent
+   * worktrees, temp) needs write permission; the rest of the cleanable
+   * categories describe the daemon and still need `daemon.manage`.
+   */
   async handleStorageCleanRequest(
     msg: Extract<SessionInboundMessage, { type: "daemon.storage.clean.request" }>,
+    options: { canManageDaemon: boolean } = { canManageDaemon: true },
   ): Promise<void> {
     const host = this.daemonRuntimeConfig?.hostResources;
     try {
       if (!host) throw new Error("Storage cleanup is not available on this daemon");
+      if (
+        !options.canManageDaemon &&
+        !WRITE_CLEANABLE_STORAGE_CATEGORIES.has(msg.categoryId as StorageCategoryId)
+      ) {
+        throw new Error(`Clearing ${msg.categoryId} needs daemon management permission`);
+      }
       const result = await host.storage.cleanup(msg.categoryId);
+      await host.storageAlerts?.check({ refresh: true });
       this.host.emit({
         type: "daemon.storage.clean.response",
         payload: { requestId: msg.requestId, ...result, error: null },

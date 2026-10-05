@@ -2705,7 +2705,9 @@ export class Session {
       case "daemon.storage.list.request":
         return this.daemonSession.handleStorageListRequest(msg);
       case "daemon.storage.clean.request":
-        return this.daemonSession.handleStorageCleanRequest(msg);
+        return this.daemonSession.handleStorageCleanRequest(msg, {
+          canManageDaemon: this.authorization.allowsPermission("daemon.manage"),
+        });
       case "daemon.skills.list.request":
         return this.daemonSession.handleSkillsListRequest(msg);
       case "daemon.skills.set_enabled.request":

@@ -40,6 +40,17 @@ export const CLEANABLE_STORAGE_CATEGORIES: ReadonlySet<StorageCategoryId> = new 
   "temp",
 ]);
 
+/**
+ * The cleanable categories a write-permission (operator) session may clear:
+ * the scratch space the work itself leaves behind. Logs and the speech cache
+ * describe the daemon rather than the work, so they stay with `daemon.manage`.
+ */
+export const WRITE_CLEANABLE_STORAGE_CATEGORIES: ReadonlySet<StorageCategoryId> = new Set([
+  "worktrees",
+  "agent_worktrees",
+  "temp",
+]);
+
 export interface StorageCategory {
   id: StorageCategoryId;
   path: string | null;

@@ -1,9 +1,10 @@
 /**
  * COMPAT(hostResources): added in v1.6.0.
  *
- * Host Resources: live CPU/memory/disk and daemon-process load, the size of
- * each Frogg-owned storage category, and cleanup for the categories the daemon
- * marks cleanable. Metrics poll only while the settings screen is focused.
+ * The host's Resources section: live CPU/memory/disk and daemon-process load,
+ * the size of each Frogg-owned storage category, cleanup for the categories the
+ * daemon marks cleanable, and the thresholds behind the growing-storage alert.
+ * Metrics poll only while the section is focused.
  */
 import { useCallback, useMemo, useState } from "react";
 import { Text, View } from "react-native";
@@ -23,9 +24,18 @@ import { SettingsSection } from "@/screens/settings/settings-section";
 import { settingsStyles } from "@/styles/settings";
 import { confirmDialog } from "@/utils/confirm-dialog";
 import { formatBytes } from "./daemon-update-progress";
+import { Switch } from "@/components/ui/switch";
+import { EditingTextInput as TextInput } from "@/components/ui/text-input";
+import { useDaemonConfig } from "@/hooks/use-daemon-config";
+import { useSessionStore } from "@/stores/session-store";
 import {
   HOST_METRICS_POLL_MS,
+  STORAGE_ALERT_MAX_GIB,
+  STORAGE_ALERT_MIN_GIB,
+  bytesToGib,
   canCleanCategory,
+  parseGibDraft,
+  storageAlertVariant,
   formatCategorySize,
   formatLoadAverage,
   formatPercent,
@@ -42,20 +52,225 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function HostResourcesSection({ serverId }: { serverId: string }) {
+export function HostResourcesPage({ serverId }: { serverId: string }) {
   const { t } = useTranslation();
   const supported = useHostFeature(serverId, "hostResources");
   const isConnected = useHostRuntimeIsConnected(serverId);
-  if (!supported || !isConnected) return null;
+  if (!supported || !isConnected) {
+    return (
+      <SettingsSection title={t("settings.host.resources.title")} testID="host-page-resources">
+        <Alert
+          variant="info"
+          description={t(
+            isConnected
+              ? "settings.host.resources.unsupported"
+              : "settings.host.resources.disconnected",
+          )}
+          testID="host-page-resources-unavailable"
+        />
+      </SettingsSection>
+    );
+  }
+  return (
+    <View>
+      <SettingsSection
+        title={t("settings.host.resources.title")}
+        info={t("settings.host.resources.info")}
+        testID="host-page-resources"
+      >
+        <HostMetricsCard serverId={serverId} />
+        <OwnedStorageCard serverId={serverId} />
+      </SettingsSection>
+      <StorageAlertSettings serverId={serverId} />
+    </View>
+  );
+}
+
+/**
+ * The thresholds the daemon measures against. They live in daemon config, so
+ * they are the same for every client of this host and only an owner may change
+ * them; everyone else reads them.
+ */
+function StorageAlertSettings({ serverId }: { serverId: string }) {
+  const { t } = useTranslation();
+  const { config, patchConfig } = useDaemonConfig(serverId);
+  const supported = useHostFeature(serverId, "storageAlerts");
+  const isOwner = useSessionStore(
+    (state) => (state.sessions[serverId]?.serverInfo?.callerRole ?? "owner") === "owner",
+  );
+  const [error, setError] = useState<string | null>(null);
+  const alerts = config?.storage?.alerts;
+
+  const save = useCallback(
+    async (patch: Partial<NonNullable<typeof alerts>>) => {
+      setError(null);
+      try {
+        await patchConfig({ storage: { alerts: patch } });
+      } catch (saveError) {
+        setError(errorMessage(saveError));
+      }
+    },
+    [patchConfig],
+  );
+  const setEnabled = useCallback((enabled: boolean) => void save({ enabled }), [save]);
+  const setCriticalOnly = useCallback(
+    (criticalOnly: boolean) => void save({ notifyAt: criticalOnly ? "critical" : "warn" }),
+    [save],
+  );
+  const setWarnBytes = useCallback((warnBytes: number) => save({ warnBytes }), [save]);
+  const setCriticalBytes = useCallback((criticalBytes: number) => save({ criticalBytes }), [save]);
+
+  if (!supported || !alerts) return null;
+
   return (
     <SettingsSection
-      title={t("settings.host.resources.title")}
-      info={t("settings.host.resources.info")}
-      testID="host-page-resources"
+      title={t("settings.host.resources.alerts.title")}
+      info={t("settings.host.resources.alerts.info")}
+      testID="host-page-resources-alerts"
     >
-      <HostMetricsCard serverId={serverId} />
-      <OwnedStorageCard serverId={serverId} />
+      <View style={settingsStyles.card}>
+        <View style={settingsStyles.row}>
+          <View style={settingsStyles.rowContent}>
+            <Text style={settingsStyles.rowTitle}>
+              {t("settings.host.resources.alerts.enabled")}
+            </Text>
+            <Text style={settingsStyles.rowHint}>
+              {t("settings.host.resources.alerts.enabledHint")}
+            </Text>
+          </View>
+          <Switch
+            value={alerts.enabled}
+            onValueChange={setEnabled}
+            disabled={!isOwner}
+            accessibilityLabel={t("settings.host.resources.alerts.enabled")}
+            testID="host-page-resources-alerts-enabled"
+          />
+        </View>
+        <ThresholdRow
+          title={t("settings.host.resources.alerts.warnThreshold")}
+          hint={t("settings.host.resources.alerts.warnThresholdHint")}
+          bytes={alerts.warnBytes}
+          disabled={!isOwner || !alerts.enabled}
+          onSave={setWarnBytes}
+          testID="host-page-resources-alerts-warn"
+        />
+        <ThresholdRow
+          title={t("settings.host.resources.alerts.criticalThreshold")}
+          hint={t("settings.host.resources.alerts.criticalThresholdHint")}
+          bytes={alerts.criticalBytes}
+          disabled={!isOwner || !alerts.enabled}
+          onSave={setCriticalBytes}
+          testID="host-page-resources-alerts-critical"
+        />
+        <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+          <View style={settingsStyles.rowContent}>
+            <Text style={settingsStyles.rowTitle}>
+              {t("settings.host.resources.alerts.criticalOnly")}
+            </Text>
+            <Text style={settingsStyles.rowHint}>
+              {t("settings.host.resources.alerts.criticalOnlyHint")}
+            </Text>
+          </View>
+          <Switch
+            value={alerts.notifyAt === "critical"}
+            onValueChange={setCriticalOnly}
+            disabled={!isOwner || !alerts.enabled}
+            accessibilityLabel={t("settings.host.resources.alerts.criticalOnly")}
+            testID="host-page-resources-alerts-critical-only"
+          />
+        </View>
+        {isOwner ? null : (
+          <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+            <Text style={settingsStyles.rowHint}>
+              {t("settings.host.resources.alerts.ownerOnly")}
+            </Text>
+          </View>
+        )}
+        {error ? (
+          <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+            <Text style={settingsStyles.rowError}>{error}</Text>
+          </View>
+        ) : null}
+      </View>
     </SettingsSection>
+  );
+}
+
+/** Whole GiB, committed on blur or submit; a threshold has no "unset" value. */
+function ThresholdRow({
+  title,
+  hint,
+  bytes,
+  disabled,
+  onSave,
+  testID,
+}: {
+  title: string;
+  hint: string;
+  bytes: number;
+  disabled: boolean;
+  onSave: (bytes: number) => Promise<void>;
+  testID: string;
+}) {
+  const { t } = useTranslation();
+  const saved = String(bytesToGib(bytes));
+  const [draft, setDraft] = useState(saved);
+  // Uncontrolled input: a new key resets it after a rejected entry or a change
+  // another client made.
+  const [resetCount, setResetCount] = useState(0);
+  const [lastSaved, setLastSaved] = useState(saved);
+  const [invalid, setInvalid] = useState(false);
+  if (lastSaved !== saved) {
+    setLastSaved(saved);
+    setDraft(saved);
+    setResetCount((count) => count + 1);
+  }
+
+  const handleChange = useCallback((next: string) => setDraft(next.replace(/[^\d]/g, "")), []);
+  const commit = useCallback(() => {
+    const parsed = parseGibDraft(draft);
+    if ("invalid" in parsed) {
+      // Keep the rejected entry visible under the message rather than erasing it.
+      setInvalid(true);
+      return;
+    }
+    setInvalid(false);
+    if (parsed.bytes === bytes) return;
+    void onSave(parsed.bytes);
+  }, [bytes, draft, onSave]);
+
+  return (
+    <View style={[settingsStyles.row, settingsStyles.rowBorder]} testID={testID}>
+      <View style={settingsStyles.rowContent}>
+        <Text style={settingsStyles.rowTitle}>{title}</Text>
+        <Text style={settingsStyles.rowHint}>{hint}</Text>
+        {invalid ? (
+          <Text style={settingsStyles.rowError}>
+            {t("settings.host.resources.alerts.invalidThreshold", {
+              min: STORAGE_ALERT_MIN_GIB,
+              max: STORAGE_ALERT_MAX_GIB,
+            })}
+          </Text>
+        ) : null}
+      </View>
+      <View style={styles.thresholdField}>
+        <TextInput
+          key={resetCount}
+          initialValue={draft}
+          onChangeText={handleChange}
+          onBlur={commit}
+          onSubmitEditing={commit}
+          editable={!disabled}
+          keyboardType="number-pad"
+          inputMode="numeric"
+          selectTextOnFocus
+          style={styles.thresholdInput}
+          accessibilityLabel={title}
+          testID={`${testID}-input`}
+        />
+        <Text style={styles.thresholdUnit}>{t("settings.host.resources.alerts.unit")}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -386,8 +601,32 @@ function OwnedStorageCard({ serverId }: { serverId: string }) {
   }
 
   const totalSize = formatCategorySize(total);
+  const alert = query.data.alert ?? null;
+  const alertVariant = alert ? storageAlertVariant(alert.level) : null;
   return (
     <View style={settingsStyles.card} testID="host-page-resources-storage">
+      {alert && alertVariant ? (
+        <View style={settingsStyles.row}>
+          <View style={styles.resultAlert}>
+            <Alert
+              variant={alertVariant}
+              title={t(
+                alertVariant === "error"
+                  ? "settings.host.resources.alerts.criticalTitle"
+                  : "settings.host.resources.alerts.warnTitle",
+              )}
+              description={t("settings.host.resources.alerts.banner", {
+                size: formatBytes(alert.totalBytes),
+                threshold: formatBytes(
+                  alert.level === "critical" ? alert.criticalBytes : alert.warnBytes,
+                ),
+                reclaimable: formatBytes(alert.reclaimableBytes),
+              })}
+              testID="host-page-resources-storage-alert"
+            />
+          </View>
+        </View>
+      ) : null}
       <View style={settingsStyles.row}>
         <View style={settingsStyles.rowContent}>
           <Text style={settingsStyles.rowTitle}>
@@ -533,5 +772,19 @@ const styles = StyleSheet.create((theme) => ({
   },
   resultAlert: {
     flex: 1,
+  },
+  thresholdField: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing[2],
+  },
+  thresholdInput: {
+    minWidth: 72,
+    textAlign: "right",
+    color: theme.colors.foreground,
+  },
+  thresholdUnit: {
+    color: theme.colors.foregroundMuted,
+    fontSize: theme.fontSize.sm,
   },
 }));

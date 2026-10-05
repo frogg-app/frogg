@@ -74,6 +74,7 @@ export const HOST_SETTINGS_SECTIONS = [
   "skills",
   "terminals",
   "host",
+  "resources",
 ] as const;
 
 /** Provider or model id pattern; `*` matches any run of characters. */

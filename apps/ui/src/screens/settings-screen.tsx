@@ -65,6 +65,7 @@ import {
   HostProvidersPage,
   HostTerminalsPage,
 } from "@/screens/settings/host-page";
+import { HostResourcesPage } from "@/screens/settings/host-resources-section";
 import { HostSkillsSection } from "@/screens/settings/skills-section";
 import { HostWebClientSection } from "@/screens/settings/host-web-client-section";
 import { HostDeveloperPage } from "@/screens/settings/developer/host-developer-page";
@@ -122,6 +123,8 @@ function renderHostSettingsContent(
       return <HostWebClientSection serverId={view.serverId} />;
     case "developer":
       return <HostDeveloperPage serverId={view.serverId} />;
+    case "resources":
+      return <HostResourcesPage serverId={view.serverId} />;
     case "host":
       return <HostSettingsPage serverId={view.serverId} onHostRemoved={onHostRemoved} />;
   }

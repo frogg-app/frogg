@@ -23,7 +23,8 @@ import type {
 } from "./agent/provider-launch-config.js";
 import { ProviderOverrideSchema } from "./agent/provider-launch-config.js";
 import { AgentProviderSchema } from "@frogg/protocol/provider-manifest";
-import type { MutableCleanCutConfig } from "@frogg/protocol/messages";
+import type { MutableCleanCutConfig, MutableStorageAlertsConfig } from "@frogg/protocol/messages";
+import { DEFAULT_STORAGE_ALERTS } from "@frogg/protocol/messages";
 import { hashDaemonPassword } from "./auth.js";
 import { resolveSpeechConfig } from "./speech/speech-config-resolver.js";
 import type { RequestedSpeechProviders } from "./speech/speech-types.js";
@@ -733,6 +734,22 @@ export function resolveCleanCutSetting(
   };
 }
 
+/**
+ * `daemon.storage.alerts`: when to warn that Frogg-owned storage is growing.
+ * A partially written block keeps the defaults for the keys it omits, and a
+ * critical threshold at or below the warning one is lifted above it so the two
+ * levels stay distinct.
+ */
+export function resolveStorageAlertsSetting(
+  persisted: ReturnType<typeof loadPersistedConfig>,
+): MutableStorageAlertsConfig {
+  const alerts = { ...DEFAULT_STORAGE_ALERTS, ...persisted.daemon?.storage?.alerts };
+  return {
+    ...alerts,
+    criticalBytes: Math.max(alerts.criticalBytes, alerts.warnBytes),
+  };
+}
+
 /** `features.companion.model`, surfaced as the mutable `companionModel`; null is the default. */
 function resolveCompanionModelSetting(
   persisted: ReturnType<typeof loadPersistedConfig>,
@@ -756,6 +773,7 @@ function resolveStaticLoadConfigSettings(
     cleanCut: resolveCleanCutSetting(persisted),
     companionModel: resolveCompanionModelSetting(persisted),
     hostSettingsHiddenSections: resolveHostSettingsHiddenSections(persisted),
+    storageAlerts: resolveStorageAlertsSetting(persisted),
     autoUpdate: resolveAutoUpdateConfig(env, persisted),
     appendSystemPrompt: resolveAppendSystemPrompt(persisted),
     ...resolveProfileLists(persisted),

@@ -121,6 +121,69 @@ describe("DaemonSession host resources", () => {
       payload: { requestId: "r2", error: expect.stringMatching(/not cleanable/) },
     });
   });
+
+  test("reports the alert level alongside the storage sizes", async () => {
+    const froggHome = makeHome();
+    const hostResources = createHostResources({
+      froggHome,
+      tmpRoot: froggHome,
+      logger: pino({ level: "silent" }),
+    });
+    const { subsystem, emitted } = makeSubsystem({
+      daemonRuntimeConfig: {
+        listen: null,
+        getRelayConfig: () => null,
+        hostResources,
+        // A threshold under anything measurable, so a fresh home still trips it.
+        getStorageAlerts: () => ({
+          enabled: true,
+          warnBytes: 0,
+          criticalBytes: 1024 ** 4,
+          notifyAt: "warn",
+        }),
+      },
+    });
+    await subsystem.handleStorageListRequest({
+      type: "daemon.storage.list.request",
+      requestId: "r1",
+    });
+    const list = emitted.find((m) => m.type === "daemon.storage.list.response");
+    expect(list?.type === "daemon.storage.list.response" && list.payload.alert).toMatchObject({
+      level: "warn",
+      criticalBytes: 1024 ** 4,
+    });
+  });
+
+  test("a write-permission caller may clear stale worktrees but not the daemon's logs", async () => {
+    const froggHome = makeHome();
+    const hostResources = createHostResources({
+      froggHome,
+      tmpRoot: froggHome,
+      logger: pino({ level: "silent" }),
+      worktrees: {
+        worktreesBaseRoot: join(froggHome, "worktrees"),
+        froggHome,
+        listRepoRoots: async () => [],
+        listReferencedPaths: async () => [],
+      },
+    });
+    const { subsystem, emitted } = makeSubsystem({
+      daemonRuntimeConfig: { listen: null, getRelayConfig: () => null, hostResources },
+    });
+    await subsystem.handleStorageCleanRequest(
+      { type: "daemon.storage.clean.request", requestId: "r1", categoryId: "logs" },
+      { canManageDaemon: false },
+    );
+    await subsystem.handleStorageCleanRequest(
+      { type: "daemon.storage.clean.request", requestId: "r2", categoryId: "worktrees" },
+      { canManageDaemon: false },
+    );
+    const responses = emitted.filter((m) => m.type === "daemon.storage.clean.response");
+    expect(responses[0]).toMatchObject({
+      payload: { requestId: "r1", error: expect.stringMatching(/daemon management permission/) },
+    });
+    expect(responses[1]).toMatchObject({ payload: { requestId: "r2", error: null } });
+  });
 });
 
 describe("DaemonSession", () => {
