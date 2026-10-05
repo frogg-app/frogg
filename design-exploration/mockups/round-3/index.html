@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Frogg mockups — Round 3</title>
+    <style>
+      :root {
+        font:
+          15px/1.55 system-ui,
+          sans-serif;
+        color: #1c1c1f;
+      }
+      body {
+        margin: 0;
+        background: #f4f4f1;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+      }
+      h1 {
+        font-size: 30px;
+        margin: 0 0 4px;
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        color: #666;
+        margin: 0 0 28px;
+        max-width: 760px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+        gap: 20px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e3e3de;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .swatch {
+        height: 120px;
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        padding: 16px 20px;
+        color: #fff;
+      }
+      .swatch h2 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: -0.02em;
+      }
+      .swatch small {
+        position: absolute;
+        top: 14px;
+        right: 18px;
+        font-size: 12px;
+        opacity: 0.8;
+      }
+      .body {
+        padding: 16px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+      .body p {
+        margin: 0;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        gap: 4px 10px;
+        margin: 0;
+        font-size: 13.5px;
+      }
+      dt {
+        color: #888;
+      }
+      dd {
+        margin: 0;
+      }
+      .links {
+        display: flex;
+        gap: 10px;
+      }
+      .links a {
+        padding: 6px 12px;
+        border-radius: 9px;
+        background: #1c1c1f;
+        color: #fff;
+        text-decoration: none;
+        font-size: 13.5px;
+      }
+      .links a.alt {
+        background: #ecece7;
+        color: #1c1c1f;
+      }
+      textarea {
+        width: 100%;
+        min-height: 90px;
+        border: 1px solid #dcdcd5;
+        border-radius: 10px;
+        padding: 10px;
+        font: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      .rate {
+        display: flex;
+        gap: 6px;
+      }
+      .rate button {
+        border: 1px solid #dcdcd5;
+        background: #fff;
+        border-radius: 99px;
+        padding: 3px 12px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+      }
+      .rate button.on {
+        background: #1c1c1f;
+        color: #fff;
+        border-color: #1c1c1f;
+      }
+      .save {
+        font-size: 12px;
+        color: #888;
+      }
+      .general {
+        margin-top: 28px;
+        background: #fff;
+        border: 1px solid #e3e3de;
+        border-radius: 16px;
+        padding: 18px 20px;
+      }
+      .tips {
+        font-size: 13px;
+        color: #777;
+        margin-top: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Round 3 — one language, four IDE layouts</h1>
+      <p class="lede">
+        Back on the IDE side: standard places for everything, clear labels, nothing to learn. The
+        look comes from the frogg.dev site: near-black with grain, cyan into deep blue, faceted
+        shards, cut (chamfered) corners instead of rounded pills, and slow, smooth ease-out motion.
+        Instead of an accent bar on the active row, the selection glides between rows (a plate,
+        corner brackets, a notch, a slanted highlight). Status is a shape plus a word: ▲ running, ◆
+        needs you, ⬢ done, ⚑ failed, ◇ idle. Same fake data and behaviour as before.
+        <a href="../round-2/index.html">Round 2</a> ·
+        <a href="../round-1/index.html">Round 1</a>
+      </p>
+      <div class="grid" id="grid"></div>
+      <div class="general">
+        <b>General notes</b> (cross-direction: mix-and-match, things to keep or kill)<textarea
+          data-k="general"
+        ></textarea>
+      </div>
+      <p class="tips">
+        Tips: click around the session list quickly to see the selection glide · j/k moves · hover
+        rows for the cursor spotlight · Facet: Changes/Terminal/PR tabs · Bracket: “Changes” slides
+        a drawer open, A approves · Slate: close and reopen tabs, collapse folders and the bottom
+        panel · Prism: the left rail switches project scope, Chat/Changes/Terminal toggle.
+      </p>
+    </div>
+    <script>
+      const D = [
+        {
+          id: "facet",
+          name: "Facet",
+          bg: "radial-gradient(60% 80% at 50% 100%,#25b5c855,transparent 70%),linear-gradient(135deg,#080b0d,#0e1418)",
+          arch: "Three-pane · sessions by project / chat / Changes·Terminal·PR",
+          idea: "The baseline layout from the research doc, in the new language. Each project gets its own faceted shard. The selected session sits on a raised plate with cut corners that glides between rows, lit along its top edge. Tabs use the same gliding plate.",
+          q: "Is the plate-and-facet language distinctive enough on its own, in the most familiar layout?",
+          vis: "Dark, chamfered surfaces · Space Grotesk + Inter + JetBrains Mono · gliding plate, blur-in rows, cursor spotlight",
+        },
+        {
+          id: "bracket",
+          name: "Bracket",
+          bg: "linear-gradient(90deg,#f5b84a 0 20%,#ff6b6b 20% 35%,#3fcf8e 35% 55%,#25b5c8 55% 75%,#ffffff22 75%) 0 100%/100% 8px no-repeat,#0c1114",
+          arch: "Inbox split (Switchboard’s structure) · attention-sorted list / chat + slide-out changes",
+          idea: "Switchboard’s inbox in the new language. A fleet bar at the top shows every session’s state at a glance. Groups run Needs you → Failed → Ready to review → Working → Idle, with inline Approve and the failure line. The selection is a set of corner brackets that glide and re-frame the row. Changes open as a drawer so the chat stays wide.",
+          q: "Does attention-first sorting plus the fleet bar beat grouping by project?",
+          vis: "Dark, corner brackets, striped ‘working’ bar · same fonts · bracket glide, drawer slide",
+        },
+        {
+          id: "slate",
+          name: "Slate",
+          bg: "linear-gradient(180deg,#080b0d 0 18%,#0c1114 18% 82%,#061a22 82%)",
+          arch: "Full IDE · activity bar / explorer tree / session tabs / changes / bottom panel / status bar",
+          idea: "The most VS Code-like option: an activity bar, an explorer with an Attention section above the project folders, open sessions as slanted editor tabs, a terminal panel at the bottom, and a status bar showing branch, quota rings and a ‘2 need you’ alert. The active icon gets a shard behind it rather than a stripe.",
+          q: "Do IDE users want sessions to behave like files (tabs, tree, panels), even if it’s denser?",
+          vis: "Dark, slanted tabs, shard-backed icons · same fonts · tabs slide in, notch glide, panel collapse",
+        },
+        {
+          id: "prism",
+          name: "Prism",
+          bg: "linear-gradient(90deg,#0b1a22 0 14%,#ffffff 14% 50%,#f4f7f8 50%)",
+          dark: true,
+          arch: "Project rail / scoped session list / chat ⇄ changes ⇄ terminal",
+          idea: "A light version of the same language. A dark rail on the left switches scope: All, Needs you, or one project (shown by its shard). The list is sorted by attention, and the selection is a slanted highlight that slides. The main area switches between Chat, Changes and Terminal with a segmented control that blurs between views.",
+          q: "Does the language hold up in light mode? Does a project rail help once there are many projects?",
+          vis: "Cool white, ink-navy, cyan → deep blue · same fonts · slanted glide, blur cross-fade between views",
+        },
+      ];
+      const KEY = "frogg-r3-feedback";
+      let fb = JSON.parse(localStorage.getItem(KEY) || "{}");
+      fetch("feedback.json", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          if (j) {
+            fb = Object.assign({}, j, fb);
+            fill();
+          }
+        })
+        .catch(() => {});
+      document.getElementById("grid").innerHTML = D.map(
+        (d) => `<div class="card">
+  <div class="swatch" style="background:${d.bg};${d.dark ? "color:#1c1c1f" : ""}"><h2>${d.name}</h2><small>${d.arch.split(" · ")[0]}</small></div>
+  <div class="body"><p>${d.idea}</p>
+  <dl><dt>Layout</dt><dd>${d.arch}</dd><dt>Tests</dt><dd>${d.q}</dd><dt>Look</dt><dd>${d.vis}</dd></dl>
+  <div class="links"><a href="${d.id}/index.html">Open desktop</a><a class="alt" href="_shared/phone.html?d=${d.id}">Mobile view</a></div>
+  <div class="rate" data-r="${d.id}">${["Love", "Maybe", "No"].map((v) => `<button data-v="${v}">${v}</button>`).join("")}</div>
+  <textarea data-k="${d.id}" placeholder="Notes on ${d.name}: what to keep, kill, or steal into another direction…"></textarea>
+  <span class="save" data-s="${d.id}"></span></div></div>`,
+      ).join("");
+      function fill() {
+        document
+          .querySelectorAll("textarea[data-k]")
+          .forEach((t) => (t.value = fb[t.dataset.k] || ""));
+        document
+          .querySelectorAll(".rate")
+          .forEach((r) =>
+            r
+              .querySelectorAll("button")
+              .forEach((b) => b.classList.toggle("on", fb["rate_" + r.dataset.r] === b.dataset.v)),
+          );
+      }
+      let timer;
+      function save() {
+        localStorage.setItem(KEY, JSON.stringify(fb));
+        clearTimeout(timer);
+        timer = setTimeout(
+          () =>
+            fetch("../feedback/round-3", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(fb),
+            })
+              .then((r) =>
+                document
+                  .querySelectorAll(".save")
+                  .forEach((s) => (s.textContent = r.ok ? "Saved" : "Saved locally only")),
+              )
+              .catch(() => {}),
+          500,
+        );
+      }
+      document.addEventListener("input", (e) => {
+        if (e.target.dataset.k) {
+          fb[e.target.dataset.k] = e.target.value;
+          save();
+        }
+      });
+      document.addEventListener("click", (e) => {
+        const b = e.target.closest(".rate button");
+        if (b) {
+          const k = "rate_" + b.parentElement.dataset.r;
+          fb[k] = fb[k] === b.dataset.v ? "" : b.dataset.v;
+          fill();
+          save();
+        }
+      });
+      fill();
+    </script>
+  </body>
+</html>
