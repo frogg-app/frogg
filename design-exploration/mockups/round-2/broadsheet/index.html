@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Broadsheet — Frogg round 2</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,700;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="mast">
+      <div class="ear l">Vol. 1.6 · No. 12<br /><b>Beta edition</b></div>
+      <div class="title">
+        <h1>The Frogg</h1>
+        <div class="dateline" id="dateline"></div>
+      </div>
+      <div class="ear r">
+        <button data-pal>Index <kbd>⌘K</kbd></button><br />devbox · macbook · <s>ci-runner-2</s>
+      </div>
+    </header>
+    <div class="paper">
+      <nav class="front" id="front"></nav>
+      <main class="article">
+        <div class="art-h">
+          <button class="m-back" data-back>← Front page</button>
+          <div class="kicker" id="kicker"></div>
+          <h2 id="headline"></h2>
+          <div class="byline" id="byline"></div>
+        </div>
+        <div class="art-body" id="scroll"><div class="chat" id="chat"></div></div>
+        <div class="dock">
+          <div id="strip"></div>
+          <div id="composer"></div>
+        </div>
+      </main>
+      <aside class="brief" id="brief"></aside>
+    </div>
+    <a class="dirnav" href="../index.html">← round 2</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../_shared/kit.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

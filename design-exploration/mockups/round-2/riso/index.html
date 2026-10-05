@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Riso — Frogg round 2</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700;900&family=Archivo+Black&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="logo"><span class="pk">FRO</span><span class="bl">GG</span></div>
+      <div class="legend">
+        <span><i class="sw h-permission"></i>needs you</span
+        ><span><i class="sw h-running"></i>running</span><span><i class="sw h-done"></i>done</span
+        ><span><i class="sw h-error"></i>error</span><span><i class="sw h-idle"></i>idle</span>
+      </div>
+      <button class="find" data-pal>FIND ⌘K</button>
+    </header>
+    <section class="strip" id="strip-s"></section>
+    <main class="read">
+      <div class="read-h">
+        <button class="m-back" data-back>← posters</button>
+        <div class="big-no" id="bigno"></div>
+        <div>
+          <div class="meta" id="meta"></div>
+          <h1 id="title"></h1>
+        </div>
+      </div>
+      <div class="read-body" id="scroll"><div class="chat" id="chat"></div></div>
+      <div class="dock">
+        <div id="strip"></div>
+        <div id="composer"></div>
+      </div>
+    </main>
+    <a class="dirnav" href="../index.html">← round 2</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../_shared/kit.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

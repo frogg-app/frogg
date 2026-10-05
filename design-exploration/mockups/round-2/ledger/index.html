@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Ledger — Frogg round 2</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Caveat:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute">
+      <filter id="rough">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n" />
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" />
+      </filter>
+      <filter id="worn">
+        <feTurbulence baseFrequency="1.4" numOctaves="1" result="n" />
+        <feColorMatrix in="n" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 1.6" result="m" />
+        <feComposite in="SourceGraphic" in2="m" operator="in" />
+      </filter>
+    </svg>
+    <div class="desk">
+      <section class="form">
+        <div class="form-h">
+          <b>FROGG</b> SESSION JOURNAL<span>PAGE 001 · <button data-pal>FIND ⌘K</button></span>
+        </div>
+        <div class="cols">
+          <span>NO.</span><span>ACCOUNT / ENTRY</span><span>DR</span><span>CR</span
+          ><span>STATUS</span>
+        </div>
+        <div id="rows"></div>
+        <div class="totals" id="totals"></div>
+      </section>
+      <section class="book">
+        <div class="book-h">
+          <button class="m-back" data-back>← journal</button>
+          <div class="acct" id="acct"></div>
+          <h1 id="title"></h1>
+          <div class="stamp-slot" id="stamp"></div>
+        </div>
+        <div class="book-body" id="scroll">
+          <div class="chat" id="chat"></div>
+        </div>
+        <div class="dock">
+          <div id="strip"></div>
+          <div id="composer"></div>
+        </div>
+      </section>
+    </div>
+    <a class="dirnav" href="../index.html">← round 2</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../_shared/kit.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

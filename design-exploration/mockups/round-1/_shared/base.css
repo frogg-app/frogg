@@ -1,0 +1,381 @@
+/* Motion tokens from 03-motion-and-polish §25, plus structure shared by all directions. */
+:root {
+  --d-fast: 100ms;
+  --d-quick: 150ms;
+  --d-base: 200ms;
+  --d-moderate: 280ms;
+  --d-slow: 400ms;
+  --d-ambient: 1600ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-in: cubic-bezier(0.55, 0.085, 0.68, 0.53);
+  /* spring approximations (linear()) */
+  --spring-snappy: linear(0, 0.28 8%, 0.72 20%, 0.93 34%, 1.01 50%, 1 100%);
+  --spring-default: linear(0, 0.2 8%, 0.6 20%, 0.88 36%, 0.98 52%, 1 100%);
+  --spring-bouncy: linear(0, 0.35 10%, 0.9 24%, 1.1 36%, 1.04 50%, 0.98 64%, 1 100%);
+  --stagger: 30ms;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+kbd {
+  font-family: inherit;
+  font-size: 0.78em;
+  opacity: 0.7;
+}
+[hidden] {
+  display: none !important;
+}
+
+/* streaming: per-word fade with tiny blur */
+.tok {
+  animation: tok-in var(--d-base) var(--ease-out) both;
+}
+@keyframes tok-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+.streaming::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 1em;
+  vertical-align: -0.15em;
+  margin-left: 2px;
+  background: currentColor;
+  opacity: 0.5;
+  animation: caret 1s steps(2) infinite;
+}
+@keyframes caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* status dots: motion ONLY for running */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.dot-running {
+  animation: breathe var(--d-ambient) ease-in-out infinite;
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* thinking shimmer */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--shim-a, #888) 0%,
+    var(--shim-a, #888) 40%,
+    var(--shim-b, #fff) 50%,
+    var(--shim-a, #888) 60%,
+    var(--shim-a, #888) 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shim 2s linear infinite;
+}
+@keyframes shim {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+/* enters */
+.enter {
+  animation: enter var(--d-base) var(--ease-out) both;
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+}
+.msg.pending {
+  opacity: 0.55;
+  transition: opacity var(--d-base) var(--ease-out);
+}
+
+/* tool cards */
+.tool {
+  position: relative;
+  overflow: hidden;
+}
+.tool-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tool-head .target {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.tool-head .tool-meta {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.tool-body {
+  display: none;
+}
+.tool.open .tool-body,
+.tool.group:hover .tool-body {
+  display: block;
+}
+.tool-beam {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 2px;
+  width: 35%;
+  animation: beam 1.1s linear infinite;
+}
+@keyframes beam {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+.tool.done .tool-beam {
+  display: none;
+}
+.tool-state::before {
+  content: "";
+}
+.tool.done .tool-state::before {
+  content: "✓";
+}
+.tool.fail .tool-state::before {
+  content: "✕";
+}
+.diff .dl {
+  white-space: pre;
+  clip-path: inset(0 0 100% 0);
+  animation: hunk var(--d-moderate) var(--ease-out) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+@keyframes hunk {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.diff .dl.add {
+  animation:
+    hunk var(--d-moderate) var(--ease-out) both,
+    afterglow 1.2s var(--ease-out) both;
+  animation-delay: calc(var(--i) * 40ms);
+}
+
+/* permission */
+.perm.resolved {
+  animation: none;
+}
+.perm-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* composer states */
+.composer-notice,
+.composer-perm {
+  display: none;
+}
+.composer[data-state="streaming"] .stop-icon,
+.composer[data-state="permission"] .stop-icon {
+  display: inline;
+}
+.composer .stop-icon {
+  display: none;
+}
+.composer[data-state="streaming"] .send-icon,
+.composer[data-state="permission"] .send-icon {
+  display: none;
+}
+.composer[data-state="streaming"] .composer-notice {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.composer[data-state="permission"] .composer-perm {
+  display: flex;
+}
+.composer-input {
+  outline: none;
+  min-height: 1.5em;
+  max-height: 30vh;
+  overflow: auto;
+}
+.composer-input:empty::before {
+  content: attr(data-placeholder);
+  opacity: 0.45;
+  pointer-events: none;
+}
+.composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.bar-spacer {
+  flex: 1;
+}
+.rings {
+  display: inline-flex;
+  gap: 4px;
+}
+.ring {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ring-fill {
+  transition: stroke-dashoffset 900ms var(--ease-out-soft);
+}
+.chip {
+  white-space: nowrap;
+}
+
+/* palette */
+.pal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 14vh;
+}
+.pal {
+  width: min(620px, 92vw);
+  transform: scale(0.98) translateY(-4px);
+  opacity: 0;
+  transition:
+    transform var(--d-quick) var(--ease-out),
+    opacity var(--d-quick) var(--ease-out);
+}
+.pal-scrim.open .pal {
+  transform: none;
+  opacity: 1;
+}
+.pal-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+.pal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.pal-item .pal-m {
+  margin-left: auto;
+  opacity: 0.55;
+  font-size: 0.85em;
+}
+.pal-foot {
+  display: flex;
+  gap: 14px;
+}
+
+::view-transition-old(chat),
+::view-transition-new(chat) {
+  animation-duration: var(--d-base);
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-old(chat) {
+  animation-name: vt-out;
+  animation-duration: 150ms;
+}
+::view-transition-new(chat) {
+  animation-name: vt-in;
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@keyframes vt-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.pulse-once {
+  animation: pulse-once 450ms var(--spring-bouncy);
+}
+@keyframes pulse-once {
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: var(--d-fast) !important;
+  }
+  .dot-running,
+  .shimmer,
+  .tool-beam {
+    animation: none !important;
+  }
+}
+@media (max-width: 640px) {
+  .composer-bar {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+  .chip-model .sub {
+    display: none;
+  }
+  .rings .ring:nth-child(3) {
+    display: none;
+  }
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Hive — Frogg round 1</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Martian+Mono:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-view="grid">
+    <div class="noise"></div>
+    <header class="bar">
+      <div class="logo"><i></i><i></i><i></i>FROGG</div>
+      <button class="island" id="island">
+        <span class="dot dot-running"></span><span id="islandText">3 agents running</span>
+      </button>
+      <div class="bar-r">
+        <button id="gridBtn" class="ghostbtn">▦ Overview <kbd>⌘⇧O</kbd></button
+        ><button class="ghostbtn" id="openPal">⌘K</button><button class="newbtn">＋ Spawn</button>
+      </div>
+    </header>
+    <main class="stage">
+      <section class="grid" id="grid"></section>
+      <section class="focus" id="focus">
+        <nav class="rail" id="rail"></nav>
+        <div class="panel" id="panel">
+          <div class="panel-h">
+            <button class="m-back" id="back">‹</button><span class="ph-dot" id="phDot"></span>
+            <div>
+              <div class="ph-t" id="title"></div>
+              <div class="ph-s" id="sub"></div>
+            </div>
+            <div class="ph-act">
+              <button class="ghostbtn">Split ⫿</button
+              ><button class="ghostbtn" id="ctxBtn">Context ◨</button>
+            </div>
+          </div>
+          <div class="chat-scroll" id="scroll"><div class="chat" id="chat"></div></div>
+          <div class="dock">
+            <div id="strip"></div>
+            <div id="composer"></div>
+          </div>
+        </div>
+        <aside class="ctxpane" id="ctx">
+          <div class="ctx-h">Changes</div>
+          <div id="ctxBody"></div>
+          <div class="ctx-h">Activity</div>
+          <svg class="spark" id="spark" viewBox="0 0 240 48" preserveAspectRatio="none"></svg>
+          <div class="ctx-h">Terminal</div>
+          <pre class="term">
+$ pnpm --filter server test
+ ✓ session-store (38)
+ ✓ write-queue (12)
+ ✓ lru (9)
+ Tests  142 passed</pre
+          >
+        </aside>
+      </section>
+    </main>
+    <a class="dirnav" href="../../index.html">← all directions</a
+    ><a class="dirnav m" href="../_shared/phone.html?d=hive">mobile ↗</a>
+    <script src="../_shared/core.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

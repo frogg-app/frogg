@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Switchboard — Frogg round 1</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-mview="list">
+    <header class="top">
+      <div class="mark">frogg<span>/</span><em>switchboard</em></div>
+      <nav class="tri" id="tri"></nav>
+      <button class="cmd" id="openPal">Command <kbd>⌘K</kbd></button>
+      <div class="hosts">
+        <span class="dot dot-done"></span>devbox <span class="dot dot-done"></span>macbook
+        <span class="dot dot-error"></span>ci-runner-2
+      </div>
+    </header>
+    <div class="split">
+      <section class="list">
+        <div class="list-h">
+          <span>St</span><span>Session</span><span>Agent</span><span>Δ</span><span>Last</span>
+        </div>
+        <div id="rows"></div>
+        <div class="list-foot">
+          <kbd>j</kbd><kbd>k</kbd> move · <kbd>⏎</kbd> open · <kbd>a</kbd> approve ·
+          <kbd>c</kbd> new
+        </div>
+      </section>
+      <section class="read">
+        <div class="read-h">
+          <button class="m-back" id="back">← Inbox</button>
+          <div class="rh-meta" id="meta"></div>
+          <h1 id="title"></h1>
+          <div class="rh-act">
+            <button>Changes <b id="chg"></b></button><button>Terminal</button
+            ><button>PR #412</button><button>CI ●●●○○</button>
+          </div>
+        </div>
+        <div class="read-body" id="scroll"><div class="chat" id="chat"></div></div>
+        <div class="dock">
+          <div id="strip"></div>
+          <div id="composer"></div>
+        </div>
+      </section>
+    </div>
+    <a class="dirnav" href="../../index.html">← all directions</a
+    ><a class="dirnav m" href="../_shared/phone.html?d=switchboard">mobile ↗</a>
+    <script src="../_shared/core.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
