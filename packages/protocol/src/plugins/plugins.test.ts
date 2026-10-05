@@ -24,9 +24,42 @@ const manifest = {
   },
 };
 
+const surfaces = {
+  ...manifest,
+  scope: "hybrid",
+  entry: { daemon: "dist/daemon.js", client: "dist/client.js" },
+  capabilities: ["rpc", "ui.view", "composer", "media.microphone", "media.audio", "speech"],
+  contributes: {
+    panels: [{ id: "issues", title: "Issues", kind: "list" }],
+    views: [{ id: "main", title: "Main" }],
+    composerActions: [{ id: "acme.talk", title: "Talk" }],
+  },
+};
+
 describe("PluginManifestSchema", () => {
   it("accepts a valid manifest", () => {
     expect(PluginManifestSchema.safeParse(manifest).success).toBe(true);
+  });
+
+  it("accepts views and composer actions with their capabilities", () => {
+    expect(PluginManifestSchema.safeParse(surfaces).success).toBe(true);
+  });
+
+  it.each([
+    ["views without ui.view", { capabilities: ["rpc", "composer"] }],
+    ["composer actions without composer", { capabilities: ["rpc", "ui.view"] }],
+    ["views on a daemon-only plugin", { scope: "daemon", entry: { daemon: "dist/daemon.js" } }],
+    [
+      "a view id that repeats a panel id",
+      {
+        contributes: {
+          panels: [{ id: "main", title: "Main", kind: "list" }],
+          views: [{ id: "main", title: "Main" }],
+        },
+      },
+    ],
+  ])("rejects %s", (_label, patch) => {
+    expect(PluginManifestSchema.safeParse({ ...surfaces, ...patch }).success).toBe(false);
   });
 
   it.each([

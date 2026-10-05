@@ -5,19 +5,24 @@
  * calls its `activate(ctx)`. The port is the only way out; it never leaves this closure.
  *
  * Wire (over the port):
- *   app → sandbox  {t:"init", code, info}        load + activate
+ *   app → sandbox  {t:"init", code, info}        load + activate; with info.view, render that
+ *                                                view into #root instead of activating
  *                  {t:"invoke", id, method, params}  a contribution the plugin handles
  *                  {t:"result", id, ok, value, error} answer to a sandbox "call"
+ *                  {t:"event", event, data}     ctx.events delivery
+ *                  {t:"audio", chunk}           ctx.media microphone chunk
  *   sandbox → app  {t:"call", id, op, args}      a ctx API call
  *                  {t:"handled", methods}        methods registered with ctx.rpc.handle
  *                  {t:"activated"} | {t:"failed", error}
  *                  {t:"result", id, ok, value, error} answer to an "invoke"
  */
 export const CLIENT_PLUGIN_BOOTSTRAP = String.raw`
-function __froggBoot(port, loadModule) {
+function __froggBoot(port, loadModule, getRoot) {
   var nextId = 1;
   var pending = new Map();
   var handlers = new Map();
+  var eventListeners = new Map();
+  var audioListeners = new Set();
   var started = false;
   function errorText(e) { return e && e.message ? String(e.message) : String(e); }
   function call(op, args) {
@@ -60,6 +65,37 @@ function __froggBoot(port, loadModule) {
     if (caps.has("ui.contribute")) {
       ctx.ui = { notify: function (message, level) { void call("ui.notify", { message: String(message), level: level }); } };
     }
+    if (caps.has("rpc")) {
+      ctx.events = {
+        on: function (event, fn) {
+          if (typeof event !== "string" || typeof fn !== "function") throw new Error("events.on(event, fn)");
+          var set = eventListeners.get(event);
+          if (!set) { set = new Set(); eventListeners.set(event, set); }
+          set.add(fn);
+          return { dispose: function () { set.delete(fn); } };
+        },
+        emit: function (event, data) { void call("events.emit", { event: String(event), data: data === undefined ? null : data }); }
+      };
+    }
+    if (caps.has("media.microphone") || caps.has("media.audio")) {
+      ctx.media = {
+        startCapture: function () { return call("media.capture.start", {}).then(function () {}); },
+        stopCapture: function () { void call("media.capture.stop", {}); },
+        onAudio: function (fn) {
+          if (typeof fn !== "function") throw new Error("media.onAudio(fn)");
+          audioListeners.add(fn);
+          return { dispose: function () { audioListeners.delete(fn); } };
+        },
+        play: function (audio) { return call("media.play", { data: audio && audio.data, format: audio && audio.format }).then(function () {}); },
+        stopPlayback: function () { void call("media.stop", {}); }
+      };
+    }
+    if (caps.has("composer")) {
+      ctx.composer = { insertText: function (text) { return call("composer.insert", { text: String(text) }).then(function (v) { return v === true; }); } };
+    }
+    if (info.view) {
+      ctx.view = Object.freeze({ id: String(info.view), close: function () { void call("view.close", {}); } });
+    }
     return Object.freeze(ctx);
   }
   function reply(id, promise) {
@@ -83,6 +119,15 @@ function __froggBoot(port, loadModule) {
       if (m.ok) p.resolve(m.value); else p.reject(new Error(m.error));
       return;
     }
+    if (m.t === "event") {
+      var listeners = eventListeners.get(m.event);
+      if (listeners) listeners.forEach(function (fn) { try { fn(m.data); } catch (e) { void call("log", { level: "error", message: errorText(e) }); } });
+      return;
+    }
+    if (m.t === "audio") {
+      audioListeners.forEach(function (fn) { try { fn(m.chunk); } catch (e) { void call("log", { level: "error", message: errorText(e) }); } });
+      return;
+    }
     if (m.t === "invoke") {
       reply(m.id, function () {
         var fn = handlers.get(m.method);
@@ -97,6 +142,11 @@ function __froggBoot(port, loadModule) {
       Promise.resolve()
         .then(function () { return loadModule(String(m.code)); })
         .then(function (mod) {
+          if (ctx.view) {
+            var render = mod && mod.views && mod.views[ctx.view.id];
+            if (typeof render !== "function") throw new Error("The client entry does not export views[" + JSON.stringify(ctx.view.id) + "]");
+            return render(getRoot(), ctx);
+          }
           var activate = mod && (typeof mod.default === "function" ? mod.default : mod.activate);
           if (typeof activate !== "function") throw new Error("The client entry does not export activate()");
           return activate(ctx);
@@ -123,10 +173,19 @@ export function sandboxCsp(capabilities: readonly string[]): string {
   ].join("; ");
 }
 
-/** The srcdoc for one plugin's sandboxed iframe. Boots, then waits for the app's port. */
-export function sandboxDocument(capabilities: readonly string[]): string {
+/**
+ * The srcdoc for one plugin's sandboxed iframe. Boots, then waits for the app's port. A view
+ * document fills its frame and gives the plugin a `#root` element to render into.
+ */
+export function sandboxDocument(
+  capabilities: readonly string[],
+  options: { view?: boolean } = {},
+): string {
   const csp = sandboxCsp(capabilities).replace(/"/g, "&quot;");
-  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"></head><body><script>
+  const body = options.view
+    ? `<style>html,body,#root{margin:0;width:100%;height:100%;overflow:hidden}</style><div id="root"></div>`
+    : "";
+  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"></head><body>${body}<script>
 ${CLIENT_PLUGIN_BOOTSTRAP}
 (function () {
   function loadModule(code) {
@@ -139,7 +198,7 @@ ${CLIENT_PLUGIN_BOOTSTRAP}
     var d = event.data;
     if (!d || d.t !== "frogg-plugin-port" || !event.ports || !event.ports[0]) return;
     taken = true;
-    __froggBoot(event.ports[0], loadModule);
+    __froggBoot(event.ports[0], loadModule, function () { return document.getElementById("root") || document.body; });
   });
   window.parent.postMessage({ t: "frogg-plugin-boot" }, "*");
 })();

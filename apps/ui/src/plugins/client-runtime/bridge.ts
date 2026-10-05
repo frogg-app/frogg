@@ -20,6 +20,17 @@ export interface ClientPluginBridgeDeps {
   /** The plugin's daemon half via the host's plugins.rpc.call; rejects when none is reachable. */
   rpcCall: (method: string, params: unknown) => Promise<unknown>;
   notify: (message: string, level: ClientPluginNotifyLevel) => void;
+  /** Delivers to this plugin's other sandboxes on this device. */
+  emitEvent: (event: string, data: unknown) => void;
+  media: {
+    startCapture: () => Promise<void>;
+    stopCapture: () => void;
+    play: (data: string, format: string) => Promise<void>;
+    stopPlayback: () => void;
+  };
+  insertComposerText: (text: string) => Promise<boolean>;
+  /** Closes the view this sandbox renders; a no-op for the background half. */
+  closeView: () => void;
 }
 
 export const CLIENT_PLUGIN_OPS = [
@@ -30,6 +41,13 @@ export const CLIENT_PLUGIN_OPS = [
   "settings.all",
   "rpc.call",
   "ui.notify",
+  "events.emit",
+  "media.capture.start",
+  "media.capture.stop",
+  "media.play",
+  "media.stop",
+  "composer.insert",
+  "view.close",
 ] as const;
 export type ClientPluginOp = (typeof CLIENT_PLUGIN_OPS)[number];
 
@@ -41,6 +59,13 @@ const OP_CAPABILITY: Record<ClientPluginOp, string | null> = {
   "settings.all": "settings.store",
   "rpc.call": "rpc",
   "ui.notify": "ui.contribute",
+  "events.emit": "rpc",
+  "media.capture.start": "media.microphone",
+  "media.capture.stop": "media.microphone",
+  "media.play": "media.audio",
+  "media.stop": "media.audio",
+  "composer.insert": "composer",
+  "view.close": "ui.view",
 };
 
 const LOG_LEVELS: ReadonlySet<string> = new Set(["debug", "info", "warn", "error"]);
@@ -48,6 +73,9 @@ const NOTIFY_LEVELS: ReadonlySet<string> = new Set(["info", "success", "warning"
 const MAX_KEY = 128;
 const MAX_MESSAGE = 2000;
 const MAX_SETTINGS_BYTES = 1024 * 1024;
+const MAX_EVENT_BYTES = 256 * 1024;
+const MAX_AUDIO_BASE64 = 32 * 1024 * 1024;
+const MAX_COMPOSER_TEXT = 20_000;
 
 function asArgs(args: unknown): Record<string, unknown> {
   return typeof args === "object" && args !== null ? (args as Record<string, unknown>) : {};
@@ -141,6 +169,38 @@ export function createClientPluginBridge(deps: ClientPluginBridgeDeps) {
         deps.notify(requireString(args.message, "message", MAX_MESSAGE), level);
         return null;
       }
+      case "events.emit": {
+        const event = requireString(args.event, "event", MAX_KEY);
+        const data = toJson(args.data);
+        if (JSON.stringify(data).length > MAX_EVENT_BYTES) {
+          throw new ClientPluginError("invalid_request", "event data is too large");
+        }
+        deps.emitEvent(event, data);
+        return null;
+      }
+      case "media.capture.start":
+        await deps.media.startCapture();
+        return null;
+      case "media.capture.stop":
+        deps.media.stopCapture();
+        return null;
+      case "media.play": {
+        const data = requireString(args.data, "data", MAX_AUDIO_BASE64);
+        const format = requireString(args.format, "format", MAX_KEY);
+        if (!format.startsWith("audio/")) {
+          throw new ClientPluginError("invalid_request", "format must be an audio MIME type");
+        }
+        await deps.media.play(data, format);
+        return null;
+      }
+      case "media.stop":
+        deps.media.stopPlayback();
+        return null;
+      case "composer.insert":
+        return deps.insertComposerText(requireString(args.text, "text", MAX_COMPOSER_TEXT));
+      case "view.close":
+        deps.closeView();
+        return null;
     }
   }
 

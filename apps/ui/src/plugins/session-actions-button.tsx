@@ -45,7 +45,7 @@ const invoke = (client: DaemonClient, input: ActionInput) =>
 
 /**
  * Plugin contributions for the session header: `sessionActions` (invoked with the focused
- * agent and the workspace directory) and `panels` (opened as workspace tabs). Renders nothing
+ * agent and the workspace directory), `panels` and `views` (opened as workspace tabs). Renders nothing
  * when the host has no plugin feature or no plugin contributes either.
  */
 export function PluginSessionActionsButton({
@@ -90,7 +90,8 @@ function SessionActionsMenu({
   const sets = useMemo(
     () =>
       contributions.contributions.filter(
-        (set) => set.sessionActions.length > 0 || set.panels.length > 0,
+        (set) =>
+          set.sessionActions.length > 0 || set.panels.length > 0 || (set.views?.length ?? 0) > 0,
       ),
     [contributions.contributions],
   );
@@ -181,6 +182,19 @@ function PluginMenuSection({
               badge={set.badges[panel.id]}
               pluginId={set.pluginId}
               itemId={panel.id}
+              onPick={onOpenPanel}
+            />
+          ))
+        : null}
+      {onOpenPanel
+        ? (set.views ?? []).map((view) => (
+            <PluginMenuItem
+              key={`view:${view.id}`}
+              testID={`plugin-open-view-${view.id}`}
+              label={view.title}
+              badge={set.badges[view.id]}
+              pluginId={set.pluginId}
+              itemId={view.id}
               onPick={onOpenPanel}
             />
           ))

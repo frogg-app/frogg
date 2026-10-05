@@ -123,6 +123,8 @@ import type { MessageInputKeyboardActionKind } from "@/keyboard/actions";
 import { submitAgentInput } from "@/composer/submit";
 import { createMessageSubmissionWriter } from "@/composer/submission/writer";
 import { ComposerKeyboardScopeProvider, useComposerKeyboardScope } from "@/composer/keyboard-scope";
+import { PluginComposerActionsButton } from "@/plugins/composer-actions-button";
+import { registerComposerTarget } from "@/plugins/composer-target";
 import { useAppSettings } from "@/hooks/use-settings";
 import { RenderProfile } from "@/utils/render-profiler";
 import { AfterPaintPublication } from "@/composer/after-paint-publication";
@@ -1364,6 +1366,22 @@ function ComposerContentImpl({
     [onChangeText],
   );
 
+  // ctx.composer.insertText from plugins lands in the composer of the focused pane.
+  const { isActiveComposer } = useComposerKeyboardScope();
+  const pluginInsertStateRef = useRef({ value: userInput, cursor: cursorIndex });
+  pluginInsertStateRef.current = { value: userInput, cursor: cursorIndex };
+  useEffect(() => {
+    if (!isActiveComposer) return;
+    return registerComposerTarget({
+      insert: (text) => {
+        const { value: current, cursor } = pluginInsertStateRef.current;
+        const at = Math.min(Math.max(cursor, 0), current.length);
+        const end = at + text.length;
+        replaceUserInput(current.slice(0, at) + text + current.slice(at), { start: end, end });
+      },
+    });
+  }, [isActiveComposer, replaceUserInput]);
+
   const runClientSlashCommand = useCallback(
     (command: ClientSlashCommand): boolean => {
       if (command.execution !== "immediate" || !onClientSlashCommand) {
@@ -2093,10 +2111,16 @@ function ComposerContentImpl({
         {mode.showAgentControls ? (
           <ComposerVoiceAlertsToggle serverId={serverId} workspaceId={workspaceId} />
         ) : null}
+        <PluginComposerActionsButton
+          serverId={serverId}
+          agentId={hasAgent && agentId ? agentId : null}
+          cwd={cwd || null}
+        />
       </>
     ),
     [
       agentId,
+      cwd,
       agentState.provider,
       agentState.providerAccountId,
       contextWindowMeter,

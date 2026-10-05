@@ -172,6 +172,15 @@ function bridgeWith(capabilities: string[]) {
   let settings: Record<string, unknown> = {};
   const notify = vi.fn();
   const rpcCall = vi.fn(async () => ({ count: 2 }));
+  const emitEvent = vi.fn();
+  const media = {
+    startCapture: vi.fn(async () => undefined),
+    stopCapture: vi.fn(),
+    play: vi.fn(async () => undefined),
+    stopPlayback: vi.fn(),
+  };
+  const insertComposerText = vi.fn(async () => true);
+  const closeView = vi.fn();
   const bridge = createClientPluginBridge({
     pluginId: "acme.clock",
     capabilities,
@@ -184,8 +193,21 @@ function bridgeWith(capabilities: string[]) {
     },
     rpcCall,
     notify,
+    emitEvent,
+    media,
+    insertComposerText,
+    closeView,
   });
-  return { bridge, notify, rpcCall, settings: () => settings };
+  return {
+    bridge,
+    notify,
+    rpcCall,
+    emitEvent,
+    media,
+    insertComposerText,
+    closeView,
+    settings: () => settings,
+  };
 }
 
 describe("capability bridge", () => {
@@ -209,6 +231,35 @@ describe("capability bridge", () => {
     await expect(bridge.handle("fs.read", {})).rejects.toMatchObject({ code: "invalid_request" });
   });
 
+  it("gates media, composer, events and view ops on their capabilities", async () => {
+    const denied = bridgeWith(["rpc"]);
+    for (const op of ["media.capture.start", "media.play", "composer.insert", "view.close"]) {
+      await expect(denied.bridge.handle(op, {})).rejects.toMatchObject({ code: "forbidden" });
+    }
+    const { bridge, media, insertComposerText, emitEvent, closeView } = bridgeWith([
+      "rpc",
+      "media.microphone",
+      "media.audio",
+      "composer",
+      "ui.view",
+    ]);
+    await bridge.handle("media.capture.start", {});
+    expect(media.startCapture).toHaveBeenCalled();
+    await bridge.handle("media.play", { data: "AA==", format: "audio/mpeg" });
+    expect(media.play).toHaveBeenCalledWith("AA==", "audio/mpeg");
+    await expect(
+      bridge.handle("media.play", { data: "AA==", format: "text/html" }),
+    ).rejects.toMatchObject({
+      code: "invalid_request",
+    });
+    await expect(bridge.handle("composer.insert", { text: "hi" })).resolves.toBe(true);
+    expect(insertComposerText).toHaveBeenCalledWith("hi");
+    await bridge.handle("events.emit", { event: "state", data: { a: 1 } });
+    expect(emitEvent).toHaveBeenCalledWith("state", { a: 1 });
+    await bridge.handle("view.close", {});
+    expect(closeView).toHaveBeenCalled();
+  });
+
   it("stores JSON settings device-locally and serialises writes", async () => {
     const { bridge, settings } = bridgeWith(["settings.store"]);
     await Promise.all([
@@ -223,7 +274,11 @@ describe("capability bridge", () => {
 
 // ---------------------------------------------------------------------------- message bridge
 
-type Boot = (port: unknown, load: (code: string) => Promise<unknown>) => void;
+type Boot = (
+  port: unknown,
+  load: (code: string) => Promise<unknown>,
+  getRoot?: () => unknown,
+) => void;
 const boot = new Function(`${CLIENT_PLUGIN_BOOTSTRAP}; return __froggBoot;`)() as Boot;
 
 function nodePort(port: import("node:worker_threads").MessagePort): PortLike {
@@ -235,7 +290,11 @@ function nodePort(port: import("node:worker_threads").MessagePort): PortLike {
 }
 
 /** Wires the real bootstrap to a channel over a Node MessageChannel; `activate` is the plugin. */
-function sandboxPair(activate: (ctx: ClientPluginContext) => unknown, capabilities: string[]) {
+function sandboxPair(
+  activate: (ctx: ClientPluginContext) => unknown,
+  capabilities: string[],
+  extra: { views?: Record<string, (root: unknown, ctx: ClientPluginContext) => unknown> } = {},
+) {
   const { port1, port2 } = new MessageChannel();
   const inner = {
     postMessage: (m: unknown) => port2.postMessage(m),
@@ -243,7 +302,11 @@ function sandboxPair(activate: (ctx: ClientPluginContext) => unknown, capabiliti
       port2.on("message", (data) => fn({ data }));
     },
   };
-  boot(inner, async () => ({ default: activate }));
+  boot(
+    inner,
+    async () => ({ default: activate, views: extra.views }),
+    () => "ROOT",
+  );
   const deps = bridgeWith(capabilities);
   const channel = new ClientPluginChannel(nodePort(port1), deps.bridge);
   const info = { id: "acme.clock", version: "1.0.0", dev: false, capabilities };
@@ -319,6 +382,58 @@ describe("sandbox message bridge", () => {
     const pending = pair.channel.invoke("slow", {});
     pair.close();
     await expect(pending).rejects.toMatchObject({ code: "not_active" });
+  });
+});
+
+function recordingPlugin(seen: unknown[]) {
+  const onState = (data: unknown) => seen.push(["event", data]);
+  const onAudio = (chunk: { sampleRate: number }) => seen.push(["audio", chunk.sampleRate]);
+  return (ctx: ClientPluginContext) => {
+    ctx.events.on("state", onState);
+    ctx.media.onAudio(onAudio);
+    ctx.rpc.handle("go", () => {
+      ctx.events.emit("ping", { n: 1 });
+      return ctx.media.startCapture();
+    });
+  };
+}
+
+describe("sandbox events, audio and views", () => {
+  it("delivers events and audio chunks to listeners and emits through the bridge", async () => {
+    const seen: unknown[] = [];
+    const pair = sandboxPair(recordingPlugin(seen), ["rpc", "media.microphone"]);
+    await pair.channel.activate("", pair.info);
+    pair.channel.deliverEvent("state", { phase: "listening" });
+    pair.channel.deliverAudio({ pcm16: "", sampleRate: 16000, level: 0 });
+    await pair.channel.invoke("go", {});
+    expect(seen).toEqual([
+      ["event", { phase: "listening" }],
+      ["audio", 16000],
+    ]);
+    expect(pair.deps.emitEvent).toHaveBeenCalledWith("ping", { n: 1 });
+    expect(pair.deps.media.startCapture).toHaveBeenCalled();
+    pair.close();
+  });
+
+  it("renders the named view into the root instead of activating", async () => {
+    const activate = vi.fn();
+    const render = vi.fn((_root: unknown, ctx: ClientPluginContext) => {
+      ctx.view?.close();
+    });
+    const pair = sandboxPair(activate, ["rpc", "ui.view"], { views: { main: render } });
+    await pair.channel.activate("", { ...pair.info, view: "main" });
+    expect(activate).not.toHaveBeenCalled();
+    expect(render.mock.calls[0]?.[0]).toBe("ROOT");
+    await vi.waitFor(() => expect(pair.deps.closeView).toHaveBeenCalled());
+    pair.close();
+
+    const missing = sandboxPair(activate, ["ui.view"]);
+    await expect(
+      missing.channel.activate("", { ...missing.info, view: "nope" }),
+    ).rejects.toMatchObject({
+      code: "plugin_error",
+    });
+    missing.close();
   });
 });
 

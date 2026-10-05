@@ -28,6 +28,7 @@ import type {
   PluginRepo,
   PluginsChangedMessage,
   PluginsNotifyMessage,
+  PluginsEventMessage,
 } from "@frogg/protocol/plugins/rpc-schemas";
 import type { PluginNotifyLevel } from "@frogg/protocol/plugins/api-v1";
 import { PluginServiceError } from "./errors.js";
@@ -38,7 +39,7 @@ import {
   fetchVerifiedTarball,
   type FetchLike,
 } from "./repo-client.js";
-import { PluginRuntime, type PluginAgentBridge } from "./runtime.js";
+import { PluginRuntime, type PluginAgentBridge, type PluginSpeechBridge } from "./runtime.js";
 import { PluginSettingsFile } from "./settings-store.js";
 import { PluginStateStore, type InstalledPluginRecord } from "./state-store.js";
 import { isValidPublicKey } from "./signing.js";
@@ -69,7 +70,7 @@ export const DEFAULT_PLUGIN_POLICY: PluginBrandPolicy = {
   autoUpdate: "brand-repos",
 };
 
-export type PluginServiceEvent = PluginsChangedMessage | PluginsNotifyMessage;
+export type PluginServiceEvent = PluginsChangedMessage | PluginsNotifyMessage | PluginsEventMessage;
 
 export interface PluginServiceOptions {
   froggHome: string;
@@ -77,6 +78,7 @@ export interface PluginServiceOptions {
   policy: PluginBrandPolicy;
   fetch?: FetchLike;
   agents?: PluginAgentBridge | null;
+  speech?: PluginSpeechBridge | null;
   /** Override the compiled-in official repo (tests). */
   officialRepo?: { name: string; url: string; publicKey: string };
   /** Auto-update poll interval; 0 disables polling. Default 6h. */
@@ -541,10 +543,13 @@ export class PluginService {
       granted,
       settings: this.settingsFor(p.manifest.id),
       agents: this.opts.agents ?? null,
+      speech: this.opts.speech ?? null,
       logger: this.logger,
       hooks: {
         notify: (pluginId, message, level: PluginNotifyLevel) =>
           this.emit({ type: "plugins.notify", payload: { pluginId, message, level } }),
+        emitEvent: (pluginId, event, data) =>
+          this.emit({ type: "plugins.event", payload: { pluginId, event, data } }),
         badgesChanged: (pluginId) => this.changed(pluginId, "contributions"),
         refreshPanel: (pluginId) => this.changed(pluginId, "contributions"),
       },
@@ -1062,6 +1067,8 @@ export class PluginService {
         commands: c.commands ?? [],
         sessionActions: c.sessionActions ?? [],
         panels: c.panels ?? [],
+        views: c.views ?? [],
+        composerActions: c.composerActions ?? [],
         settings: c.settings ?? [],
         badges: p.runtime?.badgeMap ?? {},
       });

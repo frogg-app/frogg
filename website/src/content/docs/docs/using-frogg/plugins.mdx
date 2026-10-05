@@ -48,8 +48,12 @@ check is not installed and the reason is shown.
 Each client plugin runs in its own sandbox with no access to the app's windows, storage or
 other plugins. It can only use what its permissions allow: device-local settings
 (`settings.store`), toasts (`ui.contribute`), answering its own commands, session actions and
-panels, and calling its host half (`rpc`), and network requests only with `network`. Commands,
-session actions and panels from client plugins appear alongside those from hosts.
+panels, and calling its host half (`rpc`), and network requests only with `network`. With the
+matching permissions it can also draw its own views (`ui.view`), use the microphone
+(`media.microphone`) and play audio (`media.audio`) through the app, which asks for microphone
+access itself and lets only one voice feature hold the microphone at a time, and add composer
+buttons that insert text (`composer`). Commands, session actions, panels and views from client
+plugins appear alongside those from hosts.
 
 The **Installed** list shows each plugin's status (Starting, Active, Error, Disabled, Blocked),
 source and a switch. **Uninstall** asks for confirmation. Your brand's allow and deny lists
@@ -107,6 +111,11 @@ added yourself carry an extra warning.
 | `settings.store`       | Store its own settings                  |
 | `ui.contribute`        | Add commands, buttons and panels        |
 | `rpc`                  | Answer requests from the app            |
+| `ui.view`              | Show its own views in the app           |
+| `media.microphone`     | Use the microphone                      |
+| `media.audio`          | Play audio                              |
+| `composer`             | Add composer buttons and insert text    |
+| `speech`               | Use the host's speech recognition and voices |
 
 ## Repositories
 
@@ -138,6 +147,11 @@ in which case the option is hidden on hosts and in the desktop app alike.
 - **Session actions** and **panels** appear under the puzzle button in the session header.
   Actions run against the focused agent and the workspace directory. Panels open as workspace
   tabs and show a list, formatted text or a form the plugin provides.
+- **Views** are listed under the same puzzle button and open as workspace tabs too, but the
+  plugin draws them itself in a sandbox. They need the plugin installed on this device and run
+  in the desktop and web apps.
+- **Composer actions** appear under a puzzle button in the composer toolbar and run against the
+  composer's agent and directory.
 - **Settings** appear on the plugin's settings page.
 - **Notifications** from a plugin show as toasts.
 

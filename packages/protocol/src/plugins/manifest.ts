@@ -40,6 +40,11 @@ export const PLUGIN_CAPABILITIES = [
   "settings.store",
   "ui.contribute",
   "rpc",
+  "ui.view",
+  "media.microphone",
+  "media.audio",
+  "composer",
+  "speech",
 ] as const;
 export const PluginCapabilitySchema = z.enum(PLUGIN_CAPABILITIES);
 export type PluginCapability = z.infer<typeof PluginCapabilitySchema>;
@@ -62,6 +67,26 @@ export const PluginCommandContributionSchema = z.object({
  * Session header button. Invoking it calls plugin RPC method `<id>` with `{ agentId, cwd }`.
  */
 export const PluginSessionActionContributionSchema = z.object({
+  id: ContributionIdSchema,
+  title: TitleSchema,
+  icon: z.string().max(64).optional(),
+});
+
+/**
+ * Custom view: a visible sandboxed iframe in the app that loads the plugin's client entry and
+ * calls its exported `views[<id>](root, ctx)`. Needs a client entry and the "ui.view" capability.
+ */
+export const PluginViewContributionSchema = z.object({
+  id: ContributionIdSchema,
+  title: TitleSchema,
+  icon: z.string().max(64).optional(),
+});
+
+/**
+ * Composer button. Invoking it calls plugin RPC method `<id>` with `{ agentId, cwd }` (either may
+ * be null when the composer is not attached to an agent). Needs the "composer" capability.
+ */
+export const PluginComposerActionContributionSchema = z.object({
   id: ContributionIdSchema,
   title: TitleSchema,
   icon: z.string().max(64).optional(),
@@ -109,6 +134,8 @@ export const PluginContributesSchema = z.object({
   commands: z.array(PluginCommandContributionSchema).max(50).optional(),
   sessionActions: z.array(PluginSessionActionContributionSchema).max(20).optional(),
   panels: z.array(PluginPanelContributionSchema).max(20).optional(),
+  views: z.array(PluginViewContributionSchema).max(20).optional(),
+  composerActions: z.array(PluginComposerActionContributionSchema).max(10).optional(),
   settings: z.array(PluginSettingFieldSchema).max(100).optional(),
 });
 export type PluginContributes = z.infer<typeof PluginContributesSchema>;
@@ -164,18 +191,38 @@ function entryIssues(m: {
   return issues;
 }
 
-function contributionIssues(
+/** Views and composer actions: the contributions added for app-side surfaces. */
+function surfaceIssues(
+  scope: PluginScope,
   capabilities: readonly string[],
-  c: PluginContributes | undefined,
+  c: PluginContributes,
 ): ManifestIssue[] {
-  if (!c) return [];
   const issues: ManifestIssue[] = [];
-  const invokesRpc =
-    (c.commands?.length ?? 0) + (c.sessionActions?.length ?? 0) + (c.panels?.length ?? 0) > 0;
-  if (invokesRpc && !capabilities.includes("rpc")) {
+  if (c.views?.length) {
+    if (!capabilities.includes("ui.view")) {
+      issues.push({
+        path: ["capabilities"],
+        message: 'views contributions require the "ui.view" capability',
+      });
+    }
+    if (scope !== "client" && scope !== "hybrid") {
+      issues.push({
+        path: ["contributes", "views"],
+        message: "views need a client entry (scope client or hybrid)",
+      });
+    }
+  }
+  const panelIds = new Set((c.panels ?? []).map((p) => p.id));
+  if ((c.views ?? []).some((v) => panelIds.has(v.id))) {
+    issues.push({
+      path: ["contributes", "views"],
+      message: "a view id must not repeat a panel id; both open as the same tab",
+    });
+  }
+  if (c.composerActions?.length && !capabilities.includes("composer")) {
     issues.push({
       path: ["capabilities"],
-      message: 'commands, sessionActions and panels require the "rpc" capability',
+      message: 'composerActions contributions require the "composer" capability',
     });
   }
   if (c.settings?.length && !capabilities.includes("settings.store")) {
@@ -184,10 +231,35 @@ function contributionIssues(
       message: 'settings contributions require the "settings.store" capability',
     });
   }
+  return issues;
+}
+
+function contributionIssues(
+  scope: PluginScope,
+  capabilities: readonly string[],
+  c: PluginContributes | undefined,
+): ManifestIssue[] {
+  if (!c) return [];
+  const issues: ManifestIssue[] = [];
+  const invokesRpc =
+    (c.commands?.length ?? 0) +
+      (c.sessionActions?.length ?? 0) +
+      (c.panels?.length ?? 0) +
+      (c.composerActions?.length ?? 0) >
+    0;
+  if (invokesRpc && !capabilities.includes("rpc")) {
+    issues.push({
+      path: ["capabilities"],
+      message: 'commands, sessionActions, panels and composerActions require the "rpc" capability',
+    });
+  }
+  issues.push(...surfaceIssues(scope, capabilities, c));
   const idLists: Record<string, string[]> = {
     commands: (c.commands ?? []).map((x) => x.id),
     sessionActions: (c.sessionActions ?? []).map((x) => x.id),
     panels: (c.panels ?? []).map((x) => x.id),
+    views: (c.views ?? []).map((x) => x.id),
+    composerActions: (c.composerActions ?? []).map((x) => x.id),
     settings: (c.settings ?? []).map((x) => x.key),
   };
   for (const [key, ids] of Object.entries(idLists)) {
@@ -207,7 +279,11 @@ function manifestIssues(m: {
   if (new Set(m.capabilities).size !== m.capabilities.length) {
     issues.push({ path: ["capabilities"], message: "duplicate capability" });
   }
-  return [...issues, ...entryIssues(m), ...contributionIssues(m.capabilities, m.contributes)];
+  return [
+    ...issues,
+    ...entryIssues(m),
+    ...contributionIssues(m.scope, m.capabilities, m.contributes),
+  ];
 }
 
 export function isSafeRelativePath(p: string): boolean {
@@ -264,6 +340,7 @@ export type PluginPanelContent = z.infer<typeof PluginPanelContentSchema>;
 export const pluginContributionMethods = {
   command: (id: string) => id,
   sessionAction: (id: string) => id,
+  composerAction: (id: string) => id,
   panelRender: (id: string) => `panel.${id}.render`,
   panelSubmit: (id: string) => `panel.${id}.submit`,
 } as const;

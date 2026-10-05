@@ -2136,8 +2136,6 @@ pub struct SetDaemonConfigRequestConfig {
     pub auto_update: Option<SetDaemonConfigRequestConfigAutoUpdate>,
     #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
     pub host_settings: Option<SetDaemonConfigRequestConfigHostSettings>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub storage: Option<SetDaemonConfigRequestConfigStorage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -2259,34 +2257,6 @@ pub enum SetDaemonConfigRequestConfigHostSettingsHiddenSectionsItem {
     Terminals,
     #[serde(rename = "host")]
     Host,
-    #[serde(rename = "resources")]
-    Resources,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetDaemonConfigRequestConfigStorage {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub alerts: Option<SetDaemonConfigRequestConfigStorageAlerts>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetDaemonConfigRequestConfigStorageAlerts {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<bool>,
-    #[serde(rename = "warnBytes", skip_serializing_if = "Option::is_none")]
-    pub warn_bytes: Option<i64>,
-    #[serde(rename = "criticalBytes", skip_serializing_if = "Option::is_none")]
-    pub critical_bytes: Option<i64>,
-    #[serde(rename = "notifyAt", skip_serializing_if = "Option::is_none")]
-    pub notify_at: Option<SetDaemonConfigRequestConfigStorageAlertsNotifyAt>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SetDaemonConfigRequestConfigStorageAlertsNotifyAt {
-    #[serde(rename = "warn")]
-    Warn,
-    #[serde(rename = "critical")]
-    Critical,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

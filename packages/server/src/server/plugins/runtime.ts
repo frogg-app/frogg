@@ -15,6 +15,10 @@ import type {
   PluginNotifyLevel,
   PluginRpcContext,
   PluginRpcHandler,
+  PluginSpeechAvailability,
+  PluginSynthesis,
+  PluginTranscribeInput,
+  PluginTranscription,
 } from "@frogg/protocol/plugins/api-v1";
 import { isPluginCapability, type PluginManifest } from "@frogg/protocol/plugins/manifest";
 import { PluginServiceError } from "./errors.js";
@@ -27,8 +31,15 @@ export interface PluginAgentBridge {
   sendMessage(agentId: string, text: string): Promise<void>;
 }
 
+export interface PluginSpeechBridge {
+  available(): PluginSpeechAvailability;
+  transcribe(input: PluginTranscribeInput): Promise<PluginTranscription>;
+  synthesize(text: string, options?: { speed?: number }): Promise<PluginSynthesis>;
+}
+
 export interface PluginRuntimeHooks {
   notify(pluginId: string, message: string, level: PluginNotifyLevel): void;
+  emitEvent(pluginId: string, event: string, data: unknown): void;
   badgesChanged(pluginId: string): void;
   refreshPanel(pluginId: string, panelId: string): void;
 }
@@ -41,6 +52,7 @@ export interface PluginRuntimeOptions {
   granted: readonly string[];
   settings: PluginSettingsFile;
   agents: PluginAgentBridge | null;
+  speech?: PluginSpeechBridge | null;
   hooks: PluginRuntimeHooks;
   logger: pino.Logger;
   activateTimeoutMs?: number;
@@ -48,6 +60,8 @@ export interface PluginRuntimeOptions {
 }
 
 let importNonce = 0;
+const MAX_EVENT_BYTES = 256 * 1024;
+const MAX_SYNTHESIZE_CHARS = 4000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
@@ -180,6 +194,56 @@ export class PluginRuntime {
           return this.track(() => {
             if (this.rpc.get(method) === handler) this.rpc.delete(method);
           });
+        },
+      };
+      ctx.events = {
+        emit: (event, data) => {
+          if (typeof event !== "string" || !event || event.length > 128) {
+            throw new PluginServiceError("invalid_request", "events.emit(event) needs a name");
+          }
+          let json: unknown;
+          try {
+            json = data === undefined ? null : JSON.parse(JSON.stringify(data));
+          } catch {
+            throw new PluginServiceError("invalid_request", "event data must be JSON");
+          }
+          if (JSON.stringify(json).length > MAX_EVENT_BYTES) {
+            throw new PluginServiceError("invalid_request", "event data is too large");
+          }
+          hooks.emitEvent(manifest.id, event, json);
+        },
+      };
+    }
+    if (this.has("speech")) {
+      const speech = this.opts.speech ?? null;
+      const unavailable = () =>
+        Promise.reject(new PluginServiceError("not_active", "This host has no speech backend"));
+      ctx.speech = {
+        available: async () => speech?.available() ?? { stt: false, tts: false },
+        transcribe: (input) => {
+          if (!speech) return unavailable();
+          if (
+            !input ||
+            typeof input.pcm16 !== "string" ||
+            !Number.isInteger(input.sampleRate) ||
+            input.sampleRate < 8000 ||
+            input.sampleRate > 96000
+          ) {
+            return Promise.reject(
+              new PluginServiceError(
+                "invalid_request",
+                "transcribe({ pcm16, sampleRate }) needs base64 PCM16 and a rate in 8000..96000",
+              ),
+            );
+          }
+          return speech.transcribe(input);
+        },
+        synthesize: (text, options) => {
+          if (!speech) return unavailable();
+          if (typeof text !== "string" || !text.trim()) {
+            return Promise.reject(new PluginServiceError("invalid_request", "text is required"));
+          }
+          return speech.synthesize(text.slice(0, MAX_SYNTHESIZE_CHARS), options);
         },
       };
     }

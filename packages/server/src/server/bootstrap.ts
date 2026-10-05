@@ -96,7 +96,7 @@ import { DownloadTokenStore } from "./file-download/token-store.js";
 import type { OpenAiSpeechProviderConfig } from "./speech/providers/openai/config.js";
 import type { LocalSpeechProviderConfig } from "./speech/providers/local/config.js";
 import type { RequestedSpeechProviders } from "./speech/speech-types.js";
-import { createSpeechService } from "./speech/speech-runtime.js";
+import { createSpeechService, type SpeechService } from "./speech/speech-runtime.js";
 import { mountNotificationAudioRoute } from "./notifications/audio-route.js";
 import {
   createSpokenAlertService,
@@ -166,6 +166,7 @@ import { setupUsageLimitAutoResume } from "./agent/usage-limit-auto-resume.js";
 import { maybeAutoCleanCut, type AutoCleanCutDeps } from "./agent/auto-clean-cut.js";
 import { sendPromptToAgent } from "./agent/agent-prompt.js";
 import { PluginService } from "./plugins/plugin-service.js";
+import { createPluginSpeechBridge } from "./plugins/speech-bridge.js";
 import { createPluginAgentBridge } from "./plugins/agent-bridge.js";
 import { wrapSessionMessage, type SessionOutboundMessage } from "./messages.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
@@ -1695,6 +1696,8 @@ export async function createFroggDaemon(
     if (value === false) usageLimitAutoResume.cancelAll();
   });
 
+  // Assigned once the speech service exists, further down.
+  let pluginSpeechService: SpeechService | null = null;
   const pluginService = new PluginService({
     froggHome: config.froggHome,
     logger,
@@ -1702,6 +1705,7 @@ export async function createFroggDaemon(
     // Beta builds are the developer channel: local plugin folders link out of the box.
     localLinking: !isStableVersion(daemonVersion),
     agents: createPluginAgentBridge({ agentManager, agentStorage, logger }),
+    speech: createPluginSpeechBridge({ resolve: () => pluginSpeechService, logger }),
   });
 
   setupAutoArchiveOnMerge({
@@ -2086,6 +2090,7 @@ export async function createFroggDaemon(
     openaiConfig: config.openai,
     speechConfig: config.speech,
   });
+  pluginSpeechService = speechService;
   logger.info({ elapsed: elapsed() }, "Speech service created");
 
   const spokenAlerts = createSpokenAlertService({

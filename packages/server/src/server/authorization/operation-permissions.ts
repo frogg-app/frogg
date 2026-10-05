@@ -450,6 +450,7 @@ const OUTBOUND_PERMISSION = {
   "plugins.dev.link.response": "daemon.manage",
   "plugins.dev.set_enabled.response": "daemon.manage",
   "plugins.dev.unlink.response": "daemon.manage",
+  "plugins.event": "daemon.read",
   "plugins.get_catalog.response": "daemon.read",
   "plugins.get_contributions.response": "daemon.read",
   "plugins.install.response": "daemon.manage",

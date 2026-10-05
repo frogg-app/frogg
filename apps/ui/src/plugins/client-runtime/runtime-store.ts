@@ -4,6 +4,7 @@ import { isPluginIdAllowed } from "@frogg/protocol/plugins/repo-index";
 import { PluginManifestSchema } from "@frogg/protocol/plugins/manifest";
 import { createClientPluginBridge, type ClientPluginNotifyLevel } from "./bridge";
 import type { ClientPluginChannel } from "./channel";
+import { createClientPluginMediaHost, type ClientPluginMediaHost } from "./media-host";
 import { ClientPluginError } from "./errors";
 import { startIframeSandbox } from "./iframe-sandbox";
 import type { ClientPluginRecord } from "./records";
@@ -24,12 +25,15 @@ export interface ClientPluginRuntimeDeps {
   notify: (pluginId: string, message: string, level: ClientPluginNotifyLevel) => void;
   /** The plugin's daemon half, on a connected host where it is active. */
   rpcCall: (pluginId: string, method: string, params: unknown) => Promise<unknown>;
+  /** Inserts text into the focused composer; false when none is open. */
+  insertComposerText: (text: string) => Promise<boolean>;
   fetch: FetchLike;
 }
 
 let deps: ClientPluginRuntimeDeps = {
   notify: () => undefined,
   rpcCall: () => Promise.reject(new ClientPluginError("not_active", "No host")),
+  insertComposerText: async () => false,
   fetch: (url) => fetch(url),
 };
 
@@ -42,6 +46,55 @@ interface Running {
   dispose: () => void;
 }
 const running = new Map<string, Running>();
+/** Open view sandboxes per plugin. */
+const views = new Map<string, Set<Running>>();
+
+interface PluginMedia {
+  host: ClientPluginMediaHost;
+  /** The sandbox that started capture receives the chunks. */
+  captureTarget: ClientPluginChannel | null;
+}
+const media = new Map<string, PluginMedia>();
+
+function pluginChannels(id: string): ClientPluginChannel[] {
+  const out: ClientPluginChannel[] = [];
+  const background = running.get(id);
+  if (background) out.push(background.channel);
+  for (const view of views.get(id) ?? []) out.push(view.channel);
+  return out;
+}
+
+function mediaFor(id: string): PluginMedia {
+  let entry = media.get(id);
+  if (!entry) {
+    const created: PluginMedia = {
+      captureTarget: null,
+      host: createClientPluginMediaHost({
+        onAudio: (chunk) => created.captureTarget?.deliverAudio(chunk),
+      }),
+    };
+    entry = created;
+    media.set(id, entry);
+  }
+  return entry;
+}
+
+function stopMedia(id: string): void {
+  media.get(id)?.host.dispose();
+  media.delete(id);
+}
+
+/** Delivers an event to every sandbox of `pluginId` on this device except `except`. */
+export function deliverClientPluginEvent(
+  pluginId: string,
+  event: string,
+  data: unknown,
+  except: ClientPluginChannel | null = null,
+): void {
+  for (const channel of pluginChannels(pluginId)) {
+    if (channel !== except) channel.deliverEvent(event, data);
+  }
+}
 
 interface State {
   loaded: boolean;
@@ -87,6 +140,9 @@ async function persist(record: ClientPluginRecord): Promise<void> {
 function stop(id: string): void {
   running.get(id)?.dispose();
   running.delete(id);
+  for (const view of views.get(id) ?? []) view.dispose();
+  views.delete(id);
+  stopMedia(id);
   set((s) => {
     const handled = { ...s.handled };
     delete handled[id];
@@ -115,7 +171,40 @@ async function start(record: ClientPluginRecord): Promise<void> {
   }
   setStatus(record.id, { state: "starting", error: null });
   const id = record.id;
-  const bridge = createClientPluginBridge({
+  const holder: { channel: ClientPluginChannel | null } = { channel: null };
+  const bridge = makeBridge(record, holder, () => undefined);
+  try {
+    const code = record.devPath ? await devSource(record) : record.entrySource;
+    const sandbox = await startIframeSandbox({
+      code,
+      info: {
+        id,
+        version: record.version,
+        dev: record.source === "dev",
+        capabilities: record.grantedCapabilities,
+      },
+      bridge,
+      onHandledChange: (methods) => set((s) => ({ handled: { ...s.handled, [id]: [...methods] } })),
+    });
+    holder.channel = sandbox.channel;
+    running.set(id, sandbox);
+    set((s) => ({ handled: { ...s.handled, [id]: [...sandbox.channel.handledMethods()] } }));
+    setStatus(id, { state: "active", error: null });
+  } catch (error) {
+    setStatus(id, {
+      state: "error",
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+function makeBridge(
+  record: ClientPluginRecord,
+  holder: { channel: ClientPluginChannel | null },
+  closeView: () => void,
+) {
+  const id = record.id;
+  return createClientPluginBridge({
     pluginId: id,
     capabilities: record.grantedCapabilities,
     log: (level, message, data) => {
@@ -141,29 +230,83 @@ async function start(record: ClientPluginRecord): Promise<void> {
       return deps.rpcCall(id, method, params);
     },
     notify: (message, level) => deps.notify(id, message, level),
-  });
-  try {
-    const code = record.devPath ? await devSource(record) : record.entrySource;
-    const sandbox = await startIframeSandbox({
-      code,
-      info: {
-        id,
-        version: record.version,
-        dev: record.source === "dev",
-        capabilities: record.grantedCapabilities,
+    emitEvent: (event, data) => deliverClientPluginEvent(id, event, data, holder.channel),
+    media: {
+      startCapture: async () => {
+        const entry = mediaFor(id);
+        entry.captureTarget = holder.channel;
+        await entry.host.startCapture();
       },
-      bridge,
-      onHandledChange: (methods) => set((s) => ({ handled: { ...s.handled, [id]: [...methods] } })),
-    });
-    running.set(id, sandbox);
-    set((s) => ({ handled: { ...s.handled, [id]: [...sandbox.channel.handledMethods()] } }));
-    setStatus(id, { state: "active", error: null });
-  } catch (error) {
-    setStatus(id, {
-      state: "error",
-      error: error instanceof Error ? error.message : String(error),
-    });
+      stopCapture: () => {
+        const entry = media.get(id);
+        if (!entry) return;
+        entry.captureTarget = null;
+        entry.host.stopCapture();
+      },
+      play: (data, format) => mediaFor(id).host.play(data, format),
+      stopPlayback: () => media.get(id)?.host.stopPlayback(),
+    },
+    insertComposerText: (text) => deps.insertComposerText(text),
+    closeView,
+  });
+}
+
+/**
+ * Renders one of a running plugin's `contributes.views` into `container` in its own visible
+ * sandbox. The view shares the plugin's grants, settings, events and media with its background
+ * half. Dispose to close it.
+ */
+export async function startClientPluginView(input: {
+  pluginId: string;
+  viewId: string;
+  container: HTMLElement;
+  onClose: () => void;
+}): Promise<{ dispose: () => void }> {
+  const record = get().records.find((r) => r.id === input.pluginId);
+  if (!record || get().status[input.pluginId]?.state !== "active") {
+    throw new ClientPluginError("not_active", `${input.pluginId} is not running on this device`);
   }
+  if (!record.grantedCapabilities.includes("ui.view")) {
+    throw new ClientPluginError("forbidden", `${input.pluginId} was not granted "ui.view"`);
+  }
+  if (!record.manifest.contributes?.views?.some((v) => v.id === input.viewId)) {
+    throw new ClientPluginError("not_found", `${input.pluginId} has no view ${input.viewId}`);
+  }
+  const holder: { channel: ClientPluginChannel | null } = { channel: null };
+  const code = record.devPath ? await devSource(record) : record.entrySource;
+  const sandbox = await startIframeSandbox({
+    code,
+    info: {
+      id: record.id,
+      version: record.version,
+      dev: record.source === "dev",
+      capabilities: record.grantedCapabilities,
+      view: input.viewId,
+    },
+    bridge: makeBridge(record, holder, input.onClose),
+    onHandledChange: () => undefined,
+    container: input.container,
+  });
+  holder.channel = sandbox.channel;
+  const entry: Running = {
+    channel: sandbox.channel,
+    dispose: () => {
+      const capture = media.get(record.id);
+      if (capture?.captureTarget === sandbox.channel) {
+        capture.captureTarget = null;
+        capture.host.stopCapture();
+      }
+      sandbox.dispose();
+      views.get(record.id)?.delete(entry);
+    },
+  };
+  let open = views.get(record.id);
+  if (!open) {
+    open = new Set();
+    views.set(record.id, open);
+  }
+  open.add(entry);
+  return { dispose: entry.dispose };
 }
 
 /** Reads installed client plugins from device storage and starts the enabled ones. */

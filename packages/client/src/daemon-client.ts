@@ -64,6 +64,7 @@ import type {
   PluginRepo,
   PluginsChangedMessage,
   PluginsNotifyMessage,
+  PluginsEventMessage,
 } from "@frogg/protocol/messages";
 import type { AgentCleanCutSubagentResult } from "@frogg/protocol/messages";
 import { validateWSOutboundMessage } from "@frogg/protocol/validation/ws-outbound";
@@ -563,6 +564,7 @@ function unwrapPluginPayload<T extends { requestId: string; error: PluginError |
 
 export type PluginsChangedEvent = PluginsChangedMessage["payload"];
 export type PluginsNotifyEvent = PluginsNotifyMessage["payload"];
+export type PluginsEvent = PluginsEventMessage["payload"];
 export type {
   PluginCatalogEntry,
   PluginContributionSet,
@@ -4778,6 +4780,10 @@ export class DaemonClient {
 
   onPluginsNotify(handler: (event: PluginsNotifyEvent) => void): () => void {
     return this.on("plugins.notify", (message) => handler(message.payload));
+  }
+
+  onPluginsEvent(handler: (event: PluginsEvent) => void): () => void {
+    return this.on("plugins.event", (message) => handler(message.payload));
   }
 
   async checkoutForgeSetAutoMerge(

@@ -59,6 +59,11 @@ const en = {
     settings_store: "Store its own settings",
     ui_contribute: "Add commands, buttons and panels",
     rpc: "Answer requests from the app",
+    ui_view: "Show its own views in the app",
+    media_microphone: "Use the microphone",
+    media_audio: "Play audio",
+    composer: "Add composer buttons and insert text",
+    speech: "Use the host's speech recognition and voices",
   },
   errors: {
     withDetail: "{{summary}} {{detail}}",
@@ -158,9 +163,15 @@ const en = {
     empty: "Nothing to show.",
     submit: "Submit",
     submitted: "Submitted",
+    viewUnsupported: "This view runs on desktop and web.",
+    viewNeedsClient: "Install {{plugin}} on this device to open this view.",
+    viewFailed: "Could not open this view: {{error}}",
   },
   sessionActions: {
     trigger: "Plugin actions",
+  },
+  composerActions: {
+    trigger: "Plugin composer actions",
   },
   commandCenter: {
     section: "Plugins",
@@ -239,6 +250,11 @@ export const pluginsCopies: Record<
       settings_store: "Guardar su propia configuración",
       ui_contribute: "Añadir comandos, botones y paneles",
       rpc: "Responder a solicitudes de la app",
+      ui_view: "Mostrar sus propias vistas en la app",
+      media_microphone: "Usar el micrófono",
+      media_audio: "Reproducir audio",
+      composer: "Añadir botones al editor e insertar texto",
+      speech: "Usar el reconocimiento de voz y las voces del host",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -339,9 +355,15 @@ export const pluginsCopies: Record<
       empty: "No hay nada que mostrar.",
       submit: "Enviar",
       submitted: "Enviado",
+      viewUnsupported: "Esta vista funciona en escritorio y web.",
+      viewNeedsClient: "Instala {{plugin}} en este dispositivo para abrir esta vista.",
+      viewFailed: "No se pudo abrir esta vista: {{error}}",
     },
     sessionActions: {
       trigger: "Acciones de plugins",
+    },
+    composerActions: {
+      trigger: "Acciones de plugins del editor",
     },
     commandCenter: {
       section: "Plugins",
@@ -408,6 +430,11 @@ export const pluginsCopies: Record<
       settings_store: "Enregistrer ses propres réglages",
       ui_contribute: "Ajouter des commandes, boutons et panneaux",
       rpc: "Répondre aux requêtes de l’app",
+      ui_view: "Afficher ses propres vues dans l'app",
+      media_microphone: "Utiliser le micro",
+      media_audio: "Lire de l'audio",
+      composer: "Ajouter des boutons au compositeur et insérer du texte",
+      speech: "Utiliser la reconnaissance vocale et les voix de l'hôte",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -508,9 +535,15 @@ export const pluginsCopies: Record<
       empty: "Rien à afficher.",
       submit: "Envoyer",
       submitted: "Envoyé",
+      viewUnsupported: "Cette vue fonctionne sur ordinateur et sur le web.",
+      viewNeedsClient: "Installez {{plugin}} sur cet appareil pour ouvrir cette vue.",
+      viewFailed: "Impossible d'ouvrir cette vue : {{error}}",
     },
     sessionActions: {
       trigger: "Actions des plugins",
+    },
+    composerActions: {
+      trigger: "Actions des plugins du compositeur",
     },
     commandCenter: {
       section: "Plugins",
@@ -578,6 +611,11 @@ export const pluginsCopies: Record<
       settings_store: "独自の設定を保存する",
       ui_contribute: "コマンド・ボタン・パネルを追加する",
       rpc: "アプリからのリクエストに応答する",
+      ui_view: "アプリ内に独自のビューを表示",
+      media_microphone: "マイクを使用",
+      media_audio: "音声を再生",
+      composer: "入力欄にボタンを追加し、テキストを挿入",
+      speech: "ホストの音声認識と音声合成を使用",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -676,9 +714,16 @@ export const pluginsCopies: Record<
       empty: "表示する内容がありません。",
       submit: "送信",
       submitted: "送信しました",
+      viewUnsupported: "このビューはデスクトップと Web で動作します。",
+      viewNeedsClient:
+        "このビューを開くには、このデバイスに {{plugin}} をインストールしてください。",
+      viewFailed: "このビューを開けませんでした: {{error}}",
     },
     sessionActions: {
       trigger: "プラグインのアクション",
+    },
+    composerActions: {
+      trigger: "入力欄のプラグインアクション",
     },
     commandCenter: {
       section: "プラグイン",
@@ -744,6 +789,11 @@ export const pluginsCopies: Record<
       settings_store: "자체 설정 저장",
       ui_contribute: "명령, 버튼, 패널 추가",
       rpc: "앱의 요청에 응답",
+      ui_view: "앱에 자체 보기 표시",
+      media_microphone: "마이크 사용",
+      media_audio: "오디오 재생",
+      composer: "작성기에 버튼 추가 및 텍스트 삽입",
+      speech: "호스트의 음성 인식과 음성 사용",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -842,9 +892,15 @@ export const pluginsCopies: Record<
       empty: "표시할 내용이 없습니다.",
       submit: "제출",
       submitted: "제출됨",
+      viewUnsupported: "이 보기는 데스크톱과 웹에서 실행됩니다.",
+      viewNeedsClient: "이 보기를 열려면 이 기기에 {{plugin}}을(를) 설치하세요.",
+      viewFailed: "이 보기를 열 수 없습니다: {{error}}",
     },
     sessionActions: {
       trigger: "플러그인 작업",
+    },
+    composerActions: {
+      trigger: "작성기 플러그인 작업",
     },
     commandCenter: {
       section: "플러그인",
@@ -911,6 +967,11 @@ export const pluginsCopies: Record<
       settings_store: "Guardar as próprias configurações",
       ui_contribute: "Adicionar comandos, botões e painéis",
       rpc: "Responder a requisições do app",
+      ui_view: "Mostrar as próprias visualizações no app",
+      media_microphone: "Usar o microfone",
+      media_audio: "Reproduzir áudio",
+      composer: "Adicionar botões ao editor e inserir texto",
+      speech: "Usar o reconhecimento de fala e as vozes do host",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -1011,9 +1072,15 @@ export const pluginsCopies: Record<
       empty: "Nada para mostrar.",
       submit: "Enviar",
       submitted: "Enviado",
+      viewUnsupported: "Esta visualização funciona no desktop e na web.",
+      viewNeedsClient: "Instale {{plugin}} neste dispositivo para abrir esta visualização.",
+      viewFailed: "Não foi possível abrir esta visualização: {{error}}",
     },
     sessionActions: {
       trigger: "Ações de plugins",
+    },
+    composerActions: {
+      trigger: "Ações de plugins do editor",
     },
     commandCenter: {
       section: "Plugins",
@@ -1081,6 +1148,11 @@ export const pluginsCopies: Record<
       settings_store: "Хранить собственные настройки",
       ui_contribute: "Добавлять команды, кнопки и панели",
       rpc: "Отвечать на запросы приложения",
+      ui_view: "Показывать собственные представления в приложении",
+      media_microphone: "Использовать микрофон",
+      media_audio: "Воспроизводить звук",
+      composer: "Добавлять кнопки в редактор и вставлять текст",
+      speech: "Использовать распознавание речи и голоса хоста",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -1181,9 +1253,15 @@ export const pluginsCopies: Record<
       empty: "Нечего показать.",
       submit: "Отправить",
       submitted: "Отправлено",
+      viewUnsupported: "Это представление работает в настольной и веб-версии.",
+      viewNeedsClient: "Установите {{plugin}} на это устройство, чтобы открыть это представление.",
+      viewFailed: "Не удалось открыть представление: {{error}}",
     },
     sessionActions: {
       trigger: "Действия плагинов",
+    },
+    composerActions: {
+      trigger: "Действия плагинов в редакторе",
     },
     commandCenter: {
       section: "Плагины",
@@ -1247,6 +1325,11 @@ export const pluginsCopies: Record<
       settings_store: "保存自己的设置",
       ui_contribute: "添加命令、按钮和面板",
       rpc: "响应来自应用的请求",
+      ui_view: "在应用中显示自己的视图",
+      media_microphone: "使用麦克风",
+      media_audio: "播放音频",
+      composer: "添加输入框按钮并插入文本",
+      speech: "使用主机的语音识别和语音",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -1342,9 +1425,15 @@ export const pluginsCopies: Record<
       empty: "没有可显示的内容。",
       submit: "提交",
       submitted: "已提交",
+      viewUnsupported: "此视图可在桌面版和网页版中运行。",
+      viewNeedsClient: "在此设备上安装 {{plugin}} 以打开此视图。",
+      viewFailed: "无法打开此视图：{{error}}",
     },
     sessionActions: {
       trigger: "插件操作",
+    },
+    composerActions: {
+      trigger: "输入框插件操作",
     },
     commandCenter: {
       section: "插件",
@@ -1408,6 +1497,11 @@ export const pluginsCopies: Record<
       settings_store: "حفظ إعداداتها الخاصة",
       ui_contribute: "إضافة أوامر وأزرار ولوحات",
       rpc: "الرد على طلبات التطبيق",
+      ui_view: "عرض واجهاته الخاصة في التطبيق",
+      media_microphone: "استخدام الميكروفون",
+      media_audio: "تشغيل الصوت",
+      composer: "إضافة أزرار إلى المحرر وإدراج نص",
+      speech: "استخدام التعرف على الكلام والأصوات في المضيف",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -1503,9 +1597,15 @@ export const pluginsCopies: Record<
       empty: "لا شيء لعرضه.",
       submit: "إرسال",
       submitted: "تم الإرسال",
+      viewUnsupported: "تعمل هذه الواجهة على سطح المكتب والويب.",
+      viewNeedsClient: "ثبّت {{plugin}} على هذا الجهاز لفتح هذه الواجهة.",
+      viewFailed: "تعذّر فتح هذه الواجهة: {{error}}",
     },
     sessionActions: {
       trigger: "إجراءات الإضافات",
+    },
+    composerActions: {
+      trigger: "إجراءات المكونات الإضافية في المحرر",
     },
     commandCenter: {
       section: "الإضافات",

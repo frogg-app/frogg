@@ -19,7 +19,12 @@ export type PluginCapabilityName =
   | "agent.write"
   | "settings.store"
   | "ui.contribute"
-  | "rpc";
+  | "rpc"
+  | "ui.view"
+  | "media.microphone"
+  | "media.audio"
+  | "composer"
+  | "speech";
 
 export type PluginJsonValue =
   | string
@@ -119,6 +124,49 @@ export interface PluginUiApi {
   refreshPanel(panelId: string): void;
 }
 
+export interface PluginEventsApi {
+  /**
+   * Pushes an event to this plugin's client halves on every connected app (`rpc`). `data` must be
+   * JSON. Clients receive it through `ctx.events.on(event, listener)`.
+   */
+  emit(event: string, data?: unknown): void;
+}
+
+export interface PluginSpeechAvailability {
+  /** A speech-to-text backend is configured and ready. */
+  stt: boolean;
+  /** A text-to-speech backend is configured and ready. */
+  tts: boolean;
+}
+
+export interface PluginTranscribeInput {
+  /** Mono PCM16 little-endian samples, base64. */
+  pcm16: string;
+  /** Sample rate of `pcm16`; the host resamples to whatever its backend needs. */
+  sampleRate: number;
+  /** BCP 47 hint; defaults to the host's configured language. */
+  language?: string;
+}
+
+export interface PluginTranscription {
+  text: string;
+  language?: string;
+}
+
+export interface PluginSynthesis {
+  /** Encoded audio, base64. */
+  audio: string;
+  /** MIME type of `audio`, e.g. "audio/mpeg" or "audio/pcm;rate=24000". */
+  format: string;
+}
+
+/** The host's configured voice backends (`speech`). */
+export interface PluginSpeechApi {
+  available(): Promise<PluginSpeechAvailability>;
+  transcribe(input: PluginTranscribeInput): Promise<PluginTranscription>;
+  synthesize(text: string, options?: { speed?: number }): Promise<PluginSynthesis>;
+}
+
 export interface PluginContext {
   apiVersion: PluginApiVersion;
   log: PluginLogger;
@@ -131,6 +179,10 @@ export interface PluginContext {
   rpc: PluginRpcApi;
   /** `ui.contribute` */
   ui: PluginUiApi;
+  /** `rpc` */
+  events: PluginEventsApi;
+  /** `speech` */
+  speech: PluginSpeechApi;
   /** Aborted when the plugin is deactivated. */
   signal: AbortSignal;
 }
@@ -184,6 +236,54 @@ export interface ClientPluginUiApi {
   notify(message: string, level?: PluginNotifyLevel): void;
 }
 
+export interface ClientPluginEventsApi {
+  /**
+   * Events from the plugin's daemon half (`ctx.events.emit` there) and from this plugin's other
+   * sandboxes on this device (the background half and any open views).
+   */
+  on(event: string, listener: (data: unknown) => void): PluginDisposable;
+  /** Delivers to this plugin's other sandboxes on this device. `data` must be JSON. */
+  emit(event: string, data?: unknown): void;
+}
+
+export interface ClientPluginAudioChunk {
+  /** Mono PCM16 little-endian samples, base64. */
+  pcm16: string;
+  sampleRate: number;
+  /** RMS level of the chunk, 0..1. */
+  level: number;
+}
+
+export interface ClientPluginMediaApi {
+  /**
+   * `media.microphone`. Asks the app to open the microphone (the app owns the permission prompt)
+   * and streams 16 kHz chunks to `onAudio`. Rejects when the user declines or another feature owns it.
+   */
+  startCapture(): Promise<void>;
+  stopCapture(): void;
+  onAudio(listener: (chunk: ClientPluginAudioChunk) => void): PluginDisposable;
+  /**
+   * `media.audio`. Plays encoded audio (base64 + MIME type, as returned by the daemon's
+   * `ctx.speech.synthesize`) and resolves when it finishes or is stopped. One clip at a time; a
+   * new clip stops the previous one.
+   */
+  play(audio: { data: string; format: string }): Promise<void>;
+  stopPlayback(): void;
+}
+
+export interface ClientPluginComposerApi {
+  /** `composer`. Inserts text at the cursor of the focused composer. False when none is open. */
+  insertText(text: string): Promise<boolean>;
+}
+
+/** Present in a view sandbox only. */
+export interface ClientPluginViewInfo {
+  /** The `contributes.views` id being rendered. */
+  id: string;
+  /** Closes this view. */
+  close(): void;
+}
+
 export interface ClientPluginContext {
   apiVersion: PluginApiVersion;
   log: PluginLogger;
@@ -194,11 +294,31 @@ export interface ClientPluginContext {
   rpc: ClientPluginRpcApi;
   /** `ui.contribute` */
   ui: ClientPluginUiApi;
+  /** `rpc` */
+  events: ClientPluginEventsApi;
+  /** `media.microphone` / `media.audio` */
+  media: ClientPluginMediaApi;
+  /** `composer` */
+  composer: ClientPluginComposerApi;
+  /** Set when this sandbox renders a view; absent in the background half. */
+  view?: ClientPluginViewInfo;
 }
 
 export type ClientPluginActivate = (ctx: ClientPluginContext) => void | Promise<void>;
 
+/**
+ * Renders one `contributes.views` entry into `root`, a full-size element in the view's own
+ * sandboxed iframe (typed `unknown` so the API needs no DOM lib; it is an `HTMLElement`). The
+ * iframe is discarded when the view closes, so there is nothing to clean up.
+ */
+export type ClientPluginViewRender = (
+  root: unknown,
+  ctx: ClientPluginContext,
+) => void | Promise<void>;
+
 export interface ClientPluginModule {
   default?: ClientPluginActivate;
   activate?: ClientPluginActivate;
+  /** View renderers keyed by `contributes.views` id. */
+  views?: Record<string, ClientPluginViewRender>;
 }

@@ -141,6 +141,7 @@ import {
   PluginsSettingsSetResponseSchema,
   PluginsChangedMessageSchema,
   PluginsNotifyMessageSchema,
+  PluginsEventMessageSchema,
 } from "./plugins/rpc-schemas.js";
 import {
   BrowserAutomationExecuteRequestSchema,
@@ -8217,6 +8218,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   PluginsSettingsSetResponseSchema,
   PluginsChangedMessageSchema,
   PluginsNotifyMessageSchema,
+  PluginsEventMessageSchema,
   AuthDeviceListResponseSchema,
   AuthDeviceRenameResponseSchema,
   AuthDeviceRevokeResponseSchema,

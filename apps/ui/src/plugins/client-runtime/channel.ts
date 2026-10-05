@@ -14,6 +14,8 @@ export interface ClientPluginInitInfo {
   version: string;
   dev: boolean;
   capabilities: readonly string[];
+  /** Set for a view sandbox: the `contributes.views` id it renders. */
+  view?: string;
 }
 
 export const DEFAULT_INVOKE_TIMEOUT_MS = 15_000;
@@ -74,6 +76,16 @@ export class ClientPluginChannel {
   private send(message: unknown): void {
     // oxlint-disable-next-line unicorn/require-post-message-target-origin
     this.port.postMessage(message);
+  }
+
+  /** Delivers a ctx.events event to the sandbox. */
+  deliverEvent(event: string, data: unknown): void {
+    if (!this.closed) this.send({ t: "event", event, data });
+  }
+
+  /** Delivers a microphone chunk to the sandbox's ctx.media.onAudio listeners. */
+  deliverAudio(chunk: unknown): void {
+    if (!this.closed) this.send({ t: "audio", chunk });
   }
 
   handledMethods(): ReadonlySet<string> {

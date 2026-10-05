@@ -22,6 +22,8 @@ export function clientContributionSets(
       commands: r.manifest.contributes?.commands ?? [],
       sessionActions: r.manifest.contributes?.sessionActions ?? [],
       panels: r.manifest.contributes?.panels ?? [],
+      views: r.manifest.contributes?.views ?? [],
+      composerActions: r.manifest.contributes?.composerActions ?? [],
       settings: r.manifest.contributes?.settings ?? [],
       badges: {},
     }));

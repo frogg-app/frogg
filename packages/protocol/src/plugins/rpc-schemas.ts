@@ -1,6 +1,8 @@
 import { z } from "zod";
 import {
   PluginCommandContributionSchema,
+  PluginComposerActionContributionSchema,
+  PluginViewContributionSchema,
   PluginPanelContributionSchema,
   PluginSessionActionContributionSchema,
   PluginSettingFieldSchema,
@@ -129,6 +131,8 @@ export const PluginContributionSetSchema = z.object({
   commands: z.array(PluginCommandContributionSchema),
   sessionActions: z.array(PluginSessionActionContributionSchema),
   panels: z.array(PluginPanelContributionSchema),
+  views: z.array(PluginViewContributionSchema).optional(),
+  composerActions: z.array(PluginComposerActionContributionSchema).optional(),
   settings: z.array(PluginSettingFieldSchema),
   /** ctx.ui.setBadge values keyed by contribution id (panel/command/sessionAction). */
   badges: z.record(z.string(), z.string()),
@@ -278,6 +282,16 @@ export const PluginsNotifyMessageSchema = z.object({
   }),
 });
 
+/** ctx.events.emit() from a plugin's daemon half; forwarded to that plugin's client sandboxes. */
+export const PluginsEventMessageSchema = z.object({
+  type: z.literal("plugins.event"),
+  payload: z.object({
+    pluginId: z.string(),
+    event: z.string(),
+    data: z.unknown().optional(),
+  }),
+});
+
 export type PluginsListRequest = z.infer<typeof PluginsListRequestSchema>;
 export type PluginsReposListRequest = z.infer<typeof PluginsReposListRequestSchema>;
 export type PluginsReposAddRequest = z.infer<typeof PluginsReposAddRequestSchema>;
@@ -313,6 +327,7 @@ export type PluginsSettingsGetResponse = z.infer<typeof PluginsSettingsGetRespon
 export type PluginsSettingsSetResponse = z.infer<typeof PluginsSettingsSetResponseSchema>;
 export type PluginsChangedMessage = z.infer<typeof PluginsChangedMessageSchema>;
 export type PluginsNotifyMessage = z.infer<typeof PluginsNotifyMessageSchema>;
+export type PluginsEventMessage = z.infer<typeof PluginsEventMessageSchema>;
 
 export const PLUGINS_INBOUND_SCHEMAS = [
   PluginsListRequestSchema,

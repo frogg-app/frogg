@@ -64,6 +64,10 @@ Entry module default-exports `activate(ctx)` and optionally `deactivate()`.
 - `ctx.agents.list()/get()/onEvent()` (`agent.read`); `sendMessage()` (`agent.write`)
 - `ctx.rpc.handle(method, fn)` — callable from the client half (`rpc`)
 - `ctx.ui.setBadge()/notify()` — updates declarative contributions (`ui.contribute`)
+- `ctx.events.emit(event, data)` — pushes `plugins.event` to the plugin's client halves on
+  every connected app (`rpc`; JSON, 256 KB cap)
+- `ctx.speech.available()/transcribe({ pcm16, sampleRate })/synthesize(text)` — the host's
+  configured STT/TTS backends (`speech`); audio is base64, synthesis returns a MIME type
 
 Plugins run in the daemon process, each loaded via dynamic `import()` with an
 error boundary. v1 is **not** a sandbox: capability gating limits the API
@@ -83,7 +87,15 @@ No arbitrary React. `contributes` may declare:
   by plugin RPC `panel.<id>.render` as a typed JSON tree.
 - `settings`: a JSON-schema-ish field list rendered in the plugin's settings page.
 
-A sandboxed webview panel kind may come later; not in v1.
+- `views`: `{ id, title }` → a custom surface: the client entry's exported `views[id](root, ctx)`
+  renders into a visible sandboxed iframe opened as a workspace tab (`ui.view`; client or
+  hybrid scope; view ids must not repeat panel ids since both use the `plugin_panel` tab).
+- `composerActions`: buttons in the composer toolbar; invoke plugin RPC `<id>` with
+  `{ agentId, cwd }` (`composer`).
+
+`views` and `composerActions` are separate optional arrays rather than new panel kinds, so
+older apps (which parse panel `kind` strictly) ignore them instead of rejecting the whole
+contribution set.
 
 ## Repository index: `index.json`
 
@@ -268,6 +280,17 @@ Client API v1 (`activate(ctx)`; members exist only with the capability):
 - `ctx.rpc.call(method, params)` — the plugin's daemon half via the host's `plugins.rpc.call`
   (`rpc`; hybrid only)
 - `ctx.ui.notify(message, level)` — toast in this app (`ui.contribute`)
+- `ctx.events.on(event, fn)/emit(event, data)` — daemon-half events and fan-out between this
+  plugin's sandboxes on the device: background half plus open views (`rpc`)
+- `ctx.media.startCapture()/stopCapture()/onAudio(fn)` — 16 kHz PCM16 base64 chunks from the
+  app's audio engine (`media.microphone`); `ctx.media.play({ data, format })/stopPlayback()`
+  (`media.audio`). The app owns the permission prompt and the device-wide audio lease, so a
+  plugin cannot capture while dictation or realtime voice is live. Chunks go to the sandbox that
+  started capture.
+- `ctx.composer.insertText(text)` — inserts at the cursor of the focused pane's composer
+  (`composer`); false when none is active
+- `ctx.view` — `{ id, close() }`, present only in a view sandbox; a view sandbox loads the same
+  entry but calls `views[id](root, ctx)` instead of `activate`
 
 Decisions:
 

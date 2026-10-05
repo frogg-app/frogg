@@ -6,6 +6,7 @@ import { getHostRuntimeStore } from "@/runtime/host-runtime";
 import { isPluginsEnabledByBrand, usePluginHostIds } from "../hosts";
 import { ClientPluginError } from "./errors";
 import { loadClientPlugins, setClientPluginRuntimeDeps } from "./runtime-store";
+import { insertIntoActiveComposer } from "../composer-target";
 import { isClientPluginRuntimeSupported } from "./storage";
 
 const SKIP_CODES: ReadonlySet<string> = new Set(["not_found", "not_active", "forbidden"]);
@@ -22,6 +23,7 @@ export function ClientPluginRuntimeHost() {
 
   useEffect(() => {
     setClientPluginRuntimeDeps({
+      insertComposerText: async (text) => insertIntoActiveComposer(text),
       notify: (_pluginId, message, level) => {
         const variant: ToastVariant = level;
         toast.show(message, {

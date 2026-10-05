@@ -58,6 +58,8 @@ pub enum SessionMessage {
     PluginsChanged(PluginsChanged),
     #[serde(rename = "plugins.notify")]
     PluginsNotify(PluginsNotify),
+    #[serde(rename = "plugins.event")]
+    PluginsEvent(PluginsEvent),
     #[serde(rename = "auth.device.list.response")]
     AuthDeviceListResponse(AuthDeviceListResponse),
     #[serde(rename = "auth.device.rename.response")]
@@ -929,6 +931,11 @@ pub struct PluginsGetContributionsResponsePayloadContributionsItem {
     pub session_actions:
         Vec<PluginsGetContributionsResponsePayloadContributionsItemSessionActionsItem>,
     pub panels: Vec<PluginsGetContributionsResponsePayloadContributionsItemPanelsItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub views: Option<Vec<PluginsGetContributionsResponsePayloadContributionsItemViewsItem>>,
+    #[serde(rename = "composerActions", skip_serializing_if = "Option::is_none")]
+    pub composer_actions:
+        Option<Vec<PluginsGetContributionsResponsePayloadContributionsItemComposerActionsItem>>,
     pub settings: Vec<PluginsGetContributionsResponsePayloadContributionsItemSettingsItem>,
     pub badges: serde_json::Value,
 }
@@ -964,6 +971,22 @@ pub enum PluginsGetContributionsResponsePayloadContributionsItemPanelsItemKind {
     Markdown,
     #[serde(rename = "form")]
     Form,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsGetContributionsResponsePayloadContributionsItemViewsItem {
+    pub id: String,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsGetContributionsResponsePayloadContributionsItemComposerActionsItem {
+    pub id: String,
+    pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub icon: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1087,6 +1110,20 @@ pub struct PluginsNotifyPayload {
     pub plugin_id: String,
     pub message: String,
     pub level: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsEvent {
+    pub payload: PluginsEventPayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsEventPayload {
+    #[serde(rename = "pluginId")]
+    pub plugin_id: String,
+    pub event: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub data: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -7739,8 +7776,6 @@ pub struct DaemonStorageListResponsePayload {
     pub computed_at: Option<String>,
     pub categories: Vec<DaemonStorageListResponsePayloadCategoriesItem>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub alert: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
 
@@ -8245,8 +8280,6 @@ pub struct GetDaemonConfigResponsePayloadConfig {
     pub auto_update: Option<GetDaemonConfigResponsePayloadConfigAutoUpdate>,
     #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
     pub host_settings: Option<GetDaemonConfigResponsePayloadConfigHostSettings>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub storage: Option<GetDaemonConfigResponsePayloadConfigStorage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8391,32 +8424,6 @@ pub enum GetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
     Terminals,
     #[serde(rename = "host")]
     Host,
-    #[serde(rename = "resources")]
-    Resources,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct GetDaemonConfigResponsePayloadConfigStorage {
-    pub alerts: GetDaemonConfigResponsePayloadConfigStorageAlerts,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct GetDaemonConfigResponsePayloadConfigStorageAlerts {
-    pub enabled: bool,
-    #[serde(rename = "warnBytes")]
-    pub warn_bytes: i64,
-    #[serde(rename = "criticalBytes")]
-    pub critical_bytes: i64,
-    #[serde(rename = "notifyAt")]
-    pub notify_at: GetDaemonConfigResponsePayloadConfigStorageAlertsNotifyAt,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum GetDaemonConfigResponsePayloadConfigStorageAlertsNotifyAt {
-    #[serde(rename = "warn")]
-    Warn,
-    #[serde(rename = "critical")]
-    Critical,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8477,8 +8484,6 @@ pub struct SetDaemonConfigResponsePayloadConfig {
     pub auto_update: Option<SetDaemonConfigResponsePayloadConfigAutoUpdate>,
     #[serde(rename = "hostSettings", skip_serializing_if = "Option::is_none")]
     pub host_settings: Option<SetDaemonConfigResponsePayloadConfigHostSettings>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub storage: Option<SetDaemonConfigResponsePayloadConfigStorage>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -8623,32 +8628,6 @@ pub enum SetDaemonConfigResponsePayloadConfigHostSettingsHiddenSectionsItem {
     Terminals,
     #[serde(rename = "host")]
     Host,
-    #[serde(rename = "resources")]
-    Resources,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetDaemonConfigResponsePayloadConfigStorage {
-    pub alerts: SetDaemonConfigResponsePayloadConfigStorageAlerts,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct SetDaemonConfigResponsePayloadConfigStorageAlerts {
-    pub enabled: bool,
-    #[serde(rename = "warnBytes")]
-    pub warn_bytes: i64,
-    #[serde(rename = "criticalBytes")]
-    pub critical_bytes: i64,
-    #[serde(rename = "notifyAt")]
-    pub notify_at: SetDaemonConfigResponsePayloadConfigStorageAlertsNotifyAt,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum SetDaemonConfigResponsePayloadConfigStorageAlertsNotifyAt {
-    #[serde(rename = "warn")]
-    Warn,
-    #[serde(rename = "critical")]
-    Critical,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

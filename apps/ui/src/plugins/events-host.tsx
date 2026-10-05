@@ -5,6 +5,7 @@ import { useHostRuntimeClient } from "@/runtime/host-runtime";
 import type { ToastVariant } from "@/components/toast-host";
 import { usePluginHostIds } from "./hosts";
 import { pluginsQueryKeys } from "./query-keys";
+import { deliverClientPluginEvent } from "./client-runtime/runtime-store";
 
 const NOTIFY_VARIANTS: ReadonlySet<string> = new Set(["info", "success", "warning", "error"]);
 
@@ -12,7 +13,10 @@ function toToastVariant(level: string): ToastVariant {
   return NOTIFY_VARIANTS.has(level) ? (level as ToastVariant) : "info";
 }
 
-/** One host's plugin push events: `plugins.changed` refetches, `plugins.notify` toasts. */
+/**
+ * One host's plugin push events: `plugins.changed` refetches, `plugins.notify` toasts,
+ * `plugins.event` goes to that plugin's client sandboxes on this device.
+ */
 function PluginHostEvents({ serverId }: { serverId: string }) {
   const client = useHostRuntimeClient(serverId);
   const queryClient = useQueryClient();
@@ -31,9 +35,13 @@ function PluginHostEvents({ serverId }: { serverId: string }) {
         testID: "plugin-notify-toast",
       });
     });
+    const offEvent = client.onPluginsEvent((event) => {
+      deliverClientPluginEvent(event.pluginId, event.event, event.data ?? null);
+    });
     return () => {
       offChanged();
       offNotify();
+      offEvent();
     };
   }, [client, queryClient, serverId, toast]);
 
