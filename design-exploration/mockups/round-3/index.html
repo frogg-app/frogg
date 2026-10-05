@@ -150,7 +150,7 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>Round 3 — one language, four IDE layouts</h1>
+      <h1>Round 3 — one language, five IDE layouts</h1>
       <p class="lede">
         Back on the IDE side: standard places for everything, clear labels, nothing to learn. The
         look comes from the frogg.dev site: near-black with grain, cyan into deep blue, faceted
@@ -212,6 +212,15 @@
           idea: "A light version of the same language. A dark rail on the left switches scope: All, Needs you, or one project (shown by its shard). The list is sorted by attention, and the selection is a slanted highlight that slides. The main area switches between Chat, Changes and Terminal with a segmented control that blurs between views.",
           q: "Does the language hold up in light mode? Does a project rail help once there are many projects?",
           vis: "Cool white, ink-navy, cyan → deep blue · same fonts · slanted glide, blur cross-fade between views",
+        },
+        {
+          id: "studio",
+          name: "Studio",
+          bg: "radial-gradient(60% 90% at 50% 100%,#25b5c866,transparent 70%),radial-gradient(40% 50% at 85% 10%,#8b7cf633,transparent 70%),#080b0d",
+          arch: "Three-pane + Overview grid · sessions / terrain hero + chat / stats·changes·checks cards",
+          idea: "A direct port of frogg.dev. Glass nav, the site’s segmented filter chips (lists reflow smoothly when you filter), and rounded rows whose gradient border lights up under the cursor. The session header is the site’s live low-poly WebGL terrain, which reacts to the pointer and shrinks as you scroll. Pill buttons glow cyan, stats count up, and Overview shows sessions as the site’s project cards, with spotlight and tilt.",
+          q: "Is the marketing site’s exact look right for the app, or is it too much for all-day use?",
+          vis: "Rounded 14–20px, glass, gradient borders, glowing status pills · Space Grotesk + Inter + JetBrains Mono · WebGL terrain, smooth reflow, tilt, count-up",
         },
       ];
       const KEY = "frogg-r3-feedback";
