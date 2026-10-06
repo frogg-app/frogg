@@ -419,7 +419,7 @@ export const interactions: Entry[] = [
     category: "Interactions",
     path: "Palette.tsx",
     purpose: "⌘K over the shell; Esc or the scrim closes.",
-    polish: "none (instant)",
+    polish: "scrim fade + card rise/scale 170ms ease; out 110ms",
     ownToasts: true,
     variants: [
       { id: "shell", label: "Shell", note: SHELL_NOTE, C: PaletteDemo, h: 760, bleed: true },
@@ -431,7 +431,8 @@ export const interactions: Entry[] = [
     category: "Interactions",
     path: "NewSession.tsx",
     purpose: "⌘N over the shell; creating selects the new session, which plays a turn.",
-    polish: "desktop: none (instant) · phone: Modal slide (RN-web 300ms)",
+    polish:
+      "desktop: scrim fade + card rise/scale 170ms, out 110ms · phone: slide-up 200ms, out 140ms (native Modal slide)",
     ownToasts: true,
     variants: [{ id: "shell", label: "Shell", note: SHELL_NOTE, C: NewDemo, h: 760, bleed: true }],
   },

@@ -433,7 +433,7 @@ export const primitives: Entry[] = [
       "Bracket dropdown: in place on wide web (or above with up), a bottom sheet in a Modal on native and narrow widths.",
     usedBy: 13,
     polish:
-      "wide web menu: no animation · sheet: Modal animationType=fade (RN-web 300ms ease-in/out) · hover swaps fill instantly",
+      "wide web menu: popover motion (fade + scale 0.96→1 + 4px, 160ms ease; out 110ms) · sheet: slide-up 200ms + scrim fade, out 140ms · hover instant",
     variants: [
       { id: "field", label: "Field with hints and a disabled option", C: SelectField, h: 260 },
       { id: "mono", label: "mono, fixed width", C: SelectMono, h: 220 },
@@ -461,7 +461,8 @@ export const primitives: Entry[] = [
     purpose:
       "Anchored popover in a transparent Modal: heads, rules, hints, kbd chips, checks, danger rows.",
     usedBy: 12,
-    polish: "Modal animationType=none: appears and disappears instantly",
+    polish:
+      "in: fade + scale 0.96→1 + 4px from the anchor, 160ms ease, origin at anchor corner · out: fade + scale 0.97, 110ms, stays mounted, action runs at once · hover instant · reduced motion: none",
     variants: [{ id: "default", label: "Session menu items", C: MenuDemo }],
   },
   {
@@ -471,7 +472,8 @@ export const primitives: Entry[] = [
     path: "components/tools/Dialog.tsx (+ Confirm.tsx, Prompt.tsx)",
     purpose: "Centred modal card: eyebrow, title, body, right-aligned footer; backdrop closes.",
     usedBy: 11,
-    polish: "Modal animationType=fade (RN-web: opacity, 300ms)",
+    polish:
+      "in: scrim fade + card fade/scale 0.97→1/6px rise, 170ms ease · out: 110ms fade + scale, stays mounted · reduced motion: none",
     variants: [{ id: "default", label: "Confirm", C: DialogDemo }],
   },
 ];

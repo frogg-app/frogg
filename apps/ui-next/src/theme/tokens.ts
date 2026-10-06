@@ -150,3 +150,47 @@ export const labelTint: Record<string, string> = {
   amber: "#b29d64",
   blue: "#7ba1d5",
 };
+
+/**
+ * Overlay motion (menus, popovers, dialogs, palette, sheets): fast scale+fade in on `ease`,
+ * a faster accelerating fade+scale out. Web-only CSS keyframes; native gets static styles.
+ */
+export const overlayMs = { in: 160, out: 110, sheet: 200 } as const;
+const easeOut = "cubic-bezier(0.4, 0, 1, 1)";
+export const overlayFrames = {
+  popDown: {
+    "0%": { opacity: 0, transform: "translateY(-4px) scale(0.96)" },
+    "100%": { opacity: 1, transform: "translateY(0px) scale(1)" },
+  },
+  popUp: {
+    "0%": { opacity: 0, transform: "translateY(4px) scale(0.96)" },
+    "100%": { opacity: 1, transform: "translateY(0px) scale(1)" },
+  },
+  popOut: {
+    "0%": { opacity: 1, transform: "scale(1)" },
+    "100%": { opacity: 0, transform: "scale(0.97)" },
+  },
+  rise: {
+    "0%": { opacity: 0, transform: "translateY(6px) scale(0.97)" },
+    "100%": { opacity: 1, transform: "translateY(0px) scale(1)" },
+  },
+  fadeOut: { "0%": { opacity: 1 }, "100%": { opacity: 0 } },
+  sheetIn: {
+    "0%": { transform: "translateY(100%)" },
+    "100%": { transform: "translateY(0%)" },
+  },
+  sheetOut: {
+    "0%": { transform: "translateY(0%)" },
+    "100%": { transform: "translateY(100%)" },
+  },
+} satisfies Record<string, Frames>;
+export const overlayMotion = {
+  popDown: anim(overlayFrames.popDown, `${overlayMs.in}ms`, ease),
+  popUp: anim(overlayFrames.popUp, `${overlayMs.in}ms`, ease),
+  popOut: anim(overlayFrames.popOut, `${overlayMs.out}ms`, easeOut),
+  rise: anim(overlayFrames.rise, `${overlayMs.in + 10}ms`, ease),
+  fadeIn: anim(frames.fade, `${overlayMs.in}ms`, ease),
+  fadeOut: anim(overlayFrames.fadeOut, `${overlayMs.out}ms`, easeOut),
+  sheetIn: anim(overlayFrames.sheetIn, `${overlayMs.sheet}ms`, ease),
+  sheetOut: anim(overlayFrames.sheetOut, `${overlayMs.out + 30}ms`, easeOut),
+};

@@ -215,7 +215,7 @@ export const shell: Entry[] = [
     path: "components/Palette.tsx",
     purpose: "⌘K palette over sessions, commands and tools; also owns J/K/A/Esc and ⌘N.",
     usedBy: 1,
-    polish: "none: layer, scrim (blur) and card appear and vanish instantly",
+    polish: "in: scrim fade + card rise/scale 170ms ease · out 110ms, stays mounted",
     variants: [{ id: "default", label: "Open and filter", C: PaletteDemo, h: 560, bleed: true }],
   },
   {
@@ -226,7 +226,7 @@ export const shell: Entry[] = [
     purpose: "New-session form: project, isolation, base branch, agent pickers, prompt and title.",
     usedBy: 1,
     polish:
-      "desktop/tablet overlay: none (instant) · phone: full-screen Modal animationType=slide (RN-web 300ms)",
+      "desktop/tablet overlay: scrim fade + card rise/scale 170ms, out 110ms · phone: full-screen slide-up 200ms, out 140ms (native Modal slide)",
     setup: setupNewSession,
     variants: [{ id: "default", label: "Overlay", C: NewSessionDemo, h: 720, bleed: true }],
   },

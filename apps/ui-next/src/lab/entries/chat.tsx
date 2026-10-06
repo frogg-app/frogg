@@ -249,7 +249,8 @@ export const chat: Entry[] = [
     purpose:
       "Message input with chips, live pickers, attachments, slash-command autocomplete, send and stop.",
     usedBy: 3,
-    polish: "slash menu enters with motion.enter (200ms); nothing else animates",
+    polish:
+      "slash menu enters with overlayMotion.popUp (160ms, origin bottom-left); nothing else animates",
     variants: [
       {
         id: "default",
@@ -273,7 +274,8 @@ export const chat: Entry[] = [
     path: "components/chat/SlashMenu.tsx",
     purpose: "The composer's command and skill list.",
     usedBy: 1,
-    polish: "motion.enter on mount (opacity + translateY 6px, 200ms)",
+    polish:
+      "overlayMotion.popUp on mount (fade + scale 0.96→1 + 4px, 160ms, origin bottom-left); unmounts instantly",
     variants: [
       { id: "matches", label: "Commands and skills, one highlighted", C: SlashMatches, h: 300 },
       { id: "loading", label: "Loading", C: SlashLoading, h: 110 },
@@ -298,7 +300,8 @@ export const chat: Entry[] = [
     path: "components/chat/SessionMenu.tsx",
     purpose: "The ⋯ menu in the conversation header: rename, fork, rewind, clean cut, archive.",
     usedBy: 1,
-    polish: "Menu: instant · its dialogs fade (Modal fade)",
+    polish:
+      "Menu: popover motion 160ms in / 110ms out · its dialogs: scrim fade + card rise 170ms / 110ms",
     variants: [{ id: "default", label: "Open the ⋯ menu", C: HeaderMenu }],
   },
 ];

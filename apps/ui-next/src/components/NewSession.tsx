@@ -1,12 +1,13 @@
 import { KeyboardFrame } from "./shell/KeyboardFrame";
+import { exitPointer, riseStyle, scrimStyle, sheetStyle, usePresence } from "./presence";
 import { GitBranch, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { loadConfig, useConfig } from "../daemon/config";
 import { createSession, listProjects, type Project } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
-import { color, font, web } from "../theme/tokens";
+import { color, font, overlayMs, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { providerLabel } from "../util";
 import { Button } from "./Button";
@@ -121,6 +122,7 @@ export function NewSession() {
   const setTool = useUi((s) => s.setTool);
   const providers = useConfig((s) => s.providers);
   const phone = useFormFactor() === "phone";
+  const { mounted, closing } = usePresence(open, phone ? overlayMs.out + 30 : overlayMs.out);
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [isolation, setIsolation] = useState<Isolation>("worktree");
@@ -249,7 +251,7 @@ export function NewSession() {
     [entry],
   );
 
-  if (!open) return null;
+  if (!mounted) return null;
 
   const worktree = isGit && isolation === "worktree";
   const selW = phone ? "100%" : undefined;
@@ -349,12 +351,13 @@ export function NewSession() {
     return (
       <Modal
         visible
-        animationType="slide"
+        transparent={Platform.OS === "web"}
+        animationType={Platform.OS === "web" ? "none" : "slide"}
         statusBarTranslucent
         navigationBarTranslucent
         onRequestClose={close}
       >
-        <SafeAreaView edges={EDGES_ALL} style={s.phoneRoot}>
+        <SafeAreaView edges={EDGES_ALL} style={[s.phoneRoot, sheetStyle(closing)]}>
           <KeyboardFrame style={s.flex}>
             <View style={s.phoneHead}>
               <Pressable onPress={close} hitSlop={12} accessibilityLabel="Close">
@@ -391,39 +394,41 @@ export function NewSession() {
     );
 
   return (
-    <View style={s.layer}>
-      <Pressable style={s.scrim} onPress={close} />
-      <Cut size={16} flip style={s.box}>
-        <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
-          <View style={s.headRow}>
-            <View style={s.flex}>
-              <T v="mono" style={s.kbd}>
-                ⌘N
-              </T>
-              <T v="display" style={s.heading}>
-                New session
-              </T>
+    <View style={s.layer} pointerEvents={exitPointer(closing)}>
+      <Pressable style={[s.scrim, scrimStyle(closing)]} onPress={close} />
+      <View style={[s.boxPlace, riseStyle(closing)]}>
+        <Cut size={16} flip style={s.box}>
+          <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
+            <View style={s.headRow}>
+              <View style={s.flex}>
+                <T v="mono" style={s.kbd}>
+                  ⌘N
+                </T>
+                <T v="display" style={s.heading}>
+                  New session
+                </T>
+              </View>
+              <Pressable onPress={close} hitSlop={10} accessibilityLabel="Close">
+                <X size={16} color={color.faint} />
+              </Pressable>
             </View>
-            <Pressable onPress={close} hitSlop={10} accessibilityLabel="Close">
-              <X size={16} color={color.faint} />
-            </Pressable>
+            {fields}
+          </ScrollView>
+          <View style={s.foot}>
+            <T v="mono" numberOfLines={1} style={s.footText}>
+              {foot}
+            </T>
+            <Button label="Cancel" onPress={close} />
+            <Button
+              kind="primary"
+              label={createLabel}
+              kbd="⌘↵"
+              disabled={!canCreate}
+              onPress={onCreate}
+            />
           </View>
-          {fields}
-        </ScrollView>
-        <View style={s.foot}>
-          <T v="mono" numberOfLines={1} style={s.footText}>
-            {foot}
-          </T>
-          <Button label="Cancel" onPress={close} />
-          <Button
-            kind="primary"
-            label={createLabel}
-            kbd="⌘↵"
-            disabled={!canCreate}
-            onPress={onCreate}
-          />
-        </View>
-      </Cut>
+        </Cut>
+      </View>
     </View>
   );
 }
@@ -464,10 +469,11 @@ const s = StyleSheet.create({
     backgroundColor: color.scrim,
     ...web({ backdropFilter: "blur(6px)" }),
   },
+  boxPlace: { width: "100%", maxHeight: "92%", alignItems: "center" },
   box: {
     width: "100%",
     maxWidth: 760,
-    maxHeight: "92%",
+    flexShrink: 1,
     backgroundColor: color.panel,
     borderTopWidth: 1,
     borderTopColor: color.cyan,

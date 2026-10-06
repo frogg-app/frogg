@@ -1,5 +1,6 @@
 import { Check, ChevronRight, type LucideIcon } from "lucide-react-native";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { exitPointer, popStyle, scrimStyle, usePresence } from "../presence";
 import {
   Modal,
   Pressable,
@@ -50,25 +51,43 @@ export function Popover({
   children: ReactNode;
 }) {
   const win = useWindowDimensions();
+  const { mounted, closing } = usePresence(!!rect);
+  // Hold the last anchor so the panel stays put while it animates out.
+  const last = useRef<Rect | null>(rect);
+  if (rect) last.current = rect;
+  const at = rect ?? last.current;
   const [h, setH] = useState(0);
   const onLayout = useCallback((e: LayoutChangeEvent) => setH(e.nativeEvent.layout.height), []);
   const pos = useMemo(() => {
-    if (!rect) return null;
+    if (!at) return null;
     const w = Math.min(width, win.width - 16);
-    let x = right ? rect.x + rect.w - w : rect.x;
+    let x = right ? at.x + at.w - w : at.x;
     x = Math.max(8, Math.min(win.width - w - 8, x));
-    let y = rect.y + rect.h + 6;
-    if (h && y + h > win.height - 8) y = Math.max(8, rect.y - h - 6);
-    return { left: x, top: y, width: w, maxHeight: win.height - 16 };
-  }, [rect, right, width, win.width, win.height, h]);
+    let y = at.y + at.h + 6;
+    let up = false;
+    if (h && y + h > win.height - 8) {
+      y = Math.max(8, at.y - h - 6);
+      up = true;
+    }
+    return { box: { left: x, top: y, width: w, maxHeight: win.height - 16 }, up };
+  }, [at, right, width, win.width, win.height, h]);
+  const anim = useMemo(() => popStyle(closing, !!pos?.up, !!right), [closing, pos?.up, right]);
   return (
-    <Modal transparent visible={!!rect} onRequestClose={onClose} animationType="none">
-      <Pressable style={s.backdrop} onPress={onClose} accessibilityLabel="Close menu" />
-      {pos && (
-        <Cut size={8} flip style={[s.pop, pos]} onLayout={onLayout}>
-          {children}
-        </Cut>
-      )}
+    <Modal transparent visible={mounted} onRequestClose={onClose} animationType="none">
+      <View style={s.fill} pointerEvents={exitPointer(closing)}>
+        <Pressable
+          style={[s.backdrop, scrimStyle(closing)]}
+          onPress={onClose}
+          accessibilityLabel="Close menu"
+        />
+        {pos && (
+          <View style={[s.place, pos.box, ...anim]} onLayout={onLayout}>
+            <Cut size={8} flip style={s.pop}>
+              {children}
+            </Cut>
+          </View>
+        )}
+      </View>
     </Modal>
   );
 }
@@ -177,9 +196,11 @@ function MenuRow({ item, onClose }: { item: Item; onClose: () => void }) {
 }
 
 const s = StyleSheet.create({
+  fill: { ...StyleSheet.absoluteFillObject },
   backdrop: { ...StyleSheet.absoluteFillObject },
+  place: { position: "absolute" },
   pop: {
-    position: "absolute",
+    flexShrink: 1,
     backgroundColor: color.raise,
     borderWidth: 1,
     borderColor: color.line2,

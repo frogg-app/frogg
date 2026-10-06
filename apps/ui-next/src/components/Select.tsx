@@ -10,8 +10,9 @@ import {
   View,
   type TextStyle,
 } from "react-native";
+import { exitPointer, popStyle, scrimStyle, sheetStyle, usePresence } from "./presence";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { bp, color, web } from "../theme/tokens";
+import { bp, color, overlayMs, web } from "../theme/tokens";
 import { Cut } from "./Cut";
 import { T } from "./Text";
 
@@ -67,13 +68,15 @@ export function Select<V extends string>({
     [onChange],
   );
   const wrap = useMemo(() => ({ width, zIndex: open && !sheet ? 40 : 1 }), [width, open, sheet]);
+  const drop = usePresence(open && !sheet);
   const menu = useMemo(
     () => [
       s.menu,
       up && s.menuUp,
       menuWidth !== undefined && { width: menuWidth, right: undefined },
+      ...popStyle(drop.closing, !!up, false),
     ],
-    [up, menuWidth],
+    [up, menuWidth, drop.closing],
   );
   let fieldText: TextStyle = s.fieldText;
   if (chip) fieldText = s.fieldTextChip;
@@ -111,20 +114,22 @@ export function Select<V extends string>({
           onClose={close}
         />
       )}
-      {open && !sheet && (
-        <Cut size={8} flip style={menu}>
-          <ScrollView style={s.scroll}>
-            {options.map((o) => (
-              <OptionRow
-                key={o.value}
-                option={o}
-                selected={o.value === value}
-                mono={!!mono}
-                onPick={pick}
-              />
-            ))}
-          </ScrollView>
-        </Cut>
+      {drop.mounted && !sheet && (
+        <View style={menu} pointerEvents={exitPointer(drop.closing)}>
+          <Cut size={8} flip style={s.menuPaint}>
+            <ScrollView style={s.scroll}>
+              {options.map((o) => (
+                <OptionRow
+                  key={o.value}
+                  option={o}
+                  selected={o.value === value}
+                  mono={!!mono}
+                  onPick={pick}
+                />
+              ))}
+            </ScrollView>
+          </Cut>
+        </View>
       )}
     </View>
   );
@@ -148,21 +153,26 @@ function SelectSheet<V extends string>({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { mounted, closing } = usePresence(open, overlayMs.out + 30);
   const panel = useMemo(
-    () => [s.sheet, { paddingBottom: Math.max(insets.bottom, 12) }],
-    [insets.bottom],
+    () => [s.sheet, { paddingBottom: Math.max(insets.bottom, 12) }, sheetStyle(closing)],
+    [insets.bottom, closing],
   );
   return (
     <Modal
-      visible={open}
+      visible={mounted}
       transparent
-      animationType="fade"
+      animationType={Platform.OS === "web" ? "none" : "fade"}
       statusBarTranslucent
       navigationBarTranslucent
       onRequestClose={onClose}
     >
-      <View style={s.sheetLayer}>
-        <Pressable style={s.sheetScrim} onPress={onClose} accessibilityLabel="Close" />
+      <View style={s.sheetLayer} pointerEvents={exitPointer(closing)}>
+        <Pressable
+          style={[s.sheetScrim, scrimStyle(closing)]}
+          onPress={onClose}
+          accessibilityLabel="Close"
+        />
         <View style={panel}>
           <View style={s.grab} />
           <T v="label" style={s.sheetTitle}>
@@ -255,6 +265,8 @@ const s = StyleSheet.create({
     left: 0,
     right: 0,
     marginTop: 4,
+  },
+  menuPaint: {
     backgroundColor: color.raise,
     borderWidth: 1,
     borderColor: color.line2,

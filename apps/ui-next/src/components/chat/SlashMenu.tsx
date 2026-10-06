@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { color, motion, web } from "../../theme/tokens";
+import { color, overlayMotion, web } from "../../theme/tokens";
 import { Cut } from "../Cut";
 import { T } from "../Text";
 import type { SlashCommand } from "./actions";
@@ -117,7 +117,8 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: color.line2,
     paddingVertical: 4,
-    ...motion.enter,
+    ...overlayMotion.popUp,
+    ...web({ transformOrigin: "bottom left" }),
     ...web({ boxShadow: `0 16px 40px ${color.scrim}` }),
   },
   scroll: { maxHeight: 380, flexGrow: 0 },

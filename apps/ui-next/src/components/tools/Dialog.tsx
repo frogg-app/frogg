@@ -1,6 +1,7 @@
 import { X } from "lucide-react-native";
 import { useMemo, type ReactNode } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { exitPointer, riseStyle, scrimStyle, usePresence } from "../presence";
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { color, web } from "../../theme/tokens";
 import { Cut } from "../Cut";
 import { T } from "../Text";
@@ -23,28 +24,41 @@ export function Dialog({
   footer?: ReactNode;
   width?: number;
 }) {
-  const card = useMemo(() => [s.card, { width, maxWidth: "94%" as const }], [width]);
+  const card = useMemo(() => [s.place, { width }], [width]);
+  const { mounted, closing } = usePresence(open);
+  const panel = useMemo(() => [card, riseStyle(closing)], [card, closing]);
   return (
-    <Modal transparent visible={open} onRequestClose={onClose} animationType="fade">
-      <View style={s.wrap}>
-        <Pressable style={s.backdrop} onPress={onClose} accessibilityLabel="Close dialog" />
-        <Cut size={14} style={card}>
-          <View style={s.head}>
-            <View style={s.flex}>
-              {eyebrow && <T v="label">{eyebrow}</T>}
-              <T v="display" style={s.title}>
-                {title}
-              </T>
+    <Modal
+      transparent
+      visible={mounted}
+      onRequestClose={onClose}
+      animationType={Platform.OS === "web" ? "none" : "fade"}
+    >
+      <View style={s.wrap} pointerEvents={exitPointer(closing)}>
+        <Pressable
+          style={[s.backdrop, scrimStyle(closing)]}
+          onPress={onClose}
+          accessibilityLabel="Close dialog"
+        />
+        <View style={panel}>
+          <Cut size={14} style={s.card}>
+            <View style={s.head}>
+              <View style={s.flex}>
+                {eyebrow && <T v="label">{eyebrow}</T>}
+                <T v="display" style={s.title}>
+                  {title}
+                </T>
+              </View>
+              <Pressable onPress={onClose} accessibilityLabel="Close">
+                <X size={14} color={color.faint} />
+              </Pressable>
             </View>
-            <Pressable onPress={onClose} accessibilityLabel="Close">
-              <X size={14} color={color.faint} />
-            </Pressable>
-          </View>
-          <ScrollView style={s.body} contentContainerStyle={s.bodyIn}>
-            {children}
-          </ScrollView>
-          {footer && <View style={s.foot}>{footer}</View>}
-        </Cut>
+            <ScrollView style={s.body} contentContainerStyle={s.bodyIn}>
+              {children}
+            </ScrollView>
+            {footer && <View style={s.foot}>{footer}</View>}
+          </Cut>
+        </View>
       </View>
     </Modal>
   );
@@ -57,7 +71,9 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(4,7,9,0.72)",
     ...web({ backdropFilter: "blur(6px)" }),
   },
+  place: { maxWidth: "94%", maxHeight: "90%" },
   card: {
+    flexShrink: 1,
     backgroundColor: color.panel,
     borderWidth: 1,
     borderColor: color.line2,

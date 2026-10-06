@@ -1,4 +1,5 @@
 import { ChevronRight } from "lucide-react-native";
+import { exitPointer, riseStyle, scrimStyle, usePresence } from "./presence";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Pressable,
@@ -117,6 +118,7 @@ const FOOT_HINTS: Array<[string, string]> = [
 
 export function Palette() {
   const open = useUi((s) => s.paletteOpen);
+  const { mounted, closing } = usePresence(open);
   const ui = useUi();
   const sessions = useDaemon((s) => s.sessions);
   const [q, setQ] = useState("");
@@ -214,53 +216,55 @@ export function Palette() {
     },
     [items, cursor, pick, close],
   );
-  if (!open) return null;
+  if (!mounted) return null;
   return (
-    <View style={s.layer}>
-      <Pressable style={s.scrim} onPress={close} />
-      <Cut size={14} flip style={s.box}>
-        <TextInput
-          autoFocus
-          value={q}
-          onChangeText={onChangeText}
-          placeholder="Search sessions, commands, tools…"
-          placeholderTextColor={color.faint}
-          style={s.input}
-          onKeyPress={onKeyPress}
-        />
-        <ScrollView
-          style={s.list}
-          contentContainerStyle={s.listContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {items.length === 0 && (
-            <T v="label" style={s.empty}>
-              no matches
-            </T>
-          )}
-          {items.map((i, n) => (
-            <PaletteRow
-              key={i.id}
-              item={i}
-              index={n}
-              head={i.group !== items[n - 1]?.group}
-              on={n === cursor}
-              pick={pick}
-              setCursor={setCursor}
-            />
-          ))}
-        </ScrollView>
-        <View style={s.foot}>
-          {FOOT_HINTS.map(([k, l]) => (
-            <View key={k} style={s.hint}>
-              <T v="mono" style={s.kbd}>
-                {k}
+    <View style={s.layer} pointerEvents={exitPointer(closing)}>
+      <Pressable style={[s.scrim, scrimStyle(closing)]} onPress={close} />
+      <View style={[s.boxPlace, riseStyle(closing)]}>
+        <Cut size={14} flip style={s.box}>
+          <TextInput
+            autoFocus
+            value={q}
+            onChangeText={onChangeText}
+            placeholder="Search sessions, commands, tools…"
+            placeholderTextColor={color.faint}
+            style={s.input}
+            onKeyPress={onKeyPress}
+          />
+          <ScrollView
+            style={s.list}
+            contentContainerStyle={s.listContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {items.length === 0 && (
+              <T v="label" style={s.empty}>
+                no matches
               </T>
-              <T style={s.hintText}>{l}</T>
-            </View>
-          ))}
-        </View>
-      </Cut>
+            )}
+            {items.map((i, n) => (
+              <PaletteRow
+                key={i.id}
+                item={i}
+                index={n}
+                head={i.group !== items[n - 1]?.group}
+                on={n === cursor}
+                pick={pick}
+                setCursor={setCursor}
+              />
+            ))}
+          </ScrollView>
+          <View style={s.foot}>
+            {FOOT_HINTS.map(([k, l]) => (
+              <View key={k} style={s.hint}>
+                <T v="mono" style={s.kbd}>
+                  {k}
+                </T>
+                <T style={s.hintText}>{l}</T>
+              </View>
+            ))}
+          </View>
+        </Cut>
+      </View>
     </View>
   );
 }
@@ -323,6 +327,7 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(4,8,10,0.6)",
     ...web({ backdropFilter: "blur(6px)" }),
   },
+  boxPlace: { width: "100%", alignItems: "center" },
   box: {
     width: "100%",
     maxWidth: 620,
