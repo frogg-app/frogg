@@ -9,6 +9,7 @@ import { primitives } from "./entries/primitives";
 import { settings } from "./entries/settings";
 import { shapeAlts } from "./entries/shapeAlts";
 import { shell } from "./entries/shell";
+import { textReveal } from "./entries/textReveal";
 import { tools } from "./entries/tools";
 
 export const ENTRIES: Entry[] = [
@@ -19,6 +20,7 @@ export const ENTRIES: Entry[] = [
   ...data,
   ...feedback,
   ...chat,
+  textReveal,
   ...shell,
   ...settings,
   ...tools,
