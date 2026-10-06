@@ -277,12 +277,16 @@ function LogoRipple() {
   return <LogoMotionRow motion="ripple" />;
 }
 
-function LogoShatter() {
-  return <LogoMotionRow motion="shatter" />;
+function LogoSplit() {
+  return <LogoMotionRow motion="split" />;
 }
 
 function LogoSweep() {
   return <LogoMotionRow motion="sweep" />;
+}
+
+function LogoTurn() {
+  return <LogoMotionRow motion="turn" />;
 }
 
 function HeadTop() {
@@ -605,20 +609,21 @@ export const primitives: Entry[] = [
   },
   {
     id: "logo",
-    decision: "Pick the logo motion: ripple (current rail default), shatter or sweep.",
+    decision: "Pick the logo motion: ripple (current rail default), split, sweep or turn.",
     name: "Logo",
     category: "Primitives",
     path: "components/Logo.tsx",
     purpose:
-      "Faceted gem mark (SVG). Hover and press it: a low-poly mesh after the frogg.dev hero takes over the facets. Motion via the `motion` prop; the rail uses ripple.",
+      "Faceted gem mark (SVG). Hover and press it: the gem's own four faces animate, nothing finer. Motion via the `motion` prop; the rail uses ripple.",
     usedBy: 2,
     polish:
-      "motion: three candidates (ripple default in the rail). Web only, 20px and up, off under reduced motion; native and the 12px status-bar mark stay static.",
+      "motion: four candidates on the gem's own faces (ripple default in the rail). Hover eases in over 260ms, press runs 600ms, no idle animation. Web only, 20px and up, off under reduced motion; native and the 12px status-bar mark stay static.",
     variants: [
       { id: "sizes", label: "Sizes in use", C: Logos },
       { id: "ripple", label: "Motion: ripple (rail default)", C: LogoRipple },
-      { id: "shatter", label: "Motion: shatter", C: LogoShatter },
+      { id: "split", label: "Motion: split", C: LogoSplit },
       { id: "sweep", label: "Motion: sweep", C: LogoSweep },
+      { id: "turn", label: "Motion: turn", C: LogoTurn },
     ],
   },
   {

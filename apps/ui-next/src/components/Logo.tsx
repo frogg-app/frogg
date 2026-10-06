@@ -4,19 +4,61 @@ import Svg, { Circle, Defs, G, Line, LinearGradient, Polygon, Stop } from "react
 import { color } from "../theme/tokens";
 
 /**
- * Logo motion, after the frogg.dev hero: a jittered low-poly mesh, flat-shaded per facet from a
- * moving height field (deep -> cyan -> mint at the peaks, lit from the top left).
- * - ripple: hover sets a slow noise swell rolling through the facets; press sends a ring outward.
- * - shatter: hover shimmers the facets; press bursts the triangles out and reassembles them.
- * - sweep: hover runs a light band across the facets with edges and vertices lighting; press
- *   flashes every vertex and throws the mesh lines a little past the hex.
+ * Logo motion on the gem's own four faces (top, right, bottom, left, exactly as drawn at rest);
+ * nothing finer. Colours run along the frogg.dev palette deep -> cyan -> mint.
+ * - ripple: hover cycles a light wave face to face; press sends one quick pulse round the faces.
+ * - split: hover breathes the faces apart ~0.5px; press opens dark seams along the face normals
+ *   (about 3px at 48, 1px at 26) and snaps back with a small overshoot.
+ * - sweep: hover runs a light band across the gem, lighting each face and glinting the edges
+ *   between them as it passes; press flashes the edges and vertices.
+ * - turn: the light moves round the gem, so the faces swap shading as if it rotated; hover turns
+ *   it one step, press spins the light a full turn.
  */
-export type LogoMotion = "none" | "ripple" | "shatter" | "sweep";
+export type LogoMotion = "none" | "ripple" | "split" | "sweep" | "turn";
 
 type P = readonly [number, number];
-type Tri = readonly [P, P, P];
+interface Face {
+  id: string;
+  pts: P[];
+  /** Outward direction, radians, y down. */
+  dir: number;
+  /** Centroid. */
+  c: P;
+}
 
 const C: P = [12, 12];
+const face = (id: string, pts: P[]): Face => {
+  const c: P = [
+    pts.reduce((a, p) => a + p[0], 0) / pts.length,
+    pts.reduce((a, p) => a + p[1], 0) / pts.length,
+  ];
+  return { id, pts, c, dir: Math.atan2(c[1] - C[1], c[0] - C[0]) };
+};
+// Clockwise from the lit top face, matching the static mark's overlays.
+const FACES: Face[] = [
+  face("top", [
+    [12, 1],
+    [22, 7],
+    [12, 12],
+  ]),
+  face("right", [
+    [22, 7],
+    [22, 17],
+    [12, 23],
+    [12, 12],
+  ]),
+  face("bottom", [
+    [12, 23],
+    [2, 17],
+    [12, 12],
+  ]),
+  face("left", [
+    [2, 17],
+    [2, 7],
+    [12, 1],
+    [12, 12],
+  ]),
+];
 const OUTER: P[] = [
   [12, 1],
   [22, 7],
@@ -25,51 +67,18 @@ const OUTER: P[] = [
   [2, 17],
   [2, 7],
 ];
-// Inner ring, jittered like the site's grid so the mesh reads hand-cut rather than regular.
-const JITTER: P[] = [
-  [0.4, 0.3],
-  [-0.5, 0.4],
-  [0.3, -0.6],
-  [-0.4, -0.2],
-  [0.6, 0.1],
-  [-0.2, 0.5],
+const EDGES: (readonly [P, P])[] = [
+  ...OUTER.map((o, i) => [o, OUTER[(i + 1) % 6]] as const),
+  [C, [12, 1]],
+  [C, [22, 7]],
+  [C, [12, 23]],
+  [C, [2, 17]],
 ];
-const mid = (a: P, b: P): P => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-const INNER: P[] = OUTER.map((o, i) => {
-  const m = mid(C, o);
-  return [m[0] + JITTER[i][0], m[1] + JITTER[i][1]] as P;
-});
-const EDGE: P[] = OUTER.map((o, i) => mid(o, OUTER[(i + 1) % 6]));
-const TRIS: Tri[] = OUTER.flatMap((o, i) => {
-  const j = (i + 1) % 6;
-  const m0 = INNER[i];
-  const m1 = INNER[j];
-  const e = EDGE[i];
-  return [
-    [C, m0, m1],
-    [m0, o, e],
-    [m0, e, m1],
-    [m1, e, OUTER[j]],
-  ] as Tri[];
-});
-const VERTS: P[] = [C, ...INNER, ...OUTER, ...EDGE];
-const SEGS: (readonly [P, P])[] = (() => {
-  const seen = new Set<string>();
-  const out: (readonly [P, P])[] = [];
-  for (const t of TRIS)
-    for (let k = 0; k < 3; k++) {
-      const a = t[k];
-      const b = t[(k + 1) % 3];
-      const key = [a.join(), b.join()].sort().join("|");
-      if (!seen.has(key)) {
-        seen.add(key);
-        out.push([a, b]);
-      }
-    }
-  return out;
-})();
+const VERTS: P[] = [C, ...OUTER];
+const key = (p: P) => p.join();
+const pts = (f: Face, dx = 0, dy = 0) => f.pts.map((p) => `${p[0] + dx},${p[1] + dy}`).join(" ");
 
-const rgb = (hex: string): [number, number, number] => [
+const rgb = (hex: string): number[] => [
   parseInt(hex.slice(1, 3), 16),
   parseInt(hex.slice(3, 5), 16),
   parseInt(hex.slice(5, 7), 16),
@@ -77,41 +86,15 @@ const rgb = (hex: string): [number, number, number] => [
 const DEEP = rgb(color.deep);
 const CYAN = rgb(color.cyan);
 const MINT = rgb(color.mint);
-const ICE = rgb(color.cyan2);
-const LIGHT = (() => {
-  const v = [-0.4, -0.8, 0.5];
-  const n = Math.hypot(v[0], v[1], v[2]);
-  return v.map((x) => x / n);
-})();
-const sstep = (a: number, b: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
 const mix = (a: number[], b: number[], t: number) => a.map((x, i) => x + (b[i] - x) * t);
-const css = (c: number[]) => `rgb(${c.map((x) => Math.round(Math.min(255, x))).join(",")})`;
-
-/** Flat facet shade, as the site's fragment shader: normal from the lifted triangle, diffuse + spec. */
-function shade(t: Tri, h: (p: P) => number, glow = 0): string {
-  const [a, b, c] = t.map((p) => [p[0], p[1], h(p)]);
-  const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
-  const v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
-  let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
-  if (n[2] < 0) n = n.map((x) => -x);
-  const len = Math.hypot(n[0], n[1], n[2]) || 1;
-  const diff = Math.max(0, (n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]) / len);
-  const height = (a[2] + b[2] + c[2]) / 3;
-  // Gradient position, top-left light to bottom-right deep, as the static mark.
-  const g = 1 - ((a[0] + b[0] + c[0] + a[1] + b[1] + c[1]) / 6 - 1) / 22;
-  const k = g + height * 0.35 + (diff - 0.49) * 0.8;
-  let col = k < 0.55 ? mix(DEEP, CYAN, sstep(0, 0.55, k)) : mix(CYAN, ICE, sstep(0.55, 1.1, k));
-  col = mix(col, MINT, sstep(0.9, 1.8, height + glow) * 0.6);
-  col = col.map((x) => x * (0.92 + (diff - 0.49) * 0.7) + glow * 70);
-  return css(col);
-}
+const css = (c: number[]) => `rgb(${c.map((x) => Math.round(x)).join(",")})`;
+/** 0 deep, 0.5 cyan, 1 mint. */
+const palette = (w: number) =>
+  css(w < 0.5 ? mix(DEEP, CYAN, w * 2) : mix(CYAN, MINT, (w - 0.5) * 2));
 
 const ease = (x: number) => 1 - (1 - x) ** 3;
 const HOVER_IN = 260;
-const PRESS = 620;
+const PRESS = 600;
 
 function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
@@ -197,7 +180,7 @@ function useClock(enabled: boolean) {
   return { now, hover, press: pressP, onEnter, onLeave, onPress };
 }
 
-// Overflow room around the 24-unit mark so lines can run past the hex without layout shift.
+// Overflow room around the 24-unit mark so faces can move without layout shift.
 const PAD = 4;
 const VB = `${-PAD} ${-PAD} ${24 + PAD * 2} ${24 + PAD * 2}`;
 
@@ -207,10 +190,12 @@ export function Logo({ size = 24, motion = "none" }: { size?: number; motion?: L
   const enabled = motion !== "none" && !reduced && size >= 20 && Platform.OS === "web";
   const { now, hover, press, onEnter, onLeave, onPress } = useClock(enabled);
   const active = enabled && (hover > 0.001 || press >= 0);
-  const big = size >= 26;
+  const split = active && motion === "split";
+  const turn = active && motion === "turn";
   const outer = (size * (24 + PAD * 2)) / 24;
   const box = { width: size, height: size };
   const svgPos = { width: outer, height: outer, left: (-size * PAD) / 24, top: (-size * PAD) / 24 };
+  const f: Frame = { t: now, hover, press, size };
 
   return (
     <View
@@ -226,13 +211,22 @@ export function Logo({ size = 24, motion = "none" }: { size?: number; motion?: L
               <Stop offset="0" stopColor={color.cyan2} />
               <Stop offset="1" stopColor={color.deep} />
             </LinearGradient>
+            <LinearGradient id="lgf" gradientUnits="userSpaceOnUse" x1="2" y1="1" x2="22" y2="23">
+              <Stop offset="0" stopColor={color.cyan2} />
+              <Stop offset="1" stopColor={color.deep} />
+            </LinearGradient>
           </Defs>
-          <Polygon points="12,1 22,7 22,17 12,23 2,17 2,7" fill="url(#lg)" />
-          <Polygon points="12,1 22,7 12,12" fill="#ffffff" opacity={0.28} />
-          <Polygon points="2,17 12,12 12,23" fill="#000000" opacity={0.25} />
-          {active && motion === "ripple" && <Ripple t={now} hover={hover} press={press} />}
-          {active && motion === "shatter" && <Shatter t={now} hover={hover} press={press} />}
-          {active && motion === "sweep" && <Sweep t={now} hover={hover} press={press} big={big} />}
+          {split && <Split {...f} />}
+          {turn && <Turn {...f} />}
+          {!split && !turn && (
+            <G>
+              <Polygon points="12,1 22,7 22,17 12,23 2,17 2,7" fill="url(#lg)" />
+              <Polygon points="12,1 22,7 12,12" fill="#ffffff" opacity={0.28} />
+              <Polygon points="2,17 12,12 12,23" fill="#000000" opacity={0.25} />
+            </G>
+          )}
+          {active && motion === "ripple" && <Ripple {...f} />}
+          {active && motion === "sweep" && <Sweep {...f} />}
         </Svg>
       </View>
     </View>
@@ -243,47 +237,53 @@ interface Frame {
   t: number;
   hover: number;
   press: number;
+  size: number;
 }
-const pts = (t: Tri, dx = 0, dy = 0) => t.map((p) => `${p[0] + dx},${p[1] + dy}`).join(" ");
-const dist = (p: P) => Math.hypot(p[0] - C[0], p[1] - C[1]);
 
-function Ripple({ t, hover, press }: Frame) {
-  const sec = t / 1000;
-  const ring = press >= 0 ? ease(press) * 14 : -99;
-  const ringAmp = press >= 0 ? 1 - press : 0;
-  const h = (p: P) =>
-    hover *
-      (Math.sin(p[0] * 0.45 + sec * 4.2) * Math.cos(p[1] * 0.38 - sec * 3.1) * 0.9 +
-        Math.sin(dist(p) * 0.7 - sec * 5) * 0.35) +
-    ringAmp * 2.2 * Math.exp(-((dist(p) - ring) ** 2) * 0.12);
-  const k = Math.max(hover, ringAmp);
+/** Rest shading of a face for a light at angle `light` (rest light is toward the top face). */
+function restShade(f: Face, light: number) {
+  const k = Math.cos(f.dir - light);
+  return k >= 0 ? { fill: "#ffffff", opacity: 0.28 * k } : { fill: "#000000", opacity: 0.25 * -k };
+}
+const REST_LIGHT = FACES[0].dir;
+
+function FacePoly({
+  f,
+  dx = 0,
+  dy = 0,
+  light = REST_LIGHT,
+}: {
+  f: Face;
+  dx?: number;
+  dy?: number;
+  light?: number;
+}) {
+  const sh = restShade(f, light);
+  const p = pts(f, dx, dy);
   return (
-    <G opacity={Math.min(1, k * 1.4)}>
-      {TRIS.map((tri) => (
-        <Polygon key={pts(tri)} points={pts(tri)} fill={shade(tri, h)} />
-      ))}
+    <G>
+      <Polygon points={p} fill="url(#lgf)" />
+      <Polygon points={p} fill={sh.fill} opacity={sh.opacity} />
     </G>
   );
 }
 
-function Shatter({ t, hover, press }: Frame) {
-  const sec = t / 1000;
-  const burst = press >= 0 ? Math.sin(Math.PI * press) * (1 - press * 0.4) : 0;
-  const h = (p: P) => hover * Math.sin(p[0] * 0.8 + p[1] * 0.5 + sec * 6) * 0.6;
-  const k = Math.max(hover, burst > 0 ? 1 : 0);
+function Ripple({ t, hover, press }: Frame) {
+  const phase = t / 1100;
   return (
-    <G opacity={Math.min(1, k * 1.4)}>
-      {TRIS.map((tri) => {
-        const cx = (tri[0][0] + tri[1][0] + tri[2][0]) / 3 - C[0];
-        const cy = (tri[0][1] + tri[1][1] + tri[2][1]) / 3 - C[1];
-        const f = burst * 0.32;
+    <G>
+      {FACES.map((f, i) => {
+        // Wave: each face a quarter-cycle behind the last, deep -> cyan -> mint as it peaks.
+        const w = 0.5 + 0.5 * Math.cos(2 * Math.PI * (phase - i / 4));
+        // Press pulse: one quick lap, face by face.
+        const pulse = press >= 0 ? Math.exp(-((press * 5 - i - 0.6) ** 2) * 2.2) : 0;
+        const op = Math.min(0.85, hover * (0.12 + 0.4 * w) + pulse * 0.75);
         return (
           <Polygon
-            key={pts(tri)}
-            points={pts(tri, cx * f, cy * f)}
-            fill={shade(tri, h, burst * 0.25)}
-            stroke={color.bg}
-            strokeWidth={burst * 0.5}
+            key={f.id}
+            points={pts(f)}
+            fill={palette(Math.max(w * hover, pulse))}
+            opacity={op}
           />
         );
       })}
@@ -291,65 +291,75 @@ function Shatter({ t, hover, press }: Frame) {
   );
 }
 
-function Sweep({ t, hover, press, big }: Frame & { big: boolean }) {
-  const sec = t / 1000;
-  // Band runs top-left to bottom-right along x + y, once every 700ms while hovered.
-  const band = ((sec / 0.7) % 1) * 64 - 10;
-  const flash = press >= 0 ? 1 - ease(press) : 0;
-  const near = (p: P) => Math.exp(-((p[0] + p[1] - band) ** 2) * 0.02) * hover;
-  const h = (p: P) => near(p) * 1.4;
-  const reach = press >= 0 ? ease(press) * 4 : 0;
+function Split({ hover, press, size }: Frame) {
+  const unit = 24 / size;
+  const peakPx = Math.max(0.8, (size - 16) / 10.7);
+  let out = 0;
+  if (press >= 0) {
+    // Out fast, then a damped spring back with a small inward overshoot.
+    const q = (press - 0.22) / 0.78;
+    out = press < 0.22 ? ease(press / 0.22) : Math.exp(-4 * q) * Math.cos(Math.PI * 1.5 * q);
+  }
+  const d = (hover * 0.5 + out * peakPx) * unit;
   return (
     <G>
-      <G opacity={Math.min(1, hover * 1.4)}>
-        {TRIS.map((tri) => (
-          <Polygon
-            key={pts(tri)}
-            points={pts(tri)}
-            fill={shade(tri, h, near(mid(tri[0], tri[1])) * 0.5)}
+      {FACES.map((f) => (
+        <FacePoly key={f.id} f={f} dx={Math.cos(f.dir) * d} dy={Math.sin(f.dir) * d} />
+      ))}
+    </G>
+  );
+}
+
+function Sweep({ t, hover, press }: Frame) {
+  // Band runs top-left to bottom-right along x + y, once every 900ms while hovered.
+  const band = ((t / 900) % 1) * 56 - 6;
+  const near = (p: P) => Math.exp(-((p[0] + p[1] - band) ** 2) * 0.02) * hover;
+  const flash = press >= 0 ? 1 - ease(press) : 0;
+  return (
+    <G>
+      {FACES.map((f) => (
+        <Polygon key={f.id} points={pts(f)} fill={color.cyan2} opacity={near(f.c) * 0.5} />
+      ))}
+      {EDGES.map(([a, b]) => {
+        const m: P = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+        return (
+          <Line
+            key={`${key(a)}-${key(b)}`}
+            x1={a[0]}
+            y1={a[1]}
+            x2={b[0]}
+            y2={b[1]}
+            stroke={color.mint}
+            strokeWidth={0.4}
+            strokeLinecap="round"
+            opacity={Math.min(1, near(m) * 1.1 + flash)}
+          />
+        );
+      })}
+      {flash > 0 &&
+        VERTS.map((p) => (
+          <Circle
+            key={key(p)}
+            cx={p[0]}
+            cy={p[1]}
+            r={0.5 + flash * 0.6}
+            fill={color.mint}
+            opacity={flash}
           />
         ))}
-      </G>
-      {SEGS.map(([a, b]) => (
-        <Line
-          key={`${a.join()}-${b.join()}`}
-          x1={a[0]}
-          y1={a[1]}
-          x2={b[0]}
-          y2={b[1]}
-          stroke={color.cyan2}
-          strokeWidth={0.35}
-          opacity={Math.min(0.9, near(mid(a, b)) * 0.9 + flash * 0.7)}
-        />
+    </G>
+  );
+}
+
+function Turn({ hover, press }: Frame) {
+  // Clockwise: hover moves the light one face round; press spins it a full turn.
+  const step = Math.PI / 2;
+  const light = REST_LIGHT + hover * step + (press >= 0 ? ease(press) * Math.PI * 2 : 0);
+  return (
+    <G>
+      {FACES.map((f) => (
+        <FacePoly key={f.id} f={f} light={light} />
       ))}
-      {VERTS.map((p) => (
-        <Circle
-          key={p.join()}
-          cx={p[0]}
-          cy={p[1]}
-          r={0.55 + flash * 0.5}
-          fill={color.mint}
-          opacity={Math.min(1, near(p) * 1.2 + flash)}
-        />
-      ))}
-      {big &&
-        flash > 0 &&
-        OUTER.map((o) => {
-          const dx = (o[0] - C[0]) / 11;
-          const dy = (o[1] - C[1]) / 11;
-          return (
-            <Line
-              key={`x${o.join()}`}
-              x1={o[0]}
-              y1={o[1]}
-              x2={o[0] + dx * reach}
-              y2={o[1] + dy * reach}
-              stroke={color.cyan}
-              strokeWidth={0.4}
-              opacity={flash}
-            />
-          );
-        })}
     </G>
   );
 }
