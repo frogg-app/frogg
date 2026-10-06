@@ -1,5 +1,6 @@
 import { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { create } from "zustand";
+import { activeHost, hostUrl, renameHost, useHosts, type Host } from "./hosts";
 import type { Session, TimelineEntry } from "./types";
 
 type Conn = "connecting" | "online" | "offline";
@@ -26,34 +27,43 @@ export const useDaemon = create<DaemonState>(() => ({
 let client: DaemonClient | null = null;
 export const getClient = () => client;
 
-function resolveUrl(): string {
+/** host:port used when nothing is saved yet: ?daemon=, then EXPO_PUBLIC_DAEMON, then this page's host. */
+function defaultEndpoint(): string {
+  const fromQuery = typeof location !== "undefined" ? new URLSearchParams(location.search).get("daemon") : null;
+  if (fromQuery) return fromQuery;
   const env = process.env.EXPO_PUBLIC_DAEMON?.trim();
-  if (env) return env.startsWith("ws") ? env : `ws://${env}/ws`;
-  if (typeof location !== "undefined") {
-    const fromQuery = new URLSearchParams(location.search).get("daemon");
-    if (fromQuery) return `ws://${fromQuery}/ws`;
-    return `ws://${location.hostname}:6767/ws`;
-  }
-  return "ws://127.0.0.1:6767/ws";
+  if (env) return env.replace(/^wss?:\/\//, "").replace(/\/ws$/, "");
+  return typeof location !== "undefined" ? `${location.hostname}:6767` : "127.0.0.1:6767";
 }
 
-export async function connect(): Promise<void> {
-  if (client) return;
-  const url = resolveUrl();
-  useDaemon.setState({ url, conn: "connecting" });
-  client = new DaemonClient({
+/** Connects to the active saved host, replacing any current connection and its per-host state. */
+export async function connect(host?: Host): Promise<void> {
+  const target = host ?? activeHost(defaultEndpoint());
+  if (client) {
+    const old = client;
+    client = null;
+    await old.close().catch(() => {});
+  }
+  useHosts.setState({ activeId: target.id });
+  const url = hostUrl(target);
+  useDaemon.setState({ url, conn: "connecting", sessions: {}, timelines: {}, streaming: {}, serverName: null });
+  const mine = new DaemonClient({
     url,
+    ...(target.password ? { password: target.password } : {}),
     clientId: `ui-next-${Math.random().toString(36).slice(2, 10)}`,
     clientType: "browser",
     deviceName: "Frogg (next)",
     suppressSendErrors: true,
     reconnect: { enabled: true },
   });
-  client.subscribeConnectionStatus((s) => {
+  client = mine;
+  mine.subscribeConnectionStatus((s) => {
+    if (client !== mine) return;
     useDaemon.setState({ conn: s.status === "connected" ? "online" : s.status === "connecting" ? "connecting" : "offline" });
     if (s.status === "connected") void loadSessions();
   });
-  client.subscribe((event) => {
+  mine.subscribe((event) => {
+    if (client !== mine) return;
     if (event.type === "agent_update") {
       const p = event.payload;
       useDaemon.setState((st) => {
@@ -89,9 +99,9 @@ export async function connect(): Promise<void> {
     }
   });
   try {
-    await client.connect();
+    await mine.connect();
   } catch {
-    useDaemon.setState({ conn: "offline" });
+    if (client === mine) useDaemon.setState({ conn: "offline" });
   }
 }
 
@@ -122,9 +132,21 @@ async function loadSessions(): Promise<void> {
   for (const e of res.entries) if (!e.agent.archivedAt) sessions[e.agent.id] = { agent: e.agent, project: e.project };
   const info = client.getLastServerInfoMessage() as { hostname?: string } | null;
   useDaemon.setState({ sessions, serverName: info?.hostname ?? null });
+  // A host saved by address alone takes the daemon's own name once we have it.
+  const st = useHosts.getState();
+  const host = st.hosts.find((h) => h.id === st.activeId);
+  if (host && info?.hostname && host.name === host.endpoint.split(":")[0]) renameHost(host.id, info.hostname);
 }
 
 const subscribed = new Set<string>();
+/** Per-host caches elsewhere reset themselves through this; called on every host switch. */
+export function onHostSwitch(fn: () => void): void {
+  useDaemon.subscribe((s, prev) => {
+    if (s.url !== prev.url) fn();
+  });
+}
+onHostSwitch(() => subscribed.clear());
+
 export async function openTimeline(agentId: string): Promise<void> {
   if (!client) return;
   if (!subscribed.has(agentId)) {

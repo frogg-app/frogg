@@ -161,3 +161,20 @@ module.exports["rail-glide"] = () => async (p, size) => {
   await p.getByLabel("Search", { exact: true }).first().click();
   await p.waitForTimeout(140);
 };
+module.exports["hosts-add"] = () => async (p, size) => {
+  await module.exports.goMore(p, size, "Hosts");
+  await p.getByText("Add a host", { exact: true }).first().click();
+  await p.getByPlaceholder(/^host:port/).fill("buildbox.lan:6767");
+  await p.getByPlaceholder("Name (optional)").fill("buildbox");
+  await p.waitForTimeout(300);
+};
+module.exports["hosts-offline"] = () => async (p, size) => {
+  await module.exports["hosts-add"]()(p, size);
+  await p.getByText("Connect", { exact: true }).click();
+  await p.waitForTimeout(2500);
+};
+module.exports["hosts-back"] = () => async (p, size) => {
+  await module.exports["hosts-offline"]()(p, size);
+  await p.getByText("frogg-dev", { exact: true }).last().click();
+  await p.waitForTimeout(2500);
+};

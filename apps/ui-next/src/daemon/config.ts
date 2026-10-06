@@ -1,6 +1,6 @@
 import type { MutableDaemonConfig, MutableDaemonConfigPatch } from "@frogg/protocol/messages";
 import { create } from "zustand";
-import { getClient } from "./store";
+import { getClient, onHostSwitch } from "./store";
 
 type Providers = Awaited<ReturnType<NonNullable<ReturnType<typeof getClient>>["getProvidersSnapshot"]>>;
 type Status = Awaited<ReturnType<NonNullable<ReturnType<typeof getClient>>["getDaemonStatus"]>>;
@@ -45,3 +45,5 @@ export async function patchConfig(patch: MutableDaemonConfigPatch): Promise<void
     useConfig.setState({ saving: false });
   }
 }
+
+onHostSwitch(() => useConfig.setState({ config: null, providers: null, status: null, error: null }));

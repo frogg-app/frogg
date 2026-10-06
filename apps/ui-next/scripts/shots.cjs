@@ -58,7 +58,10 @@ for (const [name, fn] of Object.entries(require("./scenarios.cjs"))) if (name !=
       if (only && !only.includes(name)) continue;
       const page = await browser.newPage({ viewport: { width: w, height: h } });
       page.on("pageerror", (e) => errors.push(`${size}/${name}: ${e.message}`));
-      page.on("console", (m) => m.type() === "error" && errors.push(`${size}/${name}: ${m.text()}`));
+      page.on("console", (m) => {
+        // The hosts scenarios point at an address that does not resolve, on purpose.
+        if (m.type() === "error" && !/ERR_NAME_NOT_RESOLVED/.test(m.text())) errors.push(`${size}/${name}: ${m.text()}`);
+      });
       await page.goto(url, { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(1200);

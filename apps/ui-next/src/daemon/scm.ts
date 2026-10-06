@@ -1,7 +1,7 @@
 import type { CheckoutDiffUpdateSchema, CheckoutStatusResponseSchema } from "@frogg/protocol/messages";
 import type { z } from "zod";
 import { create } from "zustand";
-import { getClient } from "./store";
+import { getClient, onHostSwitch } from "./store";
 
 export type CheckoutStatus = z.infer<typeof CheckoutStatusResponseSchema>["payload"];
 export type DiffFile = z.infer<typeof CheckoutDiffUpdateSchema>["payload"]["files"][number];
@@ -22,6 +22,11 @@ export const useScm = create<ScmState>(() => ({
 
 let subId: string | null = null;
 let unsub: (() => void) | null = null;
+onHostSwitch(() => {
+  subId = null;
+  unsub = null;
+  useScm.setState({ cwd: null, status: null, files: null, error: null });
+});
 
 /** Point source control at a checkout and keep its diff live. */
 export async function watchCheckout(cwd: string, compare: Compare = useScm.getState().compare): Promise<void> {

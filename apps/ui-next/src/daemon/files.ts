@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getClient } from "./store";
+import { getClient, onHostSwitch } from "./store";
 
 export interface Entry {
   name: string;
@@ -50,3 +50,5 @@ export async function readText(path: string): Promise<{ text: string | null; kin
   const res = await client.readFile(root, path, undefined, 1_000_000);
   return { text: res.kind === "text" ? new TextDecoder().decode(res.bytes) : null, kind: res.kind, size: res.size };
 }
+
+onHostSwitch(() => useFiles.setState({ root: null, dirs: {}, expanded: { ".": true } }));

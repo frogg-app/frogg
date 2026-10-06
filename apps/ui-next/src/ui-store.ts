@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { onHostSwitch } from "./daemon/store";
 
 export type Tool =
   | "sessions" | "search" | "files" | "scm" | "prs" | "terminals" | "tasks"
@@ -55,3 +56,8 @@ export const useUi = create<UiState>((set) => ({
   select: (selected) => set({ selected, listOpen: false }),
   setListOpen: (listOpen) => set({ listOpen }),
 }));
+
+// A different host has different sessions and files: drop everything that pointed into the old one.
+onHostSwitch(() =>
+  useUi.setState({ selected: null, diffPath: null, terminalId: null, inboxId: null, filePath: null, listOpen: false }),
+);

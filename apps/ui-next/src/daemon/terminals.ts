@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getClient } from "./store";
+import { getClient, onHostSwitch } from "./store";
 
 export interface TerminalInfo {
   id: string;
@@ -18,6 +18,11 @@ export const useTerminals = create<TermState>(() => ({ cwd: null, list: null, er
 
 let watching: string | null = null;
 let unsub: (() => void) | null = null;
+onHostSwitch(() => {
+  watching = null;
+  unsub = null;
+  useTerminals.setState({ cwd: null, list: null, error: null });
+});
 
 export async function watchTerminals(cwd: string): Promise<void> {
   const client = getClient();
