@@ -120,3 +120,11 @@ module.exports["ci-run"] = () => async (p, size) => {
   if (await failed.count()) await failed.click();
   await p.waitForTimeout(500);
 };
+module.exports.tasks = () => async (p, size) => { await module.exports.goMore(p, size, "Tasks"); await p.waitForTimeout(1500); };
+module.exports.plugins = () => async (p, size) => { await module.exports.goMore(p, size, "Plugins"); await p.waitForTimeout(2500); };
+module.exports["plugins-browse"] = () => async (p, size) => {
+  await module.exports.goMore(p, size, "Plugins");
+  await p.getByText("Browse", { exact: true }).first().click();
+  await p.waitForTimeout(6000);
+};
+module.exports.companion = () => async (p, size) => { await module.exports.goMore(p, size, "Companion"); await p.waitForTimeout(1500); };

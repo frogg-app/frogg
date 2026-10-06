@@ -10,6 +10,9 @@ import { SearchPanel } from "../components/SearchPanel";
 import { UsagePanel } from "../components/UsagePanel";
 import { HostsPanel } from "../components/HostsPanel";
 import { CiRunDetail, closeRun, PrsPanel, useOpenRun } from "../components/PrsPanel";
+import { TasksPanel } from "../components/TasksPanel";
+import { PluginsPanel } from "../components/PluginsPanel";
+import { CompanionPanel } from "../components/CompanionPanel";
 import { Home } from "../components/Home";
 import { NewSession } from "../components/NewSession";
 import { Palette, useGlobalKeys } from "../components/Palette";
@@ -39,6 +42,9 @@ function sidePanel(tool: Tool): ReactNode {
     case "usage": return <UsagePanel />;
     case "hosts": return <HostsPanel />;
     case "prs": return <PrsPanel />;
+    case "tasks": return <TasksPanel />;
+    case "plugins": return <PluginsPanel />;
+    case "companion": return <CompanionPanel />;
     default: return <ToolPane tool={tool} />;
   }
 }
