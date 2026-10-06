@@ -194,3 +194,47 @@ export const overlayMotion = {
   sheetIn: anim(overlayFrames.sheetIn, `${overlayMs.sheet}ms`, ease),
   sheetOut: anim(overlayFrames.sheetOut, `${overlayMs.out + 30}ms`, easeOut),
 };
+
+/**
+ * Toast motion: card slides in from the right (up on phones) and fades, its corner marks snap
+ * in `cornerDelay` later; exit is a faster accelerating slide/fade; the stack reflows on `glide`.
+ * `life` is the auto-dismiss time the drain line runs over.
+ */
+export const toastMs = { in: 200, out: 140, reflow: 180, cornerDelay: 60, life: 4200 } as const;
+export const toastFrames = {
+  inSide: {
+    "0%": { opacity: 0, transform: "translateX(28px)" },
+    "100%": { opacity: 1, transform: "translateX(0px)" },
+  },
+  inUp: {
+    "0%": { opacity: 0, transform: "translateY(18px)" },
+    "100%": { opacity: 1, transform: "translateY(0px)" },
+  },
+  outSide: {
+    "0%": { opacity: 1, transform: "translateX(0px)" },
+    "100%": { opacity: 0, transform: "translateX(24px)" },
+  },
+  outDown: {
+    "0%": { opacity: 1, transform: "translateY(0px)" },
+    "100%": { opacity: 0, transform: "translateY(12px)" },
+  },
+  corner: {
+    "0%": { opacity: 0, transform: "scale(1.9)" },
+    "100%": { opacity: 1, transform: "scale(1)" },
+  },
+  drain: {
+    "0%": { transform: "scaleX(1)" },
+    "100%": { transform: "scaleX(0)" },
+  },
+} satisfies Record<string, Frames>;
+export const toastMotion = {
+  inSide: anim(toastFrames.inSide, `${toastMs.in}ms`, ease),
+  inUp: anim(toastFrames.inUp, `${toastMs.in}ms`, ease),
+  outSide: anim(toastFrames.outSide, `${toastMs.out}ms`, "cubic-bezier(0.4, 0, 1, 1)"),
+  outDown: anim(toastFrames.outDown, `${toastMs.out}ms`, "cubic-bezier(0.4, 0, 1, 1)"),
+  corner: {
+    ...anim(toastFrames.corner, "160ms", ease),
+    ...web({ animationDelay: `${toastMs.cornerDelay}ms` }),
+  },
+  drain: anim(toastFrames.drain, `${toastMs.life}ms`, "linear"),
+};

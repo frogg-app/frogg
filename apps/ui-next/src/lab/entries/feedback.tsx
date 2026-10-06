@@ -15,7 +15,14 @@ import {
 import { Crashed } from "../../components/shell/ErrorBoundary";
 import { T } from "../../components/Text";
 import { Banner, Banners } from "../../components/toast/Banners";
-import { toast, useToasts } from "../../components/toast/store";
+import {
+  clearToasts,
+  DEFAULT_TOAST_VARIANT,
+  setToastVariant,
+  toast,
+  useToasts,
+  type ToastVariant,
+} from "../../components/toast/store";
 import { useDaemon } from "../../daemon/store";
 import type { TimelineItem } from "../../daemon/types";
 import { color } from "../../theme/tokens";
@@ -73,21 +80,38 @@ const fire = {
       detail:
         "And a detail line that is also long enough to need truncation at two lines on the narrow phone width of the lab",
       kind: "error",
+      source: "s-working",
     }),
 };
 const flood = () => {
   for (const k of ["ok", "done", "info", "needs", "error"] as const) fire[k]();
 };
-const clearToasts = () => useToasts.setState({ toasts: [] });
 const finishBackground = () =>
   patchAgent(ID.working, { status: "idle", requiresAttention: true, attentionReason: "finished" });
 const failBackground = () =>
   patchAgent(ID.idle, { status: "error", lastError: "Error: provider exited with code 1" });
 
+const VARIANTS: { id: ToastVariant; label: string }[] = [
+  { id: "bracket", label: "A · bracket" },
+  { id: "hud", label: "B · hud" },
+  { id: "facet", label: "C · facet" },
+];
+
+function VariantAct({ id, label, on }: { id: ToastVariant; label: string; on: boolean }) {
+  const run = useCallback(() => setToastVariant(id), [id]);
+  return <Act label={on ? `● ${label}` : label} run={run} />;
+}
+
 function ToastDemo() {
   const count = useToasts((st) => st.toasts.length);
+  const variant = useToasts((st) => st.variant);
   return (
     <Stack>
+      <Controls>
+        {VARIANTS.map((v) => (
+          <VariantAct key={v.id} id={v.id} label={v.label} on={v.id === variant} />
+        ))}
+      </Controls>
       <Controls>
         <Act label="ok" run={fire.ok} />
         <Act label="done + action" run={fire.done} />
@@ -104,8 +128,8 @@ function ToastDemo() {
         <Act label="Background session fails" run={failBackground} />
       </Controls>
       <T v="mono">
-        {count} on screen · auto-dismiss after 4200ms unless sticky · toasts render bottom-right of
-        the lab
+        {count} on screen · variant {variant} (shell default {DEFAULT_TOAST_VARIANT}) · auto-dismiss
+        4200ms, held while the pointer is over the stack · renders bottom-right of the lab
       </T>
     </Stack>
   );
@@ -314,7 +338,7 @@ export const feedback: Entry[] = [
       "Transient bottom-right stack (full width above the tabs on phones), max 4. Background session status changes become toasts with Open.",
     usedBy: 10,
     polish:
-      "in: motion.enter (opacity + translateY 6px, 200ms cubic-bezier(0.23,1,0.32,1)) · out: none, removed instantly on dismiss or after 4200ms · no reflow animation when the stack shifts",
+      "in: 200ms slide from right (up on phones) + fade on glide, corners/gem snap +60ms · out: 140ms accelerating slide + fade, stays mounted through exit · stack slots open/close over 180ms on glide · drain line runs the 4200ms lifetime, paused on hover · reduced motion and native: static, instant removal",
     variants: [{ id: "lifecycle", label: "Fire, stack, dismiss", C: ToastDemo }],
   },
   {
