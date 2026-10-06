@@ -24,7 +24,7 @@ export function DiffView({ path, onBack }: { path: string; onBack?: () => void }
         <View style={{ flex: 1, minWidth: 200 }}>
           <T v="label">{compare === "uncommitted" ? "changes · uncommitted" : `changes · vs ${base}`}</T>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 }}>
-            {onBack && <Pressable onPress={onBack} hitSlop={10}><ArrowLeft size={18} color={color.text} /></Pressable>}
+            {onBack && <Pressable onPress={onBack} hitSlop={10} accessibilityLabel="Back"><ArrowLeft size={18} color={color.text} /></Pressable>}
             <T v="display" style={{ fontSize: 19 }} numberOfLines={1}>{path.split("/").pop()}</T>
           </View>
           {file && (

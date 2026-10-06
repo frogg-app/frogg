@@ -31,7 +31,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         </T>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 }}>
           {onBack && (
-            <Pressable onPress={onBack} hitSlop={10}><ArrowLeft size={18} color={color.text} /></Pressable>
+            <Pressable onPress={onBack} hitSlop={10} accessibilityLabel="Back"><ArrowLeft size={18} color={color.text} /></Pressable>
           )}
           <T v="display" numberOfLines={1} style={{ fontSize: 19, flex: 1 }}>{a.title || "Untitled session"}</T>
           <Pressable onPress={() => void archiveSession(a.id)} accessibilityLabel="Archive session" hitSlop={8}>

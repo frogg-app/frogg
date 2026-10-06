@@ -99,3 +99,24 @@ module.exports.search = (tool) => async (p, size) => {
 };
 module.exports.usage = () => async (p, size) => { await module.exports.goMore(p, size, "Usage"); await p.waitForTimeout(2500); };
 module.exports.hosts = () => async (p, size) => { await module.exports.goMore(p, size, "Hosts"); await p.waitForTimeout(2000); };
+module.exports.prs = () => async (p, size) => {
+  await p.getByText("Interface redesign (ui-next)").first().click();
+  await p.waitForTimeout(600);
+  if (size === "phone") await p.getByLabel("Back").first().click();
+  await module.exports.goMore(p, size, "PRs & CI");
+  await p.waitForTimeout(4000);
+};
+module.exports["prs-ci"] = () => async (p, size) => {
+  await module.exports.prs()(p, size);
+  await p.getByText(/^CI runs/).first().click();
+  await p.getByText(/^CI runs [1-9]/).first().waitFor({ timeout: 20000 }).catch(() => {});
+  await p.waitForTimeout(800);
+};
+module.exports["ci-run"] = () => async (p, size) => {
+  await module.exports["prs-ci"]()(p, size);
+  await p.getByText(/^Release #\d+/).nth(1).click();
+  await p.waitForTimeout(600);
+  const failed = p.getByText(/^(test|build|e2e)/i).first();
+  if (await failed.count()) await failed.click();
+  await p.waitForTimeout(500);
+};

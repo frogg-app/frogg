@@ -9,6 +9,7 @@ import { FilesPanel, FileViewer } from "../components/Files";
 import { SearchPanel } from "../components/SearchPanel";
 import { UsagePanel } from "../components/UsagePanel";
 import { HostsPanel } from "../components/HostsPanel";
+import { CiRunDetail, closeRun, PrsPanel, useOpenRun } from "../components/PrsPanel";
 import { Home } from "../components/Home";
 import { NewSession } from "../components/NewSession";
 import { Palette, useGlobalKeys } from "../components/Palette";
@@ -37,6 +38,7 @@ function sidePanel(tool: Tool): ReactNode {
     case "search": return <SearchPanel />;
     case "usage": return <UsagePanel />;
     case "hosts": return <HostsPanel />;
+    case "prs": return <PrsPanel />;
     default: return <ToolPane tool={tool} />;
   }
 }
@@ -45,6 +47,7 @@ export default function Shell() {
   const ff = useFormFactor();
   const docked = useWindowDimensions().width >= 900;
   const { tool, selected, listOpen, diffPath, terminalId, inboxId, settingsPage, filePath, select, setListOpen, openDiff, openTerminal, openInbox, openSettings, openFile } = useUi();
+  const openRun = useOpenRun();
   const session = useDaemon((s) => (selected ? s.sessions[selected] : undefined));
   const b = useBuckets();
   const badges: Partial<Record<Tool, number>> = {
@@ -60,6 +63,8 @@ export default function Shell() {
       <DiffView path={diffPath} onBack={phone ? () => openDiff(null) : undefined} />
     ) : tool === "terminals" && terminalId ? (
       <TerminalDetail id={terminalId} onBack={phone ? () => openTerminal(null) : undefined} />
+    ) : tool === "prs" && openRun ? (
+      <CiRunDetail id={openRun} onBack={phone ? closeRun : undefined} />
     ) : tool === "files" && filePath ? (
       <FileViewer path={filePath} onBack={phone ? () => openFile(null) : undefined} />
     ) : tool === "settings" && (settingsPage || !phone) ? (
@@ -83,7 +88,7 @@ export default function Shell() {
     );
   }
 
-  const hasDetail = !!(session || (tool === "scm" && diffPath) || (tool === "terminals" && terminalId) || (tool === "inbox" && inboxId) || (tool === "settings" && settingsPage) || (tool === "files" && filePath));
+  const hasDetail = !!(session || (tool === "scm" && diffPath) || (tool === "terminals" && terminalId) || (tool === "inbox" && inboxId) || (tool === "settings" && settingsPage) || (tool === "files" && filePath) || (tool === "prs" && openRun));
   return (
     <View style={s.root}>
       <View style={{ flex: 1, flexDirection: "row" }}>
