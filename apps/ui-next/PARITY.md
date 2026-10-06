@@ -5,7 +5,7 @@ Gaps where ui-next lacks something apps/ui has. Order = priority. Tick when done
 ## P1 — Hosts (broken workflows)
 
 - [x] **Edit host**: change address/port, password, TLS after adding (apps/ui: Host page → Connections)
-- [ ] Per-host connection list: show each saved route (direct/relay/SSH) with latency; remove one route
+- [x] Per-host connection list: show each saved route (direct/relay/SSH) with latency; remove one route
 - [ ] Host appearance: colour (11 swatches) and sidebar badge (Name / Icon only / Hidden)
 - [ ] Rename from Hosts panel / host detail (currently only Settings › Overview)
 - [ ] Connection error card: credential rejected → "Pair again"; different daemon at this address

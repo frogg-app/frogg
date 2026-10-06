@@ -499,3 +499,34 @@ module.exports["he-row-pencil"] = () => async (p, size) => {
     .click();
   await p.waitForTimeout(400);
 };
+// hr: per-host routes (seeded alternates on the active host).
+const hrSeed = async (p, size) => {
+  await p.evaluate(() => {
+    const key = "frogg-next.hosts.v1";
+    const st = JSON.parse(localStorage.getItem(key) || "null");
+    if (!st || !st.hosts.length) return;
+    const h = st.hosts.find((x) => x.id === st.activeId) || st.hosts[0];
+    h.routes = [
+      { id: "r_local", endpoint: "localhost:7821" },
+      { id: "r_lan", endpoint: "10.255.255.1:6767" },
+      {
+        id: "r_relay",
+        endpoint: "relay.frogg.dev:443",
+        tls: true,
+        relay: { daemonPublicKeyB64: "AA==" },
+      },
+    ];
+    localStorage.setItem(key, JSON.stringify(st));
+  });
+  await p.reload();
+  await p.waitForTimeout(1500);
+  await hostsTool(p, size);
+  await p.getByText("frogg-dev", { exact: true }).first().click();
+  await p.waitForTimeout(5000);
+};
+module.exports["hr-routes"] = () => hrSeed;
+module.exports["hr-remove"] = () => async (p, size) => {
+  await hrSeed(p, size);
+  await p.getByLabel("Remove route 10.255.255.1:6767", { exact: true }).click();
+  await p.waitForTimeout(300);
+};

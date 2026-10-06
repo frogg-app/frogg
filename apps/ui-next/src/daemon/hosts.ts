@@ -27,7 +27,28 @@ export interface Host {
   role?: string;
   /** ISO time this device last had a live connection to the host. */
   lastOnlineAt?: string;
+  /** Other saved ways to reach the same daemon (the fields above are the one in use). */
+  routes?: HostRoute[];
 }
+
+/** One saved way to reach a daemon: a direct listener or a relay. */
+export interface HostRoute {
+  id: string;
+  endpoint: string;
+  tls?: boolean;
+  relay?: { daemonPublicKeyB64: string };
+}
+
+const sameRoute = (a: Omit<HostRoute, "id">, b: Omit<HostRoute, "id">) =>
+  a.endpoint === b.endpoint && Boolean(a.relay) === Boolean(b.relay);
+
+/** The route a host currently connects through. */
+export const primaryRoute = (h: Host): HostRoute => ({
+  id: "primary",
+  endpoint: h.endpoint,
+  ...(h.tls !== undefined ? { tls: h.tls } : {}),
+  ...(h.relay ? { relay: h.relay } : {}),
+});
 
 interface HostsState {
   hosts: Host[];
@@ -113,7 +134,14 @@ export function upsertHost(input: Omit<Host, "id">): Host {
     ? useHosts.getState().hosts.find((h) => h.serverId === input.serverId)
     : undefined;
   if (!existing) return addHost(input);
-  const host = { ...existing, ...input, id: existing.id };
+  // A new route to a known daemon keeps the old one as an alternate.
+  const prev = primaryRoute(existing);
+  const routes = (existing.routes ?? []).filter((r) => !sameRoute(r, input));
+  if (!sameRoute(prev, input)) routes.unshift({ ...prev, id: newHostId() });
+  const host: Host = { ...existing, ...input, id: existing.id };
+  if (!input.relay) delete host.relay;
+  if (routes.length) host.routes = routes;
+  else delete host.routes;
   useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === host.id ? host : h)) }));
   return host;
 }
@@ -140,6 +168,48 @@ export function updateHost(id: string, patch: Partial<Omit<Host, "id">>): Host |
   if (!host.password) delete host.password;
   useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === id ? host : h)) }));
   return host;
+}
+
+/** Makes a saved alternate the route in use; the previous one becomes an alternate. */
+export function promoteRoute(hostId: string, routeId: string): Host | null {
+  const h = useHosts.getState().hosts.find((x) => x.id === hostId);
+  const next = h?.routes?.find((r) => r.id === routeId);
+  if (!h || !next) return null;
+  const routes = [
+    { ...primaryRoute(h), id: newHostId() },
+    ...(h.routes ?? []).filter((r) => r.id !== routeId),
+  ];
+  const host: Host = { ...h, endpoint: next.endpoint, routes };
+  if (next.tls === undefined) delete host.tls;
+  else host.tls = next.tls;
+  if (next.relay) host.relay = next.relay;
+  else delete host.relay;
+  useHosts.setState((s) => ({ hosts: s.hosts.map((x) => (x.id === hostId ? host : x)) }));
+  return host;
+}
+
+/** Forgets the route in use, switching to the first alternate; null when there is none. */
+export function dropPrimaryRoute(hostId: string): Host | null {
+  const h = useHosts.getState().hosts.find((x) => x.id === hostId);
+  const first = h?.routes?.[0];
+  if (!h || !first) return null;
+  const host = promoteRoute(hostId, first.id);
+  const demoted = host?.routes?.[0];
+  if (host && demoted) removeRoute(hostId, demoted.id);
+  return useHosts.getState().hosts.find((x) => x.id === hostId) ?? null;
+}
+
+/** Forgets one alternate route of a host. */
+export function removeRoute(hostId: string, routeId: string): void {
+  useHosts.setState((s) => ({
+    hosts: s.hosts.map((h) => {
+      if (h.id !== hostId || !h.routes) return h;
+      const routes = h.routes.filter((r) => r.id !== routeId);
+      const next: Host = { ...h, routes };
+      if (!routes.length) delete next.routes;
+      return next;
+    }),
+  }));
 }
 
 // ---------------------------------------------------------------------------

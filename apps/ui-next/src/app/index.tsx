@@ -13,6 +13,7 @@ import { FilesPanel, FileViewer } from "../components/Files";
 import { SearchPanel } from "../components/SearchPanel";
 import { UsagePanel } from "../components/UsagePanel";
 import { HostsPanel } from "../components/HostsPanel";
+import { HostDetail } from "../components/hosts/HostDetail";
 import { CiRunDetail, closeRun, PrsPanel, useOpenRun } from "../components/PrsPanel";
 import { TasksPanel } from "../components/TasksPanel";
 import { PluginsPanel } from "../components/PluginsPanel";
@@ -115,6 +116,7 @@ function MainDetail({ ui, phone, openRun, session }: DetailProps): ReactNode {
     );
   if (tool === "inbox" && inboxId)
     return <InboxDetail id={inboxId} onBack={phone ? backInbox : undefined} />;
+  if (tool === "hosts" && !phone) return <HostDetail />;
   if (tool !== "sessions" && phone) return null;
   if (session) return <Chat session={session} onBack={phone ? backChat : undefined} />;
   return phone ? null : <Home />;

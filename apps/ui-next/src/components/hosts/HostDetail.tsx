@@ -9,6 +9,7 @@ import { Button } from "../Button";
 import { Cut } from "../Cut";
 import { Meter } from "../Meter";
 import { Pill } from "../settings/controls";
+import { Routes } from "./Routes";
 import { T } from "../Text";
 import { openSheet, useHostView, viewHost } from "./state";
 
@@ -195,10 +196,7 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
         </Card>
         {owner && <HereNow />}
         <Card title="Connections">
-          <ConnLine
-            label={isRelayHost(host) ? "Relay" : "Direct"}
-            value={`${host.endpoint}${host.tls ? " · TLS" : ""}`}
-          />
+          <Routes host={host} />
           {host.fingerprint && (
             <T v="mono" style={s.faint}>
               key {host.fingerprint.slice(0, 20)}…
@@ -283,8 +281,8 @@ function SavedHost({ host, onBack }: { host: Host; onBack?: () => void }) {
     <>
       <Head host={host} eyebrow={`Host · ${hostKind(host)}`} onBack={onBack} actions={switchBtn} />
       <View style={s.grid}>
-        <Card title="Connection">
-          <ConnLine label={hostKind(host)} value={`${host.endpoint}${host.tls ? " · TLS" : ""}`} />
+        <Card title="Connections">
+          <Routes host={host} />
           <T style={s.muted}>{last ? `Last connected ${last}.` : "Not connected yet."}</T>
           {host.role && <T style={s.muted}>Paired as {host.role}.</T>}
           <View style={s.bannerActs}>
@@ -379,18 +377,6 @@ function RequestRow({ r, done }: { r: PendingPairingRequest; done: () => void })
       </View>
       <Button label="Deny" onPress={deny} />
       <Button kind="primary" label="Approve" onPress={approve} />
-    </View>
-  );
-}
-
-function ConnLine({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={s.device}>
-      <View style={[s.dot, s.dotOn]} />
-      <T style={s.strong}>{label}</T>
-      <T v="mono" numberOfLines={1} style={s.flex}>
-        {value}
-      </T>
     </View>
   );
 }
