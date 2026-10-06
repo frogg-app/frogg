@@ -1,0 +1,25 @@
+{
+  "name": "@frogg/ui-next",
+  "version": "1.6.12-beta.1",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "web": "expo start --web",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@frogg/client": "*",
+    "@frogg/protocol": "*",
+    "expo": "^54.0.18",
+    "expo-router": "~6.0.13",
+    "lucide-react-native": "^0.546.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-svg": "^15.14.0",
+    "react-native-web": "~0.21.0",
+    "zustand": "^5.0.9"
+  }
+}

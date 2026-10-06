@@ -1,0 +1,11 @@
+{
+  "expo": {
+    "name": "Frogg",
+    "slug": "frogg-ui-next",
+    "scheme": "frogg-next",
+    "userInterfaceStyle": "dark",
+    "web": { "bundler": "metro", "output": "single" },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": false }
+  }
+}
