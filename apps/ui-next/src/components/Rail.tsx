@@ -144,7 +144,7 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
         {glide && <View style={glide} />}
         <View style={s.logo}>
           <View style={s.logoMark}>
-            <Logo size={26} />
+            <Logo size={26} motion="ripple" />
           </View>
           <T v="display" style={[s.word, open && s.labelOn]} numberOfLines={1}>
             frogg
