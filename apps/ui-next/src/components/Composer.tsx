@@ -1,13 +1,17 @@
 import { ArrowUp, Mic, Plus, Square } from "lucide-react-native";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { color, font, web } from "../theme/tokens";
 import { Cut } from "./Cut";
 import { T } from "./Text";
 
 export function Composer({
-  placeholder, chips, onSend, compact, onStop,
-}: { placeholder: string; chips: string[]; onSend: (text: string) => void; compact?: boolean; onStop?: () => void }) {
+  placeholder, chips, onSend, compact, onStop, controls,
+}: {
+  placeholder: string; chips: string[]; onSend: (text: string) => void; compact?: boolean; onStop?: () => void;
+  /** Live pickers (model, mode) shown in place of static chips. */
+  controls?: ReactNode;
+}) {
   const [text, setText] = useState("");
   const submit = () => {
     const t = text.trim();
@@ -40,6 +44,7 @@ export function Composer({
             <T v="mono" style={{ color: color.text }}>{c}</T>
           </View>
         ))}
+        {controls}
         <View style={{ flex: 1 }} />
         <Mic size={16} color={color.muted} />
         {onStop && !text.trim() ? (

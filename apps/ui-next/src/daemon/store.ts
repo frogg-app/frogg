@@ -193,3 +193,11 @@ export async function archiveSession(agentId: string): Promise<void> {
     return { sessions };
   });
 }
+
+export async function setAgentModel(agentId: string, model: string): Promise<void> {
+  await client?.setAgentModel(agentId, model);
+}
+
+export async function setAgentMode(agentId: string, modeId: string): Promise<void> {
+  await client?.setAgentMode(agentId, modeId);
+}

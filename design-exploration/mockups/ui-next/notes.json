@@ -11,5 +11,6 @@
   "10": "Files: lazy tree of the active checkout and a highlighted viewer (@frogg/highlight with a Bracket syntax palette). Diffs now use the daemon's syntax tokens.",
   "11": "Search across all sessions (archived included) with match highlighting; Usage with segmented meters per provider window (real figures from this host's provider logins); Hosts with live CPU, memory and disk.",
   "12": "PRs & CI on this repo's real GitHub data: pull request for the branch with checks, CI runs list, and a run detail with jobs (failed first, skipped dimmed) and expandable steps.",
-  "13": "Every rail tool is now live: Tasks (the session's plan and subagents), Plugins (installed with enable toggles, catalog with install and capability notice), Companion (notebook and a text line). Mock sessions have no plan, so Tasks shows its empty state."
+  "13": "Every rail tool is now live: Tasks (the session's plan and subagents), Plugins (installed with enable toggles, catalog with install and capability notice), Companion (notebook and a text line). Mock sessions have no plan, so Tasks shows its empty state.",
+  "14": "Chat depth: tool calls expand to their real content (diffs, shell output, file reads, search hits); model and mode are live pickers in the composer; J / K walk the session list, A / Esc answer the open session's permission. Bracket shapes now clip only their paint layer, so menus can open out of them."
 }

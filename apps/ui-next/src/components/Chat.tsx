@@ -1,12 +1,16 @@
-import { Archive, ArrowLeft, Check, FileText, Search, SquareTerminal, X } from "lucide-react-native";
+import { Archive, ArrowLeft } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { archiveSession, cancelTurn, openTimeline, send, useDaemon } from "../daemon/store";
+import { archiveSession, cancelTurn, openTimeline, send, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
+import type { Agent } from "../daemon/types";
+import { useConfig, loadConfig } from "../daemon/config";
+import { Select } from "./Select";
 import { bucketOf, type Session, type TimelineEntry } from "../daemon/types";
 import { color } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { Composer } from "./Composer";
 import { PermissionCard } from "./PermissionCard";
+import { ToolCall } from "./ToolCall";
 import { Markdown } from "./Markdown";
 import { bucketColor, StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
@@ -53,6 +57,9 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
       >
         {!entries && <T v="label" style={{ textAlign: "center", marginTop: 40 }}>loading timeline…</T>}
+        {entries?.length === 0 && a.status !== "running" && (
+          <T v="label" style={{ textAlign: "center", marginTop: 40 }}>no messages yet · say what to do below</T>
+        )}
         {entries?.map((e, i) => <Item key={`${e.seqStart}-${i}`} e={e} provider={providerLabel(a.provider)} />)}
         {a.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={a.id} p={p} />)}
         {a.status === "running" && <Thinking />}
@@ -60,7 +67,8 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
       <View style={s.composer}>
         <Composer
           placeholder={`Message ${providerLabel(a.provider)} — @ files, / commands`}
-          chips={[providerLabel(a.provider), model ?? "default"].slice(onBack ? 1 : 0)}
+          chips={onBack ? [] : [providerLabel(a.provider)]}
+          controls={<AgentControls agent={a} />}
           onSend={(t) => void send(a.id, t)}
           onStop={a.status === "running" ? () => void cancelTurn(a.id) : undefined}
           compact={!!onBack}
@@ -100,20 +108,8 @@ function Item({ e, provider }: { e: TimelineEntry; provider: string }) {
       );
     case "reasoning":
       return <T numberOfLines={3} style={{ marginTop: 12, color: color.faint, fontStyle: "italic" }}>{it.text}</T>;
-    case "tool_call": {
-      const Icon = /read|file/i.test(it.name) ? FileText : /grep|search|glob/i.test(it.name) ? Search : SquareTerminal;
-      const st = it.status;
-      return (
-        <View style={s.tool}>
-          <Icon size={14} color={color.muted} />
-          <T v="mono" style={{ color: color.cyan2, fontSize: 12.5 }}>{it.name}</T>
-          <View style={{ flex: 1 }} />
-          {st === "completed" && <Check size={13} color={color.mint} />}
-          {st === "failed" && <X size={13} color={color.coral} />}
-          {st === "running" && <StatusGlyph bucket="working" size={7} />}
-        </View>
-      );
-    }
+    case "tool_call":
+      return <ToolCall item={it} />;
     case "error":
       return <T v="mono" style={{ color: color.coral, marginTop: 12 }}>{it.message}</T>;
     case "todo":
@@ -139,3 +135,33 @@ const s = StyleSheet.create({
   tool: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, backgroundColor: color.panel, borderWidth: 1, borderColor: color.line, paddingHorizontal: 12, paddingVertical: 8 },
   composer: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 6, maxWidth: 892, width: "100%", alignSelf: "center" },
 });
+
+/** Model and mode pickers for a live session, fed by the host's provider snapshot. */
+function AgentControls({ agent }: { agent: Agent }) {
+  const providers = useConfig((s) => s.providers);
+  useEffect(() => {
+    if (!providers) void loadConfig();
+  }, [providers]);
+  const entry = providers?.entries.find((p) => p.provider === agent.provider);
+  const model = agent.runtimeInfo?.model ?? agent.model;
+  const models = entry?.models ?? [];
+  return (
+    <>
+      <Select
+        chip mono up width="auto" menuWidth={240}
+        value={model ?? null}
+        placeholder={model ?? "default model"}
+        options={models.map((m) => ({ value: m.id, label: m.label, hint: m.description }))}
+        onChange={(v) => void setAgentModel(agent.id, v)}
+      />
+      {agent.availableModes.length > 0 && (
+        <Select
+          chip up width="auto" menuWidth={240}
+          value={agent.currentModeId}
+          options={agent.availableModes.map((m) => ({ value: m.id, label: m.label, hint: m.description }))}
+          onChange={(v) => void setAgentMode(agent.id, v)}
+        />
+      )}
+    </>
+  );
+}

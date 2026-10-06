@@ -2,7 +2,7 @@ import { ChevronRight } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { newTerminal } from "../daemon/terminals";
-import { useDaemon } from "../daemon/store";
+import { answerPermission, useDaemon } from "../daemon/store";
 import { bucketOf } from "../daemon/types";
 import { color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
@@ -21,13 +21,45 @@ interface Item {
   run: () => void;
 }
 
-/** ⌘K / Ctrl+K anywhere; `>` narrows to commands. */
+const ORDER = ["needs", "failed", "review", "working", "idle"];
+
+/** Session ids in the order the list shows them, for J / K. */
+function orderedSessionIds(): string[] {
+  return Object.values(useDaemon.getState().sessions)
+    .sort((a, b) => ORDER.indexOf(bucketOf(a.agent)) - ORDER.indexOf(bucketOf(b.agent)) || Date.parse(b.agent.updatedAt) - Date.parse(a.agent.updatedAt))
+    .map((s) => s.agent.id);
+}
+
+/** ⌘K / Ctrl+K anywhere; `>` narrows to commands; J / K move through sessions; A / Esc answer a permission. */
 export function useGlobalKeys() {
   const setPalette = useUi((s) => s.setPalette);
   useEffect(() => {
     const doc = (globalThis as { document?: Document }).document;
     if (!doc) return;
     const onKey = (e: KeyboardEvent) => {
+      const typing = /^(INPUT|TEXTAREA)$/.test((e.target as HTMLElement | null)?.tagName ?? "") || (e.target as HTMLElement | null)?.isContentEditable;
+      const ui = useUi.getState();
+      if (!typing && !e.metaKey && !e.ctrlKey && !e.altKey && !ui.paletteOpen && !ui.newSessionOpen) {
+        const k = e.key.toLowerCase();
+        if (k === "j" || k === "k") {
+          const order = orderedSessionIds();
+          const at = ui.selected ? order.indexOf(ui.selected) : -1;
+          const next = order[Math.max(0, Math.min(order.length - 1, at + (k === "j" ? 1 : -1)))];
+          if (next) {
+            ui.setTool("sessions");
+            ui.select(next);
+          }
+          e.preventDefault();
+          return;
+        }
+        const agent = ui.selected ? useDaemon.getState().sessions[ui.selected]?.agent : undefined;
+        const perm = agent?.pendingPermissions[0];
+        if (agent && perm && (k === "a" || k === "escape")) {
+          void answerPermission(agent.id, perm.id, k === "a");
+          e.preventDefault();
+          return;
+        }
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n" && !e.shiftKey) {
         e.preventDefault();
         useUi.getState().setNewSession(true);

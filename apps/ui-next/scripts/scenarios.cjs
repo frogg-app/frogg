@@ -128,3 +128,21 @@ module.exports["plugins-browse"] = () => async (p, size) => {
   await p.waitForTimeout(6000);
 };
 module.exports.companion = () => async (p, size) => { await module.exports.goMore(p, size, "Companion"); await p.waitForTimeout(1500); };
+module.exports["chat-tools"] = () => async (p, size) => {
+  await p.getByText("Preview chat").first().click();
+  await p.waitForTimeout(1500);
+  await p.getByText("hooks/use-scroll-anchor.ts", { exact: true }).last().click();
+  await p.waitForTimeout(500);
+};
+module.exports["chat-model"] = () => async (p, size) => {
+  await p.getByText("Second chat").first().click();
+  await p.waitForTimeout(1500);
+  await p.getByText("Ten second stream", { exact: true }).last().click();
+  await p.waitForTimeout(500);
+};
+module.exports["keys-jk"] = () => async (p) => {
+  await p.keyboard.press("j");
+  await p.keyboard.press("j");
+  await p.keyboard.press("j");
+  await p.waitForTimeout(1200);
+};
