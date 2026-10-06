@@ -1,6 +1,6 @@
 import { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { create } from "zustand";
-import { activeHost, hostUrl, renameHost, useHosts, type Host } from "./hosts";
+import { activeHost, hostsReady, hostUrl, renameHost, useHosts, type Host } from "./hosts";
 import type { Session, TimelineEntry } from "./types";
 
 type Conn = "connecting" | "online" | "offline";
@@ -40,6 +40,7 @@ function defaultEndpoint(): string {
 
 /** Connects to the active saved host, replacing any current connection and its per-host state. */
 export async function connect(host?: Host): Promise<void> {
+  await hostsReady;
   const target = host ?? activeHost(defaultEndpoint());
   if (client) {
     const old = client;

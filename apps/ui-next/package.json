@@ -5,15 +5,21 @@
   "main": "expo-router/entry",
   "scripts": {
     "web": "expo start --web",
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsgo --noEmit",
+    "android:apk": "node scripts/build-apk.mjs",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@frogg/client": "*",
     "@frogg/highlight": "*",
     "@frogg/protocol": "*",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "@xterm/addon-fit": "^0.12.0-beta.213",
     "@xterm/xterm": "^6.1.0-beta.213",
     "expo": "^54.0.18",
+    "expo-build-properties": "^1.0.9",
+    "expo-font": "~14.0.12",
     "expo-router": "~6.0.13",
     "lucide-react-native": "^0.546.0",
     "react": "19.1.0",

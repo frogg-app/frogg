@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 
 export interface Host {
@@ -15,20 +16,19 @@ interface HostsState {
 }
 
 const KEY = "frogg-next.hosts.v1";
-const storage = (globalThis as { localStorage?: Storage }).localStorage;
 
-function load(): HostsState {
-  try {
-    const raw = storage?.getItem(KEY);
-    if (raw) return JSON.parse(raw) as HostsState;
-  } catch {
-    /* corrupt or unavailable: start fresh */
-  }
-  return { hosts: [], activeId: null };
-}
+export const useHosts = create<HostsState>(() => ({ hosts: [], activeId: null }));
 
-export const useHosts = create<HostsState>(load);
-useHosts.subscribe((s) => storage?.setItem(KEY, JSON.stringify(s)));
+/** Resolves once the saved hosts are loaded; later changes are written back. */
+export const hostsReady: Promise<void> = AsyncStorage.getItem(KEY)
+  .then((raw) => {
+    if (raw) useHosts.setState(JSON.parse(raw) as HostsState);
+    return undefined;
+  })
+  .catch(() => undefined /* corrupt or unavailable: start fresh */)
+  .finally(() => {
+    useHosts.subscribe((s) => void AsyncStorage.setItem(KEY, JSON.stringify(s)));
+  });
 
 export const hostUrl = (h: Host) => `${h.tls ? "wss" : "ws"}://${h.endpoint}/ws`;
 

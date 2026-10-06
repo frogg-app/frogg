@@ -1,1 +1,4 @@
 .expo/
+/android
+/ios
+/dist-apk
