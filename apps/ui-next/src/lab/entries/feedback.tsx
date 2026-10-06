@@ -3,7 +3,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button } from "../../components/Button";
 import { ComposerNotices } from "../../components/chat/Notices";
-import { Compaction, SessionState } from "../../components/chat/SessionState";
+import {
+  Compaction,
+  DEFAULT_STATE_VARIANT,
+  SessionState,
+  type StateVariant,
+} from "../../components/chat/SessionState";
 import { PermissionCard } from "../../components/PermissionCard";
 import { Finding } from "../../components/settings/pages/hostkit";
 import {
@@ -295,6 +300,29 @@ const Offline = () => (
   </Cases>
 );
 
+const StyleCases = ({ v }: { v: StateVariant }) => (
+  <Cases>
+    <Case name="SessionState" props={`variant="${v}" · review`} w={CHAT}>
+      <SessionState agent={reviewAgent} online variant={v} />
+    </Case>
+    <Case name="SessionState" props={`variant="${v}" · failed`} w={CHAT}>
+      <SessionState agent={failedAgent} online variant={v} />
+    </Case>
+    <Case name="SessionState" props={`variant="${v}" · offline`} w={CHAT}>
+      <SessionState agent={idleAgent} online={false} variant={v} />
+    </Case>
+    <Case name="SessionState" props={`variant="${v}" · review`} w={W.phone}>
+      <SessionState agent={reviewAgent} online variant={v} />
+    </Case>
+    <Case name="SessionState" props={`variant="${v}" · failed`} w={W.phone}>
+      <SessionState agent={failedAgent} online variant={v} />
+    </Case>
+  </Cases>
+);
+const StyleEdge = () => <StyleCases v="edge" />;
+const StyleBracket = () => <StyleCases v="bracket" />;
+const StyleBanner = () => <StyleCases v="banner" />;
+
 const cutLoading = { type: "compaction", status: "loading", trigger: "manual" } as Extract<
   TimelineItem,
   { type: "compaction" }
@@ -513,8 +541,13 @@ export const feedback: Entry[] = [
     purpose:
       "End-of-timeline state cards (review, failed, host offline) and the compaction / clean-cut marker.",
     usedBy: 1,
-    polish: "none; the compaction summary expands instantly",
+    polish:
+      "Cards rise 8px + fade on mount (200ms, glide curve); the kind edge/trim/corners draw in 60ms later; failed flashes coral once, review glows mint once. Clean-cut marker is the apps/ui divider (amber cut line, scissors) with a beam running along the line while compacting; the summary unfolds (180ms) and folds (140ms). Reduced motion and native: static. Replay to see entry.",
+    decision: `Pick the state card style: A edge (wash + 3px edge bar + tag), B bracket (raised card, kind corners), C banner (full-width wash, top trim). Current default: ${DEFAULT_STATE_VARIANT}.`,
     variants: [
+      { id: "style-edge", label: "Style A · edge bar (default)", C: StyleEdge },
+      { id: "style-bracket", label: "Style B · bracket card", C: StyleBracket },
+      { id: "style-banner", label: "Style C · banner + top trim", C: StyleBanner },
       { id: "review", label: "Ready to review", C: Review },
       { id: "failed", label: "Failed", C: Failed },
       { id: "offline", label: "Host offline", C: Offline },

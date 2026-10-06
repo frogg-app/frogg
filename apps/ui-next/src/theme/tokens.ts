@@ -238,3 +238,53 @@ export const toastMotion = {
   },
   drain: anim(toastFrames.drain, `${toastMs.life}ms`, "linear"),
 };
+
+/**
+ * Session state cards (end of timeline): fade + rise on `ease`, the kind trim draws in `trimDelay`
+ * later; failed flashes coral once, review glows mint once; the compaction summary unfolds.
+ */
+export const stateMs = { in: 200, trim: 220, trimDelay: 60, flash: 520, glow: 900, fold: 180 };
+export const stateFrames = {
+  rise: {
+    "0%": { opacity: 0, transform: "translateY(8px)" },
+    "100%": { opacity: 1, transform: "translateY(0px)" },
+  },
+  drawX: { "0%": { transform: "scaleX(0)" }, "100%": { transform: "scaleX(1)" } },
+  drawY: { "0%": { transform: "scaleY(0)" }, "100%": { transform: "scaleY(1)" } },
+  flash: {
+    "0%": { backgroundColor: "rgba(255,107,107,0.30)" },
+    "100%": { backgroundColor: "rgba(255,107,107,0)" },
+  },
+  glow: {
+    "0%": { boxShadow: "0 0 0px rgba(63,207,142,0)" },
+    "35%": { boxShadow: "0 0 22px rgba(63,207,142,0.32)" },
+    "100%": { boxShadow: "0 0 0px rgba(63,207,142,0)" },
+  },
+  unfold: {
+    "0%": { opacity: 0, maxHeight: 0 },
+    "100%": { opacity: 1, maxHeight: 640 },
+  },
+  fold: {
+    "0%": { opacity: 1, maxHeight: 640 },
+    "100%": { opacity: 0, maxHeight: 0 },
+  },
+} satisfies Record<string, Frames>;
+const after = (ms: number) => web({ animationDelay: `${ms}ms` });
+export const stateMotion = {
+  rise: anim(stateFrames.rise, `${stateMs.in}ms`, ease),
+  drawX: { ...anim(stateFrames.drawX, `${stateMs.trim}ms`, ease), ...after(stateMs.trimDelay) },
+  drawY: { ...anim(stateFrames.drawY, `${stateMs.trim}ms`, ease), ...after(stateMs.trimDelay) },
+  flash: { ...anim(stateFrames.flash, `${stateMs.flash}ms`, "ease-out"), ...after(80) },
+  glow: { ...anim(stateFrames.glow, `${stateMs.glow}ms`, "ease-out"), ...after(80) },
+  beam: anim(frames.beam, "1.4s", "cubic-bezier(0.45, 0, 0.55, 1)", "infinite", "none"),
+  corner: { ...anim(frames.snap, "160ms", ease), ...after(stateMs.trimDelay) },
+  unfold: anim(stateFrames.unfold, `${stateMs.fold}ms`, ease),
+  fold: anim(stateFrames.fold, `${stateMs.fold - 40}ms`, "cubic-bezier(0.4, 0, 1, 1)"),
+};
+/** Kind washes for state cards. */
+export const stateWash = {
+  mint: "rgba(63,207,142,0.07)",
+  coral: "rgba(255,107,107,0.08)",
+  amber: "rgba(245,184,74,0.07)",
+  cyan: "rgba(37,181,200,0.07)",
+} as const;
