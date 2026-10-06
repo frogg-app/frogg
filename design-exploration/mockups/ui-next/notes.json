@@ -7,5 +7,6 @@
   "06": "Terminals: list per checkout, new/kill, real PTY rendered with xterm in the Bracket palette.",
   "07": "Inbox (needs you / failures / finished, detail with permission card and context), \u2318K command palette, phone More sheet with every tool.",
   "08": "Settings: You / Agents / Host navigation; Automation, Tools & prompts, Providers, Overview, Appearance and Shortcuts pages read and write the daemon's config.json live.",
-  "09": "New session (\u2318N, + in the list, or home's Ask box): project, worktree vs local checkout, base branch, provider / model / mode from the host's provider snapshot. Creates a real agent and opens it. Composer gets Stop while a turn runs; chat header gets Archive."
+  "09": "New session (\u2318N, + in the list, or home's Ask box): project, worktree vs local checkout, base branch, provider / model / mode from the host's provider snapshot. Creates a real agent and opens it. Composer gets Stop while a turn runs; chat header gets Archive.",
+  "10": "Files: lazy tree of the active checkout and a highlighted viewer (@frogg/highlight with a Bracket syntax palette). Diffs now use the daemon's syntax tokens."
 }

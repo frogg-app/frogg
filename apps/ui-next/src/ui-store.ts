@@ -18,6 +18,8 @@ interface UiState {
   /** Inbox: the session whose notification fills the main pane. */
   inboxId: string | null;
   openInbox: (id: string | null) => void;
+  filePath: string | null;
+  openFile: (path: string | null) => void;
   settingsPage: string | null;
   openSettings: (id: string | null) => void;
   newSessionOpen: boolean;
@@ -40,6 +42,8 @@ export const useUi = create<UiState>((set) => ({
   openTerminal: (terminalId) => set({ terminalId, listOpen: false }),
   inboxId: null,
   openInbox: (inboxId) => set({ inboxId, listOpen: false }),
+  filePath: null,
+  openFile: (filePath) => set({ filePath, listOpen: false }),
   settingsPage: null,
   openSettings: (settingsPage) => set({ settingsPage, listOpen: false }),
   newSessionOpen: false,

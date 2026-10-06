@@ -42,7 +42,7 @@ const scenarios = {
     await page.waitForTimeout(1500);
   },
 };
-for (const [name, fn] of Object.entries(require("./scenarios.cjs"))) scenarios[name] = fn(tool);
+for (const [name, fn] of Object.entries(require("./scenarios.cjs"))) if (name !== "goMore") scenarios[name] = fn(tool);
 
 (async () => {
   fs.mkdirSync(out, { recursive: true });

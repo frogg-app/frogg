@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@frogg/client": "*",
+    "@frogg/highlight": "*",
     "@frogg/protocol": "*",
     "@xterm/addon-fit": "^0.12.0-beta.213",
     "@xterm/xterm": "^6.1.0-beta.213",

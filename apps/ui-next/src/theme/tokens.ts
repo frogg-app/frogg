@@ -34,3 +34,11 @@ export const bp = { tablet: 700, desktop: 1100 } as const;
 /** CSS-only style keys (gradients, outline, resize) that RN types do not know; dropped on native. */
 export const web = (style: Record<string, string | number>): object =>
   (globalThis as { document?: unknown }).document ? style : {};
+
+/** Syntax colours tuned to the Bracket palette (cyan / violet / amber / mint). */
+export const syntax: Record<string, string> = {
+  keyword: "#8b7cf6", comment: "#5f6b6e", string: "#7fe3b2", number: "#f5b84a", literal: "#f5b84a",
+  function: "#7fd9e6", definition: "#7fd9e6", class: "#ffcf7a", type: "#b1a6fa", tag: "#7fd9e6",
+  attribute: "#f5b84a", property: "#c9e6ea", variable: "#f2f6f7", operator: "#9aa6a9", punctuation: "#9aa6a9",
+  regexp: "#7fe3b2", escape: "#f5b84a", meta: "#5f6b6e", heading: "#7fd9e6", link: "#25b5c8",
+};

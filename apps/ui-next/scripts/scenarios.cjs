@@ -73,3 +73,21 @@ module.exports["new-session-created"] = () => async (p) => {
   await p.getByText("Create session", { exact: true }).click();
   await p.waitForTimeout(5000);
 };
+const goMore = async (p, size, label) => {
+  if (size === "phone") {
+    await p.getByText("More", { exact: true }).last().click();
+    await p.waitForTimeout(300);
+    await p.getByText(label, { exact: true }).last().click();
+  } else await p.getByLabel(label, { exact: true }).first().click();
+  await p.waitForTimeout(1000);
+};
+module.exports.files = () => async (p, size) => {
+  await goMore(p, size, "Files");
+  await p.getByText("src", { exact: true }).first().click();
+  await p.waitForTimeout(600);
+  await p.getByText("store", { exact: true }).first().click();
+  await p.waitForTimeout(600);
+  await p.getByText("session-store.ts", { exact: true }).first().click();
+  await p.waitForTimeout(1200);
+};
+module.exports.goMore = goMore;

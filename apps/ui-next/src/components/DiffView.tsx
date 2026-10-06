@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { setCompare, useScm, type DiffFile } from "../daemon/scm";
 import { useFormFactor } from "../theme/layout";
 import { color, font } from "../theme/tokens";
+import { Tokens } from "./Code";
 import { T } from "./Text";
 
 type Line = DiffFile["hunks"][number]["lines"][number];
@@ -72,7 +73,9 @@ function Code({ line, no }: { line: Line | null; no: number | null }) {
   return (
     <View style={[s.line, { backgroundColor: line ? bg[line.type] : "rgba(255,255,255,0.015)" }]}>
       <T style={s.no}>{no ?? ""}</T>
-      <T style={[s.code, { color: line ? fg[line.type] : color.faint }]}>{line?.content ?? ""}</T>
+      <T style={[s.code, { color: line ? fg[line.type] : color.faint }]}>
+        {line?.tokens ? <Tokens tokens={line.tokens} /> : line?.content ?? ""}
+      </T>
     </View>
   );
 }

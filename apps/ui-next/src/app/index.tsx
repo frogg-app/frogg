@@ -5,6 +5,7 @@ import { Chat } from "../components/Chat";
 import { DiffView } from "../components/DiffView";
 import { InboxDetail, InboxPanel } from "../components/Inbox";
 import { SettingsNav, SettingsPage } from "../components/settings/Settings";
+import { FilesPanel, FileViewer } from "../components/Files";
 import { Home } from "../components/Home";
 import { NewSession } from "../components/NewSession";
 import { Palette, useGlobalKeys } from "../components/Palette";
@@ -29,6 +30,7 @@ function sidePanel(tool: Tool): ReactNode {
     case "terminals": return <TerminalsPanel />;
     case "inbox": return <InboxPanel />;
     case "settings": return <SettingsNav />;
+    case "files": return <FilesPanel />;
     default: return <ToolPane tool={tool} />;
   }
 }
@@ -36,7 +38,7 @@ function sidePanel(tool: Tool): ReactNode {
 export default function Shell() {
   const ff = useFormFactor();
   const docked = useWindowDimensions().width >= 900;
-  const { tool, selected, listOpen, diffPath, terminalId, inboxId, settingsPage, select, setListOpen, openDiff, openTerminal, openInbox, openSettings } = useUi();
+  const { tool, selected, listOpen, diffPath, terminalId, inboxId, settingsPage, filePath, select, setListOpen, openDiff, openTerminal, openInbox, openSettings, openFile } = useUi();
   const session = useDaemon((s) => (selected ? s.sessions[selected] : undefined));
   const b = useBuckets();
   const badges: Partial<Record<Tool, number>> = {
@@ -52,6 +54,8 @@ export default function Shell() {
       <DiffView path={diffPath} onBack={phone ? () => openDiff(null) : undefined} />
     ) : tool === "terminals" && terminalId ? (
       <TerminalDetail id={terminalId} onBack={phone ? () => openTerminal(null) : undefined} />
+    ) : tool === "files" && filePath ? (
+      <FileViewer path={filePath} onBack={phone ? () => openFile(null) : undefined} />
     ) : tool === "settings" && (settingsPage || !phone) ? (
       <SettingsPage id={settingsPage ?? "appearance"} onBack={phone ? () => openSettings(null) : undefined} />
     ) : tool === "inbox" && inboxId ? (
@@ -73,7 +77,7 @@ export default function Shell() {
     );
   }
 
-  const hasDetail = !!(session || (tool === "scm" && diffPath) || (tool === "terminals" && terminalId) || (tool === "inbox" && inboxId) || (tool === "settings" && settingsPage));
+  const hasDetail = !!(session || (tool === "scm" && diffPath) || (tool === "terminals" && terminalId) || (tool === "inbox" && inboxId) || (tool === "settings" && settingsPage) || (tool === "files" && filePath));
   return (
     <View style={s.root}>
       <View style={{ flex: 1, flexDirection: "row" }}>
