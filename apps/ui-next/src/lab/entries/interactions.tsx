@@ -28,6 +28,7 @@ import {
 } from "../fixtures";
 import { Act, Controls, Fill, type Entry } from "../kit";
 import { LiveChat } from "./chat";
+import { FakeKeyboard } from "./fakeKeyboard";
 import { useBadges } from "./shell";
 
 // ---- shared ----
@@ -327,29 +328,6 @@ const PermissionDemo = () => (
 
 // ---- keyboard ----
 
-const KEY_ROWS = [
-  { id: "r1", keys: "qwertyuiop".split("") },
-  { id: "r2", keys: "asdfghjkl".split("") },
-  { id: "r3", keys: "zxcvbnm".split("") },
-];
-function FakeKeyboard() {
-  return (
-    <View style={s.kb}>
-      {KEY_ROWS.map((r) => (
-        <View key={r.id} style={s.kbRow}>
-          {r.keys.map((k) => (
-            <View key={k} style={s.key}>
-              <T style={s.keyT}>{k}</T>
-            </View>
-          ))}
-        </View>
-      ))}
-      <View style={s.kbRow}>
-        <View style={s.space} />
-      </View>
-    </View>
-  );
-}
 function KeyboardDemo() {
   const [kb, setKb] = useState(false);
   const [chatOpen, setChatOpen] = useState(true);
@@ -371,7 +349,7 @@ function KeyboardDemo() {
           {chatOpen ? <LiveChat id={ID.preview} back={toList} /> : <SessionList />}
           {!chatOpen && !kb && <PhoneTabs badges={badges} />}
         </KeyboardFrame>
-        {kb && <FakeKeyboard />}
+        <FakeKeyboard up={kb} />
       </View>
     </Fill>
   );
@@ -541,9 +519,9 @@ export const interactions: Entry[] = [
     category: "Interactions",
     path: "shell/KeyboardFrame.tsx · shell/useKeyboardVisible.ts · app/index.tsx",
     purpose:
-      "Web approximation: the window shrinks above the keyboard (Android adjustResize) and the phone tabs hide while it is up.",
+      "Web approximation: the window shrinks above the keyboard (Android adjustResize) and the phone tabs hide while it is up. The chat stays pinned: what sat just above the composer is still just above it with the keyboard up.",
     polish:
-      "none in code: Android resizes the window natively, iOS uses KeyboardAvoidingView behavior=padding, web never reports a keyboard",
+      "keyboard 250ms on glide (stand-in for the IME inset animation) · timeline keeps its distance from the end on every layout pass (chat/useBottomAnchor.ts), so it scrolls in step with the resize, no jump on dismiss; at the bottom it stays pinned to the end, scrolled up the same lines stay put · composer growing uses the same path · iOS: KeyboardAvoidingView behavior=padding",
     setup: selectPreview,
     variants: [{ id: "phone", label: "Phone, 390 wide", C: KeyboardDemo, h: 800, bleed: true }],
   },
@@ -579,15 +557,4 @@ const s = StyleSheet.create({
   },
   panel: { flex: 1, ...motion.enter },
   hint: { color: color.faint, fontSize: 12, marginTop: 10 },
-  kb: { backgroundColor: color.raise, paddingVertical: 8, gap: 8, height: 230 },
-  kbRow: { flexDirection: "row", justifyContent: "center", gap: 5 },
-  key: {
-    width: 30,
-    height: 40,
-    backgroundColor: color.wash3,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  keyT: { color: color.text },
-  space: { width: 200, height: 40, backgroundColor: color.wash3 },
 });

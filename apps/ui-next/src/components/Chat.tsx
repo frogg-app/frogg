@@ -1,5 +1,5 @@
 import { ArrowLeft } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { loadConfig, useConfig } from "../daemon/config";
 import { cancelTurn, openTimeline, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
@@ -11,6 +11,7 @@ import { ComposerNotices } from "./chat/Notices";
 import { SessionMenu } from "./chat/SessionMenu";
 import { SessionState, Compaction } from "./chat/SessionState";
 import { forkDrafts, listCommands, sendWithAttachments, type Attachment } from "./chat/actions";
+import { useBottomAnchor } from "./chat/useBottomAnchor";
 import { toastError } from "./toast/store";
 import { Composer } from "./Composer";
 import { Markdown } from "./Markdown";
@@ -51,7 +52,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   const a = session.agent;
   const conn = useDaemon((st) => st.conn);
   const entries = useDaemon((st) => st.timelines[a.id]);
-  const scroll = useRef<ScrollView>(null);
+  const anchor = useBottomAnchor();
   useEffect(() => {
     void openTimeline(a.id).catch((e) => toastError("Could not load conversation", e));
   }, [a.id]);
@@ -61,7 +62,6 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   const model = a.runtimeInfo?.model ?? a.model;
   const provider = providerLabel(a.provider);
   const running = a.status === "running";
-  const toEnd = useCallback(() => scroll.current?.scrollToEnd({ animated: false }), []);
   const onSend = useCallback(
     async (t: string, attachments: Attachment[]) => {
       await sendWithAttachments(a.id, t, attachments);
@@ -110,10 +110,13 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         </View>
       </View>
       <ScrollView
-        ref={scroll}
+        ref={anchor.ref}
         style={s.scroll}
         contentContainerStyle={s.body}
-        onContentSizeChange={toEnd}
+        onScroll={anchor.onScroll}
+        onLayout={anchor.onLayout}
+        onContentSizeChange={anchor.onContentSizeChange}
+        scrollEventThrottle={anchor.scrollEventThrottle}
       >
         {!rows && (
           <T v="label" style={s.empty}>
