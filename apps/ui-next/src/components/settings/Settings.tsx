@@ -33,6 +33,20 @@ import { Button } from "../Button";
 import { Brackets } from "../SessionList";
 import { T } from "../Text";
 import { Area, Pill, Row, Section, Seg, Toggle } from "./controls";
+import { ChatComposer } from "./pages/ChatComposer";
+import { FilesEditor } from "./pages/FilesEditor";
+import { Notifications } from "./pages/Notifications";
+import { VoiceCompanion } from "./pages/VoiceCompanion";
+import { Accounts } from "./pages/Accounts";
+import { PermissionModes } from "./pages/PermissionModes";
+import { UsageLimits } from "./pages/UsageLimits";
+import { ContextCleanCut } from "./pages/ContextCleanCut";
+import { DevicesAccess } from "./pages/DevicesAccess";
+import { Security } from "./pages/Security";
+import { SessionLabels } from "./pages/SessionLabels";
+import { TerminalProfiles } from "./pages/TerminalProfiles";
+import { ResourcesStorage } from "./pages/ResourcesStorage";
+import { DaemonUpdates } from "./pages/DaemonUpdates";
 
 type Scope = "You" | "Agents" | "Host";
 interface Page {
@@ -284,12 +298,13 @@ export const PAGES: Page[] = [
     scope: "You",
     body: Appearance,
   },
-  { id: "chat", label: "Chat & composer", icon: MessageSquare, scope: "You" },
+  { id: "chat", label: "Chat & composer", icon: MessageSquare, scope: "You", body: ChatComposer },
   {
     id: "files",
     label: "Files, editor & terminal",
     icon: FileCode,
     scope: "You",
+    body: FilesEditor,
   },
   {
     id: "keys",
@@ -298,8 +313,8 @@ export const PAGES: Page[] = [
     scope: "You",
     body: Shortcuts,
   },
-  { id: "notify", label: "Notifications & inbox", icon: Bell, scope: "You" },
-  { id: "voice", label: "Voice & Companion", icon: Bot, scope: "You" },
+  { id: "notify", label: "Notifications & inbox", icon: Bell, scope: "You", body: Notifications },
+  { id: "voice", label: "Voice & Companion", icon: Bot, scope: "You", body: VoiceCompanion },
   {
     id: "providers",
     label: "Providers & models",
@@ -307,14 +322,15 @@ export const PAGES: Page[] = [
     scope: "Agents",
     body: Providers,
   },
-  { id: "accounts", label: "Accounts", icon: KeyRound, scope: "Agents" },
-  { id: "modes", label: "Permission modes", icon: Shield, scope: "Agents" },
-  { id: "usage", label: "Usage & limits", icon: Gauge, scope: "Agents" },
+  { id: "accounts", label: "Accounts", icon: KeyRound, scope: "Agents", body: Accounts },
+  { id: "modes", label: "Permission modes", icon: Shield, scope: "Agents", body: PermissionModes },
+  { id: "usage", label: "Usage & limits", icon: Gauge, scope: "Agents", body: UsageLimits },
   {
     id: "context",
     label: "Context & clean cut",
     icon: Scissors,
     scope: "Agents",
+    body: ContextCleanCut,
   },
   {
     id: "tools",
@@ -330,8 +346,14 @@ export const PAGES: Page[] = [
     scope: "Host",
     body: Overview,
   },
-  { id: "devices", label: "Devices & access", icon: Smartphone, scope: "Host" },
-  { id: "security", label: "Security", icon: Lock, scope: "Host" },
+  {
+    id: "devices",
+    label: "Devices & access",
+    icon: Smartphone,
+    scope: "Host",
+    body: DevicesAccess,
+  },
+  { id: "security", label: "Security", icon: Lock, scope: "Host", body: Security },
   {
     id: "automation",
     label: "Automation",
@@ -339,20 +361,22 @@ export const PAGES: Page[] = [
     scope: "Host",
     body: Automation,
   },
-  { id: "labels", label: "Session labels", icon: Tag, scope: "Host" },
+  { id: "labels", label: "Session labels", icon: Tag, scope: "Host", body: SessionLabels },
   {
     id: "terminals",
     label: "Terminal profiles",
     icon: SquareTerminal,
     scope: "Host",
+    body: TerminalProfiles,
   },
   {
     id: "resources",
     label: "Resources & storage",
     icon: HardDrive,
     scope: "Host",
+    body: ResourcesStorage,
   },
-  { id: "daemon", label: "Daemon & updates", icon: Activity, scope: "Host" },
+  { id: "daemon", label: "Daemon & updates", icon: Activity, scope: "Host", body: DaemonUpdates },
 ];
 
 export function SettingsNav() {
