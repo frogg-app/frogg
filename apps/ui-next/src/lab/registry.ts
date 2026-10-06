@@ -7,11 +7,13 @@ import { foundations } from "./entries/foundations";
 import { interactions } from "./entries/interactions";
 import { primitives } from "./entries/primitives";
 import { settings } from "./entries/settings";
+import { shapeAlts } from "./entries/shapeAlts";
 import { shell } from "./entries/shell";
 import { tools } from "./entries/tools";
 
 export const ENTRIES: Entry[] = [
   ...foundations,
+  ...shapeAlts,
   ...primitives,
   ...buttonAlts,
   ...data,
