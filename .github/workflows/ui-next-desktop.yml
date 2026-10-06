@@ -1,0 +1,46 @@
+name: ui-next Mac ARM prototype
+
+on:
+  push:
+    branches: ["frogg-interface-design-mockups*"]
+    paths:
+      - "apps/ui-next/desktop/**"
+      - "apps/ui-next/scripts/build-desktop.mjs"
+      - ".github/workflows/ui-next-desktop.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ui-next-desktop-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  CI: "true"
+  LEFTHOOK: "0"
+  CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+jobs:
+  mac:
+    name: Mac ARM client (unsigned)
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-deps
+      - run: node --test apps/ui-next/desktop/*.test.cjs
+      - name: Build standalone prototype
+        run: node apps/ui-next/scripts/build-desktop.mjs
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-mac-arm64-${{ github.sha }}
+          path: |
+            release-assets/ui-next-mac-arm64/*.dmg
+            release-assets/ui-next-mac-arm64/*.zip
+            release-assets/ui-next-mac-arm64/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14

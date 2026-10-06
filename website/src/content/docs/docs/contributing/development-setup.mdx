@@ -305,11 +305,13 @@ builds and launches the dev client with `expo run:ios`. CI builds an unsigned si
 Next: [Architecture](/docs/contributing/architecture/) and [Testing](/docs/contributing/testing/).
 
 
-## Bracket + Rail Android prototype
+## Bracket + Rail prototype
 
 The `frogg-interface-design-mockups` research branch contains `apps/ui-next`, an
 experimental Expo Router client. Its **Frogg Next** APK uses `app.frogg.next`, so it
 installs alongside Frogg and Frogg beta. This prototype is not a beta or stable release.
+
+### Android build
 
 Build locally with Node workspace dependencies installed, Java 21, and an Android SDK
 configured through `ANDROID_HOME` (Android platform 36 and NDK 27.1.12297006):
@@ -325,6 +327,39 @@ The script regenerates `apps/ui-next/android`, embeds the JavaScript bundle and 
 and builds a debug-signed ARM64 release APK. Metro does not need to run on the phone.
 The APK appears under the chosen output directory. Keep builds in separate output
 directories; this command does not publish an artifact or require CI.
+
+### Mac ARM desktop build
+
+The same prototype can be packaged as a standalone **Frogg Next** Electron app for
+Apple Silicon. It uses `app.frogg.next` and its own `Frogg Next` application-data directory,
+so it installs beside Frogg and Frogg beta. It bundles the prototype web UI and fonts;
+it connects to separately installed daemons and does not include a daemon or an updater.
+The first host defaults to `127.0.0.1:9999`; add a LAN or tailnet daemon in Hosts.
+This shell does not expose the production desktop native bridge or register pairing links.
+
+On a Mac, after `npm ci`, run:
+
+```bash
+node apps/ui-next/scripts/build-desktop.mjs
+```
+
+The DMG, ZIP and `SHA256SUMS` appear in `release-assets/ui-next-mac-arm64/`.
+The build requires macOS; Docker on Linux cannot run this packaging command.
+To check the bundled UI on Linux without creating Mac artifacts, run:
+
+```bash
+node apps/ui-next/scripts/build-desktop.mjs --export-only
+```
+
+For a hosted build, changes to the desktop shell or its build tooling on the prototype
+branch trigger **ui-next Mac ARM prototype** automatically. You can also manually dispatch it
+(`.github/workflows/ui-next-desktop.yml`) on the prototype branch. It builds on
+`macos-15` and keeps the DMG, ZIP and checksums as workflow artifacts for 14 days.
+It does not create or publish a release. Mac builds use ad hoc signing without an Apple Developer ID and are not notarized;
+first launch may require approval in macOS Privacy & Security. A successful build
+still needs installation, launch and real-daemon validation on an Apple Silicon Mac.
+
+![Frogg Next desktop shell showing the disconnected state](../../../../assets/docs/ui-next/desktop-shell.png)
 
 Add a daemon by its LAN or tailnet address in **Hosts → Add a host → Direct address**.
 The phone must be able to reach that address. Pairing remains experimental and is not

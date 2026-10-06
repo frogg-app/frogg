@@ -2,6 +2,11 @@
 
 ## 1.6.13-beta.1 — prototype branch checkpoint
 
+- **Frogg Next Mac ARM packaging.** Added a standalone Electron shell for the new interface,
+  isolated as `app.frogg.next`, with bundled UI and fonts. A manual macOS CI workflow produces
+  unsigned DMG and ZIP artifacts with checksums; local packaging works on macOS. Mac installation
+  and real-daemon acceptance remain separate from export and build checks.
+
 - **Android keyboard layout.** The app shell and new-session sheet now let Android's
   resized window handle the keyboard, avoiding a second padding adjustment that could
   leave empty space below the tabs. iOS keeps keyboard avoidance.

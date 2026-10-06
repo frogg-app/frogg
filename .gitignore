@@ -40,3 +40,6 @@ packages/branding/src/generated/
 
 # Local Cloudflare Worker runtime state.
 .wrangler/
+
+# Staged standalone interface prototype.
+/apps/ui-next/dist-desktop/
