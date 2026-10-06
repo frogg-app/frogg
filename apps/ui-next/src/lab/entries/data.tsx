@@ -9,6 +9,7 @@ import {
 import { CodeBlock } from "../../components/Code";
 import { DiffView } from "../../components/DiffView";
 import { Markdown } from "../../components/Markdown";
+import { fmt, Num } from "../../components/CountUp";
 import { Meter } from "../../components/Meter";
 import { LabelChip } from "../../components/sessions/sheets";
 import { Pill } from "../../components/settings/controls";
@@ -324,6 +325,63 @@ function Pills() {
   );
 }
 
+const COUNTS = [
+  { id: "pct", label: "percent", value: 86, format: fmt.pct },
+  { id: "int", label: "integer", value: 128406, format: fmt.int },
+  { id: "tok", label: "tokens", value: 1840000, format: fmt.tokens },
+  { id: "tokk", label: "tokens", value: 48200, format: fmt.tokens },
+  { id: "cost", label: "cost", value: 1234.56, format: fmt.cost },
+];
+const ALT = [42, 9031, 312000, 960, 3.2];
+/** Every format on one card; Replay remounts (0 → n), Change lerps to a second value. */
+function CountUps() {
+  const [run, setRun] = useState(0);
+  const [alt, setAlt] = useState(false);
+  const replay = useCallback(() => {
+    setAlt(false);
+    setRun((n) => n + 1);
+  }, []);
+  const flip = useCallback(() => setAlt((a) => !a), []);
+  return (
+    <Cases>
+      <Case
+        name="Num"
+        props="value format={fmt.pct | int | tokens | cost} duration={420}"
+        note="Replay counts from 0; Change lerps old → new mid-flight safe."
+        w={W.panel}
+      >
+        <View style={s.pad} key={run}>
+          {COUNTS.map((c, i) => (
+            <View key={c.id} style={s.countRow}>
+              <T v="mono" style={s.countL}>
+                {c.label}
+              </T>
+              <Num
+                value={alt ? ALT[i] : c.value}
+                format={c.format}
+                duration={420}
+                style={s.countN}
+              />
+            </View>
+          ))}
+          <View style={s.playRow}>
+            <Pressable onPress={replay} style={s.replay} accessibilityLabel="Replay">
+              <T v="mono" style={s.replayT}>
+                Replay
+              </T>
+            </Pressable>
+            <Pressable onPress={flip} style={s.replay} accessibilityLabel="Change values">
+              <T v="mono" style={s.replayT}>
+                Change
+              </T>
+            </Pressable>
+          </View>
+        </View>
+      </Case>
+    </Cases>
+  );
+}
+
 const entryFor = (id: string): AccountUsage => {
   const account = accounts.find((a) => a.id === id) as AccountUsage["account"];
   const key = `${account.provider}:${id}`;
@@ -404,7 +462,7 @@ export const data: Entry[] = [
     purpose: "20-cell segmented bar; filled cells take the tone and brighten toward the end.",
     usedBy: 2,
     polish:
-      "cells stagger in (16ms/cell, 110ms each on glide, ~420ms full) and toward new values; tone crossfades; amber shimmers once then breathes the lead cell; coral pulses the run 3x then keeps a lead pulse and flashes the %; reduced motion static",
+      "cells stagger in (16ms/cell, 110ms each on glide, ~420ms full) and toward new values; tone crossfades; amber shimmers once then breathes the lead cell; coral pulses the run 3x then keeps a lead pulse and flashes the %; the % counts with the fill (CountUp); reduced motion static",
     variants: [
       {
         id: "tones",
@@ -424,7 +482,7 @@ export const data: Entry[] = [
     purpose: "A second, continuous meter used by settings pages. Near-duplicate of Meter.",
     usedBy: 2,
     polish:
-      "width glides in and toward new values; amber flashes once then breathes the edge; coral pulses 3x then keeps an edge pulse and flashes the %; reduced motion static",
+      "width glides in and toward new values; amber flashes once then breathes the edge; coral pulses 3x then keeps an edge pulse and flashes the %; the % counts on the width glide (CountUp); reduced motion static",
     variants: [
       {
         id: "tones",
@@ -434,6 +492,18 @@ export const data: Entry[] = [
       },
       { id: "play", label: "Value slider / replay", C: KitMeterPlayground },
     ],
+  },
+  {
+    id: "count-up",
+    name: "CountUp / Num",
+    category: "Data display",
+    path: "components/CountUp.tsx",
+    purpose:
+      "Numbers that accompany an animated fill lerp with it: 0 → n on mount, old → new on change. Formats keep %, separators, k/M and currency right mid-lerp.",
+    usedBy: 2,
+    polish:
+      "JS-driven Animated value, one update per frame; default 200ms on glide; SessionList legend counts 420ms mount / 240ms change; Meter label linear over 16ms/cell + 37ms (tracks the lead cell, ~360ms full); KitMeter label uses the width glide's own duration and curve; tabular digits; reduced motion instant",
+    variants: [{ id: "formats", label: "Formats / replay", C: CountUps }],
   },
   {
     id: "code",
@@ -511,6 +581,9 @@ export const data: Entry[] = [
 ];
 
 const s = StyleSheet.create({
+  countRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },
+  countL: { flex: 1, color: color.faint },
+  countN: { color: color.text, fontSize: 13 },
   pad: { padding: 16 },
   padWrap: { padding: 16, flexDirection: "row", flexWrap: "wrap", gap: 16 },
   play: { gap: 12 },

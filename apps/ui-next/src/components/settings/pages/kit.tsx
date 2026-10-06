@@ -15,6 +15,7 @@ import {
   useReducedMotion,
   useToneFade,
 } from "../../Meter";
+import { fmt, Num } from "../../CountUp";
 import { Button } from "../../Button";
 import { T } from "../../Text";
 
@@ -263,9 +264,18 @@ export function Meter({ pct }: { pct: number | null }) {
         </Animated.View>
       </View>
       <Animated.View style={pctStyle}>
-        <T v="mono" style={[s.meterT, level === "crit" && s.meterCrit]}>
-          {pct === null ? "—" : `${Math.round(p)}%`}
-        </T>
+        {pct === null ? (
+          <T v="mono" style={s.meterT}>
+            —
+          </T>
+        ) : (
+          <Num
+            value={p}
+            format={fmt.pct}
+            duration={ms}
+            style={[s.meterT, level === "crit" && s.meterCrit]}
+          />
+        )}
       </Animated.View>
     </View>
   );

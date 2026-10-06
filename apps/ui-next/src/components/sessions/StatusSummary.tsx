@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Easing, Platform, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import type { Bucket } from "../../daemon/types";
 import { beamBand, color, font, glide } from "../../theme/tokens";
+import { useCountUp } from "../CountUp";
 import { useReducedMotion } from "../Meter";
 import { bucketColor, StatusGlyph } from "../StatusGlyph";
 import { T } from "../Text";
@@ -307,27 +308,12 @@ function LegendItem({
 }
 
 /** The integer shown while `target` lerps old→new on the bar's curve; 0→target on mount. */
-function useLerp(target: number, reduced: boolean): number {
-  const v = useRef(new Animated.Value(reduced ? target : 0)).current;
-  const [shown, setShown] = useState(reduced ? target : 0);
-  const mounted = useRef(false);
+function useLerp(target: number): number {
+  const first = useRef(true);
   useEffect(() => {
-    const id = v.addListener(({ value }) => setShown(Math.round(value)));
-    return () => v.removeListener(id);
-  }, [v]);
-  useEffect(() => {
-    const first = !mounted.current;
-    mounted.current = true;
-    if (reduced) {
-      v.setValue(target);
-      setShown(target);
-      return;
-    }
-    const a = tween(v, target, first ? M.fill : M.resize, curve);
-    a.start();
-    return () => a.stop();
-  }, [target, reduced, v]);
-  return shown;
+    first.current = false;
+  }, []);
+  return Math.round(useCountUp(target, { duration: first.current ? M.fill : M.resize, curve }));
 }
 
 /** A number that rolls: the old value slides up and out while the new one rises in. */
@@ -335,7 +321,7 @@ function RollingCount({ n, reduced }: { n: number; reduced: boolean }) {
   // On exit (n → 0) keep showing the last non-zero count while the item fades.
   const shownN = useRef(n);
   if (n > 0) shownN.current = n;
-  const value = useLerp(n > 0 ? n : shownN.current, reduced);
+  const value = useLerp(n > 0 ? n : shownN.current);
   const [pair, setPair] = useState({ now: value, was: value, dir: 1 });
   const t = useRef(new Animated.Value(1)).current;
   useEffect(() => {

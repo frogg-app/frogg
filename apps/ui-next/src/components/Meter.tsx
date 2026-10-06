@@ -8,6 +8,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { color, glide } from "../theme/tokens";
+import { fmt, Num } from "./CountUp";
 import { T } from "./Text";
 
 const N = 20;
@@ -243,9 +244,19 @@ export function Meter({
       <View style={s.head}>
         <T style={s.label}>{label}</T>
         <Animated.View style={pctStyle}>
-          <T v="mono" style={[p === null ? s.pctNone : s.pct, level === "crit" && s.pctCrit]}>
-            {p === null ? "—" : `${Math.round(p)}%`}
-          </T>
+          {p === null ? (
+            <T v="mono" style={s.pctNone}>
+              —
+            </T>
+          ) : (
+            <Num
+              value={p}
+              format={fmt.pct}
+              duration={Math.abs(filled - from) * meterMotion.stagger + meterMotion.cellMs / 3}
+              curve={Easing.linear}
+              style={[s.pct, level === "crit" && s.pctCrit]}
+            />
+          )}
         </Animated.View>
       </View>
       <View style={s.bar}>
@@ -279,7 +290,7 @@ const s = StyleSheet.create({
   root: { gap: 6 },
   head: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   label: { flex: 1, fontSize: 12.5 },
-  pct: { color: color.text, fontSize: 12 },
+  pct: { color: color.text, fontSize: 12, minWidth: 32, textAlign: "right" },
   pctCrit: { color: color.coral },
   pctNone: { color: color.faint, fontSize: 12 },
   bar: { flexDirection: "row", gap: 2, height: 6 },
