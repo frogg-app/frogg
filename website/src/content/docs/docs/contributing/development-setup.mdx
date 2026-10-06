@@ -303,3 +303,53 @@ builds and launches the dev client with `expo run:ios`. CI builds an unsigned si
 `branding.yml`. Frogg does not publish iOS builds.
 
 Next: [Architecture](/docs/contributing/architecture/) and [Testing](/docs/contributing/testing/).
+
+
+## Bracket + Rail Android prototype
+
+The `frogg-interface-design-mockups` research branch contains `apps/ui-next`, an
+experimental Expo Router client. Its **Frogg Next** APK uses `app.frogg.next`, so it
+installs alongside Frogg and Frogg beta. This prototype is not a beta or stable release.
+
+Build locally with Node workspace dependencies installed, Java 21, and an Android SDK
+configured through `ANDROID_HOME` (Android platform 36 and NDK 27.1.12297006):
+
+```bash
+npm ci
+npm run build:highlight
+npm run build:client
+node apps/ui-next/scripts/build-apk.mjs release-assets/ui-next-local
+```
+
+The script regenerates `apps/ui-next/android`, embeds the JavaScript bundle and fonts,
+and builds a debug-signed ARM64 release APK. Metro does not need to run on the phone.
+The APK appears under the chosen output directory. Keep builds in separate output
+directories; this command does not publish an artifact or require CI.
+
+Add a daemon by its LAN or tailnet address in **Hosts → Add a host → Direct address**.
+The phone must be able to reach that address. Pairing remains experimental and is not
+part of this prototype's validated connection path.
+
+Host notifications have a **Dismiss notification** button. Dismissing a banner hides
+that incident; a new host, version or storage severity can show a new notice. Android
+uses native window resizing for the keyboard, while iOS uses keyboard avoidance.
+
+The prototype includes chat approval/session controls, file drafts and saves, plugin
+panels, project to-dos, and personal, agent, host, project and app settings. Controls
+requiring daemon support are gated by its reported capabilities. Native attachment
+picking is currently unavailable; the menu reports that limitation. App updates are
+manual APK installations, independent of the daemon update controls.
+
+Web screenshots and fixture checks do not establish Android acceptance. After installing,
+check daemon loading, the new-session form, keyboard positioning, Back navigation and
+settings on the device before treating a prototype build as validated.
+
+
+Prototype phone layouts checked in the web preview:
+
+![Frogg Next new-session form with stacked project, agent and prompt fields](../../../../assets/docs/ui-next/new-session-phone.png)
+
+![Frogg Next project worktree settings on a phone-sized viewport](../../../../assets/docs/ui-next/worktrees-phone.png)
+
+
+![Frogg Next host notification with an accessible dismiss button](../../../../assets/docs/ui-next/dismissible-banner-phone.png)

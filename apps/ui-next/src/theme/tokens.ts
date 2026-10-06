@@ -18,6 +18,11 @@ export const color = {
   amber: "#f5b84a",
   coral: "#ff6b6b",
   onAccent: "#04161a",
+  coralWash: "rgba(255,107,107,0.08)",
+  cyanWash: "rgba(37,181,200,0.1)",
+  wash2: "rgba(255,255,255,0.05)",
+  wash3: "rgba(255,255,255,0.1)",
+  scrim: "rgba(4,8,10,0.6)",
 } as const;
 
 export const font = {
@@ -124,4 +129,18 @@ export const motion = {
     color: "transparent",
   }),
   shimmerRun: anim(frames.shimmer, "2s", "linear", "infinite", "none"),
+};
+
+/** Workspace label colours (protocol WORKSPACE_LABEL_COLORS), tuned for the dark surface. */
+export const labelTint: Record<string, string> = {
+  violet: "#a392d5",
+  sky: "#6aa6ce",
+  emerald: "#6cae96",
+  orange: "#cc8f64",
+  pink: "#d87da3",
+  indigo: "#9299d5",
+  teal: "#6cacab",
+  red: "#d88381",
+  amber: "#b29d64",
+  blue: "#7ba1d5",
 };

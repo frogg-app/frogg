@@ -22,6 +22,14 @@ deployment run, not more code.
 
 ## Features
 
+- [ ] **Bracket + Rail research client (`apps/ui-next`).** Recovered chat, LAN hosts,
+      rail tools and settings work is integrated on `frogg-interface-design-mockups`.
+      New settings routes and toast/banner hosts are wired. Host banners are dismissible;
+      Android no longer adds keyboard padding on top of native window resizing. Local ARM64 APK packaging
+      uses `app.frogg.next`; device loading, keyboard/Back behavior and real-provider
+      round trips remain acceptance work. Native file picking and advanced tool views
+      are incomplete; pairing is not part of the validated LAN/tailnet path.
+
 - [x] **Project to-dos UI.** Daemon store, `todo_*` MCP tools, `project.todo.*` RPCs and the
       app list/detail view (gated on `features.projectTodos`) are in. Verified in the web
       preview; native iOS/Android and Electron not yet checked by hand. A kanban board view

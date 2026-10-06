@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { color, font, web } from "../../theme/tokens";
 import { T } from "../Text";
@@ -208,4 +208,115 @@ const s = StyleSheet.create({
     lineHeight: 19,
     ...web({ outlineStyle: "none", resize: "vertical" }),
   },
+});
+
+/** A short numeric field with a unit; commits on blur or submit, clamped to [min, max]. */
+export function NumField({
+  value,
+  onChange,
+  unit,
+  min = 0,
+  max = Number.MAX_SAFE_INTEGER,
+  step = 1,
+  placeholder,
+  width = 72,
+}: {
+  value: number | null;
+  onChange: (v: number | null) => void;
+  unit?: string;
+  min?: number;
+  max?: number;
+  /** Values round to this step (0.1 for one decimal). */
+  step?: number;
+  placeholder?: string;
+  width?: number;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? (value === null ? "" : String(value));
+  const commit = useCallback(() => {
+    if (draft === null) return;
+    setDraft(null);
+    const raw = draft.replace(/,/g, "").trim();
+    if (raw === "") return onChange(null);
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    const rounded = Math.round(n / step) * step;
+    onChange(Math.min(max, Math.max(min, Number(rounded.toFixed(4)))));
+  }, [draft, onChange, min, max, step]);
+  const box = useMemo(() => [ns.input, { width }], [width]);
+  return (
+    <View style={ns.wrap}>
+      <TextInput
+        value={shown}
+        onChangeText={setDraft}
+        onBlur={commit}
+        onSubmitEditing={commit}
+        keyboardType="numeric"
+        placeholder={placeholder}
+        placeholderTextColor={color.faint}
+        style={box}
+      />
+      {unit && <T style={ns.unit}>{unit}</T>}
+    </View>
+  );
+}
+
+/** A short single-line text field; commits on blur or submit. */
+export function TextField({
+  value,
+  onChange,
+  width = 80,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  width?: number;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const commit = useCallback(() => {
+    if (draft === null) return;
+    setDraft(null);
+    onChange(draft.trim());
+  }, [draft, onChange]);
+  const box = useMemo(() => [ns.input, { width }], [width]);
+  return (
+    <TextInput
+      value={draft ?? value}
+      onChangeText={setDraft}
+      onBlur={commit}
+      onSubmitEditing={commit}
+      placeholder={placeholder}
+      placeholderTextColor={color.faint}
+      style={box}
+    />
+  );
+}
+
+/** Intro paragraph above a page's first section. */
+export function Lede({ children }: { children: ReactNode }) {
+  return <T style={ns.lede}>{children}</T>;
+}
+
+/** Faint note under a section. */
+export function Note({ children }: { children: ReactNode }) {
+  return <T style={ns.note}>{children}</T>;
+}
+
+const ns = StyleSheet.create({
+  wrap: { flexDirection: "row", alignItems: "center", gap: 8 },
+  input: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: color.bg,
+    borderWidth: 1,
+    borderColor: color.line,
+    color: color.text,
+    fontFamily: font.mono,
+    fontSize: 12.5,
+    ...web({ outlineStyle: "none" }),
+  },
+  unit: { color: color.faint, fontSize: 12.5 },
+  lede: { color: color.muted, lineHeight: 20, marginBottom: 20, maxWidth: 640 },
+  note: { color: color.faint, fontSize: 12, marginTop: -18, marginBottom: 26 },
 });

@@ -9,7 +9,9 @@ import { Cut } from "./Cut";
 import { GroupHead, PanelHead } from "./PanelHead";
 import { useActiveCwd } from "./ScmPanel";
 import { Brackets } from "./SessionList";
-import { Seg } from "./settings/controls";
+import { PrMergeButton } from "./tools/PrMerge";
+import { StreamList, useStreams } from "./tools/Streams";
+import { Tabs } from "./tools/Tabs";
 import { T } from "./Text";
 
 type Client = NonNullable<ReturnType<typeof getClient>>;
@@ -48,15 +50,12 @@ const authHint: Record<string, string> = {
   no_remote: "This checkout has no forge remote.",
 };
 
-const TABS: Array<["pr" | "ci", string]> = [
-  ["pr", "Pull request"],
-  ["ci", "CI runs"],
-];
+type Tab = "pr" | "ci" | "streams";
 
 export function PrsPanel() {
   const cwd = useActiveCwd();
   const conn = useDaemon((st) => st.conn);
-  const [tab, setTab] = useState<"pr" | "ci">("pr");
+  const [tab, setTab] = useState<Tab>("pr");
   const [pr, setPr] = useState<Pr | null>(null);
   const [ci, setCi] = useState<Ci | null>(null);
   const load = useCallback(() => {
@@ -76,32 +75,45 @@ export function PrsPanel() {
   const openRun = useOpenRun();
   const status = pr?.status;
   const runs = ci?.runs ?? [];
-  const tabs = useMemo<Array<["pr" | "ci", string]>>(
-    () =>
-      TABS.map(([id, label]) => [
-        id,
-        id === "pr" ? `${label}${status ? " 1" : ""}` : `${label} ${runs.length}`,
-      ]),
-    [status, runs.length],
+  const streams = useStreams(cwd, tab === "streams");
+  const tabs = useMemo(
+    () => [
+      { id: "pr" as const, label: "Pull request", count: status ? 1 : null },
+      { id: "ci" as const, label: "CI runs", count: ci ? runs.length : null },
+      { id: "streams" as const, label: "Streams" },
+    ],
+    [status, runs.length, ci],
   );
+  const refresh = useCallback(() => {
+    load();
+    if (tab === "streams") streams.load();
+  }, [load, tab, streams]);
   return (
     <View style={s.root}>
       <PanelHead title="PRs & CI">
-        <Pressable onPress={load} accessibilityLabel="Refresh">
+        <Pressable onPress={refresh} accessibilityLabel="Refresh">
           <RefreshCw size={14} color={color.faint} />
         </Pressable>
       </PanelHead>
-      <View style={s.tabs}>
-        <Seg options={tabs} value={tab} onChange={setTab} />
-      </View>
+      <Tabs tabs={tabs} value={tab} onChange={setTab} />
       <ScrollView contentContainerStyle={s.scroll}>
-        {tab === "pr" ? <PullRequest pr={pr} /> : <RunList ci={ci} openRun={openRun} />}
+        {tab === "pr" && <PullRequest pr={pr} cwd={cwd} onChanged={load} />}
+        {tab === "ci" && <RunList ci={ci} openRun={openRun} />}
+        {tab === "streams" && <StreamList graph={streams.graph} error={streams.error} />}
       </ScrollView>
     </View>
   );
 }
 
-function PullRequest({ pr }: { pr: Pr | null }) {
+function PullRequest({
+  pr,
+  cwd,
+  onChanged,
+}: {
+  pr: Pr | null;
+  cwd: string | null;
+  onChanged: () => void;
+}) {
   const status = pr?.status;
   const openPr = useCallback(() => {
     if (status) void Linking.openURL(status.url);
@@ -151,6 +163,11 @@ function PullRequest({ pr }: { pr: Pr | null }) {
           {status.number ? `#${status.number} · ` : ""}
           {status.headRefName} → {status.baseRefName}
         </T>
+        <T v="mono" style={s.small}>
+          {reviewText(status.reviewDecision)}
+          {status.github?.autoMergeRequest ? " · auto-merge on" : " · auto-merge off"}
+        </T>
+        {cwd && !status.isMerged && <PrMergeButton cwd={cwd} pr={status} onDone={onChanged} />}
       </Cut>
       <GroupHead label="Checks" count={status.checks.length} />
       {status.checks.map((c) => (
@@ -158,6 +175,13 @@ function PullRequest({ pr }: { pr: Pr | null }) {
       ))}
     </>
   );
+}
+
+function reviewText(decision: string | null | undefined): string {
+  if (decision === "APPROVED") return "approved";
+  if (decision === "CHANGES_REQUESTED") return "changes requested";
+  if (decision === "REVIEW_REQUIRED") return "review required";
+  return "no review decision";
 }
 
 function CheckRow({ check }: { check: Check }) {

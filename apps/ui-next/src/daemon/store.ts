@@ -1,6 +1,15 @@
 import { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { create } from "zustand";
-import { activeHost, hostsReady, hostUrl, renameHost, useHosts, type Host } from "./hosts";
+import {
+  activeHost,
+  hostClientOptions,
+  hostsReady,
+  hostUrl,
+  noteConnStatus,
+  renameHost,
+  useHosts,
+  type Host,
+} from "./hosts";
 import type { Session, TimelineEntry } from "./types";
 
 type Conn = "connecting" | "online" | "offline";
@@ -26,6 +35,7 @@ export const useDaemon = create<DaemonState>(() => ({
 }));
 
 let client: DaemonClient | null = null;
+let connectionGeneration = 0;
 export const getClient = () => client;
 
 /** host:port used when nothing is saved yet: ?daemon=, then EXPO_PUBLIC_DAEMON, then this page's host. */
@@ -40,13 +50,16 @@ function defaultEndpoint(): string {
 
 /** Connects to the active saved host, replacing any current connection and its per-host state. */
 export async function connect(host?: Host): Promise<void> {
+  const generation = ++connectionGeneration;
   await hostsReady;
+  if (generation !== connectionGeneration) return;
   const target = host ?? activeHost(defaultEndpoint());
   if (client) {
     const old = client;
     client = null;
     await old.close().catch(() => {});
   }
+  if (generation !== connectionGeneration) return;
   useHosts.setState({ activeId: target.id });
   const url = hostUrl(target);
   useDaemon.setState({
@@ -65,14 +78,16 @@ export async function connect(host?: Host): Promise<void> {
     deviceName: "Frogg (next)",
     suppressSendErrors: true,
     reconnect: { enabled: true },
+    ...hostClientOptions(target),
   });
   client = mine;
   mine.subscribeConnectionStatus((s) => {
     if (client !== mine) return;
+    noteConnStatus(target.id, s, mine.lastErrorInfo);
     useDaemon.setState({
       conn: CONN[s.status] ?? "offline",
     });
-    if (s.status === "connected") void loadSessions();
+    if (s.status === "connected") void loadSessions().catch(() => {});
   });
   mine.subscribe((event) => {
     if (client !== mine) return;
@@ -123,6 +138,23 @@ export async function connect(host?: Host): Promise<void> {
   }
 }
 
+/** Close this device's connection only; forgetting a host never stops its daemon. */
+export async function disconnect(): Promise<void> {
+  ++connectionGeneration;
+  const old = client;
+  client = null;
+  useHosts.setState({ activeId: null });
+  useDaemon.setState({
+    conn: "offline",
+    url: "",
+    serverName: null,
+    sessions: {},
+    timelines: {},
+    streaming: {},
+  });
+  await old?.close().catch(() => {});
+}
+
 /** Streamed chunks of one assistant message arrive as separate items; fold them together. */
 function mergeEntry(list: TimelineEntry[], entry: TimelineEntry): TimelineEntry[] {
   const last = list[list.length - 1];
@@ -147,7 +179,9 @@ function mergeEntry(list: TimelineEntry[], entry: TimelineEntry): TimelineEntry[
 
 async function loadSessions(): Promise<void> {
   if (!client) return;
+  const source = client;
   const res = await client.fetchAgents({ page: { limit: 200 }, subscribe: {} });
+  if (client !== source) return;
   const sessions: Record<string, Session> = {};
   for (const e of res.entries)
     if (!e.agent.archivedAt) sessions[e.agent.id] = { agent: e.agent, project: e.project };

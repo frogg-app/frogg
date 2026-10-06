@@ -18,6 +18,7 @@ export function DiffView({ path, onBack }: { path: string; onBack?: () => void }
   const idx = files?.findIndex((f) => f.path === path) ?? -1;
   const effective: Mode = ff === "desktop" ? mode : "unified";
   const base = status?.isGit ? status.baseRef : null;
+  const empty = !!files && (files.length === 0 || path === ".");
   const compareOptions = useMemo<Array<["uncommitted" | "base", string]>>(
     () => [
       ["uncommitted", "Uncommitted"],
@@ -25,6 +26,7 @@ export function DiffView({ path, onBack }: { path: string; onBack?: () => void }
     ],
     [base],
   );
+  if (empty) return <EmptyDiff compare={compare} base={base} onBack={onBack} />;
   return (
     <View style={s.root}>
       <View style={s.head}>
@@ -250,7 +252,69 @@ function Split({ lines, o, n }: { lines: Line[]; o: number; n: number }) {
   );
 }
 
+/** No changes: the round-4 empty-diff state, still offering the base comparison. */
+function EmptyDiff({
+  compare,
+  base,
+  onBack,
+}: {
+  compare: "uncommitted" | "base";
+  base: string | null;
+  onBack?: () => void;
+}) {
+  const vsBase = useCallback(
+    () => setCompare(compare === "base" ? "uncommitted" : "base"),
+    [compare],
+  );
+  return (
+    <View style={s.root}>
+      <View style={s.head}>
+        <View style={s.title}>
+          <T v="label">changes</T>
+          <View style={s.titleRow}>
+            {onBack && (
+              <Pressable onPress={onBack} hitSlop={10} accessibilityLabel="Back">
+                <ArrowLeft size={18} color={color.text} />
+              </Pressable>
+            )}
+            <T v="display" style={s.name} numberOfLines={2}>
+              No changes in this worktree yet
+            </T>
+          </View>
+        </View>
+      </View>
+      <View style={s.emptyBody}>
+        <View style={s.emptyMark} />
+        <T style={s.emptyText}>
+          {compare === "base"
+            ? `This branch has nothing that is not already on ${base ?? "its base"}.`
+            : "The agent hasn't edited anything. Changes show up here as soon as a file is touched."}
+        </T>
+        {!!base && (
+          <Pressable onPress={vsBase} accessibilityRole="button">
+            {({ hovered }) => (
+              <T style={[s.emptyAct, hovered && s.emptyActHover]}>
+                {compare === "base" ? "Show uncommitted changes" : `Compare with ${base}`}
+              </T>
+            )}
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  emptyBody: { flex: 1, alignItems: "center", justifyContent: "center", gap: 14, padding: 24 },
+  emptyMark: {
+    width: 30,
+    height: 30,
+    backgroundColor: color.line2,
+    transform: [{ rotate: "15deg" }],
+  },
+  emptyText: { color: color.muted, textAlign: "center", maxWidth: 420, lineHeight: 21 },
+  emptyAct: { color: color.text, fontSize: 13, fontWeight: "500" },
+  emptyActHover: { color: color.cyan2 },
   root: { flex: 1, backgroundColor: color.bg2 },
   fill: { flex: 1 },
   title: { flex: 1, minWidth: 200 },

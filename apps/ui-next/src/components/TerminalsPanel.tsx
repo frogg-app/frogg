@@ -1,5 +1,5 @@
 import { Plus, SquareTerminal, X } from "lucide-react-native";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useDaemon } from "../daemon/store";
 import {
@@ -16,24 +16,39 @@ import { GroupHead, PanelHead } from "./PanelHead";
 import { useActiveCwd } from "./ScmPanel";
 import { Brackets } from "./SessionList";
 import { T } from "./Text";
+import { useConfirm } from "./tools/Confirm";
 
 export function TerminalsPanel() {
   const cwd = useActiveCwd();
   const conn = useDaemon((s) => s.conn);
   const { list, error } = useTerminals();
+  const [busy, setBusy] = useState(false);
   const { terminalId, openTerminal } = useUi();
   useEffect(() => {
-    if (cwd && conn === "online") void watchTerminals(cwd);
+    if (cwd && conn === "online")
+      void watchTerminals(cwd).catch((e: unknown) => useTerminals.setState({ error: String(e) }));
   }, [cwd, conn]);
   const create = useCallback(async () => {
-    const id = await newTerminal();
-    if (id) openTerminal(id);
-  }, [openTerminal]);
+    if (busy || !cwd || conn !== "online") return;
+    setBusy(true);
+    try {
+      const id = await newTerminal();
+      if (id) openTerminal(id);
+    } catch (e) {
+      useTerminals.setState({ error: String(e) });
+    } finally {
+      setBusy(false);
+    }
+  }, [openTerminal, busy, cwd, conn]);
   const onCreate = useCallback(() => void create(), [create]);
   return (
     <View style={st.fill}>
       <PanelHead title="Terminals">
-        <Pressable onPress={onCreate} accessibilityLabel="New terminal">
+        <Pressable
+          disabled={busy || !cwd || conn !== "online"}
+          onPress={onCreate}
+          accessibilityLabel="New terminal"
+        >
           <Plus size={17} color={color.faint} />
         </Pressable>
       </PanelHead>
@@ -45,7 +60,13 @@ export function TerminalsPanel() {
         {list?.length === 0 && (
           <View style={st.empty}>
             <T style={st.muted}>No terminals in this checkout yet.</T>
-            <Button kind="primary" label="New terminal" kbd="⌃`" onPress={onCreate} />
+            <Button
+              kind="primary"
+              label="New terminal"
+              kbd="⌃`"
+              onPress={onCreate}
+              disabled={busy || !cwd || conn !== "online"}
+            />
           </View>
         )}
         {list?.map((t) => (
@@ -71,27 +92,45 @@ function TerminalRow({
   onOpen: (id: string) => void;
 }) {
   const press = useCallback(() => onOpen(t.id), [onOpen, t.id]);
-  const kill = useCallback(() => void killTerminal(t.id), [t.id]);
+  const confirm = useConfirm();
+  const kill = useCallback(
+    () =>
+      confirm.ask({
+        title: `Close ${t.title || t.name}?`,
+        body: "This stops the terminal and its running process.",
+        action: "Close terminal",
+        danger: true,
+        run: () => {
+          void killTerminal(t.id).catch((e: unknown) =>
+            useTerminals.setState({ error: String(e) }),
+          );
+        },
+      }),
+    [confirm, t],
+  );
   return (
-    <Pressable onPress={press}>
-      {({ hovered }) => (
-        <View style={[st.row, hovered && st.rowHover, on && st.rowOn]}>
-          {on && <Brackets />}
-          <SquareTerminal size={15} color={on ? color.cyan2 : color.muted} />
-          <View style={st.flex}>
-            <T numberOfLines={1}>{t.title || t.name}</T>
-            <T v="mono" style={st.name}>
-              {t.name}
-            </T>
+    <View>
+      {confirm.dialog}
+      <Pressable onPress={press}>
+        {({ hovered }) => (
+          <View style={[st.row, hovered && st.rowHover, on && st.rowOn]}>
+            {on && <Brackets />}
+            <SquareTerminal size={15} color={on ? color.cyan2 : color.muted} />
+            <View style={st.flex}>
+              <T numberOfLines={1}>{t.title || t.name}</T>
+              <T v="mono" style={st.name}>
+                {t.name}
+              </T>
+            </View>
+            {(hovered || on) && (
+              <Pressable onPress={kill} accessibilityLabel="Kill terminal">
+                <X size={14} color={color.faint} />
+              </Pressable>
+            )}
           </View>
-          {hovered && (
-            <Pressable onPress={kill} accessibilityLabel="Kill terminal">
-              <X size={14} color={color.faint} />
-            </Pressable>
-          )}
-        </View>
-      )}
-    </Pressable>
+        )}
+      </Pressable>
+    </View>
   );
 }
 

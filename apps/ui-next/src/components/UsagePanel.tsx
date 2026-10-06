@@ -37,7 +37,14 @@ export function UsagePanel() {
     (maxAgeMs?: number) =>
       getClient()
         ?.listProviderUsage({ maxAgeMs })
-        .then(setUsage, (e: unknown) => setError(e instanceof Error ? e.message : String(e))),
+        .then(
+          (result) => {
+            setError(null);
+            setUsage(result);
+            return undefined;
+          },
+          (e: unknown) => setError(e instanceof Error ? e.message : String(e)),
+        ),
     [],
   );
   const refresh = useCallback(() => void load(0), [load]);

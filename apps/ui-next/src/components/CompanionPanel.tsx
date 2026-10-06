@@ -37,7 +37,10 @@ export function CompanionPanel() {
   useEffect(() => {
     const c = getClient();
     if (conn !== "online" || !c) return;
-    void c.fetchCompanionNotebook().then(setNotebook, () => {});
+    setNotebook(null);
+    setLines([]);
+    setError(null);
+    void c.fetchCompanionNotebook().then(setNotebook, (e: unknown) => setError(String(e)));
     return c.subscribeRawMessages((m) => {
       if (m.type === "companion.notebook.update") setNotebook(m.payload.notebook);
       if (m.type === "companion.reply" && m.payload.isFinal)
@@ -45,6 +48,11 @@ export function CompanionPanel() {
     });
   }, [conn]);
   const send = useCallback((text: string) => {
+    if (!getClient() || useDaemon.getState().conn !== "online") {
+      setError("Host is not connected.");
+      return;
+    }
+    setError(null);
     setLines((l) => [...l, { who: "you", text, id: ++lineSeq }]);
     getClient()
       ?.sendCompanionMessage(text)
@@ -56,7 +64,8 @@ export function CompanionPanel() {
       <PanelHead title="Companion" />
       <ScrollView style={st.flex} contentContainerStyle={st.content}>
         <GroupHead label="Notebook" count={entries.length} />
-        {entries.length === 0 && (
+        {!notebook && !error && <T style={st.empty}>Loading notebook…</T>}
+        {notebook && entries.length === 0 && (
           <T style={st.empty}>
             Talk to the companion about your work; it keeps topics and tasks here and can start
             agents for them.

@@ -1,5 +1,5 @@
 import { CheckCheck, ExternalLink } from "lucide-react-native";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { getClient, openTimeline, useDaemon } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
@@ -34,11 +34,16 @@ function summary(s: Session): string {
 
 export function InboxPanel() {
   const b = useBuckets();
+  const [error, setError] = useState<string | null>(null);
   const { inboxId, openInbox } = useUi();
   const total = GROUPS.reduce((n, g) => n + b[g.b].length, 0);
   const clearAll = useCallback(() => {
     const ids = GROUPS.flatMap((g) => b[g.b]).map((s) => s.agent.id);
-    if (ids.length) void getClient()?.clearAgentAttention(ids);
+    setError(null);
+    if (ids.length)
+      void getClient()
+        ?.clearAgentAttention(ids)
+        .catch((e: unknown) => setError(String(e)));
   }, [b]);
   return (
     <View style={st.fill}>
@@ -47,6 +52,7 @@ export function InboxPanel() {
           <CheckCheck size={15} color={color.faint} />
         </Pressable>
       </PanelHead>
+      {error && <T style={st.failText}>{error}</T>}
       <ScrollView style={st.flex}>
         {total === 0 && (
           <T v="label" style={st.empty}>
@@ -71,7 +77,7 @@ export function InboxPanel() {
         )}
       </ScrollView>
       <T v="mono" style={st.foot}>
-        OS notifications and toasts mirror this list
+        Session approvals, failures and finished work
       </T>
     </View>
   );

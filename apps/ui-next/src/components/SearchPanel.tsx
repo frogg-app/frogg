@@ -23,24 +23,42 @@ export function SearchPanel() {
   const [hits, setHits] = useState<Hit[] | null>(null);
   const [truncated, setTruncated] = useState(false);
   const seq = useRef(0);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const host = useDaemon((s) => s.url);
   useEffect(() => {
+    const mine = ++seq.current;
+    let active = true;
+    setError(null);
+    setHits(null);
+    setTruncated(false);
+    setLoading(!!q.trim());
     const text = q.trim();
     if (!text) {
       setHits(null);
       return;
     }
-    const mine = ++seq.current;
     const timer = setTimeout(async () => {
-      const res = await getClient()?.fetchAgentHistory({
-        search: text,
-        page: { limit: 50 },
-      });
-      if (!res || mine !== seq.current) return;
-      setTruncated(!!res.searchTruncated);
-      setHits(res.entries.map(toHit));
+      try {
+        const res = await getClient()?.fetchAgentHistory({
+          search: text,
+          page: { limit: 50 },
+        });
+        if (!active || mine !== seq.current) return;
+        if (!res) throw new Error("Host is not connected.");
+        setTruncated(!!res.searchTruncated);
+        setHits(res.entries.map(toHit));
+      } catch (e) {
+        if (active && mine === seq.current) setError(String(e));
+      } finally {
+        if (active && mine === seq.current) setLoading(false);
+      }
     }, 160);
-    return () => clearTimeout(timer);
-  }, [q]);
+    return () => {
+      clearTimeout(timer);
+      active = false;
+    };
+  }, [q, host]);
   return (
     <View style={s.fill}>
       <PanelHead title="Search" />
@@ -55,7 +73,9 @@ export function SearchPanel() {
         />
       </Cut>
       <ScrollView style={s.flex}>
-        {!hits && (
+        {error && <T style={s.error}>{error}</T>}
+        {loading && <T style={s.note}>Searching…</T>}
+        {!hits && !loading && !error && (
           <T v="label" style={s.note}>
             all sessions on this host, archived included
           </T>
@@ -153,6 +173,7 @@ function Marked({
 }
 
 const s = StyleSheet.create({
+  error: { padding: 16, color: color.coral },
   fill: { flex: 1, backgroundColor: color.bg2 },
   flex: { flex: 1 },
   note: { padding: 16 },

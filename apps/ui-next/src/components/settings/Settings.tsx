@@ -1,5 +1,16 @@
+import { AppUpdates } from "./pages/AppUpdates";
+import { Developer } from "./pages/Developer";
+import { About } from "./pages/About";
+import { Plugins } from "./pages/Plugins";
+import { Metadata } from "./pages/Metadata";
+import { Ci } from "./pages/Ci";
+import { Scripts } from "./pages/Scripts";
+import { Worktrees } from "./pages/Worktrees";
+import { Orchestration } from "./pages/Orchestration";
+import { HostOverview } from "./pages/HostOverview";
 import {
   Activity,
+  AlertTriangle,
   Bell,
   Bot,
   Eye,
@@ -32,7 +43,7 @@ import { agoText, providerLabel } from "../../util";
 import { Button } from "../Button";
 import { Brackets } from "../SessionList";
 import { T } from "../Text";
-import { Area, Pill, Row, Section, Seg, Toggle } from "./controls";
+import { Pill, Row, Section, Seg, Toggle } from "./controls";
 import { ChatComposer } from "./pages/ChatComposer";
 import { FilesEditor } from "./pages/FilesEditor";
 import { Notifications } from "./pages/Notifications";
@@ -48,7 +59,7 @@ import { TerminalProfiles } from "./pages/TerminalProfiles";
 import { ResourcesStorage } from "./pages/ResourcesStorage";
 import { DaemonUpdates } from "./pages/DaemonUpdates";
 
-type Scope = "You" | "Agents" | "Host";
+type Scope = "You" | "Agents" | "Host" | "Project" | "App";
 interface Page {
   id: string;
   label: string;
@@ -58,14 +69,11 @@ interface Page {
   body?: ComponentType;
 }
 
-const SCOPES: Scope[] = ["You", "Agents", "Host"];
+const SCOPES: Scope[] = ["You", "Agents", "Host", "Project", "App"];
 
 // Config writes from toggles. Module-level, so rows hand stable callbacks down.
 const setAutoArchive = (v: boolean) => void patchConfig({ autoArchiveAfterMerge: v });
 const setAutoResume = (v: boolean) => void patchConfig({ autoResumeOnUsageLimit: v });
-const setMcp = (v: boolean) => void patchConfig({ mcp: { injectIntoAgents: v } });
-const setBrowserTools = (v: boolean) => void patchConfig({ browserTools: { enabled: v } });
-const setTerminalHooks = (v: boolean) => void patchConfig({ enableTerminalAgentHooks: v });
 const noop = () => {};
 
 function useCfg() {
@@ -118,61 +126,6 @@ function Automation() {
   );
 }
 
-function ToolsPrompts() {
-  const cfg = useCfg();
-  const [prompt, setPrompt] = useState<string | null>(null);
-  const draft = prompt ?? cfg?.appendSystemPrompt ?? "";
-  const save = useCallback(() => {
-    patchConfig({ appendSystemPrompt: draft }).then(
-      () => setPrompt(null),
-      () => {},
-    );
-  }, [draft]);
-  const revert = useCallback(() => setPrompt(null), []);
-  if (!cfg) return <T v="label">loading…</T>;
-  return (
-    <>
-      <Section title="Tools given to agents">
-        <Row
-          label="Frogg MCP tools"
-          hint="Lets agents start sub-agents, open terminals and report progress."
-        >
-          <Toggle value={cfg.mcp.injectIntoAgents} onChange={setMcp} />
-        </Row>
-        <Row label="Browser tools" hint="A headless browser agents can drive to check their work.">
-          <Toggle value={cfg.browserTools.enabled} onChange={setBrowserTools} />
-        </Row>
-        <Row
-          label="Terminal agent hooks"
-          hint="Track agents started by hand in a Frogg terminal."
-          last
-        >
-          <Toggle value={cfg.enableTerminalAgentHooks} onChange={setTerminalHooks} />
-        </Row>
-      </Section>
-      <Section title="Appended system prompt">
-        <View style={s.promptBox}>
-          <T style={s.faintSmall}>Added to every agent’s system prompt on this host.</T>
-          <Area
-            value={draft}
-            onChange={setPrompt}
-            placeholder="e.g. Prefer small commits. Run the tests before you finish."
-          />
-          <View style={s.buttons}>
-            <Button
-              kind="primary"
-              label="Save"
-              disabled={prompt === null || prompt === cfg.appendSystemPrompt}
-              onPress={save}
-            />
-            {prompt !== null && <Button label="Revert" onPress={revert} />}
-          </View>
-        </View>
-      </Section>
-    </>
-  );
-}
-
 function statusTint(st: string): string {
   if (st === "ready") return color.mint;
   if (st === "error" || st === "unavailable") return color.coral;
@@ -204,41 +157,6 @@ function Providers() {
         </Row>
       ))}
     </Section>
-  );
-}
-
-function Overview() {
-  const status = useConfig((st) => st.status);
-  const conn = useDaemon((st) => st.conn);
-  const url = useDaemon((st) => st.url);
-  return (
-    <>
-      <Section title="This connection">
-        <Row label="Endpoint" hint={url}>
-          <Pill text={conn} tint={conn === "online" ? color.mint : color.amber} />
-        </Row>
-        <Row label="Daemon version" last>
-          <T v="mono" style={s.value}>
-            {status?.version ?? "—"}
-          </T>
-        </Row>
-      </Section>
-      {status && (
-        <Section title="Daemon">
-          <Row label="Listening on">
-            <T v="mono" style={s.value}>
-              {status.listen ?? "—"}
-            </T>
-          </Row>
-          <Row label="Started">
-            <T v="mono">{status.startedAt ? agoText(status.startedAt) : "—"}</T>
-          </Row>
-          <Row label="Process" last>
-            <T v="mono">pid {status.pid}</T>
-          </Row>
-        </Section>
-      )}
-    </>
   );
 }
 
@@ -337,14 +255,14 @@ export const PAGES: Page[] = [
     label: "Tools, skills & prompts",
     icon: Wrench,
     scope: "Agents",
-    body: ToolsPrompts,
+    body: Orchestration,
   },
   {
     id: "overview",
     label: "Overview & connections",
     icon: Server,
     scope: "Host",
-    body: Overview,
+    body: HostOverview,
   },
   {
     id: "devices",
@@ -377,6 +295,20 @@ export const PAGES: Page[] = [
     body: ResourcesStorage,
   },
   { id: "daemon", label: "Daemon & updates", icon: Activity, scope: "Host", body: DaemonUpdates },
+  { id: "worktrees", label: "Worktrees", icon: Wrench, scope: "Project", body: Worktrees },
+  {
+    id: "scripts",
+    label: "Scripts & services",
+    icon: SquareTerminal,
+    scope: "Project",
+    body: Scripts,
+  },
+  { id: "ci", label: "CI & release streams", icon: RefreshCw, scope: "Project", body: Ci },
+  { id: "metadata", label: "Generated text", icon: FileCode, scope: "Project", body: Metadata },
+  { id: "plugins", label: "Plugins", icon: Wrench, scope: "App", body: Plugins },
+  { id: "about", label: "About & diagnostics", icon: Activity, scope: "App", body: About },
+  { id: "developer", label: "Developer", icon: SquareTerminal, scope: "App", body: Developer },
+  { id: "updates", label: "App updates", icon: RefreshCw, scope: "App", body: AppUpdates },
 ];
 
 export function SettingsNav() {
@@ -410,7 +342,7 @@ export function SettingsNav() {
           <View key={g.scope}>
             <View style={s.scopeHead}>
               <T v="label">{g.scope}</T>
-              {g.scope !== "You" && (
+              {(g.scope === "Host" || g.scope === "Agents") && (
                 <T v="mono" style={s.tiny}>
                   {host ?? ""}
                 </T>
@@ -473,7 +405,7 @@ export function SettingsPage({ id, onBack }: { id: string; onBack?: () => void }
             saving…
           </T>
         )}
-        {page.scope !== "You" && !onBack && (
+        {(page.scope === "Host" || page.scope === "Agents") && !onBack && (
           <View style={s.badge}>
             <T v="mono" style={s.badgeT}>
               {host ?? "host"} · config.json
@@ -482,19 +414,49 @@ export function SettingsPage({ id, onBack }: { id: string; onBack?: () => void }
         )}
       </View>
       <ScrollView contentContainerStyle={s.body}>
-        {error && (
-          <T v="mono" style={s.error}>
-            {error}
-          </T>
-        )}
+        {error && <ConfigError message={error} offline={conn !== "online"} />}
         {Body ? <Body /> : <T v="label">not built yet</T>}
       </ScrollView>
     </View>
   );
 }
 
+/** Inline failure for the page's daemon calls; the page body below keeps its last values. */
+function ConfigError({ message, offline }: { message: string; offline: boolean }) {
+  const retry = useCallback(() => void loadConfig(), []);
+  return (
+    <View style={s.errBox} accessibilityRole="alert">
+      <AlertTriangle size={15} color={color.coral} />
+      <View style={s.grow}>
+        <T style={s.errTitle}>
+          {offline
+            ? "Host is offline — showing the last loaded settings"
+            : "Settings didn't load or save"}
+        </T>
+        <T v="mono" style={s.errMsg} numberOfLines={3}>
+          {message}
+        </T>
+      </View>
+      {!offline && <Button label="Retry" onPress={retry} />}
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.bg2 },
+  errBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: color.coralWash,
+    borderLeftWidth: 2,
+    borderLeftColor: color.coral,
+  },
+  errTitle: { color: color.text, fontSize: 13.5 },
+  errMsg: { color: color.coral, fontSize: 11.5, marginTop: 3 },
   grow: { flex: 1 },
   tiny: { fontSize: 10.5 },
   hover: { backgroundColor: color.wash },
@@ -562,7 +524,6 @@ const s = StyleSheet.create({
   },
   badgeT: { color: color.violet, fontSize: 11 },
   body: { padding: 24, maxWidth: 840 },
-  error: { color: color.coral, marginBottom: 16 },
   promptBox: { padding: 14, gap: 10 },
   faintSmall: { color: color.faint, fontSize: 12.5 },
   buttons: { flexDirection: "row", gap: 8 },

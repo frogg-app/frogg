@@ -97,3 +97,133 @@ export const setCompare = (compare: Compare) => {
   const { cwd } = useScm.getState();
   if (cwd) void watchCheckout(cwd, compare);
 };
+
+// ---- Branches, stashes, session commits and the "more" actions -------------------------------
+
+type Client = NonNullable<ReturnType<typeof getClient>>;
+export type Commit = Awaited<ReturnType<Client["listCheckoutCommits"]>>["commits"][number];
+export type Stash = Awaited<ReturnType<Client["stashList"]>>["entries"][number];
+export interface BranchInfo {
+  name: string;
+  committerDate: number;
+  ahead?: number;
+  behind?: number;
+}
+export type PrSummary = { number: number | null; url: string; title: string; state: string } | null;
+
+interface ScmExtra {
+  commits: Commit[] | null;
+  stashes: Stash[] | null;
+  branches: BranchInfo[] | null;
+  pr: PrSummary | undefined;
+}
+
+export const useScmExtra = create<ScmExtra>(() => ({
+  commits: null,
+  stashes: null,
+  branches: null,
+  pr: undefined,
+}));
+onHostSwitch(() =>
+  useScmExtra.setState({ commits: null, stashes: null, branches: null, pr: undefined }),
+);
+
+/** Session commits, stashes and the branch's pull request, for the panel's lower sections. */
+export async function loadExtras(): Promise<void> {
+  const { cwd } = useScm.getState();
+  const client = getClient();
+  if (!cwd || !client) return;
+  const [commits, stashes, pr] = await Promise.allSettled([
+    client.listCheckoutCommits(cwd),
+    client.stashList(cwd),
+    client.checkoutPrStatus(cwd),
+  ]);
+  if (useScm.getState().cwd !== cwd) return;
+  useScmExtra.setState({
+    commits: commits.status === "fulfilled" ? commits.value.commits : [],
+    stashes: stashes.status === "fulfilled" ? stashes.value.entries : [],
+    pr:
+      pr.status === "fulfilled" && pr.value.status
+        ? {
+            number: pr.value.status.number ?? null,
+            url: pr.value.status.url,
+            title: pr.value.status.title,
+            state: pr.value.status.isMerged ? "merged" : pr.value.status.state.toLowerCase(),
+          }
+        : null,
+  });
+}
+
+/** Local and remote branches, most recently committed first. */
+export async function loadBranches(query?: string): Promise<void> {
+  const { cwd } = useScm.getState();
+  const client = getClient();
+  if (!cwd || !client) return;
+  const res = await client.getBranchSuggestions({ cwd, query, limit: 40 });
+  const details: BranchInfo[] = res.branchDetails
+    ? res.branchDetails.map((d) => ({
+        name: d.name,
+        committerDate: d.committerDate,
+        ahead: d.localAhead,
+        behind: d.localBehind,
+      }))
+    : res.branches.map((name) => ({ name, committerDate: 0 }));
+  useScmExtra.setState({ branches: details });
+}
+
+async function act(
+  label: string,
+  fn: (cwd: string, client: Client) => Promise<{ error?: { message: string } | null } | void>,
+): Promise<boolean> {
+  const { cwd } = useScm.getState();
+  const client = getClient();
+  if (!cwd || !client) return false;
+  useScm.setState({ busy: label, error: null });
+  let ok = true;
+  try {
+    const res = await fn(cwd, client);
+    if (res && res.error) {
+      ok = false;
+      useScm.setState({ error: res.error.message });
+    }
+  } catch (e) {
+    ok = false;
+    useScm.setState({ error: e instanceof Error ? e.message : String(e) });
+  } finally {
+    useScm.setState({ busy: null });
+    await refreshStatus().catch(() => {});
+    void loadExtras().catch(() => {});
+  }
+  return ok;
+}
+
+export const switchBranch = (branch: string) =>
+  act("switch", (cwd, c) => c.checkoutSwitchBranch(cwd, branch));
+/** Stash uncommitted work, then switch: what the branch menu offers on a dirty tree. */
+export const stashAndSwitch = (branch: string) =>
+  act("switch", async (cwd, c) => {
+    const saved = await c.stashSave(cwd);
+    if (saved.error) return saved;
+    return c.checkoutSwitchBranch(cwd, branch);
+  });
+export const stashSave = () => act("stash", (cwd, c) => c.stashSave(cwd));
+export const stashPop = (index: number) => act("stash", (cwd, c) => c.stashPop(cwd, index));
+export const discard = (paths: string[]) =>
+  act("discard", (cwd, c) => c.checkoutDiscardChanges(cwd, { paths }));
+export const mergeFromBase = () => act("merge", (cwd, c) => c.checkoutMergeFromBase(cwd, {}));
+export const mergeIntoBase = () =>
+  act("merge", (cwd, c) => c.checkoutMerge(cwd, { strategy: "merge", requireCleanTarget: true }));
+export const createPr = (title?: string) =>
+  act("pr", (cwd, c) => c.checkoutPrCreate(cwd, { title }));
+export const commitAndPush = (message: string) =>
+  act("commit", async (cwd, c) => {
+    const res = await c.checkoutCommit(cwd, { message, addAll: true });
+    if (res.error) return res;
+    return c.checkoutPush(cwd);
+  });
+export const pullAndPush = () =>
+  act("pull", async (cwd, c) => {
+    const res = await c.checkoutPull(cwd);
+    if (res.error) return res;
+    return c.checkoutPush(cwd);
+  });

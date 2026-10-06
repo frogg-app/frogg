@@ -205,3 +205,199 @@ module.exports["hosts-back"] = () => async (p, size) => {
   await p.getByText("frogg-dev", { exact: true }).last().click();
   await p.waitForTimeout(2500);
 };
+module.exports["n1-new-session"] = () => async (p) => {
+  await p.keyboard.press("Control+n");
+  await p.waitForTimeout(1500);
+};
+module.exports["n1-select-open"] = () => async (p) => {
+  await p.keyboard.press("Control+n");
+  await p.waitForTimeout(1500);
+  await p.getByLabel("Project").first().click();
+  await p.waitForTimeout(600);
+};
+module.exports["n1-settings"] = () => async (p, size) => {
+  if (size === "phone") await p.getByText("Settings", { exact: true }).last().click();
+  else await p.getByLabel("Settings", { exact: true }).first().click();
+  await p.waitForTimeout(1000);
+};
+module.exports["n1-crash"] = () => async (p) => {
+  await p.goto(p.url().replace(/\/?(\?.*)?$/, "/?crash"));
+  await p.waitForTimeout(2000);
+};
+
+// s1: agent and personal settings pages.
+for (const [id, page] of [
+  ["chat", "Chat & composer"],
+  ["editor", "Files, editor & terminal"],
+  ["notify", "Notifications & inbox"],
+  ["voice", "Voice & Companion"],
+  ["accounts", "Accounts"],
+  ["modes", "Permission modes"],
+  ["usage", "Usage & limits"],
+  ["context", "Context & clean cut"],
+])
+  module.exports[`s1-${id}`] = () => settings(page);
+// t1: tool panel depth.
+const scmOpen = async (tool, p, size) => {
+  await p.getByText("Preview chat").first().click();
+  await p.waitForTimeout(500);
+  if (size === "phone") await p.getByLabel("Back").first().click();
+  await tool(p, "Source control", "Source");
+  await p.waitForTimeout(2000);
+};
+module.exports["scm-branch"] = (tool) => async (p, size) => {
+  await scmOpen(tool, p, size);
+  await p.getByLabel("Switch branch").first().click();
+  await p.waitForTimeout(1200);
+  await p.getByText("main", { exact: true }).last().click();
+  await p.waitForTimeout(400);
+};
+module.exports["scm-more"] = (tool) => async (p, size) => {
+  await scmOpen(tool, p, size);
+  await p.getByLabel("More source control actions").first().click();
+  await p.waitForTimeout(600);
+};
+// ---- session list (l1) ----
+const listOpen = async (p, size) => {
+  if (size === "phone") await p.getByText("Sessions", { exact: true }).last().click();
+  await p.waitForTimeout(800);
+};
+const scopeTo = async (p, size, label) => {
+  await listOpen(p, size);
+  await p.getByLabel("Switch scope").first().click();
+  await p.waitForTimeout(400);
+  if (label) {
+    await p.getByText(label, { exact: true }).last().click();
+    await p.waitForTimeout(1200);
+  }
+};
+module.exports["scope-menu"] = () => async (p, size) => scopeTo(p, size);
+module.exports["history"] = () => async (p, size) => scopeTo(p, size, "History");
+module.exports["chats"] = () => async (p, size) => scopeTo(p, size, "Chats");
+module.exports["add-project"] = () => async (p, size) => {
+  await scopeTo(p, size, "Add project…");
+  await p.waitForTimeout(600);
+};
+module.exports["import"] = () => async (p, size) => {
+  await scopeTo(p, size, "Import conversations…");
+  await p.waitForTimeout(2500);
+};
+module.exports["display-menu"] = () => async (p, size) => {
+  await listOpen(p, size);
+  await p.getByLabel("Display options").first().click();
+  await p.waitForTimeout(500);
+};
+const rowMenu = async (p, size) => {
+  await listOpen(p, size);
+  await p.getByText("Stripe webhook retries").first().click({ button: "right" });
+  await p.waitForTimeout(500);
+};
+module.exports["session-menu"] = () => rowMenu;
+module.exports["labels"] = () => async (p, size) => {
+  await rowMenu(p, size);
+  await p.getByText("Labels", { exact: true }).last().click();
+  await p.waitForTimeout(800);
+};
+// s2: Host settings pages.
+module.exports["settings-devices"] = () => settings("Devices & access");
+module.exports["settings-security"] = () => settings("Security");
+module.exports["settings-labels"] = () => settings("Session labels");
+module.exports["settings-terminals"] = () => settings("Terminal profiles");
+module.exports["settings-resources"] = () => settings("Resources & storage");
+module.exports["settings-daemon"] = () => settings("Daemon & updates");
+module.exports["release-streams"] = () => async (p, size) => {
+  await module.exports.prs()(p, size);
+  await p.getByText("Streams", { exact: true }).first().click();
+  await p.waitForTimeout(5000);
+  const first = p.getByText(/ waiting$/).first();
+  if (await first.count()) await first.click();
+  await p.waitForTimeout(500);
+};
+// h1: hosts, connection and pairing.
+const hostsTool = async (p, size) => {
+  await module.exports.goMore(p, size, "Hosts");
+  await p.waitForTimeout(1200);
+};
+const hAdd = async (p, size) => {
+  await hostsTool(p, size);
+  await p.getByLabel("Add a host", { exact: true }).first().click();
+  await p.waitForTimeout(500);
+};
+const hOffline = async (p, size) => {
+  await hAdd(p, size);
+  await p.getByText("Direct address", { exact: true }).first().click();
+  await p.getByPlaceholder(/^host:port/).fill("ci-runner-2.lan:6767");
+  await p.getByPlaceholder("Name (optional)").fill("ci-runner-2");
+  await p.getByText("Connect", { exact: true }).last().click();
+  await p.waitForTimeout(3000);
+  if (size === "phone") await p.getByText("ci-runner-2", { exact: true }).first().click();
+  await p.waitForTimeout(600);
+};
+const demoOffer = () => {
+  const key = Buffer.alloc(32, 7).toString("base64");
+  const offer = {
+    v: 2,
+    serverId: "srv_01J9XH4",
+    daemonPublicKeyB64: key,
+    relay: { endpoint: "relay.frogg.dev:443", useTls: true },
+  };
+  return `frogg://pair#offer=${Buffer.from(JSON.stringify(offer)).toString("base64url")}`;
+};
+module.exports["h-tool-hosts"] = () => async (p, size) => {
+  await hostsTool(p, size);
+  if (size === "phone") await p.getByText("frogg-dev", { exact: true }).first().click();
+  await p.waitForTimeout(1500);
+};
+module.exports["h-add-host"] = () => async (p, size) => {
+  await hAdd(p, size);
+  await p.getByLabel("Pairing code").fill("7KQ4M2XD");
+  await p.waitForTimeout(400);
+};
+module.exports["h-pair-confirm"] = () => async (p, size) => {
+  await hAdd(p, size);
+  await p.getByPlaceholder(/^frogg:\/\/pair/).fill(demoOffer());
+  await p.getByText("Continue", { exact: true }).last().click();
+  await p.waitForTimeout(1500);
+};
+module.exports["h-pair-code"] = () => async (p, size) => {
+  await hAdd(p, size);
+  await p.getByLabel("Pairing code").fill("7KQ4M2XD");
+  await p.getByPlaceholder(/^Host address/).fill("127.0.0.1:7821");
+  await p.getByText("Continue", { exact: true }).last().click();
+  await p.waitForTimeout(2500);
+};
+module.exports["h-pair-link"] = () => async (p) => {
+  await p.goto(`${p.url().split("?")[0]}?pair=${encodeURIComponent(demoOffer())}`, {
+    waitUntil: "networkidle",
+  });
+  await p.waitForTimeout(2500);
+};
+module.exports["h-pair-device"] = () => async (p, size) => {
+  await hostsTool(p, size);
+  await p.getByLabel("Pair a device", { exact: true }).first().click();
+  await p.waitForTimeout(2500);
+};
+module.exports["h-host-offline"] = () => hOffline;
+module.exports["h-remove-host"] = () => async (p, size) => {
+  await hOffline(p, size);
+  if (size === "phone") await p.getByText("Remove host…", { exact: true }).first().click();
+  else {
+    await p.getByText("ci-runner-2", { exact: true }).first().hover();
+    await p.getByLabel("Remove ci-runner-2").first().click();
+  }
+  await p.waitForTimeout(300);
+  await p.getByLabel("Host name").fill("ci-runner-");
+  await p.waitForTimeout(400);
+};
+
+module.exports["settings-worktrees"] = () => settings("Worktrees");
+
+module.exports["settings-scripts"] = () => settings("Scripts & services");
+
+module.exports["settings-ci"] = () => settings("CI & release streams");
+
+module.exports["settings-metadata"] = () => settings("Generated text");
+
+module.exports["settings-about"] = () => settings("About & diagnostics");
+
+module.exports["settings-updates"] = () => settings("App updates");

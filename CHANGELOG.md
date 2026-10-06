@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.6.13-beta.1 — prototype branch checkpoint
+
+- **Android keyboard layout.** The app shell and new-session sheet now let Android's
+  resized window handle the keyboard, avoiding a second padding adjustment that could
+  leave empty space below the tabs. iOS keeps keyboard avoidance.
+- **Dismissible host notifications.** Version, connection and storage banners now have
+  an accessible close button. Dismissal lasts for the current notification; a changed
+  host, version, severity or new incident can show another banner.
+
+- **Branch-only Frogg Next prototype.** Integrated recovered chat controls and permission
+  cards, LAN connection guards, file drafts, plugin/to-do panels and settings pages in
+  `apps/ui-next`; mounted notifications and registered project/app settings. The standalone
+  debug-signed `app.frogg.next` APK can be built locally without CI. This is research on
+  `frogg-interface-design-mockups`, not a main/stable release; Android acceptance remains
+  separate from web/fixture verification.
+
 ## Unreleased
 
 - **Resources is its own host settings section.** Live host load and the size of each

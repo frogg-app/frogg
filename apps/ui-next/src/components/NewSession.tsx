@@ -1,6 +1,8 @@
+import { KeyboardFrame } from "./shell/KeyboardFrame";
 import { GitBranch, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { loadConfig, useConfig } from "../daemon/config";
 import { createSession, listProjects, type Project } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
@@ -37,6 +39,79 @@ function footText(
 ): string {
   if (worktree) return `worktree · ${branch} from ${base}`;
   return project ? `in ${project.projectRootPath}` : "";
+}
+
+interface Opt {
+  value: string;
+  label: string;
+  hint?: string;
+}
+function AgentFields({
+  phone,
+  loaded,
+  provider,
+  setProvider,
+  providerOptions,
+  model,
+  setModel,
+  modelOptions,
+  mode,
+  setMode,
+  modeOptions,
+}: {
+  phone: boolean;
+  loaded: boolean;
+  provider: string | null;
+  setProvider: (v: string) => void;
+  providerOptions: Opt[];
+  model: string | null;
+  setModel: (v: string) => void;
+  modelOptions: Opt[];
+  mode: string | null;
+  setMode: (v: string) => void;
+  modeOptions: Opt[];
+}) {
+  return phone ? (
+    <>
+      <Field label="Agent" phone>
+        <Select
+          width="100%"
+          label="Agent"
+          placeholder={loaded ? "No ready agents" : "Loading agents…"}
+          value={provider}
+          onChange={setProvider}
+          options={providerOptions}
+        />
+      </Field>
+      {modelOptions.length > 0 && (
+        <Field label="Model" phone>
+          <Select
+            width="100%"
+            label="Model"
+            mono
+            value={model}
+            onChange={setModel}
+            options={modelOptions}
+          />
+        </Field>
+      )}
+      {modeOptions.length > 0 && (
+        <Field label="Mode" phone>
+          <Select width="100%" label="Mode" value={mode} onChange={setMode} options={modeOptions} />
+        </Field>
+      )}
+    </>
+  ) : (
+    <Field label="Agent" z={4}>
+      <View style={s.agentRow}>
+        <Select width={150} value={provider} onChange={setProvider} options={providerOptions} />
+        <Select width={170} mono value={model} onChange={setModel} options={modelOptions} />
+        {modeOptions.length > 0 && (
+          <Select width={150} value={mode} onChange={setMode} options={modeOptions} />
+        )}
+      </View>
+    </Field>
+  );
 }
 
 export function NewSession() {
@@ -176,10 +251,149 @@ export function NewSession() {
 
   if (!open) return null;
 
+  const worktree = isGit && isolation === "worktree";
+  const selW = phone ? "100%" : undefined;
+  const fields = (
+    <>
+      <Field label="Project" z={5} phone={phone}>
+        <Select
+          width={selW}
+          label="Project"
+          value={projectId}
+          onChange={setProjectId}
+          options={projectOptions}
+          placeholder={projects ? "No projects yet" : "Loading projects…"}
+        />
+      </Field>
+      {isGit && (
+        <Field label="Isolation" phone={phone}>
+          <Seg options={ISOLATION_OPTIONS} value={isolation} onChange={setIsolation} />
+        </Field>
+      )}
+      {worktree && (
+        <Field label="Start from" phone={phone}>
+          <View style={[s.input, phone && s.inputPhone]}>
+            <GitBranch size={13} color={color.faint} />
+            <TextInput
+              value={base}
+              onChangeText={setBase}
+              style={s.inputT}
+              placeholder="main"
+              placeholderTextColor={color.faint}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+        </Field>
+      )}
+      <AgentFields
+        phone={phone}
+        loaded={!!providers}
+        provider={entry?.provider ?? null}
+        setProvider={setProvider}
+        providerOptions={providerOptions}
+        model={model}
+        setModel={setModel}
+        modelOptions={modelOptions}
+        mode={mode}
+        setMode={setMode}
+        modeOptions={modeOptions}
+      />
+      <View style={s.prompt}>
+        <TextInput
+          autoFocus={!phone}
+          multiline
+          value={prompt}
+          onChangeText={setPrompt}
+          placeholder="What should the agent do?"
+          placeholderTextColor={color.faint}
+          style={[s.promptT, phone && s.promptPhone]}
+          textAlignVertical="top"
+        />
+        {!phone && (
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Title (optional)"
+            placeholderTextColor={color.faint}
+            style={s.title}
+          />
+        )}
+      </View>
+      {phone && (
+        <Field label="Title" phone>
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Optional — named from the prompt otherwise"
+            placeholderTextColor={color.faint}
+            style={s.titlePhone}
+          />
+        </Field>
+      )}
+      {error && (
+        <View style={s.errorBox}>
+          <T style={s.errorHead}>Could not create the session</T>
+          <T v="mono" style={s.error}>
+            {error}
+          </T>
+        </View>
+      )}
+    </>
+  );
+  const createLabel = busy ? "Creating…" : "Create session";
+  const canCreate = !busy && !!prompt.trim() && !!project && !!entry;
+  const foot = footText(worktree, branch, base, project);
+
+  if (phone)
+    return (
+      <Modal
+        visible
+        animationType="slide"
+        statusBarTranslucent
+        navigationBarTranslucent
+        onRequestClose={close}
+      >
+        <SafeAreaView edges={EDGES_ALL} style={s.phoneRoot}>
+          <KeyboardFrame style={s.flex}>
+            <View style={s.phoneHead}>
+              <Pressable onPress={close} hitSlop={12} accessibilityLabel="Close">
+                <X size={20} color={color.muted} />
+              </Pressable>
+              <T v="display" style={s.phoneHeading}>
+                New session
+              </T>
+            </View>
+            <ScrollView
+              style={s.flex}
+              contentContainerStyle={s.phoneContent}
+              keyboardShouldPersistTaps="handled"
+            >
+              {fields}
+            </ScrollView>
+            <View style={s.phoneFoot}>
+              {!!foot && (
+                <T v="mono" numberOfLines={1} style={s.footText}>
+                  {foot}
+                </T>
+              )}
+              <Button
+                kind="primary"
+                grow
+                label={createLabel}
+                disabled={!canCreate}
+                onPress={onCreate}
+              />
+            </View>
+          </KeyboardFrame>
+        </SafeAreaView>
+      </Modal>
+    );
+
   return (
     <View style={s.layer}>
       <Pressable style={s.scrim} onPress={close} />
-      <Cut size={16} flip style={[s.box, phone && s.boxPhone]}>
+      <Cut size={16} flip style={s.box}>
         <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
           <View style={s.headRow}>
             <View style={s.flex}>
@@ -190,85 +404,22 @@ export function NewSession() {
                 New session
               </T>
             </View>
-            <Pressable onPress={close} hitSlop={10}>
+            <Pressable onPress={close} hitSlop={10} accessibilityLabel="Close">
               <X size={16} color={color.faint} />
             </Pressable>
           </View>
-          <Field label="Project" z={5}>
-            <Select
-              value={projectId}
-              onChange={setProjectId}
-              options={projectOptions}
-              placeholder={projects ? "No projects yet" : "Loading…"}
-            />
-          </Field>
-          {isGit && (
-            <Field label="Isolation">
-              <Seg options={ISOLATION_OPTIONS} value={isolation} onChange={setIsolation} />
-            </Field>
-          )}
-          {isGit && isolation === "worktree" && (
-            <Field label="Start from">
-              <View style={s.input}>
-                <GitBranch size={13} color={color.faint} />
-                <TextInput
-                  value={base}
-                  onChangeText={setBase}
-                  style={s.inputT}
-                  placeholder="main"
-                  placeholderTextColor={color.faint}
-                />
-              </View>
-            </Field>
-          )}
-          <Field label="Agent" z={4}>
-            <View style={s.agentRow}>
-              <Select
-                width={150}
-                value={entry?.provider ?? null}
-                onChange={setProvider}
-                options={providerOptions}
-              />
-              <Select width={170} mono value={model} onChange={setModel} options={modelOptions} />
-              {!!entry?.modes?.length && (
-                <Select width={150} value={mode} onChange={setMode} options={modeOptions} />
-              )}
-            </View>
-          </Field>
-          <View style={s.prompt}>
-            <TextInput
-              autoFocus
-              multiline
-              value={prompt}
-              onChangeText={setPrompt}
-              placeholder="What should the agent do?"
-              placeholderTextColor={color.faint}
-              style={s.promptT}
-            />
-            <TextInput
-              value={title}
-              onChangeText={setTitle}
-              placeholder="Title (optional)"
-              placeholderTextColor={color.faint}
-              style={s.title}
-            />
-          </View>
-          {error && (
-            <T v="mono" style={s.error}>
-              {error}
-            </T>
-          )}
+          {fields}
         </ScrollView>
         <View style={s.foot}>
           <T v="mono" numberOfLines={1} style={s.footText}>
-            {footText(isGit && isolation === "worktree", branch, base, project)}
+            {foot}
           </T>
           <Button label="Cancel" onPress={close} />
           <Button
             kind="primary"
-            label={busy ? "Creating…" : "Create session"}
+            label={createLabel}
             kbd="⌘↵"
-            disabled={busy || !prompt.trim() || !project || !entry}
+            disabled={!canCreate}
             onPress={onCreate}
           />
         </View>
@@ -277,20 +428,25 @@ export function NewSession() {
   );
 }
 
+const EDGES_ALL = ["top", "bottom", "left", "right"] as const;
+
 function Field({
   label,
   children,
   z = 1,
+  phone,
 }: {
   label: string;
   children: React.ReactNode;
   z?: number;
+  /** Stack the label above a full-width control. */
+  phone?: boolean;
 }) {
-  const style = useMemo(() => [s.field, { zIndex: z }], [z]);
+  const style = useMemo(() => [phone ? s.fieldPhone : s.field, { zIndex: z }], [z, phone]);
   return (
     <View style={style}>
-      <T style={s.fieldLabel}>{label}</T>
-      <View style={s.fieldBody}>{children}</View>
+      <T style={phone ? s.fieldLabelPhone : s.fieldLabel}>{label}</T>
+      <View style={phone ? s.fieldBodyPhone : s.fieldBody}>{children}</View>
     </View>
   );
 }
@@ -305,7 +461,7 @@ const s = StyleSheet.create({
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(4,8,10,0.6)",
+    backgroundColor: color.scrim,
     ...web({ backdropFilter: "blur(6px)" }),
   },
   box: {
@@ -358,7 +514,49 @@ const s = StyleSheet.create({
     fontSize: 12.5,
     ...web({ outlineStyle: "none" }),
   },
-  boxPhone: { maxWidth: "100%" },
+  inputPhone: { width: "100%", paddingVertical: 4 },
+  promptPhone: { minHeight: 140 },
+  titlePhone: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: color.bg,
+    borderWidth: 1,
+    borderColor: color.line,
+    color: color.text,
+    fontFamily: font.body,
+    fontSize: 14,
+    ...web({ outlineStyle: "none" }),
+  },
+  errorBox: {
+    gap: 4,
+    padding: 12,
+    backgroundColor: color.coralWash,
+    borderLeftWidth: 2,
+    borderLeftColor: color.coral,
+  },
+  errorHead: { color: color.text, fontSize: 13 },
+  phoneRoot: { flex: 1, backgroundColor: color.panel },
+  phoneHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: color.line,
+  },
+  phoneHeading: { fontSize: 19 },
+  phoneContent: { padding: 16, gap: 16 },
+  phoneFoot: {
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: color.line,
+  },
+  fieldPhone: { gap: 6 },
+  fieldLabelPhone: { color: color.muted, fontSize: 12.5 },
+  fieldBodyPhone: { alignSelf: "stretch" },
   content: { padding: 22, gap: 14 },
   headRow: { flexDirection: "row", alignItems: "flex-start" },
   flex: { flex: 1 },

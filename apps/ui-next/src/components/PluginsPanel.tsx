@@ -1,21 +1,26 @@
 import { Puzzle, RefreshCw } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { getClient, useDaemon } from "../daemon/store";
-import { color } from "../theme/tokens";
+import { color, font } from "../theme/tokens";
 import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { GroupHead, PanelHead } from "./PanelHead";
-import { Pill, Seg, Toggle } from "./settings/controls";
+import { Pill, Toggle } from "./settings/controls";
 import { T } from "./Text";
+import { Tabs } from "./tools/Tabs";
+import { useConfirm } from "./tools/Confirm";
+import { PluginSources } from "./tools/PluginSources";
+import { PluginPanels } from "./tools/PluginPanels";
 
 type Client = NonNullable<ReturnType<typeof getClient>>;
 type Installed = Awaited<ReturnType<Client["pluginsList"]>>["plugins"][number];
 type Catalog = Awaited<ReturnType<Client["pluginsGetCatalog"]>>["plugins"][number];
 
 export function PluginsPanel() {
+  const [query, setQuery] = useState("");
   const conn = useDaemon((s) => s.conn);
-  const [tab, setTab] = useState<"installed" | "browse">("installed");
+  const [tab, setTab] = useState<"installed" | "browse" | "sources">("installed");
   const [installed, setInstalled] = useState<Installed[] | null>(null);
   const [catalog, setCatalog] = useState<Catalog[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -23,13 +28,14 @@ export function PluginsPanel() {
   const load = useCallback(() => {
     const c = getClient();
     if (!c?.supportsPlugins()) return setError("This host's daemon has no plugin support.");
+    setError(null);
     void c.pluginsList().then(
       (r) => setInstalled(r.plugins),
       (e: unknown) => setError(String(e)),
     );
     void c.pluginsGetCatalog().then(
       (r) => setCatalog(r.plugins),
-      () => setCatalog([]),
+      (e: unknown) => setError(String(e)),
     );
   }, []);
   useEffect(() => {
@@ -49,12 +55,19 @@ export function PluginsPanel() {
     },
     [load],
   );
-  const segOptions = useMemo<Array<["installed" | "browse", string]>>(
+  const segOptions = useMemo<Array<["installed" | "browse" | "sources", string]>>(
     () => [
       ["installed", `Installed ${installed?.length ?? ""}`],
       ["browse", "Browse"],
+      ["sources", "Sources"],
     ],
     [installed?.length],
+  );
+  const tabs = useMemo(() => segOptions.map(([id, label]) => ({ id, label })), [segOptions]);
+  const filtered = catalog?.filter((p) =>
+    `${p.name} ${p.description ?? ""} ${p.category ?? ""}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
   return (
     <View style={st.fill}>
@@ -64,9 +77,21 @@ export function PluginsPanel() {
         </Pressable>
       </PanelHead>
       <View style={st.segWrap}>
-        <Seg options={segOptions} value={tab} onChange={setTab} />
+        <Tabs tabs={tabs} value={tab} onChange={setTab} />
       </View>
+      {tab === "browse" && (
+        <TextInput
+          accessibilityLabel="Search plugins"
+          placeholder="Search plugins"
+          placeholderTextColor={color.faint}
+          value={query}
+          onChangeText={setQuery}
+          style={st.search}
+        />
+      )}
       <ScrollView contentContainerStyle={st.scroll}>
+        {tab === "sources" && <PluginSources />}
+        {tab === "installed" && !installed && !error && <T v="label">Loading plugins…</T>}
         {error && (
           <T v="mono" style={st.error}>
             {error}
@@ -82,10 +107,10 @@ export function PluginsPanel() {
           <T style={st.faint}>No plugin sources configured.</T>
         )}
         {tab === "browse" && catalog && catalog.length > 0 && (
-          <GroupHead label="Catalog" count={catalog.length} />
+          <GroupHead label="Catalog" count={filtered?.length} />
         )}
         {tab === "browse" &&
-          catalog?.map((p) => (
+          filtered?.map((p) => (
             <CatalogRow key={`${p.repoUrl}:${p.id}`} p={p} busy={busy === p.id} act={act} />
           ))}
       </ScrollView>
@@ -96,6 +121,8 @@ export function PluginsPanel() {
 type Act = (id: string, fn: () => Promise<unknown>) => Promise<void>;
 
 function InstalledRow({ p, busy, act }: { p: Installed; busy: boolean; act: Act }) {
+  const [expanded, setExpanded] = useState(false);
+  const togglePanels = useCallback(() => setExpanded((v) => !v), []);
   const onToggle = useCallback(
     (v: boolean) => void act(p.id, () => getClient()!.pluginsSetEnabled(p.id, v)),
     [act, p.id],
@@ -119,6 +146,12 @@ function InstalledRow({ p, busy, act }: { p: Installed; busy: boolean; act: Act 
           <Pill text={p.status} tint={p.error ? color.coral : color.muted} />
         )}
       </View>
+      <Button
+        label={expanded ? "Close panels" : "Open panels"}
+        onPress={togglePanels}
+        disabled={!p.enabled}
+      />
+      {expanded && <PluginPanels pluginId={p.id} />}
       {p.error && (
         <T v="mono" style={st.rowError}>
           {p.error}
@@ -129,19 +162,29 @@ function InstalledRow({ p, busy, act }: { p: Installed; busy: boolean; act: Act 
 }
 
 function CatalogRow({ p, busy, act }: { p: Catalog; busy: boolean; act: Act }) {
+  const confirm = useConfirm();
   const onInstall = useCallback(
     () =>
-      void act(p.id, () =>
-        getClient()!.pluginsInstall({
-          id: p.id,
-          repoUrl: p.repoUrl,
-          grantedCapabilities: p.latest?.capabilities ?? [],
-        }),
-      ),
-    [act, p.id, p.repoUrl, p.latest?.capabilities],
+      confirm.ask({
+        eyebrow: "Plugin permissions",
+        title: `Install ${p.name}?`,
+        body: `Source: ${p.repoName}\nVersion: ${p.latest?.version ?? "unknown"}\n\nPermissions requested:\n${p.latest?.capabilities.join("\n") || "No additional capabilities"}\n\nHost plugins are not sandboxed. Only install plugins from sources you trust.`,
+        action: "Grant and install",
+        run: () =>
+          void act(p.id, () =>
+            getClient()!.pluginsInstall({
+              id: p.id,
+              repoUrl: p.repoUrl,
+              version: p.latest?.version,
+              grantedCapabilities: p.latest?.capabilities ?? [],
+            }),
+          ),
+      }),
+    [confirm, act, p],
   );
   return (
     <View style={st.catalogCard}>
+      {confirm.dialog}
       <View style={st.headRow}>
         <T style={st.name}>{p.name}</T>
         {p.installedVersion ? (
@@ -176,6 +219,14 @@ function CatalogRow({ p, busy, act }: { p: Catalog; busy: boolean; act: Act }) {
 }
 
 const st = StyleSheet.create({
+  search: {
+    margin: 12,
+    padding: 10,
+    color: color.text,
+    fontFamily: font.body,
+    borderWidth: 1,
+    borderColor: color.line2,
+  },
   fill: { flex: 1, backgroundColor: color.bg2 },
   segWrap: { paddingHorizontal: 12, paddingBottom: 6 },
   scroll: { padding: 12, gap: 10 },

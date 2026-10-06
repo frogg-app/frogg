@@ -1,19 +1,17 @@
-import { Archive, ArrowLeft } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { loadConfig, useConfig } from "../daemon/config";
-import {
-  archiveSession,
-  cancelTurn,
-  openTimeline,
-  send,
-  setAgentMode,
-  setAgentModel,
-  useDaemon,
-} from "../daemon/store";
+import { cancelTurn, openTimeline, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
 import { bucketOf, type Agent, type Session, type TimelineEntry } from "../daemon/types";
 import { color, motion } from "../theme/tokens";
 import { providerLabel } from "../util";
+import { AccountChip } from "./chat/AccountChip";
+import { ComposerNotices } from "./chat/Notices";
+import { SessionMenu } from "./chat/SessionMenu";
+import { SessionState, Compaction } from "./chat/SessionState";
+import { forkDrafts, listCommands, sendWithAttachments, type Attachment } from "./chat/actions";
+import { toastError } from "./toast/store";
 import { Composer } from "./Composer";
 import { Markdown } from "./Markdown";
 import { PermissionCard } from "./PermissionCard";
@@ -51,10 +49,11 @@ function keyedEntries(entries: TimelineEntry[]): Array<{ key: string; e: Timelin
 
 export function Chat({ session, onBack }: { session: Session; onBack?: () => void }) {
   const a = session.agent;
+  const conn = useDaemon((st) => st.conn);
   const entries = useDaemon((st) => st.timelines[a.id]);
   const scroll = useRef<ScrollView>(null);
   useEffect(() => {
-    void openTimeline(a.id);
+    void openTimeline(a.id).catch((e) => toastError("Could not load conversation", e));
   }, [a.id]);
   const rows = useMemo(() => (entries ? keyedEntries(entries) : null), [entries]);
   const bucket = bucketOf(a);
@@ -63,9 +62,22 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   const provider = providerLabel(a.provider);
   const running = a.status === "running";
   const toEnd = useCallback(() => scroll.current?.scrollToEnd({ animated: false }), []);
-  const archive = useCallback(() => void archiveSession(a.id), [a.id]);
-  const onSend = useCallback((t: string) => void send(a.id, t), [a.id]);
-  const stop = useCallback(() => void cancelTurn(a.id), [a.id]);
+  const onSend = useCallback(
+    async (t: string, attachments: Attachment[]) => {
+      await sendWithAttachments(a.id, t, attachments);
+      forkDrafts.delete(a.id);
+    },
+    [a.id],
+  );
+  const commands = useCallback(() => listCommands(a.id), [a.id]);
+  const initialAttachments = useMemo(() => {
+    const draft = forkDrafts.get(a.id);
+    return draft ? [draft] : [];
+  }, [a.id]);
+  const stop = useCallback(() => {
+    void cancelTurn(a.id).catch((e) => toastError("Could not stop", e));
+  }, [a.id]);
+  const notices = useMemo(() => <ComposerNotices agent={a} />, [a]);
   const chips = useMemo(() => (onBack ? [] : [provider]), [onBack, provider]);
   return (
     <View style={s.root}>
@@ -82,9 +94,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
           <T v="display" numberOfLines={1} style={s.title}>
             {a.title || "Untitled session"}
           </T>
-          <Pressable onPress={archive} accessibilityLabel="Archive session" hitSlop={8}>
-            {({ hovered }) => <Archive size={16} color={hovered ? color.text : color.faint} />}
-          </Pressable>
+          <SessionMenu key={a.id} session={session} onArchived={onBack} />
         </View>
         <View style={s.sub}>
           <StatusGlyph bucket={bucket} size={7} />
@@ -121,17 +131,27 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         {a.pendingPermissions.map((p) => (
           <PermissionCard key={p.id} agentId={a.id} p={p} />
         ))}
-        {running && <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />}
+        <SessionState agent={a} online={conn === "online"} />
+        {running && conn === "online" && (
+          <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
+        )}
       </ScrollView>
       <View style={s.composer}>
         <Composer
-          placeholder={`Message ${provider} — @ files, / commands`}
+          key={a.id}
+          attach
+          disabled={conn !== "online"}
+          loadCommands={commands}
+          initialAttachments={initialAttachments}
+          notices={notices}
+          placeholder={`Message ${provider} — / commands`}
           chips={chips}
           onSend={onSend}
           onStop={running ? stop : undefined}
           compact={!!onBack}
         >
           <AgentControls agent={a} />
+          <AccountChip agent={a} />
         </Composer>
       </View>
     </View>
@@ -218,6 +238,8 @@ function Item({ e, provider }: { e: TimelineEntry; provider: string }) {
       );
     case "tool_call":
       return <ToolCall item={it} />;
+    case "compaction":
+      return <Compaction item={it} />;
     case "error":
       return (
         <T v="mono" style={s.error}>
@@ -256,11 +278,20 @@ function AgentControls({ agent }: { agent: Agent }) {
       })),
     [agent.availableModes],
   );
-  const pickModel = useCallback((v: string) => void setAgentModel(agent.id, v), [agent.id]);
-  const pickMode = useCallback((v: string) => void setAgentMode(agent.id, v), [agent.id]);
+  const pickModel = useCallback(
+    (v: string) =>
+      void setAgentModel(agent.id, v).catch((e) => toastError("Could not change model", e)),
+    [agent.id],
+  );
+  const pickMode = useCallback(
+    (v: string) =>
+      void setAgentMode(agent.id, v).catch((e) => toastError("Could not change mode", e)),
+    [agent.id],
+  );
   return (
     <>
       <Select
+        label="Model"
         chip
         mono
         up
@@ -273,6 +304,7 @@ function AgentControls({ agent }: { agent: Agent }) {
       />
       {modes.length > 0 && (
         <Select
+          label="Mode"
           chip
           up
           width="auto"

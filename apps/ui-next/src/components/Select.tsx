@@ -1,7 +1,17 @@
 import { Check, ChevronDown } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View, type TextStyle } from "react-native";
-import { color, web } from "../theme/tokens";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+  type TextStyle,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { bp, color, web } from "../theme/tokens";
 import { Cut } from "./Cut";
 import { T } from "./Text";
 
@@ -12,7 +22,11 @@ export interface Option<V extends string> {
   disabled?: boolean;
 }
 
-/** A bracket-styled dropdown; the menu opens in place over what follows (or above, with `up`). */
+/**
+ * A bracket-styled dropdown. On wide web the menu opens in place over what follows (or above,
+ * with `up`); on native and narrow widths it opens as a bottom sheet in a modal, so it never
+ * fights sibling stacking or clipping.
+ */
 export function Select<V extends string>({
   value,
   options,
@@ -23,6 +37,7 @@ export function Select<V extends string>({
   up,
   chip,
   menuWidth,
+  label,
 }: {
   value: V | null;
   options: Array<Option<V>>;
@@ -35,8 +50,13 @@ export function Select<V extends string>({
   /** Composer-chip look: no border, tinted fill. */
   chip?: boolean;
   menuWidth?: number;
+  /** Heading for the sheet on phone/native; defaults to the placeholder. */
+  label?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const narrow = useWindowDimensions().width < bp.tablet;
+  const sheet = Platform.OS !== "web" || narrow;
+  const close = useCallback(() => setOpen(false), []);
   const current = options.find((o) => o.value === value);
   const toggle = useCallback(() => setOpen((o) => !o), []);
   const pick = useCallback(
@@ -46,7 +66,7 @@ export function Select<V extends string>({
     },
     [onChange],
   );
-  const wrap = useMemo(() => ({ width, zIndex: open ? 40 : 1 }), [width, open]);
+  const wrap = useMemo(() => ({ width, zIndex: open && !sheet ? 40 : 1 }), [width, open, sheet]);
   const menu = useMemo(
     () => [
       s.menu,
@@ -60,7 +80,7 @@ export function Select<V extends string>({
   else if (mono) fieldText = s.fieldTextMono;
   return (
     <View style={wrap}>
-      <Pressable onPress={toggle}>
+      <Pressable onPress={toggle} accessibilityRole="button" accessibilityLabel={label}>
         {({ hovered }) => (
           <View
             style={[
@@ -80,7 +100,18 @@ export function Select<V extends string>({
           </View>
         )}
       </Pressable>
-      {open && (
+      {sheet && (
+        <SelectSheet
+          open={open}
+          title={label ?? placeholder}
+          options={options}
+          value={value}
+          mono={!!mono}
+          onPick={pick}
+          onClose={close}
+        />
+      )}
+      {open && !sheet && (
         <Cut size={8} flip style={menu}>
           <ScrollView style={s.scroll}>
             {options.map((o) => (
@@ -99,22 +130,88 @@ export function Select<V extends string>({
   );
 }
 
+function SelectSheet<V extends string>({
+  open,
+  title,
+  options,
+  value,
+  mono,
+  onPick,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  options: Array<Option<V>>;
+  value: V | null;
+  mono: boolean;
+  onPick: (v: V) => void;
+  onClose: () => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const panel = useMemo(
+    () => [s.sheet, { paddingBottom: Math.max(insets.bottom, 12) }],
+    [insets.bottom],
+  );
+  return (
+    <Modal
+      visible={open}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={s.sheetLayer}>
+        <Pressable style={s.sheetScrim} onPress={onClose} accessibilityLabel="Close" />
+        <View style={panel}>
+          <View style={s.grab} />
+          <T v="label" style={s.sheetTitle}>
+            {title}
+          </T>
+          <ScrollView style={s.sheetScroll}>
+            {options.length === 0 && <T style={s.empty}>Nothing to choose yet</T>}
+            {options.map((o) => (
+              <OptionRow
+                key={o.value}
+                option={o}
+                selected={o.value === value}
+                mono={mono}
+                onPick={onPick}
+                large
+              />
+            ))}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function OptionRow<V extends string>({
   option,
   selected,
   mono,
   onPick,
+  large,
 }: {
   option: Option<V>;
   selected: boolean;
   mono: boolean;
   onPick: (v: V) => void;
+  large?: boolean;
 }) {
   const onPress = useCallback(() => onPick(option.value), [onPick, option.value]);
   return (
     <Pressable disabled={option.disabled} onPress={onPress}>
       {({ hovered }) => (
-        <View style={[s.opt, hovered && s.optHover, option.disabled && s.optDisabled]}>
+        <View
+          style={[
+            s.opt,
+            large && s.optLarge,
+            (hovered || (large && selected)) && s.optHover,
+            option.disabled && s.optDisabled,
+          ]}
+        >
           <View style={s.optBody}>
             <T v={mono ? "mono" : "body"} style={mono ? s.optMono : s.optLabel}>
               {option.label}
@@ -148,10 +245,10 @@ const s = StyleSheet.create({
     borderWidth: 0,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: color.wash2,
     gap: 6,
   },
-  chipHover: { backgroundColor: "rgba(255,255,255,0.1)" },
+  chipHover: { backgroundColor: color.wash3 },
   menu: {
     position: "absolute",
     top: "100%",
@@ -173,10 +270,33 @@ const s = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  optHover: { backgroundColor: "rgba(37,181,200,0.1)" },
+  optHover: { backgroundColor: color.cyanWash },
   optDisabled: { opacity: 0.4 },
   optBody: { flex: 1 },
   optLabel: { color: color.text, fontSize: 13.5 },
   optMono: { color: color.text, fontSize: 12.5 },
   hint: { color: color.faint, fontSize: 11.5, marginTop: 2 },
+  optLarge: { minHeight: 48, paddingHorizontal: 18, paddingVertical: 10 },
+  sheetLayer: { flex: 1, justifyContent: "flex-end" },
+  sheetScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: color.scrim,
+  },
+  sheet: {
+    maxHeight: "70%",
+    backgroundColor: color.raise,
+    borderTopWidth: 1,
+    borderTopColor: color.cyan,
+    paddingTop: 8,
+  },
+  grab: {
+    alignSelf: "center",
+    width: 36,
+    height: 4,
+    backgroundColor: color.line2,
+    marginBottom: 10,
+  },
+  sheetTitle: { paddingHorizontal: 18, paddingBottom: 8 },
+  sheetScroll: { flexGrow: 0 },
+  empty: { color: color.faint, paddingHorizontal: 18, paddingVertical: 14 },
 });
