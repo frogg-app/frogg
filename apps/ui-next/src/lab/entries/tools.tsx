@@ -8,7 +8,7 @@ import { ScmPanel } from "../../components/ScmPanel";
 import { SearchPanel } from "../../components/SearchPanel";
 import { TasksPanel } from "../../components/TasksPanel";
 import { TerminalsPanel } from "../../components/TerminalsPanel";
-import { StreamList } from "../../components/tools/Streams";
+import { StreamList, useStreams } from "../../components/tools/Streams";
 import { UsagePanel } from "../../components/UsagePanel";
 import { useUi } from "../../ui-store";
 import { ID } from "../fixtures";
@@ -27,6 +27,17 @@ function panel(P: ComponentType): ComponentType {
 }
 
 const selectPreview = () => useUi.setState({ selected: ID.preview });
+/** Live: loads the simulated graph through the fixture host (lab/sim/streams.ts). */
+function StreamsGraph() {
+  const { graph, error } = useStreams("/home/dev/frogg", true);
+  return (
+    <Row>
+      <Column width={380}>
+        <StreamList graph={graph} error={error} />
+      </Column>
+    </Row>
+  );
+}
 const StreamsEmpty = () => <StreamList graph={null} error={null} />;
 const StreamsError = () => <StreamList graph={null} error="checkoutStreamsGetGraph timed out" />;
 
@@ -70,7 +81,7 @@ export const tools: Entry[] = [
     category: "Rail tools & widgets",
     path: "components/*Panel.tsx",
     purpose:
-      "Each rail tool's side panel against the fixture host. The fixture host answers session, usage, provider and checkout reads; panels needing anything else show their unavailable or empty states.",
+      "Each rail tool's side panel against the fixture host. The fixture host plus the simulated host (lab/sim/) answer every RPC the panels make.",
     polish: "panel swap in the shell: motion.enter keyed by tool (200ms)",
     setup: selectPreview,
     variants: panelVariants,
@@ -82,8 +93,10 @@ export const tools: Entry[] = [
     path: "components/tools/Streams.tsx",
     purpose: "Release streams graph for a checkout (source control panel).",
     usedBy: 1,
-    polish: "none",
+    polish:
+      "rows rise in (motion.enter 220ms on ease, 40ms stagger); hover wash 120ms; chevron rotates 90° (180ms ease); selected row cyan wash + Brackets; waiting bar width glides 420ms on ease with its count lerping via Num on the same duration; expand fades in (180ms) and change rows rise on a 22ms stagger; loading is SkeletonRows (shimmer sweep 1.6s linear)",
     variants: [
+      { id: "graph", label: "Graph", C: StreamsGraph, h: 520 },
       { id: "empty", label: "No graph yet", C: StreamsEmpty },
       { id: "error", label: "Failed to load", C: StreamsError },
     ],

@@ -27,6 +27,8 @@ import {
 } from "./fixtures";
 import { ciListRuns, ciPrStatus, seedCi } from "./fixtures/ci";
 import { useLab } from "./store";
+// Simulated RPCs (lab/sim/): file system, streams graph, subagents and the rest of the host.
+import { resetSim, simulatedRpcs } from "./sim";
 
 export const LAB_URL = "lab://fixtures";
 const APP_VERSION: string = require("../../package.json").version;
@@ -156,6 +158,23 @@ const features = {
   providerAccounts: true,
   providerUsageAccountScoped: true,
   agentProviderAccountTransfer: true,
+  // Simulated host capabilities (lab/sim/misc.ts).
+  deviceAccess: true,
+  securityPosture: true,
+  securityAcknowledge: true,
+  daemonUpdateRuns: true,
+  betaChannelManagement: true,
+  daemonChannelControl: true,
+  devDaemonRebuild: true,
+  hostResources: true,
+  storageAlerts: true,
+  webUiControl: true,
+  deviceRoleManagement: true,
+  skillsManagement: true,
+  providerAgentDefinitions: true,
+  plugins: true,
+  projectTodos: true,
+  releaseStreams: true,
 };
 
 let created = 0;
@@ -249,8 +268,10 @@ const known: Record<string, (...args: never[]) => unknown> = {
 };
 
 /** Unknown calls fail like an older host would, so components show their error states. */
+const sim = simulatedRpcs(emit);
 const client = new Proxy(known, {
   get(target, name: string) {
+    if (name in sim) return sim[name];
     if (name in target) return target[name];
     if (name === "then") return undefined;
     return async () => {
@@ -264,6 +285,7 @@ export function seedLab(): void {
   epoch += 1;
   cancelled.clear();
   attachFixtureClient(client);
+  resetSim();
   seedCi();
   useDaemon.setState({
     conn: "online",

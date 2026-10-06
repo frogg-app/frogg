@@ -1,5 +1,4 @@
 import {
-  ChevronDown,
   ChevronRight,
   File,
   FilePlus,
@@ -25,12 +24,13 @@ import {
 } from "../daemon/files";
 import { discard, useScm } from "../daemon/scm";
 import { useDaemon } from "../daemon/store";
-import { color } from "../theme/tokens";
+import { anim, color, ease, frames, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 
 import { PanelHead } from "./PanelHead";
+import { SkeletonRows } from "./Skeleton";
 import { useActiveCwd } from "./ScmPanel";
-import { Brackets } from "./SessionList";
+import { Brackets, BracketScope } from "./Brackets";
 
 import { T } from "./Text";
 import { copyText } from "./tools/clipboard";
@@ -102,7 +102,9 @@ export function FilesPanel() {
         )}
       </View>
       <ScrollView style={st.flex} contentContainerStyle={st.scrollPad}>
-        <Dir path="." depth={0} marks={marks} ask={confirm.ask} prompt={prompt.ask} />
+        <BracketScope>
+          <Dir path="." depth={0} marks={marks} ask={confirm.ask} prompt={prompt.ask} />
+        </BracketScope>
       </ScrollView>
       {confirm.dialog}
       {prompt.dialog}
@@ -126,19 +128,21 @@ function Dir({
   const listing = useFiles((s) => s.dirs[path]);
   const indent = useMemo(() => ({ paddingLeft: 16 + depth * 14 }), [depth]);
   if (!listing || listing === "loading")
-    return (
-      <T v="label" style={[st.loadingRow, indent]}>
-        …
-      </T>
-    );
+    return <SkeletonRows rows={depth === 0 ? 7 : 3} indent={6 + depth * 14} />;
   if ("error" in listing)
     return (
       <T v="mono" style={[st.error, indent]}>
         {listing.error}
       </T>
     );
-  return listing.map((e) => (
-    <Node key={e.path} e={e} depth={depth} marks={marks} ask={ask} prompt={prompt} />
+  if (listing.length === 0)
+    return (
+      <T v="label" style={[st.emptyRow, indent]}>
+        empty folder
+      </T>
+    );
+  return listing.map((e, i) => (
+    <Node key={e.path} e={e} i={i} depth={depth} marks={marks} ask={ask} prompt={prompt} />
   ));
 }
 
@@ -152,14 +156,19 @@ function iconColor(dir: boolean, on: boolean) {
   return on ? color.cyan2 : color.muted;
 }
 
+/** Row ease-in stagger: 18ms per row, capped so long folders still land quickly. */
+const enterDelay = (i: number) => web({ animationDelay: `${Math.min(i, 12) * 18}ms` });
+
 function Node({
   e,
+  i,
   depth,
   marks,
   ask,
   prompt,
 }: {
   e: Entry;
+  i: number;
   depth: number;
   marks: ReturnType<typeof useChangeMarks>;
   ask: Ask;
@@ -171,23 +180,29 @@ function Node({
   const dir = e.kind === "directory";
   const on = filePath === e.path;
   const Icon = iconFor(dir, open);
-  const Chev = open ? ChevronDown : ChevronRight;
   const mark = marks[e.path];
   const onPress = useCallback(
     () => (dir ? toggleDir(e.path) : openFile(e.path)),
     [dir, e.path, openFile],
   );
   const indent = useMemo(() => ({ paddingLeft: 6 + depth * 14 }), [depth]);
+  const enter = useMemo(() => [st.enter, enterDelay(i)], [i]);
   const markStyle = useMemo(() => [st.mark, { color: mark?.tint }], [mark?.tint]);
   const items = useEntryMenu(e, !!mark, ask, prompt);
   return (
     <>
-      <View ref={anchor.ref} collapsable={false}>
+      <View ref={anchor.ref} collapsable={false} style={enter}>
         <Pressable onPress={onPress} onLongPress={anchor.open}>
           {({ hovered }) => (
             <View style={[st.node, indent, hovered && st.hovered, on && st.nodeOn]}>
-              {on && <Brackets len={6} />}
-              {dir ? <Chev size={12} color={color.faint} /> : <View style={st.chevSpacer} />}
+              <Brackets on={on} len={6} />
+              {dir ? (
+                <View style={[st.chev, open && st.chevOpen]}>
+                  <ChevronRight size={12} color={hovered ? color.muted : color.faint} />
+                </View>
+              ) : (
+                <View style={st.chevSpacer} />
+              )}
               <Icon size={14} color={iconColor(dir, on)} strokeWidth={1.6} />
               <T numberOfLines={1} style={[st.nodeName, on && st.nodeNameOn]}>
                 {e.name}
@@ -320,9 +335,13 @@ const st = StyleSheet.create({
   rootName: { fontSize: 13, color: color.text, flexShrink: 1 },
   rootBranch: { fontSize: 11, color: color.faint, flexShrink: 1 },
   scrollPad: { paddingBottom: 16 },
-  loadingRow: { paddingVertical: 4 },
+  emptyRow: { paddingVertical: 5, color: color.faint },
+  enter: anim(frames.enter, "220ms", ease),
+  chev: { width: 12, height: 12, ...web({ transition: `transform 180ms ${ease}` }) },
+  chevOpen: { transform: [{ rotate: "90deg" }] },
   error: { color: color.coral },
   node: {
+    ...web({ transition: "background-color 120ms ease-out" }),
     flexDirection: "row",
     alignItems: "center",
     gap: 6,

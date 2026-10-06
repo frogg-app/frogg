@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { getClient, openTimeline, useDaemon } from "../daemon/store";
 import { bucketOf, type Bucket } from "../daemon/types";
-import { color } from "../theme/tokens";
+import { anim, color, ease, frames } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { GroupHead, PanelHead } from "./PanelHead";
@@ -48,6 +48,18 @@ export function TasksPanel() {
       );
   }, [id]);
   useEffect(load, [load]);
+  // Live rows: the host upserts a subagent as it works (new activity line, status changes).
+  const conn = useDaemon((s) => s.url);
+  useEffect(() => {
+    const client = getClient();
+    if (!client || !id) return;
+    return client.subscribeRawMessages((event) => {
+      if (event.type !== "agent.provider_subagents.update") return;
+      const p = event.payload;
+      if (p.kind !== "upsert" || p.subagent.parentAgentId !== id) return;
+      setSubs((cur) => upsertSub(cur, p.subagent));
+    });
+  }, [id, conn]);
   const plan = useMemo(() => {
     const todo = entries?.toReversed().find((e) => e.item.type === "todo");
     return todo?.item.type === "todo" ? todo.item.items : null;
@@ -89,24 +101,74 @@ export function TasksPanel() {
           <GroupHead label="Subagents" count={subs?.length} />
           {subs?.length === 0 && <T style={st.empty}>None spawned.</T>}
           {subs?.map((a) => (
-            <View key={a.id} style={[st.sub, !!a.parentSubagentId && st.subNested]}>
-              <View style={st.subHead}>
-                <StatusGlyph bucket={SUB_BUCKET[a.status] ?? "idle"} size={8} />
-                <T numberOfLines={1} style={st.flex}>
-                  {a.title ?? a.description ?? "Subagent"}
-                </T>
-                <T v="mono" style={st.time}>
-                  {ago(a.updatedAt)}
-                </T>
-              </View>
-              {a.subtitle && (
-                <T v="mono" numberOfLines={1} style={st.subtitle}>
-                  {a.subtitle}
-                </T>
-              )}
-            </View>
+            <SubRow key={a.id} a={a} />
           ))}
         </ScrollView>
+      )}
+    </View>
+  );
+}
+
+function upsertSub(cur: Subagent[] | null, sub: Subagent): Subagent[] | null {
+  if (!cur) return cur;
+  const at = cur.findIndex((x) => x.id === sub.id);
+  if (at < 0) return [...cur, sub];
+  const next = [...cur];
+  next[at] = sub;
+  return next;
+}
+
+/** Elapsed run time, ticking each second while the subagent runs. */
+function Elapsed({ since }: { since: string }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const secs = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
+  const text =
+    secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${`${secs % 60}`.padStart(2, "0")}s`;
+  return (
+    <T v="mono" style={[st.time, st.live]}>
+      {text}
+    </T>
+  );
+}
+
+/** One subagent: name and task, status glyph, run time, and its latest activity line. */
+function SubRow({ a }: { a: Subagent }) {
+  const running = a.status === "running";
+  const label = a.title ?? a.description ?? "Subagent";
+  const task = a.title && a.description && a.description !== a.title ? a.description : null;
+  return (
+    <View style={[st.sub, !!a.parentSubagentId && st.subNested]}>
+      <View style={st.subHead}>
+        <StatusGlyph bucket={SUB_BUCKET[a.status] ?? "idle"} size={8} />
+        <T numberOfLines={1} style={st.flex}>
+          <T style={st.subName}>{label}</T>
+          {task && <T style={st.subTask}>{`  ${task}`}</T>}
+        </T>
+        {running ? (
+          <Elapsed since={a.createdAt} />
+        ) : (
+          <T v="mono" style={st.time}>
+            {a.status === "canceled" ? "canceled" : ago(a.updatedAt)}
+          </T>
+        )}
+      </View>
+      {a.subtitle && (
+        <T
+          key={a.subtitle}
+          v="mono"
+          numberOfLines={1}
+          style={[
+            st.subtitle,
+            running && st.subtitleLive,
+            a.status === "failed" && st.subtitleFail,
+          ]}
+        >
+          {a.subtitle}
+        </T>
       )}
     </View>
   );
@@ -186,5 +248,10 @@ const st = StyleSheet.create({
   subNested: { marginLeft: 24 },
   subHead: { flexDirection: "row", alignItems: "center", gap: 8 },
   time: { fontSize: 10.5 },
-  subtitle: { marginLeft: 17, marginTop: 3, fontSize: 11 },
+  subtitle: { marginLeft: 17, marginTop: 3, fontSize: 11, color: color.faint },
+  subtitleLive: { color: color.cyan2, ...anim(frames.enter, "220ms", ease) },
+  subtitleFail: { color: color.coral },
+  subName: { color: color.text },
+  subTask: { color: color.muted, fontSize: 12.5 },
+  live: { color: color.cyan2, fontVariant: ["tabular-nums"] },
 });
