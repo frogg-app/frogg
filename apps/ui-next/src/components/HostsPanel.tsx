@@ -13,7 +13,7 @@ import { PairDevice } from "./hosts/PairDevice";
 import { RemoveHost } from "./hosts/RemoveHost";
 import { openSheet, useHostView, viewHost } from "./hosts/state";
 import { GroupHead, PanelHead } from "./PanelHead";
-import { Brackets } from "./SessionList";
+import { Brackets, BracketScope } from "./Brackets";
 import { T } from "./Text";
 
 // Pairing links can open the app at any time; the shell imports this module at start.
@@ -58,20 +58,22 @@ function HostList() {
           <Plus size={16} color={color.muted} />
         </Pressable>
       </PanelHead>
-      <ScrollView contentContainerStyle={st.scroll}>
-        {hosts.map((h) => (
-          <HostRow key={h.id} h={h} active={h.id === activeId} shown={h.id === shown} />
-        ))}
-        {!hosts.length && <T style={st.empty}>No hosts yet.</T>}
-        <GroupHead label="Add" />
-        <Pressable onPress={openAdd} style={st.add} accessibilityRole="button">
-          <Plus size={14} color={color.cyan2} />
-          <View style={st.flex}>
-            <T style={st.addT}>Add a host</T>
-            <T style={st.sub}>Paste a pairing link or code, or enter an address</T>
-          </View>
-        </Pressable>
-      </ScrollView>
+      <BracketScope>
+        <ScrollView contentContainerStyle={st.scroll}>
+          {hosts.map((h) => (
+            <HostRow key={h.id} h={h} active={h.id === activeId} shown={h.id === shown} />
+          ))}
+          {!hosts.length && <T style={st.empty}>No hosts yet.</T>}
+          <GroupHead label="Add" />
+          <Pressable onPress={openAdd} style={st.add} accessibilityRole="button">
+            <Plus size={14} color={color.cyan2} />
+            <View style={st.flex}>
+              <T style={st.addT}>Add a host</T>
+              <T style={st.sub}>Paste a pairing link or code, or enter an address</T>
+            </View>
+          </Pressable>
+        </ScrollView>
+      </BracketScope>
     </>
   );
 }
@@ -100,7 +102,7 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
     <View>
       <Pressable onPress={press} onHoverIn={rowIn} onHoverOut={rowOut}>
         <View style={[st.row, shown && st.rowOn, hovered && st.rowHover]}>
-          {shown && <Brackets c={color.cyan2} />}
+          <Brackets c={color.cyan2} on={shown} />
           <View style={st.line}>
             <View style={[down || reconnecting ? st.flag : st.dot, conn ? TINT[conn] : st.tIdle]} />
             <T style={st.name} numberOfLines={1}>

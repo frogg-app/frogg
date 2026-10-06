@@ -41,7 +41,7 @@ import { color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { agoText, providerLabel } from "../../util";
 import { Button } from "../Button";
-import { Brackets } from "../SessionList";
+import { Brackets, BracketScope } from "../Brackets";
 import { T } from "../Text";
 import { Pill, Row, Section, Seg, Toggle } from "./controls";
 import { ChatComposer } from "./pages/ChatComposer";
@@ -337,23 +337,25 @@ export function SettingsNav() {
         placeholderTextColor={color.faint}
         style={s.search}
       />
-      <ScrollView style={s.grow}>
-        {groups.map((g) => (
-          <View key={g.scope}>
-            <View style={s.scopeHead}>
-              <T v="label">{g.scope}</T>
-              {(g.scope === "Host" || g.scope === "Agents") && (
-                <T v="mono" style={s.tiny}>
-                  {host ?? ""}
-                </T>
-              )}
+      <BracketScope>
+        <ScrollView style={s.grow}>
+          {groups.map((g) => (
+            <View key={g.scope}>
+              <View style={s.scopeHead}>
+                <T v="label">{g.scope}</T>
+                {(g.scope === "Host" || g.scope === "Agents") && (
+                  <T v="mono" style={s.tiny}>
+                    {host ?? ""}
+                  </T>
+                )}
+              </View>
+              {g.pages.map((p) => (
+                <NavItem key={p.id} page={p} on={p.id === settingsPage} />
+              ))}
             </View>
-            {g.pages.map((p) => (
-              <NavItem key={p.id} page={p} on={p.id === settingsPage} />
-            ))}
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      </BracketScope>
     </View>
   );
 }
@@ -365,7 +367,7 @@ function NavItem({ page, on }: { page: Page; on: boolean }) {
     <Pressable onPress={open}>
       {({ hovered }) => (
         <View style={[s.item, hovered && s.hover, on && s.itemOn]}>
-          {on && <Brackets />}
+          <Brackets on={on} />
           <Icon size={14} color={on ? color.cyan2 : color.faint} strokeWidth={1.6} />
           <T style={page.body ? s.itemT : s.itemTMuted}>{page.label}</T>
         </View>

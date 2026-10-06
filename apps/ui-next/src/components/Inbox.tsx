@@ -11,7 +11,8 @@ import { Cut } from "./Cut";
 import { Markdown } from "./Markdown";
 import { GroupHead, PanelHead } from "./PanelHead";
 import { PermissionCard } from "./PermissionCard";
-import { Brackets, useBuckets } from "./SessionList";
+import { Brackets, BracketScope } from "./Brackets";
+import { useBuckets } from "./SessionList";
 import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 
@@ -54,27 +55,29 @@ export function InboxPanel() {
       </PanelHead>
       {error && <T style={st.failText}>{error}</T>}
       <ScrollView style={st.flex}>
-        {total === 0 && (
-          <T v="label" style={st.empty}>
-            nothing needs you
-          </T>
-        )}
-        {GROUPS.map((g) =>
-          b[g.b].length ? (
-            <View key={g.b}>
-              <GroupHead label={g.label} count={b[g.b].length} />
-              {b[g.b].map((s) => (
-                <InboxRow
-                  key={s.agent.id}
-                  s={s}
-                  bucket={g.b}
-                  on={s.agent.id === inboxId}
-                  onOpen={openInbox}
-                />
-              ))}
-            </View>
-          ) : null,
-        )}
+        <BracketScope>
+          {total === 0 && (
+            <T v="label" style={st.empty}>
+              nothing needs you
+            </T>
+          )}
+          {GROUPS.map((g) =>
+            b[g.b].length ? (
+              <View key={g.b}>
+                <GroupHead label={g.label} count={b[g.b].length} />
+                {b[g.b].map((s) => (
+                  <InboxRow
+                    key={s.agent.id}
+                    s={s}
+                    bucket={g.b}
+                    on={s.agent.id === inboxId}
+                    onOpen={openInbox}
+                  />
+                ))}
+              </View>
+            ) : null,
+          )}
+        </BracketScope>
       </ScrollView>
       <T v="mono" style={st.foot}>
         Session approvals, failures and finished work
@@ -99,7 +102,7 @@ function InboxRow({
     <Pressable onPress={press}>
       {({ hovered }) => (
         <View style={[st.row, hovered && st.rowHover, on && st.rowOn]}>
-          {on && <Brackets />}
+          <Brackets on={on} />
           <View style={st.line}>
             <StatusGlyph bucket={bucket} />
             <T numberOfLines={1} style={st.title}>

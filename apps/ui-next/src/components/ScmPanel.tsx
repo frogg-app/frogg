@@ -40,7 +40,7 @@ import { useUi } from "../ui-store";
 import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { GroupHead, PanelHead } from "./PanelHead";
-import { Brackets } from "./SessionList";
+import { Brackets, BracketScope } from "./Brackets";
 import { T } from "./Text";
 
 /** The checkout source control works on: the open session's, else the most recent one. */
@@ -114,27 +114,29 @@ export function ScmPanel() {
       )}
       {git && <BranchCard git={git} busy={busy} dirty={files?.length ?? 0} />}
       {git && <CommitBox count={files?.length ?? 0} busy={busy} error={error} />}
-      <ScrollView style={s.flex} contentContainerStyle={s.scrollPad}>
-        {files && <GroupHead label="Changes" count={files.length} />}
-        {files?.length === 0 && (
-          <T v="label" style={s.clean}>
-            working tree clean
-          </T>
-        )}
-        {files?.map((f) => (
-          <FileRow key={f.path} f={f} ask={ask} />
-        ))}
-        {!!sessionCommits?.length && (
-          <GroupHead label="Session commits" count={sessionCommits.length} />
-        )}
-        {sessionCommits?.map((c) => (
-          <CommitRow key={c.sha} c={c} />
-        ))}
-        {!!stashes?.length && <GroupHead label="Stashes" count={stashes.length} />}
-        {stashes?.map((st) => (
-          <StashRow key={`${st.index}:${st.message}`} st={st} ask={ask} />
-        ))}
-      </ScrollView>
+      <BracketScope>
+        <ScrollView style={s.flex} contentContainerStyle={s.scrollPad}>
+          {files && <GroupHead label="Changes" count={files.length} />}
+          {files?.length === 0 && (
+            <T v="label" style={s.clean}>
+              working tree clean
+            </T>
+          )}
+          {files?.map((f) => (
+            <FileRow key={f.path} f={f} ask={ask} />
+          ))}
+          {!!sessionCommits?.length && (
+            <GroupHead label="Session commits" count={sessionCommits.length} />
+          )}
+          {sessionCommits?.map((c) => (
+            <CommitRow key={c.sha} c={c} />
+          ))}
+          {!!stashes?.length && <GroupHead label="Stashes" count={stashes.length} />}
+          {stashes?.map((st) => (
+            <StashRow key={`${st.index}:${st.message}`} st={st} ask={ask} />
+          ))}
+        </ScrollView>
+      </BracketScope>
       {dialog}
     </View>
   );
@@ -392,7 +394,7 @@ function FileRow({ f, ask }: { f: DiffFile; ask: Ask }) {
     <Pressable onPress={press}>
       {({ hovered }) => (
         <View style={[s.file, hovered && s.fileHover, on && s.fileOn]}>
-          {on && <Brackets />}
+          <Brackets on={on} />
           <T v="mono" style={letterStyle}>
             {letter}
           </T>

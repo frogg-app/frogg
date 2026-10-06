@@ -179,7 +179,7 @@ export const shell: Entry[] = [
       "Sessions grouped by attention with a proportional meter, counts, filter, scope and display menus, inline approve.",
     usedBy: 10,
     polish:
-      "selected row: Brackets snap in (220ms) · hover wash instant · status summary: see StatusSummary",
+      "selected row: Brackets slide + lock-on (170ms travel, 80ms lock) · hover wash instant · status summary: see StatusSummary",
     variants: [
       {
         id: "default",
@@ -240,7 +240,8 @@ export const shell: Entry[] = [
     path: "components/Inbox.tsx",
     purpose: "Notification list (needs you, failed, ready) and the detail with the last reply.",
     usedBy: 1,
-    polish: "selected row Brackets snap (220ms); detail swaps instantly",
+    polish:
+      "selected row Brackets slide + lock-on (170ms travel, 80ms lock); detail swaps instantly",
     setup: setupInbox,
     variants: [{ id: "default", label: "Panel and detail", C: InboxDemo, h: 620, bleed: true }],
   },
@@ -251,7 +252,7 @@ export const shell: Entry[] = [
     path: "components/settings/Settings.tsx",
     purpose: "Settings navigation by scope with search, and the page registry.",
     usedBy: 1,
-    polish: "none",
+    polish: "nav: Brackets slide between pages + lock on (170ms travel, 80ms lock)",
     setup: setupSettings,
     variants: [{ id: "default", label: "Appearance page", C: SettingsDemo, h: 660, bleed: true }],
   },

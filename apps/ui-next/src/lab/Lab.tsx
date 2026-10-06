@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button } from "../components/Button";
 import { Logo } from "../components/Logo";
-import { Brackets } from "../components/SessionList";
+import { Brackets, BracketScope } from "../components/Brackets";
 import { Seg } from "../components/settings/controls";
 import { T } from "../components/Text";
 import { ToastHost } from "../components/toast/ToastHost";
@@ -120,40 +120,42 @@ function Index({ current, wide }: { current?: string; wide: boolean }) {
           style={s.searchIn}
         />
       </View>
-      <ScrollView contentContainerStyle={s.indexBody}>
-        {pending.length > 0 && (
-          <View style={s.decideGroup}>
-            <View style={s.groupHead}>
-              <T v="label" style={s.amber}>
-                Needs decision
-              </T>
-              <T v="mono" style={s.groupNAmber}>
-                {pending.length}
-              </T>
-            </View>
-            {pending.map((e) => (
-              <IndexRow key={e.id} entry={e} on={e.id === current} />
-            ))}
-          </View>
-        )}
-        {groups.map((g) => (
-          <View key={g.category}>
-            <View style={s.groupHead}>
-              <T v="label">{g.category}</T>
-              <View style={s.groupCounts}>
-                <DecideCount entries={g.entries} />
-                <T v="mono" style={s.groupN}>
-                  {g.entries.length}
+      <BracketScope>
+        <ScrollView contentContainerStyle={s.indexBody}>
+          {pending.length > 0 && (
+            <View style={s.decideGroup}>
+              <View style={s.groupHead}>
+                <T v="label" style={s.amber}>
+                  Needs decision
+                </T>
+                <T v="mono" style={s.groupNAmber}>
+                  {pending.length}
                 </T>
               </View>
+              {pending.map((e) => (
+                <IndexRow key={e.id} entry={e} on={e.id === current} />
+              ))}
             </View>
-            {g.entries.map((e) => (
-              <IndexRow key={e.id} entry={e} on={e.id === current} />
-            ))}
-          </View>
-        ))}
-        {!groups.length && <T style={s.none}>Nothing matches.</T>}
-      </ScrollView>
+          )}
+          {groups.map((g) => (
+            <View key={g.category}>
+              <View style={s.groupHead}>
+                <T v="label">{g.category}</T>
+                <View style={s.groupCounts}>
+                  <DecideCount entries={g.entries} />
+                  <T v="mono" style={s.groupN}>
+                    {g.entries.length}
+                  </T>
+                </View>
+              </View>
+              {g.entries.map((e) => (
+                <IndexRow key={e.id} entry={e} on={e.id === current} />
+              ))}
+            </View>
+          ))}
+          {!groups.length && <T style={s.none}>Nothing matches.</T>}
+        </ScrollView>
+      </BracketScope>
     </View>
   );
 }
@@ -164,7 +166,7 @@ function IndexRow({ entry, on }: { entry: Entry; on: boolean }) {
     <Pressable onPress={press} accessibilityRole="link" accessibilityLabel={entry.name}>
       {({ hovered }) => (
         <View style={[s.row, hovered && s.rowHover, on && s.rowOn]}>
-          {on && <Brackets len={6} />}
+          <Brackets len={6} on={on} />
           <View style={s.rowTop}>
             <T style={s.rowNameFlex} numberOfLines={1}>
               {entry.name}

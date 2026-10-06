@@ -366,7 +366,7 @@ export const interactions: Entry[] = [
     path: "app/index.tsx · SessionList.tsx · Chat.tsx · Palette.tsx (J/K)",
     purpose: "Selecting sessions from the list, J/K, or a toast's Open.",
     polish:
-      "new row's Brackets snap (opacity + scale 1.06→1, 220ms); chat swaps instantly and scrolls to the end without animation",
+      "Brackets slide from the old row (170ms glide, 5px outside at 60%) and lock on (80ms overshoot); J/K mid-flight retargets; chat swaps instantly and scrolls to the end without animation",
     ownToasts: true,
     variants: [
       { id: "shell", label: "Shell", note: SHELL_NOTE, C: SwitchDemo, h: 760, bleed: true },

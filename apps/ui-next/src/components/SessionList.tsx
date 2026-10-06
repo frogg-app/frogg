@@ -9,10 +9,11 @@ import {
   Plus,
 } from "lucide-react-native";
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, TextInput, View, type ViewStyle } from "react-native";
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Brackets, BracketScope } from "./Brackets";
 import { answerPermission, useDaemon } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
-import { color, font, motion, web } from "../theme/tokens";
+import { color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { Button } from "./Button";
@@ -182,19 +183,21 @@ export function SessionList() {
           </T>
         </Cut>
         <ScrollView style={s.scroll} contentContainerStyle={s.scrollBody}>
-          {groups.map((g) => (
-            <View key={g.key}>
-              <View style={s.groupHead}>
-                <T v="label">{g.label}</T>
-                <T v="mono" style={s.groupN}>
-                  {g.list.length}
-                </T>
+          <BracketScope>
+            {groups.map((g) => (
+              <View key={g.key}>
+                <View style={s.groupHead}>
+                  <T v="label">{g.label}</T>
+                  <T v="mono" style={s.groupN}>
+                    {g.list.length}
+                  </T>
+                </View>
+                {g.list.map((sess) => (
+                  <Row key={sess.agent.id} sess={sess} chat={chats} onMenu={openMenu} />
+                ))}
               </View>
-              {g.list.map((sess) => (
-                <Row key={sess.agent.id} sess={sess} chat={chats} onMenu={openMenu} />
-              ))}
-            </View>
-          ))}
+            ))}
+          </BracketScope>
           {!groups.length && <T style={s.none}>Nothing matches.</T>}
         </ScrollView>
       </>
@@ -298,7 +301,7 @@ function Row({
       <Pressable onPress={open} onLongPress={longPress} delayLongPress={350}>
         {({ hovered }) => (
           <View style={[s.row, hovered && s.rowHover, selected && s.rowOn, hidden && s.rowHidden]}>
-            {selected && <Brackets />}
+            <Brackets on={selected} />
             <View style={s.rowTop}>
               <View style={s.glyph}>
                 {chat ? (
@@ -369,55 +372,7 @@ function Row({
   );
 }
 
-// Brackets render in a handful of colours and sizes; build each corner set once.
-const bracketCache = new Map<string, ViewStyle[]>();
-function bracketCorners(c: string, len: number): ViewStyle[] {
-  const key = `${c}:${len}`;
-  let corners = bracketCache.get(key);
-  if (!corners) {
-    const b = {
-      position: "absolute" as const,
-      width: len,
-      height: len,
-      borderColor: c,
-    };
-    const st = StyleSheet.create({
-      tl: { ...b, left: 0, top: 0, borderLeftWidth: 1, borderTopWidth: 1 },
-      tr: { ...b, right: 0, top: 0, borderRightWidth: 1, borderTopWidth: 1 },
-      bl: {
-        ...b,
-        left: 0,
-        bottom: 0,
-        borderLeftWidth: 1,
-        borderBottomWidth: 1,
-      },
-      br: {
-        ...b,
-        right: 0,
-        bottom: 0,
-        borderRightWidth: 1,
-        borderBottomWidth: 1,
-      },
-    });
-    corners = [st.tl, st.tr, st.bl, st.br];
-    bracketCache.set(key, corners);
-  }
-  return corners;
-}
-
-const CORNERS = ["tl", "tr", "bl", "br"];
-
-/** Corner brackets framing the selected item, the signature of this design. */
-export function Brackets({ c = color.cyan2, len = 8 }: { c?: string; len?: number }) {
-  const corners = bracketCorners(c, len);
-  return (
-    <View pointerEvents="none" style={s.brackets}>
-      {corners.map((st, n) => (
-        <View key={CORNERS[n]} style={st} />
-      ))}
-    </View>
-  );
-}
+export { Brackets, BracketScope } from "./Brackets";
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.bg2 },
@@ -530,5 +485,4 @@ const s = StyleSheet.create({
     borderColor: "rgba(4,22,26,0.35)",
     paddingHorizontal: 3,
   },
-  brackets: { ...StyleSheet.absoluteFillObject, ...motion.snap },
 });

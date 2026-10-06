@@ -14,7 +14,7 @@ import { useUi } from "../ui-store";
 import { Button } from "./Button";
 import { GroupHead, PanelHead } from "./PanelHead";
 import { useActiveCwd } from "./ScmPanel";
-import { Brackets } from "./SessionList";
+import { Brackets, BracketScope } from "./Brackets";
 import { T } from "./Text";
 import { useConfirm } from "./tools/Confirm";
 
@@ -55,29 +55,31 @@ export function TerminalsPanel() {
       <T v="mono" numberOfLines={1} style={st.cwd}>
         {cwd ? "…/" + cwd.split("/").slice(-2).join("/") : "no checkout"}
       </T>
-      <ScrollView style={st.flex}>
-        <GroupHead label="Running" count={list?.length} />
-        {list?.length === 0 && (
-          <View style={st.empty}>
-            <T style={st.muted}>No terminals in this checkout yet.</T>
-            <Button
-              kind="primary"
-              label="New terminal"
-              kbd="⌃`"
-              onPress={onCreate}
-              disabled={busy || !cwd || conn !== "online"}
-            />
-          </View>
-        )}
-        {list?.map((t) => (
-          <TerminalRow key={t.id} t={t} on={t.id === terminalId} onOpen={openTerminal} />
-        ))}
-        {error && (
-          <T v="mono" style={st.error}>
-            {error}
-          </T>
-        )}
-      </ScrollView>
+      <BracketScope>
+        <ScrollView style={st.flex}>
+          <GroupHead label="Running" count={list?.length} />
+          {list?.length === 0 && (
+            <View style={st.empty}>
+              <T style={st.muted}>No terminals in this checkout yet.</T>
+              <Button
+                kind="primary"
+                label="New terminal"
+                kbd="⌃`"
+                onPress={onCreate}
+                disabled={busy || !cwd || conn !== "online"}
+              />
+            </View>
+          )}
+          {list?.map((t) => (
+            <TerminalRow key={t.id} t={t} on={t.id === terminalId} onOpen={openTerminal} />
+          ))}
+          {error && (
+            <T v="mono" style={st.error}>
+              {error}
+            </T>
+          )}
+        </ScrollView>
+      </BracketScope>
     </View>
   );
 }
@@ -114,7 +116,7 @@ function TerminalRow({
       <Pressable onPress={press}>
         {({ hovered }) => (
           <View style={[st.row, hovered && st.rowHover, on && st.rowOn]}>
-            {on && <Brackets />}
+            <Brackets on={on} />
             <SquareTerminal size={15} color={on ? color.cyan2 : color.muted} />
             <View style={st.flex}>
               <T numberOfLines={1}>{t.title || t.name}</T>

@@ -1,12 +1,19 @@
 import { Archive, Copy, GitFork, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Button } from "../../components/Button";
 import { Cut } from "../../components/Cut";
 import { Logo, type LogoMotion } from "../../components/Logo";
 import { GroupHead, PanelHead } from "../../components/PanelHead";
 import { Select, type Option } from "../../components/Select";
-import { Brackets } from "../../components/SessionList";
+import {
+  Brackets,
+  BracketScope,
+  CLEAR_MS,
+  IN_PLACE_MS,
+  LOCK_MS,
+  TRAVEL_MS,
+} from "../../components/Brackets";
 import { StatusGlyph } from "../../components/StatusGlyph";
 import { T } from "../../components/Text";
 import { Dialog } from "../../components/tools/Dialog";
@@ -112,6 +119,63 @@ function CutContent() {
       <T v="label">card with content</T>
       <T>Only the painted layer is clipped, so content and popovers can overflow the chamfer.</T>
     </Cut>
+  );
+}
+
+const LOCK_ROWS = [
+  { id: "a", label: "General", tall: false },
+  { id: "b", label: "Chat & composer", tall: false },
+  { id: "c", label: "Taller row — two lines of meta", tall: true },
+  { id: "d", label: "Providers & models", tall: false },
+  { id: "e", label: "Automation", tall: false },
+  { id: "f", label: "Hosts", tall: false },
+  { id: "g", label: "Keyboard", tall: false },
+];
+
+function LockRow({
+  id,
+  label,
+  tall,
+  on,
+  pick,
+}: (typeof LOCK_ROWS)[number] & { on: boolean; pick: (id: string) => void }) {
+  const press = useCallback(() => pick(id), [id, pick]);
+  return (
+    <Pressable onPress={press}>
+      <View style={[s.lockRow, tall && s.lockTall, on && s.lockOn]}>
+        <Brackets on={on} />
+        <T style={on ? s.lockTOn : s.lockT}>{label}</T>
+      </View>
+    </Pressable>
+  );
+}
+
+/** A scrolling list sharing one BracketScope: click rows, or step with the buttons. */
+function BracketLockOn() {
+  const [sel, setSel] = useState<string | null>("b");
+  const step = (d: number) => (cur: string | null) => {
+    const i = LOCK_ROWS.findIndex((r) => r.id === cur);
+    const n = i < 0 ? 0 : (i + d + LOCK_ROWS.length) % LOCK_ROWS.length;
+    return LOCK_ROWS[n].id;
+  };
+  const up = useCallback(() => setSel(step(-1)), []);
+  const down = useCallback(() => setSel(step(1)), []);
+  const clear = useCallback(() => setSel(null), []);
+  return (
+    <Stack>
+      <Wrap>
+        <Button label="Up" onPress={up} />
+        <Button label="Down" onPress={down} />
+        <Button label="Clear" onPress={clear} />
+      </Wrap>
+      <ScrollView style={s.lockList}>
+        <BracketScope>
+          {LOCK_ROWS.map((r) => (
+            <LockRow key={r.id} {...r} on={r.id === sel} pick={setSel} />
+          ))}
+        </BracketScope>
+      </ScrollView>
+    </Stack>
   );
 }
 
@@ -505,15 +569,22 @@ export const primitives: Entry[] = [
     id: "brackets",
     name: "Brackets",
     category: "Primitives",
-    path: "components/SessionList.tsx (Brackets)",
-    purpose: "Corner brackets framing the selected row: sessions, inbox, files, terminals, hosts.",
-    usedBy: 5,
-    polish: "motion.snap on mount: opacity 0→1, scale 1.06→1, 220ms cubic-bezier(0.23,1,0.32,1)",
+    path: "components/Brackets.tsx (Brackets, BracketScope)",
+    purpose:
+      "Corner brackets framing the selected row: settings nav, sessions, inbox, hosts, terminals, changes, lab index.",
+    usedBy: 8,
+    polish: `slide + lock-on: one set per BracketScope travels from the old row's live box to the new row ${TRAVEL_MS}ms on the glide curve, held 5px outside at 60% opacity, then contracts onto the row ${LOCK_MS}ms with back(2.2) overshoot to full brightness (≈${TRAVEL_MS + LOCK_MS}ms total). First selection or unmeasured old row: in-place lock-on ${IN_PLACE_MS}ms. Clear: contract 2px + fade ${CLEAR_MS}ms. Retargets mid-flight from the current box; reduced motion jumps.`,
     variants: [
+      {
+        id: "lockon",
+        label: "Slide + lock-on",
+        note: "Click rows or mash Up/Down: travel retargets from where the brackets are. Scroll the list mid-flight; rows differ in height.",
+        C: BracketLockOn,
+      },
       {
         id: "set",
         label: "Colours and lengths",
-        note: "Loops every 1.6s; click one to replay the snap.",
+        note: "Loops every 1.6s; each remount locks on in place.",
         C: BracketSet,
       },
     ],
@@ -640,6 +711,12 @@ const s = StyleSheet.create({
     maxWidth: 420,
   },
   bracketBox: { width: 120, height: 48, backgroundColor: color.wash },
+  lockList: { width: 280, height: 190, backgroundColor: color.bg2 },
+  lockRow: { paddingHorizontal: 12, paddingVertical: 9 },
+  lockTall: { paddingVertical: 20 },
+  lockOn: { backgroundColor: color.wash },
+  lockT: { color: color.muted },
+  lockTOn: { color: color.text },
   chipRow: { flex: 1, justifyContent: "flex-end", paddingTop: 150 },
   anchorRow: { flexDirection: "row" },
   dialogBody: { color: color.muted, lineHeight: 20 },
