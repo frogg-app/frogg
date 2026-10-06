@@ -191,7 +191,7 @@ module.exports["rail-glide"] = () => async (p, size) => {
 module.exports["hosts-add"] = () => async (p, size) => {
   await module.exports.goMore(p, size, "Hosts");
   await p.getByText("Add a host", { exact: true }).first().click();
-  await p.getByPlaceholder(/^host:port/).fill("buildbox.lan:6767");
+  await p.getByLabel("Host", { exact: true }).fill("buildbox.lan:6767");
   await p.getByPlaceholder("Name (optional)").fill("buildbox");
   await p.waitForTimeout(300);
 };
@@ -326,7 +326,7 @@ const hAdd = async (p, size) => {
 const hOffline = async (p, size) => {
   await hAdd(p, size);
   await p.getByText("Direct address", { exact: true }).first().click();
-  await p.getByPlaceholder(/^host:port/).fill("ci-runner-2.lan:6767");
+  await p.getByLabel("Host", { exact: true }).fill("ci-runner-2.lan:6767");
   await p.getByPlaceholder("Name (optional)").fill("ci-runner-2");
   await p.getByText("Connect", { exact: true }).last().click();
   await p.waitForTimeout(3000);
@@ -419,4 +419,55 @@ module.exports["usage-multi-collapsed"] = () => async (p, size) => {
 module.exports["settings-usage-multi"] = () => async (p, size) => {
   await usageFixture.apply(p);
   await settings("Usage & limits")(p, size);
+};
+// hp: Add host direct address, split host and port.
+const hpOpen = async (p, size) => {
+  await hAdd(p, size);
+  await p.getByText("Direct address", { exact: true }).first().click();
+  await p.waitForTimeout(200);
+};
+module.exports["hp-empty"] = () => hpOpen;
+module.exports["hp-filled"] = () => async (p, size) => {
+  await hpOpen(p, size);
+  await p.getByLabel("Host", { exact: true }).fill("wss://devbox.tail1234.ts.net:7443/ws");
+  await p.getByPlaceholder("Name (optional)").fill("devbox");
+  await p.waitForTimeout(200);
+};
+module.exports["hp-badport"] = () => async (p, size) => {
+  await hpOpen(p, size);
+  await p.getByLabel("Host", { exact: true }).fill("buildbox.lan");
+  await p.getByLabel("Port", { exact: true }).fill("70000");
+  await p.waitForTimeout(200);
+};
+// Rail expand-on-hover (desktop/tablet) and the phone tool menu.
+const railHover = async (p, wait) => {
+  await p.mouse.move(700, 450);
+  await p.waitForTimeout(400);
+  const box = await p.getByLabel("Hosts", { exact: true }).first().boundingBox();
+  await p.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await p.waitForTimeout(wait);
+};
+module.exports["rail-collapsed"] = () => async (p, size) => {
+  if (size === "phone") return;
+  await p.mouse.move(700, 450);
+  await p.waitForTimeout(400);
+};
+module.exports["rail-mid"] = () => async (p, size) => {
+  if (size === "phone") return;
+  await railHover(p, 150);
+};
+module.exports["rail-expanded"] = () => async (p, size) => {
+  if (size === "phone") return;
+  await railHover(p, 700);
+};
+module.exports["rail-picked"] = () => async (p, size) => {
+  if (size === "phone") return;
+  await railHover(p, 700);
+  await p.getByLabel("Usage", { exact: true }).first().click();
+  await p.waitForTimeout(600);
+};
+module.exports["phone-menu"] = () => async (p, size) => {
+  if (size !== "phone") return;
+  await p.getByText("More", { exact: true }).last().click();
+  await p.waitForTimeout(500);
 };

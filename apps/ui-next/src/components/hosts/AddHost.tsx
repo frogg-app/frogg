@@ -1,6 +1,7 @@
 import { Link2, QrCode, type LucideIcon } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
 import { addHost, parseHostAddress, type Host } from "../../daemon/hosts";
 import { parsePairInput, usePendingPair } from "../../daemon/pairing";
 import { connect } from "../../daemon/store";
@@ -42,7 +43,7 @@ export function AddHost() {
           on={method === "direct"}
           icon={Link2}
           title="Direct address"
-          sub="host:port, optional password and TLS"
+          sub="Host and port, optional password and TLS"
           pick={setMethod}
         />
       </View>
@@ -186,38 +187,99 @@ function Cell({ ch, gap }: { ch: string; gap: boolean }) {
   );
 }
 
+/** Splits a pasted "host:port" or ws(s):// URL; null when the text is just a host. */
+export function splitPastedAddress(
+  input: string,
+): { host: string; port?: string; tls?: boolean } | null {
+  const raw = input.trim();
+  const scheme = /^(wss?|https?):\/\//i.exec(raw);
+  if (scheme) {
+    try {
+      const url = new URL(
+        raw.replace(/^wss?:/i, (m) => (m.toLowerCase() === "wss:" ? "https:" : "http:")),
+      );
+      const tls = /^(wss|https)$/i.test(scheme[1] ?? "");
+      return { host: url.hostname, port: url.port || undefined, tls };
+    } catch {
+      return null;
+    }
+  }
+  const m = /^(\[[0-9a-fA-F:]+\]|[^:/\s]+):(\d*)$/.exec(raw);
+  return m ? { host: m[1] ?? "", port: m[2] } : null;
+}
+
+const validPort = (p: string) => /^\d{1,5}$/.test(p) && Number(p) >= 1 && Number(p) <= 65535;
+/** Bare IPv6 literals get brackets so host:port stays unambiguous. */
+const joinAddress = (host: string, port: string) => {
+  const h = host.trim();
+  return `${h.includes(":") && !h.startsWith("[") ? `[${h}]` : h}:${port.trim()}`;
+};
+
 function DirectForm() {
-  const [endpoint, setEndpoint] = useState("");
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState(String(DEFAULT_SSH_DAEMON_PORT));
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [tls, setTls] = useState(false);
   const toggleTls = useCallback(() => setTls((v) => !v), []);
-  const valid = parseHostAddress(endpoint) !== null;
+  const onHost = useCallback((v: string) => {
+    const split = splitPastedAddress(v);
+    if (!split) {
+      setHost(v);
+      return;
+    }
+    setHost(split.host);
+    if (split.port) setPort(split.port);
+    if (split.tls !== undefined) setTls(split.tls);
+  }, []);
+  const onPort = useCallback((v: string) => setPort(v.replace(/[^0-9]/g, "").slice(0, 5)), []);
+  const portOk = validPort(port);
+  const address = portOk && host.trim() ? parseHostAddress(joinAddress(host, port)) : null;
+  const valid = address !== null;
   const tlsState = useMemo(() => ({ checked: tls }), [tls]);
   const save = useCallback(() => {
-    const address = parseHostAddress(endpoint);
     if (!address) return;
-    const host: Omit<Host, "id"> = {
+    const entry: Omit<Host, "id"> = {
       endpoint: address.endpoint,
       name: name.trim() || address.name,
       tls,
       ...(password ? { password } : {}),
     };
-    void connect(addHost(host));
+    void connect(addHost(entry));
     closeSheet();
-  }, [endpoint, name, password, tls]);
+  }, [address, name, password, tls]);
   return (
     <View style={s.form}>
-      <T v="label">Address</T>
-      <TextInput
-        value={endpoint}
-        onChangeText={setEndpoint}
-        placeholder="host:port  e.g. devbox.lan:6767"
-        placeholderTextColor={color.faint}
-        style={s.input}
-        autoCapitalize="none"
-        autoCorrect={false}
-      />
+      <View style={s.addrRow}>
+        <View style={s.hostCol}>
+          <T v="label">Host</T>
+          <TextInput
+            value={host}
+            onChangeText={onHost}
+            placeholder="devbox.lan or 100.64.0.7"
+            placeholderTextColor={color.faint}
+            style={s.input}
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Host"
+          />
+        </View>
+        <View style={s.portCol}>
+          <T v="label">Port</T>
+          <TextInput
+            value={port}
+            onChangeText={onPort}
+            placeholder={String(DEFAULT_SSH_DAEMON_PORT)}
+            placeholderTextColor={color.faint}
+            style={[s.input, !portOk && s.inputBad]}
+            keyboardType="number-pad"
+            inputMode="numeric"
+            maxLength={5}
+            accessibilityLabel="Port"
+          />
+        </View>
+      </View>
+      {!portOk && <T style={s.error}>Port must be a number from 1 to 65535.</T>}
       <TextInput
         value={name}
         onChangeText={setName}
@@ -242,9 +304,9 @@ function DirectForm() {
         <View style={[s.box, tls && s.boxOn]} />
         <T style={s.hint}>Use TLS (wss://)</T>
       </Pressable>
-      {!!endpoint.trim() && !valid && (
+      {!!host.trim() && portOk && !valid && (
         <T style={s.error}>
-          Enter host:port with a port from 1 to 65535. Use brackets around IPv6 addresses.
+          Enter a hostname or IP address. Paths and credentials are not part of the host.
         </T>
       )}
       <View style={s.actions}>
@@ -273,6 +335,10 @@ const s = StyleSheet.create({
   methodTitle: { fontSize: 13, fontWeight: "600" },
   methodSub: { color: color.faint, fontSize: 11.5, marginTop: 2, lineHeight: 16 },
   form: { gap: 10, marginTop: 6 },
+  addrRow: { flexDirection: "row", gap: 10 },
+  hostCol: { flex: 7, gap: 6 },
+  portCol: { flex: 3, minWidth: 84, gap: 6 },
+  inputBad: { borderColor: color.coral },
   input: {
     paddingHorizontal: 12,
     paddingVertical: 9,

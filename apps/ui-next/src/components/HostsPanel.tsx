@@ -1,6 +1,6 @@
 import { Plus, QrCode, Trash2 } from "lucide-react-native";
-import { useCallback } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useHostLink, useHosts, type Host } from "../daemon/hosts";
 import { useDaemon } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
@@ -83,9 +83,17 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
   const remove = useCallback(() => openSheet({ kind: "remove", hostId: h.id }), [h.id]);
   const down = active && conn === "offline";
   const reconnecting = active && conn === "connecting" && !!link.droppedAt;
+  // Row and bin are siblings so hovering the bin keeps it shown and pressing it never selects the row.
+  const [rowHover, setRowHover] = useState(false);
+  const [binHover, setBinHover] = useState(false);
+  const rowIn = useCallback(() => setRowHover(true), []);
+  const rowOut = useCallback(() => setRowHover(false), []);
+  const binIn = useCallback(() => setBinHover(true), []);
+  const binOut = useCallback(() => setBinHover(false), []);
+  const hovered = rowHover || binHover;
   return (
-    <Pressable onPress={press}>
-      {({ hovered }) => (
+    <View>
+      <Pressable onPress={press} onHoverIn={rowIn} onHoverOut={rowOut}>
         <View style={[st.row, shown && st.rowOn, hovered && st.rowHover]}>
           {shown && <Brackets c={color.cyan2} />}
           <View style={st.line}>
@@ -98,11 +106,7 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
                 {hostKind(h)}
               </T>
             </View>
-            {hovered && (
-              <Pressable onPress={remove} accessibilityLabel={`Remove ${h.name}`} hitSlop={8}>
-                <Trash2 size={13} color={color.faint} />
-              </Pressable>
-            )}
+            <View style={st.binSlot} />
           </View>
           <View style={st.line}>
             <T v="mono" numberOfLines={1} style={st.endpoint}>
@@ -124,10 +128,25 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
             </T>
           )}
         </View>
+      </Pressable>
+      {(hovered || ALWAYS_BIN) && (
+        <Pressable
+          onPress={remove}
+          onHoverIn={binIn}
+          onHoverOut={binOut}
+          accessibilityLabel={`Remove ${h.name}`}
+          hitSlop={8}
+          style={st.bin}
+        >
+          <Trash2 size={13} color={binHover ? color.coral : color.faint} />
+        </Pressable>
       )}
-    </Pressable>
+    </View>
   );
 }
+
+/** Touch has no hover: keep the bin visible on native. */
+const ALWAYS_BIN = Platform.OS !== "web";
 
 const st = StyleSheet.create({
   fill: { flex: 1, backgroundColor: color.bg2 },
@@ -144,6 +163,8 @@ const st = StyleSheet.create({
   },
   rowOn: { backgroundColor: "rgba(37,181,200,0.06)" },
   rowHover: { backgroundColor: color.wash },
+  binSlot: { width: 13 },
+  bin: { position: "absolute", top: 12, right: 20 },
   line: { flexDirection: "row", alignItems: "center", gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   flag: { width: 9, height: 9 },
