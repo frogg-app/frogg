@@ -1,0 +1,8 @@
+{
+  "01": "First boot: shell, rail, session list on live daemon data (fonts not yet loaded).",
+  "02": "Fonts fixed; a message sent to the mock agent streams into the chat.",
+  "03": "Every status bucket seeded; markdown in replies; phone tab bar.",
+  "04": "Plan approvals show Review; tablet landscape docks the list.",
+  "05": "Source control: branch card with pull/push, commit box, changed files, split/unified diff.",
+  "06": "Terminals: list per checkout, new/kill, real PTY rendered with xterm in the Bracket palette."
+}
