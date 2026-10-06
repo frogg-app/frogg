@@ -91,3 +91,11 @@ module.exports.files = () => async (p, size) => {
   await p.waitForTimeout(1200);
 };
 module.exports.goMore = goMore;
+module.exports.search = (tool) => async (p, size) => {
+  await tool(p, "Search");
+  await p.waitForTimeout(500);
+  await p.keyboard.type("se");
+  await p.waitForTimeout(1200);
+};
+module.exports.usage = () => async (p, size) => { await module.exports.goMore(p, size, "Usage"); await p.waitForTimeout(2500); };
+module.exports.hosts = () => async (p, size) => { await module.exports.goMore(p, size, "Hosts"); await p.waitForTimeout(2000); };

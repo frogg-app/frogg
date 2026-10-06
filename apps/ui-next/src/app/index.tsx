@@ -6,6 +6,9 @@ import { DiffView } from "../components/DiffView";
 import { InboxDetail, InboxPanel } from "../components/Inbox";
 import { SettingsNav, SettingsPage } from "../components/settings/Settings";
 import { FilesPanel, FileViewer } from "../components/Files";
+import { SearchPanel } from "../components/SearchPanel";
+import { UsagePanel } from "../components/UsagePanel";
+import { HostsPanel } from "../components/HostsPanel";
 import { Home } from "../components/Home";
 import { NewSession } from "../components/NewSession";
 import { Palette, useGlobalKeys } from "../components/Palette";
@@ -31,6 +34,9 @@ function sidePanel(tool: Tool): ReactNode {
     case "inbox": return <InboxPanel />;
     case "settings": return <SettingsNav />;
     case "files": return <FilesPanel />;
+    case "search": return <SearchPanel />;
+    case "usage": return <UsagePanel />;
+    case "hosts": return <HostsPanel />;
     default: return <ToolPane tool={tool} />;
   }
 }
