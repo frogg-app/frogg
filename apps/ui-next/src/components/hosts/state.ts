@@ -6,7 +6,8 @@ export type HostSheet =
   | { kind: "add" }
   | { kind: "pair-device" }
   | { kind: "confirm" }
-  | { kind: "remove"; hostId: string };
+  | { kind: "remove"; hostId: string }
+  | { kind: "edit"; hostId: string };
 
 interface HostView {
   /** The host shown in the detail pane; null means the active one. */

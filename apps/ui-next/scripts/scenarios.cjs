@@ -471,3 +471,31 @@ module.exports["phone-menu"] = () => async (p, size) => {
   await p.getByText("More", { exact: true }).last().click();
   await p.waitForTimeout(500);
 };
+// he: Edit host (pre-filled Add Host fields, saved in place).
+const heOpen = async (p, size) => {
+  await hOffline(p, size);
+  if (size === "phone") await p.getByText("Edit host…", { exact: true }).first().click();
+  else {
+    await p.getByText("ci-runner-2", { exact: true }).first().hover();
+    await p.getByLabel("Edit ci-runner-2", { exact: true }).click();
+  }
+  await p.waitForTimeout(400);
+};
+module.exports["he-edit"] = () => heOpen;
+module.exports["he-saved"] = () => async (p, size) => {
+  await heOpen(p, size);
+  await p.getByLabel("Name", { exact: true }).fill("ci-runner-renamed");
+  await p.getByLabel("Port", { exact: true }).fill("7443");
+  await p.getByText("Save", { exact: true }).last().click();
+  await p.waitForTimeout(1200);
+};
+module.exports["he-row-pencil"] = () => async (p, size) => {
+  await hostsTool(p, size);
+  await p.getByText("frogg-dev", { exact: true }).first().hover();
+  await p.waitForTimeout(200);
+  await p
+    .getByLabel(/^Edit /)
+    .first()
+    .click();
+  await p.waitForTimeout(400);
+};

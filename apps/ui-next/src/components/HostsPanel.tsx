@@ -1,11 +1,11 @@
-import { Plus, QrCode, Trash2 } from "lucide-react-native";
+import { Pencil, Plus, QrCode, Trash2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useHostLink, useHosts, type Host } from "../daemon/hosts";
 import { useDaemon } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
 import { color } from "../theme/tokens";
-import { AddHost } from "./hosts/AddHost";
+import { AddHost, EditHost } from "./hosts/AddHost";
 import { HostDetail, hostKind, offlineReason } from "./hosts/HostDetail";
 import { installPairLinks } from "./hosts/links";
 import { PairConfirm } from "./hosts/PairConfirm";
@@ -32,6 +32,7 @@ export function HostsPanel() {
     <View style={st.fill}>
       {phone && pushed ? <HostDetail onBack={back} /> : <HostList />}
       <AddHost />
+      <EditHost />
       <PairConfirm />
       <PairDevice />
       <RemoveHost />
@@ -90,7 +91,11 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
   const rowOut = useCallback(() => setRowHover(false), []);
   const binIn = useCallback(() => setBinHover(true), []);
   const binOut = useCallback(() => setBinHover(false), []);
-  const hovered = rowHover || binHover;
+  const [editHover, setEditHover] = useState(false);
+  const editIn = useCallback(() => setEditHover(true), []);
+  const editOut = useCallback(() => setEditHover(false), []);
+  const edit = useCallback(() => openSheet({ kind: "edit", hostId: h.id }), [h.id]);
+  const hovered = rowHover || binHover || editHover;
   return (
     <View>
       <Pressable onPress={press} onHoverIn={rowIn} onHoverOut={rowOut}>
@@ -131,6 +136,18 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
       </Pressable>
       {(hovered || ALWAYS_BIN) && (
         <Pressable
+          onPress={edit}
+          onHoverIn={editIn}
+          onHoverOut={editOut}
+          accessibilityLabel={`Edit ${h.name}`}
+          hitSlop={8}
+          style={st.pencil}
+        >
+          <Pencil size={13} color={editHover ? color.cyan2 : color.faint} />
+        </Pressable>
+      )}
+      {(hovered || ALWAYS_BIN) && (
+        <Pressable
           onPress={remove}
           onHoverIn={binIn}
           onHoverOut={binOut}
@@ -163,8 +180,9 @@ const st = StyleSheet.create({
   },
   rowOn: { backgroundColor: "rgba(37,181,200,0.06)" },
   rowHover: { backgroundColor: color.wash },
-  binSlot: { width: 13 },
+  binSlot: { width: 38 },
   bin: { position: "absolute", top: 12, right: 20 },
+  pencil: { position: "absolute", top: 12, right: 45 },
   line: { flexDirection: "row", alignItems: "center", gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   flag: { width: 9, height: 9 },

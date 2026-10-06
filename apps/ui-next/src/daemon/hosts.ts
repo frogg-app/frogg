@@ -131,6 +131,17 @@ export function renameHost(id: string, name: string): void {
   }));
 }
 
+/** Updates a saved host in place (same id); returns the new entry, or null if it is gone. */
+export function updateHost(id: string, patch: Partial<Omit<Host, "id">>): Host | null {
+  const prev = useHosts.getState().hosts.find((h) => h.id === id);
+  if (!prev) return null;
+  const host: Host = { ...prev, ...patch, id };
+  // An empty password clears it rather than storing "".
+  if (!host.password) delete host.password;
+  useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === id ? host : h)) }));
+  return host;
+}
+
 // ---------------------------------------------------------------------------
 // Live connection detail for the active host (the DaemonClient owns the backoff).
 

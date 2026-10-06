@@ -142,6 +142,7 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
   const owner = role === "owner" || !role;
   const pairDevice = useCallback(() => openSheet({ kind: "pair-device" }), []);
   const restart = useCallback(() => void getClient()?.restartServer("Restart from Hosts"), []);
+  const edit = useCallback(() => openSheet({ kind: "edit", hostId: host.id }), [host.id]);
   const eyebrow = ["Host", hostKind(host), version ? `v${version}` : null]
     .filter(Boolean)
     .join(" · ");
@@ -162,6 +163,7 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
           <>
             {owner && <Button label="Pair a device" onPress={pairDevice} />}
             {owner && <Button label="Restart daemon" onPress={restart} />}
+            <Button label="Edit" onPress={edit} />
           </>
         }
       />
@@ -228,6 +230,7 @@ function Offline({
   const retry = useCallback(() => void connect(host), [host]);
   const remove = useCallback(() => openSheet({ kind: "remove", hostId: host.id }), [host.id]);
   const addHost = useCallback(() => openSheet({ kind: "add" }), []);
+  const edit = useCallback(() => openSheet({ kind: "edit", hostId: host.id }), [host.id]);
   const retryBtn = useMemo(() => <Button kind="primary" label="Retry" onPress={retry} />, [retry]);
   const pairing = link.error?.code === "pairing_required";
   const last = ago(host.lastOnlineAt);
@@ -256,6 +259,7 @@ function Offline({
           ) : (
             <Button kind="primary" label="Retry now" onPress={retry} />
           )}
+          <Button label="Edit host…" onPress={edit} />
           <Button kind="danger" label="Remove host…" onPress={remove} />
         </View>
       </View>
@@ -269,6 +273,7 @@ function SavedHost({ host, onBack }: { host: Host; onBack?: () => void }) {
     void connect(host);
   }, [host]);
   const remove = useCallback(() => openSheet({ kind: "remove", hostId: host.id }), [host.id]);
+  const edit = useCallback(() => openSheet({ kind: "edit", hostId: host.id }), [host.id]);
   const last = ago(host.lastOnlineAt);
   const switchBtn = useMemo(
     () => <Button kind="primary" label="Switch to this host" onPress={go} />,
@@ -283,6 +288,7 @@ function SavedHost({ host, onBack }: { host: Host; onBack?: () => void }) {
           <T style={s.muted}>{last ? `Last connected ${last}.` : "Not connected yet."}</T>
           {host.role && <T style={s.muted}>Paired as {host.role}.</T>}
           <View style={s.bannerActs}>
+            <Button label="Edit host…" onPress={edit} />
             <Button kind="danger" label="Remove host…" onPress={remove} />
           </View>
         </Card>

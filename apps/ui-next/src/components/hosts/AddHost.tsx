@@ -2,7 +2,7 @@ import { Link2, QrCode, type LucideIcon } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
-import { addHost, parseHostAddress, type Host } from "../../daemon/hosts";
+import { addHost, parseHostAddress, updateHost, useHosts, type Host } from "../../daemon/hosts";
 import { parsePairInput, usePendingPair } from "../../daemon/pairing";
 import { connect } from "../../daemon/store";
 import { color, font, web } from "../../theme/tokens";
@@ -215,12 +215,69 @@ const joinAddress = (host: string, port: string) => {
   return `${h.includes(":") && !h.startsWith("[") ? `[${h}]` : h}:${port.trim()}`;
 };
 
+/** Host/port split of a saved endpoint, for pre-filling the form. */
+function endpointParts(endpoint: string): { host: string; port: string } {
+  const split = splitPastedAddress(endpoint);
+  return split
+    ? { host: split.host, port: split.port || String(DEFAULT_SSH_DAEMON_PORT) }
+    : { host: endpoint, port: String(DEFAULT_SSH_DAEMON_PORT) };
+}
+
+const connectNew = (entry: Omit<Host, "id">) => void connect(addHost(entry));
+
 function DirectForm() {
-  const [host, setHost] = useState("");
-  const [port, setPort] = useState(String(DEFAULT_SSH_DAEMON_PORT));
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const [tls, setTls] = useState(false);
+  return <HostFields submitLabel="Connect" onSave={connectNew} />;
+}
+
+/** Edit a saved host: same fields as Add, pre-filled; saves in place and reconnects if active. */
+export function EditHost() {
+  const hostId = useHostView((st) => (st.sheet?.kind === "edit" ? st.sheet.hostId : null));
+  const host = useHosts((st) => st.hosts.find((h) => h.id === hostId));
+  return (
+    <Dialog
+      open={!!host}
+      onClose={closeSheet}
+      eyebrow="Hosts"
+      title={host ? `Edit ${host.name}` : "Edit host"}
+      width={620}
+      footer={null}
+    >
+      {host && <EditForm key={host.id} host={host} />}
+    </Dialog>
+  );
+}
+
+function EditForm({ host }: { host: Host }) {
+  const save = useCallback(
+    (entry: Omit<Host, "id">) => {
+      const changedRoute =
+        entry.endpoint !== host.endpoint ||
+        !!entry.tls !== !!host.tls ||
+        (entry.password ?? "") !== (host.password ?? "");
+      // A blank password field clears the saved one.
+      const next = updateHost(host.id, { ...entry, password: entry.password ?? "" });
+      if (next && changedRoute && useHosts.getState().activeId === host.id) void connect(next);
+    },
+    [host],
+  );
+  return <HostFields initial={host} submitLabel="Save" onSave={save} />;
+}
+
+function HostFields({
+  initial,
+  submitLabel,
+  onSave,
+}: {
+  initial?: Host;
+  submitLabel: string;
+  onSave: (entry: Omit<Host, "id">) => void;
+}) {
+  const parts = useMemo(() => (initial ? endpointParts(initial.endpoint) : null), [initial]);
+  const [host, setHost] = useState(parts?.host ?? "");
+  const [port, setPort] = useState(parts?.port ?? String(DEFAULT_SSH_DAEMON_PORT));
+  const [name, setName] = useState(initial?.name ?? "");
+  const [password, setPassword] = useState(initial?.password ?? "");
+  const [tls, setTls] = useState(initial?.tls ?? false);
   const toggleTls = useCallback(() => setTls((v) => !v), []);
   const onHost = useCallback((v: string) => {
     const split = splitPastedAddress(v);
@@ -239,15 +296,14 @@ function DirectForm() {
   const tlsState = useMemo(() => ({ checked: tls }), [tls]);
   const save = useCallback(() => {
     if (!address) return;
-    const entry: Omit<Host, "id"> = {
+    onSave({
       endpoint: address.endpoint,
       name: name.trim() || address.name,
       tls,
       ...(password ? { password } : {}),
-    };
-    void connect(addHost(entry));
+    });
     closeSheet();
-  }, [address, name, password, tls]);
+  }, [address, name, password, tls, onSave]);
   return (
     <View style={s.form}>
       <View style={s.addrRow}>
@@ -286,6 +342,7 @@ function DirectForm() {
         placeholder="Name (optional)"
         placeholderTextColor={color.faint}
         style={s.input}
+        accessibilityLabel="Name"
       />
       <TextInput
         value={password}
@@ -294,6 +351,7 @@ function DirectForm() {
         placeholderTextColor={color.faint}
         style={s.input}
         secureTextEntry
+        accessibilityLabel="Password"
       />
       <Pressable
         onPress={toggleTls}
@@ -311,7 +369,7 @@ function DirectForm() {
       )}
       <View style={s.actions}>
         <Button label="Cancel" onPress={closeSheet} />
-        <Button kind="primary" label="Connect" disabled={!valid} onPress={save} />
+        <Button kind="primary" label={submitLabel} disabled={!valid} onPress={save} />
       </View>
     </View>
   );
