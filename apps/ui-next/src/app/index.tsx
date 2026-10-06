@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useCallback, useMemo, type ReactNode } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Chat } from "../components/Chat";
@@ -26,92 +26,169 @@ import { TerminalsPanel } from "../components/TerminalsPanel";
 import { ToolPane } from "../components/ToolPane";
 import { T } from "../components/Text";
 import { useDaemon } from "../daemon/store";
+import type { Session } from "../daemon/types";
 import { useFormFactor } from "../theme/layout";
 import { color, motion } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
 
 function sidePanel(tool: Tool): ReactNode {
   switch (tool) {
-    case "sessions": return <SessionList />;
-    case "scm": return <ScmPanel />;
-    case "terminals": return <TerminalsPanel />;
-    case "inbox": return <InboxPanel />;
-    case "settings": return <SettingsNav />;
-    case "files": return <FilesPanel />;
-    case "search": return <SearchPanel />;
-    case "usage": return <UsagePanel />;
-    case "hosts": return <HostsPanel />;
-    case "prs": return <PrsPanel />;
-    case "tasks": return <TasksPanel />;
-    case "plugins": return <PluginsPanel />;
-    case "companion": return <CompanionPanel />;
-    default: return <ToolPane tool={tool} />;
+    case "sessions":
+      return <SessionList />;
+    case "scm":
+      return <ScmPanel />;
+    case "terminals":
+      return <TerminalsPanel />;
+    case "inbox":
+      return <InboxPanel />;
+    case "settings":
+      return <SettingsNav />;
+    case "files":
+      return <FilesPanel />;
+    case "search":
+      return <SearchPanel />;
+    case "usage":
+      return <UsagePanel />;
+    case "hosts":
+      return <HostsPanel />;
+    case "prs":
+      return <PrsPanel />;
+    case "tasks":
+      return <TasksPanel />;
+    case "plugins":
+      return <PluginsPanel />;
+    case "companion":
+      return <CompanionPanel />;
+    default:
+      return <ToolPane tool={tool} />;
   }
+}
+
+type UiState = ReturnType<typeof useUi.getState>;
+
+interface DetailProps {
+  ui: UiState;
+  phone: boolean;
+  openRun: string | null | undefined;
+  session: Session | undefined;
+}
+
+/** What the main pane shows: a tool's own detail view when it has one open, else the session. */
+function MainDetail({ ui, phone, openRun, session }: DetailProps): ReactNode {
+  const {
+    tool,
+    diffPath,
+    terminalId,
+    inboxId,
+    settingsPage,
+    filePath,
+    select,
+    openDiff,
+    openTerminal,
+    openInbox,
+    openSettings,
+    openFile,
+  } = ui;
+  const backDiff = useCallback(() => openDiff(null), [openDiff]);
+  const backTerminal = useCallback(() => openTerminal(null), [openTerminal]);
+  const backFile = useCallback(() => openFile(null), [openFile]);
+  const backSettings = useCallback(() => openSettings(null), [openSettings]);
+  const backInbox = useCallback(() => openInbox(null), [openInbox]);
+  const backChat = useCallback(() => select(null), [select]);
+  if (tool === "scm" && diffPath)
+    return <DiffView path={diffPath} onBack={phone ? backDiff : undefined} />;
+  if (tool === "terminals" && terminalId)
+    return <TerminalDetail id={terminalId} onBack={phone ? backTerminal : undefined} />;
+  if (tool === "prs" && openRun)
+    return <CiRunDetail id={openRun} onBack={phone ? closeRun : undefined} />;
+  if (tool === "files" && filePath)
+    return <FileViewer path={filePath} onBack={phone ? backFile : undefined} />;
+  if (tool === "settings" && (settingsPage || !phone))
+    return (
+      <SettingsPage id={settingsPage ?? "appearance"} onBack={phone ? backSettings : undefined} />
+    );
+  if (tool === "inbox" && inboxId)
+    return <InboxDetail id={inboxId} onBack={phone ? backInbox : undefined} />;
+  if (tool !== "sessions" && phone) return null;
+  if (session) return <Chat session={session} onBack={phone ? backChat : undefined} />;
+  return phone ? null : <Home />;
+}
+
+function hasDetailFor(
+  ui: UiState,
+  openRun: string | null | undefined,
+  session: Session | undefined,
+): boolean {
+  const { tool } = ui;
+  if (session) return true;
+  if (tool === "scm") return !!ui.diffPath;
+  if (tool === "terminals") return !!ui.terminalId;
+  if (tool === "inbox") return !!ui.inboxId;
+  if (tool === "settings") return !!ui.settingsPage;
+  if (tool === "files") return !!ui.filePath;
+  if (tool === "prs") return !!openRun;
+  return false;
 }
 
 export default function Shell() {
   const ff = useFormFactor();
   const docked = useWindowDimensions().width >= 900;
-  const { tool, selected, listOpen, diffPath, terminalId, inboxId, settingsPage, filePath, select, setListOpen, openDiff, openTerminal, openInbox, openSettings, openFile } = useUi();
+  const ui = useUi();
+  const { tool, selected, listOpen, setListOpen } = ui;
   const openRun = useOpenRun();
-  const session = useDaemon((s) => (selected ? s.sessions[selected] : undefined));
+  const session = useDaemon((st) => (selected ? st.sessions[selected] : undefined));
   const b = useBuckets();
-  const badges: Partial<Record<Tool, number>> = {
-    sessions: b.needs.length || undefined,
-    inbox: b.needs.length + b.failed.length || undefined,
-  };
+  const needs = b.needs.length;
+  const failed = b.failed.length;
+  const badges = useMemo<Partial<Record<Tool, number>>>(
+    () => ({
+      sessions: needs || undefined,
+      inbox: needs + failed || undefined,
+    }),
+    [needs, failed],
+  );
   const phone = ff === "phone";
   useGlobalKeys();
+  const closeList = useCallback(() => setListOpen(false), [setListOpen]);
 
-  // What the main pane shows: a tool's own detail view when it has one open, else the session.
-  const detail: ReactNode =
-    tool === "scm" && diffPath ? (
-      <DiffView path={diffPath} onBack={phone ? () => openDiff(null) : undefined} />
-    ) : tool === "terminals" && terminalId ? (
-      <TerminalDetail id={terminalId} onBack={phone ? () => openTerminal(null) : undefined} />
-    ) : tool === "prs" && openRun ? (
-      <CiRunDetail id={openRun} onBack={phone ? closeRun : undefined} />
-    ) : tool === "files" && filePath ? (
-      <FileViewer path={filePath} onBack={phone ? () => openFile(null) : undefined} />
-    ) : tool === "settings" && (settingsPage || !phone) ? (
-      <SettingsPage id={settingsPage ?? "appearance"} onBack={phone ? () => openSettings(null) : undefined} />
-    ) : tool === "inbox" && inboxId ? (
-      <InboxDetail id={inboxId} onBack={phone ? () => openInbox(null) : undefined} />
-    ) : tool === "sessions" || !phone ? (
-      session ? <Chat session={session} onBack={phone ? () => select(null) : undefined} /> : phone ? null : <Home />
-    ) : null;
+  const detailEl = <MainDetail ui={ui} phone={phone} openRun={openRun} session={session} />;
+  const phoneHasDetail = phone && hasPhoneDetail(ui, openRun, session);
   // Keyed so switching tools replays a short enter; frequent, so it stays under 200ms.
-  const side = <View key={tool} style={[{ flex: 1 }, motion.enter]}>{sidePanel(tool)}</View>;
+  const side = (
+    <View key={tool} style={[s.fill, motion.enter]}>
+      {sidePanel(tool)}
+    </View>
+  );
 
   if (phone) {
     // Phone: each tab's panel is the root; a detail view pushes over it and hides the tabs.
     return (
-      <SafeAreaView edges={["top"]} style={s.root}>
-        <View style={{ flex: 1 }}>{detail ?? side}</View>
-        {!detail && <PhoneTabs badges={badges} />}
+      <SafeAreaView edges={EDGES_TOP} style={s.root}>
+        <View style={s.fill}>{phoneHasDetail ? detailEl : side}</View>
+        {!phoneHasDetail && <PhoneTabs badges={badges} />}
         <Palette />
         <NewSession />
       </SafeAreaView>
     );
   }
 
-  const hasDetail = !!(session || (tool === "scm" && diffPath) || (tool === "terminals" && terminalId) || (tool === "inbox" && inboxId) || (tool === "settings" && settingsPage) || (tool === "files" && filePath) || (tool === "prs" && openRun));
+  const hasDetail = hasDetailFor(ui, openRun, session);
   return (
     <View style={s.root}>
-      <View style={{ flex: 1, flexDirection: "row" }}>
+      <View style={s.row}>
         <Rail badges={badges} />
         {docked ? (
           <>
-            <View style={[s.side, ff === "tablet" && { width: 300 }]}>{side}</View>
-            <View style={{ flex: 1 }}>{detail}</View>
+            <View style={[s.side, ff === "tablet" && s.sideTablet]}>{side}</View>
+            <View style={s.fill}>{detailEl}</View>
           </>
         ) : (
           // Portrait tablet: the side panel slides over the main pane; picking an item closes it.
-          <View style={{ flex: 1 }}>
-            {detail}
+          <View style={s.fill}>
+            {detailEl}
             {(listOpen || !hasDetail) && (
               <>
-                {hasDetail && <Pressable style={s.scrim} onPress={() => setListOpen(false)} />}
+                {hasDetail && <Pressable style={s.scrim} onPress={closeList} />}
                 <View style={[s.side, s.drawer]}>{side}</View>
               </>
             )}
@@ -120,24 +197,63 @@ export default function Shell() {
       </View>
       <StatusBar />
       <Palette />
-        <NewSession />
+      <NewSession />
     </View>
   );
 }
 
+/** Phone only: whether MainDetail renders a view (otherwise the tab panel shows). */
+function hasPhoneDetail(
+  ui: UiState,
+  openRun: string | null | undefined,
+  session: Session | undefined,
+): boolean {
+  return hasDetailFor(ui, openRun, ui.tool === "sessions" ? session : undefined);
+}
+
+const EDGES_TOP = ["top"] as const;
+
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.bg },
-  side: { width: 340, borderRightWidth: 1, borderRightColor: color.line, backgroundColor: color.bg2 },
-  drawer: { position: "absolute", left: 0, top: 0, bottom: 0, shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 24 },
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(0,0,0,0.45)" },
+  side: {
+    width: 340,
+    borderRightWidth: 1,
+    borderRightColor: color.line,
+    backgroundColor: color.bg2,
+  },
+  drawer: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+  },
+  scrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  fill: { flex: 1 },
+  row: { flex: 1, flexDirection: "row" },
+  sideTablet: { width: 300 },
+  terminal: { flex: 1, backgroundColor: color.bg },
+  termBack: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: color.line,
+  },
+  termBackText: { color: color.cyan2 },
 });
 
 function TerminalDetail({ id, onBack }: { id: string; onBack?: () => void }) {
   return (
-    <View style={{ flex: 1, backgroundColor: color.bg }}>
+    <View style={s.terminal}>
       {onBack && (
-        <Pressable onPress={onBack} style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: color.line }}>
-          <T v="mono" style={{ color: color.cyan2 }}>← terminals</T>
+        <Pressable onPress={onBack} style={s.termBack}>
+          <T v="mono" style={s.termBackText}>
+            ← terminals
+          </T>
         </Pressable>
       )}
       <TerminalSurface terminalId={id} />

@@ -11,12 +11,20 @@ const out = path.join(root, "design-exploration/mockups/ui-next");
 const tag = process.argv[2] || "xx";
 const only = process.argv[3] ? process.argv[3].split(",") : null;
 const sizeFilter = process.argv[4] ? process.argv[4].split(",") : null;
-const sizes = { desktop: [1440, 900], tablet: [1024, 768], portrait: [768, 1024], phone: [390, 844] };
+const sizes = {
+  desktop: [1440, 900],
+  tablet: [1024, 768],
+  portrait: [768, 1024],
+  phone: [390, 844],
+};
 
 const tool = async (page, name, phoneLabel) => {
   const rail = page.getByLabel(name, { exact: true });
   if (await rail.count()) return rail.first().click();
-  await page.getByText(phoneLabel ?? name, { exact: true }).first().click();
+  await page
+    .getByText(phoneLabel ?? name, { exact: true })
+    .first()
+    .click();
 };
 
 const scenarios = {
@@ -46,7 +54,8 @@ const scenarios = {
     await page.waitForTimeout(1500);
   },
 };
-for (const [name, fn] of Object.entries(require("./scenarios.cjs"))) if (name !== "goMore") scenarios[name] = fn(tool);
+for (const [name, fn] of Object.entries(require("./scenarios.cjs")))
+  if (name !== "goMore") scenarios[name] = fn(tool);
 
 (async () => {
   fs.mkdirSync(out, { recursive: true });
@@ -60,7 +69,8 @@ for (const [name, fn] of Object.entries(require("./scenarios.cjs"))) if (name !=
       page.on("pageerror", (e) => errors.push(`${size}/${name}: ${e.message}`));
       page.on("console", (m) => {
         // The hosts scenarios point at an address that does not resolve, on purpose.
-        if (m.type() === "error" && !/ERR_NAME_NOT_RESOLVED/.test(m.text())) errors.push(`${size}/${name}: ${m.text()}`);
+        if (m.type() === "error" && !/ERR_NAME_NOT_RESOLVED/.test(m.text()))
+          errors.push(`${size}/${name}: ${m.text()}`);
       });
       await page.goto(url, { waitUntil: "networkidle" });
       await page.evaluate(() => document.fonts.ready);
@@ -76,5 +86,7 @@ for (const [name, fn] of Object.entries(require("./scenarios.cjs"))) if (name !=
   }
   await browser.close();
   require("./gallery.cjs")(out);
-  console.log(errors.length ? "ERRORS\n" + [...new Set(errors)].join("\n") : "ok, no console errors");
+  console.log(
+    errors.length ? "ERRORS\n" + [...new Set(errors)].join("\n") : "ok, no console errors",
+  );
 })();

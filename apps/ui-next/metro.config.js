@@ -10,7 +10,11 @@ const relaySrc = path.resolve(__dirname, "../../packages/relay/src");
 const fallback = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, name, platform) => {
   const resolve = fallback ?? context.resolveRequest;
-  if (context.originModulePath.startsWith(relaySrc) && name.startsWith(".") && name.endsWith(".js")) {
+  if (
+    context.originModulePath.startsWith(relaySrc) &&
+    name.startsWith(".") &&
+    name.endsWith(".js")
+  ) {
     return resolve(context, name.replace(/\.js$/, ".ts"), platform);
   }
   return resolve(context, name, platform);

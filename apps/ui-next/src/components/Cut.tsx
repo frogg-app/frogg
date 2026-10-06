@@ -2,9 +2,19 @@ import { Platform, StyleSheet, View, type ViewProps, type ViewStyle } from "reac
 
 /** Style keys that paint the shape; on web they move onto a clipped layer behind the content. */
 const PAINT = new Set([
-  "backgroundColor", "backgroundImage", "borderWidth", "borderColor", "borderTopWidth", "borderTopColor",
-  "borderBottomWidth", "borderBottomColor", "borderLeftWidth", "borderLeftColor", "borderRightWidth",
-  "borderRightColor", "filter",
+  "backgroundColor",
+  "backgroundImage",
+  "borderWidth",
+  "borderColor",
+  "borderTopWidth",
+  "borderTopColor",
+  "borderBottomWidth",
+  "borderBottomColor",
+  "borderLeftWidth",
+  "borderLeftColor",
+  "borderRightWidth",
+  "borderRightColor",
+  "filter",
 ]);
 
 function polygon(size: number, flip: boolean): string {
@@ -19,8 +29,19 @@ function polygon(size: number, flip: boolean): string {
  * Only the painted layer is clipped, so menus and tooltips inside can overflow it.
  * Native falls back to a plain box for now.
  */
-export function Cut({ size = 8, flip = false, style, children, ...rest }: ViewProps & { size?: number; flip?: boolean }) {
-  if (Platform.OS !== "web") return <View {...rest} style={style}>{children}</View>;
+export function Cut({
+  size = 8,
+  flip = false,
+  style,
+  children,
+  ...rest
+}: ViewProps & { size?: number; flip?: boolean }) {
+  if (Platform.OS !== "web")
+    return (
+      <View {...rest} style={style}>
+        {children}
+      </View>
+    );
   const flat = (StyleSheet.flatten(style) ?? {}) as Record<string, unknown>;
   const paint: Record<string, unknown> = {};
   const box: Record<string, unknown> = {};
@@ -29,10 +50,22 @@ export function Cut({ size = 8, flip = false, style, children, ...rest }: ViewPr
   const bw = typeof paint.borderWidth === "number" ? paint.borderWidth : 0;
   return (
     // `isolation` keeps the layer's negative z-index inside this box instead of behind the page.
-    <View {...rest} style={[box as ViewStyle, { isolation: "isolate" } as ViewStyle, bw ? { borderWidth: bw, borderColor: "transparent" } : null]}>
+    <View
+      {...rest}
+      style={[
+        box as ViewStyle,
+        { isolation: "isolate" } as ViewStyle,
+        bw ? { borderWidth: bw, borderColor: "transparent" } : null,
+      ]}
+    >
       <View
         pointerEvents="none"
-        style={[StyleSheet.absoluteFill, { margin: bw ? -bw : 0 }, paint as ViewStyle, { clipPath: polygon(size, flip), zIndex: -1 } as ViewStyle]}
+        style={[
+          StyleSheet.absoluteFill,
+          { margin: bw ? -bw : 0 },
+          paint as ViewStyle,
+          { clipPath: polygon(size, flip), zIndex: -1 } as ViewStyle,
+        ]}
       />
       {children}
     </View>

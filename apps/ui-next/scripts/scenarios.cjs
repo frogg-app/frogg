@@ -58,7 +58,9 @@ module.exports["settings-providers"] = () => settings("Providers & models");
 module.exports["new-session"] = () => async (p) => {
   await p.keyboard.press("Control+n");
   await p.waitForTimeout(1500);
-  await p.keyboard.type("Make the session cache cap configurable via config.json and log evictions at debug.");
+  await p.keyboard.type(
+    "Make the session cache cap configurable via config.json and log evictions at debug.",
+  );
   await p.waitForTimeout(400);
 };
 module.exports["new-session-created"] = () => async (p) => {
@@ -91,14 +93,20 @@ module.exports.files = () => async (p, size) => {
   await p.waitForTimeout(1200);
 };
 module.exports.goMore = goMore;
-module.exports.search = (tool) => async (p, size) => {
+module.exports.search = (tool) => async (p, _size) => {
   await tool(p, "Search");
   await p.waitForTimeout(500);
   await p.keyboard.type("se");
   await p.waitForTimeout(1200);
 };
-module.exports.usage = () => async (p, size) => { await module.exports.goMore(p, size, "Usage"); await p.waitForTimeout(2500); };
-module.exports.hosts = () => async (p, size) => { await module.exports.goMore(p, size, "Hosts"); await p.waitForTimeout(2000); };
+module.exports.usage = () => async (p, size) => {
+  await module.exports.goMore(p, size, "Usage");
+  await p.waitForTimeout(2500);
+};
+module.exports.hosts = () => async (p, size) => {
+  await module.exports.goMore(p, size, "Hosts");
+  await p.waitForTimeout(2000);
+};
 module.exports.prs = () => async (p, size) => {
   await p.getByText("Interface redesign (ui-next)").first().click();
   await p.waitForTimeout(600);
@@ -108,33 +116,52 @@ module.exports.prs = () => async (p, size) => {
 };
 module.exports["prs-ci"] = () => async (p, size) => {
   await module.exports.prs()(p, size);
-  await p.getByText(/^CI runs/).first().click();
-  await p.getByText(/^CI runs [1-9]/).first().waitFor({ timeout: 20000 }).catch(() => {});
+  await p
+    .getByText(/^CI runs/)
+    .first()
+    .click();
+  await p
+    .getByText(/^CI runs [1-9]/)
+    .first()
+    .waitFor({ timeout: 20000 })
+    .catch(() => {});
   await p.waitForTimeout(800);
 };
 module.exports["ci-run"] = () => async (p, size) => {
   await module.exports["prs-ci"]()(p, size);
-  await p.getByText(/^Release #\d+/).nth(1).click();
+  await p
+    .getByText(/^Release #\d+/)
+    .nth(1)
+    .click();
   await p.waitForTimeout(600);
   const failed = p.getByText(/^(test|build|e2e)/i).first();
   if (await failed.count()) await failed.click();
   await p.waitForTimeout(500);
 };
-module.exports.tasks = () => async (p, size) => { await module.exports.goMore(p, size, "Tasks"); await p.waitForTimeout(1500); };
-module.exports.plugins = () => async (p, size) => { await module.exports.goMore(p, size, "Plugins"); await p.waitForTimeout(2500); };
+module.exports.tasks = () => async (p, size) => {
+  await module.exports.goMore(p, size, "Tasks");
+  await p.waitForTimeout(1500);
+};
+module.exports.plugins = () => async (p, size) => {
+  await module.exports.goMore(p, size, "Plugins");
+  await p.waitForTimeout(2500);
+};
 module.exports["plugins-browse"] = () => async (p, size) => {
   await module.exports.goMore(p, size, "Plugins");
   await p.getByText("Browse", { exact: true }).first().click();
   await p.waitForTimeout(6000);
 };
-module.exports.companion = () => async (p, size) => { await module.exports.goMore(p, size, "Companion"); await p.waitForTimeout(1500); };
-module.exports["chat-tools"] = () => async (p, size) => {
+module.exports.companion = () => async (p, size) => {
+  await module.exports.goMore(p, size, "Companion");
+  await p.waitForTimeout(1500);
+};
+module.exports["chat-tools"] = () => async (p, _size) => {
   await p.getByText("Preview chat").first().click();
   await p.waitForTimeout(1500);
   await p.getByText("hooks/use-scroll-anchor.ts", { exact: true }).last().click();
   await p.waitForTimeout(500);
 };
-module.exports["chat-model"] = () => async (p, size) => {
+module.exports["chat-model"] = () => async (p, _size) => {
   await p.getByText("Second chat").first().click();
   await p.waitForTimeout(1500);
   await p.getByText("Ten second stream", { exact: true }).last().click();

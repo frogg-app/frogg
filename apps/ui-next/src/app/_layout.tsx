@@ -1,8 +1,9 @@
-import "../theme/web-fonts";
+import { loadWebFonts } from "../theme/web-fonts";
 import { Slot } from "expo-router";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { connect } from "../daemon/store";
+loadWebFonts();
 
 export default function RootLayout() {
   useEffect(() => {

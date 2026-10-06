@@ -2,8 +2,19 @@ import { create } from "zustand";
 import { onHostSwitch } from "./daemon/store";
 
 export type Tool =
-  | "sessions" | "search" | "files" | "scm" | "prs" | "terminals" | "tasks"
-  | "hosts" | "usage" | "plugins" | "inbox" | "companion" | "settings";
+  | "sessions"
+  | "search"
+  | "files"
+  | "scm"
+  | "prs"
+  | "terminals"
+  | "tasks"
+  | "hosts"
+  | "usage"
+  | "plugins"
+  | "inbox"
+  | "companion"
+  | "settings";
 
 interface UiState {
   tool: Tool;
@@ -49,7 +60,8 @@ export const useUi = create<UiState>((set) => ({
   openSettings: (settingsPage) => set({ settingsPage, listOpen: false }),
   newSessionOpen: false,
   newSessionPrompt: "",
-  setNewSession: (newSessionOpen, prompt) => set(prompt === undefined ? { newSessionOpen } : { newSessionOpen, newSessionPrompt: prompt }),
+  setNewSession: (newSessionOpen, prompt) =>
+    set(prompt === undefined ? { newSessionOpen } : { newSessionOpen, newSessionPrompt: prompt }),
   paletteOpen: false,
   setPalette: (paletteOpen) => set({ paletteOpen }),
   setTool: (tool) => set({ tool, listOpen: true }),
@@ -59,5 +71,12 @@ export const useUi = create<UiState>((set) => ({
 
 // A different host has different sessions and files: drop everything that pointed into the old one.
 onHostSwitch(() =>
-  useUi.setState({ selected: null, diffPath: null, terminalId: null, inboxId: null, filePath: null, listOpen: false }),
+  useUi.setState({
+    selected: null,
+    diffPath: null,
+    terminalId: null,
+    inboxId: null,
+    filePath: null,
+    listOpen: false,
+  }),
 );

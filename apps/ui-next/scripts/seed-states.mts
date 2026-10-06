@@ -5,7 +5,10 @@ import { WebSocket } from "ws";
 import { DaemonClient } from "../../../packages/client/src/daemon-client.ts";
 
 const port = Number(process.argv[2] ?? 7821);
-const state = JSON.parse(readFileSync(".dev/preview/state.json", "utf8")) as { repo: string; workspaceId: string };
+const state = JSON.parse(readFileSync(".dev/preview/state.json", "utf8")) as {
+  repo: string;
+  workspaceId: string;
+};
 const client = new DaemonClient({
   url: `ws://127.0.0.1:${port}/ws`,
   clientId: `seed-states-${Date.now()}`,
@@ -16,8 +19,12 @@ await client.connect();
 
 const make = async (title: string, prompt: string | null) => {
   const agent = await client.createAgent({
-    provider: "mock", model: "ten-second-stream", modeId: "load-test",
-    cwd: state.repo, workspaceId: state.workspaceId, title,
+    provider: "mock",
+    model: "ten-second-stream",
+    modeId: "load-test",
+    cwd: state.repo,
+    workspaceId: state.workspaceId,
+    title,
   });
   await client.waitForAgentUpsert(agent.id, (s) => s.status === "idle", 30_000);
   if (prompt) await client.sendMessage(agent.id, prompt);

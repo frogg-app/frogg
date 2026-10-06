@@ -1,6 +1,7 @@
 // Web: load the three faces and the page reset once. Native will bundle them via expo-font.
-const doc = (globalThis as { document?: Document }).document;
-if (doc && !doc.getElementById("frogg-fonts")) {
+export function loadWebFonts(): void {
+  const doc = (globalThis as { document?: Document }).document;
+  if (!doc || doc.getElementById("frogg-fonts")) return;
   const link = doc.createElement("link");
   link.id = "frogg-fonts";
   link.rel = "stylesheet";
@@ -15,4 +16,3 @@ html,body,#root{background:#080b0d;height:100%}
 `;
   doc.head.appendChild(style);
 }
-export {};

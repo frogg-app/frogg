@@ -14,7 +14,11 @@ interface TermState {
   error: string | null;
 }
 
-export const useTerminals = create<TermState>(() => ({ cwd: null, list: null, error: null }));
+export const useTerminals = create<TermState>(() => ({
+  cwd: null,
+  list: null,
+  error: null,
+}));
 
 let watching: string | null = null;
 let unsub: (() => void) | null = null;
@@ -31,7 +35,8 @@ export async function watchTerminals(cwd: string): Promise<void> {
   watching = cwd;
   useTerminals.setState({ cwd, list: null });
   unsub ??= client.subscribeRawMessages((m) => {
-    if (m.type === "terminals_changed" && m.payload.cwd === watching) useTerminals.setState({ list: m.payload.terminals });
+    if (m.type === "terminals_changed" && m.payload.cwd === watching)
+      useTerminals.setState({ list: m.payload.terminals });
   });
   client.subscribeTerminals({ cwd });
   const res = await client.listTerminals(cwd);
@@ -48,11 +53,15 @@ export async function newTerminal(): Promise<string | null> {
     return null;
   }
   const t = res.terminal;
-  useTerminals.setState((s) => ({ list: s.list?.some((x) => x.id === t.id) ? s.list : [...(s.list ?? []), t] }));
+  useTerminals.setState((s) => ({
+    list: s.list?.some((x) => x.id === t.id) ? s.list : [...(s.list ?? []), t],
+  }));
   return t.id;
 }
 
 export async function killTerminal(id: string): Promise<void> {
   await getClient()?.killTerminal(id);
-  useTerminals.setState((s) => ({ list: s.list?.filter((t) => t.id !== id) ?? null }));
+  useTerminals.setState((s) => ({
+    list: s.list?.filter((t) => t.id !== id) ?? null,
+  }));
 }

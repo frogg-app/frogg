@@ -37,7 +37,11 @@ export function activeHost(fallbackEndpoint: string): Host {
   const st = useHosts.getState();
   const found = st.hosts.find((h) => h.id === st.activeId) ?? st.hosts[0];
   if (found) return found;
-  const host: Host = { id: `h_${Date.now().toString(36)}`, name: fallbackEndpoint.split(":")[0] ?? "host", endpoint: fallbackEndpoint };
+  const host: Host = {
+    id: `h_${Date.now().toString(36)}`,
+    name: fallbackEndpoint.split(":")[0] ?? "host",
+    endpoint: fallbackEndpoint,
+  };
   useHosts.setState({ hosts: [host], activeId: host.id });
   return host;
 }
@@ -49,9 +53,14 @@ export function addHost(input: Omit<Host, "id">): Host {
 }
 
 export function removeHost(id: string): void {
-  useHosts.setState((s) => ({ hosts: s.hosts.filter((h) => h.id !== id), activeId: s.activeId === id ? null : s.activeId }));
+  useHosts.setState((s) => ({
+    hosts: s.hosts.filter((h) => h.id !== id),
+    activeId: s.activeId === id ? null : s.activeId,
+  }));
 }
 
 export function renameHost(id: string, name: string): void {
-  useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === id ? { ...h, name } : h)) }));
+  useHosts.setState((s) => ({
+    hosts: s.hosts.map((h) => (h.id === id ? { ...h, name } : h)),
+  }));
 }

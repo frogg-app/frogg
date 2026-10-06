@@ -121,6 +121,14 @@
       }
     },
     {
+      "files": ["apps/ui-next/src/**/*.{ts,tsx}"],
+      "rules": {
+        // Conditional React Native style arrays (`[s.row, on && s.rowOn]`) are the platform idiom;
+        // StyleSheet entries are registered once, so the array itself is the only allocation.
+        "react-perf/jsx-no-new-array-as-prop": "off"
+      }
+    },
+    {
       "files": [
         "apps/ui/src/data/**/*.{ts,tsx}",
         "apps/ui/src/**/*.test.{ts,tsx}",

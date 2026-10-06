@@ -4,6 +4,7 @@ import { activeHost, hostUrl, renameHost, useHosts, type Host } from "./hosts";
 import type { Session, TimelineEntry } from "./types";
 
 type Conn = "connecting" | "online" | "offline";
+const CONN: Partial<Record<string, Conn>> = { connected: "online", connecting: "connecting" };
 
 interface DaemonState {
   conn: Conn;
@@ -29,7 +30,8 @@ export const getClient = () => client;
 
 /** host:port used when nothing is saved yet: ?daemon=, then EXPO_PUBLIC_DAEMON, then this page's host. */
 function defaultEndpoint(): string {
-  const fromQuery = typeof location !== "undefined" ? new URLSearchParams(location.search).get("daemon") : null;
+  const fromQuery =
+    typeof location !== "undefined" ? new URLSearchParams(location.search).get("daemon") : null;
   if (fromQuery) return fromQuery;
   const env = process.env.EXPO_PUBLIC_DAEMON?.trim();
   if (env) return env.replace(/^wss?:\/\//, "").replace(/\/ws$/, "");
@@ -46,7 +48,14 @@ export async function connect(host?: Host): Promise<void> {
   }
   useHosts.setState({ activeId: target.id });
   const url = hostUrl(target);
-  useDaemon.setState({ url, conn: "connecting", sessions: {}, timelines: {}, streaming: {}, serverName: null });
+  useDaemon.setState({
+    url,
+    conn: "connecting",
+    sessions: {},
+    timelines: {},
+    streaming: {},
+    serverName: null,
+  });
   const mine = new DaemonClient({
     url,
     ...(target.password ? { password: target.password } : {}),
@@ -59,7 +68,9 @@ export async function connect(host?: Host): Promise<void> {
   client = mine;
   mine.subscribeConnectionStatus((s) => {
     if (client !== mine) return;
-    useDaemon.setState({ conn: s.status === "connected" ? "online" : s.status === "connecting" ? "connecting" : "offline" });
+    useDaemon.setState({
+      conn: CONN[s.status] ?? "offline",
+    });
     if (s.status === "connected") void loadSessions();
   });
   mine.subscribe((event) => {
@@ -69,7 +80,10 @@ export async function connect(host?: Host): Promise<void> {
       useDaemon.setState((st) => {
         const sessions = { ...st.sessions };
         if (p.kind === "upsert") {
-          sessions[p.agent.id] = { agent: p.agent, project: p.project ?? sessions[p.agent.id]?.project ?? null };
+          sessions[p.agent.id] = {
+            agent: p.agent,
+            project: p.project ?? sessions[p.agent.id]?.project ?? null,
+          };
         } else delete sessions[p.agentId];
         return { sessions };
       });
@@ -93,7 +107,10 @@ export async function connect(host?: Host): Promise<void> {
           collapsed: [],
         };
         useDaemon.setState((st) => ({
-          timelines: { ...st.timelines, [event.agentId]: mergeEntry(st.timelines[event.agentId] ?? [], entry) },
+          timelines: {
+            ...st.timelines,
+            [event.agentId]: mergeEntry(st.timelines[event.agentId] ?? [], entry),
+          },
         }));
       }
     }
@@ -114,7 +131,9 @@ function mergeEntry(list: TimelineEntry[], entry: TimelineEntry): TimelineEntry[
     (item.type === "assistant_message" || item.type === "reasoning") &&
     last.item.type === item.type &&
     last.turnId === entry.turnId &&
-    ("messageId" in item ? item.messageId === (last.item as { messageId?: string }).messageId : true)
+    ("messageId" in item
+      ? item.messageId === (last.item as { messageId?: string }).messageId
+      : true)
   ) {
     return [...list.slice(0, -1), { ...last, item: { ...item, text: last.item.text + item.text } }];
   }
@@ -129,13 +148,17 @@ async function loadSessions(): Promise<void> {
   if (!client) return;
   const res = await client.fetchAgents({ page: { limit: 200 }, subscribe: {} });
   const sessions: Record<string, Session> = {};
-  for (const e of res.entries) if (!e.agent.archivedAt) sessions[e.agent.id] = { agent: e.agent, project: e.project };
-  const info = client.getLastServerInfoMessage() as { hostname?: string } | null;
+  for (const e of res.entries)
+    if (!e.agent.archivedAt) sessions[e.agent.id] = { agent: e.agent, project: e.project };
+  const info = client.getLastServerInfoMessage() as {
+    hostname?: string;
+  } | null;
   useDaemon.setState({ sessions, serverName: info?.hostname ?? null });
   // A host saved by address alone takes the daemon's own name once we have it.
   const st = useHosts.getState();
   const host = st.hosts.find((h) => h.id === st.activeId);
-  if (host && info?.hostname && host.name === host.endpoint.split(":")[0]) renameHost(host.id, info.hostname);
+  if (host && info?.hostname && host.name === host.endpoint.split(":")[0])
+    renameHost(host.id, info.hostname);
 }
 
 const subscribed = new Set<string>();
@@ -153,8 +176,13 @@ export async function openTimeline(agentId: string): Promise<void> {
     subscribed.add(agentId);
     await client.setAgentTimelineSubscription([...subscribed]);
   }
-  const res = await client.fetchAgentTimeline(agentId, { direction: "tail", limit: 200 });
-  useDaemon.setState((st) => ({ timelines: { ...st.timelines, [agentId]: res.entries } }));
+  const res = await client.fetchAgentTimeline(agentId, {
+    direction: "tail",
+    limit: 200,
+  });
+  useDaemon.setState((st) => ({
+    timelines: { ...st.timelines, [agentId]: res.entries },
+  }));
 }
 
 export async function send(agentId: string, text: string): Promise<void> {
@@ -170,7 +198,9 @@ export async function answerPermission(
   await client?.respondToPermission(
     agentId,
     requestId,
-    allow ? { behavior: "allow", selectedActionId } : { behavior: "deny", message: "Denied from Frogg" },
+    allow
+      ? { behavior: "allow", selectedActionId }
+      : { behavior: "deny", message: "Denied from Frogg" },
   );
 }
 
@@ -199,7 +229,12 @@ export async function createSession(input: {
     initialPrompt: input.initialPrompt,
     worktree: input.worktree,
   });
-  useDaemon.setState((st) => ({ sessions: { ...st.sessions, [agent.id]: { agent, project: st.sessions[agent.id]?.project ?? null } } }));
+  useDaemon.setState((st) => ({
+    sessions: {
+      ...st.sessions,
+      [agent.id]: { agent, project: st.sessions[agent.id]?.project ?? null },
+    },
+  }));
   return agent.id;
 }
 

@@ -8,10 +8,17 @@ export function ago(iso: string | null | undefined): string {
 }
 
 export const providerLabel = (p: string) =>
-  ({ claude: "Claude Code", codex: "Codex", mock: "Mock", opencode: "OpenCode", gemini: "Gemini" })[p] ?? p;
+  ({
+    claude: "Claude Code",
+    codex: "Codex",
+    mock: "Mock",
+    opencode: "OpenCode",
+    gemini: "Gemini",
+  })[p] ?? p;
 
 /** "now" or "5m ago". */
 export const agoText = (iso: string | null | undefined) => {
   const a = ago(iso);
-  return a === "now" ? "just now" : a ? `${a} ago` : "";
+  if (a === "now") return "just now";
+  return a ? `${a} ago` : "";
 };

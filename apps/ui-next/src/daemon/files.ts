@@ -15,7 +15,11 @@ interface FilesState {
   expanded: Record<string, boolean>;
 }
 
-export const useFiles = create<FilesState>(() => ({ root: null, dirs: {}, expanded: { ".": true } }));
+export const useFiles = create<FilesState>(() => ({
+  root: null,
+  dirs: {},
+  expanded: { ".": true },
+}));
 
 export async function setRoot(root: string): Promise<void> {
   if (useFiles.getState().root === root) return;
@@ -30,10 +34,19 @@ export async function loadDir(path: string): Promise<void> {
   useFiles.setState((s) => ({ dirs: { ...s.dirs, [path]: "loading" } }));
   try {
     const dir = await client.listDirectory(root, path);
-    const entries = [...dir.entries].sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind === "directory" ? -1 : 1));
+    const entries = [...dir.entries].sort((a, b) =>
+      a.kind === b.kind
+        ? a.name.localeCompare(b.name)
+        : Number(b.kind === "directory") - Number(a.kind === "directory"),
+    );
     useFiles.setState((s) => ({ dirs: { ...s.dirs, [path]: entries } }));
   } catch (e) {
-    useFiles.setState((s) => ({ dirs: { ...s.dirs, [path]: { error: e instanceof Error ? e.message : String(e) } } }));
+    useFiles.setState((s) => ({
+      dirs: {
+        ...s.dirs,
+        [path]: { error: e instanceof Error ? e.message : String(e) },
+      },
+    }));
   }
 }
 
@@ -43,12 +56,18 @@ export function toggleDir(path: string): void {
   if (open && !useFiles.getState().dirs[path]) void loadDir(path);
 }
 
-export async function readText(path: string): Promise<{ text: string | null; kind: string; size: number }> {
+export async function readText(
+  path: string,
+): Promise<{ text: string | null; kind: string; size: number }> {
   const { root } = useFiles.getState();
   const client = getClient();
   if (!root || !client) throw new Error("not connected");
   const res = await client.readFile(root, path, undefined, 1_000_000);
-  return { text: res.kind === "text" ? new TextDecoder().decode(res.bytes) : null, kind: res.kind, size: res.size };
+  return {
+    text: res.kind === "text" ? new TextDecoder().decode(res.bytes) : null,
+    kind: res.kind,
+    size: res.size,
+  };
 }
 
 onHostSwitch(() => useFiles.setState({ root: null, dirs: {}, expanded: { ".": true } }));
