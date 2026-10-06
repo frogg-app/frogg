@@ -44,7 +44,9 @@ export function SessionList() {
         </Pressable>
         <View style={{ flex: 1 }} />
         <Filter size={15} color={color.faint} />
-        <Plus size={17} color={color.faint} style={{ marginLeft: 14 }} />
+        <Pressable onPress={() => useUi.getState().setNewSession(true)} accessibilityLabel="New session" style={{ marginLeft: 14 }}>
+          <Plus size={17} color={color.faint} />
+        </Pressable>
       </View>
       <View style={s.meter}>
         {ORDER.map((o) =>

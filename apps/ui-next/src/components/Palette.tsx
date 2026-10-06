@@ -28,6 +28,10 @@ export function useGlobalKeys() {
     const doc = (globalThis as { document?: Document }).document;
     if (!doc) return;
     const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n" && !e.shiftKey) {
+        e.preventDefault();
+        useUi.getState().setNewSession(true);
+      }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPalette(!useUi.getState().paletteOpen);
@@ -57,6 +61,7 @@ export function Palette() {
         glyph: bucketOf(s.agent), run: () => { ui.setTool("sessions"); ui.select(s.agent.id); },
       });
     list.push(
+      { id: "new-session", group: "Commands", label: "New session", kbd: "⌘N", run: () => ui.setNewSession(true) },
       { id: "new-term", group: "Commands", label: "New terminal", kbd: "⌃`", run: () => { ui.setTool("terminals"); void newTerminal().then((id) => id && ui.openTerminal(id)); } },
       { id: "home", group: "Commands", label: "Start something (home)", run: () => { ui.setTool("sessions"); ui.select(null); } },
     );

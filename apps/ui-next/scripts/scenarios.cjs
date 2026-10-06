@@ -55,3 +55,21 @@ const settings = (page) => async (p, size) => {
 module.exports["settings-automation"] = () => settings("Automation");
 module.exports["settings-tools"] = () => settings("Tools, skills & prompts");
 module.exports["settings-providers"] = () => settings("Providers & models");
+module.exports["new-session"] = () => async (p) => {
+  await p.keyboard.press("Control+n");
+  await p.waitForTimeout(1500);
+  await p.keyboard.type("Make the session cache cap configurable via config.json and log evictions at debug.");
+  await p.waitForTimeout(400);
+};
+module.exports["new-session-created"] = () => async (p) => {
+  await p.keyboard.press("Control+n");
+  await p.waitForTimeout(1500);
+  await p.keyboard.type("Add an LRU eviction log line");
+  await p.getByText("Local checkout", { exact: true }).click();
+  // Never a real provider from a screenshot run: pick the mock one.
+  await p.getByText("Claude", { exact: true }).first().click();
+  await p.getByText("Mock Load Test", { exact: true }).click();
+  await p.waitForTimeout(300);
+  await p.getByText("Create session", { exact: true }).click();
+  await p.waitForTimeout(5000);
+};

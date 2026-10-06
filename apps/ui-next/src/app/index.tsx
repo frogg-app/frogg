@@ -6,6 +6,7 @@ import { DiffView } from "../components/DiffView";
 import { InboxDetail, InboxPanel } from "../components/Inbox";
 import { SettingsNav, SettingsPage } from "../components/settings/Settings";
 import { Home } from "../components/Home";
+import { NewSession } from "../components/NewSession";
 import { Palette, useGlobalKeys } from "../components/Palette";
 import { PhoneTabs } from "../components/PhoneTabs";
 import { Rail } from "../components/Rail";
@@ -67,6 +68,7 @@ export default function Shell() {
         <View style={{ flex: 1 }}>{detail ?? side}</View>
         {!detail && <PhoneTabs badges={badges} />}
         <Palette />
+        <NewSession />
       </SafeAreaView>
     );
   }
@@ -96,6 +98,7 @@ export default function Shell() {
       </View>
       <StatusBar />
       <Palette />
+        <NewSession />
     </View>
   );
 }

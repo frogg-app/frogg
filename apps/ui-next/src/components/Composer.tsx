@@ -1,4 +1,4 @@
-import { ArrowUp, Mic, Plus } from "lucide-react-native";
+import { ArrowUp, Mic, Plus, Square } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { color, font, web } from "../theme/tokens";
@@ -6,8 +6,8 @@ import { Cut } from "./Cut";
 import { T } from "./Text";
 
 export function Composer({
-  placeholder, chips, onSend, compact,
-}: { placeholder: string; chips: string[]; onSend: (text: string) => void; compact?: boolean }) {
+  placeholder, chips, onSend, compact, onStop,
+}: { placeholder: string; chips: string[]; onSend: (text: string) => void; compact?: boolean; onStop?: () => void }) {
   const [text, setText] = useState("");
   const submit = () => {
     const t = text.trim();
@@ -42,11 +42,19 @@ export function Composer({
         ))}
         <View style={{ flex: 1 }} />
         <Mic size={16} color={color.muted} />
-        <Pressable onPress={submit} accessibilityLabel="Send">
-          <Cut size={6} style={[s.send, !text.trim() && { opacity: 0.55 }]}>
-            <ArrowUp size={16} color={color.onAccent} strokeWidth={2.2} />
-          </Cut>
-        </Pressable>
+        {onStop && !text.trim() ? (
+          <Pressable onPress={onStop} accessibilityLabel="Stop">
+            <Cut size={6} style={[s.send, s.stop]}>
+              <Square size={11} color={color.coral} fill={color.coral} />
+            </Cut>
+          </Pressable>
+        ) : (
+          <Pressable onPress={submit} accessibilityLabel="Send">
+            <Cut size={6} style={[s.send, !text.trim() && { opacity: 0.55 }]}>
+              <ArrowUp size={16} color={color.onAccent} strokeWidth={2.2} />
+            </Cut>
+          </Pressable>
+        )}
       </View>
     </Cut>
   );
@@ -61,6 +69,7 @@ const s = StyleSheet.create({
   bar: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
   chip: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,255,255,0.05)", paddingHorizontal: 8, paddingVertical: 4 },
   chipDot: { width: 6, height: 6, backgroundColor: color.cyan2, transform: [{ rotate: "45deg" }] },
+  stop: { backgroundColor: "rgba(255,107,107,0.14)", ...web({ backgroundImage: "none" }) },
   send: {
     width: 30, height: 30, alignItems: "center", justifyContent: "center", backgroundColor: color.cyan,
     ...web({ backgroundImage: "linear-gradient(135deg, #7fd9e6, #25b5c8 60%, #045b9d)" }),

@@ -20,6 +20,9 @@ interface UiState {
   openInbox: (id: string | null) => void;
   settingsPage: string | null;
   openSettings: (id: string | null) => void;
+  newSessionOpen: boolean;
+  newSessionPrompt: string;
+  setNewSession: (open: boolean, prompt?: string) => void;
   paletteOpen: boolean;
   setPalette: (open: boolean) => void;
   setTool: (tool: Tool) => void;
@@ -39,6 +42,9 @@ export const useUi = create<UiState>((set) => ({
   openInbox: (inboxId) => set({ inboxId, listOpen: false }),
   settingsPage: null,
   openSettings: (settingsPage) => set({ settingsPage, listOpen: false }),
+  newSessionOpen: false,
+  newSessionPrompt: "",
+  setNewSession: (newSessionOpen, prompt) => set(prompt === undefined ? { newSessionOpen } : { newSessionOpen, newSessionPrompt: prompt }),
   paletteOpen: false,
   setPalette: (paletteOpen) => set({ paletteOpen }),
   setTool: (tool) => set({ tool, listOpen: true }),

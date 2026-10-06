@@ -151,3 +151,45 @@ export async function answerPermission(
     allow ? { behavior: "allow", selectedActionId } : { behavior: "deny", message: "Denied from Frogg" },
   );
 }
+
+export type Project = Awaited<ReturnType<DaemonClient["listProjects"]>>["projects"][number];
+
+export async function listProjects(): Promise<Project[]> {
+  return (await client?.listProjects())?.projects ?? [];
+}
+
+export async function createSession(input: {
+  cwd: string;
+  provider: string;
+  model?: string;
+  modeId?: string;
+  title?: string;
+  initialPrompt: string;
+  worktree?: { mode: "branch-off"; newBranch: string; base?: string };
+}): Promise<string> {
+  if (!client) throw new Error("not connected");
+  const agent = await client.createAgent({
+    provider: input.provider as never,
+    cwd: input.cwd,
+    model: input.model,
+    modeId: input.modeId,
+    title: input.title,
+    initialPrompt: input.initialPrompt,
+    worktree: input.worktree,
+  });
+  useDaemon.setState((st) => ({ sessions: { ...st.sessions, [agent.id]: { agent, project: st.sessions[agent.id]?.project ?? null } } }));
+  return agent.id;
+}
+
+export async function cancelTurn(agentId: string): Promise<void> {
+  await client?.cancelAgent(agentId);
+}
+
+export async function archiveSession(agentId: string): Promise<void> {
+  await client?.archiveAgent(agentId);
+  useDaemon.setState((st) => {
+    const sessions = { ...st.sessions };
+    delete sessions[agentId];
+    return { sessions };
+  });
+}

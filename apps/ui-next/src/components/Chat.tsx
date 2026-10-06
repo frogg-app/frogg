@@ -1,12 +1,11 @@
-import { ArrowLeft, Check, FileText, Lock, Search, SquareTerminal, X } from "lucide-react-native";
+import { Archive, ArrowLeft, Check, FileText, Search, SquareTerminal, X } from "lucide-react-native";
 import { useEffect, useRef } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { answerPermission, openTimeline, send, useDaemon } from "../daemon/store";
+import { archiveSession, cancelTurn, openTimeline, send, useDaemon } from "../daemon/store";
 import { bucketOf, type Session, type TimelineEntry } from "../daemon/types";
-import { color, web } from "../theme/tokens";
+import { color } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { Composer } from "./Composer";
-import { Cut } from "./Cut";
 import { PermissionCard } from "./PermissionCard";
 import { Markdown } from "./Markdown";
 import { bucketColor, StatusGlyph } from "./StatusGlyph";
@@ -35,6 +34,9 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
             <Pressable onPress={onBack} hitSlop={10}><ArrowLeft size={18} color={color.text} /></Pressable>
           )}
           <T v="display" numberOfLines={1} style={{ fontSize: 19, flex: 1 }}>{a.title || "Untitled session"}</T>
+          <Pressable onPress={() => void archiveSession(a.id)} accessibilityLabel="Archive session" hitSlop={8}>
+            {({ hovered }) => <Archive size={16} color={hovered ? color.text : color.faint} />}
+          </Pressable>
         </View>
         <View style={s.sub}>
           <StatusGlyph bucket={bucket} size={7} />
@@ -60,18 +62,11 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
           placeholder={`Message ${providerLabel(a.provider)} — @ files, / commands`}
           chips={[providerLabel(a.provider), model ?? "default"].slice(onBack ? 1 : 0)}
           onSend={(t) => void send(a.id, t)}
+          onStop={a.status === "running" ? () => void cancelTurn(a.id) : undefined}
           compact={!!onBack}
         />
       </View>
     </View>
-  );
-}
-
-function Kbd({ k, dark }: { k: string; dark?: boolean }) {
-  return (
-    <T v="mono" style={{ fontSize: 9.5, paddingHorizontal: 4, borderWidth: 1, borderColor: dark ? "rgba(4,22,26,0.35)" : color.line2, color: dark ? color.onAccent : color.muted }}>
-      {k}
-    </T>
   );
 }
 
@@ -142,11 +137,5 @@ const s = StyleSheet.create({
   body: { paddingHorizontal: 24, paddingVertical: 18, maxWidth: 860, width: "100%", alignSelf: "center" },
   user: { alignSelf: "flex-end", maxWidth: "85%", marginTop: 14, backgroundColor: color.raise, borderLeftWidth: 2, borderLeftColor: color.cyan2, paddingHorizontal: 14, paddingVertical: 10 },
   tool: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 8, backgroundColor: color.panel, borderWidth: 1, borderColor: color.line, paddingHorizontal: 12, paddingVertical: 8 },
-  perm: { marginTop: 16, borderWidth: 1, borderColor: "rgba(245,184,74,0.45)", backgroundColor: "rgba(245,184,74,0.05)", padding: 14 },
-  deny: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: "rgba(255,255,255,0.06)" },
-  allow: {
-    flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: color.cyan2,
-    ...web({ backgroundImage: "linear-gradient(135deg, #7fd9e6, #25b5c8)" }),
-  },
   composer: { paddingHorizontal: 16, paddingBottom: 14, paddingTop: 6, maxWidth: 892, width: "100%", alignSelf: "center" },
 });
