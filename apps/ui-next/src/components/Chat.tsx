@@ -7,6 +7,7 @@ import { color, web } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { Composer } from "./Composer";
 import { Cut } from "./Cut";
+import { PermissionCard } from "./PermissionCard";
 import { Markdown } from "./Markdown";
 import { bucketColor, StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
@@ -51,25 +52,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
       >
         {!entries && <T v="label" style={{ textAlign: "center", marginTop: 40 }}>loading timeline…</T>}
         {entries?.map((e, i) => <Item key={`${e.seqStart}-${i}`} e={e} provider={providerLabel(a.provider)} />)}
-        {a.pendingPermissions.map((p) => (
-          <Cut key={p.id} size={10} flip style={s.perm}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Lock size={13} color={color.amber} />
-              <T style={{ color: color.amber, fontWeight: "600", fontSize: 12.5 }}>Permission needed</T>
-              <T v="mono" style={{ marginLeft: "auto" }}>{p.name}</T>
-            </View>
-            <T style={{ fontSize: 15, marginTop: 10 }}>{p.title ?? p.name}</T>
-            {p.description && <T style={{ color: color.muted, marginTop: 6 }}>{p.description}</T>}
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
-              <Pressable onPress={() => void answerPermission(a.id, p.id, false)}>
-                <Cut size={6} style={s.deny}><T style={{ fontWeight: "600" }}>Deny</T><Kbd k="Esc" /></Cut>
-              </Pressable>
-              <Pressable onPress={() => void answerPermission(a.id, p.id, true)}>
-                <Cut size={6} style={s.allow}><T style={{ fontWeight: "600", color: color.onAccent }}>Approve</T><Kbd k="A" dark /></Cut>
-              </Pressable>
-            </View>
-          </Cut>
-        ))}
+        {a.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={a.id} p={p} />)}
         {a.status === "running" && <Thinking />}
       </ScrollView>
       <View style={s.composer}>

@@ -139,10 +139,15 @@ export async function send(agentId: string, text: string): Promise<void> {
   await client?.sendMessage(agentId, text);
 }
 
-export async function answerPermission(agentId: string, requestId: string, allow: boolean): Promise<void> {
+export async function answerPermission(
+  agentId: string,
+  requestId: string,
+  allow: boolean,
+  selectedActionId?: string,
+): Promise<void> {
   await client?.respondToPermission(
     agentId,
     requestId,
-    allow ? { behavior: "allow" } : { behavior: "deny", message: "Denied from Frogg" },
+    allow ? { behavior: "allow", selectedActionId } : { behavior: "deny", message: "Denied from Frogg" },
   );
 }

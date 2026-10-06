@@ -4,5 +4,7 @@
   "03": "Every status bucket seeded; markdown in replies; phone tab bar.",
   "04": "Plan approvals show Review; tablet landscape docks the list.",
   "05": "Source control: branch card with pull/push, commit box, changed files, split/unified diff.",
-  "06": "Terminals: list per checkout, new/kill, real PTY rendered with xterm in the Bracket palette."
+  "06": "Terminals: list per checkout, new/kill, real PTY rendered with xterm in the Bracket palette.",
+  "07": "Inbox (needs you / failures / finished, detail with permission card and context), \u2318K command palette, phone More sheet with every tool.",
+  "08": "Settings: You / Agents / Host navigation; Automation, Tools & prompts, Providers, Overview, Appearance and Shortcuts pages read and write the daemon's config.json live."
 }

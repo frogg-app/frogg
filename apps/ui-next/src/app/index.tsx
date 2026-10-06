@@ -3,7 +3,10 @@ import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Chat } from "../components/Chat";
 import { DiffView } from "../components/DiffView";
+import { InboxDetail, InboxPanel } from "../components/Inbox";
+import { SettingsNav, SettingsPage } from "../components/settings/Settings";
 import { Home } from "../components/Home";
+import { Palette, useGlobalKeys } from "../components/Palette";
 import { PhoneTabs } from "../components/PhoneTabs";
 import { Rail } from "../components/Rail";
 import { ScmPanel } from "../components/ScmPanel";
@@ -23,6 +26,8 @@ function sidePanel(tool: Tool): ReactNode {
     case "sessions": return <SessionList />;
     case "scm": return <ScmPanel />;
     case "terminals": return <TerminalsPanel />;
+    case "inbox": return <InboxPanel />;
+    case "settings": return <SettingsNav />;
     default: return <ToolPane tool={tool} />;
   }
 }
@@ -30,7 +35,7 @@ function sidePanel(tool: Tool): ReactNode {
 export default function Shell() {
   const ff = useFormFactor();
   const docked = useWindowDimensions().width >= 900;
-  const { tool, selected, listOpen, diffPath, terminalId, select, setListOpen, openDiff, openTerminal } = useUi();
+  const { tool, selected, listOpen, diffPath, terminalId, inboxId, settingsPage, select, setListOpen, openDiff, openTerminal, openInbox, openSettings } = useUi();
   const session = useDaemon((s) => (selected ? s.sessions[selected] : undefined));
   const b = useBuckets();
   const badges: Partial<Record<Tool, number>> = {
@@ -38,6 +43,7 @@ export default function Shell() {
     inbox: b.needs.length + b.failed.length || undefined,
   };
   const phone = ff === "phone";
+  useGlobalKeys();
 
   // What the main pane shows: a tool's own detail view when it has one open, else the session.
   const detail: ReactNode =
@@ -45,6 +51,10 @@ export default function Shell() {
       <DiffView path={diffPath} onBack={phone ? () => openDiff(null) : undefined} />
     ) : tool === "terminals" && terminalId ? (
       <TerminalDetail id={terminalId} onBack={phone ? () => openTerminal(null) : undefined} />
+    ) : tool === "settings" && (settingsPage || !phone) ? (
+      <SettingsPage id={settingsPage ?? "appearance"} onBack={phone ? () => openSettings(null) : undefined} />
+    ) : tool === "inbox" && inboxId ? (
+      <InboxDetail id={inboxId} onBack={phone ? () => openInbox(null) : undefined} />
     ) : tool === "sessions" || !phone ? (
       session ? <Chat session={session} onBack={phone ? () => select(null) : undefined} /> : phone ? null : <Home />
     ) : null;
@@ -56,11 +66,12 @@ export default function Shell() {
       <SafeAreaView edges={["top"]} style={s.root}>
         <View style={{ flex: 1 }}>{detail ?? side}</View>
         {!detail && <PhoneTabs badges={badges} />}
+        <Palette />
       </SafeAreaView>
     );
   }
 
-  const hasDetail = !!(session || (tool === "scm" && diffPath) || (tool === "terminals" && terminalId));
+  const hasDetail = !!(session || (tool === "scm" && diffPath) || (tool === "terminals" && terminalId) || (tool === "inbox" && inboxId) || (tool === "settings" && settingsPage));
   return (
     <View style={s.root}>
       <View style={{ flex: 1, flexDirection: "row" }}>
@@ -84,6 +95,7 @@ export default function Shell() {
         )}
       </View>
       <StatusBar />
+      <Palette />
     </View>
   );
 }

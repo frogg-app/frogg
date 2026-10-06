@@ -15,6 +15,13 @@ interface UiState {
   /** Terminals: the one filling the main pane. */
   terminalId: string | null;
   openTerminal: (id: string | null) => void;
+  /** Inbox: the session whose notification fills the main pane. */
+  inboxId: string | null;
+  openInbox: (id: string | null) => void;
+  settingsPage: string | null;
+  openSettings: (id: string | null) => void;
+  paletteOpen: boolean;
+  setPalette: (open: boolean) => void;
   setTool: (tool: Tool) => void;
   select: (id: string | null) => void;
   setListOpen: (open: boolean) => void;
@@ -28,6 +35,12 @@ export const useUi = create<UiState>((set) => ({
   openDiff: (diffPath) => set({ diffPath, listOpen: false }),
   terminalId: null,
   openTerminal: (terminalId) => set({ terminalId, listOpen: false }),
+  inboxId: null,
+  openInbox: (inboxId) => set({ inboxId, listOpen: false }),
+  settingsPage: null,
+  openSettings: (settingsPage) => set({ settingsPage, listOpen: false }),
+  paletteOpen: false,
+  setPalette: (paletteOpen) => set({ paletteOpen }),
   setTool: (tool) => set({ tool, listOpen: true }),
   select: (selected) => set({ selected, listOpen: false }),
   setListOpen: (listOpen) => set({ listOpen }),
