@@ -163,7 +163,7 @@ export function Start({ children }: { children: ReactNode }) {
   return <View style={s.start}>{children}</View>;
 }
 
-/** Anchors a popover that positions itself above its parent (bottom: 100%) to the frame's foot. */
+/** Sits a composer popover at the frame's foot, at the 340 width Floating gives it in the app. */
 export function Above({ children }: { children: ReactNode }) {
   return (
     <View style={s.aboveFrame}>
@@ -318,5 +318,5 @@ const s = StyleSheet.create({
   ghostDot: { width: 8, height: 8, borderWidth: 1, borderColor: color.line2 },
   ghostBar: { height: 8, backgroundColor: color.wash2 },
   aboveFrame: { flex: 1, justifyContent: "flex-end" },
-  above: { height: 1 },
+  above: { width: 340, maxWidth: "100%" },
 });

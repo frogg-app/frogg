@@ -240,7 +240,9 @@ const SlashEmpty = () => (
   </Above>
 );
 const SlashError = () => (
-  <SlashMenu commands={CMDS} error matches={NONE} highlight={0} onPick={noop} />
+  <Above>
+    <SlashMenu commands={CMDS} error matches={NONE} highlight={0} onPick={noop} />
+  </Above>
 );
 
 function Attachments() {
@@ -357,7 +359,7 @@ export const chat: Entry[] = [
     polish:
       "overlayMotion.popUp on mount (fade + scale 0.96→1 + 4px, 160ms, origin bottom-left); unmounts instantly",
     variants: [
-      { id: "matches", label: "Commands and skills, one highlighted", C: SlashMatches, h: 300 },
+      { id: "matches", label: "Commands and skills, one highlighted", C: SlashMatches, h: 360 },
       { id: "loading", label: "Loading", C: SlashLoading, h: 110 },
       { id: "empty", label: "No matches", C: SlashEmpty, h: 110 },
       { id: "error", label: "Unavailable", C: SlashError, h: 110 },
