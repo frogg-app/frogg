@@ -31,7 +31,11 @@ const scenarios = {
       await page.waitForTimeout(Number(process.env.WAIT || 4000));
     }
   },
-  scm: async (page) => {
+  scm: async (page, size) => {
+    // Source control follows the open session's checkout; pick one with changes.
+    await page.getByText("Preview chat").first().click();
+    await page.waitForTimeout(500);
+    if (size === "phone") await page.getByLabel("Back").first().click();
     await tool(page, "Source control", "Source");
     await page.waitForTimeout(1500);
     await page.getByText("session-store.ts", { exact: true }).first().click();

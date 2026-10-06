@@ -50,7 +50,7 @@ export function Markdown({ text }: { text: string }) {
 }
 
 function Inline({ text }: { text: string }) {
-  return text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g).map((part, i) => {
+  return text.split(/(`[^`]+`|\*\*[^*]+\*\*|(?<![\w*])[_*][^_*\s][^_*]*[_*](?![\w*]))/g).map((part, i) => {
     if (part.startsWith("`") && part.endsWith("`") && part.length > 1)
       return (
         <T key={i} style={{ fontFamily: font.mono, fontSize: 12.5, color: color.cyan2, backgroundColor: "rgba(127,217,230,0.08)" }}>
@@ -58,6 +58,7 @@ function Inline({ text }: { text: string }) {
         </T>
       );
     if (part.startsWith("**")) return <T key={i} style={{ fontWeight: "600" }}>{part.slice(2, -2)}</T>;
+    if (/^[_*].+[_*]$/.test(part)) return <T key={i} style={{ fontStyle: "italic", color: color.muted }}>{part.slice(1, -1)}</T>;
     return <Fragment key={i}>{part}</Fragment>;
   });
 }
