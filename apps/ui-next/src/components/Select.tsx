@@ -1,5 +1,5 @@
 import { Check, ChevronDown } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Modal,
   Platform,
@@ -14,6 +14,7 @@ import { exitPointer, popStyle, scrimStyle, sheetStyle, usePresence } from "./pr
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { bp, color, overlayMs, web } from "../theme/tokens";
 import { Cut } from "./Cut";
+import { Floating } from "./Floating";
 import { T } from "./Text";
 
 export interface Option<V extends string> {
@@ -24,8 +25,8 @@ export interface Option<V extends string> {
 }
 
 /**
- * A bracket-styled dropdown. On wide web the menu opens in place over what follows (or above,
- * with `up`); on native and narrow widths it opens as a bottom sheet in a modal, so it never
+ * A bracket-styled dropdown. On wide web the menu floats over the page next to the field (above with `up`,
+ * flipping when there is no room); on native and narrow widths it opens as a bottom sheet in a modal, so it never
  * fights sibling stacking or clipping.
  */
 export function Select<V extends string>({
@@ -69,20 +70,33 @@ export function Select<V extends string>({
   );
   const wrap = useMemo(() => ({ width, zIndex: open && !sheet ? 40 : 1 }), [width, open, sheet]);
   const drop = usePresence(open && !sheet);
-  const menu = useMemo(
-    () => [
-      s.menu,
-      up && s.menuUp,
-      menuWidth !== undefined && { width: menuWidth, right: undefined },
-      ...popStyle(drop.closing, !!up, false),
-    ],
-    [up, menuWidth, drop.closing],
+  const anchor = useRef<View>(null);
+  const closing = drop.closing;
+  const menu = useCallback(
+    (p: { up: boolean; maxHeight: number }) => (
+      <View style={popStyle(closing, p.up, false)} pointerEvents={exitPointer(closing)}>
+        <Cut size={8} flip style={s.menuPaint}>
+          <ScrollView style={s.scroll}>
+            {options.map((o) => (
+              <OptionRow
+                key={o.value}
+                option={o}
+                selected={o.value === value}
+                mono={!!mono}
+                onPick={pick}
+              />
+            ))}
+          </ScrollView>
+        </Cut>
+      </View>
+    ),
+    [closing, options, value, mono, pick],
   );
   let fieldText: TextStyle = s.fieldText;
   if (chip) fieldText = s.fieldTextChip;
   else if (mono) fieldText = s.fieldTextMono;
   return (
-    <View style={wrap}>
+    <View style={wrap} ref={anchor}>
       <Pressable onPress={toggle} accessibilityRole="button" accessibilityLabel={label}>
         {({ hovered }) => (
           <View
@@ -115,21 +129,9 @@ export function Select<V extends string>({
         />
       )}
       {drop.mounted && !sheet && (
-        <View style={menu} pointerEvents={exitPointer(drop.closing)}>
-          <Cut size={8} flip style={s.menuPaint}>
-            <ScrollView style={s.scroll}>
-              {options.map((o) => (
-                <OptionRow
-                  key={o.value}
-                  option={o}
-                  selected={o.value === value}
-                  mono={!!mono}
-                  onPick={pick}
-                />
-              ))}
-            </ScrollView>
-          </Cut>
-        </View>
+        <Floating anchor={anchor} up={up} width={menuWidth}>
+          {menu}
+        </Floating>
       )}
     </View>
   );
@@ -259,13 +261,6 @@ const s = StyleSheet.create({
     gap: 6,
   },
   chipHover: { backgroundColor: color.wash3 },
-  menu: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    marginTop: 4,
-  },
   menuPaint: {
     backgroundColor: color.raise,
     borderWidth: 1,
@@ -273,7 +268,6 @@ const s = StyleSheet.create({
     paddingVertical: 4,
     ...web({ boxShadow: "0 16px 40px #000a" }),
   },
-  menuUp: { top: undefined, bottom: "100%", marginTop: 0, marginBottom: 4 },
   scroll: { maxHeight: 260 },
   opt: {
     flexDirection: "row",

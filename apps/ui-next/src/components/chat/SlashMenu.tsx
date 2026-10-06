@@ -28,7 +28,13 @@ export function SlashMenu({
   matches,
   highlight,
   onPick,
+  up = true,
+  maxHeight = 380,
 }: {
+  /** Which side of the composer it opened on (drives the grow origin). */
+  up?: boolean;
+  /** Room available on that side; the list scrolls inside it. */
+  maxHeight?: number;
   commands: SlashCommand[] | null;
   error?: boolean;
   matches: SlashCommand[];
@@ -41,9 +47,10 @@ export function SlashMenu({
     return { cmd, skill };
   }, [matches]);
   const hiName = matches[highlight]?.name;
+  const scroll = useMemo(() => ({ maxHeight: Math.min(380, maxHeight - 10) }), [maxHeight]);
   return (
-    <Cut size={8} flip style={s.pop}>
-      <ScrollView style={s.scroll} keyboardShouldPersistTaps="always">
+    <Cut size={8} flip style={[s.pop, up ? s.popUp : s.popDown]}>
+      <ScrollView style={[s.scroll, scroll]} keyboardShouldPersistTaps="always">
         {!commands && (
           <T v="label" style={s.empty}>
             loading commands…
@@ -106,22 +113,15 @@ function Row({
 
 const s = StyleSheet.create({
   pop: {
-    position: "absolute",
-    left: 0,
-    bottom: "100%",
-    marginBottom: 6,
-    width: 340,
-    maxWidth: "100%",
-    zIndex: 20,
     backgroundColor: color.raise,
     borderWidth: 1,
     borderColor: color.line2,
     paddingVertical: 4,
-    ...overlayMotion.popUp,
-    ...web({ transformOrigin: "bottom left" }),
     ...web({ boxShadow: `0 16px 40px ${color.scrim}` }),
   },
-  scroll: { maxHeight: 380, flexGrow: 0 },
+  popUp: { ...overlayMotion.popUp, ...web({ transformOrigin: "bottom left" }) },
+  popDown: { ...overlayMotion.popDown, ...web({ transformOrigin: "top left" }) },
+  scroll: { flexGrow: 0 },
   head: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4, fontSize: 9.5 },
   empty: { padding: 14 },
   row: { paddingHorizontal: 10, paddingVertical: 7, marginHorizontal: 4 },

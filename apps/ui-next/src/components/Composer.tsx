@@ -1,5 +1,5 @@
 import { ArrowUp, Mic, Plus, Square } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -14,6 +14,7 @@ import { AttachChips, AttachMenu } from "./chat/Attach";
 import { SlashMenu, matchCommands } from "./chat/SlashMenu";
 import { toastError } from "./toast/store";
 import { Cut } from "./Cut";
+import { Floating } from "./Floating";
 import { T } from "./Text";
 
 type KeyEvent = NativeSyntheticEvent<TextInputKeyPressEventData & { shiftKey?: boolean }>;
@@ -140,16 +141,28 @@ export function Composer({
   );
   const addAtts = useCallback((more: Attachment[]) => setAtts((a) => [...a, ...more]), []);
   const removeAtt = useCallback((id: string) => setAtts((a) => a.filter((x) => x.id !== id)), []);
+  const anchor = useRef<View>(null);
+  const highlight = Math.min(hi, Math.max(0, matches.length - 1));
+  const slashMenu = useCallback(
+    (p: { up: boolean; maxHeight: number }) => (
+      <SlashMenu
+        up={p.up}
+        maxHeight={p.maxHeight}
+        error={commandError}
+        commands={commands}
+        matches={matches}
+        highlight={highlight}
+        onPick={pickCommand}
+      />
+    ),
+    [commandError, commands, matches, highlight, pickCommand],
+  );
   return (
-    <View style={s.wrap}>
+    <View style={s.wrap} ref={anchor}>
       {slashOpen && (
-        <SlashMenu
-          error={commandError}
-          commands={commands}
-          matches={matches}
-          highlight={Math.min(hi, Math.max(0, matches.length - 1))}
-          onPick={pickCommand}
-        />
+        <Floating anchor={anchor} up width={340} gap={6}>
+          {slashMenu}
+        </Floating>
       )}
       <Cut size={10} style={s.box}>
         {notices}
