@@ -22,7 +22,8 @@ import { isChat, openSheet, projectIdOf, useDirectory, type Prefs } from "./sess
 import { ageGroup, HistoryList } from "./sessions/history";
 import { DisplayMenu, ScopeMenu, SessionMenu } from "./sessions/menus";
 import { LabelChip, SessionSheets } from "./sessions/sheets";
-import { bucketColor, StatusGlyph } from "./StatusGlyph";
+import { StatusSummary } from "./sessions/StatusSummary";
+import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 import { useAnchor, type Rect } from "./tools/Menu";
 
@@ -161,42 +162,13 @@ export function SessionList() {
   const openMenu = useCallback((id: string, rect: Rect) => setMenu({ id, rect }), []);
   const chats = scope === "chats";
   const history = scope === "archived";
-  // The proportional meter: one segment per non-empty bucket, sized by its share.
-  const segments = useMemo(
-    () =>
-      ORDER.filter((o) => counts[o.b]).map((o) => ({
-        b: o.b,
-        style: [s.segment, { flex: counts[o.b] / (total || 1), backgroundColor: bucketColor[o.b] }],
-      })),
-    [counts, total],
-  );
-  const chips = ORDER.filter((o) => counts[o.b]);
   let body: ReactNode;
   if (history) body = <HistoryList />;
   else if (!total) body = <Empty name={name} chats={chats} all={scope === "all"} />;
   else
     body = (
       <>
-        {!chats && (
-          <>
-            <View style={s.meter}>
-              {segments.map((seg) => (
-                <View key={seg.b} style={seg.style} />
-              ))}
-            </View>
-            <View style={s.counts}>
-              {chips.map((o) => (
-                <View key={o.b} style={s.count}>
-                  <StatusGlyph bucket={o.b} size={7} still />
-                  <T style={s.countN}>{counts[o.b]}</T>
-                  <T style={s.countL} numberOfLines={1}>
-                    {o.label.toLowerCase()}
-                  </T>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
+        {!chats && <StatusSummary key={name} counts={counts} />}
         <Cut size={5} style={s.filter}>
           <TextInput
             value={q}
@@ -473,24 +445,6 @@ const s = StyleSheet.create({
   emptyB: { fontSize: 12.5, color: color.muted, textAlign: "center", lineHeight: 19 },
   emptyLink: { fontSize: 12.5, color: color.text, marginTop: 4 },
   rowHidden: { opacity: 0.5 },
-  meter: {
-    flexDirection: "row",
-    gap: 2,
-    marginHorizontal: 14,
-    backgroundColor: color.line,
-  },
-  segment: { height: 3 },
-  counts: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    columnGap: 12,
-    rowGap: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  count: { flexDirection: "row", alignItems: "center", gap: 5, flexShrink: 0 },
-  countN: { fontSize: 11.5, fontWeight: "600" },
-  countL: { fontSize: 11.5, color: color.muted },
   filter: {
     flexDirection: "row",
     alignItems: "center",

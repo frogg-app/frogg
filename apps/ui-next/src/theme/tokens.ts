@@ -288,3 +288,9 @@ export const stateWash = {
   amber: "rgba(245,184,74,0.07)",
   cyan: "rgba(37,181,200,0.07)",
 } as const;
+
+/** A soft light band (transparent → bright → transparent) for beams travelling along thin bars. */
+export const beamBand = web({
+  backgroundImage:
+    "linear-gradient(90deg, rgba(242,246,247,0) 0%, rgba(242,246,247,0.85) 50%, rgba(242,246,247,0) 100%)",
+});

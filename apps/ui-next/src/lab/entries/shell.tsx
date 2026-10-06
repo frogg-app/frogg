@@ -14,6 +14,7 @@ import { useDaemon } from "../../daemon/store";
 import { color } from "../../theme/tokens";
 import { useUi, type Tool } from "../../ui-store";
 import { ID, sessions } from "../fixtures";
+import { statusSummary } from "./statusSummary";
 import { Act, Column, Controls, Fill, Row, Stack, type Entry } from "../kit";
 
 /** Badges the shell computes from the session buckets (sessions: needs, inbox: needs + failed). */
@@ -178,7 +179,7 @@ export const shell: Entry[] = [
       "Sessions grouped by attention with a proportional meter, counts, filter, scope and display menus, inline approve.",
     usedBy: 10,
     polish:
-      "selected row: Brackets snap in (220ms) · hover wash instant · meter segments resize instantly",
+      "selected row: Brackets snap in (220ms) · hover wash instant · status summary: see StatusSummary",
     variants: [
       {
         id: "default",
@@ -188,6 +189,7 @@ export const shell: Entry[] = [
       },
     ],
   },
+  statusSummary,
   {
     id: "status-bar",
     name: "StatusBar",
