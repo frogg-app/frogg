@@ -3,9 +3,18 @@
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import type { LucideIcon } from "lucide-react-native";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { StyleSheet, TextInput, View, type TextInputProps } from "react-native";
+import { Animated, Easing, StyleSheet, TextInput, View, type TextInputProps } from "react-native";
 import { getClient, useDaemon } from "../../../daemon/store";
-import { color, font, web } from "../../../theme/tokens";
+import { color, font, glide, web } from "../../../theme/tokens";
+import {
+  levelOf,
+  useLabelFlash,
+  meterMotion,
+  useFrom,
+  useMeterAlert,
+  useReducedMotion,
+  useToneFade,
+} from "../../Meter";
 import { Button } from "../../Button";
 import { T } from "../../Text";
 
@@ -213,33 +222,53 @@ export function Acts({ children }: { children: ReactNode }) {
   return <View style={s.acts}>{children}</View>;
 }
 
+/**
+ * Continuous meter. Width glides in on mount and toward new values; amber (≥ 70) shimmers once
+ * then breathes faintly at the edge, coral (≥ 90) pulses three times then keeps an edge pulse.
+ */
 export function Meter({ pct }: { pct: number | null }) {
   const p = Math.max(0, Math.min(100, pct ?? 0));
-  const fill = useMeterFill(p);
-  let tint: object = s.fillOk;
-  if (p >= 85) tint = s.fillBad;
-  else if (p >= 70) tint = s.fillWarn;
+  let tint: string = color.cyan;
+  if (p >= 90) tint = color.coral;
+  else if (p >= 70) tint = color.amber;
+  const reduced = useReducedMotion();
+  const w = useRef(new Animated.Value(0)).current;
+  const span = Math.abs(p - useFrom(p));
+  const ms = Math.max(160, (span / 100) * meterMotion.fillMs);
+  useEffect(() => {
+    if (reduced) return w.setValue(p);
+    const a = Animated.timing(w, {
+      toValue: p,
+      duration: ms,
+      easing: Easing.bezier(...glide.curve),
+      useNativeDriver: false,
+    });
+    a.start();
+    return () => a.stop();
+  }, [p, ms, reduced, w]);
+  const level = levelOf(tint, pct === null ? null : p);
+  const alert = useMeterAlert(level, ms, reduced);
+  const fade = useToneFade(tint, reduced);
+  const pctStyle = useLabelFlash(alert.flash, level);
+  const width = w.interpolate({ inputRange: [0, 100], outputRange: ["0%", "100%"] });
+  const bg = fade.tone.interpolate({ inputRange: [0, 1], outputRange: [fade.prevTint, tint] });
+  const glow = Animated.multiply(alert.flash, level === "warn" ? 1.4 : 0.55);
+  const edge = Animated.multiply(alert.lead, level === "crit" ? 0.85 : 0.5);
   return (
     <View style={s.meterRow}>
       <View style={s.meter}>
-        <View style={[s.fill, tint, fill]} />
+        <Animated.View style={[s.fill, { width, backgroundColor: bg }]}>
+          <Animated.View style={[s.meterGlow, { opacity: glow }]} />
+          <Animated.View style={[s.meterEdge, { opacity: edge }]} />
+        </Animated.View>
       </View>
-      <T v="mono" style={s.meterT}>
-        {pct === null ? "—" : `${Math.round(p)}%`}
-      </T>
+      <Animated.View style={pctStyle}>
+        <T v="mono" style={[s.meterT, level === "crit" && s.meterCrit]}>
+          {pct === null ? "—" : `${Math.round(p)}%`}
+        </T>
+      </Animated.View>
     </View>
   );
-}
-
-const fillCache = new Map<number, object>();
-function useMeterFill(p: number): object {
-  const key = Math.round(p);
-  let st = fillCache.get(key);
-  if (!st) {
-    st = StyleSheet.create({ w: { width: `${key}%` } }).w;
-    fillCache.set(key, st);
-  }
-  return st;
 }
 
 /** A destructive button that asks once more inline before it acts. */
@@ -361,9 +390,16 @@ export const s = StyleSheet.create({
   meterRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   meter: { width: 140, height: 6, backgroundColor: "rgba(255,255,255,0.08)" },
   fill: { height: 6 },
-  fillOk: { backgroundColor: color.cyan },
-  fillWarn: { backgroundColor: color.amber },
-  fillBad: { backgroundColor: color.coral },
+  meterGlow: { ...StyleSheet.absoluteFillObject, backgroundColor: color.text },
+  meterEdge: {
+    position: "absolute",
+    right: 0,
+    top: -2,
+    bottom: -2,
+    width: 3,
+    backgroundColor: color.text,
+  },
+  meterCrit: { color: color.coral },
   meterT: { width: 36, textAlign: "right", color: color.text },
   field: {
     minWidth: 160,

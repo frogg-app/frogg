@@ -14,7 +14,7 @@ import type { TimelineItem } from "../../daemon/types";
 import { color } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { commands as COMMANDS, ID, toolDetails, toolItem } from "../fixtures";
-import { Above, Fill, Stack, Wrap, type Entry } from "../kit";
+import { Above, Case, Cases, Fill, W, type Entry } from "../kit";
 
 type ToolItem = Extract<TimelineItem, { type: "tool_call" }>;
 
@@ -30,7 +30,17 @@ export function LiveChat({ id, back }: { id: string; back?: () => void }) {
 }
 const noop = () => {};
 const Preview = () => <LiveChat id={ID.preview} />;
-const PreviewPhone = () => <LiveChat id={ID.preview} back={noop} />;
+const PreviewPhone = () => (
+  <Case
+    name="Chat"
+    props="session onBack"
+    note="Phone push: back arrow, compact composer."
+    w={W.phone}
+    h={560}
+  >
+    <LiveChat id={ID.preview} back={noop} />
+  </Case>
+);
 const Failed = () => <LiveChat id={ID.failed} />;
 const Needs = () => <LiveChat id={ID.needs} />;
 const Working = () => <LiveChat id={ID.working} />;
@@ -81,8 +91,29 @@ function ToolList({ items }: { items: ToolItem[] }) {
     </View>
   );
 }
-const Kinds = () => <ToolList items={KINDS} />;
-const States = () => <ToolList items={STATES} />;
+/** Chat column width on desktop. */
+const CHAT = 720;
+const Kinds = () => (
+  <Case
+    name="ToolCall"
+    props="item={tool_call} × 12 detail kinds"
+    note="Chat column width."
+    w={CHAT}
+    plain
+  >
+    <ToolList items={KINDS} />
+  </Case>
+);
+const States = () => (
+  <Cases>
+    <Case name="ToolCall" props={'status="running" | "completed" | "failed"'} w={CHAT} plain>
+      <ToolList items={STATES} />
+    </Case>
+    <Case name="ToolCall" props="(same)" note="Phone: long arguments truncate." w={W.phone} plain>
+      <ToolList items={STATES} />
+    </Case>
+  </Cases>
+);
 
 // ---- composer ----
 
@@ -102,7 +133,7 @@ const ATTACHMENTS: Attachment[] = [
   { kind: "fork", id: "k1", name: "Forked from Preview chat", context: {} as never },
 ];
 
-const Default = () => (
+const DefaultInner = () => (
   <Composer
     placeholder="Message Claude Code — / commands"
     chips={CHIPS}
@@ -111,14 +142,34 @@ const Default = () => (
     loadCommands={loadCommands}
   />
 );
-const Disabled = () => <Composer placeholder="Host offline" chips={CHIPS} onSend={send} disabled />;
+const Default = () => (
+  <View style={s.foot}>
+    <Case name="Composer" props="chips attach loadCommands" w={CHAT} plain>
+      <DefaultInner />
+    </Case>
+  </View>
+);
+const Disabled = () => (
+  <Case name="Composer" props='disabled placeholder="Host offline"' w={CHAT} plain>
+    <Composer placeholder="Host offline" chips={CHIPS} onSend={send} disabled />
+  </Case>
+);
 const Compact = () => (
-  <Composer placeholder="Message Claude Code" chips={NO_CHIPS} onSend={send} compact attach />
+  <Case name="Composer" props="compact attach chips={[]}" w={W.phone} plain>
+    <Composer placeholder="Message Claude Code" chips={NO_CHIPS} onSend={send} compact attach />
+  </Case>
 );
 const Running = () => (
-  <Composer placeholder="Message Claude Code" chips={CHIPS} onSend={send} onStop={noop} />
+  <Case name="Composer" props="onStop" note="Turn running: send becomes stop." w={CHAT} plain>
+    <Composer placeholder="Message Claude Code" chips={CHIPS} onSend={send} onStop={noop} />
+  </Case>
 );
 const WithFiles = () => (
+  <Case name="Composer" props="initialAttachments={[image, file, fork]}" w={CHAT} plain>
+    <WithFilesInner />
+  </Case>
+);
+const WithFilesInner = () => (
   <Composer
     placeholder="Message Claude Code"
     chips={CHIPS}
@@ -128,6 +179,19 @@ const WithFiles = () => (
   />
 );
 const SlashFails = () => (
+  <View style={s.foot}>
+    <Case
+      name="Composer"
+      props="loadCommands={rejects}"
+      note="Type / to see the error state."
+      w={CHAT}
+      plain
+    >
+      <SlashFailsInner />
+    </Case>
+  </View>
+);
+const SlashFailsInner = () => (
   <Composer
     placeholder="Type / to see the error state"
     chips={CHIPS}
@@ -140,9 +204,19 @@ function Live() {
   const a = useDaemon((st) => st.sessions[ID.preview]?.agent);
   if (!a) return null;
   return (
-    <Composer placeholder="Pickers are live: model, mode, account" chips={CHIPS} onSend={send}>
-      <AccountChip agent={a} />
-    </Composer>
+    <View style={s.foot}>
+      <Case
+        name="Composer"
+        props="children=[AccountChip]"
+        note="Model, mode and account pickers are live."
+        w={CHAT}
+        plain
+      >
+        <Composer placeholder="Pickers are live: model, mode, account" chips={CHIPS} onSend={send}>
+          <AccountChip agent={a} />
+        </Composer>
+      </Case>
+    </View>
   );
 }
 
@@ -174,12 +248,20 @@ function Attachments() {
   const remove = useCallback((id: string) => setItems((l) => l.filter((a) => a.id !== id)), []);
   const add = useCallback((a: Attachment[]) => setItems((l) => [...l, ...a]), []);
   return (
-    <Stack>
-      <Wrap>
+    <Cases>
+      <Case name="AttachMenu" props="onAdd" note="Click + for the menu (web file picker)." plain>
         <AttachMenu onAdd={add} />
-      </Wrap>
-      <AttachChips items={items} onRemove={remove} />
-    </Stack>
+      </Case>
+      <Case
+        name="AttachChips"
+        props="items={[image, file, fork]} onRemove"
+        note="× removes a chip; long names truncate at the phone width."
+        w={W.phone}
+        plain
+      >
+        <AttachChips items={items} onRemove={remove} />
+      </Case>
+    </Cases>
   );
 }
 
@@ -218,8 +300,6 @@ export const chat: Entry[] = [
         id: "phone",
         label: "Pushed (back arrow, compact composer)",
         C: PreviewPhone,
-        h: 520,
-        bleed: true,
       },
       { id: "needs", label: "Waiting on a permission", C: Needs, h: 520, bleed: true },
       { id: "working", label: "Working (thinking indicator)", C: Working, h: 420, bleed: true },
@@ -308,4 +388,5 @@ export const chat: Entry[] = [
 
 const s = StyleSheet.create({
   menuRow: { flexDirection: "row", backgroundColor: color.bg2 },
+  foot: { flex: 1, justifyContent: "flex-end" },
 });

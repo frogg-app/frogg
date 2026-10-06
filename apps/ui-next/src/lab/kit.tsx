@@ -159,6 +159,91 @@ export function Row({ children }: { children: ReactNode }) {
   return <View style={s.row}>{children}</View>;
 }
 
+/** Real context widths: docked side panel, tablet side panel, phone screen. */
+export const W = { panel: 340, tablet: 300, phone: 390 } as const;
+
+/**
+ * One labelled case: the component name, its key props and the width it is shown at, then the
+ * live component in a frame of that width. Lay several side by side with `Cases`.
+ */
+export function Case({
+  name,
+  props,
+  note,
+  w,
+  h,
+  plain,
+  children,
+}: {
+  /** Component name, e.g. "PanelHead". */
+  name: string;
+  /** Key props as written in JSX, e.g. `title="Usage" actions=[refresh]`. */
+  props?: string;
+  /** What this case proves or what to try. */
+  note?: string;
+  /** Frame width in px (the component's real context); omit for natural width. */
+  w?: number;
+  /** Fixed frame height, for components that fill their parent. */
+  h?: number;
+  /** No surface or border: for components that paint their own card. */
+  plain?: boolean;
+  children: ReactNode;
+}) {
+  const box = useMemo(
+    () => [s.caseBox, w !== undefined && { width: w }, h !== undefined && { height: h }],
+    [w, h],
+  );
+  const frame = useMemo(() => [s.caseFrame, plain && s.casePlain], [plain]);
+  return (
+    <View style={box}>
+      <View style={s.caseHead}>
+        <T v="mono" style={s.caseName} numberOfLines={3}>
+          {name}
+          {props ? <T v="mono" style={s.caseProps}>{` ${props}`}</T> : null}
+        </T>
+        {w !== undefined && (
+          <T v="mono" style={s.caseW}>
+            {w}px
+          </T>
+        )}
+      </View>
+      {note && <T style={s.caseNote}>{note}</T>}
+      <View style={frame}>{children}</View>
+    </View>
+  );
+}
+
+/** Cases side by side, wrapping onto new lines (one per line on a phone). */
+export function Cases({ children }: { children: ReactNode }) {
+  return <View style={s.cases}>{children}</View>;
+}
+
+const GHOST = [
+  { id: "a", w: "72%" as const },
+  { id: "b", w: "54%" as const },
+  { id: "c", w: "64%" as const },
+  { id: "d", w: "46%" as const },
+];
+/** Placeholder rows beneath a head, so it reads as the top of a real panel. */
+export function Ghost({ n = 2 }: { n?: number }) {
+  return (
+    <View style={s.ghost}>
+      {GHOST.slice(0, n).map((g) => (
+        <GhostRow key={g.id} w={g.w} />
+      ))}
+    </View>
+  );
+}
+function GhostRow({ w }: { w: `${number}%` }) {
+  const bar = useMemo(() => [s.ghostBar, { width: w }], [w]);
+  return (
+    <View style={s.ghostRow}>
+      <View style={s.ghostDot} />
+      <View style={bar} />
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   spec: { gap: 8 },
   specHead: { gap: 2 },
@@ -182,6 +267,26 @@ const s = StyleSheet.create({
   column: { borderRightWidth: 1, borderRightColor: color.line, backgroundColor: color.bg2 },
   row: { flex: 1, flexDirection: "row" },
   start: { alignItems: "flex-start", gap: 14 },
+  caseBox: { maxWidth: "100%", gap: 6 },
+  caseHead: { flexDirection: "row", alignItems: "baseline", gap: 10 },
+  caseName: { flex: 1, fontSize: 11.5, color: color.cyan2 },
+  caseProps: { fontSize: 11.5, color: color.muted },
+  caseW: { fontSize: 10.5, color: color.faint },
+  caseNote: { fontSize: 12, color: color.faint },
+  caseFrame: {
+    flex: 1,
+    backgroundColor: color.bg2,
+    borderWidth: 1,
+    borderColor: color.line2,
+    borderStyle: "dashed",
+    overflow: "hidden",
+  },
+  casePlain: { backgroundColor: "transparent", borderWidth: 0, overflow: "visible" },
+  cases: { flexDirection: "row", flexWrap: "wrap", gap: 24, alignItems: "flex-start" },
+  ghost: { paddingHorizontal: 16, paddingVertical: 6, gap: 2 },
+  ghostRow: { flexDirection: "row", alignItems: "center", gap: 10, height: 30 },
+  ghostDot: { width: 8, height: 8, borderWidth: 1, borderColor: color.line2 },
+  ghostBar: { height: 8, backgroundColor: color.wash2 },
   aboveFrame: { flex: 1, justifyContent: "flex-end" },
   above: { height: 1 },
 });

@@ -163,7 +163,8 @@ export const shell: Entry[] = [
     path: "components/PhoneTabs.tsx",
     purpose: "Phone bottom tabs: five tools plus More, which opens an all-tools sheet.",
     usedBy: 1,
-    polish: "none: tab highlight and the More sheet (scrim + sheet) appear instantly",
+    polish:
+      "tab highlight slides between tabs (Glide, 200ms glide curve) · the More sheet (scrim + sheet) appears instantly",
     variants: [
       { id: "default", label: "Tabs and More sheet", C: PhoneTabsDemo, h: 560, bleed: true },
     ],

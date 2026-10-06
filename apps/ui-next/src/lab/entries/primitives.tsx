@@ -14,7 +14,7 @@ import { Menu, useAnchor, type MenuEntry } from "../../components/tools/Menu";
 import { Tabs } from "../../components/tools/Tabs";
 import type { Bucket } from "../../daemon/types";
 import { color } from "../../theme/tokens";
-import { Cell, Loop, Stack, Start, Wrap, type Entry } from "../kit";
+import { Case, Cases, Cell, Ghost, Loop, Stack, Start, W, Wrap, type Entry } from "../kit";
 
 const noop = () => {};
 
@@ -22,18 +22,34 @@ function Buttons() {
   return (
     <Stack>
       <Wrap>
-        <Button kind="primary" label="Create session" onPress={noop} />
-        <Button label="Cancel" onPress={noop} />
-        <Button kind="danger" label="Archive" onPress={noop} />
+        <Cell label='kind="primary"'>
+          <Button kind="primary" label="Create session" onPress={noop} />
+        </Cell>
+        <Cell label="(ghost, default)">
+          <Button label="Cancel" onPress={noop} />
+        </Cell>
+        <Cell label='kind="danger"'>
+          <Button kind="danger" label="Archive" onPress={noop} />
+        </Cell>
       </Wrap>
       <Wrap>
-        <Button kind="primary" label="New" icon={Plus} onPress={noop} />
-        <Button label="Refresh" icon={RefreshCw} onPress={noop} />
-        <Button kind="danger" label="Delete" icon={Trash2} onPress={noop} />
+        <Cell label="primary icon={Plus}">
+          <Button kind="primary" label="New" icon={Plus} onPress={noop} />
+        </Cell>
+        <Cell label="icon={RefreshCw}">
+          <Button label="Refresh" icon={RefreshCw} onPress={noop} />
+        </Cell>
+        <Cell label="danger icon={Trash2}">
+          <Button kind="danger" label="Delete" icon={Trash2} onPress={noop} />
+        </Cell>
       </Wrap>
       <Wrap>
-        <Button kind="primary" label="Create session" kbd="⌘↵" onPress={noop} />
-        <Button label="Search" kbd="⌘K" onPress={noop} />
+        <Cell label='primary kbd="⌘↵"'>
+          <Button kind="primary" label="Create session" kbd="⌘↵" onPress={noop} />
+        </Cell>
+        <Cell label='kbd="⌘K"'>
+          <Button label="Search" kbd="⌘K" onPress={noop} />
+        </Cell>
       </Wrap>
     </Stack>
   );
@@ -42,19 +58,32 @@ function Buttons() {
 function ButtonsDisabled() {
   return (
     <Wrap>
-      <Button kind="primary" label="Creating…" disabled />
-      <Button label="Working…" disabled />
-      <Button kind="danger" label="Deny" disabled />
+      <Cell label="primary disabled">
+        <Button kind="primary" label="Creating…" disabled />
+      </Cell>
+      <Cell label="disabled">
+        <Button label="Working…" disabled />
+      </Cell>
+      <Cell label="danger disabled">
+        <Button kind="danger" label="Deny" disabled />
+      </Cell>
     </Wrap>
   );
 }
 
 function ButtonsGrow() {
   return (
-    <View style={s.growRow}>
-      <Button label="Cancel" grow onPress={noop} />
-      <Button kind="primary" label="Create session" grow onPress={noop} />
-    </View>
+    <Case
+      name="Button"
+      props="grow (× 2)"
+      note="Phone sheet footer: the pair splits the width."
+      w={W.phone}
+    >
+      <View style={s.growRow}>
+        <Button label="Cancel" grow onPress={noop} />
+        <Button kind="primary" label="Create session" grow onPress={noop} />
+      </View>
+    </Case>
   );
 }
 
@@ -192,18 +221,81 @@ function LogoSweep() {
   return <LogoMotionRow motion="sweep" />;
 }
 
-function Heads() {
+function HeadTop() {
   return (
-    <View style={s.headBox}>
-      <PanelHead title="Usage">
-        <RefreshCw size={14} color={color.faint} />
-      </PanelHead>
-      <GroupHead label="Needs you" count={3} />
-      <GroupHead label="Idle" />
-      <PanelHead title="A long panel title that should not push its actions off the edge">
-        <Plus size={16} color={color.faint} />
-      </PanelHead>
-    </View>
+    <Cases>
+      <Case name="PanelHead" props={'title="Usage" children=[refresh]'} w={W.panel}>
+        <PanelHead title="Usage">
+          <RefreshCw size={14} color={color.faint} />
+        </PanelHead>
+        <Ghost n={3} />
+      </Case>
+      <Case name="PanelHead" props={'title="Files" children=[new, refresh]'} w={W.tablet}>
+        <PanelHead title="Files">
+          <Plus size={16} color={color.faint} />
+          <RefreshCw size={14} color={color.faint} />
+        </PanelHead>
+        <Ghost n={3} />
+      </Case>
+      <Case name="PanelHead" props={'title="Search"'} note="No children: title only." w={W.tablet}>
+        <PanelHead title="Search" />
+        <Ghost n={2} />
+      </Case>
+    </Cases>
+  );
+}
+
+function HeadGroups() {
+  return (
+    <Cases>
+      <Case
+        name="GroupHead"
+        props={'label="Needs you" count={3}'}
+        note="Count sits flush right; the label is uppercased by the label variant."
+        w={W.panel}
+      >
+        <GroupHead label="Needs you" count={3} />
+        <Ghost n={3} />
+        <GroupHead label="Idle" count={12} />
+        <Ghost n={2} />
+      </Case>
+      <Case
+        name="GroupHead"
+        props={'label="Idle"'}
+        note="No count prop: nothing on the right."
+        w={W.panel}
+      >
+        <GroupHead label="Idle" />
+        <Ghost n={2} />
+      </Case>
+    </Cases>
+  );
+}
+
+function HeadLong() {
+  return (
+    <Cases>
+      <Case
+        name="PanelHead"
+        props={'title="Pull requests and checks for frogg-interface-design" children=[+]'}
+        note="Title wraps (no numberOfLines); the action stays pinned right."
+        w={W.tablet}
+      >
+        <PanelHead title="Pull requests and checks for frogg-interface-design">
+          <Plus size={16} color={color.faint} />
+        </PanelHead>
+        <Ghost n={2} />
+      </Case>
+      <Case
+        name="GroupHead"
+        props={'label="Waiting on review from the platform team" count={128}'}
+        note="At the phone width the label wraps; the count stays top right."
+        w={W.phone}
+      >
+        <GroupHead label="Waiting on review from the platform team" count={128} />
+        <Ghost n={2} />
+      </Case>
+    </Cases>
   );
 }
 
@@ -222,19 +314,41 @@ function useChoice(initial: string | null) {
 
 function SelectField() {
   const [v, set] = useChoice("claude-opus-4-5");
-  return <Select value={v} options={MODELS} onChange={set} label="Model" />;
+  return (
+    <Case
+      name="Select"
+      props='label="Model" options={4, one disabled}'
+      note="Click to open; hover rows."
+      w={W.panel}
+      plain
+    >
+      <Select value={v} options={MODELS} onChange={set} label="Model" />
+    </Case>
+  );
 }
 function SelectMono() {
   const [v, set] = useChoice("claude-sonnet-4-5");
-  return <Select mono width={200} value={v} options={MODELS} onChange={set} />;
+  return (
+    <Case name="Select" props="mono width={200}" plain>
+      <Select mono width={200} value={v} options={MODELS} onChange={set} />
+    </Case>
+  );
 }
 function SelectEmpty() {
   const [v, set] = useChoice(null);
-  return <Select value={v} options={MODELS} onChange={set} placeholder="Choose a model" />;
+  return (
+    <Case name="Select" props='value={null} placeholder="Choose a model"' w={W.panel} plain>
+      <Select value={v} options={MODELS} onChange={set} placeholder="Choose a model" />
+    </Case>
+  );
 }
 function SelectNone() {
   const [v, set] = useChoice(null);
-  return <Select value={v} options={NO_OPTIONS} onChange={set} placeholder="No ready agents" />;
+  return (
+    <Case name="Select" props='options={[]} placeholder="No ready agents"' w={W.panel} plain>
+      <Select value={v} options={NO_OPTIONS} onChange={set} placeholder="No ready agents" />
+    </Case>
+  );
 }
 const NO_OPTIONS: Array<Option<string>> = [];
 function SelectChip() {
@@ -255,7 +369,29 @@ type TabId = (typeof TABS)[number]["id"];
 function TabsDemo() {
   const [v, setV] = useState<TabId>("changes");
   return (
-    <Tabs tabs={TABS as unknown as Array<{ id: TabId; label: string }>} value={v} onChange={setV} />
+    <Cases>
+      <Case
+        name="Tabs"
+        props="tabs={[12, 3, null counts]}"
+        note="Click a tab: the underline glides."
+        w={W.panel}
+      >
+        <Tabs
+          tabs={TABS as unknown as Array<{ id: TabId; label: string }>}
+          value={v}
+          onChange={setV}
+        />
+        <Ghost n={2} />
+      </Case>
+      <Case name="Tabs" props="(same)" note="Tablet side panel width." w={W.tablet}>
+        <Tabs
+          tabs={TABS as unknown as Array<{ id: TabId; label: string }>}
+          value={v}
+          onChange={setV}
+        />
+        <Ghost n={2} />
+      </Case>
+    </Cases>
   );
 }
 
@@ -314,10 +450,10 @@ function DialogFoot({ onClose }: { onClose: () => void }) {
 
 function HoverProbe() {
   return (
-    <Pressable>
+    <Pressable style={s.probe}>
       {({ hovered, pressed }) => (
         <T v="mono">
-          hovered {String(!!hovered)} · pressed {String(pressed)}
+          Hover or press this box · hovered {String(!!hovered)} · pressed {String(pressed)}
         </T>
       )}
     </Pressable>
@@ -422,7 +558,11 @@ export const primitives: Entry[] = [
       "Side-panel title row with trailing actions, and the uppercase group label with a count.",
     usedBy: 11,
     polish: "none",
-    variants: [{ id: "heads", label: "Heads", C: Heads, bleed: true }],
+    variants: [
+      { id: "panel", label: "PanelHead at the top of a side panel", C: HeadTop },
+      { id: "group", label: "GroupHead between list groups", C: HeadGroups },
+      { id: "long", label: "Long title and label at narrow widths", C: HeadLong },
+    ],
   },
   {
     id: "select",
@@ -479,7 +619,14 @@ export const primitives: Entry[] = [
 ];
 
 const s = StyleSheet.create({
-  growRow: { flexDirection: "row", gap: 8, maxWidth: 390 },
+  growRow: { flexDirection: "row", gap: 8, padding: 12 },
+  probe: {
+    alignSelf: "flex-start",
+    padding: 12,
+    borderWidth: 1,
+    borderColor: color.line2,
+    borderStyle: "dashed",
+  },
   cutFill: { width: 80, height: 44, backgroundColor: color.raise },
   cutBorder: { width: 80, height: 44, borderWidth: 1, borderColor: color.line2 },
   cutGrad: { width: 80, height: 44, backgroundColor: color.cyan },
@@ -492,7 +639,6 @@ const s = StyleSheet.create({
     maxWidth: 420,
   },
   bracketBox: { width: 120, height: 48, backgroundColor: color.wash },
-  headBox: { backgroundColor: color.bg2 },
   chipRow: { flex: 1, justifyContent: "flex-end", paddingTop: 150 },
   anchorRow: { flexDirection: "row" },
   dialogBody: { color: color.muted, lineHeight: 20 },

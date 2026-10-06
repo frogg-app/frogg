@@ -15,9 +15,8 @@ import {
   Toggle,
 } from "../../components/settings/controls";
 import { Acts, Block, Field, Item, Value } from "../../components/settings/pages/kit";
-import { T } from "../../components/Text";
 import { color } from "../../theme/tokens";
-import { Cell, Stack, Start, Wrap, type Entry } from "../kit";
+import { Case, Cases, Cell, W, Wrap, type Entry } from "../kit";
 
 const noop = () => {};
 
@@ -26,16 +25,16 @@ function Toggles() {
   const [b, setB] = useState(false);
   return (
     <Wrap>
-      <Cell label={`on: ${a}`}>
+      <Cell label={`value={${a}}`}>
         <Toggle value={a} onChange={setA} />
       </Cell>
-      <Cell label={`off: ${b}`}>
+      <Cell label={`value={${b}}`}>
         <Toggle value={b} onChange={setB} />
       </Cell>
-      <Cell label="disabled on">
+      <Cell label="value disabled">
         <Toggle value disabled onChange={noop} />
       </Cell>
-      <Cell label="disabled off">
+      <Cell label="value={false} disabled">
         <Toggle value={false} disabled onChange={noop} />
       </Cell>
     </Wrap>
@@ -56,10 +55,18 @@ function Segs() {
   const [d, setD] = useState<Density>("comfortable");
   const [i, setI] = useState("worktree");
   return (
-    <Start>
-      <Seg options={DENSITY} value={d} onChange={setD} />
-      <Seg options={TWO} value={i} onChange={setI} />
-    </Start>
+    <Cases>
+      <Case
+        name="Seg"
+        props={`options={3} value="${d}"`}
+        note="Click another option: the indicator slides."
+      >
+        <Seg options={DENSITY} value={d} onChange={setD} />
+      </Case>
+      <Case name="Seg" props={`options={2} value="${i}"`}>
+        <Seg options={TWO} value={i} onChange={setI} />
+      </Case>
+    </Cases>
   );
 }
 
@@ -71,21 +78,35 @@ function Fields() {
   const [txt, setTxt] = useState("main");
   const [field, setField] = useState("");
   return (
-    <Stack>
-      <Area value={area} onChange={setArea} placeholder="Instructions for every session" />
-      <Wrap>
+    <Cases>
+      <Case name="Area" props='placeholder="Instructions for every session"' w={560} plain>
+        <Area value={area} onChange={setArea} placeholder="Instructions for every session" />
+      </Case>
+      <Case
+        name="NumField"
+        props='unit="sessions" min={10} max={1000}'
+        note={`Commits on blur or Enter, clamps to [min, max]; value ${String(num)}.`}
+        plain
+      >
         <NumField value={num} onChange={setNum} unit="sessions" min={10} max={1000} />
+      </Case>
+      <Case name="NumField" props='value={null} placeholder="auto" unit="h"' plain>
         <NumField value={null} onChange={setNum} placeholder="auto" unit="h" />
+      </Case>
+      <Case name="TextField" props="width={140}" plain>
         <TextField value={txt} onChange={setTxt} width={140} />
+      </Case>
+      <Case name="Field (kit)" props='placeholder="kit Field"' w={W.tablet} plain>
         <Field value={field} onChangeText={setField} placeholder="kit Field" />
+      </Case>
+      <Case name="Field (kit)" props="mono short editable={false}" plain>
         <Field value="mono short" mono short editable={false} />
-      </Wrap>
-      <T v="mono">NumField commits on blur or Enter and clamps to [min, max]; now {String(num)}</T>
-    </Stack>
+      </Case>
+    </Cases>
   );
 }
 
-function SectionRows() {
+function SectionBody() {
   const [v, setV] = useState(true);
   return (
     <View>
@@ -112,7 +133,32 @@ function SectionRows() {
   );
 }
 
-function KitRows() {
+function SectionRows() {
+  return (
+    <Cases>
+      <Case
+        name="Section + Row"
+        props='title="Interface"'
+        note="Settings page column."
+        w={640}
+        plain
+      >
+        <SectionBody />
+      </Case>
+      <Case
+        name="Section + Row"
+        props="(same)"
+        note="Phone: long label and hint wrap beside the control."
+        w={W.phone}
+        plain
+      >
+        <SectionBody />
+      </Case>
+    </Cases>
+  );
+}
+
+function KitRowsBody() {
   return (
     <View style={s.card}>
       <Item icon={Monitor} title="MacBook Pro" sub="paired 3 days ago · owner">
@@ -129,6 +175,25 @@ function KitRows() {
         </Acts>
       </Block>
     </View>
+  );
+}
+
+function KitRows() {
+  return (
+    <Cases>
+      <Case
+        name="Item / Block / Acts / Value"
+        props="icon title sub children"
+        note="Host page column."
+        w={640}
+        plain
+      >
+        <KitRowsBody />
+      </Case>
+      <Case name="(same)" note="Phone width." w={W.phone} plain>
+        <KitRowsBody />
+      </Case>
+    </Cases>
   );
 }
 
@@ -158,7 +223,8 @@ export const settings: Entry[] = [
     path: "components/settings/controls.tsx (Seg)",
     purpose: "Segmented choice of two to four options.",
     usedBy: 38,
-    polish: "none; selection swaps instantly",
+    polish:
+      "selection indicator slides between options (Glide, components/Glide.tsx: 200ms on the glide curve); shared with Tabs, the DiffView toggles and PhoneTabs · label colour swaps instantly · reduced motion: jumps",
     variants: [{ id: "default", label: "Three and two options", C: Segs }],
   },
   {

@@ -1,3 +1,4 @@
+import { StyleSheet, View } from "react-native";
 import { CodeBlock } from "../../components/Code";
 import { DiffView } from "../../components/DiffView";
 import { Markdown } from "../../components/Markdown";
@@ -11,36 +12,103 @@ import { watchCheckout } from "../../daemon/scm";
 import type { AccountUsage } from "../../daemon/usage";
 import { color } from "../../theme/tokens";
 import { accounts, usage } from "../fixtures";
-import { Fill, Stack, Wrap, type Entry } from "../kit";
+import { Case, Cases, Cell, Fill, W, type Entry } from "../kit";
 
 function Meters() {
   return (
-    <Stack>
-      <Meter pct={8} label="Session" detail="resets in 3h 10m" />
-      <Meter pct={42} label="Weekly" detail="resets Thu 09:00" />
-      <Meter pct={74} label="Opus weekly" detail="warning at 70%" />
-      <Meter pct={96} label="Premium requests" detail="critical at 90%" />
-    </Stack>
+    <Cases>
+      <Case name="Meter" props={'pct={8} label="Session" detail="resets in 3h 10m"'} w={W.panel}>
+        <View style={s.pad}>
+          <Meter pct={8} label="Session" detail="resets in 3h 10m" />
+        </View>
+      </Case>
+      <Case name="Meter" props={"pct={42}"} note="Below 70: cyan." w={W.panel}>
+        <View style={s.pad}>
+          <Meter pct={42} label="Weekly" detail="resets Thu 09:00" />
+        </View>
+      </Case>
+      <Case name="Meter" props={"pct={74}"} note="70 and over: amber." w={W.panel}>
+        <View style={s.pad}>
+          <Meter pct={74} label="Opus weekly" detail="warning at 70%" />
+        </View>
+      </Case>
+      <Case name="Meter" props={"pct={96}"} note="90 and over: coral." w={W.panel}>
+        <View style={s.pad}>
+          <Meter pct={96} label="Premium requests" detail="critical at 90%" />
+        </View>
+      </Case>
+    </Cases>
   );
 }
 function MetersEdge() {
   return (
-    <Stack>
-      <Meter pct={null} label="Credits" detail="no figure reported" />
-      <Meter pct={0} label="Empty" />
-      <Meter pct={140} label="Over 100 clamps" />
-      <Meter pct={55} label="Account tint" tone={color.violet} />
-    </Stack>
+    <Cases>
+      <Case name="Meter" props={"pct={null}"} note="No figure: dash, empty cells." w={W.panel}>
+        <View style={s.pad}>
+          <Meter pct={null} label="Credits" detail="no figure reported" />
+        </View>
+      </Case>
+      <Case name="Meter" props={"pct={0}"} note="No detail line." w={W.panel}>
+        <View style={s.pad}>
+          <Meter pct={0} label="Empty" />
+        </View>
+      </Case>
+      <Case name="Meter" props={"pct={140}"} note="Clamps to 100%." w={W.panel}>
+        <View style={s.pad}>
+          <Meter pct={140} label="Over 100 clamps" />
+        </View>
+      </Case>
+      <Case
+        name="Meter"
+        props={"pct={55} tone={violet}"}
+        note="Account tint overrides thresholds."
+        w={W.panel}
+      >
+        <View style={s.pad}>
+          <Meter pct={55} label="Account tint" tone={color.violet} />
+        </View>
+      </Case>
+      <Case
+        name="Meter"
+        props={'pct={42} label="A very long window label for a narrow panel"'}
+        note="Long label at the tablet panel width."
+        w={W.tablet}
+      >
+        <View style={s.pad}>
+          <Meter
+            pct={42}
+            label="A very long window label for a narrow panel"
+            detail="resets in 6d 23h 59m"
+          />
+        </View>
+      </Case>
+    </Cases>
   );
 }
 function KitMeters() {
   return (
-    <Stack>
-      <KitMeter pct={30} />
-      <KitMeter pct={72} />
-      <KitMeter pct={88} />
-      <KitMeter pct={null} />
-    </Stack>
+    <Cases>
+      <Case name="KitMeter" props={"pct={30}"} w={W.panel}>
+        <View style={s.pad}>
+          <KitMeter pct={30} />
+        </View>
+      </Case>
+      <Case name="KitMeter" props={"pct={72}"} note="70 and over: amber." w={W.panel}>
+        <View style={s.pad}>
+          <KitMeter pct={72} />
+        </View>
+      </Case>
+      <Case name="KitMeter" props={"pct={88}"} note="85 and over: coral." w={W.panel}>
+        <View style={s.pad}>
+          <KitMeter pct={88} />
+        </View>
+      </Case>
+      <Case name="KitMeter" props={"pct={null}"} w={W.panel}>
+        <View style={s.pad}>
+          <KitMeter pct={null} />
+        </View>
+      </Case>
+    </Cases>
   );
 }
 
@@ -89,30 +157,72 @@ const MD_GAPS = `1. Numbered item
 | --- | --- |
 | maxEntries | 200 |
 `;
-const MarkdownFull = () => <Markdown text={MD} />;
-const MarkdownGaps = () => <Markdown text={MD_GAPS} />;
-const MarkdownShort = () => <Markdown text="Bumped to **0.546.0**; no icon renames." />;
+const MarkdownFull = () => (
+  <Case name="Markdown" props="text={plan}" note="At the chat column width." w={680} plain>
+    <Markdown text={MD} />
+  </Case>
+);
+const MarkdownGaps = () => (
+  <Case name="Markdown" props="text={unsupported}" w={680} plain>
+    <Markdown text={MD_GAPS} />
+  </Case>
+);
+const MarkdownShort = () => (
+  <Case name="Markdown" props={'text="Bumped to **0.546.0**…"'} w={W.phone} plain>
+    <Markdown text="Bumped to **0.546.0**; no icon renames." />
+  </Case>
+);
 
 function Pills() {
   return (
-    <Stack>
-      <Wrap>
-        <Pill text="default" />
-        <Pill text="ready" tint={color.mint} />
-        <Pill text="beta" tint={color.cyan2} />
-        <Pill text="needs restart" tint={color.amber} />
-        <Pill text="failed" tint={color.coral} />
-      </Wrap>
-      <Wrap>
-        <LabelChip name="frontend" c="sky" />
-        <LabelChip name="urgent" c="red" />
-        <LabelChip name="no colour" />
-      </Wrap>
-      <Wrap>
-        <HostLabelChip name="hostkit chip" tone={color.violet} />
-        <HostLabelChip name="hostkit amber" tone={color.amber} />
-      </Wrap>
-    </Stack>
+    <Cases>
+      <Case name="Pill" props="text tint" note="settings/controls.tsx: outlined status.">
+        <View style={s.padWrap}>
+          <Cell label="no tint">
+            <Pill text="default" />
+          </Cell>
+          <Cell label="mint">
+            <Pill text="ready" tint={color.mint} />
+          </Cell>
+          <Cell label="cyan2">
+            <Pill text="beta" tint={color.cyan2} />
+          </Cell>
+          <Cell label="amber">
+            <Pill text="needs restart" tint={color.amber} />
+          </Cell>
+          <Cell label="coral">
+            <Pill text="failed" tint={color.coral} />
+          </Cell>
+        </View>
+      </Case>
+      <Case name="LabelChip" props="name c" note="sessions/sheets.tsx: session labels.">
+        <View style={s.padWrap}>
+          <Cell label='c="sky"'>
+            <LabelChip name="frontend" c="sky" />
+          </Cell>
+          <Cell label='c="red"'>
+            <LabelChip name="urgent" c="red" />
+          </Cell>
+          <Cell label="no c">
+            <LabelChip name="no colour" />
+          </Cell>
+        </View>
+      </Case>
+      <Case
+        name="LabelChip (hostkit)"
+        props="name tone"
+        note="settings/pages/hostkit.tsx: host labels; the duplicate."
+      >
+        <View style={s.padWrap}>
+          <Cell label="violet">
+            <HostLabelChip name="gpu" tone={color.violet} />
+          </Cell>
+          <Cell label="amber">
+            <HostLabelChip name="staging" tone={color.amber} />
+          </Cell>
+        </View>
+      </Case>
+    </Cases>
   );
 }
 
@@ -127,10 +237,19 @@ const workTint = accountTint(work.account, 0);
 const personalTint = accountTint(personal.account, 1);
 function Accounts() {
   return (
-    <Stack>
-      <AccountBlock entry={work} tint={workTint} />
-      <AccountBlock entry={personal} tint={personalTint} />
-    </Stack>
+    <Cases>
+      <Case
+        name="AccountBlock"
+        props="entry={work} tint={cyan}"
+        note="Active sign-in: marker and plan."
+        w={W.panel}
+      >
+        <AccountBlock entry={work} tint={workTint} />
+      </Case>
+      <Case name="AccountBlock" props="entry={personal} tint={violet}" w={W.panel}>
+        <AccountBlock entry={personal} tint={personalTint} />
+      </Case>
+    </Cases>
   );
 }
 const signedOut: AccountUsage = { ...entryFor("codex-acme"), usage: null };
@@ -141,10 +260,24 @@ const failed: AccountUsage = {
 };
 function AccountsEdge() {
   return (
-    <Stack>
-      <AccountBlock entry={signedOut} tint={color.amber} />
-      <AccountBlock entry={failed} tint={color.coral} />
-    </Stack>
+    <Cases>
+      <Case
+        name="AccountBlock"
+        props="entry={{usage: null}}"
+        note="Signed out: no windows."
+        w={W.panel}
+      >
+        <AccountBlock entry={signedOut} tint={color.amber} />
+      </Case>
+      <Case
+        name="AccountBlock"
+        props={'entry={{error: "usage API returned 503"}}'}
+        note="Failed read: error line."
+        w={W.panel}
+      >
+        <AccountBlock entry={failed} tint={color.coral} />
+      </Case>
+    </Cases>
   );
 }
 
@@ -265,7 +398,8 @@ export const data: Entry[] = [
     purpose:
       "A file's diff in the main pane (source control): split on desktop, unified below, against uncommitted or base.",
     usedBy: 1,
-    polish: "none",
+    polish:
+      "split/unified and uncommitted/base toggles: sliding indicator (Glide, 200ms glide curve); diff body swaps instantly",
     setup: watchFixtureCheckout,
     variants: [
       { id: "modified", label: "Modified file", C: Diff, h: 480, bleed: true },
@@ -273,3 +407,8 @@ export const data: Entry[] = [
     ],
   },
 ];
+
+const s = StyleSheet.create({
+  pad: { padding: 16 },
+  padWrap: { padding: 16, flexDirection: "row", flexWrap: "wrap", gap: 16 },
+});

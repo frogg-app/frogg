@@ -38,7 +38,7 @@ import {
   toolPermission,
   type Permission,
 } from "../fixtures";
-import { Act, Controls, Fill, Stack, type Entry } from "../kit";
+import { Act, Case, Cases, Controls, Fill, Stack, W, type Entry } from "../kit";
 
 // ---- toasts ----
 
@@ -140,33 +140,54 @@ function ToastDemo() {
 const noop = () => {};
 function BannerTones() {
   return (
-    <View>
-      <Banner
-        tone="warn"
-        title="devbox runs daemon 1.6.10"
-        detail="older than this app (1.6.13); some features are hidden"
-        action="Update host…"
-        onPress={noop}
-        onDismiss={noop}
-      />
-      <Banner
-        tone="run"
-        title="Connecting to devbox"
-        detail="offline for 0:42 · reconnect before sending messages"
-        action="Retry now"
-        onPress={noop}
-        onDismiss={noop}
-      />
-      <Banner
-        tone="error"
-        title="Frogg storage on devbox is 48.2 GB"
-        detail="clean up worktrees, logs and caches to free space"
-        action="Review storage…"
-        onPress={noop}
-        onDismiss={noop}
-      />
-      <Banner tone="warn" title="No action, not dismissible" />
-    </View>
+    <Stack>
+      <Case
+        name="Banner"
+        props={'tone="warn" action="Update host…" onDismiss'}
+        note="Daemon older than the app."
+      >
+        <Banner
+          tone="warn"
+          title="devbox runs daemon 1.6.10"
+          detail="older than this app (1.6.13); some features are hidden"
+          action="Update host…"
+          onPress={noop}
+          onDismiss={noop}
+        />
+      </Case>
+      <Case
+        name="Banner"
+        props={'tone="run" action="Retry now"'}
+        note="Reconnecting: the glyph breathes."
+      >
+        <Banner
+          tone="run"
+          title="Connecting to devbox"
+          detail="offline for 0:42 · reconnect before sending messages"
+          action="Retry now"
+          onPress={noop}
+          onDismiss={noop}
+        />
+      </Case>
+      <Case
+        name="Banner"
+        props={'tone="error" action="Review storage…"'}
+        note="At the phone width the detail and action wrap."
+        w={W.phone}
+      >
+        <Banner
+          tone="error"
+          title="Frogg storage on devbox is 48.2 GB"
+          detail="clean up worktrees, logs and caches to free space"
+          action="Review storage…"
+          onPress={noop}
+          onDismiss={noop}
+        />
+      </Case>
+      <Case name="Banner" props={'tone="warn" title only'} note="No action, no dismiss button.">
+        <Banner tone="warn" title="No action, not dismissible" />
+      </Case>
+    </Stack>
   );
 }
 
@@ -198,9 +219,15 @@ function BannerHost() {
         <Act label="Storage critical" run={storageCritical} />
         <Act label="Storage ok" run={storageOk} />
       </Controls>
-      <View style={s.bannerFrame}>
-        <Banners />
-      </View>
+      <Case
+        name="Banners"
+        props="(reads the host store)"
+        note="Empty while the host is online with no alerts: press Drop connection or a storage button."
+      >
+        <View style={s.bannerFrame}>
+          <Banners />
+        </View>
+      </Case>
     </Stack>
   );
 }
@@ -235,9 +262,37 @@ const failedAgent = agent({
   lastError: "Error: 3 tests failed in webhooks.test.ts (timeout after 5000ms)",
 });
 const idleAgent = agent({ id: "x-idle" });
-const Review = () => <SessionState agent={reviewAgent} online />;
-const Failed = () => <SessionState agent={failedAgent} online />;
-const Offline = () => <SessionState agent={idleAgent} online={false} />;
+const CHAT = 680;
+const Review = () => (
+  <Cases>
+    <Case name="SessionState" props="agent={requiresAttention: finished} online" w={CHAT}>
+      <SessionState agent={reviewAgent} online />
+    </Case>
+    <Case name="SessionState" props="(same)" w={W.phone}>
+      <SessionState agent={reviewAgent} online />
+    </Case>
+  </Cases>
+);
+const Failed = () => (
+  <Cases>
+    <Case name="SessionState" props={'agent={status: "error", lastError} online'} w={CHAT}>
+      <SessionState agent={failedAgent} online />
+    </Case>
+    <Case name="SessionState" props="(same)" note="Long error wraps." w={W.phone}>
+      <SessionState agent={failedAgent} online />
+    </Case>
+  </Cases>
+);
+const Offline = () => (
+  <Cases>
+    <Case name="SessionState" props="agent={idle} online={false}" w={CHAT}>
+      <SessionState agent={idleAgent} online={false} />
+    </Case>
+    <Case name="SessionState" props="(same)" w={W.phone}>
+      <SessionState agent={idleAgent} online={false} />
+    </Case>
+  </Cases>
+);
 
 const cutLoading = { type: "compaction", status: "loading", trigger: "manual" } as Extract<
   TimelineItem,
@@ -262,9 +317,26 @@ const autoCompaction = {
   trigger: "auto",
   preTokens: 160000,
 } as Extract<TimelineItem, { type: "compaction" }>;
-const CutLoading = () => <Compaction item={cutLoading} />;
-const CutDone = () => <Compaction item={cutDone} />;
-const CutAuto = () => <Compaction item={autoCompaction} />;
+const CutLoading = () => (
+  <Case name="Compaction" props={'item={status: "loading", trigger: "manual"}'} w={CHAT}>
+    <Compaction item={cutLoading} />
+  </Case>
+);
+const CutDone = () => (
+  <Case
+    name="Compaction"
+    props={'item={status: "completed", cleanCut: {summary, …}}'}
+    note="Click to expand the summary."
+    w={CHAT}
+  >
+    <Compaction item={cutDone} />
+  </Case>
+);
+const CutAuto = () => (
+  <Case name="Compaction" props={'item={trigger: "auto", preTokens: 160000}'} w={CHAT}>
+    <Compaction item={autoCompaction} />
+  </Case>
+);
 
 // ---- composer notices ----
 
@@ -278,8 +350,26 @@ const resumeAgent = agent({
   id: "x-resume",
   autoResume: { resumeAt: ahead(47), resetsAt: ahead(47), detectedAt: ago(2) },
 });
-const Cold = () => <ComposerNotices agent={coldAgent} />;
-const Resume = () => <ComposerNotices agent={resumeAgent} />;
+const Cold = () => (
+  <Cases>
+    <Case name="ComposerNotices" props="agent={lastUsageAt: 90m ago, 142k context}" w={CHAT}>
+      <ComposerNotices agent={coldAgent} />
+    </Case>
+    <Case name="ComposerNotices" props="(same)" note="Wraps at the phone width." w={W.phone}>
+      <ComposerNotices agent={coldAgent} />
+    </Case>
+  </Cases>
+);
+const Resume = () => (
+  <Cases>
+    <Case name="ComposerNotices" props="agent={autoResume: {resumeAt: +47m}}" w={CHAT}>
+      <ComposerNotices agent={resumeAgent} />
+    </Case>
+    <Case name="ComposerNotices" props="(same)" w={W.phone}>
+      <ComposerNotices agent={resumeAgent} />
+    </Case>
+  </Cases>
+);
 
 // ---- settings kit feedback ----
 
@@ -289,29 +379,46 @@ function KitFeedback() {
   const confirm = useCallback(() => toast({ title: "Removed" }), []);
   const pairBtn = useMemo(() => <Button kind="primary" label="Pair a device" onPress={noop} />, []);
   return (
-    <Stack>
-      <KitBanner icon={KeyRound} title="Pair a device" body="Scan the code from the phone app.">
-        {pairBtn}
-      </KitBanner>
-      <KitBanner
-        icon={HardDrive}
-        title="devbox runs 1.6.10"
-        body="Update to see every setting."
-        tint={color.amber}
-      />
-      <View style={s.findBox}>
+    <Cases>
+      <Case name="Banner (kit)" props="icon={KeyRound} title body children=[button]" w={560} plain>
+        <KitBanner icon={KeyRound} title="Pair a device" body="Scan the code from the phone app.">
+          {pairBtn}
+        </KitBanner>
+      </Case>
+      <Case name="Banner (kit)" props="icon={HardDrive} tint={amber}" w={560} plain>
+        <KitBanner
+          icon={HardDrive}
+          title="devbox runs 1.6.10"
+          body="Update to see every setting."
+          tint={color.amber}
+        />
+      </Case>
+      <Case name="Finding" props={'tone="ok" | "warn" | "bad" last'} w={560}>
         <Finding tone="ok" title="Password set" body="Clients must authenticate." />
         <Finding tone="warn" title="Listening on 0.0.0.0" body="Reachable from the LAN." />
         <Finding tone="bad" title="TLS off for a relay host" last />
-      </View>
-      <Status rpc={loadingRpc} what="devices" />
-      <Status rpc={errorRpc} what="devices" />
-      <ErrorLine text="Error: listen EADDRINUSE 0.0.0.0:6767" />
-      <View style={s.row}>
+      </Case>
+      <Case name="Status" props={'rpc={loading} what="devices"'} w={W.phone}>
+        <Status rpc={loadingRpc} what="devices" />
+      </Case>
+      <Case name="Status" props={'rpc={error: "Request timed out…"}'} w={W.phone}>
+        <Status rpc={errorRpc} what="devices" />
+      </Case>
+      <Case name="ErrorLine" props={'text="Error: listen EADDRINUSE…"'} w={W.phone}>
+        <ErrorLine text="Error: listen EADDRINUSE 0.0.0.0:6767" />
+      </Case>
+      <Case
+        name="Confirm"
+        props={'label="Remove" confirm="Remove for good"'}
+        note="Click once to arm, again to confirm."
+        plain
+      >
         <Confirm label="Remove" confirm="Remove for good" onConfirm={confirm} />
+      </Case>
+      <Case name="Confirm" props="pending" plain>
         <Confirm label="Working" confirm="x" onConfirm={confirm} pending />
-      </View>
-    </Stack>
+      </Case>
+    </Cases>
   );
 }
 
@@ -351,7 +458,7 @@ export const feedback: Entry[] = [
     polish:
       "none on show or dismiss; the run tone's glyph breathes (1.6s ∞); the offline timer ticks every 1s",
     variants: [
-      { id: "tones", label: "Tones", C: BannerTones, bleed: true },
+      { id: "tones", label: "Tones", C: BannerTones },
       {
         id: "host",
         label: "Live host banners",
@@ -442,6 +549,4 @@ const s = StyleSheet.create({
   bannerFrame: { borderWidth: 1, borderColor: color.line, minHeight: 60 },
   answered: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 },
   answeredT: { color: color.muted, flex: 1 },
-  findBox: { borderWidth: 1, borderColor: color.line },
-  row: { flexDirection: "row", gap: 12 },
 });
