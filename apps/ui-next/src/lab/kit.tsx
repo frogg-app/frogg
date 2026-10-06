@@ -2,6 +2,7 @@
 import type { ComponentType, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { RotateCcw } from "lucide-react-native";
 import { Button } from "../components/Button";
 import { T } from "../components/Text";
 import { color } from "../theme/tokens";
@@ -59,14 +60,29 @@ export function Specimen({ v }: { v: Variant }) {
     () => [s.frame, v.bleed && s.bleed, v.h !== undefined && { height: v.h }],
     [v.bleed, v.h],
   );
+  // Replays just this specimen; the rest of the pane, its scroll and other specimens' state stay put.
+  const [run, setRun] = useState(0);
+  const replay = useCallback(() => setRun((n) => n + 1), []);
   return (
     <View style={s.spec}>
-      <View style={s.specHead}>
-        <T style={s.specLabel}>{v.label}</T>
-        {v.note && <T style={s.specNote}>{v.note}</T>}
+      <View style={s.specTop}>
+        <View style={s.specHead}>
+          <T style={s.specLabel}>{v.label}</T>
+          {v.note && <T style={s.specNote}>{v.note}</T>}
+        </View>
+        <Pressable
+          onPress={replay}
+          style={({ hovered }: { hovered?: boolean }) => [s.specReplay, hovered && s.specReplayOn]}
+          accessibilityLabel={`Replay ${v.label}`}
+        >
+          <RotateCcw size={13} color={color.faint} />
+          <T v="mono" style={s.specReplayT}>
+            replay
+          </T>
+        </Pressable>
       </View>
       <View style={frame}>
-        <v.C />
+        <v.C key={run} />
       </View>
     </View>
   );
@@ -248,7 +264,19 @@ function GhostRow({ w }: { w: `${number}%` }) {
 
 const s = StyleSheet.create({
   spec: { gap: 8 },
-  specHead: { gap: 2 },
+  specTop: { flexDirection: "row", alignItems: "flex-end", gap: 12 },
+  specHead: { gap: 2, flex: 1 },
+  specReplay: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: color.line,
+  },
+  specReplayOn: { borderColor: color.line2, backgroundColor: color.wash },
+  specReplayT: { fontSize: 11, color: color.faint },
   specLabel: { fontSize: 12.5, fontWeight: "600", color: color.text },
   specNote: { fontSize: 12, color: color.faint },
   frame: {

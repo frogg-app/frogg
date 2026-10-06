@@ -46,17 +46,22 @@ export function Lab() {
   const speed = useLab((st) => st.speed);
   const nonce = useLab((st) => st.nonce);
   useSlowMotion(Number(speed));
-  // Fixtures reseed before every entry and every replay; specimens mount only once that's done.
-  const key = `${entry?.id ?? ""}:${nonce}`;
+  // Fixtures reseed before every entry; specimens mount only once that's done. Replay reseeds
+  // synchronously and remounts the specimens in place, so the pane keeps its scroll position.
+  const key = entry?.id ?? "";
   const [prepared, setPrepared] = useState<string | null>(null);
   useEffect(() => {
     prepare(entry);
     setPrepared(key);
   }, [key, entry]);
   const ready = prepared === key;
+  const replay = useCallback(() => {
+    prepare(entry);
+    bumpNonce();
+  }, [entry]);
   return (
     <SafeAreaView style={s.root}>
-      <Header speed={speed} />
+      <Header speed={speed} replay={replay} />
       <View style={s.body}>
         {(wide || !entry) && <Index current={entry?.id} wide={wide} />}
         {entry && ready && <EntryView entry={entry} nonce={nonce} back={!wide} />}
@@ -67,7 +72,7 @@ export function Lab() {
   );
 }
 
-function Header({ speed }: { speed: Speed }) {
+function Header({ speed, replay }: { speed: Speed; replay: () => void }) {
   return (
     <View style={s.header}>
       <Pressable onPress={home} style={s.brand} accessibilityLabel="Lab overview">
@@ -81,7 +86,7 @@ function Header({ speed }: { speed: Speed }) {
       </Pressable>
       <View style={s.spacer} />
       <Seg options={SPEEDS} value={speed} onChange={setSpeed} />
-      <Button label="Replay" icon={RotateCcw} onPress={bumpNonce} />
+      <Button label="Replay all" icon={RotateCcw} onPress={replay} />
     </View>
   );
 }
