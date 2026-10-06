@@ -1,19 +1,31 @@
 import {
   Bell,
+  ChevronRight,
   FolderGit2,
   Layers,
-  MoreHorizontal,
+  Menu,
+  X,
   Search,
   Settings,
   type LucideIcon,
 } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AccessibilityInfo,
+  Animated,
+  BackHandler,
+  Easing,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { color, font } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
 import { Cut } from "./Cut";
-import { TOOLS, type ToolMeta } from "./Rail";
+import { GROUP_NAMES, GROUPS, type ToolMeta } from "./Rail";
 import { T } from "./Text";
 
 type TabId = Tool | "more";
@@ -30,7 +42,7 @@ const TABS: Tab[] = [
   { id: "scm", icon: FolderGit2, label: "Source" },
   { id: "inbox", icon: Bell, label: "Inbox" },
   { id: "settings", icon: Settings, label: "Settings" },
-  { id: "more", icon: MoreHorizontal, label: "More" },
+  { id: "more", icon: Menu, label: "More" },
 ];
 
 export function PhoneTabs({ badges }: { badges: Partial<Record<Tool, number>> }) {
@@ -53,21 +65,7 @@ export function PhoneTabs({ badges }: { badges: Partial<Record<Tool, number>> })
   );
   return (
     <>
-      {more && (
-        <View style={s.sheetLayer}>
-          <Pressable style={s.scrim} onPress={closeMore} />
-          <Cut size={14} flip style={s.sheet}>
-            <T v="label" style={s.sheetTitle}>
-              all tools
-            </T>
-            <View style={s.grid}>
-              {TOOLS.map((t) => (
-                <SheetCell key={t.id} meta={t} on={tool === t.id} onPick={pick} />
-              ))}
-            </View>
-          </Cut>
-        </View>
-      )}
+      {more && <ToolMenu tool={tool} badges={badges} onPick={pick} onClose={closeMore} />}
       <View style={barStyle}>
         {TABS.map((t) => (
           <TabButton
@@ -111,54 +109,166 @@ function TabButton({
   );
 }
 
-function SheetCell({
+/**
+ * Phone: every tool as a full-screen menu, grouped like the desktop rail. Slides in from the
+ * right; Android back and the close button dismiss it.
+ */
+function ToolMenu({
+  tool,
+  badges,
+  onPick,
+  onClose,
+}: {
+  tool: Tool;
+  badges: Partial<Record<Tool, number>>;
+  onPick: (id: TabId) => void;
+  onClose: () => void;
+}) {
+  const t = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    let live = true;
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .catch(() => false)
+      .then((reduce) => {
+        if (!live) return undefined;
+        Animated.timing(t, {
+          toValue: 1,
+          duration: reduce ? 0 : 220,
+          easing: Easing.bezier(0.22, 1, 0.36, 1),
+          useNativeDriver: Platform.OS !== "web",
+        }).start();
+        return undefined;
+      });
+    return () => {
+      live = false;
+    };
+  }, [t]);
+  useEffect(() => {
+    // Registered after the shell's handler, so it runs first.
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [onClose]);
+  const anim = useMemo(
+    () => [
+      s.menu,
+      {
+        opacity: t,
+        transform: [{ translateX: t.interpolate({ inputRange: [0, 1], outputRange: [48, 0] }) }],
+      },
+    ],
+    [t],
+  );
+  return (
+    <Animated.View style={anim}>
+      <View style={s.menuHead}>
+        <T v="display" style={s.menuTitle}>
+          All tools
+        </T>
+        <Pressable onPress={onClose} accessibilityLabel="Close menu" style={s.close}>
+          <X size={20} strokeWidth={1.6} color={color.muted} />
+        </Pressable>
+      </View>
+      <ScrollView contentContainerStyle={s.menuBody}>
+        {GROUPS.map((g, i) => (
+          <View key={GROUP_NAMES[i]} style={s.group}>
+            <T v="label" style={s.groupT}>
+              {GROUP_NAMES[i]}
+            </T>
+            {g.map((m) => (
+              <MenuRow
+                key={m.id}
+                meta={m}
+                on={tool === m.id}
+                badge={badges[m.id]}
+                onPick={onPick}
+              />
+            ))}
+          </View>
+        ))}
+      </ScrollView>
+    </Animated.View>
+  );
+}
+
+function MenuRow({
   meta,
   on,
+  badge,
   onPick,
 }: {
   meta: ToolMeta;
   on: boolean;
+  badge?: number;
   onPick: (id: TabId) => void;
 }) {
   const { id, icon: Icon, label } = meta;
   const onPress = useCallback(() => onPick(id), [id, onPick]);
   return (
-    <Pressable style={s.cell} onPress={onPress}>
-      <Cut size={8} style={[s.cellIn, on && s.on]}>
-        <Icon size={20} strokeWidth={1.6} color={on ? color.cyan2 : color.muted} />
-        <T style={[s.cellT, on && s.lOn]}>{label}</T>
-      </Cut>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      {({ pressed }) => (
+        <Cut size={10} style={[s.row, pressed && s.rowPressed, on && s.on]}>
+          <Cut size={6} style={[s.rowIcon, on && s.rowIconOn]}>
+            <Icon size={18} strokeWidth={1.6} color={on ? color.cyan2 : color.muted} />
+          </Cut>
+          <T style={[s.rowT, on && s.lOn]}>{label}</T>
+          {!!badge && (
+            <View style={s.rowBadge}>
+              <T style={s.bt}>{badge}</T>
+            </View>
+          )}
+          <ChevronRight size={16} strokeWidth={1.6} color={color.faint} />
+        </Cut>
+      )}
     </Pressable>
   );
 }
 
 const s = StyleSheet.create({
-  sheetLayer: {
+  menu: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "flex-end",
     zIndex: 20,
+    backgroundColor: color.bg,
   },
-  scrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  sheet: {
-    backgroundColor: color.panel,
-    padding: 16,
-    paddingBottom: 90,
-    borderTopWidth: 1,
-    borderColor: color.line2,
-  },
-  sheetTitle: { marginBottom: 12 },
-  grid: { flexDirection: "row", flexWrap: "wrap", rowGap: 10 },
-  cell: { width: "25%", paddingHorizontal: 4 },
-  cellIn: {
+  menuHead: {
+    flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 12,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 8,
+  },
+  menuTitle: { flex: 1, fontSize: 18 },
+  close: { padding: 8, marginRight: -8 },
+  menuBody: { paddingHorizontal: 12, paddingBottom: 96 },
+  group: { marginTop: 10, gap: 4 },
+  groupT: { paddingHorizontal: 4, marginBottom: 4 },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
     backgroundColor: color.wash,
   },
-  cellT: { fontSize: 11.5, color: color.text, textAlign: "center" },
+  rowPressed: { backgroundColor: color.wash3 },
+  rowIcon: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: color.wash2,
+  },
+  rowIconOn: { backgroundColor: "rgba(37,181,200,0.16)" },
+  rowT: { flex: 1, fontSize: 14.5, color: color.text },
+  rowBadge: {
+    minWidth: 18,
+    height: 16,
+    paddingHorizontal: 4,
+    justifyContent: "center",
+    backgroundColor: color.amber,
+  },
   bar: {
     zIndex: 30,
     flexDirection: "row",

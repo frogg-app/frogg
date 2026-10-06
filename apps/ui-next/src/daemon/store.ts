@@ -38,6 +38,15 @@ let client: DaemonClient | null = null;
 let connectionGeneration = 0;
 export const getClient = () => client;
 
+/**
+ * Component lab only (`/lab`): installs an in-memory stand-in for the daemon client so
+ * real components run against fixtures with no host. The app never calls this.
+ */
+export function attachFixtureClient(fake: unknown): void {
+  ++connectionGeneration;
+  client = fake as DaemonClient;
+}
+
 /** host:port used when nothing is saved yet: ?daemon=, then EXPO_PUBLIC_DAEMON, then this page's host. */
 function defaultEndpoint(): string {
   const fromQuery =

@@ -90,6 +90,8 @@ export const PREF_DEFAULTS = {
   suggestSwitch: true,
   // Context
   staleCacheWarning: true,
+  // Shell
+  railPinned: false,
 };
 
 export type Prefs = typeof PREF_DEFAULTS;

@@ -61,6 +61,10 @@ module.exports = {
         { android: { minSdkVersion: 29, kotlinVersion: "2.1.20", usesCleartextTraffic: true } },
       ],
     ],
-    experiments: { typedRoutes: false },
+    // FROGG_WEB_BASE_URL serves a web export from a subpath (the component lab build uses /lab).
+    experiments: {
+      typedRoutes: false,
+      ...(process.env.FROGG_WEB_BASE_URL ? { baseUrl: process.env.FROGG_WEB_BASE_URL } : {}),
+    },
   },
 };
