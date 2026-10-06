@@ -138,6 +138,8 @@ const s = StyleSheet.create({
 export const buttonAlts: Entry[] = [
   {
     id: "button-alts",
+    decision:
+      "Pick the primary button style: A flat cyan, B flat mint, C outline, D dark + accent bar, E bracket corners, F accent wash — or keep the gradient.",
     name: "Primary button alternatives",
     category: "Primitives",
     path: "lab/AltButton.tsx (lab only)",

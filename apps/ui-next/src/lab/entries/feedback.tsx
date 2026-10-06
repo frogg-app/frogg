@@ -1,5 +1,5 @@
 import { HardDrive, KeyRound } from "lucide-react-native";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button } from "../../components/Button";
 import { ComposerNotices } from "../../components/chat/Notices";
@@ -39,6 +39,7 @@ import {
   type Permission,
 } from "../fixtures";
 import { Act, Case, Cases, Controls, Fill, Stack, W, type Entry } from "../kit";
+import { useLab } from "../store";
 
 // ---- toasts ----
 
@@ -427,10 +428,23 @@ const crashStack = `TypeError: Cannot read properties of undefined (reading 'age
     at Row (SessionList.tsx:290:12)
     at renderWithHooks (react-dom.development.js:15486:18)
     at SessionList (SessionList.tsx:152:3)`;
+/** Remounts the crash view every 2.4s (scaled by lab speed) and on Replay, so the entry replays. */
 function CrashedDemo() {
+  const [n, setN] = useState(0);
+  const rate = Number(useLab((st) => st.speed));
+  const replay = useCallback(() => setN((x) => x + 1), []);
+  useEffect(() => {
+    const id = setInterval(replay, 2400 / rate);
+    return () => clearInterval(id);
+  }, [replay, rate, n]);
   return (
     <Fill>
-      <Crashed error={crashError} stack={crashStack} onRetry={noop} />
+      <Controls>
+        <Act label="Replay entry" run={replay} />
+      </Controls>
+      <Fill key={n}>
+        <Crashed error={crashError} stack={crashStack} onRetry={noop} />
+      </Fill>
     </Fill>
   );
 }
@@ -438,6 +452,7 @@ function CrashedDemo() {
 export const feedback: Entry[] = [
   {
     id: "toast",
+    decision: "Pick the toast style: A bracket (current default), B HUD or C facet.",
     name: "Toasts",
     category: "Feedback",
     path: "components/toast/ToastHost.tsx · toast/store.ts",
@@ -540,7 +555,8 @@ export const feedback: Entry[] = [
     path: "components/shell/ErrorBoundary.tsx (Crashed)",
     purpose: "The root error boundary's screen: message, top stack frames, copy and retry.",
     usedBy: 1,
-    polish: "none",
+    polish:
+      "Entry, web CSS keyframes on ease, settled by 420ms: eyebrow one-shot glitch (opacity flicker + x jitter, 180ms); title rise 8px (220ms, +40ms); coral glyph snaps scale 1.3 -> 0.96 -> 1 with a coral glow flash (260ms, +60ms); message rise (+120ms); stack trace slides up + scaleY (240ms, +170ms); buttons rise last (200ms, +220ms). Copy -> Copied crossfades (140ms fade on remount). Native renders the settled state; prefers-reduced-motion collapses it. Loops every 2.4s here; Replay entry restarts.",
     variants: [{ id: "default", label: "Render error", C: CrashedDemo, h: 520, bleed: true }],
   },
 ];

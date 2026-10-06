@@ -47,6 +47,8 @@ export interface Entry {
   variants: Variant[];
   /** Runs after the fixtures reseed, before the variants mount (select a session, open a tool). */
   setup?: () => void;
+  /** An open question for the user; shows a DECIDE marker in the index and a callout on the page. */
+  decision?: string;
   /** The demo mounts its own ToastHost (the real shell), so the lab's is left out. */
   ownToasts?: boolean;
 }

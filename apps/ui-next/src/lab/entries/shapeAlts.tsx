@@ -287,6 +287,8 @@ const variants: Variant[] = [
 export const shapeAlts: Entry[] = [
   {
     id: "shape-alts",
+    decision:
+      "Pick the shape language: A fixed chamfer outline (current), B tint + edge bar, C bracket corners, D notch tab, E soft geometric, F HUD frame.",
     name: "Shape alternatives",
     category: "Foundations",
     path: "lab/entries/shapeAlts.tsx (lab only)",

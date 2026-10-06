@@ -534,6 +534,7 @@ export const primitives: Entry[] = [
   },
   {
     id: "logo",
+    decision: "Pick the logo motion: ripple (current rail default), shatter or sweep.",
     name: "Logo",
     category: "Primitives",
     path: "components/Logo.tsx",
