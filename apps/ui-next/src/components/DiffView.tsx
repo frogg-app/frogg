@@ -1,10 +1,18 @@
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  Animated,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
 import { setCompare, useScm, type DiffFile } from "../daemon/scm";
 import { useFormFactor } from "../theme/layout";
-import { color, font } from "../theme/tokens";
+import { color, font, glide, web } from "../theme/tokens";
 import { Tokens } from "./Code";
+import { useGlide } from "./Glide";
 import { T } from "./Text";
 
 type Line = DiffFile["hunks"][number]["lines"][number];
@@ -122,10 +130,27 @@ function Seg<V extends string>({
   value: V;
   onChange: (v: V) => void;
 }) {
+  const g = useGlide(value);
+  const pill = useMemo(
+    () => [
+      s.segPill,
+      !g.ready && s.segHidden,
+      { left: g.left, width: g.width, top: g.top, height: g.height },
+    ],
+    [g.ready, g.left, g.width, g.top, g.height],
+  );
   return (
     <View style={s.seg}>
+      <Animated.View style={pill} pointerEvents="none" />
       {options.map(([v, label]) => (
-        <SegItem key={v} v={v} label={label} on={value === v} onChange={onChange} />
+        <SegItem
+          key={v}
+          v={v}
+          label={label}
+          on={value === v}
+          onChange={onChange}
+          onMeasure={g.measure}
+        />
       ))}
     </View>
   );
@@ -136,15 +161,18 @@ function SegItem<V extends string>({
   label,
   on,
   onChange,
+  onMeasure,
 }: {
   v: V;
   label: string;
   on: boolean;
   onChange: (v: V) => void;
+  onMeasure: (v: V, e: LayoutChangeEvent) => void;
 }) {
+  const layout = useCallback((e: LayoutChangeEvent) => onMeasure(v, e), [onMeasure, v]);
   const press = useCallback(() => onChange(v), [onChange, v]);
   return (
-    <Pressable onPress={press} style={[s.segI, on && s.segOn]}>
+    <Pressable onPress={press} onLayout={layout} style={s.segI}>
       <T style={[s.segT, on && s.segTOn]}>{label}</T>
     </Pressable>
   );
@@ -331,7 +359,11 @@ const s = StyleSheet.create({
   faint: { color: color.faint },
   scroll: { paddingBottom: 40 },
   note: { padding: 24 },
-  segT: { fontSize: 12, color: color.faint },
+  segT: {
+    fontSize: 12,
+    color: color.faint,
+    ...web({ transition: `color ${glide.ms}ms ease-out` }),
+  },
   segTOn: { color: color.text },
   splitRow: { flexDirection: "row" },
   splitLeft: { flex: 1, borderRightWidth: 1, borderRightColor: color.line },
@@ -353,7 +385,8 @@ const s = StyleSheet.create({
     borderColor: color.line,
   },
   segI: { paddingHorizontal: 10, paddingVertical: 5 },
-  segOn: { backgroundColor: "rgba(255,255,255,0.07)" },
+  segPill: { position: "absolute", backgroundColor: "rgba(255,255,255,0.07)" },
+  segHidden: { opacity: 0 },
   hunk: {
     paddingHorizontal: 16,
     paddingVertical: 6,

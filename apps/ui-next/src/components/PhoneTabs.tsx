@@ -15,6 +15,7 @@ import {
   Animated,
   BackHandler,
   Easing,
+  type LayoutChangeEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -22,10 +23,11 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { color, font } from "../theme/tokens";
+import { color, font, glide, web } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
 import { Cut } from "./Cut";
 import { GROUP_NAMES, GROUPS, type ToolMeta } from "./Rail";
+import { useGlide } from "./Glide";
 import { T } from "./Text";
 
 type TabId = Tool | "more";
@@ -59,6 +61,16 @@ export function PhoneTabs({ badges }: { badges: Partial<Record<Tool, number>> })
     setMore(false);
     useUi.getState().setTool(id);
   }, []);
+  const active: TabId = more || !inTabs ? "more" : (tool as TabId);
+  const g = useGlide(active);
+  const pill = useMemo(
+    () => [
+      s.pill,
+      !g.ready && s.pillHidden,
+      { left: g.left, width: g.width, top: g.top, height: g.height },
+    ],
+    [g.ready, g.left, g.width, g.top, g.height],
+  );
   const barStyle = useMemo(
     () => [s.bar, { paddingBottom: Math.max(insets.bottom, 6) }],
     [insets.bottom],
@@ -67,6 +79,9 @@ export function PhoneTabs({ badges }: { badges: Partial<Record<Tool, number>> })
     <>
       {more && <ToolMenu tool={tool} badges={badges} onPick={pick} onClose={closeMore} />}
       <View style={barStyle}>
+        <Animated.View style={pill} pointerEvents="none">
+          <Cut size={8} style={s.pillFill} />
+        </Animated.View>
         {TABS.map((t) => (
           <TabButton
             key={t.id}
@@ -74,6 +89,7 @@ export function PhoneTabs({ badges }: { badges: Partial<Record<Tool, number>> })
             on={t.id === "more" ? more || !inTabs : tool === t.id}
             badge={t.id === "more" ? undefined : badges[t.id]}
             onPick={pick}
+            onMeasure={g.measure}
           />
         ))}
       </View>
@@ -86,17 +102,20 @@ function TabButton({
   on,
   badge,
   onPick,
+  onMeasure,
 }: {
   tab: Tab;
   on: boolean;
   badge?: number;
   onPick: (id: TabId) => void;
+  onMeasure: (id: TabId, e: LayoutChangeEvent) => void;
 }) {
   const { id, icon: Icon, label } = tab;
   const onPress = useCallback(() => onPick(id), [id, onPick]);
+  const onLayout = useCallback((e: LayoutChangeEvent) => onMeasure(id, e), [id, onMeasure]);
   return (
-    <Pressable style={s.tabWrap} onPress={onPress}>
-      <Cut size={8} style={[s.tab, on && s.on]}>
+    <Pressable style={s.tabWrap} onPress={onPress} onLayout={onLayout}>
+      <Cut size={8} style={s.tab}>
         <Icon size={18} strokeWidth={1.6} color={on ? color.cyan2 : color.faint} />
         <T style={[s.l, on && s.lOn]}>{label}</T>
         {!!badge && (
@@ -282,7 +301,10 @@ const s = StyleSheet.create({
   tabWrap: { flex: 1 },
   tab: { alignItems: "center", gap: 4, paddingVertical: 6 },
   on: { backgroundColor: "rgba(127,217,230,0.1)" },
-  l: { fontSize: 10.5, color: color.faint },
+  pill: { position: "absolute" },
+  pillHidden: { opacity: 0 },
+  pillFill: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(127,217,230,0.1)" },
+  l: { fontSize: 10.5, color: color.faint, ...web({ transition: `color ${glide.ms}ms ease-out` }) },
   lOn: { color: color.cyan2 },
   badge: {
     position: "absolute",

@@ -1,6 +1,14 @@
 import { useCallback, useMemo, useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, TextInput, View } from "react-native";
-import { color, font, web } from "../../theme/tokens";
+import {
+  Animated,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+  type LayoutChangeEvent,
+} from "react-native";
+import { color, font, glide, web } from "../../theme/tokens";
+import { useGlide } from "../Glide";
 import { T } from "../Text";
 
 export function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -67,10 +75,27 @@ export function Seg<V extends string>({
   value: V;
   onChange: (v: V) => void;
 }) {
+  const g = useGlide(value);
+  const pill = useMemo(
+    () => [
+      s.segPill,
+      !g.ready && s.segHidden,
+      { left: g.left, width: g.width, top: g.top, height: g.height },
+    ],
+    [g.ready, g.left, g.width, g.top, g.height],
+  );
   return (
     <View style={s.seg}>
+      <Animated.View style={pill} pointerEvents="none" />
       {options.map(([v, label]) => (
-        <SegItem key={v} value={v} label={label} on={value === v} onPick={onChange} />
+        <SegItem
+          key={v}
+          value={v}
+          label={label}
+          on={value === v}
+          onPick={onChange}
+          onMeasure={g.measure}
+        />
       ))}
     </View>
   );
@@ -81,16 +106,19 @@ function SegItem<V extends string>({
   label,
   on,
   onPick,
+  onMeasure,
 }: {
   value: V;
   label: string;
   on: boolean;
   onPick: (v: V) => void;
+  onMeasure: (v: V, e: LayoutChangeEvent) => void;
 }) {
+  const layout = useCallback((e: LayoutChangeEvent) => onMeasure(value, e), [onMeasure, value]);
   const press = useCallback(() => onPick(value), [onPick, value]);
   return (
-    <Pressable onPress={press} style={[s.segI, on && s.segOn]}>
-      <T style={on ? s.segTOn : s.segT}>{label}</T>
+    <Pressable onPress={press} onLayout={layout} style={s.segI}>
+      <T style={[s.segT, on && s.segTOn]}>{label}</T>
     </Pressable>
   );
 }
@@ -192,9 +220,14 @@ const s = StyleSheet.create({
   knobOn: { backgroundColor: "#fff", transform: [{ translateX: 14 }] },
   seg: { flexDirection: "row", borderWidth: 1, borderColor: color.line2 },
   segI: { paddingHorizontal: 11, paddingVertical: 5 },
-  segOn: { backgroundColor: "rgba(255,255,255,0.08)" },
-  segT: { fontSize: 12.5, color: color.faint },
-  segTOn: { fontSize: 12.5, color: color.text },
+  segPill: { position: "absolute", backgroundColor: "rgba(255,255,255,0.08)" },
+  segHidden: { opacity: 0 },
+  segT: {
+    fontSize: 12.5,
+    color: color.faint,
+    ...web({ transition: `color ${glide.ms}ms ease-out` }),
+  },
+  segTOn: { color: color.text },
   area: {
     width: "100%",
     minHeight: 110,

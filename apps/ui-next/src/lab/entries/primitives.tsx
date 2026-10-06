@@ -449,7 +449,8 @@ export const primitives: Entry[] = [
     path: "components/tools/Tabs.tsx",
     purpose: "Underlined panel tabs with counts (source control, PRs, plugins).",
     usedBy: 3,
-    polish: "none; underline and colour swap instantly",
+    polish:
+      "Shared underline glides and resizes between tabs (useGlide, glide token: 200ms on the ease curve); label colour crossfades; first paint and reduced motion jump.",
     variants: [{ id: "default", label: "With counts", C: TabsDemo, bleed: true }],
   },
   {
