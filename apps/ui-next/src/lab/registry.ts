@@ -1,6 +1,7 @@
 import { CATEGORIES, type Category, type Entry } from "./kit";
 import { buttonAlts } from "./entries/buttonAlts";
 import { chat } from "./entries/chat";
+import { ciRuns } from "./entries/ci";
 import { data } from "./entries/data";
 import { feedback } from "./entries/feedback";
 import { foundations } from "./entries/foundations";
@@ -24,6 +25,7 @@ export const ENTRIES: Entry[] = [
   ...shell,
   ...settings,
   ...tools,
+  ciRuns,
   ...interactions,
 ];
 

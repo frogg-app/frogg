@@ -1,14 +1,28 @@
 import { ExternalLink, GitPullRequest, RefreshCw } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Linking, Pressable, ScrollView, StyleSheet, View, type TextStyle } from "react-native";
-import { create } from "zustand";
 import { getClient, useDaemon } from "../daemon/store";
 import { color } from "../theme/tokens";
-import { agoText } from "../util";
+import { CiGlyph, CiProgress, JobRow, LogExcerpt, RunActions, RunRow, RunTally } from "./ci/CiRuns";
+import {
+  ciState,
+  dur,
+  isDone,
+  openCiRun,
+  runProgress,
+  seconds,
+  stateOf,
+  useCi,
+  useNow,
+  type CiJob,
+  type CiList,
+  type CiRun,
+} from "./ci/model";
+import { BracketScope } from "./Brackets";
 import { Cut } from "./Cut";
 import { GroupHead, PanelHead } from "./PanelHead";
 import { useActiveCwd } from "./ScmPanel";
-import { Brackets } from "./SessionList";
+import { Seg } from "./settings/controls";
 import { PrMergeButton } from "./tools/PrMerge";
 import { StreamList, useStreams } from "./tools/Streams";
 import { Tabs } from "./tools/Tabs";
@@ -16,33 +30,18 @@ import { T } from "./Text";
 
 type Client = NonNullable<ReturnType<typeof getClient>>;
 type Pr = Awaited<ReturnType<Client["checkoutPrStatus"]>>;
-type Ci = Awaited<ReturnType<Client["checkoutCiListRuns"]>>;
-type Run = Ci["runs"][number];
-type Job = Run["jobs"][number];
 type Check = NonNullable<Pr["status"]>["checks"][number];
-type State = "ok" | "fail" | "run" | "wait" | "skip";
 
-/** Runs of the last listing, shared with the run detail pane. */
-const useRuns = create<{ runs: Run[]; open: string | null }>(() => ({
-  runs: [],
-  open: null,
-}));
-export const useOpenRun = () => useRuns((st) => st.open);
-export const closeRun = () => useRuns.setState({ open: null });
-
-/** Collapses forge-specific check and run states onto the five the design has glyphs for. */
-export function stateOf(status: string): State {
-  const v = status.toLowerCase();
-  if (/skip|neutral/.test(v)) return "skip";
-  if (/success|pass|completed/.test(v)) return "ok";
-  if (/fail|error|cancel|timed_out|action_required/.test(v)) return "fail";
-  if (/progress|running|in_progress/.test(v)) return "run";
-  return "wait";
-}
+export { stateOf };
+export const useOpenRun = () => useCi((st) => st.open);
+export const closeRun = () => openCiRun(null);
 
 function Dot({ status }: { status: string }) {
-  return <View style={dots[stateOf(status)]} />;
+  return <CiGlyph state={ciState(status)} />;
 }
+
+/** While anything is queued or running, the listing refreshes on this interval. */
+const POLL_MS = 15_000;
 
 const authHint: Record<string, string> = {
   unauthenticated: "Sign the host's gh CLI in to see pull requests.",
@@ -52,29 +51,34 @@ const authHint: Record<string, string> = {
 
 type Tab = "pr" | "ci" | "streams";
 
-export function PrsPanel() {
+export function PrsPanel({ initialTab = "pr" }: { initialTab?: Tab }) {
   const cwd = useActiveCwd();
   const conn = useDaemon((st) => st.conn);
-  const [tab, setTab] = useState<Tab>("pr");
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [pr, setPr] = useState<Pr | null>(null);
-  const [ci, setCi] = useState<Ci | null>(null);
+  const ci = useCi((st) => st.list);
+  const runs = useCi((st) => st.runs);
   const load = useCallback(() => {
     const client = getClient();
     if (!cwd || !client) return;
     client.checkoutPrStatus(cwd).then(setPr, () => {});
     const listRuns = async () => {
-      const res = await client.checkoutCiListRuns(cwd);
-      setCi(res);
-      useRuns.setState({ runs: res.runs });
+      const { runs: next, ...list } = await client.checkoutCiListRuns(cwd);
+      useCi.setState({ runs: next as CiRun[], list });
     };
     listRuns().catch(() => {});
   }, [cwd]);
   useEffect(() => {
     if (conn === "online") load();
   }, [conn, load]);
+  const active = runs.some((r) => !isDone(ciState(r.status)));
+  useEffect(() => {
+    if (!active || conn !== "online") return undefined;
+    const id = setInterval(load, POLL_MS);
+    return () => clearInterval(id);
+  }, [active, conn, load]);
   const openRun = useOpenRun();
   const status = pr?.status;
-  const runs = ci?.runs ?? [];
   const streams = useStreams(cwd, tab === "streams");
   const tabs = useMemo(
     () => [
@@ -98,7 +102,7 @@ export function PrsPanel() {
       <Tabs tabs={tabs} value={tab} onChange={setTab} />
       <ScrollView contentContainerStyle={s.scroll}>
         {tab === "pr" && <PullRequest pr={pr} cwd={cwd} onChanged={load} />}
-        {tab === "ci" && <RunList ci={ci} openRun={openRun} />}
+        {tab === "ci" && <RunList list={ci} runs={runs} openRun={openRun} />}
         {tab === "streams" && <StreamList graph={streams.graph} error={streams.error} />}
       </ScrollView>
     </View>
@@ -200,90 +204,108 @@ function CheckRow({ check }: { check: Check }) {
   );
 }
 
-function RunList({ ci, openRun }: { ci: Ci | null; openRun: string | null }) {
-  const runs = ci?.runs ?? [];
+type Scope = "branch" | "all";
+
+function RunList({
+  list,
+  runs,
+  openRun,
+}: {
+  list: Omit<CiList, "runs"> | null;
+  runs: CiRun[];
+  openRun: string | null;
+}) {
+  const branch = list?.branch ?? null;
+  const [scope, setScope] = useState<Scope>("all");
+  const scopes = useMemo<Array<[Scope, string]>>(
+    () => [
+      ["branch", branch ?? "This branch"],
+      ["all", "All branches"],
+    ],
+    [branch],
+  );
+  const shown = useMemo(
+    () => (scope === "branch" && branch ? runs.filter((r) => r.branch === branch) : runs),
+    [scope, branch, runs],
+  );
+  // Rows present on first paint stay put; later arrivals rise in.
+  const seen = useRef<Set<string> | null>(null);
+  if (seen.current === null && runs.length) seen.current = new Set(runs.map((r) => r.id));
+  const firstLive = shown.find((r) => ciState(r.status) === "run")?.id;
   return (
     <>
-      {ci?.providerErrors.map((e) => (
+      {list?.providerErrors.map((e) => (
         <T key={e.provider} v="mono" style={s.providerError}>
           {e.provider}: {e.message}
         </T>
       ))}
-      {runs.length === 0 && (
-        <T style={[s.pad, s.muted]}>{ci ? "No CI runs for this repository." : "loading…"}</T>
+      {list && runs.length > 0 && (
+        <>
+          {branch && (
+            <View style={s.scope}>
+              <Seg options={scopes} value={scope} onChange={setScope} />
+            </View>
+          )}
+          <RunTally runs={shown} />
+        </>
       )}
-      {runs.map((r) => (
-        <RunRow key={r.id} run={r} on={openRun === r.id} />
-      ))}
+      {shown.length === 0 && (
+        <T style={[s.pad, s.muted]}>{list ? "No CI runs for this repository." : "loading…"}</T>
+      )}
+      <BracketScope>
+        {shown.map((r) => (
+          <RunRow
+            key={r.id}
+            run={r}
+            selected={openRun === r.id}
+            onOpen={openCiRun}
+            defaultOpen={r.id === firstLive}
+            fresh={!!seen.current && !seen.current.has(r.id)}
+          />
+        ))}
+      </BracketScope>
     </>
   );
 }
 
-function RunRow({ run, on }: { run: Run; on: boolean }) {
-  const open = useCallback(() => useRuns.setState({ open: run.id }), [run.id]);
-  return (
-    <Pressable onPress={open}>
-      {({ hovered }) => (
-        <View style={[s.run, hovered && s.hover, on && s.runOn]}>
-          {on && <Brackets />}
-          <View style={s.runHead}>
-            <Dot status={run.status} />
-            <T numberOfLines={1} style={s.grow}>
-              {run.pipeline}
-              {run.number ? ` #${run.number}` : ""}
-            </T>
-            <T v="mono" style={s.tiny}>
-              {agoText(run.startedAt)}
-            </T>
-          </View>
-          <T v="mono" numberOfLines={1} style={s.runMeta}>
-            {[run.branch, run.trigger, `${run.jobs.length} jobs`].filter(Boolean).join(" · ")}
-          </T>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
-const duration = (a: string | null, b: string | null) => {
-  if (!a) return "";
-  const sec = Math.round(((b ? Date.parse(b) : Date.now()) - Date.parse(a)) / 1000);
-  if (sec <= 0) return "";
-  return sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}m ${String(sec % 60).padStart(2, "0")}s`;
-};
-
-const ORDER: State[] = ["fail", "run", "wait", "ok", "skip"];
 const FORGE: Record<string, string> = {
   githubActions: "GitHub Actions",
   gitlab: "GitLab CI",
   buildkite: "Buildkite",
+  jenkins: "Jenkins",
 };
 
+function headline(run: CiRun, now: number): string {
+  const st = ciState(run.status);
+  const took = seconds(run.startedAt, run.completedAt, now);
+  const failed = run.jobs.filter((j) => ciState(j.status) === "fail").map((j) => j.name);
+  if (st === "fail")
+    return `Failed${took !== null ? ` in ${dur(took)}` : ""}${failed.length ? ` on ${failed.join(", ")}` : ""}`;
+  if (st === "ok") return `Passed${took !== null ? ` in ${dur(took)}` : ""}`;
+  if (st === "cancel") return "Cancelled";
+  if (st === "wait") return "Queued, waiting for a runner";
+  const done = run.jobs.filter((j) => isDone(ciState(j.status))).length;
+  return `Running · ${done} of ${run.jobs.length} jobs done`;
+}
+
+/** The run pane: header with actions, the job list, and the picked job's steps and log. */
 export function CiRunDetail({ id, onBack }: { id: string; onBack?: () => void }) {
-  const run = useRuns((st) => st.runs.find((r) => r.id === id));
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const jobs = useMemo(
-    () =>
-      [...(run?.jobs ?? [])].sort(
-        (a, b) => ORDER.indexOf(stateOf(a.status)) - ORDER.indexOf(stateOf(b.status)),
-      ),
-    [run],
-  );
-  const toggle = useCallback(
-    (jobId: string) => setExpanded((cur) => (cur === jobId ? null : jobId)),
-    [],
-  );
-  const openUrl = useCallback(() => {
-    if (run?.url) void Linking.openURL(run.url);
-  }, [run?.url]);
+  const run = useCi((st) => st.runs.find((r) => r.id === id));
+  const [pick, setPick] = useState<string | null>(null);
+  const now = useNow(!!run && !run.completedAt);
   if (!run) return <View style={s.root} />;
-  const failed = run.jobs.filter((j) => stateOf(j.status) === "fail").length;
+  const st = ciState(run.status);
+  const fallback =
+    run.jobs.find((j) => ciState(j.status) === "fail") ??
+    run.jobs.find((j) => ciState(j.status) === "run") ??
+    run.jobs[0];
+  const job = run.jobs.find((j) => j.id === pick) ?? fallback;
   return (
     <View style={s.root}>
       <View style={s.detailHead}>
         <View style={s.detailTitleBox}>
           <T v="label">
-            ci run · {FORGE[run.provider] ?? run.provider} · {run.trigger ?? "run"}
+            ci run{run.number ? ` #${run.number}` : ""} · {FORGE[run.provider] ?? run.provider}
           </T>
           <View style={s.detailTitleRow}>
             {onBack && (
@@ -291,119 +313,90 @@ export function CiRunDetail({ id, onBack }: { id: string; onBack?: () => void })
                 <T style={s.back}>←</T>
               </Pressable>
             )}
-            <Dot status={run.status} />
-            <T v="display" style={s.detailTitle}>
+            <T v="display" style={s.detailTitle} numberOfLines={2}>
               {run.pipeline}
-              {run.number ? ` #${run.number}` : ""}
+              {run.branch ? ` · ${run.branch}` : ""}
             </T>
           </View>
-          <T v="mono" style={s.detailMeta}>
-            {[
-              run.branch,
-              `${run.jobs.length} jobs`,
-              failed ? `${failed} failed` : null,
-              duration(run.startedAt, run.completedAt),
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </T>
-        </View>
-        {run.url && (
-          <Pressable onPress={openUrl} style={s.openOut}>
-            <T style={s.muted}>
-              Open on {run.provider === "githubActions" ? "GitHub" : run.provider}
+          <View style={s.detailMetaRow}>
+            <CiGlyph state={st} />
+            <T style={[s.detailMeta, st === "fail" && s.failText]}>{headline(run, now)}</T>
+            <T v="mono" style={s.small} numberOfLines={1}>
+              {[run.trigger, run.actor, run.sha?.slice(0, 7)].filter(Boolean).join(" · ")}
             </T>
-            <ExternalLink size={13} color={color.muted} />
-          </Pressable>
-        )}
+          </View>
+          {run.title && (
+            <T style={s.muted} numberOfLines={1}>
+              {run.title}
+            </T>
+          )}
+          {!isDone(st) && (
+            <View style={s.detailBar}>
+              <CiProgress value={runProgress(run)} state={st} />
+            </View>
+          )}
+        </View>
+        <RunActions run={run} />
       </View>
-      <ScrollView contentContainerStyle={s.jobs}>
-        {jobs.map((j) => (
-          <JobCard key={j.id} job={j} open={expanded === j.id} onToggle={toggle} />
-        ))}
+      <ScrollView contentContainerStyle={s.grid}>
+        <View style={s.jobCol}>
+          <BracketScope>
+            {run.jobs.map((j) => (
+              <JobRow
+                key={j.id}
+                job={j}
+                selected={job?.id === j.id}
+                onPress={setPick}
+                excerpt={false}
+              />
+            ))}
+          </BracketScope>
+        </View>
+        {job && <JobPane job={job} />}
       </ScrollView>
     </View>
   );
 }
 
-function JobCard({
-  job,
-  open,
-  onToggle,
-}: {
-  job: Job;
-  open: boolean;
-  onToggle: (id: string) => void;
-}) {
-  const press = useCallback(() => onToggle(job.id), [job.id, onToggle]);
+function runnerText(job: CiJob): string {
+  if (!job.runner) return "";
+  return job.runner.hosted ? job.runner.name : `self-hosted · ${job.runner.name}`;
+}
+
+function JobPane({ job }: { job: CiJob }) {
   const steps = useMemo(
     () => job.steps.map((st, n) => ({ ...st, key: `${n}:${st.name}` })),
     [job.steps],
   );
-  const skipped = stateOf(job.status) === "skip";
   return (
-    <Cut size={8} style={s.job}>
-      <Pressable onPress={press}>
-        <View style={s.jobHead}>
-          <Dot status={job.status} />
-          <T numberOfLines={1} style={[s.jobName, skipped && s.faint]}>
-            {job.name}
-          </T>
-          {job.runner && (
-            <T v="mono" style={s.tiny}>
-              {job.runner.hosted ? "hosted" : job.runner.name}
+    <Cut size={8} style={s.pane}>
+      <View style={s.paneHead}>
+        <T style={s.paneName}>{job.name}</T>
+        <T v="mono" style={s.small}>
+          {runnerText(job)}
+        </T>
+      </View>
+      <View style={s.steps}>
+        {steps.map((st) => (
+          <View key={st.key} style={s.step}>
+            <Dot status={st.status} />
+            <T
+              v="mono"
+              style={[
+                s.stepText,
+                ciState(st.status) === "fail" && s.failText,
+                ciState(st.status) === "run" && s.stepRun,
+              ]}
+            >
+              {st.name}
             </T>
-          )}
-          <T v="mono" style={s.jobTime}>
-            {duration(job.startedAt, job.completedAt)}
-          </T>
-        </View>
-      </Pressable>
-      {open && (
-        <View style={s.steps}>
-          {steps.map((st) => (
-            <View key={st.key} style={s.step}>
-              <Dot status={st.status} />
-              <T v="mono" style={stateOf(st.status) === "fail" ? s.stepFail : s.stepText}>
-                {st.name}
-              </T>
-            </View>
-          ))}
-        </View>
-      )}
+          </View>
+        ))}
+      </View>
+      <LogExcerpt job={job} tall />
     </Cut>
   );
 }
-
-const dots = StyleSheet.create({
-  ok: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: color.mint,
-    borderWidth: 1,
-    borderColor: color.mint,
-  },
-  wait: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: color.faint,
-  },
-  skip: { width: 8, height: 1.5, backgroundColor: color.faint },
-  fail: { width: 8, height: 8, backgroundColor: color.coral },
-  run: {
-    width: 0,
-    height: 0,
-    borderTopWidth: 4,
-    borderBottomWidth: 4,
-    borderLeftWidth: 8,
-    borderTopColor: "transparent",
-    borderBottomColor: "transparent",
-    borderLeftColor: color.cyan,
-  },
-});
 
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.bg2 },
@@ -446,16 +439,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 4,
   },
-  run: {
-    marginHorizontal: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: color.line,
-  },
-  runOn: { backgroundColor: "rgba(127,217,230,0.05)" },
-  runHead: { flexDirection: "row", alignItems: "center", gap: 8 },
-  runMeta: { marginLeft: 16, marginTop: 3, fontSize: 11 },
+  scope: { paddingHorizontal: 12, paddingTop: 4 },
+  failText: { color: color.coral },
   detailHead: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -467,24 +452,20 @@ const s = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: color.line,
   },
-  detailTitleBox: { flex: 1, minWidth: 220 },
-  detailTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 4,
-  },
-  detailTitle: { fontSize: 20 },
-  detailMeta: { marginTop: 6 },
+  detailTitleBox: { flex: 1, minWidth: 260, gap: 6 },
+  detailTitleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  detailTitle: { fontSize: 20, flexShrink: 1 },
+  detailMetaRow: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  detailMeta: { fontSize: 12.5, color: color.muted },
+  detailBar: { maxWidth: 420, flexDirection: "row" },
   back: { color: color.cyan2, fontSize: 18 },
-  openOut: { flexDirection: "row", gap: 6, alignItems: "center" },
-  jobs: { padding: 24, gap: 8, maxWidth: 900 },
-  job: { backgroundColor: color.panel },
-  jobHead: { flexDirection: "row", alignItems: "center", gap: 10, padding: 12 },
-  jobName: { flex: 1, fontWeight: "500", color: color.text },
-  jobTime: { width: 64, textAlign: "right" },
-  steps: { paddingHorizontal: 12, paddingBottom: 12, paddingLeft: 30, gap: 5 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 16, padding: 16, alignItems: "flex-start" },
+  jobCol: { width: 280, flexGrow: 1, maxWidth: 420 },
+  pane: { flexGrow: 3, flexBasis: 320, backgroundColor: color.panel, padding: 14, gap: 10 },
+  paneHead: { flexDirection: "row", alignItems: "baseline", gap: 10 },
+  paneName: { fontWeight: "600", flex: 1 },
+  steps: { gap: 6 },
   step: { flexDirection: "row", alignItems: "center", gap: 10 },
   stepText: { color: color.muted },
-  stepFail: { color: color.coral },
+  stepRun: { color: color.cyan2 },
 });

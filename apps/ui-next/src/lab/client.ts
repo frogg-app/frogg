@@ -25,6 +25,7 @@ import {
   usage,
   type Permission,
 } from "./fixtures";
+import { ciListRuns, ciPrStatus, seedCi } from "./fixtures/ci";
 import { useLab } from "./store";
 
 export const LAB_URL = "lab://fixtures";
@@ -173,7 +174,9 @@ const known: Record<string, (...args: never[]) => unknown> = {
   listTerminals: async () => ({ terminals: [] }),
   getCheckoutStatus: async (cwd: string) => checkoutStatus(cwd),
   subscribeCheckoutDiff: async () => ({ files: diffFiles, error: null }),
-  checkoutPrStatus: async () => ({ status: null }),
+  // CI (lab/fixtures/ci.ts): simulated runs and the preview branch PR.
+  checkoutPrStatus: async (cwd: string) => ciPrStatus(cwd),
+  checkoutCiListRuns: async (cwd: string) => ciListRuns(cwd),
   close: async () => {},
   connect: async () => {},
   fetchAgentTimeline: async (id: string) => ({
@@ -261,6 +264,7 @@ export function seedLab(): void {
   epoch += 1;
   cancelled.clear();
   attachFixtureClient(client);
+  seedCi();
   useDaemon.setState({
     conn: "online",
     url: LAB_URL,
