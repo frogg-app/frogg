@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Button } from "../../components/Button";
 import { Cut } from "../../components/Cut";
-import { Logo } from "../../components/Logo";
+import { Logo, type LogoMotion } from "../../components/Logo";
 import { GroupHead, PanelHead } from "../../components/PanelHead";
 import { Select, type Option } from "../../components/Select";
 import { Brackets } from "../../components/SessionList";
@@ -14,7 +14,7 @@ import { Menu, useAnchor, type MenuEntry } from "../../components/tools/Menu";
 import { Tabs } from "../../components/tools/Tabs";
 import type { Bucket } from "../../daemon/types";
 import { color } from "../../theme/tokens";
-import { Cell, Stack, Start, Wrap, type Entry } from "../kit";
+import { Cell, Loop, Stack, Start, Wrap, type Entry } from "../kit";
 
 const noop = () => {};
 
@@ -90,19 +90,25 @@ function BracketSet() {
   return (
     <Wrap>
       <Cell label="default cyan2 · 8">
-        <View style={s.bracketBox}>
-          <Brackets />
-        </View>
+        <Loop>
+          <View style={s.bracketBox}>
+            <Brackets />
+          </View>
+        </Loop>
       </Cell>
       <Cell label="len 6 (files)">
-        <View style={s.bracketBox}>
-          <Brackets len={6} />
-        </View>
+        <Loop>
+          <View style={s.bracketBox}>
+            <Brackets len={6} />
+          </View>
+        </Loop>
       </Cell>
       <Cell label="amber">
-        <View style={s.bracketBox}>
-          <Brackets c={color.amber} />
-        </View>
+        <Loop>
+          <View style={s.bracketBox}>
+            <Brackets c={color.amber} />
+          </View>
+        </Loop>
       </Cell>
     </Wrap>
   );
@@ -159,6 +165,31 @@ function Logos() {
       </Cell>
     </Wrap>
   );
+}
+
+function LogoMotionRow({ motion }: { motion: LogoMotion }) {
+  return (
+    <Wrap>
+      <Cell label={`${motion} · 26 (rail)`}>
+        <Logo size={26} motion={motion} />
+      </Cell>
+      <Cell label={`${motion} · 48`}>
+        <Logo size={48} motion={motion} />
+      </Cell>
+    </Wrap>
+  );
+}
+
+function LogoRipple() {
+  return <LogoMotionRow motion="ripple" />;
+}
+
+function LogoShatter() {
+  return <LogoMotionRow motion="shatter" />;
+}
+
+function LogoSweep() {
+  return <LogoMotionRow motion="sweep" />;
 }
 
 function Heads() {
@@ -343,7 +374,12 @@ export const primitives: Entry[] = [
     usedBy: 5,
     polish: "motion.snap on mount: opacity 0→1, scale 1.06→1, 220ms cubic-bezier(0.23,1,0.32,1)",
     variants: [
-      { id: "set", label: "Colours and lengths", note: "Replay to see the snap.", C: BracketSet },
+      {
+        id: "set",
+        label: "Colours and lengths",
+        note: "Loops every 1.6s; click one to replay the snap.",
+        C: BracketSet,
+      },
     ],
   },
   {
@@ -365,10 +401,17 @@ export const primitives: Entry[] = [
     name: "Logo",
     category: "Primitives",
     path: "components/Logo.tsx",
-    purpose: "Faceted gem mark (SVG).",
+    purpose:
+      "Faceted gem mark (SVG). Hover and press it: a low-poly mesh after the frogg.dev hero takes over the facets. Motion via the `motion` prop; the rail uses ripple.",
     usedBy: 2,
-    polish: "none",
-    variants: [{ id: "sizes", label: "Sizes in use", C: Logos }],
+    polish:
+      "motion: three candidates (ripple default in the rail). Web only, 20px and up, off under reduced motion; native and the 12px status-bar mark stay static.",
+    variants: [
+      { id: "sizes", label: "Sizes in use", C: Logos },
+      { id: "ripple", label: "Motion: ripple (rail default)", C: LogoRipple },
+      { id: "shatter", label: "Motion: shatter", C: LogoShatter },
+      { id: "sweep", label: "Motion: sweep", C: LogoSweep },
+    ],
   },
   {
     id: "panel-head",

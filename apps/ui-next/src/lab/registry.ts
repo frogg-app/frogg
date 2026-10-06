@@ -1,4 +1,5 @@
 import { CATEGORIES, type Category, type Entry } from "./kit";
+import { buttonAlts } from "./entries/buttonAlts";
 import { chat } from "./entries/chat";
 import { data } from "./entries/data";
 import { feedback } from "./entries/feedback";
@@ -12,6 +13,7 @@ import { tools } from "./entries/tools";
 export const ENTRIES: Entry[] = [
   ...foundations,
   ...primitives,
+  ...buttonAlts,
   ...data,
   ...feedback,
   ...chat,

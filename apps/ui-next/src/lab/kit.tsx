@@ -1,10 +1,11 @@
 // Building blocks for lab entries: the entry/variant types, specimen frames and demo controls.
 import type { ComponentType, ReactNode } from "react";
-import { useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Button } from "../components/Button";
 import { T } from "../components/Text";
 import { color } from "../theme/tokens";
+import { useLab } from "./store";
 
 export const CATEGORIES = [
   "Foundations",
@@ -106,6 +107,25 @@ export function Cell({ label, children }: { label: string; children: ReactNode }
         {label}
       </T>
     </View>
+  );
+}
+
+/**
+ * Remounts its children every `every` ms (scaled by the lab speed) and on click, so one-shot
+ * mount animations (enter, snap, fade, afterglow, bracket snap) keep replaying in view.
+ */
+export function Loop({ children, every = 1600 }: { children: ReactNode; every?: number }) {
+  const [n, setN] = useState(0);
+  const rate = Number(useLab((st) => st.speed));
+  const replay = useCallback(() => setN((x) => x + 1), []);
+  useEffect(() => {
+    const id = setInterval(replay, every / rate);
+    return () => clearInterval(id);
+  }, [replay, every, rate, n]);
+  return (
+    <Pressable onPress={replay} accessibilityLabel="Replay">
+      <View key={n}>{children}</View>
+    </Pressable>
   );
 }
 

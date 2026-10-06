@@ -23,6 +23,10 @@ export const color = {
   wash2: "rgba(255,255,255,0.05)",
   wash3: "rgba(255,255,255,0.1)",
   scrim: "rgba(4,8,10,0.6)",
+  cyanWash2: "rgba(37,181,200,0.18)",
+  cyanWash3: "rgba(37,181,200,0.28)",
+  cyanDim: "#1e9aab",
+  mintDim: "#33b47a",
 } as const;
 
 export const font = {
@@ -32,6 +36,8 @@ export const font = {
 } as const;
 
 export const ease = "cubic-bezier(0.22, 1, 0.36, 1)";
+/** Sliding selection indicators (tabs, segments): the `ease` curve as numbers, and its duration. */
+export const glide = { ms: 200, curve: [0.22, 1, 0.36, 1] as const };
 
 /** Width breakpoints: phone below `tablet`, rail + one pane below `desktop`, full IDE above. */
 export const bp = { tablet: 700, desktop: 1100 } as const;

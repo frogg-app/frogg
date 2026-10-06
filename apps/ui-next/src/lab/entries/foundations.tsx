@@ -3,7 +3,7 @@ import { Cut } from "../../components/Cut";
 import { Brackets } from "../../components/SessionList";
 import { T } from "../../components/Text";
 import { anim, bp, color, font, frames, labelTint, motion, syntax, web } from "../../theme/tokens";
-import { Cell, Stack, Wrap, type Entry } from "../kit";
+import { Cell, Loop, Stack, Wrap, type Entry } from "../kit";
 
 const swatchCache = new Map<string, ViewStyle>();
 function swatchStyle(c: string): ViewStyle {
@@ -114,11 +114,11 @@ function Layout() {
   );
 }
 
-const MOTION: Array<{ id: string; label: string; style: object }> = [
-  { id: "enter", label: "enter 200ms", style: motion.enter },
-  { id: "snap", label: "snap 220ms", style: motion.snap },
-  { id: "fade", label: "fade 150ms", style: motion.fade },
-  { id: "afterglow", label: "afterglow 1.2s", style: motion.afterglow },
+const MOTION: Array<{ id: string; label: string; style: object; once?: boolean }> = [
+  { id: "enter", label: "enter 200ms", style: motion.enter, once: true },
+  { id: "snap", label: "snap 220ms", style: motion.snap, once: true },
+  { id: "fade", label: "fade 150ms", style: motion.fade, once: true },
+  { id: "afterglow", label: "afterglow 1.2s", style: motion.afterglow, once: true },
   { id: "breathe", label: "breathe 1.6s ∞", style: motion.breathe },
 ];
 
@@ -143,7 +143,13 @@ function Motion() {
     <Wrap>
       {MOTION.map((m) => (
         <Cell key={m.id} label={m.label}>
-          <View style={motionStyles[m.id]} />
+          {m.once ? (
+            <Loop>
+              <View style={motionStyles[m.id]} />
+            </Loop>
+          ) : (
+            <View style={motionStyles[m.id]} />
+          )}
         </Cell>
       ))}
       <Cell label="beam 1.4s ∞">
@@ -157,9 +163,11 @@ function Motion() {
         </T>
       </Cell>
       <Cell label="snap brackets">
-        <View style={s.bracketBox}>
-          <Brackets />
-        </View>
+        <Loop>
+          <View style={s.bracketBox}>
+            <Brackets />
+          </View>
+        </Loop>
       </Cell>
     </Wrap>
   );
@@ -212,7 +220,7 @@ export const foundations: Entry[] = [
     category: "Foundations",
     path: "theme/tokens.ts (frames, anim, motion) · theme/web-fonts.ts",
     purpose:
-      "Every keyframe animation in the app, live. Press Replay to rerun the one-shot ones; use the speed control to slow them.",
+      "Every keyframe animation in the app, live. One-shot ones loop every 1.6s; click a cell to replay it now; use the speed control to slow them.",
     usedBy: 7,
     polish:
       "enter: opacity 0→1 + translateY 6→0, 200ms cubic-bezier(0.23,1,0.32,1) · snap: opacity + scale 1.06→1, 220ms same curve · fade: opacity, 150ms ease-out · afterglow: mint wash 0.28→0.09, 1.2s ease-out · breathe: opacity 0.45↔1, 1.6s ease-in-out ∞ · shimmer: background-position, 2s linear ∞ · beam: translateX −100%→400%, 1.4s cubic-bezier(0.77,0,0.175,1) ∞ · web only; native renders the end state · prefers-reduced-motion clamps all to 1ms",
