@@ -22,6 +22,14 @@ Add an `Entry` to the matching file in `src/lab/entries/`: `id`, `name`, `catego
 `variants` (each a component with an optional fixed height). `setup` runs after the fixtures
 reseed. Follow the app's lint rules (no inline objects or arrows as props).
 
+## Decisions
+
+An entry awaiting the user's call sets `decision: "<the question>"` on its `Entry`. The lab then
+shows an amber DECIDE chip on its index row and overview card, an amber dot + count in its
+category header, a "Needs decision" group at the top of the index and overview, and an amber
+callout above the polish notes. To clear it once answered, delete the `decision` field (and
+apply the pick).
+
 ## Components (52)
 
 Used by = files outside the component's own module that import it (grep of `src/`, lab excluded).
@@ -152,9 +160,11 @@ Recorded from the audit; nothing here was changed.
   the custom curve.
 - **Transitions are literals** in component files (`Rail.tsx`, `settings/controls.tsx`), not
   tokens; keyframe animations go through `motion`.
-- **Overlays disagree.** Dialog and the narrow Select sheet fade (RN-web Modal, 300ms);
-  the phone new-session sheet slides; Menu/Popover, Palette, the desktop new-session overlay,
-  the phone More sheet and the portrait-tablet drawer appear and vanish with no motion.
+- **Overlays agree (fixed).** Menu/Popover, wide Select, Dialog/Confirm, Palette and the desktop
+  new-session overlay share `overlayMotion` + `usePresence` (components/presence.ts): 160-170ms
+  fade + scale in on `ease`, 110ms out, mounted through exit; the narrow Select sheet slides up
+  200ms. Still static: the phone More sheet and the portrait-tablet drawer; the phone
+  new-session sheet keeps the native Modal slide.
 - **Enter without exit.** Toasts, the slash menu and tool rows animate in but are removed
   instantly; the toast stack jumps when one leaves.
 - **Instant state changes** where a transition would read better: ToolCall expand and its
