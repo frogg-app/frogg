@@ -25,7 +25,9 @@ deployment run, not more code.
 - [ ] **Bracket + Rail research client (`apps/ui-next`).** Recovered chat, LAN hosts,
       rail tools and settings work is integrated on `frogg-interface-design-mockups`.
       New settings routes and toast/banner hosts are wired. Host banners are dismissible;
-      Android no longer adds keyboard padding on top of native window resizing. Local ARM64 APK packaging
+      Android no longer adds keyboard padding on top of native window resizing. Usage views
+      show per-account figures for multi-sign-in providers (verified in the web preview against
+      a fixture; the preview host has one sign-in per provider). Local ARM64 APK packaging
       uses `app.frogg.next`; device loading, keyboard/Back behavior and real-provider
       round trips remain acceptance work. Native file picking and advanced tool views
       are incomplete; pairing is not part of the validated LAN/tailnet path.

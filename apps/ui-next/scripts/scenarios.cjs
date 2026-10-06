@@ -401,3 +401,22 @@ module.exports["settings-metadata"] = () => settings("Generated text");
 module.exports["settings-about"] = () => settings("About & diagnostics");
 
 module.exports["settings-updates"] = () => settings("App updates");
+
+// Multi-account usage: the preview daemon has one sign-in per provider, so these swap in
+// the fixture from usage-fixture.cjs (two Claude, two Codex accounts) before shooting.
+const usageFixture = require("./usage-fixture.cjs");
+module.exports["settings-usage"] = () => settings("Usage & limits");
+module.exports["usage-multi"] = () => async (p, size) => {
+  await usageFixture.apply(p);
+  await module.exports.goMore(p, size, "Usage");
+  await p.waitForTimeout(800);
+};
+module.exports["usage-multi-collapsed"] = () => async (p, size) => {
+  await module.exports["usage-multi"]()(p, size);
+  await p.getByLabel("Collapse Claude", { exact: true }).first().click();
+  await p.waitForTimeout(300);
+};
+module.exports["settings-usage-multi"] = () => async (p, size) => {
+  await usageFixture.apply(p);
+  await settings("Usage & limits")(p, size);
+};

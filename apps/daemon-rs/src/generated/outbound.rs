@@ -11444,6 +11444,8 @@ pub struct ProviderUsageListResponsePayloadProvidersItem {
     pub status: ProviderUsageListResponsePayloadProvidersItemStatus,
     #[serde(rename = "planLabel", skip_serializing_if = "Option::is_none")]
     pub plan_label: Option<String>,
+    #[serde(rename = "accountEmail", skip_serializing_if = "Option::is_none")]
+    pub account_email: Option<String>,
     #[serde(rename = "sourceLabel", skip_serializing_if = "Option::is_none")]
     pub source_label: Option<String>,
     #[serde(rename = "fetchedAt", skip_serializing_if = "Option::is_none")]

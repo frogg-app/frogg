@@ -39,6 +39,11 @@ const ClaudeCredentialsSchema = z.object({
     .optional(),
 });
 
+// The CLI's own state file. Only the signed-in identity is read from it.
+const ClaudeStateSchema = z.object({
+  oauthAccount: z.object({ emailAddress: z.string().optional() }).nullish(),
+});
+
 const ClaudeUsageWindowSchema = z.object({
   utilization: ApiNumberSchema,
   resets_at: z.string().nullish(),
@@ -375,6 +380,7 @@ export class ClaudeQuotaProvider implements ProviderUsageFetcher {
       return unavailableUsage(this);
     }
 
+    const accountEmail = await this.readAccountEmail(context?.configDir);
     const scoped = reconcileScopedLimits(
       legacyScopedLimits(resp),
       this.scopedLimitsFromResponse(resp.limits),
@@ -403,6 +409,7 @@ export class ClaudeQuotaProvider implements ProviderUsageFetcher {
       displayName: this.displayName,
       status: "available",
       planLabel: plan,
+      accountEmail,
       windows,
       balances: [],
       details,
@@ -450,6 +457,32 @@ export class ClaudeQuotaProvider implements ProviderUsageFetcher {
     // read that finds no credential file reports unavailable instead.
     if (home !== this.claudeHome) return null;
     return this.platform === "darwin" ? await this.readKeychainCredential() : null;
+  }
+
+  /**
+   * The email the CLI recorded for this sign-in, so two accounts can be told
+   * apart. With `CLAUDE_CONFIG_DIR` set the CLI keeps `.claude.json` inside that
+   * directory; for the primary sign-in it keeps it in the home directory. A
+   * scoped read never looks outside its own directory, for the same reason the
+   * keychain fallback is skipped: it would name another account.
+   */
+  private async readAccountEmail(configDir?: string): Promise<string | null> {
+    const home = configDir ?? this.claudeHome;
+    const candidates =
+      home === this.claudeHome
+        ? [join(homedir(), ".claude.json"), join(home, ".claude.json")]
+        : [join(home, ".claude.json")];
+    for (const path of candidates) {
+      if (!existsSync(path)) continue;
+      try {
+        const state = ClaudeStateSchema.parse(JSON.parse(await fs.readFile(path, "utf8")));
+        const email = state.oauthAccount?.emailAddress?.trim();
+        if (email) return email;
+      } catch {
+        continue;
+      }
+    }
+    return null;
   }
 
   private async readCredentialFile(path: string): Promise<ClaudeCredentialRecord | null> {

@@ -14233,6 +14233,9 @@ if(typeof __o_5072["displayName"]!=="string"){_e.push({code:"invalid_type",expec
 if(__o_5072["status"]!=="available"&&__o_5072["status"]!=="unavailable"&&__o_5072["status"]!=="error"){_e.push({code:"invalid_value",values:["available","unavailable","error"],input:__o_5072["status"],path:["message"].concat("payload").concat("providers").concat(__i_5071).concat("status")});}
 if(__o_5072["planLabel"]!==null){if(typeof __o_5072["planLabel"]!=="string"){_e.push({code:"invalid_type",expected:"string",input:__o_5072["planLabel"],path:["message"].concat("payload").concat("providers").concat(__i_5071).concat("planLabel")});}
 }
+if(__o_5072["accountEmail"]!==undefined){if(__o_5072["accountEmail"]!==null){if(typeof __o_5072["accountEmail"]!=="string"){_e.push({code:"invalid_type",expected:"string",input:__o_5072["accountEmail"],path:["message"].concat("payload").concat("providers").concat(__i_5071).concat("accountEmail")});}
+}
+}
 if(__o_5072["sourceLabel"]!==undefined){if(__o_5072["sourceLabel"]!==null){if(typeof __o_5072["sourceLabel"]!=="string"){_e.push({code:"invalid_type",expected:"string",input:__o_5072["sourceLabel"],path:["message"].concat("payload").concat("providers").concat(__i_5071).concat("sourceLabel")});}
 }
 }

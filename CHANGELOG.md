@@ -5,6 +5,15 @@
 - **Android keyboard layout.** The app shell and new-session sheet now let Android's
   resized window handle the keyboard, avoiding a second padding adjustment that could
   leave empty space below the tabs. iOS keeps keyboard avoidance.
+- **Usage per account.** Frogg Next's Usage panel and **Usage & limits** settings now group
+  usage by provider and, for a provider with two or more sign-ins, show one block per account:
+  its name and email, which account new sessions use, its windows and reset times, and
+  signed-out, error or stale states. A multi-account provider collapses to one line per
+  account plus its fullest window; single-account providers look as before. Meter colours
+  follow the device's warning and critical thresholds. The daemon now reports the sign-in's
+  email with each Claude and Codex usage read (`accountEmail`, optional on
+  `provider.usage.list.response`), read from that account's own `.claude.json` or the Codex
+  usage API.
 - **Dismissible host notifications.** Version, connection and storage banners now have
   an accessible close button. Dismissal lasts for the current notification; a changed
   host, version, severity or new incident can show another banner.

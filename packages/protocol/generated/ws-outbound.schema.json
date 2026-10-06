@@ -51171,6 +51171,12 @@
                               "null"
                             ]
                           },
+                          "accountEmail": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
                           "sourceLabel": {
                             "type": [
                               "string",

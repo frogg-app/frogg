@@ -141,8 +141,14 @@ function AccountRow({
     );
     if (ok) reload();
   }, [act, a.id, reload]);
-  const plan = usage?.planLabel ? `${usage.planLabel} · ` : "";
-  const state = a.authenticated ? "signed in" : "signed out";
+  const sub = [
+    usage?.accountEmail,
+    usage?.planLabel,
+    a.configDir,
+    a.authenticated ? "signed in" : "signed out",
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const windows = (usage?.windows ?? []).slice(0, 2);
   return (
     <View style={s.acct}>
@@ -154,8 +160,7 @@ function AccountRow({
             {a.isActive ? <Pill text="default" /> : null}
           </View>
           <T style={s.sub} numberOfLines={1}>
-            {plan}
-            {a.configDir} · {state}
+            {sub}
           </T>
         </View>
         {windows.length > 0 ? (

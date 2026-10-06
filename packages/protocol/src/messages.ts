@@ -7759,6 +7759,13 @@ export const ProviderUsageSchema = z.object({
   displayName: z.string(),
   status: ProviderUsageStatusSchema,
   planLabel: z.string().nullable(),
+  /**
+   * COMPAT(providerUsageAccountEmail): added in v1.6.13, remove after 2027-10-06.
+   * The sign-in the figures belong to, as the provider reports it (an email
+   * address for Claude and Codex). Lets a client tell two accounts of one
+   * provider apart; absent or null when the provider does not say.
+   */
+  accountEmail: z.string().nullable().optional(),
   sourceLabel: z.string().nullable().optional(),
   fetchedAt: z.string().nullable().optional(),
   nextRefreshAt: z.string().nullable().optional(),
