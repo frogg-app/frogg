@@ -1,4 +1,11 @@
-import { StyleSheet, View } from "react-native";
+import { useCallback, useState, type ReactNode } from "react";
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type GestureResponderEvent,
+  type LayoutChangeEvent,
+} from "react-native";
 import { CodeBlock } from "../../components/Code";
 import { DiffView } from "../../components/DiffView";
 import { Markdown } from "../../components/Markdown";
@@ -11,8 +18,99 @@ import { AccountBlock, accountTint } from "../../components/UsagePanel";
 import { watchCheckout } from "../../daemon/scm";
 import type { AccountUsage } from "../../daemon/usage";
 import { color } from "../../theme/tokens";
+import { T } from "../../components/Text";
 import { accounts, usage } from "../fixtures";
 import { Case, Cases, Cell, Fill, W, type Entry } from "../kit";
+
+const PRESETS = [8, 42, 69, 74, 89, 96, 100];
+
+/** Drag across 70 and 90 to see fills, the amber shimmer and the coral pulses; Replay remounts. */
+function MeterPlay({ render }: { render: (pct: number) => ReactNode }) {
+  const [pct, setPct] = useState(42);
+  const [run, setRun] = useState(0);
+  const [w, setW] = useState(1);
+  const onLayout = useCallback((e: LayoutChangeEvent) => setW(e.nativeEvent.layout.width || 1), []);
+  const pick = useCallback(
+    (e: GestureResponderEvent) =>
+      setPct(Math.round(Math.max(0, Math.min(100, (e.nativeEvent.locationX / w) * 100)))),
+    [w],
+  );
+  const yes = useCallback(() => true, []);
+  const replay = useCallback(() => setRun((n) => n + 1), []);
+  return (
+    <View style={s.play}>
+      <View key={run}>{render(pct)}</View>
+      <View
+        style={s.track}
+        onLayout={onLayout}
+        onStartShouldSetResponder={yes}
+        onMoveShouldSetResponder={yes}
+        onResponderGrant={pick}
+        onResponderMove={pick}
+        accessibilityLabel="Meter value"
+      >
+        <View pointerEvents="none" style={[s.mark, s.mark70]} />
+        <View pointerEvents="none" style={[s.mark, s.mark90]} />
+      </View>
+      <View style={s.playRow}>
+        {PRESETS.map((v) => (
+          <Preset key={v} v={v} on={v === pct} set={setPct} />
+        ))}
+        <Pressable onPress={replay} style={s.replay} accessibilityLabel="Replay">
+          <T v="mono" style={s.replayT}>
+            Replay
+          </T>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+function Preset({ v, on, set }: { v: number; on: boolean; set: (v: number) => void }) {
+  const go = useCallback(() => set(v), [set, v]);
+  return (
+    <Pressable onPress={go} style={[s.preset, on && s.presetOn]}>
+      <T v="mono" style={s.replayT}>
+        {v}
+      </T>
+    </Pressable>
+  );
+}
+const renderMeter = (pct: number) => (
+  <Meter pct={pct} label="Drag me" detail="warning 70 · critical 90" />
+);
+const renderKit = (pct: number) => <KitMeter pct={pct} />;
+function MeterPlayground() {
+  return (
+    <Cases>
+      <Case
+        name="Meter"
+        props="pct={drag}"
+        note="Drag the track or tap a value; Replay remounts the mount animation."
+        w={W.panel}
+      >
+        <View style={s.pad}>
+          <MeterPlay render={renderMeter} />
+        </View>
+      </Case>
+    </Cases>
+  );
+}
+function KitMeterPlayground() {
+  return (
+    <Cases>
+      <Case
+        name="KitMeter"
+        props="pct={drag}"
+        note="Drag across 70 and 90; Replay remounts."
+        w={W.panel}
+      >
+        <View style={s.pad}>
+          <MeterPlay render={renderKit} />
+        </View>
+      </Case>
+    </Cases>
+  );
+}
 
 function Meters() {
   return (
@@ -98,9 +196,9 @@ function KitMeters() {
           <KitMeter pct={72} />
         </View>
       </Case>
-      <Case name="KitMeter" props={"pct={88}"} note="85 and over: coral." w={W.panel}>
+      <Case name="KitMeter" props={"pct={94}"} note="90 and over: coral." w={W.panel}>
         <View style={s.pad}>
-          <KitMeter pct={88} />
+          <KitMeter pct={94} />
         </View>
       </Case>
       <Case name="KitMeter" props={"pct={null}"} w={W.panel}>
@@ -305,7 +403,8 @@ export const data: Entry[] = [
     path: "components/Meter.tsx",
     purpose: "20-cell segmented bar; filled cells take the tone and brighten toward the end.",
     usedBy: 2,
-    polish: "none; fill changes are instant (no width or cell transition)",
+    polish:
+      "cells stagger in (16ms/cell, 110ms each on glide, ~420ms full) and toward new values; tone crossfades; amber shimmers once then breathes the lead cell; coral pulses the run 3x then keeps a lead pulse and flashes the %; reduced motion static",
     variants: [
       {
         id: "tones",
@@ -314,6 +413,7 @@ export const data: Entry[] = [
         C: Meters,
       },
       { id: "edge", label: "Null, zero, clamped, custom tone", C: MetersEdge },
+      { id: "play", label: "Value slider / replay", C: MeterPlayground },
     ],
   },
   {
@@ -323,14 +423,16 @@ export const data: Entry[] = [
     path: "components/settings/pages/kit.tsx (Meter)",
     purpose: "A second, continuous meter used by settings pages. Near-duplicate of Meter.",
     usedBy: 2,
-    polish: "none",
+    polish:
+      "width glides in and toward new values; amber flashes once then breathes the edge; coral pulses 3x then keeps an edge pulse and flashes the %; reduced motion static",
     variants: [
       {
         id: "tones",
         label: "Thresholds",
-        note: "amber ≥ 70, coral ≥ 85 (Meter uses 90)",
+        note: "amber ≥ 70, coral ≥ 90 (matches Meter)",
         C: KitMeters,
       },
+      { id: "play", label: "Value slider / replay", C: KitMeterPlayground },
     ],
   },
   {
@@ -411,4 +513,14 @@ export const data: Entry[] = [
 const s = StyleSheet.create({
   pad: { padding: 16 },
   padWrap: { padding: 16, flexDirection: "row", flexWrap: "wrap", gap: 16 },
+  play: { gap: 12 },
+  track: { height: 22, backgroundColor: color.line, justifyContent: "center" },
+  mark: { position: "absolute", top: 0, bottom: 0, width: 1 },
+  mark70: { left: "70%", backgroundColor: color.amber },
+  mark90: { left: "90%", backgroundColor: color.coral },
+  playRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  preset: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: color.line },
+  presetOn: { borderColor: color.cyan },
+  replay: { paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: color.amber },
+  replayT: { fontSize: 11, color: color.text },
 });
