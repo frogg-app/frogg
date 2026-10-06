@@ -1,4 +1,4 @@
-import { useCallback, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import Shell from "../../app/index";
 import { InboxPanel } from "../../components/Inbox";
@@ -263,6 +263,49 @@ function ToolLifecycle() {
   );
 }
 
+const BURST = ["b1", "b2", "b3", "b4", "b5"];
+const BURST_GAP = 70;
+
+function BurstRow({ id, round, done }: { id: string; round: number; done: boolean }) {
+  const item = toolItem(
+    `${id}-${round}`,
+    "Bash",
+    toolDetails.shell,
+    done ? "completed" : "running",
+    null,
+  ) as Extract<TimelineItem, { type: "tool_call" }>;
+  return <ToolCall item={item} />;
+}
+
+/** Five calls finish 70ms apart: every glyph draws, only the first row sweeps. */
+function ToolBurst() {
+  const [round, setRound] = useState(0);
+  const [done, setDone] = useState(0);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const reset = useCallback(() => {
+    for (const t of timers.current) clearTimeout(t);
+    timers.current = [];
+    setDone(0);
+    setRound((r) => r + 1);
+  }, []);
+  const burst = useCallback(() => {
+    for (const t of timers.current) clearTimeout(t);
+    timers.current = BURST.map((_, i) => setTimeout(() => setDone(i + 1), i * BURST_GAP));
+  }, []);
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  return (
+    <View>
+      <Controls>
+        <Act label="Start (remount)" run={reset} primary />
+        <Act label="Burst complete" run={burst} />
+      </Controls>
+      {BURST.map((id, i) => (
+        <BurstRow key={id} id={id} round={round} done={i < done} />
+      ))}
+    </View>
+  );
+}
+
 // ---- permissions ----
 
 const askShell = () => askPermission(ID.needs, shellPermission);
@@ -475,8 +518,12 @@ export const interactions: Entry[] = [
     category: "Interactions",
     path: "ToolCall.tsx",
     purpose: "Running → completed or failed, expand and collapse.",
-    polish: "enter 200ms on mount · beam while running · expand instant · chevron rotate instant",
-    variants: [{ id: "one", label: "One call", C: ToolLifecycle }],
+    polish:
+      "enter 200ms on mount · beam while running · settle (live running→done only, never on mount): glyph wipes in left→right 220ms + scale pop 0.8→1.1→1 260ms, 2px mint edge fades 0.9→0 and a 10% mint wash sweeps the row 420ms, all on ease; failure is the same with ✕ and coral at 8%; a burst sweeps once per 300ms, the 2px edge goes with the sweep, glyphs always draw · native and reduced motion: settled state · expand instant · chevron rotate instant",
+    variants: [
+      { id: "one", label: "One call", C: ToolLifecycle },
+      { id: "burst", label: "Burst (5 calls, 70ms apart)", C: ToolBurst },
+    ],
   },
   {
     id: "x-permission",

@@ -315,7 +315,7 @@ export const chat: Entry[] = [
       "One collapsible row per tool call: icon, verb, argument, meta, status; expands to its output.",
     usedBy: 1,
     polish:
-      "mount: motion.enter 200ms · running: a 1px beam sweeps the top edge, 1.4s cubic-bezier(0.77,0,0.175,1) ∞ · expand/collapse: instant; the chevron rotates 0→90° with no transition",
+      "mount: motion.enter 200ms · running: a 1px beam sweeps the top edge, 1.4s cubic-bezier(0.77,0,0.175,1) ∞ · done (live only): glyph draws 220ms + pop 260ms, edge flash and row sweep 420ms on ease, sweep throttled to one per 300ms · expand/collapse: instant; the chevron rotates 0→90° with no transition",
     variants: [
       { id: "kinds", label: "Every detail type", note: "Click a row to expand.", C: Kinds },
       { id: "states", label: "Running, completed, failed", C: States },

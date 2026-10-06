@@ -294,3 +294,30 @@ export const beamBand = web({
   backgroundImage:
     "linear-gradient(90deg, rgba(242,246,247,0) 0%, rgba(242,246,247,0.85) 50%, rgba(242,246,247,0) 100%)",
 });
+
+/**
+ * Tool call settle (running → completed/failed, live only): the glyph wipes in left→right
+ * (draw) with a small scale pop, a faint wash sweeps the row and a 2px edge flashes, all on
+ * `ease`, settled by `toolDoneMs.sweep`. Web-only; native and reduced motion get the end state.
+ */
+export const toolDoneMs = { draw: 220, pop: 260, sweep: 420, throttle: 300 } as const;
+export const toolDoneFrames = {
+  draw: { "0%": { width: 0 }, "100%": { width: 14 } },
+  pop: {
+    "0%": { opacity: 0, transform: "scale(0.8)" },
+    "55%": { opacity: 1, transform: "scale(1.1)" },
+    "100%": { opacity: 1, transform: "scale(1)" },
+  },
+  sweep: {
+    "0%": { opacity: 0, transform: "translateX(-100%)" },
+    "30%": { opacity: 1 },
+    "100%": { opacity: 0, transform: "translateX(250%)" },
+  },
+  edge: { "0%": { opacity: 0.9 }, "100%": { opacity: 0 } },
+} satisfies Record<string, Frames>;
+export const toolDoneMotion = {
+  draw: anim(toolDoneFrames.draw, `${toolDoneMs.draw}ms`, ease),
+  pop: anim(toolDoneFrames.pop, `${toolDoneMs.pop}ms`, ease),
+  sweep: anim(toolDoneFrames.sweep, `${toolDoneMs.sweep}ms`, ease),
+  edge: anim(toolDoneFrames.edge, `${toolDoneMs.sweep}ms`, "ease-out"),
+};

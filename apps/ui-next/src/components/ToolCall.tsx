@@ -14,9 +14,18 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react-native";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { anim, color, font, frames, motion, web } from "../theme/tokens";
+import {
+  anim,
+  color,
+  font,
+  frames,
+  motion,
+  toolDoneMotion,
+  toolDoneMs,
+  web,
+} from "../theme/tokens";
 import { CodeBlock } from "./Code";
 import { Markdown } from "./Markdown";
 import { StatusGlyph } from "./StatusGlyph";
@@ -193,13 +202,58 @@ function DiffText({ text }: { text: string }) {
   );
 }
 
+type Settle = { kind: "completed" | "failed"; sweep: boolean } | null;
+
+/** Last time any row played its sweep; a burst only sweeps once per `toolDoneMs.throttle`. */
+let lastSweep = 0;
+
+/**
+ * Plays once on a live running → completed/failed transition (never on mount with a final
+ * status). The glyph always draws in; the row sweep is skipped inside a burst.
+ */
+function useSettle(status: ToolCallTimelineItem["status"]): Settle {
+  const prev = useRef(status);
+  const [settle, setSettle] = useState<Settle>(null);
+  useEffect(() => {
+    const was = prev.current;
+    prev.current = status;
+    if (was !== "running" || (status !== "completed" && status !== "failed")) return;
+    const now = Date.now();
+    const sweep = now - lastSweep > toolDoneMs.throttle;
+    if (sweep) lastSweep = now;
+    setSettle({ kind: status, sweep });
+    const t = setTimeout(() => setSettle(null), toolDoneMs.sweep + 40);
+    return () => clearTimeout(t);
+  }, [status]);
+  return settle;
+}
+
+function DoneGlyph({ failed, live }: { failed: boolean; live: boolean }) {
+  const G = failed ? X : Check;
+  return (
+    <View style={[s.glyph, live && s.glyphPop]}>
+      <View style={[s.glyphClip, live && s.glyphDraw]}>
+        <G size={13} color={failed ? color.coral : color.mint} />
+      </View>
+    </View>
+  );
+}
+
 export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
   const [open, setOpen] = useState(false);
   const { icon: Icon, verb, arg, meta } = summary(item.name, item.detail);
   const failed = item.status === "failed";
   const toggle = useCallback(() => setOpen((o) => !o), []);
+  const settle = useSettle(item.status);
+  const settleFail = settle?.kind === "failed";
   return (
     <View style={[s.box, failed && s.failed]}>
+      {settle?.sweep && (
+        <View pointerEvents="none" style={s.sweepTrack}>
+          <View style={[s.sweep, settleFail ? s.sweepFail : s.sweepDone]} />
+        </View>
+      )}
+      {settle?.sweep && <View pointerEvents="none" style={[s.edge, settleFail && s.edgeFail]} />}
       {item.status === "running" && (
         <View pointerEvents="none" style={s.beamTrack}>
           <View style={s.beam} />
@@ -218,8 +272,7 @@ export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
                 {meta}
               </T>
             )}
-            {item.status === "completed" && <Check size={13} color={color.mint} />}
-            {failed && <X size={13} color={color.coral} />}
+            {item.status !== "running" && <DoneGlyph failed={failed} live={!!settle} />}
             {item.status === "running" && <StatusGlyph bucket="working" size={7} />}
             <ChevronRight size={13} color={color.faint} style={open ? s.chevOpen : s.chev} />
           </View>
@@ -270,6 +323,35 @@ const s = StyleSheet.create({
     }),
     ...anim(frames.beam, "1.4s", "cubic-bezier(0.77,0,0.175,1)", "infinite", "none"),
   },
+  sweepTrack: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
+  sweep: { position: "absolute", top: 0, bottom: 0, left: 0, width: "40%", opacity: 0 },
+  sweepDone: {
+    ...web({
+      backgroundImage: "linear-gradient(90deg, transparent, rgba(63,207,142,0.10), transparent)",
+    }),
+    ...toolDoneMotion.sweep,
+  },
+  sweepFail: {
+    ...web({
+      backgroundImage: "linear-gradient(90deg, transparent, rgba(255,107,107,0.08), transparent)",
+    }),
+    ...toolDoneMotion.sweep,
+  },
+  edge: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: 2,
+    opacity: 0,
+    backgroundColor: color.mint,
+    ...toolDoneMotion.edge,
+  },
+  edgeFail: { backgroundColor: color.coral },
+  glyph: { width: 14, height: 14, justifyContent: "center" },
+  glyphPop: toolDoneMotion.pop,
+  glyphClip: { width: 14, height: 14, overflow: "hidden", justifyContent: "center" },
+  glyphDraw: toolDoneMotion.draw,
   row: {
     flexDirection: "row",
     alignItems: "center",
