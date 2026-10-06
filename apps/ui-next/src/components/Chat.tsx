@@ -6,7 +6,7 @@ import type { Agent } from "../daemon/types";
 import { useConfig, loadConfig } from "../daemon/config";
 import { Select } from "./Select";
 import { bucketOf, type Session, type TimelineEntry } from "../daemon/types";
-import { color } from "../theme/tokens";
+import { color, motion } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { Composer } from "./Composer";
 import { PermissionCard } from "./PermissionCard";
@@ -62,7 +62,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         )}
         {entries?.map((e, i) => <Item key={`${e.seqStart}-${i}`} e={e} provider={providerLabel(a.provider)} />)}
         {a.pendingPermissions.map((p) => <PermissionCard key={p.id} agentId={a.id} p={p} />)}
-        {a.status === "running" && <Thinking />}
+        {a.status === "running" && <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />}
       </ScrollView>
       <View style={s.composer}>
         <Composer
@@ -78,11 +78,20 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   );
 }
 
-function Thinking() {
+/** What the agent is doing right now, as a shimmering label; static amber when it is waiting on you. */
+function Thinking({ entries, waiting }: { entries: TimelineEntry[] | undefined; waiting: boolean }) {
+  const last = entries?.[entries.length - 1]?.item;
+  const label = waiting
+    ? "Waiting for you"
+    : last?.type === "tool_call" && last.status === "running"
+      ? { shell: "Running a command", read: "Reading files", edit: "Editing", write: "Writing", search: "Searching", fetch: "Fetching", sub_agent: "Running a subagent" }[last.detail.type as string] ?? `Using ${last.name}`
+      : last?.type === "assistant_message"
+        ? "Writing"
+        : "Thinking";
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 14 }}>
-      <StatusGlyph bucket="working" size={8} />
-      <T v="mono" style={{ color: color.cyan2 }}>working…</T>
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 }}>
+      {waiting ? <StatusGlyph bucket="needs" size={7} /> : <StatusGlyph bucket="working" size={8} />}
+      <T v="mono" style={[{ fontSize: 12.5 }, waiting ? { color: color.amber } : [motion.shimmerText, motion.shimmerRun]]}>{label}</T>
     </View>
   );
 }

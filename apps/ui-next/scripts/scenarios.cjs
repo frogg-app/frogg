@@ -146,3 +146,18 @@ module.exports["keys-jk"] = () => async (p) => {
   await p.keyboard.press("j");
   await p.waitForTimeout(1200);
 };
+module.exports["running"] = () => async (p) => {
+  await p.getByText("Solo chat").first().click();
+  await p.waitForTimeout(1000);
+  const box = p.getByPlaceholder(/^Message/).first();
+  await box.fill("Walk me through the scroll anchor.");
+  await box.press("Enter");
+  await p.waitForTimeout(3500);
+};
+module.exports["rail-glide"] = () => async (p, size) => {
+  if (size === "phone") return;
+  await p.getByLabel("Settings", { exact: true }).first().click();
+  await p.waitForTimeout(400);
+  await p.getByLabel("Search", { exact: true }).first().click();
+  await p.waitForTimeout(140);
+};

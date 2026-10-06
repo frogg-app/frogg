@@ -27,7 +27,7 @@ import { ToolPane } from "../components/ToolPane";
 import { T } from "../components/Text";
 import { useDaemon } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
-import { color } from "../theme/tokens";
+import { color, motion } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
 
 function sidePanel(tool: Tool): ReactNode {
@@ -80,7 +80,8 @@ export default function Shell() {
     ) : tool === "sessions" || !phone ? (
       session ? <Chat session={session} onBack={phone ? () => select(null) : undefined} /> : phone ? null : <Home />
     ) : null;
-  const side = sidePanel(tool);
+  // Keyed so switching tools replays a short enter; frequent, so it stays under 200ms.
+  const side = <View key={tool} style={[{ flex: 1 }, motion.enter]}>{sidePanel(tool)}</View>;
 
   if (phone) {
     // Phone: each tab's panel is the root; a detail view pushes over it and hides the tabs.

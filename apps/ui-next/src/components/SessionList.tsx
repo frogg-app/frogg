@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { answerPermission, useDaemon } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
-import { color, font, web } from "../theme/tokens";
+import { color, font, motion, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { Cut } from "./Cut";
@@ -135,12 +135,12 @@ function Row({ sess, bucket }: { sess: Session; bucket: Bucket }) {
 export function Brackets({ c = color.cyan2, len = 8 }: { c?: string; len?: number }) {
   const b = { position: "absolute" as const, width: len, height: len, borderColor: c };
   return (
-    <>
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, motion.snap]}>
       <View style={[b, { left: 0, top: 0, borderLeftWidth: 1, borderTopWidth: 1 }]} />
       <View style={[b, { right: 0, top: 0, borderRightWidth: 1, borderTopWidth: 1 }]} />
       <View style={[b, { left: 0, bottom: 0, borderLeftWidth: 1, borderBottomWidth: 1 }]} />
       <View style={[b, { right: 0, bottom: 0, borderRightWidth: 1, borderBottomWidth: 1 }]} />
-    </>
+    </View>
   );
 }
 

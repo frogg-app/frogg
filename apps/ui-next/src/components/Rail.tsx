@@ -2,6 +2,7 @@ import {
   Bell, Bot, CircleGauge, Files, FolderGit2, GitPullRequest, Layers, ListChecks, Puzzle,
   Search, Server, Settings, SquareTerminal, type LucideIcon,
 } from "lucide-react-native";
+import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { color, font, web } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
@@ -28,12 +29,18 @@ export const TOOLS: Array<{ id: Tool; icon: LucideIcon; label: string; group: 0 
 export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
   const tool = useUi((s) => s.tool);
   const setTool = useUi((s) => s.setTool);
+  // Item offsets within the rail, so one indicator can glide between them.
+  const [ys, setYs] = useState<Partial<Record<Tool, number>>>({});
   const group = (g: number) =>
     TOOLS.filter((t) => t.group === g).map((t) => (
-      <RailItem key={t.id} {...t} on={tool === t.id} badge={badges[t.id]} onPress={() => setTool(t.id)} />
+      <View key={t.id} onLayout={(e) => { const y = e.nativeEvent.layout.y; setYs((m) => (m[t.id] === y ? m : { ...m, [t.id]: y })); }}>
+        <RailItem {...t} on={tool === t.id} badge={badges[t.id]} onPress={() => setTool(t.id)} />
+      </View>
     ));
+  const y = ys[tool];
   return (
     <View style={s.rail}>
+      {y !== undefined && <View style={[s.glide, { transform: [{ translateY: y + 6 }] }]} />}
       <View style={{ marginBottom: 10 }}>
         <Logo size={26} />
       </View>
@@ -53,7 +60,6 @@ function RailItem({ icon: Icon, label, on, badge, onPress }: {
     <Pressable onPress={onPress} accessibilityLabel={label} style={{ position: "relative" }}>
       {({ hovered }) => (
         <>
-          {on && <View style={s.ind} />}
           <Cut size={on ? 12 : 8} style={[s.ri, hovered && s.riHover, on && s.riOn]}>
             <Icon size={18} strokeWidth={1.6} color={on ? color.cyan2 : hovered ? color.text : color.faint} />
           </Cut>
@@ -80,7 +86,10 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(37,181,200,0.16)",
     ...web({ backgroundImage: "linear-gradient(135deg, #7fd9e633, #045b9d33)" }),
   },
-  ind: { position: "absolute", left: -9, top: 6, bottom: 6, width: 2, backgroundColor: color.cyan2 },
+  glide: {
+    position: "absolute", left: 0, top: 0, width: 2, height: 28, backgroundColor: color.cyan2,
+    ...web({ backgroundImage: "linear-gradient(#7fd9e6, #045b9d)", transition: "transform 450ms cubic-bezier(0.22, 1, 0.36, 1)" }),
+  },
   badge: { position: "absolute", right: 1, top: 1, minWidth: 14, height: 14, paddingHorizontal: 3, backgroundColor: color.amber },
   badgeT: { fontFamily: font.mono, fontSize: 9, lineHeight: 14, fontWeight: "600", color: "#1a1204", textAlign: "center" },
 });

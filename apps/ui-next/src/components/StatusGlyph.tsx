@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import type { Bucket } from "../daemon/types";
-import { color } from "../theme/tokens";
+import { color, motion } from "../theme/tokens";
 
 export const bucketColor: Record<Bucket, string> = {
   needs: color.amber,
@@ -11,7 +11,7 @@ export const bucketColor: Record<Bucket, string> = {
 };
 
 /** Diamond = needs you, square = failed, dot = review, triangle = working, hollow = idle. */
-export function StatusGlyph({ bucket, size = 9 }: { bucket: Bucket; size?: number }) {
+export function StatusGlyph({ bucket, size = 9, still }: { bucket: Bucket; size?: number; still?: boolean }) {
   const c = bucketColor[bucket];
   if (bucket === "needs")
     return <View style={{ width: size, height: size, backgroundColor: c, transform: [{ rotate: "45deg" }] }} />;
@@ -23,6 +23,7 @@ export function StatusGlyph({ bucket, size = 9 }: { bucket: Bucket; size?: numbe
         style={{
           width: 0, height: 0, borderTopWidth: size / 2, borderBottomWidth: size / 2, borderLeftWidth: size,
           borderTopColor: "transparent", borderBottomColor: "transparent", borderLeftColor: c,
+          ...(still ? null : motion.breathe),
         }}
       />
     );

@@ -5,7 +5,7 @@ import {
 } from "lucide-react-native";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { color, font } from "../theme/tokens";
+import { anim, color, font, frames, motion, web } from "../theme/tokens";
 import { CodeBlock } from "./Code";
 import { Markdown } from "./Markdown";
 import { StatusGlyph } from "./StatusGlyph";
@@ -109,7 +109,12 @@ export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
   const { icon: Icon, verb, arg, meta } = summary(item.name, item.detail);
   const failed = item.status === "failed";
   return (
-    <View style={[s.box, failed && { borderColor: "rgba(255,107,107,0.35)" }]}>
+    <View style={[s.box, failed && s.failed]}>
+      {item.status === "running" && (
+        <View pointerEvents="none" style={s.beamTrack}>
+          <View style={s.beam} />
+        </View>
+      )}
       <Pressable onPress={() => setOpen(!open)}>
         {({ hovered }) => (
           <View style={[s.row, hovered && { backgroundColor: color.wash }]}>
@@ -135,7 +140,14 @@ export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
 }
 
 const s = StyleSheet.create({
-  box: { marginTop: 8, backgroundColor: color.panel, borderWidth: 1, borderColor: color.line },
+  box: { marginTop: 8, backgroundColor: color.panel, borderWidth: 1, borderColor: color.line, overflow: "hidden", ...motion.enter },
+  failed: { borderColor: "rgba(255,107,107,0.35)", borderLeftWidth: 2, borderLeftColor: color.coral },
+  beamTrack: { position: "absolute", top: 0, left: 0, right: 0, height: 1, overflow: "hidden" },
+  beam: {
+    width: "25%", height: 1, backgroundColor: color.cyan2,
+    ...web({ backgroundImage: "linear-gradient(90deg, transparent, #7fd9e6, transparent)" }),
+    ...anim(frames.beam, "1.4s", "cubic-bezier(0.77,0,0.175,1)", "infinite", "none"),
+  },
   row: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingVertical: 8 },
   body: { borderTopWidth: 1, borderTopColor: color.line, backgroundColor: color.bg, maxHeight: 420, overflow: "hidden" },
   pre: { fontFamily: font.mono, fontSize: 12, lineHeight: 18, color: color.muted, padding: 12, whiteSpace: "pre" } as object,
