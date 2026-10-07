@@ -59,6 +59,7 @@ const EXPANDED = 212;
 export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
   const tool = useUi((s) => s.tool);
   const pinned = usePrefs((p) => p.railPinned);
+  const logoMotion = usePrefs((p) => p.logoMotion);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
   // After a pick the rail folds away until the pointer leaves (or keyboard focus moves on).
@@ -144,7 +145,7 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
         {glide && <View style={glide} />}
         <View style={s.logo}>
           <View style={s.logoMark}>
-            <Logo size={26} motion="ripple" />
+            <Logo size={26} motion={logoMotion} />
           </View>
           <T v="display" style={[s.word, open && s.labelOn]} numberOfLines={1}>
             frogg

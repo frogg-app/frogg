@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AccessibilityInfo, Platform, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Svg, { Circle, Defs, G, Line, LinearGradient, Polygon, Stop } from "react-native-svg";
 import { color } from "../theme/tokens";
+import { isNative, useReduceMotion } from "./nativeMotion";
 
 /**
  * Logo motion on the gem's own four faces (top, right, bottom, left, exactly as drawn at rest);
@@ -96,20 +97,6 @@ const ease = (x: number) => 1 - (1 - x) ** 3;
 const HOVER_IN = 260;
 const PRESS = 600;
 
-function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
-  useEffect(() => {
-    let live = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((v) => live && setReduced(v));
-    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduced);
-    return () => {
-      live = false;
-      sub.remove();
-    };
-  }, []);
-  return reduced;
-}
-
 /** Drives a frame clock while hovered or settling from a press; idle costs nothing. */
 function useClock(enabled: boolean) {
   const [now, setNow] = useState(0);
@@ -184,10 +171,10 @@ function useClock(enabled: boolean) {
 const PAD = 4;
 const VB = `${-PAD} ${-PAD} ${24 + PAD * 2} ${24 + PAD * 2}`;
 
-/** Faceted gem mark, after the frogg.dev logo. Animated marks run on web, at 20px and up. */
+/** Faceted gem mark, after the frogg.dev logo. Animated marks run at 20px and up; hover is pointer-only, press works on touch. */
 export function Logo({ size = 24, motion = "none" }: { size?: number; motion?: LogoMotion }) {
-  const reduced = useReducedMotion();
-  const enabled = motion !== "none" && !reduced && size >= 20 && Platform.OS === "web";
+  const reduced = useReduceMotion();
+  const enabled = motion !== "none" && !reduced && size >= 20;
   const { now, hover, press, onEnter, onLeave, onPress } = useClock(enabled);
   const active = enabled && (hover > 0.001 || press >= 0);
   const split = active && motion === "split";
@@ -203,6 +190,7 @@ export function Logo({ size = 24, motion = "none" }: { size?: number; motion?: L
       onPointerEnter={onEnter}
       onPointerLeave={onLeave}
       onPointerDown={onPress}
+      onTouchStart={isNative ? onPress : undefined}
     >
       <View style={[s.svg, svgPos]} pointerEvents="none">
         <Svg width={outer} height={outer} viewBox={VB}>

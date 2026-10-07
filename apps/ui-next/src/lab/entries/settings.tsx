@@ -14,11 +14,27 @@ import {
   TextField,
   Toggle,
 } from "../../components/settings/controls";
+import { DesignOptions } from "../../components/settings/pages/DesignOptions";
 import { Acts, Block, Field, Item, Value } from "../../components/settings/pages/kit";
 import { color } from "../../theme/tokens";
 import { Case, Cases, Cell, W, Wrap, type Entry } from "../kit";
 
 const noop = () => {};
+
+function DesignOptionsCase() {
+  return (
+    <Cases>
+      <Case
+        name="DesignOptions"
+        props="(Settings → Design options)"
+        note="Every pending pick on one page; changes apply to the whole lab and app live."
+        w={W.phone}
+      >
+        <DesignOptions />
+      </Case>
+    </Cases>
+  );
+}
 
 function Toggles() {
   const [a, setA] = useState(true);
@@ -198,6 +214,18 @@ function KitRows() {
 }
 
 export const settings: Entry[] = [
+  {
+    id: "design-options",
+    name: "Design options",
+    category: "Settings controls",
+    path: "components/settings/pages/DesignOptions.tsx",
+    purpose:
+      "Settings page that switches every pending lab decision on-device: primary button, logo motion, shape language, toast, session state card, streaming text reveal and heading reveal. Persisted in prefs; production components read the picks. The lab entries that carry each decision stay marked and point here.",
+    usedBy: 1,
+    polish:
+      "chooser chips use the bracket selection language (slide + lock-on) · each pick previews on the real production component · motions that are web-only are tagged 'web only'",
+    variants: [{ id: "page", label: "Phone width", C: DesignOptionsCase }],
+  },
   {
     id: "toggle",
     name: "Toggle",

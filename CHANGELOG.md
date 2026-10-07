@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.6.13-beta.2 — prototype design options on device
+
+- **Settings → Design options (Frogg Next).** Every pending lab pick is switchable at runtime and
+  kept on the device: primary button (gradient or A–F), logo motion, shape language (A–F), toast
+  style, session state card style, streaming text reveal (Off or 1–8) and heading reveal. Each
+  picker previews the production component. Defaults: gradient button, ripple logo, chamfer shape,
+  bracket toast, edge state card, word-fade text, letter-stagger headings.
+- **Native motion on Android.** All eight streaming text reveals and the four heading reveals,
+  toast enter/exit/reflow, session state entry, tool-call settle and running beams, logo press
+  motion and the chamfered outline now run natively. Blur-in, chunk slide, glow shadow and the
+  gradient fill are approximated or web only; the Design options page lists them.
+- **Text reveal fixes.** The typewriter loop stops once it catches up, and an inline marker
+  closing mid-stream no longer restarts the word's animation.
+
 ## 1.6.13-beta.1 — prototype branch checkpoint
 
 - **Frogg Next Mac ARM packaging.** Added a standalone Electron shell for the new interface,

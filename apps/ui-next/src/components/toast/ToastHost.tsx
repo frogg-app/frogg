@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import {
   Animated,
   Easing,
-  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -15,8 +14,10 @@ import { useDaemon } from "../../daemon/store";
 import { bucketOf, type Bucket } from "../../daemon/types";
 import { useFormFactor } from "../../theme/layout";
 import { color, glide, toastMotion, toastMs, web } from "../../theme/tokens";
+import { usePrefs } from "../../prefs";
 import { useUi } from "../../ui-store";
 import { Cut } from "../Cut";
+import { isNative, NativeDrain, NativeEnter, type Pose } from "../nativeMotion";
 import { StatusGlyph } from "../StatusGlyph";
 import { T } from "../Text";
 import {
@@ -60,6 +61,7 @@ const tint = Object.fromEntries(
 
 const curve = Easing.bezier(...glide.curve);
 const GAP = 8;
+const NONE = {};
 
 /**
  * Bottom-right stack of transient toasts (bottom, full width on phones). Also turns session
@@ -70,6 +72,7 @@ export function ToastHost({ variant }: { variant?: ToastVariant }) {
   const toasts = useToasts((st) => st.toasts);
   const paused = useToasts((st) => st.paused);
   const chosen = useToasts((st) => st.variant);
+  const pref = usePrefs((st) => st.toastStyle);
   const phone = useFormFactor() === "phone";
   const insets = useSafeAreaInsets();
   useSessionToasts();
@@ -83,7 +86,7 @@ export function ToastHost({ variant }: { variant?: ToastVariant }) {
       onPointerLeave={resumeToasts}
     >
       {toasts.map((t) => (
-        <Slot key={t.id} t={t} phone={phone} variant={variant ?? chosen} paused={paused} />
+        <Slot key={t.id} t={t} phone={phone} variant={variant ?? chosen ?? pref} paused={paused} />
       ))}
     </View>
   );
@@ -152,21 +155,30 @@ function Card({ t, phone, variant, paused, live }: RowProps & { live: boolean })
     dismissToast(t.id);
     t.action?.onPress();
   }, [t]);
-  let move: object | false = false;
+  let move: object = NONE;
   if (live) {
     if (t.leaving) move = phone ? m.outDown : m.outSide;
     else move = phone ? m.inUp : m.inSide;
   }
-  const drain = !t.sticky && Platform.OS === "web" && (
-    <View
-      pointerEvents="none"
-      style={[s.drain, tint[t.kind].bg, live && m.drain, paused && s.held]}
-    />
-  );
-  const parts = { t, close, act, drain, snap: live && !t.leaving };
-  if (variant === "hud") return <Hud {...parts} move={move} />;
-  if (variant === "facet") return <Facet {...parts} move={move} />;
-  return <Bracket {...parts} move={move} />;
+  let drain: ReactNode = null;
+  if (!t.sticky && isNative)
+    drain = live ? (
+      <NativeDrain ms={toastMs.life} paused={paused} style={[s.drain, tint[t.kind].bg]} />
+    ) : (
+      <View pointerEvents="none" style={[s.drain, tint[t.kind].bg]} />
+    );
+  else if (!t.sticky)
+    drain = (
+      <View
+        pointerEvents="none"
+        style={[s.drain, tint[t.kind].bg, live && m.drain, paused && s.held]}
+      />
+    );
+  const mover = { move, live, phone, leaving: !!t.leaving };
+  const parts = { t, close, act, drain, snap: live && !t.leaving, mover };
+  if (variant === "hud") return <Hud {...parts} />;
+  if (variant === "facet") return <Facet {...parts} />;
+  return <Bracket {...parts} />;
 }
 
 interface Parts {
@@ -175,7 +187,67 @@ interface Parts {
   act: () => void;
   drain: ReactNode;
   snap: boolean;
-  move: object | false;
+  mover: MoverProps;
+}
+
+interface MoverProps {
+  move: object;
+  live: boolean;
+  phone: boolean;
+  leaving: boolean;
+}
+
+const SIDE_IN: Pose = { opacity: 0, x: 28 };
+const SIDE_OUT: Pose = { opacity: 0, x: 24 };
+const UP_IN: Pose = { opacity: 0, y: 18 };
+const UP_OUT: Pose = { opacity: 0, y: 12 };
+const SNAP: Pose = { opacity: 0, scale: 1.9 };
+
+/** Card enter/exit: CSS keyframes on web, native-driver slide + fade elsewhere. */
+function Mover({
+  move,
+  live,
+  phone,
+  leaving,
+  style,
+  children,
+}: MoverProps & { style?: object | object[]; children: ReactNode }) {
+  if (!isNative) return <View style={[style, move]}>{children}</View>;
+  return (
+    <NativeEnter
+      on={live}
+      from={phone ? UP_IN : SIDE_IN}
+      exit={phone ? UP_OUT : SIDE_OUT}
+      leaving={leaving}
+      ms={toastMs.in}
+      exitMs={toastMs.out}
+      style={style}
+    >
+      {children}
+    </NativeEnter>
+  );
+}
+
+/** Corner marks / gem: scale-and-fade snap `cornerDelay` after the card lands. */
+function Snapper({ on, style, children }: { on: boolean; style: object; children: ReactNode }) {
+  if (!isNative)
+    return (
+      <View pointerEvents="none" style={[style, on && m.corner]}>
+        {children}
+      </View>
+    );
+  return (
+    <NativeEnter
+      on={on}
+      from={SNAP}
+      ms={160}
+      delay={toastMs.cornerDelay}
+      pointerEvents="none"
+      style={style}
+    >
+      {children}
+    </NativeEnter>
+  );
 }
 
 function Icon({ kind }: { kind: ToastKind }) {
@@ -208,16 +280,16 @@ function Body({ t, mono }: { t: Toast; mono?: boolean }) {
 
 // ---- A: chamfered card, kind bracket corners, edge bar, mono tag ----
 
-function Bracket({ t, close, act, drain, snap, move }: Parts) {
+function Bracket({ t, close, act, drain, snap, mover }: Parts) {
   const k = tint[t.kind];
   return (
-    <View style={move}>
+    <Mover {...mover}>
       <Cut size={10} flip style={[s.card, s.cardA]}>
         <View style={[s.edge, k.bg]} />
-        <View pointerEvents="none" style={[s.corners, snap && m.corner]}>
+        <Snapper on={snap} style={s.corners}>
           <View style={[s.cTL, k.line]} />
           <View style={[s.cBR, k.line]} />
-        </View>
+        </Snapper>
         <View style={s.bodyA}>
           <View style={s.head}>
             <Icon kind={t.kind} />
@@ -236,7 +308,7 @@ function Bracket({ t, close, act, drain, snap, move }: Parts) {
         </View>
         {drain}
       </Cut>
-    </View>
+    </Mover>
   );
 }
 
@@ -248,16 +320,16 @@ function clock(at: number) {
   return `${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 }
 
-function Hud({ t, close, act, drain, snap, move }: Parts) {
+function Hud({ t, close, act, drain, snap, mover }: Parts) {
   const k = tint[t.kind];
   return (
-    <View style={[s.card, s.hud, move]}>
-      <View pointerEvents="none" style={[s.ticks, snap && m.corner]}>
+    <Mover {...mover} style={[s.card, s.hud]}>
+      <Snapper on={snap} style={s.ticks}>
         <View style={[s.tTL, k.line]} />
         <View style={s.tTR} />
         <View style={s.tBL} />
         <View style={s.tBR} />
-      </View>
+      </Snapper>
       <View style={s.hudHead}>
         <View style={[s.dot, k.bg]} />
         <T v="mono" style={[s.hudTag, k.fg]}>
@@ -281,7 +353,7 @@ function Hud({ t, close, act, drain, snap, move }: Parts) {
         )}
       </View>
       {drain}
-    </View>
+    </Mover>
   );
 }
 
@@ -323,18 +395,18 @@ function Gem({ c }: { c: string }) {
   );
 }
 
-function Facet({ t, close, act, drain, snap, move }: Parts) {
+function Facet({ t, close, act, drain, snap, mover }: Parts) {
   const k = tint[t.kind];
   const c = KIND[t.kind].c;
   return (
-    <View style={move}>
+    <Mover {...mover}>
       <Cut size={10} flip style={[s.card, s.cardC]}>
         <View pointerEvents="none" style={s.mesh}>
           <Mesh c={c} />
         </View>
-        <View style={[s.gem, snap && m.corner]}>
+        <Snapper on={snap} style={s.gem}>
           <Gem c={c} />
-        </View>
+        </Snapper>
         <View style={s.bodyC}>
           <Body t={t} />
           <View style={s.footC}>
@@ -351,7 +423,7 @@ function Facet({ t, close, act, drain, snap, move }: Parts) {
         <Close onPress={close} />
         {drain}
       </Cut>
-    </View>
+    </Mover>
   );
 }
 

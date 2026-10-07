@@ -1,4 +1,5 @@
 import { HardDrive, KeyRound } from "lucide-react-native";
+import { usePrefs } from "../../prefs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button } from "../../components/Button";
@@ -110,7 +111,10 @@ function VariantAct({ id, label, on }: { id: ToastVariant; label: string; on: bo
 
 function ToastDemo() {
   const count = useToasts((st) => st.toasts.length);
-  const variant = useToasts((st) => st.variant);
+  const stored = useToasts((st) => st.variant);
+  const pref = usePrefs((st) => st.toastStyle);
+  const variant = stored ?? pref;
+  useEffect(() => () => setToastVariant(null), []);
   return (
     <Stack>
       <Controls>
@@ -480,7 +484,8 @@ function CrashedDemo() {
 export const feedback: Entry[] = [
   {
     id: "toast",
-    decision: "Pick the toast style: A bracket (current default), B HUD or C facet.",
+    decision:
+      "Pick the toast style: A bracket (current default), B HUD or C facet. Switchable on-device in Settings → Design options.",
     name: "Toasts",
     category: "Feedback",
     path: "components/toast/ToastHost.tsx · toast/store.ts",
@@ -542,8 +547,8 @@ export const feedback: Entry[] = [
       "End-of-timeline state cards (review, failed, host offline) and the compaction / clean-cut marker.",
     usedBy: 1,
     polish:
-      "Cards rise 8px + fade on mount (200ms, glide curve); the kind edge/trim/corners draw in 60ms later; failed flashes coral once, review glows mint once. Clean-cut marker is the apps/ui divider (amber cut line, scissors) with a beam running along the line while compacting; the summary unfolds (180ms) and folds (140ms). Reduced motion and native: static. Replay to see entry.",
-    decision: `Pick the state card style: A edge (wash + 3px edge bar + tag), B bracket (raised card, kind corners), C banner (full-width wash, top trim). Current default: ${DEFAULT_STATE_VARIANT}.`,
+      "Cards rise 8px + fade on mount (200ms, glide curve); the kind edge/trim/corners draw in 60ms later; failed flashes coral once, review glows mint once. Clean-cut marker is the apps/ui divider (amber cut line, scissors) with a beam running along the line while compacting; the summary unfolds (180ms) and folds (140ms). Native runs the same motion on the native driver (summary height on the JS driver); reduced motion: static. Replay to see entry.",
+    decision: `Pick the state card style: A edge (wash + 3px edge bar + tag), B bracket (raised card, kind corners), C banner (full-width wash, top trim). Current default: ${DEFAULT_STATE_VARIANT}. Switchable on-device in Settings → Design options.`,
     variants: [
       { id: "style-edge", label: "Style A · edge bar (default)", C: StyleEdge },
       { id: "style-bracket", label: "Style B · bracket card", C: StyleBracket },

@@ -14,8 +14,9 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react-native";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Beam, isNative, NativeEnter, NativePulse, type Pose, Sweep } from "./nativeMotion";
 import {
   anim,
   color,
@@ -228,8 +229,35 @@ function useSettle(status: ToolCallTimelineItem["status"]): Settle {
   return settle;
 }
 
+const ENTER: Pose = { opacity: 0, y: 6 };
+const POP: Pose = { opacity: 0, scale: 0.8 };
+const DRAW: Pose = { scaleX: 0 };
+
+function Enter({ style, children }: { style: object; children: ReactNode }) {
+  if (!isNative) return <View style={style}>{children}</View>;
+  return (
+    <NativeEnter from={ENTER} ms={200} style={style}>
+      {children}
+    </NativeEnter>
+  );
+}
+
 function DoneGlyph({ failed, live }: { failed: boolean; live: boolean }) {
   const G = failed ? X : Check;
+  if (isNative)
+    return (
+      <NativeEnter on={live} from={POP} ms={toolDoneMs.pop} style={s.glyph}>
+        <NativeEnter
+          on={live}
+          from={DRAW}
+          anchor="start-x"
+          ms={toolDoneMs.draw}
+          style={s.glyphClip}
+        >
+          <G size={13} color={failed ? color.coral : color.mint} />
+        </NativeEnter>
+      </NativeEnter>
+    );
   return (
     <View style={[s.glyph, live && s.glyphPop]}>
       <View style={[s.glyphClip, live && s.glyphDraw]}>
@@ -247,16 +275,26 @@ export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
   const settle = useSettle(item.status);
   const settleFail = settle?.kind === "failed";
   return (
-    <View style={[s.box, failed && s.failed]}>
-      {settle?.sweep && (
+    <Enter style={[s.box, failed && s.failed]}>
+      {settle?.sweep && !isNative && (
         <View pointerEvents="none" style={s.sweepTrack}>
           <View style={[s.sweep, settleFail ? s.sweepFail : s.sweepDone]} />
         </View>
       )}
-      {settle?.sweep && <View pointerEvents="none" style={[s.edge, settleFail && s.edgeFail]} />}
+      {settle?.sweep && isNative && (
+        <Sweep ms={toolDoneMs.sweep} style={settleFail ? s.nSweepFail : s.nSweepDone} />
+      )}
+      {settle?.sweep && !isNative && (
+        <View pointerEvents="none" style={[s.edge, settleFail && s.edgeFail]} />
+      )}
+      {settle?.sweep && isNative && (
+        <View pointerEvents="none" style={s.edgeBox}>
+          <NativePulse peak={0.9} ms={toolDoneMs.sweep} style={settleFail ? s.bgCoral : s.bgMint} />
+        </View>
+      )}
       {item.status === "running" && (
         <View pointerEvents="none" style={s.beamTrack}>
-          <View style={s.beam} />
+          {isNative ? <Beam color={color.cyan2} /> : <View style={s.beam} />}
         </View>
       )}
       <Pressable onPress={toggle}>
@@ -288,7 +326,7 @@ export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
           <Body d={item.detail} />
         </View>
       )}
-    </View>
+    </Enter>
   );
 }
 
@@ -300,6 +338,16 @@ const s = StyleSheet.create({
     borderColor: color.line,
     overflow: "hidden",
     ...motion.enter,
+  },
+  edgeBox: { position: "absolute", top: 0, bottom: 0, left: 0, width: 2, overflow: "hidden" },
+  bgMint: { backgroundColor: color.mint },
+  bgCoral: { backgroundColor: color.coral },
+  nSweepDone: { backgroundColor: "rgba(63,207,142,0.10)", position: "absolute", top: 0, bottom: 0 },
+  nSweepFail: {
+    backgroundColor: "rgba(255,107,107,0.08)",
+    position: "absolute",
+    top: 0,
+    bottom: 0,
   },
   failed: {
     borderColor: "rgba(255,107,107,0.35)",

@@ -50,7 +50,13 @@ function Current() {
   return (
     <Stack>
       <Wrap>
-        <Button kind="primary" label="Create session" onPress={noop} />
+        <Button
+          kind="primary"
+          look="gradient"
+          shape="chamfer"
+          label="Create session"
+          onPress={noop}
+        />
         <Button label="Cancel" onPress={noop} />
         <Button kind="danger" label="Archive" onPress={noop} />
       </Wrap>
@@ -139,10 +145,10 @@ export const buttonAlts: Entry[] = [
   {
     id: "button-alts",
     decision:
-      "Pick the primary button style: A flat cyan, B flat mint, C outline, D dark + accent bar, E bracket corners, F accent wash — or keep the gradient.",
+      "Pick the primary button style: A flat cyan, B flat mint, C outline, D dark + accent bar, E bracket corners, F accent wash — or keep the gradient (shipping default). Switchable on-device in Settings → Design options.",
     name: "Primary button alternatives",
     category: "Primitives",
-    path: "lab/AltButton.tsx (lab only)",
+    path: "components/Button.tsx (look prop)",
     purpose:
       "Candidates to replace the gradient primary. Each keeps the 6px chamfer and sits beside the real ghost and danger buttons; hover and press them, or read the forced rest / hover / pressed strip.",
     polish: "hover and pressed swap background instantly, matching Button",

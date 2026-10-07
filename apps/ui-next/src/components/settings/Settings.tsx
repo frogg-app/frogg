@@ -1,5 +1,6 @@
 import { AppUpdates } from "./pages/AppUpdates";
 import { Developer } from "./pages/Developer";
+import { DesignOptions } from "./pages/DesignOptions";
 import { About } from "./pages/About";
 import { Plugins } from "./pages/Plugins";
 import { Metadata } from "./pages/Metadata";
@@ -19,6 +20,7 @@ import {
   HardDrive,
   Keyboard,
   KeyRound,
+  Palette,
   Lock,
   MessageSquare,
   RefreshCw,
@@ -308,6 +310,7 @@ export const PAGES: Page[] = [
   { id: "plugins", label: "Plugins", icon: Wrench, scope: "App", body: Plugins },
   { id: "about", label: "About & diagnostics", icon: Activity, scope: "App", body: About },
   { id: "developer", label: "Developer", icon: SquareTerminal, scope: "App", body: Developer },
+  { id: "design", label: "Design options", icon: Palette, scope: "App", body: DesignOptions },
   { id: "updates", label: "App updates", icon: RefreshCw, scope: "App", body: AppUpdates },
 ];
 

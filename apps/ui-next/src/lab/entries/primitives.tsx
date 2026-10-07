@@ -609,7 +609,8 @@ export const primitives: Entry[] = [
   },
   {
     id: "logo",
-    decision: "Pick the logo motion: ripple (current rail default), split, sweep or turn.",
+    decision:
+      "Pick the logo motion: ripple (current rail default), split, sweep or turn. Switchable on-device in Settings → Design options.",
     name: "Logo",
     category: "Primitives",
     path: "components/Logo.tsx",
@@ -617,7 +618,7 @@ export const primitives: Entry[] = [
       "Faceted gem mark (SVG). Hover and press it: the gem's own four faces animate, nothing finer. Motion via the `motion` prop; the rail uses ripple.",
     usedBy: 2,
     polish:
-      "motion: four candidates on the gem's own faces (ripple default in the rail). Hover eases in over 260ms, press runs 600ms, no idle animation. Web only, 20px and up, off under reduced motion; native and the 12px status-bar mark stay static.",
+      "motion: four candidates on the gem's own faces (ripple default in the rail). Hover eases in over 260ms, press runs 600ms, no idle animation. 20px and up, off under reduced motion; hover is pointer-only, press works on touch; the 12px status-bar mark stays static.",
     variants: [
       { id: "sizes", label: "Sizes in use", C: Logos },
       { id: "ripple", label: "Motion: ripple (rail default)", C: LogoRipple },

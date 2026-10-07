@@ -212,7 +212,14 @@ function TitleCase({
     <Case name={label} props={`mode="${mode}"`} note={spec} w={W.phone}>
       <View style={s.titles}>
         <RevealTitle key={`a${run}`} text={TITLES[0]} mode={mode} style={s.hero} rate={rate} />
-        <RevealTitle key={`b${run}`} text={TITLES[1]} mode={mode} style={s.crash} rate={rate} />
+        <RevealTitle
+          key={`b${run}`}
+          text={TITLES[1]}
+          mode={mode}
+          style={s.crash}
+          rate={rate}
+          tone="coral"
+        />
         <RevealTitle key={`c${run}`} text={TITLES[2]} mode={mode} style={s.panel} rate={rate} />
       </View>
     </Case>
@@ -225,14 +232,15 @@ export const textReveal: Entry = {
   category: "Chat",
   path: "components/chat/TextReveal.tsx",
   purpose:
-    "Options for how streamed assistant text and one-shot titles appear. Lab only: production Markdown is unchanged.",
+    "How streamed assistant text and one-shot titles appear. Production uses these (Settings → Design options): chat replies via RevealMarkdown, panel titles, the home heading and the session title via RevealHeading. Web animates with CSS; native runs every mode from a shared frame clock.",
   usedBy: 0,
   polish:
     REVEALS.map((r) => `${r.n} ${r.label}: ${r.spec}`).join(" · ") +
     ` · only pieces younger than their animation are spans; the rest is plain text (pruned on a timer) · ` +
     `history present at mount never animates · no reflow: opacity/filter/mask/top/left on inline spans, scramble overlays transparent real text · ` +
-    `prefers-reduced-motion: instant (no caret blink, no typewriter) · native: plain text, caret static and typewriter kept · caret idle after ${revealMs.caretIdle}ms`,
-  decision: "Pick the streaming text reveal (1–8) and heading reveal.",
+    `reduced motion (prefers-reduced-motion / OS setting): instant · native equivalents are text-colour alpha/tint on a shared rAF clock (only live spans re-render): fade has no rise, blur is an alpha fade from a cool cyan tint (no blur), slide is a whole-chunk alpha fade (no translate), wipe is per-char alpha/tint with a soft edge, scramble swaps glyphs in place at ~30fps (minor reflow), caret blinks via the clock · caret idle after ${revealMs.caretIdle}ms`,
+  decision:
+    "Pick the streaming text reveal (1–8) and heading reveal. Switchable on-device in Settings → Design options.",
   variants: [
     {
       id: "stream",

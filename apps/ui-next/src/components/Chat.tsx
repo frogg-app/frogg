@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { loadConfig, useConfig } from "../daemon/config";
 import { cancelTurn, openTimeline, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
 import { bucketOf, type Agent, type Session, type TimelineEntry } from "../daemon/types";
+import { usePrefs } from "../prefs";
 import { color, motion } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { AccountChip } from "./chat/AccountChip";
@@ -20,6 +21,7 @@ import { Select } from "./Select";
 import { bucketColor, StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 import { ToolCall } from "./ToolCall";
+import { RevealHeading, RevealMarkdown } from "./chat/TextReveal";
 
 const bucketText = {
   needs: "Needs you",
@@ -91,9 +93,12 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
               <ArrowLeft size={18} color={color.text} />
             </Pressable>
           )}
-          <T v="display" numberOfLines={1} style={s.title}>
-            {a.title || "Untitled session"}
-          </T>
+          <RevealHeading
+            key={`title-${a.id}`}
+            text={a.title || "Untitled session"}
+            numberOfLines={1}
+            style={s.title}
+          />
           <SessionMenu key={a.id} session={session} onArchived={onBack} />
         </View>
         <View style={s.sub}>
@@ -129,7 +134,12 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
           </T>
         )}
         {rows?.map((r) => (
-          <Item key={r.key} e={r.e} provider={provider} />
+          <Item
+            key={r.key}
+            e={r.e}
+            provider={provider}
+            streaming={running && r === rows[rows.length - 1]}
+          />
         ))}
         {a.pendingPermissions.map((p) => (
           <PermissionCard key={p.id} agentId={a.id} p={p} />
@@ -214,7 +224,21 @@ function Todo({ items }: { items: Array<{ text: string; completed: boolean; id?:
   );
 }
 
-function Item({ e, provider }: { e: TimelineEntry; provider: string }) {
+function Reply({ text, streaming }: { text: string; streaming: boolean }) {
+  const mode = usePrefs((p) => p.textReveal);
+  if (mode === "none") return <Markdown text={text} />;
+  return <RevealMarkdown text={text} mode={mode} streaming={streaming} />;
+}
+
+function Item({
+  e,
+  provider,
+  streaming,
+}: {
+  e: TimelineEntry;
+  provider: string;
+  streaming: boolean;
+}) {
   const it = e.item;
   switch (it.type) {
     case "user_message":
@@ -230,7 +254,7 @@ function Item({ e, provider }: { e: TimelineEntry; provider: string }) {
             <View style={s.diamond} />
             <T style={s.replyWho}>{provider}</T>
           </View>
-          <Markdown text={it.text} />
+          <Reply text={it.text} streaming={streaming} />
         </View>
       );
     case "reasoning":

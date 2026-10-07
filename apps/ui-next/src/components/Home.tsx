@@ -5,6 +5,7 @@ import { useDaemon } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
 import { color } from "../theme/tokens";
 import { useUi } from "../ui-store";
+import { RevealHeading } from "./chat/TextReveal";
 import { Composer } from "./Composer";
 import { Cut } from "./Cut";
 import { T } from "./Text";
@@ -67,9 +68,10 @@ export function Home() {
           <T v="label" style={s.center}>
             or just ask · no project
           </T>
-          <T v="display" style={phone ? s.askTitlePhone : s.askTitle}>
-            What do you want to know?
-          </T>
+          <RevealHeading
+            text="What do you want to know?"
+            style={phone ? s.askTitlePhone : s.askTitle}
+          />
           <Composer placeholder="Ask anything…" chips={ASK_CHIPS} onSend={ask} />
         </View>
       </ScrollView>

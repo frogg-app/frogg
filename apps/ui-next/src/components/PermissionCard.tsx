@@ -1,15 +1,15 @@
 import { ListChecks, Lock } from "lucide-react-native";
 import { useCallback, useState } from "react";
-import { StyleSheet, TextInput, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { answerPermission, useDaemon } from "../daemon/store";
 import type { Agent } from "../daemon/types";
-import { color, font, web } from "../theme/tokens";
+import { color } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { Button } from "./Button";
 import { denyWithMessage } from "./chat/actions";
 import { parseQuestions, QuestionCard } from "./chat/QuestionCard";
-import { Cut } from "./Cut";
 import { Markdown } from "./Markdown";
+import { ShapeCard, ShapeInput } from "./Shape";
 import { T } from "./Text";
 import { toast, toastError } from "./toast/store";
 
@@ -94,14 +94,13 @@ function ApprovalCard({ agent, p }: { agent: Agent; p: Permission }) {
     .filter(Boolean)
     .join(" · ");
   return (
-    <Cut size={10} flip style={s.card}>
-      <View style={s.head}>
-        <Icon size={13} color={color.amber} />
-        <T style={s.kind}>{plan ? "Plan ready for review" : "Permission needed"}</T>
-        <T v="mono" style={s.name} numberOfLines={1}>
-          {meta}
-        </T>
-      </View>
+    <ShapeCard
+      tint={color.amber}
+      icon={Icon}
+      tag={plan ? "PLAN" : "PERMISSION"}
+      meta={meta}
+      title={plan ? "Plan ready for review" : "Permission needed"}
+    >
       {planText && (
         <View style={s.plan}>
           <Markdown text={planText} />
@@ -118,12 +117,10 @@ function ApprovalCard({ agent, p }: { agent: Agent; p: Permission }) {
       {!planText && !cmd && <T style={s.title}>{p.title ?? p.name}</T>}
       {p.description && <T style={s.desc}>{p.description}</T>}
       {replying && (
-        <TextInput
+        <ShapeInput
           value={reply}
           onChangeText={setReply}
           placeholder="Tell the agent what to do instead"
-          placeholderTextColor={color.faint}
-          style={s.input}
           autoFocus
           onSubmitEditing={sendReply}
         />
@@ -149,7 +146,7 @@ function ApprovalCard({ agent, p }: { agent: Agent; p: Permission }) {
           disabled={busy}
         />
       </View>
-    </Cut>
+    </ShapeCard>
   );
 }
 
@@ -175,31 +172,9 @@ function ActionButton({
 }
 
 const s = StyleSheet.create({
-  card: {
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: `${color.amber}73`,
-    backgroundColor: `${color.amber}0a`,
-    padding: 14,
-  },
-  head: { flexDirection: "row", alignItems: "center", gap: 8 },
-  kind: { color: color.amber, fontWeight: "600", fontSize: 12.5 },
-  name: { marginLeft: "auto", flexShrink: 1 },
   title: { fontSize: 15, marginTop: 10 },
   cmd: { fontSize: 14, color: color.cyan2 },
   plan: { marginTop: 6 },
   desc: { color: color.muted, marginTop: 8, lineHeight: 20, fontSize: 12.5 },
-  input: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: color.line2,
-    backgroundColor: color.bg,
-    color: color.text,
-    fontFamily: font.body,
-    fontSize: 13.5,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    ...web({ outlineStyle: "none" }),
-  },
   actions: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 },
 });

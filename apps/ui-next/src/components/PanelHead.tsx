@@ -1,14 +1,13 @@
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 import { color } from "../theme/tokens";
+import { RevealHeading } from "./chat/TextReveal";
 import { T } from "./Text";
 
 export function PanelHead({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <View style={s.head}>
-      <T v="display" style={s.title}>
-        {title}
-      </T>
+      <RevealHeading key={title} text={title} style={s.title} />
       {children}
     </View>
   );

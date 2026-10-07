@@ -25,7 +25,33 @@ const ch = (inbox: boolean, desktop: boolean, push: boolean, spoken: boolean, so
   sound,
 });
 
+/** Prototype design picks (Settings → Design options); every one is switchable at runtime. */
+export type ButtonStyle = "gradient" | "solid" | "mint" | "outline" | "bar" | "bracket" | "tint";
+export type LogoMotionPref = "none" | "ripple" | "split" | "sweep" | "turn";
+export type ShapeLang = "chamfer" | "bar" | "brackets" | "tab" | "soft" | "hud";
+export type ToastStylePref = "bracket" | "hud" | "facet";
+export type StateStylePref = "edge" | "bracket" | "banner";
+export type TextRevealPref =
+  | "none"
+  | "fade"
+  | "blur"
+  | "caret"
+  | "scramble"
+  | "wipe"
+  | "slide"
+  | "type"
+  | "glow";
+export type HeadingRevealPref = "none" | "stagger" | "scramble" | "wipe" | "blur";
+
 export const PREF_DEFAULTS = {
+  // Design options (prototype picks)
+  buttonStyle: "gradient" as ButtonStyle,
+  logoMotion: "ripple" as LogoMotionPref,
+  shapeLang: "chamfer" as ShapeLang,
+  toastStyle: "bracket" as ToastStylePref,
+  stateStyle: "edge" as StateStylePref,
+  textReveal: "fade" as TextRevealPref,
+  headingReveal: "stagger" as HeadingRevealPref,
   // Chat & composer
   busyEnter: "steer" as "steer" | "queue" | "interrupt",
   toolCalls: "full" as "full" | "summary",

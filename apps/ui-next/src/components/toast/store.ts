@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { toastMs } from "../../theme/tokens";
+import { isNative, nativeMotionOn } from "../nativeMotion";
 
 /** `ok` is a plain confirmation; the others borrow the session status glyphs. */
 export type ToastKind = "ok" | "done" | "error" | "needs" | "info";
@@ -27,7 +28,8 @@ interface ToastState {
   toasts: Toast[];
   /** Pointer is over the stack: timers and drain lines hold. */
   paused: boolean;
-  variant: ToastVariant;
+  /** Explicit override (the lab); null follows the `toastStyle` preference. */
+  variant: ToastVariant | null;
 }
 
 export const DEFAULT_TOAST_VARIANT: ToastVariant = "bracket";
@@ -35,7 +37,7 @@ export const DEFAULT_TOAST_VARIANT: ToastVariant = "bracket";
 export const useToasts = create<ToastState>(() => ({
   toasts: [],
   paused: false,
-  variant: DEFAULT_TOAST_VARIANT,
+  variant: null,
 }));
 
 export const LIFETIME_MS = toastMs.life;
@@ -58,9 +60,10 @@ interface MQ {
   document?: unknown;
   matchMedia?: (q: string) => { matches: boolean };
 }
-/** Exit animations run on web unless the OS asks for reduced motion; native removes at once. */
+/** Exit animations run unless the OS asks for reduced motion (web: matchMedia, native: AccessibilityInfo). */
 export function toastsAnimate(): boolean {
   const g = globalThis as MQ;
+  if (isNative) return nativeMotionOn();
   if (!g.document) return false;
   return !g.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
@@ -127,8 +130,8 @@ export function resumeToasts(): void {
   if (useToasts.getState().paused) useToasts.setState({ paused: false });
 }
 
-/** Lab hook: switch the visual direction live. */
-export function setToastVariant(variant: ToastVariant): void {
+/** Lab hook: switch the visual direction live; null goes back to the preference. */
+export function setToastVariant(variant: ToastVariant | null): void {
   useToasts.setState({ variant });
 }
 

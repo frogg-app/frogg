@@ -1,12 +1,22 @@
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronRight, Copy, Loader, Scissors } from "lucide-react-native";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Animated, Pressable, StyleSheet, View, type LayoutChangeEvent } from "react-native";
 import { connect } from "../../daemon/store";
 import { bucketOf, type Agent, type Bucket, type TimelineItem } from "../../daemon/types";
 import { color, stateMotion, stateMs, stateWash, web } from "../../theme/tokens";
+import { usePrefs } from "../../prefs";
 import { useUi } from "../../ui-store";
 import { Button } from "../Button";
 import { Markdown } from "../Markdown";
+import {
+  Beam,
+  isNative,
+  NativeEnter,
+  nativeEase,
+  nativeMotionOn,
+  NativePulse,
+  type Pose,
+} from "../nativeMotion";
 import { reducedMotion, usePresence } from "../presence";
 import { copyText } from "../shell/copy";
 import { StatusGlyph } from "../StatusGlyph";
@@ -44,6 +54,86 @@ const tint = Object.fromEntries(
 
 const none = {};
 
+const RISE: Pose = { opacity: 0, y: 8 };
+const DRAW_X: Pose = { scaleX: 0 };
+const DRAW_Y: Pose = { scaleY: 0 };
+const SNAP: Pose = { opacity: 0, scale: 1.06 };
+
+/** Fade + rise on mount: CSS keyframes on web, native-driver on device. */
+function Rise({ live, style, children }: { live: boolean; style: object; children: ReactNode }) {
+  if (!isNative) return <View style={[style, live && m.rise]}>{children}</View>;
+  return (
+    <NativeEnter on={live} from={RISE} ms={stateMs.in} style={style}>
+      {children}
+    </NativeEnter>
+  );
+}
+
+/** Trim that draws in `trimDelay` after the card lands (bar, top rule or corner marks). */
+function Trim({ variant, live, kind }: { variant: StateVariant; live: boolean; kind: Kind }) {
+  const k = tint[kind];
+  if (variant === "edge") {
+    if (isNative)
+      return (
+        <NativeEnter
+          on={live}
+          from={DRAW_Y}
+          anchor="start-y"
+          ms={stateMs.trim}
+          delay={stateMs.trimDelay}
+          pointerEvents="none"
+          style={[s.bar, k.bg]}
+        />
+      );
+    return <View pointerEvents="none" style={[s.bar, k.bg, live && m.drawY]} />;
+  }
+  if (variant === "banner") {
+    if (isNative)
+      return (
+        <NativeEnter
+          on={live}
+          from={DRAW_X}
+          anchor="start-x"
+          ms={stateMs.trim}
+          delay={stateMs.trimDelay}
+          pointerEvents="none"
+          style={[s.top, s.trimTrack]}
+        >
+          <View style={[s.trimFill, k.bg]} />
+        </NativeEnter>
+      );
+    return (
+      <View pointerEvents="none" style={[s.top, s.trimTrack, live && m.drawX]}>
+        <View style={[s.trimFill, k.bg]} />
+      </View>
+    );
+  }
+  const marks = (
+    <>
+      <View style={[s.cTL, k.line]} />
+      <View style={[s.cBR, k.line]} />
+    </>
+  );
+  if (isNative)
+    return (
+      <NativeEnter
+        on={live}
+        from={SNAP}
+        ms={160}
+        delay={stateMs.trimDelay}
+        pointerEvents="none"
+        style={s.corners}
+      >
+        {marks}
+      </NativeEnter>
+    );
+  return (
+    <View pointerEvents="none" style={[s.corners, live && m.corner]}>
+      {marks}
+    </View>
+  );
+}
+
 /** Card frame for the end-of-timeline states. */
 function Frame({
   kind,
@@ -66,33 +156,47 @@ function Frame({
       </T>
     </View>
   );
-  let trim: ReactNode;
-  if (variant === "edge")
-    trim = <View pointerEvents="none" style={[s.bar, k.bg, live && m.drawY]} />;
-  else if (variant === "banner")
-    trim = (
-      <View pointerEvents="none" style={[s.top, s.trimTrack, live && m.drawX]}>
-        <View style={[s.trimFill, k.bg]} />
-      </View>
-    );
-  else
-    trim = (
-      <View pointerEvents="none" style={[s.corners, live && m.corner]}>
-        <View style={[s.cTL, k.line]} />
-        <View style={[s.cBR, k.line]} />
-      </View>
-    );
   return (
-    <View style={[s.wrap, live && m.rise]}>
+    <Rise live={live} style={s.wrap}>
       <View style={[s.card, s[variant], k.wash, glow]}>
         <View pointerEvents="none" style={[s.flash, flash]} />
-        {trim}
+        {isNative && live && kind === "failed" && (
+          <NativePulse peak={0.3} ms={stateMs.flash} delay={80} style={k.bg} />
+        )}
+        {isNative && live && kind === "review" && (
+          <NativePulse peak={0.16} rise={315} ms={stateMs.glow} delay={80} style={s.glowRing} />
+        )}
+        <Trim variant={variant} live={live} kind={kind} />
         <View style={[s.body, variant === "edge" && s.bodyEdge]}>
           {head}
           {children}
         </View>
       </View>
-    </View>
+    </Rise>
+  );
+}
+
+const SAMPLE: Record<Kind, { title: string; detail: string; mono?: boolean }> = {
+  review: { title: "Ready to review", detail: "Review the changes or send a follow-up below." },
+  failed: {
+    title: "Session failed",
+    detail: "Error: provider exited with code 1",
+    mono: true,
+  },
+  offline: {
+    title: "Host offline",
+    detail: "Showing the last received conversation. Reconnect before sending a message.",
+  },
+};
+
+/** The real state card around static sample copy (Settings preview); remount replays entry. */
+export function StatePreview({ kind }: { kind: Kind }) {
+  const variant = usePrefs((st) => st.stateStyle);
+  const x = SAMPLE[kind];
+  return (
+    <Frame kind={kind} variant={variant}>
+      <Row title={x.title} detail={x.detail} mono={x.mono} />
+    </Frame>
   );
 }
 
@@ -100,13 +204,15 @@ function Frame({
 export function SessionState({
   agent,
   online,
-  variant = DEFAULT_STATE_VARIANT,
+  variant: override,
 }: {
   agent: Agent;
   online: boolean;
   variant?: StateVariant;
 }) {
   const bucket = bucketOf(agent);
+  const pref = usePrefs((st) => st.stateStyle);
+  const variant = override ?? pref;
   const reconnect = useCallback(() => {
     void connect();
   }, []);
@@ -198,7 +304,8 @@ function CutLine({ tone, running }: { tone: "amber" | "plain"; running: boolean 
   const live = useMemo(() => !reducedMotion(), []);
   return (
     <View style={[s.cutLine, tone === "amber" ? s.cutAmber : s.cutPlain, running && s.cutRun]}>
-      {running && live && <View style={[s.beam, m.beam]} />}
+      {running && live && isNative && <Beam color={color.cyan2} />}
+      {running && live && !isNative && <View style={[s.beam, m.beam]} />}
     </View>
   );
 }
@@ -230,7 +337,7 @@ export function Compaction({ item }: { item: Extract<TimelineItem, { type: "comp
   const meta = cut ? cutMeta(cut) : [];
   const Glyph = running ? Loader : Scissors;
   return (
-    <View style={[s.cut, live && m.rise]}>
+    <Rise live={live} style={s.cut}>
       <View style={s.divider}>
         <CutLine tone={amber ? "amber" : "plain"} running={running} />
         <View style={s.cutLabel}>
@@ -279,12 +386,59 @@ export function Compaction({ item }: { item: Extract<TimelineItem, { type: "comp
           )}
         </View>
       )}
-      {cut?.summary && fold.mounted && (
+      {cut?.summary && isNative && (
+        <Unfold open={expanded}>
+          <Markdown text={cut.summary} />
+        </Unfold>
+      )}
+      {cut?.summary && !isNative && fold.mounted && (
         <View style={[s.summary, live && (fold.closing ? m.fold : m.unfold)]}>
           <Markdown text={cut.summary} />
         </View>
       )}
-    </View>
+    </Rise>
+  );
+}
+
+/** Native summary unfold/fold: height and opacity on the JS driver (height cannot be native). */
+function Unfold({ open, children }: { open: boolean; children: ReactNode }) {
+  const [mounted, setMounted] = useState(open);
+  const [full, setFull] = useState(0);
+  const p = useRef(new Animated.Value(0)).current;
+  const onLayout = useCallback((e: LayoutChangeEvent) => setFull(e.nativeEvent.layout.height), []);
+  useEffect(() => {
+    if (open) setMounted(true);
+    if (!nativeMotionOn()) {
+      p.setValue(open ? 1 : 0);
+      if (!open) setMounted(false);
+      return undefined;
+    }
+    if (open && !full) return undefined;
+    const a = Animated.timing(p, {
+      toValue: open ? 1 : 0,
+      duration: open ? stateMs.fold : stateMs.fold - 40,
+      easing: open ? nativeEase.out : nativeEase.exit,
+      useNativeDriver: false,
+    });
+    a.start(({ finished }) => {
+      if (finished && !open) setMounted(false);
+    });
+    return () => a.stop();
+  }, [open, full, p]);
+  const clip = useMemo(
+    () =>
+      full
+        ? { height: p.interpolate({ inputRange: [0, 1], outputRange: [0, full] }), opacity: p }
+        : { opacity: p },
+    [p, full],
+  );
+  if (!mounted) return null;
+  return (
+    <Animated.View style={[s.unfold, clip]}>
+      <View style={s.summary} onLayout={onLayout}>
+        {children}
+      </View>
+    </Animated.View>
   );
 }
 
@@ -341,6 +495,8 @@ const s = StyleSheet.create({
   metaText: { fontSize: 12, color: color.muted },
   chev: { ...web({ transition: `transform ${stateMs.fold}ms` }) },
   chevOpen: { transform: [{ rotate: "90deg" }] },
+  unfold: { marginTop: 4, overflow: "hidden" },
+  glowRing: { backgroundColor: color.mint, borderWidth: 1, borderColor: color.mint },
   summary: {
     marginTop: 4,
     padding: 12,

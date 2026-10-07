@@ -1,4 +1,13 @@
-import { Platform, StyleSheet, View, type ViewProps, type ViewStyle } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  Platform,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+  type ViewProps,
+  type ViewStyle,
+} from "react-native";
+import Svg, { Polygon } from "react-native-svg";
 
 /** Style keys that paint the shape; on web they move onto a clipped layer behind the content. */
 const PAINT = new Set([
@@ -62,7 +71,8 @@ function ring(size: number, flip: boolean, width: number): string {
  * The bracket shape: two opposite corners chamfered. `size` is the chamfer in px,
  * `flip` cuts top-right/bottom-left instead of top-left/bottom-right.
  * Only the painted layer is clipped, so menus and tooltips inside can overflow it.
- * Native falls back to a plain box for now.
+ * Native draws the same outline as an SVG polygon behind the content (fill plus a stroke), sized
+ * from the laid-out box, so the chamfer shows on device too.
  */
 export function Cut({
   size = 8,
@@ -73,9 +83,9 @@ export function Cut({
 }: ViewProps & { size?: number; flip?: boolean }) {
   if (Platform.OS !== "web")
     return (
-      <View {...rest} style={style}>
+      <NativeCut size={size} flip={flip} style={style} {...rest}>
         {children}
-      </View>
+      </NativeCut>
     );
   const flat = (StyleSheet.flatten(style) ?? {}) as Record<string, unknown>;
   const paint: Record<string, unknown> = {};
@@ -124,3 +134,87 @@ export function Cut({
     </View>
   );
 }
+
+/** Corner points of the chamfered outline for a `w` x `h` box, inset by `i`. */
+function nativePoints(w: number, h: number, size: number, flip: boolean, i: number): string {
+  const c = Math.max(0, size - i * (2 - Math.SQRT2));
+  const l = i;
+  const t = i;
+  const r = w - i;
+  const b = h - i;
+  const pts = flip
+    ? [
+        [l, t],
+        [r - c - i, t],
+        [r, t + c + i],
+        [r, b],
+        [l + c + i, b],
+        [l, b - c - i],
+      ]
+    : [
+        [l + c + i, t],
+        [r, t],
+        [r, b - c - i],
+        [r - c - i, b],
+        [l, b],
+        [l, t + c + i],
+      ];
+  return pts.map((p) => `${p[0]},${p[1]}`).join(" ");
+}
+
+function NativeCut({
+  size,
+  flip,
+  style,
+  children,
+  onLayout,
+  ...rest
+}: ViewProps & { size: number; flip: boolean }) {
+  const [box, setBox] = useState<{ w: number; h: number } | null>(null);
+  const layout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const { width, height } = e.nativeEvent.layout;
+      setBox((old) => (old && old.w === width && old.h === height ? old : { w: width, h: height }));
+      onLayout?.(e);
+    },
+    [onLayout],
+  );
+  const flat = (StyleSheet.flatten(style) ?? {}) as ViewStyle;
+  const { backgroundColor, borderColor, borderWidth, ...keep } = flat;
+  const bw = typeof borderWidth === "number" ? borderWidth : 0;
+  const stroke = bw && typeof borderColor === "string" ? borderColor : null;
+  const fill = typeof backgroundColor === "string" ? backgroundColor : null;
+  const painted = box && (fill || stroke);
+  return (
+    <View
+      {...rest}
+      onLayout={layout}
+      style={[
+        keep,
+        bw ? { borderWidth: bw, borderColor: "transparent" } : null,
+        !painted && fill ? { backgroundColor: fill } : null,
+        !painted && stroke ? { borderColor: stroke } : null,
+      ]}
+    >
+      {painted ? (
+        <Svg
+          pointerEvents="none"
+          width={box.w}
+          height={box.h}
+          style={[ns.svg, { left: -bw, top: -bw }]}
+        >
+          <Polygon
+            points={nativePoints(box.w, box.h, size, flip, stroke ? bw / 2 : 0)}
+            fill={fill ?? "none"}
+            stroke={stroke ?? "none"}
+            strokeWidth={stroke ? bw : 0}
+            strokeLinejoin="miter"
+          />
+        </Svg>
+      ) : null}
+      {children}
+    </View>
+  );
+}
+
+const ns = StyleSheet.create({ svg: { position: "absolute" } });
