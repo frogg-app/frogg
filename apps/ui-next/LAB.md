@@ -217,3 +217,24 @@ Recorded from the audit; nothing here was changed.
 - **Panels the fixture host can't populate** (Search, Files, PRs & CI, Tasks, Plugins,
   Companion, Terminals) show only their empty or unavailable states in the lab; showing them
   populated needs more fixture RPCs in `src/lab/client.ts`.
+
+## Sub-work
+
+Entries: `subwork-rows`, `subwork-strip`, `subwork-model`. Model `components/subwork/model.ts`, live store and
+`useSubWork` in `daemon/subwork.ts`, views in `components/subwork/`. Pick the row style in Settings → Design
+options (`subworkStyle`: chip default, dots, tree).
+
+| Source                                                                                              | Wire                                                                                                              | Gate (min daemon)                                      | Real or derived                                                                                |
+| --------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Provider subagents (status running/completed/failed/canceled, subtitle, `parentSubagentId` nesting) | `agent.provider_subagents.list` + `.update` (upsert/remove/timeline)                                              | `features.providerSubagents`, v0.1.107; nesting v1.5.9 | real                                                                                           |
+| Workspace scripts/services (lifecycle, health, port, exitCode, terminalId)                          | `workspace.scripts` on descriptors + `script_status_update`; start/stop RPCs `workspaceScriptManagement` v0.1.105 | none                                                   | real                                                                                           |
+| Terminals (activity idle/working/attention)                                                         | `list_terminals`, `terminals_changed` (per subscribed cwd)                                                        | none                                                   | real                                                                                           |
+| Child sessions                                                                                      | agent label `frogg.parent-agent-id` on `create_agent` children                                                    | none (v1.0.0 label)                                    | real                                                                                           |
+| Background commands (Bash run_in_background, Monitor)                                               | none: Claude `local_bash` tasks are excluded from the subagent track                                              | n/a                                                    | derived from timeline (shell output says "background" + `task_notification_*` call); heuristic |
+| Queued sends, MCP servers/plugins                                                                   | not session sub-work on the wire                                                                                  | n/a                                                    | not included                                                                                   |
+
+Daemon 1.6.11 advertises all real sources; none is gated above it. An older daemon (no `providerSubagents`) just
+contributes no subagents: no RPC, no error, the Tasks "Subagents" group is absent. The version banner stays the only hint.
+Gaps for the daemon: a structured background-command/monitor track; script/terminal ownership by session
+(they are workspace/cwd scoped, so every session in that workspace shows them); a way to stream subagent updates
+for sessions the client is not viewing (rows fetch only for working or open sessions).

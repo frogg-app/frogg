@@ -13,6 +13,7 @@ import { SessionMenu } from "./chat/SessionMenu";
 import { SessionState, Compaction } from "./chat/SessionState";
 import { forkDrafts, listCommands, sendWithAttachments, type Attachment } from "./chat/actions";
 import { useBottomAnchor } from "./chat/useBottomAnchor";
+import { SubWorkStrip } from "./subwork/Strip";
 import { toastError } from "./toast/store";
 import { Composer } from "./Composer";
 import { Markdown } from "./Markdown";
@@ -114,6 +115,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
           )}
         </View>
       </View>
+      <SubWorkStrip sessionId={a.id} />
       <ScrollView
         ref={anchor.ref}
         style={s.scroll}

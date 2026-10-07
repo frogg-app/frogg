@@ -30,6 +30,7 @@ import {
 import { CodeBlock } from "./Code";
 import { Markdown } from "./Markdown";
 import { StatusGlyph } from "./StatusGlyph";
+import { SpawnedElapsed, SpawnedLink } from "./subwork/Link";
 import { T } from "./Text";
 
 type Detail = ToolCallTimelineItem["detail"];
@@ -310,6 +311,7 @@ export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
                 {meta}
               </T>
             )}
+            {item.detail?.type === "sub_agent" && <SpawnedElapsed callId={item.callId} />}
             {item.status !== "running" && <DoneGlyph failed={failed} live={!!settle} />}
             {item.status === "running" && <StatusGlyph bucket="working" size={7} />}
             <ChevronRight size={13} color={color.faint} style={open ? s.chevOpen : s.chev} />
@@ -324,6 +326,7 @@ export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
             </T>
           )}
           <Body d={item.detail} />
+          {item.detail?.type === "sub_agent" && <SpawnedLink callId={item.callId} />}
         </View>
       )}
     </Enter>

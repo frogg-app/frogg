@@ -31,6 +31,7 @@ export type LogoMotionPref = "none" | "ripple" | "split" | "sweep" | "turn";
 export type ShapeLang = "chamfer" | "bar" | "brackets" | "tab" | "soft" | "hud";
 export type ToastStylePref = "bracket" | "hud" | "facet";
 export type StateStylePref = "edge" | "bracket" | "banner";
+export type SubworkStylePref = "chip" | "dots" | "tree";
 export type TextRevealPref =
   | "none"
   | "fade"
@@ -50,6 +51,7 @@ export const PREF_DEFAULTS = {
   shapeLang: "chamfer" as ShapeLang,
   toastStyle: "bracket" as ToastStylePref,
   stateStyle: "edge" as StateStylePref,
+  subworkStyle: "chip" as SubworkStylePref,
   textReveal: "fade" as TextRevealPref,
   headingReveal: "stagger" as HeadingRevealPref,
   // Chat & composer

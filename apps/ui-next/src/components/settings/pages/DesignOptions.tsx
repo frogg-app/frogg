@@ -12,6 +12,7 @@ import {
   type LogoMotionPref,
   type ShapeLang,
   type StateStylePref,
+  type SubworkStylePref,
   type TextRevealPref,
   type ToastStylePref,
 } from "../../../prefs";
@@ -20,6 +21,7 @@ import { Brackets, BracketScope } from "../../Brackets";
 import { Button } from "../../Button";
 import { RevealMarkdown, RevealTitle } from "../../chat/TextReveal";
 import { StatePreview } from "../../chat/SessionState";
+import { SubWorkPreview } from "../../subwork/Preview";
 import { Cut } from "../../Cut";
 import { Logo } from "../../Logo";
 import { ShapeCard, ShapeInput } from "../../Shape";
@@ -94,6 +96,24 @@ const STATES: Opt<StateStylePref>[] = [
   { value: "edge", label: "A Edge", note: "Kind wash, 3px leading edge bar and a mono tag." },
   { value: "bracket", label: "B Bracket", note: "Raised card with kind bracket corners." },
   { value: "banner", label: "C Banner", note: "Full-width wash with a 2px top trim." },
+];
+
+const SUBWORK: Opt<SubworkStylePref>[] = [
+  {
+    value: "chip",
+    label: "A Count chip",
+    note: "A chip with the count; beam and pulse while running. Tap to open the nested rows.",
+  },
+  {
+    value: "dots",
+    label: "B Mini-glyph dots",
+    note: "One small square per sub-process, coloured by status. Tap to open the nested rows.",
+  },
+  {
+    value: "tree",
+    label: "C Tree",
+    note: "Nested rows with tree lines, always visible under the session (up to five).",
+  },
 ];
 
 const TEXTS: Opt<TextRevealPref>[] = [
@@ -469,6 +489,7 @@ const DEFAULTS = {
   shapeLang: PREF_DEFAULTS.shapeLang,
   toastStyle: PREF_DEFAULTS.toastStyle,
   stateStyle: PREF_DEFAULTS.stateStyle,
+  subworkStyle: PREF_DEFAULTS.subworkStyle,
   textReveal: PREF_DEFAULTS.textReveal,
   headingReveal: PREF_DEFAULTS.headingReveal,
 };
@@ -526,6 +547,15 @@ export function DesignOptions() {
         onChange={prefSetter("stateStyle")}
       >
         <StateCards />
+      </Picker>
+      <Picker
+        title="Sub-work indicator"
+        options={SUBWORK}
+        value={p.subworkStyle}
+        fallback={DEFAULTS.subworkStyle}
+        onChange={prefSetter("subworkStyle")}
+      >
+        <SubWorkPreview />
       </Picker>
       <Picker
         title="Streaming text reveal"

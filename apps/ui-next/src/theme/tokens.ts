@@ -321,3 +321,26 @@ export const toolDoneMotion = {
   sweep: anim(toolDoneFrames.sweep, `${toolDoneMs.sweep}ms`, ease),
   edge: anim(toolDoneFrames.edge, `${toolDoneMs.sweep}ms`, "ease-out"),
 };
+
+/**
+ * Sub-work indicators (session-row chip, chat strip, nested rows), all RN Animated so web and
+ * Android share one implementation. Beam/pulse loops only run while something is running; every
+ * one-shot is under 3 flashes a second and skipped under reduced motion.
+ */
+export const subworkMs = {
+  /** Nested rows open/close (height) on the glide curve. */
+  collapse: 240,
+  /** Running chip: light band travel, and mark pulse (each half). */
+  beam: 1700,
+  pulse: 700,
+  /** Settle (running → done/failed): glyph pop, row wash. */
+  popUp: 120,
+  popDown: 260,
+  flashUp: 80,
+  flashDown: 520,
+  /** Chat strip stays after the last item settles, so the result is readable. */
+  linger: 2600,
+  /** Strip enter / exit. */
+  enter: 200,
+  exit: 160,
+} as const;

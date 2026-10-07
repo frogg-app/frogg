@@ -80,6 +80,12 @@ function subagents(parent: string) {
   ];
 }
 
+/** Sub-work lab demo (sim/subwork.ts) owns these parents' rows: the list returns them verbatim. */
+export const simRows = new Map<string, ReturnType<typeof subagents>>();
+/** Terminals the sub-work demo reports per cwd; other cwds fall back to the lab's own terminals. */
+export const simTerminals = new Map<string, unknown[]>();
+export const seedRows = subagents;
+
 let epoch = 0;
 const live = new Map<string, ReturnType<typeof subagents>[number]>();
 
@@ -87,6 +93,8 @@ const live = new Map<string, ReturnType<typeof subagents>[number]>();
 export function resetSubagents(): void {
   epoch += 1;
   live.clear();
+  simRows.clear();
+  simTerminals.clear();
 }
 
 async function stream(parent: string, emit: Emit, mine: number): Promise<void> {
@@ -108,6 +116,14 @@ async function stream(parent: string, emit: Emit, mine: number): Promise<void> {
 export function makeListProviderSubagents(emit: Emit) {
   return async (parentAgentId: string) => {
     await latency(220);
+    const owned = simRows.get(parentAgentId);
+    if (owned)
+      return {
+        requestId: "lab",
+        parentAgentId,
+        subagents: [...owned],
+        error: null,
+      };
     const rows = subagents(parentAgentId);
     if (!live.has(parentAgentId)) {
       live.set(parentAgentId, rows[0]);

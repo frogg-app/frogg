@@ -5,6 +5,7 @@ import { useDaemon } from "../../daemon/store";
 import type { Agent } from "../../daemon/types";
 import { accounts, agent as makeAgent, ago, ahead, placement, projects } from "../fixtures";
 import { labWait, latency } from "./time";
+import { simTerminals } from "./agents";
 
 type Rpc = (...args: never[]) => unknown;
 type Emit = (event: unknown) => void;
@@ -1567,9 +1568,9 @@ export const miscRpcs: Record<string, Rpc> = {
   },
 
   // Terminals
-  listTerminals: async () => {
+  listTerminals: async (cwd?: string) => {
     await latency(80);
-    return { terminals: labTerminals() };
+    return { terminals: (cwd && simTerminals.get(cwd)) || labTerminals() };
   },
   createTerminal: async (cwd: string) => {
     await latency(250);

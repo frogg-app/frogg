@@ -18,6 +18,9 @@ import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { Button } from "./Button";
 import { Cut } from "./Cut";
+import { useRunningSubWork } from "../daemon/subwork";
+import { useRowSubWork } from "./subwork/hooks";
+import { SubWorkBody, SubWorkChip } from "./subwork/views";
 import { useContextMenu } from "./sessions/contextMenu";
 import { isChat, openSheet, projectIdOf, useDirectory, type Prefs } from "./sessions/directory";
 import { ageGroup, HistoryList } from "./sessions/history";
@@ -156,6 +159,8 @@ export function SessionList() {
   const scope = useDirectory((d) => d.scope);
   const needle = q.trim().toLowerCase();
   const { groups, counts, total, scopeName: name } = useListModel(needle);
+  const ids = useMemo(() => groups.flatMap((g) => g.list.map((x) => x.agent.id)), [groups]);
+  const subRunning = useRunningSubWork(ids);
   const scopeA = useAnchor();
   const displayA = useAnchor();
   const [menu, setMenu] = useState<{ id: string; rect: Rect } | null>(null);
@@ -169,7 +174,7 @@ export function SessionList() {
   else
     body = (
       <>
-        {!chats && <StatusSummary key={name} counts={counts} />}
+        {!chats && <StatusSummary key={name} counts={counts} sub={subRunning} />}
         <Cut size={5} style={s.filter}>
           <TextInput
             value={q}
@@ -280,6 +285,7 @@ function Row({
   const catalog = useDirectory((d) => d.labels);
   const hidden = useDirectory((d) => d.hidden.includes(a.id));
   const ref = useRef<View>(null);
+  const sub = useRowSubWork(a.id, a.status === "running" || selected);
   const perm = a.pendingPermissions[0];
   const plan = perm?.kind === "plan";
   const branch = branchOf(sess);
@@ -314,6 +320,12 @@ function Row({
                 {title}
               </T>
               {ws?.pinnedAt && <Pin size={11} color={color.faint} />}
+              <SubWorkChip
+                items={sub.items}
+                variant={sub.variant}
+                open={sub.open}
+                onToggle={sub.toggle}
+              />
               <T v="mono" style={s.time}>
                 {ago(a.updatedAt)}
               </T>
@@ -365,6 +377,12 @@ function Row({
                 </Pressable>
               </View>
             )}
+            <SubWorkBody
+              items={sub.items}
+              variant={sub.variant}
+              open={sub.open}
+              onOpen={sub.onOpen}
+            />
           </View>
         )}
       </Pressable>

@@ -175,7 +175,14 @@ const features = {
   plugins: true,
   projectTodos: true,
   releaseStreams: true,
+  providerSubagents: true,
 };
+
+/** Flip an advertised daemon feature, to see a screen as it looks against an older daemon. */
+export function setLabFeature(key: string, on: boolean): void {
+  (features as Record<string, boolean>)[key] = on;
+}
+export const labFeature = (key: string): boolean => !!(features as Record<string, boolean>)[key];
 
 let created = 0;
 const known: Record<string, (...args: never[]) => unknown> = {

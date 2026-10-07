@@ -1,14 +1,17 @@
 import { RefreshCw } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { getClient, openTimeline, useDaemon } from "../daemon/store";
+import { openTimeline, useDaemon } from "../daemon/store";
+import { loadSubagents, loadTerminals, supportsSubagents, useSubWork } from "../daemon/subwork";
 import { bucketOf, type Bucket } from "../daemon/types";
-import { anim, color, ease, frames } from "../theme/tokens";
+import { color } from "../theme/tokens";
 import { useUi } from "../ui-store";
-import { ago } from "../util";
 import { GroupHead, PanelHead } from "./PanelHead";
 import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
+import { KIND_LABEL, KIND_ORDER, type SubWork } from "./subwork/model";
+import { openSubWork } from "./subwork/hooks";
+import { SubWorkTree } from "./subwork/views";
 import { Tabs } from "./tools/Tabs";
 import { ProjectTodos } from "./tools/ProjectTodos";
 const TABS: Array<{ id: "session" | "todos"; label: string }> = [
@@ -16,14 +19,9 @@ const TABS: Array<{ id: "session" | "todos"; label: string }> = [
   { id: "todos", label: "Project to-dos" },
 ];
 
-type Subagent = Awaited<
-  ReturnType<NonNullable<ReturnType<typeof getClient>>["listProviderSubagents"]>
->["subagents"][number];
-
-/** The open session's plan (its latest to-do list) and the subagents it has spawned. */
+/** The open session's plan (its latest to-do list) and everything running underneath it. */
 export function TasksPanel() {
   const [tab, setTab] = useState<"session" | "todos">("session");
-  const [error, setError] = useState<string | null>(null);
   const selected = useUi((s) => s.selected);
   const fallback = useDaemon(
     (s) =>
@@ -34,32 +32,31 @@ export function TasksPanel() {
   const id = selected ?? fallback;
   const session = useDaemon((s) => (id ? s.sessions[id] : undefined));
   const entries = useDaemon((s) => (id ? s.timelines[id] : undefined));
-  const [subs, setSubs] = useState<Subagent[] | null>(null);
+  const cwd = session?.agent.cwd;
+  const { items } = useSubWork(id);
+  const canSub = supportsSubagents();
+  useEffect(() => {
+    if (id) void openTimeline(id);
+  }, [id]);
   const load = useCallback(() => {
-    setSubs(null);
-    setError(null);
     if (!id) return;
     void openTimeline(id);
-    void getClient()
-      ?.listProviderSubagents(id)
-      .then(
-        (r) => setSubs(r.subagents),
-        (e: unknown) => setError(String(e)),
-      );
-  }, [id]);
-  useEffect(load, [load]);
-  // Live rows: the host upserts a subagent as it works (new activity line, status changes).
-  const conn = useDaemon((s) => s.url);
-  useEffect(() => {
-    const client = getClient();
-    if (!client || !id) return;
-    return client.subscribeRawMessages((event) => {
-      if (event.type !== "agent.provider_subagents.update") return;
-      const p = event.payload;
-      if (p.kind !== "upsert" || p.subagent.parentAgentId !== id) return;
-      setSubs((cur) => upsertSub(cur, p.subagent));
-    });
-  }, [id, conn]);
+    loadSubagents(id, true);
+    if (cwd) loadTerminals(cwd, true);
+  }, [id, cwd]);
+  const onOpen = useCallback(
+    (item: SubWork) => {
+      if (id) openSubWork(id, item);
+    },
+    [id],
+  );
+  const groups = useMemo(
+    () =>
+      KIND_ORDER.map((kind) => ({ kind, list: items.filter((x) => x.kind === kind) })).filter(
+        (g) => g.list.length > 0 || (g.kind === "subagent" && canSub),
+      ),
+    [items, canSub],
+  );
   const plan = useMemo(() => {
     const todo = entries?.toReversed().find((e) => e.item.type === "todo");
     return todo?.item.type === "todo" ? todo.item.items : null;
@@ -92,83 +89,21 @@ export function TasksPanel() {
       )}
       {tab === "session" && (
         <ScrollView contentContainerStyle={st.scrollPad}>
-          {error && <T style={st.empty}>{error}</T>}
           <GroupHead label={plan ? `Plan · ${done} of ${plan.length}` : "Plan"} />
           {!plan && <T style={st.empty}>{emptyPlan}</T>}
           {plan?.map((t, i) => (
             <PlanRow key={t.id ?? `${i}:${t.text}`} t={t} />
           ))}
-          <GroupHead label="Subagents" count={subs?.length} />
-          {subs?.length === 0 && <T style={st.empty}>None spawned.</T>}
-          {subs?.map((a) => (
-            <SubRow key={a.id} a={a} />
+          {groups.map((g) => (
+            <View key={g.kind}>
+              <GroupHead label={KIND_LABEL[g.kind]} count={g.list.length} />
+              {g.list.length === 0 && <T style={st.empty}>None spawned.</T>}
+              <View style={st.group}>
+                <SubWorkTree items={g.list} onOpen={onOpen} plain />
+              </View>
+            </View>
           ))}
         </ScrollView>
-      )}
-    </View>
-  );
-}
-
-function upsertSub(cur: Subagent[] | null, sub: Subagent): Subagent[] | null {
-  if (!cur) return cur;
-  const at = cur.findIndex((x) => x.id === sub.id);
-  if (at < 0) return [...cur, sub];
-  const next = [...cur];
-  next[at] = sub;
-  return next;
-}
-
-/** Elapsed run time, ticking each second while the subagent runs. */
-function Elapsed({ since }: { since: string }) {
-  const [now, setNow] = useState(Date.now);
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  const secs = Math.max(0, Math.floor((now - Date.parse(since)) / 1000));
-  const text =
-    secs < 60 ? `${secs}s` : `${Math.floor(secs / 60)}m ${`${secs % 60}`.padStart(2, "0")}s`;
-  return (
-    <T v="mono" style={[st.time, st.live]}>
-      {text}
-    </T>
-  );
-}
-
-/** One subagent: name and task, status glyph, run time, and its latest activity line. */
-function SubRow({ a }: { a: Subagent }) {
-  const running = a.status === "running";
-  const label = a.title ?? a.description ?? "Subagent";
-  const task = a.title && a.description && a.description !== a.title ? a.description : null;
-  return (
-    <View style={[st.sub, !!a.parentSubagentId && st.subNested]}>
-      <View style={st.subHead}>
-        <StatusGlyph bucket={SUB_BUCKET[a.status] ?? "idle"} size={8} />
-        <T numberOfLines={1} style={st.flex}>
-          <T style={st.subName}>{label}</T>
-          {task && <T style={st.subTask}>{`  ${task}`}</T>}
-        </T>
-        {running ? (
-          <Elapsed since={a.createdAt} />
-        ) : (
-          <T v="mono" style={st.time}>
-            {a.status === "canceled" ? "canceled" : ago(a.updatedAt)}
-          </T>
-        )}
-      </View>
-      {a.subtitle && (
-        <T
-          key={a.subtitle}
-          v="mono"
-          numberOfLines={1}
-          style={[
-            st.subtitle,
-            running && st.subtitleLive,
-            a.status === "failed" && st.subtitleFail,
-          ]}
-        >
-          {a.subtitle}
-        </T>
       )}
     </View>
   );
@@ -181,11 +116,6 @@ type PlanItem = NonNullable<
   >["items"]
 >[number];
 
-const SUB_BUCKET: Record<string, Bucket> = {
-  running: "working",
-  failed: "failed",
-  completed: "review",
-};
 const STEP_BUCKET: Record<"done" | "doing" | "todo", Bucket> = {
   done: "review",
   doing: "working",
@@ -213,7 +143,6 @@ function PlanRow({ t }: { t: PlanItem }) {
 
 const st = StyleSheet.create({
   fill: { flex: 1, backgroundColor: color.bg2 },
-  flex: { flex: 1 },
   sessionRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -237,21 +166,5 @@ const st = StyleSheet.create({
   glyphPad: { paddingTop: 5 },
   planText: { flex: 1, color: color.text },
   planDone: { color: color.muted },
-  sub: {
-    marginHorizontal: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: color.line,
-    marginLeft: 8,
-  },
-  subNested: { marginLeft: 24 },
-  subHead: { flexDirection: "row", alignItems: "center", gap: 8 },
-  time: { fontSize: 10.5 },
-  subtitle: { marginLeft: 17, marginTop: 3, fontSize: 11, color: color.faint },
-  subtitleLive: { color: color.cyan2, ...anim(frames.enter, "220ms", ease) },
-  subtitleFail: { color: color.coral },
-  subName: { color: color.text },
-  subTask: { color: color.muted, fontSize: 12.5 },
-  live: { color: color.cyan2, fontVariant: ["tabular-nums"] },
+  group: { marginHorizontal: 8, paddingHorizontal: 4 },
 });

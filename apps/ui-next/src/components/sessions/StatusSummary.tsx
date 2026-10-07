@@ -7,6 +7,7 @@ import { beamBand, color, font, glide } from "../../theme/tokens";
 import { useCountUp } from "../CountUp";
 import { useReducedMotion } from "../Meter";
 import { bucketColor, StatusGlyph } from "../StatusGlyph";
+import { SubCaption } from "../subwork/Caption";
 import { T } from "../Text";
 
 export const BUCKETS: Array<{ b: Bucket; label: string }> = [
@@ -98,7 +99,14 @@ function useFlash(b: Bucket, rise: number, reduced: boolean): Animated.Value {
   return v;
 }
 
-export function StatusSummary({ counts }: { counts: Record<Bucket, number> }) {
+export function StatusSummary({
+  counts,
+  sub = 0,
+}: {
+  counts: Record<Bucket, number>;
+  /** Sub-processes running across these sessions; a caption only, never a sixth count. */
+  sub?: number;
+}) {
   const reduced = useReducedMotion();
   const total = BUCKETS.reduce((n, o) => n + counts[o.b], 0) || 1;
   const [w, setW] = useState(0);
@@ -143,6 +151,7 @@ export function StatusSummary({ counts }: { counts: Record<Bucket, number> }) {
           <LegendItem key={o.b} b={o.b} label={o.label} n={counts[o.b]} reduced={reduced} />
         ))}
       </View>
+      <SubCaption n={sub} />
     </View>
   );
 }
