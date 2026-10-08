@@ -21,7 +21,7 @@ import { ToastHost } from "../components/toast/ToastHost";
 import { bp, color, font, web } from "../theme/tokens";
 import { seedLab } from "./client";
 import { Specimen, type Entry } from "./kit";
-import { BY_ID, ENTRIES, GROUPS } from "./registry";
+import { announce, BY_ID, ENTRIES, GROUPS } from "./registry";
 import { useSlowMotion } from "./slowmo";
 import { bumpNonce, setSpeed, useLab, type Speed } from "./store";
 
@@ -55,6 +55,9 @@ export function Lab() {
     setPrepared(key);
   }, [key, entry]);
   const ready = prepared === key;
+  useEffect(() => {
+    announce(ready ? key || "(index)" : null);
+  }, [ready, key]);
   const replay = useCallback(() => {
     prepare(entry);
     bumpNonce();

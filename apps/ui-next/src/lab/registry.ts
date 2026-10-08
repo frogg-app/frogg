@@ -39,3 +39,27 @@ export const GROUPS: Array<{ category: Category; entries: Entry[] }> = CATEGORIE
     entries: ENTRIES.filter((e) => e.category === category),
   }),
 );
+
+export const DECISIONS = ENTRIES.filter((e) => e.decision);
+
+interface LabProbe {
+  ids: string[];
+  decisions: string[];
+  ready: string | null;
+}
+
+declare global {
+  interface Window {
+    __LAB__?: LabProbe;
+  }
+}
+
+/** Exposes entry ids and the mounted entry for lab-check/shots/probe (web only). */
+export function announce(ready: string | null): void {
+  if (typeof window === "undefined") return;
+  window.__LAB__ = {
+    ids: ENTRIES.map((e) => e.id),
+    decisions: DECISIONS.map((e) => e.id),
+    ready,
+  };
+}

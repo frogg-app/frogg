@@ -43,3 +43,4 @@ packages/branding/src/generated/
 
 # Staged standalone interface prototype.
 /apps/ui-next/dist-desktop/
+.app-design/

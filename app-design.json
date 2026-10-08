@@ -1,0 +1,22 @@
+{
+  "app": "apps/ui-next",
+  "framework": "expo-router",
+  "labDir": "src/lab",
+  "labRoute": "/lab",
+  "gallery": "design-exploration/mockups/app-design",
+  "labOut": "design-exploration/mockups/app-design/lab",
+  "stateDir": ".app-design",
+  "port": 7840,
+  "devUrl": "http://127.0.0.1:8081/lab",
+  "labUrl": "http://127.0.0.1:7840/",
+  "baseUrlEnv": "FROGG_WEB_BASE_URL",
+  "buildDeps": [
+    "npm run build --workspace=@frogg/protocol",
+    "npm run build --workspace=@frogg/client",
+    "npm run build --workspace=@frogg/highlight"
+  ],
+  "forbidden": ["not available in the component lab"],
+  "viewports": {},
+  "coAuthor": "Claude Sonnet 5.5 <noreply@anthropic.com>",
+  "scripts": "~/app-design-plugin/scripts"
+}
