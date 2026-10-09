@@ -242,6 +242,15 @@ type Status =
   | { status: "disconnected"; reason?: string }
   | { status: "disposed" };
 
+/** Records that this device just reached a host (any host, active or not). */
+export function markHostOnline(hostId: string): void {
+  useHosts.setState((st) => ({
+    hosts: st.hosts.map((h) =>
+      h.id === hostId ? { ...h, lastOnlineAt: new Date().toISOString() } : h,
+    ),
+  }));
+}
+
 /** Called by the store on every connection status change of the active client. */
 export function noteConnStatus(
   hostId: string,
@@ -252,11 +261,7 @@ export function noteConnStatus(
   const fresh = prev.hostId !== hostId;
   if (s.status === "connected") {
     useHostLink.setState({ hostId, attempt: 0, reason: null, error: null, droppedAt: null });
-    useHosts.setState((st) => ({
-      hosts: st.hosts.map((h) =>
-        h.id === hostId ? { ...h, lastOnlineAt: new Date().toISOString() } : h,
-      ),
-    }));
+    markHostOnline(hostId);
     return;
   }
   const base = fresh ? { attempt: 0, reason: null, droppedAt: null } : prev;

@@ -1,10 +1,12 @@
 import { DaemonClient } from "@frogg/client/internal/daemon-client";
+import { useMemo } from "react";
 import { create } from "zustand";
 import {
   activeHost,
   hostClientOptions,
   hostsReady,
   hostUrl,
+  markHostOnline,
   noteConnStatus,
   renameHost,
   useHosts,
@@ -57,68 +59,105 @@ function defaultEndpoint(): string {
   return typeof location !== "undefined" ? `${location.hostname}:6767` : "127.0.0.1:6767";
 }
 
-/** Connects to the active saved host, replacing any current connection and its per-host state. */
-export async function connect(host?: Host): Promise<void> {
-  const generation = ++connectionGeneration;
-  await hostsReady;
-  if (generation !== connectionGeneration) return;
-  const target = host ?? activeHost(defaultEndpoint());
-  if (client) {
-    const old = client;
-    client = null;
-    await old.close().catch(() => {});
-  }
-  if (generation !== connectionGeneration) return;
-  useHosts.setState({ activeId: target.id });
-  const url = hostUrl(target);
-  useDaemon.setState({
-    url,
+/**
+ * Every saved host keeps its own live connection, so sessions on all of them stay current.
+ * One of them is active: `client` and `useDaemon` point at it, and everything else in the app
+ * (files, terminals, settings, timelines) talks to that one. Switching hosts only repoints them.
+ */
+interface Pooled {
+  host: Host;
+  key: string;
+  client: DaemonClient;
+  conn: Conn;
+  serverName: string | null;
+}
+
+const pool = new Map<string, Pooled>();
+let activeHostId: string | null = null;
+
+/** Sessions and link state of the hosts that are not active; the active host's live in useDaemon. */
+export const useFleet = create<{
+  sessions: Record<string, Record<string, Session>>;
+  conn: Record<string, Conn>;
+}>(() => ({ sessions: {}, conn: {} }));
+
+/** Sessions of every connected host except the active one, each tagged with its hostId. */
+export function useOtherHostSessions(): Session[] {
+  const fleet = useFleet((st) => st.sessions);
+  const activeId = useHosts((st) => st.activeId);
+  return useMemo(() => {
+    const out: Session[] = [];
+    for (const [hostId, sessions] of Object.entries(fleet)) {
+      if (hostId === activeId) continue;
+      for (const sess of Object.values(sessions)) out.push({ ...sess, hostId });
+    }
+    return out;
+  }, [fleet, activeId]);
+}
+
+const routeKey = (h: Host) =>
+  JSON.stringify([hostUrl(h), h.password ?? "", h.serverId ?? "", h.relay?.daemonPublicKeyB64 ?? ""]);
+
+const isActive = (p: Pooled) => activeHostId === p.host.id && client === p.client;
+
+function setFleetSessions(
+  hostId: string,
+  fn: (prev: Record<string, Session>) => Record<string, Session>,
+): void {
+  useFleet.setState((st) => ({ sessions: { ...st.sessions, [hostId]: fn(st.sessions[hostId] ?? {}) } }));
+}
+
+// The active host's list is edited in useDaemon (here and by actions elsewhere); keep its fleet copy
+// current so switching back to it later starts from what was last shown.
+useDaemon.subscribe((s, prev) => {
+  if (activeHostId && s.sessions !== prev.sessions && pool.get(activeHostId)?.client === client)
+    setFleetSessions(activeHostId, () => s.sessions);
+});
+
+function openPooled(host: Host): Pooled {
+  const p: Pooled = {
+    host,
+    key: routeKey(host),
     conn: "connecting",
-    sessions: {},
-    timelines: {},
-    streaming: {},
     serverName: null,
-  });
-  const mine = new DaemonClient({
-    url,
-    ...(target.password ? { password: target.password } : {}),
-    clientId: `ui-next-${Math.random().toString(36).slice(2, 10)}`,
-    clientType: "browser",
-    deviceName: "Frogg (next)",
-    suppressSendErrors: true,
-    reconnect: { enabled: true },
-    ...hostClientOptions(target),
-  });
-  client = mine;
+    client: new DaemonClient({
+      url: hostUrl(host),
+      ...(host.password ? { password: host.password } : {}),
+      clientId: `ui-next-${Math.random().toString(36).slice(2, 10)}`,
+      clientType: "browser",
+      deviceName: "Frogg (next)",
+      suppressSendErrors: true,
+      reconnect: { enabled: true },
+      ...hostClientOptions(host),
+    }),
+  };
+  pool.set(host.id, p);
+  const mine = p.client;
   mine.subscribeConnectionStatus((s) => {
-    if (client !== mine) return;
-    noteConnStatus(target.id, s, mine.lastErrorInfo);
-    useDaemon.setState({
-      conn: CONN[s.status] ?? "offline",
-    });
-    if (s.status === "connected") void loadSessions().catch(() => {});
+    if (pool.get(host.id) !== p) return;
+    p.conn = CONN[s.status] ?? "offline";
+    useFleet.setState((st) => ({ conn: { ...st.conn, [host.id]: p.conn } }));
+    if (isActive(p)) {
+      noteConnStatus(host.id, s, mine.lastErrorInfo);
+      useDaemon.setState({ conn: p.conn });
+    } else if (s.status === "connected") markHostOnline(host.id);
+    if (s.status === "connected") void loadSessions(p).catch(() => {});
   });
   mine.subscribe((event) => {
-    if (client !== mine) return;
-    if (event.type === "agent_update") {
-      const p = event.payload;
-      useDaemon.setState((st) => {
-        const sessions = { ...st.sessions };
-        if (p.kind === "upsert") {
-          sessions[p.agent.id] = {
-            agent: p.agent,
-            project: p.project ?? sessions[p.agent.id]?.project ?? null,
-          };
-        } else delete sessions[p.agentId];
-        return { sessions };
-      });
-    } else if (event.type === "agent_deleted") {
-      useDaemon.setState((st) => {
-        const sessions = { ...st.sessions };
-        delete sessions[event.agentId];
-        return { sessions };
-      });
-    } else if (event.type === "agent_stream") {
+    if (pool.get(host.id) !== p) return;
+    if (event.type === "agent_update" || event.type === "agent_deleted") {
+      const apply = (prev: Record<string, Session>) => {
+        const sessions = { ...prev };
+        if (event.type === "agent_deleted") delete sessions[event.agentId];
+        else if (event.payload.kind === "upsert") {
+          const { agent, project } = event.payload;
+          sessions[agent.id] = { agent, project: project ?? sessions[agent.id]?.project ?? null };
+        } else delete sessions[event.payload.agentId];
+        return sessions;
+      };
+      if (isActive(p)) useDaemon.setState((st) => ({ sessions: apply(st.sessions) }));
+      else setFleetSessions(host.id, apply);
+    } else if (event.type === "agent_stream" && isActive(p)) {
       const e = event.event;
       if (e.type === "timeline") {
         const entry: TimelineEntry = {
@@ -140,17 +179,92 @@ export async function connect(host?: Host): Promise<void> {
       }
     }
   });
-  try {
-    await mine.connect();
-  } catch {
-    if (client === mine) useDaemon.setState({ conn: "offline" });
+  mine.connect().catch(() => {
+    if (pool.get(host.id) !== p) return;
+    p.conn = "offline";
+    useFleet.setState((st) => ({ conn: { ...st.conn, [host.id]: "offline" } }));
+    if (isActive(p)) useDaemon.setState({ conn: "offline" });
+  });
+  return p;
+}
+
+function closePooled(id: string): void {
+  const p = pool.get(id);
+  if (!p) return;
+  pool.delete(id);
+  void p.client.close().catch(() => {});
+  useFleet.setState((st) => {
+    const sessions = { ...st.sessions };
+    const conn = { ...st.conn };
+    delete sessions[id];
+    delete conn[id];
+    return { sessions, conn };
+  });
+}
+
+/** Opens a connection to every saved host that lacks one and drops those of forgotten hosts. */
+function syncPool(): void {
+  const hosts = useHosts.getState().hosts;
+  // Deleting the current entry while iterating a Map is safe.
+  for (const id of pool.keys()) if (!hosts.some((h) => h.id === id)) closePooled(id);
+  for (const h of hosts) {
+    const p = pool.get(h.id);
+    if (!p) openPooled(h);
+    else p.host = h;
   }
 }
 
-/** Close this device's connection only; forgetting a host never stops its daemon. */
+let pooling = false;
+function startPool(): void {
+  if (pooling) return;
+  pooling = true;
+  syncPool();
+  useHosts.subscribe((s, prev) => {
+    if (s.hosts !== prev.hosts) syncPool();
+  });
+}
+
+/**
+ * Makes a saved host the active one. Its connection is reused when already open; asking for the
+ * host that is already active, or one whose address changed, opens a fresh connection (a retry).
+ */
+export async function connect(host?: Host): Promise<void> {
+  const generation = ++connectionGeneration;
+  await hostsReady;
+  if (generation !== connectionGeneration) return;
+  const target = host ?? activeHost(defaultEndpoint());
+  startPool();
+  const previous = activeHostId ? pool.get(activeHostId) : undefined;
+  let p = pool.get(target.id);
+  if (p && (p.key !== routeKey(target) || target.id === activeHostId || p.conn === "offline")) {
+    closePooled(target.id);
+    p = undefined;
+  }
+  if (previous && previous !== p) void previous.client.setAgentTimelineSubscription([]).catch(() => {});
+  activeHostId = target.id;
+  client = null;
+  useHosts.setState({ activeId: target.id });
+  p ??= openPooled(target);
+  client = p.client;
+  useDaemon.setState({
+    url: hostUrl(target),
+    conn: p.conn,
+    sessions: useFleet.getState().sessions[target.id] ?? {},
+    timelines: {},
+    streaming: {},
+    serverName: p.serverName,
+  });
+  if (p.conn === "online") {
+    noteConnStatus(target.id, { status: "connected" }, null);
+    void loadSessions(p).catch(() => {});
+  }
+}
+
+/** Leaves no host active; the other hosts' connections stay open. Never stops a daemon. */
 export async function disconnect(): Promise<void> {
   ++connectionGeneration;
-  const old = client;
+  const old = activeHostId;
+  activeHostId = null;
   client = null;
   useHosts.setState({ activeId: null });
   useDaemon.setState({
@@ -161,7 +275,7 @@ export async function disconnect(): Promise<void> {
     timelines: {},
     streaming: {},
   });
-  await old?.close().catch(() => {});
+  if (old) closePooled(old);
 }
 
 /** Streamed chunks of one assistant message arrive as separate items; fold them together. */
@@ -186,21 +300,21 @@ function mergeEntry(list: TimelineEntry[], entry: TimelineEntry): TimelineEntry[
   return [...list, entry];
 }
 
-async function loadSessions(): Promise<void> {
-  if (!client) return;
-  const source = client;
-  const res = await client.fetchAgents({ page: { limit: 200 }, subscribe: {} });
-  if (client !== source) return;
+async function loadSessions(p: Pooled): Promise<void> {
+  const source = p.client;
+  const res = await source.fetchAgents({ page: { limit: 200 }, subscribe: {} });
+  if (pool.get(p.host.id) !== p) return;
   const sessions: Record<string, Session> = {};
   for (const e of res.entries)
     if (!e.agent.archivedAt) sessions[e.agent.id] = { agent: e.agent, project: e.project };
-  const info = client.getLastServerInfoMessage() as {
+  const info = source.getLastServerInfoMessage() as {
     hostname?: string;
   } | null;
-  useDaemon.setState({ sessions, serverName: info?.hostname ?? null });
+  p.serverName = info?.hostname ?? null;
+  if (isActive(p)) useDaemon.setState({ sessions, serverName: p.serverName });
+  else setFleetSessions(p.host.id, () => sessions);
   // A host saved by address alone takes the daemon's own name once we have it.
-  const st = useHosts.getState();
-  const host = st.hosts.find((h) => h.id === st.activeId);
+  const host = useHosts.getState().hosts.find((h) => h.id === p.host.id);
   if (host && info?.hostname && host.name === host.endpoint.split(":")[0])
     renameHost(host.id, info.hostname);
 }
