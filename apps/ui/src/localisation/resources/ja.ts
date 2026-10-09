@@ -603,6 +603,7 @@ export const ja: TranslationResources = {
     },
   },
   message: {
+    sending: "送信中…",
     diagram: {
       diagram: "図",
       zoomIn: "拡大",

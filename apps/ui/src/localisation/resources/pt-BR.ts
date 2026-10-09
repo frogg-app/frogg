@@ -603,6 +603,7 @@ export const ptBR: TranslationResources = {
     },
   },
   message: {
+    sending: "Enviando…",
     diagram: {
       diagram: "Diagrama",
       zoomIn: "Aproximar",

@@ -599,6 +599,7 @@ export const ko: TranslationResources = {
     },
   },
   message: {
+    sending: "보내는 중…",
     diagram: {
       diagram: "다이어그램",
       zoomIn: "확대",

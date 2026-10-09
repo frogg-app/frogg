@@ -60,6 +60,12 @@ import Animated, {
 } from "react-native-reanimated";
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Rect, Stop } from "react-native-svg";
 import { CODE_SURFACE_DATASET } from "@/styles/code-surface";
+import { openExternalUrl } from "@/utils/open-external-url";
+import {
+  hasMarkdownImage,
+  splitUserMessage,
+  type UserMessageRun,
+} from "@/utils/user-message-segments";
 import { inlineUnistylesStyle } from "@/styles/unistyles-inline-style";
 import { MarkdownRenderer, type MarkdownStyles } from "@/components/markdown/renderer";
 import type { TaskActivity, TodoEntry, UserMessageImageAttachment } from "@/types/stream";
@@ -335,6 +341,88 @@ function shouldStopDetailWheelPropagation(detailRoot: HTMLElement, event: WheelE
   return canScrollHorizontally;
 }
 
+function UserMessageBody({
+  message,
+  occurrenceKey,
+  client,
+  serverId,
+}: {
+  message: string;
+  occurrenceKey: string;
+  client?: DaemonClient | null;
+  serverId?: string;
+}) {
+  const segments = useMemo(() => splitUserMessage(message), [message]);
+  return (
+    <>
+      {segments.map((segment, index) =>
+        segment.kind === "image" ? (
+          <AssistantMarkdownImage
+            // oxlint-disable-next-line react/no-array-index-key -- segments are positional
+            key={`image:${index}`}
+            source={segment.src}
+            alt={segment.alt}
+            occurrenceKey={`${occurrenceKey}:${index}`}
+            hasLeadingContent={index > 0}
+            client={client}
+            serverId={serverId}
+          />
+        ) : (
+          <Text
+            // oxlint-disable-next-line react/no-array-index-key -- segments are positional
+            key={`text:${index}`}
+            selectable
+            style={[userMessageStylesheet.text, index > 0 && userMessageStylesheet.textAfterImage]}
+          >
+            {segment.runs.map((run, runIndex) =>
+              run.url ? (
+                // oxlint-disable-next-line react/no-array-index-key -- runs are positional
+                <UserMessageLink key={runIndex} run={run} />
+              ) : (
+                run.text
+              ),
+            )}
+          </Text>
+        ),
+      )}
+    </>
+  );
+}
+
+function UserMessageLink({ run }: { run: UserMessageRun }) {
+  const url = run.url ?? null;
+  const open = useCallback(() => void openExternalUrl(url), [url]);
+  return (
+    <Text style={userMessageStylesheet.link} onPress={open} accessibilityRole="link">
+      {run.text}
+    </Text>
+  );
+}
+
+/** Shown under an optimistic user message until the daemon acknowledges it. */
+function UserMessageSending() {
+  const { t } = useTranslation();
+  const pulse = useSharedValue(0.35);
+  useEffect(() => {
+    pulse.value = withRepeat(
+      withTiming(1, { duration: 520, easing: Easing.inOut(Easing.quad) }),
+      -1,
+      true,
+    );
+    return () => cancelAnimation(pulse);
+  }, [pulse]);
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: pulse.value,
+    transform: [{ scale: 0.7 + pulse.value * 0.3 }],
+  }));
+  return (
+    <View style={userMessageStylesheet.sendingRow} testID="user-message-sending">
+      <Animated.View style={[userMessageStylesheet.sendingDot, dotStyle]} />
+      <Text style={userMessageStylesheet.timestampText}>{t("message.sending")}</Text>
+    </View>
+  );
+}
+
 const userMessageStylesheet = StyleSheet.create((theme) => ({
   container: {
     flexDirection: "row",
@@ -363,6 +451,34 @@ const userMessageStylesheet = StyleSheet.create((theme) => ({
     paddingVertical: theme.spacing[4],
     minWidth: 0,
     flexShrink: 1,
+    ...(isWeb ? { transition: "opacity 160ms ease-out" } : {}),
+  },
+  bubbleWithImage: {
+    width: 420,
+    maxWidth: "100%",
+  },
+  bubblePending: {
+    opacity: 0.72,
+  },
+  sendingRow: {
+    alignSelf: "flex-end",
+    flexDirection: "row",
+    alignItems: "center",
+    height: 24,
+    gap: theme.spacing[2],
+    marginTop: theme.spacing[2],
+  },
+  sendingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: theme.colors.accentBright,
+  },
+  link: {
+    color: theme.colors.accentBright,
+  },
+  textAfterImage: {
+    marginTop: theme.spacing[2],
   },
   text: {
     color: theme.colors.foreground,
@@ -458,6 +574,7 @@ export const UserMessage = memo(function UserMessage({
   const resolvedDisableOuterSpacing = useDisableOuterSpacing(disableOuterSpacing);
   const hasText = message.trim().length > 0;
   const hasImages = images.length > 0;
+  const hasInlineImage = useMemo(() => hasMarkdownImage(message), [message]);
   const hasAttachments = attachments.length > 0;
   const showTrailingRow = !isPending && hasText && (isCompact || isNative || isHovered);
   const formattedTimestamp = useMemo(
@@ -501,6 +618,14 @@ export const UserMessage = memo(function UserMessage({
     ],
     [hasText],
   );
+  const bubbleStyle = useMemo(
+    () => [
+      userMessageStylesheet.bubble,
+      hasInlineImage && userMessageStylesheet.bubbleWithImage,
+      isPending && userMessageStylesheet.bubblePending,
+    ],
+    [hasInlineImage, isPending],
+  );
   const trailingRowStyle = useMemo(
     () => [
       userMessageStylesheet.trailingRow,
@@ -518,7 +643,7 @@ export const UserMessage = memo(function UserMessage({
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
       >
-        <View style={userMessageStylesheet.bubble}>
+        <View style={bubbleStyle}>
           {hasImages ? (
             <View style={imagePreviewContainerStyle}>
               {images.map((image) => (
@@ -550,12 +675,16 @@ export const UserMessage = memo(function UserMessage({
             </View>
           ) : null}
           {hasText ? (
-            <Text selectable style={userMessageStylesheet.text}>
-              {message}
-            </Text>
+            <UserMessageBody
+              message={message}
+              occurrenceKey={`user:${agentId ?? ""}:${messageId ?? timestamp}`}
+              client={client}
+              serverId={serverId}
+            />
           ) : null}
         </View>
-        {hasText ? (
+        {isPending ? <UserMessageSending /> : null}
+        {hasText && !isPending ? (
           <View
             style={trailingRowStyle}
             pointerEvents={showTrailingRow ? "auto" : "none"}

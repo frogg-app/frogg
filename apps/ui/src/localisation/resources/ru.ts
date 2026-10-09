@@ -602,6 +602,7 @@ export const ru: TranslationResources = {
     },
   },
   message: {
+    sending: "Отправка…",
     diagram: {
       diagram: "Диаграмма",
       zoomIn: "Увеличить масштаб",

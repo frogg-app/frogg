@@ -604,6 +604,7 @@ export const es: TranslationResources = {
     },
   },
   message: {
+    sending: "Enviando…",
     diagram: {
       diagram: "Diagrama",
       zoomIn: "Acercar",

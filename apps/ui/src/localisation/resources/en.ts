@@ -600,6 +600,7 @@ export const en = {
     },
   },
   message: {
+    sending: "Sending…",
     diagram: {
       diagram: "Diagram",
       zoomIn: "Zoom in",

@@ -594,6 +594,7 @@ export const zhCN: TranslationResources = {
     },
   },
   message: {
+    sending: "正在发送…",
     diagram: {
       diagram: "图表",
       zoomIn: "放大",

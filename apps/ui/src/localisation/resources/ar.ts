@@ -598,6 +598,7 @@ export const ar: TranslationResources = {
     },
   },
   message: {
+    sending: "جارٍ الإرسال…",
     diagram: {
       diagram: "مخطط",
       zoomIn: "تكبير",
