@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Chat } from "../../components/Chat";
 import { AccountChip } from "../../components/chat/AccountChip";
+import { ContextMeter } from "../../components/chat/ContextMeter";
 import type { Attachment, SlashCommand } from "../../components/chat/actions";
 import { AttachChips, AttachMenu } from "../../components/chat/Attach";
 import { SessionMenu } from "../../components/chat/SessionMenu";
@@ -207,13 +208,14 @@ function Live() {
     <View style={s.foot}>
       <Case
         name="Composer"
-        props="children=[AccountChip]"
+        props="children=[AccountChip, ContextMeter]"
         note="Model, mode and account pickers are live."
         w={CHAT}
         plain
       >
         <Composer placeholder="Pickers are live: model, mode, account" chips={CHIPS} onSend={send}>
           <AccountChip agent={a} />
+          <ContextMeter agent={a} />
         </Composer>
       </Case>
     </View>

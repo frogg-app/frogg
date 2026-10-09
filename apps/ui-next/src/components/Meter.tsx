@@ -18,7 +18,7 @@ export const meterMotion = { stagger: 16, cellMs: 110, fillMs: 420, pulseMs: 380
 const curve = Easing.bezier(...glide.curve);
 const wave = Easing.inOut(Easing.quad);
 
-function toneFor(p: number | null): string {
+export function toneFor(p: number | null): string {
   if (p === null) return color.faint;
   if (p >= 90) return color.coral;
   if (p >= 70) return color.amber;

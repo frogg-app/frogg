@@ -24,6 +24,7 @@ export function agent(p: Partial<Agent> & { id: string }): Agent {
     updatedAt: ago(4),
     lastUserMessageAt: ago(6),
     lastUsageAt: ago(5),
+    lastUsage: { contextWindowUsedTokens: 142000, contextWindowMaxTokens: 200000 },
     status: "idle",
     capabilities: {
       supportsStreaming: true,

@@ -8,6 +8,7 @@ import { usePrefs } from "../prefs";
 import { color, motion } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { AccountChip } from "./chat/AccountChip";
+import { ContextMeter } from "./chat/ContextMeter";
 import { ComposerNotices } from "./chat/Notices";
 import { SessionMenu } from "./chat/SessionMenu";
 import { SessionState, Compaction } from "./chat/SessionState";
@@ -167,6 +168,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         >
           <AgentControls agent={a} />
           <AccountChip agent={a} />
+          <ContextMeter agent={a} />
         </Composer>
       </View>
     </View>
