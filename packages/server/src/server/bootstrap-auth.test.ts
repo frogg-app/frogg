@@ -48,16 +48,47 @@ describe("daemon bearer auth", () => {
     process.env = { ...originalEnv, FROGG_SUPERVISED: "0" };
   });
 
-  test("leaves HTTP and WebSocket open when no password is configured", async () => {
+  test("refuses tokenless loopback HTTP and WebSocket; the local token registers a device", async () => {
     const daemonHandle = await createTestFroggDaemon();
+    const clients: DaemonClient[] = [];
     try {
       const response = await fetch(`http://127.0.0.1:${daemonHandle.port}/api/status`);
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(401);
+      await expectWebSocketCloses({
+        port: daemonHandle.port,
+        code: 4401,
+        reason: "Pairing required",
+      });
 
-      const { ws, protocol } = await connectWebSocket({ port: daemonHandle.port });
-      expect(protocol).toBe("");
-      ws.close();
+      const localToken = readLocalToken(daemonHandle.froggHome) ?? undefined;
+      const connect = async (clientId: string) => {
+        const client = new DaemonClient({
+          url: `ws://127.0.0.1:${daemonHandle.port}/ws`,
+          password: localToken,
+          clientId,
+          deviceName: "Host CLI",
+        });
+        clients.push(client);
+        await client.connect();
+        return client;
+      };
+      const cli = await connect("clid_host_cli");
+      await expect(cli.getDaemonPairingOffer()).resolves.toMatchObject({
+        relayEnabled: expect.any(Boolean),
+      });
+      await connect("clid_host_cli");
+      const devices = daemonHandle.daemon.claimStore.listDevices();
+      expect(devices).toEqual([
+        expect.objectContaining({
+          name: "Host CLI",
+          pairedVia: "local",
+          role: "owner",
+        }),
+      ]);
+      // A local registration does not claim the daemon: pairing stays open.
+      expect(daemonHandle.daemon.claimStore.isClaimed()).toBe(false);
     } finally {
+      for (const client of clients) await client.close().catch(() => undefined);
       await daemonHandle.close();
     }
   });
@@ -158,7 +189,7 @@ describe("daemon bearer auth", () => {
     const daemonHandle = await createTestFroggDaemon();
     try {
       const base = `http://127.0.0.1:${daemonHandle.port}`;
-      expect((await fetch(`${base}/api/status`)).status).toBe(200);
+      expect((await fetch(`${base}/api/status`)).status).toBe(401);
       const stale = await fetch(`${base}/api/status`, {
         headers: { Authorization: "Bearer revoked-or-stale" },
       });
@@ -167,7 +198,7 @@ describe("daemon bearer auth", () => {
         port: daemonHandle.port,
         protocol: "frogg.bearer.revoked-or-stale",
         code: 4401,
-        reason: "Incorrect password",
+        reason: "Pairing required",
       });
 
       const localToken = readLocalToken(daemonHandle.froggHome);
@@ -177,49 +208,6 @@ describe("daemon bearer auth", () => {
       });
       expect(local.status).toBe(200);
     } finally {
-      await daemonHandle.close();
-    }
-  });
-
-  test("once claimed, tokenless loopback WS may not mint pairing offers; the local token may", async () => {
-    const daemonHandle = await createTestFroggDaemon();
-    const clients: DaemonClient[] = [];
-    const connect = async (password?: string) => {
-      const client = new DaemonClient({
-        url: `ws://127.0.0.1:${daemonHandle.port}/ws`,
-        ...(password ? { password } : {}),
-      });
-      clients.push(client);
-      await client.connect();
-      return client;
-    };
-    try {
-      // Unclaimed: locality is enough to start pairing.
-      const before = await connect();
-      await expect(before.getDaemonPairingOffer()).resolves.toMatchObject({
-        relayEnabled: expect.any(Boolean),
-      });
-
-      daemonHandle.daemon.claimStore.mintPrincipal({
-        label: "Laptop",
-        role: "owner",
-        pairedVia: "code",
-      });
-
-      const tokenless = await connect();
-      await expect(tokenless.getDaemonPairingOffer()).rejects.toThrow(/not authorized/);
-      await expect(tokenless.createPairingCode()).rejects.toThrow(/not authorized/);
-      // The already-open tokenless session is gated too, not only new ones.
-      await expect(before.getDaemonPairingOffer()).rejects.toThrow(/not authorized/);
-      // Tokenless loopback keeps its other owner authority.
-      await expect(tokenless.fetchAgents()).resolves.toBeDefined();
-
-      const withLocalToken = await connect(readLocalToken(daemonHandle.froggHome) ?? undefined);
-      await expect(withLocalToken.getDaemonPairingOffer()).resolves.toMatchObject({
-        relayEnabled: expect.any(Boolean),
-      });
-    } finally {
-      for (const client of clients) await client.close().catch(() => undefined);
       await daemonHandle.close();
     }
   });

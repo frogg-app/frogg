@@ -680,9 +680,9 @@ function createWebUiServer(input: {
 }
 
 /**
- * The claim page replaces the app only while nobody can authenticate yet
- * (no password, no paired device) and the visitor is not on loopback. A
- * single-machine setup opening http://localhost keeps working untouched.
+ * The claim page replaces the app while nobody can authenticate yet (no
+ * password, no paired device), for every visitor: loopback included, because
+ * the app cannot connect until its device is registered.
  */
 function createClaimGate(input: {
   auth: DaemonAuthConfig;
@@ -692,8 +692,7 @@ function createClaimGate(input: {
 }): WebUiGate {
   const { auth, claimStore, offerSource } = input;
   return {
-    shouldGate: (req) =>
-      !auth.password && !claimStore.isClaimed() && auth.access?.isTrustedClient(req) === false,
+    shouldGate: () => !auth.password && !claimStore.isClaimed(),
     render: async (req) => {
       const requestHost = typeof req.headers.host === "string" ? req.headers.host : undefined;
       const built = buildDirectClaimOffer(offerSource, {
@@ -1203,7 +1202,6 @@ export async function createFroggDaemon(
       connectedClients: () => wsServer?.getConnectedClientCount() ?? 0,
       isClaimed: () => isDaemonClaimed(claimStore, authConfig.password),
       trustLan: () => authConfig.access?.trustLan() ?? DEFAULT_TRUST_LAN,
-      isTrustedClient: (req) => authConfig.access?.isTrustedClient(req) ?? false,
       needsCredential: (req) => requestNeedsBearer(authConfig, req),
     }),
   );

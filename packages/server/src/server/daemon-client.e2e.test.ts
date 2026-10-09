@@ -91,6 +91,8 @@ test("DaemonClient surfaces password auth failures from WebSocket close reasons"
   });
   const missingPasswordClient = new DaemonClient({
     url: `ws://127.0.0.1:${daemon.port}/ws`,
+    // Empty, so the test client does not fall back to the daemon's local token.
+    password: "",
     reconnect: { enabled: false },
   });
   const wrongPasswordClient = new DaemonClient({

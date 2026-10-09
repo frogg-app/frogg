@@ -73,8 +73,17 @@ describe("daemon web UI bootstrap", () => {
       mcpEnabled: false,
       webUi: { enabled: true, distDir, port: await freePort() },
     });
-    await expect(fetchDaemonWebUi({ port: daemonHandle.port })).rejects.toThrow(/got 404/);
+    await expect(fetchDaemonWebUi({ port: daemonHandle.port })).rejects.toThrow(/got 40[14]/);
   });
+
+  // Unclaimed, every visitor gets the claim page; these tests are about the app.
+  function claimDaemon(handle: TestFroggDaemon): void {
+    handle.daemon.claimStore.mintPrincipal({
+      label: "Laptop",
+      role: "owner",
+      pairedVia: "code",
+    });
+  }
 
   let tempRoot: string | null = null;
   let daemonHandle: TestFroggDaemon | null = null;
@@ -111,6 +120,7 @@ describe("daemon web UI bootstrap", () => {
         port: webPort,
       },
     });
+    claimDaemon(daemonHandle);
 
     const httpHint = readInjectedConnectionHint(await fetchDaemonWebUi({ port: webPort }));
     const httpsHint = readInjectedConnectionHint(
@@ -145,6 +155,7 @@ describe("daemon web UI bootstrap", () => {
         port: webPort,
       },
     });
+    claimDaemon(daemonHandle);
 
     const httpsHint = readInjectedConnectionHint(
       await fetchDaemonWebUi({

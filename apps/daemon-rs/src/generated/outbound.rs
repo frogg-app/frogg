@@ -1183,6 +1183,8 @@ pub enum AuthDeviceListResponsePayloadDevicesItemPairedVia {
     Password,
     #[serde(rename = "legacy")]
     Legacy,
+    #[serde(rename = "local")]
+    Local,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

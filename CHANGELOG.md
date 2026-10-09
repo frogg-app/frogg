@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Every device registers; no anonymous connections.** Loopback and trusted-LAN clients no
+  longer connect without a credential: every WebSocket and API caller presents a paired-device
+  credential, the daemon password or (on the host) the local token. A password or local-token
+  session is bound on its first hello to a device registered under its client id and device
+  name (the CLI registers as `<hostname> CLI`), so it appears in the device list and can be
+  renamed and, later, mentioned and notified. Local-token registrations (`pairedVia: "local"`)
+  do not claim the daemon. Until the daemon is claimed every visitor, loopback included, gets
+  the claim page, and `/api/identity` reports `pairingRequired` for all. A desktop app that
+  relied on loopback trust now shows **Pair again**.
+
 - **Resources is its own host settings section.** Live host load and the size of each
   Frogg-owned storage area move out of the host Overview into a **Resources** section under the
   Daemon group, alongside new storage alerts. Clearing stale worktrees, agent worktrees and

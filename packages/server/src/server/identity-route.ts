@@ -47,8 +47,6 @@ export interface IdentityRouteDependencies {
   isClaimed: () => boolean;
   connectedClients: () => number;
   trustLan: () => boolean;
-  /** Loopback or trusted-LAN requester (see access-policy.ts). */
-  isTrustedClient: (req: RequestLike) => boolean;
   /** This requester needs a bearer (see `requestNeedsBearer` in auth.ts). */
   needsCredential: (req: RequestLike) => boolean;
 }
@@ -65,7 +63,8 @@ export function describeDaemonIdentity(
     version: deps.version,
     listen: deps.listen(),
     connectedClients: deps.connectedClients(),
-    pairingRequired: !deps.isClaimed() && !deps.isTrustedClient(req),
+    // Every device registers, whatever its network, so an unclaimed daemon asks everyone.
+    pairingRequired: !deps.isClaimed(),
     credentialRequired: deps.needsCredential(req),
     lanTrusted: deps.trustLan(),
   };

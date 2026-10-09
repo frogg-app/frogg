@@ -81,7 +81,7 @@ describe("access mode", () => {
 
   test("each mode says who can connect", () => {
     expect(describeAccessMode("password")).toContain("password");
-    expect(describeAccessMode("lan_trusted")).toContain("private network");
+    expect(describeAccessMode("lan_trusted")).toContain("every device pairs");
     expect(describeAccessMode("pairing_required")).toContain("pair");
   });
 });

@@ -34,7 +34,8 @@ import type {
   ProviderCatalog,
 } from "../../agent/agent-sdk-types.js";
 import { createTestAgentClients } from "../../test-utils/fake-agent-client.js";
-import { DaemonClient } from "../../test-utils/daemon-client.js";
+import { DaemonClient, registerTestDaemonLocalToken } from "../../test-utils/daemon-client.js";
+import { createLocalTokenFile } from "../../local-token.js";
 import { AgentStorage } from "../../agent/agent-storage.js";
 import { AgentManager } from "../../agent/agent-manager.js";
 import { DaemonExecutions } from "../daemon-executions.js";
@@ -451,6 +452,8 @@ export class HubRelationshipHarness {
   private config!: FroggDaemonConfig;
   private root = "";
   private froggHome = "";
+  private localToken = "";
+  private unregisterLocalToken: (() => void) | null = null;
   private host = "";
   private readonly logs: string[] = [];
   private readonly providerPrompts: AgentPromptInput[] = [];
@@ -1433,6 +1436,9 @@ export class HubRelationshipHarness {
     const target = this.daemon.getListenTarget();
     if (!target || target.type !== "tcp") throw new Error("Daemon did not bind TCP");
     this.host = `127.0.0.1:${target.port}`;
+    this.localToken = createLocalTokenFile(this.froggHome).ensure();
+    this.unregisterLocalToken?.();
+    this.unregisterLocalToken = registerTestDaemonLocalToken(target.port, this.localToken);
   }
 
   private async stopDaemon(): Promise<void> {
@@ -1458,7 +1464,10 @@ export class HubRelationshipHarness {
         this.host,
         "--json",
       ],
-      { cwd: REPOSITORY_ROOT, env: { ...process.env, NO_COLOR: "1" } },
+      {
+        cwd: REPOSITORY_ROOT,
+        env: { ...process.env, FROGG_HOME: this.froggHome, NO_COLOR: "1" },
+      },
     );
     const parsed = JSON.parse(stdout) as unknown;
     if (Array.isArray(parsed)) return parsed[0] as Record<string, unknown>;
@@ -1491,7 +1500,7 @@ export class HubRelationshipHarness {
     url: string,
     options: { origin?: string; protocols?: string[] } = {},
   ): Promise<WebSocket> {
-    const { protocols, ...socketOptions } = options;
+    const { protocols = [`frogg.bearer.${this.localToken}`], ...socketOptions } = options;
     const socket = new WebSocket(url, protocols, socketOptions);
     this.claimedCliSockets.add(socket);
     await new Promise<void>((resolve, reject) => {

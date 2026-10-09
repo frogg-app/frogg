@@ -12,6 +12,7 @@ import { AgentManagerShuttingDownError } from "./agent/agent-manager.js";
 import { hashDaemonPassword } from "./auth.js";
 import { generateLocalPairingOffer } from "./pairing-offer.js";
 import { createTestFroggDaemon } from "./test-utils/frogg-daemon.js";
+import { createLocalTokenFile } from "./local-token.js";
 import { createTestAgentClients } from "./test-utils/fake-agent-client.js";
 import { DaemonClient } from "./test-utils/daemon-client.js";
 import { isPlatform } from "../test-utils/platform.js";
@@ -189,6 +190,7 @@ describe("frogg daemon bootstrap", () => {
       if (!target || target.type !== "tcp") throw new Error("Expected a TCP listener");
       client = new DaemonClient({
         url: `ws://127.0.0.1:${target.port}/ws`,
+        password: createLocalTokenFile(config.froggHome).ensure(),
         appVersion: "0.4.0",
       });
       await client.connect();
@@ -488,7 +490,10 @@ describe("frogg daemon bootstrap", () => {
 
   test("daemon websocket still upgrades when service proxy upgrade handler is mounted", async () => {
     const daemonHandle = await createTestFroggDaemon();
-    const ws = new WebSocket(`ws://127.0.0.1:${daemonHandle.port}/ws`);
+    const localToken = createLocalTokenFile(daemonHandle.froggHome).ensure();
+    const ws = new WebSocket(`ws://127.0.0.1:${daemonHandle.port}/ws`, [
+      `frogg.bearer.${localToken}`,
+    ]);
     try {
       await new Promise<void>((resolve, reject) => {
         ws.once("open", resolve);
@@ -582,6 +587,7 @@ describe("frogg daemon bootstrap", () => {
       }
       client = new DaemonClient({
         url: `ws://127.0.0.1:${listenTarget.port}/ws`,
+        password: createLocalTokenFile(config.froggHome).ensure(),
         appVersion: "0.1.82",
       });
       await client.connect();

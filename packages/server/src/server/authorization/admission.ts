@@ -15,11 +15,16 @@ export interface PrincipalAdmission {
   role?: DeviceRole;
   transport?: SessionTransport;
   /**
-   * Admitted on locality alone (loopback / trusted LAN, no credential). Such a
-   * connection keeps owner authority but may not mint pairing credentials once
-   * the daemon is claimed; see owner-offer-gate.ts.
+   * Admitted on locality alone. No transport admits on locality any more; the
+   * field stays for the owner-offer gate and is always false for real sockets.
    */
   localityTrusted?: boolean;
+  /**
+   * Admitted on a shared secret (password or local token) rather than a device
+   * credential: the session is bound to a device registered by its hello
+   * clientId before it is created.
+   */
+  registerVia?: "password" | "local";
 }
 
 /** The single place a connection's role is decided, for every transport. */
@@ -33,8 +38,8 @@ export function resolveAdmissionRole(admission: PrincipalAdmission): DeviceRole 
 
 /**
  * The admission for an authenticated connection. A paired device brings its own
- * principal, permissions and role; the daemon password and bearer-free trusted
- * clients (loopback, trusted LAN) keep the owner authority they have always had.
+ * principal, permissions and role; the daemon password and the local token keep
+ * owner authority and are registered as a device at hello.
  */
 export function admissionForPrincipal(
   principal: BearerPrincipal,
@@ -45,7 +50,7 @@ export function admissionForPrincipal(
       principalId: "owner",
       permissions: OWNER_PERMISSIONS,
       transport,
-      ...(principal.kind === "trusted" ? { localityTrusted: true } : {}),
+      registerVia: principal.kind === "password" ? "password" : "local",
     };
   }
   const { device } = principal;

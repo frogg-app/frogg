@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
 import { WebSocket } from "ws";
-import { DaemonClient } from "@frogg/client/internal/daemon-client";
+import { DaemonClient } from "../test-utils/daemon-client.js";
 import {
   WSOutboundMessageSchema,
   type TerminalState,

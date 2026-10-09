@@ -28,7 +28,9 @@ export const DeviceCredentialSchema = z.object({
   createdAt: z.string(),
   lastSeenAt: z.string().nullable(),
   /** How the device was paired. */
-  pairedVia: z.enum(["claim", "offer", "code", "approval", "password", "legacy"]).optional(),
+  pairedVia: z
+    .enum(["claim", "offer", "code", "approval", "password", "legacy", "local"])
+    .optional(),
   /** The requesting connection authenticated with this credential. */
   current: z.boolean(),
   /** At least one live connection uses this credential. */

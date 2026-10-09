@@ -182,6 +182,8 @@ export interface SessionAdmission {
   transport?: SessionTransport;
   /** Admitted on locality alone, with no credential presented. */
   localityTrusted?: boolean;
+  /** Admitted on the password or local token; bound to a registered device at hello. */
+  registerVia?: "password" | "local";
 }
 
 /** Sessions are never shared across device credentials, whatever the principal. */
@@ -1865,6 +1867,7 @@ export class VoiceAssistantWebSocketServer {
     }
 
     this.clearPendingConnection(ws);
+    pending.admission = this.bindAdmissionToDevice(pending.admission, clientId, message);
     pending.identity.clientId = clientId;
     if (message.appVersion) {
       pending.identity.appVersion = message.appVersion;
@@ -1903,6 +1906,32 @@ export class VoiceAssistantWebSocketServer {
       },
       "Client connected via hello",
     );
+  }
+
+  /**
+   * A password or local-token connection becomes the device registered for its
+   * clientId (registered now on first sight), so every session is a named,
+   * listable device that can be mentioned and notified.
+   */
+  private bindAdmissionToDevice(
+    admission: SessionAdmission,
+    clientId: string,
+    message: WSHelloMessage,
+  ): SessionAdmission {
+    const via = admission.registerVia;
+    const access = this.auth?.access;
+    if (!via || admission.device || !access) return admission;
+    const device = access.registerClientDevice({
+      clientId,
+      name: message.deviceName?.trim() || message.clientType || "Unnamed device",
+      via,
+    });
+    access.touchDevice(device.id);
+    return {
+      ...admission,
+      principalId: device.principalId,
+      device: { id: device.id, name: device.name, role: device.role },
+    };
   }
 
   private resumeSession(params: {
