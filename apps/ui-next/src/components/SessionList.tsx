@@ -13,7 +13,7 @@ import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native
 import { Brackets, BracketScope } from "./Brackets";
 import { answerPermission, useDaemon } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
-import { color, font, web } from "../theme/tokens";
+import { anim, color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { ago } from "../util";
 import { Button } from "./Button";
@@ -249,7 +249,10 @@ function Empty({ name, chats, all }: { name: string; chats: boolean; all: boolea
   else if (all) title = "No sessions yet";
   return (
     <View style={s.empty}>
-      <View style={s.emptyMark} />
+      <View style={s.emptyMarkBox}>
+        <View style={[s.emptyRing, s.emptyRingLoop]} />
+        <View style={[s.emptyMark, s.emptyMarkLoop]} />
+      </View>
       <T v="display" style={s.emptyT}>
         {title}
       </T>
@@ -407,13 +410,49 @@ const s = StyleSheet.create({
   icon: { marginLeft: 14, padding: 2 },
   none: { color: color.faint, fontSize: 12.5, textAlign: "center", marginTop: 24 },
   empty: { alignItems: "center", paddingHorizontal: 28, paddingTop: 48, gap: 10 },
+  emptyMarkBox: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
   emptyMark: {
     width: 34,
     height: 34,
     backgroundColor: color.line2,
     transform: [{ rotate: "45deg" }],
-    marginBottom: 8,
   },
+  // Rests, then a quarter turn with a brief lift; the ring sheds off as it lands.
+  emptyMarkLoop: anim(
+    {
+      "0%, 55%": { transform: "rotate(45deg) scale(1)", backgroundColor: color.line2 },
+      "70%": { transform: "rotate(105deg) scale(0.86)", backgroundColor: "#3a4d52" },
+      "82%, 100%": { transform: "rotate(135deg) scale(1)", backgroundColor: color.line2 },
+    },
+    "3.6s",
+    "cubic-bezier(0.65, 0, 0.35, 1)",
+    "infinite",
+  ),
+  emptyRing: {
+    position: "absolute",
+    width: 34,
+    height: 34,
+    borderWidth: 1,
+    borderColor: "rgba(127,217,230,0.5)",
+    opacity: 0,
+    transform: [{ rotate: "45deg" }],
+  },
+  emptyRingLoop: anim(
+    {
+      "0%, 76%": { opacity: 0, transform: "rotate(135deg) scale(1)" },
+      "80%": { opacity: 0.8, transform: "rotate(135deg) scale(1.02)" },
+      "100%": { opacity: 0, transform: "rotate(135deg) scale(1.55)" },
+    },
+    "3.6s",
+    "ease-out",
+    "infinite",
+  ),
   emptyT: { fontSize: 14.5, textAlign: "center" },
   emptyB: { fontSize: 12.5, color: color.muted, textAlign: "center", lineHeight: 19 },
   emptyLink: { fontSize: 12.5, color: color.text, marginTop: 4 },
