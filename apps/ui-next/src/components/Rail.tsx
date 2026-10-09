@@ -62,8 +62,10 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
   const logoMotion = usePrefs((p) => p.logoMotion);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
-  // After a pick the rail folds away until the pointer leaves (or keyboard focus moves on).
+  // After a pick the rail folds away until the pointer reaches another item, leaves, or
+  // keyboard focus moves on.
   const [suppressed, setSuppressed] = useState(false);
+  const picked = useRef<Tool | null>(null);
   const inside = useRef(false);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,6 +88,12 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
     if (openTimer.current) clearTimeout(openTimer.current);
     setHover(false);
     setSuppressed(false);
+    picked.current = null;
+  }, []);
+  const onItemHover = useCallback((id: Tool) => {
+    if (picked.current === null || picked.current === id) return;
+    picked.current = null;
+    setSuppressed(false);
   }, []);
   const onItemFocus = useCallback(() => {
     if (blurTimer.current) clearTimeout(blurTimer.current);
@@ -100,6 +108,7 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
   }, []);
   const onPick = useCallback((id: Tool) => {
     useUi.getState().setTool(id);
+    picked.current = id;
     setSuppressed(true);
     setFocus(false);
   }, []);
@@ -131,6 +140,7 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
         badge={badges[t.id]}
         onMeasure={measure}
         onPick={onPick}
+        onHover={onItemHover}
         onFocus={onItemFocus}
         onBlur={onItemBlur}
       />
@@ -175,6 +185,7 @@ function RailItem({
   badge,
   onMeasure,
   onPick,
+  onHover,
   onFocus,
   onBlur,
 }: {
@@ -185,6 +196,7 @@ function RailItem({
   badge?: number;
   onMeasure: (id: Tool, y: number) => void;
   onPick: (id: Tool) => void;
+  onHover: (id: Tool) => void;
   onFocus: () => void;
   onBlur: () => void;
 }) {
@@ -194,11 +206,13 @@ function RailItem({
     [id, onMeasure],
   );
   const onPress = useCallback(() => onPick(id), [id, onPick]);
+  const onHoverIn = useCallback(() => onHover(id), [id, onHover]);
   const a11y = useMemo(() => ({ selected: on }), [on]);
   return (
     <View onLayout={onLayout} style={s.itemWrap}>
       <Pressable
         onPress={onPress}
+        onHoverIn={onHoverIn}
         onFocus={onFocus}
         onBlur={onBlur}
         accessibilityRole="button"
@@ -325,7 +339,7 @@ const s = StyleSheet.create({
   riOn: {
     backgroundColor: "rgba(37,181,200,0.16)",
     ...web({
-      backgroundImage: "linear-gradient(135deg, #7fd9e633, #045b9d33)",
+      backgroundImage: "linear-gradient(135deg, #7fd9e62e, #25b5c81a)",
     }),
   },
   label: {
@@ -356,7 +370,7 @@ const s = StyleSheet.create({
     height: 28,
     backgroundColor: color.cyan2,
     ...web({
-      backgroundImage: "linear-gradient(#7fd9e6, #045b9d)",
+      backgroundImage: "linear-gradient(#7fd9e6, #25b5c8)",
       transition: "transform 450ms cubic-bezier(0.22, 1, 0.36, 1)",
     }),
   },
