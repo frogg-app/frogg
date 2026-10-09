@@ -11,7 +11,8 @@ import {
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Brackets, BracketScope } from "./Brackets";
-import { answerPermission, useDaemon } from "../daemon/store";
+import { useHosts } from "../daemon/hosts";
+import { answerPermission, connect, useDaemon, useOtherHostSessions } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
 import { anim, color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
@@ -82,6 +83,8 @@ function sorter(sort: Prefs["sort"], pinned: (x: Session) => boolean) {
 /** The scoped, filtered, grouped rows the list shows, plus per-bucket counts for the meter. */
 function useListModel(needle: string) {
   const sessions = useDaemon((s) => s.sessions);
+  const others = useOtherHostSessions();
+  const hosts = useHosts((s) => s.hosts);
   const dir = useDirectory();
   return useMemo(() => {
     const { scope, prefs, hidden, workspaces } = dir;
@@ -90,7 +93,10 @@ function useListModel(needle: string) {
     const pinned = (x: Session) =>
       !!(x.agent.workspaceId && workspaces[x.agent.workspaceId]?.pinnedAt);
     const chats = scope === "chats";
-    const inScope = Object.values(sessions).filter((x) => {
+    // "All projects" spans every connected host; a project or chats scope is the active host's.
+    const pool = scope === "all" ? [...Object.values(sessions), ...others] : Object.values(sessions);
+    const hostName = (x: Session) => hosts.find((h) => h.id === x.hostId)?.name ?? "host";
+    const inScope = pool.filter((x) => {
       if (isChat(x, dir) !== chats) return false;
       if (!chats && scope !== "all" && projectIdOf(x, dir) !== scope) return false;
       return true;
@@ -121,7 +127,10 @@ function useListModel(needle: string) {
         push(g, g, x);
       }
     } else if (prefs.group === "project") {
-      for (const x of visible) push(projectIdOf(x, dir) ?? projectName(x), projectName(x), x);
+      for (const x of visible) {
+        if (x.hostId) push(`${x.hostId}:${projectName(x)}`, `${projectName(x)} · ${hostName(x)}`, x);
+        else push(projectIdOf(x, dir) ?? projectName(x), projectName(x), x);
+      }
       groups.sort((a, b) => a.label.localeCompare(b.label));
     } else if (prefs.group === "labels") {
       for (const x of visible) {
@@ -136,8 +145,15 @@ function useListModel(needle: string) {
         if (list.length) groups.push({ key: o.b, label: o.label, list });
       }
     }
-    return { groups, counts, total: inScope.length, scopeName: scopeName(dir) };
-  }, [sessions, dir, needle]);
+    const activeName = hosts.find((h) => h.id === useHosts.getState().activeId)?.name;
+    // Rows name their host once sessions from more than one host share the list.
+    const mixed = others.length > 0 && scope === "all";
+    const hostOf = (x: Session) => {
+      if (x.hostId) return hostName(x);
+      return mixed ? activeName : undefined;
+    };
+    return { groups, counts, total: inScope.length, scopeName: scopeName(dir), hostOf };
+  }, [sessions, others, hosts, dir, needle]);
 }
 
 function scopeName(d: ReturnType<typeof useDirectory.getState>): string {
@@ -158,8 +174,12 @@ export function SessionList() {
   const [q, setQ] = useState("");
   const scope = useDirectory((d) => d.scope);
   const needle = q.trim().toLowerCase();
-  const { groups, counts, total, scopeName: name } = useListModel(needle);
-  const ids = useMemo(() => groups.flatMap((g) => g.list.map((x) => x.agent.id)), [groups]);
+  const { groups, counts, total, scopeName: name, hostOf } = useListModel(needle);
+  // Sub-work is read from the active host, so only its own sessions are asked about.
+  const ids = useMemo(
+    () => groups.flatMap((g) => g.list.filter((x) => !x.hostId).map((x) => x.agent.id)),
+    [groups],
+  );
   const subRunning = useRunningSubWork(ids);
   const scopeA = useAnchor();
   const displayA = useAnchor();
@@ -198,7 +218,13 @@ export function SessionList() {
                   </T>
                 </View>
                 {g.list.map((sess) => (
-                  <Row key={sess.agent.id} sess={sess} chat={chats} onMenu={openMenu} />
+                  <Row
+                    key={`${sess.hostId ?? ""}:${sess.agent.id}`}
+                    sess={sess}
+                    chat={chats}
+                    host={hostOf(sess)}
+                    onMenu={openMenu}
+                  />
                 ))}
               </View>
             ))}
@@ -271,38 +297,53 @@ function Empty({ name, chats, all }: { name: string; chats: boolean; all: boolea
   );
 }
 
+/** Makes the session's host active (a no-op wait when it already is), then opens the session. */
+async function openOnItsHost(sess: Session): Promise<void> {
+  const host = sess.hostId && useHosts.getState().hosts.find((h) => h.id === sess.hostId);
+  if (host) await connect(host);
+  useUi.getState().select(sess.agent.id);
+}
+
 function Row({
   sess,
   chat,
+  host,
   onMenu,
 }: {
   sess: Session;
   chat: boolean;
+  /** Host name, shown when the list mixes sessions from several hosts. */
+  host?: string;
   onMenu: (id: string, r: Rect) => void;
 }) {
   const a = sess.agent;
+  const elsewhere = !!sess.hostId;
   const bucket = bucketOf(a);
-  const selected = useUi((st) => st.selected === a.id);
+  const selected = useUi((st) => !elsewhere && st.selected === a.id);
   const prefs = useDirectory((d) => d.prefs);
   const ws = useDirectory((d) => (a.workspaceId ? d.workspaces[a.workspaceId] : undefined));
   const catalog = useDirectory((d) => d.labels);
   const hidden = useDirectory((d) => d.hidden.includes(a.id));
   const ref = useRef<View>(null);
-  const sub = useRowSubWork(a.id, a.status === "running" || selected);
+  const sub = useRowSubWork(a.id, !elsewhere && (a.status === "running" || selected));
   const perm = a.pendingPermissions[0];
   const plan = perm?.kind === "plan";
   const branch = branchOf(sess);
-  const open = useCallback(() => useUi.getState().select(a.id), [a.id]);
-  const menuAt = useCallback((r: Rect) => onMenu(a.id, r), [a.id, onMenu]);
+  const open = useCallback(() => void openOnItsHost(sess), [sess]);
+  // Menu actions run against the active host, so another host's session opens instead.
+  const menuAt = useCallback(
+    (r: Rect) => (elsewhere ? void openOnItsHost(sess) : onMenu(a.id, r)),
+    [a.id, elsewhere, onMenu, sess],
+  );
   useContextMenu(ref, menuAt);
   const longPress = useCallback(() => {
     ref.current?.measureInWindow((x, y, w, h) => menuAt({ x, y, w, h }));
   }, [menuAt]);
   // A plan needs reading, so its button opens the session; anything else approves in place.
   const act = useCallback(() => {
-    if (!perm || perm.kind === "plan") useUi.getState().select(a.id);
+    if (!perm || perm.kind === "plan" || elsewhere) void openOnItsHost(sess);
     else void answerPermission(a.id, perm.id, true);
-  }, [a.id, perm]);
+  }, [a.id, elsewhere, perm, sess]);
   const title = prefs.title === "branch" && branch ? branch : a.title || "Untitled session";
   const labels = prefs.show.labels ? (ws?.labels ?? []) : [];
   return (
@@ -334,6 +375,11 @@ function Row({
               </T>
             </View>
             <View style={s.meta}>
+              {host && (
+                <T v="mono" numberOfLines={1} style={s.host}>
+                  {host}
+                </T>
+              )}
               {chat && (
                 <T style={s.proj} numberOfLines={1}>
                   {a.model ?? a.provider} · read-only sandbox
@@ -514,6 +560,7 @@ const s = StyleSheet.create({
     marginLeft: 18,
   },
   proj: { fontSize: 12, color: color.muted },
+  host: { fontSize: 11, color: color.cyan2, flexShrink: 0 },
   branch: { fontSize: 11, color: color.faint, flexShrink: 1 },
   error: { color: color.coral, marginTop: 6, marginLeft: 14 },
   permRow: { flexDirection: "row", gap: 8, marginTop: 8, marginLeft: 18 },

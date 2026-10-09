@@ -13,6 +13,8 @@ export type TimelineItem = TimelineEntry["item"];
 export interface Session {
   agent: Agent;
   project: Placement | null;
+  /** Set only on a session listed from a saved host other than the active one. */
+  hostId?: string;
 }
 
 /** The status groups the session list sorts into, in display order. */
