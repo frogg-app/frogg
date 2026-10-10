@@ -417,43 +417,8 @@ function ImportRow({
 
 function AddProjectDialog() {
   const host = useDaemon((st) => st.serverName) ?? "host";
-  const projects = useDirectory((d) => d.projects);
-  const start = useMemo(
-    () => (projects[0] ? parentDir(projects[0].projectRootPath) : "/"),
-    [projects],
-  );
-  const [dir, setDir] = useState(start);
-  const [entries, setEntries] = useState<Array<{ name: string; path: string }> | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [newName, setNewName] = useState<string | null>(null);
-  const added = useMemo(() => new Set(projects.map((p) => p.projectRootPath)), [projects]);
-  const load = useCallback((d: string) => {
-    setEntries(null);
-    setErr(null);
-    setPicked(null);
-    listDir(d)
-      .then(setEntries)
-      .catch((e: unknown) => {
-        setEntries([]);
-        setErr(errText(e));
-      });
-  }, []);
-  useEffect(() => load(dir), [dir, load]);
-  const up = useCallback(() => setDir((d) => parentDir(d)), []);
-  const refresh = useCallback(() => load(dir), [dir, load]);
-  const startNew = useCallback(() => setNewName(""), []);
-  const createDir = useCallback(() => {
-    const n = newName?.trim();
-    if (!n) return;
-    makeDir(dir, n)
-      .then(() => {
-        setNewName(null);
-        load(dir);
-        return undefined;
-      })
-      .catch((e: unknown) => setErr(errText(e)));
-  }, [dir, newName, load]);
   const add = useCallback(() => {
     if (!picked) return;
     addProject(picked)
@@ -489,6 +454,68 @@ function AddProjectDialog() {
       footer={footer}
       width={740}
     >
+      <FolderBrowser picked={picked} onPick={setPicked} />
+      <ErrorLine text={err} />
+    </Dialog>
+  );
+}
+
+/**
+ * Browses folders on the connected host. A tap selects a folder (reported through onPick);
+ * tapping the selected one, or a folder that is already a project, opens it.
+ */
+export function FolderBrowser({
+  picked,
+  onPick,
+  from,
+}: {
+  picked: string | null;
+  onPick: (path: string | null) => void;
+  /** A folder to start beside (its parent is listed); defaults to the first project's. */
+  from?: string;
+}) {
+  const host = useDaemon((st) => st.serverName) ?? "host";
+  const projects = useDirectory((d) => d.projects);
+  const start = useMemo(() => {
+    const seed = from ?? projects[0]?.projectRootPath;
+    return seed ? parentDir(seed) : "/";
+  }, [from, projects]);
+  const [dir, setDir] = useState(start);
+  const [entries, setEntries] = useState<Array<{ name: string; path: string }> | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [newName, setNewName] = useState<string | null>(null);
+  const added = useMemo(() => new Set(projects.map((p) => p.projectRootPath)), [projects]);
+  const load = useCallback(
+    (d: string) => {
+      setEntries(null);
+      setErr(null);
+      onPick(null);
+      listDir(d)
+        .then(setEntries)
+        .catch((e: unknown) => {
+          setEntries([]);
+          setErr(errText(e));
+        });
+    },
+    [onPick],
+  );
+  useEffect(() => load(dir), [dir, load]);
+  const up = useCallback(() => setDir((d) => parentDir(d)), []);
+  const refresh = useCallback(() => load(dir), [dir, load]);
+  const startNew = useCallback(() => setNewName(""), []);
+  const createDir = useCallback(() => {
+    const n = newName?.trim();
+    if (!n) return;
+    makeDir(dir, n)
+      .then(() => {
+        setNewName(null);
+        load(dir);
+        return undefined;
+      })
+      .catch((e: unknown) => setErr(errText(e)));
+  }, [dir, newName, load]);
+  return (
+    <View style={s.browser}>
       <View style={s.pathRow}>
         <Folder size={13} color={color.muted} />
         <T v="mono" style={s.path} numberOfLines={1} ellipsizeMode="head">
@@ -523,13 +550,13 @@ function AddProjectDialog() {
             entry={e}
             added={added.has(e.path)}
             on={picked === e.path}
-            onPick={setPicked}
+            onPick={onPick}
             onOpen={setDir}
           />
         ))}
       </View>
       <ErrorLine text={err} />
-    </Dialog>
+    </View>
   );
 }
 
@@ -611,6 +638,7 @@ const s = StyleSheet.create({
   },
   rowTitle: { fontSize: 13 },
   rowMeta: { fontSize: 11.5, color: color.faint, marginTop: 2 },
+  browser: { gap: 10 },
   pathRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   path: { flex: 1, color: color.text, fontSize: 12.5 },
   link: { fontSize: 12, color: color.muted },

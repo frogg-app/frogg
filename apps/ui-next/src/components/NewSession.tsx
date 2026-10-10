@@ -14,6 +14,8 @@ import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { Seg } from "./settings/controls";
 import { Select } from "./Select";
+import { addProject } from "./sessions/directory";
+import { FolderBrowser } from "./sessions/sheets";
 import { T } from "./Text";
 
 type Isolation = "worktree" | "local";
@@ -134,6 +136,7 @@ export function NewSession() {
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [browsing, setBrowsing] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -169,6 +172,15 @@ export function NewSession() {
         : (entry.defaultModeId ?? entry.modes?.[0]?.id ?? null),
     );
   }, [entry]);
+
+  const browse = useCallback(() => setBrowsing(true), []);
+  const stopBrowsing = useCallback(() => setBrowsing(false), []);
+  const folderAdded = useCallback((p: Project[], path: string) => {
+    setProjects(p);
+    const hit = p.find((x) => x.projectRootPath === path);
+    if (hit) setProjectId(hit.projectId);
+    setBrowsing(false);
+  }, []);
 
   const project = projects?.find((p) => p.projectId === projectId);
   const isGit = project?.projectKind === "git";
@@ -254,19 +266,20 @@ export function NewSession() {
   if (!mounted) return null;
 
   const worktree = isGit && isolation === "worktree";
-  const selW = phone ? "100%" : undefined;
   const fields = (
     <>
-      <Field label="Project" z={5} phone={phone}>
-        <Select
-          width={selW}
-          label="Project"
-          value={projectId}
-          onChange={setProjectId}
-          options={projectOptions}
-          placeholder={projects ? "No projects yet" : "Loading projects…"}
-        />
-      </Field>
+      <ProjectField
+        phone={phone}
+        value={projectId}
+        onChange={setProjectId}
+        options={projectOptions}
+        loaded={!!projects}
+        browsing={browsing}
+        onBrowse={browse}
+      />
+      {browsing && (
+        <FolderPick from={project?.projectRootPath} onCancel={stopBrowsing} onAdded={folderAdded} />
+      )}
       {isGit && (
         <Field label="Isolation" phone={phone}>
           <Seg options={ISOLATION_OPTIONS} value={isolation} onChange={setIsolation} />
@@ -435,6 +448,90 @@ export function NewSession() {
 
 const EDGES_ALL = ["top", "bottom", "left", "right"] as const;
 
+function ProjectField({
+  phone,
+  value,
+  onChange,
+  options,
+  loaded,
+  browsing,
+  onBrowse,
+}: {
+  phone: boolean;
+  value: string | null;
+  onChange: (id: string) => void;
+  options: Array<{ value: string; label: string; hint?: string }>;
+  loaded: boolean;
+  browsing: boolean;
+  onBrowse: () => void;
+}) {
+  return (
+    <Field label="Project" z={5} phone={phone}>
+      <View style={[s.projectRow, phone && s.projectRowPhone]}>
+        <Select
+          width={phone ? "100%" : undefined}
+          label="Project"
+          value={value}
+          onChange={onChange}
+          options={options}
+          placeholder={loaded ? "No projects yet" : "Loading projects…"}
+        />
+        {!browsing && <Button label="Choose folder…" onPress={onBrowse} />}
+      </View>
+    </Field>
+  );
+}
+
+function folderLabel(folder: string | null, adding: boolean): string {
+  if (adding) return "Adding…";
+  return folder ? `Use ${folder.split("/").pop()}` : "Pick a folder";
+}
+
+/** Inline host-folder picker: the picked folder is added as a project (idempotent). */
+function FolderPick({
+  from,
+  onCancel,
+  onAdded,
+}: {
+  from?: string;
+  onCancel: () => void;
+  onAdded: (projects: Project[], path: string) => void;
+}) {
+  const [folder, setFolder] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const pick = useCallback(() => {
+    if (!folder) return;
+    setAdding(true);
+    setError(null);
+    addProject(folder)
+      .then(listProjects)
+      .then((p) => {
+        onAdded(p, folder);
+        return p;
+      })
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
+      .finally(() => setAdding(false));
+  }, [folder, onAdded]);
+  const label = folderLabel(folder, adding);
+  return (
+    <View style={s.browse}>
+      <ScrollView style={s.browseList}>
+        <FolderBrowser picked={folder} onPick={setFolder} from={from} />
+      </ScrollView>
+      {error && (
+        <T v="mono" style={s.error}>
+          {error}
+        </T>
+      )}
+      <View style={s.browseActs}>
+        <Button label="Cancel" onPress={onCancel} />
+        <Button kind="primary" label={label} onPress={pick} disabled={!folder || adding} />
+      </View>
+    </View>
+  );
+}
+
 function Field({
   label,
   children,
@@ -457,6 +554,17 @@ function Field({
 }
 
 const s = StyleSheet.create({
+  browse: {
+    gap: 10,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: color.line2,
+    backgroundColor: color.bg2,
+  },
+  browseList: { maxHeight: 300 },
+  projectRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  projectRowPhone: { flexDirection: "column", alignItems: "stretch" },
+  browseActs: { flexDirection: "row", justifyContent: "flex-end", gap: 8 },
   layer: {
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",

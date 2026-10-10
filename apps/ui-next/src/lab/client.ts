@@ -224,7 +224,7 @@ const known: Record<string, (...args: never[]) => unknown> = {
     patchAgent(id, { status: "idle" });
     return {};
   },
-  listProjects: async () => ({ projects }),
+  listProjects: async () => ({ projects: [...projects] }),
   getProvidersSnapshot: async () => providers,
   getDaemonConfig: async () => ({ config: useConfig.getState().config ?? {} }),
   getDaemonStatus: async () => null,
