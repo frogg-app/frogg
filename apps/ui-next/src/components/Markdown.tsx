@@ -1,7 +1,9 @@
-import { Fragment } from "react";
-import { StyleSheet, View } from "react-native";
+import { Check, Copy } from "lucide-react-native";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { color, font } from "../theme/tokens";
 import { T } from "./Text";
+import { copyText } from "./tools/clipboard";
 
 interface Block {
   kind: "code" | "h" | "li" | "p";
@@ -43,14 +45,7 @@ export function Markdown({ text }: { text: string }) {
   return (
     <View style={st.wrap}>
       {blocks.map((b) => {
-        if (b.kind === "code")
-          return (
-            <View key={b.key} style={st.code}>
-              <T v="mono" style={st.codeText}>
-                {b.text}
-              </T>
-            </View>
-          );
+        if (b.kind === "code") return <CodeFence key={b.key} text={b.text} />;
         if (b.kind === "h")
           return (
             <T key={b.key} v="display" style={[st.h, b.level === 1 && st.h1]}>
@@ -105,6 +100,43 @@ function Inline({ text }: { text: string }) {
     });
 }
 
+const COPIED_MS = 1400;
+
+/** A fenced block with a copy button; the icon turns into a tick while the copy is fresh. */
+function CodeFence({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const id = setTimeout(() => setCopied(false), COPIED_MS);
+    return () => clearTimeout(id);
+  }, [copied]);
+  const copy = useCallback(() => {
+    void copyText(text).then((ok) => ok && setCopied(true));
+  }, [text]);
+  return (
+    <View style={st.code}>
+      <T v="mono" style={st.codeText}>
+        {text}
+      </T>
+      <Pressable
+        onPress={copy}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={copied ? "Copied" : "Copy code"}
+        style={st.copy}
+      >
+        {({ hovered }) =>
+          copied ? (
+            <Check size={13} color={color.mint} />
+          ) : (
+            <Copy size={13} color={hovered ? color.text : color.faint} />
+          )
+        }
+      </Pressable>
+    </View>
+  );
+}
+
 const st = StyleSheet.create({
   wrap: { gap: 8 },
   code: {
@@ -112,7 +144,9 @@ const st = StyleSheet.create({
     borderLeftWidth: 2,
     borderLeftColor: color.deep,
     padding: 10,
+    paddingRight: 34,
   },
+  copy: { position: "absolute", top: 8, right: 8, padding: 2 },
   codeText: { color: color.text, fontSize: 12.5, lineHeight: 19 },
   h: { fontSize: 15.5, marginTop: 6 },
   h1: { fontSize: 18 },
