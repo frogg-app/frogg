@@ -1,4 +1,4 @@
-name: ui-next Mac ARM prototype
+name: ui-next desktop prototype
 
 on:
   push:
@@ -42,5 +42,26 @@ jobs:
             release-assets/ui-next-mac-arm64/*.dmg
             release-assets/ui-next-mac-arm64/*.zip
             release-assets/ui-next-mac-arm64/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    name: Windows x64 client (unsigned)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-deps
+      - name: Build standalone prototype
+        run: node apps/ui-next/scripts/build-desktop.mjs --target win32-x64
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-win-x64-${{ github.sha }}
+          path: |
+            release-assets/ui-next-win-x64/*.exe
+            release-assets/ui-next-win-x64/*.zip
+            release-assets/ui-next-win-x64/SHA256SUMS
           if-no-files-found: error
           retention-days: 14
