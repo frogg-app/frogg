@@ -40,12 +40,24 @@ import {
   fetchVerifiedTarball,
   type FetchLike,
 } from "./repo-client.js";
-import { PluginRuntime, type PluginAgentBridge, type PluginSpeechBridge } from "./runtime.js";
+import {
+  PluginRuntime,
+  type PluginAgentBridge,
+  type PluginAuditEntry,
+  type PluginHostServices,
+  type PluginSpeechBridge,
+} from "./runtime.js";
+import type { PluginAgentSummary, PluginAttentionEvent } from "@frogg/protocol/plugins/api-v1";
 import { PluginSettingsFile } from "./settings-store.js";
 import { PluginStateStore, type InstalledPluginRecord } from "./state-store.js";
 import { isValidPublicKey } from "./signing.js";
 import { writeTarEntries } from "./tar.js";
-import { assertManifestMatches, readManifestFromTarball, readPluginManifest } from "./tooling.js";
+import {
+  PluginIncompatibleApiError,
+  assertManifestMatches,
+  readManifestFromTarball,
+  readPluginManifest,
+} from "./tooling.js";
 
 export interface PluginBrandPolicy {
   enabled: boolean;
@@ -57,6 +69,8 @@ export interface PluginBrandPolicy {
   deny: readonly string[];
   preinstalled: readonly { id: string; version: string | null }[];
   autoUpdate: "off" | "brand-repos" | "all";
+  /** Whether plugins may be given remote control of agents. Default allowed. */
+  remoteControl?: "allowed" | "forbidden";
 }
 
 export const DEFAULT_PLUGIN_POLICY: PluginBrandPolicy = {
@@ -69,6 +83,7 @@ export const DEFAULT_PLUGIN_POLICY: PluginBrandPolicy = {
   deny: [],
   preinstalled: [],
   autoUpdate: "brand-repos",
+  remoteControl: "allowed",
 };
 
 export type PluginServiceEvent = PluginsChangedMessage | PluginsNotifyMessage | PluginsEventMessage;
@@ -80,6 +95,8 @@ export interface PluginServiceOptions {
   fetch?: FetchLike;
   agents?: PluginAgentBridge | null;
   speech?: PluginSpeechBridge | null;
+  /** Plugin API v2 host services (workspaces, to-dos, daemon version). */
+  host?: Omit<PluginHostServices, "subscribeAttention" | "audit"> | null;
   /** Override the compiled-in official repo (tests). */
   officialRepo?: { name: string; url: string; publicKey: string };
   /** Auto-update poll interval; 0 disables polling. Default 6h. */
@@ -157,6 +174,8 @@ export class PluginService {
   private readonly settingsFiles = new Map<string, PluginSettingsFile>();
   private readonly fetchImpl: FetchLike;
   private readonly logger: pino.Logger;
+  private readonly attentionListeners = new Set<(event: PluginAttentionEvent) => void>();
+  private auditWrite: Promise<void> = Promise.resolve();
   private autoUpdateTimer: NodeJS.Timeout | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private started = false;
@@ -259,6 +278,79 @@ export class PluginService {
       developerMode: this.opts.policy.developerMode,
       developerModeEnabled: this.devModeActive(),
       apiVersions: [...SUPPORTED_PLUGIN_API_VERSIONS],
+      remoteControl: this.remoteControlPolicy(),
+    };
+  }
+
+  private remoteControlPolicy(): "allowed" | "forbidden" {
+    return this.opts.policy.remoteControl ?? "allowed";
+  }
+
+  /** Remote control is effective only while the brand allows it and the owner switched it on. */
+  isRemoteControlEnabled(id: string): boolean {
+    return this.remoteControlPolicy() === "allowed" && this.state.get().remoteControl.includes(id);
+  }
+
+  async setRemoteControl(id: string, enabled: boolean): Promise<PluginInstalled> {
+    this.requireEnabled();
+    return this.exclusive(async () => {
+      const p = this.require(id);
+      if (enabled && this.remoteControlPolicy() === "forbidden")
+        throw new PluginServiceError(
+          "forbidden",
+          "This build does not allow plugin remote control",
+        );
+      await this.state.update((draft) => {
+        draft.remoteControl = draft.remoteControl.filter((x) => x !== id);
+        if (enabled) draft.remoteControl.push(id);
+      });
+      this.logger.info({ pluginId: id, enabled }, "plugin remote control changed");
+      p.runtime?.remoteControlChanged(this.isRemoteControlEnabled(id));
+      this.changed(id, "remote_control");
+      return this.view(p);
+    });
+  }
+
+  // --------------------------------------------------------------- host feeds
+
+  /** Called by the WebSocket server for every agent attention event it processes. */
+  publishAttention(event: PluginAttentionEvent): void {
+    for (const listener of this.attentionListeners) {
+      try {
+        listener(event);
+      } catch (err) {
+        this.logger.warn({ err }, "plugin attention listener threw");
+      }
+    }
+  }
+
+  /** The plugin-facing summary of an agent, for host feeds that only hold an id. */
+  async listAgentSummary(agentId: string): Promise<PluginAgentSummary | null> {
+    return (await this.opts.agents?.get(agentId)) ?? null;
+  }
+
+  private subscribeAttention(listener: (event: PluginAttentionEvent) => void): () => void {
+    this.attentionListeners.add(listener);
+    return () => this.attentionListeners.delete(listener);
+  }
+
+  /** Appends to $FROGG_HOME/plugins/audit.jsonl; write failures are logged, never thrown. */
+  private appendAudit(entry: PluginAuditEntry): void {
+    const file = path.join(this.pluginsDir, "audit.jsonl");
+    this.auditWrite = this.auditWrite
+      .then(() => fs.mkdir(this.pluginsDir, { recursive: true }))
+      .then(() => fs.appendFile(file, JSON.stringify(entry) + "\n"))
+      .catch((err) => this.logger.warn({ err }, "writing the plugin audit log failed"));
+  }
+
+  private hostServices(): PluginHostServices {
+    return {
+      version: this.opts.host?.version ?? "unknown",
+      features: this.opts.host?.features ?? [],
+      workspaces: this.opts.host?.workspaces ?? null,
+      todos: this.opts.host?.todos ?? null,
+      subscribeAttention: (listener) => this.subscribeAttention(listener),
+      audit: (entry) => this.appendAudit(entry),
     };
   }
 
@@ -458,6 +550,7 @@ export class PluginService {
       preinstalled: p.record?.preinstalled === true,
       features: [...(m.contributes?.features ?? [])],
       installedAt: p.record?.installedAt ?? null,
+      remoteControl: this.isRemoteControlEnabled(m.id),
     };
   }
 
@@ -547,6 +640,8 @@ export class PluginService {
       settings: this.settingsFor(p.manifest.id),
       agents: this.opts.agents ?? null,
       speech: this.opts.speech ?? null,
+      host: this.hostServices(),
+      remoteControl: () => this.isRemoteControlEnabled(p.manifest.id),
       logger: this.logger,
       hooks: {
         notify: (pluginId, message, level: PluginNotifyLevel) =>
@@ -585,7 +680,7 @@ export class PluginService {
         dev: false,
         record,
         runtime: null,
-        status: "error",
+        status: err instanceof PluginIncompatibleApiError ? "incompatible" : "error",
         error: (err as Error).message,
       });
       return;
@@ -643,6 +738,8 @@ export class PluginService {
         v.tarball,
       );
     } catch (err) {
+      if (err instanceof PluginIncompatibleApiError)
+        throw new PluginServiceError("incompatible", err.message);
       throw new PluginServiceError("manifest_mismatch", (err as Error).message);
     }
     if (!isSupportedPluginApiVersion(manifest.apiVersion)) {
@@ -799,6 +896,7 @@ export class PluginService {
       this.plugins.delete(id);
       await this.state.update((s) => {
         delete s.installed[id];
+        s.remoteControl = s.remoteControl.filter((x) => x !== id);
       });
       await fs.rm(path.join(this.pluginsDir, id), { recursive: true, force: true });
       await fs.rm(this.dataDir(id), { recursive: true, force: true });
@@ -969,6 +1067,7 @@ export class PluginService {
       await this.dropDev(id);
       await this.state.update((s) => {
         s.devLinks = s.devLinks.filter((l) => l.path !== linkPath);
+        s.remoteControl = s.remoteControl.filter((x) => x !== id);
       });
       this.changed(id, "uninstalled");
     });

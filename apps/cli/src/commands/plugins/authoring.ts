@@ -7,7 +7,7 @@ import {
   buildPluginIndex,
   generatePluginRepoKeyPair,
   packPlugin,
-  serializePluginIndex,
+  writePluginIndexFiles,
   signPluginIndexFile,
   verifyPluginIndexFile,
 } from "@frogg/server";
@@ -113,9 +113,13 @@ export async function runIndexBuildCommand(
       ...(options.categories ? { categoriesFile: path.resolve(options.categories) } : {}),
     }),
   );
-  await fs.mkdir(path.dirname(path.resolve(options.out)), { recursive: true });
-  await fs.writeFile(options.out, serializePluginIndex(index));
-  return fields({ index: path.resolve(options.out), plugins: index.plugins.length });
+  const written = await wrap(() => writePluginIndexFiles(index, path.resolve(options.out)));
+  return fields({
+    index: written.v1File,
+    plugins: written.v1Plugins,
+    indexV2: written.v2File,
+    pluginsV2: written.v2Plugins,
+  });
 }
 
 export async function runIndexSignCommand(

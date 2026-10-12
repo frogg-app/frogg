@@ -3,6 +3,8 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import {
+  SUPPORTED_PLUGIN_API_VERSIONS,
+  unsupportedManifestApiVersion,
   PLUGIN_MANIFEST_FILENAME,
   PluginManifestSchema,
   type PluginManifest,
@@ -11,7 +13,9 @@ import {
   PLUGIN_INDEX_PUBLIC_KEY_SUFFIX,
   PLUGIN_INDEX_SCHEMA_VERSION,
   PLUGIN_INDEX_SIGNATURE_SUFFIX,
+  PLUGIN_INDEX_V2_FILENAME,
   PluginIndexSchema,
+  splitPluginIndexByApiVersion,
   type PluginIndex,
   type PluginIndexEntry,
 } from "@frogg/protocol/plugins/repo-index";
@@ -25,6 +29,20 @@ import {
 
 export class PluginToolingError extends Error {}
 
+/** The manifest targets a plugin API version this host does not support. */
+export class PluginIncompatibleApiError extends PluginToolingError {
+  constructor(
+    where: string,
+    readonly apiVersion: number,
+  ) {
+    super(
+      `${where}: needs plugin API v${apiVersion} (this host supports ${SUPPORTED_PLUGIN_API_VERSIONS.join(
+        ", ",
+      )})`,
+    );
+  }
+}
+
 function formatIssues(error: { issues: { path: PropertyKey[]; message: string }[] }): string {
   return error.issues
     .map((i) => `${i.path.map(String).join(".") || "(root)"}: ${i.message}`)
@@ -32,6 +50,8 @@ function formatIssues(error: { issues: { path: PropertyKey[]; message: string }[
 }
 
 export function parsePluginManifest(raw: unknown, where: string): PluginManifest {
+  const unsupported = unsupportedManifestApiVersion(raw);
+  if (unsupported !== null) throw new PluginIncompatibleApiError(where, unsupported);
   const parsed = PluginManifestSchema.safeParse(raw);
   if (!parsed.success)
     throw new PluginToolingError(`${where}: invalid manifest: ${formatIssues(parsed.error)}`);
@@ -259,6 +279,34 @@ export async function buildPluginIndex(opts: BuildIndexOptions): Promise<PluginI
   if (!parsed.success)
     throw new PluginToolingError(`generated index is invalid: ${formatIssues(parsed.error)}`);
   return parsed.data;
+}
+
+/**
+ * Writes `index.json` (API v1 versions only, safe for hosts that predate v2) to `out`, and the
+ * complete index as `index.v2.json` next to it.
+ */
+export async function writePluginIndexFiles(
+  index: PluginIndex,
+  out: string,
+): Promise<{
+  v1File: string;
+  v2File: string;
+  v1Plugins: number;
+  v2Plugins: number;
+}> {
+  const { v1, v2 } = splitPluginIndexByApiVersion(index);
+  const v2File = path.join(path.dirname(out), PLUGIN_INDEX_V2_FILENAME);
+  if (path.resolve(v2File) === path.resolve(out))
+    throw new PluginToolingError(`--out must not be named ${PLUGIN_INDEX_V2_FILENAME}`);
+  await fs.mkdir(path.dirname(out), { recursive: true });
+  await fs.writeFile(out, serializePluginIndex(v1));
+  await fs.writeFile(v2File, serializePluginIndex(v2));
+  return {
+    v1File: out,
+    v2File,
+    v1Plugins: v1.plugins.length,
+    v2Plugins: v2.plugins.length,
+  };
 }
 
 export function serializePluginIndex(index: PluginIndex): string {

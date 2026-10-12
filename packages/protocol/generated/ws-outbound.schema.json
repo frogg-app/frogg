@@ -163,6 +163,9 @@
                               "string",
                               "null"
                             ]
+                          },
+                          "remoteControl": {
+                            "type": "boolean"
                           }
                         },
                         "required": [
@@ -209,6 +212,9 @@
                           "items": {
                             "type": "number"
                           }
+                        },
+                        "remoteControl": {
+                          "type": "string"
                         }
                       },
                       "required": [
@@ -933,6 +939,9 @@
                                 "string",
                                 "null"
                               ]
+                            },
+                            "remoteControl": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -1177,6 +1186,196 @@
                                 "string",
                                 "null"
                               ]
+                            },
+                            "remoteControl": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "version",
+                            "apiVersion",
+                            "scope",
+                            "description",
+                            "author",
+                            "homepage",
+                            "source",
+                            "repoUrl",
+                            "devPath",
+                            "enabled",
+                            "status",
+                            "error",
+                            "capabilities",
+                            "grantedCapabilities",
+                            "updateAvailable",
+                            "preinstalled",
+                            "installedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "requestId",
+                    "error",
+                    "plugin"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "plugins.set_remote_control.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "error": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string"
+                            },
+                            "message": {
+                              "type": "string"
+                            },
+                            "capabilities": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "plugin": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            },
+                            "version": {
+                              "type": "string"
+                            },
+                            "apiVersion": {
+                              "type": "number"
+                            },
+                            "scope": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "author": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "homepage": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "source": {
+                              "type": "string"
+                            },
+                            "repoUrl": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "devPath": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "enabled": {
+                              "type": "boolean"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "error": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "capabilities": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "grantedCapabilities": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "updateAvailable": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "preinstalled": {
+                              "type": "boolean"
+                            },
+                            "features": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "installedAt": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "remoteControl": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -1361,6 +1560,9 @@
                                 "string",
                                 "null"
                               ]
+                            },
+                            "remoteControl": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -1545,6 +1747,9 @@
                                 "string",
                                 "null"
                               ]
+                            },
+                            "remoteControl": {
+                              "type": "boolean"
                             }
                           },
                           "required": [
@@ -1712,6 +1917,9 @@
                           "items": {
                             "type": "number"
                           }
+                        },
+                        "remoteControl": {
+                          "type": "string"
                         }
                       },
                       "required": [

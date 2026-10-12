@@ -11,6 +11,7 @@ import type { ClientPluginRecord } from "./records";
 import { getClientPluginStorage, type ClientPluginStorage } from "./storage";
 import { bundleFromFiles, fetchVerifiedClientPlugin, type FetchLike } from "./verify";
 import { invokeDesktopCommand } from "@/desktop/electron/invoke";
+import { openExternalUrl } from "@/utils/open-external-url";
 
 /** active | starting | error | disabled | blocked */
 export type ClientPluginRunState = "starting" | "active" | "error" | "disabled" | "blocked";
@@ -230,6 +231,10 @@ function makeBridge(
       return deps.rpcCall(id, method, params);
     },
     notify: (message, level) => deps.notify(id, message, level),
+    openExternal: async (url) => {
+      await openExternalUrl(url);
+      return true;
+    },
     emitEvent: (event, data) => deliverClientPluginEvent(id, event, data, holder.channel),
     media: {
       startCapture: async () => {

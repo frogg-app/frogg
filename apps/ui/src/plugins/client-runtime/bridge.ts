@@ -20,6 +20,8 @@ export interface ClientPluginBridgeDeps {
   /** The plugin's daemon half via the host's plugins.rpc.call; rejects when none is reachable. */
   rpcCall: (method: string, params: unknown) => Promise<unknown>;
   notify: (message: string, level: ClientPluginNotifyLevel) => void;
+  /** Opens an https URL outside the app; resolves false when refused. */
+  openExternal: (url: string) => Promise<boolean>;
   /** Delivers to this plugin's other sandboxes on this device. */
   emitEvent: (event: string, data: unknown) => void;
   media: {
@@ -41,6 +43,7 @@ export const CLIENT_PLUGIN_OPS = [
   "settings.all",
   "rpc.call",
   "ui.notify",
+  "ui.open_external",
   "events.emit",
   "media.capture.start",
   "media.capture.stop",
@@ -59,6 +62,7 @@ const OP_CAPABILITY: Record<ClientPluginOp, string | null> = {
   "settings.all": "settings.store",
   "rpc.call": "rpc",
   "ui.notify": "ui.contribute",
+  "ui.open_external": "ui.external",
   "events.emit": "rpc",
   "media.capture.start": "media.microphone",
   "media.capture.stop": "media.microphone",
@@ -168,6 +172,17 @@ export function createClientPluginBridge(deps: ClientPluginBridgeDeps) {
           : "info";
         deps.notify(requireString(args.message, "message", MAX_MESSAGE), level);
         return null;
+      }
+      case "ui.open_external": {
+        const url = requireString(args.url, "url", 4096);
+        let parsed: URL;
+        try {
+          parsed = new URL(url);
+        } catch {
+          throw new ClientPluginError("invalid_request", "url is not a URL");
+        }
+        if (parsed.protocol !== "https:") return false;
+        return deps.openExternal(parsed.toString());
       }
       case "events.emit": {
         const event = requireString(args.event, "event", MAX_KEY);

@@ -18,6 +18,7 @@ import { usePluginContributions, usePluginMutation, usePluginsList } from "./que
 import { PluginRequestError } from "@frogg/client/internal/daemon-client";
 import { pluginStyles as styles } from "./shared-styles";
 import { HybridClientComponent } from "./hybrid-client";
+import { RemoteControlRow, wantsRemoteControl } from "./remote-control-row";
 
 export function InstalledTab({ serverId }: { serverId: string }): ReactElement {
   const { t } = useTranslation();
@@ -67,6 +68,7 @@ export function InstalledTab({ serverId }: { serverId: string }): ReactElement {
           serverId={serverId}
           plugin={plugin}
           hasSettings={settingsIds.has(plugin.id)}
+          remoteControlForbidden={policy.remoteControl === "forbidden"}
         />
       ))}
     </View>
@@ -95,10 +97,12 @@ function InstalledRow({
   serverId,
   plugin,
   hasSettings,
+  remoteControlForbidden,
 }: {
   serverId: string;
   plugin: PluginInstalled;
   hasSettings: boolean;
+  remoteControlForbidden: boolean;
 }): ReactElement {
   const { t } = useTranslation();
   const setView = usePluginsModalStore((state) => state.setView);
@@ -177,6 +181,9 @@ function InstalledRow({
         />
       </View>
       <InstalledRowDetails plugin={plugin} />
+      {wantsRemoteControl(plugin) ? (
+        <RemoteControlRow serverId={serverId} plugin={plugin} forbidden={remoteControlForbidden} />
+      ) : null}
       {showUpdateError ? <Text style={styles.error}>{describePluginError(failure)}</Text> : null}
       <View style={styles.actions}>
         {plugin.updateAvailable && !isDev ? (

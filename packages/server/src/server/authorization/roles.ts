@@ -214,6 +214,7 @@ const INBOUND_ROLE = {
   "plugins.repos.remove.request": "owner",
   "plugins.rpc.call.request": "operator",
   "plugins.set_enabled.request": "owner",
+  "plugins.set_remote_control.request": "owner",
   "plugins.settings.get.request": "viewer",
   "plugins.settings.set.request": "owner",
   "plugins.uninstall.request": "owner",

@@ -172,6 +172,8 @@ import { sendPromptToAgent } from "./agent/agent-prompt.js";
 import { PluginService } from "./plugins/plugin-service.js";
 import { createPluginSpeechBridge } from "./plugins/speech-bridge.js";
 import { createPluginAgentBridge } from "./plugins/agent-bridge.js";
+import { createPluginTodosBridge, createPluginWorkspacesBridge } from "./plugins/host-bridges.js";
+import { PLUGIN_HOST_FEATURES } from "./plugins/host-features.js";
 import { wrapSessionMessage, type SessionOutboundMessage } from "./messages.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
 import { createConfiguredTerminalManager } from "../terminal/terminal-manager-factory.js";
@@ -1706,8 +1708,26 @@ export async function createFroggDaemon(
     policy: brand.plugins,
     // Beta builds are the developer channel: local plugin folders link out of the box.
     localLinking: !isStableVersion(daemonVersion),
-    agents: createPluginAgentBridge({ agentManager, agentStorage, logger }),
-    speech: createPluginSpeechBridge({ resolve: () => pluginSpeechService, logger }),
+    agents: createPluginAgentBridge({
+      agentManager,
+      agentStorage,
+      logger,
+      workspaceGit: workspaceGitService,
+      workspaces: workspaceRegistry,
+    }),
+    speech: createPluginSpeechBridge({
+      resolve: () => pluginSpeechService,
+      logger,
+    }),
+    host: {
+      version: daemonVersion,
+      features: PLUGIN_HOST_FEATURES,
+      workspaces: createPluginWorkspacesBridge({
+        projects: projectRegistry,
+        workspaces: workspaceRegistry,
+      }),
+      todos: createPluginTodosBridge({ todos: projectTodoService }),
+    },
   });
 
   setupAutoArchiveOnMerge({

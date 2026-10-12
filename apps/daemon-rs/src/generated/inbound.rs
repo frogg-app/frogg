@@ -119,6 +119,8 @@ pub enum SessionMessage {
     PluginsUninstallRequest(PluginsUninstallRequest),
     #[serde(rename = "plugins.set_enabled.request")]
     PluginsSetEnabledRequest(PluginsSetEnabledRequest),
+    #[serde(rename = "plugins.set_remote_control.request")]
+    PluginsSetRemoteControlRequest(PluginsSetRemoteControlRequest),
     #[serde(rename = "plugins.update.request")]
     PluginsUpdateRequest(PluginsUpdateRequest),
     #[serde(rename = "plugins.dev.link.request")]
@@ -689,6 +691,14 @@ pub struct PluginsUninstallRequest {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PluginsSetEnabledRequest {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub id: String,
+    pub enabled: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSetRemoteControlRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
     pub id: String,

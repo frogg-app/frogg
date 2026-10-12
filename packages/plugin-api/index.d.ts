@@ -1,6 +1,9 @@
 // GENERATED from packages/protocol/src/plugins/api-v1.ts by scripts/generate.mjs. Do not edit.
 /**
- * Frogg plugin API v1 — the `ctx` a daemon-side plugin receives in `activate(ctx)`.
+ * Frogg plugin API v1 and v2 — the `ctx` a daemon-side plugin receives in `activate(ctx)`.
+ *
+ * v2 is a strict superset of v1: a v1 plugin runs unchanged on a v2 host. Members marked "v2" exist
+ * only for plugins whose manifest declares `apiVersion: 2` (see docs/plans/plugins-v2.md).
  *
  * Source of truth for the `@frogg/plugin-api` types package (packages/plugin-api), which is a
  * generated copy of this file. Keep it self-contained: no imports, types only. The daemon's
@@ -10,7 +13,7 @@
  * absent (undefined) at runtime. Their types are non-optional for authoring convenience.
  */
 
-export type PluginApiVersion = 1;
+export type PluginApiVersion = 1 | 2;
 
 export type PluginCapabilityName =
   | "network"
@@ -25,7 +28,14 @@ export type PluginCapabilityName =
   | "media.microphone"
   | "media.audio"
   | "composer"
-  | "speech";
+  | "speech"
+  // v2
+  | "agent.manage"
+  | "agent.permissions"
+  | "workspaces.read"
+  | "todos.read"
+  | "todos.write"
+  | "ui.external";
 
 export type PluginJsonValue =
   | string
@@ -67,6 +77,16 @@ export interface PluginDisposable {
   dispose(): void;
 }
 
+export interface PluginAgentUsage {
+  inputTokens?: number;
+  cachedInputTokens?: number;
+  outputTokens?: number;
+  /** Only some providers report cost. */
+  costUsd?: number;
+  contextWindowUsedTokens?: number;
+  contextWindowMaxTokens?: number;
+}
+
 export interface PluginAgentSummary {
   id: string;
   provider: string;
@@ -75,6 +95,68 @@ export interface PluginAgentSummary {
   title?: string;
   createdAt?: string;
   updatedAt?: string;
+  /** v2 */
+  model?: string | null;
+  /** v2 */
+  workspaceId?: string | null;
+  /** v2. Current branch of the agent's checkout, when known. */
+  branch?: string | null;
+  /** v2 */
+  labels?: Record<string, string>;
+  /** v2. Pull/merge request for the agent's branch, when known. */
+  prUrl?: string | null;
+  /** v2. Latest usage the provider reported. */
+  usage?: PluginAgentUsage | null;
+  /** v2 */
+  requiresAttention?: boolean;
+  /** v2. "finished" | "error" | "permission" while attention is required. */
+  attentionReason?: string | null;
+  /** v2. Number of permission requests waiting for an answer. */
+  pendingPermissions?: number;
+  /** v2 */
+  lastError?: string | null;
+}
+
+/** v2. One agent timeline item, reduced to what integrations need. Reasoning is never exposed. */
+export type PluginTimelineItem =
+  | { type: "user_message"; text: string }
+  | { type: "assistant_message"; text: string }
+  | {
+      type: "tool_call";
+      callId: string;
+      name: string;
+      status: "running" | "completed" | "failed" | "canceled";
+      /** Short human-readable gist (command, file, query), when the host can derive one. */
+      summary?: string;
+    }
+  | { type: "plan"; text: string }
+  | { type: "todo"; items: { text: string; completed: boolean }[] }
+  | { type: "error"; message: string }
+  | { type: "compaction" };
+
+/** v2 */
+export interface PluginTimelineEntry {
+  /** Monotonic within one timeline epoch. */
+  seq: number;
+  timestamp: string;
+  turnId?: string;
+  item: PluginTimelineItem;
+}
+
+/** v2 */
+export interface PluginTimelinePage {
+  entries: PluginTimelineEntry[];
+  /**
+   * Opaque cursor positioned after the last entry returned. Persist it and pass it back to resume
+   * after a restart without seeing entries twice.
+   */
+  cursor: string | null;
+  /**
+   * True when the passed cursor no longer applies (the timeline was rebuilt); `entries` then starts
+   * from the oldest retained entry and callers should treat it as a fresh read.
+   */
+  reset: boolean;
+  hasMore: boolean;
 }
 
 export interface PluginAgentEvent {
@@ -82,6 +164,74 @@ export interface PluginAgentEvent {
   /** Known: "state", "timeline", "removed". */
   kind: string;
   agent?: PluginAgentSummary;
+  /** v2. The new item, on "timeline" events. */
+  entry?: PluginTimelineEntry;
+  /** v2. Resume point after `entry`; persist it and pass it to `getTimeline` after a restart. */
+  cursor?: string;
+}
+
+/** v2 */
+export type PluginAttentionReason = "finished" | "error" | "permission";
+
+/** v2 */
+export interface PluginAttentionEvent {
+  agentId: string;
+  reason: PluginAttentionReason;
+  agent: PluginAgentSummary;
+  /** Last assistant message, for "finished" and "error". */
+  message: string | null;
+  /**
+   * True when a connected app is in active use, i.e. when the host suppressed the push
+   * notification. Delivered to listeners only if they passed `{ force: true }`.
+   */
+  clientActive: boolean;
+}
+
+/** v2. Write calls name the external identity that caused them, e.g. "discord:123". */
+export interface PluginActorOptions {
+  actor: string;
+}
+
+/** v2. Attachment on a message sent to an agent. */
+export interface PluginAttachment {
+  name: string;
+  /** e.g. "image/png", "text/markdown". Images are passed to the agent as images. */
+  mime: string;
+  /** base64 */
+  data: string;
+}
+
+/** v2 */
+export interface PluginSendMessageOptions {
+  attachments?: PluginAttachment[];
+  /** Defaults to "plugin:<id>". */
+  actor?: string;
+}
+
+/** v2 (`agent.manage`) */
+export interface PluginCreateAgentInput extends PluginActorOptions {
+  /** Target workspace; the agent runs in its checkout. */
+  workspaceId: string;
+  provider: string;
+  model?: string;
+  modeId?: string;
+  title?: string;
+  /** Labels stored on the agent, e.g. { "discord.thread": "123" }. Keys are prefixed by nobody. */
+  labels?: Record<string, string>;
+  prompt: string;
+}
+
+/** v2 */
+export interface PluginDiffStat {
+  additions: number;
+  deletions: number;
+}
+
+/** v2 */
+export interface PluginProviderInfo {
+  id: string;
+  label: string;
+  available: boolean;
 }
 
 export interface PluginAgentsApi {
@@ -91,8 +241,206 @@ export interface PluginAgentsApi {
   get(agentId: string): Promise<PluginAgentSummary | null>;
   /** `agent.read` */
   onEvent(listener: (event: PluginAgentEvent) => void): PluginDisposable;
-  /** `agent.write` — sends a user message to the agent. */
-  sendMessage(agentId: string, text: string): Promise<void>;
+  /**
+   * `agent.write` — sends a user message to the agent. v2 adds `options`; for v2 plugins it is also
+   * remote-controlled (rejects `forbidden` while the owner has remote control off), because the
+   * message usually comes from an outside identity.
+   */
+  sendMessage(agentId: string, text: string, options?: PluginSendMessageOptions): Promise<void>;
+  /**
+   * v2, `agent.read`. Without a cursor returns the newest `limit` entries (default 50, max 500);
+   * with one, the entries after it.
+   */
+  getTimeline(
+    agentId: string,
+    options?: { cursor?: string | null; limit?: number },
+  ): Promise<PluginTimelinePage>;
+  /** v2, `agent.read` */
+  getLastAssistantMessage(agentId: string): Promise<string | null>;
+  /** v2, `agent.read`. Uncommitted plus branch changes in the agent's checkout. */
+  getDiffStat(agentId: string): Promise<PluginDiffStat | null>;
+  /**
+   * v2, `agent.read`. Fires when an agent finishes, errors or asks for permission. Skipped while
+   * a connected app is in active use, like push notifications, unless `force` is set.
+   */
+  onAttention(
+    listener: (event: PluginAttentionEvent) => void,
+    options?: { force?: boolean },
+  ): PluginDisposable;
+  /** v2, `agent.read`. Providers this host can run. */
+  listProviders(): Promise<PluginProviderInfo[]>;
+  /** v2, `agent.manage`. Starts an agent with an initial prompt. */
+  create(input: PluginCreateAgentInput): Promise<PluginAgentSummary>;
+  /** v2, `agent.manage`. Cancels the current turn. */
+  cancel(agentId: string, options: PluginActorOptions): Promise<void>;
+  /** v2, `agent.manage` */
+  archive(agentId: string, options: PluginActorOptions): Promise<void>;
+}
+
+/** v2 */
+export interface PluginPermissionRequest {
+  agentId: string;
+  requestId: string;
+  /** Tool or request name, e.g. "Bash". */
+  name: string;
+  /** "tool" | "plan" | "question" | "mode" | "other" */
+  kind: string;
+  title?: string;
+  description?: string;
+  /** Short preview of the tool input (command, path, plan text), truncated. */
+  inputPreview?: string;
+  /** True when "always" would add a standing rule (the provider suggested one). */
+  canAlways: boolean;
+  /** When the host saw the request; absent for requests listed after a daemon restart. */
+  requestedAt?: string;
+}
+
+/** v2 */
+export type PluginPermissionDecision = "allow" | "deny" | "always";
+
+/** v2 */
+export interface PluginPermissionResolved {
+  agentId: string;
+  requestId: string;
+  behavior: "allow" | "deny";
+}
+
+/**
+ * v2 (`agent.permissions`). `respond` rejects with code `already_resolved` when the request was
+ * answered elsewhere first.
+ */
+export interface PluginPermissionsApi {
+  list(agentId?: string): Promise<PluginPermissionRequest[]>;
+  onRequest(listener: (request: PluginPermissionRequest) => void): PluginDisposable;
+  onResolved(listener: (resolved: PluginPermissionResolved) => void): PluginDisposable;
+  respond(
+    agentId: string,
+    requestId: string,
+    decision: PluginPermissionDecision,
+    options: PluginActorOptions & { message?: string },
+  ): Promise<void>;
+}
+
+/** v2 */
+export interface PluginProject {
+  id: string;
+  name: string;
+  rootPath: string;
+}
+
+/** v2 */
+export interface PluginWorkspace {
+  id: string;
+  projectId: string;
+  title: string;
+  cwd: string;
+  branch: string | null;
+  /** "local_checkout" | "worktree" | "directory" ... */
+  kind: string;
+}
+
+/** v2 (`workspaces.read`). Archived workspaces and projects are excluded. */
+export interface PluginWorkspacesApi {
+  listProjects(): Promise<PluginProject[]>;
+  list(projectId?: string): Promise<PluginWorkspace[]>;
+  get(workspaceId: string): Promise<PluginWorkspace | null>;
+}
+
+/** v2. "backlog" | "ready" | "claimed" | "in_progress" | "review" | "done" | "blocked" */
+export type PluginTodoStatus = string;
+/** v2. "low" | "medium" | "high" | "urgent" */
+export type PluginTodoPriority = string;
+
+/** v2 */
+export interface PluginTodo {
+  id: string;
+  projectId: string;
+  title: string;
+  description: string;
+  category: string | null;
+  priority: PluginTodoPriority;
+  status: PluginTodoStatus;
+  /** Agents currently holding a claim; claims are host-controlled. */
+  claimedBy: { agentId: string; stale: boolean }[];
+  progressCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** v2 */
+export interface PluginTodoDetail extends PluginTodo {
+  progress: { at: string; agentId?: string; note: string }[];
+  plan: string | null;
+}
+
+/** v2 */
+export interface PluginTodoChange {
+  projectId: string;
+  kind: "upsert" | "remove";
+  todoId: string;
+  todo: PluginTodo | null;
+}
+
+/** v2 */
+export interface PluginTodoInput {
+  title: string;
+  description?: string;
+  category?: string | null;
+  priority?: PluginTodoPriority;
+}
+
+/** v2 (`todos.read` / `todos.write`) */
+export interface PluginTodosApi {
+  /** `todos.read` */
+  list(projectId: string, filter?: { status?: PluginTodoStatus[] }): Promise<PluginTodo[]>;
+  /** `todos.read` */
+  get(projectId: string, todoId: string): Promise<PluginTodoDetail>;
+  /** `todos.read` */
+  onChange(listener: (change: PluginTodoChange) => void): PluginDisposable;
+  /** `todos.write` */
+  create(
+    projectId: string,
+    input: PluginTodoInput,
+    options: PluginActorOptions,
+  ): Promise<PluginTodo>;
+  /** `todos.write` */
+  update(
+    projectId: string,
+    todoId: string,
+    patch: Partial<PluginTodoInput>,
+    options: PluginActorOptions,
+  ): Promise<PluginTodo>;
+  /** `todos.write`. Cannot set "claimed"; claims belong to agents. */
+  setStatus(
+    projectId: string,
+    todoId: string,
+    status: PluginTodoStatus,
+    options: PluginActorOptions,
+  ): Promise<PluginTodo>;
+  /** `todos.write`. Appends a progress note. */
+  addNote(
+    projectId: string,
+    todoId: string,
+    note: string,
+    options: PluginActorOptions,
+  ): Promise<void>;
+}
+
+/** v2. Always present on v2 plugins. */
+export interface PluginHostInfo {
+  /** Daemon version. */
+  version: string;
+  /** API versions this host supports. */
+  apiVersions: readonly number[];
+  /** Additive features beyond the base API version, e.g. "timeline.cursor". */
+  features: readonly string[];
+  /**
+   * False while the owner has not enabled remote control for this plugin: `agent.manage`,
+   * `agent.permissions` and `todos.write` calls reject with `forbidden` until it is.
+   */
+  remoteControl: boolean;
+  /** Fires when the owner turns remote control on or off for this plugin. */
+  onRemoteControlChange(listener: (enabled: boolean) => void): PluginDisposable;
 }
 
 export interface PluginRpcContext {
@@ -186,6 +534,14 @@ export interface PluginContext {
   speech: PluginSpeechApi;
   /** Aborted when the plugin is deactivated. */
   signal: AbortSignal;
+  /** v2 */
+  host: PluginHostInfo;
+  /** v2, `agent.permissions` */
+  permissions: PluginPermissionsApi;
+  /** v2, `workspaces.read` */
+  workspaces: PluginWorkspacesApi;
+  /** v2, `todos.read` / `todos.write` */
+  todos: PluginTodosApi;
 }
 
 export type PluginActivate = (ctx: PluginContext) => void | Promise<void>;
@@ -235,6 +591,11 @@ export interface ClientPluginRpcApi {
 export interface ClientPluginUiApi {
   /** Toast in this app. */
   notify(message: string, level?: PluginNotifyLevel): void;
+  /**
+   * v2, `ui.external`. Opens an https URL in the system browser (desktop) or a new tab (web),
+   * e.g. for OAuth consent. Resolves false when refused.
+   */
+  openExternal(url: string): Promise<boolean>;
 }
 
 export interface ClientPluginEventsApi {

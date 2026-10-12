@@ -62,8 +62,10 @@ function __froggBoot(port, loadModule, getRoot) {
         call: function (method, params) { return call("rpc.call", { method: method, params: params }); }
       };
     }
-    if (caps.has("ui.contribute")) {
-      ctx.ui = { notify: function (message, level) { void call("ui.notify", { message: String(message), level: level }); } };
+    if (caps.has("ui.contribute") || caps.has("ui.external")) {
+      ctx.ui = {};
+      if (caps.has("ui.contribute")) ctx.ui.notify = function (message, level) { void call("ui.notify", { message: String(message), level: level }); };
+      if (caps.has("ui.external")) ctx.ui.openExternal = function (url) { return call("ui.open_external", { url: String(url) }).then(function (v) { return v === true; }); };
     }
     if (caps.has("rpc")) {
       ctx.events = {

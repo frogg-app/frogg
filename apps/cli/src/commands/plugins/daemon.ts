@@ -60,6 +60,7 @@ export interface PluginRow {
   status: string;
   source: string;
   enabled: string;
+  remote: string;
   update: string;
   name: string;
 }
@@ -79,6 +80,7 @@ const pluginSchema: OutputSchema<PluginRow> = {
     },
     { header: "SOURCE", field: "source", width: 9 },
     { header: "ENABLED", field: "enabled", width: 8 },
+    { header: "REMOTE", field: "remote", width: 7 },
     { header: "UPDATE", field: "update", width: 10 },
     { header: "NAME", field: "name", width: 30 },
   ],
@@ -91,6 +93,7 @@ function row(p: PluginInstalled): PluginRow {
     status: p.error ? `${p.status}: ${p.error}` : p.status,
     source: p.source,
     enabled: p.enabled ? "yes" : "no",
+    remote: p.remoteControl ? "on" : "off",
     update: p.updateAvailable ?? "-",
     name: p.name,
   };
@@ -187,6 +190,24 @@ export function makeSetEnabledCommand(enabled: boolean) {
     withPlugins(options, async (client) =>
       one((await client.pluginsSetEnabled(id, enabled)).plugin),
     );
+}
+
+/** `frogg plugins remote-control <id> [on|off]`; without a state it reports the current one. */
+export async function runRemoteControlCommand(
+  id: string,
+  state: string | undefined,
+  options: CommandOptions,
+  _command: Command,
+): Promise<ListResult<PluginRow>> {
+  return withPlugins(options, async (client) => {
+    if (state === undefined) {
+      const { plugins } = await client.pluginsList();
+      return one(plugins.find((p) => p.id === id) ?? null);
+    }
+    if (state !== "on" && state !== "off")
+      throw { code: "PLUGIN_ERROR", message: "State must be on or off" };
+    return one((await client.pluginsSetRemoteControl(id, state === "on")).plugin);
+  });
 }
 
 export async function runUpdateCommand(

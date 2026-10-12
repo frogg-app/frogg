@@ -6,7 +6,7 @@ import { join } from "path";
 import { daemonHostname as getHostname } from "./daemon-hostname.js";
 import { randomUUID } from "node:crypto";
 import { monitorEventLoopDelay } from "node:perf_hooks";
-import type { AgentManager, AgentMetricsSnapshot } from "./agent/agent-manager.js";
+import type { AgentManager, AgentMetricsSnapshot, ManagedAgent } from "./agent/agent-manager.js";
 import type { AgentStorage } from "./agent/agent-storage.js";
 import type { DownloadTokenStore } from "./file-download/token-store.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
@@ -3013,6 +3013,40 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
+  /**
+   * Plugin API v2 `onAttention`. `clientActive` mirrors push suppression: true when the push would
+   * have been skipped because someone is using an app, whatever the reason's own push eligibility.
+   */
+  private publishPluginAttention(
+    params: { agentId: string; reason: "finished" | "error" | "permission" },
+    agent: ManagedAgent,
+    assistantMessage: string | null,
+    allStates: ClientPresenceState[],
+    nowMs: number,
+  ): void {
+    const service = this.pluginService;
+    if (!service) return;
+    const presence = computeNotificationPlan({
+      allStates,
+      focusTarget: { kind: "agent", id: params.agentId },
+      pushEligible: true,
+      nowMs,
+    });
+    void (async () => {
+      const summary = await service.listAgentSummary(params.agentId);
+      if (!summary) return;
+      service.publishAttention({
+        agentId: params.agentId,
+        reason: params.reason,
+        agent: summary,
+        message: params.reason === "permission" ? null : assistantMessage,
+        clientActive: !presence.shouldPush,
+      });
+    })().catch((err) => {
+      this.logger.warn({ err, agentId: agent.id }, "Failed to publish plugin attention");
+    });
+  }
+
   private async broadcastAgentAttention(params: {
     agentId: string;
     provider: AgentProvider;
@@ -3067,6 +3101,8 @@ export class VoiceAssistantWebSocketServer {
         this.logger.warn({ err, agentId: params.agentId }, "Failed to send push notification");
       });
     }
+
+    this.publishPluginAttention(params, agent, assistantMessage, allStates, nowMs);
 
     for (const [clientIndex, { ws }] of clientEntries.entries()) {
       const shouldNotify = clientIndex === plan.inAppRecipientIndex;

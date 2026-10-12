@@ -2,7 +2,8 @@
 import {
   PLUGIN_INDEX_PUBLIC_KEY_SUFFIX,
   PLUGIN_INDEX_SIGNATURE_SUFFIX,
-  PluginIndexSchema,
+  parsePluginIndexTolerant,
+  pluginIndexV2Url,
   type PluginIndex,
 } from "@frogg/protocol/plugins/repo-index";
 import { isValidPublicKey, sha256Hex, verifyPluginIndexSignature } from "./signing.js";
@@ -74,8 +75,8 @@ export async function fetchRepoPublicKey(fetchImpl: FetchLike, indexUrl: string)
   return key;
 }
 
-/** Fetches index.json + .sig, verifies the signature against `publicKey`, then parses. */
-export async function fetchVerifiedIndex(
+/** Fetches one index file + .sig, verifies the signature against `publicKey`, then parses. */
+async function fetchVerifiedIndexFile(
   fetchImpl: FetchLike,
   indexUrl: string,
   publicKey: string,
@@ -93,10 +94,31 @@ export async function fetchVerifiedIndex(
   } catch {
     throw new PluginServiceError("fetch_failed", `${indexUrl} is not valid JSON`);
   }
-  const parsed = PluginIndexSchema.safeParse(raw);
-  if (!parsed.success)
+  const parsed = parsePluginIndexTolerant(raw);
+  if (!parsed)
     throw new PluginServiceError("fetch_failed", `${indexUrl} is not a valid plugin index`);
-  return parsed.data;
+  return parsed;
+}
+
+/**
+ * Fetches a repository's index, preferring the sibling `index.v2.json` (every API version) over
+ * `index.json` (API v1 only). Falls back to `index.json` only when the v2 file cannot be fetched;
+ * a v2 file that fails its signature check is an error, not a reason to fall back.
+ */
+export async function fetchVerifiedIndex(
+  fetchImpl: FetchLike,
+  indexUrl: string,
+  publicKey: string,
+): Promise<PluginIndex> {
+  const v2Url = pluginIndexV2Url(indexUrl);
+  if (v2Url) {
+    try {
+      return await fetchVerifiedIndexFile(fetchImpl, v2Url, publicKey);
+    } catch (err) {
+      if (!(err instanceof PluginServiceError) || err.code !== "fetch_failed") throw err;
+    }
+  }
+  return fetchVerifiedIndexFile(fetchImpl, indexUrl, publicKey);
 }
 
 /** Downloads a tarball and verifies its sha256 before anything reads it. */

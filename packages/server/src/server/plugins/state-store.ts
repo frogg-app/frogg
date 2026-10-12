@@ -35,11 +35,19 @@ const PluginStateSchema = z.object({
   installed: z.record(z.string(), InstalledRecordSchema).default({}),
   userRepos: z.array(UserRepoSchema).default([]),
   devLinks: z.array(DevLinkSchema).default([]),
+  /** Plugin ids the owner has enabled remote control for (plugin API v2). */
+  remoteControl: z.array(z.string()).default([]),
 });
 export type PluginState = z.infer<typeof PluginStateSchema>;
 
 export function emptyPluginState(): PluginState {
-  return { version: 1, installed: {}, userRepos: [], devLinks: [] };
+  return {
+    version: 1,
+    installed: {},
+    userRepos: [],
+    devLinks: [],
+    remoteControl: [],
+  };
 }
 
 export class PluginStateStore {

@@ -14,6 +14,7 @@ import {
   runInstallCommand,
   runLinkCommand,
   runListCommand,
+  runRemoteControlCommand,
   runReposAddCommand,
   runReposListCommand,
   runReposRemoveCommand,
@@ -54,6 +55,15 @@ export function createPluginsCommand(): Command {
       .description("Disable an installed plugin")
       .argument("<id>", "Plugin id"),
   ).action(withOutput(makeSetEnabledCommand(false)));
+  addJsonAndDaemonHostOptions(
+    plugins
+      .command("remote-control")
+      .description(
+        "Show or switch remote control (agent.manage, agent.permissions, todos.write, and replies from v2 plugins)",
+      )
+      .argument("<id>", "Plugin id")
+      .argument("[state]", "on | off"),
+  ).action(withOutput(runRemoteControlCommand));
   addJsonAndDaemonHostOptions(
     plugins
       .command("update")

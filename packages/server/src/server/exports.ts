@@ -123,6 +123,7 @@ export {
   packPlugin,
   readPluginManifest,
   serializePluginIndex,
+  writePluginIndexFiles,
   signPluginIndexFile,
   verifyPluginIndexFile,
 } from "./plugins/tooling.js";

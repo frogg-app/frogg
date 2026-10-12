@@ -5,8 +5,9 @@ import {
 } from "@frogg/protocol/plugins/manifest";
 import {
   PLUGIN_INDEX_SIGNATURE_SUFFIX,
-  PluginIndexSchema,
+  parsePluginIndexTolerant,
   pickPluginVersion,
+  pluginIndexV2Url,
   type PluginIndex,
   type PluginIndexVersion,
 } from "@frogg/protocol/plugins/repo-index";
@@ -85,33 +86,53 @@ async function fetchBytes(fetchImpl: FetchLike, url: string): Promise<Uint8Array
   return new Uint8Array(await response.arrayBuffer());
 }
 
-/** Fetches `index.json` and its `.sig`, verifies the signature, then parses. */
-export async function fetchVerifiedIndex(
+/** Fetches one index file and its `.sig`, verifies the signature, then parses. */
+async function fetchVerifiedIndexFile(
   fetchImpl: FetchLike,
-  repo: { url: string; publicKey: string },
+  url: string,
+  publicKey: string,
 ): Promise<PluginIndex> {
   const [indexBytes, sigBytes] = await Promise.all([
-    fetchBytes(fetchImpl, repo.url),
-    fetchBytes(fetchImpl, repo.url + PLUGIN_INDEX_SIGNATURE_SUFFIX),
+    fetchBytes(fetchImpl, url),
+    fetchBytes(fetchImpl, url + PLUGIN_INDEX_SIGNATURE_SUFFIX),
   ]);
   const signature = new TextDecoder().decode(sigBytes).trim();
-  if (!(await verifyEd25519(indexBytes, signature, repo.publicKey))) {
+  if (!(await verifyEd25519(indexBytes, signature, publicKey))) {
     throw new ClientPluginError(
       "signature_invalid",
-      `${repo.url}: index signature does not match the repository key`,
+      `${url}: index signature does not match the repository key`,
     );
   }
   let json: unknown;
   try {
     json = JSON.parse(new TextDecoder().decode(indexBytes));
   } catch {
-    throw new ClientPluginError("invalid_request", `${repo.url}: index is not JSON`);
+    throw new ClientPluginError("invalid_request", `${url}: index is not JSON`);
   }
-  const parsed = PluginIndexSchema.safeParse(json);
-  if (!parsed.success) {
-    throw new ClientPluginError("invalid_request", `${repo.url}: index is malformed`);
+  const parsed = parsePluginIndexTolerant(json);
+  if (!parsed) {
+    throw new ClientPluginError("invalid_request", `${url}: index is malformed`);
   }
-  return parsed.data;
+  return parsed;
+}
+
+/**
+ * Fetches a repository's index, preferring `index.v2.json` (every API version) and falling back to
+ * `index.json` (API v1 only) when the v2 file cannot be fetched. Mirrors the daemon.
+ */
+export async function fetchVerifiedIndex(
+  fetchImpl: FetchLike,
+  repo: { url: string; publicKey: string },
+): Promise<PluginIndex> {
+  const v2Url = pluginIndexV2Url(repo.url);
+  if (v2Url) {
+    try {
+      return await fetchVerifiedIndexFile(fetchImpl, v2Url, repo.publicKey);
+    } catch (error) {
+      if (!(error instanceof ClientPluginError) || error.code !== "fetch_failed") throw error;
+    }
+  }
+  return fetchVerifiedIndexFile(fetchImpl, repo.url, repo.publicKey);
 }
 
 export function resolveIndexVersion(
