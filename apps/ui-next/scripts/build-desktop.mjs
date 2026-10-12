@@ -14,9 +14,43 @@ const { values } = parseArgs({
     "export-only": { type: "boolean", default: false },
   },
 });
-if (values.target !== "darwin-arm64") throw new Error("Only --target darwin-arm64 is supported.");
-if (!values["export-only"] && process.platform !== "darwin") {
-  throw new Error("Mac artifacts require macOS. Use --export-only to validate the UI elsewhere.");
+const icons = path.join(root, ".generated/branding/icons");
+// Per target: the OS that must build it, the artifact folder and electron-builder settings.
+const targets = {
+  "darwin-arm64": {
+    os: "darwin",
+    label: "Mac ARM",
+    dir: "ui-next-mac-arm64",
+    cli: ["--mac", "--arm64"],
+    config: {
+      artifactName: "Frogg-Next-${version}-mac-${arch}.${ext}",
+      mac: {
+        target: ["dmg", "zip"],
+        category: "public.app-category.developer-tools",
+        icon: path.join(icons, "icon.icns"),
+        identity: "-",
+        notarize: false,
+      },
+    },
+  },
+  "win32-x64": {
+    os: "win32",
+    label: "Windows x64",
+    dir: "ui-next-win-x64",
+    cli: ["--win", "--x64"],
+    config: {
+      artifactName: "Frogg-Next-${version}-win-${arch}.${ext}",
+      win: { target: ["nsis", "zip"], icon: path.join(icons, "icon.ico") },
+      nsis: { oneClick: true, perMachine: false, runAfterFinish: true, shortcutName: "Frogg Next" },
+    },
+  },
+};
+const target = targets[values.target];
+if (!target) throw new Error(`--target must be one of: ${Object.keys(targets).join(", ")}`);
+if (!values["export-only"] && process.platform !== target.os) {
+  throw new Error(
+    `${target.label} artifacts must be built on ${target.os}. Use --export-only to validate the UI elsewhere.`,
+  );
 }
 function run(command, args, cwd = root) {
   const result = spawnSync(command, args, {
@@ -81,26 +115,19 @@ cpSync(path.join(root, "NOTICE"), path.join(stage, "NOTICE"));
 if (values["export-only"]) {
   console.log(`Desktop UI staged at ${stage}`);
 } else {
-  const outDir = path.join(root, "release-assets/ui-next-mac-arm64");
+  const outDir = path.join(root, "release-assets", target.dir);
   const configPath = path.join(stage, "builder.json");
   writeFileSync(
     configPath,
     JSON.stringify({
       appId: "app.frogg.next",
       productName: "Frogg Next",
-      artifactName: "Frogg-Next-${version}-mac-${arch}.${ext}",
       electronVersion: desktopPackage.devDependencies.electron,
       npmRebuild: false,
       asar: true,
       files: ["main.cjs", "resolve-asset.cjs", "web/**/*", "package.json", "LICENSE", "NOTICE"],
       directories: { output: outDir },
-      mac: {
-        target: ["dmg", "zip"],
-        category: "public.app-category.developer-tools",
-        icon: path.join(root, ".generated/branding/icons/icon.icns"),
-        identity: "-",
-        notarize: false,
-      },
+      ...target.config,
       publish: null,
     }),
   );
@@ -110,11 +137,10 @@ if (values["export-only"]) {
     stage,
     "--config",
     configPath,
-    "--mac",
-    "--arm64",
+    ...target.cli,
     "--publish",
     "never",
   ]);
   await writeElectronChecksums(outDir);
-  console.log(`Mac ARM artifacts: ${outDir}`);
+  console.log(`${target.label} artifacts: ${outDir}`);
 }
