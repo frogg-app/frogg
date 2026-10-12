@@ -219,6 +219,7 @@ Host commands take `--host` and `--json`; they need a daemon that reports plugin
 | `frogg plugins install <id>` | Install from a configured repository (`--version`, `--repo <url>`); `--yes` grants the requested capabilities without prompting |
 | `frogg plugins uninstall <id>` | Remove a plugin and its data; brand-preinstalled plugins can only be disabled |
 | `frogg plugins enable <id>` / `disable <id>` | Start or stop an installed plugin |
+| `frogg plugins remote-control <id> [on\|off]` | Show or switch [remote control](/docs/using-frogg/plugins/#remote-control) for a plugin (host owners only) |
 | `frogg plugins update [id]` | List updates, or update one plugin (`--all` for every one); an update that adds capabilities asks again (`--yes` grants) |
 | `frogg plugins repos list` | Official, brand and user repositories with their pinned keys and fetch errors |
 | `frogg plugins repos add <url>` | Add a user repository, when the build allows it. Pins `--public-key`, or the key served at `<url>.pub` on first use |
@@ -232,7 +233,7 @@ Authoring and repository tooling runs locally:
 | `frogg plugins new <id>` | Scaffold a plugin (`--name`, `--dir`) |
 | `frogg plugins pack [dir]` | Validate `frogg-plugin.json` and write `<id>-<version>.tgz` plus `.sha256` (`--out <dir>`) |
 | `frogg plugins keygen` | ed25519 repository keypair, base64; `--out <file>` writes the private key with mode 0600 |
-| `frogg plugins index build` | Build `index.json` from `--plugins`, `--tarballs`, `--base-url`, `--name` (`--categories`, `--commit`, `--out`) |
+| `frogg plugins index build` | Build `index.json` from `--plugins`, `--tarballs`, `--base-url`, `--name` (`--categories`, `--commit`, `--out`). Also writes `index.v2.json` beside it: `index.json` keeps plugin API v1 versions only, for hosts that predate v2, and `index.v2.json` lists every version. Sign and verify both |
 | `frogg plugins index sign <file>` | Write `index.json.sig` and `index.json.pub` using the key in `--key-env` (default `PLUGIN_REPO_SIGNING_KEY`) or `--key-file` |
 | `frogg plugins index verify <file>` | Check the signature against `--public-key` and, with `--tarballs <dir>`, every tarball's sha256 and manifest |
 

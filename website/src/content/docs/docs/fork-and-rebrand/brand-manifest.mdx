@@ -404,6 +404,7 @@ Controls where plugins come from and what users may do with them. The daemon enf
 | `allow` / `deny` | plugin-id globs (`*`) | `[]` | Deny wins; an empty `allow` allows every id. Applies to the catalog, installs and already-installed plugins |
 | `preinstalled`   | array of `{ id, version? }` | `[]` | Installed on daemon start from brand repositories first, then the official one. `version` is exact or a range (`^1`, `~1.2`). Users cannot uninstall them. `build`-scope entries are for the brand build pipeline |
 | `autoUpdate`     | `off` \| `brand-repos` \| `all` | `brand-repos` | Background updates. Never applied when an update adds capabilities |
+| `remoteControl`  | `allowed` \| `forbidden` | `allowed` | Whether host owners may turn on [remote control](/docs/using-frogg/plugins/#remote-control), which lets plugins start agents, answer permission requests and change to-dos for people outside Frogg |
 
 To host a brand repository, copy `templates/plugin-repo/` from the Frogg repo into a new
 GitHub repository; its README covers keys, Pages and publishing. Its CI does not use npm
