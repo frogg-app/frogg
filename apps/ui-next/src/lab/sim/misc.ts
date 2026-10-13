@@ -700,7 +700,17 @@ interface LabTerminal {
   buffer: string;
   line: string;
 }
-const terminals: LabTerminal[] = [];
+// One terminal in a checkout no lab session uses, so the panel's host-wide group has a row.
+const terminals: LabTerminal[] = [
+  {
+    id: "term-billing",
+    name: "bash 1",
+    title: "npm run dev",
+    cwd: "/home/dev/billing",
+    buffer: "$ npm run dev\r\n\r\n  VITE ready in 412 ms\r\n  ➜  Local: http://localhost:5173/\r\n",
+    line: "",
+  },
+];
 const streamHandlers = new Set<(e: unknown) => void>();
 const encoder = new TextEncoder();
 const PROMPT =
@@ -1648,7 +1658,16 @@ export const miscRpcs: Record<string, Rpc> = {
   // Terminals
   listTerminals: async (cwd?: string) => {
     await latency(80);
-    return { terminals: (cwd && simTerminals.get(cwd)) || labTerminals() };
+    // Per checkout when asked for one, every terminal on the host otherwise (like the daemon).
+    if (cwd)
+      return {
+        cwd,
+        terminals: [
+          ...(simTerminals.get(cwd) ?? []),
+          ...labTerminals().filter((t) => t.cwd === cwd),
+        ],
+      };
+    return { terminals: [...[...simTerminals.values()].flat(), ...labTerminals()] };
   },
   createTerminal: async (cwd: string) => {
     await latency(250);
