@@ -1,4 +1,5 @@
 import { usePrefs, prefSetter } from "../../../prefs";
+import { setPrefs as setListPrefs, useDirectory, type Sort } from "../../sessions/directory";
 import { Row, Section, Seg, Toggle } from "../controls";
 
 const BUSY: Array<["steer" | "queue" | "interrupt", string]> = [
@@ -24,6 +25,14 @@ const PRS: Array<["tool" | "pane" | "browser", string]> = [
   ["pane", "Side pane"],
   ["browser", "Browser"],
 ];
+const SORTS: Array<[Sort, string]> = [
+  ["state", "Attention first"],
+  ["recent", "Recent"],
+  ["created", "Created"],
+  ["title", "Title"],
+];
+const pickSort = (sort: Sort) => setListPrefs({ sort });
+
 const DOWNLOADS: Array<["ask" | "folder", string]> = [
   ["ask", "Ask every time"],
   ["folder", "Save to folder"],
@@ -66,6 +75,20 @@ export function ChatComposer() {
           <Toggle value={p.hiddenFolders} onChange={prefSetter("hiddenFolders")} />
         </Row>
       </Section>
+      <Section title="Session list">
+        <Row
+          label="Order sessions by"
+          hint="Attention first puts sessions that need you, failed or are ready above working and idle ones, in every grouping. Also in the list's filter menu."
+          last
+        >
+          <SortSeg />
+        </Row>
+      </Section>
     </>
   );
+}
+
+function SortSeg() {
+  const sort = useDirectory((d) => d.prefs.sort);
+  return <Seg options={SORTS} value={sort} onChange={pickSort} />;
 }

@@ -31,7 +31,8 @@ export type RecentProviderSession = Awaited<
 /** "all", "chats", "archived", or a project id. */
 export type Scope = string;
 export type Group = "attention" | "project" | "labels";
-export type Sort = "recent" | "created" | "title";
+/** `state`: needs you, failed, ready, working, then idle; most recent first within each. */
+export type Sort = "recent" | "created" | "title" | "state";
 export type ShowKey = "project" | "branch" | "host" | "labels" | "provider";
 
 export interface Prefs {
