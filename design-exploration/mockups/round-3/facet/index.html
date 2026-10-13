@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Facet — Frogg round 3</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="../_shared/r3.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <div class="brand" id="brand"></div>
+      <div class="crumbs" id="crumbs"></div>
+      <button class="search" data-pal>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" /></svg
+        ><span>Search sessions, files, commands</span><kbd>⌘K</kbd>
+      </button>
+      <div class="hosts">
+        <span class="host ok">devbox</span><span class="host ok">macbook</span
+        ><span class="host bad">ci-runner-2</span>
+      </div>
+    </header>
+    <div class="ws">
+      <aside class="side">
+        <div class="side-h">
+          <span class="eyebrow">Sessions</span><button class="new">+ New <kbd>⌘N</kbd></button>
+        </div>
+        <div class="filters" id="filters"></div>
+        <div class="list" id="list">
+          <div class="plate" id="plate"></div>
+          <div id="rows"></div>
+        </div>
+      </aside>
+      <main class="center">
+        <div class="ch">
+          <button class="m-back" data-back>← Sessions</button>
+          <div class="ch-t">
+            <h1 id="title"></h1>
+            <div class="ch-m" id="meta"></div>
+          </div>
+          <div class="ch-act">
+            <button class="btn ghost">Fork</button><button class="btn ghost">Split</button
+            ><button class="btn" id="pr">Open PR</button>
+          </div>
+        </div>
+        <div class="scroll" id="scroll"><div class="chat" id="chat"></div></div>
+        <div class="dock">
+          <div id="strip"></div>
+          <div id="composer"></div>
+        </div>
+      </main>
+      <aside class="pane">
+        <nav class="tabs" id="tabs">
+          <span class="tab-ind" id="tabInd"></span
+          ><button class="on" data-tab="changes">Changes <b id="chgN"></b></button
+          ><button data-tab="terminal">Terminal</button><button data-tab="pr">PR · CI</button>
+        </nav>
+        <div class="pane-body" id="paneBody"></div>
+      </aside>
+    </div>
+    <a class="dirnav" href="../index.html">← round 3</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../../round-2/_shared/kit.js"></script>
+    <script src="../_shared/r3.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

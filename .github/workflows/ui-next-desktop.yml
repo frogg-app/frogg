@@ -1,0 +1,147 @@
+name: Frogg Next desktop
+
+# Unsigned Frogg Next (apps/ui-next) desktop clients for Mac ARM and Windows x64. Versioned with the
+# root package. On every main push that touches the client this uploads workflow artifacts; the
+# Release workflow also calls it with `release-tag` to attach Frogg-Next-<version>-* assets and a
+# Frogg-Next-<version>-SHA256SUMS to that tag's GitHub release (release-process.mdx).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/ui-next/**"
+      - "packages/client/**"
+      - "packages/protocol/**"
+      - "packages/highlight/**"
+      - "package-lock.json"
+      - ".github/workflows/ui-next-desktop.yml"
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release-tag:
+        description: "Release tag to build and attach the assets to"
+        required: true
+        type: string
+      clobber:
+        description: "'true' when the calling run created the release and may overwrite its assets"
+        required: false
+        default: "false"
+        type: string
+      mac:
+        description: "Build the Mac ARM client"
+        required: false
+        default: true
+        type: boolean
+      windows:
+        description: "Build the Windows x64 client"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+# A release call runs inside the Release workflow's own run, so it needs its own group: sharing
+# the main-push group would queue a release behind (or ahead of) an unrelated artifact build.
+concurrency:
+  group: ui-next-desktop-${{ inputs.release-tag || github.ref }}
+  cancel-in-progress: false
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  CI: "true"
+  LEFTHOOK: "0"
+  CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+jobs:
+  mac:
+    name: Mac ARM client (unsigned)
+    if: inputs.mac != false
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-deps
+      - run: node --test apps/ui-next/desktop/*.test.cjs
+      - name: Build standalone prototype
+        run: node apps/ui-next/scripts/build-desktop.mjs
+      # Not `release-assets-*`: the Release workflow's updater-manifest job merges every artifact
+      # with that prefix into the classic app's update feeds.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-mac-arm64-${{ github.sha }}
+          path: |
+            release-assets/ui-next-mac-arm64/*.dmg
+            release-assets/ui-next-mac-arm64/*.zip
+            release-assets/ui-next-mac-arm64/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    name: Windows x64 client (unsigned)
+    if: inputs.windows != false
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-deps
+      - name: Build standalone prototype
+        run: node apps/ui-next/scripts/build-desktop.mjs --target win32-x64
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-win-x64-${{ github.sha }}
+          path: |
+            release-assets/ui-next-win-x64/*.exe
+            release-assets/ui-next-win-x64/*.zip
+            release-assets/ui-next-win-x64/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  # The only job with write access, and only on a release call: the builds above stay read-only.
+  release:
+    name: Attach to GitHub release
+    needs: [mac, windows]
+    if: >-
+      always() && inputs.release-tag != '' &&
+      !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: frogg-next-*-${{ github.sha }}
+          path: frogg-next
+          merge-multiple: true
+      - name: Upload to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
+          CLOBBER: ${{ inputs.clobber }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          cd frogg-next
+          # One checksum list for the whole family; the per-target SHA256SUMS would collide.
+          rm -f SHA256SUMS
+          shopt -s nullglob
+          files=(Frogg-Next-"$version"-*)
+          [ "${#files[@]}" -gt 0 ] || { echo "::error::No Frogg-Next-$version-* assets were built"; exit 1; }
+          sha256sum "${files[@]}" > "Frogg-Next-$version-SHA256SUMS"
+          cat "Frogg-Next-$version-SHA256SUMS"
+          flags=()
+          if [ "$CLOBBER" = "true" ]; then flags+=(--clobber); fi
+          existing=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
+          for f in Frogg-Next-"$version"-*; do
+            if [ "$CLOBBER" != "true" ] && grep -qx -- "$f" <<<"$existing"; then
+              echo "::warning::$f already on $RELEASE_TAG; skipping"
+              continue
+            fi
+            gh release upload "$RELEASE_TAG" "$f" "${flags[@]}"
+          done

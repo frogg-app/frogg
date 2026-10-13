@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Mobile view</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 40px;
+        background: #1b1b1d;
+        font: 14px system-ui;
+        color: #bbb;
+        flex-wrap: wrap;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+      .phone {
+        width: 390px;
+        height: 844px;
+        border-radius: 48px;
+        padding: 12px;
+        background: #000;
+        box-shadow:
+          0 0 0 2px #333,
+          0 30px 80px rgba(0, 0, 0, 0.6);
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        border-radius: 38px;
+        background: #fff;
+      }
+      a {
+        color: #9cf;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <p><a id="back" href="#">← desktop view</a></p>
+      <p>Mobile width (366px viewport).</p>
+    </div>
+    <div class="phone"><iframe id="f"></iframe></div>
+    <script>
+      const d = new URLSearchParams(location.search).get("d") || "pond";
+      document.getElementById("f").src = "../" + d + "/index.html?m=1";
+      document.getElementById("back").href = "../" + d + "/index.html";
+      document.title = d + " — mobile";
+    </script>
+  </body>
+</html>

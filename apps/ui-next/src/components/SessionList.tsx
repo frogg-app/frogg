@@ -1,0 +1,642 @@
+import {
+  ChevronDown,
+  Filter,
+  FolderGit2,
+  History,
+  Layers,
+  MessageSquare,
+  Pin,
+  Plus,
+} from "lucide-react-native";
+import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
+import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { Brackets, BracketScope } from "./Brackets";
+import { useHosts } from "../daemon/hosts";
+import { parseQuestions } from "./chat/QuestionCard";
+import { answerPermission, connect, useDaemon, useOtherHostSessions } from "../daemon/store";
+import { bucketOf, type Bucket, type Session } from "../daemon/types";
+import { anim, color, font, web } from "../theme/tokens";
+import { useUi } from "../ui-store";
+import { ago } from "../util";
+import { Button } from "./Button";
+import { Cut } from "./Cut";
+import { useRunningSubWork } from "../daemon/subwork";
+import { useRowSubWork } from "./subwork/hooks";
+import { SubWorkBody, SubWorkChip } from "./subwork/views";
+import { useContextMenu } from "./sessions/contextMenu";
+import { isChat, openSheet, projectIdOf, useDirectory, type Prefs } from "./sessions/directory";
+import { ageGroup, HistoryList } from "./sessions/history";
+import { DisplayMenu, ScopeMenu, SessionMenu } from "./sessions/menus";
+import { LabelChip, SessionSheets } from "./sessions/sheets";
+import { StatusSummary } from "./sessions/StatusSummary";
+import { StatusGlyph } from "./StatusGlyph";
+import { T } from "./Text";
+import { useAnchor, type Rect } from "./tools/Menu";
+
+const ORDER: Array<{ b: Bucket; label: string }> = [
+  { b: "needs", label: "Needs you" },
+  { b: "failed", label: "Failed" },
+  { b: "review", label: "Ready to review" },
+  { b: "working", label: "Working" },
+  { b: "idle", label: "Idle" },
+];
+
+export function useBuckets() {
+  const sessions = useDaemon((s) => s.sessions);
+  return useMemo(() => {
+    const out: Record<Bucket, Session[]> = {
+      needs: [],
+      failed: [],
+      review: [],
+      working: [],
+      idle: [],
+    };
+    for (const s of Object.values(sessions)) out[bucketOf(s.agent)].push(s);
+    for (const list of Object.values(out))
+      list.sort((a, b) => Date.parse(b.agent.updatedAt) - Date.parse(a.agent.updatedAt));
+    return out;
+  }, [sessions]);
+}
+
+const openNewSession = () => useUi.getState().setNewSession(true);
+const openImport = () => openSheet({ kind: "import" });
+
+interface Group {
+  key: string;
+  label: string;
+  list: Session[];
+}
+
+const branchOf = (x: Session) =>
+  x.project?.checkout.isGit ? x.project.checkout.currentBranch : null;
+const projectName = (x: Session) => x.project?.projectName ?? x.agent.cwd.split("/").pop() ?? "";
+
+const rank = (x: Session) => ORDER.findIndex((o) => o.b === bucketOf(x.agent));
+
+function sorter(sort: Prefs["sort"], pinned: (x: Session) => boolean) {
+  return (a: Session, b: Session) => {
+    const p = Number(pinned(b)) - Number(pinned(a));
+    if (p) return p;
+    if (sort === "title") return (a.agent.title ?? "").localeCompare(b.agent.title ?? "");
+    if (sort === "state") {
+      const r = rank(a) - rank(b);
+      if (r) return r;
+    }
+    const key = sort === "created" ? "createdAt" : "updatedAt";
+    return Date.parse(b.agent[key]) - Date.parse(a.agent[key]);
+  };
+}
+
+/** The scoped, filtered, grouped rows the list shows, plus per-bucket counts for the meter. */
+function useListModel(needle: string) {
+  const sessions = useDaemon((s) => s.sessions);
+  const others = useOtherHostSessions();
+  const hosts = useHosts((s) => s.hosts);
+  const dir = useDirectory();
+  return useMemo(() => {
+    const { scope, prefs, hidden, workspaces } = dir;
+    const labelsOf = (x: Session) =>
+      (x.agent.workspaceId && workspaces[x.agent.workspaceId]?.labels) || [];
+    const pinned = (x: Session) =>
+      !!(x.agent.workspaceId && workspaces[x.agent.workspaceId]?.pinnedAt);
+    const chats = scope === "chats";
+    // "All projects" spans every connected host; a project or chats scope is the active host's.
+    const pool =
+      scope === "all" ? [...Object.values(sessions), ...others] : Object.values(sessions);
+    const hostName = (x: Session) => hosts.find((h) => h.id === x.hostId)?.name ?? "host";
+    const inScope = pool.filter((x) => {
+      if (isChat(x, dir) !== chats) return false;
+      if (!chats && scope !== "all" && projectIdOf(x, dir) !== scope) return false;
+      return true;
+    });
+    const counts: Record<Bucket, number> = { needs: 0, failed: 0, review: 0, working: 0, idle: 0 };
+    for (const x of inScope) counts[bucketOf(x.agent)] += 1;
+    const visible = inScope.filter((x) => {
+      if (!prefs.showHidden && hidden.includes(x.agent.id)) return false;
+      if (prefs.label && !labelsOf(x).includes(prefs.label)) return false;
+      if (!needle) return true;
+      const hay = `${x.agent.title ?? ""} ${projectName(x)} ${branchOf(x) ?? ""}`.toLowerCase();
+      return hay.includes(needle);
+    });
+    visible.sort(sorter(prefs.sort, pinned));
+    const groups: Group[] = [];
+    const push = (key: string, label: string, x: Session) => {
+      let g = groups.find((y) => y.key === key);
+      if (!g) {
+        g = { key, label, list: [] };
+        groups.push(g);
+      }
+      g.list.push(x);
+    };
+    if (chats) {
+      // Already newest-first, so calendar groups come out in order.
+      for (const x of visible) {
+        const g = ageGroup(x.agent.updatedAt);
+        push(g, g, x);
+      }
+    } else if (prefs.group === "project") {
+      for (const x of visible) {
+        if (x.hostId)
+          push(`${x.hostId}:${projectName(x)}`, `${projectName(x)} · ${hostName(x)}`, x);
+        else push(projectIdOf(x, dir) ?? projectName(x), projectName(x), x);
+      }
+      groups.sort((a, b) => a.label.localeCompare(b.label));
+    } else if (prefs.group === "labels") {
+      for (const x of visible) {
+        const ls = labelsOf(x);
+        if (!ls.length) push("~none", "No label", x);
+        for (const l of ls) push(`l:${l}`, l, x);
+      }
+      groups.sort((a, b) => a.label.localeCompare(b.label));
+    } else {
+      for (const o of ORDER) {
+        const list = visible.filter((x) => bucketOf(x.agent) === o.b);
+        if (list.length) groups.push({ key: o.b, label: o.label, list });
+      }
+    }
+    const activeName = hosts.find((h) => h.id === useHosts.getState().activeId)?.name;
+    // Rows name their host once sessions from more than one host share the list.
+    const mixed = others.length > 0 && scope === "all";
+    const hostOf = (x: Session) => {
+      if (x.hostId) return hostName(x);
+      return mixed ? activeName : undefined;
+    };
+    return { groups, counts, total: inScope.length, scopeName: scopeName(dir), hostOf };
+  }, [sessions, others, hosts, dir, needle]);
+}
+
+function scopeName(d: ReturnType<typeof useDirectory.getState>): string {
+  if (d.scope === "all") return "All projects";
+  if (d.scope === "chats") return "Chats";
+  if (d.scope === "archived") return "History";
+  return d.projects.find((p) => p.projectId === d.scope)?.projectDisplayName ?? "Project";
+}
+
+function ScopeIcon({ scope }: { scope: string }) {
+  if (scope === "chats") return <MessageSquare size={14} color={color.cyan2} />;
+  if (scope === "archived") return <History size={14} color={color.cyan2} />;
+  if (scope === "all") return <Layers size={14} color={color.cyan2} />;
+  return <FolderGit2 size={14} color={color.cyan2} />;
+}
+
+export function SessionList() {
+  const [q, setQ] = useState("");
+  const scope = useDirectory((d) => d.scope);
+  const needle = q.trim().toLowerCase();
+  const { groups, counts, total, scopeName: name, hostOf } = useListModel(needle);
+  // Sub-work is read from the active host, so only its own sessions are asked about.
+  const ids = useMemo(
+    () => groups.flatMap((g) => g.list.filter((x) => !x.hostId).map((x) => x.agent.id)),
+    [groups],
+  );
+  const subRunning = useRunningSubWork(ids);
+  const scopeA = useAnchor();
+  const displayA = useAnchor();
+  const [menu, setMenu] = useState<{ id: string; rect: Rect } | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
+  const openMenu = useCallback((id: string, rect: Rect) => setMenu({ id, rect }), []);
+  const chats = scope === "chats";
+  const history = scope === "archived";
+  let body: ReactNode;
+  if (history) body = <HistoryList />;
+  else if (!total) body = <Empty name={name} chats={chats} all={scope === "all"} />;
+  else
+    body = (
+      <>
+        {!chats && <StatusSummary key={name} counts={counts} sub={subRunning} />}
+        <Cut size={5} style={s.filter}>
+          <TextInput
+            value={q}
+            onChangeText={setQ}
+            placeholder={chats ? "Filter chats" : "Filter sessions"}
+            placeholderTextColor={color.faint}
+            style={s.filterIn}
+          />
+          <T v="mono" style={s.kbd}>
+            /
+          </T>
+        </Cut>
+        <ScrollView style={s.scroll} contentContainerStyle={s.scrollBody}>
+          <BracketScope>
+            {groups.map((g) => (
+              <View key={g.key}>
+                <View style={s.groupHead}>
+                  <T v="label">{g.label}</T>
+                  <T v="mono" style={s.groupN}>
+                    {g.list.length}
+                  </T>
+                </View>
+                {g.list.map((sess) => (
+                  <Row
+                    key={`${sess.hostId ?? ""}:${sess.agent.id}`}
+                    sess={sess}
+                    chat={chats}
+                    host={hostOf(sess)}
+                    onMenu={openMenu}
+                  />
+                ))}
+              </View>
+            ))}
+          </BracketScope>
+          {!groups.length && <T style={s.none}>Nothing matches.</T>}
+        </ScrollView>
+      </>
+    );
+  return (
+    <View style={s.root}>
+      <View style={s.head}>
+        <View ref={scopeA.ref} collapsable={false}>
+          <Pressable
+            style={s.scope}
+            onPress={scopeA.open}
+            accessibilityLabel="Switch scope"
+            accessibilityRole="button"
+          >
+            <ScopeIcon scope={scope} />
+            <T v="display" style={s.scopeT} numberOfLines={1}>
+              {name}
+            </T>
+            <ChevronDown size={14} color={color.faint} />
+          </Pressable>
+        </View>
+        <View style={s.spacer} />
+        <View ref={displayA.ref} collapsable={false}>
+          <Pressable onPress={displayA.open} accessibilityLabel="Display options" style={s.icon}>
+            <Filter size={15} color={color.faint} />
+          </Pressable>
+        </View>
+        <Pressable onPress={openNewSession} accessibilityLabel="New session" style={s.icon}>
+          <Plus size={17} color={color.faint} />
+        </Pressable>
+      </View>
+      {body}
+      <ScopeMenu rect={scopeA.rect} onClose={scopeA.close} />
+      <DisplayMenu rect={displayA.rect} onClose={displayA.close} />
+      <SessionMenu rect={menu?.rect ?? null} agentId={menu?.id ?? null} onClose={closeMenu} />
+      <SessionSheets />
+    </View>
+  );
+}
+
+function Empty({ name, chats, all }: { name: string; chats: boolean; all: boolean }) {
+  let title = `No sessions in ${name} yet`;
+  if (chats) title = "No chats yet";
+  else if (all) title = "No sessions yet";
+  return (
+    <View style={s.empty}>
+      <View style={s.emptyMarkBox}>
+        <View style={[s.emptyRing, s.emptyRingLoop]} />
+        <View style={[s.emptyMark, s.emptyMarkLoop]} />
+      </View>
+      <T v="display" style={s.emptyT}>
+        {title}
+      </T>
+      <T style={s.emptyB}>
+        {chats
+          ? "Ask a quick question without a project."
+          : "Start one on a new worktree, or import an existing conversation."}
+      </T>
+      <Button kind="primary" label="New session" onPress={openNewSession} />
+      {!chats && (
+        <Pressable onPress={openImport}>
+          <T style={s.emptyLink}>Import…</T>
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+/** Makes the session's host active (a no-op wait when it already is), then opens the session. */
+async function openOnItsHost(sess: Session): Promise<void> {
+  const host = sess.hostId && useHosts.getState().hosts.find((h) => h.id === sess.hostId);
+  if (host) await connect(host);
+  useUi.getState().select(sess.agent.id);
+}
+
+function Row({
+  sess,
+  chat,
+  host,
+  onMenu,
+}: {
+  sess: Session;
+  chat: boolean;
+  /** Host name, shown when the list mixes sessions from several hosts. */
+  host?: string;
+  onMenu: (id: string, r: Rect) => void;
+}) {
+  const a = sess.agent;
+  const elsewhere = !!sess.hostId;
+  const bucket = bucketOf(a);
+  const selected = useUi((st) => !elsewhere && st.selected === a.id);
+  const prefs = useDirectory((d) => d.prefs);
+  const ws = useDirectory((d) => (a.workspaceId ? d.workspaces[a.workspaceId] : undefined));
+  const catalog = useDirectory((d) => d.labels);
+  const hidden = useDirectory((d) => d.hidden.includes(a.id));
+  const ref = useRef<View>(null);
+  const sub = useRowSubWork(a.id, !elsewhere && (a.status === "running" || selected));
+  const perm = a.pendingPermissions[0];
+  const plan = perm?.kind === "plan";
+  // A question needs an answer, not an approval: its button opens the session's QuestionCard.
+  const question = perm?.kind === "question";
+  const asked = useMemo(
+    () => (question ? (parseQuestions(perm.input)?.[0]?.question ?? null) : null),
+    [question, perm?.input],
+  );
+  const branch = branchOf(sess);
+  const open = useCallback(() => void openOnItsHost(sess), [sess]);
+  // Menu actions run against the active host, so another host's session opens instead.
+  const menuAt = useCallback(
+    (r: Rect) => (elsewhere ? void openOnItsHost(sess) : onMenu(a.id, r)),
+    [a.id, elsewhere, onMenu, sess],
+  );
+  useContextMenu(ref, menuAt);
+  const longPress = useCallback(() => {
+    ref.current?.measureInWindow((x, y, w, h) => menuAt({ x, y, w, h }));
+  }, [menuAt]);
+  // Plans and questions need the session open; anything else approves in place.
+  const act = useCallback(() => {
+    if (!perm || perm.kind === "plan" || perm.kind === "question" || elsewhere)
+      void openOnItsHost(sess);
+    else void answerPermission(a.id, perm.id, true);
+  }, [a.id, elsewhere, perm, sess]);
+  const title = prefs.title === "branch" && branch ? branch : a.title || "Untitled session";
+  const labels = prefs.show.labels ? (ws?.labels ?? []) : [];
+  return (
+    <View ref={ref} collapsable={false}>
+      <Pressable onPress={open} onLongPress={longPress} delayLongPress={350}>
+        {({ hovered }) => (
+          <View style={[s.row, hovered && s.rowHover, selected && s.rowOn, hidden && s.rowHidden]}>
+            <Brackets on={selected} />
+            <View style={s.rowTop}>
+              <View style={s.glyph}>
+                {chat ? (
+                  <MessageSquare size={12} color={color.muted} />
+                ) : (
+                  <StatusGlyph bucket={bucket} />
+                )}
+              </View>
+              <T numberOfLines={1} style={s.title}>
+                {title}
+              </T>
+              {ws?.pinnedAt && <Pin size={11} color={color.faint} />}
+              <SubWorkChip
+                items={sub.items}
+                variant={sub.variant}
+                open={sub.open}
+                onToggle={sub.toggle}
+              />
+              <T v="mono" style={s.time}>
+                {ago(a.updatedAt)}
+              </T>
+            </View>
+            <View style={s.meta}>
+              {host && (
+                <T v="mono" numberOfLines={1} style={s.host}>
+                  {host}
+                </T>
+              )}
+              {chat && (
+                <T style={s.proj} numberOfLines={1}>
+                  {a.model ?? a.provider} · read-only sandbox
+                </T>
+              )}
+              {!chat && prefs.show.project && (
+                <T style={s.proj} numberOfLines={1}>
+                  {projectName(sess)}
+                </T>
+              )}
+              {!chat && prefs.show.branch && branch && prefs.title !== "branch" && (
+                <T v="mono" numberOfLines={1} style={s.branch}>
+                  {branch}
+                </T>
+              )}
+              {!chat && prefs.show.provider && (
+                <T v="mono" numberOfLines={1} style={s.branch}>
+                  {a.provider}
+                </T>
+              )}
+              {labels.map((l) => (
+                <LabelChip key={l} name={l} c={catalog.find((c) => c.name === l)?.color} />
+              ))}
+            </View>
+            {bucket === "failed" && a.lastError && (
+              <T v="mono" numberOfLines={2} style={s.error}>
+                {a.lastError}
+              </T>
+            )}
+            {perm && (
+              <View style={s.permRow}>
+                <View style={s.permCmd}>
+                  <PermLabel plan={plan} asked={asked} fallback={perm.title ?? perm.name} />
+                </View>
+                <Pressable onPress={act}>
+                  <Cut size={6} style={s.approve}>
+                    <T style={s.approveT}>{actLabel(plan, question)}</T>
+                    {!question && (
+                      <T v="mono" style={s.approveK}>
+                        A
+                      </T>
+                    )}
+                  </Cut>
+                </Pressable>
+              </View>
+            )}
+            <SubWorkBody
+              items={sub.items}
+              variant={sub.variant}
+              open={sub.open}
+              onOpen={sub.onOpen}
+            />
+          </View>
+        )}
+      </Pressable>
+    </View>
+  );
+}
+
+function actLabel(plan: boolean, question: boolean): string {
+  if (plan) return "Review";
+  return question ? "Answer" : "Approve";
+}
+
+function PermLabel({
+  plan,
+  asked,
+  fallback,
+}: {
+  plan: boolean;
+  asked: string | null;
+  fallback: string;
+}) {
+  if (plan)
+    return (
+      <T v="mono" numberOfLines={1} style={s.permPlan}>
+        Plan ready
+      </T>
+    );
+  if (asked)
+    return (
+      <T numberOfLines={1} style={s.permAsk}>
+        {asked}
+      </T>
+    );
+  return (
+    <T v="mono" numberOfLines={1} style={s.permText}>
+      {fallback}
+    </T>
+  );
+}
+
+export { Brackets, BracketScope } from "./Brackets";
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: color.bg2 },
+  head: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  scope: { flexDirection: "row", alignItems: "center", gap: 7, flexShrink: 1 },
+  scopeT: { fontSize: 15, flexShrink: 1 },
+  spacer: { flex: 1 },
+  icon: { marginLeft: 14, padding: 2 },
+  none: { color: color.faint, fontSize: 12.5, textAlign: "center", marginTop: 24 },
+  empty: { alignItems: "center", paddingHorizontal: 28, paddingTop: 48, gap: 10 },
+  emptyMarkBox: {
+    width: 48,
+    height: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  emptyMark: {
+    width: 34,
+    height: 34,
+    backgroundColor: color.line2,
+    transform: [{ rotate: "45deg" }],
+  },
+  // Rests, then a quarter turn with a brief lift; the ring sheds off as it lands.
+  emptyMarkLoop: anim(
+    {
+      "0%, 55%": { transform: "rotate(45deg) scale(1)", backgroundColor: color.line2 },
+      "70%": { transform: "rotate(105deg) scale(0.86)", backgroundColor: "#3a4d52" },
+      "82%, 100%": { transform: "rotate(135deg) scale(1)", backgroundColor: color.line2 },
+    },
+    "3.6s",
+    "cubic-bezier(0.65, 0, 0.35, 1)",
+    "infinite",
+  ),
+  emptyRing: {
+    position: "absolute",
+    width: 34,
+    height: 34,
+    borderWidth: 1,
+    borderColor: "rgba(127,217,230,0.5)",
+    opacity: 0,
+    transform: [{ rotate: "45deg" }],
+  },
+  emptyRingLoop: anim(
+    {
+      "0%, 76%": { opacity: 0, transform: "rotate(135deg) scale(1)" },
+      "80%": { opacity: 0.8, transform: "rotate(135deg) scale(1.02)" },
+      "100%": { opacity: 0, transform: "rotate(135deg) scale(1.55)" },
+    },
+    "3.6s",
+    "ease-out",
+    "infinite",
+  ),
+  emptyT: { fontSize: 14.5, textAlign: "center" },
+  emptyB: { fontSize: 12.5, color: color.muted, textAlign: "center", lineHeight: 19 },
+  emptyLink: { fontSize: 12.5, color: color.text, marginTop: 4 },
+  rowHidden: { opacity: 0.5 },
+  filter: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 12,
+    marginBottom: 6,
+    backgroundColor: color.panel,
+    borderWidth: 1,
+    borderColor: color.line,
+  },
+  filterIn: {
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    color: color.text,
+    fontFamily: font.body,
+    fontSize: 13,
+    ...web({ outlineStyle: "none" }),
+  },
+  kbd: {
+    borderWidth: 1,
+    borderColor: color.line2,
+    paddingHorizontal: 5,
+    marginRight: 8,
+    fontSize: 10,
+  },
+  scroll: { flex: 1 },
+  scrollBody: { paddingBottom: 16 },
+  groupHead: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 6,
+  },
+  groupN: { color: color.faint, fontSize: 10.5 },
+  row: {
+    marginHorizontal: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 9,
+    borderBottomWidth: 1,
+    borderBottomColor: color.line,
+  },
+  rowHover: { backgroundColor: color.wash },
+  rowOn: { backgroundColor: "rgba(127,217,230,0.05)" },
+  rowTop: { flexDirection: "row", alignItems: "flex-start", gap: 4 },
+  glyph: { width: 14, paddingTop: 5 },
+  title: { flex: 1, fontSize: 13.5, fontWeight: "500" },
+  time: { fontSize: 10.5, color: color.faint },
+  meta: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
+    marginLeft: 18,
+  },
+  proj: { fontSize: 12, color: color.muted },
+  host: { fontSize: 11, color: color.cyan2, flexShrink: 0 },
+  branch: { fontSize: 11, color: color.faint, flexShrink: 1 },
+  error: { color: color.coral, marginTop: 6, marginLeft: 14 },
+  permRow: { flexDirection: "row", gap: 8, marginTop: 8, marginLeft: 18 },
+  permCmd: {
+    flex: 1,
+    backgroundColor: "rgba(245,184,74,0.07)",
+    paddingHorizontal: 8,
+    justifyContent: "center",
+  },
+  permText: { color: color.text },
+  permPlan: { color: color.amber },
+  permAsk: { color: color.text, fontSize: 12.5 },
+  approve: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: color.cyan2,
+    ...web({ backgroundImage: "linear-gradient(135deg, #7fd9e6, #25b5c8)" }),
+  },
+  approveT: { fontWeight: "600", color: color.onAccent, fontSize: 12.5 },
+  approveK: {
+    fontSize: 9.5,
+    color: color.onAccent,
+    borderWidth: 1,
+    borderColor: "rgba(4,22,26,0.35)",
+    paddingHorizontal: 3,
+  },
+});

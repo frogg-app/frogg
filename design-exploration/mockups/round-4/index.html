@@ -1,0 +1,540 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Frogg mockups — Round 4: every surface</title>
+    <style>
+      :root {
+        font:
+          15px/1.55 system-ui,
+          sans-serif;
+        color: #1c1c1f;
+      }
+      body {
+        margin: 0;
+        background: #f4f4f1;
+      }
+      .wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 36px 20px 80px;
+      }
+      h1 {
+        font-size: 30px;
+        margin: 0 0 4px;
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        color: #555;
+        margin: 0 0 18px;
+        max-width: 780px;
+      }
+      a {
+        color: #06798a;
+      }
+      .toc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0 0 22px;
+      }
+      .toc a {
+        font-size: 13px;
+        padding: 4px 10px;
+        border-radius: 99px;
+        background: #e8e8e2;
+        color: #1c1c1f;
+        text-decoration: none;
+      }
+      .ia {
+        background: #fff;
+        border: 1px solid #e3e3de;
+        border-radius: 16px;
+        padding: 20px 22px;
+        margin-bottom: 26px;
+      }
+      .ia h2 {
+        margin: 0 0 10px;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+      .ia h3 {
+        margin: 18px 0 6px;
+        font-size: 15px;
+      }
+      .ia ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+      .ia li {
+        margin: 3px 0;
+        font-size: 14px;
+      }
+      .cols {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 4px 28px;
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        font-size: 13.5px;
+      }
+      td,
+      th {
+        text-align: left;
+        padding: 6px 8px;
+        border-top: 1px solid #ecece6;
+        vertical-align: top;
+      }
+      th {
+        color: #888;
+        font-weight: 500;
+        font-size: 12px;
+      }
+      code {
+        font-size: 12.5px;
+        background: #efefea;
+        padding: 1px 5px;
+        border-radius: 5px;
+      }
+      .section {
+        font-size: 22px;
+        margin: 40px 0 12px;
+        letter-spacing: -0.02em;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(min(520px, 100%), 1fr));
+        gap: 18px;
+      }
+      .grid.m {
+        grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+      }
+      .card {
+        background: #fff;
+        border-radius: 14px;
+        border: 1px solid #e3e3de;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .shot {
+        display: block;
+        background: #0b0e10;
+        cursor: zoom-in;
+        border: 0;
+        padding: 0;
+        width: 100%;
+      }
+      .shot img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .body {
+        padding: 12px 16px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .cap {
+        margin: 0;
+        font-size: 14px;
+      }
+      .cap b {
+        font-family: ui-monospace, monospace;
+        font-size: 11.5px;
+        color: #888;
+        font-weight: 400;
+        margin-right: 6px;
+      }
+      .row {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .open {
+        font-size: 13px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        background: #1c1c1f;
+        color: #fff;
+        text-decoration: none;
+        margin-right: auto;
+      }
+      .rate button {
+        border: 1px solid #dcdcd5;
+        background: #fff;
+        border-radius: 99px;
+        padding: 3px 12px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+      }
+      .rate button.on {
+        background: #1c1c1f;
+        color: #fff;
+        border-color: #1c1c1f;
+      }
+      textarea {
+        width: 100%;
+        min-height: 54px;
+        border: 1px solid #dcdcd5;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font: inherit;
+        font-size: 14px;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      .save {
+        font-size: 12px;
+        color: #888;
+      }
+      .general {
+        margin-top: 30px;
+        background: #fff;
+        border: 1px solid #e3e3de;
+        border-radius: 16px;
+        padding: 16px 18px;
+      }
+      .lb {
+        position: fixed;
+        inset: 0;
+        background: #000e;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        overflow: auto;
+      }
+      .lb.on {
+        display: flex;
+      }
+      .lb img {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      @media (max-width: 640px) {
+        .wrap {
+          padding: 22px 12px 60px;
+        }
+        h1 {
+          font-size: 24px;
+        }
+        .lb {
+          align-items: flex-start;
+        }
+        .lb img {
+          max-width: none;
+          max-height: none;
+          width: 1440px;
+        }
+        .lb.m img {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Round 4 — Bracket + Rail, every surface</h1>
+      <p class="lede">
+        The Bracket + Rail direction extended to the whole product. The rail is now a tool switcher
+        (not project icons); projects move into a scope switcher at the top of the session list.
+        Each tool owns the side panel and the main area. Every menu, setting, modal, toast and state
+        from the content inventory has a place. Each card opens that exact state live; rate and add
+        notes as you go (saved to the server).
+        <a href="../round-3/index.html">Round 3</a> · <a href="app/index.html">Open the app</a>
+      </p>
+      <nav class="toc" id="toc"></nav>
+
+      <section class="ia" id="ia">
+        <h2>IA decisions</h2>
+        <div class="cols">
+          <div>
+            <h3>Rail tools (top to bottom)</h3>
+            <table>
+              <tr>
+                <th>Tool</th>
+                <th>Side panel</th>
+                <th>Main area</th>
+              </tr>
+              <tr>
+                <td>Sessions</td>
+                <td>Scope switcher, fleet bar, attention inbox, subagents under rows</td>
+                <td>Tabs + chat, changes drawer (\)</td>
+              </tr>
+              <tr>
+                <td>Search</td>
+                <td>Code + conversation results</td>
+                <td>Match in context</td>
+              </tr>
+              <tr>
+                <td>Files</td>
+                <td>Worktree tree with git status</td>
+                <td>Editor tabs</td>
+              </tr>
+              <tr>
+                <td>Source control</td>
+                <td>Branch, commit box, staged/changes, commits, stashes</td>
+                <td>Diff with review comments</td>
+              </tr>
+              <tr>
+                <td>PRs &amp; CI</td>
+                <td>PRs · CI runs · Streams (dev)</td>
+                <td>PR detail, run log, stream lanes</td>
+              </tr>
+              <tr>
+                <td>Terminals &amp; services</td>
+                <td>Terminals, frogg.json scripts, setup log</td>
+                <td>Split terminals</td>
+              </tr>
+              <tr>
+                <td>Tasks</td>
+                <td>Agent plan + subagents · project to-dos</td>
+                <td>To-do board</td>
+              </tr>
+              <tr>
+                <td>Hosts &amp; devices</td>
+                <td>Hosts, network discovery</td>
+                <td>Load, presence, pairing, security, storage, daemon</td>
+              </tr>
+              <tr>
+                <td>Usage &amp; limits</td>
+                <td>Every account’s windows</td>
+                <td>Account history, top sessions, limit behaviour</td>
+              </tr>
+              <tr>
+                <td>Plugins</td>
+                <td>Installed · Browse · Sources</td>
+                <td>Plugin detail / catalog</td>
+              </tr>
+              <tr>
+                <td><i>Plugin tools</i></td>
+                <td colspan="2">
+                  Below a dashed divider: one rail entry per plugin panel (Sentry, Linear). Same
+                  side + main frame.
+                </td>
+              </tr>
+              <tr>
+                <td>Inbox <b>(new)</b></td>
+                <td>Persisted notifications by urgency</td>
+                <td>Act in place (approve, open, mute)</td>
+              </tr>
+              <tr>
+                <td>Companion</td>
+                <td colspan="2">Voice overlay (preview)</td>
+              </tr>
+              <tr>
+                <td>Settings</td>
+                <td>Settings tree</td>
+                <td>Settings page</td>
+              </tr>
+            </table>
+            <p class="lede" style="margin-top: 8px; font-size: 13px">
+              Not on the rail: Browser (a tab kind, desktop only), Chats and History (Sessions
+              scopes), Providers and Accounts (Settings, with Usage on the rail), Diagnostics and
+              Dev builds (Settings › App).
+            </p>
+          </div>
+          <div>
+            <h3>Settings tree (grouped by where it is stored)</h3>
+            <ul>
+              <li>
+                <b>You</b> · this device: Appearance · Chat &amp; composer · Files, editor &amp;
+                terminal · Keyboard shortcuts · Notifications &amp; inbox · Voice &amp; Companion
+              </li>
+              <li>
+                <b>Agents</b> · host: Providers &amp; models · Accounts · Permission modes · Usage
+                &amp; limits · Context &amp; clean cut · Tools, skills &amp; prompts
+              </li>
+              <li>
+                <b>Host</b> (host switcher): Overview &amp; connections · Devices &amp; access ·
+                Security · Automation · Session labels · Terminal profiles · Resources &amp; storage
+                · Daemon &amp; updates
+              </li>
+              <li>
+                <b>Project</b> (project switcher, writes frogg.json): Worktrees · Scripts &amp;
+                services · CI &amp; release streams · Generated text
+              </li>
+              <li><b>App</b>: Plugins · App updates · About &amp; diagnostics · Developer</li>
+            </ul>
+            <p class="lede" style="margin-top: 8px; font-size: 13px">
+              Every page header carries a scope badge (This device / devbox · config.json /
+              frogg-app · frogg.json). ⌘K searches settings by keyword.
+            </p>
+            <h3>Where modals live</h3>
+            <ul>
+              <li>
+                Sessions: New session (⌘N, + in list header), Import (scope menu, session menu),
+                Archive / Rewind / Labels (session and tab menus, row right-click)
+              </li>
+              <li>
+                Composer: model, mode, account, provider, attach and / popovers open upward from
+                their chips
+              </li>
+              <li>
+                Source control: branch switcher (branch card), git actions (⋯), commit options; PRs:
+                merge strategies
+              </li>
+              <li>
+                Hosts: Add a host (+), Pair a device (host header, Settings › Devices), Deploy,
+                Remove (host ⋯)
+              </li>
+              <li>
+                Plugins: consent on Install; Providers: detail and catalog in Settings; Accounts:
+                Add / Move
+              </li>
+              <li>
+                Global: ⌘K palette, ? shortcuts, toasts bottom-right, host banners above the session
+                header
+              </li>
+            </ul>
+          </div>
+        </div>
+        <h3>Consolidations from the inventory</h3>
+        <ul>
+          <li>
+            <b>Pairing: six flows → one.</b> “Add a host” has five methods (offer via QR/link/code,
+            network, SSH, deploy, direct) that all end in one confirm step (fingerprint, role,
+            claim). “Pair a device” shows QR, link and code as one offer.
+          </li>
+          <li>
+            <b>Daemon updates: four paths → one page.</b> Host › Daemon &amp; updates; Frogg picks
+            self-update, desktop bundle or SSH redeploy. Beta daemons move to Developer.
+          </li>
+          <li>
+            <b>Permission modes: one vocabulary.</b> Plan · Ask · Auto-edit · Auto · Unattended,
+            with the provider’s own name shown beside (Bypass / Full Access / Allow All →
+            Unattended).
+          </li>
+          <li>
+            <b>“Session” everywhere.</b> Workspace is gone from copy; worktree is an attribute of a
+            session.
+          </li>
+          <li>
+            <b>Changes + git actions = Source control.</b> One tool; the chat keeps a quick changes
+            drawer.
+          </li>
+          <li><b>Chats and History are Sessions scopes,</b> not separate screens.</li>
+          <li>
+            <b>Usage in one place.</b> Device meter prefs and host plan usage both live under Usage
+            &amp; limits (tool + settings page).
+          </li>
+          <li>
+            <b>Notifications persist.</b> New Inbox is the record; toasts, OS alerts, push and
+            spoken alerts are deliveries, routed per type.
+          </li>
+          <li>
+            <b>Hidden settings get controls:</b> vim mode, open-in-side-pane, PR open location, port
+            ranges, Jenkins CI.
+          </li>
+          <li>
+            <b>Shortcut fixes:</b> ⌘O labelled “New agent in this session”; split / focus pane on
+            every platform; rail tools get bindings.
+          </li>
+          <li>
+            <b>Developer-only surfaces</b> (release streams, dev builds, beta daemons) appear only
+            with Developer mode on.
+          </li>
+        </ul>
+      </section>
+
+      <div id="groups"></div>
+      <div class="general">
+        <b>General notes</b> (structure, rail order, anything missing)
+        <textarea data-k="general"></textarea><span class="save"></span>
+      </div>
+    </div>
+    <div class="lb" id="lb"><img alt="" /></div>
+    <script>
+      const KEY = "frogg-r4-feedback";
+      let fb = JSON.parse(localStorage.getItem(KEY) || "{}");
+      const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      fetch("states.json", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((states) => {
+          const groups = [...new Set(states.map((s) => s.g))];
+          document.getElementById("toc").innerHTML =
+            '<a href="#ia">IA decisions</a>' +
+            groups.map((g) => `<a href="#${slug(g)}">${g}</a>`).join("");
+          document.getElementById("groups").innerHTML = groups
+            .map((g) => {
+              const l = states.filter((s) => s.g === g);
+              return `<h2 class="section" id="${slug(g)}">${g} <small style="color:#999;font-size:14px">${l.length}</small></h2><div class="grid ${l[0].m ? "m" : ""}">${l.map(card).join("")}</div>`;
+            })
+            .join("");
+          fill();
+        });
+      const card = (s) => `<div class="card">
+        <button class="shot" data-src="shots/${s.id}.jpg" data-m="${s.m ? 1 : ""}"><img src="shots/${s.id}.jpg" alt="${s.c}" loading="lazy" width="${s.m ? 390 : 1440}" height="${s.m ? 844 : 900}" /></button>
+        <div class="body"><p class="cap"><b>${s.id}</b>${s.c}</p>
+        <div class="row"><a class="open" href="app/index.html?state=${s.id}">Open live</a><span class="rate" data-r="${s.id}">${["Love", "Maybe", "No"].map((v) => `<button data-v="${v}">${v}</button>`).join(" ")}</span></div>
+        <textarea data-k="${s.id}" placeholder="Notes"></textarea><span class="save"></span></div></div>`;
+      fetch("feedback.json", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          if (j) {
+            fb = Object.assign({}, j, fb);
+            fill();
+          }
+        })
+        .catch(() => {});
+      function fill() {
+        document
+          .querySelectorAll("textarea[data-k]")
+          .forEach((t) => (t.value = fb[t.dataset.k] || ""));
+        document
+          .querySelectorAll(".rate")
+          .forEach((r) =>
+            r
+              .querySelectorAll("button")
+              .forEach((b) => b.classList.toggle("on", fb["rate_" + r.dataset.r] === b.dataset.v)),
+          );
+      }
+      let timer;
+      function save(el) {
+        localStorage.setItem(KEY, JSON.stringify(fb));
+        clearTimeout(timer);
+        const note = el && el.closest(".card, .general")?.querySelector(".save");
+        timer = setTimeout(
+          () =>
+            fetch("../feedback/round-4", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(fb),
+            })
+              .then((r) => note && (note.textContent = r.ok ? "Saved" : "Saved locally only"))
+              .catch(() => note && (note.textContent = "Saved locally only")),
+          500,
+        );
+      }
+      document.addEventListener("input", (e) => {
+        if (e.target.dataset.k) {
+          fb[e.target.dataset.k] = e.target.value;
+          save(e.target);
+        }
+      });
+      const lb = document.getElementById("lb");
+      document.addEventListener("click", (e) => {
+        const b = e.target.closest(".rate button");
+        if (b) {
+          const k = "rate_" + b.parentElement.dataset.r;
+          fb[k] = fb[k] === b.dataset.v ? "" : b.dataset.v;
+          fill();
+          save(b);
+        }
+        const s = e.target.closest(".shot");
+        if (s) {
+          lb.querySelector("img").src = s.dataset.src;
+          lb.classList.toggle("m", !!s.dataset.m);
+          lb.classList.add("on");
+        } else if (e.target.closest("#lb")) lb.classList.remove("on");
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,157 @@
+#!/usr/bin/env node
+import { spawnSync } from "node:child_process";
+import { cpSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { parseArgs } from "node:util";
+import { portableCommand } from "../../../scripts/dev/npm-command.mjs";
+import { writeElectronChecksums } from "../../../scripts/release/electron-checksums.mjs";
+import { froggNextArtifactName } from "../../../packages/branding/src/artifact-contract.mjs";
+
+const root = path.resolve(import.meta.dirname, "../../..");
+const app = path.join(root, "apps/ui-next");
+const { values } = parseArgs({
+  options: {
+    target: { type: "string", default: "darwin-arm64" },
+    "export-only": { type: "boolean", default: false },
+    // Print the release asset names this target produces, then exit.
+    "dry-run": { type: "boolean", default: false },
+  },
+});
+const icons = path.join(root, ".generated/branding/icons");
+// Per target: the OS that must build it, the artifact folder and electron-builder settings.
+const targets = {
+  "darwin-arm64": {
+    os: "darwin",
+    label: "Mac ARM",
+    dir: "ui-next-mac-arm64",
+    cli: ["--mac", "--arm64"],
+    assets: ["mac-arm64.dmg", "mac-arm64.zip"],
+    config: {
+      artifactName: froggNextArtifactName("${version}", "mac-${arch}.${ext}"),
+      mac: {
+        target: ["dmg", "zip"],
+        category: "public.app-category.developer-tools",
+        icon: path.join(icons, "icon.icns"),
+        identity: "-",
+        notarize: false,
+      },
+    },
+  },
+  "win32-x64": {
+    os: "win32",
+    label: "Windows x64",
+    dir: "ui-next-win-x64",
+    cli: ["--win", "--x64"],
+    assets: ["win-x64.exe", "win-x64.zip"],
+    config: {
+      artifactName: froggNextArtifactName("${version}", "win-${arch}.${ext}"),
+      win: { target: ["nsis", "zip"], icon: path.join(icons, "icon.ico") },
+      nsis: { oneClick: true, perMachine: false, runAfterFinish: true, shortcutName: "Frogg Next" },
+    },
+  },
+};
+const target = targets[values.target];
+if (!target) throw new Error(`--target must be one of: ${Object.keys(targets).join(", ")}`);
+const { version } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
+if (values["dry-run"]) {
+  for (const suffix of target.assets) {
+    console.log(path.join("release-assets", target.dir, froggNextArtifactName(version, suffix)));
+  }
+  process.exit(0);
+}
+if (!values["export-only"] && process.platform !== target.os) {
+  throw new Error(
+    `${target.label} artifacts must be built on ${target.os}. Use --export-only to validate the UI elsewhere.`,
+  );
+}
+function run(command, args, cwd = root) {
+  const result = spawnSync(command, args, {
+    cwd,
+    stdio: "inherit",
+    env: process.env,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) process.exit(result.status ?? 1);
+}
+for (const script of ["build:highlight", "build:client"]) {
+  const npm = portableCommand("npm", ["run", script]);
+  run(npm.command, npm.args);
+}
+const stage = path.join(app, "dist-desktop");
+rmSync(stage, { recursive: true, force: true });
+mkdirSync(stage, { recursive: true });
+run(
+  process.execPath,
+  [
+    path.join(root, "node_modules/expo/bin/cli"),
+    "export",
+    "--platform",
+    "web",
+    "--output-dir",
+    path.join(stage, "web"),
+  ],
+  app,
+);
+cpSync(path.join(app, "assets/fonts"), path.join(stage, "web/fonts"), { recursive: true });
+cpSync(path.join(app, "desktop/fonts.css"), path.join(stage, "web/desktop-fonts.css"));
+const indexPath = path.join(stage, "web/index.html");
+const policy =
+  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' ws: wss: https: http:; worker-src 'self' blob:";
+writeFileSync(
+  indexPath,
+  readFileSync(indexPath, "utf8").replace(
+    "<head>",
+    `<head><meta http-equiv="Content-Security-Policy" content="${policy}"><link id="frogg-fonts" rel="stylesheet" href="/desktop-fonts.css">`,
+  ),
+);
+for (const file of ["main.cjs", "resolve-asset.cjs", "window-chrome.cjs"]) {
+  cpSync(path.join(app, "desktop", file), path.join(stage, file));
+}
+const desktopPackage = JSON.parse(
+  readFileSync(path.join(root, "apps/desktop/package.json"), "utf8"),
+);
+writeFileSync(
+  path.join(stage, "package.json"),
+  JSON.stringify({
+    name: "frogg-next-desktop",
+    version,
+    description: "Frogg Next interface prototype",
+    author: desktopPackage.author,
+    license: "Apache-2.0",
+    main: "main.cjs",
+  }),
+);
+cpSync(path.join(root, "LICENSE"), path.join(stage, "LICENSE"));
+cpSync(path.join(root, "NOTICE"), path.join(stage, "NOTICE"));
+if (values["export-only"]) {
+  console.log(`Desktop UI staged at ${stage}`);
+} else {
+  const outDir = path.join(root, "release-assets", target.dir);
+  const configPath = path.join(stage, "builder.json");
+  writeFileSync(
+    configPath,
+    JSON.stringify({
+      appId: "app.frogg.next",
+      productName: "Frogg Next",
+      electronVersion: desktopPackage.devDependencies.electron,
+      npmRebuild: false,
+      asar: true,
+      files: ["main.cjs", "resolve-asset.cjs", "web/**/*", "package.json", "LICENSE", "NOTICE"],
+      directories: { output: outDir },
+      ...target.config,
+      publish: null,
+    }),
+  );
+  run(process.execPath, [
+    path.join(root, "node_modules/electron-builder/cli.js"),
+    "--projectDir",
+    stage,
+    "--config",
+    configPath,
+    ...target.cli,
+    "--publish",
+    "never",
+  ]);
+  await writeElectronChecksums(outDir);
+  console.log(`${target.label} artifacts: ${outDir}`);
+}

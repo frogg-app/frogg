@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createTestLogger } from "../../../../test-utils/test-logger.js";
-import { TranscriptFollower, TurnLease } from "./linked-transcript.js";
+import { advancesConversation, TranscriptFollower, TurnLease } from "./linked-transcript.js";
 
 let dir: string;
 let transcript: string;
@@ -125,5 +125,23 @@ describe("TurnLease", () => {
     cancelled = true;
     expect(await cancelledWait).toBe(false);
     holder.release();
+  });
+});
+
+describe("advancesConversation", () => {
+  test("a main-thread user or assistant message moves the conversation on", () => {
+    expect(advancesConversation(['{"type":"assistant","uuid":"x"}'])).toBe(true);
+    expect(advancesConversation(['{"type":"summary"}', '{"type":"user","uuid":"y"}'])).toBe(true);
+  });
+
+  test("the live process's own idle writes do not", () => {
+    const wake = JSON.stringify({
+      type: "queue-operation",
+      operation: "enqueue",
+      content: "<task-notification><task-id>bg-1</task-id></task-notification>",
+    });
+    expect(advancesConversation([wake])).toBe(false);
+    expect(advancesConversation(['{"type":"assistant","isSidechain":true}'])).toBe(false);
+    expect(advancesConversation(["not json", '{"type":"file-history-snapshot"}'])).toBe(false);
   });
 });

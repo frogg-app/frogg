@@ -795,6 +795,59 @@ describe("real provider usage fetchers", () => {
     }
   });
 
+  it("reports the Claude sign-in's email from the matching .claude.json", async () => {
+    const accountDir = mkdtempSync(join(tmpdir(), "usage-test-claude-acct-"));
+    try {
+      writeClaudeCredentials(claudeHome, "at_default");
+      writeClaudeCredentials(accountDir, "at_work");
+      // The primary sign-in keeps its state file in the home directory.
+      writeFileSync(
+        join(homeDir, ".claude.json"),
+        JSON.stringify({ oauthAccount: { emailAddress: "me@home.example" } }),
+      );
+      writeFileSync(
+        join(accountDir, ".claude.json"),
+        JSON.stringify({ oauthAccount: { emailAddress: "me@work.example" } }),
+      );
+      fetchApi = vi.fn(async () => jsonResponse(makeClaudeResponse({}))) as never;
+
+      const primary = await service().listUsage();
+      const scoped = await service().listUsage({ configDirs: { claude: accountDir } });
+
+      expect(findProvider(primary, "claude").accountEmail).toBe("me@home.example");
+      expect(findProvider(scoped, "claude").accountEmail).toBe("me@work.example");
+    } finally {
+      rmSync(accountDir, { recursive: true, force: true });
+    }
+  });
+
+  it("never names the primary Claude sign-in for an account without a state file", async () => {
+    const accountDir = mkdtempSync(join(tmpdir(), "usage-test-claude-acct-"));
+    try {
+      writeClaudeCredentials(accountDir, "at_work");
+      writeFileSync(
+        join(homeDir, ".claude.json"),
+        JSON.stringify({ oauthAccount: { emailAddress: "me@home.example" } }),
+      );
+      fetchApi = vi.fn(async () => jsonResponse(makeClaudeResponse({}))) as never;
+
+      const scoped = await service().listUsage({ configDirs: { claude: accountDir } });
+
+      expect(findProvider(scoped, "claude").accountEmail).toBeNull();
+    } finally {
+      rmSync(accountDir, { recursive: true, force: true });
+    }
+  });
+
+  it("reports the Codex sign-in's email from the usage response", async () => {
+    writeCodexAuth(codexHome, "at_codex_valid");
+    fetchApi = vi.fn(async () => jsonResponse(makeCodexResponse({}))) as never;
+
+    const result = await service().listUsage();
+
+    expect(findProvider(result, "codex").accountEmail).toBe("user@example.com");
+  });
+
   // The keychain entry belongs to the primary sign-in, so falling back to it for
   // another account would report the wrong account's quota under its name.
   it("never falls back to the macOS Keychain for a non-default account", async () => {

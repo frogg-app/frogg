@@ -1,0 +1,159 @@
+/* Light mode of the remix: Prism's palette and dark rail, Bracket inbox, Slate tabs + status bar, Facet pane. */
+:root {
+  --bg: #eef3f5;
+  --bg-2: #ffffff;
+  --panel: #eef3f5;
+  --raise: #e4ecef;
+  --line: #0b1f2a14;
+  --line-2: #0b1f2a26;
+  --text: #0b1a22;
+  --muted: #4c5d65;
+  --faint: #8a989e;
+  --cyan: #0e9fb3;
+  --cyan-2: #0a7f93;
+  --deep: #045b9d;
+  --mint: #17a86b;
+  --amber: #d98a00;
+  --coral: #e04848;
+  --on-accent: #fff;
+  --shim-a: #8a989e;
+  --shim-b: #045b9d;
+  color-scheme: light;
+}
+body::after {
+  opacity: 0.03;
+}
+code {
+  color: var(--deep);
+}
+.rail {
+  background: #0b1a22;
+  border: 0;
+}
+.ri {
+  color: #8fa3ab;
+  background: #ffffff0a;
+}
+.ri:hover {
+  color: #fff;
+  background: #ffffff17;
+}
+.ri.on {
+  background: #fff;
+  color: var(--deep);
+}
+.ri .tip {
+  background: #0b1a22;
+  color: #fff;
+}
+.rsep {
+  background: #ffffff1f;
+}
+.ri.add {
+  outline-color: #ffffff26;
+  color: #8fa3ab;
+}
+.r1 b {
+  color: var(--text);
+  font-weight: 600;
+}
+.st-idle .r1 b {
+  color: var(--muted);
+  font-weight: 500;
+}
+.brk i {
+  border-color: var(--deep);
+}
+.brk::before {
+  background: linear-gradient(90deg, #0e9fb31a, transparent);
+}
+.r3 .cmd {
+  background: #d98a0014;
+}
+.qa,
+.btn.approve,
+.send {
+  background: linear-gradient(135deg, var(--cyan), var(--deep));
+  color: #fff;
+}
+.tabs {
+  background: var(--bg);
+}
+.tab {
+  background: #e2eaee;
+}
+.tab.on {
+  background: #fff;
+}
+.tab.on::before {
+  background: var(--deep);
+  height: 2px;
+}
+.msg.user .bubble {
+  background: #0b1a22;
+  color: #eef4f6;
+}
+.tool,
+.composer {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.hl.add,
+.diff .dl.add {
+  background: #17a86b14;
+  color: #0d6b44;
+}
+.hl.del,
+.diff .dl.del {
+  background: #e0484812;
+  color: #a52b2b;
+}
+.hunk {
+  background: #f7fafb;
+  border: 1px solid var(--line);
+}
+.perm > * {
+  background: #fffaf0;
+}
+.btn {
+  background: var(--panel);
+}
+.chip {
+  background: var(--panel);
+}
+.term {
+  background: #0b1a22;
+  color: #a9bcc3;
+}
+.term b {
+  color: #fff;
+}
+.term .pr {
+  color: #7fd9e6;
+}
+.status {
+  background: #0b1a22;
+  border: 0;
+  color: #a9bcc3;
+}
+.sb.brand {
+  color: #7fd9e6;
+}
+.sb .add {
+  color: #3fcf8e;
+}
+.pal {
+  background: #fffffff2;
+}
+.pal-scrim {
+  background: #0b1a2233;
+}
+.pind {
+  background: var(--panel);
+}
+.pind::after {
+  background: var(--deep);
+}
+::-webkit-scrollbar-thumb {
+  background: #0b1f2a1f;
+}

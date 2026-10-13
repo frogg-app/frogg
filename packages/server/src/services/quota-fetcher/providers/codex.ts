@@ -170,6 +170,7 @@ export class CodexQuotaProvider implements ProviderUsageFetcher {
       displayName: this.displayName,
       status: "available",
       planLabel: resp.plan_type ?? null,
+      accountEmail: resp.email ?? null,
       windows,
       balances,
       details: [],

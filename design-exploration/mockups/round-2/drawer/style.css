@@ -1,0 +1,671 @@
+:root {
+  --wood: #6b4a2f;
+  --wood2: #5a3d26;
+  --card: #fbf7ec;
+  --ink: #2a2620;
+  --soft: #7b7263;
+  --rule: #2a26201f;
+  --blue: #6f8fc9;
+  --red: #c8473a;
+  --frog: #3f7d3a;
+  --shim-a: #7b7263;
+  --shim-b: #2a2620;
+  font:
+    14.5px/1.55 "Literata",
+    Georgia,
+    serif;
+  color: var(--ink);
+}
+body {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  height: 100vh;
+  background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence baseFrequency='.012 .3' numOctaves='3' seed='4'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .24 0 0 0 0 .15 0 0 0 .35 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+    #8a6845;
+}
+code,
+kbd,
+.tool,
+.composer-bar,
+.sub,
+.callno {
+  font-family: "Courier Prime", monospace;
+}
+/* the cabinet drawer */
+.cabinet {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 14px 0 0 14px;
+}
+.plate {
+  align-self: center;
+  margin: 0 0 14px;
+  padding: 6px 18px;
+  background: linear-gradient(#e7d9b0, #b99c5a);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px #fff8,
+    0 2px 4px #0006;
+  text-align: center;
+  color: #3b2d14;
+}
+.plate span {
+  font: 800 18px/1 "Bricolage Grotesque";
+  letter-spacing: 0.04em;
+  display: block;
+}
+.plate small {
+  font: 11px "Courier Prime";
+}
+.drawer {
+  flex: 1;
+  overflow: auto;
+  background: var(--wood2);
+  border-radius: 6px 0 0 0;
+  box-shadow:
+    inset 0 10px 18px #0007,
+    inset 6px 0 10px #0004;
+  padding: 18px 14px 40px 16px;
+}
+.divider {
+  position: relative;
+  margin-top: 14px;
+}
+.tab {
+  position: relative;
+  margin-left: calc(var(--tab) * 22%);
+  width: 48%;
+  background: var(--tint);
+  border-radius: 8px 8px 0 0;
+  padding: 5px 12px 4px;
+  box-shadow: 0 -1px 2px #0003;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  z-index: 2;
+}
+.tab b {
+  font: 800 13px "Bricolage Grotesque";
+}
+.tab small {
+  font: 10.5px "Courier Prime";
+  color: #0008;
+}
+.cards {
+  background: var(--tint);
+  border-radius: 0 6px 6px 6px;
+  padding: 6px 6px 8px;
+  box-shadow: 0 3px 6px #0004;
+}
+.card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  position: relative;
+  background:
+    linear-gradient(transparent 26px, #c8473a66 26px, #c8473a66 27px, transparent 27px),
+    repeating-linear-gradient(transparent 0 19px, #6f8fc933 19px 20px) 0 27px,
+    var(--card);
+  padding: 6px 12px 8px 30px;
+  margin-top: -2px;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 0 #0002,
+    0 -1px 0 #fff;
+  transition:
+    transform var(--d-base) var(--spring-snappy),
+    box-shadow var(--d-base);
+}
+.card .hole {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: var(--wood2);
+  box-shadow: inset 0 1px 2px #000a;
+}
+.card .t {
+  display: block;
+  font:
+    700 13.5px/1.2 "Courier Prime",
+    monospace;
+  padding-right: 36px;
+  min-height: 20px;
+}
+.card .sub {
+  display: block;
+  font-size: 11px;
+  color: var(--soft);
+  margin-top: 4px;
+}
+.card.st-idle {
+  filter: saturate(0.4);
+}
+.card.st-idle .t {
+  color: var(--soft);
+}
+.card:hover {
+  transform: translateX(6px);
+}
+/* selection = the card is pulled out of the drawer */
+.card.on {
+  transform: translateX(26px) rotate(-0.6deg);
+  box-shadow: -2px 6px 14px #0005;
+  z-index: 3;
+}
+.card.on .t {
+  text-decoration: underline wavy #3f7d3a88;
+  text-underline-offset: 4px;
+}
+.card.nudge {
+  animation: nudge 600ms var(--spring-bouncy);
+}
+@keyframes nudge {
+  30% {
+    transform: translateX(14px);
+  }
+}
+/* status as physical flags: clipped tabs of coloured paper on the card edge */
+.flag {
+  position: absolute;
+  right: -2px;
+  top: 6px;
+  font: 700 9.5px/1 "Courier Prime";
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 4px 8px 4px 6px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 5px 50%);
+  color: #fff;
+}
+.flag-permission {
+  background: var(--red);
+}
+.flag-error {
+  background: #333;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 5px 70%, 2px 45%, 6px 25%);
+}
+.flag-done {
+  background: var(--frog);
+}
+.flag-running {
+  background: #e3b23c;
+  color: #3b2d14;
+  animation: flutter 1.6s ease-in-out infinite;
+  transform-origin: right;
+}
+@keyframes flutter {
+  50% {
+    transform: scaleX(0.86);
+  }
+}
+.ask {
+  display: block;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.qa {
+  font: 700 11px "Courier Prime";
+  background: var(--red);
+  color: #fff;
+  padding: 1px 7px;
+  border-radius: 2px;
+  margin-left: 4px;
+}
+.qa:hover {
+  background: var(--ink);
+}
+/* the main card on the desk */
+.desk {
+  padding: 26px 30px 20px 34px;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.card-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--card);
+  border-radius: 4px;
+  box-shadow:
+    0 1px 0 #fff inset,
+    0 20px 40px #0006,
+    0 2px 4px #0004;
+  border-top: 10px solid var(--tint, #e9d9a6);
+  position: relative;
+}
+.card-h {
+  padding: 14px 32px 12px 64px;
+  border-bottom: 2px solid #c8473a88;
+  position: relative;
+}
+.callno {
+  font-size: 12px;
+  color: var(--soft);
+  letter-spacing: 0.08em;
+}
+.card-h h1 {
+  font: 800 30px/1.1 "Bricolage Grotesque";
+  margin: 2px 0 6px;
+  letter-spacing: -0.01em;
+  max-width: 80%;
+}
+.meta {
+  font-size: 13px;
+  color: var(--soft);
+}
+.clip {
+  position: absolute;
+  right: -6px;
+  top: 16px;
+  transform: scale(1.6);
+  transform-origin: right top;
+}
+.m-back {
+  display: none;
+}
+.card-body {
+  flex: 1;
+  overflow: auto;
+  padding: 6px 32px 24px 64px;
+  background: repeating-linear-gradient(transparent 0 25px, #6f8fc92e 25px 26px);
+  background-attachment: local;
+  position: relative;
+}
+.card-body::before {
+  content: "";
+  position: fixed;
+}
+.chat {
+  max-width: 720px;
+  view-transition-name: chat;
+}
+.turn-divider {
+  font: 11px "Courier Prime";
+  color: var(--soft);
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.msg {
+  margin: 10px 0;
+}
+.msg.user .bubble {
+  font:
+    400 15px/1.55 "Courier Prime",
+    monospace;
+  background: #fff;
+  border: 1px solid var(--rule);
+  padding: 8px 12px;
+  transform: rotate(-0.4deg);
+  box-shadow: 2px 3px 0 #0001;
+  position: relative;
+  max-width: 560px;
+}
+.msg.user .bubble::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: 24px;
+  width: 46px;
+  height: 18px;
+  background: #f3e9a8cc;
+  transform: rotate(-4deg);
+  box-shadow: 0 1px 1px #0001;
+}
+.msg.agent .who {
+  font: 700 11px "Courier Prime";
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--frog);
+}
+.agent-swatch {
+  display: none;
+}
+.md p {
+  margin: 0 0 8px;
+}
+.reasoning {
+  font-size: 13px;
+  color: var(--soft);
+  font-style: italic;
+}
+.add {
+  color: var(--frog);
+}
+.del {
+  color: var(--red);
+}
+.tool {
+  font-size: 12.5px;
+  padding: 2px 0;
+}
+.tool-head {
+  cursor: pointer;
+  padding: 2px 0;
+}
+.tool-ico {
+  color: var(--soft);
+  display: flex;
+}
+.tool-head .verb {
+  font-weight: 700;
+}
+.tool-head .tool-meta {
+  color: var(--soft);
+}
+.tool.done .tool-state::before {
+  color: var(--frog);
+}
+.tool.fail {
+  color: var(--red);
+}
+.tool-beam {
+  height: 2px;
+  background: #e3b23c;
+  top: auto;
+  bottom: 0;
+}
+.tool-body {
+  border-left: 3px solid #e3b23c;
+  background: #fff9;
+  padding: 6px 10px;
+  margin: 4px 0;
+  font-size: 12px;
+}
+.diff .dl.add {
+  background: #3f7d3a1a;
+}
+.diff .dl.del {
+  background: #c8473a14;
+  color: var(--red);
+}
+@keyframes afterglow {
+  from {
+    background: #e3b23c66;
+  }
+}
+.tool-err {
+  color: var(--red);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+/* permission: a pink request slip clipped on */
+.perm {
+  background: #f6d6d0;
+  padding: 12px 16px 14px;
+  margin: 16px 0;
+  max-width: 560px;
+  position: relative;
+  box-shadow: 0 6px 14px #0002;
+  transform: rotate(0.5deg);
+}
+.perm::before {
+  content: "";
+  position: absolute;
+  top: -12px;
+  left: 30px;
+  width: 14px;
+  height: 34px;
+  border: 2.5px solid #888;
+  border-radius: 8px;
+  border-bottom-color: transparent;
+}
+.perm.enter {
+  animation: slip 380ms var(--spring-bouncy) both;
+}
+@keyframes slip {
+  from {
+    transform: translateY(-20px) rotate(-3deg);
+    opacity: 0;
+  }
+}
+.perm-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font: 700 12px "Courier Prime";
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--red);
+}
+.perm-agent {
+  margin-left: auto;
+  color: var(--soft);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+.perm-body {
+  font-size: 15px;
+  margin: 6px 0 10px;
+}
+.btn {
+  font: 700 12px "Courier Prime";
+  padding: 5px 12px;
+  background: #fff;
+  border: 1px solid #0002;
+  border-radius: 2px;
+}
+.btn.approve {
+  background: var(--frog);
+  color: #fff;
+  border-color: var(--frog);
+}
+.btn.ghost {
+  background: transparent;
+  text-decoration: underline;
+  border-color: transparent;
+}
+.perm.resolved {
+  background: #eee6d6;
+  transform: none;
+}
+.perm-result {
+  font-style: italic;
+  color: var(--soft);
+}
+.thinking {
+  font-style: italic;
+  display: flex;
+  gap: 10px;
+}
+.turn-footer {
+  display: flex;
+  gap: 14px;
+  font: 11px "Courier Prime";
+  color: var(--soft);
+}
+.link {
+  text-decoration: underline;
+}
+.error-msg {
+  color: var(--red);
+}
+.dock {
+  border-top: 1px solid var(--rule);
+  padding: 10px 32px 14px 64px;
+}
+.dstrip {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  font-size: 12.5px;
+  padding-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.dstrip-files {
+  color: var(--soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  font: 11.5px "Courier Prime";
+}
+.dfile {
+  margin-right: 10px;
+}
+.dstrip-act {
+  display: flex;
+  gap: 10px;
+}
+.composer {
+  background: #fff;
+  border: 1px solid var(--rule);
+  padding: 8px 10px;
+  box-shadow: 0 2px 0 #0001;
+}
+.composer-input {
+  font: 15px "Courier Prime";
+  padding: 2px 0 8px;
+}
+.composer-bar {
+  font-size: 11.5px;
+}
+.chip {
+  background: #f3ecd9;
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+.chip .sub {
+  color: var(--soft);
+}
+.ring-track {
+  stroke: #0001;
+}
+.ring-fill {
+  stroke: var(--frog);
+}
+.ring-fill.hot {
+  stroke: var(--red);
+}
+.ring-label {
+  font-size: 10px;
+  color: var(--soft);
+}
+.icon-btn {
+  padding: 4px;
+}
+.send {
+  background: var(--frog);
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.composer-notice {
+  font-size: 12px;
+  color: var(--soft);
+  margin-bottom: 4px;
+}
+.composer-perm {
+  justify-content: space-between;
+  align-items: center;
+  background: #f6d6d0;
+  padding: 6px 10px;
+  margin: -8px -10px 8px;
+  gap: 10px;
+}
+.pal-scrim {
+  background: #3b2d1466;
+}
+.pal {
+  background: var(--card);
+  border-top: 10px solid #e9d9a6;
+  padding: 12px 16px;
+  box-shadow: 0 24px 60px #0007;
+  border-radius: 3px;
+}
+.pal-input {
+  font: 18px "Courier Prime";
+  border-bottom: 2px solid #c8473a88;
+  padding-bottom: 6px;
+}
+.pal-group {
+  font: 700 10.5px "Courier Prime";
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--soft);
+  margin: 8px 0 2px;
+}
+.pal-item {
+  padding: 4px 6px;
+}
+.pal-item.sel {
+  background: #e9d9a6;
+}
+.pal-foot {
+  font: 11px "Courier Prime";
+  color: var(--soft);
+  margin-top: 8px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+}
+.dot-permission {
+  background: var(--red);
+}
+.dot-running {
+  background: #e3b23c;
+}
+.dot-done {
+  background: var(--frog);
+}
+.dot-error {
+  background: #333;
+}
+.dot-idle {
+  background: #ccc;
+}
+.dirnav {
+  position: fixed;
+  right: 12px;
+  bottom: 6px;
+  font: 11px "Courier Prime";
+  color: #fffa;
+}
+@media (max-width: 720px) {
+  body {
+    grid-template-columns: 1fr;
+  }
+  body[data-mview="chat"] .cabinet,
+  body[data-mview="list"] .desk {
+    display: none;
+  }
+  .cabinet {
+    padding: 10px 10px 0;
+  }
+  .desk {
+    padding: 8px;
+  }
+  .card-h,
+  .card-body,
+  .dock {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .card-h h1 {
+    font-size: 22px;
+  }
+  .m-back {
+    display: inline;
+    font: 12px "Courier Prime";
+    color: var(--soft);
+  }
+  .card.on {
+    transform: translateX(10px) rotate(-0.6deg);
+  }
+  .chip-account,
+  .chip-mode {
+    display: none;
+  }
+}

@@ -1,0 +1,321 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type {
+  DaemonClientConfig,
+  DaemonClientErrorInfo,
+} from "@frogg/client/internal/daemon-client";
+import {
+  buildRelayWebSocketUrl,
+  shouldUseTlsForDefaultHostedRelay,
+} from "@frogg/protocol/daemon-endpoints";
+import { create } from "zustand";
+
+export interface Host {
+  id: string;
+  name: string;
+  /** host:port of the daemon's WebSocket listener, or of the relay for a relay host. */
+  endpoint: string;
+  tls?: boolean;
+  /** Daemon password or the device credential minted by pairing. */
+  password?: string;
+  /** The daemon's stable id; a handshake from any other daemon is refused. */
+  serverId?: string;
+  /** Present when the host is reached through a relay, end-to-end encrypted to this key. */
+  relay?: { daemonPublicKeyB64: string };
+  /** `sha256:…` of the daemon key, kept so a later pairing can't swap keys silently. */
+  fingerprint?: string;
+  /** Role the daemon granted when this device paired. */
+  role?: string;
+  /** ISO time this device last had a live connection to the host. */
+  lastOnlineAt?: string;
+  /** Other saved ways to reach the same daemon (the fields above are the one in use). */
+  routes?: HostRoute[];
+}
+
+/** One saved way to reach a daemon: a direct listener or a relay. */
+export interface HostRoute {
+  id: string;
+  endpoint: string;
+  tls?: boolean;
+  relay?: { daemonPublicKeyB64: string };
+}
+
+const sameRoute = (a: Omit<HostRoute, "id">, b: Omit<HostRoute, "id">) =>
+  a.endpoint === b.endpoint && Boolean(a.relay) === Boolean(b.relay);
+
+/** The route a host currently connects through. */
+export const primaryRoute = (h: Host): HostRoute => ({
+  id: "primary",
+  endpoint: h.endpoint,
+  ...(h.tls !== undefined ? { tls: h.tls } : {}),
+  ...(h.relay ? { relay: h.relay } : {}),
+});
+
+interface HostsState {
+  hosts: Host[];
+  activeId: string | null;
+}
+
+const newHostId = () => `h_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+
+/** Direct LAN/tailnet listener, including bracketed IPv6; paths and credentials are not addresses. */
+export function parseHostAddress(input: string): { endpoint: string; name: string } | null {
+  const raw = input.trim();
+  if (!/^(?:[a-zA-Z0-9.-]+|\[[0-9a-fA-F:]+\]):\d{1,5}$/.test(raw)) return null;
+  try {
+    const port = Number(raw.slice(raw.lastIndexOf(":") + 1));
+    if (port < 1 || port > 65535) return null;
+    const url = new URL(`ws://${raw}`);
+    return { endpoint: `${url.hostname}:${port}`, name: url.hostname };
+  } catch {
+    return null;
+  }
+}
+
+const KEY = "frogg-next.hosts.v1";
+
+export const useHosts = create<HostsState>(() => ({ hosts: [], activeId: null }));
+
+/** Resolves once the saved hosts are loaded; later changes are written back. */
+export const hostsReady: Promise<void> = AsyncStorage.getItem(KEY)
+  .then((raw) => {
+    if (raw) useHosts.setState(JSON.parse(raw) as HostsState);
+    return undefined;
+  })
+  .catch(() => undefined /* corrupt or unavailable: start fresh */)
+  .finally(() => {
+    useHosts.subscribe(
+      (s) => void AsyncStorage.setItem(KEY, JSON.stringify(s)).catch(() => undefined),
+    );
+  });
+
+export const hostUrl = (h: Host) =>
+  h.relay && h.serverId
+    ? buildRelayWebSocketUrl({
+        endpoint: h.endpoint,
+        useTls: h.tls ?? shouldUseTlsForDefaultHostedRelay(h.endpoint),
+        serverId: h.serverId,
+        role: "client",
+      })
+    : `${h.tls ? "wss" : "ws"}://${h.endpoint}/ws`;
+
+/** Extra DaemonClient options a host needs: relay E2EE and the serverId pin. */
+export function hostClientOptions(h: Host): Partial<DaemonClientConfig> {
+  return {
+    ...(h.serverId ? { expectedServerId: h.serverId } : {}),
+    ...(h.relay ? { e2ee: { enabled: true, daemonPublicKeyB64: h.relay.daemonPublicKeyB64 } } : {}),
+  };
+}
+
+export const isRelayHost = (h: Host) => Boolean(h.relay);
+
+/** The serverId a direct host's address answers `/api/identity` with; null when unreachable. */
+export async function fetchServerId(endpoint: string, tls?: boolean): Promise<string | null> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 4000);
+  try {
+    const r = await fetch(`${tls ? "https" : "http"}://${endpoint}/api/identity`, {
+      signal: ctl.signal,
+    });
+    const body = r.ok ? ((await r.json()) as { serverId?: unknown }) : null;
+    return typeof body?.serverId === "string" ? body.serverId : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** The host to connect to: the saved active one, else a first entry from the env/query default. */
+export function activeHost(fallbackEndpoint: string): Host {
+  const st = useHosts.getState();
+  const found = st.hosts.find((h) => h.id === st.activeId) ?? st.hosts[0];
+  if (found) return found;
+  const host: Host = {
+    id: newHostId(),
+    name: fallbackEndpoint.split(":")[0] ?? "host",
+    endpoint: fallbackEndpoint,
+  };
+  useHosts.setState({ hosts: [host], activeId: host.id });
+  return host;
+}
+
+export function addHost(input: Omit<Host, "id">): Host {
+  const host = { ...input, id: newHostId() };
+  useHosts.setState((s) => ({ hosts: [...s.hosts, host] }));
+  return host;
+}
+
+/**
+ * Adds a paired host, or refreshes the saved one it pairs: the same serverId (re-pairing), else an
+ * address-only entry at the same direct endpoint (a host that refused this app until it paired).
+ */
+export function upsertHost(input: Omit<Host, "id">): Host {
+  const hosts = useHosts.getState().hosts;
+  const existing =
+    (input.serverId ? hosts.find((h) => h.serverId === input.serverId) : undefined) ??
+    (input.relay
+      ? undefined
+      : hosts.find((h) => !h.serverId && !h.relay && h.endpoint === input.endpoint));
+  if (!existing) return addHost(input);
+  // A new route to a known daemon keeps the old one as an alternate.
+  const prev = primaryRoute(existing);
+  const routes = (existing.routes ?? []).filter((r) => !sameRoute(r, input));
+  if (!sameRoute(prev, input)) routes.unshift({ ...prev, id: newHostId() });
+  const host: Host = { ...existing, ...input, id: existing.id };
+  if (!input.relay) delete host.relay;
+  if (routes.length) host.routes = routes;
+  else delete host.routes;
+  useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === host.id ? host : h)) }));
+  return host;
+}
+
+export function removeHost(id: string): void {
+  useHosts.setState((s) => ({
+    hosts: s.hosts.filter((h) => h.id !== id),
+    activeId: s.activeId === id ? null : s.activeId,
+  }));
+}
+
+export function renameHost(id: string, name: string): void {
+  useHosts.setState((s) => ({
+    hosts: s.hosts.map((h) => (h.id === id ? { ...h, name } : h)),
+  }));
+}
+
+/** Updates a saved host in place (same id); returns the new entry, or null if it is gone. */
+export function updateHost(id: string, patch: Partial<Omit<Host, "id">>): Host | null {
+  const prev = useHosts.getState().hosts.find((h) => h.id === id);
+  if (!prev) return null;
+  const host: Host = { ...prev, ...patch, id };
+  // An empty password clears it rather than storing "".
+  if (!host.password) delete host.password;
+  useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === id ? host : h)) }));
+  return host;
+}
+
+/**
+ * Binds a saved host to the daemon now answering at its address (a different serverId): the
+ * old daemon's credential, key and role mean nothing to it, so they go and the host pairs or
+ * signs in afresh. Same id, so its place in the list stays.
+ */
+export function rebindHost(id: string, serverId: string): Host | null {
+  const prev = useHosts.getState().hosts.find((h) => h.id === id);
+  if (!prev) return null;
+  const host: Host = { ...prev, serverId };
+  delete host.password;
+  delete host.fingerprint;
+  delete host.role;
+  delete host.lastOnlineAt;
+  useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === id ? host : h)) }));
+  return host;
+}
+
+/** Makes a saved alternate the route in use; the previous one becomes an alternate. */
+export function promoteRoute(hostId: string, routeId: string): Host | null {
+  const h = useHosts.getState().hosts.find((x) => x.id === hostId);
+  const next = h?.routes?.find((r) => r.id === routeId);
+  if (!h || !next) return null;
+  const routes = [
+    { ...primaryRoute(h), id: newHostId() },
+    ...(h.routes ?? []).filter((r) => r.id !== routeId),
+  ];
+  const host: Host = { ...h, endpoint: next.endpoint, routes };
+  if (next.tls === undefined) delete host.tls;
+  else host.tls = next.tls;
+  if (next.relay) host.relay = next.relay;
+  else delete host.relay;
+  useHosts.setState((s) => ({ hosts: s.hosts.map((x) => (x.id === hostId ? host : x)) }));
+  return host;
+}
+
+/** Forgets the route in use, switching to the first alternate; null when there is none. */
+export function dropPrimaryRoute(hostId: string): Host | null {
+  const h = useHosts.getState().hosts.find((x) => x.id === hostId);
+  const first = h?.routes?.[0];
+  if (!h || !first) return null;
+  const host = promoteRoute(hostId, first.id);
+  const demoted = host?.routes?.[0];
+  if (host && demoted) removeRoute(hostId, demoted.id);
+  return useHosts.getState().hosts.find((x) => x.id === hostId) ?? null;
+}
+
+/** Forgets one alternate route of a host. */
+export function removeRoute(hostId: string, routeId: string): void {
+  useHosts.setState((s) => ({
+    hosts: s.hosts.map((h) => {
+      if (h.id !== hostId || !h.routes) return h;
+      const routes = h.routes.filter((r) => r.id !== routeId);
+      const next: Host = { ...h, routes };
+      if (!routes.length) delete next.routes;
+      return next;
+    }),
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Live connection detail for the active host (the DaemonClient owns the backoff).
+
+export interface HostLink {
+  hostId: string | null;
+  /** Reconnect attempt number while connecting; 0 on the first try. */
+  attempt: number;
+  /** Close reason from the last drop, if any. */
+  reason: string | null;
+  /** Typed error from the client (auth refused, wrong daemon, …). */
+  error: DaemonClientErrorInfo | null;
+  /** When the active host was last seen online in this run. */
+  droppedAt: string | null;
+}
+
+export const useHostLink = create<HostLink>(() => ({
+  hostId: null,
+  attempt: 0,
+  reason: null,
+  error: null,
+  droppedAt: null,
+}));
+
+type Status =
+  | { status: "idle" }
+  | { status: "connecting"; attempt: number }
+  | { status: "connected" }
+  | { status: "disconnected"; reason?: string }
+  | { status: "disposed" };
+
+/** Records that this device just reached a host (any host, active or not). */
+export function markHostOnline(hostId: string): void {
+  useHosts.setState((st) => ({
+    hosts: st.hosts.map((h) =>
+      h.id === hostId ? { ...h, lastOnlineAt: new Date().toISOString() } : h,
+    ),
+  }));
+}
+
+/** Called by the store on every connection status change of the active client. */
+export function noteConnStatus(
+  hostId: string,
+  s: Status,
+  error: DaemonClientErrorInfo | null,
+): void {
+  const prev = useHostLink.getState();
+  const fresh = prev.hostId !== hostId;
+  if (s.status === "connected") {
+    useHostLink.setState({ hostId, attempt: 0, reason: null, error: null, droppedAt: null });
+    markHostOnline(hostId);
+    return;
+  }
+  const base = fresh ? { attempt: 0, reason: null, droppedAt: null } : prev;
+  const next: HostLink = {
+    hostId,
+    attempt: base.attempt,
+    reason: base.reason,
+    error,
+    droppedAt: base.droppedAt,
+  };
+  if (s.status === "connecting") next.attempt = s.attempt;
+  if (s.status === "disconnected") {
+    next.reason = s.reason ?? null;
+    next.droppedAt ??= new Date().toISOString();
+  }
+  useHostLink.setState(next);
+}

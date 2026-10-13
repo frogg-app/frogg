@@ -48,3 +48,20 @@ export const desktopArtifactSuffixes = [
   "mac-aarch64.app.tar.gz",
   "mac-x86_64.app.tar.gz",
 ];
+
+/**
+ * Frogg Next (apps/ui-next) ships beside the classic app on the same release under its own fixed
+ * prefix. It is not an update payload: no updater manifest, `release.json` or checksum list of the
+ * classic app may pick these files up, and their prefix never equals a brand's `artifactPrefix`.
+ */
+export const froggNextArtifactPrefix = "Frogg-Next";
+
+/** @param {string} version @param {string} suffix */
+export function froggNextArtifactName(version, suffix) {
+  return `${froggNextArtifactPrefix}-${version}-${suffix}`;
+}
+
+/** @param {string} name */
+export function isFroggNextArtifact(name) {
+  return name.startsWith(`${froggNextArtifactPrefix}-`);
+}

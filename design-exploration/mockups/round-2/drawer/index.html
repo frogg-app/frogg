@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Drawer — Frogg round 2</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <aside class="cabinet">
+      <div class="plate">
+        <span>frogg</span><small>card catalogue · <button data-pal>⌘K</button></small>
+      </div>
+      <div class="drawer" id="drawer"></div>
+    </aside>
+    <main class="desk">
+      <article class="card-main">
+        <div class="card-h">
+          <button class="m-back" data-back>← drawer</button>
+          <div class="callno" id="callno"></div>
+          <h1 id="title"></h1>
+          <div class="meta" id="meta"></div>
+          <div class="clip" id="clip"></div>
+        </div>
+        <div class="card-body" id="scroll"><div class="chat" id="chat"></div></div>
+        <div class="dock">
+          <div id="strip"></div>
+          <div id="composer"></div>
+        </div>
+      </article>
+    </main>
+    <a class="dirnav" href="../index.html">← round 2</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../_shared/kit.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

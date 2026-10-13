@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Split — Frogg round 3 remix</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="../_shared/r3.css" />
+    <link rel="stylesheet" href="../_remix/parts.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="row-f grow">
+      <nav class="rail" id="rail"></nav>
+      <aside class="side col" style="width: 300px">
+        <div class="lh">
+          <h2 class="scope" id="scopeName"></h2>
+          <button class="search" data-pal>Search <kbd>⌘K</kbd></button>
+        </div>
+        <button class="fleet" id="fleet"></button>
+        <div class="list" id="list">
+          <div class="brk" id="brk"><i></i><i></i><i></i><i></i></div>
+          <div id="rows"></div>
+        </div>
+      </aside>
+      <main class="main col grow">
+        <div class="row-f grow">
+          <div class="col grow half">
+            <div class="sh">
+              <div class="sh-t">
+                <div class="crumb" id="crumb"></div>
+                <h1><button class="m-back" data-back>←</button><span id="title"></span></h1>
+                <div class="meta" id="meta"></div>
+              </div>
+            </div>
+            <div class="chatcol">
+              <div class="scroll" id="scroll"><div class="chat" id="chat"></div></div>
+              <div class="dock">
+                <div id="strip"></div>
+                <div id="composer"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col grow half second">
+            <div class="sh">
+              <div class="sh-t">
+                <div class="crumb" id="crumb2"></div>
+                <h1 id="title2"></h1>
+                <div class="meta"><span>Needs you</span><span>Claude Code</span></div>
+              </div>
+              <div class="acts">
+                <button class="btn ghost">Swap</button><button class="btn ghost">✕</button>
+              </div>
+            </div>
+            <div class="chatcol">
+              <div class="scroll" id="scroll2"><div class="chat" id="chat2"></div></div>
+              <div class="dock"><div id="composer2"></div></div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <footer class="status" id="status"></footer>
+    <a class="dirnav" href="../index.html#remix">← round 3</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../../round-2/_shared/kit.js"></script>
+    <script src="../_shared/r3.js"></script>
+    <script src="../_remix/remix.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

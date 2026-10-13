@@ -1,0 +1,809 @@
+/* SWITCHBOARD — warm paper, ink, signal-vermilion. Editorial serif + tight grotesk + mono.
+   Hairline rules, square corners, no shadows. Snappy, near-instant motion. */
+:root {
+  --paper: #f3efe6;
+  --paper2: #ebe6da;
+  --card: #fbf9f4;
+  --ink: #191714;
+  --ink2: #5a554b;
+  --ink3: #948d7f;
+  --rule: #d6cfbf;
+  --rule2: #bdb5a3;
+  --sig: #e5401f;
+  --amber: #d98a00;
+  --green: #2f7d3a;
+  --blue: #2456c7;
+  --red: #c62828;
+  --shim-a: #948d7f;
+  --shim-b: #191714;
+  font:
+    13.5px/1.5 "Inter Tight",
+    system-ui,
+    sans-serif;
+  color: var(--ink);
+}
+body {
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+code,
+.mono,
+pre,
+.dl,
+.c-d,
+.c-a,
+.tool-head .target,
+.tool-meta,
+kbd,
+.dstrip-files {
+  font-family: "DM Mono", ui-monospace, monospace;
+  font-size: 12px;
+}
+kbd {
+  border: 1px solid var(--rule2);
+  padding: 0 4px;
+  border-radius: 2px;
+  opacity: 1;
+  color: var(--ink2);
+}
+.add {
+  color: var(--green);
+}
+.del {
+  color: var(--red);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 18px;
+  height: 48px;
+  border-bottom: 1px solid var(--ink);
+  flex: none;
+}
+.mark {
+  font: 600 16px "Inter Tight";
+  letter-spacing: -0.02em;
+}
+.mark span {
+  color: var(--sig);
+  margin: 0 4px;
+}
+.mark em {
+  font: italic 19px "Instrument Serif";
+  font-weight: 400;
+}
+.tri {
+  display: flex;
+  height: 100%;
+}
+.tri button {
+  white-space: nowrap;
+  padding: 0 12px;
+  height: 100%;
+  color: var(--ink2);
+  border-bottom: 2px solid transparent;
+  transition: color var(--d-fast);
+  font-weight: 500;
+}
+.tri button sup {
+  font: 10px "DM Mono";
+  margin-left: 3px;
+  color: var(--ink3);
+}
+.tri button.on {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.tri .t-permission sup {
+  color: #fff;
+  background: var(--sig);
+  padding: 0 4px;
+  border-radius: 2px;
+}
+.cmd {
+  margin-left: auto;
+  border: 1px solid var(--rule2);
+  padding: 4px 10px;
+  color: var(--ink2);
+}
+.hosts {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--ink2);
+  font-size: 12px;
+}
+
+.split {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(420px, 44%) 1fr;
+  min-height: 0;
+}
+.list {
+  border-right: 1px solid var(--ink);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--card);
+}
+.list-h,
+.srow {
+  display: grid;
+  grid-template-columns: 26px 1fr 34px 92px 44px;
+  gap: 10px;
+  align-items: start;
+  padding: 0 14px;
+}
+.list-h {
+  font: 10.5px "DM Mono";
+  text-transform: uppercase;
+  color: var(--ink3);
+  border-bottom: 1px solid var(--rule);
+  padding-top: 7px;
+  padding-bottom: 7px;
+  letter-spacing: 0.06em;
+}
+#rows {
+  overflow: auto;
+  flex: 1;
+}
+.sec {
+  font: italic 17px "Instrument Serif";
+  padding: 12px 14px 2px 50px;
+  color: var(--ink2);
+  border-top: 1px solid var(--rule);
+}
+.sec-permission {
+  color: var(--sig);
+}
+.srow {
+  width: 100%;
+  text-align: left;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--rule);
+  transition: background var(--d-fast);
+  position: relative;
+}
+.srow:hover {
+  background: var(--paper);
+}
+.srow.active {
+  background: var(--ink);
+  color: var(--paper);
+}
+.srow.active i,
+.srow.active .c-a,
+.srow.active .c-ag {
+  color: #b9b2a3;
+}
+.srow.active .add {
+  color: #7fd48a;
+}
+.srow.active .del {
+  color: #ff8f7a;
+}
+.srow.unread b::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--blue);
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: 2px;
+}
+.c-st {
+  padding-top: 5px;
+}
+.c-t {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.c-t b {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c-t i {
+  font-style: normal;
+  color: var(--ink3);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ask {
+  font-size: 12px;
+  margin-top: 4px;
+  color: var(--sig);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ask.err {
+  color: var(--red);
+}
+.qa {
+  border: 1px solid currentColor;
+  padding: 0 6px;
+  font-weight: 600;
+}
+.qa:hover {
+  background: var(--sig);
+  color: #fff;
+}
+.c-ag {
+  font: 600 11px "DM Mono";
+  color: oklch(0.5 0.14 var(--agent-h));
+  padding-top: 2px;
+}
+.c-d,
+.c-a {
+  text-align: right;
+  color: var(--ink3);
+  padding-top: 1px;
+}
+.list-foot {
+  border-top: 1px solid var(--rule);
+  padding: 7px 14px;
+  color: var(--ink3);
+  font-size: 12px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.flash {
+  animation: flash 900ms var(--ease-out);
+}
+@keyframes flash {
+  from {
+    background: #e5401f33;
+  }
+}
+
+.dot {
+  border-radius: 0;
+  width: 9px;
+  height: 9px;
+}
+.dot-running {
+  background: var(--green);
+  border-radius: 50%;
+}
+.dot-permission {
+  background: var(--sig);
+  transform: rotate(45deg);
+}
+.dot-idle {
+  border: 1.5px solid var(--ink3);
+  border-radius: 50%;
+}
+.dot-error {
+  background: var(--red);
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.dot-done {
+  background: var(--blue);
+  border-radius: 50%;
+}
+.srow.active .dot-idle {
+  border-color: #b9b2a3;
+}
+
+.read {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.read-h {
+  padding: 16px 28px 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.m-back {
+  display: none;
+  color: var(--sig);
+  margin-bottom: 6px;
+}
+.rh-meta {
+  color: var(--ink2);
+  font-size: 12px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.read-h h1 {
+  font: 400 34px/1.1 "Instrument Serif";
+  margin: 6px 0 10px;
+  letter-spacing: -0.01em;
+}
+.rh-act {
+  display: flex;
+  gap: 0;
+}
+.rh-act button {
+  border: 1px solid var(--rule2);
+  margin-right: -1px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--ink2);
+  transition: background var(--d-fast);
+}
+.rh-act button:hover {
+  background: var(--card);
+  color: var(--ink);
+}
+.read-body {
+  flex: 1;
+  overflow: auto;
+  view-transition-name: chat;
+}
+.chat {
+  max-width: 720px;
+  padding: 20px 28px 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.turn-divider {
+  font: 10.5px "DM Mono";
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.turn-divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--rule);
+}
+.msg.user .bubble {
+  border-left: 3px solid var(--ink);
+  padding: 2px 0 2px 14px;
+  font-weight: 500;
+  font-size: 15px;
+}
+.msg.agent .who {
+  font: 10.5px "DM Mono";
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: oklch(0.5 0.14 var(--agent-h));
+  margin-bottom: 4px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.agent-swatch {
+  width: 7px;
+  height: 7px;
+  background: oklch(0.55 0.15 var(--agent-h, 140));
+  display: inline-block;
+}
+.md {
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+.md p {
+  margin: 0 0 6px;
+}
+.md code {
+  background: var(--paper2);
+  padding: 0 4px;
+}
+.error-msg .md {
+  color: var(--red);
+}
+.reasoning {
+  color: var(--ink3);
+  font-size: 12.5px;
+  font-style: italic;
+}
+.thinking {
+  display: flex;
+  gap: 10px;
+  font: 500 13px "DM Mono";
+}
+.elapsed {
+  color: var(--ink3);
+}
+.tool {
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: -11px;
+}
+.tool + .tool {
+  border-top: 0;
+}
+.tool-head {
+  padding: 6px 2px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.tool-ico {
+  color: var(--ink3);
+  display: flex;
+}
+.verb {
+  font-weight: 600;
+  min-width: 36px;
+}
+.target {
+  color: var(--ink2);
+}
+.tool-meta {
+  color: var(--ink3);
+}
+.tool-state {
+  color: var(--green);
+  width: 14px;
+}
+.tool-beam {
+  background: var(--sig);
+  width: 18%;
+  height: 1px;
+}
+.tool.fail .verb,
+.tool.fail .tool-state {
+  color: var(--red);
+}
+.tool.fail {
+  border-left: 3px solid var(--red);
+  padding-left: 8px;
+}
+.tool-err {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  color: var(--red);
+  white-space: pre-wrap;
+}
+.tool-body {
+  padding: 4px 0 8px 24px;
+  font: 12px "DM Mono";
+  color: var(--ink2);
+}
+.tool + :not(.tool) {
+  margin-top: 12px;
+}
+.diff {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  padding: 4px 0 !important;
+  margin: 0 0 8px;
+}
+.dl {
+  padding: 0 10px;
+}
+.dl.add {
+  background: #2f7d3a14;
+  color: var(--green);
+}
+.dl.del {
+  background: #c6282810;
+  color: var(--red);
+}
+@keyframes afterglow {
+  from {
+    background: #2f7d3a40;
+  }
+}
+.perm {
+  border: 1.5px solid var(--sig);
+  background: var(--card);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.perm.enter {
+  animation: perm-in var(--d-base) var(--ease-out) both;
+}
+@keyframes perm-in {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+.perm-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font: 600 10.5px "DM Mono";
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sig);
+}
+.perm-agent {
+  margin-left: auto;
+  color: var(--ink3);
+}
+.perm-body {
+  font-size: 15px;
+}
+.btn {
+  padding: 5px 12px;
+  border: 1px solid var(--ink);
+  font-weight: 500;
+  transition:
+    background var(--d-fast),
+    color var(--d-fast);
+}
+.btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn.approve {
+  background: var(--sig);
+  border-color: var(--sig);
+  color: #fff;
+}
+.btn.ghost {
+  border-color: var(--rule2);
+  color: var(--ink2);
+}
+.perm.resolved {
+  border-color: var(--rule2);
+}
+.perm-result {
+  font: 12px "DM Mono";
+  color: var(--ink3);
+}
+.turn-footer {
+  display: flex;
+  gap: 14px;
+  font: 11px "DM Mono";
+  color: var(--ink3);
+  padding-top: 4px;
+}
+.link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: var(--ink2);
+  font-size: 12px;
+}
+
+.dock {
+  border-top: 1px solid var(--ink);
+  background: var(--card);
+}
+.dstrip {
+  display: flex;
+  gap: 12px;
+  padding: 6px 28px;
+  border-bottom: 1px solid var(--rule);
+  font-size: 12px;
+  align-items: center;
+}
+.dstrip-files {
+  display: flex;
+  gap: 12px;
+  color: var(--ink3);
+  overflow: hidden;
+  white-space: nowrap;
+  flex: 1;
+}
+.dstrip-act {
+  display: flex;
+  gap: 10px;
+}
+.chev {
+  display: inline-block;
+  margin-right: 4px;
+  transition: transform var(--d-base) var(--spring-snappy);
+}
+.composer {
+  padding: 10px 28px 12px;
+}
+.composer-input {
+  font-size: 15px;
+  padding: 4px 0 10px;
+}
+.composer-notice {
+  font-size: 12px;
+  color: var(--ink2);
+  padding-bottom: 6px;
+}
+.composer-perm {
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  margin: 0 -10px 8px;
+  background: #e5401f12;
+  border-left: 3px solid var(--sig);
+  flex-wrap: wrap;
+}
+.composer-perm .perm-actions {
+  margin-left: auto;
+}
+.chip {
+  font-size: 12px;
+  padding: 2px 8px;
+  border: 1px solid var(--rule);
+  color: var(--ink2);
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.chip:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.chip .sub {
+  color: var(--ink3);
+}
+.ring-track {
+  stroke: var(--rule);
+}
+.ring-fill {
+  stroke: var(--ink);
+  stroke-linecap: butt;
+}
+.ring-fill.hot {
+  stroke: var(--sig);
+}
+.ring-label {
+  font: 10px "DM Mono";
+  color: var(--ink3);
+}
+.icon-btn {
+  padding: 4px;
+  color: var(--ink2);
+}
+.send {
+  height: 30px;
+  padding: 0 14px;
+  background: var(--ink);
+  color: var(--paper);
+  display: grid;
+  place-items: center;
+  transition: transform var(--d-fast);
+}
+.send:active {
+  transform: scale(0.97);
+}
+.composer[data-state="streaming"] .send,
+.composer[data-state="permission"] .send {
+  background: var(--sig);
+}
+
+.pal-scrim {
+  background: #19171455;
+}
+.pal {
+  background: var(--card);
+  border: 1.5px solid var(--ink);
+}
+.pal-input {
+  padding: 14px 16px;
+  font: 400 22px "Instrument Serif";
+  border-bottom: 1px solid var(--ink);
+}
+.pal-list {
+  max-height: 50vh;
+  overflow: auto;
+}
+.pal-group {
+  font: 10.5px "DM Mono";
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink3);
+  padding: 8px 16px 4px;
+}
+.pal-item {
+  padding: 7px 16px;
+}
+.pal-item.sel {
+  background: var(--ink);
+  color: var(--paper);
+}
+.pal-foot {
+  border-top: 1px solid var(--rule);
+  padding: 7px 16px;
+  font-size: 12px;
+  color: var(--ink3);
+}
+/* Switchboard: palette is instant (03 §25) — no scale. */
+.pal {
+  transform: none;
+  transition: opacity 0ms;
+}
+
+.dirnav {
+  position: fixed;
+  right: 12px;
+  bottom: 6px;
+  font-size: 11px;
+  color: var(--ink3);
+  z-index: 50;
+}
+.dirnav.m {
+  right: 110px;
+}
+
+@media (max-width: 640px) {
+  .top {
+    gap: 10px;
+    padding: 0 10px;
+    height: auto;
+    flex-wrap: wrap;
+    padding-top: 8px;
+  }
+  .hosts,
+  .cmd {
+    display: none;
+  }
+  .tri {
+    width: 100%;
+    overflow-x: auto;
+    height: 40px;
+  }
+  .split {
+    grid-template-columns: 1fr;
+  }
+  body[data-mview="list"] .read,
+  body[data-mview="chat"] .list {
+    display: none;
+  }
+  body[data-mview="chat"] .top {
+    display: none;
+  }
+  .list-h {
+    display: none;
+  }
+  .srow {
+    grid-template-columns: 20px 1fr 70px;
+  }
+  .c-ag,
+  .c-a {
+    display: none;
+  }
+  .m-back {
+    display: block;
+  }
+  .read-h {
+    padding: 10px 14px;
+  }
+  .read-h h1 {
+    font-size: 26px;
+  }
+  .rh-act {
+    overflow-x: auto;
+  }
+  .chat {
+    padding: 14px;
+  }
+  .dstrip {
+    padding: 6px 14px;
+  }
+  .dstrip-files {
+    display: none;
+  }
+  .composer {
+    padding: 8px 14px 10px;
+  }
+  .chip-account,
+  .chip-mode,
+  .ring-label,
+  .mic {
+    display: none;
+  }
+  .list-foot,
+  .dirnav {
+    display: none;
+  }
+}

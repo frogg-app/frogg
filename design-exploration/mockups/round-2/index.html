@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Frogg mockups — Round 2</title>
+    <style>
+      :root {
+        font:
+          15px/1.55 system-ui,
+          sans-serif;
+        color: #1c1c1f;
+      }
+      body {
+        margin: 0;
+        background: #f4f4f1;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+      }
+      h1 {
+        font-size: 30px;
+        margin: 0 0 4px;
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        color: #666;
+        margin: 0 0 28px;
+        max-width: 760px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+        gap: 20px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e3e3de;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .swatch {
+        height: 120px;
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        padding: 16px 20px;
+        color: #fff;
+      }
+      .swatch h2 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: -0.02em;
+      }
+      .swatch small {
+        position: absolute;
+        top: 14px;
+        right: 18px;
+        font-size: 12px;
+        opacity: 0.8;
+      }
+      .body {
+        padding: 16px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+      .body p {
+        margin: 0;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        gap: 4px 10px;
+        margin: 0;
+        font-size: 13.5px;
+      }
+      dt {
+        color: #888;
+      }
+      dd {
+        margin: 0;
+      }
+      .links {
+        display: flex;
+        gap: 10px;
+      }
+      .links a {
+        padding: 6px 12px;
+        border-radius: 9px;
+        background: #1c1c1f;
+        color: #fff;
+        text-decoration: none;
+        font-size: 13.5px;
+      }
+      .links a.alt {
+        background: #ecece7;
+        color: #1c1c1f;
+      }
+      textarea {
+        width: 100%;
+        min-height: 90px;
+        border: 1px solid #dcdcd5;
+        border-radius: 10px;
+        padding: 10px;
+        font: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      .rate {
+        display: flex;
+        gap: 6px;
+      }
+      .rate button {
+        border: 1px solid #dcdcd5;
+        background: #fff;
+        border-radius: 99px;
+        padding: 3px 12px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+      }
+      .rate button.on {
+        background: #1c1c1f;
+        color: #fff;
+        border-color: #1c1c1f;
+      }
+      .save {
+        font-size: 12px;
+        color: #888;
+      }
+      .general {
+        margin-top: 28px;
+        background: #fff;
+        border: 1px solid #e3e3de;
+        border-radius: 16px;
+        padding: 18px 20px;
+      }
+      .tips {
+        font-size: 13px;
+        color: #777;
+        margin-top: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Round 2 — six new directions</h1>
+      <p class="lede">
+        Built from round 1: Switchboard’s paper-and-ink feel was the favourite, and the glowing
+        accent pills in Pond and Hive’s sidebars were out. None of these uses a glow or gradient
+        pill for selection or status. Each one marks the active session in its own physical way (a
+        printer’s fist, a highlighter swipe, a card pulled out of a drawer, a red-pencil circle, a
+        pinned poster, a platform sign), and shows status by shape or texture, not colour alone.
+        Same fake data and behaviours as round 1.
+        <a href="../round-1/index.html">Round 1 is still here</a>.
+      </p>
+      <div class="grid" id="grid"></div>
+      <div class="general">
+        <b>General notes</b> (cross-direction: mix-and-match, things to keep or kill)<textarea
+          data-k="general"
+        ></textarea>
+      </div>
+      <p class="tips">
+        Tips: j/k moves between sessions everywhere · Blueprint: G toggles “all sheets” · Ledger:
+        stamps thunk when a session changes state · Riso: posters scroll sideways · Metro: the
+        departure board lists what’s on hold.
+      </p>
+    </div>
+    <script>
+      const D = [
+        {
+          id: "broadsheet",
+          name: "Broadsheet",
+          bg: "linear-gradient(135deg,#f3efe4 60%,#c4231b)",
+          dark: true,
+          arch: "Front page · three columns: headlines / article / in-brief",
+          idea: "Switchboard taken all the way to print. Sessions are headlines filed under desks (Stop press, Corrections, Filed, Developing, Archive), sized by urgency. The transcript reads like an article: user turns become pull-quotes, tool calls are wire lines with dot leaders, approvals are a STOP PRESS box.",
+          q: "Can typography alone (size, weight, italic, a ☛) carry hierarchy and selection, with no chips at all?",
+          vis: "Newsprint with grain, ink black + one press red · Playfair Display + Newsreader + IBM Plex Mono · almost no motion",
+        },
+        {
+          id: "ledger",
+          name: "Ledger",
+          bg: "repeating-linear-gradient(#fbf8ef 0 18px,#e3eedc 18px 36px)",
+          dark: true,
+          arch: "Inbox · continuous-form journal / ruled account page",
+          idea: "Switchboard’s inbox as an accountant’s journal on green-bar tractor-feed paper. Every row has debit/credit columns (+lines / −lines) and a rubber stamp for status: SIGN HERE, RETURNED, POSTED. Selection is a highlighter swipe plus a pencil tick. You approve by signing a line.",
+          q: "Do stamps and handwriting make state changes feel tangible, or just noisy?",
+          vis: "Cream + green bar, blue-black ink, stamp red, highlighter yellow · Libre Caslon + IBM Plex Mono + Caveat handwriting · stamps thunk in",
+        },
+        {
+          id: "drawer",
+          name: "Drawer",
+          bg: "linear-gradient(135deg,#8a6845,#e9d9a6 70%)",
+          arch: "Three-pane reworked from Pond · card-catalogue drawer / one card on the desk",
+          idea: "Pond’s sidebar redone as a library card drawer. Projects are manila dividers with staggered tabs; sessions are index cards. The active one is pulled out of the drawer, and status shows as paper flags clipped to the card edge. The chat sits on a big ruled index card on a wooden desk.",
+          q: "Does a physical metaphor make lots of sessions easier to scan, or just slower?",
+          vis: "Walnut, manila, ruled card stock · Courier Prime + Literata + Bricolage Grotesque · springy pull-out, flags flutter while running",
+        },
+        {
+          id: "blueprint",
+          name: "Blueprint",
+          bg: "linear-gradient(#e9f1ff22 1px,transparent 1px) 0 0/16px 16px, linear-gradient(90deg,#e9f1ff22 1px,transparent 1px) 0 0/16px 16px, #17457f",
+          arch: "Grid ⇄ focus reworked from Hive · sheet rail / drawing · G for all sheets",
+          idea: "Hive’s live tiles as engineering drawing sheets. Each has a title block (project, agent, rev ±lines, age) and a line-drawn activity trace. The active sheet gets a hand-drawn red-pencil circle drawn on in real time, and sessions that need you get red-pencil margin notes. G lays every sheet out on the table.",
+          q: "Can a dark, technical look feel crafted rather than ‘AI dashboard’ by using line work instead of glow?",
+          vis: "Cyanotype blue, white line work, red pencil · B612 + B612 Mono + Architects Daughter · the circle draws itself, dimension lines",
+        },
+        {
+          id: "riso",
+          name: "Riso",
+          bg: "radial-gradient(#ff48b0 40%,transparent 43%) 0 0/9px 9px, linear-gradient(135deg,#f4f1ea 50%,#0078bf)",
+          dark: true,
+          arch: "New · horizontal poster strip on top / reading area below",
+          idea: "A risograph zine. Sessions are small printed posters in a sideways strip, sorted by attention. Status is a halftone texture (dots = needs you, moving hatch = running, solid = done, grid = error), so it still reads in greyscale. The selected poster is pinned: straightened, taped, with a yellow slab behind it.",
+          q: "Is a horizontal session strip (more room for chat) better than a sidebar? Is texture-coded status readable?",
+          vis: "Off-white stock, fluoro pink + blue overprinting, yellow · Archivo Black + Archivo + Space Mono · bouncy slaps, drifting hatch",
+        },
+        {
+          id: "metro",
+          name: "Metro",
+          bg: "linear-gradient(90deg,#00843d 0 25%,#e87722 25% 50%,#0072bc 50% 75%,#8e3b96 75%)",
+          arch: "Three-pane · transit map / journey / departure board",
+          idea: "Wayfinding signage. Each project is a coloured line and sessions are stations on it. Marker shape gives status (filled = arrived, interchange ring = hold, crossed out = closed, a train moving along the line = running). The selected station becomes a black platform sign with ‘You are here’. The transcript is the journey: every turn and tool call is a stop on the line. A departure board lists what’s on hold.",
+          q: "Does colour-by-project (not by status or brand) give orientation without the ‘AI accent’ feel?",
+          vis: "White, signage black, safety yellow, four line colours · Overpass (highway-sign typeface) + Overpass Mono · flap-in board, moving trains",
+        },
+      ];
+      const KEY = "frogg-r2-feedback";
+      let fb = JSON.parse(localStorage.getItem(KEY) || "{}");
+      fetch("feedback.json", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          if (j) {
+            fb = Object.assign({}, j, fb);
+            fill();
+          }
+        })
+        .catch(() => {});
+      document.getElementById("grid").innerHTML = D.map(
+        (d) => `<div class="card">
+  <div class="swatch" style="background:${d.bg};${d.dark ? "color:#1c1c1f" : ""}"><h2>${d.name}</h2><small>${d.arch.split(" · ")[0]}</small></div>
+  <div class="body"><p>${d.idea}</p>
+  <dl><dt>Layout</dt><dd>${d.arch}</dd><dt>Tests</dt><dd>${d.q}</dd><dt>Look</dt><dd>${d.vis}</dd></dl>
+  <div class="links"><a href="${d.id}/index.html">Open desktop</a><a class="alt" href="_shared/phone.html?d=${d.id}">Mobile view</a></div>
+  <div class="rate" data-r="${d.id}">${["Love", "Maybe", "No"].map((v) => `<button data-v="${v}">${v}</button>`).join("")}</div>
+  <textarea data-k="${d.id}" placeholder="Notes on ${d.name}: what to keep, kill, or steal into another direction…"></textarea>
+  <span class="save" data-s="${d.id}"></span></div></div>`,
+      ).join("");
+      function fill() {
+        document
+          .querySelectorAll("textarea[data-k]")
+          .forEach((t) => (t.value = fb[t.dataset.k] || ""));
+        document
+          .querySelectorAll(".rate")
+          .forEach((r) =>
+            r
+              .querySelectorAll("button")
+              .forEach((b) => b.classList.toggle("on", fb["rate_" + r.dataset.r] === b.dataset.v)),
+          );
+      }
+      let timer;
+      function save() {
+        localStorage.setItem(KEY, JSON.stringify(fb));
+        clearTimeout(timer);
+        timer = setTimeout(
+          () =>
+            fetch("../feedback/round-2", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(fb),
+            })
+              .then((r) =>
+                document
+                  .querySelectorAll(".save")
+                  .forEach((s) => (s.textContent = r.ok ? "Saved" : "Saved locally only")),
+              )
+              .catch(() => {}),
+          500,
+        );
+      }
+      document.addEventListener("input", (e) => {
+        if (e.target.dataset.k) {
+          fb[e.target.dataset.k] = e.target.value;
+          save();
+        }
+      });
+      document.addEventListener("click", (e) => {
+        const b = e.target.closest(".rate button");
+        if (b) {
+          const k = "rate_" + b.parentElement.dataset.r;
+          fb[k] = fb[k] === b.dataset.v ? "" : b.dataset.v;
+          fill();
+          save();
+        }
+      });
+      fill();
+    </script>
+  </body>
+</html>

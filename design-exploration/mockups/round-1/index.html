@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Frogg mockups — Round 1</title>
+    <style>
+      :root {
+        font:
+          15px/1.55 system-ui,
+          sans-serif;
+        color: #1c1c1f;
+      }
+      body {
+        margin: 0;
+        background: #f4f4f1;
+      }
+      .wrap {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 40px 24px 80px;
+      }
+      h1 {
+        font-size: 30px;
+        margin: 0 0 4px;
+        letter-spacing: -0.02em;
+      }
+      .lede {
+        color: #666;
+        margin: 0 0 28px;
+        max-width: 760px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+        gap: 20px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 16px;
+        border: 1px solid #e3e3de;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .swatch {
+        height: 120px;
+        position: relative;
+        display: flex;
+        align-items: flex-end;
+        padding: 16px 20px;
+        color: #fff;
+      }
+      .swatch h2 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: -0.02em;
+      }
+      .swatch small {
+        position: absolute;
+        top: 14px;
+        right: 18px;
+        font-size: 12px;
+        opacity: 0.8;
+      }
+      .body {
+        padding: 16px 20px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+      .body p {
+        margin: 0;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        gap: 4px 10px;
+        margin: 0;
+        font-size: 13.5px;
+      }
+      dt {
+        color: #888;
+      }
+      dd {
+        margin: 0;
+      }
+      .links {
+        display: flex;
+        gap: 10px;
+      }
+      .links a {
+        padding: 6px 12px;
+        border-radius: 9px;
+        background: #1c1c1f;
+        color: #fff;
+        text-decoration: none;
+        font-size: 13.5px;
+      }
+      .links a.alt {
+        background: #ecece7;
+        color: #1c1c1f;
+      }
+      textarea {
+        width: 100%;
+        min-height: 90px;
+        border: 1px solid #dcdcd5;
+        border-radius: 10px;
+        padding: 10px;
+        font: inherit;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      .rate {
+        display: flex;
+        gap: 6px;
+      }
+      .rate button {
+        border: 1px solid #dcdcd5;
+        background: #fff;
+        border-radius: 99px;
+        padding: 3px 12px;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+      }
+      .rate button.on {
+        background: #1c1c1f;
+        color: #fff;
+        border-color: #1c1c1f;
+      }
+      .save {
+        font-size: 12px;
+        color: #888;
+      }
+      .general {
+        margin-top: 28px;
+        background: #fff;
+        border: 1px solid #e3e3de;
+        border-radius: 16px;
+        padding: 18px 20px;
+      }
+      .tips {
+        font-size: 13px;
+        color: #777;
+        margin-top: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Round 1 — four directions</h1>
+      <p class="lede">
+        Each direction differs in layout archetype and visual language. All share the same fake data
+        and behaviours: live streaming turn on “Session store persistence refactor”, tool cards,
+        diff reveal, a permission prompt (approve with the card, the composer bar, or ⏎/Esc), ⌘K
+        palette, session switching and background events (a session finishes, another starts
+        asking). Notes save to the server for the next round.
+      </p>
+      <div class="grid" id="grid"></div>
+      <div class="general">
+        <b>General notes</b> (cross-direction: mix-and-match, things to keep or kill)<textarea
+          data-k="general"
+        ></textarea>
+      </div>
+      <p class="tips">
+        Tips: hover the Lumen rail and its “Needs you” stack · Hive: “Overview” button or ⌘⇧O for
+        the fleet grid · Switchboard: j/k to move through the inbox · Pond: ◧ toggles the context
+        pane.
+      </p>
+    </div>
+    <script>
+      const D = [
+        {
+          id: "pond",
+          name: "Pond",
+          bg: "linear-gradient(135deg,#0b1210,#1a2a22 60%,#c8f53c)",
+          arch: "A · three-pane (the 02 recommendation) with a pinned “Needs you” group",
+          idea: "The safe-but-owned baseline: sidebar / chat / tabbed context pane. Deep pond-water greens with a single lily-lime accent that only marks “alive” things (running dots, active row, send, beams).",
+          vis: "Dark, moss surfaces, soft 10–18px radii · Bricolage Grotesque + IBM Plex Sans + JetBrains Mono · gentle springs, glow beam on running tools",
+        },
+        {
+          id: "switchboard",
+          name: "Switchboard",
+          bg: "linear-gradient(135deg,#f3efe6 55%,#e5401f)",
+          dark: true,
+          arch: "D · inbox / split list, sorted by attention, triage tabs on top",
+          idea: "Sessions as an operator’s inbox: one dense table grouped Needs you → Error → Done → Running → Idle, with inline Approve. The conversation is a reading pane. Keyboard-first (j/k).",
+          vis: "Light warm paper, ink rules, signal-vermilion, square corners, no shadows · Instrument Serif headings + Inter Tight + DM Mono · near-instant motion, shape-coded status glyphs",
+        },
+        {
+          id: "hive",
+          name: "Hive",
+          bg: "radial-gradient(circle at 20% 0,#2a1b4a,#07070a 70%), #07070a",
+          arch: "C/E · mission-control grid ⇄ focused chat with a mini-rail of sessions",
+          idea: "Fleet first: every session is a live tile (tail line, throughput sparkline, inline approve). Opening one morphs the tile into a focus panel (View Transition), with siblings shrunk to a rail. A Dynamic-Island activity pill narrates events.",
+          vis: "Near-black glass with grain, per-agent OKLCH hue edges and conic border-beams · Space Grotesk + Martian Mono · expressive morphs and bouncy palette",
+        },
+        {
+          id: "lumen",
+          name: "Lumen",
+          bg: "linear-gradient(135deg,#dcd7ff,#eeedf6 50%,#cdf3e2)",
+          dark: true,
+          arch: "F-leaning · chat page + floating canvas, avatar rail, stacked “Needs you” cards",
+          idea: "Chat as a calm document; sessions are monogram avatars with status rings in a rail that expands on hover. Approvals arrive as a Sonner-style card stack you can clear without leaving the chat. Changes live in a floating canvas.",
+          vis: "Bright mist-lilac, white floating cards, soft coloured shadows, 18–26px radii · Outfit + Fragment Mono · frog-green + ultramarine, bouncy-but-short springs",
+        },
+      ];
+      const KEY = "frogg-r1-feedback";
+      let fb = JSON.parse(localStorage.getItem(KEY) || "{}");
+      fetch("feedback.json", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => {
+          if (j) {
+            fb = Object.assign({}, j, fb);
+            fill();
+          }
+        })
+        .catch(() => {});
+      document.getElementById("grid").innerHTML = D.map(
+        (d) => `<div class="card">
+  <div class="swatch" style="background:${d.bg};${d.dark ? "color:#1c1c1f" : ""}"><h2>${d.name}</h2><small>${d.arch.split(" · ")[0]}</small></div>
+  <div class="body"><p>${d.idea}</p>
+  <dl><dt>Layout</dt><dd>${d.arch}</dd><dt>Look</dt><dd>${d.vis}</dd></dl>
+  <div class="links"><a href="${d.id}/index.html">Open desktop</a><a class="alt" href="_shared/phone.html?d=${d.id}">Mobile view</a></div>
+  <div class="rate" data-r="${d.id}">${["Love", "Maybe", "No"].map((v) => `<button data-v="${v}">${v}</button>`).join("")}</div>
+  <textarea data-k="${d.id}" placeholder="Notes on ${d.name}: what to keep, kill, or steal into another direction…"></textarea>
+  <span class="save" data-s="${d.id}"></span></div></div>`,
+      ).join("");
+      function fill() {
+        document
+          .querySelectorAll("textarea[data-k]")
+          .forEach((t) => (t.value = fb[t.dataset.k] || ""));
+        document
+          .querySelectorAll(".rate")
+          .forEach((r) =>
+            r
+              .querySelectorAll("button")
+              .forEach((b) => b.classList.toggle("on", fb["rate_" + r.dataset.r] === b.dataset.v)),
+          );
+      }
+      let timer;
+      function save() {
+        localStorage.setItem(KEY, JSON.stringify(fb));
+        clearTimeout(timer);
+        timer = setTimeout(
+          () =>
+            fetch("../feedback/round-1", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(fb),
+            })
+              .then((r) =>
+                document
+                  .querySelectorAll(".save")
+                  .forEach((s) => (s.textContent = r.ok ? "Saved" : "Saved locally only")),
+              )
+              .catch(() => {}),
+          500,
+        );
+      }
+      document.addEventListener("input", (e) => {
+        if (e.target.dataset.k) {
+          fb[e.target.dataset.k] = e.target.value;
+          save();
+        }
+      });
+      document.addEventListener("click", (e) => {
+        const b = e.target.closest(".rate button");
+        if (b) {
+          const k = "rate_" + b.parentElement.dataset.r;
+          fb[k] = fb[k] === b.dataset.v ? "" : b.dataset.v;
+          fill();
+          save();
+        }
+      });
+      fill();
+    </script>
+  </body>
+</html>

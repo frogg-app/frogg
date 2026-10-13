@@ -5,7 +5,10 @@ name: Release
 # Electron updater manifests, the Android APK (release-
 # signed when the keystore secrets are set, otherwise debug-signed and named
 # `-unsigned`; see the android job) and the
-# Docker image (when Docker Hub credentials are configured).
+# Docker image (when Docker Hub credentials are configured). It also attaches the
+# Frogg Next client (Frogg-Next-<version>-*, the next-desktop and next-android jobs)
+# unless the brand sets distribution.froggNext to false; those files are not part of
+# the classic app's update feeds.
 # website/src/content/docs/docs/contributing/release-process.mdx explains
 # the flow, the asset names and the secrets.
 
@@ -70,6 +73,7 @@ jobs:
       clobber: ${{ steps.release.outputs.clobber }}
       docker: ${{ steps.secrets.outputs.docker }}
       android_signing: ${{ steps.secrets.outputs.android_signing }}
+      frogg_next: ${{ steps.frogg-next.outputs.enabled }}
       desktop_matrix: ${{ steps.platforms.outputs.desktop }}
       daemon_matrix: ${{ steps.platforms.outputs.daemon }}
       build_all: ${{ steps.platforms.outputs.build_all }}
@@ -162,6 +166,15 @@ jobs:
           echo "docker=$docker" >> "$GITHUB_OUTPUT"
           echo "android_signing=$android_signing" >> "$GITHUB_OUTPUT"
           echo "docker push: $docker, android release keystore: $android_signing"
+
+      # distribution.froggNext in the brand: on for upstream frogg, off for other brands unless
+      # they opt in. A tag whose brand predates the flag resolves to false.
+      - name: Resolve Frogg Next assets
+        id: frogg-next
+        run: |
+          enabled=$(node -p 'require("./.generated/branding/brand.json").distribution.froggNext === true')
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
+          echo "Frogg Next assets: $enabled"
 
       # Which platforms this run builds.
       #
@@ -702,6 +715,40 @@ jobs:
           path: release-assets
           retention-days: 7
 
+  # Frogg Next (apps/ui-next) beside the classic app: unsigned Mac ARM and Windows x64 clients
+  # (Windows only on a `platforms: default` run) and the arm64 APK. Their artifacts are named
+  # frogg-next-*, not release-assets-*, so updater-manifest never sees them, and
+  # electron-release-manifests.mjs skips Frogg-Next-* names on the release itself.
+  next-desktop:
+    name: frogg next desktop
+    needs: meta
+    if: inputs.only != 'android' && needs.meta.outputs.frogg_next == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/ui-next-desktop.yml
+    with:
+      release-tag: ${{ needs.meta.outputs.tag }}
+      clobber: ${{ needs.meta.outputs.clobber }}
+      mac: ${{ needs.meta.outputs.build_all == 'true' }}
+      windows: true
+
+  next-android:
+    name: frogg next android
+    needs: meta
+    if: needs.meta.outputs.frogg_next == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/ui-next-android.yml
+    with:
+      release-tag: ${{ needs.meta.outputs.tag }}
+      clobber: ${{ needs.meta.outputs.clobber }}
+    # Frogg Next's own key, never the classic FROGG_ANDROID_* one: a different app id.
+    secrets:
+      FROGG_NEXT_ANDROID_KEYSTORE_BASE64: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_BASE64 }}
+      FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD }}
+      FROGG_NEXT_ANDROID_KEY_ALIAS: ${{ secrets.FROGG_NEXT_ANDROID_KEY_ALIAS }}
+      FROGG_NEXT_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEY_PASSWORD }}
+
   updater-manifest:
     name: Release metadata and update compatibility
     needs: [meta, desktop]
@@ -810,7 +857,10 @@ jobs:
 
   publish:
     name: publish completed release
-    needs: [meta, desktop, daemon-bundle, android, updater-manifest, docker]
+    # Waits for the Frogg Next jobs so the release is complete when it goes public, but does not
+    # require them: the prototype failing must not hold back the classic app's release.
+    needs:
+      [meta, desktop, daemon-bundle, android, updater-manifest, docker, next-desktop, next-android]
     if: >-
       always() && needs.meta.result == 'success' &&
       needs.meta.outputs.build_all == 'true' &&

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Prism — Frogg round 3</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="../_shared/r3.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="ws">
+      <nav class="rail" id="rail"></nav>
+      <aside class="side">
+        <div class="side-h">
+          <h2 id="scopeName"></h2>
+          <button class="search" data-pal>
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" /></svg
+            ><kbd>⌘K</kbd>
+          </button>
+        </div>
+        <div class="list" id="list">
+          <div class="skew" id="skew"></div>
+          <div id="rows"></div>
+        </div>
+        <button class="newbtn">New session <kbd>⌘N</kbd></button>
+      </aside>
+      <main class="center">
+        <div class="ch">
+          <button class="m-back" data-back>← Sessions</button>
+          <div class="ch-t">
+            <div class="ch-crumb mono" id="crumb"></div>
+            <h1 id="title"></h1>
+          </div>
+          <div class="seg" id="seg">
+            <span class="seg-ind" id="segInd"></span><button class="on" data-v="chat">Chat</button
+            ><button data-v="changes">Changes <b id="chgN"></b></button
+            ><button data-v="terminal">Terminal</button>
+          </div>
+        </div>
+        <div class="views" id="views">
+          <div class="v v-chat">
+            <div class="scroll" id="scroll"><div class="chat" id="chat"></div></div>
+            <div class="dock">
+              <div id="strip"></div>
+              <div id="composer"></div>
+            </div>
+          </div>
+          <div class="v v-changes" id="vChanges"></div>
+          <div class="v v-terminal" id="vTerm"></div>
+        </div>
+      </main>
+    </div>
+    <a class="dirnav" href="../index.html">← round 3</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../../round-2/_shared/kit.js"></script>
+    <script src="../_shared/r3.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

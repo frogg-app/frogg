@@ -389,6 +389,9 @@ host-wide Usage section still reports the primary directory.
 
 A provider sheet's account tab reports the same per-account figures: the usage shown on a tab
 is read from that account's own config directory, whether or not it is the account in use.
+For Claude and Codex the figures also name the sign-in they belong to: the email address from
+that account's own `.claude.json` (the home directory's for the primary Claude sign-in) or from
+the Codex usage API, so two accounts of one provider can be told apart.
 
 ## Provider environment
 

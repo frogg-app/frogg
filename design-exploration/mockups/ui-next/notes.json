@@ -1,0 +1,19 @@
+{
+  "01": "First boot: shell, rail, session list on live daemon data (fonts not yet loaded).",
+  "02": "Fonts fixed; a message sent to the mock agent streams into the chat.",
+  "03": "Every status bucket seeded; markdown in replies; phone tab bar.",
+  "04": "Plan approvals show Review; tablet landscape docks the list.",
+  "05": "Source control: branch card with pull/push, commit box, changed files, split/unified diff.",
+  "06": "Terminals: list per checkout, new/kill, real PTY rendered with xterm in the Bracket palette.",
+  "07": "Inbox (needs you / failures / finished, detail with permission card and context), \u2318K command palette, phone More sheet with every tool.",
+  "08": "Settings: You / Agents / Host navigation; Automation, Tools & prompts, Providers, Overview, Appearance and Shortcuts pages read and write the daemon's config.json live.",
+  "09": "New session (\u2318N, + in the list, or home's Ask box): project, worktree vs local checkout, base branch, provider / model / mode from the host's provider snapshot. Creates a real agent and opens it. Composer gets Stop while a turn runs; chat header gets Archive.",
+  "10": "Files: lazy tree of the active checkout and a highlighted viewer (@frogg/highlight with a Bracket syntax palette). Diffs now use the daemon's syntax tokens.",
+  "11": "Search across all sessions (archived included) with match highlighting; Usage with segmented meters per provider window (real figures from this host's provider logins); Hosts with live CPU, memory and disk.",
+  "12": "PRs & CI on this repo's real GitHub data: pull request for the branch with checks, CI runs list, and a run detail with jobs (failed first, skipped dimmed) and expandable steps.",
+  "13": "Every rail tool is now live: Tasks (the session's plan and subagents), Plugins (installed with enable toggles, catalog with install and capability notice), Companion (notebook and a text line). Mock sessions have no plan, so Tasks shows its empty state.",
+  "14": "Chat depth: tool calls expand to their real content (diffs, shell output, file reads, search hits); model and mode are live pickers in the composer; J / K walk the session list, A / Esc answer the open session's permission. Bracket shapes now clip only their paint layer, so menus can open out of them.",
+  "15": "Motion layer (web): running glyphs breathe; the rail indicator glides between tools (frame caught mid-glide); selection brackets snap in; the working line names what the agent is doing with a shimmer (static amber when it waits on you); running tool cards carry a beam on their top edge; panels enter in 200ms. All of it drops to near-instant under prefers-reduced-motion.",
+  "16": "Full sweep: every scenario at desktop (1440), landscape tablet (1024), portrait tablet (768, list as a drawer) and phone (390). Status bar now carries branch, ahead count, diff stat, PR checks, the open session's model and \u2318K.",
+  "17": "Multiple hosts: saved locally, added by host:port (optional password and TLS), switched with one click. Switching drops every per-host cache (sessions, timelines, checkout, terminals, files, config) and the view. An unreachable host gets a plain offline card; a host saved by address takes the daemon's own name on first connect."
+}

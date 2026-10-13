@@ -146,6 +146,36 @@ test("rejects two Mac payloads for the same architecture", async () => {
   }
 });
 
+test("Frogg Next assets on the same release stay out of the update feeds and checksums", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "frogg-next-assets-"));
+  const out = path.join(dir, "metadata");
+  const version = "1.6.13-beta.5";
+  try {
+    for (const suffix of ["win-x64.exe", "linux-x86_64.AppImage", "mac-x64.zip", "mac-arm64.zip"]) {
+      await writeFile(path.join(dir, `frogg-beta-${version}-${suffix}`), suffix);
+    }
+    const next = [
+      `Frogg-Next-${version}-win-x64.exe`,
+      `Frogg-Next-${version}-win-x64.zip`,
+      `Frogg-Next-${version}-mac-arm64.zip`,
+      `Frogg-Next-${version}-mac-arm64.dmg`,
+      `Frogg-Next-${version}-SHA256SUMS`,
+      `Frogg-Next-${version}-android-arm64-v8a-unsigned.apk`,
+    ];
+    for (const name of next) await writeFile(path.join(dir, name), name);
+    const descriptor = await buildReleaseMetadata({ version, assets: dir, out });
+    const urls = Object.values(descriptor.updatePaths["electron-updater"].platforms).flatMap(
+      (platform) => platform.files.map((file) => file.url),
+    );
+    assert.equal(urls.length, 4);
+    assert.ok(urls.every((url) => url.startsWith("frogg-beta-")));
+    const sums = await readFile(path.join(out, "SHA256SUMS-desktop"), "utf8");
+    for (const name of next) assert.ok(!sums.includes(name), `${name} in SHA256SUMS-desktop`);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
 test("selected releases retain exact preceding platform payloads and versions", async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "frogg-retained-platforms-"));
   const out = path.join(dir, "metadata");

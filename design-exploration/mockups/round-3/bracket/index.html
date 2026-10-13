@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Bracket — Frogg round 3</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="../_shared/r3.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="ws">
+      <aside class="inbox">
+        <div class="ib-h">
+          <div class="brand" id="brand"></div>
+          <button class="search" data-pal>Search <kbd>⌘K</kbd></button>
+        </div>
+        <button class="fleet" id="fleet" title="Fleet status"></button>
+        <div class="list" id="list">
+          <div class="brk" id="brk"><i></i><i></i><i></i><i></i></div>
+          <div id="rows"></div>
+        </div>
+        <div class="ib-f"><kbd>J</kbd><kbd>K</kbd> move <kbd>A</kbd> approve <kbd>⌘N</kbd> new</div>
+      </aside>
+      <main class="center">
+        <div class="ch">
+          <button class="m-back" data-back>← Inbox</button>
+          <div class="ch-crumb mono" id="crumb"></div>
+          <h1 id="title"></h1>
+          <div class="ch-row">
+            <div class="ch-m" id="meta"></div>
+            <div class="ch-act">
+              <button class="btn ghost" id="togglePane">Changes <b id="chgN"></b></button
+              ><button class="btn ghost">Terminal</button><button class="btn">Open PR</button>
+            </div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="scroll" id="scroll"><div class="chat" id="chat"></div></div>
+          <aside class="drawer" id="drawer"></aside>
+        </div>
+        <div class="dock">
+          <div id="strip"></div>
+          <div id="composer"></div>
+        </div>
+      </main>
+    </div>
+    <a class="dirnav" href="../index.html">← round 3</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../../round-2/_shared/kit.js"></script>
+    <script src="../_shared/r3.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

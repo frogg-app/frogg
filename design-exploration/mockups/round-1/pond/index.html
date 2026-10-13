@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pond — Frogg round 1</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-mview="list">
+    <div class="app">
+      <aside class="side">
+        <div class="brand">
+          <span class="logo"></span><span class="wordmark">frogg</span
+          ><button class="host"><span class="dot dot-done"></span>devbox ▾</button>
+        </div>
+        <button class="search" id="openPal">
+          <span class="si">⌕</span><span>Jump to…</span><kbd>⌘K</kbd>
+        </button>
+        <div class="seg"><button class="on">Sessions</button><button>Chats</button></div>
+        <div class="side-scroll">
+          <div class="group needs">
+            <div class="group-h">Needs you <span class="count" id="needsCount"></span></div>
+            <div id="needs"></div>
+          </div>
+          <div id="groups"></div>
+        </div>
+        <button class="new">＋ New session <kbd>⌘N</kbd></button>
+      </aside>
+      <main class="main">
+        <header class="head">
+          <button class="m-back" id="back">‹</button>
+          <div class="title-wrap">
+            <div class="title" id="title"></div>
+            <div class="crumbs" id="crumbs"></div>
+          </div>
+          <div class="head-act">
+            <button class="pill ci"><span class="dot dot-running"></span>CI 3/5</button
+            ><button class="pill">Open PR</button
+            ><button class="pill icon" id="togglePane" title="Toggle context pane">◧</button>
+          </div>
+        </header>
+        <div class="chat-scroll" id="scroll"><div class="chat" id="chat"></div></div>
+        <div class="dock">
+          <div id="strip"></div>
+          <div id="composer"></div>
+        </div>
+      </main>
+      <aside class="pane" id="pane">
+        <div class="tabs">
+          <button class="on">Changes</button><button>Terminal</button><button>Files</button
+          ><button>Preview</button><span class="tab-ink"></span>
+        </div>
+        <div class="pane-body" id="paneBody"></div>
+      </aside>
+    </div>
+    <div class="m-home-composer">
+      <div class="mhc">What should an agent do next?<span>⏎</span></div>
+    </div>
+    <a class="dirnav" href="../../index.html">← all directions</a
+    ><a class="dirnav m" href="../_shared/phone.html?d=pond">mobile ↗</a>
+    <script src="../_shared/core.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.6.13-beta.2 — prototype design options on device
+
+- **Settings → Design options (Frogg Next).** Every pending lab pick is switchable at runtime and
+  kept on the device: primary button (gradient or A–F), logo motion, shape language (A–F), toast
+  style, session state card style, streaming text reveal (Off or 1–8) and heading reveal. Each
+  picker previews the production component. Defaults: gradient button, ripple logo, chamfer shape,
+  bracket toast, edge state card, word-fade text, letter-stagger headings.
+- **Native motion on Android.** All eight streaming text reveals and the four heading reveals,
+  toast enter/exit/reflow, session state entry, tool-call settle and running beams, logo press
+  motion and the chamfered outline now run natively. Blur-in, chunk slide, glow shadow and the
+  gradient fill are approximated or web only; the Design options page lists them.
+- **Text reveal fixes.** The typewriter loop stops once it catches up, and an inline marker
+  closing mid-stream no longer restarts the word's animation.
+
+## 1.6.13-beta.1 — prototype branch checkpoint
+
+- **Frogg Next Mac ARM packaging.** Added a standalone Electron shell for the new interface,
+  isolated as `app.frogg.next`, with bundled UI and fonts. A manual macOS CI workflow produces
+  unsigned DMG and ZIP artifacts with checksums; local packaging works on macOS. Mac installation
+  and real-daemon acceptance remain separate from export and build checks.
+
+- **Android keyboard layout.** The app shell and new-session sheet now let Android's
+  resized window handle the keyboard, avoiding a second padding adjustment that could
+  leave empty space below the tabs. iOS keeps keyboard avoidance.
+- **Usage per account.** Frogg Next's Usage panel and **Usage & limits** settings now group
+  usage by provider and, for a provider with two or more sign-ins, show one block per account:
+  its name and email, which account new sessions use, its windows and reset times, and
+  signed-out, error or stale states. A multi-account provider collapses to one line per
+  account plus its fullest window; single-account providers look as before. Meter colours
+  follow the device's warning and critical thresholds. The daemon now reports the sign-in's
+  email with each Claude and Codex usage read (`accountEmail`, optional on
+  `provider.usage.list.response`), read from that account's own `.claude.json` or the Codex
+  usage API.
+- **Dismissible host notifications.** Version, connection and storage banners now have
+  an accessible close button. Dismissal lasts for the current notification; a changed
+  host, version, severity or new incident can show another banner.
+
+- **Branch-only Frogg Next prototype.** Integrated recovered chat controls and permission
+  cards, LAN connection guards, file drafts, plugin/to-do panels and settings pages in
+  `apps/ui-next`; mounted notifications and registered project/app settings. The standalone
+  debug-signed `app.frogg.next` APK can be built locally without CI. This is research on
+  `frogg-interface-design-mockups`, not a main/stable release; Android acceptance remains
+  separate from web/fixture verification.
+
 ## Unreleased
 
 - **Plugin API v2.** A strict superset of v1 for plugins that bridge Frogg to chat and office

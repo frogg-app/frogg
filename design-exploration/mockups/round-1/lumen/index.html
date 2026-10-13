@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Lumen — Frogg round 1</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Fragment+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <nav class="dock-rail" id="rail">
+      <div class="rl-logo">f</div>
+      <button class="rl-search" id="openPal" title="⌘K">
+        ⌕<span>Search <kbd>⌘K</kbd></span>
+      </button>
+      <div class="rl-list" id="rlist"></div>
+      <button class="rl-new">＋<span>New session</span></button>
+    </nav>
+    <div class="stack" id="stack"></div>
+    <main class="page">
+      <header class="phead" style="">
+        <div class="avatar big" id="pav"></div>
+        <div>
+          <h1 id="title"></h1>
+          <div class="psub" id="sub"></div>
+        </div>
+        <div class="pact">
+          <button class="soft" id="canvasBtn">Canvas</button><button class="soft">Share</button>
+        </div>
+      </header>
+      <div class="chat-scroll" id="scroll">
+        <div class="chat" id="chat"></div>
+        <div class="spacer"></div>
+      </div>
+      <div class="float-dock">
+        <div id="strip"></div>
+        <div id="composer"></div>
+      </div>
+    </main>
+    <aside class="canvas" id="canvas">
+      <div class="cv-tabs">
+        <button class="on">Changes</button><button>Preview</button><button>Terminal</button
+        ><button>Files</button>
+      </div>
+      <div class="cv-body" id="cvBody"></div>
+    </aside>
+    <a class="dirnav" href="../../index.html">← all directions</a
+    ><a class="dirnav m" href="../_shared/phone.html?d=lumen">mobile ↗</a>
+    <script src="../_shared/core.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

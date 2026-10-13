@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Blueprint — Frogg round 2</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=B612+Mono:wght@400;700&family=B612:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body data-view="focus">
+    <header class="top">
+      <div class="logo">FROGG<small>DWG. SET 1.6 — AGENT WORKS</small></div>
+      <nav>
+        <button id="toFocus" class="on">Drawing</button
+        ><button id="toGrid">All sheets <kbd>G</kbd></button
+        ><button data-pal>Find <kbd>⌘K</kbd></button>
+      </nav>
+      <div class="scale">SCALE 1:1 · <span id="clock"></span></div>
+    </header>
+    <div class="table">
+      <aside class="sheets" id="sheets"></aside>
+      <main class="dwg">
+        <div class="dwg-h">
+          <button class="m-back" data-back>← sheets</button>
+          <h1 id="title"></h1>
+          <div class="tb" id="tb"></div>
+        </div>
+        <div class="dwg-body" id="scroll"><div class="chat" id="chat"></div></div>
+        <div class="dock">
+          <div id="strip"></div>
+          <div id="composer"></div>
+        </div>
+      </main>
+    </div>
+    <a class="dirnav" href="../index.html">← round 2</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../_shared/kit.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

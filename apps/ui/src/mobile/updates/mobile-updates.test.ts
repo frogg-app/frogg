@@ -77,6 +77,9 @@ describe("parseApkAssetName", () => {
   it("rejects debug builds, other products and non-APK assets", () => {
     expect(parseApkAssetName(`${prefix}-1.5.17-android-arm64-v8a-debug.apk`)).toBeNull();
     expect(parseApkAssetName(`other-1.5.17-android-arm64-v8a.apk`)).toBeNull();
+    // Frogg Next ships its APK on the same release; it is a different app (app.frogg.next).
+    expect(parseApkAssetName(`Frogg-Next-1.5.17-android-arm64-v8a-unsigned.apk`)).toBeNull();
+    expect(parseApkAssetName(`Frogg-Next-1.5.17-beta.2-android-arm64-v8a.apk`)).toBeNull();
     expect(parseApkAssetName(`${prefix}-1.5.17-linux-x86_64.AppImage`)).toBeNull();
   });
 });

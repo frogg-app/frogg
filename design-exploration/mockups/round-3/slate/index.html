@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Slate — Frogg round 3</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../round-1/_shared/base.css" />
+    <link rel="stylesheet" href="../_shared/r3.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="act" id="act"></nav>
+      <aside class="tree">
+        <div class="tree-h">
+          <span class="eyebrow">Explorer</span><button class="new" title="New session">+</button>
+        </div>
+        <div class="tree-body" id="list">
+          <div class="notch" id="notch"></div>
+          <div id="rows"></div>
+        </div>
+      </aside>
+      <main class="editor">
+        <div class="tabs" id="tabs"></div>
+        <div class="crumb mono" id="crumb"><button class="m-back" data-back>←</button></div>
+        <div class="split">
+          <div class="chatcol">
+            <div class="scroll" id="scroll"><div class="chat" id="chat"></div></div>
+            <div class="dock">
+              <div id="strip"></div>
+              <div id="composer"></div>
+            </div>
+          </div>
+          <aside class="side2" id="side2"></aside>
+        </div>
+        <section class="panel" id="panel">
+          <div class="panel-tabs">
+            <button class="on">Terminal</button><button>Problems <b>1</b></button
+            ><button>Output</button><span class="sp"></span><button id="panelToggle">⌄</button>
+          </div>
+          <div class="panel-body" id="panelBody"></div>
+        </section>
+      </main>
+    </div>
+    <footer class="status" id="status"></footer>
+    <a class="dirnav" href="../index.html">← round 3</a>
+    <script src="../../round-1/_shared/core.js"></script>
+    <script src="../../round-2/_shared/kit.js"></script>
+    <script src="../_shared/r3.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

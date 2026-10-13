@@ -1,0 +1,149 @@
+name: Frogg Next Android
+
+# Arm64 APK of Frogg Next (apps/ui-next, package app.frogg.next). On every main push that touches
+# the client this uploads a workflow artifact; the Release workflow also calls it with
+# `release-tag` to attach Frogg-Next-<version>-android-arm64-v8a[-unsigned].apk to that tag's
+# GitHub release. The APK is release-signed only with Frogg Next's own keystore
+# (FROGG_NEXT_ANDROID_KEYSTORE_BASE64 and friends, never the classic app's key); without it, it is
+# debug-signed and named -unsigned (release-process.mdx).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/ui-next/**"
+      - "packages/client/**"
+      - "packages/protocol/**"
+      - "packages/highlight/**"
+      - "package-lock.json"
+      - ".github/workflows/ui-next-android.yml"
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release-tag:
+        description: "Release tag to build and attach the APK to"
+        required: true
+        type: string
+      clobber:
+        description: "'true' when the calling run created the release and may overwrite its assets"
+        required: false
+        default: "false"
+        type: string
+    secrets:
+      FROGG_NEXT_ANDROID_KEYSTORE_BASE64:
+        required: false
+      FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD:
+        required: false
+      FROGG_NEXT_ANDROID_KEY_ALIAS:
+        required: false
+      FROGG_NEXT_ANDROID_KEY_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+# Main pushes cancel superseded builds; a release call gets its own group and is never cancelled.
+concurrency:
+  group: ui-next-android-${{ inputs.release-tag || github.ref }}
+  cancel-in-progress: ${{ !inputs.release-tag }}
+
+env:
+  ONNXRUNTIME_NODE_INSTALL: skip
+  CI: "true"
+  LEFTHOOK: "0"
+
+jobs:
+  apk:
+    name: Android arm64 APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
+          persist-credentials: false
+      - uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: false
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+      - run: sudo rm -rf /usr/local/lib/android/sdk/ndk /usr/local/lib/android/sdk/emulator /usr/local/lib/android/sdk/system-images
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Install dependencies
+        run: node scripts/ci/npm-retry.mjs ci
+      - name: Build workspace packages
+        run: npm run build:highlight && npm run build:client
+      # Release calls only: main-push artifacts stay debug-signed. Both the keystore and its
+      # password must be set, like the classic app's android_signing check in release.yml.
+      - name: Prepare Frogg Next keystore
+        if: inputs.release-tag != ''
+        env:
+          KEYSTORE_BASE64: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "No Frogg Next keystore: the APK is debug-signed and named -unsigned."
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/frogg-next-release.keystore"
+          echo "FROGG_ANDROID_KEYSTORE=$RUNNER_TEMP/frogg-next-release.keystore" >> "$GITHUB_ENV"
+      - name: Build APK
+        env:
+          FROGG_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD }}
+          FROGG_ANDROID_KEY_ALIAS: ${{ secrets.FROGG_NEXT_ANDROID_KEY_ALIAS || 'frogg-next' }}
+          FROGG_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEY_PASSWORD }}
+        run: node apps/ui-next/scripts/build-apk.mjs release-assets
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-android-arm64-${{ github.sha }}
+          path: release-assets/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+  # The only job with write access, and only on a release call: the build above stays read-only.
+  release:
+    name: Attach to GitHub release
+    needs: apk
+    if: inputs.release-tag != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: frogg-next-android-arm64-${{ github.sha }}
+          path: release-assets
+      - name: Upload to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ inputs.release-tag }}
+          CLOBBER: ${{ inputs.clobber }}
+        run: |
+          flags=()
+          if [ "$CLOBBER" = "true" ]; then flags+=(--clobber); fi
+          existing=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
+          for f in release-assets/Frogg-Next-*-android-*.apk; do
+            n=$(basename "$f")
+            if [ "$CLOBBER" != "true" ] && grep -qx -- "$n" <<<"$existing"; then
+              echo "::warning::$n already on $RELEASE_TAG; skipping"
+              continue
+            fi
+            gh release upload "$RELEASE_TAG" "$f" "${flags[@]}"
+          done
