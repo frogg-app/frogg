@@ -221,7 +221,34 @@ const PNG = Uint8Array.from(
   (c) => c.charCodeAt(0),
 );
 
+/** Where the lab's agent attachments live: absolute host paths, as Claude Code writes them. */
+export const LAB_ATTACHMENTS = "/tmp/frogg-attachments-lab";
+
+/** A drawn "screenshot" per attachment name, so markdown images have something visible. */
+function attachmentSvg(name: string): Uint8Array {
+  const wide = !name.includes("phone");
+  const [w, h] = wide ? [960, 540] : [390, 720];
+  const hue = [...name].reduce((n, c) => n + c.charCodeAt(0), 0) % 360;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="100%" height="100%" fill="#0c1114"/><rect x="0" y="0" width="${wide ? 64 : w}" height="${wide ? h : 56}" fill="#0e1418"/><rect x="${wide ? 96 : 24}" y="${wide ? 40 : 88}" width="${wide ? 520 : 260}" height="22" fill="hsl(${hue},55%,62%)"/><rect x="${wide ? 96 : 24}" y="${wide ? 84 : 128}" width="${wide ? 760 : 340}" height="${wide ? 380 : 540}" fill="#131b20" stroke="rgba(255,255,255,0.16)"/><text x="${wide ? 120 : 44}" y="${wide ? 130 : 176}" fill="#9aa6a9" font-family="monospace" font-size="20">${name}</text></svg>`;
+  return new TextEncoder().encode(svg);
+}
+
 export async function readFile(_cwd: string, path: string, _req?: string, maxBytes?: number) {
+  if (path.startsWith(`${LAB_ATTACHMENTS}/`) || _cwd === LAB_ATTACHMENTS) {
+    await latency(240);
+    const name = baseName(path);
+    if (name.startsWith("missing")) throw new Error(`ENOENT: no such file '${path}'`);
+    const bytes = attachmentSvg(name);
+    return {
+      bytes,
+      mime: "image/svg+xml",
+      size: bytes.length,
+      path,
+      kind: "image" as const,
+      modifiedAt: new Date().toISOString(),
+      revision: "1",
+    };
+  }
   const p = norm(path);
   const node = fs().get(p);
   await latency(node && node.size > 100_000 ? 420 : 160);

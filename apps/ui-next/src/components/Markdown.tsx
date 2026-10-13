@@ -2,24 +2,33 @@ import { Check, Copy } from "lucide-react-native";
 import { Fragment, useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { color, font } from "../theme/tokens";
+import { HostImage } from "./markdown/HostImage";
+import { MdTable } from "./markdown/MdTable";
+import { parseTable, splitImages, type Cell, type Table } from "./markdown/syntax";
 import { T } from "./Text";
 import { copyText } from "./tools/clipboard";
 
 interface Block {
-  kind: "code" | "h" | "li" | "p";
+  kind: "code" | "h" | "li" | "p" | "table" | "img";
   text: string;
   level?: number;
+  table?: Table;
+  src?: string;
   key: string;
 }
 
-/** Headings, bullets, fenced code, inline code and bold: enough for agent replies. */
+/** Headings, bullets, tables, images, fenced code, inline code and bold: enough for agent replies. */
 export function Markdown({ text }: { text: string }) {
   const blocks: Block[] = [];
   const lines = text.split("\n");
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const key = `${i}`;
-    if (line.startsWith("```")) {
+    const table = parseTable(lines, i);
+    if (table) {
+      blocks.push({ kind: "table", text: "", table, key });
+      i = table.end - 1;
+    } else if (line.startsWith("```")) {
       const code: string[] = [];
       while (++i < lines.length && !lines[i].startsWith("```")) code.push(lines[i]);
       blocks.push({ kind: "code", text: code.join("\n"), key });
@@ -37,15 +46,24 @@ export function Markdown({ text }: { text: string }) {
         key,
       });
     } else if (line.trim()) {
-      const prev = blocks[blocks.length - 1];
-      if (prev?.kind === "p" && lines[i - 1]?.trim()) prev.text += " " + line;
-      else blocks.push({ kind: "p", text: line, key });
+      splitImages(line).forEach((piece, n) => {
+        const k = `${key}.${piece.off}`;
+        if (piece.kind === "img") {
+          blocks.push({ kind: "img", text: piece.alt, src: piece.src, key: k });
+          return;
+        }
+        const prev = blocks[blocks.length - 1];
+        if (n === 0 && prev?.kind === "p" && lines[i - 1]?.trim()) prev.text += " " + piece.text;
+        else blocks.push({ kind: "p", text: piece.text, key: k });
+      });
     }
   }
   return (
     <View style={st.wrap}>
       {blocks.map((b) => {
         if (b.kind === "code") return <CodeFence key={b.key} text={b.text} />;
+        if (b.table) return <MdTable key={b.key} table={b.table} cell={tableCell} />;
+        if (b.src) return <HostImage key={b.key} src={b.src} alt={b.text} />;
         if (b.kind === "h")
           return (
             <T key={b.key} v="display" style={[st.h, b.level === 1 && st.h1]}>
@@ -70,6 +88,8 @@ export function Markdown({ text }: { text: string }) {
     </View>
   );
 }
+
+const tableCell = (c: Cell) => <Inline text={c.text} />;
 
 function Inline({ text }: { text: string }) {
   let offset = 0;

@@ -30,6 +30,9 @@ import {
 } from "react-native";
 import { usePrefs } from "../../prefs";
 import { anim, color, ease, font, web } from "../../theme/tokens";
+import { HostImage } from "../markdown/HostImage";
+import { MdTable } from "../markdown/MdTable";
+import { parseTable, splitImages, type Cell, type Table } from "../markdown/syntax";
 import { reducedMotion } from "../presence";
 import { T } from "../Text";
 
@@ -521,9 +524,15 @@ interface Seg {
   at: number;
 }
 interface Block {
-  kind: "code" | "h" | "li" | "p";
+  kind: "code" | "h" | "li" | "p" | "table" | "img";
   parts: Seg[];
   level?: number;
+  /** Tables: the parsed cells, and the offset of each of its rows' lines (header first). */
+  table?: Table;
+  rowAt?: number[];
+  /** Images: source and alt text. */
+  src?: string;
+  alt?: string;
   key: string;
 }
 
@@ -539,7 +548,15 @@ function parse(text: string): Block[] {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const key = `${starts[i]}`;
-    if (line.startsWith("```")) {
+    const table = parseTable(lines, i);
+    if (table) {
+      const rowAt = [starts[i], ...starts.slice(i + 2, table.end)];
+      const parts = [table.head, ...table.rows].flatMap((r, n) =>
+        r.map((c) => ({ text: c.text, at: rowAt[n] + c.off })),
+      );
+      blocks.push({ kind: "table", parts, table, rowAt, key });
+      i = table.end - 1;
+    } else if (line.startsWith("```")) {
       const code: Seg[] = [];
       while (++i < lines.length && !lines[i].startsWith("```"))
         code.push({ text: lines[i], at: starts[i] });
@@ -556,10 +573,17 @@ function parse(text: string): Block[] {
       const cut = line.match(/^\s*([-*]|\d+\.)\s/)?.[0].length ?? 0;
       blocks.push({ kind: "li", parts: [{ text: line.slice(cut), at: starts[i] + cut }], key });
     } else if (line.trim()) {
-      const prev = blocks[blocks.length - 1];
-      if (prev?.kind === "p" && lines[i - 1]?.trim())
-        prev.parts.push({ text: line, at: starts[i] });
-      else blocks.push({ kind: "p", parts: [{ text: line, at: starts[i] }], key });
+      splitImages(line).forEach((piece, n) => {
+        const from = starts[i] + piece.off;
+        if (piece.kind === "img") {
+          blocks.push({ kind: "img", parts: [], src: piece.src, alt: piece.alt, key: `${from}` });
+          return;
+        }
+        const prev = blocks[blocks.length - 1];
+        if (n === 0 && prev?.kind === "p" && lines[i - 1]?.trim())
+          prev.parts.push({ text: piece.text, at: from });
+        else blocks.push({ kind: "p", parts: [{ text: piece.text, at: from }], key: `${from}` });
+      });
     }
   }
   return blocks;
@@ -812,6 +836,12 @@ function Caret({ state }: { state: 1 | 2 }) {
   return <T style={[sx.caret, state === 2 && sx.blink]}> </T>;
 }
 
+/** A table cell's inline content, revealed at its offset in the streamed text. */
+function CellText({ x, at }: { x: Cell; at: number }) {
+  const seg = useMemo(() => ({ text: x.text, at }), [x.text, at]);
+  return <Inline seg={seg} />;
+}
+
 interface BlockProps {
   b: Block;
   pieces: Piece[];
@@ -823,8 +853,14 @@ interface BlockProps {
 function BlockViewImpl({ b, pieces, mode, rate, caret }: BlockProps) {
   const ctx = useMemo(() => ({ mode, pieces, rate }), [mode, pieces, rate]);
   const c = caret ? <Caret state={caret} /> : null;
+  const cell = useCallback(
+    (x: Cell, row: number) => <CellText x={x} at={(b.rowAt?.[row + 1] ?? 0) + x.off} />,
+    [b.rowAt],
+  );
   let body: ReactNode;
-  if (b.kind === "code")
+  if (b.table) body = <MdTable table={b.table} cell={cell} />;
+  else if (b.src !== undefined) body = <HostImage src={b.src} alt={b.alt ?? ""} />;
+  else if (b.kind === "code")
     body = (
       <View style={st.code}>
         <T v="mono" style={st.codeText}>
@@ -863,6 +899,7 @@ function BlockViewImpl({ b, pieces, mode, rate, caret }: BlockProps) {
 function sameBlock(a: BlockProps, b: BlockProps) {
   if (a.mode !== b.mode || a.rate !== b.rate || a.caret !== b.caret) return false;
   if (a.b.key !== b.b.key || a.b.kind !== b.b.kind || a.b.level !== b.b.level) return false;
+  if (a.b.src !== b.b.src || a.b.alt !== b.b.alt) return false;
   if (a.b.parts.length !== b.b.parts.length || a.pieces.length !== b.pieces.length) return false;
   if (a.b.parts.some((p, i) => p.text !== b.b.parts[i].text || p.at !== b.b.parts[i].at))
     return false;
