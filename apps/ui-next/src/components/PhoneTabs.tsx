@@ -28,6 +28,7 @@ import { useUi, type Tool } from "../ui-store";
 import { Cut } from "./Cut";
 import { GROUP_NAMES, type ToolMeta, useShownGroups } from "./Rail";
 import { useGlide } from "./Glide";
+import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
 
 type TabId = Tool | "more";
@@ -53,6 +54,7 @@ export function PhoneTabs({ badges }: { badges: Partial<Record<Tool, number>> })
   const [more, setMore] = useState(false);
   const inTabs = TABS.some((t) => t.id === tool);
   const closeMore = useCallback(() => setMore(false), []);
+  useModalLayer(more, closeMore);
   const pick = useCallback((id: TabId) => {
     if (id === "more") {
       setMore((m) => !m);

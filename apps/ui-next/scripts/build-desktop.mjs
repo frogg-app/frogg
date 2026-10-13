@@ -58,7 +58,7 @@ writeFileSync(
     `<head><meta http-equiv="Content-Security-Policy" content="${policy}"><link id="frogg-fonts" rel="stylesheet" href="/desktop-fonts.css">`,
   ),
 );
-for (const file of ["main.cjs", "resolve-asset.cjs"]) {
+for (const file of ["main.cjs", "resolve-asset.cjs", "window-chrome.cjs"]) {
   cpSync(path.join(app, "desktop", file), path.join(stage, file));
 }
 const { version } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));

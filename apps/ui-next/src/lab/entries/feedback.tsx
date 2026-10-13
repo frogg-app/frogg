@@ -21,7 +21,7 @@ import {
 } from "../../components/settings/pages/kit";
 import { Crashed } from "../../components/shell/ErrorBoundary";
 import { T } from "../../components/Text";
-import { Banner, Banners } from "../../components/toast/Banners";
+import { HostToasts } from "../../components/toast/HostToasts";
 import {
   clearToasts,
   DEFAULT_TOAST_VARIANT,
@@ -141,67 +141,16 @@ function ToastDemo() {
       </Controls>
       <T v="mono">
         {count} on screen · variant {variant} (shell default {DEFAULT_TOAST_VARIANT}) · auto-dismiss
-        4200ms, held while the pointer is over the stack · renders bottom-right of the lab
+        per Settings → Notifications (default 5s), held while the pointer is over the stack ·
+        renders bottom-right of the lab
       </T>
     </Stack>
   );
 }
 
-// ---- banners ----
+// ---- host toasts ----
 
 const noop = () => {};
-function BannerTones() {
-  return (
-    <Stack>
-      <Case
-        name="Banner"
-        props={'tone="warn" action="Update host…" onDismiss'}
-        note="Daemon older than the app."
-      >
-        <Banner
-          tone="warn"
-          title="devbox runs daemon 1.6.10"
-          detail="older than this app (1.6.13); some features are hidden"
-          action="Update host…"
-          onPress={noop}
-          onDismiss={noop}
-        />
-      </Case>
-      <Case
-        name="Banner"
-        props={'tone="run" action="Retry now"'}
-        note="Reconnecting: the glyph breathes."
-      >
-        <Banner
-          tone="run"
-          title="Connecting to devbox"
-          detail="offline for 0:42 · reconnect before sending messages"
-          action="Retry now"
-          onPress={noop}
-          onDismiss={noop}
-        />
-      </Case>
-      <Case
-        name="Banner"
-        props={'tone="error" action="Review storage…"'}
-        note="At the phone width the detail and action wrap."
-        w={W.phone}
-      >
-        <Banner
-          tone="error"
-          title="Frogg storage on devbox is 48.2 GB"
-          detail="clean up worktrees, logs and caches to free space"
-          action="Review storage…"
-          onPress={noop}
-          onDismiss={noop}
-        />
-      </Case>
-      <Case name="Banner" props={'tone="warn" title only'} note="No action, no dismiss button.">
-        <Banner tone="warn" title="No action, not dismissible" />
-      </Case>
-    </Stack>
-  );
-}
 
 const goOffline = () => useDaemon.setState({ conn: "connecting" });
 const goOnline = () => useDaemon.setState({ conn: "online" });
@@ -221,7 +170,7 @@ const storageOk = () =>
     payload: { status: "storage_alert", alert: { level: "ok", totalBytes: 1e9 } },
   });
 
-function BannerHost() {
+function HostToastDemo() {
   return (
     <Stack>
       <Controls>
@@ -232,13 +181,12 @@ function BannerHost() {
         <Act label="Storage ok" run={storageOk} />
       </Controls>
       <Case
-        name="Banners"
-        props="(reads the host store)"
-        note="Empty while the host is online with no alerts: press Drop connection or a storage button."
+        name="HostToasts"
+        props="(reads the host store; renders nothing)"
+        note="Drop connection: after 2s a sticky Connecting toast whose timer ticks; Reconnect retires it with a Reconnected toast. Storage critical stays until it clears; warning fades like any toast."
       >
-        <View style={s.bannerFrame}>
-          <Banners />
-        </View>
+        <HostToasts />
+        <T v="mono">Toasts appear bottom-right of the lab.</T>
       </Case>
     </Stack>
   );
@@ -543,21 +491,21 @@ export const feedback: Entry[] = [
     variants: [{ id: "lifecycle", label: "Fire, stack, dismiss", C: ToastDemo }],
   },
   {
-    id: "banner",
-    name: "Banners",
+    id: "host-toasts",
+    name: "Host toasts",
     category: "Feedback",
-    path: "components/toast/Banners.tsx",
-    purpose: "Full-width host conditions: daemon older than the app, reconnecting, storage alerts.",
+    path: "components/toast/HostToasts.tsx",
+    purpose:
+      "Host conditions as toasts (formerly full-width banners): daemon older than the app, reconnecting, storage alerts.",
     usedBy: 1,
     polish:
-      "none on show or dismiss; the run tone's glyph breathes (1.6s ∞); the offline timer ticks every 1s",
+      "toast motion (see Toasts) · the reconnecting toast is sticky and its offline timer ticks every 1s in place · retired with a 140ms exit when the link returns",
     variants: [
-      { id: "tones", label: "Tones", C: BannerTones },
       {
         id: "host",
-        label: "Live host banners",
-        note: "Drives the real Banners from the fixture host.",
-        C: BannerHost,
+        label: "Live host toasts",
+        note: "Drives the real HostToasts from the fixture host.",
+        C: HostToastDemo,
       },
     ],
   },
@@ -651,7 +599,6 @@ export const feedback: Entry[] = [
 ];
 
 const s = StyleSheet.create({
-  bannerFrame: { borderWidth: 1, borderColor: color.line, minHeight: 60 },
   answered: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 8 },
   answeredT: { color: color.muted, flex: 1 },
 });

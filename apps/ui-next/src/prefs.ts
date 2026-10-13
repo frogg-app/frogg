@@ -131,6 +131,8 @@ export const PREF_DEFAULTS = {
   scmCompact: false,
   scmBaseCommits: true,
   scmStashes: true,
+  // Toasts: seconds on screen; 0 keeps them until dismissed.
+  toastSeconds: 5,
 };
 
 export type Prefs = typeof PREF_DEFAULTS;

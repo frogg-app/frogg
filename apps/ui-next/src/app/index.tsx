@@ -1,6 +1,7 @@
 import { KeyboardFrame } from "../components/shell/KeyboardFrame";
 import { ToastHost } from "../components/toast/ToastHost";
-import { Banners } from "../components/toast/Banners";
+import { HostToasts } from "../components/toast/HostToasts";
+import { TitleBar } from "../components/shell/TitleBar";
 import { useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
@@ -209,7 +210,7 @@ export default function Shell() {
       >
         <KeyboardFrame style={s.fill}>
           {crash !== undefined && <Crash />}
-          <Banners />
+          <HostToasts />
           <View style={s.fill}>{phoneHasDetail ? detailEl : side}</View>
           {!phoneHasDetail && !keyboard && <PhoneTabs badges={badges} />}
         </KeyboardFrame>
@@ -223,9 +224,10 @@ export default function Shell() {
   const hasDetail = hasDetailFor(ui, openRun, session);
   return (
     <SafeAreaView edges={keyboard ? EDGES_NO_BOTTOM : EDGES_ALL} style={s.root}>
+      <TitleBar />
       <KeyboardFrame style={s.fill}>
         {crash !== undefined && <Crash />}
-        <Banners />
+        <HostToasts />
         <View style={s.row}>
           <Rail badges={badges} />
           {FULL_TOOLS.has(tool) && <View style={[s.fill, s.full]}>{side}</View>}

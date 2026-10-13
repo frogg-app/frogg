@@ -1,7 +1,15 @@
 import { KeyboardFrame } from "./shell/KeyboardFrame";
 import { exitPointer, riseStyle, scrimStyle, sheetStyle, usePresence } from "./presence";
 import { FileText, GitBranch, Image as ImageIcon, Paperclip, X } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { loadConfig, useConfig } from "../daemon/config";
@@ -35,6 +43,7 @@ import {
 } from "./sessions/create";
 import { addProject, baseName } from "./sessions/directory";
 import { FolderBrowser } from "./sessions/sheets";
+import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
 
 type Isolation = "worktree" | "local";
@@ -652,6 +661,8 @@ export function NewSession() {
     setOpen(false);
     setError(null);
   }, [setOpen]);
+  const root = useRef<View>(null);
+  useModalLayer(open, close, root);
   const reset = useCallback(() => {
     setPrompt("");
     setTitle("");
@@ -752,6 +763,7 @@ export function NewSession() {
       createLabel={createLabel}
       canCreate={canCreate}
       onCreate={onCreate}
+      root={root}
     >
       {fields}
     </Shell>
@@ -868,6 +880,7 @@ interface ShellProps {
   createLabel: string;
   canCreate: boolean;
   onCreate: () => void;
+  root: RefObject<View | null>;
   children: ReactNode;
 }
 
@@ -933,12 +946,13 @@ function DeskSheet({
   createLabel,
   canCreate,
   onCreate,
+  root,
   children,
 }: ShellProps) {
   return (
     <View style={s.layer} pointerEvents={exitPointer(closing)}>
       <Pressable style={[s.scrim, scrimStyle(closing)]} onPress={close} />
-      <View style={[s.boxPlace, riseStyle(closing)]}>
+      <View style={[s.boxPlace, riseStyle(closing)]} ref={root}>
         <Cut size={16} flip style={s.box}>
           <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             <View style={s.headRow}>

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { bp, color, overlayMs, web } from "../theme/tokens";
 import { Cut } from "./Cut";
 import { Floating } from "./Floating";
+import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
 
 export interface Option<V extends string> {
@@ -70,6 +71,7 @@ export function Select<V extends string>({
   );
   const wrap = useMemo(() => ({ width, zIndex: open && !sheet ? 40 : 1 }), [width, open, sheet]);
   const drop = usePresence(open && !sheet);
+  useModalLayer(open, close);
   const anchor = useRef<View>(null);
   const closing = drop.closing;
   const menu = useCallback(

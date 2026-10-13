@@ -15,6 +15,7 @@ import { Brackets, BracketScope } from "./Brackets";
 import { useBuckets } from "./SessionList";
 import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
+import { ToastLog } from "./toast/ToastLog";
 
 const GROUPS: Array<{ b: Bucket; label: string }> = [
   { b: "needs", label: "Needs you" },
@@ -78,9 +79,10 @@ export function InboxPanel() {
             ) : null,
           )}
         </BracketScope>
+        <ToastLog />
       </ScrollView>
       <T v="mono" style={st.foot}>
-        Session approvals, failures and finished work
+        Session approvals, failures, finished work and past toasts
       </T>
     </View>
   );
