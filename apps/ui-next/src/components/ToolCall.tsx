@@ -20,6 +20,7 @@ import { Beam, isNative, NativeEnter, NativePulse, type Pose, Sweep } from "./na
 import {
   anim,
   color,
+  ease,
   font,
   frames,
   motion,
@@ -27,6 +28,8 @@ import {
   toolDoneMs,
   web,
 } from "../theme/tokens";
+import { Clamp } from "./chat/Clamp";
+import { Collapse } from "./subwork/Collapse";
 import { CodeBlock } from "./Code";
 import { Markdown } from "./Markdown";
 import { StatusGlyph } from "./StatusGlyph";
@@ -204,6 +207,9 @@ function DiffText({ text }: { text: string }) {
   );
 }
 
+/** Expanded output taller than this is clamped behind "Show more". */
+const BODY_CAP = 320;
+
 type Settle = { kind: "completed" | "failed"; sweep: boolean } | null;
 
 /** Last time any row played its sweep; a burst only sweeps once per `toolDoneMs.throttle`. */
@@ -318,17 +324,19 @@ export function ToolCall({ item }: { item: ToolCallTimelineItem }) {
           </View>
         )}
       </Pressable>
-      {open && (
+      <Collapse open={open}>
         <View style={s.body}>
           {failed && !!item.error && (
             <T v="mono" style={s.error}>
               {String(item.error)}
             </T>
           )}
-          <Body d={item.detail} />
+          <Clamp cap={BODY_CAP}>
+            <Body d={item.detail} />
+          </Clamp>
           {item.detail?.type === "sub_agent" && <SpawnedLink callId={item.callId} />}
         </View>
-      )}
+      </Collapse>
     </Enter>
   );
 }
@@ -414,8 +422,6 @@ const s = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: color.line,
     backgroundColor: color.bg,
-    maxHeight: 420,
-    overflow: "hidden",
   },
   pre: {
     fontFamily: font.mono,
@@ -440,8 +446,8 @@ const s = StyleSheet.create({
   verb: { color: color.cyan2, fontFamily: font.mono, fontSize: 12.5 },
   arg: { flex: 1, fontFamily: font.mono, fontSize: 12.5, color: color.text },
   meta: { fontSize: 11 },
-  chev: { transform: [{ rotate: "0deg" }] },
-  chevOpen: { transform: [{ rotate: "90deg" }] },
+  chev: { transform: [{ rotate: "0deg" }], ...web({ transition: `transform 200ms ${ease}` }) },
+  chevOpen: { transform: [{ rotate: "90deg" }], ...web({ transition: `transform 200ms ${ease}` }) },
   error: { color: color.coral, padding: 10 },
   add: { backgroundColor: "rgba(63,207,142,0.09)", color: "#a6ecc8" },
   del: { backgroundColor: "rgba(255,107,107,0.10)", color: "#ffb3b3" },
