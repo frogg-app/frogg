@@ -26,6 +26,11 @@ test("custom defaults have independent identities and no upstream services", () 
   assert.equal(brand.distribution.releaseBase, null);
   assert.equal(brand.services.pairingUrl, null);
   assert.equal(brand.distribution.iosStoreId, null);
+  assert.equal(brand.distribution.froggNext, false);
+  assert.equal(
+    resolveBrandManifest({ ...minimal, distribution: { froggNext: true } }).distribution.froggNext,
+    true,
+  );
   assert.equal(brand.links.docs, null);
   assert.equal(storageKey(brand, "settings"), "com.acme.studio:settings");
 });
@@ -362,6 +367,16 @@ test("the beta channel installs beside stable under its own identity", () => {
   assert.equal(beta.legacyFrogg, false);
   assert.equal(beta.distribution.iosStoreId, null);
   assert.equal(beta.distribution.repository, "frogg-app/frogg");
+  // Upstream frogg attaches Frogg Next on both channels unless it opts out.
+  assert.equal(stable.distribution.froggNext, true);
+  assert.equal(beta.distribution.froggNext, true);
+  assert.equal(
+    resolveBrandManifest(
+      { ...official, distribution: { ...official.distribution, froggNext: false } },
+      { channel: "beta" },
+    ).distribution.froggNext,
+    false,
+  );
   // Behaviour follows the product: frogg beta keeps frogg's open defaults and theme.
   assert.equal(beta.stockFrogg, true);
   assert.equal(beta.daemon.bind, stable.daemon.bind);
