@@ -3,11 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { useConfig } from "../../daemon/config";
 import type { Agent } from "../../daemon/types";
-import { color } from "../../theme/tokens";
+import { color, motion } from "../../theme/tokens";
 import { StatusGlyph } from "../StatusGlyph";
 import { T } from "../Text";
-import { toast, toastError } from "../toast/store";
+import { toastError } from "../toast/store";
 import { cancelAutoResume, cleanCut, hasFeature } from "./actions";
+import { CUT, runSessionOp, useSessionOp } from "./sessionOps";
 
 function useNow(active: boolean, everyMs: number): number {
   const [now, setNow] = useState(() => Date.now());
@@ -31,13 +32,15 @@ function kTokens(n: number): string {
   return n >= 1000 ? `${Math.round(n / 1000)}k` : String(n);
 }
 
-/** Strips above the composer input: a lapsed prompt cache, a pending auto-resume. */
+/** Strips above the composer input: a running move/clean cut, a lapsed prompt cache, a pending auto-resume. */
 export function ComposerNotices({ agent }: { agent: Agent }) {
+  const op = useSessionOp(agent.id);
   const settings = useConfig((st) => (st.config as { cleanCut?: unknown } | null)?.cleanCut);
   const resume = agent.autoResume ?? null;
   const now = useNow(true, resume ? 1000 : 30_000);
   const lastTurn = agent.lastUsageAt ?? agent.lastUserMessageAt ?? null;
   const cold =
+    !op &&
     agent.status !== "running" &&
     !!agent.lastUserMessageAt &&
     isPromptCacheCold({
@@ -50,18 +53,20 @@ export function ComposerNotices({ agent }: { agent: Agent }) {
     ?.contextWindowUsedTokens;
   const canCut = hasFeature("agentCleanCut");
   const doCut = useCallback(() => {
-    toast({ title: "Clean cut started", detail: "Summarising the conversation", kind: "info" });
-    cleanCut(agent.id).then(
-      () => toast({ title: "Clean cut done", detail: "The next message starts from the summary" }),
-      (e) => toastError("Clean cut failed", e),
-    );
+    runSessionOp(agent.id, CUT, () => cleanCut(agent.id));
   }, [agent.id]);
   const cancel = useCallback(() => {
     cancelAutoResume(agent.id).catch((e) => toastError("Could not cancel auto-resume", e));
   }, [agent.id]);
-  if (!cold && !resume) return null;
+  if (!cold && !resume && !op) return null;
   return (
     <View style={s.list}>
+      {op && (
+        <View style={[s.note, s.enter]}>
+          <StatusGlyph bucket="working" size={7} />
+          <T style={s.t}>{op.label}…</T>
+        </View>
+      )}
       {cold && (
         <View style={[s.note, s.warn]}>
           <StatusGlyph bucket="needs" size={7} still />
@@ -98,6 +103,7 @@ function Link({ label, onPress }: { label: string; onPress: () => void }) {
 
 const s = StyleSheet.create({
   list: { gap: 4, marginBottom: 8 },
+  enter: motion.enter,
   note: {
     flexDirection: "row",
     alignItems: "center",

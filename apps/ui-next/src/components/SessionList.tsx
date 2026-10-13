@@ -12,6 +12,7 @@ import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Brackets, BracketScope } from "./Brackets";
 import { useHosts } from "../daemon/hosts";
+import { parseQuestions } from "./chat/QuestionCard";
 import { answerPermission, connect, useDaemon, useOtherHostSessions } from "../daemon/store";
 import { bucketOf, type Bucket, type Session } from "../daemon/types";
 import { anim, color, font, web } from "../theme/tokens";
@@ -70,11 +71,17 @@ const branchOf = (x: Session) =>
   x.project?.checkout.isGit ? x.project.checkout.currentBranch : null;
 const projectName = (x: Session) => x.project?.projectName ?? x.agent.cwd.split("/").pop() ?? "";
 
+const rank = (x: Session) => ORDER.findIndex((o) => o.b === bucketOf(x.agent));
+
 function sorter(sort: Prefs["sort"], pinned: (x: Session) => boolean) {
   return (a: Session, b: Session) => {
     const p = Number(pinned(b)) - Number(pinned(a));
     if (p) return p;
     if (sort === "title") return (a.agent.title ?? "").localeCompare(b.agent.title ?? "");
+    if (sort === "state") {
+      const r = rank(a) - rank(b);
+      if (r) return r;
+    }
     const key = sort === "created" ? "createdAt" : "updatedAt";
     return Date.parse(b.agent[key]) - Date.parse(a.agent[key]);
   };
@@ -94,7 +101,8 @@ function useListModel(needle: string) {
       !!(x.agent.workspaceId && workspaces[x.agent.workspaceId]?.pinnedAt);
     const chats = scope === "chats";
     // "All projects" spans every connected host; a project or chats scope is the active host's.
-    const pool = scope === "all" ? [...Object.values(sessions), ...others] : Object.values(sessions);
+    const pool =
+      scope === "all" ? [...Object.values(sessions), ...others] : Object.values(sessions);
     const hostName = (x: Session) => hosts.find((h) => h.id === x.hostId)?.name ?? "host";
     const inScope = pool.filter((x) => {
       if (isChat(x, dir) !== chats) return false;
@@ -128,7 +136,8 @@ function useListModel(needle: string) {
       }
     } else if (prefs.group === "project") {
       for (const x of visible) {
-        if (x.hostId) push(`${x.hostId}:${projectName(x)}`, `${projectName(x)} · ${hostName(x)}`, x);
+        if (x.hostId)
+          push(`${x.hostId}:${projectName(x)}`, `${projectName(x)} · ${hostName(x)}`, x);
         else push(projectIdOf(x, dir) ?? projectName(x), projectName(x), x);
       }
       groups.sort((a, b) => a.label.localeCompare(b.label));
@@ -328,6 +337,12 @@ function Row({
   const sub = useRowSubWork(a.id, !elsewhere && (a.status === "running" || selected));
   const perm = a.pendingPermissions[0];
   const plan = perm?.kind === "plan";
+  // A question needs an answer, not an approval: its button opens the session's QuestionCard.
+  const question = perm?.kind === "question";
+  const asked = useMemo(
+    () => (question ? (parseQuestions(perm.input)?.[0]?.question ?? null) : null),
+    [question, perm?.input],
+  );
   const branch = branchOf(sess);
   const open = useCallback(() => void openOnItsHost(sess), [sess]);
   // Menu actions run against the active host, so another host's session opens instead.
@@ -339,9 +354,10 @@ function Row({
   const longPress = useCallback(() => {
     ref.current?.measureInWindow((x, y, w, h) => menuAt({ x, y, w, h }));
   }, [menuAt]);
-  // A plan needs reading, so its button opens the session; anything else approves in place.
+  // Plans and questions need the session open; anything else approves in place.
   const act = useCallback(() => {
-    if (!perm || perm.kind === "plan" || elsewhere) void openOnItsHost(sess);
+    if (!perm || perm.kind === "plan" || perm.kind === "question" || elsewhere)
+      void openOnItsHost(sess);
     else void answerPermission(a.id, perm.id, true);
   }, [a.id, elsewhere, perm, sess]);
   const title = prefs.title === "branch" && branch ? branch : a.title || "Untitled session";
@@ -412,16 +428,16 @@ function Row({
             {perm && (
               <View style={s.permRow}>
                 <View style={s.permCmd}>
-                  <T v="mono" numberOfLines={1} style={plan ? s.permPlan : s.permText}>
-                    {plan ? "Plan ready" : (perm.title ?? perm.name)}
-                  </T>
+                  <PermLabel plan={plan} asked={asked} fallback={perm.title ?? perm.name} />
                 </View>
                 <Pressable onPress={act}>
                   <Cut size={6} style={s.approve}>
-                    <T style={s.approveT}>{plan ? "Review" : "Approve"}</T>
-                    <T v="mono" style={s.approveK}>
-                      A
-                    </T>
+                    <T style={s.approveT}>{actLabel(plan, question)}</T>
+                    {!question && (
+                      <T v="mono" style={s.approveK}>
+                        A
+                      </T>
+                    )}
                   </Cut>
                 </Pressable>
               </View>
@@ -436,6 +452,39 @@ function Row({
         )}
       </Pressable>
     </View>
+  );
+}
+
+function actLabel(plan: boolean, question: boolean): string {
+  if (plan) return "Review";
+  return question ? "Answer" : "Approve";
+}
+
+function PermLabel({
+  plan,
+  asked,
+  fallback,
+}: {
+  plan: boolean;
+  asked: string | null;
+  fallback: string;
+}) {
+  if (plan)
+    return (
+      <T v="mono" numberOfLines={1} style={s.permPlan}>
+        Plan ready
+      </T>
+    );
+  if (asked)
+    return (
+      <T numberOfLines={1} style={s.permAsk}>
+        {asked}
+      </T>
+    );
+  return (
+    <T v="mono" numberOfLines={1} style={s.permText}>
+      {fallback}
+    </T>
   );
 }
 
@@ -572,6 +621,7 @@ const s = StyleSheet.create({
   },
   permText: { color: color.text },
   permPlan: { color: color.amber },
+  permAsk: { color: color.text, fontSize: 12.5 },
   approve: {
     flexDirection: "row",
     alignItems: "center",

@@ -2,7 +2,7 @@ import type { Picked } from "./actions";
 
 export const canPickFiles = true;
 
-function read(file: File): Promise<Picked> {
+export function readFile(file: File): Promise<Picked> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.addEventListener("error", () => reject(r.error ?? new Error("Could not read file")), {
@@ -37,7 +37,7 @@ export function pickFiles(opts: { images?: boolean }): Promise<Picked[]> {
       "change",
       () => {
         const files = Array.from(input.files ?? []);
-        void Promise.all(files.map(read)).then(resolve, reject);
+        void Promise.all(files.map(readFile)).then(resolve, reject);
       },
       { once: true },
     );

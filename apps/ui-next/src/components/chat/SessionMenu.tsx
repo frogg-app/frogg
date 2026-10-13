@@ -21,6 +21,7 @@ import { toast, toastError } from "../toast/store";
 import { Dialog } from "../tools/Dialog";
 import { Menu, useAnchor, type MenuEntry } from "../tools/Menu";
 import { checkoutRisk, cleanCut, fork, hasFeature, renameSession, rewind } from "./actions";
+import { CUT, runSessionOp, useSessionOp } from "./sessionOps";
 
 type Open = null | "rename" | "archive" | "rewind";
 
@@ -36,6 +37,7 @@ export function SessionMenu({
   const anchor = useAnchor();
   const [open, setOpen] = useState<Open>(null);
   const close = useCallback(() => setOpen(null), []);
+  const op = useSessionOp(a.id);
   const entries = useDaemon((st) => st.timelines[a.id]);
   const target = useMemo(() => lastUserMessage(entries), [entries]);
   const caps = a.capabilities;
@@ -52,11 +54,7 @@ export function SessionMenu({
     );
   }, [a]);
   const doCut = useCallback(() => {
-    toast({ title: "Clean cut started", detail: "Summarising the conversation", kind: "info" });
-    cleanCut(a.id).then(
-      () => toast({ title: "Clean cut done", detail: "The next message starts from the summary" }),
-      (e) => toastError("Clean cut failed", e),
-    );
+    runSessionOp(a.id, CUT, () => cleanCut(a.id));
   }, [a.id]);
   const copyId = useCallback(() => {
     void copyText(a.id).then((ok) => ok && toast({ title: "Copied session ID", detail: a.id }));
@@ -84,8 +82,8 @@ export function SessionMenu({
       list.push({
         label: "Clean cut",
         icon: Scissors,
-        hint: "Summarise, continue in a fresh context",
-        disabled: a.status === "running",
+        hint: op ? `${op.label}…` : "Summarise, continue in a fresh context",
+        disabled: a.status === "running" || !!op,
         onPress: doCut,
       });
     list.push({ label: "Copy session ID", icon: Copy, onPress: copyId });
@@ -96,7 +94,7 @@ export function SessionMenu({
       onPress: () => setOpen("archive"),
     });
     return list;
-  }, [doFork, doCut, copyId, canRewind, target, a.status]);
+  }, [doFork, doCut, copyId, canRewind, target, a.status, op]);
   return (
     <>
       <View ref={anchor.ref} collapsable={false}>

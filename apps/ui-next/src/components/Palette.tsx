@@ -69,6 +69,8 @@ function answerSelected(k: string): boolean {
   const agent = ui.selected ? useDaemon.getState().sessions[ui.selected]?.agent : undefined;
   const perm = agent?.pendingPermissions[0];
   if (!agent || !perm) return false;
+  // A question is answered on its card, never approved bare.
+  if (perm.kind === "question") return false;
   void answerPermission(agent.id, perm.id, k === "a");
   return true;
 }

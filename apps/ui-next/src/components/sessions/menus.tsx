@@ -173,6 +173,7 @@ const GROUPS: Array<[Group, string]> = [
   ["labels", "Labels"],
 ];
 const SORTS: Array<{ value: Sort; label: string }> = [
+  { value: "state", label: "Attention first" },
   { value: "recent", label: "Recent activity" },
   { value: "created", label: "Created" },
   { value: "title", label: "Title" },

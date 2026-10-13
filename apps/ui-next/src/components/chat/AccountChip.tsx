@@ -4,14 +4,15 @@ import { Pressable, StyleSheet, View } from "react-native";
 import type { Agent } from "../../daemon/types";
 import { color } from "../../theme/tokens";
 import { T } from "../Text";
-import { toast, toastError } from "../toast/store";
 import { Menu, useAnchor, type MenuEntry } from "../tools/Menu";
 import { cleanCut, hasFeature, listAccounts, moveToAccount, type Account } from "./actions";
+import { runSessionOp, useSessionOp } from "./sessionOps";
 
 /** Account the session runs on. Locked once started: switching means a move or a clean cut. */
 export function AccountChip({ agent }: { agent: Agent }) {
   const [accounts, setAccounts] = useState<Account[] | null>(null);
   const anchor = useAnchor();
+  const op = useSessionOp(agent.id);
   useEffect(() => {
     let live = true;
     listAccounts(agent.provider).then(
@@ -34,6 +35,8 @@ export function AccountChip({ agent }: { agent: Agent }) {
     );
     const canMove = agent.status !== "running" && hasFeature("agentProviderAccountTransfer");
     const canCut = agent.status !== "running" && hasFeature("agentCleanCut");
+    // While a move or clean cut runs, the others stay visible but locked.
+    const busy = op ? `${op.label}…` : undefined;
     const entries: MenuEntry[] = [
       { head: "Account · locked once the agent started" },
       ...accounts
@@ -50,26 +53,40 @@ export function AccountChip({ agent }: { agent: Agent }) {
       if (canMove)
         entries.push({
           label: `Move conversation to ${o.name}…`,
-          hint: "Full history; re-sends the context on the next turn",
+          hint: busy ?? "Full history; re-sends the context on the next turn",
+          disabled: !!op,
           onPress: () =>
-            moveToAccount(agent.id, o.id).then(
-              () => toast({ title: `Moved to ${o.name}` }),
-              (e) => toastError("Could not move the conversation", e),
+            runSessionOp(
+              agent.id,
+              {
+                label: `Moving the conversation to ${o.name}`,
+                done: `Moved to ${o.name}`,
+                doneDetail: "The next turn re-sends the full history",
+                failed: "Could not move the conversation",
+              },
+              () => moveToAccount(agent.id, o.id),
             ),
         });
       if (canCut)
         entries.push({
           label: `Clean cut to ${o.name}`,
-          hint: "Summarise, then continue there",
+          hint: busy ?? "Summarise, then continue there",
+          disabled: !!op,
           onPress: () =>
-            cleanCut(agent.id, o.id).then(
-              () => toast({ title: `Clean cut to ${o.name}` }),
-              (e) => toastError("Clean cut failed", e),
+            runSessionOp(
+              agent.id,
+              {
+                label: `Clean cut to ${o.name}: summarising`,
+                done: `Clean cut to ${o.name} done`,
+                doneDetail: "The next message starts from the summary",
+                failed: "Clean cut failed",
+              },
+              () => cleanCut(agent.id, o.id),
             ),
         });
     }
     return entries;
-  }, [accounts, current, agent.id, agent.provider, agent.status]);
+  }, [accounts, current, agent.id, agent.provider, agent.status, op]);
   if (!current) return null;
   return (
     <>

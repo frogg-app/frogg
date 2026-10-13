@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button } from "../../components/Button";
 import { ComposerNotices } from "../../components/chat/Notices";
+import { useSessionOps } from "../../components/chat/sessionOps";
 import {
   Compaction,
   DEFAULT_STATE_VARIANT,
@@ -33,6 +34,7 @@ import { useDaemon } from "../../daemon/store";
 import type { TimelineItem } from "../../daemon/types";
 import { color } from "../../theme/tokens";
 import { askPermission, emit, patchAgent } from "../client";
+import { seedRows, simRows } from "../sim/agents";
 import {
   ago,
   agent,
@@ -266,6 +268,23 @@ const setupPermissions = () => askPermission(ID.preview, toolPermission);
 // ---- session state ----
 
 const reviewAgent = agent({ id: "x-review", requiresAttention: true, attentionReason: "finished" });
+const cleanAgent = agent({
+  id: "x-clean",
+  cwd: "/home/dev/clean",
+  requiresAttention: true,
+  attentionReason: "finished",
+});
+const waitingAgent = agent({
+  id: "x-waiting",
+  requiresAttention: true,
+  attentionReason: "finished",
+});
+// Settled children only, so "Ready" and "Finished" aren't held by the sim's running subagent;
+// x-waiting keeps it and shows the waiting card.
+const setupStates = () => {
+  simRows.set("x-review", seedRows("x-review").slice(1));
+  simRows.set("x-clean", seedRows("x-clean").slice(1));
+};
 const failedAgent = agent({
   id: "x-failed",
   status: "error",
@@ -280,6 +299,23 @@ const Review = () => (
     </Case>
     <Case name="SessionState" props="(same)" w={W.phone}>
       <SessionState agent={reviewAgent} online />
+    </Case>
+  </Cases>
+);
+const Clean = () => (
+  <Cases>
+    <Case name="SessionState" props="agent={finished, checkout unchanged} online" w={CHAT}>
+      <SessionState agent={cleanAgent} online />
+    </Case>
+  </Cases>
+);
+const Waiting = () => (
+  <Cases>
+    <Case name="SessionState" props="agent={finished, a subagent still running} online" w={CHAT}>
+      <SessionState agent={waitingAgent} online />
+    </Case>
+    <Case name="SessionState" props="(same)" w={W.phone}>
+      <SessionState agent={waitingAgent} online />
     </Case>
   </Cases>
 );
@@ -383,6 +419,16 @@ const resumeAgent = agent({
   id: "x-resume",
   autoResume: { resumeAt: ahead(47), resetsAt: ahead(47), detectedAt: ago(2) },
 });
+const opAgent = agent({ id: "x-op" });
+const setupNotices = () =>
+  useSessionOps.setState({ "x-op": { label: "Moving the conversation to work" } });
+const Moving = () => (
+  <Cases>
+    <Case name="ComposerNotices" props="runSessionOp in flight (move / clean cut)" w={CHAT}>
+      <ComposerNotices agent={opAgent} />
+    </Case>
+  </Cases>
+);
 const Cold = () => (
   <Cases>
     <Case name="ComposerNotices" props="agent={lastUsageAt: 90m ago, 142k context}" w={CHAT}>
@@ -541,6 +587,7 @@ export const feedback: Entry[] = [
   {
     id: "session-state",
     name: "SessionState / Compaction",
+    setup: setupStates,
     category: "Feedback",
     path: "components/chat/SessionState.tsx",
     purpose:
@@ -554,6 +601,8 @@ export const feedback: Entry[] = [
       { id: "style-bracket", label: "Style B · bracket card", C: StyleBracket },
       { id: "style-banner", label: "Style C · banner + top trim", C: StyleBanner },
       { id: "review", label: "Ready to review", C: Review },
+      { id: "clean", label: "Finished, no file changes", C: Clean },
+      { id: "waiting", label: "Waiting on background work", C: Waiting },
       { id: "failed", label: "Failed", C: Failed },
       { id: "offline", label: "Host offline", C: Offline },
       { id: "cut-loading", label: "Clean cut running", C: CutLoading },
@@ -564,6 +613,7 @@ export const feedback: Entry[] = [
   {
     id: "notices",
     name: "ComposerNotices",
+    setup: setupNotices,
     category: "Feedback",
     path: "components/chat/Notices.tsx",
     purpose:
@@ -571,6 +621,7 @@ export const feedback: Entry[] = [
     usedBy: 1,
     polish: "none; the countdown ticks every 1s",
     variants: [
+      { id: "moving", label: "Move or clean cut running", C: Moving },
       { id: "cold", label: "Cold prompt cache", C: Cold },
       { id: "resume", label: "Auto-resume pending", C: Resume },
     ],
