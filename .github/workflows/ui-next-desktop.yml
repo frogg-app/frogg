@@ -55,7 +55,7 @@ env:
 jobs:
   mac:
     name: Mac ARM client (unsigned)
-    if: inputs.mac != false
+    if: inputs.release-tag == '' || inputs.mac
     runs-on: macos-15
     timeout-minutes: 45
     steps:
@@ -81,7 +81,7 @@ jobs:
 
   windows:
     name: Windows x64 client (unsigned)
-    if: inputs.windows != false
+    if: inputs.release-tag == '' || inputs.windows
     runs-on: windows-latest
     timeout-minutes: 45
     steps:
