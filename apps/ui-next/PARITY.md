@@ -22,7 +22,7 @@ Gaps where ui-next lacks something apps/ui has. Order = priority. Tick when done
 - [ ] Permission modes defaults
 - [ ] Notifications delivery matrix, sound, rail badge
 - [x] Usage meter refresh timer / on hover / after reply (animate still unread)
-- [ ] Companion enable gates the rail item; other companion prefs
+- [ ] Companion enable gates the rail item (done: host gate from `server_info` + device pref + install-plugin row); other companion prefs
 - [ ] Appearance: density + motion persisted and applied
 
 ## P3 — Missing controls

@@ -54,8 +54,8 @@ export const GROUPS = [0, 1, 2].map((g) => TOOLS.filter((t) => t.group === g));
 
 /**
  * Whether a tool is offered at all. The Companion is a plugin feature: it shows only when the
- * connected host has the Companion plugin installed and enabled, and this device hasn't turned
- * it off (Settings › Voice & companion).
+ * connected host runs it (server_info says its plugin is in, or the brand has plugins off), and
+ * this device hasn't turned it off (Settings › Voice & companion).
  */
 export function useToolShown(): (id: Tool) => boolean {
   const companion = usePluginGate((g) => g.companion);
