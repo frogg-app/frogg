@@ -14,7 +14,8 @@ import { useDaemon } from "../../daemon/store";
 import type { TimelineItem } from "../../daemon/types";
 import { color } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
-import { commands as COMMANDS, ID, toolDetails, toolItem } from "../fixtures";
+import { commands as COMMANDS, entry, ID, toolDetails, toolItem } from "../fixtures";
+import { LAB_ATTACHMENTS } from "../sim/fs";
 import { Above, Case, Cases, Fill, W, type Entry } from "../kit";
 
 type ToolItem = Extract<TimelineItem, { type: "tool_call" }>;
@@ -43,6 +44,62 @@ const PreviewPhone = () => (
   </Case>
 );
 const Failed = () => <LiveChat id={ID.failed} />;
+
+const RENDER_ID = "s-render";
+const RENDER_PROMPT =
+  "The sidebar needs to expand out smoothly when hovering or selecting a tool, and the rail icons should keep their place while it does";
+/** A session with a provisional (cut) title, a relayed agent message, images and a table. */
+function seedRender() {
+  const st = useDaemon.getState();
+  const base = st.sessions[ID.preview];
+  if (!base || st.sessions[RENDER_ID]) return;
+  const it = (item: TimelineItem) => entry(item, "turn-r");
+  useDaemon.setState({
+    sessions: {
+      ...st.sessions,
+      [RENDER_ID]: {
+        ...base,
+        agent: {
+          ...base.agent,
+          id: RENDER_ID,
+          title: RENDER_PROMPT.slice(0, 60).trim(),
+          cwd: LAB_ATTACHMENTS,
+        },
+      },
+    },
+    timelines: {
+      ...st.timelines,
+      [RENDER_ID]: [
+        it({ type: "user_message", text: RENDER_PROMPT, messageId: "r-u1" }),
+        it({
+          type: "user_message",
+          text: `Here is what it does now:\n![Image](file://${LAB_ATTACHMENTS}/before-sidebar.png)`,
+          messageId: "r-u2",
+        }),
+        it({
+          type: "user_message",
+          text: `From the "Frogg Plugin: Google Suite" agent (${ID.review.slice(0, 5)}, worktree ~/.frogg/worktrees/1j7d90so/frogg-plugin-google-suite): The **Drive** picker is ready. Can you wire it into the attach menu?`,
+          messageId: "r-u3",
+        }),
+        it({
+          type: "user_message",
+          text: "From Google Suite agent (cf989ce): Calendar sync landed too.",
+          messageId: "r-u4",
+        }),
+        it({
+          type: "assistant_message",
+          text: `Before and after:\n\n![Image](file://${LAB_ATTACHMENTS}/before-sidebar.png)![Image](file://${LAB_ATTACHMENTS}/after-sidebar.png)\n\n| Prize pool | 1st | 2nd | 3rd |\n|---|---:|---:|---:|\n| $5k (Cup #1) | 2,000 | 1,250 | 750 |\n| $10k (Cup #2) | 4,000 | 2,500 | 1,500 |`,
+          messageId: "r-a1",
+        }),
+        it(toolItem("r-long", "Bash", toolDetails.shellLong)),
+      ],
+    },
+  });
+}
+function Rendering() {
+  useState(seedRender);
+  return <LiveChat id={RENDER_ID} />;
+}
 const Needs = () => <LiveChat id={ID.needs} />;
 const Working = () => <LiveChat id={ID.working} />;
 const selectPreview = () => useUi.setState({ selected: ID.preview });
@@ -77,6 +134,7 @@ const KINDS: ToolItem[] = [
   T("k-wt", "worktree", "worktree"),
   T("k-unknown", "mcp__frogg__list_agents", "unknown"),
 ];
+const LONG: ToolItem[] = [T("l-long", "Bash", "shellLong"), T("l-short", "Bash", "shell")];
 const STATES: ToolItem[] = [
   T("s-run", "Bash", "shell", "running"),
   T("s-done", "Bash", "shell"),
@@ -103,6 +161,17 @@ const Kinds = () => (
     plain
   >
     <ToolList items={KINDS} />
+  </Case>
+);
+const Long = () => (
+  <Case
+    name="ToolCall"
+    props="item={long shell output}"
+    note="Expand the first row: output past 320px is clamped behind Show more. The second fits."
+    w={CHAT}
+    plain
+  >
+    <ToolList items={LONG} />
   </Case>
 );
 const States = () => (
@@ -308,6 +377,14 @@ export const chat: Entry[] = [
       { id: "needs", label: "Waiting on a permission", C: Needs, h: 520, bleed: true },
       { id: "working", label: "Working (thinking indicator)", C: Working, h: 420, bleed: true },
       { id: "failed", label: "Failed", C: Failed, h: 480, bleed: true },
+      {
+        id: "render",
+        label: "Rich content",
+        note: "Images, a table, relayed agent messages and a provisional title. The relay from the review session links to it; cf989ce matches no session.",
+        C: Rendering,
+        h: 900,
+        bleed: true,
+      },
     ],
   },
   {
@@ -323,6 +400,7 @@ export const chat: Entry[] = [
     variants: [
       { id: "kinds", label: "Every detail type", note: "Click a row to expand.", C: Kinds },
       { id: "states", label: "Running, completed, failed", C: States },
+      { id: "long", label: "Long output (see more)", C: Long },
     ],
   },
   {

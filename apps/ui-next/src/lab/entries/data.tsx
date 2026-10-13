@@ -9,6 +9,7 @@ import {
 import { CodeBlock } from "../../components/Code";
 import { DiffView } from "../../components/DiffView";
 import { Markdown } from "../../components/Markdown";
+import { ImageRoot } from "../../components/markdown/HostImage";
 import { fmt, Num } from "../../components/CountUp";
 import { Meter } from "../../components/Meter";
 import { LabelChip } from "../../components/sessions/sheets";
@@ -21,6 +22,7 @@ import type { AccountUsage } from "../../daemon/usage";
 import { color } from "../../theme/tokens";
 import { T } from "../../components/Text";
 import { accounts, usage } from "../fixtures";
+import { LAB_ATTACHMENTS } from "../sim/fs";
 import { Case, Cases, Cell, Fill, W, type Entry } from "../kit";
 
 const PRESETS = [8, 42, 69, 74, 89, 96, 100];
@@ -256,6 +258,52 @@ const MD_GAPS = `1. Numbered item
 | --- | --- |
 | maxEntries | 200 |
 `;
+const MD_TABLES = `Prize split for the next two cups:
+
+| Prize pool | 1st | 2nd | 3rd | Notes |
+|---|---:|---:|---:|:---:|
+| $5k (Cup #1) | 2,000 | 1,250 | 750 | paid in **USDC** |
+| $10k (Cup #2) | 4,000 | 2,500 | 1,500 | \`payout.ts\` handles splits |
+
+| Setting | Default | Where it is read |
+| --- | --- | --- |
+| sessionCache.maxEntries | 200 | SessionStore constructor, once at start-up, never re-read after a config reload |
+| sessionCache.evictLog | debug | eviction loop |
+`;
+const MD_IMAGES = `Here is the sidebar before and after:
+
+![Image](file://${LAB_ATTACHMENTS}/before-sidebar.png)![Image](file://${LAB_ATTACHMENTS}/after-sidebar.png)
+
+Relative to the session folder: ![phone](./phone-rail.png)
+
+A data URL loads directly: ![dot](data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNDAiIGhlaWdodD0iNjAiPjxyZWN0IHdpZHRoPSIyNDAiIGhlaWdodD0iNjAiIGZpbGw9IiMyNWI1YzgiLz48L3N2Zz4=)
+
+![Image](file://${LAB_ATTACHMENTS}/missing-crop.png)
+`;
+const MarkdownTables = () => (
+  <Case
+    name="Markdown"
+    props="text={tables}"
+    note="Second table is wider than the column: it scrolls sideways."
+    w={680}
+    plain
+  >
+    <Markdown text={MD_TABLES} />
+  </Case>
+);
+const MarkdownImages = () => (
+  <Case
+    name="Markdown"
+    props="text={images}"
+    note="Host files are read through the daemon; the last one is missing."
+    w={680}
+    plain
+  >
+    <ImageRoot.Provider value={LAB_ATTACHMENTS}>
+      <Markdown text={MD_IMAGES} />
+    </ImageRoot.Provider>
+  </Case>
+);
 const MarkdownFull = () => (
   <Case name="Markdown" props="text={plan}" note="At the chat column width." w={680} plain>
     <Markdown text={MD} />
@@ -525,7 +573,8 @@ export const data: Entry[] = [
     name: "Markdown",
     category: "Data display",
     path: "components/Markdown.tsx",
-    purpose: "Assistant replies and plans: headings, bullets, fenced code, inline code and bold.",
+    purpose:
+      "Assistant replies and plans: headings, bullets, tables, images, fenced code, inline code and bold.",
     usedBy: 6,
     polish: "none",
     variants: [
@@ -533,10 +582,12 @@ export const data: Entry[] = [
       {
         id: "gaps",
         label: "Unsupported syntax",
-        note: "Numbered lists, quotes, italics, links, rules and tables render as plain text.",
+        note: "Quotes, links and rules render as plain text.",
         C: MarkdownGaps,
       },
       { id: "short", label: "One line", C: MarkdownShort },
+      { id: "tables", label: "Tables", C: MarkdownTables },
+      { id: "images", label: "Images", C: MarkdownImages },
     ],
   },
   {
