@@ -39,6 +39,12 @@ export interface DaemonAccessPolicy {
   credentialHashes(): readonly string[];
   /** The paired device a bearer token belongs to. */
   findDevice(token: string): DeviceRecord | null;
+  /** The registered device a password or local-token client is bound to. */
+  registerClientDevice(input: {
+    clientId: string;
+    name: string;
+    via: "password" | "local";
+  }): DeviceRecord;
   /** Record that the device just authenticated (last-seen). */
   touchDevice(credentialId: string): void;
   /**
@@ -218,6 +224,7 @@ export function createAccessPolicy(input: {
     isClaimed: () => input.claimStore.isClaimed(),
     credentialHashes: () => input.claimStore.credentialHashes(),
     findDevice: (token) => input.claimStore.findDeviceByToken(token),
+    registerClientDevice: (registration) => input.claimStore.registerClientDevice(registration),
     touchDevice: (credentialId) => input.claimStore.touchLastSeen(credentialId),
     trustLan,
     claimMode,

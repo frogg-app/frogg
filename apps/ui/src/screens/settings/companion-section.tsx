@@ -8,16 +8,36 @@ import { Button } from "@/components/ui/button";
 import { buildSettingsHostSectionRoute } from "@/utils/host-routes";
 import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/hooks/use-settings";
+import { useSessionStore } from "@/stores/session-store";
+import { getCompanionReadinessState } from "@/utils/server-info-capabilities";
+import { describePluginError } from "@/plugins/errors";
+import { usePluginMutation } from "@/plugins/queries";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { settingsStyles } from "@/styles/settings";
 import { CompanionBehaviorSettings } from "./companion-behavior-settings";
 import { CompanionModelPicker } from "./companion-model-picker";
 
-/** Client-side preferences for the Companion; the daemon decides whether it runs at all. */
+const installPlugin = (
+  client: Parameters<Parameters<typeof usePluginMutation>[1]>[0],
+  plugin: { id: string; repoUrl: string },
+) => client.pluginsInstall({ id: plugin.id, repoUrl: plugin.repoUrl, grantedCapabilities: [] });
+
+/**
+ * Client-side preferences for the Companion; the daemon decides whether it runs at all. A host
+ * runs it only with the Companion plugin installed, so desktop and web show this section once
+ * that plugin is on the host (or this device already opted in), while mobile always offers the
+ * switch, off by default, and turning it on installs the plugin on the host.
+ */
 export function CompanionSection() {
   const { t } = useTranslation();
   const { settings, updateSettings } = useSettings();
   const host = useCompanionHost();
+  const anyHostUnlocked = useSessionStore((state) =>
+    Object.values(state.sessions).some((session) => {
+      const readiness = getCompanionReadinessState({ serverInfo: session?.serverInfo });
+      return readiness !== null && !readiness.plugin;
+    }),
+  );
   const router = useRouter();
   const session = useCompanionStore((state) => state.session);
   const status = t(
@@ -28,11 +48,19 @@ export function CompanionSection() {
     }),
   );
 
+  const install = usePluginMutation(host.serverId, installPlugin);
+  const { mutate: mutateInstall } = install;
+  const pluginRequired = host.pluginRequired;
+  const installRequired = useCallback(() => {
+    if (pluginRequired) mutateInstall(pluginRequired);
+  }, [mutateInstall, pluginRequired]);
+
   const handleEnabledChange = useCallback(
     (companionEnabled: boolean) => {
       void updateSettings({ companionEnabled });
+      if (companionEnabled) installRequired();
     },
-    [updateSettings],
+    [installRequired, updateSettings],
   );
 
   const changeNativeVoice = useCallback(
@@ -44,6 +72,8 @@ export function CompanionSection() {
   const openProviders = useCallback(() => {
     if (host.serverId) router.push(buildSettingsHostSectionRoute(host.serverId, "providers"));
   }, [host.serverId, router]);
+
+  if (Platform.OS === "web" && !settings.companionEnabled && !anyHostUnlocked) return null;
 
   return (
     <>
@@ -63,6 +93,29 @@ export function CompanionSection() {
               testID="settings-companion-enabled"
             />
           </View>
+          {settings.companionEnabled && pluginRequired ? (
+            <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
+              <View style={settingsStyles.rowContent}>
+                <Text style={settingsStyles.rowTitle}>{t("companion.plugin.required")}</Text>
+                <Text style={settingsStyles.rowHint}>
+                  {install.error
+                    ? describePluginError(install.error)
+                    : t("companion.plugin.description")}
+                </Text>
+              </View>
+              <Button
+                size="sm"
+                variant="outline"
+                onPress={installRequired}
+                disabled={install.isPending}
+                testID="settings-companion-install-plugin"
+              >
+                {install.isPending
+                  ? t("companion.plugin.installing")
+                  : t("companion.plugin.install")}
+              </Button>
+            </View>
+          ) : null}
           {settings.companionEnabled && Platform.OS === "web" ? (
             <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
               <View style={settingsStyles.rowContent}>

@@ -82,7 +82,7 @@ export function renderClaimGatePage(input: ClaimGatePageInput): string {
     <button id="refresh" class="secondary" type="button">New code</button>
     <span id="status" class="status">Waiting for a device to pair…</span>
   </div>
-  <div class="meta">Reachable at ${endpoints} · server ${escapeHtml(input.serverId)} · ${escapeHtml(brand.name)} ${escapeHtml(input.version)}. You are seeing this page because your address is not on the daemon's trusted private network (or <code>${escapeHtml(brand.cliName)} daemon trust-lan off</code> is set). On the daemon's own machine: <code>${escapeHtml(brand.cliName)} daemon pair</code>, <code>${escapeHtml(brand.cliName)} daemon set-password</code> to use a password instead, or <code>${escapeHtml(brand.cliName)} daemon trust-lan on</code> to let the local network in without pairing.</div>
+  <div class="meta">Reachable at ${endpoints} · server ${escapeHtml(input.serverId)} · ${escapeHtml(brand.name)} ${escapeHtml(input.version)}. You are seeing this page because no device has claimed this daemon yet, and every device must register before it connects. On the daemon's own machine: <code>${escapeHtml(brand.cliName)} daemon pair</code>, or <code>${escapeHtml(brand.cliName)} daemon set-password</code> to use a password instead.</div>
 </main>
 <script>${SCRIPT}</script>
 </body>

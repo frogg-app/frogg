@@ -12,8 +12,8 @@ import { z } from "zod";
 export const PLUGIN_MANIFEST_FILENAME = "frogg-plugin.json";
 
 /** API versions this build of the host can load. */
-export const SUPPORTED_PLUGIN_API_VERSIONS = [1] as const;
-export const CURRENT_PLUGIN_API_VERSION = 1;
+export const SUPPORTED_PLUGIN_API_VERSIONS = [1, 2] as const;
+export const CURRENT_PLUGIN_API_VERSION = 2;
 
 export const PLUGIN_ID_PATTERN = /^[a-z0-9]+(\.[a-z0-9-]+)+$/;
 /** Semver core with optional prerelease/build, e.g. 1.2.0, 1.2.0-beta.1. */
@@ -45,8 +45,42 @@ export const PLUGIN_CAPABILITIES = [
   "media.audio",
   "composer",
   "speech",
+  "agent.manage",
+  "agent.permissions",
+  "workspaces.read",
+  "todos.read",
+  "todos.write",
+  "ui.external",
 ] as const;
 export const PluginCapabilitySchema = z.enum(PLUGIN_CAPABILITIES);
+
+/**
+ * Capabilities added in API v2. A manifest declaring any of them must declare `apiVersion: 2` or
+ * later, which keeps them out of the v1 repository index that shipped hosts parse strictly.
+ */
+export const PLUGIN_V2_CAPABILITIES: readonly PluginCapability[] = [
+  "agent.manage",
+  "agent.permissions",
+  "workspaces.read",
+  "todos.read",
+  "todos.write",
+  "ui.external",
+];
+
+/**
+ * Capabilities that let an outside identity drive agents. Granted at install like any other but
+ * inert until the host owner enables remote control for the plugin, and refused outright when the
+ * brand forbids remote control.
+ */
+export const PLUGIN_REMOTE_CONTROL_CAPABILITIES: readonly PluginCapability[] = [
+  "agent.manage",
+  "agent.permissions",
+  "todos.write",
+];
+
+export function isRemoteControlCapability(value: string): boolean {
+  return (PLUGIN_REMOTE_CONTROL_CAPABILITIES as readonly string[]).includes(value);
+}
 export type PluginCapability = z.infer<typeof PluginCapabilitySchema>;
 
 export function isPluginCapability(value: unknown): value is PluginCapability {
@@ -130,6 +164,16 @@ export const PluginSettingFieldSchema = z.object({
     .optional(),
 });
 
+/**
+ * Built-in features a plugin can switch on. The code ships with the host; installing the
+ * plugin is the opt-in, so the feature reaches a host through the plugin pipeline (ad-hoc
+ * download, consent, enable/disable) without its code living in the plugin. Honoured only
+ * for official and brand plugins, and dev links in developer mode.
+ */
+export const PLUGIN_BUILTIN_FEATURES = ["companion"] as const;
+export const PluginBuiltinFeatureSchema = z.enum(PLUGIN_BUILTIN_FEATURES);
+export type PluginBuiltinFeature = z.infer<typeof PluginBuiltinFeatureSchema>;
+
 export const PluginContributesSchema = z.object({
   commands: z.array(PluginCommandContributionSchema).max(50).optional(),
   sessionActions: z.array(PluginSessionActionContributionSchema).max(20).optional(),
@@ -137,6 +181,7 @@ export const PluginContributesSchema = z.object({
   views: z.array(PluginViewContributionSchema).max(20).optional(),
   composerActions: z.array(PluginComposerActionContributionSchema).max(10).optional(),
   settings: z.array(PluginSettingFieldSchema).max(100).optional(),
+  features: z.array(PluginBuiltinFeatureSchema).max(PLUGIN_BUILTIN_FEATURES.length).optional(),
 });
 export type PluginContributes = z.infer<typeof PluginContributesSchema>;
 
@@ -261,6 +306,7 @@ function contributionIssues(
     views: (c.views ?? []).map((x) => x.id),
     composerActions: (c.composerActions ?? []).map((x) => x.id),
     settings: (c.settings ?? []).map((x) => x.key),
+    features: [...(c.features ?? [])],
   };
   for (const [key, ids] of Object.entries(idLists)) {
     if (new Set(ids).size !== ids.length)
@@ -270,6 +316,7 @@ function contributionIssues(
 }
 
 function manifestIssues(m: {
+  apiVersion: number;
   scope: PluginScope;
   entry?: { daemon?: string; client?: string };
   capabilities: readonly string[];
@@ -278,6 +325,15 @@ function manifestIssues(m: {
   const issues: ManifestIssue[] = [];
   if (new Set(m.capabilities).size !== m.capabilities.length) {
     issues.push({ path: ["capabilities"], message: "duplicate capability" });
+  }
+  const v2Only = m.capabilities.filter((c) =>
+    (PLUGIN_V2_CAPABILITIES as readonly string[]).includes(c),
+  );
+  if (m.apiVersion < 2 && v2Only.length) {
+    issues.push({
+      path: ["apiVersion"],
+      message: `capabilities ${v2Only.join(", ")} need apiVersion 2`,
+    });
   }
   return [
     ...issues,
@@ -293,6 +349,18 @@ export function isSafeRelativePath(p: string): boolean {
 
 export function isSupportedPluginApiVersion(v: number): boolean {
   return (SUPPORTED_PLUGIN_API_VERSIONS as readonly number[]).includes(v);
+}
+
+/**
+ * The manifest's declared `apiVersion` when this host cannot load it, read before full validation:
+ * a newer manifest may use capabilities this host has never heard of, and should be reported as
+ * incompatible rather than invalid.
+ */
+export function unsupportedManifestApiVersion(raw: unknown): number | null {
+  if (!raw || typeof raw !== "object") return null;
+  const v = (raw as { apiVersion?: unknown }).apiVersion;
+  if (typeof v !== "number" || !Number.isInteger(v) || v < 1) return null;
+  return isSupportedPluginApiVersion(v) ? null : v;
 }
 
 /** Capabilities in `next` not present in `prev` — an update that adds any needs re-consent. */

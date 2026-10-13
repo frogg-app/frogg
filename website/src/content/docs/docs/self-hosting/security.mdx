@@ -13,19 +13,25 @@ it like SSH access to that machine.
 
 ## Access policy
 
-| Client connects from | No password | Password set |
-| -------------------- | ----------- | ------------ |
-| Loopback | Allowed | Password or device credential |
-| Private network (RFC 1918, link-local, `fc00::/7`) | Allowed while `trustLan` is on (default for `frogg`) | Password or device credential |
-| Anywhere else, including CGNAT `100.64.0.0/10` (Tailscale) | Paired-device credential | Password or device credential |
+Every device registers with the daemon. There are no anonymous connections: loopback and
+the LAN need a credential exactly like the internet does.
 
-Two settings override the table:
+| Client connects from                                       | No password                      | Password set                               |
+| ---------------------------------------------------------- | -------------------------------- | ------------------------------------------ |
+| Loopback                                                   | Device credential or local token | Password, device credential or local token |
+| Private network (RFC 1918, link-local, `fc00::/7`)         | Device credential                | Password or device credential              |
+| Anywhere else, including CGNAT `100.64.0.0/10` (Tailscale) | Device credential                | Password or device credential              |
 
-- `daemon.auth.claimMode` (`FROGG_CLAIM_MODE`). While it is on, the LAN is **not** trusted
-  whatever `trustLan` says, and every client needs a credential. See
-  [claim mode](#claim-mode).
-- A relay connection always needs a device credential. Reaching the daemon through a relay
-  is not evidence of anything, so locality never applies to it.
+A session that connects with the daemon password or the local token is bound to a
+registered device on its first hello, keyed by its client id and named after the device
+name it sends (the CLI sends `<hostname> CLI`). It shows in the device list like a paired
+device, so it can be renamed and mentioned. A local-token registration does not claim the
+daemon. Until the daemon is claimed, every visitor to the web app, loopback included, gets
+the claim page.
+
+`trustLan` and claim mode still decide [claim-mode](#claim-mode) behaviour and the
+service proxy, but no longer admit a tokenless connection. A relay connection always needs
+a device credential.
 
 Unauthenticated routes: `/api/identity` (version and brand, used by LAN scans),
 `/api/health`, and the device-access routes that are how a device gets its first
@@ -42,10 +48,8 @@ socket and named pipe clients only.
 
 Minting a pairing credential goes through one gate: `/api/setup/offer`, the
 `daemon.get_pairing_offer` RPC and the `auth.pairing_code.create` RPC. Before the daemon
-is claimed, any client that can reach it may start pairing. After that, locality alone is
-not enough. The caller must present an owner device credential, the daemon password or
-the local token. A tokenless loopback or trusted-LAN session keeps its other owner
-authority.
+is claimed, any client that can reach it may start pairing. After that, the caller must
+present an owner device credential, the daemon password or the local token.
 
 Repeated bad credentials from one address are throttled — 10 failures in 5 minutes blocks
 that address for 5 minutes, and the daemon answers `429`.
@@ -93,10 +97,8 @@ LAN trust off and claim mode on. All are defaults for a daemon you have not conf
 `FROGG_LISTEN`, `FROGG_CLAIM_MODE`, `FROGG_TRUST_LAN` or `FROGG_CLAIM_SCOPE` in the daemon's
 environment (under a brand's own prefix for a branded build).
 
-Turning claim mode off hands LAN access back to `trustLan`. If `trustLan` is `true`, from
-`config.json`, the environment, the brand, or a daemon older than the brand's `trustLan`
-default, every private-network client connects with no credential. Set `trustLan: false`
-whenever you turn claim mode off on a network you do not control.
+Turning claim mode off hands LAN access back to `trustLan`. Every client still needs a
+credential to connect; `trustLan` only widens the service proxy and claim-mode checks.
 
 ### Turning claim mode on and off
 
@@ -177,8 +179,8 @@ least an operator. A credential below the route's role is refused with `403`.
 
 The role comes from the credential wherever one is presented, on a direct connection and
 over the relay alike: a viewer phone stays a viewer whichever way it reaches the daemon.
-The daemon password and bearer-free trusted clients (loopback, trusted LAN) act as the
-owner, because they carry no device identity. The Agent MCP endpoint requires an
+The daemon password and the local token act as the owner; the device each registers is an
+owner device. The Agent MCP endpoint requires an
 `operator` or `owner` credential — a viewer credential is rejected there with `403`.
 
 ### Managing devices

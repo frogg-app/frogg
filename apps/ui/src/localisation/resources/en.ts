@@ -600,6 +600,7 @@ export const en = {
     },
   },
   message: {
+    sending: "Sending…",
     diagram: {
       diagram: "Diagram",
       zoomIn: "Zoom in",
@@ -2653,6 +2654,13 @@ export const en = {
     },
   },
   companion: {
+    plugin: {
+      required: "Companion plugin not installed on this host",
+      description:
+        "The host runs Companion once its plugin is installed. It needs no extra permissions.",
+      install: "Install plugin",
+      installing: "Installing…",
+    },
     behavior: {
       nextSession: "Changes apply when you next start Companion.",
       verbosity: "Reply length",

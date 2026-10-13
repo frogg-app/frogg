@@ -1,6 +1,6 @@
 {
   "name": "@frogg/ui-next",
-  "version": "1.6.13-beta.4",
+  "version": "1.6.13-beta.5",
   "private": true,
   "main": "index.ts",
   "scripts": {

@@ -4684,6 +4684,18 @@ export class DaemonClient {
     );
   }
 
+  async pluginsSetRemoteControl(
+    id: string,
+    enabled: boolean,
+  ): Promise<{ plugin: PluginInstalled | null }> {
+    return unwrapPluginPayload(
+      await this.sendNamespacedCorrelatedSessionRequest<"plugins.set_remote_control.response">({
+        message: { type: "plugins.set_remote_control.request", id, enabled },
+        timeout: 60_000,
+      }),
+    );
+  }
+
   async pluginsUpdate(input: {
     id: string;
     version?: string;

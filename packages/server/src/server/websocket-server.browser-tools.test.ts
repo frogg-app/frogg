@@ -74,6 +74,8 @@ function createWorkspaceAutoNameStub(): WorkspaceAutoName {
   });
 }
 
+const TEST_LOCAL_TOKEN = "test-local-token";
+
 describe("WebSocketServer browser tools wiring", () => {
   it("registers capable clients and dispatches broker requests over the real WebSocket path", async () => {
     const harness = await startBrowserToolsDaemonHarness();
@@ -210,6 +212,7 @@ async function startBrowserToolsDaemonHarness(): Promise<BrowserToolsDaemonHarne
       const clientId = options.clientId;
       const client = new DaemonClient({
         url,
+        password: TEST_LOCAL_TOKEN,
         ...(clientId ? { clientId } : {}),
         clientType: "browser",
         connectTimeoutMs: 500,
@@ -297,7 +300,7 @@ function createVoiceAssistantWebSocketServer(params: {
     null,
     { allowedOrigins: new Set(["*"]) },
     createWorkspaceAutoNameStub(),
-    undefined,
+    { localToken: { matches: (token) => token === TEST_LOCAL_TOKEN } },
     undefined,
     undefined,
     undefined,

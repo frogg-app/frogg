@@ -184,12 +184,11 @@ describe("bearer requirement by client locality", () => {
   }
 
   const MATRIX: MatrixCase[] = [
-    // trustLan on (the default): loopback and the LAN are open, the internet is not.
-    { trustLan: true, password: undefined, client: "loopback", needsBearer: false },
-    { trustLan: true, password: undefined, client: "lan", needsBearer: false },
+    // Every client needs a credential, whatever its locality: no anonymous connections.
+    { trustLan: true, password: undefined, client: "loopback", needsBearer: true },
+    { trustLan: true, password: undefined, client: "lan", needsBearer: true },
     { trustLan: true, password: undefined, client: "public", needsBearer: true },
-    // trustLan off: only loopback is open.
-    { trustLan: false, password: undefined, client: "loopback", needsBearer: false },
+    { trustLan: false, password: undefined, client: "loopback", needsBearer: true },
     { trustLan: false, password: undefined, client: "lan", needsBearer: true },
     { trustLan: false, password: undefined, client: "public", needsBearer: true },
     // A password is the opt-in lock for everyone, whatever trustLan says.
@@ -231,7 +230,7 @@ describe("bearer requirement by client locality", () => {
     const lanBehindProxy = requestFrom("127.0.0.1", "192.168.1.10");
     expect(trusting.access.clientLocality(lanBehindProxy)).toBe("lan");
     expect(trusting.access.isLoopbackClient(lanBehindProxy)).toBe(false);
-    expect(requestNeedsBearer(trusting, lanBehindProxy)).toBe(false);
+    expect(requestNeedsBearer(trusting, lanBehindProxy)).toBe(true);
     expect(
       requestNeedsBearer({ password: undefined, access: policyFor(false) }, lanBehindProxy),
     ).toBe(true);
@@ -244,7 +243,7 @@ describe("bearer requirement by client locality", () => {
     expect(requestNeedsBearer(trusting, spoofed)).toBe(true);
   });
 
-  test("claim mode untrusts the LAN and loopback stays open", () => {
+  test("claim mode untrusts the LAN and loopback still needs a credential", () => {
     const home = mkdtempSync(path.join(tmpdir(), "frogg-auth-claim-"));
     homes.push(home);
     const access = createAccessPolicy({
@@ -259,7 +258,7 @@ describe("bearer requirement by client locality", () => {
       true,
     );
     expect(requestNeedsBearer({ password: undefined, access }, requestFrom(SOCKETS.loopback))).toBe(
-      false,
+      true,
     );
   });
 
@@ -327,11 +326,11 @@ describe("bearer requirement by client locality", () => {
       expect((await authorizeBearerAsync(auth, req, owner.credential)).ok).toBe(true);
     });
 
-    test("tokenless loopback stays trusted", async () => {
+    test("tokenless loopback is refused: every connection is a registered device", async () => {
       const { auth } = claimedLoopback();
       expect(await authorizeBearerAsync(auth, requestFrom(SOCKETS.loopback), null)).toEqual({
-        ok: true,
-        principal: { kind: "trusted" },
+        ok: false,
+        reason: "missing_token",
       });
     });
 
@@ -373,7 +372,7 @@ describe("bearer requirement by client locality", () => {
       });
     });
 
-    test("a stray bearer at an unclaimed daemon on a trusted LAN is 401", async () => {
+    test("a stray bearer at an unclaimed daemon on a trusted LAN is told to pair", async () => {
       const home = mkdtempSync(path.join(tmpdir(), "frogg-auth-stray-"));
       homes.push(home);
       const auth: DaemonAuthConfig = {
@@ -385,9 +384,9 @@ describe("bearer requirement by client locality", () => {
       };
       expect(await authorizeBearerAsync(auth, requestFrom(SOCKETS.lan), "stale")).toEqual({
         ok: false,
-        reason: "invalid_token",
+        reason: "unclaimed",
       });
-      expect((await authorizeBearerAsync(auth, requestFrom(SOCKETS.lan), null)).ok).toBe(true);
+      expect((await authorizeBearerAsync(auth, requestFrom(SOCKETS.lan), null)).ok).toBe(false);
     });
   });
 });

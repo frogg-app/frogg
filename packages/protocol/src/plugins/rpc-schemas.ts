@@ -66,7 +66,14 @@ export const PluginInstalledSchema = z.object({
   updateAvailable: z.string().nullable(),
   /** Installed by brand `preinstalled`; cannot be uninstalled. */
   preinstalled: z.boolean(),
+  /** Built-in features this plugin switches on (`contributes.features`) while enabled. */
+  features: z.array(z.string()).optional(),
   installedAt: z.string().nullable(),
+  /**
+   * Whether the owner enabled remote control (agent.manage, agent.permissions, todos.write) for
+   * this plugin. Absent from daemons that predate plugin API v2.
+   */
+  remoteControl: z.boolean().optional(),
 });
 export type PluginInstalled = z.infer<typeof PluginInstalledSchema>;
 
@@ -79,6 +86,8 @@ export const PluginPolicySchema = z.object({
   /** The host's developer-mode setting (only meaningful when allowed). */
   developerModeEnabled: z.boolean(),
   apiVersions: z.array(z.number()),
+  /** Brand `plugins.remoteControl`: "allowed" | "forbidden". Absent before plugin API v2. */
+  remoteControl: z.string().optional(),
 });
 export type PluginPolicy = z.infer<typeof PluginPolicySchema>;
 
@@ -177,6 +186,11 @@ export const PluginsSetEnabledRequestSchema = req("plugins.set_enabled.request",
   id: z.string(),
   enabled: z.boolean(),
 });
+/** Turns remote control on or off for one plugin. Owner only; refused when the brand forbids it. */
+export const PluginsSetRemoteControlRequestSchema = req("plugins.set_remote_control.request", {
+  id: z.string(),
+  enabled: z.boolean(),
+});
 export const PluginsUpdateRequestSchema = req("plugins.update.request", {
   id: z.string(),
   version: z.string().optional(),
@@ -230,6 +244,9 @@ export const PluginsUninstallResponseSchema = res("plugins.uninstall.response", 
   success: z.boolean(),
 });
 export const PluginsSetEnabledResponseSchema = res("plugins.set_enabled.response", {
+  plugin: PluginInstalledSchema.nullable(),
+});
+export const PluginsSetRemoteControlResponseSchema = res("plugins.set_remote_control.response", {
   plugin: PluginInstalledSchema.nullable(),
 });
 export const PluginsUpdateResponseSchema = res("plugins.update.response", {
@@ -300,6 +317,7 @@ export type PluginsGetCatalogRequest = z.infer<typeof PluginsGetCatalogRequestSc
 export type PluginsInstallRequest = z.infer<typeof PluginsInstallRequestSchema>;
 export type PluginsUninstallRequest = z.infer<typeof PluginsUninstallRequestSchema>;
 export type PluginsSetEnabledRequest = z.infer<typeof PluginsSetEnabledRequestSchema>;
+export type PluginsSetRemoteControlRequest = z.infer<typeof PluginsSetRemoteControlRequestSchema>;
 export type PluginsUpdateRequest = z.infer<typeof PluginsUpdateRequestSchema>;
 export type PluginsDevLinkRequest = z.infer<typeof PluginsDevLinkRequestSchema>;
 export type PluginsDevUnlinkRequest = z.infer<typeof PluginsDevUnlinkRequestSchema>;
@@ -317,6 +335,7 @@ export type PluginsGetCatalogResponse = z.infer<typeof PluginsGetCatalogResponse
 export type PluginsInstallResponse = z.infer<typeof PluginsInstallResponseSchema>;
 export type PluginsUninstallResponse = z.infer<typeof PluginsUninstallResponseSchema>;
 export type PluginsSetEnabledResponse = z.infer<typeof PluginsSetEnabledResponseSchema>;
+export type PluginsSetRemoteControlResponse = z.infer<typeof PluginsSetRemoteControlResponseSchema>;
 export type PluginsUpdateResponse = z.infer<typeof PluginsUpdateResponseSchema>;
 export type PluginsDevLinkResponse = z.infer<typeof PluginsDevLinkResponseSchema>;
 export type PluginsDevUnlinkResponse = z.infer<typeof PluginsDevUnlinkResponseSchema>;
@@ -338,6 +357,7 @@ export const PLUGINS_INBOUND_SCHEMAS = [
   PluginsInstallRequestSchema,
   PluginsUninstallRequestSchema,
   PluginsSetEnabledRequestSchema,
+  PluginsSetRemoteControlRequestSchema,
   PluginsUpdateRequestSchema,
   PluginsDevLinkRequestSchema,
   PluginsDevUnlinkRequestSchema,

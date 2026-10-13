@@ -82,6 +82,84 @@ export const PluginIndexSchema = z
   });
 export type PluginIndex = z.infer<typeof PluginIndexSchema>;
 
+/**
+ * Sibling of `index.json` listing every plugin version, including API v2+ ones. `index.json` itself
+ * only ever lists API v1 versions: hosts that shipped before v2 parse it strictly, so one entry with
+ * a capability they don't know would break the whole catalog for them.
+ */
+export const PLUGIN_INDEX_V2_FILENAME = "index.v2.json";
+
+/** The v2 index URL next to a repo's `index.json` URL, or null when the URL has another shape. */
+export function pluginIndexV2Url(indexUrl: string): string | null {
+  const m = /^(.*\/)index\.json(\?.*)?$/.exec(indexUrl);
+  return m ? `${m[1]}${PLUGIN_INDEX_V2_FILENAME}${m[2] ?? ""}` : null;
+}
+
+const PluginIndexHeaderSchema = z.object({
+  schemaVersion: z.literal(PLUGIN_INDEX_SCHEMA_VERSION),
+  name: z.string().min(1).max(120),
+  generatedAt: z.string(),
+  plugins: z.array(z.unknown()),
+});
+
+/**
+ * Parses an index keeping whatever this build understands: versions that fail validation (for
+ * example ones declaring capabilities added after this build) are dropped, and so are plugins left
+ * with no versions. Null when the index itself is malformed.
+ */
+export function parsePluginIndexTolerant(raw: unknown): PluginIndex | null {
+  const header = PluginIndexHeaderSchema.safeParse(raw);
+  if (!header.success) return null;
+  const plugins: PluginIndexEntry[] = [];
+  const seen = new Set<string>();
+  for (const rawEntry of header.data.plugins) {
+    if (!rawEntry || typeof rawEntry !== "object") continue;
+    const e = rawEntry as {
+      id?: unknown;
+      category?: unknown;
+      versions?: unknown;
+    };
+    const id = PluginIdSchema.safeParse(e.id);
+    if (!id.success || seen.has(id.data) || !Array.isArray(e.versions)) continue;
+    const versionSet = new Set<string>();
+    const versions: PluginIndexVersion[] = [];
+    for (const rawVersion of e.versions) {
+      const v = PluginIndexVersionSchema.safeParse(rawVersion);
+      if (!v.success || versionSet.has(v.data.version)) continue;
+      versionSet.add(v.data.version);
+      versions.push(v.data);
+    }
+    if (!versions.length) continue;
+    const category = z.string().max(64).safeParse(e.category);
+    seen.add(id.data);
+    plugins.push({
+      id: id.data,
+      ...(category.success ? { category: category.data } : {}),
+      versions,
+    });
+  }
+  return {
+    schemaVersion: header.data.schemaVersion,
+    name: header.data.name,
+    generatedAt: header.data.generatedAt,
+    plugins,
+  };
+}
+
+/** Splits a full index into the v1-only `index.json` and the complete `index.v2.json`. */
+export function splitPluginIndexByApiVersion(index: PluginIndex): {
+  v1: PluginIndex;
+  v2: PluginIndex;
+} {
+  const v1Plugins = index.plugins
+    .map((p) => ({
+      ...p,
+      versions: p.versions.filter((v) => v.apiVersion === 1),
+    }))
+    .filter((p) => p.versions.length > 0);
+  return { v1: { ...index, plugins: v1Plugins }, v2: index };
+}
+
 // ---------------------------------------------------------------------------
 // Minimal semver helpers (no dependency). Enough for index ordering and the
 // brand `preinstalled` ranges: exact, `^x`, `^x.y`, `^x.y.z`, `~x.y`, `*`, `latest`.

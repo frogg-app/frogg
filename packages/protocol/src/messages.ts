@@ -115,6 +115,7 @@ import {
   PluginsInstallRequestSchema,
   PluginsUninstallRequestSchema,
   PluginsSetEnabledRequestSchema,
+  PluginsSetRemoteControlRequestSchema,
   PluginsUpdateRequestSchema,
   PluginsDevLinkRequestSchema,
   PluginsDevUnlinkRequestSchema,
@@ -131,6 +132,7 @@ import {
   PluginsInstallResponseSchema,
   PluginsUninstallResponseSchema,
   PluginsSetEnabledResponseSchema,
+  PluginsSetRemoteControlResponseSchema,
   PluginsUpdateResponseSchema,
   PluginsDevLinkResponseSchema,
   PluginsDevUnlinkResponseSchema,
@@ -3784,6 +3786,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   PluginsInstallRequestSchema,
   PluginsUninstallRequestSchema,
   PluginsSetEnabledRequestSchema,
+  PluginsSetRemoteControlRequestSchema,
   PluginsUpdateRequestSchema,
   PluginsDevLinkRequestSchema,
   PluginsDevUnlinkRequestSchema,
@@ -4272,6 +4275,11 @@ export const DictationStreamErrorMessageSchema = z.object({
 export const ServerCapabilityStateSchema = z.object({
   enabled: z.boolean(),
   reason: z.string(),
+  /**
+   * Set when the feature is off only because its plugin is not installed and enabled:
+   * installing this plugin from this repo (no capabilities to grant) switches it on.
+   */
+  plugin: z.object({ id: z.string(), repoUrl: z.string() }).optional(),
 });
 
 export const ServerVoiceCapabilitiesSchema = z.object({
@@ -8215,6 +8223,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   PluginsInstallResponseSchema,
   PluginsUninstallResponseSchema,
   PluginsSetEnabledResponseSchema,
+  PluginsSetRemoteControlResponseSchema,
   PluginsUpdateResponseSchema,
   PluginsDevLinkResponseSchema,
   PluginsDevUnlinkResponseSchema,

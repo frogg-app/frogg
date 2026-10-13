@@ -525,6 +525,10 @@
         "autoUpdate": {
           "type": "string",
           "enum": ["off", "brand-repos", "all"]
+        },
+        "remoteControl": {
+          "type": "string",
+          "enum": ["allowed", "forbidden"]
         }
       },
       "additionalProperties": false

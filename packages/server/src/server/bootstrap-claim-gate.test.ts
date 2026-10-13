@@ -93,7 +93,7 @@ describe("first-run claim gate", () => {
     }
   });
 
-  test("serves the claim page to public visitors, the app to loopback, and the app after claiming", async () => {
+  test("serves the claim page to every visitor until claimed, then the app", async () => {
     const { port, daemon } = await startDaemon();
     const base = `http://127.0.0.1:${port}`;
 
@@ -105,9 +105,10 @@ describe("first-run claim gate", () => {
       listen: `127.0.0.1:${port}`,
     });
 
+    // Loopback is gated too: the app cannot connect until its device is registered.
     const loopback = await fetch(`${webBase()}/`);
     expect(loopback.status).toBe(200);
-    expect(await loopback.text()).toContain("the app");
+    expect(await loopback.text()).toContain("Claim this frogg daemon");
 
     const gated = await fetch(`${webBase()}/some/deep/link`, { headers: PUBLIC });
     expect(gated.status).toBe(200);
@@ -120,11 +121,20 @@ describe("first-run claim gate", () => {
     // Public API and WebSocket access is locked while unclaimed.
     const lockedApi = await fetch(`${base}/api/status`, { headers: PUBLIC });
     expect(lockedApi.status).toBe(401);
-    expect(await lockedApi.json()).toEqual({ error: "Unauthorized", setup: "unclaimed" });
-    expect(await wsClose(port, PUBLIC)).toEqual({ code: 4401, reason: "Pairing required" });
-    // Loopback keeps working as before.
-    expect((await fetch(`${base}/api/status`)).status).toBe(200);
-    expect(await wsClose(port, {})).toBe("open");
+    expect(await lockedApi.json()).toEqual({
+      error: "Unauthorized",
+      setup: "unclaimed",
+    });
+    expect(await wsClose(port, PUBLIC)).toEqual({
+      code: 4401,
+      reason: "Pairing required",
+    });
+    // Loopback is no exception: no anonymous connections.
+    expect((await fetch(`${base}/api/status`)).status).toBe(401);
+    expect(await wsClose(port, {})).toEqual({
+      code: 4401,
+      reason: "Pairing required",
+    });
 
     const offer = parseAnyConnectionOfferFromUrl(extractPairingUrl(html));
     if (!offer || offer.v !== 3) throw new Error("expected a v3 direct claim offer");
@@ -210,28 +220,26 @@ describe("first-run claim gate", () => {
     );
   });
 
-  test("a LAN visitor behind the trusted proxy is treated like loopback while trustLan is on", async () => {
+  test("a trusted-LAN visitor still pairs before it connects", async () => {
     const { port } = await startDaemon();
     const base = `http://127.0.0.1:${port}`;
 
-    // No gate, no bearer: the LAN client gets the app, the API, and a WebSocket.
     const identity = await (await fetch(`${base}/api/identity`, { headers: LAN })).json();
-    expect(identity).toMatchObject({ pairingRequired: false, lanTrusted: true });
-    expect(await (await fetch(`${webBase()}/`, { headers: LAN })).text()).toContain("the app");
-    expect((await fetch(`${base}/api/status`, { headers: LAN })).status).toBe(200);
-    expect(await wsClose(port, LAN)).toBe("open");
-
-    // The same daemon still gates a public address.
-    expect(
-      (await (await fetch(`${base}/api/identity`, { headers: PUBLIC })).json()).pairingRequired,
-    ).toBe(true);
-    expect(await (await fetch(`${webBase()}/`, { headers: PUBLIC })).text()).toContain(
+    expect(identity).toMatchObject({ pairingRequired: true, lanTrusted: true });
+    expect(await (await fetch(`${webBase()}/`, { headers: LAN })).text()).toContain(
       "Claim this frogg daemon",
     );
-    expect(await wsClose(port, PUBLIC)).toEqual({ code: 4401, reason: "Pairing required" });
+    expect((await fetch(`${base}/api/status`, { headers: LAN })).status).toBe(401);
+    expect(await wsClose(port, LAN)).toEqual({
+      code: 4401,
+      reason: "Pairing required",
+    });
 
-    // Pairing stays available to a LAN client that wants a credential of its own.
-    const offer = await fetch(`${base}/api/setup/offer`, { method: "POST", headers: LAN });
+    // Unclaimed, so a LAN client may start pairing and connect with its own credential.
+    const offer = await fetch(`${base}/api/setup/offer`, {
+      method: "POST",
+      headers: LAN,
+    });
     expect(offer.status).toBe(200);
     const { url } = (await offer.json()) as { url: string };
     const parsed = parseAnyConnectionOfferFromUrl(url);
@@ -243,22 +251,11 @@ describe("first-run claim gate", () => {
     });
     expect(claimed.status).toBe(201);
     const minted = (await claimed.json()) as { credential: string };
-    expect(await wsClose(port, PUBLIC, `frogg.bearer.${minted.credential}`)).toBe("open");
-  });
-
-  test("with trustLan off a LAN visitor sees the gate and needs a bearer", async () => {
-    const { port } = await startDaemon({ trustLan: false });
-    const base = `http://127.0.0.1:${port}`;
-
-    const identity = await (await fetch(`${base}/api/identity`, { headers: LAN })).json();
-    expect(identity).toMatchObject({ pairingRequired: true, lanTrusted: false });
-    expect(await (await fetch(`${webBase()}/`, { headers: LAN })).text()).toContain(
-      "Claim this frogg daemon",
-    );
-    expect((await fetch(`${base}/api/status`, { headers: LAN })).status).toBe(401);
-    expect(await wsClose(port, LAN)).toEqual({ code: 4401, reason: "Pairing required" });
-    // Loopback is never gated.
-    expect((await fetch(`${base}/api/status`)).status).toBe(200);
+    expect(await wsClose(port, LAN, `frogg.bearer.${minted.credential}`)).toBe("open");
+    expect(await wsClose(port, LAN)).toEqual({
+      code: 4401,
+      reason: "Password required",
+    });
   });
 
   test("a configured password counts as claimed: no gate, password required everywhere", async () => {

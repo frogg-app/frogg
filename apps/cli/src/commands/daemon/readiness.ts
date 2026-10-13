@@ -111,7 +111,7 @@ export function describeAccessMode(mode: DaemonAccessMode): string {
     case "password":
       return "Access: password set — every client, LAN included, must enter the daemon password.";
     case "lan_trusted":
-      return "Access: LAN trusted — devices on your private network connect without pairing; anyone else must pair.";
+      return "Access: every device pairs (or uses the password) before it connects.";
     case "pairing_required":
       return "Access: pairing required — every client beyond this machine must pair first.";
   }

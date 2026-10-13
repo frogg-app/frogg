@@ -66,6 +66,8 @@ export class PluginsSession {
         return { success: true };
       case "plugins.set_enabled.request":
         return { plugin: await service.setEnabled(msg.id, msg.enabled) };
+      case "plugins.set_remote_control.request":
+        return { plugin: await service.setRemoteControl(msg.id, msg.enabled) };
       case "plugins.update.request":
         return { plugin: await service.update(msg) };
       case "plugins.dev.link.request":
@@ -112,6 +114,7 @@ function emptyFields(type: PluginsRequest["type"]): Record<string, unknown> {
       return { repo: null };
     case "plugins.install.request":
     case "plugins.set_enabled.request":
+    case "plugins.set_remote_control.request":
     case "plugins.update.request":
     case "plugins.dev.link.request":
       return { plugin: null };

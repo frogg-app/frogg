@@ -72,12 +72,19 @@ results. It is labelled **preview** and experimental.
 
 ### Turn it on
 
-1. **Settings → General → Enable Companion (preview)**. It is off by default on each
-   device, and enabling it does not start the microphone.
+1. Install the **Companion** plugin on the host, from **Plugins → Browse** (category
+   **Frogg features**). It requests no permissions. A host runs Companion only while this
+   plugin is installed and enabled; disabling or uninstalling it turns Companion off for every
+   device using that host. Hosts whose brand switches plugins off keep Companion built in.
+2. **Settings → General → Enable Companion (preview)**. It is off by default on each
+   device, and enabling it does not start the microphone. On desktop and web the Companion
+   settings appear once a connected host has the plugin, and installing the plugin from this
+   device turns them on. On mobile the switch is always there; turning it on installs the
+   plugin on the host if it is missing, or shows **Install plugin** if that failed.
 
    <Screenshot src={appCompanionSettingsImg} alt="Companion settings" />
 
-2. In a project session, press the **Companion** button in the composer, then allow the
+3. In a project session, press the **Companion** button in the composer, then allow the
    microphone.
 
 Controls: **Mute** pauses the microphone while tasks continue. **Minimize** keeps the

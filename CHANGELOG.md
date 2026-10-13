@@ -46,6 +46,30 @@
 
 ## Unreleased
 
+- **Plugin API v2.** A strict superset of v1 for plugins that bridge Frogg to chat and office
+  tools. It adds agent timelines with a resume cursor (and the item on every timeline event),
+  attention events that follow push suppression, diff stats, providers, model, branch, PR and usage
+  on agent summaries; and new capabilities `agent.manage` (create, cancel, archive),
+  `agent.permissions` (list and answer permission requests), `workspaces.read`, `todos.read`,
+  `todos.write` and, for client plugins, `ui.external` (open an https link). The remote-control
+  capabilities, plus `sendMessage` for v2 plugins, stay off until the host owner turns on
+  **Remote control** for the plugin (Plugins → Installed, `frogg plugins remote-control <id> on`,
+  `plugins.set_remote_control`). Brands can forbid it with `plugins.remoteControl`. Each such
+  action is audit-logged to `plugins/audit.jsonl` with its outside actor. `frogg plugins index build`
+  now also writes `index.v2.json`; `index.json` keeps v1 versions only so hosts that predate v2 keep
+  reading it. Hosts and clients prefer `index.v2.json`, parse indexes per entry, and report
+  manifests for an unsupported API version as incompatible rather than invalid.
+
+- **Every device registers; no anonymous connections.** Loopback and trusted-LAN clients no
+  longer connect without a credential: every WebSocket and API caller presents a paired-device
+  credential, the daemon password or (on the host) the local token. A password or local-token
+  session is bound on its first hello to a device registered under its client id and device
+  name (the CLI registers as `<hostname> CLI`), so it appears in the device list and can be
+  renamed and, later, mentioned and notified. Local-token registrations (`pairedVia: "local"`)
+  do not claim the daemon. Until the daemon is claimed every visitor, loopback included, gets
+  the claim page, and `/api/identity` reports `pairingRequired` for all. A desktop app that
+  relied on loopback trust now shows **Pair again**.
+
 - **Resources is its own host settings section.** Live host load and the size of each
   Frogg-owned storage area move out of the host Overview into a **Resources** section under the
   Daemon group, alongside new storage alerts. Clearing stale worktrees, agent worktrees and

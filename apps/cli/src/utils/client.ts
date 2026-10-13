@@ -15,6 +15,7 @@ import {
 } from "@frogg/protocol/connection-offer";
 import { parseSshTransportUri } from "@frogg/protocol/ssh-transport";
 import { DaemonClient, type WebSocketLike } from "@frogg/client/internal/daemon-client";
+import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
 import { getOrCreateCliClientId } from "./client-id.js";
@@ -309,6 +310,8 @@ async function tryConnectHost(
     url: target.url,
     clientId,
     clientType: "cli",
+    // The name this CLI is registered and mentioned under on the daemon.
+    deviceName: `${os.hostname()} CLI`,
     appVersion: resolveCliVersion(),
     password,
     connectTimeoutMs: timeout,
@@ -350,6 +353,8 @@ async function connectViaRelayOffer(
     url,
     clientId,
     clientType: "cli",
+    // The name this CLI is registered and mentioned under on the daemon.
+    deviceName: `${os.hostname()} CLI`,
     appVersion: resolveCliVersion(),
     connectTimeoutMs: timeout,
     webSocketFactory: (

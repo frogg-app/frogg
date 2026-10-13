@@ -40,7 +40,20 @@ export const PRINCIPALS_V1_BACKUP_FILENAME = "principals.v1.bak.json";
 /** lastSeenAt is persisted at most this often per device. */
 export const LAST_SEEN_WRITE_INTERVAL_MS = 60_000;
 
-export const PAIRED_VIA = ["claim", "offer", "code", "approval", "password", "legacy"] as const;
+/**
+ * `local`: a client that reached the daemon with the host's local token and was
+ * registered on its first hello (see registerClientDevice). It does not claim
+ * the daemon: the host user owns it regardless.
+ */
+export const PAIRED_VIA = [
+  "claim",
+  "offer",
+  "code",
+  "approval",
+  "password",
+  "legacy",
+  "local",
+] as const;
 export type PairedVia = (typeof PAIRED_VIA)[number];
 
 const LegacyCredentialSchema = z
@@ -80,6 +93,8 @@ const CredentialRecordSchema = z
     role: z.enum(DEVICE_ROLES).optional(),
     pairedVia: z.enum(PAIRED_VIA).optional(),
     lastSeenAt: z.string().optional(),
+    /** The hello clientId of a device registered by registerClientDevice. */
+    clientId: z.string().min(1).optional(),
   })
   .strict();
 
@@ -147,6 +162,17 @@ export interface ClaimStore {
   listDevices(): DeviceRecord[];
   getDevice(credentialId: string): DeviceRecord | null;
   mintPrincipal(input: MintInput): MintedPrincipal;
+  /**
+   * The device a password or local-token client is bound to, keyed by its hello
+   * clientId: found when it registered before, otherwise registered now. Such a
+   * device has no usable bearer of its own; it exists so every connection is a
+   * named, listable, revocable device.
+   */
+  registerClientDevice(input: {
+    clientId: string;
+    name: string;
+    via: "password" | "local";
+  }): DeviceRecord;
   renameDevice(credentialId: string, name: string): DeviceRecord | null;
   /** Removes the credential (and its principal when it was the last one). */
   revokeDevice(credentialId: string): boolean;
@@ -344,7 +370,9 @@ export function createClaimStore(froggHome: string): ClaimStore {
       const current = read();
       return (
         Boolean(current.claimedAt) ||
-        current.principals.some((principal) => principal.credentials.length > 0)
+        current.principals.some((principal) =>
+          principal.credentials.some((credential) => credential.pairedVia !== "local"),
+        )
       );
     },
     claimedAt: () => read().claimedAt ?? null,
@@ -403,6 +431,43 @@ export function createClaimStore(froggHome: string): ClaimStore {
         role: resolvedRole,
         deviceName: name,
       };
+    },
+    registerClientDevice: ({ clientId, name, via }) => {
+      const current = read();
+      for (const principal of current.principals) {
+        const credential = principal.credentials.find(
+          (entry) => entry.clientId === clientId && entry.pairedVia === via,
+        );
+        if (credential) return toDevice(principal, credential);
+      }
+      const now = new Date().toISOString();
+      const deviceName = name.trim() || "Unnamed device";
+      const principal: PrincipalRecord = {
+        id: generateId("prn"),
+        label: deviceName,
+        createdAt: now,
+        permissions: [...DAEMON_PERMISSIONS],
+        credentials: [
+          {
+            id: generateId("crd"),
+            // A random secret nobody holds: the device authenticates with the
+            // password or local token, never with a credential of its own.
+            sha256: hashCredential(randomBytes(32).toString("base64url")),
+            createdAt: now,
+            name: deviceName,
+            role: "owner",
+            pairedVia: via,
+            clientId,
+          },
+        ],
+      };
+      write({
+        ...current,
+        // A local registration does not claim the daemon; a password one already is.
+        ...(via === "password" ? { claimedAt: current.claimedAt ?? now } : {}),
+        principals: [...current.principals, principal],
+      });
+      return toDevice(principal, principal.credentials[0]!);
     },
     renameDevice: (credentialId, name) => {
       const trimmed = name.trim();

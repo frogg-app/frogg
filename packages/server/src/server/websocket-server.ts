@@ -6,7 +6,7 @@ import { join } from "path";
 import { daemonHostname as getHostname } from "./daemon-hostname.js";
 import { randomUUID } from "node:crypto";
 import { monitorEventLoopDelay } from "node:perf_hooks";
-import type { AgentManager, AgentMetricsSnapshot } from "./agent/agent-manager.js";
+import type { AgentManager, AgentMetricsSnapshot, ManagedAgent } from "./agent/agent-manager.js";
 import type { AgentStorage } from "./agent/agent-storage.js";
 import type { DownloadTokenStore } from "./file-download/token-store.js";
 import type { TerminalManager } from "../terminal/terminal-manager.js";
@@ -182,6 +182,8 @@ export interface SessionAdmission {
   transport?: SessionTransport;
   /** Admitted on locality alone, with no credential presented. */
   localityTrusted?: boolean;
+  /** Admitted on the password or local token; bound to a registered device at hello. */
+  registerVia?: "password" | "local";
 }
 
 /** Sessions are never shared across device credentials, whatever the principal. */
@@ -1865,6 +1867,7 @@ export class VoiceAssistantWebSocketServer {
     }
 
     this.clearPendingConnection(ws);
+    pending.admission = this.bindAdmissionToDevice(pending.admission, clientId, message);
     pending.identity.clientId = clientId;
     if (message.appVersion) {
       pending.identity.appVersion = message.appVersion;
@@ -1903,6 +1906,32 @@ export class VoiceAssistantWebSocketServer {
       },
       "Client connected via hello",
     );
+  }
+
+  /**
+   * A password or local-token connection becomes the device registered for its
+   * clientId (registered now on first sight), so every session is a named,
+   * listable device that can be mentioned and notified.
+   */
+  private bindAdmissionToDevice(
+    admission: SessionAdmission,
+    clientId: string,
+    message: WSHelloMessage,
+  ): SessionAdmission {
+    const via = admission.registerVia;
+    const access = this.auth?.access;
+    if (!via || admission.device || !access) return admission;
+    const device = access.registerClientDevice({
+      clientId,
+      name: message.deviceName?.trim() || message.clientType || "Unnamed device",
+      via,
+    });
+    access.touchDevice(device.id);
+    return {
+      ...admission,
+      principalId: device.principalId,
+      device: { id: device.id, name: device.name, role: device.role },
+    };
   }
 
   private resumeSession(params: {
@@ -2984,6 +3013,40 @@ export class VoiceAssistantWebSocketServer {
     };
   }
 
+  /**
+   * Plugin API v2 `onAttention`. `clientActive` mirrors push suppression: true when the push would
+   * have been skipped because someone is using an app, whatever the reason's own push eligibility.
+   */
+  private publishPluginAttention(
+    params: { agentId: string; reason: "finished" | "error" | "permission" },
+    agent: ManagedAgent,
+    assistantMessage: string | null,
+    allStates: ClientPresenceState[],
+    nowMs: number,
+  ): void {
+    const service = this.pluginService;
+    if (!service) return;
+    const presence = computeNotificationPlan({
+      allStates,
+      focusTarget: { kind: "agent", id: params.agentId },
+      pushEligible: true,
+      nowMs,
+    });
+    void (async () => {
+      const summary = await service.listAgentSummary(params.agentId);
+      if (!summary) return;
+      service.publishAttention({
+        agentId: params.agentId,
+        reason: params.reason,
+        agent: summary,
+        message: params.reason === "permission" ? null : assistantMessage,
+        clientActive: !presence.shouldPush,
+      });
+    })().catch((err) => {
+      this.logger.warn({ err, agentId: agent.id }, "Failed to publish plugin attention");
+    });
+  }
+
   private async broadcastAgentAttention(params: {
     agentId: string;
     provider: AgentProvider;
@@ -3038,6 +3101,8 @@ export class VoiceAssistantWebSocketServer {
         this.logger.warn({ err, agentId: params.agentId }, "Failed to send push notification");
       });
     }
+
+    this.publishPluginAttention(params, agent, assistantMessage, allStates, nowMs);
 
     for (const [clientIndex, { ws }] of clientEntries.entries()) {
       const shouldNotify = clientIndex === plan.inAppRecipientIndex;

@@ -603,6 +603,7 @@ export const ja: TranslationResources = {
     },
   },
   message: {
+    sending: "送信中…",
     diagram: {
       diagram: "図",
       zoomIn: "拡大",
@@ -2667,6 +2668,13 @@ export const ja: TranslationResources = {
     },
   },
   companion: {
+    plugin: {
+      required: "このホストには コンパニオンプラグインがインストールされていません",
+      description:
+        "プラグインをインストールすると、ホストで コンパニオンが動作します。追加の権限は不要です。",
+      install: "プラグインをインストール",
+      installing: "インストール中…",
+    },
     behavior: {
       nextSession: "変更は次にCompanionを開始すると適用されます。",
       verbosity: "返信の長さ",

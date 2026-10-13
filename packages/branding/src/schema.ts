@@ -282,6 +282,9 @@ export const BrandManifestSchema = z.strictObject({
         )
         .optional(),
       autoUpdate: z.enum(["off", "brand-repos", "all"]).optional(),
+      // Whether plugins may be given remote control of agents (plugin API v2 capabilities
+      // agent.manage, agent.permissions and todos.write). Default allowed.
+      remoteControl: z.enum(["allowed", "forbidden"]).optional(),
     })
     .optional(),
   channels: z.strictObject({ beta: channelOverrides.optional() }).optional(),
@@ -624,6 +627,7 @@ function resolvePlugins(manifest: BrandManifest) {
     deny: p.deny ?? [],
     preinstalled: (p.preinstalled ?? []).map((e) => ({ id: e.id, version: e.version ?? null })),
     autoUpdate: p.autoUpdate ?? ("brand-repos" as "off" | "brand-repos" | "all"),
+    remoteControl: p.remoteControl ?? ("allowed" as "allowed" | "forbidden"),
   };
 }
 

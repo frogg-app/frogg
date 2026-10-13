@@ -50,7 +50,14 @@ refactors don't break plugins.
 - `capabilities` (v1): `network`, `filesystem.workspace`, `process.spawn`,
   `agent.read`, `agent.write`, `settings.store`, `ui.contribute`, `rpc`.
   Shown in the consent dialog. Re-consent only when an update adds any.
-- `contributes`: declarative UI (see below).
+- `contributes`: declarative UI (see below), plus `features`: built-in features the
+  plugin switches on while enabled (`["companion"]` is the only one). The feature's code
+  ships with the host; the plugin is just its opt-in and delivery path, which also suits
+  features that mainly target mobile, where client plugins cannot run. Honoured only for
+  official and brand installs and dev links in developer mode. The host reports a locked
+  feature as `{ enabled: false, plugin: { id, repoUrl } }` in its capability state so a
+  client can offer the install (no capabilities to grant). `frogg.companion` in the
+  official repo is the first; a host with plugins off by brand never gates features.
 - Schema lives in `packages/protocol/src/plugins/manifest.ts` (zod), shared by
   daemon, client, CLI and repo CI.
 

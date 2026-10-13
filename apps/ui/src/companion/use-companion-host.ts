@@ -15,6 +15,8 @@ export interface CompanionHost {
   details: ServerCapabilities["companionDetails"] | null;
   /** The daemon's own words for why it cannot run a session, or null. */
   unavailableReason: string | null;
+  /** The plugin the host needs installed before it runs the Companion, or null. */
+  pluginRequired: { id: string; repoUrl: string } | null;
 }
 
 /**
@@ -58,6 +60,7 @@ export function useCompanionHost(): CompanionHost {
       transportReady &&
       details?.conversationControls === true,
     unavailableReason: resolveCompanionUnavailableMessage({ serverInfo }),
+    pluginRequired: readiness?.plugin ?? null,
   };
 }
 

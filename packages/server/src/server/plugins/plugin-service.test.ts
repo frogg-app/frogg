@@ -419,6 +419,54 @@ describe("PluginService brand policy", () => {
   });
 });
 
+describe("PluginService built-in features", () => {
+  const feature = {
+    capabilities: [],
+    code: "export default function activate() {}",
+    contributes: { features: ["companion"] },
+  };
+
+  it("unlocks a feature while an official plugin contributing it is enabled", async () => {
+    const { official, service, events } = await setup();
+    await official.publish([{ id: "frogg.companion", version: "1.0.0", ...feature }]);
+    await service.start();
+    expect(events.some((e) => e.type === "plugins.changed" && e.payload.reason === "loaded")).toBe(
+      true,
+    );
+    expect(service.isFeatureUnlocked("companion")).toBe(false);
+    expect(service.featurePluginSource("frogg.companion")).toEqual({
+      id: "frogg.companion",
+      repoUrl: official.url,
+    });
+
+    const installed = await service.install({
+      id: "frogg.companion",
+      repoUrl: official.url,
+      grantedCapabilities: [],
+    });
+    expect(installed.features).toEqual(["companion"]);
+    expect(service.isFeatureUnlocked("companion")).toBe(true);
+    await service.setEnabled("frogg.companion", false);
+    expect(service.isFeatureUnlocked("companion")).toBe(false);
+  });
+
+  it("ignores features from user-repo plugins", async () => {
+    const { service } = await setup({ policy: { allowUserRepos: true } });
+    await service.start();
+    const userRepo = await startFixtureRepo();
+    cleanups.push(() => userRepo.close());
+    await userRepo.publish([{ id: "fx.unlock", version: "1.0.0", ...feature }]);
+    await service.addRepo({ url: userRepo.url });
+    await service.install({ id: "fx.unlock", repoUrl: userRepo.url, grantedCapabilities: [] });
+    expect(service.isFeatureUnlocked("companion")).toBe(false);
+  });
+
+  it("offers no install source when the brand drops the official repo", async () => {
+    const { service } = await setup({ policy: { officialRepo: false } });
+    expect(service.featurePluginSource("frogg.companion")).toBeNull();
+  });
+});
+
 describe("PluginService dev links", () => {
   it("links a local folder and hot-reloads on change", async () => {
     const { service } = await setup({ localLinking: true });

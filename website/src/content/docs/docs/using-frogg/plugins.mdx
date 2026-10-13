@@ -88,6 +88,17 @@ any. **Uninstall** asks for confirmation, because it also removes the plugin's s
 Plugins your brand preinstalls cannot be uninstalled. A plugin that failed to load shows its
 error under the description.
 
+### Remote control
+
+Some plugins relay people from outside Frogg into your agents, such as Discord users or Google Doc
+commenters. The permissions that allow this are **start, stop and archive agents**, **approve or
+deny permission requests** and **create and update project to-dos**. For plugins built on plugin
+API v2, sending messages to agents counts too. They are granted when you install the plugin but
+stay off until you turn on **Remote control** on its row. Only a host owner can switch it, it
+takes effect immediately, and the brand can forbid it. Every action a plugin takes this way is
+logged to `plugins/audit.jsonl` in the host's Frogg home, with the outside identity that caused it
+(for example `discord:1234` or `google:alice@example.com`).
+
 ## Browse and install
 
 **Browse** lists every plugin from the host's repositories, grouped by category, with a search
@@ -154,6 +165,10 @@ in which case the option is hidden on hosts and in the desktop app alike.
   composer's agent and directory.
 - **Settings** appear on the plugin's settings page.
 - **Notifications** from a plugin show as toasts.
+- **Frogg features** are optional parts of Frogg, such as
+  [Companion](/docs/using-frogg/voice-and-companion/#companion), that ship with the app but stay
+  off on a host until their plugin is installed there. Only plugins from the official or a brand
+  repository can switch a feature on.
 
 <Screenshot src={pluginsPanelImg} alt="A plugin panel open as a workspace tab" />
 

@@ -180,6 +180,7 @@ function bridgeWith(capabilities: string[]) {
     stopPlayback: vi.fn(),
   };
   const insertComposerText = vi.fn(async () => true);
+  const openExternal = vi.fn(async () => true);
   const closeView = vi.fn();
   const bridge = createClientPluginBridge({
     pluginId: "acme.clock",
@@ -196,9 +197,11 @@ function bridgeWith(capabilities: string[]) {
     emitEvent,
     media,
     insertComposerText,
+    openExternal,
     closeView,
   });
   return {
+    openExternal,
     bridge,
     notify,
     rpcCall,
@@ -224,6 +227,27 @@ describe("capability bridge", () => {
     });
     expect(notify).not.toHaveBeenCalled();
     await expect(bridge.handle("log", { message: "ok" })).resolves.toBeNull();
+  });
+
+  it("opens only https URLs, and only with ui.external", async () => {
+    const denied = bridgeWith(["ui.contribute"]);
+    await expect(
+      denied.bridge.handle("ui.open_external", { url: "https://example.com" }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    const { bridge, openExternal } = bridgeWith(["ui.external"]);
+    await expect(bridge.handle("ui.open_external", { url: "http://example.com" })).resolves.toBe(
+      false,
+    );
+    await expect(bridge.handle("ui.open_external", { url: "javascript:alert(1)" })).resolves.toBe(
+      false,
+    );
+    expect(openExternal).not.toHaveBeenCalled();
+    await expect(
+      bridge.handle("ui.open_external", {
+        url: "https://accounts.google.com/o/oauth2",
+      }),
+    ).resolves.toBe(true);
+    expect(openExternal).toHaveBeenCalledWith("https://accounts.google.com/o/oauth2");
   });
 
   it("rejects unknown operations", async () => {

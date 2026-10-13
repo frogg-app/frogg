@@ -8,6 +8,8 @@ import type pino from "pino";
 import type {
   PluginAgentEvent,
   PluginAgentSummary,
+  PluginAttachment,
+  PluginAttentionEvent,
   PluginCapabilityName,
   PluginContext,
   PluginDisposable,
@@ -19,16 +21,98 @@ import type {
   PluginSynthesis,
   PluginTranscribeInput,
   PluginTranscription,
+  PluginCreateAgentInput,
+  PluginDiffStat,
+  PluginPermissionDecision,
+  PluginPermissionRequest,
+  PluginPermissionResolved,
+  PluginProject,
+  PluginProviderInfo,
+  PluginTimelinePage,
+  PluginTodo,
+  PluginTodoChange,
+  PluginTodoDetail,
+  PluginTodoInput,
+  PluginWorkspace,
 } from "@frogg/protocol/plugins/api-v1";
-import { isPluginCapability, type PluginManifest } from "@frogg/protocol/plugins/manifest";
+import {
+  SUPPORTED_PLUGIN_API_VERSIONS,
+  isPluginCapability,
+  type PluginManifest,
+} from "@frogg/protocol/plugins/manifest";
 import { PluginServiceError } from "./errors.js";
 import type { PluginSettingsFile } from "./settings-store.js";
+import {
+  buildAgentsV2,
+  buildHostInfo,
+  buildPermissionsV2,
+  buildTodosV2,
+  buildWorkspacesV2,
+  gate,
+  type RuntimeV2Deps,
+} from "./runtime-v2.js";
 
 export interface PluginAgentBridge {
   list(): Promise<PluginAgentSummary[]>;
   get(agentId: string): Promise<PluginAgentSummary | null>;
   subscribe(listener: (event: PluginAgentEvent) => void): () => void;
-  sendMessage(agentId: string, text: string): Promise<void>;
+  sendMessage(agentId: string, text: string, attachments?: PluginAttachment[]): Promise<void>;
+  getTimeline(
+    agentId: string,
+    options?: { cursor?: string | null; limit?: number },
+  ): Promise<PluginTimelinePage>;
+  getLastAssistantMessage(agentId: string): Promise<string | null>;
+  getDiffStat(agentId: string): Promise<PluginDiffStat | null>;
+  listProviders(): Promise<PluginProviderInfo[]>;
+  create(input: PluginCreateAgentInput): Promise<PluginAgentSummary>;
+  cancel(agentId: string): Promise<void>;
+  archive(agentId: string): Promise<void>;
+  listPermissions(agentId?: string): Promise<PluginPermissionRequest[]>;
+  subscribePermissions(
+    onRequest: (request: PluginPermissionRequest) => void,
+    onResolved: (resolved: PluginPermissionResolved) => void,
+  ): () => void;
+  respondToPermission(
+    agentId: string,
+    requestId: string,
+    decision: PluginPermissionDecision,
+    message?: string,
+  ): Promise<void>;
+}
+
+export interface PluginWorkspacesBridge {
+  listProjects(): Promise<PluginProject[]>;
+  list(projectId?: string): Promise<PluginWorkspace[]>;
+  get(workspaceId: string): Promise<PluginWorkspace | null>;
+}
+
+export interface PluginTodosBridge {
+  list(projectId: string, filter?: { status?: string[] }): Promise<PluginTodo[]>;
+  get(projectId: string, todoId: string): Promise<PluginTodoDetail>;
+  subscribe(listener: (change: PluginTodoChange) => void): () => void;
+  create(projectId: string, input: PluginTodoInput): Promise<PluginTodo>;
+  update(projectId: string, todoId: string, patch: Partial<PluginTodoInput>): Promise<PluginTodo>;
+  setStatus(projectId: string, todoId: string, status: string, note?: string): Promise<PluginTodo>;
+  addNote(projectId: string, todoId: string, note: string): Promise<void>;
+}
+
+/** One audited plugin action: who (the external identity the plugin names) did what to what. */
+export interface PluginAuditEntry {
+  at: string;
+  pluginId: string;
+  actor: string;
+  op: string;
+  target: string;
+}
+
+/** Host services and policy shared by every plugin runtime on this daemon. */
+export interface PluginHostServices {
+  version: string;
+  features: readonly string[];
+  workspaces?: PluginWorkspacesBridge | null;
+  todos?: PluginTodosBridge | null;
+  subscribeAttention?: ((listener: (event: PluginAttentionEvent) => void) => () => void) | null;
+  audit?: (entry: PluginAuditEntry) => void;
 }
 
 export interface PluginSpeechBridge {
@@ -53,6 +137,9 @@ export interface PluginRuntimeOptions {
   settings: PluginSettingsFile;
   agents: PluginAgentBridge | null;
   speech?: PluginSpeechBridge | null;
+  host?: PluginHostServices | null;
+  /** Whether the owner has enabled remote control for this plugin; read on every gated call. */
+  remoteControl?: () => boolean;
   hooks: PluginRuntimeHooks;
   logger: pino.Logger;
   activateTimeoutMs?: number;
@@ -133,8 +220,9 @@ export class PluginRuntime {
   buildContext(): PluginContext {
     const { manifest, logger, hooks } = this.opts;
     const log = logger.child({ pluginId: manifest.id });
+    const v2 = manifest.apiVersion >= 2;
     const ctx: Partial<PluginContext> = {
-      apiVersion: 1,
+      apiVersion: v2 ? 2 : 1,
       signal: this.abort.signal,
       log: {
         debug: (m, d) => log.debug(d ?? {}, m),
@@ -161,7 +249,7 @@ export class PluginRuntime {
       };
     }
     const agents = this.opts.agents;
-    if (agents && (this.has("agent.read") || this.has("agent.write"))) {
+    if (agents && (this.has("agent.read") || this.has("agent.write") || this.has("agent.manage"))) {
       const denied = (cap: string) => () =>
         Promise.reject(new PluginServiceError("forbidden", `capability ${cap} not granted`));
       ctx.agents = {
@@ -173,14 +261,24 @@ export class PluginRuntime {
           return this.track(agents.subscribe(this.guard("agent", listener)));
         },
         sendMessage: this.has("agent.write")
-          ? async (id, text) => {
+          ? async (id, text, options) => {
               if (typeof text !== "string" || !text.trim())
                 throw new PluginServiceError("invalid_request", "text is required");
-              await agents.sendMessage(id, text);
+              if (v2) gate(this.v2Gate(), "agent.write", true);
+              const attachments = v2 ? options?.attachments : undefined;
+              await agents.sendMessage(id, text, attachments);
+              if (v2) {
+                const actor =
+                  typeof options?.actor === "string" && options.actor.trim()
+                    ? options.actor.trim().slice(0, 200)
+                    : `plugin:${manifest.id}`;
+                this.audit({ actor, op: "agents.send_message", target: id });
+              }
             }
           : denied("agent.write"),
-      };
+      } as PluginContext["agents"];
     }
+    if (v2) this.addV2(ctx);
     if (this.has("rpc")) {
       ctx.rpc = {
         handle: (method, handler) => {
@@ -260,6 +358,57 @@ export class PluginRuntime {
       };
     }
     return ctx as PluginContext;
+  }
+
+  private audit(entry: Omit<PluginAuditEntry, "pluginId" | "at">): void {
+    const full = { at: new Date().toISOString(), pluginId: this.id, ...entry };
+    this.opts.logger.info({ audit: full }, "plugin action");
+    this.opts.host?.audit?.(full);
+  }
+
+  private readonly remoteControlListeners = new Set<(enabled: boolean) => void>();
+
+  /** Called by the service after the owner toggles remote control for this plugin. */
+  remoteControlChanged(enabled: boolean): void {
+    for (const listener of this.remoteControlListeners) listener(enabled);
+  }
+
+  private v2Gate() {
+    return {
+      pluginId: this.id,
+      has: (cap: PluginCapabilityName) => this.has(cap),
+      remoteControl: () => this.opts.remoteControl?.() === true,
+    };
+  }
+
+  private addV2(ctx: Partial<PluginContext>): void {
+    const host = this.opts.host ?? null;
+    const deps: RuntimeV2Deps = {
+      pluginId: this.id,
+      has: (cap) => this.has(cap),
+      remoteControl: () => this.opts.remoteControl?.() === true,
+      onRemoteControlChange: (listener) => {
+        this.remoteControlListeners.add(listener);
+        return () => this.remoteControlListeners.delete(listener);
+      },
+      track: (fn) => this.track(fn),
+      guard: (what, fn) => this.guard(what, fn),
+      audit: (entry) => this.audit(entry),
+      host: {
+        version: host?.version ?? "unknown",
+        apiVersions: SUPPORTED_PLUGIN_API_VERSIONS,
+        features: host?.features ?? [],
+      },
+      agents: this.opts.agents,
+      subscribeAttention: host?.subscribeAttention ?? null,
+      workspaces: host?.workspaces ?? null,
+      todos: host?.todos ?? null,
+    };
+    ctx.host = buildHostInfo(deps);
+    if (ctx.agents) Object.assign(ctx.agents, buildAgentsV2(deps));
+    if (this.has("agent.permissions")) ctx.permissions = buildPermissionsV2(deps);
+    if (this.has("workspaces.read")) ctx.workspaces = buildWorkspacesV2(deps);
+    if (this.has("todos.read") || this.has("todos.write")) ctx.todos = buildTodosV2(deps);
   }
 
   async activate(): Promise<void> {

@@ -13,7 +13,7 @@ import type { RequestHandler } from "express";
 
 import type { DeviceRole } from "@frogg/protocol/device-access";
 import { defaultRoleForTransport, roleSatisfies } from "./authorization/roles.js";
-import { DEFAULT_TRUST_LAN, isAuthRequired, type DaemonAccessPolicy } from "./access-policy.js";
+import type { DaemonAccessPolicy } from "./access-policy.js";
 import { hashCredential, type DeviceRecord } from "./claim-store.js";
 import type { AuthFailureLimiter } from "./auth-rate-limit.js";
 
@@ -222,14 +222,14 @@ export function extractWsBearerToken(protocol: string | null): string | null {
 
 /**
  * Who the daemon decided is talking to it. A paired device carries its own
- * credential, permissions and role; the daemon password and bearer-free trusted
- * clients (loopback, trusted LAN) have no device record and act as the owner.
+ * credential, permissions and role; the daemon password and the local token
+ * act as the owner, and a WebSocket session admitted on either is bound to a
+ * registered device at hello (registerClientDevice).
  */
 export type BearerPrincipal =
   | { kind: "device"; device: DeviceRecord }
   | { kind: "password" }
-  | { kind: "local_token" }
-  | { kind: "trusted" };
+  | { kind: "local_token" };
 
 /** How a connection authenticated. A paired device is always identified as one. */
 export type BearerDecision =
@@ -238,14 +238,16 @@ export type BearerDecision =
 
 type RequestLike = Pick<IncomingMessage, "headers" | "socket">;
 
-/** Does this request need a bearer at all? (see access-policy.ts) */
-export function requestNeedsBearer(auth: DaemonAuthConfig | undefined, req: RequestLike): boolean {
-  return isAuthRequired({
-    password: auth?.password,
-    claimed: auth?.access?.isClaimed() ?? false,
-    client: auth?.access ? auth.access.clientLocality(req) : "loopback",
-    trustLan: auth?.access?.trustLan() ?? DEFAULT_TRUST_LAN,
-  });
+/**
+ * Does this request need a bearer at all? Always: every device registers with
+ * the daemon, whatever network it arrives from. Kept as a function so callers
+ * that advertise the requirement (`/api/identity`) stay one place to change.
+ */
+export function requestNeedsBearer(
+  _auth: DaemonAuthConfig | undefined,
+  _req: RequestLike,
+): boolean {
+  return true;
 }
 
 /**
@@ -301,10 +303,9 @@ function matchesLocalToken(
  * Everything but the password check. Returns a final decision, or the key to
  * throttle under when the token must still be checked against the password.
  *
- * A presented bearer is always checked, even where locality alone would admit
- * the caller: a revoked device or a wrong password must never be quietly
- * upgraded to locality trust. Only a caller presenting nothing is trusted on
- * locality.
+ * Every connection carries a credential: a paired device, the local token, or
+ * the daemon password. Locality (loopback, trusted LAN) never admits a caller
+ * on its own, so no connection is anonymous.
  */
 function preDecide(
   auth: DaemonAuthConfig | undefined,
@@ -313,11 +314,9 @@ function preDecide(
 ): BearerDecision | { key: string; token: string; password: string } {
   const known = token === null ? null : resolveKnownCredential(auth, req, token);
   if (known) return { ok: true, principal: known };
-  const needsBearer = requestNeedsBearer(auth, req);
-  if (!needsBearer && token === null) return { ok: true, principal: { kind: "trusted" } };
   const key = clientKey(req, auth);
   if (auth?.limiter?.isBlocked(key)) return { ok: false, reason: "rate_limited" };
-  const missing = needsBearer ? missingBearerReason(auth, token) : null;
+  const missing = missingBearerReason(auth, token);
   if (missing) return { ok: false, reason: missing };
   // A token is presented here (the tokenless cases returned above).
   if (!auth?.password || token === null) {
@@ -499,7 +498,13 @@ export function createRequireBearerMiddleware(
   };
 }
 
-const SELF_AUTHENTICATING_ROUTES = new Set(["/api/files/download", "/mcp/agents"]);
+// `/api/setup/offer` checks its own owner credential once claimed; before that
+// it is how the first device pairs, and the claim page hands out offers anyway.
+const SELF_AUTHENTICATING_ROUTES = new Set([
+  "/api/files/download",
+  "/mcp/agents",
+  "/api/setup/offer",
+]);
 const PUBLIC_ROUTES = new Set([
   "/api/health",
   "/api/identity",

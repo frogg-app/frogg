@@ -38,6 +38,8 @@ pub enum SessionMessage {
     PluginsUninstallResponse(PluginsUninstallResponse),
     #[serde(rename = "plugins.set_enabled.response")]
     PluginsSetEnabledResponse(PluginsSetEnabledResponse),
+    #[serde(rename = "plugins.set_remote_control.response")]
+    PluginsSetRemoteControlResponse(PluginsSetRemoteControlResponse),
     #[serde(rename = "plugins.update.response")]
     PluginsUpdateResponse(PluginsUpdateResponse),
     #[serde(rename = "plugins.dev.link.response")]
@@ -647,8 +649,12 @@ pub struct PluginsListResponsePayloadPluginsItem {
     #[serde(rename = "updateAvailable", skip_serializing_if = "Option::is_none")]
     pub update_available: Option<String>,
     pub preinstalled: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub features: Option<Vec<String>>,
     #[serde(rename = "installedAt", skip_serializing_if = "Option::is_none")]
     pub installed_at: Option<String>,
+    #[serde(rename = "remoteControl", skip_serializing_if = "Option::is_none")]
+    pub remote_control: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -662,6 +668,8 @@ pub struct PluginsListResponsePayloadPolicy {
     pub developer_mode_enabled: bool,
     #[serde(rename = "apiVersions")]
     pub api_versions: Vec<f64>,
+    #[serde(rename = "remoteControl", skip_serializing_if = "Option::is_none")]
+    pub remote_control: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -828,6 +836,19 @@ pub struct PluginsSetEnabledResponsePayload {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSetRemoteControlResponse {
+    pub payload: PluginsSetRemoteControlResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PluginsSetRemoteControlResponsePayload {
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+    pub error: serde_json::Value,
+    pub plugin: serde_json::Value,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PluginsUpdateResponse {
     pub payload: PluginsUpdateResponsePayload,
 }
@@ -890,6 +911,8 @@ pub struct PluginsDevSetEnabledResponsePayloadPolicy {
     pub developer_mode_enabled: bool,
     #[serde(rename = "apiVersions")]
     pub api_versions: Vec<f64>,
+    #[serde(rename = "remoteControl", skip_serializing_if = "Option::is_none")]
+    pub remote_control: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -1181,6 +1204,8 @@ pub enum AuthDeviceListResponsePayloadDevicesItemPairedVia {
     Password,
     #[serde(rename = "legacy")]
     Legacy,
+    #[serde(rename = "local")]
+    Local,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

@@ -64,6 +64,12 @@ const en = {
     media_audio: "Play audio",
     composer: "Add composer buttons and insert text",
     speech: "Use the host's speech recognition and voices",
+    agent_manage: "Start, stop and archive agents",
+    agent_permissions: "Approve or deny agents' permission requests",
+    workspaces_read: "See projects and workspaces",
+    todos_read: "Read project to-dos",
+    todos_write: "Create and update project to-dos",
+    ui_external: "Open links in your browser",
   },
   errors: {
     withDetail: "{{summary}} {{detail}}",
@@ -81,6 +87,7 @@ const en = {
     not_active: "The plugin is not running.",
     timeout: "The request timed out.",
     internal: "Something went wrong on the host.",
+    already_resolved: "Already answered elsewhere.",
   },
   installed: {
     empty: "No plugins installed on this host.",
@@ -95,6 +102,11 @@ const en = {
     uninstall: "Uninstall",
     uninstallTitle: "Uninstall {{name}}?",
     uninstallMessage: "{{name}} and its stored settings will be removed from this host.",
+    remoteControl: "Remote control",
+    remoteControlHint:
+      "Lets this plugin start agents, answer permission requests, change to-dos and send messages for people outside Frogg. Only turn it on if you trust everyone the plugin lets in.",
+    remoteControlLabel: "Remote control for {{name}}",
+    remoteControlForbidden: "Remote control is turned off for this build.",
   },
   browse: {
     search: "Search plugins",
@@ -255,6 +267,12 @@ export const pluginsCopies: Record<
       media_audio: "Reproducir audio",
       composer: "Añadir botones al editor e insertar texto",
       speech: "Usar el reconocimiento de voz y las voces del host",
+      agent_manage: "Iniciar, detener y archivar agentes",
+      agent_permissions: "Aprobar o denegar las solicitudes de permiso de los agentes",
+      workspaces_read: "Ver proyectos y espacios de trabajo",
+      todos_read: "Leer las tareas del proyecto",
+      todos_write: "Crear y actualizar tareas del proyecto",
+      ui_external: "Abrir enlaces en tu navegador",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -272,6 +290,7 @@ export const pluginsCopies: Record<
       not_active: "El plugin no se está ejecutando.",
       timeout: "Se agotó el tiempo de espera de la solicitud.",
       internal: "Algo salió mal en el host.",
+      already_resolved: "Ya se respondió en otro lugar.",
     },
     installed: {
       empty: "No hay plugins instalados en este host.",
@@ -286,6 +305,11 @@ export const pluginsCopies: Record<
       uninstall: "Desinstalar",
       uninstallTitle: "¿Desinstalar {{name}}?",
       uninstallMessage: "{{name}} y su configuración guardada se eliminarán de este host.",
+      remoteControl: "Control remoto",
+      remoteControlHint:
+        "Permite que este plugin inicie agentes, responda solicitudes de permiso, cambie tareas y envíe mensajes en nombre de personas fuera de Frogg. Actívalo solo si confías en todas las personas a las que el plugin da acceso.",
+      remoteControlLabel: "Control remoto de {{name}}",
+      remoteControlForbidden: "El control remoto está desactivado en esta compilación.",
     },
     browse: {
       search: "Buscar plugins",
@@ -435,6 +459,12 @@ export const pluginsCopies: Record<
       media_audio: "Lire de l'audio",
       composer: "Ajouter des boutons au compositeur et insérer du texte",
       speech: "Utiliser la reconnaissance vocale et les voix de l'hôte",
+      agent_manage: "Démarrer, arrêter et archiver des agents",
+      agent_permissions: "Approuver ou refuser les demandes d'autorisation des agents",
+      workspaces_read: "Voir les projets et espaces de travail",
+      todos_read: "Lire les tâches du projet",
+      todos_write: "Créer et modifier les tâches du projet",
+      ui_external: "Ouvrir des liens dans votre navigateur",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -452,6 +482,7 @@ export const pluginsCopies: Record<
       not_active: "Le plugin n’est pas en cours d’exécution.",
       timeout: "La requête a expiré.",
       internal: "Un problème est survenu sur l’hôte.",
+      already_resolved: "Déjà traité ailleurs.",
     },
     installed: {
       empty: "Aucun plugin installé sur cet hôte.",
@@ -466,6 +497,11 @@ export const pluginsCopies: Record<
       uninstall: "Désinstaller",
       uninstallTitle: "Désinstaller {{name}} ?",
       uninstallMessage: "{{name}} et ses réglages enregistrés seront supprimés de cet hôte.",
+      remoteControl: "Contrôle à distance",
+      remoteControlHint:
+        "Permet à ce plugin de démarrer des agents, de répondre aux demandes d'autorisation, de modifier les tâches et d'envoyer des messages pour des personnes extérieures à Frogg. Activez-le uniquement si vous faites confiance à toutes les personnes que le plugin laisse entrer.",
+      remoteControlLabel: "Contrôle à distance pour {{name}}",
+      remoteControlForbidden: "Le contrôle à distance est désactivé pour cette version.",
     },
     browse: {
       search: "Rechercher des plugins",
@@ -616,6 +652,12 @@ export const pluginsCopies: Record<
       media_audio: "音声を再生",
       composer: "入力欄にボタンを追加し、テキストを挿入",
       speech: "ホストの音声認識と音声合成を使用",
+      agent_manage: "エージェントの開始・停止・アーカイブ",
+      agent_permissions: "エージェントの権限リクエストの承認・拒否",
+      workspaces_read: "プロジェクトとワークスペースの表示",
+      todos_read: "プロジェクトの ToDo の読み取り",
+      todos_write: "プロジェクトの ToDo の作成と更新",
+      ui_external: "ブラウザでリンクを開く",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -633,6 +675,7 @@ export const pluginsCopies: Record<
       not_active: "プラグインが動作していません。",
       timeout: "リクエストがタイムアウトしました。",
       internal: "ホストで問題が発生しました。",
+      already_resolved: "すでに別の場所で応答済みです。",
     },
     installed: {
       empty: "このホストにはプラグインがインストールされていません。",
@@ -647,6 +690,11 @@ export const pluginsCopies: Record<
       uninstall: "アンインストール",
       uninstallTitle: "{{name}} をアンインストールしますか？",
       uninstallMessage: "{{name}} と保存された設定がこのホストから削除されます。",
+      remoteControl: "リモート操作",
+      remoteControlHint:
+        "このプラグインが Frogg 外のユーザーに代わってエージェントの開始、権限リクエストへの応答、ToDo の変更、メッセージの送信を行えるようにします。プラグインが許可するすべての人を信頼できる場合にのみ有効にしてください。",
+      remoteControlLabel: "{{name}} のリモート操作",
+      remoteControlForbidden: "このビルドではリモート操作が無効になっています。",
     },
     browse: {
       search: "プラグインを検索",
@@ -794,6 +842,12 @@ export const pluginsCopies: Record<
       media_audio: "오디오 재생",
       composer: "작성기에 버튼 추가 및 텍스트 삽입",
       speech: "호스트의 음성 인식과 음성 사용",
+      agent_manage: "에이전트 시작, 중지 및 보관",
+      agent_permissions: "에이전트의 권한 요청 승인 또는 거부",
+      workspaces_read: "프로젝트와 작업 공간 보기",
+      todos_read: "프로젝트 할 일 읽기",
+      todos_write: "프로젝트 할 일 만들기 및 수정",
+      ui_external: "브라우저에서 링크 열기",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -811,6 +865,7 @@ export const pluginsCopies: Record<
       not_active: "플러그인이 실행 중이 아닙니다.",
       timeout: "요청 시간이 초과되었습니다.",
       internal: "호스트에서 문제가 발생했습니다.",
+      already_resolved: "이미 다른 곳에서 응답했습니다.",
     },
     installed: {
       empty: "이 호스트에 설치된 플러그인이 없습니다.",
@@ -825,6 +880,11 @@ export const pluginsCopies: Record<
       uninstall: "제거",
       uninstallTitle: "{{name}}을(를) 제거할까요?",
       uninstallMessage: "{{name}}과(와) 저장된 설정이 이 호스트에서 제거됩니다.",
+      remoteControl: "원격 제어",
+      remoteControlHint:
+        "이 플러그인이 Frogg 외부 사용자를 대신해 에이전트를 시작하고, 권한 요청에 응답하고, 할 일을 변경하고, 메시지를 보낼 수 있게 합니다. 플러그인이 허용하는 모든 사람을 신뢰할 때만 켜세요.",
+      remoteControlLabel: "{{name}} 원격 제어",
+      remoteControlForbidden: "이 빌드에서는 원격 제어가 꺼져 있습니다.",
     },
     browse: {
       search: "플러그인 검색",
@@ -972,6 +1032,12 @@ export const pluginsCopies: Record<
       media_audio: "Reproduzir áudio",
       composer: "Adicionar botões ao editor e inserir texto",
       speech: "Usar o reconhecimento de fala e as vozes do host",
+      agent_manage: "Iniciar, parar e arquivar agentes",
+      agent_permissions: "Aprovar ou negar pedidos de permissão dos agentes",
+      workspaces_read: "Ver projetos e espaços de trabalho",
+      todos_read: "Ler as tarefas do projeto",
+      todos_write: "Criar e atualizar tarefas do projeto",
+      ui_external: "Abrir links no navegador",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -989,6 +1055,7 @@ export const pluginsCopies: Record<
       not_active: "O plugin não está em execução.",
       timeout: "A requisição expirou.",
       internal: "Algo deu errado no host.",
+      already_resolved: "Já respondido em outro lugar.",
     },
     installed: {
       empty: "Nenhum plugin instalado neste host.",
@@ -1003,6 +1070,11 @@ export const pluginsCopies: Record<
       uninstall: "Desinstalar",
       uninstallTitle: "Desinstalar {{name}}?",
       uninstallMessage: "{{name}} e suas configurações salvas serão removidos deste host.",
+      remoteControl: "Controle remoto",
+      remoteControlHint:
+        "Permite que este plugin inicie agentes, responda a pedidos de permissão, altere tarefas e envie mensagens em nome de pessoas fora do Frogg. Ative apenas se você confia em todos a quem o plugin dá acesso.",
+      remoteControlLabel: "Controle remoto de {{name}}",
+      remoteControlForbidden: "O controle remoto está desativado nesta versão.",
     },
     browse: {
       search: "Buscar plugins",
@@ -1153,6 +1225,12 @@ export const pluginsCopies: Record<
       media_audio: "Воспроизводить звук",
       composer: "Добавлять кнопки в редактор и вставлять текст",
       speech: "Использовать распознавание речи и голоса хоста",
+      agent_manage: "Запускать, останавливать и архивировать агентов",
+      agent_permissions: "Одобрять или отклонять запросы разрешений агентов",
+      workspaces_read: "Просматривать проекты и рабочие пространства",
+      todos_read: "Читать задачи проекта",
+      todos_write: "Создавать и изменять задачи проекта",
+      ui_external: "Открывать ссылки в браузере",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -1170,6 +1248,7 @@ export const pluginsCopies: Record<
       not_active: "Плагин не запущен.",
       timeout: "Время ожидания запроса истекло.",
       internal: "На хосте что-то пошло не так.",
+      already_resolved: "Уже отвечено в другом месте.",
     },
     installed: {
       empty: "На этом хосте нет установленных плагинов.",
@@ -1184,6 +1263,11 @@ export const pluginsCopies: Record<
       uninstall: "Удалить",
       uninstallTitle: "Удалить {{name}}?",
       uninstallMessage: "{{name}} и его сохранённые настройки будут удалены с этого хоста.",
+      remoteControl: "Удалённое управление",
+      remoteControlHint:
+        "Позволяет плагину запускать агентов, отвечать на запросы разрешений, менять задачи и отправлять сообщения от имени людей вне Frogg. Включайте, только если доверяете всем, кого пускает плагин.",
+      remoteControlLabel: "Удалённое управление для {{name}}",
+      remoteControlForbidden: "Удалённое управление отключено в этой сборке.",
     },
     browse: {
       search: "Поиск плагинов",
@@ -1330,6 +1414,12 @@ export const pluginsCopies: Record<
       media_audio: "播放音频",
       composer: "添加输入框按钮并插入文本",
       speech: "使用主机的语音识别和语音",
+      agent_manage: "启动、停止和归档智能体",
+      agent_permissions: "批准或拒绝智能体的权限请求",
+      workspaces_read: "查看项目和工作区",
+      todos_read: "读取项目待办事项",
+      todos_write: "创建和更新项目待办事项",
+      ui_external: "在浏览器中打开链接",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -1347,6 +1437,7 @@ export const pluginsCopies: Record<
       not_active: "插件未在运行。",
       timeout: "请求超时。",
       internal: "主机上出现问题。",
+      already_resolved: "已在其他地方处理。",
     },
     installed: {
       empty: "此主机上没有安装插件。",
@@ -1360,6 +1451,11 @@ export const pluginsCopies: Record<
       uninstall: "卸载",
       uninstallTitle: "卸载 {{name}}？",
       uninstallMessage: "{{name}} 及其保存的设置将从此主机中移除。",
+      remoteControl: "远程控制",
+      remoteControlHint:
+        "允许此插件代表 Frogg 之外的人启动智能体、回应权限请求、更改待办事项和发送消息。仅在你信任插件允许的所有人时才开启。",
+      remoteControlLabel: "{{name}} 的远程控制",
+      remoteControlForbidden: "此版本已关闭远程控制。",
     },
     browse: {
       search: "搜索插件",
@@ -1502,6 +1598,12 @@ export const pluginsCopies: Record<
       media_audio: "تشغيل الصوت",
       composer: "إضافة أزرار إلى المحرر وإدراج نص",
       speech: "استخدام التعرف على الكلام والأصوات في المضيف",
+      agent_manage: "بدء الوكلاء وإيقافهم وأرشفتهم",
+      agent_permissions: "الموافقة على طلبات أذونات الوكلاء أو رفضها",
+      workspaces_read: "عرض المشاريع ومساحات العمل",
+      todos_read: "قراءة مهام المشروع",
+      todos_write: "إنشاء مهام المشروع وتحديثها",
+      ui_external: "فتح الروابط في المتصفح",
     },
     errors: {
       withDetail: "{{summary}} {{detail}}",
@@ -1519,6 +1621,7 @@ export const pluginsCopies: Record<
       not_active: "الإضافة لا تعمل.",
       timeout: "انتهت مهلة الطلب.",
       internal: "حدث خطأ على المضيف.",
+      already_resolved: "تمت الإجابة عليه في مكان آخر.",
     },
     installed: {
       empty: "لا توجد إضافات مثبّتة على هذا المضيف.",
@@ -1532,6 +1635,11 @@ export const pluginsCopies: Record<
       uninstall: "إلغاء التثبيت",
       uninstallTitle: "إلغاء تثبيت {{name}}؟",
       uninstallMessage: "ستُزال {{name}} وإعداداتها المحفوظة من هذا المضيف.",
+      remoteControl: "التحكم عن بُعد",
+      remoteControlHint:
+        "يسمح لهذا المكوّن الإضافي ببدء الوكلاء والرد على طلبات الأذونات وتغيير المهام وإرسال الرسائل نيابةً عن أشخاص خارج Frogg. فعّله فقط إذا كنت تثق بكل من يسمح لهم المكوّن الإضافي بالدخول.",
+      remoteControlLabel: "التحكم عن بُعد في {{name}}",
+      remoteControlForbidden: "التحكم عن بُعد متوقف في هذا الإصدار.",
     },
     browse: {
       search: "ابحث عن إضافات",
