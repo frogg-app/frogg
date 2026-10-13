@@ -199,7 +199,11 @@ const known: Record<string, (...args: never[]) => unknown> = {
   unsubscribeCheckoutDiff: () => {},
   listTerminals: async () => ({ terminals: [] }),
   getCheckoutStatus: async (cwd: string) => checkoutStatus(cwd),
-  subscribeCheckoutDiff: async () => ({ files: diffFiles, error: null }),
+  // A checkout under /home/dev/clean has nothing changed (the "Finished" state card).
+  subscribeCheckoutDiff: async (cwd: string) => ({
+    files: cwd.startsWith("/home/dev/clean") ? [] : diffFiles,
+    error: null,
+  }),
   // CI (lab/fixtures/ci.ts): simulated runs and the preview branch PR.
   checkoutPrStatus: async (cwd: string) => ciPrStatus(cwd),
   checkoutCiListRuns: async (cwd: string) => ciListRuns(cwd),
