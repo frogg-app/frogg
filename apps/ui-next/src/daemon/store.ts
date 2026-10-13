@@ -95,8 +95,31 @@ export function useOtherHostSessions(): Session[] {
   }, [fleet, activeId]);
 }
 
+/**
+ * The live client of any saved host: the pooled one, or the active client when the host is the
+ * active one (the component lab installs a lone fixture client that way). Null when not open.
+ */
+export function getHostClient(hostId: string | null | undefined): DaemonClient | null {
+  if (!hostId || hostId === activeHostId || (!pool.size && client)) return client;
+  return pool.get(hostId)?.client ?? null;
+}
+
+/** Link state of any saved host; the active one reads useDaemon so it matches the shell. */
+export function useHostConn(hostId: string | null | undefined): Conn | null {
+  const fleet = useFleet((st) => (hostId ? st.conn[hostId] : undefined));
+  const active = useHosts((st) => st.activeId === hostId);
+  const own = useDaemon((st) => st.conn);
+  if (!hostId) return null;
+  return active ? own : (fleet ?? null);
+}
+
 const routeKey = (h: Host) =>
-  JSON.stringify([hostUrl(h), h.password ?? "", h.serverId ?? "", h.relay?.daemonPublicKeyB64 ?? ""]);
+  JSON.stringify([
+    hostUrl(h),
+    h.password ?? "",
+    h.serverId ?? "",
+    h.relay?.daemonPublicKeyB64 ?? "",
+  ]);
 
 const isActive = (p: Pooled) => activeHostId === p.host.id && client === p.client;
 
@@ -104,7 +127,9 @@ function setFleetSessions(
   hostId: string,
   fn: (prev: Record<string, Session>) => Record<string, Session>,
 ): void {
-  useFleet.setState((st) => ({ sessions: { ...st.sessions, [hostId]: fn(st.sessions[hostId] ?? {}) } }));
+  useFleet.setState((st) => ({
+    sessions: { ...st.sessions, [hostId]: fn(st.sessions[hostId] ?? {}) },
+  }));
 }
 
 // The active host's list is edited in useDaemon (here and by actions elsewhere); keep its fleet copy
@@ -240,7 +265,8 @@ export async function connect(host?: Host): Promise<void> {
     closePooled(target.id);
     p = undefined;
   }
-  if (previous && previous !== p) void previous.client.setAgentTimelineSubscription([]).catch(() => {});
+  if (previous && previous !== p)
+    void previous.client.setAgentTimelineSubscription([]).catch(() => {});
   activeHostId = target.id;
   client = null;
   useHosts.setState({ activeId: target.id });

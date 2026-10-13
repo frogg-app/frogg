@@ -1,14 +1,14 @@
-import type { DeviceCredential, PendingPairingRequest } from "@frogg/protocol/device-access";
-import { ArrowLeft, Laptop, Smartphone } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { isRelayHost, useHostLink, useHosts, type Host } from "../../daemon/hosts";
-import { connect, getClient, useDaemon } from "../../daemon/store";
+import { connect, getClient, useDaemon, useFleet, useHostConn } from "../../daemon/store";
 import { color } from "../../theme/tokens";
 import { Button } from "../Button";
-import { Cut } from "../Cut";
 import { Meter } from "../Meter";
-import { Pill } from "../settings/controls";
+import { Card } from "./Card";
+import { HereNow } from "./HereNow";
+import { HostUpdate } from "./HostUpdate";
 import { Routes } from "./Routes";
 import { T } from "../Text";
 import { openSheet, useHostView, viewHost } from "./state";
@@ -194,7 +194,7 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
             <T style={s.muted}>Reading host metrics…</T>
           )}
         </Card>
-        {owner && <HereNow />}
+        {owner && <HereNow key={url} owner={owner} role={role} />}
         <Card title="Connections">
           <Routes host={host} />
           {host.fingerprint && (
@@ -208,6 +208,7 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
           <T style={s.muted}>
             {role ? `This device is ${role === "owner" ? "an" : "a"} ${role}.` : ""}
           </T>
+          {owner && <HostUpdate version={version} />}
         </Card>
       </View>
     </>
@@ -265,7 +266,22 @@ function Offline({
   );
 }
 
+/** One line on a background host's link; every saved host stays connected, not just the active one. */
+function backgroundStatus(conn: string | null, count: number | null, last: string | null): string {
+  if (conn === "online")
+    return `Connected in the background${count === null ? "" : ` · ${count} sessions`}.`;
+  if (conn === "connecting") return "Connecting…";
+  if (conn === "offline")
+    return `Can't reach it right now${last ? `; last connected ${last}` : ""}. Frogg keeps retrying.`;
+  return last ? `Last connected ${last}.` : "Not connected yet.";
+}
+
 function SavedHost({ host, onBack }: { host: Host; onBack?: () => void }) {
+  const conn = useHostConn(host.id);
+  const count = useFleet((st) => {
+    const list = st.sessions[host.id];
+    return list ? Object.keys(list).length : null;
+  });
   const go = useCallback(() => {
     viewHost(null, false);
     void connect(host);
@@ -283,7 +299,7 @@ function SavedHost({ host, onBack }: { host: Host; onBack?: () => void }) {
       <View style={s.grid}>
         <Card title="Connections">
           <Routes host={host} />
-          <T style={s.muted}>{last ? `Last connected ${last}.` : "Not connected yet."}</T>
+          <T style={s.muted}>{backgroundStatus(conn, count, last)}</T>
           {host.role && <T style={s.muted}>Paired as {host.role}.</T>}
           <View style={s.bannerActs}>
             <Button label="Edit host…" onPress={edit} />
@@ -292,104 +308,6 @@ function SavedHost({ host, onBack }: { host: Host; onBack?: () => void }) {
         </Card>
       </View>
     </>
-  );
-}
-
-function HereNow() {
-  const [devices, setDevices] = useState<DeviceCredential[]>([]);
-  const [requests, setRequests] = useState<PendingPairingRequest[]>([]);
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const client = getClient();
-    if (!client) return;
-    let live = true;
-    const load = () => {
-      void client
-        .listDevices()
-        .then((r) => live && setDevices(r.devices))
-        .catch(() => {});
-      void client
-        .listPairingRequests()
-        .then((r) => live && setRequests(r.requests))
-        .catch(() => {});
-    };
-    load();
-    const id = setInterval(load, 5000);
-    return () => {
-      live = false;
-      clearInterval(id);
-    };
-  }, [tick]);
-  const refresh = useCallback(() => setTick((n) => n + 1), []);
-  const sorted = [...devices].sort((a, b) => Number(b.connected) - Number(a.connected));
-  return (
-    <Card title="Here now" count={`${devices.filter((d) => d.connected).length} connected`}>
-      {sorted.slice(0, 6).map((d) => (
-        <DeviceRow key={d.id} d={d} />
-      ))}
-      {!devices.length && <T style={s.muted}>No paired devices.</T>}
-      {requests.map((r) => (
-        <RequestRow key={r.id} r={r} done={refresh} />
-      ))}
-    </Card>
-  );
-}
-
-function DeviceRow({ d }: { d: DeviceCredential }) {
-  const Icon = /pixel|phone|android|ios/i.test(d.name) ? Smartphone : Laptop;
-  const seen = d.connected ? "connected" : `last seen ${ago(d.lastSeenAt) ?? "never"}`;
-  return (
-    <View style={s.device}>
-      <Icon size={14} color={color.muted} />
-      <T numberOfLines={1} style={s.deviceName}>
-        {d.name}
-        {d.current ? " (this device)" : ""}
-      </T>
-      <T style={s.faintSmall}>{seen}</T>
-      <Pill text={d.role} />
-    </View>
-  );
-}
-
-function RequestRow({ r, done }: { r: PendingPairingRequest; done: () => void }) {
-  const decide = useCallback(
-    (decision: "approve" | "deny") =>
-      void getClient()
-        ?.decidePairingRequest({ pairingRequestId: r.id, decision, role: "operator" })
-        .finally(done),
-    [r.id, done],
-  );
-  const approve = useCallback(() => decide("approve"), [decide]);
-  const deny = useCallback(() => decide("deny"), [decide]);
-  return (
-    <View style={s.request}>
-      <View style={s.diamond} />
-      <View style={s.flex}>
-        <T style={s.strong}>{r.deviceName} wants Operator access</T>
-        <T style={s.muted}>
-          Match code{" "}
-          <T v="mono" style={s.code}>
-            {r.matchCode}
-          </T>{" "}
-          on that device
-          {r.remoteAddress ? ` · ${r.remoteAddress}` : ""}
-        </T>
-      </View>
-      <Button label="Deny" onPress={deny} />
-      <Button kind="primary" label="Approve" onPress={approve} />
-    </View>
-  );
-}
-
-function Card({ title, count, children }: { title: string; count?: string; children: ReactNode }) {
-  return (
-    <Cut size={10} flip style={s.card}>
-      <View style={s.cardHead}>
-        <T style={s.strong}>{title}</T>
-        {count && <T style={s.faintSmall}>{count}</T>}
-      </View>
-      {children}
-    </Cut>
   );
 }
 
@@ -406,35 +324,9 @@ const s = StyleSheet.create({
   dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: color.faint },
   dotOn: { backgroundColor: color.mint },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 14 },
-  card: {
-    flexGrow: 1,
-    flexBasis: 340,
-    padding: 16,
-    gap: 12,
-    backgroundColor: color.panel,
-  },
-  cardHead: { flexDirection: "row", alignItems: "baseline", gap: 8 },
   strong: { fontWeight: "600", fontSize: 13.5 },
   muted: { color: color.muted, fontSize: 12.5, lineHeight: 18 },
   faint: { color: color.faint, fontSize: 10.5 },
-  faintSmall: { color: color.faint, fontSize: 12 },
-  flex: { flex: 1 },
-  device: { flexDirection: "row", alignItems: "center", gap: 10 },
-  deviceName: { flexShrink: 1, fontSize: 13 },
-  request: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    padding: 12,
-    backgroundColor: "rgba(245,184,74,0.06)",
-  },
-  diamond: {
-    width: 8,
-    height: 8,
-    backgroundColor: color.amber,
-    transform: [{ rotate: "45deg" }],
-  },
-  code: { color: color.cyan2 },
   banner: {
     maxWidth: 720,
     padding: 18,

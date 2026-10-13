@@ -7,6 +7,7 @@ import { Globe, Laptop, QrCode, ShieldAlert, Smartphone } from "lucide-react-nat
 import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { getClient } from "../../../daemon/store";
+import { pairingErrorText } from "../../hosts/access";
 import { color, font } from "../../../theme/tokens";
 import { agoText } from "../../../util";
 import { Select } from "../../Select";
@@ -52,6 +53,8 @@ export function DevicesAccess() {
 }
 function PageBody() {
   const supported = useFeature("deviceAccess");
+  const role = (getClient()?.getLastServerInfoMessage() as { callerRole?: string } | null)
+    ?.callerRole;
   const devices = useRpc(loadDevices, { enabled: supported !== false, pollMs: 15000 });
   const requests = useRpc(loadRequests, { enabled: supported !== false, pollMs: 5000 });
   if (supported === false)
@@ -77,6 +80,16 @@ function PageBody() {
       <ErrorLine text={requests.error} />
       <Section title="Paired devices">
         <Status rpc={devices} what="devices">
+          {devices.data && !list.some((d) => d.current) && (
+            <Item
+              icon={Globe}
+              title="This app"
+              sub="Connected as a trusted local or LAN connection, with no device credential"
+              last={list.length === 0}
+            >
+              <T v="mono">{role ?? "owner"}</T>
+            </Item>
+          )}
           {list.length === 0 ? (
             <Block last>
               <T style={s.muted}>No devices paired yet.</T>
@@ -129,7 +142,7 @@ function PairBar() {
           onPress={create}
         />
       </Banner>
-      <ErrorLine text={act.error} />
+      <ErrorLine text={act.error && pairingErrorText(act.error)} />
       {code?.code && (
         <Section title="Pairing code">
           <Block>

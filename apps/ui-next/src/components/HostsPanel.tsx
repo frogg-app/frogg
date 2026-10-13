@@ -2,7 +2,7 @@ import { Pencil, Plus, QrCode, Trash2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useHostLink, useHosts, type Host } from "../daemon/hosts";
-import { useDaemon } from "../daemon/store";
+import { useDaemon, useFleet, useHostConn } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
 import { color } from "../theme/tokens";
 import { AddHost, EditHost } from "./hosts/AddHost";
@@ -19,7 +19,12 @@ import { T } from "./Text";
 // Pairing links can open the app at any time; the shell imports this module at start.
 installPairLinks();
 
-const savedLabel = (active: boolean) => (active ? "" : "saved");
+/** Second-line status of a host that is connected in the background but not the active one. */
+function idleLabel(conn: string | null, count: number | null): string {
+  if (conn === "online") return count === null ? "connected" : `${count} sessions`;
+  if (conn === "connecting") return "connecting…";
+  return conn === "offline" ? "offline" : "saved";
+}
 const openAdd = () => openSheet({ kind: "add" });
 const openPair = () => openSheet({ kind: "pair-device" });
 const back = () => viewHost(null, false);
@@ -79,8 +84,14 @@ function HostList() {
 }
 
 function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolean }) {
-  const conn = useDaemon((s) => (active ? s.conn : null));
-  const count = useDaemon((s) => (active ? Object.keys(s.sessions).length : null));
+  // Every saved host stays connected; the active one reads the shell's state, the rest the pool's.
+  const conn = useHostConn(h.id);
+  const own = useDaemon((s) => (active ? Object.keys(s.sessions).length : null));
+  const pooled = useFleet((s) => {
+    const list = s.sessions[h.id];
+    return list ? Object.keys(list).length : null;
+  });
+  const count = active ? own : pooled;
   const link = useHostLink();
   const press = useCallback(() => viewHost(h.id), [h.id]);
   const remove = useCallback(() => openSheet({ kind: "remove", hostId: h.id }), [h.id]);
@@ -120,7 +131,7 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
               {h.endpoint}
             </T>
             <T v="mono" style={st.sub}>
-              {count === null ? savedLabel(active) : `${count} sessions`}
+              {active && count !== null ? `${count} sessions` : idleLabel(conn, count)}
             </T>
           </View>
           {(down || reconnecting) && (
