@@ -1,5 +1,5 @@
 import { Link2, QrCode, type LucideIcon } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
 import { addHost, parseHostAddress, updateHost, useHosts, type Host } from "../../daemon/hosts";
@@ -15,8 +15,13 @@ type Method = "pair" | "direct";
 
 /** Add a host: paste a pairing link or type its code, or enter a direct address. */
 export function AddHost() {
-  const open = useHostView((s) => s.sheet?.kind === "add");
+  const sheet = useHostView((s) => s.sheet);
+  const open = sheet?.kind === "add";
   const [method, setMethod] = useState<Method>("direct");
+  // "Pair this app" on a refused host opens straight on the pairing form.
+  useEffect(() => {
+    if (sheet?.kind === "add") setMethod(sheet.method ?? "direct");
+  }, [sheet]);
   return (
     <Dialog
       open={open}
@@ -27,7 +32,8 @@ export function AddHost() {
       footer={null}
     >
       <T style={s.lede}>
-        Connect using a LAN or tailnet address. A pairing offer has a separate confirmation step.
+        Every device registers with the host: pair it with an offer from an owner device, or connect
+        to its address with the daemon password. A pairing offer has a separate confirmation step.
       </T>
       <View style={s.methods}>
         <MethodCard
@@ -43,7 +49,7 @@ export function AddHost() {
           on={method === "direct"}
           icon={Link2}
           title="Direct address"
-          sub="Host and port, optional password and TLS"
+          sub="Host and port, the daemon password and TLS"
           pick={setMethod}
         />
       </View>
@@ -336,23 +342,29 @@ function HostFields({
         </View>
       </View>
       {!portOk && <T style={s.error}>Port must be a number from 1 to 65535.</T>}
-      <TextInput
-        value={name}
-        onChangeText={setName}
-        placeholder="Name (optional)"
-        placeholderTextColor={color.faint}
-        style={s.input}
-        accessibilityLabel="Name"
-      />
-      <TextInput
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password (if the daemon has one)"
-        placeholderTextColor={color.faint}
-        style={s.input}
-        secureTextEntry
-        accessibilityLabel="Password"
-      />
+      <View style={s.field}>
+        <T v="label">Name</T>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder="Optional, defaults to the host"
+          placeholderTextColor={color.faint}
+          style={s.input}
+          accessibilityLabel="Name"
+        />
+      </View>
+      <View style={s.field}>
+        <T v="label">Password</T>
+        <TextInput
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Only if the daemon has one"
+          placeholderTextColor={color.faint}
+          style={s.input}
+          secureTextEntry
+          accessibilityLabel="Password"
+        />
+      </View>
       <Pressable
         onPress={toggleTls}
         style={s.check}
@@ -395,6 +407,7 @@ const s = StyleSheet.create({
   form: { gap: 10, marginTop: 6 },
   addrRow: { flexDirection: "row", gap: 10 },
   hostCol: { flex: 7, gap: 6 },
+  field: { gap: 6 },
   portCol: { flex: 3, minWidth: 84, gap: 6 },
   inputBad: { borderColor: color.coral },
   input: {

@@ -7,7 +7,7 @@ import { Globe, Laptop, QrCode, ShieldAlert, Smartphone } from "lucide-react-nat
 import { useCallback, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { getClient } from "../../../daemon/store";
-import { pairingErrorText } from "../../hosts/access";
+import { isUnregistered, pairingErrorText, registeredVia } from "../../hosts/access";
 import { color, font } from "../../../theme/tokens";
 import { agoText } from "../../../util";
 import { Select } from "../../Select";
@@ -32,6 +32,9 @@ const INVITE_ROLES: Array<[Role, string]> = [
   ["viewer", "Viewer"],
 ];
 
+const callerRole = () =>
+  (getClient()?.getLastServerInfoMessage() as { callerRole?: string } | null)?.callerRole ?? null;
+
 const loadDevices = (c: DaemonClient) => c.listDevices();
 const loadRequests = (c: DaemonClient) => c.listPairingRequests();
 
@@ -43,9 +46,11 @@ function deviceIcon(d: Device) {
 }
 
 function seenText(d: Device): string {
-  if (d.current) return d.connected ? "This device · connected" : "This device";
-  if (d.connected) return "Connected";
-  return d.lastSeenAt ? `Last seen ${agoText(d.lastSeenAt)}` : "Never connected";
+  let seen = d.lastSeenAt ? `Last seen ${agoText(d.lastSeenAt)}` : "Never connected";
+  if (d.connected) seen = "Connected";
+  if (d.current) seen = d.connected ? "This app · connected" : "This app";
+  const via = registeredVia(d);
+  return via ? `${seen} · ${via}` : seen;
 }
 
 export function DevicesAccess() {
@@ -53,17 +58,25 @@ export function DevicesAccess() {
 }
 function PageBody() {
   const supported = useFeature("deviceAccess");
-  const role = (getClient()?.getLastServerInfoMessage() as { callerRole?: string } | null)
-    ?.callerRole;
+  const role = callerRole();
+  // Pairing and approvals are owner-only; an older daemon reports no role and acts as owner.
+  const owner = !role || role === "owner";
   const devices = useRpc(loadDevices, { enabled: supported !== false, pollMs: 15000 });
-  const requests = useRpc(loadRequests, { enabled: supported !== false, pollMs: 5000 });
+  const requests = useRpc(loadRequests, { enabled: supported !== false && owner, pollMs: 5000 });
   if (supported === false)
     return <T style={s.muted}>This daemon is too old for per-device access. Update it first.</T>;
   const list = devices.data?.devices ?? [];
   const waiting = requests.data?.requests ?? [];
   return (
     <>
-      <PairBar />
+      {owner ? (
+        <PairBar />
+      ) : (
+        <T style={s.muted}>
+          This app is registered as {/^[aeiou]/.test(role) ? "an" : "a"} {role}. Only an owner
+          device can pair new devices or approve pairing requests.
+        </T>
+      )}
       {waiting.length > 0 && (
         <Section title="Waiting for approval">
           {waiting.map((r) => (
@@ -78,13 +91,13 @@ function PageBody() {
         </Section>
       )}
       <ErrorLine text={requests.error} />
-      <Section title="Paired devices">
+      <Section title="Devices">
         <Status rpc={devices} what="devices">
-          {devices.data && !list.some((d) => d.current) && (
+          {isUnregistered(devices.data?.devices ?? null) && (
             <Item
               icon={Globe}
               title="This app"
-              sub="Connected as a trusted local or LAN connection, with no device credential"
+              sub="Connected without registering: this daemon predates device registration. Update it so every connection is a device."
               last={list.length === 0}
             >
               <T v="mono">{role ?? "owner"}</T>
@@ -92,7 +105,7 @@ function PageBody() {
           )}
           {list.length === 0 ? (
             <Block last>
-              <T style={s.muted}>No devices paired yet.</T>
+              <T style={s.muted}>No devices registered yet.</T>
             </Block>
           ) : (
             list.map((d) => (
@@ -142,12 +155,12 @@ function PairBar() {
           onPress={create}
         />
       </Banner>
-      <ErrorLine text={act.error && pairingErrorText(act.error)} />
+      <ErrorLine text={act.error && pairingErrorText(act.error, callerRole())} />
       {code?.code && (
         <Section title="Pairing code">
           <Block>
             <T style={s.code} selectable>
-              {code.code.replace(/(.{4})/, "$1-")}
+              {code.code.replace(/-/g, "").replace(/(.{4})/, "$1-")}
             </T>
             <T style={s.muted}>
               Enter it on the new device, or open the link there. Grants {code.role ?? "operator"}

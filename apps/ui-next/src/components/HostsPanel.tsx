@@ -4,7 +4,7 @@ import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native"
 import { useHostLink, useHosts, type Host } from "../daemon/hosts";
 import { useDaemon, useFleet, useHostConn } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
-import { color } from "../theme/tokens";
+import { color, motion } from "../theme/tokens";
 import { AddHost, EditHost } from "./hosts/AddHost";
 import { HostDetail, hostKind, offlineReason } from "./hosts/HostDetail";
 import { installPairLinks } from "./hosts/links";
@@ -115,7 +115,13 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
         <View style={[st.row, shown && st.rowOn, hovered && st.rowHover]}>
           <Brackets c={color.cyan2} on={shown} />
           <View style={st.line}>
-            <View style={[down || reconnecting ? st.flag : st.dot, conn ? TINT[conn] : st.tIdle]} />
+            <View
+              style={[
+                down || reconnecting ? st.flag : st.dot,
+                conn ? TINT[conn] : st.tIdle,
+                reconnecting && st.live,
+              ]}
+            />
             <T style={st.name} numberOfLines={1}>
               {h.name}
             </T>
@@ -137,7 +143,7 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
           {(down || reconnecting) && (
             <T v="mono" style={st.err} numberOfLines={2}>
               {offlineReason(link)}
-              {link.attempt > 0 ? ` · retrying (${link.attempt + 1})` : ""}
+              {reconnecting ? ` · retrying (attempt ${link.attempt + 1})…` : ""}
             </T>
           )}
           {active && conn === "connecting" && !link.droppedAt && (
@@ -199,6 +205,7 @@ const st = StyleSheet.create({
   line: { flexDirection: "row", alignItems: "center", gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
   flag: { width: 9, height: 9 },
+  live: motion.breathe,
   name: { flex: 1, fontSize: 13.5, fontWeight: "500" },
   badge: { paddingHorizontal: 5, paddingVertical: 1, backgroundColor: color.raise },
   badgeT: { fontSize: 10 },

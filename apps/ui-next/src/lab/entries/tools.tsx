@@ -5,6 +5,8 @@ import { HostsPanel } from "../../components/HostsPanel";
 import { HostDetail } from "../../components/hosts/HostDetail";
 import { PairDevice } from "../../components/hosts/PairDevice";
 import { openSheet, useHostView } from "../../components/hosts/state";
+import { useHostLink, useHosts, type HostLink } from "../../daemon/hosts";
+import { useDaemon } from "../../daemon/store";
 import { PluginsPanel } from "../../components/PluginsPanel";
 import { PrsPanel } from "../../components/PrsPanel";
 import { ScmPanel } from "../../components/ScmPanel";
@@ -15,7 +17,7 @@ import { StreamList, useStreams } from "../../components/tools/Streams";
 import { UsagePanel } from "../../components/UsagePanel";
 import { useUi } from "../../ui-store";
 import { ID } from "../fixtures";
-import { Column, Row, type Entry, type Variant } from "../kit";
+import { Act, Column, Controls, Row, type Entry, type Variant } from "../kit";
 
 function panel(P: ComponentType): ComponentType {
   return function Panel() {
@@ -78,6 +80,67 @@ function hostPane(view: { viewId: string | null; pair?: boolean }): ComponentTyp
     );
   };
 }
+/** Offline states of the active host's pane: each sets the shell's link state for the entry. */
+const linkIdle = (): HostLink => ({
+  hostId: useHosts.getState().activeId,
+  attempt: 0,
+  reason: null,
+  error: null,
+  droppedAt: null,
+});
+function showLink(conn: "offline" | "connecting", link: Partial<HostLink>): void {
+  useDaemon.setState({ conn });
+  useHostLink.setState({ ...linkIdle(), ...link });
+}
+const refused = (reason: string, credentialRejected = false) =>
+  showLink("offline", {
+    droppedAt: new Date().toISOString(),
+    reason,
+    error: { code: "pairing_required", credentialRejected, reason },
+  });
+const OFFLINE = {
+  first: () => showLink("connecting", {}),
+  reconnecting: () =>
+    showLink("connecting", {
+      attempt: 3,
+      reason: "Transport closed (code 1006)",
+      droppedAt: new Date().toISOString(),
+    }),
+  waiting: () =>
+    showLink("offline", {
+      attempt: 3,
+      reason: "Transport closed (code 1006)",
+      droppedAt: new Date().toISOString(),
+    }),
+  unclaimed: () => refused("Pairing required"),
+  unregistered: () => refused("Password required"),
+  rejected: () => refused("Device access revoked", true),
+};
+
+/** The active host's offline pane; the online fixture host comes back on unmount. */
+function OfflinePane() {
+  useEffect(() => {
+    useHostView.setState({ viewId: null, pushed: false, sheet: null });
+    OFFLINE.unclaimed();
+    return () => {
+      useDaemon.setState({ conn: "online" });
+      useHostLink.setState(linkIdle());
+    };
+  }, []);
+  return (
+    <>
+      <Controls>
+        <Act label="first connect" run={OFFLINE.first} />
+        <Act label="reconnecting" run={OFFLINE.reconnecting} />
+        <Act label="waiting to retry" run={OFFLINE.waiting} />
+        <Act label="refused: unclaimed" run={OFFLINE.unclaimed} />
+        <Act label="refused: not registered" run={OFFLINE.unregistered} />
+        <Act label="refused: credential rejected" run={OFFLINE.rejected} />
+      </Controls>
+      <HostDetail />
+    </>
+  );
+}
 const ActiveHostPane = hostPane({ viewId: null });
 const SavedHostPane = hostPane({ viewId: "h_win" });
 const PairingPane = hostPane({ viewId: null, pair: true });
@@ -89,10 +152,22 @@ export const tools: Entry[] = [
     category: "Rail tools & widgets",
     path: "components/hosts/HostDetail.tsx (+ HereNow, HostUpdate)",
     purpose:
-      "Hosts main pane for the active host: load, who is here now (rename, roles, this app without a credential), connections and the daemon card with channel/version update.",
+      "Hosts main pane for the active host: load, who is here now (rename, roles, this app as a registered device), connections and the daemon card with channel/version update.",
     usedBy: 1,
     polish: "Here now and update status poll; the rename prompt fades (Modal)",
     variants: [{ id: "active", label: "Active host", C: ActiveHostPane, h: 860, bleed: true }],
+  },
+  {
+    id: "host-offline",
+    name: "HostDetail (offline)",
+    category: "Rail tools & widgets",
+    path: "components/hosts/HostDetail.tsx (+ hosts/access.ts)",
+    purpose:
+      "The active host when it is not connected: first connect, reconnecting or waiting to retry, and the three ways a daemon refuses an app that is not a registered device (unclaimed, no credential, credential rejected). The TLS-mismatch hint needs a live daemon on the other scheme.",
+    usedBy: 1,
+    polish:
+      "the flag breathes (1.6s ∞) while Frogg keeps retrying; the retry track's light band travels (stateMotion.beam) only while a reconnect is in flight",
+    variants: [{ id: "states", label: "Offline states", C: OfflinePane, h: 360, bleed: true }],
   },
   {
     id: "host-saved",

@@ -16,6 +16,7 @@ import { Pill } from "../settings/controls";
 import { useFeature } from "../settings/pages/kit";
 import { T } from "../Text";
 import { usePrompt } from "../tools/Prompt";
+import { isUnregistered, registeredVia } from "./access";
 import { Card } from "./Card";
 
 const ROLE_OPTIONS: Array<{ value: DeviceRole; label: string }> = [
@@ -86,8 +87,8 @@ export function HereNow({ owner, role }: { owner: boolean; role: string | null }
   const sorted = [...list].sort(
     (a, b) => Number(b.current) - Number(a.current) || Number(b.connected) - Number(a.connected),
   );
-  // A tokenless loopback/LAN connection has no credential, so the list has no "current" entry.
-  const anonymous = devices !== null && !list.some((d) => d.current);
+  // A current daemon lists this app as a device; only an older one admits it unregistered.
+  const anonymous = isUnregistered(devices);
   const connected = list.filter((d) => d.connected).length + (anonymous ? 1 : 0);
   return (
     <Card title="Here now" count={devices ? `${connected} connected` : undefined}>
@@ -120,7 +121,9 @@ function ThisSession({ role }: { role: string | null }) {
         <T numberOfLines={1} style={s.deviceName}>
           This app
         </T>
-        <T style={s.faintSmall}>connected · trusted network, no device credential</T>
+        <T style={s.faintSmall}>
+          connected · not registered (the daemon predates device registration)
+        </T>
       </View>
       <Pill text={role ?? "owner"} tint={color.cyan2} />
     </View>
@@ -145,7 +148,9 @@ function DeviceRow({
   const Icon = iconOf(d.name);
   let seen = d.lastSeenAt ? `last seen ${agoText(d.lastSeenAt)}` : "never connected";
   if (d.connected) seen = "connected";
-  if (d.current) seen = d.connected ? "this device · connected" : "this device";
+  if (d.current) seen = d.connected ? "this app · connected" : "this app";
+  const via = registeredVia(d);
+  if (via) seen = `${seen} · ${via}`;
   const rename = useCallback(
     () =>
       ask({

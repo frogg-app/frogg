@@ -70,7 +70,13 @@ export function PairDevice() {
         });
         if (!relay) setRoute("direct");
       } catch (e) {
-        if (live) setError(pairingErrorText(e));
+        if (live)
+          setError(
+            pairingErrorText(
+              e,
+              (client.getLastServerInfoMessage() as { callerRole?: string } | null)?.callerRole,
+            ),
+          );
       }
     })();
     return () => {

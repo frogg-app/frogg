@@ -1,9 +1,10 @@
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { isRelayHost, useHostLink, useHosts, type Host } from "../../daemon/hosts";
+import { isRelayHost, updateHost, useHostLink, useHosts, type Host } from "../../daemon/hosts";
 import { connect, getClient, useDaemon, useFleet, useHostConn } from "../../daemon/store";
-import { color } from "../../theme/tokens";
+import { color, motion, stateMotion } from "../../theme/tokens";
+import { authRefusal } from "./access";
 import { Button } from "../Button";
 import { Meter } from "../Meter";
 import { Card } from "./Card";
@@ -36,9 +37,8 @@ export function ago(iso: string | null | undefined): string | null {
 
 /** Why the active host is not connected, in one line. */
 export function offlineReason(link: ReturnType<typeof useHostLink.getState>): string {
-  const code = link.error?.code;
-  if (code === "pairing_required")
-    return "This device isn't paired with the host, or its credential was revoked. Pair again.";
+  const refusal = authRefusal(link.error);
+  if (refusal) return refusal.title;
   if (link.error && "message" in link.error && typeof link.error.message === "string")
     return link.error.message;
   if (link.reason) return link.reason;
@@ -206,13 +206,39 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
         <Card title="Daemon">
           <T style={s.strong}>{version ?? "unknown version"}</T>
           <T style={s.muted}>
-            {role ? `This device is ${role === "owner" ? "an" : "a"} ${role}.` : ""}
+            {role ? `This device is ${/^[aeiou]/.test(role) ? "an" : "a"} ${role}.` : ""}
           </T>
           {owner && <HostUpdate version={version} />}
         </Card>
       </View>
     </>
   );
+}
+
+/**
+ * When a direct host keeps failing, asks /api/identity over the other scheme: a daemon that only
+ * answers there means the saved TLS setting is wrong (the usual cause of a bare 1006).
+ */
+function useTlsMismatch(host: Host, down: boolean): boolean {
+  const [wrong, setWrong] = useState(false);
+  const { endpoint, tls } = host;
+  const relay = isRelayHost(host);
+  useEffect(() => {
+    setWrong(false);
+    if (!down || relay) return;
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 4000);
+    fetch(`${tls ? "http" : "https"}://${endpoint}/api/identity`, { signal: ctl.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((b: { serverId?: string } | null) => {
+        if (b?.serverId) setWrong(true);
+        return undefined;
+      })
+      .catch(() => undefined)
+      .finally(() => clearTimeout(timer));
+    return () => ctl.abort();
+  }, [endpoint, tls, relay, down]);
+  return wrong;
 }
 
 function Offline({
@@ -228,37 +254,69 @@ function Offline({
 }) {
   const retry = useCallback(() => void connect(host), [host]);
   const remove = useCallback(() => openSheet({ kind: "remove", hostId: host.id }), [host.id]);
-  const addHost = useCallback(() => openSheet({ kind: "add" }), []);
+  const pairApp = useCallback(() => openSheet({ kind: "add", method: "pair" }), []);
   const edit = useCallback(() => openSheet({ kind: "edit", hostId: host.id }), [host.id]);
-  const retryBtn = useMemo(() => <Button kind="primary" label="Retry" onPress={retry} />, [retry]);
-  const pairing = link.error?.code === "pairing_required";
+  const refusal = authRefusal(link.error);
   const last = ago(host.lastOnlineAt);
   const connecting = conn === "connecting";
-  const attempt = link.attempt > 0 ? ` · attempt ${link.attempt + 1}` : "";
+  // First connect (never dropped this run) reads as a wait; a reconnect reads as a failure.
+  const first = connecting && !link.droppedAt;
+  const tlsWrong = useTlsMismatch(host, !first && !refusal);
+  const fixTls = useCallback(() => {
+    const next = updateHost(host.id, { tls: !host.tls });
+    if (next) void connect(next);
+  }, [host.id, host.tls]);
+  const retryBtn = useMemo(
+    () => <Button kind="primary" label={connecting ? "Retrying…" : "Retry"} onPress={retry} />,
+    [retry, connecting],
+  );
+  const attempt = link.attempt + 1;
+  let title = `Can't reach ${host.name}`;
+  if (first) title = `Connecting to ${host.name}…`;
+  else if (refusal) title = refusal.title;
+  let body = `${offlineReason(link)}.${last ? ` Last connected ${last}.` : ""} Sessions on this host are paused here and come back when it does.`;
+  if (first) body = host.endpoint;
+  else if (refusal) body = refusal.body;
+  let primary = <Button kind="primary" label="Retry now" onPress={retry} />;
+  if (refusal) primary = <Button kind="primary" label="Pair this app…" onPress={pairApp} />;
+  else if (tlsWrong)
+    primary = (
+      <Button kind="primary" label={host.tls ? "Turn off TLS" : "Turn on TLS"} onPress={fixTls} />
+    );
   return (
     <>
-      <Head host={host} eyebrow={`Host · ${hostKind(host)}`} onBack={onBack} actions={retryBtn} />
-      <View style={[s.banner, connecting && s.bannerWait]}>
+      <Head
+        host={host}
+        eyebrow={`Host · ${hostKind(host)}`}
+        onBack={onBack}
+        actions={refusal ? undefined : retryBtn}
+      />
+      <View style={[s.banner, first && s.bannerWait]}>
         <View style={s.bannerHead}>
-          <View style={[s.flag, connecting && s.flagWait]} />
-          <T style={s.strong}>
-            {connecting && !link.droppedAt
-              ? `Connecting to ${host.name}…`
-              : `Can't reach ${host.name}`}
-          </T>
+          <View style={[s.flag, first && s.flagWait, !refusal && s.flagLive]} />
+          <T style={s.strong}>{title}</T>
         </View>
-        <T style={s.bannerBody}>
-          {connecting && !link.droppedAt
-            ? `${host.endpoint}${attempt}`
-            : `${offlineReason(link)}.${last ? ` Last connected ${last}.` : ""} Sessions on this host are paused here and come back when it does. ${pairing ? "Pair again to reconnect." : `Frogg keeps retrying${attempt}.`}`}
-        </T>
+        <T style={s.bannerBody}>{body}</T>
+        {tlsWrong && (
+          <T style={s.hintLine}>
+            {host.tls
+              ? `${host.endpoint} answers without TLS. Turn TLS off for this host to connect.`
+              : `${host.endpoint} only answers over TLS. Turn TLS on for this host to connect.`}
+          </T>
+        )}
+        {!refusal && !first && (
+          <View style={s.retryRow}>
+            <View style={s.track}>{connecting && <View style={s.scan} />}</View>
+            <T v="mono" style={connecting ? s.retryOn : s.retryIdle}>
+              {connecting
+                ? `retrying · attempt ${attempt}`
+                : `waiting to retry · ${attempt - 1} tried`}
+            </T>
+          </View>
+        )}
         <View style={s.bannerActs}>
-          {pairing ? (
-            <Button kind="primary" label="Pair again" onPress={addHost} />
-          ) : (
-            <Button kind="primary" label="Retry now" onPress={retry} />
-          )}
-          <Button label="Edit host…" onPress={edit} />
+          {primary}
+          <Button label={refusal ? "Add the password…" : "Edit host…"} onPress={edit} />
           <Button kind="danger" label="Remove host…" onPress={remove} />
         </View>
       </View>
@@ -339,6 +397,13 @@ const s = StyleSheet.create({
   bannerHead: { flexDirection: "row", alignItems: "center", gap: 10 },
   flag: { width: 10, height: 10, backgroundColor: color.coral },
   flagWait: { backgroundColor: color.amber },
+  flagLive: motion.breathe,
+  hintLine: { color: color.text, fontSize: 13, lineHeight: 19 },
+  retryRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  track: { width: 120, height: 2, backgroundColor: color.line, overflow: "hidden" },
+  scan: { width: "25%", height: 2, backgroundColor: color.coral, ...stateMotion.beam },
+  retryOn: { color: color.coral, fontSize: 11.5 },
+  retryIdle: { color: color.faint, fontSize: 11.5 },
   bannerBody: { color: color.muted, fontSize: 13.5, lineHeight: 21 },
   bannerActs: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
 });
