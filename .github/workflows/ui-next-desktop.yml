@@ -1,11 +1,17 @@
-name: ui-next desktop prototype
+name: Frogg Next desktop
 
+# Unsigned Frogg Next (apps/ui-next) desktop clients for Mac ARM and Windows x64, built on every
+# main push that touches the client. Versioned with the root package, so a beta cut on main
+# produces Frogg-Next-<beta version> artifacts. Not part of the Release workflow yet.
 on:
   push:
-    branches: ["frogg-interface-design-mockups*"]
+    branches: [main]
     paths:
-      - "apps/ui-next/desktop/**"
-      - "apps/ui-next/scripts/build-desktop.mjs"
+      - "apps/ui-next/**"
+      - "packages/client/**"
+      - "packages/protocol/**"
+      - "packages/highlight/**"
+      - "package-lock.json"
       - ".github/workflows/ui-next-desktop.yml"
   workflow_dispatch:
 

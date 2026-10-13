@@ -70,11 +70,7 @@ export function Specimen({ v }: { v: Variant }) {
           <T style={s.specLabel}>{v.label}</T>
           {v.note && <T style={s.specNote}>{v.note}</T>}
         </View>
-        <Pressable
-          onPress={replay}
-          style={({ hovered }: { hovered?: boolean }) => [s.specReplay, hovered && s.specReplayOn]}
-          accessibilityLabel={`Replay ${v.label}`}
-        >
+        <Pressable onPress={replay} style={replayStyle} accessibilityLabel={`Replay ${v.label}`}>
           <RotateCcw size={13} color={color.faint} />
           <T v="mono" style={s.specReplayT}>
             replay
@@ -320,3 +316,7 @@ const s = StyleSheet.create({
   aboveFrame: { flex: 1, justifyContent: "flex-end" },
   above: { width: 340, maxWidth: "100%" },
 });
+
+function replayStyle({ hovered }: { hovered?: boolean }) {
+  return [s.specReplay, hovered && s.specReplayOn];
+}

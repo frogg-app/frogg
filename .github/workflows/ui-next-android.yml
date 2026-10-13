@@ -1,10 +1,10 @@
-name: ui-next Android prototype
+name: Frogg Next Android
 
-# Debug-signed APK of the apps/ui-next prototype (package app.frogg.next), built on every push
-# to the prototype branch. Not part of releases.
+# Debug-signed APK of Frogg Next (apps/ui-next, package app.frogg.next), built on every main push
+# that touches the client. Not part of the Release workflow yet.
 on:
   push:
-    branches: [frogg-interface-design-mockups]
+    branches: [main]
     paths:
       - "apps/ui-next/**"
       - "packages/client/**"
