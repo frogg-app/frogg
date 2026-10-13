@@ -2,19 +2,46 @@ import { PluginRequestError } from "@frogg/client/internal/daemon-client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let info: unknown = null;
-vi.mock("./store", () => ({
-  getClient: () => ({ getLastServerInfoMessage: () => info }),
-  onHostSwitch: () => {},
-  useDaemon: () => "online",
-}));
+type Listener = (m: { type: string; payload?: unknown }) => void;
+const listeners = new Set<Listener>();
+const push = (pluginId: string | null, reason: string) => {
+  for (const fn of listeners) fn({ type: "plugins.changed", payload: { pluginId, reason } });
+};
+let installed: Array<{ id: string; version: string; enabled: boolean }> = [];
+const pluginsList = vi.fn(async () => ({ plugins: installed.map((p) => ({ ...p })), policy: {} }));
+const pluginsGetCatalog = vi.fn(async () => ({ plugins: [], repos: [] }));
+const pluginsReposList = vi.fn(async () => ({ repos: [] }));
+const pluginsSetEnabled = vi.fn(async (_id: string, _on: boolean) => ({ plugin: null }));
+const client = {
+  getLastServerInfoMessage: () => info,
+  supportsPlugins: () => true,
+  subscribeRawMessages: (fn: Listener) => {
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  },
+  pluginsList,
+  pluginsGetCatalog,
+  pluginsReposList,
+  pluginsSetEnabled,
+};
+vi.mock("./store", () => {
+  const useDaemon = () => "online";
+  useDaemon.subscribe = () => () => {};
+  return { getClient: () => client, onHostSwitch: () => {}, useDaemon };
+});
 vi.mock("../prefs", () => ({ setPref: vi.fn() }));
 
 const {
   describeCapability,
   describePluginError,
   refreshPluginGate,
+  refreshPlugins,
+  resetPlugins,
+  setPluginEnabled,
   usePluginGate,
+  usePlugins,
   wantsRemoteControl,
+  watchPlugins,
 } = await import("./plugins");
 
 describe("Companion gate", () => {
@@ -63,5 +90,94 @@ describe("plugin helpers", () => {
   it("describes plugin errors by code", () => {
     const e = new PluginRequestError({ code: "signature_invalid", message: "bad key" });
     expect(describePluginError(e)).toBe("The repository signature did not verify. bad key");
+  });
+});
+
+const watchPluginsForTest = (kinds: Parameters<typeof watchPlugins>[0][]) => {
+  const off = kinds.map(watchPlugins);
+  return () => off.forEach((f) => f());
+};
+
+describe("shared plugin store", () => {
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+  let unwatch: () => void = () => {};
+  beforeEach(() => {
+    resetPlugins();
+    unwatch();
+    unwatch = () => {};
+    installed = [{ id: "a", version: "1.0.0", enabled: true }];
+    vi.clearAllMocks();
+  });
+
+  it("shares one request between readers mounting together", async () => {
+    unwatch = watchPluginsForTest(["installed", "installed", "installed"]);
+    await flush();
+    expect(pluginsList).toHaveBeenCalledTimes(1);
+    expect(usePlugins.getState().installed?.map((p) => p.id)).toEqual(["a"]);
+  });
+
+  it("reruns once when a change lands mid-request, so the result is never stale", async () => {
+    const first = refreshPlugins("installed");
+    installed = [...installed, { id: "b", version: "2.0.0", enabled: true }];
+    void refreshPlugins("installed");
+    void refreshPlugins("installed");
+    await first;
+    expect(pluginsList).toHaveBeenCalledTimes(2);
+    expect(usePlugins.getState().installed?.map((p) => p.id)).toEqual(["a", "b"]);
+  });
+
+  it("refetches the installed list and catalog on an external install while watched", async () => {
+    unwatch = watchPluginsForTest(["installed", "catalog"]);
+    await flush();
+    vi.clearAllMocks();
+    installed = [...installed, { id: "b", version: "2.0.0", enabled: true }];
+    push("b", "installed");
+    await flush();
+    expect(pluginsList).toHaveBeenCalledTimes(1);
+    expect(pluginsGetCatalog).toHaveBeenCalledTimes(1);
+    expect(pluginsReposList).not.toHaveBeenCalled();
+    expect(usePlugins.getState().installed?.map((p) => p.id)).toEqual(["a", "b"]);
+  });
+
+  it("routes repo, settings and contribution changes to what they touch", async () => {
+    unwatch = watchPluginsForTest(["installed", "catalog", "repos"]);
+    await flush();
+    vi.clearAllMocks();
+    push(null, "repos");
+    push("a", "settings");
+    push("a", "contributions");
+    await flush();
+    expect(pluginsList).not.toHaveBeenCalled();
+    expect(pluginsReposList).toHaveBeenCalledTimes(1);
+    expect(pluginsGetCatalog).toHaveBeenCalledTimes(1);
+    expect(usePlugins.getState().settingsRev).toEqual({ a: 1 });
+  });
+
+  it("does not fetch for a list nobody shows", async () => {
+    unwatch = watchPluginsForTest(["installed"]);
+    await flush();
+    vi.clearAllMocks();
+    push(null, "repos");
+    await flush();
+    expect(pluginsReposList).not.toHaveBeenCalled();
+  });
+
+  it("drops a response from before a host switch", async () => {
+    const pending = refreshPlugins("installed");
+    resetPlugins();
+    await pending;
+    expect(usePlugins.getState().installed).toBeNull();
+  });
+
+  it("shows this client's toggle at once and refetches when the host refuses it", async () => {
+    await refreshPlugins("installed");
+    let fail: (e: Error) => void = () => {};
+    pluginsSetEnabled.mockImplementationOnce(() => new Promise((_, reject) => (fail = reject)));
+    const done = setPluginEnabled("a", false);
+    expect(usePlugins.getState().installed?.[0].enabled).toBe(false);
+    fail(new Error("no"));
+    await expect(done).rejects.toThrow("no");
+    await flush();
+    expect(usePlugins.getState().installed?.[0].enabled).toBe(true);
   });
 });

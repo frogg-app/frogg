@@ -3,6 +3,7 @@
 import { useConfig } from "../daemon/config";
 import { useHosts } from "../daemon/hosts";
 import { attachFixtureClient, useDaemon } from "../daemon/store";
+import { resetPlugins as resetPluginStore } from "../daemon/plugins";
 import type { Agent, TimelineEntry, TimelineItem } from "../daemon/types";
 import { loadUsage, useUsage } from "../daemon/usage";
 import { useDirectory } from "../components/sessions/directory";
@@ -304,6 +305,7 @@ export function seedLab(): void {
   cancelled.clear();
   attachFixtureClient(client);
   resetSim();
+  resetPluginStore();
   // Two saved hosts: the fixture one in use and a Windows box that is not reachable.
   useHosts.setState({
     hosts: [
