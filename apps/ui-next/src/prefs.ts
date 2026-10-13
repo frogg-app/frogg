@@ -107,10 +107,11 @@ export const PREF_DEFAULTS = {
   unattendedWorktreesOnly: true,
   shiftTab: "safe" as "safe" | "all",
   // Usage meters
+  // The usage endpoint rate-limits: a slow timer only by default.
   meterTimer: true,
-  meterSeconds: 30,
-  meterHover: true,
-  meterAfterReply: true,
+  meterSeconds: 120,
+  meterHover: false,
+  meterAfterReply: false,
   warnPct: 65,
   criticalPct: 90,
   meterAnimate: true,
@@ -124,6 +125,8 @@ export const PREF_DEFAULTS = {
 
 export type Prefs = typeof PREF_DEFAULTS;
 
+const METER_DEFAULTS_V = 2;
+
 const KEY = "frogg.next.prefs";
 
 export const usePrefs = create<Prefs>(() => PREF_DEFAULTS);
@@ -131,7 +134,13 @@ export const usePrefs = create<Prefs>(() => PREF_DEFAULTS);
 export const prefsReady: Promise<void> = AsyncStorage.getItem(KEY)
   .then((raw) => {
     if (!raw) return undefined;
-    const saved = JSON.parse(raw) as Partial<Prefs>;
+    const saved = JSON.parse(raw) as Partial<Prefs> & { meterDefaultsV?: number };
+    // The meter prefs were saved but never read before v2; adopt the new, gentler defaults.
+    if ((saved.meterDefaultsV ?? 1) < METER_DEFAULTS_V) {
+      delete saved.meterSeconds;
+      delete saved.meterHover;
+      delete saved.meterAfterReply;
+    }
     usePrefs.setState({
       ...saved,
       deliver: { ...PREF_DEFAULTS.deliver, ...saved.deliver },
@@ -140,7 +149,10 @@ export const prefsReady: Promise<void> = AsyncStorage.getItem(KEY)
   })
   .catch(() => {})
   .finally(() => {
-    usePrefs.subscribe((s) => void AsyncStorage.setItem(KEY, JSON.stringify(s)));
+    usePrefs.subscribe(
+      (s) =>
+        void AsyncStorage.setItem(KEY, JSON.stringify({ ...s, meterDefaultsV: METER_DEFAULTS_V })),
+    );
   });
 
 export function setPref<K extends keyof Prefs>(key: K, value: Prefs[K]): void {
