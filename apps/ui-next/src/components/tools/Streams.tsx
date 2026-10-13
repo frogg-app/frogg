@@ -35,9 +35,10 @@ export function useStreams(cwd: string | null, active: boolean) {
   return { graph, error, load };
 }
 
+/** Stream identity colours. Green is kept for "released", so no stream is green. */
 const DOT: Record<string, string> = {
   development: color.cyan,
-  stable: color.mint,
+  stable: color.text,
   feature: color.violet,
 };
 
@@ -62,6 +63,10 @@ export function StreamList({ graph, error }: { graph: Graph | null; error: strin
     return <T style={[s.pad, s.muted]}>No release streams for this repository.</T>;
   return (
     <BracketScope>
+      <T style={s.lede}>
+        Streams are the long-lived branches releases ship from. The number is how many commits on
+        each aren’t in a release yet; open one to see them and what moves them on.
+      </T>
       {graph.streams.map((st, i) => (
         <StreamRow
           key={st.id}
@@ -94,7 +99,7 @@ const expanded = (on: boolean) => (on ? OPEN : SHUT);
 
 function countLabel(st: Stream, graph: Graph): string {
   if (!st.exists) return "missing";
-  if (st.kind !== "feature") return "waiting";
+  if (st.kind !== "feature") return "unreleased";
   const behind = graph.flows.find((f) => f.to === st.id && f.kind === "sync")?.pending ?? 0;
   return behind ? `ahead · ${behind} behind` : "ahead";
 }
@@ -164,7 +169,8 @@ function StreamRow({
           {flows.map((f) => (
             <FlowRow key={`${f.from}>${f.to}:${f.kind}`} f={f} />
           ))}
-          {waiting.length === 0 && <T style={s.muted}>Nothing waiting.</T>}
+          {waiting.length === 0 && <T style={s.muted}>Everything here is released.</T>}
+          {waiting.length > 0 && <Legend />}
           {waiting.slice(0, 30).map((c, n) => (
             <ChangeRow key={c.sha} c={c} n={n} stream={st.id} />
           ))}
@@ -174,16 +180,56 @@ function StreamRow({
   );
 }
 
+const plural = (n: number) => `${n} commit${n === 1 ? "" : "s"}`;
+
+/** What a flow means, in words: "3 commits ready to promote to stable". */
+function flowText(f: Graph["flows"][number]): string {
+  const n = plural(f.pending);
+  switch (f.kind) {
+    case "promote":
+      return `${n} ready to promote to ${f.to}`;
+    case "backport":
+      return `${n} to backport to ${f.to}`;
+    case "forward-port":
+      return `${n} to carry forward to ${f.to}`;
+    case "sync":
+      return `${f.to} is ${n} behind; sync to catch up`;
+    case "contribute":
+      return `${n} to contribute to ${f.to}`;
+    default:
+      return `${n} → ${f.to} (${f.kind})`;
+  }
+}
+
 function FlowRow({ f }: { f: Graph["flows"][number] }) {
   return (
     <View style={s.flowRow}>
-      <T v="mono" style={s.flowKind}>
-        {f.kind}
-      </T>
-      <T v="mono" numberOfLines={1} style={s.flow}>
-        → {f.to} · {f.pending}
-        {f.command ? ` · ${f.command}` : ""}
-      </T>
+      <T style={s.flow}>{flowText(f)}</T>
+      {f.command && (
+        <T v="mono" numberOfLines={1} style={s.flowCmd}>
+          {f.command}
+        </T>
+      )}
+    </View>
+  );
+}
+
+/** Key for the change diamonds, relative to the open stream. */
+function Legend() {
+  return (
+    <View style={s.legend}>
+      <View style={s.legendItem}>
+        <View style={s.diamond} />
+        <T v="mono" style={s.legendT}>
+          on the branch, not released
+        </T>
+      </View>
+      <View style={s.legendItem}>
+        <View style={[s.diamond, s.diamondPending]} />
+        <T v="mono" style={s.legendT}>
+          on its way here
+        </T>
+      </View>
     </View>
   );
 }
@@ -202,7 +248,7 @@ function ChangeRow({ c, n, stream }: { c: Change; n: number; stream: string }) {
             style={[
               s.diamond,
               here?.state === "pending" && s.diamondPending,
-              c.presence.some((p) => p.state === "shipped") && s.diamondOn,
+              here?.state === "shipped" && s.diamondOn,
             ]}
           />
           <T numberOfLines={1} style={s.subject}>
@@ -260,9 +306,20 @@ const s = StyleSheet.create({
     gap: 2,
     ...anim(frames.fade, "180ms", ease),
   },
-  flowRow: { flexDirection: "row", gap: 8, paddingVertical: 3 },
-  flowKind: { fontSize: 10.5, color: color.amber, minWidth: 74 },
-  flow: { flex: 1, fontSize: 10.5, color: color.cyan2 },
+  lede: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 8,
+    fontSize: 12,
+    lineHeight: 17,
+    color: color.muted,
+  },
+  flowRow: { gap: 2, paddingVertical: 4 },
+  flow: { fontSize: 12, color: color.amber },
+  flowCmd: { fontSize: 10.5, color: color.faint },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: 14, paddingVertical: 6 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  legendT: { fontSize: 10, color: color.faint },
   change: {
     flexDirection: "row",
     alignItems: "center",

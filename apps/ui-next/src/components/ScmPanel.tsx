@@ -125,12 +125,7 @@ export function ScmPanel() {
           {files?.map((f) => (
             <FileRow key={f.path} f={f} ask={ask} />
           ))}
-          {!!sessionCommits?.length && (
-            <GroupHead label="Session commits" count={sessionCommits.length} />
-          )}
-          {sessionCommits?.map((c) => (
-            <CommitRow key={c.sha} c={c} />
-          ))}
+          <BranchCommits commits={sessionCommits} base={git?.baseRef ?? null} />
           {!!stashes?.length && <GroupHead label="Stashes" count={stashes.length} />}
           {stashes?.map((st) => (
             <StashRow key={`${st.index}:${st.message}`} st={st} ask={ask} />
@@ -264,11 +259,23 @@ function BranchCard({ git, busy, dirty }: { git: Git; busy: Scm["busy"]; dirty: 
         dirty={dirty}
       />
       <View style={s.counts}>
-        <T v="mono" style={s.ahead}>
-          ↑{ab?.ahead ?? 0}
-        </T>
-        <T v="mono">↓{ab?.behind ?? 0}</T>
-        <T v="mono">vs {git.baseRef ?? "—"}</T>
+        {git.baseRef && git.currentBranch !== git.baseRef ? (
+          <T v="mono" style={s.countT}>
+            <T v="mono" style={s.ahead}>
+              {ab?.ahead ?? 0} ahead
+            </T>{" "}
+            of {git.baseRef} · {ab?.behind ?? 0} behind
+          </T>
+        ) : (
+          <T v="mono" style={s.countT}>
+            {git.baseRef ? `this is ${git.baseRef}` : "no base branch"}
+          </T>
+        )}
+        {ahead > 0 && (
+          <T v="mono" style={s.unpushed}>
+            {ahead} not pushed
+          </T>
+        )}
         {busy === "switch" && <T v="mono">switching…</T>}
         {busy === "stash" && <T v="mono">stashing…</T>}
         {busy === "merge" && <T v="mono">merging…</T>}
@@ -425,6 +432,27 @@ function FileRow({ f, ask }: { f: DiffFile; ask: Ask }) {
   );
 }
 
+/** The branch's own commits (not yet in its base), with a key for the unpushed marker. */
+function BranchCommits({ commits, base }: { commits: Commit[] | null; base: string | null }) {
+  if (!commits?.length) return null;
+  return (
+    <>
+      <GroupHead label={`Commits not in ${base ?? "the base branch"}`} count={commits.length} />
+      {commits.some((c) => !c.isOnRemote) && (
+        <View style={s.legend}>
+          <View style={s.localDot} />
+          <T v="mono" style={s.legendT}>
+            not pushed yet
+          </T>
+        </View>
+      )}
+      {commits.map((c) => (
+        <CommitRow key={c.sha} c={c} />
+      ))}
+    </>
+  );
+}
+
 function CommitRow({ c }: { c: Commit }) {
   return (
     <View style={s.line}>
@@ -486,7 +514,17 @@ const s = StyleSheet.create({
   branchHead: { flexDirection: "row", alignItems: "center", gap: 8 },
   branchName: { color: color.text, fontSize: 13, fontWeight: "500", flexShrink: 1 },
   branchNameHover: { color: color.cyan2 },
-  counts: { flexDirection: "row", gap: 10, marginTop: 6, marginLeft: 22 },
+  counts: { flexDirection: "row", flexWrap: "wrap", columnGap: 10, marginTop: 6, marginLeft: 22 },
+  countT: { fontSize: 11, color: color.muted },
+  unpushed: { fontSize: 11, color: color.amber },
+  legend: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+  legendT: { fontSize: 10, color: color.faint },
   ahead: { color: color.cyan2 },
   syncRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
   commitBox: { paddingHorizontal: 12, gap: 8 },
