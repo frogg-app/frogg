@@ -1,28 +1,32 @@
-import { Puzzle, RefreshCw } from "lucide-react-native";
+import { RefreshCw } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
+import { describePluginError, noteInstalled } from "../daemon/plugins";
 import { getClient, useDaemon } from "../daemon/store";
 import { color, font } from "../theme/tokens";
 import { Button } from "./Button";
-import { Cut } from "./Cut";
 import { GroupHead, PanelHead } from "./PanelHead";
-import { Pill, Toggle } from "./settings/controls";
+import { Pill } from "./settings/controls";
 import { T } from "./Text";
 import { Tabs } from "./tools/Tabs";
 import { useConfirm } from "./tools/Confirm";
 import { PluginSources } from "./tools/PluginSources";
-import { PluginPanels } from "./tools/PluginPanels";
+import { capabilityLine, InstalledRow, type Act, type Installed } from "./tools/PluginInstalled";
 
 type Client = NonNullable<ReturnType<typeof getClient>>;
-type Installed = Awaited<ReturnType<Client["pluginsList"]>>["plugins"][number];
-type Catalog = Awaited<ReturnType<Client["pluginsGetCatalog"]>>["plugins"][number];
+type Policy = Awaited<ReturnType<Client["pluginsList"]>>["policy"];
+type CatalogResult = Awaited<ReturnType<Client["pluginsGetCatalog"]>>;
+type Catalog = CatalogResult["plugins"][number];
+type Repo = CatalogResult["repos"][number];
 
 export function PluginsPanel() {
   const [query, setQuery] = useState("");
   const conn = useDaemon((s) => s.conn);
   const [tab, setTab] = useState<"installed" | "browse" | "sources">("installed");
   const [installed, setInstalled] = useState<Installed[] | null>(null);
+  const [policy, setPolicy] = useState<Policy | null>(null);
   const [catalog, setCatalog] = useState<Catalog[] | null>(null);
+  const [repoErrors, setRepoErrors] = useState<Repo[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const load = useCallback(() => {
@@ -30,12 +34,21 @@ export function PluginsPanel() {
     if (!c?.supportsPlugins()) return setError("This host's daemon has no plugin support.");
     setError(null);
     void c.pluginsList().then(
-      (r) => setInstalled(r.plugins),
-      (e: unknown) => setError(String(e)),
+      (r) => {
+        setInstalled(r.plugins);
+        setPolicy(r.policy);
+        return undefined;
+      },
+      (e: unknown) => setError(describePluginError(e)),
     );
     void c.pluginsGetCatalog().then(
-      (r) => setCatalog(r.plugins),
-      (e: unknown) => setError(String(e)),
+      (r) => {
+        setCatalog(r.plugins);
+        // Repos that failed to fetch or verify; the others still list their plugins.
+        setRepoErrors(r.repos.filter((x) => x.error));
+        return undefined;
+      },
+      (e: unknown) => setError(describePluginError(e)),
     );
   }, []);
   useEffect(() => {
@@ -48,7 +61,7 @@ export function PluginsPanel() {
         await fn();
         load();
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        setError(describePluginError(e));
       } finally {
         setBusy(null);
       }
@@ -64,6 +77,8 @@ export function PluginsPanel() {
     [installed?.length],
   );
   const tabs = useMemo(() => segOptions.map(([id, label]) => ({ id, label })), [segOptions]);
+  const off = policy?.enabled === false;
+  const rcForbidden = policy?.remoteControl === "forbidden";
   const filtered = catalog?.filter((p) =>
     `${p.name} ${p.description ?? ""} ${p.category ?? ""}`
       .toLowerCase()
@@ -97,90 +112,105 @@ export function PluginsPanel() {
             {error}
           </T>
         )}
-        {tab === "installed" && installed?.length === 0 && (
+        {off && <T style={st.faint}>Plugins are turned off for this build.</T>}
+        {tab === "installed" && !off && installed?.length === 0 && (
           <T style={st.faint}>No plugins installed. Browse the catalog to add one.</T>
         )}
         {tab === "installed" &&
-          installed?.map((p) => <InstalledRow key={p.id} p={p} busy={busy === p.id} act={act} />)}
-        {tab === "browse" && !catalog && <T v="label">loading catalog…</T>}
-        {tab === "browse" && catalog?.length === 0 && (
-          <T style={st.faint}>No plugin sources configured.</T>
-        )}
-        {tab === "browse" && catalog && catalog.length > 0 && (
-          <GroupHead label="Catalog" count={filtered?.length} />
-        )}
-        {tab === "browse" &&
-          filtered?.map((p) => (
-            <CatalogRow key={`${p.repoUrl}:${p.id}`} p={p} busy={busy === p.id} act={act} />
+          installed?.map((p) => (
+            <InstalledRow
+              key={p.id}
+              p={p}
+              busy={busy === p.id}
+              act={act}
+              remoteControlForbidden={rcForbidden}
+            />
           ))}
+        {tab === "browse" && (
+          <Browse
+            catalog={catalog}
+            filtered={filtered}
+            repoErrors={repoErrors}
+            busy={busy}
+            act={act}
+            remoteControlForbidden={rcForbidden}
+          />
+        )}
       </ScrollView>
     </View>
   );
 }
 
-type Act = (id: string, fn: () => Promise<unknown>) => Promise<void>;
-
-function InstalledRow({ p, busy, act }: { p: Installed; busy: boolean; act: Act }) {
-  const [expanded, setExpanded] = useState(false);
-  const togglePanels = useCallback(() => setExpanded((v) => !v), []);
-  const onToggle = useCallback(
-    (v: boolean) => void act(p.id, () => getClient()!.pluginsSetEnabled(p.id, v)),
-    [act, p.id],
-  );
+/** The Browse tab: sources that failed to fetch or verify, then the catalog. */
+function Browse({
+  catalog,
+  filtered,
+  repoErrors,
+  busy,
+  act,
+  remoteControlForbidden,
+}: {
+  catalog: Catalog[] | null;
+  filtered: Catalog[] | undefined;
+  repoErrors: Repo[];
+  busy: string | null;
+  act: Act;
+  remoteControlForbidden: boolean;
+}) {
   return (
-    <Cut size={10} flip style={st.installedCard}>
-      <View style={st.headRow}>
-        <Puzzle size={15} color={p.enabled ? color.violet : color.faint} />
-        <T style={st.name}>{p.name}</T>
-        <Toggle value={p.enabled} disabled={busy} onChange={onToggle} />
-      </View>
-      {p.description && <T style={st.descInstalled}>{p.description}</T>}
-      <View style={st.pills}>
-        <T v="mono" style={st.mono}>
-          v{p.version}
+    <>
+      {!catalog && <T v="label">loading catalog…</T>}
+      {catalog?.length === 0 && <T style={st.faint}>No plugin sources configured.</T>}
+      {repoErrors.map((r) => (
+        <T key={r.url} v="mono" style={st.rowError}>
+          {r.name}: {r.error}
         </T>
-        {p.devPath && <Pill text="dev link" tint={color.amber} />}
-        {p.preinstalled && <Pill text="built in" />}
-        {p.updateAvailable && <Pill text={`update ${p.updateAvailable}`} tint={color.cyan2} />}
-        {p.status !== "active" && p.status !== "ok" && (
-          <Pill text={p.status} tint={p.error ? color.coral : color.muted} />
-        )}
-      </View>
-      <Button
-        label={expanded ? "Close panels" : "Open panels"}
-        onPress={togglePanels}
-        disabled={!p.enabled}
-      />
-      {expanded && <PluginPanels pluginId={p.id} />}
-      {p.error && (
-        <T v="mono" style={st.rowError}>
-          {p.error}
-        </T>
-      )}
-    </Cut>
+      ))}
+      {catalog && catalog.length > 0 && <GroupHead label="Catalog" count={filtered?.length} />}
+      {filtered?.map((p) => (
+        <CatalogRow
+          key={`${p.repoUrl}:${p.id}`}
+          p={p}
+          busy={busy === p.id}
+          act={act}
+          remoteControlForbidden={remoteControlForbidden}
+        />
+      ))}
+    </>
   );
 }
 
-function CatalogRow({ p, busy, act }: { p: Catalog; busy: boolean; act: Act }) {
+function CatalogRow({
+  p,
+  busy,
+  act,
+  remoteControlForbidden,
+}: {
+  p: Catalog;
+  busy: boolean;
+  act: Act;
+  remoteControlForbidden: boolean;
+}) {
   const confirm = useConfirm();
   const onInstall = useCallback(
     () =>
       confirm.ask({
         eyebrow: "Plugin permissions",
         title: `Install ${p.name}?`,
-        body: `Source: ${p.repoName}\nVersion: ${p.latest?.version ?? "unknown"}\n\nPermissions requested:\n${p.latest?.capabilities.join("\n") || "No additional capabilities"}\n\nHost plugins are not sandboxed. Only install plugins from sources you trust.`,
+        body: `Source: ${p.repoName}\nVersion: ${p.latest?.version ?? "unknown"}\n\nPermissions requested:\n${p.latest?.capabilities.map(capabilityLine(remoteControlForbidden)).join("\n") || "No additional capabilities"}\n\nHost plugins are not sandboxed. Only install plugins from sources you trust.`,
         action: "Grant and install",
         run: () =>
-          void act(p.id, () =>
-            getClient()!.pluginsInstall({
+          void act(p.id, async () => {
+            const r = await getClient()!.pluginsInstall({
               id: p.id,
               repoUrl: p.repoUrl,
               version: p.latest?.version,
               grantedCapabilities: p.latest?.capabilities ?? [],
-            }),
-          ),
+            });
+            noteInstalled(r.plugin);
+          }),
       }),
-    [confirm, act, p],
+    [confirm, act, p, remoteControlForbidden],
   );
   return (
     <View style={st.catalogCard}>
@@ -200,12 +230,7 @@ function CatalogRow({ p, busy, act }: { p: Catalog; busy: boolean; act: Act }) {
       </View>
       {p.description && <T style={st.desc}>{p.description}</T>}
       <T v="mono" style={st.mono}>
-        {[
-          p.repoName,
-          p.category,
-          p.tier,
-          p.latest ? `v${p.latest.version}` : "no compatible version",
-        ]
+        {[p.repoName, p.category, p.tier, p.latest ? `v${p.latest.version}` : incompatible(p)]
           .filter(Boolean)
           .join(" · ")}
       </T>
@@ -216,6 +241,12 @@ function CatalogRow({ p, busy, act }: { p: Catalog; busy: boolean; act: Act }) {
       )}
     </View>
   );
+}
+
+/** Why a listed plugin has no version this host can load. */
+function incompatible(p: Catalog): string {
+  const api = Math.max(0, ...p.versions.map((v) => v.apiVersion));
+  return api > 0 ? `needs a newer host (plugin API v${api})` : "no compatible version";
 }
 
 const st = StyleSheet.create({
@@ -232,18 +263,10 @@ const st = StyleSheet.create({
   scroll: { padding: 12, gap: 10 },
   error: { color: color.coral },
   faint: { color: color.faint },
-  installedCard: { backgroundColor: color.panel, padding: 14, gap: 8 },
   catalogCard: { backgroundColor: color.panel, padding: 14, gap: 6 },
   headRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   name: { flex: 1, fontWeight: "600" },
-  descInstalled: { color: color.muted, fontSize: 12.5, lineHeight: 18 },
   desc: { color: color.muted, fontSize: 12.5 },
-  pills: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    alignItems: "center",
-  },
   mono: { fontSize: 10.5 },
   rowError: { color: color.coral, fontSize: 11 },
   needs: { fontSize: 10.5, color: color.amber },

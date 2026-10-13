@@ -30,6 +30,7 @@ import { ciListRuns, ciPrStatus, seedCi } from "./fixtures/ci";
 import { useLab } from "./store";
 // Simulated RPCs (lab/sim/): file system, streams graph, subagents and the rest of the host.
 import { resetSim, simulatedRpcs } from "./sim";
+import { labCompanionCapability } from "./sim/misc";
 
 export const LAB_URL = "lab://fixtures";
 const APP_VERSION: string = require("../../package.json").version;
@@ -187,7 +188,12 @@ export const labFeature = (key: string): boolean => !!(features as Record<string
 
 let created = 0;
 const known: Record<string, (...args: never[]) => unknown> = {
-  getLastServerInfoMessage: () => ({ hostname: "devbox", version: APP_VERSION, features }),
+  getLastServerInfoMessage: () => ({
+    hostname: "devbox",
+    version: APP_VERSION,
+    features,
+    capabilities: { companion: labCompanionCapability() },
+  }),
   subscribe: (fn: Listener) => {
     listeners.add(fn);
     return () => listeners.delete(fn);

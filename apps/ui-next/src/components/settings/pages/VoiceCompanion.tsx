@@ -1,9 +1,15 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { patchConfig, useConfig } from "../../../daemon/config";
+import {
+  describePluginError,
+  installCompanionPlugin,
+  usePluginGate,
+} from "../../../daemon/plugins";
 import { getClient, useDaemon } from "../../../daemon/store";
 import { prefSetter, usePrefs } from "../../../prefs";
 import { color } from "../../../theme/tokens";
+import { Button } from "../../Button";
 import { Select, type Option } from "../../Select";
 import { T } from "../../Text";
 import { NumField, Pill, Row, Section, Seg, Toggle } from "../controls";
@@ -74,6 +80,36 @@ function ModelPicker() {
   return <Select value={current ?? DEFAULT} options={options} onChange={setModel} width={220} />;
 }
 
+const setCompanionPref = prefSetter("companion");
+/** Turning the Companion on also installs its plugin on a host that is missing it (as apps/ui). */
+const setCompanion = (on: boolean) => {
+  setCompanionPref(on);
+  if (on && usePluginGate.getState().companionPlugin) void installCompanionPlugin().catch(() => {});
+};
+
+/** The host runs the Companion only with its plugin in; offers the install while it is missing. */
+function CompanionPluginRow() {
+  const plugin = usePluginGate((g) => g.companionPlugin);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const install = useCallback(() => {
+    setBusy(true);
+    setError(null);
+    installCompanionPlugin()
+      .catch((e: unknown) => setError(describePluginError(e)))
+      .finally(() => setBusy(false));
+  }, []);
+  if (!plugin) return null;
+  return (
+    <Row
+      label="Companion plugin required"
+      hint={error ?? "This host runs the Companion once its plugin is installed."}
+    >
+      <Button label={busy ? "Installing…" : "Install"} onPress={install} disabled={busy} />
+    </Row>
+  );
+}
+
 export function VoiceCompanion() {
   const p = usePrefs();
   const host = useDaemon((st) => st.serverName);
@@ -85,8 +121,9 @@ export function VoiceCompanion() {
       </View>
       <Section title="">
         <Row label="Enable Companion" hint="Talk to your sessions hands-free">
-          <Toggle value={p.companion} onChange={prefSetter("companion")} />
+          <Toggle value={p.companion} onChange={setCompanion} />
         </Row>
+        {p.companion && <CompanionPluginRow />}
         <Row label="Conversation model" hint={`${host ?? "host"} config.json`}>
           <ModelPicker />
         </Row>

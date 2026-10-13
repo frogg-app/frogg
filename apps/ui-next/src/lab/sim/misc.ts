@@ -1,5 +1,6 @@
 // In-memory simulations for the daemon RPCs the lab's fixture client does not answer itself:
 // settings pages, source control, plugins, devices, terminals and the session directory.
+import { PluginRequestError } from "@frogg/client/internal/daemon-client";
 import { useConfig } from "../../daemon/config";
 import { useDaemon } from "../../daemon/store";
 import type { Agent } from "../../daemon/types";
@@ -410,107 +411,266 @@ const branchNames = [
 
 // ---- plugins -----------------------------------------------------------------------------------
 
-let plugins = [
-  {
+interface SimPlugin {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  apiVersion: number;
+  scope: string;
+  author: string | null;
+  homepage: string | null;
+  source: string;
+  repoUrl: string | null;
+  enabled: boolean;
+  status: string;
+  error: string | null;
+  devPath: string | null;
+  preinstalled: boolean;
+  updateAvailable: string | null;
+  capabilities: string[];
+  grantedCapabilities: string[];
+  features: string[];
+  installedAt: string | null;
+  remoteControl?: boolean;
+}
+const OFFICIAL = "https://plugins.frogg.app/index.json";
+const simPlugin = (p: Partial<SimPlugin> & Pick<SimPlugin, "id" | "name" | "version">) => ({
+  description: "",
+  apiVersion: 1,
+  scope: "host",
+  author: "Frogg",
+  homepage: null,
+  source: "official",
+  repoUrl: OFFICIAL,
+  enabled: true,
+  status: "active",
+  error: null,
+  devPath: null,
+  preinstalled: false,
+  updateAvailable: null,
+  capabilities: [],
+  grantedCapabilities: [],
+  features: [],
+  installedAt: "2026-10-01T09:00:00Z",
+  // Every v2 daemon reports it; pre-v2 daemons leave it out.
+  remoteControl: false,
+  ...p,
+});
+const startPlugins = (): SimPlugin[] => [
+  simPlugin({
     id: "frogg-linear",
     name: "Linear",
     description: "Pull Linear issues into sessions and link branches to tickets.",
     version: "0.4.2",
-    enabled: true,
-    status: "active",
-    error: null as string | null,
-    devPath: null as string | null,
-    preinstalled: false,
-    updateAvailable: "0.5.0" as string | null,
-  },
-  {
+    capabilities: ["network", "settings.store", "ui.contribute"],
+    grantedCapabilities: ["network", "settings.store", "ui.contribute"],
+    updateAvailable: "0.5.0",
+  }),
+  simPlugin({
+    id: "frogg-slack",
+    name: "Slack bridge",
+    description:
+      "Run agents from a Slack channel: start sessions, answer permission prompts, file to-dos.",
+    version: "2.0.1",
+    apiVersion: 2,
+    capabilities: [
+      "network",
+      "agent.read",
+      "agent.manage",
+      "agent.permissions",
+      "workspaces.read",
+      "todos.write",
+    ],
+    grantedCapabilities: [
+      "network",
+      "agent.read",
+      "agent.manage",
+      "agent.permissions",
+      "workspaces.read",
+      "todos.write",
+    ],
+  }),
+  simPlugin({
     id: "frogg-sentry",
     name: "Sentry",
     description: "Open recent Sentry issues as agent tasks.",
     version: "1.1.0",
     enabled: false,
     status: "disabled",
-    error: null,
-    devPath: null,
     preinstalled: true,
-    updateAvailable: null,
-  },
+    source: "brand",
+    capabilities: ["network"],
+    grantedCapabilities: ["network"],
+  }),
 ];
+let plugins = startPlugins();
+let pluginPolicy = {
+  enabled: true,
+  allowUserRepos: true,
+  developerMode: "allowed",
+  developerModeEnabled: false,
+  apiVersions: [1, 2],
+  remoteControl: "allowed",
+};
+/** Lab switch: a brand that forbids plugin remote control. */
+export function setLabRemoteControlForbidden(forbidden: boolean): void {
+  pluginPolicy = { ...pluginPolicy, remoteControl: forbidden ? "forbidden" : "allowed" };
+}
+/** Back to the starting plugins (every reseed). */
+export function resetPlugins(): void {
+  plugins = startPlugins();
+  setLabRemoteControlForbidden(false);
+}
+/** The host's Companion capability: locked, naming its plugin, until frogg.companion is on. */
+export function labCompanionCapability() {
+  const on = plugins.some((p) => p.features.includes("companion") && p.enabled);
+  return on
+    ? { enabled: true, reason: "" }
+    : {
+        enabled: false,
+        reason: "Install the Companion plugin on this daemon to use the Companion.",
+        plugin: { id: "frogg.companion", repoUrl: OFFICIAL },
+      };
+}
 let repos = [
   {
-    url: "https://plugins.frogg.app/index.json",
+    url: OFFICIAL,
     name: "Frogg official",
     tier: "official",
     pluginCount: 12,
     publicKey: "ed25519:Fq3…9xA",
-    error: null,
+    lastFetchedAt: "2026-10-13T08:00:00Z",
+    error: null as string | null,
     removable: false,
   },
   {
     url: "https://github.com/acme/frogg-plugins",
     name: "acme/frogg-plugins",
-    tier: "community",
+    tier: "user",
     pluginCount: 3,
-    publicKey: null,
-    error: null,
+    publicKey: "ed25519:Ac9…2kP",
+    lastFetchedAt: "2026-10-13T08:00:00Z",
+    error: null as string | null,
+    removable: true,
+  },
+  {
+    url: "https://plugins.example.dev/index.json",
+    name: "example.dev",
+    tier: "user",
+    pluginCount: null as number | null,
+    publicKey: "ed25519:Zx1…0qQ",
+    lastFetchedAt: null as string | null,
+    error: "index signature does not match the repository key" as string | null,
     removable: true,
   },
 ];
-const catalog = () =>
-  (
+type CatalogRow = [string, string, string, string, string, string[], number?, string[]?];
+const CATALOG: CatalogRow[] = [
+  [
+    "frogg-linear",
+    "Linear",
+    "Pull Linear issues into sessions.",
+    "productivity",
+    "0.5.0",
+    ["network", "settings.store", "ui.contribute", "workspaces.read"],
+    2,
+  ],
+  [
+    "frogg-slack",
+    "Slack bridge",
+    "Run agents from a Slack channel.",
+    "remote",
+    "2.0.1",
     [
-      [
-        "frogg-linear",
-        "Linear",
-        "Pull Linear issues into sessions.",
-        "productivity",
-        "0.5.0",
-        ["network", "secrets"],
-      ],
-      [
-        "frogg-sentry",
-        "Sentry",
-        "Open Sentry issues as agent tasks.",
-        "observability",
-        "1.1.0",
-        ["network"],
-      ],
-      [
-        "frogg.companion",
-        "Companion",
-        "Voice companion that talks you through your agents. Installing it switches on the Companion built into Frogg for this host.",
-        "features",
-        "1.0.0",
-        [],
-      ],
-      [
-        "frogg-vercel",
-        "Vercel previews",
-        "Show deploy previews for each branch.",
-        "deploy",
-        "0.2.1",
-        ["network", "checkout.read"],
-      ],
-      [
-        "frogg-pagerduty",
-        "PagerDuty",
-        "Start an agent from an incident.",
-        "observability",
-        "0.1.0",
-        ["network", "agents.create"],
-      ],
-    ] as Array<[string, string, string, string, string, string[]]>
-  ).map(([id, name, description, category, version, capabilities]) => ({
+      "network",
+      "agent.read",
+      "agent.manage",
+      "agent.permissions",
+      "workspaces.read",
+      "todos.write",
+    ],
+    2,
+  ],
+  [
+    "frogg-sentry",
+    "Sentry",
+    "Open Sentry issues as agent tasks.",
+    "observability",
+    "1.1.0",
+    ["network"],
+  ],
+  [
+    "frogg.companion",
+    "Companion",
+    "Voice companion that talks you through your agents. Installing it switches on the Companion built into Frogg for this host.",
+    "features",
+    "1.0.0",
+    [],
+    1,
+    ["companion"],
+  ],
+  [
+    "frogg-discord",
+    "Discord",
+    "Answer agents' permission requests and read to-dos from Discord.",
+    "remote",
+    "1.0.0",
+    ["network", "agent.permissions", "todos.read", "ui.external"],
+    2,
+  ],
+  [
+    "frogg-vercel",
+    "Vercel previews",
+    "Show deploy previews for each branch.",
+    "deploy",
+    "0.2.1",
+    ["network", "agent.read"],
+  ],
+  [
+    "frogg-pagerduty",
+    "PagerDuty",
+    "Start an agent from an incident.",
+    "observability",
+    "0.1.0",
+    ["network", "agent.write"],
+  ],
+  // Only a plugin API this host doesn't load yet: listed, not installable.
+  ["frogg-telegram", "Telegram", "Drive agents from Telegram.", "remote", "3.0.0", ["network"], 3],
+];
+const catalogEntry = ([
+  id,
+  name,
+  description,
+  category,
+  version,
+  capabilities,
+  apiVersion = 1,
+]: CatalogRow) => {
+  const v = {
+    version,
+    apiVersion,
+    scope: "host",
+    capabilities,
+    compatible: apiVersion <= 2,
+    publishedAt: "2026-10-10T00:00:00Z",
+  };
+  return {
     id,
     name,
     description,
+    author: "Frogg",
+    homepage: null,
     category,
     tier: "official",
     repoUrl: repos[0].url,
     repoName: repos[0].name,
     installedVersion: plugins.find((p) => p.id === id)?.version ?? null,
-    latest: { version, compatible: true, capabilities },
-  }));
+    latest: v.compatible ? v : null,
+    versions: [v],
+  };
+};
+const catalog = () => CATALOG.map(catalogEntry);
 const pluginSettings: Record<string, Record<string, unknown>> = {
   "frogg-linear": { apiKey: "••••", team: "FRG", autoLink: true },
   "frogg-sentry": { org: "frogg" },
@@ -1537,33 +1697,61 @@ export const miscRpcs: Record<string, Rpc> = {
   // Plugins
   pluginsList: async () => {
     await latency();
-    return { plugins: plugins.map((p) => ({ ...p })) };
+    return { plugins: plugins.map((p) => ({ ...p })), policy: { ...pluginPolicy } };
   },
   pluginsGetCatalog: async () => {
     await latency(400);
-    return { plugins: catalog() };
+    return { plugins: catalog(), repos };
   },
-  pluginsInstall: async (o: { id: string; version?: string }) => {
+  pluginsInstall: async (o: { id: string; version?: string; grantedCapabilities: string[] }) => {
     await labWait(1600);
-    const c = catalog().find((x) => x.id === o.id);
+    const row = CATALOG.find((x) => x[0] === o.id);
+    const c = row && catalogEntry(row);
     if (!plugins.some((p) => p.id === o.id))
       plugins = [
         ...plugins,
-        {
+        simPlugin({
           id: o.id,
           name: c?.name ?? o.id,
           description: c?.description ?? "",
-          version: o.version ?? "0.1.0",
-          enabled: true,
-          status: "active",
-          error: null,
-          devPath: null,
-          preinstalled: false,
-          updateAvailable: null,
-        },
+          version: o.version ?? c?.latest?.version ?? "0.1.0",
+          apiVersion: c?.latest?.apiVersion ?? 1,
+          capabilities: c?.latest?.capabilities ?? [],
+          grantedCapabilities: o.grantedCapabilities,
+          features: row?.[7] ?? [],
+        }),
       ];
     emitEvent({ type: "plugins.changed", payload: { pluginId: o.id, reason: "installed" } });
-    return { success: true, error: null };
+    return { plugin: { ...plugins.find((p) => p.id === o.id)! } };
+  },
+  pluginsUninstall: async (id: string) => {
+    await latency(500);
+    plugins = plugins.filter((p) => p.id !== id);
+    emitEvent({ type: "plugins.changed", payload: { pluginId: id, reason: "uninstalled" } });
+    return { success: true };
+  },
+  pluginsUpdate: async (o: { id: string; grantedCapabilities?: string[] }) => {
+    await labWait(900);
+    const p = plugins.find((x) => x.id === o.id);
+    const row = CATALOG.find((x) => x[0] === o.id);
+    if (!p || !row) throw new PluginRequestError({ code: "not_found", message: o.id });
+    const granted = o.grantedCapabilities ?? p.grantedCapabilities;
+    const added = row[5].filter((c) => !granted.includes(c));
+    if (added.length)
+      throw new PluginRequestError({
+        code: "consent_required",
+        message: `${p.name} ${row[4]} asks for ${added.join(", ")}`,
+        capabilities: added,
+      });
+    Object.assign(p, {
+      version: row[4],
+      apiVersion: row[6] ?? 1,
+      capabilities: row[5],
+      grantedCapabilities: granted,
+      updateAvailable: null,
+    });
+    emitEvent({ type: "plugins.changed", payload: { pluginId: p.id, reason: "updated" } });
+    return { plugin: { ...p } };
   },
   pluginsSetEnabled: async (id: string, enabled: boolean) => {
     await latency(300);
@@ -1573,7 +1761,19 @@ export const miscRpcs: Record<string, Rpc> = {
       type: "plugins.changed",
       payload: { pluginId: id, reason: enabled ? "enabled" : "disabled" },
     });
-    return { success: true };
+    return { plugin: p ? { ...p } : null };
+  },
+  pluginsSetRemoteControl: async (id: string, enabled: boolean) => {
+    await latency(300);
+    if (pluginPolicy.remoteControl === "forbidden")
+      throw new PluginRequestError({
+        code: "forbidden",
+        message: "remote control is turned off for this build",
+      });
+    const p = plugins.find((x) => x.id === id);
+    if (p) p.remoteControl = enabled;
+    emitEvent({ type: "plugins.changed", payload: { pluginId: id, reason: "updated" } });
+    return { plugin: p ? { ...p } : null };
   },
   pluginsGetContributions: async () => {
     await latency();
@@ -1650,10 +1850,11 @@ export const miscRpcs: Record<string, Rpc> = {
     const repo = {
       url: o.url,
       name: o.url.replace(/^https?:\/\/(github\.com\/)?/, ""),
-      tier: "community",
-      pluginCount: 2,
-      publicKey: o.publicKey ?? null,
-      error: null,
+      tier: "user",
+      pluginCount: 2 as number | null,
+      publicKey: o.publicKey ?? "ed25519:Tf0…new",
+      lastFetchedAt: new Date().toISOString() as string | null,
+      error: null as string | null,
       removable: true,
     };
     repos = [...repos, repo];
