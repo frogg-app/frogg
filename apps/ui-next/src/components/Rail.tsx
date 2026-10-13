@@ -18,6 +18,7 @@ import {
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from "react-native";
+import { usePluginGate } from "../daemon/plugins";
 import { usePrefs, setPref } from "../prefs";
 import { color, ease, font, web } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
@@ -51,6 +52,26 @@ export const TOOLS: ToolMeta[] = [
 export const GROUP_NAMES = ["Work", "Host", "App"] as const;
 export const GROUPS = [0, 1, 2].map((g) => TOOLS.filter((t) => t.group === g));
 
+/**
+ * Whether a tool is offered at all. The Companion is a plugin feature: it shows only when the
+ * connected host has the Companion plugin installed and enabled, and this device hasn't turned
+ * it off (Settings › Voice & companion).
+ */
+export function useToolShown(): (id: Tool) => boolean {
+  const companion = usePluginGate((g) => g.companion);
+  const companionPref = usePrefs((p) => p.companion);
+  return useCallback(
+    (id: Tool) => id !== "companion" || (companion && companionPref),
+    [companion, companionPref],
+  );
+}
+
+/** GROUPS without the tools this host doesn't offer. */
+export function useShownGroups(): ToolMeta[][] {
+  const shown = useToolShown();
+  return useMemo(() => GROUPS.map((g) => g.filter((t) => shown(t.id))), [shown]);
+}
+
 /** Hover-intent delay before the rail expands; leaving closes at once. */
 const OPEN_DELAY = 140;
 /** The rail's width transition (s.rail) plus a frame of slack. */
@@ -62,6 +83,7 @@ const EXPANDED = 212;
 
 export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
   const tool = useUi((s) => s.tool);
+  const groups = useShownGroups();
   const pinned = usePrefs((p) => p.railPinned);
   const logoMotion = usePrefs((p) => p.logoMotion);
   const [hover, setHover] = useState(false);
@@ -151,7 +173,7 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
     [y],
   );
   const items = (g: number) =>
-    GROUPS[g].map((t) => (
+    groups[g].map((t) => (
       <RailItem
         key={t.id}
         meta={t}

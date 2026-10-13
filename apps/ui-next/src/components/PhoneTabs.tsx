@@ -26,7 +26,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { color, font, glide, web } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
 import { Cut } from "./Cut";
-import { GROUP_NAMES, GROUPS, type ToolMeta } from "./Rail";
+import { GROUP_NAMES, type ToolMeta, useShownGroups } from "./Rail";
 import { useGlide } from "./Glide";
 import { T } from "./Text";
 
@@ -170,6 +170,7 @@ function ToolMenu({
     });
     return () => sub.remove();
   }, [onClose]);
+  const groups = useShownGroups();
   const anim = useMemo(
     () => [
       s.menu,
@@ -191,7 +192,7 @@ function ToolMenu({
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={s.menuBody}>
-        {GROUPS.map((g, i) => (
+        {groups.map((g, i) => (
           <View key={GROUP_NAMES[i]} style={s.group}>
             <T v="label" style={s.groupT}>
               {GROUP_NAMES[i]}

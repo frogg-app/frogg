@@ -16,7 +16,7 @@ import { bucketOf } from "../daemon/types";
 import { color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { Cut } from "./Cut";
-import { TOOLS } from "./Rail";
+import { TOOLS, useToolShown } from "./Rail";
 import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 
@@ -129,6 +129,7 @@ export function Palette() {
     setQ("");
     setCursor(0);
   }, [setPalette]);
+  const shown = useToolShown();
   const items = useMemo<Item[]>(() => {
     const list: Item[] = [];
     for (const s of Object.values(sessions).sort(
@@ -173,7 +174,7 @@ export function Palette() {
         },
       },
     );
-    for (const t of TOOLS)
+    for (const t of TOOLS.filter((x) => shown(x.id)))
       list.push({
         id: `go-${t.id}`,
         group: "Go to",
@@ -187,7 +188,7 @@ export function Palette() {
         (!commandsOnly || i.group !== "Sessions") &&
         (!needle || `${i.label} ${i.hint ?? ""}`.toLowerCase().includes(needle)),
     );
-  }, [sessions, q, ui]);
+  }, [sessions, q, ui, shown]);
   const pick = useCallback(
     (i: Item | undefined) => {
       if (!i) return;

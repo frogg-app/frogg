@@ -473,6 +473,14 @@ const catalog = () =>
         ["network"],
       ],
       [
+        "frogg.companion",
+        "Companion",
+        "Voice companion that talks you through your agents. Installing it switches on the Companion built into Frogg for this host.",
+        "features",
+        "1.0.0",
+        [],
+      ],
+      [
         "frogg-vercel",
         "Vercel previews",
         "Show deploy previews for each branch.",
@@ -1471,12 +1479,17 @@ export const miscRpcs: Record<string, Rpc> = {
           updateAvailable: null,
         },
       ];
+    emitEvent({ type: "plugins.changed", payload: { pluginId: o.id, reason: "installed" } });
     return { success: true, error: null };
   },
   pluginsSetEnabled: async (id: string, enabled: boolean) => {
     await latency(300);
     const p = plugins.find((x) => x.id === id);
     if (p) Object.assign(p, { enabled, status: enabled ? "active" : "disabled" });
+    emitEvent({
+      type: "plugins.changed",
+      payload: { pluginId: id, reason: enabled ? "enabled" : "disabled" },
+    });
     return { success: true };
   },
   pluginsGetContributions: async () => {

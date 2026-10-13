@@ -1,7 +1,7 @@
 import { KeyboardFrame } from "../components/shell/KeyboardFrame";
 import { ToastHost } from "../components/toast/ToastHost";
 import { Banners } from "../components/toast/Banners";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,7 +22,7 @@ import { Home } from "../components/Home";
 import { NewSession } from "../components/NewSession";
 import { Palette, useGlobalKeys } from "../components/Palette";
 import { PhoneTabs } from "../components/PhoneTabs";
-import { Rail } from "../components/Rail";
+import { Rail, useToolShown } from "../components/Rail";
 import { ScmPanel } from "../components/ScmPanel";
 import { SessionList, useBuckets } from "../components/SessionList";
 import { StatusBar } from "../components/StatusBar";
@@ -33,6 +33,7 @@ import { T } from "../components/Text";
 import { useHardwareBack } from "../components/shell/useHardwareBack";
 import { useKeyboardVisible } from "../components/shell/useKeyboardVisible";
 import { useDaemon } from "../daemon/store";
+import { useWatchPluginGate } from "../daemon/plugins";
 import type { Session } from "../daemon/types";
 import { useFormFactor } from "../theme/layout";
 import { color, motion } from "../theme/tokens";
@@ -157,6 +158,12 @@ export default function Shell() {
   );
   const phone = ff === "phone";
   useGlobalKeys();
+  useWatchPluginGate();
+  // A tool the host stops offering (the Companion plugin removed) falls back to Sessions.
+  const shown = useToolShown();
+  useEffect(() => {
+    if (!shown(tool)) useUi.getState().setTool("sessions");
+  }, [shown, tool]);
   const closeList = useCallback(() => setListOpen(false), [setListOpen]);
   const onHardwareBack = useCallback(() => popBack(phone, openRun), [phone, openRun]);
   useHardwareBack(onHardwareBack);
