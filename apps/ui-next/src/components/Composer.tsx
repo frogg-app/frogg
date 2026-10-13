@@ -11,6 +11,7 @@ import {
 import { color, font, web } from "../theme/tokens";
 import type { Attachment, SlashCommand } from "./chat/actions";
 import { AttachChips, AttachMenu } from "./chat/Attach";
+import { usePasteImages } from "./chat/pasteImages";
 import { SlashMenu, matchCommands } from "./chat/SlashMenu";
 import { toastError } from "./toast/store";
 import { Cut } from "./Cut";
@@ -142,6 +143,8 @@ export function Composer({
   const addAtts = useCallback((more: Attachment[]) => setAtts((a) => [...a, ...more]), []);
   const removeAtt = useCallback((id: string) => setAtts((a) => a.filter((x) => x.id !== id)), []);
   const anchor = useRef<View>(null);
+  const input = useRef<TextInput>(null);
+  usePasteImages(input, addAtts, !!attach && !disabled);
   const highlight = Math.min(hi, Math.max(0, matches.length - 1));
   const slashMenu = useCallback(
     (p: { up: boolean; maxHeight: number }) => (
@@ -168,6 +171,7 @@ export function Composer({
         {notices}
         {atts.length > 0 && <AttachChips items={atts} onRemove={removeAtt} />}
         <TextInput
+          ref={input}
           editable={!sending}
           value={text}
           onChangeText={onChange}
