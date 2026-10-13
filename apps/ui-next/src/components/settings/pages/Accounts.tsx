@@ -1,12 +1,23 @@
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
-import { useCallback, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
-import { getClient } from "../../../daemon/store";
+import { useHosts, type Host } from "../../../daemon/hosts";
+import { getHostClient, useDaemon, useHostConn } from "../../../daemon/store";
 import { color } from "../../../theme/tokens";
 import { Button } from "../../Button";
 import { T } from "../../Text";
 import { Area, Pill, Row, Section } from "../controls";
-import { Acts, Block, Confirm, ErrorLine, Field, Status, useAction, useRpc } from "./kit";
+import {
+  Acts,
+  Block,
+  Confirm,
+  ErrorLine,
+  Field,
+  Status,
+  errText,
+  useAction,
+  type Rpc,
+} from "./kit";
 
 type AccountList = Awaited<ReturnType<DaemonClient["listProviderAccounts"]>>;
 type Account = AccountList["accounts"][number];
@@ -25,6 +36,44 @@ const SWATCH = [color.cyan, color.violet, color.mint, color.amber, color.coral];
 const NO_USAGE: Record<string, Usage | undefined> = {};
 const provName = (p: string) => NAMES[p] ?? p;
 
+const USAGE_MAX_AGE = 5 * 60_000;
+
+/** The saved host whose accounts a subtree shows; actions go to that host's own connection. */
+const HostCtx = createContext<string | null>(null);
+
+/** loadAll against one host's pooled client, when it is online, and again on reload. */
+function useAccountsRpc(hostId: string | null, conn: string | null): Rpc<Loaded> {
+  const [data, setData] = useState<Loaded | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const c = getHostClient(hostId);
+    if (conn !== "online" || !c) return;
+    let live = true;
+    setLoading(true);
+    loadAll(c).then(
+      (d) => {
+        if (!live) return;
+        setData(d);
+        setError(null);
+        setLoading(false);
+        return undefined;
+      },
+      (e: unknown) => {
+        if (!live) return;
+        setError(errText(e));
+        setLoading(false);
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [hostId, conn, tick]);
+  const reload = useCallback(() => setTick((t) => t + 1), []);
+  return { data, error, loading, reload };
+}
+
 interface Loaded {
   list: AccountList;
   usage: Record<string, Usage | undefined>;
@@ -36,8 +85,13 @@ async function loadAll(c: DaemonClient): Promise<Loaded> {
   const usage: Record<string, Usage | undefined> = {};
   await Promise.all(
     list.accounts.map(async (a) => {
+      // Cached figures are fine here; forcing a read per account trips the provider's rate limit.
       const res = await c
-        .listProviderUsage({ provider: a.provider, providerAccountId: a.id })
+        .listProviderUsage({
+          provider: a.provider,
+          providerAccountId: a.id,
+          maxAgeMs: USAGE_MAX_AGE,
+        })
         .catch(() => null);
       usage[a.id] = res?.providers.find((u) => u.providerId === a.provider) ?? res?.providers[0];
     }),
@@ -45,8 +99,32 @@ async function loadAll(c: DaemonClient): Promise<Loaded> {
   return { list, usage };
 }
 
+/** Accounts on every saved host, each under its host's name when there is more than one. */
 export function Accounts() {
-  const rpc = useRpc(loadAll);
+  const hosts = useHosts((st) => st.hosts);
+  const activeId = useHosts((st) => st.activeId);
+  // The active host first, then the rest in their saved order.
+  const ordered = useMemo(
+    () => [...hosts].sort((a, b) => Number(b.id === activeId) - Number(a.id === activeId)),
+    [hosts, activeId],
+  );
+  // No saved list (the component lab's lone fixture client): show the active connection.
+  if (!ordered.length) return <HostAccounts host={null} named={false} />;
+  return (
+    <>
+      {ordered.map((h) => (
+        <HostCtx.Provider key={h.id} value={h.id}>
+          <HostAccounts host={h} named={ordered.length > 1} />
+        </HostCtx.Provider>
+      ))}
+    </>
+  );
+}
+
+function HostAccounts({ host, named }: { host: Host | null; named: boolean }) {
+  const own = useDaemon((st) => st.conn);
+  const conn = useHostConn(host?.id) ?? own;
+  const rpc = useAccountsRpc(host?.id ?? null, conn);
   const groups = useMemo(() => {
     const out = new Map<Provider, Account[]>();
     for (const a of rpc.data?.list.accounts ?? []) {
@@ -61,27 +139,47 @@ export function Accounts() {
     return { used: [...out.entries()], rest };
   }, [rpc.data]);
   const all = useMemo(() => [...groups.used.map(([p]) => p), ...groups.rest], [groups]);
+  const head = named ? (
+    <View style={s.hostHead}>
+      <T v="label">{host?.name ?? "host"}</T>
+      <T v="mono" style={s.hostState}>
+        {hostState(conn)}
+      </T>
+    </View>
+  ) : null;
+  if (conn !== "online")
+    return (
+      <>
+        {head}
+        <T style={s.sub}>
+          {conn === "connecting" ? "Connecting…" : "Offline; its accounts show once it is back."}
+        </T>
+      </>
+    );
   return (
-    <Status rpc={rpc} what="accounts">
-      {groups.used.map(([prov, accts], gi) => (
-        <ProviderGroup
-          key={prov}
-          provider={prov}
-          accounts={accts}
-          usage={rpc.data?.usage ?? NO_USAGE}
-          tint={SWATCH[gi % SWATCH.length]}
-          reload={rpc.reload}
-        />
-      ))}
-      {groups.rest.length > 0 ? (
-        <Section title="Other providers">
-          {groups.rest.map((p) => (
-            <AddAccount key={p} provider={p} reload={rpc.reload} />
-          ))}
-        </Section>
-      ) : null}
-      <Transfer providers={all} reload={rpc.reload} />
-    </Status>
+    <>
+      {head}
+      <Status rpc={rpc} what="accounts">
+        {groups.used.map(([prov, accts], gi) => (
+          <ProviderGroup
+            key={prov}
+            provider={prov}
+            accounts={accts}
+            usage={rpc.data?.usage ?? NO_USAGE}
+            tint={SWATCH[gi % SWATCH.length]}
+            reload={rpc.reload}
+          />
+        ))}
+        {groups.rest.length > 0 ? (
+          <Section title="Other providers">
+            {groups.rest.map((p) => (
+              <AddAccount key={p} provider={p} reload={rpc.reload} />
+            ))}
+          </Section>
+        ) : null}
+        <Transfer providers={all} reload={rpc.reload} />
+      </Status>
+    </>
   );
 }
 
@@ -119,28 +217,29 @@ function AccountRow({
   tint: string;
   reload: () => void;
 }) {
+  const hostId = useContext(HostCtx);
   const [open, setOpen] = useState(false);
   const toggle = useCallback(() => setOpen((o) => !o), []);
   const act = useAction();
   const sw = useMemo(() => [s.sw, { backgroundColor: tint }], [tint]);
   const makeDefault = useCallback(async () => {
     const ok = await act.run("default", () =>
-      clientOrThrow().setActiveProviderAccount({ provider: a.provider, accountId: a.id }),
+      clientOrThrow(hostId).setActiveProviderAccount({ provider: a.provider, accountId: a.id }),
     );
     if (ok) reload();
-  }, [act, a, reload]);
+  }, [act, a, reload, hostId]);
   const signOut = useCallback(async () => {
     const ok = await act.run("signout", () =>
-      clientOrThrow().signOutProviderAccount({ accountId: a.id }),
+      clientOrThrow(hostId).signOutProviderAccount({ accountId: a.id }),
     );
     if (ok) reload();
-  }, [act, a.id, reload]);
+  }, [act, a.id, reload, hostId]);
   const remove = useCallback(async () => {
     const ok = await act.run("delete", () =>
-      clientOrThrow().deleteProviderAccount({ accountId: a.id }),
+      clientOrThrow(hostId).deleteProviderAccount({ accountId: a.id }),
     );
     if (ok) reload();
-  }, [act, a.id, reload]);
+  }, [act, a.id, reload, hostId]);
   const sub = [
     usage?.accountEmail,
     usage?.planLabel,
@@ -200,8 +299,13 @@ function AccountRow({
   );
 }
 
-function clientOrThrow(): DaemonClient {
-  const c = getClient();
+function hostState(conn: string | null): string {
+  if (conn === "online") return "connected";
+  return conn === "connecting" ? "connecting…" : "offline";
+}
+
+function clientOrThrow(hostId: string | null): DaemonClient {
+  const c = getHostClient(hostId);
   if (!c) throw new Error("host offline");
   return c;
 }
@@ -236,6 +340,7 @@ function WindowMeter({ label, pct }: { label: string; pct: number | null }) {
 }
 
 function AddAccount({ provider, reload }: { provider: Provider; reload: () => void }) {
+  const hostId = useContext(HostCtx);
   const [name, setName] = useState<string | null>(null);
   const act = useAction();
   const start = useCallback(() => setName(""), []);
@@ -244,13 +349,13 @@ function AddAccount({ provider, reload }: { provider: Provider; reload: () => vo
     const n = name?.trim();
     if (!n) return;
     const ok = await act.run("add", () =>
-      clientOrThrow().createProviderAccount({ provider, name: n }),
+      clientOrThrow(hostId).createProviderAccount({ provider, name: n }),
     );
     if (ok) {
       setName(null);
       reload();
     }
-  }, [act, name, provider, reload]);
+  }, [act, name, provider, reload, hostId]);
   if (name === null)
     return (
       <View style={s.addRow}>
@@ -283,6 +388,7 @@ function AddAccount({ provider, reload }: { provider: Provider; reload: () => vo
 }
 
 function Transfer({ providers, reload }: { providers: Provider[]; reload: () => void }) {
+  const hostId = useContext(HostCtx);
   const [exported, setExported] = useState<string | null>(null);
   const [paste, setPaste] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
@@ -291,13 +397,13 @@ function Transfer({ providers, reload }: { providers: Provider[]; reload: () => 
     const bundles: unknown[] = [];
     const ok = await act.run("export", async () => {
       for (const p of providers) {
-        const res = await clientOrThrow().exportProviderAccounts({ provider: p });
+        const res = await clientOrThrow(hostId).exportProviderAccounts({ provider: p });
         if (res.error) throw new Error(res.error);
         if (res.bundle) bundles.push(res.bundle);
       }
     });
     if (ok) setExported(JSON.stringify(bundles.length === 1 ? bundles[0] : bundles, null, 2));
-  }, [act, providers]);
+  }, [act, providers, hostId]);
   const hideExport = useCallback(() => setExported(null), []);
   const startPaste = useCallback(() => setPaste(""), []);
   const cancelPaste = useCallback(() => setPaste(null), []);
@@ -313,7 +419,7 @@ function Transfer({ providers, reload }: { providers: Provider[]; reload: () => 
     const list = (Array.isArray(parsed) ? parsed : [parsed]) as Bundle[];
     const ok = await act.run("import", async () => {
       for (const bundle of list) {
-        const res = await clientOrThrow().importProviderAccounts({ bundle });
+        const res = await clientOrThrow(hostId).importProviderAccounts({ bundle });
         if (res.error) throw new Error(res.error);
       }
     });
@@ -322,7 +428,7 @@ function Transfer({ providers, reload }: { providers: Provider[]; reload: () => 
       setNote(`Imported ${list.length} bundle${list.length === 1 ? "" : "s"}.`);
       reload();
     }
-  }, [act, paste, reload]);
+  }, [act, paste, reload, hostId]);
   return (
     <Section title="Move accounts between hosts">
       <Row label="Export bundle" hint="Contains credentials in plain text">
@@ -368,6 +474,14 @@ function Transfer({ providers, reload }: { providers: Provider[]; reload: () => 
 }
 
 const s = StyleSheet.create({
+  hostHead: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  hostState: { fontSize: 11, color: color.faint },
   acct: { borderBottomWidth: 1, borderBottomColor: color.line },
   acctRow: {
     flexDirection: "row",
