@@ -42,11 +42,10 @@ import { useHosts } from "../../daemon/hosts";
 import { useDaemon } from "../../daemon/store";
 import { color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
-import { agoText, providerLabel } from "../../util";
 import { Button } from "../Button";
 import { Brackets, BracketScope } from "../Brackets";
 import { T } from "../Text";
-import { Pill, Row, Section, Seg, Toggle } from "./controls";
+import { Row, Section, Seg, Toggle } from "./controls";
 import { ChatComposer } from "./pages/ChatComposer";
 import { FilesEditor } from "./pages/FilesEditor";
 import { Notifications } from "./pages/Notifications";
@@ -61,6 +60,7 @@ import { SessionLabels } from "./pages/SessionLabels";
 import { TerminalProfiles } from "./pages/TerminalProfiles";
 import { ResourcesStorage } from "./pages/ResourcesStorage";
 import { DaemonUpdates } from "./pages/DaemonUpdates";
+import { Providers } from "./pages/Providers";
 
 type Scope = "You" | "Agents" | "Host" | "Project" | "App";
 interface Page {
@@ -126,40 +126,6 @@ function Automation() {
         </Row>
       </Section>
     </>
-  );
-}
-
-function statusTint(st: string): string {
-  if (st === "ready") return color.mint;
-  if (st === "error" || st === "unavailable") return color.coral;
-  return color.amber;
-}
-
-function Providers() {
-  const providers = useConfig((st) => st.providers);
-  if (!providers) return <T v="label">loading…</T>;
-  const last = providers.entries.at(-1)?.provider;
-  return (
-    <Section title="Installed providers">
-      {providers.entries.map((p) => (
-        <Row
-          key={p.provider}
-          label={p.label ?? providerLabel(p.provider)}
-          hint={
-            p.error ??
-            `${p.models?.length ?? 0} models${
-              p.fetchedAt ? ` · checked ${agoText(p.fetchedAt)}` : ""
-            }`
-          }
-          last={p.provider === last}
-        >
-          <View style={s.pills}>
-            {!p.enabled && <Pill text="disabled" />}
-            <Pill text={p.status} tint={statusTint(p.status)} />
-          </View>
-        </Row>
-      ))}
-    </Section>
   );
 }
 
@@ -542,7 +508,6 @@ const s = StyleSheet.create({
   promptBox: { padding: 14, gap: 10 },
   faintSmall: { color: color.faint, fontSize: 12.5 },
   buttons: { flexDirection: "row", gap: 8 },
-  pills: { flexDirection: "row", gap: 6 },
   value: { color: color.text },
   kbd: {
     borderWidth: 1,
