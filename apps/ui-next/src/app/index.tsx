@@ -16,6 +16,7 @@ import { HostsPanel } from "../components/HostsPanel";
 import { HostDetail } from "../components/hosts/HostDetail";
 import { CiRunDetail, closeRun, PrsPanel, useOpenRun } from "../components/PrsPanel";
 import { TasksPanel } from "../components/TasksPanel";
+import { TodoBoard } from "../components/tasks/TodoBoard";
 import { PluginsPanel } from "../components/PluginsPanel";
 import { CompanionPanel } from "../components/CompanionPanel";
 import { Home } from "../components/Home";
@@ -124,6 +125,7 @@ function MainDetail({ ui, phone, openRun, session }: DetailProps): ReactNode {
   if (tool === "inbox" && inboxId)
     return <InboxDetail id={inboxId} onBack={phone ? backInbox : undefined} />;
   if (tool === "hosts" && !phone) return <HostDetail />;
+  if (tool === "tasks" && !phone) return <TodoBoard />;
   return fallbackDetail(tool, phone, session, backChat);
 }
 
@@ -153,6 +155,7 @@ function hasDetailFor(
   if (tool === "settings") return !!ui.settingsPage;
   if (tool === "files") return !!ui.filePath;
   if (tool === "prs") return !!openRun;
+  if (tool === "tasks") return true;
   return false;
 }
 
@@ -293,6 +296,8 @@ function hasPhoneDetail(
   openRun: string | null | undefined,
   session: Session | undefined,
 ): boolean {
+  // Tasks keeps its board inside the tab on phones.
+  if (ui.tool === "tasks") return false;
   return hasDetailFor(ui, openRun, ui.tool === "sessions" ? session : undefined);
 }
 
