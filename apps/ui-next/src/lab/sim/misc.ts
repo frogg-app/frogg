@@ -995,6 +995,11 @@ export const miscRpcs: Record<string, Rpc> = {
     });
     return { success: true, error: null };
   },
+  listProviderModels: async (provider: string) => {
+    await latency(400);
+    const e = useConfig.getState().providers?.entries.find((x) => x.provider === provider);
+    return { provider, models: e?.models ?? [], error: null, fetchedAt: new Date().toISOString() };
+  },
   getBranchSuggestions: async (o: { query?: string; limit?: number }) => {
     await latency();
     const q = o.query?.toLowerCase() ?? "";

@@ -29,6 +29,11 @@ function need(): DaemonClient {
 const channelOf = (version: string | null): DaemonUpdateChannel =>
   version && /-beta/i.test(version) ? "beta" : "stable";
 
+function startLabel(starting: boolean, target: string | null): string {
+  if (starting) return "Starting…";
+  return target ? `Update to ${target}` : "Update";
+}
+
 function checkLine(c: Check): string {
   if (c.error) return c.error;
   if (!c.updatable) return c.reason ?? "This install can't update itself.";
@@ -130,7 +135,7 @@ export function HostUpdate({ version }: { version: string | null }) {
         />
         <Button
           kind="primary"
-          label={act.pending === "start" ? "Starting…" : `Update to ${target ?? "…"}`}
+          label={startLabel(act.pending === "start", target)}
           onPress={start}
           disabled={!canStart}
         />

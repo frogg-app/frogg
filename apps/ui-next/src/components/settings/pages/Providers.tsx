@@ -103,7 +103,7 @@ function ProviderRow({
           ))}
           {!count && !models.loading && <T style={s.hint}>This provider reports no models.</T>}
           {models.loading && <T style={s.hint}>Asking the provider for its full list…</T>}
-          {models.error && <T style={s.err}>{models.error}</T>}
+          {models.error && !count && <T style={s.err}>{models.error}</T>}
         </View>
       )}
     </View>
