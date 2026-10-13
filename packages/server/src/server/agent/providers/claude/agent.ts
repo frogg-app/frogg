@@ -1,5 +1,5 @@
 import { daemonHostname } from "../../../daemon-hostname.js";
-import { TranscriptFollower, TurnLease } from "./linked-transcript.js";
+import { advancesConversation, TranscriptFollower, TurnLease } from "./linked-transcript.js";
 import type { ChildProcess } from "node:child_process";
 import type { SkillLaunchPolicy } from "../../../skills/catalog.js";
 import { randomUUID } from "node:crypto";
@@ -3668,8 +3668,9 @@ class ClaudeAgentSession implements AgentSession {
       });
     }
     // The live Claude process still sits at its own last message; the next turn must start a
-    // fresh one, which resumes from the transcript's end.
-    if (this.query) this.queryRestartNeeded = true;
+    // fresh one, which resumes from the transcript's end. Its own idle writes (a background
+    // task's wake-up queue record) don't count: restarting for those kills its other work.
+    if (this.query && advancesConversation(lines)) this.queryRestartNeeded = true;
     this.logger.info(
       { sessionId: this.claudeSessionId, lines: lines.length, items: timeline.length },
       "Picked up turns another process added to a linked conversation",

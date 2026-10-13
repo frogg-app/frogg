@@ -101,6 +101,24 @@ export class TranscriptFollower {
   }
 }
 
+/**
+ * Whether appended lines moved the conversation on (a user or assistant message on the main
+ * thread), so a live process sitting at its own last message must restart to resume after them.
+ * The live process also writes while idle: a background shell, Monitor or subagent finishing
+ * appends a `queue-operation` record for its wake-up. Restarting on those would kill the rest of
+ * that process's background work, and the wake-back it promised would never arrive.
+ */
+export function advancesConversation(lines: string[]): boolean {
+  return lines.some((line) => {
+    try {
+      const record = JSON.parse(line) as { type?: unknown; isSidechain?: unknown } | null;
+      return (record?.type === "user" || record?.type === "assistant") && !record.isSidechain;
+    } catch {
+      return false;
+    }
+  });
+}
+
 function sizeOf(path: string): number {
   try {
     return fs.statSync(path).size;
