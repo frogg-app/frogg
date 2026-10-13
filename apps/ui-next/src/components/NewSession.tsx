@@ -1,7 +1,7 @@
 import { KeyboardFrame } from "./shell/KeyboardFrame";
 import { exitPointer, riseStyle, scrimStyle, sheetStyle, usePresence } from "./presence";
 import { GitBranch, X } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { loadConfig, useConfig } from "../daemon/config";
@@ -16,6 +16,7 @@ import { Seg } from "./settings/controls";
 import { Select } from "./Select";
 import { addProject } from "./sessions/directory";
 import { FolderBrowser } from "./sessions/sheets";
+import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
 
 type Isolation = "worktree" | "local";
@@ -189,6 +190,8 @@ export function NewSession() {
     setOpen(false);
     setError(null);
   }, [setOpen]);
+  const root = useRef<View>(null);
+  useModalLayer(open, close, root);
   const submit = useCallback(async () => {
     if (!project || !entry || !prompt.trim()) return;
     setBusy(true);
@@ -409,7 +412,7 @@ export function NewSession() {
   return (
     <View style={s.layer} pointerEvents={exitPointer(closing)}>
       <Pressable style={[s.scrim, scrimStyle(closing)]} onPress={close} />
-      <View style={[s.boxPlace, riseStyle(closing)]}>
+      <View style={[s.boxPlace, riseStyle(closing)]} ref={root}>
         <Cut size={16} flip style={s.box}>
           <ScrollView contentContainerStyle={s.content} keyboardShouldPersistTaps="handled">
             <View style={s.headRow}>

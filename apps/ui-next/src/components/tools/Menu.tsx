@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { color, web } from "../../theme/tokens";
 import { Cut } from "../Cut";
+import { useModalLayer } from "../shell/modalStack";
 import { T } from "../Text";
 
 export interface Rect {
@@ -52,6 +53,7 @@ export function Popover({
 }) {
   const win = useWindowDimensions();
   const { mounted, closing } = usePresence(!!rect);
+  useModalLayer(!!rect, onClose);
   // Hold the last anchor so the panel stays put while it animates out.
   const last = useRef<Rect | null>(rect);
   if (rect) last.current = rect;

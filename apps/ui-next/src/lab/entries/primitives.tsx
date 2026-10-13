@@ -16,7 +16,12 @@ import {
 } from "../../components/Brackets";
 import { StatusGlyph } from "../../components/StatusGlyph";
 import { T } from "../../components/Text";
+import { AddHost } from "../../components/hosts/AddHost";
+import { RemoveHost } from "../../components/hosts/RemoveHost";
+import { openSheet } from "../../components/hosts/state";
 import { Dialog } from "../../components/tools/Dialog";
+import { usePrompt } from "../../components/tools/Prompt";
+import { useHosts } from "../../daemon/hosts";
 import { Menu, useAnchor, type MenuEntry } from "../../components/tools/Menu";
 import { Tabs } from "../../components/tools/Tabs";
 import type { Bucket } from "../../daemon/types";
@@ -507,6 +512,72 @@ function DialogDemo() {
     </Start>
   );
 }
+const LAB_HOST = "lab-frogg-dev";
+const openAdd = () => openSheet({ kind: "add" });
+function openRemove() {
+  const hosts = useHosts.getState().hosts;
+  if (!hosts.some((h) => h.id === LAB_HOST))
+    useHosts.setState({
+      hosts: [...hosts, { id: LAB_HOST, name: "Frogg Dev", endpoint: "192.168.1.17:9999" }],
+    });
+  openSheet({ kind: "remove", hostId: LAB_HOST });
+}
+
+/** The hosts dialogs as the Hosts panel mounts them: sized to content, Esc closes. */
+function HostDialogsDemo() {
+  return (
+    <Start>
+      <Button label="Add a host" onPress={openAdd} />
+      <Button label="Remove Frogg Dev" kind="danger" onPress={openRemove} />
+      <AddHost />
+      <RemoveHost />
+    </Start>
+  );
+}
+
+/** A prompt over a dialog: Esc closes only the top one; Ctrl/Cmd+A takes the top one's field. */
+function NestedDemo() {
+  const [open, setOpen] = useState(false);
+  const show = useCallback(() => setOpen(true), []);
+  const hide = useCallback(() => setOpen(false), []);
+  const prompt = usePrompt();
+  const { ask } = prompt;
+  const rename = useCallback(
+    () =>
+      ask({
+        title: "Rename session",
+        initial: "Invoice PDF renderer",
+        action: "Rename",
+        run: () => Promise.resolve(null),
+      }),
+    [ask],
+  );
+  const footer = useMemo(
+    () => (
+      <>
+        <Button label="Close" onPress={hide} />
+        <Button kind="primary" label="Rename…" onPress={rename} />
+      </>
+    ),
+    [hide, rename],
+  );
+  return (
+    <Start>
+      <Button label="Open dialog" onPress={show} />
+      <Dialog
+        open={open}
+        onClose={hide}
+        eyebrow="Session"
+        title="Invoice PDF renderer"
+        footer={footer}
+      >
+        <T style={s.dialogBody}>Open the rename prompt, then press Esc twice.</T>
+      </Dialog>
+      {prompt.dialog}
+    </Start>
+  );
+}
+
 function DialogFoot({ onClose }: { onClose: () => void }) {
   return (
     <>
@@ -688,11 +759,16 @@ export const primitives: Entry[] = [
     name: "Dialog",
     category: "Primitives",
     path: "components/tools/Dialog.tsx (+ Confirm.tsx, Prompt.tsx)",
-    purpose: "Centred modal card: eyebrow, title, body, right-aligned footer; backdrop closes.",
+    purpose:
+      "Centred modal card: eyebrow, title, body, right-aligned footer; backdrop or Esc closes; Ctrl/Cmd+A takes its first field. Hugs its content up to 90% of the space, then the body scrolls.",
     usedBy: 11,
     polish:
       "in: scrim fade + card fade/scale 0.97→1/6px rise, 170ms ease · out: 110ms fade + scale, stays mounted · reduced motion: none",
-    variants: [{ id: "default", label: "Confirm", C: DialogDemo }],
+    variants: [
+      { id: "default", label: "Confirm", C: DialogDemo },
+      { id: "hosts", label: "Add / remove host", C: HostDialogsDemo },
+      { id: "nested", label: "Nested (Esc closes the top one)", C: NestedDemo },
+    ],
   },
 ];
 

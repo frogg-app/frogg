@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react-native";
 import { exitPointer, riseStyle, scrimStyle, usePresence } from "./presence";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Pressable,
   ScrollView,
@@ -17,6 +17,7 @@ import { color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { Cut } from "./Cut";
 import { TOOLS } from "./Rail";
+import { modalOpen, useModalLayer } from "./shell/modalStack";
 import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
 
@@ -76,7 +77,15 @@ function answerSelected(k: string): boolean {
 /** Bare-key shortcuts, only when nothing is focused for typing and no overlay is open. */
 function handleBareKey(e: KeyboardEvent): boolean {
   const ui = useUi.getState();
-  if (isTyping(e) || e.metaKey || e.ctrlKey || e.altKey || ui.paletteOpen || ui.newSessionOpen)
+  if (
+    isTyping(e) ||
+    e.metaKey ||
+    e.ctrlKey ||
+    e.altKey ||
+    ui.paletteOpen ||
+    ui.newSessionOpen ||
+    modalOpen()
+  )
     return false;
   const k = e.key.toLowerCase();
   return moveSelection(k) || answerSelected(k);
@@ -119,6 +128,7 @@ const FOOT_HINTS: Array<[string, string]> = [
 export function Palette() {
   const open = useUi((s) => s.paletteOpen);
   const { mounted, closing } = usePresence(open);
+  const root = useRef<View>(null);
   const ui = useUi();
   const sessions = useDaemon((s) => s.sessions);
   const [q, setQ] = useState("");
@@ -129,6 +139,7 @@ export function Palette() {
     setQ("");
     setCursor(0);
   }, [setPalette]);
+  useModalLayer(open, close, root);
   const items = useMemo<Item[]>(() => {
     const list: Item[] = [];
     for (const s of Object.values(sessions).sort(
@@ -220,7 +231,7 @@ export function Palette() {
   return (
     <View style={s.layer} pointerEvents={exitPointer(closing)}>
       <Pressable style={[s.scrim, scrimStyle(closing)]} onPress={close} />
-      <View style={[s.boxPlace, riseStyle(closing)]}>
+      <View style={[s.boxPlace, riseStyle(closing)]} ref={root}>
         <Cut size={14} flip style={s.box}>
           <TextInput
             autoFocus

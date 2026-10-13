@@ -17,7 +17,8 @@ export function RemoveHost() {
   const sessions = useDaemon((s) => Object.keys(s.sessions).length);
   const [typed, setTyped] = useState("");
   useEffect(() => setTyped(""), [id]);
-  const ok = !!host && typed.trim() === host.name;
+  // Case-insensitive: the name is a label to retype, not a password.
+  const ok = !!host && typed.trim().toLowerCase() === host.name.trim().toLowerCase();
   const remove = useCallback(() => {
     if (!host || !ok) return;
     removeHost(host.id);
@@ -47,9 +48,9 @@ export function RemoveHost() {
         This device forgets the host and {count} disappear from your lists. The daemon on{" "}
         {host?.name} keeps running; nothing on disk changes.
       </T>
-      <T v="label">
+      <T style={s.prompt}>
         Type{" "}
-        <T v="label" style={s.name}>
+        <T v="mono" style={s.name}>
           {host?.name}
         </T>{" "}
         to confirm
@@ -68,7 +69,9 @@ export function RemoveHost() {
 
 const s = StyleSheet.create({
   body: { color: color.muted, fontSize: 13.5, lineHeight: 20 },
-  name: { color: color.cyan2 },
+  prompt: { color: color.muted, fontSize: 12.5 },
+  // Shown exactly as stored (no label caps) so what you read is what you type.
+  name: { color: color.cyan2, fontSize: 12.5 },
   input: {
     paddingHorizontal: 12,
     paddingVertical: 9,
