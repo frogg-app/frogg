@@ -17,8 +17,8 @@ import {
   type DeviceRole,
   type DirectPairingLink,
 } from "@frogg/protocol/device-access";
-import { Platform } from "react-native";
 import { create } from "zustand";
+import { deviceLabel } from "./client-id";
 import { upsertHost, useHosts, type Host } from "./hosts";
 
 /**
@@ -176,8 +176,6 @@ export async function verifyPairTarget(t: PairTarget): Promise<Verify> {
 
 // ---------------------------------------------------------------------------
 // Redeeming
-
-const deviceLabel = () => `Frogg (next) on ${Platform.OS}`;
 
 const httpBase = (endpoint: string, tls: boolean) =>
   `${tls ? "https" : "http"}://${normalizeHostPort(endpoint)}`;

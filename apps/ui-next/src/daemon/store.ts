@@ -12,6 +12,7 @@ import {
   useHosts,
   type Host,
 } from "./hosts";
+import { clientId, clientIdReady, deviceLabel } from "./client-id";
 import type { Session, TimelineEntry } from "./types";
 
 type Conn = "connecting" | "online" | "offline";
@@ -148,9 +149,10 @@ function openPooled(host: Host): Pooled {
     client: new DaemonClient({
       url: hostUrl(host),
       ...(host.password ? { password: host.password } : {}),
-      clientId: `ui-next-${Math.random().toString(36).slice(2, 10)}`,
+      // One stable id per install: the daemon registers this app as a device under it.
+      clientId: clientId(),
       clientType: "browser",
-      deviceName: "Frogg (next)",
+      deviceName: deviceLabel(),
       suppressSendErrors: true,
       reconnect: { enabled: true },
       ...hostClientOptions(host),
@@ -255,7 +257,7 @@ function startPool(): void {
  */
 export async function connect(host?: Host): Promise<void> {
   const generation = ++connectionGeneration;
-  await hostsReady;
+  await Promise.all([hostsReady, clientIdReady]);
   if (generation !== connectionGeneration) return;
   const target = host ?? activeHost(defaultEndpoint());
   startPool();

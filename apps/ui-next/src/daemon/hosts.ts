@@ -128,11 +128,17 @@ export function addHost(input: Omit<Host, "id">): Host {
   return host;
 }
 
-/** Adds a paired host, or refreshes the saved one with the same serverId (re-pairing). */
+/**
+ * Adds a paired host, or refreshes the saved one it pairs: the same serverId (re-pairing), else an
+ * address-only entry at the same direct endpoint (a host that refused this app until it paired).
+ */
 export function upsertHost(input: Omit<Host, "id">): Host {
-  const existing = input.serverId
-    ? useHosts.getState().hosts.find((h) => h.serverId === input.serverId)
-    : undefined;
+  const hosts = useHosts.getState().hosts;
+  const existing =
+    (input.serverId ? hosts.find((h) => h.serverId === input.serverId) : undefined) ??
+    (input.relay
+      ? undefined
+      : hosts.find((h) => !h.serverId && !h.relay && h.endpoint === input.endpoint));
   if (!existing) return addHost(input);
   // A new route to a known daemon keeps the old one as an alternate.
   const prev = primaryRoute(existing);

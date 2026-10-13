@@ -3,7 +3,7 @@ import { create } from "zustand";
 /** Which host the Hosts view shows, and which hosts dialog is open. */
 export type HostSheet =
   | null
-  | { kind: "add" }
+  | { kind: "add"; method?: "pair" | "direct" }
   | { kind: "pair-device" }
   | { kind: "confirm" }
   | { kind: "remove"; hostId: string }
