@@ -162,7 +162,24 @@ const HOST_DIRS: Record<string, string[]> = {
   "/": ["home", "opt", "tmp"],
   "/home": ["dev"],
   "/home/dev": ["frogg", "frogg-site", "notes", "scratch"],
+  // A Windows host, reached by typing a drive into the browser's path.
+  "C:\\": ["Projects", "Users"],
+  "C:\\Users": ["dev"],
+  "C:\\Users\\dev": ["frogg", "notes"],
+  "C:\\Projects": [],
+  "D:\\": ["work"],
 };
+
+/** New-folder in the host browser: the folder lists under its parent until the next reseed. */
+export function addHostDir(parent: string, name: string): string {
+  const key = parent.replace(/[\\/]+$/, "") || "/";
+  const at = HOST_DIRS[key] ?? HOST_DIRS[`${key}\\`];
+  if (at && !at.includes(name)) at.push(name);
+  const win = /^[a-zA-Z]:/.test(key);
+  const child = `${key}${win ? "\\" : "/"}${name}`.replace(/^\/\//, "/");
+  HOST_DIRS[child] ??= [];
+  return child;
+}
 
 function children(dir: string): string[] {
   const out: string[] = [];
@@ -173,11 +190,12 @@ function children(dir: string): string[] {
 
 export async function listDirectory(cwd: string, path: string) {
   await latency(path === "." ? 260 : 140);
-  const host = HOST_DIRS[cwd.replace(/\/+$/, "") || "/"];
+  const host =
+    HOST_DIRS[cwd] ?? HOST_DIRS[cwd.replace(/[\\/]+$/, "") || "/"] ?? HOST_DIRS[`${cwd}\\`];
   if (host && norm(path) === ".")
     return {
       path: ".",
-      absolutePath: cwd,
+      absolutePath: /^[a-zA-Z]:$/.test(cwd) ? `${cwd}\\` : cwd,
       entries: host.map((name) => ({
         name,
         path: name,

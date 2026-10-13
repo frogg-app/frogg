@@ -1,6 +1,7 @@
 // An in-memory stand-in for the daemon client, so real components run in the lab with no host.
 // It answers the reads the components make from fixtures and plays agent turns on a timer.
 import { useConfig } from "../daemon/config";
+import { useHosts } from "../daemon/hosts";
 import { attachFixtureClient, useDaemon } from "../daemon/store";
 import type { Agent, TimelineEntry, TimelineItem } from "../daemon/types";
 import { loadUsage, useUsage } from "../daemon/usage";
@@ -293,6 +294,14 @@ export function seedLab(): void {
   cancelled.clear();
   attachFixtureClient(client);
   resetSim();
+  // Two saved hosts: the fixture one in use and a Windows box that is not reachable.
+  useHosts.setState({
+    hosts: [
+      { id: "h_lab", name: "devbox", endpoint: "devbox:6767" },
+      { id: "h_win", name: "winbox", endpoint: "192.168.1.40:6767" },
+    ],
+    activeId: "h_lab",
+  });
   seedCi();
   useDaemon.setState({
     conn: "online",

@@ -6,6 +6,7 @@ import type { Agent } from "../../daemon/types";
 import { accounts, agent as makeAgent, ago, ahead, placement, projects } from "../fixtures";
 import { labWait, latency } from "./time";
 import { simTerminals } from "./agents";
+import { addHostDir } from "./fs";
 
 type Rpc = (...args: never[]) => unknown;
 type Emit = (event: unknown) => void;
@@ -757,7 +758,7 @@ export const miscRpcs: Record<string, Rpc> = {
   },
   createProjectDirectory: async (o: { parentPath: string; name: string }) => {
     await latency();
-    return { path: `${o.parentPath.replace(/\/+$/, "")}/${o.name}`, error: null };
+    return { path: addHostDir(o.parentPath, o.name), error: null };
   },
   fetchAgents: async () => {
     await latency();
@@ -1058,6 +1059,7 @@ export const miscRpcs: Record<string, Rpc> = {
     await latency(900);
     return {
       currentVersion: VERSION,
+      channel: "stable",
       latestVersion: LATEST,
       updateAvailable: !lastResult || lastResult.to !== LATEST,
       updatable: true,
