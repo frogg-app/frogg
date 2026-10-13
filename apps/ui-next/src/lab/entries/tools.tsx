@@ -1,7 +1,10 @@
-import type { ComponentType } from "react";
+import { useEffect, type ComponentType } from "react";
 import { CompanionPanel } from "../../components/CompanionPanel";
 import { FilesPanel } from "../../components/Files";
 import { HostsPanel } from "../../components/HostsPanel";
+import { HostDetail } from "../../components/hosts/HostDetail";
+import { PairDevice } from "../../components/hosts/PairDevice";
+import { openSheet, useHostView } from "../../components/hosts/state";
 import { PluginsPanel } from "../../components/PluginsPanel";
 import { PrsPanel } from "../../components/PrsPanel";
 import { ScmPanel } from "../../components/ScmPanel";
@@ -60,7 +63,57 @@ const panelVariants: Variant[] = PANELS.map(([id, label, P]) => ({
   bleed: true,
 }));
 
+/** The Hosts tool's main pane, with its pairing dialog mounted; `view` picks what it shows. */
+function hostPane(view: { viewId: string | null; pair?: boolean }): ComponentType {
+  return function HostPane() {
+    useEffect(() => {
+      useHostView.setState({ viewId: view.viewId, pushed: false, sheet: null });
+      if (view.pair) openSheet({ kind: "pair-device" });
+    }, []);
+    return (
+      <>
+        <HostDetail />
+        <PairDevice />
+      </>
+    );
+  };
+}
+const ActiveHostPane = hostPane({ viewId: null });
+const SavedHostPane = hostPane({ viewId: "h_win" });
+const PairingPane = hostPane({ viewId: null, pair: true });
+
 export const tools: Entry[] = [
+  {
+    id: "host-detail",
+    name: "HostDetail",
+    category: "Rail tools & widgets",
+    path: "components/hosts/HostDetail.tsx (+ HereNow, HostUpdate)",
+    purpose:
+      "Hosts main pane for the active host: load, who is here now (rename, roles, this app without a credential), connections and the daemon card with channel/version update.",
+    usedBy: 1,
+    polish: "Here now and update status poll; the rename prompt fades (Modal)",
+    variants: [{ id: "active", label: "Active host", C: ActiveHostPane, h: 860, bleed: true }],
+  },
+  {
+    id: "host-saved",
+    name: "HostDetail (background host)",
+    category: "Rail tools & widgets",
+    path: "components/hosts/HostDetail.tsx",
+    purpose: "A saved host that is not the active one: its pooled link state and session count.",
+    usedBy: 1,
+    polish: "none",
+    variants: [{ id: "saved", label: "Background host", C: SavedHostPane, h: 360, bleed: true }],
+  },
+  {
+    id: "pair-device",
+    name: "PairDevice",
+    category: "Rail tools & widgets",
+    path: "components/hosts/PairDevice.tsx",
+    purpose: "Owner side of pairing: role, QR, link and code; failures sit in the footer.",
+    usedBy: 1,
+    polish: "Dialog fade + rise (overlayMotion)",
+    variants: [{ id: "pair", label: "Pair a device", C: PairingPane, h: 640, bleed: true }],
+  },
   {
     id: "usage-panel",
     name: "UsagePanel",

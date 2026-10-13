@@ -21,13 +21,13 @@ Gaps where ui-next lacks something apps/ui has. Order = priority. Tick when done
 - [ ] Files/terminal: scrollback (TerminalView hardcodes 5000), vim, open-in targets
 - [ ] Permission modes defaults
 - [ ] Notifications delivery matrix, sound, rail badge
-- [ ] Usage meter refresh timer / on hover / after reply / animate
+- [x] Usage meter refresh timer / on hover / after reply (animate still unread)
 - [ ] Companion enable gates the rail item; other companion prefs
 - [ ] Appearance: density + motion persisted and applied
 
 ## P3 — Missing controls
 
-- [ ] Providers: enable/disable toggle, add/remove provider, refresh
+- [ ] Providers: enable/disable toggle, add/remove provider, refresh (model list per provider done)
 - [ ] Provider settings: version (install/update/auto-update), models (custom IDs, search), diagnostic run/copy, uninstall
 - [ ] Account details: sign in (login terminal), default model/thinking, model access, per-account prompt, nickname/colour
 - [ ] Automation › generated-text model (stub `noop`) — automatic/preferred model with fallback
@@ -36,8 +36,8 @@ Gaps where ui-next lacks something apps/ui has. Order = priority. Tick when done
 - [ ] Appearance: fonts (UI/content/code + sizes), syntax theme, language
 - [ ] Sidebar/rail items: show/hide, reorder
 - [ ] Keyboard shortcuts: rebind / clear / reset (desktop)
-- [ ] Daemon self-update phases + reconnect countdown
-- [ ] Connected devices "now" list, nickname, last seen; last-owner / self-demote guards
+- [ ] Daemon self-update phases + reconnect countdown (channel/version pick, live run status done)
+- [ ] Connected devices "now" list, nickname, last seen; last-owner / self-demote guards (Here now: rename, role, this-app row done)
 - [ ] Pairing code card: expiry timer, fingerprint, QR, regenerate; owner-code warning
 - [ ] Security: listen-address instructions
 - [ ] About: connected hosts' versions with "version differs" / Update host; release channel; developer-options switch

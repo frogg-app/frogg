@@ -6,6 +6,7 @@ import {
   accountName,
   groupReports,
   loadUsage,
+  useUsageAutoRefresh,
   usedPct,
   useUsage,
   type ProviderAccount,
@@ -36,9 +37,10 @@ export function UsageLimits() {
   const p = usePrefs();
   const host = useDaemon((st) => st.serverName);
   const resume = useConfig((st) => st.config?.autoResumeOnUsageLimit);
-  const setSeconds = useCallback((v: number | null) => prefSetter("meterSeconds")(v ?? 30), []);
+  const setSeconds = useCallback((v: number | null) => prefSetter("meterSeconds")(v ?? 120), []);
   const conn = useDaemon((st) => st.conn);
   const groups = useUsage((st) => st.groups);
+  useUsageAutoRefresh();
   useEffect(() => {
     if (conn === "online" && getClient() && !useUsage.getState().groups) void loadUsage();
   }, [conn]);
@@ -47,14 +49,17 @@ export function UsageLimits() {
   return (
     <>
       <Section title="Meters">
-        <Row label="Refresh on a timer">
+        <Row
+          label="Refresh on a timer"
+          hint="The usage endpoint rate-limits; Frogg backs off on its own when it does"
+        >
           <Toggle value={p.meterTimer} onChange={prefSetter("meterTimer")} />
-          <NumField value={p.meterSeconds} onChange={setSeconds} unit="s" min={5} max={3600} />
+          <NumField value={p.meterSeconds} onChange={setSeconds} unit="s" min={30} max={3600} />
         </Row>
-        <Row label="Refresh on hover">
+        <Row label="Refresh on hover" hint="Pointer over the usage panel">
           <Toggle value={p.meterHover} onChange={prefSetter("meterHover")} />
         </Row>
-        <Row label="Refresh after a reply">
+        <Row label="Refresh after a reply" hint="When a session finishes a turn">
           <Toggle value={p.meterAfterReply} onChange={prefSetter("meterAfterReply")} />
         </Row>
         <Row label="Warning at">

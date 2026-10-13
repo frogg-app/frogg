@@ -8,6 +8,8 @@ import {
   isStale,
   loadUsage,
   peakWindow,
+  refreshOnHover,
+  useUsageAutoRefresh,
   usedPct,
   useUsage,
   type AccountUsage,
@@ -78,8 +80,9 @@ const openAccounts = () => {
 
 export function UsagePanel() {
   const conn = useDaemon((s) => s.conn);
-  const { groups, error, loading } = useUsage();
+  const { groups, error, loading, backoffUntil } = useUsage();
   const refresh = useCallback(() => void loadUsage(0), []);
+  useUsageAutoRefresh();
   useEffect(() => {
     if (conn === "online" && getClient()) void loadUsage();
   }, [conn]);
@@ -103,9 +106,17 @@ export function UsagePanel() {
         )}
         {!groups && !error && <T v="label">loading…</T>}
         {groups?.length === 0 && <T style={st.faint}>No provider reports usage on this host.</T>}
-        {shown.map((g) => (
-          <ProviderCard key={g.providerId} group={g} />
-        ))}
+        {backoffUntil !== null && (
+          <T v="mono" style={st.faint}>
+            Provider is rate-limiting usage reads · next automatic refresh{" "}
+            {new Date(backoffUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+          </T>
+        )}
+        <View onPointerEnter={refreshOnHover} style={st.cards}>
+          {shown.map((g) => (
+            <ProviderCard key={g.providerId} group={g} />
+          ))}
+        </View>
         {unset.length > 0 && (
           <T v="mono" style={st.unset}>
             not set up: {unset.map((g) => g.displayName).join(", ")}
@@ -327,6 +338,7 @@ function Figures({
 const st = StyleSheet.create({
   fill: { flex: 1, backgroundColor: color.bg2 },
   content: { padding: 12, gap: 10 },
+  cards: { gap: 10 },
   error: { color: color.coral },
   faint: { color: color.faint },
   card: { backgroundColor: color.panel, padding: 14, gap: 12 },

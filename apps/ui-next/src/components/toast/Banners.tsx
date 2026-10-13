@@ -39,7 +39,11 @@ export function Banners() {
     });
   }, [conn, url]);
   const retry = useCallback(() => void connect(), []);
-  const openHosts = useCallback(() => useUi.getState().setTool("hosts"), []);
+  // The update itself lives on the host's Daemon & updates page (channel, version, progress).
+  const openUpdate = useCallback(() => {
+    useUi.getState().setTool("settings");
+    useUi.getState().openSettings("daemon");
+  }, []);
   const openResources = useCallback(() => {
     useUi.getState().setTool("settings");
     useUi.getState().openSettings("resources");
@@ -54,7 +58,7 @@ export function Banners() {
           title={`${hostName} runs daemon ${version}`}
           detail={`older than this app (${APP_VERSION}); some features are hidden`}
           action="Update host…"
-          onPress={openHosts}
+          onPress={openUpdate}
         />
       )}
       {conn !== "online" && (

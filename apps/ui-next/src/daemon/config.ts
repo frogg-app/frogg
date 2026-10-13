@@ -32,8 +32,11 @@ export async function loadConfig(): Promise<void> {
       client.getProvidersSnapshot(),
       client.getDaemonStatus().catch(() => null),
     ]);
+    // A host switch mid-read must not file this host's settings under the next one.
+    if (getClient() !== client) return;
     useConfig.setState({ config: cfg.config, providers, status, error: null });
   } catch (e) {
+    if (getClient() !== client) return;
     useConfig.setState({ error: e instanceof Error ? e.message : String(e) });
   }
 }

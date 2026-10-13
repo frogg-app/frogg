@@ -10,6 +10,7 @@ import { copyText } from "../shell/copy";
 import { T } from "../Text";
 import { Dialog } from "../tools/Dialog";
 import { useCountdown } from "./PairConfirm";
+import { pairingErrorText } from "./access";
 import { Qr } from "./Qr";
 import { closeSheet, useHostView } from "./state";
 
@@ -69,7 +70,7 @@ export function PairDevice() {
         });
         if (!relay) setRoute("direct");
       } catch (e) {
-        if (live) setError(e instanceof Error ? e.message : String(e));
+        if (live) setError(pairingErrorText(e));
       }
     })();
     return () => {
@@ -91,14 +92,17 @@ export function PairDevice() {
       width={740}
       footer={
         <>
-          <T style={s.footNote}>QR, link and code are the same offer.</T>
+          {/* The failure sits in the footer so it never pushes the body into a scroll. */}
+          <T style={error ? s.footError : s.footNote}>
+            {error ?? "QR, link and code are the same offer."}
+          </T>
           <Button kind="primary" label="Done" onPress={closeSheet} />
         </>
       }
     >
       <View style={s.row}>
         <View style={s.qr}>
-          {link ? <Qr value={link} size={200} /> : <View style={s.qrEmpty} />}
+          {link ? <Qr value={link} size={QR} /> : <View style={s.qrEmpty} />}
         </View>
         <View style={s.side}>
           <T v="label">Role for the new device</T>
@@ -133,13 +137,13 @@ export function PairDevice() {
               Anyone with this link can request access; the role is fixed by the code.
             </T>
           )}
-          {error && <T style={s.error}>{error}</T>}
         </View>
       </View>
     </Dialog>
   );
 }
 
+const QR = 176;
 const POS = ["p0", "p1", "p2", "p3", "p4", "p5", "p6", "p7"];
 
 function CodeCell({ ch, gap }: { ch: string; gap: boolean }) {
@@ -152,13 +156,13 @@ function CodeCell({ ch, gap }: { ch: string; gap: boolean }) {
 
 const s = StyleSheet.create({
   row: { flexDirection: "row", flexWrap: "wrap", gap: 24 },
-  qr: { padding: 10 },
-  qrEmpty: { width: 200, height: 200, backgroundColor: color.wash },
-  side: { flex: 1, minWidth: 260, gap: 10 },
+  qr: { padding: 6 },
+  qrEmpty: { width: QR, height: QR, backgroundColor: color.wash },
+  side: { flex: 1, minWidth: 260, gap: 8 },
   cells: { flexDirection: "row", gap: 8 },
   cell: {
     width: 30,
-    height: 40,
+    height: 36,
     alignItems: "center",
     justifyContent: "center",
     borderBottomWidth: 2,
@@ -177,6 +181,6 @@ const s = StyleSheet.create({
   acts: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   muted: { color: color.muted, fontSize: 12, lineHeight: 18, flexShrink: 1 },
   fp: { color: color.cyan2, fontSize: 11 },
-  error: { color: color.coral, fontSize: 12.5 },
   footNote: { flex: 1, alignSelf: "center", color: color.muted, fontSize: 12 },
+  footError: { flex: 1, alignSelf: "center", color: color.coral, fontSize: 12, lineHeight: 17 },
 });

@@ -2,6 +2,7 @@ import { patchHostConfig as patchConfig } from "./host-state";
 import { HostPage } from "./host-state";
 import { useHostRpc as useRpc } from "./host-state";
 import { useHostAction as useAction } from "./host-state";
+import { HostUpdate } from "../../hosts/HostUpdate";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import type { DaemonAutoUpdateConfig } from "@frogg/protocol/messages";
 import { Upload } from "lucide-react-native";
@@ -14,10 +15,9 @@ import { agoText } from "../../../util";
 import { Button } from "../../Button";
 import { T } from "../../Text";
 import { NumField, Row, Section, Seg, Toggle } from "../controls";
-import { need } from "./hostkit";
 import { Banner, Block, Confirm, ErrorLine, Status, Value, type Rpc, useFeature } from "./kit";
+import { need } from "./hostkit";
 
-type Check = Awaited<ReturnType<DaemonClient["checkDaemonUpdate"]>>;
 type Channel = DaemonAutoUpdateConfig["channel"];
 
 const CHANNELS: Array<[Channel, string]> = [
@@ -53,7 +53,7 @@ function PageBody() {
   const version = status.data?.version ?? update.data?.currentVersion ?? null;
   return (
     <>
-      <VersionBanner host={host} version={version} canUpdate={runs === true} />
+      <VersionBanner host={host} version={version} />
       <ErrorLine text={status.error ?? update.error} />
       {update.data?.run && (
         <Section title="Updating">
@@ -104,58 +104,19 @@ function lastText(r: NonNullable<UpdateStatus["lastResult"]>): string {
   return `${what}${r.reason ? ` · ${r.reason}` : ""} · ${when}`;
 }
 
-function VersionBanner({
-  host,
-  version,
-  canUpdate,
-}: {
-  host: string;
-  version: string | null;
-  canUpdate: boolean;
-}) {
-  const [check, setCheck] = useState<Check | null>(null);
-  const act = useAction();
-  const runCheck = useCallback(() => {
-    void act.run("check", async () => {
-      const res = await need().checkDaemonUpdate();
-      setCheck(res);
-      return res;
-    });
-  }, [act]);
-  const start = useCallback(() => {
-    void act.run("start", () =>
-      need().startDaemonUpdate(check?.latestVersion ? { version: check.latestVersion } : {}),
-    );
-  }, [act, check]);
-  let state = "";
-  if (check?.updateAvailable) state = ` · ${check.latestVersion} available`;
-  else if (check && !check.error && check.latestVersion) state = " · up to date";
+function VersionBanner({ host, version }: { host: string; version: string | null }) {
   return (
     <>
       <Banner
         icon={Upload}
-        title={`${host} runs ${version ?? "an unknown version"}${state}`}
-        body="Update this independently installed daemon here when self-update is supported. Other installations must be updated through their installer."
-      >
-        {canUpdate && (
-          <Button
-            label={act.pending === "check" ? "Checking…" : "Check now"}
-            onPress={runCheck}
-            disabled={!!act.pending}
-          />
-        )}
-        {check?.updateAvailable && check.updatable && (
-          <Button
-            kind="primary"
-            label={act.pending === "start" ? "Starting…" : `Update to ${check.latestVersion}`}
-            onPress={start}
-            disabled={!!act.pending}
-          />
-        )}
-      </Banner>
-      <ErrorLine
-        text={act.error ?? check?.error ?? (check && !check.updatable ? check.reason : null)}
+        title={`${host} runs ${version ?? "an unknown version"}`}
+        body="Pick a channel or an exact version, check, then update. The daemon restarts into the new version and rolls back on its own if it fails to start."
       />
+      <Section title="Update this host">
+        <Block last>
+          <HostUpdate version={version} />
+        </Block>
+      </Section>
     </>
   );
 }

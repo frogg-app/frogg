@@ -38,14 +38,14 @@ import {
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { loadConfig, patchConfig, useConfig } from "../../daemon/config";
+import { useHosts } from "../../daemon/hosts";
 import { useDaemon } from "../../daemon/store";
 import { color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
-import { agoText, providerLabel } from "../../util";
 import { Button } from "../Button";
 import { Brackets, BracketScope } from "../Brackets";
 import { T } from "../Text";
-import { Pill, Row, Section, Seg, Toggle } from "./controls";
+import { Row, Section, Seg, Toggle } from "./controls";
 import { ChatComposer } from "./pages/ChatComposer";
 import { FilesEditor } from "./pages/FilesEditor";
 import { Notifications } from "./pages/Notifications";
@@ -60,6 +60,7 @@ import { SessionLabels } from "./pages/SessionLabels";
 import { TerminalProfiles } from "./pages/TerminalProfiles";
 import { ResourcesStorage } from "./pages/ResourcesStorage";
 import { DaemonUpdates } from "./pages/DaemonUpdates";
+import { Providers } from "./pages/Providers";
 
 type Scope = "You" | "Agents" | "Host" | "Project" | "App";
 interface Page {
@@ -125,40 +126,6 @@ function Automation() {
         </Row>
       </Section>
     </>
-  );
-}
-
-function statusTint(st: string): string {
-  if (st === "ready") return color.mint;
-  if (st === "error" || st === "unavailable") return color.coral;
-  return color.amber;
-}
-
-function Providers() {
-  const providers = useConfig((st) => st.providers);
-  if (!providers) return <T v="label">loading…</T>;
-  const last = providers.entries.at(-1)?.provider;
-  return (
-    <Section title="Installed providers">
-      {providers.entries.map((p) => (
-        <Row
-          key={p.provider}
-          label={p.label ?? providerLabel(p.provider)}
-          hint={
-            p.error ??
-            `${p.models?.length ?? 0} models${
-              p.fetchedAt ? ` · checked ${agoText(p.fetchedAt)}` : ""
-            }`
-          }
-          last={p.provider === last}
-        >
-          <View style={s.pills}>
-            {!p.enabled && <Pill text="disabled" />}
-            <Pill text={p.status} tint={statusTint(p.status)} />
-          </View>
-        </Row>
-      ))}
-    </Section>
   );
 }
 
@@ -379,15 +346,24 @@ function NavItem({ page, on }: { page: Page; on: boolean }) {
   );
 }
 
+/** The active host's name: the daemon's own once known, else the saved name; null with none. */
+function useHostLabel(): string | null {
+  const served = useDaemon((st) => st.serverName);
+  const saved = useHosts((st) => st.hosts.find((h) => h.id === st.activeId)?.name ?? null);
+  return served ?? saved;
+}
+
 export function SettingsPage({ id, onBack }: { id: string; onBack?: () => void }) {
   const page = PAGES.find((p) => p.id === id) ?? PAGES[0];
   const conn = useDaemon((st) => st.conn);
   const error = useConfig((st) => st.error);
   const saving = useConfig((st) => st.saving);
-  const host = useDaemon((st) => st.serverName);
+  const url = useDaemon((st) => st.url);
+  const host = useHostLabel();
+  // Every host stays connected, so switching keeps conn "online": reload on the host too.
   useEffect(() => {
     if (conn === "online") void loadConfig();
-  }, [conn]);
+  }, [conn, url]);
   const Body = page.body;
   return (
     <View style={s.root}>
@@ -413,7 +389,7 @@ export function SettingsPage({ id, onBack }: { id: string; onBack?: () => void }
         {(page.scope === "Host" || page.scope === "Agents") && !onBack && (
           <View style={s.badge}>
             <T v="mono" style={s.badgeT}>
-              {host ?? "host"} · config.json
+              {host ? `${host} · config.json` : "no host connected"}
             </T>
           </View>
         )}
@@ -532,7 +508,6 @@ const s = StyleSheet.create({
   promptBox: { padding: 14, gap: 10 },
   faintSmall: { color: color.faint, fontSize: 12.5 },
   buttons: { flexDirection: "row", gap: 8 },
-  pills: { flexDirection: "row", gap: 6 },
   value: { color: color.text },
   kbd: {
     borderWidth: 1,

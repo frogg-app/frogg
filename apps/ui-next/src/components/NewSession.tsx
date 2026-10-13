@@ -1,11 +1,20 @@
 import { KeyboardFrame } from "./shell/KeyboardFrame";
 import { exitPointer, riseStyle, scrimStyle, sheetStyle, usePresence } from "./presence";
-import { GitBranch, X } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { FileText, GitBranch, Image as ImageIcon, Paperclip, X } from "lucide-react-native";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { loadConfig, useConfig } from "../daemon/config";
-import { createSession, listProjects, type Project } from "../daemon/store";
+import type { DaemonClient } from "@frogg/client/internal/daemon-client";
+import { useHosts } from "../daemon/hosts";
+import {
+  connect,
+  getHostClient,
+  useDaemon,
+  useFleet,
+  useHostConn,
+  type Project,
+} from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
 import { color, font, overlayMs, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
@@ -14,7 +23,17 @@ import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { Seg } from "./settings/controls";
 import { Select } from "./Select";
-import { addProject } from "./sessions/directory";
+import { canPickFiles, pickFiles } from "./chat/pickFiles";
+import {
+  isImage,
+  loadBranches,
+  prepareDrafts,
+  toDraft,
+  type BranchOption,
+  type Draft,
+  type HostProviders,
+} from "./sessions/create";
+import { addProject, baseName } from "./sessions/directory";
 import { FolderBrowser } from "./sessions/sheets";
 import { T } from "./Text";
 
@@ -117,42 +136,127 @@ function AgentFields({
   );
 }
 
-export function NewSession() {
-  const open = useUi((s) => s.newSessionOpen);
-  const setOpen = useUi((s) => s.setNewSession);
-  const select = useUi((s) => s.select);
-  const setTool = useUi((s) => s.setTool);
-  const providers = useConfig((s) => s.providers);
-  const phone = useFormFactor() === "phone";
-  const { mounted, closing } = usePresence(open, phone ? overlayMs.out + 30 : overlayMs.out);
+type Kind = "agent" | "terminal";
+const KIND_OPTIONS: Array<[Kind, string]> = [
+  ["agent", "Agent"],
+  ["terminal", "Terminal"],
+];
+
+function connHint(conn: string | null | undefined): string {
+  if (conn === "online") return "connected";
+  if (conn === "connecting") return "connecting…";
+  return "offline";
+}
+
+/** Every saved host and its link state, for the host picker. */
+function useHostOptions() {
+  const hosts = useHosts((st) => st.hosts);
+  const activeId = useHosts((st) => st.activeId);
+  const fleet = useFleet((st) => st.conn);
+  const own = useDaemon((st) => st.conn);
+  return useMemo(
+    () =>
+      hosts.map((h) => {
+        const conn = h.id === activeId ? own : fleet[h.id];
+        return {
+          value: h.id,
+          label: h.name,
+          hint: `${h.endpoint} · ${connHint(conn)}`,
+          disabled: conn !== "online",
+        };
+      }),
+    [hosts, activeId, fleet, own],
+  );
+}
+
+/** The chosen host's ready providers: the shell's snapshot for the active host, else its own. */
+function useHostProviders(hostId: string | null, active: boolean, open: boolean) {
+  const shared = useConfig((st) => st.providers);
+  const [own, setOwn] = useState<HostProviders | null>(null);
+  useEffect(() => {
+    setOwn(null);
+    if (!open || active) {
+      if (open && !shared) void loadConfig();
+      return;
+    }
+    const c = getHostClient(hostId);
+    if (!c) return;
+    let live = true;
+    c.getProvidersSnapshot()
+      .then((p) => live && setOwn(p))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [hostId, active, open, shared]);
+  return active ? shared : own;
+}
+
+/** The chosen host's projects; switching hosts starts the pick over. */
+function useHostProjects(
+  open: boolean,
+  hostId: string | null,
+  hostConn: string | null,
+  setError: (e: string | null) => void,
+  setBrowsing: (b: boolean) => void,
+) {
   const [projects, setProjects] = useState<Project[] | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
-  const [isolation, setIsolation] = useState<Isolation>("worktree");
-  const [base, setBase] = useState("main");
+  useEffect(() => {
+    if (!open) return;
+    setProjects(null);
+    setProjectId(null);
+    setBrowsing(false);
+    const c = getHostClient(hostId);
+    if (!c || hostConn !== "online") return;
+    let live = true;
+    const read = async () => {
+      const r = await c.listProjects();
+      if (!live) return;
+      setProjects(r.projects);
+      setProjectId(r.projects[0]?.projectId ?? null);
+    };
+    read().catch((e: unknown) => live && setError(e instanceof Error ? e.message : String(e)));
+    return () => {
+      live = false;
+    };
+  }, [open, hostId, hostConn, setError, setBrowsing]);
+  return { projects, setProjects, projectId, setProjectId };
+}
+
+/** Start from: every local and published branch of the picked checkout. */
+function useBranches(
+  open: boolean,
+  hostId: string | null,
+  root: string | undefined,
+  setBase: (fn: (b: string) => string) => void,
+): BranchOption[] | null {
+  const [branches, setBranches] = useState<BranchOption[] | null>(null);
+  useEffect(() => {
+    setBranches(null);
+    const c = getHostClient(hostId);
+    if (!open || !c || !root) return;
+    let live = true;
+    const read = async () => {
+      const list = await loadBranches(c, root);
+      if (!live) return;
+      setBranches(list);
+      const first = list[0]?.value;
+      setBase((b) => (list.some((x) => x.value === b) || !first ? b : first));
+    };
+    read().catch(() => live && setBranches([]));
+    return () => {
+      live = false;
+    };
+  }, [open, hostId, root, setBase]);
+  return branches;
+}
+
+/** Provider, model and mode, kept valid as the host's ready providers change. */
+function useAgentChoice(providers: HostProviders | null) {
   const [provider, setProvider] = useState<string | null>(null);
   const [model, setModel] = useState<string | null>(null);
   const [mode, setMode] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState("");
-  const [title, setTitle] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [browsing, setBrowsing] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    const seed = useUi.getState().newSessionPrompt;
-    if (seed) {
-      setPrompt(seed);
-      useUi.setState({ newSessionPrompt: "" });
-    }
-    void listProjects().then((p) => {
-      setProjects(p);
-      setProjectId((cur) => cur ?? p[0]?.projectId ?? null);
-      return p;
-    });
-    if (!providers) void loadConfig();
-  }, [open, providers]);
-
   const ready = useMemo(
     () => providers?.entries.filter((p) => p.status === "ready" && p.enabled) ?? [],
     [providers],
@@ -172,66 +276,499 @@ export function NewSession() {
         : (entry.defaultModeId ?? entry.modes?.[0]?.id ?? null),
     );
   }, [entry]);
+  return { ready, entry, setProvider, model, setModel, mode, setMode };
+}
 
-  const browse = useCallback(() => setBrowsing(true), []);
-  const stopBrowsing = useCallback(() => setBrowsing(false), []);
-  const folderAdded = useCallback((p: Project[], path: string) => {
-    setProjects(p);
-    const hit = p.find((x) => x.projectRootPath === path);
-    if (hit) setProjectId(hit.projectId);
-    setBrowsing(false);
-  }, []);
+/** Makes `hostId` the active host when it is not already (a no-op for the active one). */
+async function focusHost(hostId: string | null): Promise<void> {
+  const st = useHosts.getState();
+  const target = st.hosts.find((h) => h.id === hostId);
+  if (target && target.id !== st.activeId) await connect(target);
+}
 
-  const project = projects?.find((p) => p.projectId === projectId);
-  const isGit = project?.projectKind === "git";
-  const branch = slug(title || prompt);
-  const close = useCallback(() => {
-    setOpen(false);
-    setError(null);
-  }, [setOpen]);
-  const submit = useCallback(async () => {
-    if (!project || !entry || !prompt.trim()) return;
+async function startTerminal(
+  c: DaemonClient,
+  hostId: string | null,
+  cwd: string,
+  name?: string,
+): Promise<void> {
+  const res = await c.createTerminal(cwd, name);
+  if (res.error || !res.terminal) throw new Error(res.error ?? "Could not start a terminal");
+  await focusHost(hostId);
+  useUi.getState().setTool("terminals");
+  useUi.getState().openTerminal(res.terminal.id);
+}
+
+async function startAgent(
+  c: DaemonClient,
+  hostId: string | null,
+  input: {
+    provider: string;
+    cwd: string;
+    model?: string;
+    modeId?: string;
+    title?: string;
+    initialPrompt: string;
+    drafts: Draft[];
+    worktree?: { mode: "branch-off"; newBranch: string; base?: string };
+  },
+): Promise<void> {
+  const { drafts, provider, ...rest } = input;
+  const { images, attachments } = await prepareDrafts(c, drafts);
+  const agent = await c.createAgent({
+    ...rest,
+    provider: provider as never,
+    images,
+    attachments,
+  });
+  await focusHost(hostId);
+  useDaemon.setState((st) => ({
+    sessions: {
+      ...st.sessions,
+      [agent.id]: { agent, project: st.sessions[agent.id]?.project ?? null },
+    },
+  }));
+  useUi.getState().setTool("sessions");
+  useUi.getState().select(agent.id);
+}
+
+type Entry = NonNullable<ReturnType<typeof useAgentChoice>["entry"]>;
+
+/** Creates the session (or terminal) on the chosen host from the sheet's current fields. */
+function useSubmit(f: {
+  hostId: string | null;
+  kind: Kind;
+  project: Project | undefined;
+  entry: Entry | undefined;
+  prompt: string;
+  drafts: Draft[];
+  model: string | null;
+  mode: string | null;
+  title: string;
+  worktree: { newBranch: string; base: string } | null;
+  setBusy: (b: boolean) => void;
+  setError: (e: string | null) => void;
+  reset: () => void;
+}) {
+  const ref = useRef(f);
+  ref.current = f;
+  return useCallback(async () => {
+    const { hostId, kind, project, entry, prompt, title, setBusy, setError } = ref.current;
+    const c = getHostClient(hostId);
+    if (!c || !project) return;
+    if (kind === "agent" && (!entry || !prompt.trim())) return;
     setBusy(true);
     setError(null);
     try {
-      const id = await createSession({
-        cwd: project.projectRootPath,
-        provider: entry.provider,
-        model: model ?? undefined,
-        modeId: mode ?? undefined,
-        title: title.trim() || undefined,
-        initialPrompt: prompt.trim(),
-        worktree:
-          isGit && isolation === "worktree"
-            ? { mode: "branch-off", newBranch: branch, base }
-            : undefined,
-      });
-      setPrompt("");
-      setTitle("");
-      close();
-      setTool("sessions");
-      select(id);
+      const cwd = project.projectRootPath;
+      const name = title.trim() || undefined;
+      if (kind === "terminal") await startTerminal(c, hostId, cwd, name);
+      else if (entry) await startAgent(c, hostId, agentInput(ref.current, entry, cwd, name));
+      ref.current.reset();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
-  }, [
+  }, []);
+}
+
+function agentInput(
+  f: Parameters<typeof useSubmit>[0],
+  entry: Entry,
+  cwd: string,
+  title: string | undefined,
+): Parameters<typeof startAgent>[2] {
+  return {
+    provider: entry.provider,
+    cwd,
+    model: f.model ?? undefined,
+    modeId: f.mode ?? undefined,
+    title,
+    initialPrompt: f.prompt.trim(),
+    drafts: f.drafts,
+    worktree: f.worktree ? { mode: "branch-off", ...f.worktree } : undefined,
+  };
+}
+
+/** Each opening starts on the active host and takes any prompt handed to the sheet. */
+function useOnOpen(
+  open: boolean,
+  setHostId: (id: string | null) => void,
+  setPrompt: (p: string) => void,
+): void {
+  useEffect(() => {
+    if (!open) return;
+    setHostId(useHosts.getState().activeId);
+    const seed = useUi.getState().newSessionPrompt;
+    if (seed) {
+      setPrompt(seed);
+      useUi.setState({ newSessionPrompt: "" });
+    }
+  }, [open, setHostId, setPrompt]);
+}
+
+/** Files picked for the first prompt; they are sent once the session exists. */
+function useDrafts(setError: (e: string | null) => void) {
+  const [drafts, setDrafts] = useState<Draft[]>([]);
+  const attachFiles = useCallback(() => {
+    pickFiles({ images: false })
+      .then((picked) => {
+        if (picked.length) setDrafts((d) => [...d, ...picked.map(toDraft)]);
+        return undefined;
+      })
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+  }, [setError]);
+  const dropDraft = useCallback((id: string) => setDrafts((d) => d.filter((x) => x.id !== id)), []);
+  return { drafts, setDrafts, attachFiles, dropDraft };
+}
+
+type HostOption = ReturnType<typeof useHostOptions>[number];
+
+interface SheetFieldsProps {
+  agentKind: boolean;
+  attachFiles: () => void;
+  base: string;
+  branchOptions: BranchOption[];
+  branches: BranchOption[] | null;
+  browse: () => void;
+  browsing: boolean;
+  drafts: Draft[];
+  dropDraft: (id: string) => void;
+  entry: Entry | undefined;
+  error: string | null;
+  folderAdded: (p: Project[], path: string) => void;
+  hostConn: string | null;
+  hostId: string | null;
+  hostName: string | undefined;
+  hostOptions: HostOption[];
+  isGit: boolean;
+  isolation: Isolation;
+  kind: Kind;
+  mode: string | null;
+  modeOptions: Opt[];
+  model: string | null;
+  modelOptions: Opt[];
+  phone: boolean;
+  project: Project | undefined;
+  projectId: string | null;
+  projectOptions: Opt[];
+  projectPaths: string[];
+  projects: Project[] | null;
+  prompt: string;
+  providerOptions: Opt[];
+  providers: HostProviders | null;
+  setBase: (b: string) => void;
+  setHostId: (id: string) => void;
+  setIsolation: (v: Isolation) => void;
+  setKind: (v: Kind) => void;
+  setMode: (v: string) => void;
+  setModel: (v: string) => void;
+  setProjectId: (id: string) => void;
+  setPrompt: (v: string) => void;
+  setProvider: (v: string) => void;
+  setTitle: (v: string) => void;
+  stopBrowsing: () => void;
+  title: string;
+  worktree: boolean;
+}
+
+/** Every field of the sheet, top to bottom; NewSession owns the state. */
+function SheetFields({
+  agentKind,
+  attachFiles,
+  base,
+  branchOptions,
+  branches,
+  browse,
+  browsing,
+  drafts,
+  dropDraft,
+  entry,
+  error,
+  folderAdded,
+  hostConn,
+  hostId,
+  hostName,
+  hostOptions,
+  isGit,
+  isolation,
+  kind,
+  mode,
+  modeOptions,
+  model,
+  modelOptions,
+  phone,
+  project,
+  projectId,
+  projectOptions,
+  projectPaths,
+  projects,
+  prompt,
+  providerOptions,
+  providers,
+  setBase,
+  setHostId,
+  setIsolation,
+  setKind,
+  setMode,
+  setModel,
+  setProjectId,
+  setPrompt,
+  setProvider,
+  setTitle,
+  stopBrowsing,
+  title,
+  worktree,
+}: SheetFieldsProps) {
+  return (
+    <>
+      {hostOptions.length > 1 && (
+        <HostField phone={phone} value={hostId} onChange={setHostId} options={hostOptions} />
+      )}
+      <Field label="Type" phone={phone}>
+        <Seg options={KIND_OPTIONS} value={kind} onChange={setKind} />
+      </Field>
+      <ProjectField
+        phone={phone}
+        value={projectId}
+        onChange={setProjectId}
+        options={projectOptions}
+        loaded={!!projects || hostConn !== "online"}
+        offline={hostConn !== "online"}
+        browsing={browsing}
+        onBrowse={browse}
+      />
+      {browsing && (
+        <FolderPick
+          key={hostId ?? "active"}
+          from={project?.projectRootPath}
+          hostId={hostId}
+          hostName={hostName}
+          projectPaths={projectPaths}
+          onCancel={stopBrowsing}
+          onAdded={folderAdded}
+        />
+      )}
+      {agentKind && isGit && (
+        <Field label="Isolation" phone={phone}>
+          <Seg options={ISOLATION_OPTIONS} value={isolation} onChange={setIsolation} />
+        </Field>
+      )}
+      {worktree && (
+        <BranchField
+          phone={phone}
+          value={base}
+          onChange={setBase}
+          options={branchOptions}
+          loaded={!!branches}
+        />
+      )}
+      {agentKind && (
+        <AgentFields
+          phone={phone}
+          loaded={!!providers}
+          provider={entry?.provider ?? null}
+          setProvider={setProvider}
+          providerOptions={providerOptions}
+          model={model}
+          setModel={setModel}
+          modelOptions={modelOptions}
+          mode={mode}
+          setMode={setMode}
+          modeOptions={modeOptions}
+        />
+      )}
+      {agentKind && (
+        <PromptBox
+          phone={phone}
+          prompt={prompt}
+          setPrompt={setPrompt}
+          title={title}
+          setTitle={setTitle}
+          drafts={drafts}
+          onRemove={dropDraft}
+          onAttach={attachFiles}
+        />
+      )}
+      {(phone || !agentKind) && (
+        <NameField phone={phone} agent={agentKind} value={title} onChange={setTitle} />
+      )}
+      {error && <ErrorBox agent={agentKind} error={error} />}
+    </>
+  );
+}
+
+export function NewSession() {
+  const open = useUi((s) => s.newSessionOpen);
+  const setOpen = useUi((s) => s.setNewSession);
+  const phone = useFormFactor() === "phone";
+  const { mounted, closing } = usePresence(open, phone ? overlayMs.out + 30 : overlayMs.out);
+  const activeId = useHosts((s) => s.activeId);
+  const hostOptions = useHostOptions();
+  const [hostId, setHostId] = useState<string | null>(activeId);
+  const active = !hostId || hostId === activeId;
+  const ownConn = useDaemon((st) => st.conn);
+  const hostConn = useHostConn(hostId) ?? ownConn;
+  const hostName = hostOptions.find((h) => h.value === hostId)?.label;
+  const providers = useHostProviders(hostId, active, open);
+  const [kind, setKind] = useState<Kind>("agent");
+  const [isolation, setIsolation] = useState<Isolation>("worktree");
+  const [base, setBase] = useState("main");
+  const [prompt, setPrompt] = useState("");
+  const [title, setTitle] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [browsing, setBrowsing] = useState(false);
+  const { projects, setProjects, projectId, setProjectId } = useHostProjects(
+    open,
+    hostId,
+    hostConn,
+    setError,
+    setBrowsing,
+  );
+
+  useOnOpen(open, setHostId, setPrompt);
+  const { drafts, setDrafts, attachFiles, dropDraft } = useDrafts(setError);
+  const { ready, entry, setProvider, model, setModel, mode, setMode } = useAgentChoice(providers);
+  const project = projects?.find((p) => p.projectId === projectId);
+  const isGit = project?.projectKind === "git";
+  const branches = useBranches(open, hostId, isGit ? project?.projectRootPath : undefined, setBase);
+
+  const browse = useCallback(() => setBrowsing(true), []);
+  const stopBrowsing = useCallback(() => setBrowsing(false), []);
+  const folderAdded = useCallback(
+    (p: Project[], path: string) => {
+      setProjects(p);
+      const hit = p.find((x) => x.projectRootPath === path);
+      if (hit) setProjectId(hit.projectId);
+      setBrowsing(false);
+    },
+    [setProjects, setProjectId],
+  );
+
+  const branch = slug(title || prompt);
+  const close = useCallback(() => {
+    setOpen(false);
+    setError(null);
+  }, [setOpen]);
+  const reset = useCallback(() => {
+    setPrompt("");
+    setTitle("");
+    setDrafts([]);
+    close();
+  }, [close, setDrafts]);
+  const submit = useSubmit({
+    hostId,
+    kind,
     project,
     entry,
     prompt,
+    drafts,
     model,
     mode,
     title,
-    isGit,
-    isolation,
-    branch,
-    base,
-    close,
-    setTool,
-    select,
-  ]);
+    worktree: isGit && isolation === "worktree" ? { newBranch: branch, base } : null,
+    setBusy,
+    setError,
+    reset,
+  });
   const onCreate = useCallback(() => void submit(), [submit]);
+  const {
+    projectOptions,
+    projectPaths,
+    providerOptions,
+    modelOptions,
+    modeOptions,
+    branchOptions,
+  } = useSheetOptions(projects, ready, entry, branches, base);
+
+  if (!mounted) return null;
+
+  const agentKind = kind === "agent";
+  const worktree = agentKind && isGit && isolation === "worktree";
+  const fields = (
+    <SheetFields
+      agentKind={agentKind}
+      attachFiles={attachFiles}
+      base={base}
+      branchOptions={branchOptions}
+      branches={branches}
+      browse={browse}
+      browsing={browsing}
+      drafts={drafts}
+      dropDraft={dropDraft}
+      entry={entry}
+      error={error}
+      folderAdded={folderAdded}
+      hostConn={hostConn}
+      hostId={hostId}
+      hostName={hostName}
+      hostOptions={hostOptions}
+      isGit={isGit}
+      isolation={isolation}
+      kind={kind}
+      mode={mode}
+      modeOptions={modeOptions}
+      model={model}
+      modelOptions={modelOptions}
+      phone={phone}
+      project={project}
+      projectId={projectId}
+      projectOptions={projectOptions}
+      projectPaths={projectPaths}
+      projects={projects}
+      prompt={prompt}
+      providerOptions={providerOptions}
+      providers={providers}
+      setBase={setBase}
+      setHostId={setHostId}
+      setIsolation={setIsolation}
+      setKind={setKind}
+      setMode={setMode}
+      setModel={setModel}
+      setProjectId={setProjectId}
+      setPrompt={setPrompt}
+      setProvider={setProvider}
+      setTitle={setTitle}
+      stopBrowsing={stopBrowsing}
+      title={title}
+      worktree={worktree}
+    />
+  );
+  const createLabel = actionLabel(agentKind, busy);
+  const canCreate =
+    !busy && !!project && hostConn === "online" && (!agentKind || agentReady(prompt, entry));
+  const foot = [hostOptions.length > 1 ? hostName : null, footText(worktree, branch, base, project)]
+    .filter(Boolean)
+    .join(" · ");
+
+  const Shell = phone ? PhoneSheet : DeskSheet;
+  return (
+    <Shell
+      closing={closing}
+      close={close}
+      foot={foot}
+      createLabel={createLabel}
+      canCreate={canCreate}
+      onCreate={onCreate}
+    >
+      {fields}
+    </Shell>
+  );
+}
+
+function agentReady(prompt: string, entry: unknown): boolean {
+  return !!prompt.trim() && !!entry;
+}
+
+function useSheetOptions(
+  projects: Project[] | null,
+  ready: HostProviders["entries"],
+  entry: HostProviders["entries"][number] | undefined,
+  branches: BranchOption[] | null,
+  base: string,
+) {
   const projectOptions = useMemo(
     () =>
       (projects ?? []).map((p) => ({
@@ -241,12 +778,9 @@ export function NewSession() {
       })),
     [projects],
   );
+  const projectPaths = useMemo(() => (projects ?? []).map((p) => p.projectRootPath), [projects]);
   const providerOptions = useMemo(
-    () =>
-      ready.map((p) => ({
-        value: p.provider,
-        label: p.label ?? providerLabel(p.provider),
-      })),
+    () => ready.map((p) => ({ value: p.provider, label: p.label ?? providerLabel(p.provider) })),
     [ready],
   );
   const modelOptions = useMemo(
@@ -254,158 +788,153 @@ export function NewSession() {
     [entry],
   );
   const modeOptions = useMemo(
-    () =>
-      (entry?.modes ?? []).map((m) => ({
-        value: m.id,
-        label: m.label,
-        hint: m.description,
-      })),
+    () => (entry?.modes ?? []).map((m) => ({ value: m.id, label: m.label, hint: m.description })),
     [entry],
   );
+  // The current base stays pickable even when the host has not listed it (yet).
+  const branchOptions = useMemo(() => {
+    const list = branches ?? [];
+    return list.some((b) => b.value === base) ? list : [{ value: base, label: base }, ...list];
+  }, [branches, base]);
+  return {
+    projectOptions,
+    projectPaths,
+    providerOptions,
+    modelOptions,
+    modeOptions,
+    branchOptions,
+  };
+}
 
-  if (!mounted) return null;
-
-  const worktree = isGit && isolation === "worktree";
-  const fields = (
-    <>
-      <ProjectField
-        phone={phone}
-        value={projectId}
-        onChange={setProjectId}
-        options={projectOptions}
-        loaded={!!projects}
-        browsing={browsing}
-        onBrowse={browse}
+function HostField({
+  phone,
+  value,
+  onChange,
+  options,
+}: {
+  phone: boolean;
+  value: string | null;
+  onChange: (id: string) => void;
+  options: Array<{ value: string; label: string; hint?: string; disabled?: boolean }>;
+}) {
+  return (
+    <Field label="Host" z={7} phone={phone}>
+      <Select
+        width={phone ? "100%" : 240}
+        label="Host"
+        value={value}
+        onChange={onChange}
+        options={options}
       />
-      {browsing && (
-        <FolderPick from={project?.projectRootPath} onCancel={stopBrowsing} onAdded={folderAdded} />
-      )}
-      {isGit && (
-        <Field label="Isolation" phone={phone}>
-          <Seg options={ISOLATION_OPTIONS} value={isolation} onChange={setIsolation} />
-        </Field>
-      )}
-      {worktree && (
-        <Field label="Start from" phone={phone}>
-          <View style={[s.input, phone && s.inputPhone]}>
-            <GitBranch size={13} color={color.faint} />
-            <TextInput
-              value={base}
-              onChangeText={setBase}
-              style={s.inputT}
-              placeholder="main"
-              placeholderTextColor={color.faint}
-              autoCapitalize="none"
-              autoCorrect={false}
+    </Field>
+  );
+}
+
+function BranchField({
+  phone,
+  value,
+  onChange,
+  options,
+  loaded,
+}: {
+  phone: boolean;
+  value: string;
+  onChange: (b: string) => void;
+  options: BranchOption[];
+  loaded: boolean;
+}) {
+  return (
+    <Field label="Start from" z={3} phone={phone}>
+      <View style={s.branchRow}>
+        <GitBranch size={13} color={color.faint} />
+        <Select
+          width={phone ? "100%" : 240}
+          mono
+          label="Start from"
+          value={value}
+          onChange={onChange}
+          options={options}
+          placeholder={loaded ? "No branches" : "Loading branches…"}
+        />
+      </View>
+    </Field>
+  );
+}
+
+interface ShellProps {
+  closing: boolean;
+  close: () => void;
+  foot: string;
+  createLabel: string;
+  canCreate: boolean;
+  onCreate: () => void;
+  children: ReactNode;
+}
+
+function PhoneSheet({
+  closing,
+  close,
+  foot,
+  createLabel,
+  canCreate,
+  onCreate,
+  children,
+}: ShellProps) {
+  return (
+    <Modal
+      visible
+      transparent={Platform.OS === "web"}
+      animationType={Platform.OS === "web" ? "none" : "slide"}
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={close}
+    >
+      <SafeAreaView edges={EDGES_ALL} style={[s.phoneRoot, sheetStyle(closing)]}>
+        <KeyboardFrame style={s.flex}>
+          <View style={s.phoneHead}>
+            <Pressable onPress={close} hitSlop={12} accessibilityLabel="Close">
+              <X size={20} color={color.muted} />
+            </Pressable>
+            <T v="display" style={s.phoneHeading}>
+              New session
+            </T>
+          </View>
+          <ScrollView
+            style={s.flex}
+            contentContainerStyle={s.phoneContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
+          <View style={s.phoneFoot}>
+            {!!foot && (
+              <T v="mono" numberOfLines={1} style={s.footText}>
+                {foot}
+              </T>
+            )}
+            <Button
+              kind="primary"
+              grow
+              label={createLabel}
+              disabled={!canCreate}
+              onPress={onCreate}
             />
           </View>
-        </Field>
-      )}
-      <AgentFields
-        phone={phone}
-        loaded={!!providers}
-        provider={entry?.provider ?? null}
-        setProvider={setProvider}
-        providerOptions={providerOptions}
-        model={model}
-        setModel={setModel}
-        modelOptions={modelOptions}
-        mode={mode}
-        setMode={setMode}
-        modeOptions={modeOptions}
-      />
-      <View style={s.prompt}>
-        <TextInput
-          autoFocus={!phone}
-          multiline
-          value={prompt}
-          onChangeText={setPrompt}
-          placeholder="What should the agent do?"
-          placeholderTextColor={color.faint}
-          style={[s.promptT, phone && s.promptPhone]}
-          textAlignVertical="top"
-        />
-        {!phone && (
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Title (optional)"
-            placeholderTextColor={color.faint}
-            style={s.title}
-          />
-        )}
-      </View>
-      {phone && (
-        <Field label="Title" phone>
-          <TextInput
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Optional — named from the prompt otherwise"
-            placeholderTextColor={color.faint}
-            style={s.titlePhone}
-          />
-        </Field>
-      )}
-      {error && (
-        <View style={s.errorBox}>
-          <T style={s.errorHead}>Could not create the session</T>
-          <T v="mono" style={s.error}>
-            {error}
-          </T>
-        </View>
-      )}
-    </>
+        </KeyboardFrame>
+      </SafeAreaView>
+    </Modal>
   );
-  const createLabel = busy ? "Creating…" : "Create session";
-  const canCreate = !busy && !!prompt.trim() && !!project && !!entry;
-  const foot = footText(worktree, branch, base, project);
+}
 
-  if (phone)
-    return (
-      <Modal
-        visible
-        transparent={Platform.OS === "web"}
-        animationType={Platform.OS === "web" ? "none" : "slide"}
-        statusBarTranslucent
-        navigationBarTranslucent
-        onRequestClose={close}
-      >
-        <SafeAreaView edges={EDGES_ALL} style={[s.phoneRoot, sheetStyle(closing)]}>
-          <KeyboardFrame style={s.flex}>
-            <View style={s.phoneHead}>
-              <Pressable onPress={close} hitSlop={12} accessibilityLabel="Close">
-                <X size={20} color={color.muted} />
-              </Pressable>
-              <T v="display" style={s.phoneHeading}>
-                New session
-              </T>
-            </View>
-            <ScrollView
-              style={s.flex}
-              contentContainerStyle={s.phoneContent}
-              keyboardShouldPersistTaps="handled"
-            >
-              {fields}
-            </ScrollView>
-            <View style={s.phoneFoot}>
-              {!!foot && (
-                <T v="mono" numberOfLines={1} style={s.footText}>
-                  {foot}
-                </T>
-              )}
-              <Button
-                kind="primary"
-                grow
-                label={createLabel}
-                disabled={!canCreate}
-                onPress={onCreate}
-              />
-            </View>
-          </KeyboardFrame>
-        </SafeAreaView>
-      </Modal>
-    );
-
+function DeskSheet({
+  closing,
+  close,
+  foot,
+  createLabel,
+  canCreate,
+  onCreate,
+  children,
+}: ShellProps) {
   return (
     <View style={s.layer} pointerEvents={exitPointer(closing)}>
       <Pressable style={[s.scrim, scrimStyle(closing)]} onPress={close} />
@@ -425,7 +954,7 @@ export function NewSession() {
                 <X size={16} color={color.faint} />
               </Pressable>
             </View>
-            {fields}
+            {children}
           </ScrollView>
           <View style={s.foot}>
             <T v="mono" numberOfLines={1} style={s.footText}>
@@ -446,6 +975,106 @@ export function NewSession() {
   );
 }
 
+function actionLabel(agent: boolean, busy: boolean): string {
+  if (agent) return busy ? "Creating…" : "Create session";
+  return busy ? "Starting…" : "Start terminal";
+}
+
+/** The first prompt, its attachments and (on wide layouts) the optional title. */
+function PromptBox({
+  phone,
+  prompt,
+  setPrompt,
+  title,
+  setTitle,
+  drafts,
+  onRemove,
+  onAttach,
+}: {
+  phone: boolean;
+  prompt: string;
+  setPrompt: (v: string) => void;
+  title: string;
+  setTitle: (v: string) => void;
+  drafts: Draft[];
+  onRemove: (id: string) => void;
+  onAttach: () => void;
+}) {
+  return (
+    <View style={s.prompt}>
+      {drafts.length > 0 && <DraftChips drafts={drafts} onRemove={onRemove} />}
+      <TextInput
+        autoFocus={!phone}
+        multiline
+        value={prompt}
+        onChangeText={setPrompt}
+        placeholder="What should the agent do?"
+        placeholderTextColor={color.faint}
+        style={[s.promptT, phone && s.promptPhone]}
+        textAlignVertical="top"
+      />
+      <View style={s.promptFoot}>
+        {canPickFiles && (
+          <Pressable onPress={onAttach} accessibilityLabel="Attach files" hitSlop={6}>
+            {({ hovered }) => (
+              <View style={s.attach}>
+                <Paperclip size={14} color={hovered ? color.text : color.muted} />
+                <T style={hovered ? s.attachTOn : s.attachT}>Attach</T>
+              </View>
+            )}
+          </Pressable>
+        )}
+        {!phone && (
+          <TextInput
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Title (optional)"
+            placeholderTextColor={color.faint}
+            style={s.title}
+          />
+        )}
+      </View>
+    </View>
+  );
+}
+
+function NameField({
+  phone,
+  agent,
+  value,
+  onChange,
+}: {
+  phone: boolean;
+  agent: boolean;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <Field label={agent ? "Title" : "Name"} phone={phone}>
+      <TextInput
+        value={value}
+        onChangeText={onChange}
+        placeholder={agent ? "Optional — named from the prompt otherwise" : "Optional"}
+        placeholderTextColor={color.faint}
+        style={[s.titlePhone, !phone && s.nameWide]}
+      />
+    </Field>
+  );
+}
+
+function ErrorBox({ agent, error }: { agent: boolean; error: string }) {
+  return (
+    <View style={s.errorBox}>
+      <T style={s.errorHead}>
+        {agent ? "Could not create the session" : "Could not start the terminal"}
+      </T>
+      <T v="mono" style={s.error}>
+        {error}
+      </T>
+    </View>
+  );
+}
+
 const EDGES_ALL = ["top", "bottom", "left", "right"] as const;
 
 function ProjectField({
@@ -454,6 +1083,7 @@ function ProjectField({
   onChange,
   options,
   loaded,
+  offline,
   browsing,
   onBrowse,
 }: {
@@ -462,6 +1092,7 @@ function ProjectField({
   onChange: (id: string) => void;
   options: Array<{ value: string; label: string; hint?: string }>;
   loaded: boolean;
+  offline: boolean;
   browsing: boolean;
   onBrowse: () => void;
 }) {
@@ -474,50 +1105,69 @@ function ProjectField({
           value={value}
           onChange={onChange}
           options={options}
-          placeholder={loaded ? "No projects yet" : "Loading projects…"}
+          placeholder={projectPlaceholder(loaded, offline)}
         />
-        {!browsing && <Button label="Choose folder…" onPress={onBrowse} />}
+        {!browsing && !offline && <Button label="Choose folder…" onPress={onBrowse} />}
       </View>
     </Field>
   );
 }
 
-function folderLabel(folder: string | null, adding: boolean): string {
-  if (adding) return "Adding…";
-  return folder ? `Use ${folder.split("/").pop()}` : "Pick a folder";
+function projectPlaceholder(loaded: boolean, offline: boolean): string {
+  if (offline) return "Host offline";
+  return loaded ? "No projects yet" : "Loading projects…";
 }
 
-/** Inline host-folder picker: the picked folder is added as a project (idempotent). */
+function folderLabel(folder: string | null, adding: boolean): string {
+  if (adding) return "Adding…";
+  return folder ? `Use ${baseName(folder) || folder}` : "Pick a folder";
+}
+
+/** Inline host-folder picker on the chosen host: the picked folder is added as a project. */
 function FolderPick({
   from,
+  hostId,
+  hostName,
+  projectPaths,
   onCancel,
   onAdded,
 }: {
   from?: string;
+  hostId: string | null;
+  hostName?: string;
+  projectPaths: string[];
   onCancel: () => void;
   onAdded: (projects: Project[], path: string) => void;
 }) {
   const [folder, setFolder] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const client = getHostClient(hostId);
   const pick = useCallback(() => {
-    if (!folder) return;
+    if (!folder || !client) return;
     setAdding(true);
     setError(null);
-    addProject(folder)
-      .then(listProjects)
-      .then((p) => {
-        onAdded(p, folder);
-        return p;
+    addProject(folder, client)
+      .then(() => client.listProjects())
+      .then((r) => {
+        onAdded(r.projects, folder);
+        return r;
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setAdding(false));
-  }, [folder, onAdded]);
+  }, [folder, client, onAdded]);
   const label = folderLabel(folder, adding);
   return (
     <View style={s.browse}>
       <ScrollView style={s.browseList}>
-        <FolderBrowser picked={folder} onPick={setFolder} from={from} />
+        <FolderBrowser
+          picked={folder}
+          onPick={setFolder}
+          from={from}
+          client={client}
+          hostName={hostName}
+          projectPaths={projectPaths}
+        />
       </ScrollView>
       {error && (
         <T v="mono" style={s.error}>
@@ -528,6 +1178,33 @@ function FolderPick({
         <Button label="Cancel" onPress={onCancel} />
         <Button kind="primary" label={label} onPress={pick} disabled={!folder || adding} />
       </View>
+    </View>
+  );
+}
+
+/** Files waiting to go with the first prompt. */
+function DraftChips({ drafts, onRemove }: { drafts: Draft[]; onRemove: (id: string) => void }) {
+  return (
+    <View style={s.chips}>
+      {drafts.map((d) => (
+        <DraftChip key={d.id} d={d} onRemove={onRemove} />
+      ))}
+    </View>
+  );
+}
+
+function DraftChip({ d, onRemove }: { d: Draft; onRemove: (id: string) => void }) {
+  const remove = useCallback(() => onRemove(d.id), [d.id, onRemove]);
+  const Icon = isImage(d) ? ImageIcon : FileText;
+  return (
+    <View style={s.chip}>
+      <Icon size={12} color={color.muted} />
+      <T v="mono" style={s.chipName} numberOfLines={1}>
+        {d.name}
+      </T>
+      <Pressable onPress={remove} hitSlop={6} accessibilityLabel={`Remove ${d.name}`}>
+        <X size={11} color={color.faint} />
+      </Pressable>
     </View>
   );
 }
@@ -604,6 +1281,25 @@ const s = StyleSheet.create({
     fontSize: 12.5,
     ...web({ outlineStyle: "none" }),
   },
+  branchRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  promptFoot: { flexDirection: "row", alignItems: "center", gap: 12 },
+  attach: { flexDirection: "row", alignItems: "center", gap: 6 },
+  attachT: { fontSize: 12.5, color: color.muted },
+  attachTOn: { fontSize: 12.5, color: color.text },
+  nameWide: { width: 240 },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  chip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: color.line,
+    backgroundColor: color.wash,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    maxWidth: 260,
+  },
+  chipName: { color: color.text, flexShrink: 1 },
   prompt: {
     backgroundColor: color.raise,
     borderWidth: 1,
@@ -620,7 +1316,7 @@ const s = StyleSheet.create({
     ...web({ outlineStyle: "none", resize: "none" }),
   },
   title: {
-    alignSelf: "flex-end",
+    marginLeft: "auto",
     width: 220,
     textAlign: "right",
     color: color.muted,
