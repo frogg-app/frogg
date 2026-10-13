@@ -38,6 +38,7 @@ import {
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { loadConfig, patchConfig, useConfig } from "../../daemon/config";
+import { useHosts } from "../../daemon/hosts";
 import { useDaemon } from "../../daemon/store";
 import { color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
@@ -379,15 +380,24 @@ function NavItem({ page, on }: { page: Page; on: boolean }) {
   );
 }
 
+/** The active host's name: the daemon's own once known, else the saved name; null with none. */
+function useHostLabel(): string | null {
+  const served = useDaemon((st) => st.serverName);
+  const saved = useHosts((st) => st.hosts.find((h) => h.id === st.activeId)?.name ?? null);
+  return served ?? saved;
+}
+
 export function SettingsPage({ id, onBack }: { id: string; onBack?: () => void }) {
   const page = PAGES.find((p) => p.id === id) ?? PAGES[0];
   const conn = useDaemon((st) => st.conn);
   const error = useConfig((st) => st.error);
   const saving = useConfig((st) => st.saving);
-  const host = useDaemon((st) => st.serverName);
+  const url = useDaemon((st) => st.url);
+  const host = useHostLabel();
+  // Every host stays connected, so switching keeps conn "online": reload on the host too.
   useEffect(() => {
     if (conn === "online") void loadConfig();
-  }, [conn]);
+  }, [conn, url]);
   const Body = page.body;
   return (
     <View style={s.root}>
@@ -413,7 +423,7 @@ export function SettingsPage({ id, onBack }: { id: string; onBack?: () => void }
         {(page.scope === "Host" || page.scope === "Agents") && !onBack && (
           <View style={s.badge}>
             <T v="mono" style={s.badgeT}>
-              {host ?? "host"} · config.json
+              {host ? `${host} · config.json` : "no host connected"}
             </T>
           </View>
         )}

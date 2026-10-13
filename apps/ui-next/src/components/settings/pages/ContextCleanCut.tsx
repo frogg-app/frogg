@@ -2,6 +2,7 @@ import type { CleanCutSummaryModel, MutableCleanCutConfig } from "@frogg/protoco
 import { useCallback, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { patchConfig, useConfig } from "../../../daemon/config";
+import { useDaemon } from "../../../daemon/store";
 import { prefSetter, usePrefs } from "../../../prefs";
 import { color } from "../../../theme/tokens";
 import { Button } from "../../Button";
@@ -152,9 +153,18 @@ function AddOverride({ taken }: { taken: string[] }) {
   );
 }
 
+/** Why the clean cut rows are missing: no host, a failed read, an old daemon, or still loading. */
+function cleanCutState(online: boolean, loaded: boolean, failed: boolean): string {
+  if (!online) return "connect a host to edit";
+  if (loaded) return "needs a newer daemon";
+  return failed ? "couldn't load" : "loading…";
+}
+
 export function ContextCleanCut() {
   const cc = useConfig((st) => st.config?.cleanCut);
   const loaded = useConfig((st) => st.config !== null);
+  const failed = useConfig((st) => st.error !== null);
+  const online = useDaemon((st) => st.conn === "online");
   const stale = usePrefs((st) => st.staleCacheWarning);
   const options = useModelOptions();
   const overrides = Object.entries(cc?.providers ?? {});
@@ -193,7 +203,7 @@ export function ContextCleanCut() {
           </>
         ) : (
           <Row label="Clean cut settings" last>
-            <Pill text={loaded ? "needs a newer daemon" : "loading…"} />
+            <Pill text={cleanCutState(online, loaded, failed)} />
           </Row>
         )}
       </Section>
