@@ -6,6 +6,7 @@ import { data } from "./entries/data";
 import { feedback } from "./entries/feedback";
 import { foundations } from "./entries/foundations";
 import { interactions } from "./entries/interactions";
+import { plugins } from "./entries/plugins";
 import { primitives } from "./entries/primitives";
 import { settings } from "./entries/settings";
 import { shapeAlts } from "./entries/shapeAlts";
@@ -27,6 +28,7 @@ export const ENTRIES: Entry[] = [
   ...subwork,
   ...settings,
   ...tools,
+  ...plugins,
   ciRuns,
   ...interactions,
 ];
