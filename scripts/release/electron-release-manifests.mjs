@@ -1,3 +1,4 @@
+import { isFroggNextArtifact } from "../../packages/branding/src/artifact-contract.mjs";
 import { channelOfVersion } from "./release-channel.mjs";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
@@ -33,7 +34,8 @@ export async function buildElectronReleaseManifests({
     version,
     platformVersions,
   );
-  const names = (await readdir(assets)).sort();
+  // Frogg Next shares the release but not the update path; its names end like ours.
+  const names = (await readdir(assets)).filter((name) => !isFroggNextArtifact(name)).sort();
   const groups = {
     "": names.filter((name) => name.endsWith(`-${windowsVersion}-win-x64.exe`)),
     "-linux": names.filter((name) => name.endsWith(`-${linuxVersion}-linux-x86_64.AppImage`)),

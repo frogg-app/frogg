@@ -205,6 +205,9 @@ export const BrandManifestSchema = z.strictObject({
         .optional(),
       iosStoreId: z.string().regex(/^\d+$/).optional(),
       expoProjectId: z.uuid().optional(),
+      // Attach the Frogg Next client (apps/ui-next) to each GitHub release. Default true for
+      // upstream frogg, false for any other brand.
+      froggNext: z.boolean().optional(),
     })
     .optional(),
   pairing: z
@@ -303,7 +306,7 @@ export function resolveBrandManifest(input: unknown, options: ResolveBrandOption
   // frogg's open defaults and theme, but installs under its own names beside frogg.
   const stock = base.id === "frogg";
   const manifest = channel === "beta" ? betaManifest(base) : base;
-  const distribution = resolveDistribution(manifest);
+  const distribution = resolveDistribution(manifest, stock);
   const repository = distribution.repository;
   const light = manifest.colors?.light ?? {
     accent: "#525252",
@@ -575,7 +578,7 @@ function resolveProjects(manifest: BrandManifest) {
   return { defaultDirectory: manifest.projects?.defaultDirectory ?? "~" };
 }
 
-function resolveDistribution(manifest: BrandManifest) {
+function resolveDistribution(manifest: BrandManifest, stock: boolean) {
   const distribution = manifest.distribution ?? {};
   const updateMode =
     distribution.updates ?? (distribution.repository ? "github-release" : "disabled");
@@ -596,6 +599,7 @@ function resolveDistribution(manifest: BrandManifest) {
     pairingImage: distribution.pairingImage ?? null,
     iosStoreId: distribution.iosStoreId ?? null,
     expoProjectId: distribution.expoProjectId ?? null,
+    froggNext: distribution.froggNext ?? stock,
   };
 }
 

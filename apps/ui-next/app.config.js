@@ -1,6 +1,8 @@
 // Prototype identity: installs beside the stable and beta apps rather than over them.
 const PACKAGE_ID = "app.frogg.next";
 const rootPkg = require("../../package.json");
+// Same env-driven release signing as the classic app; scripts/build-apk.mjs documents the variables.
+const withAndroidReleaseSigning = require("../ui/plugins/with-android-release-signing");
 
 const font = (file, weight, style = "normal") => ({
   path: `./assets/fonts/${file}.ttf`,
@@ -60,6 +62,7 @@ module.exports = {
         "expo-build-properties",
         { android: { minSdkVersion: 29, kotlinVersion: "2.1.20", usesCleartextTraffic: true } },
       ],
+      withAndroidReleaseSigning,
     ],
     // FROGG_WEB_BASE_URL serves a web export from a subpath (the component lab build uses /lab).
     experiments: {

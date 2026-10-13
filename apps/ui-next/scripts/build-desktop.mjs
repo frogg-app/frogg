@@ -5,6 +5,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { portableCommand } from "../../../scripts/dev/npm-command.mjs";
 import { writeElectronChecksums } from "../../../scripts/release/electron-checksums.mjs";
+import { froggNextArtifactName } from "../../../packages/branding/src/artifact-contract.mjs";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const app = path.join(root, "apps/ui-next");
@@ -12,6 +13,8 @@ const { values } = parseArgs({
   options: {
     target: { type: "string", default: "darwin-arm64" },
     "export-only": { type: "boolean", default: false },
+    // Print the release asset names this target produces, then exit.
+    "dry-run": { type: "boolean", default: false },
   },
 });
 const icons = path.join(root, ".generated/branding/icons");
@@ -22,8 +25,9 @@ const targets = {
     label: "Mac ARM",
     dir: "ui-next-mac-arm64",
     cli: ["--mac", "--arm64"],
+    assets: ["mac-arm64.dmg", "mac-arm64.zip"],
     config: {
-      artifactName: "Frogg-Next-${version}-mac-${arch}.${ext}",
+      artifactName: froggNextArtifactName("${version}", "mac-${arch}.${ext}"),
       mac: {
         target: ["dmg", "zip"],
         category: "public.app-category.developer-tools",
@@ -38,8 +42,9 @@ const targets = {
     label: "Windows x64",
     dir: "ui-next-win-x64",
     cli: ["--win", "--x64"],
+    assets: ["win-x64.exe", "win-x64.zip"],
     config: {
-      artifactName: "Frogg-Next-${version}-win-${arch}.${ext}",
+      artifactName: froggNextArtifactName("${version}", "win-${arch}.${ext}"),
       win: { target: ["nsis", "zip"], icon: path.join(icons, "icon.ico") },
       nsis: { oneClick: true, perMachine: false, runAfterFinish: true, shortcutName: "Frogg Next" },
     },
@@ -47,6 +52,13 @@ const targets = {
 };
 const target = targets[values.target];
 if (!target) throw new Error(`--target must be one of: ${Object.keys(targets).join(", ")}`);
+const { version } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
+if (values["dry-run"]) {
+  for (const suffix of target.assets) {
+    console.log(path.join("release-assets", target.dir, froggNextArtifactName(version, suffix)));
+  }
+  process.exit(0);
+}
 if (!values["export-only"] && process.platform !== target.os) {
   throw new Error(
     `${target.label} artifacts must be built on ${target.os}. Use --export-only to validate the UI elsewhere.`,
@@ -95,7 +107,6 @@ writeFileSync(
 for (const file of ["main.cjs", "resolve-asset.cjs", "window-chrome.cjs"]) {
   cpSync(path.join(app, "desktop", file), path.join(stage, file));
 }
-const { version } = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 const desktopPackage = JSON.parse(
   readFileSync(path.join(root, "apps/desktop/package.json"), "utf8"),
 );

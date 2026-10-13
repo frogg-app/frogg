@@ -3,6 +3,9 @@ import { test } from "node:test";
 import {
   daemonArtifactName,
   desktopArtifactName,
+  desktopArtifactSuffixes,
+  froggNextArtifactName,
+  isFroggNextArtifact,
   legacyDesktopSuffix,
 } from "../../packages/branding/src/artifact-contract.mjs";
 const official = {
@@ -94,4 +97,36 @@ test("generated installer and application agree on the historical cutoff", async
     "current",
     "current",
   ]);
+});
+
+test("Frogg Next is a separate, non-updater asset family", () => {
+  const version = "1.6.13-beta.5";
+  const next = [
+    froggNextArtifactName(version, "mac-arm64.dmg"),
+    froggNextArtifactName(version, "mac-arm64.zip"),
+    froggNextArtifactName(version, "win-x64.exe"),
+    froggNextArtifactName(version, "win-x64.zip"),
+    froggNextArtifactName(version, "SHA256SUMS"),
+    froggNextArtifactName(version, "android-arm64-v8a-unsigned.apk"),
+  ];
+  assert.equal(next[0], "Frogg-Next-1.6.13-beta.5-mac-arm64.dmg");
+  assert.ok(next.every(isFroggNextArtifact));
+  // No classic name of any brand or channel falls into the family, and the classic app's
+  // updaters match on an exact `artifactPrefix`, which "Frogg-Next" never is.
+  const brands = [
+    official,
+    { ...official, artifactPrefix: "frogg" },
+    { ...official, artifactPrefix: "frogg-beta", daemonArtifactPrefix: "frogg-beta-daemon" },
+    custom,
+  ];
+  for (const brand of brands) {
+    assert.notEqual(brand.artifactPrefix, "Frogg-Next");
+    for (const suffix of desktopArtifactSuffixes) {
+      assert.equal(isFroggNextArtifact(desktopArtifactName(brand, version, suffix)), false);
+    }
+    assert.equal(isFroggNextArtifact(daemonArtifactName(brand, version, "win", "x64")), false);
+  }
+  for (const name of ["SHA256SUMS-desktop", "release.json", "electron-beta.yml", "install.sh"]) {
+    assert.equal(isFroggNextArtifact(name), false);
+  }
 });
