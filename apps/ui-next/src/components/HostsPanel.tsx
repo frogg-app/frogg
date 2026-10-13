@@ -2,11 +2,12 @@ import { Pencil, Plus, QrCode, Trash2 } from "lucide-react-native";
 import { useCallback, useState } from "react";
 import { Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useHostLink, useHosts, type Host } from "../daemon/hosts";
-import { useDaemon, useFleet, useHostConn } from "../daemon/store";
+import { useDaemon, useFleet, useHostConn, useHostError } from "../daemon/store";
 import { useFormFactor } from "../theme/layout";
 import { color, motion } from "../theme/tokens";
 import { AddHost, EditHost } from "./hosts/AddHost";
-import { HostDetail, hostKind, offlineReason } from "./hosts/HostDetail";
+import { offlineReason } from "./hosts/access";
+import { HostDetail, hostKind } from "./hosts/HostDetail";
 import { installPairLinks } from "./hosts/links";
 import { PairConfirm } from "./hosts/PairConfirm";
 import { PairDevice } from "./hosts/PairDevice";
@@ -93,6 +94,9 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
   });
   const count = active ? own : pooled;
   const link = useHostLink();
+  // A background host has no link detail, only its client's typed error (refused, wrong daemon).
+  const error = useHostError(h.id);
+  const blocked = !active && conn !== "online" && !!error;
   const press = useCallback(() => viewHost(h.id), [h.id]);
   const remove = useCallback(() => openSheet({ kind: "remove", hostId: h.id }), [h.id]);
   const down = active && conn === "offline";
@@ -117,7 +121,7 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
           <View style={st.line}>
             <View
               style={[
-                down || reconnecting ? st.flag : st.dot,
+                down || reconnecting || blocked ? st.flag : st.dot,
                 conn ? TINT[conn] : st.tIdle,
                 reconnecting && st.live,
               ]}
@@ -140,17 +144,7 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
               {active && count !== null ? `${count} sessions` : idleLabel(conn, count)}
             </T>
           </View>
-          {(down || reconnecting) && (
-            <T v="mono" style={st.err} numberOfLines={2}>
-              {offlineReason(link)}
-              {reconnecting ? ` · retrying (attempt ${link.attempt + 1})…` : ""}
-            </T>
-          )}
-          {active && conn === "connecting" && !link.droppedAt && (
-            <T v="mono" style={st.wait}>
-              connecting…
-            </T>
-          )}
+          <RowStatus active={active} conn={conn} error={error} />
         </View>
       </Pressable>
       {(hovered || ALWAYS_BIN) && (
@@ -178,6 +172,40 @@ function HostRow({ h, active, shown }: { h: Host; active: boolean; shown: boolea
         </Pressable>
       )}
     </View>
+  );
+}
+
+/** Why a host is not connected, under its row: the active one's link, a background one's error. */
+function RowStatus({
+  active,
+  conn,
+  error,
+}: {
+  active: boolean;
+  conn: string | null;
+  error: ReturnType<typeof useHostError>;
+}) {
+  const link = useHostLink();
+  if (!active) {
+    if (conn === "online" || !error) return null;
+    return (
+      <T v="mono" style={st.err} numberOfLines={2}>
+        {offlineReason({ error, reason: null })}
+      </T>
+    );
+  }
+  if (conn === "connecting" && !link.droppedAt)
+    return (
+      <T v="mono" style={st.wait}>
+        connecting…
+      </T>
+    );
+  if (conn !== "offline" && conn !== "connecting") return null;
+  return (
+    <T v="mono" style={st.err} numberOfLines={2}>
+      {offlineReason(link)}
+      {conn === "connecting" ? ` · retrying (attempt ${link.attempt + 1})…` : ""}
+    </T>
   );
 }
 

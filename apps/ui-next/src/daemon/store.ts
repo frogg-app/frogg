@@ -1,14 +1,17 @@
-import { DaemonClient } from "@frogg/client/internal/daemon-client";
+import { DaemonClient, type DaemonClientErrorInfo } from "@frogg/client/internal/daemon-client";
 import { useMemo } from "react";
 import { create } from "zustand";
 import {
   activeHost,
+  fetchServerId,
   hostClientOptions,
   hostsReady,
   hostUrl,
   markHostOnline,
   noteConnStatus,
   renameHost,
+  updateHost,
+  useHostLink,
   useHosts,
   type Host,
 } from "./hosts";
@@ -76,11 +79,19 @@ interface Pooled {
 const pool = new Map<string, Pooled>();
 let activeHostId: string | null = null;
 
-/** Sessions and link state of the hosts that are not active; the active host's live in useDaemon. */
+/**
+ * Sessions and link state of the hosts that are not active (the active host's live in useDaemon),
+ * and the typed error of every host's last failed connect (auth refused, wrong daemon).
+ */
 export const useFleet = create<{
   sessions: Record<string, Record<string, Session>>;
   conn: Record<string, Conn>;
-}>(() => ({ sessions: {}, conn: {} }));
+  errors: Record<string, DaemonClientErrorInfo | null>;
+}>(() => ({ sessions: {}, conn: {}, errors: {} }));
+
+/** Why any saved host's connection last failed, when the client could say. */
+export const useHostError = (hostId: string | null | undefined) =>
+  useFleet((st) => (hostId ? (st.errors[hostId] ?? null) : null));
 
 /** Sessions of every connected host except the active one, each tagged with its hostId. */
 export function useOtherHostSessions(): Session[] {
@@ -163,9 +174,15 @@ function openPooled(host: Host): Pooled {
   mine.subscribeConnectionStatus((s) => {
     if (pool.get(host.id) !== p) return;
     p.conn = CONN[s.status] ?? "offline";
-    useFleet.setState((st) => ({ conn: { ...st.conn, [host.id]: p.conn } }));
+    if (s.status === "connected") pinServerId(p);
+    const error = mine.lastErrorInfo;
+    useFleet.setState((st) => ({
+      conn: { ...st.conn, [host.id]: p.conn },
+      errors: { ...st.errors, [host.id]: error },
+    }));
+    if (error?.code === "pairing_required") void checkIdentity(p, mine);
     if (isActive(p)) {
-      noteConnStatus(host.id, s, mine.lastErrorInfo);
+      noteConnStatus(host.id, s, error);
       useDaemon.setState({ conn: p.conn });
     } else if (s.status === "connected") markHostOnline(host.id);
     if (s.status === "connected") void loadSessions(p).catch(() => {});
@@ -215,6 +232,41 @@ function openPooled(host: Host): Pooled {
   return p;
 }
 
+/**
+ * A host saved by address alone learns which daemon it is on its first connect (existing entries
+ * too, on their next one), and its client refuses any other daemon at that address from then on.
+ */
+function pinServerId(p: Pooled): void {
+  const serverId = p.client.getLastServerInfoMessage()?.serverId;
+  const saved = useHosts.getState().hosts.find((h) => h.id === p.host.id);
+  if (!serverId || !saved || saved.serverId) return;
+  p.client.setExpectedServerId(serverId);
+  const host = updateHost(saved.id, { serverId });
+  // Same connection, now pinned: switching to the host must not reopen it.
+  if (host) p.key = routeKey(host);
+}
+
+/**
+ * A daemon that refuses the saved credential may simply be another daemon at the host's address
+ * (it refuses before it says who it is). Its /api/identity tells: then the host shows the wrong
+ * daemon, not a pairing problem.
+ */
+async function checkIdentity(p: Pooled, from: DaemonClient): Promise<void> {
+  const saved = useHosts.getState().hosts.find((h) => h.id === p.host.id);
+  if (!saved?.serverId || saved.relay) return;
+  const actual = await fetchServerId(saved.endpoint, saved.tls);
+  if (!actual || actual === saved.serverId) return;
+  // Only while that refusal still stands on the same connection.
+  if (pool.get(p.host.id) !== p || from.lastErrorInfo?.code !== "pairing_required") return;
+  const error: DaemonClientErrorInfo = {
+    code: "server_identity_mismatch",
+    expectedServerId: saved.serverId,
+    actualServerId: actual,
+  };
+  useFleet.setState((st) => ({ errors: { ...st.errors, [p.host.id]: error } }));
+  if (isActive(p)) useHostLink.setState({ error });
+}
+
 function closePooled(id: string): void {
   const p = pool.get(id);
   if (!p) return;
@@ -223,9 +275,11 @@ function closePooled(id: string): void {
   useFleet.setState((st) => {
     const sessions = { ...st.sessions };
     const conn = { ...st.conn };
+    const errors = { ...st.errors };
     delete sessions[id];
     delete conn[id];
-    return { sessions, conn };
+    delete errors[id];
+    return { sessions, conn, errors };
   });
 }
 
@@ -335,16 +389,17 @@ async function loadSessions(p: Pooled): Promise<void> {
   const sessions: Record<string, Session> = {};
   for (const e of res.entries)
     if (!e.agent.archivedAt) sessions[e.agent.id] = { agent: e.agent, project: e.project };
-  const info = source.getLastServerInfoMessage() as {
-    hostname?: string;
-  } | null;
+  const info = source.getLastServerInfoMessage();
+  // Never file one daemon's sessions under a host saved for another (the client pin refuses it
+  // first; this covers an entry rebound while the list was loading).
+  const saved = useHosts.getState().hosts.find((h) => h.id === p.host.id);
+  if (saved?.serverId && info?.serverId && info.serverId !== saved.serverId) return;
   p.serverName = info?.hostname ?? null;
   if (isActive(p)) useDaemon.setState({ sessions, serverName: p.serverName });
   else setFleetSessions(p.host.id, () => sessions);
   // A host saved by address alone takes the daemon's own name once we have it.
-  const host = useHosts.getState().hosts.find((h) => h.id === p.host.id);
-  if (host && info?.hostname && host.name === host.endpoint.split(":")[0])
-    renameHost(host.id, info.hostname);
+  if (saved && info?.hostname && saved.name === saved.endpoint.split(":")[0])
+    renameHost(saved.id, info.hostname);
 }
 
 const subscribed = new Set<string>();

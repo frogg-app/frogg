@@ -108,6 +108,23 @@ export function hostClientOptions(h: Host): Partial<DaemonClientConfig> {
 
 export const isRelayHost = (h: Host) => Boolean(h.relay);
 
+/** The serverId a direct host's address answers `/api/identity` with; null when unreachable. */
+export async function fetchServerId(endpoint: string, tls?: boolean): Promise<string | null> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 4000);
+  try {
+    const r = await fetch(`${tls ? "https" : "http"}://${endpoint}/api/identity`, {
+      signal: ctl.signal,
+    });
+    const body = r.ok ? ((await r.json()) as { serverId?: unknown }) : null;
+    return typeof body?.serverId === "string" ? body.serverId : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** The host to connect to: the saved active one, else a first entry from the env/query default. */
 export function activeHost(fallbackEndpoint: string): Host {
   const st = useHosts.getState();
@@ -172,6 +189,23 @@ export function updateHost(id: string, patch: Partial<Omit<Host, "id">>): Host |
   const host: Host = { ...prev, ...patch, id };
   // An empty password clears it rather than storing "".
   if (!host.password) delete host.password;
+  useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === id ? host : h)) }));
+  return host;
+}
+
+/**
+ * Binds a saved host to the daemon now answering at its address (a different serverId): the
+ * old daemon's credential, key and role mean nothing to it, so they go and the host pairs or
+ * signs in afresh. Same id, so its place in the list stays.
+ */
+export function rebindHost(id: string, serverId: string): Host | null {
+  const prev = useHosts.getState().hosts.find((h) => h.id === id);
+  if (!prev) return null;
+  const host: Host = { ...prev, serverId };
+  delete host.password;
+  delete host.fingerprint;
+  delete host.role;
+  delete host.lastOnlineAt;
   useHosts.setState((s) => ({ hosts: s.hosts.map((h) => (h.id === id ? host : h)) }));
   return host;
 }

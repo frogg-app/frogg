@@ -1,12 +1,14 @@
 import { useEffect, type ComponentType } from "react";
+import { StyleSheet, View } from "react-native";
 import { CompanionPanel } from "../../components/CompanionPanel";
 import { FilesPanel } from "../../components/Files";
 import { HostsPanel } from "../../components/HostsPanel";
 import { HostDetail } from "../../components/hosts/HostDetail";
 import { PairDevice } from "../../components/hosts/PairDevice";
-import { openSheet, useHostView } from "../../components/hosts/state";
+import { openSheet, useHostView, viewHost } from "../../components/hosts/state";
+import { HostToasts } from "../../components/toast/HostToasts";
 import { useHostLink, useHosts, type HostLink } from "../../daemon/hosts";
-import { useDaemon } from "../../daemon/store";
+import { useDaemon, useFleet } from "../../daemon/store";
 import { PluginsPanel } from "../../components/PluginsPanel";
 import { PrsPanel } from "../../components/PrsPanel";
 import { ScmPanel } from "../../components/ScmPanel";
@@ -89,9 +91,16 @@ const linkIdle = (): HostLink => ({
   droppedAt: null,
 });
 function showLink(conn: "offline" | "connecting", link: Partial<HostLink>): void {
+  viewHost(null, false);
+  useFleet.setState({ conn: {}, errors: {} });
   useDaemon.setState({ conn });
   useHostLink.setState({ ...linkIdle(), ...link });
 }
+const wrongDaemon = {
+  code: "server_identity_mismatch",
+  expectedServerId: "srv_7f3a9c21e4",
+  actualServerId: "srv_b81d05e6aa",
+} as const;
 const refused = (reason: string, credentialRejected = false) =>
   showLink("offline", {
     droppedAt: new Date().toISOString(),
@@ -115,6 +124,20 @@ const OFFLINE = {
   unclaimed: () => refused("Pairing required"),
   unregistered: () => refused("Password required"),
   rejected: () => refused("Device access revoked", true),
+  wrongDaemon: () =>
+    showLink("connecting", {
+      attempt: 2,
+      reason: "Unexpected server identity",
+      droppedAt: new Date().toISOString(),
+      error: wrongDaemon,
+    }),
+  /** winbox, connected in the background, finds another daemon at its address. */
+  wrongDaemonBackground: () => {
+    useDaemon.setState({ conn: "online" });
+    useHostLink.setState(linkIdle());
+    useFleet.setState({ conn: { h_win: "offline" }, errors: { h_win: wrongDaemon } });
+    viewHost("h_win", false);
+  },
 };
 
 /** The active host's offline pane; the online fixture host comes back on unmount. */
@@ -125,6 +148,7 @@ function OfflinePane() {
     return () => {
       useDaemon.setState({ conn: "online" });
       useHostLink.setState(linkIdle());
+      useFleet.setState({ conn: {}, errors: {} });
     };
   }, []);
   return (
@@ -136,8 +160,19 @@ function OfflinePane() {
         <Act label="refused: unclaimed" run={OFFLINE.unclaimed} />
         <Act label="refused: not registered" run={OFFLINE.unregistered} />
         <Act label="refused: credential rejected" run={OFFLINE.rejected} />
+        <Act label="different daemon" run={OFFLINE.wrongDaemon} />
+        <Act label="different daemon (background host)" run={OFFLINE.wrongDaemonBackground} />
       </Controls>
-      <HostDetail />
+      <View style={s.split}>
+        <View style={s.list}>
+          <HostsPanel />
+        </View>
+        <View style={s.fill}>
+          <HostDetail />
+        </View>
+      </View>
+      {/* The shell's host toasts: a refusal or the wrong daemon offers its fix, not Retry. */}
+      <HostToasts />
     </>
   );
 }
@@ -161,13 +196,13 @@ export const tools: Entry[] = [
     id: "host-offline",
     name: "HostDetail (offline)",
     category: "Rail tools & widgets",
-    path: "components/hosts/HostDetail.tsx (+ hosts/access.ts)",
+    path: "components/hosts/Offline.tsx (+ hosts/access.ts, HostsPanel, toast/HostToasts)",
     purpose:
-      "The active host when it is not connected: first connect, reconnecting or waiting to retry, and the three ways a daemon refuses an app that is not a registered device (unclaimed, no credential, credential rejected). The TLS-mismatch hint needs a live daemon on the other scheme.",
+      "A host when it is not connected: first connect, reconnecting or waiting to retry, the three ways a daemon refuses an app that is not a registered device (unclaimed, no credential, credential rejected), and a different daemon answering at the host's address (active or background host). The host list and the shell's host toast show beside it: after 2s each state raises its toast once, and a refusal or the wrong daemon offers the fix instead of Retry. The TLS-mismatch hint needs a live daemon on the other scheme.",
     usedBy: 1,
     polish:
       "the flag breathes (1.6s ∞) while Frogg keeps retrying; the retry track's light band travels (stateMotion.beam) only while a reconnect is in flight",
-    variants: [{ id: "states", label: "Offline states", C: OfflinePane, h: 360, bleed: true }],
+    variants: [{ id: "states", label: "Offline states", C: OfflinePane, h: 560, bleed: true }],
   },
   {
     id: "host-saved",
@@ -230,3 +265,9 @@ export const tools: Entry[] = [
     ],
   },
 ];
+
+const s = StyleSheet.create({
+  split: { flex: 1, flexDirection: "row" },
+  list: { width: 300 },
+  fill: { flex: 1 },
+});
