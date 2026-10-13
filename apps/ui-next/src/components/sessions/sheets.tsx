@@ -1,6 +1,7 @@
 import { Check, Folder, RotateCw } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native";
+import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { useDaemon } from "../../daemon/store";
 import { color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
@@ -19,6 +20,9 @@ import {
   loadDirectory,
   makeDir,
   parentDir,
+  baseName,
+  joinPath,
+  tildePath,
   renameSession,
   setSessionLabel,
   useDirectory,
@@ -385,7 +389,7 @@ function ProviderTab({
   );
 }
 
-const tilde = (p: string) => p.replace(/^\/(home|Users)\/[^/]+/, "~");
+const tilde = tildePath;
 
 function ImportRow({
   row,
@@ -429,7 +433,7 @@ function AddProjectDialog() {
       })
       .catch((e: unknown) => setErr(errText(e)));
   }, [picked]);
-  const pickedName = picked?.split("/").pop();
+  const pickedName = picked ? baseName(picked) : undefined;
   const footer = useMemo(
     () => (
       <View style={s.footRow}>
@@ -461,67 +465,114 @@ function AddProjectDialog() {
 }
 
 /**
- * Browses folders on the connected host. A tap selects a folder (reported through onPick);
- * tapping the selected one, or a folder that is already a project, opens it.
+ * Browses folders on a host (the active one unless `client` names another). A tap selects a
+ * folder (reported through onPick); tapping the selected one, or a folder that is already a
+ * project, opens it. The path is editable, which is also how to reach another Windows drive.
  */
 export function FolderBrowser({
   picked,
   onPick,
   from,
+  client,
+  hostName,
+  projectPaths,
 }: {
   picked: string | null;
   onPick: (path: string | null) => void;
   /** A folder to start beside (its parent is listed); defaults to the first project's. */
   from?: string;
+  /** The host to browse; the active host when omitted. */
+  client?: DaemonClient | null;
+  hostName?: string;
+  /** That host's project roots, marked as already added; the active host's when omitted. */
+  projectPaths?: string[];
 }) {
-  const host = useDaemon((st) => st.serverName) ?? "host";
+  const activeName = useDaemon((st) => st.serverName) ?? "host";
+  const host = hostName ?? activeName;
   const projects = useDirectory((d) => d.projects);
+  const roots = useMemo(
+    () => projectPaths ?? projects.map((p) => p.projectRootPath),
+    [projectPaths, projects],
+  );
   const start = useMemo(() => {
-    const seed = from ?? projects[0]?.projectRootPath;
+    const seed = from ?? roots[0];
     return seed ? parentDir(seed) : "/";
-  }, [from, projects]);
+  }, [from, roots]);
   const [dir, setDir] = useState(start);
+  const [abs, setAbs] = useState(start);
   const [entries, setEntries] = useState<Array<{ name: string; path: string }> | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [newName, setNewName] = useState<string | null>(null);
-  const added = useMemo(() => new Set(projects.map((p) => p.projectRootPath)), [projects]);
+  const [typed, setTyped] = useState<string | null>(null);
+  const added = useMemo(() => new Set(roots), [roots]);
   const load = useCallback(
-    (d: string) => {
+    (d: string, select?: string) => {
       setEntries(null);
       setErr(null);
-      onPick(null);
-      listDir(d)
-        .then(setEntries)
+      onPick(select ?? null);
+      listDir(d, client)
+        .then((res) => {
+          setAbs(res.path);
+          setEntries(res.entries);
+          return undefined;
+        })
         .catch((e: unknown) => {
           setEntries([]);
           setErr(errText(e));
         });
     },
-    [onPick],
+    [onPick, client],
   );
   useEffect(() => load(dir), [dir, load]);
-  const up = useCallback(() => setDir((d) => parentDir(d)), []);
+  const up = useCallback(() => setDir(parentDir(abs)), [abs]);
   const refresh = useCallback(() => load(dir), [dir, load]);
   const startNew = useCallback(() => setNewName(""), []);
+  const cancelNew = useCallback(() => setNewName(null), []);
   const createDir = useCallback(() => {
     const n = newName?.trim();
     if (!n) return;
-    makeDir(dir, n)
+    makeDir(abs, n, client)
       .then(() => {
         setNewName(null);
-        load(dir);
+        // The new folder comes back selected, ready to use.
+        load(dir, joinPath(abs, n));
         return undefined;
       })
       .catch((e: unknown) => setErr(errText(e)));
-  }, [dir, newName, load]);
+  }, [abs, dir, newName, load, client]);
+  const editPath = useCallback(() => setTyped(abs), [abs]);
+  const goTyped = useCallback(() => {
+    const t = typed?.trim();
+    setTyped(null);
+    if (t) setDir(t);
+  }, [typed]);
+  const cancelTyped = useCallback(() => setTyped(null), []);
   return (
     <View style={s.browser}>
       <View style={s.pathRow}>
         <Folder size={13} color={color.muted} />
-        <T v="mono" style={s.path} numberOfLines={1} ellipsizeMode="head">
-          {host}:{tilde(dir)}
-        </T>
-        <Pressable onPress={up}>
+        {typed === null ? (
+          <Pressable onPress={editPath} style={s.pathPress} accessibilityLabel="Type a path">
+            <T v="mono" style={s.path} numberOfLines={1} ellipsizeMode="head">
+              {host}:{tildePath(abs)}
+            </T>
+          </Pressable>
+        ) : (
+          <TextInput
+            value={typed}
+            onChangeText={setTyped}
+            onSubmitEditing={goTyped}
+            onBlur={cancelTyped}
+            autoFocus
+            selectTextOnFocus
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholder="/home/you or D:\"
+            placeholderTextColor={color.faint}
+            style={[s.input, s.pathInput]}
+          />
+        )}
+        <Pressable onPress={up} accessibilityLabel="Up one folder">
           <T style={s.link}>Up</T>
         </Pressable>
         <Pressable onPress={refresh} accessibilityLabel="Refresh">
@@ -532,15 +583,19 @@ export function FolderBrowser({
         </Pressable>
       </View>
       {newName !== null && (
-        <TextInput
-          value={newName}
-          onChangeText={setNewName}
-          onSubmitEditing={createDir}
-          autoFocus
-          placeholder="Folder name, then Enter"
-          placeholderTextColor={color.faint}
-          style={s.input}
-        />
+        <View style={s.newRow}>
+          <TextInput
+            value={newName}
+            onChangeText={setNewName}
+            onSubmitEditing={createDir}
+            autoFocus
+            placeholder={`New folder in ${baseName(abs) || abs}`}
+            placeholderTextColor={color.faint}
+            style={[s.input, s.flex]}
+          />
+          <Button label="Cancel" onPress={cancelNew} />
+          <Button kind="primary" label="Create" onPress={createDir} disabled={!newName.trim()} />
+        </View>
       )}
       {entries === null && <ActivityIndicator color={color.cyan} />}
       <View>
@@ -554,6 +609,7 @@ export function FolderBrowser({
             onOpen={setDir}
           />
         ))}
+        {entries?.length === 0 && !err && <T style={s.rowMeta}>No folders here.</T>}
       </View>
       <ErrorLine text={err} />
     </View>
@@ -640,7 +696,10 @@ const s = StyleSheet.create({
   rowMeta: { fontSize: 11.5, color: color.faint, marginTop: 2 },
   browser: { gap: 10 },
   pathRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  path: { flex: 1, color: color.text, fontSize: 12.5 },
+  path: { color: color.text, fontSize: 12.5 },
+  pathPress: { flex: 1 },
+  pathInput: { flex: 1, paddingVertical: 4, fontFamily: font.mono, fontSize: 12.5 },
+  newRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   link: { fontSize: 12, color: color.muted },
   dirRow: {
     flexDirection: "row",

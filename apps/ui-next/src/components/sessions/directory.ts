@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
+import { joinPath } from "./paths";
 import { create } from "zustand";
 import {
   archiveSession,
@@ -265,32 +266,38 @@ export async function setPinned(workspaceId: string, pinned: boolean): Promise<v
 
 export { archiveSession };
 
-export async function addProject(cwd: string): Promise<void> {
-  await need().addProject(cwd);
-  await loadDirectory();
+/** Adds a folder as a project on the active host, or on `client`'s host when given. */
+export async function addProject(cwd: string, client?: DaemonClient | null): Promise<void> {
+  const c = client ?? need();
+  await c.addProject(cwd);
+  if (c === getClient()) await loadDirectory();
 }
 
-export async function listDir(dir: string): Promise<Array<{ name: string; path: string }>> {
-  const res = await need().listDirectory(dir, ".");
-  return res.entries
+/** A host folder's subfolders, plus the folder's absolute path as the host spells it. */
+export async function listDir(
+  dir: string,
+  client?: DaemonClient | null,
+): Promise<{ path: string; entries: Array<{ name: string; path: string }> }> {
+  const res = await (client ?? need()).listDirectory(dir, ".");
+  const path = res.absolutePath || dir;
+  const entries = res.entries
     .filter((e) => e.kind === "directory" && !e.name.startsWith("."))
-    .map((e) => ({ name: e.name, path: joinPath(dir, e.name) }))
+    .map((e) => ({ name: e.name, path: joinPath(path, e.name) }))
     .sort((a, b) => a.name.localeCompare(b.name));
+  return { path, entries };
 }
 
-export async function makeDir(parentPath: string, name: string): Promise<void> {
-  await need().createProjectDirectory({ parentPath, name });
+export async function makeDir(
+  parentPath: string,
+  name: string,
+  client?: DaemonClient | null,
+): Promise<void> {
+  const res = await (client ?? need()).createProjectDirectory({ parentPath, name });
+  const err = (res as { error?: string | null } | null)?.error;
+  if (err) throw new Error(err);
 }
 
-export function joinPath(dir: string, name: string): string {
-  return `${dir.replace(/\/+$/, "")}/${name}`;
-}
-
-export function parentDir(dir: string): string {
-  const trimmed = dir.replace(/\/+$/, "");
-  const i = trimmed.lastIndexOf("/");
-  return i <= 0 ? "/" : trimmed.slice(0, i);
-}
+export { baseName, joinPath, parentDir, tildePath } from "./paths";
 
 export async function fetchHistory(input: {
   search?: string;
