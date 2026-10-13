@@ -387,6 +387,8 @@ let localCommits = commits.map(([sha, subject, mins, isOnBase]) => ({
   authorName: "Frogg Agent",
   authorDate: ago(mins),
   isOnBase,
+  // The newest branch commit is local only; the rest are pushed.
+  isOnRemote: isOnBase || mins > 20,
 }));
 let stashes = [
   {
@@ -998,6 +1000,7 @@ export const miscRpcs: Record<string, Rpc> = {
         authorName: "Paz",
         authorDate: ago(0),
         isOnBase: false,
+        isOnRemote: false,
       },
       ...localCommits,
     ];

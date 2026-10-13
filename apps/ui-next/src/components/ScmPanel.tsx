@@ -26,11 +26,9 @@ import {
   useScm,
   useScmExtra,
   watchCheckout,
-  type Commit,
   type DiffFile,
   type Stash,
 } from "../daemon/scm";
-import { ago } from "../util";
 import { useFormFactor } from "../theme/layout";
 import { BranchMenu } from "./tools/BranchMenu";
 import { useConfirm, type ConfirmSpec } from "./tools/Confirm";
@@ -41,6 +39,8 @@ import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { GroupHead, PanelHead } from "./PanelHead";
 import { Brackets, BracketScope } from "./Brackets";
+import { CommitGraph, ScmQuickSettings } from "./scm/CommitGraph";
+import { usePrefs } from "../prefs";
 import { T } from "./Text";
 
 /** The checkout source control works on: the open session's, else the most recent one. */
@@ -78,10 +78,11 @@ export function ScmPanel() {
     if (cwd) void watchCheckout(cwd).then(() => loadExtras().catch(() => {}));
   }, [cwd]);
   const git = status && status.isGit ? status : null;
-  const sessionCommits = useMemo(() => commits?.filter((c) => !c.isOnBase) ?? null, [commits]);
+  const showStashes = usePrefs((p) => p.scmStashes);
   return (
     <View style={s.fill}>
       <PanelHead title="Source control">
+        {git && <ScmQuickSettings base={git.baseRef ?? null} />}
         <Pressable onPress={refresh} accessibilityLabel="Refresh">
           <RefreshCw size={14} color={color.faint} />
         </Pressable>
@@ -125,11 +126,8 @@ export function ScmPanel() {
           {files?.map((f) => (
             <FileRow key={f.path} f={f} ask={ask} />
           ))}
-          <BranchCommits commits={sessionCommits} base={git?.baseRef ?? null} />
-          {!!stashes?.length && <GroupHead label="Stashes" count={stashes.length} />}
-          {stashes?.map((st) => (
-            <StashRow key={`${st.index}:${st.message}`} st={st} ask={ask} />
-          ))}
+          <CommitGraph commits={commits} base={git?.baseRef ?? null} />
+          {showStashes && <Stashes stashes={stashes} ask={ask} />}
         </ScrollView>
       </BracketScope>
       {dialog}
@@ -432,41 +430,15 @@ function FileRow({ f, ask }: { f: DiffFile; ask: Ask }) {
   );
 }
 
-/** The branch's own commits (not yet in its base), with a key for the unpushed marker. */
-function BranchCommits({ commits, base }: { commits: Commit[] | null; base: string | null }) {
-  if (!commits?.length) return null;
+function Stashes({ stashes, ask }: { stashes: Stash[] | null; ask: Ask }) {
+  if (!stashes?.length) return null;
   return (
     <>
-      <GroupHead label={`Commits not in ${base ?? "the base branch"}`} count={commits.length} />
-      {commits.some((c) => !c.isOnRemote) && (
-        <View style={s.legend}>
-          <View style={s.localDot} />
-          <T v="mono" style={s.legendT}>
-            not pushed yet
-          </T>
-        </View>
-      )}
-      {commits.map((c) => (
-        <CommitRow key={c.sha} c={c} />
+      <GroupHead label="Stashes" count={stashes.length} />
+      {stashes.map((st) => (
+        <StashRow key={`${st.index}:${st.message}`} st={st} ask={ask} />
       ))}
     </>
-  );
-}
-
-function CommitRow({ c }: { c: Commit }) {
-  return (
-    <View style={s.line}>
-      <T v="mono" style={s.sha}>
-        {c.shortSha}
-      </T>
-      <T numberOfLines={1} style={s.lineText}>
-        {c.subject}
-      </T>
-      {!c.isOnRemote && <View style={s.localDot} />}
-      <T v="mono" style={s.when}>
-        {ago(c.authorDate)}
-      </T>
-    </View>
   );
 }
 
