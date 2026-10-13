@@ -687,6 +687,8 @@ const OUTPUTS: Record<string, string> = {
     "   Duration  1.84s",
   ].join("\r\n"),
   pwd: "/home/dev/frogg",
+  // Leaves mouse reporting on, like a TUI that exited without resetting it.
+  "mouse on": "\x1b[?1000h\x1b[?1006hmouse reporting on",
   whoami: "frogg",
 };
 

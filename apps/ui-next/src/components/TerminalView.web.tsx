@@ -49,6 +49,25 @@ export function TerminalSurface({ terminalId }: { terminalId: string }) {
     term.loadAddon(fit);
     term.open(el);
     fit.fit();
+    // A click on the pane's padding or the strip the fitted grid leaves over lands outside xterm,
+    // and the browser would move focus to the page; keep it in the terminal instead.
+    const focus = (e: MouseEvent) => {
+      if (e.target !== el) return;
+      e.preventDefault();
+      term.focus();
+    };
+    el.addEventListener("mousedown", focus);
+    // Scrollback scrolls straight away: a program that left mouse reporting on (or a restored
+    // snapshot carrying it) would otherwise swallow the wheel until it was reset. Full-screen
+    // programs on the alternate buffer still get the wheel; Shift sends it to the program anyway.
+    term.attachCustomWheelEventHandler((e) => {
+      if (e.shiftKey || term.buffer.active.type !== "normal") return true;
+      if (term.modes.mouseTrackingMode === "none") return true;
+      const lines = Math.round(e.deltaY / (e.deltaMode === 1 ? 1 : 40)) || Math.sign(e.deltaY);
+      term.scrollLines(lines);
+      e.preventDefault();
+      return false;
+    });
     const off = client.onTerminalStreamEvent((e) => {
       if (e.terminalId !== terminalId) return;
       if (e.type === "output" || e.type === "restore") term.write(e.data);
@@ -78,6 +97,7 @@ export function TerminalSurface({ terminalId }: { terminalId: string }) {
     term.focus();
     return () => {
       ro.disconnect();
+      el.removeEventListener("mousedown", focus);
       off();
       input.dispose();
       client.unsubscribeTerminal(terminalId);
