@@ -53,6 +53,10 @@ export const GROUPS = [0, 1, 2].map((g) => TOOLS.filter((t) => t.group === g));
 
 /** Hover-intent delay before the rail expands; leaving closes at once. */
 const OPEN_DELAY = 140;
+/** The rail's width transition (s.rail) plus a frame of slack. */
+const CLOSE_MS = 240;
+/** After a pick, how long the pointer rests on another item before the rail reopens. */
+const REOPEN_DWELL = 450;
 const COLLAPSED = 58;
 const EXPANDED = 212;
 
@@ -62,17 +66,21 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
   const logoMotion = usePrefs((p) => p.logoMotion);
   const [hover, setHover] = useState(false);
   const [focus, setFocus] = useState(false);
-  // After a pick the rail folds away until the pointer reaches another item, leaves, or
+  // After a pick the rail folds away until the pointer leaves, rests on another item, or
   // keyboard focus moves on.
   const [suppressed, setSuppressed] = useState(false);
   const picked = useRef<Tool | null>(null);
   const inside = useRef(false);
+  // While the rail folds away, items slide under a still pointer; hover there is not intent.
+  const closingUntil = useRef(0);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dwellTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
       if (openTimer.current) clearTimeout(openTimer.current);
       if (blurTimer.current) clearTimeout(blurTimer.current);
+      if (dwellTimer.current) clearTimeout(dwellTimer.current);
     },
     [],
   );
@@ -81,19 +89,28 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
   const onEnter = useCallback(() => {
     inside.current = true;
     if (openTimer.current) clearTimeout(openTimer.current);
-    openTimer.current = setTimeout(() => setHover(true), OPEN_DELAY);
+    openTimer.current = setTimeout(
+      () => setHover(true),
+      Math.max(OPEN_DELAY, closingUntil.current - Date.now()),
+    );
   }, []);
   const onLeave = useCallback(() => {
     inside.current = false;
     if (openTimer.current) clearTimeout(openTimer.current);
+    if (dwellTimer.current) clearTimeout(dwellTimer.current);
     setHover(false);
     setSuppressed(false);
     picked.current = null;
   }, []);
   const onItemHover = useCallback((id: Tool) => {
+    if (dwellTimer.current) clearTimeout(dwellTimer.current);
     if (picked.current === null || picked.current === id) return;
-    picked.current = null;
-    setSuppressed(false);
+    // Sweeping across items on the way out is not intent; resting on one is.
+    const wait = Math.max(REOPEN_DWELL, closingUntil.current - Date.now());
+    dwellTimer.current = setTimeout(() => {
+      picked.current = null;
+      setSuppressed(false);
+    }, wait);
   }, []);
   const onItemFocus = useCallback(() => {
     if (blurTimer.current) clearTimeout(blurTimer.current);
@@ -109,13 +126,17 @@ export function Rail({ badges }: { badges: Partial<Record<Tool, number>> }) {
   const onPick = useCallback((id: Tool) => {
     useUi.getState().setTool(id);
     picked.current = id;
+    if (!usePrefs.getState().railPinned) closingUntil.current = Date.now() + CLOSE_MS;
     setSuppressed(true);
     setFocus(false);
   }, []);
   const togglePin = useCallback(() => {
     const next = !usePrefs.getState().railPinned;
     setPref("railPinned", next);
-    if (!next) setSuppressed(true);
+    if (!next) {
+      closingUntil.current = Date.now() + CLOSE_MS;
+      setSuppressed(true);
+    }
   }, []);
 
   // Item offsets within the rail, so one indicator can glide between them.
