@@ -101,9 +101,11 @@ merged (`scripts/release/streams-core.mjs`).
 | `daemon-build`     | Builds the server stack and bundles the shared web UI into the daemon                            |
 | `daemon-bundle`    | Matrix: `linux-x64`, `linux-arm64`, `darwin-arm64`, `darwin-x64`, `win-x64`, `win-arm64`. Packs each bundle with a `.sha256` sidecar |
 | `android`          | Builds the arm64-v8a APK with `scripts/release/build-android-apk.mjs --serial`                   |
+| `next-desktop`     | Frogg Next, unless the brand turns it off. Calls `ui-next-desktop.yml`: unsigned Mac ARM and Windows x64 clients (Windows only with `platforms: default`), uploaded with one checksum list. See [Frogg Next](#frogg-next) |
+| `next-android`     | Frogg Next, unless the brand turns it off. Calls `ui-next-android.yml`: the arm64 APK (package `app.frogg.next`) |
 | `updater-manifest` | Full builds only. Generates `release.json`, the Electron channel manifests and `SHA256SUMS-desktop` from the uploaded binaries, then runs `verify-release-assets.mjs` |
 | `docker`           | Only with Docker Hub credentials. Builds `deploy/docker/base/Dockerfile` for `linux/amd64` and pushes it |
-| `publish`          | Clears the draft flag only if `meta`, `desktop`, `daemon-bundle`, `android` and `updater-manifest` succeeded, `docker` succeeded or was skipped, and the run built all platforms |
+| `publish`          | Clears the draft flag only if `meta`, `desktop`, `daemon-bundle`, `android` and `updater-manifest` succeeded, `docker` succeeded or was skipped, and the run built all platforms. Waits for the Frogg Next jobs but does not require them |
 
 A `-beta.N` tag builds every job with `FROGG_BRAND_CHANNEL=beta`: frogg beta's application id,
 names, port, icons and `frogg-beta-*` asset names (see
@@ -114,7 +116,7 @@ version when two runs finish out of order.
 Manual dispatch inputs:
 
 - `tag` (required): an existing tag to build.
-- `only`: `all` or `android`. `android` runs only `meta` and `android`.
+- `only`: `all` or `android`. `android` runs only `meta`, `android` and `next-android`.
 - `platforms`: `default` builds Windows x64 desktop, `linux-x64` and `win-x64` daemon bundles,
   and the APK. `all` builds the full matrix. A tag push always builds everything.
 
@@ -149,6 +151,8 @@ Names come from `brand.artifactPrefix` (`Frogg`). Real examples from v0.6.19:
 | `electron-latest.yml`, `electron-latest-linux.yml`, `electron-latest-mac.yml` | Electron update feeds (`electron-beta*` for betas) |
 | `SHA256SUMS-desktop`                           | checksums of the desktop assets            |
 | `install.sh`, `uninstall.sh`, `install-docker.sh`, `uninstall-docker.sh` | install scripts   |
+| `Frogg-Next-<v>-mac-arm64.{dmg,zip}`, `Frogg-Next-<v>-win-x64.{exe,zip}`, `Frogg-Next-<v>-SHA256SUMS` | Frogg Next desktop (`next-desktop`) |
+| `Frogg-Next-<v>-android-arm64-v8a-unsigned.apk` (no `-unsigned` with its own keystore) | Frogg Next APK (`next-android`) |
 
 Other desktop files (`.dmg`, `.deb`, Linux `.tar.gz`) follow the electron-builder pattern
 `Frogg-<version>-<os>-<arch>.<ext>`. Check real names with
@@ -162,6 +166,7 @@ All secrets are optional. Without them the release still builds, with the limits
 | --------------------------- | --------------------------------------------------------------------------------------- | ------------ |
 | Windows code signing (Azure Trusted Signing) | `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `TRUSTED_SIGNING_ENDPOINT`, `TRUSTED_SIGNING_ACCOUNT`, `TRUSTED_SIGNING_PROFILE` | Windows binaries are unsigned |
 | Android release keystore    | `FROGG_ANDROID_KEYSTORE_BASE64`, `FROGG_ANDROID_KEYSTORE_PASSWORD`, `FROGG_ANDROID_KEY_ALIAS` (default `frogg`), `FROGG_ANDROID_KEY_PASSWORD` | APK is debug-signed and named `-unsigned` |
+| Frogg Next Android keystore | `FROGG_NEXT_ANDROID_KEYSTORE_BASE64`, `FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD`, `FROGG_NEXT_ANDROID_KEY_ALIAS` (default `frogg-next`), `FROGG_NEXT_ANDROID_KEY_PASSWORD` | Frogg Next APK is debug-signed and named `-unsigned` |
 | Docker Hub                  | `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`                                                  | `docker` job is skipped |
 | External brand repository   | `BRANDING_READ_TOKEN`                                                                    | Only needed for a private brand repository |
 
@@ -181,6 +186,35 @@ asset with the same signing flavour, so a debug-signed install is offered the `-
 and a release-signed one is offered the plain APK. When both exist on a release, each install
 follows its own path; when only the mismatched one exists, the app says so rather than starting
 an install Android would reject. Keep publishing the flavour that matches what is installed.
+
+### Frogg Next
+
+Frogg Next (`apps/ui-next`) ships on the same release as the classic app, under the fixed
+`Frogg-Next-<version>-` prefix from `packages/branding/src/artifact-contract.mjs`. It is a
+separate app with its own application id (`app.frogg.next`), not an update payload:
+
+- `.github/workflows/ui-next-desktop.yml` and `ui-next-android.yml` keep building workflow
+  artifacts on pushes to `main`. `release.yml` calls them (`workflow_call`) with the tag and the
+  `clobber` flag; a separate job in each then uploads to the release, skipping names already
+  there like every other upload.
+- Their artifacts are named `frogg-next-*`, so `updater-manifest` (which merges
+  `release-assets-*`) never sees them, and `electron-release-manifests.mjs` ignores
+  `Frogg-Next-*` names, so they never enter the `electron-*` feeds, `release.json` or
+  `SHA256SUMS-desktop`. `artifact-contract.test.mjs` and `build-release-metadata.test.mjs` hold
+  this. The classic Android updater matches only the brand's own `artifactPrefix`.
+- The desktop clients are unsigned and not notarized. The APK is release-signed only with Frogg
+  Next's own `FROGG_NEXT_ANDROID_*` keystore, never the classic key; otherwise it is debug-signed
+  and named `-unsigned`. Builds from `main` pushes are always debug-signed.
+- The brand flag `distribution.froggNext` turns the jobs on or off. It defaults to on for
+  upstream frogg and off for any other brand (see
+  [Build and release](/docs/fork-and-rebrand/build-and-release/#frogg-next-assets)).
+
+Check asset names without building:
+
+```bash
+node apps/ui-next/scripts/build-desktop.mjs --dry-run [--target win32-x64]
+node apps/ui-next/scripts/build-apk.mjs release-assets --dry-run
+```
 
 ### Docker tags
 
