@@ -29,6 +29,7 @@ import { StatusBar } from "../components/StatusBar";
 import { TerminalSurface } from "../components/TerminalView";
 import { TerminalsPanel } from "../components/TerminalsPanel";
 import { ToolPane } from "../components/ToolPane";
+import { ToolEmpty } from "../components/shell/ToolEmpty";
 import { T } from "../components/Text";
 import { useHardwareBack } from "../components/shell/useHardwareBack";
 import { useKeyboardVisible } from "../components/shell/useKeyboardVisible";
@@ -74,6 +75,11 @@ function sidePanel(tool: Tool): ReactNode {
 
 type UiState = ReturnType<typeof useUi.getState>;
 
+/** Tools whose main pane falls back to the open session's chat. */
+const CHAT_TOOLS: ReadonlySet<Tool> = new Set<Tool>(["sessions", "search"]);
+/** Tools with no detail view of their own: on wide layouts the panel takes the full width. */
+const FULL_TOOLS: ReadonlySet<Tool> = new Set<Tool>(["usage", "plugins", "companion"]);
+
 interface DetailProps {
   ui: UiState;
   phone: boolean;
@@ -118,7 +124,18 @@ function MainDetail({ ui, phone, openRun, session }: DetailProps): ReactNode {
   if (tool === "inbox" && inboxId)
     return <InboxDetail id={inboxId} onBack={phone ? backInbox : undefined} />;
   if (tool === "hosts" && !phone) return <HostDetail />;
+  return fallbackDetail(tool, phone, session, backChat);
+}
+
+/** Nothing of the tool's own is open: the session's chat (chat tools only), else an empty pane. */
+function fallbackDetail(
+  tool: Tool,
+  phone: boolean,
+  session: Session | undefined,
+  backChat: () => void,
+): ReactNode {
   if (tool !== "sessions" && phone) return null;
+  if (!CHAT_TOOLS.has(tool)) return <ToolEmpty tool={tool} />;
   if (session) return <Chat session={session} onBack={phone ? backChat : undefined} />;
   return phone ? null : <Home />;
 }
@@ -129,7 +146,7 @@ function hasDetailFor(
   session: Session | undefined,
 ): boolean {
   const { tool } = ui;
-  if (session) return true;
+  if (session && CHAT_TOOLS.has(tool)) return true;
   if (tool === "scm") return !!ui.diffPath;
   if (tool === "terminals") return !!ui.terminalId;
   if (tool === "inbox") return !!ui.inboxId;
@@ -208,12 +225,14 @@ export default function Shell() {
         <Banners />
         <View style={s.row}>
           <Rail badges={badges} />
-          {docked ? (
+          {FULL_TOOLS.has(tool) && <View style={[s.fill, s.full]}>{side}</View>}
+          {!FULL_TOOLS.has(tool) && docked && (
             <>
               <View style={[s.side, ff === "tablet" && s.sideTablet]}>{side}</View>
               <View style={s.fill}>{detailEl}</View>
             </>
-          ) : (
+          )}
+          {!FULL_TOOLS.has(tool) && !docked && (
             // Portrait tablet: the side panel slides over the main pane; picking an item closes it.
             <View style={s.fill}>
               {detailEl}
@@ -304,6 +323,7 @@ const s = StyleSheet.create({
   fill: { flex: 1 },
   row: { flex: 1, flexDirection: "row" },
   sideTablet: { width: 300 },
+  full: { backgroundColor: color.bg2 },
   terminal: { flex: 1, backgroundColor: color.bg },
   termBack: {
     padding: 12,
