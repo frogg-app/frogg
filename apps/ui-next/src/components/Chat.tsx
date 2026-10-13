@@ -12,12 +12,15 @@ import { ContextMeter } from "./chat/ContextMeter";
 import { ComposerNotices } from "./chat/Notices";
 import { SessionMenu } from "./chat/SessionMenu";
 import { SessionState, Compaction } from "./chat/SessionState";
+import { headerTitle } from "./chat/title";
+import { UserMessage } from "./chat/UserMessage";
 import { forkDrafts, listCommands, sendWithAttachments, type Attachment } from "./chat/actions";
 import { useBottomAnchor } from "./chat/useBottomAnchor";
 import { SubWorkStrip } from "./subwork/Strip";
 import { toastError } from "./toast/store";
 import { Composer } from "./Composer";
 import { Markdown } from "./Markdown";
+import { ImageRoot } from "./markdown/HostImage";
 import { PermissionCard } from "./PermissionCard";
 import { Select } from "./Select";
 import { bucketColor, StatusGlyph } from "./StatusGlyph";
@@ -83,6 +86,10 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   }, [a.id]);
   const notices = useMemo(() => <ComposerNotices agent={a} />, [a]);
   const chips = useMemo(() => (onBack ? [] : [provider]), [onBack, provider]);
+  const title = useMemo(
+    () => headerTitle(a.title || "Untitled session", entries),
+    [a.title, entries],
+  );
   return (
     <View style={s.root}>
       <View style={s.head}>
@@ -95,12 +102,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
               <ArrowLeft size={18} color={color.text} />
             </Pressable>
           )}
-          <RevealHeading
-            key={`title-${a.id}`}
-            text={a.title || "Untitled session"}
-            numberOfLines={1}
-            style={s.title}
-          />
+          <RevealHeading key={`title-${a.id}`} text={title} numberOfLines={1} style={s.title} />
           <SessionMenu key={a.id} session={session} onArchived={onBack} />
         </View>
         <View style={s.sub}>
@@ -117,41 +119,43 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
         </View>
       </View>
       <SubWorkStrip sessionId={a.id} />
-      <ScrollView
-        ref={anchor.ref}
-        style={s.scroll}
-        contentContainerStyle={s.body}
-        onScroll={anchor.onScroll}
-        onLayout={anchor.onLayout}
-        onContentSizeChange={anchor.onContentSizeChange}
-        scrollEventThrottle={anchor.scrollEventThrottle}
-      >
-        {!rows && (
-          <T v="label" style={s.empty}>
-            loading timeline…
-          </T>
-        )}
-        {rows?.length === 0 && !running && (
-          <T v="label" style={s.empty}>
-            no messages yet · say what to do below
-          </T>
-        )}
-        {rows?.map((r) => (
-          <Item
-            key={r.key}
-            e={r.e}
-            provider={provider}
-            streaming={running && r === rows[rows.length - 1]}
-          />
-        ))}
-        {a.pendingPermissions.map((p) => (
-          <PermissionCard key={p.id} agentId={a.id} p={p} />
-        ))}
-        <SessionState agent={a} online={conn === "online"} />
-        {running && conn === "online" && (
-          <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
-        )}
-      </ScrollView>
+      <ImageRoot.Provider value={a.cwd}>
+        <ScrollView
+          ref={anchor.ref}
+          style={s.scroll}
+          contentContainerStyle={s.body}
+          onScroll={anchor.onScroll}
+          onLayout={anchor.onLayout}
+          onContentSizeChange={anchor.onContentSizeChange}
+          scrollEventThrottle={anchor.scrollEventThrottle}
+        >
+          {!rows && (
+            <T v="label" style={s.empty}>
+              loading timeline…
+            </T>
+          )}
+          {rows?.length === 0 && !running && (
+            <T v="label" style={s.empty}>
+              no messages yet · say what to do below
+            </T>
+          )}
+          {rows?.map((r) => (
+            <Item
+              key={r.key}
+              e={r.e}
+              provider={provider}
+              streaming={running && r === rows[rows.length - 1]}
+            />
+          ))}
+          {a.pendingPermissions.map((p) => (
+            <PermissionCard key={p.id} agentId={a.id} p={p} />
+          ))}
+          <SessionState agent={a} online={conn === "online"} />
+          {running && conn === "online" && (
+            <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
+          )}
+        </ScrollView>
+      </ImageRoot.Provider>
       <View style={s.composer}>
         <Composer
           key={a.id}
@@ -246,11 +250,7 @@ function Item({
   const it = e.item;
   switch (it.type) {
     case "user_message":
-      return (
-        <View style={s.user}>
-          <T style={s.userT}>{it.text}</T>
-        </View>
-      );
+      return <UserMessage text={it.text} />;
     case "assistant_message":
       return (
         <View style={s.reply}>
@@ -378,17 +378,6 @@ const s = StyleSheet.create({
     alignSelf: "center",
   },
   empty: { textAlign: "center", marginTop: 40 },
-  user: {
-    alignSelf: "flex-end",
-    maxWidth: "85%",
-    marginTop: 14,
-    backgroundColor: color.raise,
-    borderLeftWidth: 2,
-    borderLeftColor: color.cyan2,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  userT: { fontSize: 14.5, lineHeight: 22 },
   reply: { marginTop: 18 },
   replyHead: {
     flexDirection: "row",
