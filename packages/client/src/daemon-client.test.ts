@@ -6020,6 +6020,44 @@ test("refuses a different daemon on the host's address and reconnects once the r
   expect(client.lastErrorInfo).toBeNull();
 });
 
+test("a serverId pinned after connecting refuses a different daemon on reconnect", async () => {
+  const answers = ["srv_first", "srv_foreign"];
+  const mocks: Array<ReturnType<typeof createMockTransport>> = [];
+  const client = new DaemonClient({
+    url: "ws://test",
+    clientId: "identity_pin_test",
+    logger: createMockLogger(),
+    transportFactory: () => {
+      const mock = createMockTransport();
+      mocks.push(mock);
+      return mock.transport;
+    },
+    reconnect: { enabled: true, baseDelayMs: 1, maxDelayMs: 1 },
+  });
+  clients.push(client);
+  const answer = (serverId: string) =>
+    mocks.at(-1)!.triggerMessage(
+      wrapSessionMessage({
+        type: "status",
+        payload: { status: "server_info", serverId, hostname: null, version: null },
+      }),
+    );
+
+  const connectPromise = client.connect();
+  answer(answers[0]!);
+  await connectPromise;
+  client.setExpectedServerId("srv_first");
+  mocks.at(-1)!.triggerClose({ code: 1006, reason: "network lost" });
+  await vi.waitFor(() => expect(mocks.length).toBe(2));
+  answer(answers[1]!);
+  expect(client.getConnectionState().status).not.toBe("connected");
+  expect(client.lastErrorInfo).toEqual({
+    code: "server_identity_mismatch",
+    expectedServerId: "srv_first",
+    actualServerId: "srv_foreign",
+  });
+});
+
 async function connectPluginTestClient() {
   const mock = createMockTransport();
   const client = new DaemonClient({

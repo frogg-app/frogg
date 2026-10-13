@@ -7231,6 +7231,14 @@ export class DaemonClient {
     }
   }
 
+  /**
+   * Pins (or unpins) the daemon this client accepts from the next handshake on,
+   * e.g. once a host saved by address alone learns its serverId.
+   */
+  setExpectedServerId(serverId: string | undefined): void {
+    this.config = { ...this.config, expectedServerId: serverId };
+  }
+
   setReconnectEnabled(enabled: boolean): void {
     this.config = {
       ...this.config,

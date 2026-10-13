@@ -1,15 +1,23 @@
 import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { isRelayHost, updateHost, useHostLink, useHosts, type Host } from "../../daemon/hosts";
-import { connect, getClient, useDaemon, useFleet, useHostConn } from "../../daemon/store";
-import { color, motion, stateMotion } from "../../theme/tokens";
-import { authRefusal } from "./access";
+import { isRelayHost, useHostLink, useHosts, type Host } from "../../daemon/hosts";
+import {
+  connect,
+  getClient,
+  useDaemon,
+  useFleet,
+  useHostConn,
+  useHostError,
+} from "../../daemon/store";
+import { color } from "../../theme/tokens";
+import { authRefusal, identityMismatch } from "./access";
 import { Button } from "../Button";
 import { Meter } from "../Meter";
 import { Card } from "./Card";
 import { HereNow } from "./HereNow";
 import { HostUpdate } from "./HostUpdate";
+import { ago, MismatchBanner, Offline } from "./Offline";
 import { Routes } from "./Routes";
 import { T } from "../Text";
 import { openSheet, useHostView, viewHost } from "./state";
@@ -23,27 +31,6 @@ export const uptime = (s: number) =>
   s > 86400
     ? `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`
     : `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
-
-/** "12m ago" style age for an ISO time. */
-export function ago(iso: string | null | undefined): string | null {
-  if (!iso) return null;
-  const s = Math.max(0, Math.floor((Date.now() - Date.parse(iso)) / 1000));
-  if (!Number.isFinite(s)) return null;
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
-
-/** Why the active host is not connected, in one line. */
-export function offlineReason(link: ReturnType<typeof useHostLink.getState>): string {
-  const refusal = authRefusal(link.error);
-  if (refusal) return refusal.title;
-  if (link.error && "message" in link.error && typeof link.error.message === "string")
-    return link.error.message;
-  if (link.reason) return link.reason;
-  return "No answer from the daemon";
-}
 
 export const hostKind = (h: Host) => (isRelayHost(h) ? "Relay" : "Direct");
 
@@ -144,11 +131,34 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
   const pairDevice = useCallback(() => openSheet({ kind: "pair-device" }), []);
   const restart = useCallback(() => void getClient()?.restartServer("Restart from Hosts"), []);
   const edit = useCallback(() => openSheet({ kind: "edit", hostId: host.id }), [host.id]);
+  const retry = useCallback(() => void connect(host), [host]);
+  const retryBtn = useMemo(
+    () => (
+      <Button
+        kind="primary"
+        label={conn === "connecting" ? "Retrying…" : "Retry"}
+        onPress={retry}
+      />
+    ),
+    [retry, conn],
+  );
   const eyebrow = ["Host", hostKind(host), version ? `v${version}` : null]
     .filter(Boolean)
     .join(" · ");
 
-  if (conn !== "online") return <Offline host={host} link={link} conn={conn} onBack={onBack} />;
+  if (conn !== "online")
+    return (
+      <>
+        <Head
+          host={host}
+          eyebrow={`Host · ${hostKind(host)}`}
+          onBack={onBack}
+          // A refusal or the wrong daemon is not fixed by retrying; the banner offers the fix.
+          actions={authRefusal(link.error) || identityMismatch(link.error) ? undefined : retryBtn}
+        />
+        <Offline host={host} link={link} conn={conn} />
+      </>
+    );
 
   const status = `${isRelayHost(host) ? "Connected via relay" : "Connected directly"}${
     m ? ` · ${m.platform} · ${m.arch} · up ${uptime(m.uptimeSeconds)}` : ""
@@ -215,115 +225,6 @@ function ActiveHost({ host, onBack }: { host: Host; onBack?: () => void }) {
   );
 }
 
-/**
- * When a direct host keeps failing, asks /api/identity over the other scheme: a daemon that only
- * answers there means the saved TLS setting is wrong (the usual cause of a bare 1006).
- */
-function useTlsMismatch(host: Host, down: boolean): boolean {
-  const [wrong, setWrong] = useState(false);
-  const { endpoint, tls } = host;
-  const relay = isRelayHost(host);
-  useEffect(() => {
-    setWrong(false);
-    if (!down || relay) return;
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 4000);
-    fetch(`${tls ? "http" : "https"}://${endpoint}/api/identity`, { signal: ctl.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((b: { serverId?: string } | null) => {
-        if (b?.serverId) setWrong(true);
-        return undefined;
-      })
-      .catch(() => undefined)
-      .finally(() => clearTimeout(timer));
-    return () => ctl.abort();
-  }, [endpoint, tls, relay, down]);
-  return wrong;
-}
-
-function Offline({
-  host,
-  link,
-  conn,
-  onBack,
-}: {
-  host: Host;
-  link: ReturnType<typeof useHostLink.getState>;
-  conn: string;
-  onBack?: () => void;
-}) {
-  const retry = useCallback(() => void connect(host), [host]);
-  const remove = useCallback(() => openSheet({ kind: "remove", hostId: host.id }), [host.id]);
-  const pairApp = useCallback(() => openSheet({ kind: "add", method: "pair" }), []);
-  const edit = useCallback(() => openSheet({ kind: "edit", hostId: host.id }), [host.id]);
-  const refusal = authRefusal(link.error);
-  const last = ago(host.lastOnlineAt);
-  const connecting = conn === "connecting";
-  // First connect (never dropped this run) reads as a wait; a reconnect reads as a failure.
-  const first = connecting && !link.droppedAt;
-  const tlsWrong = useTlsMismatch(host, !first && !refusal);
-  const fixTls = useCallback(() => {
-    const next = updateHost(host.id, { tls: !host.tls });
-    if (next) void connect(next);
-  }, [host.id, host.tls]);
-  const retryBtn = useMemo(
-    () => <Button kind="primary" label={connecting ? "Retrying…" : "Retry"} onPress={retry} />,
-    [retry, connecting],
-  );
-  const attempt = link.attempt + 1;
-  let title = `Can't reach ${host.name}`;
-  if (first) title = `Connecting to ${host.name}…`;
-  else if (refusal) title = refusal.title;
-  let body = `${offlineReason(link)}.${last ? ` Last connected ${last}.` : ""} Sessions on this host are paused here and come back when it does.`;
-  if (first) body = host.endpoint;
-  else if (refusal) body = refusal.body;
-  let primary = <Button kind="primary" label="Retry now" onPress={retry} />;
-  if (refusal) primary = <Button kind="primary" label="Pair this app…" onPress={pairApp} />;
-  else if (tlsWrong)
-    primary = (
-      <Button kind="primary" label={host.tls ? "Turn off TLS" : "Turn on TLS"} onPress={fixTls} />
-    );
-  return (
-    <>
-      <Head
-        host={host}
-        eyebrow={`Host · ${hostKind(host)}`}
-        onBack={onBack}
-        actions={refusal ? undefined : retryBtn}
-      />
-      <View style={[s.banner, first && s.bannerWait]}>
-        <View style={s.bannerHead}>
-          <View style={[s.flag, first && s.flagWait, !refusal && s.flagLive]} />
-          <T style={s.strong}>{title}</T>
-        </View>
-        <T style={s.bannerBody}>{body}</T>
-        {tlsWrong && (
-          <T style={s.hintLine}>
-            {host.tls
-              ? `${host.endpoint} answers without TLS. Turn TLS off for this host to connect.`
-              : `${host.endpoint} only answers over TLS. Turn TLS on for this host to connect.`}
-          </T>
-        )}
-        {!refusal && !first && (
-          <View style={s.retryRow}>
-            <View style={s.track}>{connecting && <View style={s.scan} />}</View>
-            <T v="mono" style={connecting ? s.retryOn : s.retryIdle}>
-              {connecting
-                ? `retrying · attempt ${attempt}`
-                : `waiting to retry · ${attempt - 1} tried`}
-            </T>
-          </View>
-        )}
-        <View style={s.bannerActs}>
-          {primary}
-          <Button label={refusal ? "Add the password…" : "Edit host…"} onPress={edit} />
-          <Button kind="danger" label="Remove host…" onPress={remove} />
-        </View>
-      </View>
-    </>
-  );
-}
-
 /** One line on a background host's link; every saved host stays connected, not just the active one. */
 function backgroundStatus(conn: string | null, count: number | null, last: string | null): string {
   if (conn === "online")
@@ -346,6 +247,7 @@ function SavedHost({ host, onBack }: { host: Host; onBack?: () => void }) {
   }, [host]);
   const remove = useCallback(() => openSheet({ kind: "remove", hostId: host.id }), [host.id]);
   const edit = useCallback(() => openSheet({ kind: "edit", hostId: host.id }), [host.id]);
+  const wrongDaemon = identityMismatch(useHostError(host.id));
   const last = ago(host.lastOnlineAt);
   const switchBtn = useMemo(
     () => <Button kind="primary" label="Switch to this host" onPress={go} />,
@@ -354,10 +256,11 @@ function SavedHost({ host, onBack }: { host: Host; onBack?: () => void }) {
   return (
     <>
       <Head host={host} eyebrow={`Host · ${hostKind(host)}`} onBack={onBack} actions={switchBtn} />
+      {wrongDaemon && <MismatchBanner host={host} id={wrongDaemon} />}
       <View style={s.grid}>
         <Card title="Connections">
           <Routes host={host} />
-          <T style={s.muted}>{backgroundStatus(conn, count, last)}</T>
+          {!wrongDaemon && <T style={s.muted}>{backgroundStatus(conn, count, last)}</T>}
           {host.role && <T style={s.muted}>Paired as {host.role}.</T>}
           <View style={s.bannerActs}>
             <Button label="Edit host…" onPress={edit} />
@@ -385,25 +288,5 @@ const s = StyleSheet.create({
   strong: { fontWeight: "600", fontSize: 13.5 },
   muted: { color: color.muted, fontSize: 12.5, lineHeight: 18 },
   faint: { color: color.faint, fontSize: 10.5 },
-  banner: {
-    maxWidth: 720,
-    padding: 18,
-    gap: 10,
-    borderLeftWidth: 2,
-    borderLeftColor: color.coral,
-    backgroundColor: "rgba(255,107,107,0.06)",
-  },
-  bannerWait: { borderLeftColor: color.amber, backgroundColor: "rgba(245,184,74,0.05)" },
-  bannerHead: { flexDirection: "row", alignItems: "center", gap: 10 },
-  flag: { width: 10, height: 10, backgroundColor: color.coral },
-  flagWait: { backgroundColor: color.amber },
-  flagLive: motion.breathe,
-  hintLine: { color: color.text, fontSize: 13, lineHeight: 19 },
-  retryRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  track: { width: 120, height: 2, backgroundColor: color.line, overflow: "hidden" },
-  scan: { width: "25%", height: 2, backgroundColor: color.coral, ...stateMotion.beam },
-  retryOn: { color: color.coral, fontSize: 11.5 },
-  retryIdle: { color: color.faint, fontSize: 11.5 },
-  bannerBody: { color: color.muted, fontSize: 13.5, lineHeight: 21 },
   bannerActs: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
 });

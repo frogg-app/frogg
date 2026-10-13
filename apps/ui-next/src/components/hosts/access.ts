@@ -36,6 +36,10 @@ export interface AuthRefusal {
   kind: "unclaimed" | "missing" | "rejected";
   title: string;
   body: string;
+  /** Label of the pairing action that fixes it (the banner's primary, the toast's action). */
+  action: string;
+  /** Toast wording, naming the host since the toast shows outside the Hosts tool. */
+  toast: (host: string) => { title: string; detail: string };
 }
 
 /**
@@ -49,16 +53,65 @@ export function authRefusal(error: DaemonClientErrorInfo | null): AuthRefusal | 
       kind: "rejected",
       title: "The host turned this app away",
       body: `It refused the saved credential (${error.reason || "rejected"}): the device was revoked, or the password changed. Pair again, or enter the current password.`,
+      action: "Pair again…",
+      toast: (host) => ({
+        title: `${host} turned this app away`,
+        detail: "It refused the saved credential. Pair again or enter the current password.",
+      }),
     };
   if (/pairing required/i.test(error.reason))
     return {
       kind: "unclaimed",
       title: "This host isn't claimed yet",
       body: "No device owns this daemon, and it only admits registered devices. Run `frogg daemon pair` on the host and paste the link or code here to claim it as owner.",
+      action: "Pair this app…",
+      toast: (host) => ({
+        title: `${host} isn't claimed yet`,
+        detail: "Pair this app with `frogg daemon pair` on the host to claim it as owner.",
+      }),
     };
   return {
     kind: "missing",
     title: "This host needs pairing or its password",
     body: "The daemon only admits registered devices, from any network. Pair this app with a code from an owner device, or add the daemon password to this host.",
+    action: "Pair this app…",
+    toast: (host) => ({
+      title: `${host} needs pairing or its password`,
+      detail: "It only admits registered devices. Pair this app or add the daemon password.",
+    }),
   };
+}
+
+export interface IdentityMismatch {
+  /** The daemon the saved host was bound to. */
+  expected: string;
+  /** The daemon answering at its address instead. */
+  actual: string;
+  title: (address: string) => string;
+}
+
+/**
+ * A different daemon answers at the saved host's address (its serverId differs from the one
+ * saved). The client refuses the handshake, so no session of that daemon reaches this host, and
+ * keeps retrying in case the saved one comes back.
+ */
+export function identityMismatch(error: DaemonClientErrorInfo | null): IdentityMismatch | null {
+  if (error?.code !== "server_identity_mismatch") return null;
+  return {
+    expected: error.expectedServerId,
+    actual: error.actualServerId,
+    title: (address) => `A different Frogg daemon is answering at ${address}`,
+  };
+}
+
+/** Why a host is not connected, in one line (the host list and the offline banner). */
+export function offlineReason(link: {
+  error: DaemonClientErrorInfo | null;
+  reason: string | null;
+}): string {
+  const refusal = authRefusal(link.error);
+  if (refusal) return refusal.title;
+  if (identityMismatch(link.error)) return "A different daemon is answering at this address";
+  if (link.reason) return link.reason;
+  return "No answer from the daemon";
 }

@@ -8,7 +8,7 @@ Gaps where ui-next lacks something apps/ui has. Order = priority. Tick when done
 - [x] Per-host connection list: show each saved route (direct/relay/SSH) with latency; remove one route
 - [ ] Host appearance: colour (11 swatches) and sidebar badge (Name / Icon only / Hidden)
 - [ ] Rename from Hosts panel / host detail (currently only Settings › Overview)
-- [ ] Connection error card: credential rejected → "Pair again"; different daemon at this address
+- [x] Connection error card: credential rejected → "Pair again"; different daemon at this address
 - [ ] Pairing request approval: pick role (currently hardcoded `operator`)
 - [ ] Network scan: "Servers on your network" with Connect / Needs pairing
 - [ ] Multiple-daemon conflict warning with "Shut down other"

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useHostLink, useHosts } from "../../daemon/hosts";
 import { connect, getClient, useDaemon } from "../../daemon/store";
 import { useUi } from "../../ui-store";
+import { authRefusal, identityMismatch } from "../hosts/access";
+import { openSheet, viewHost } from "../hosts/state";
 import { dismissToast, toast, toastShowing, updateToast } from "./store";
 
 const APP_VERSION: string = require("../../../package.json").version;
@@ -33,6 +35,16 @@ const openUpdate = () => {
   useUi.getState().setTool("settings");
   useUi.getState().openSettings("daemon");
 };
+/** The Hosts tool on the active host, where its offline banner offers the same fixes. */
+function openHost(sheet?: Parameters<typeof openSheet>[0]) {
+  useUi.getState().setTool("hosts");
+  // Phone: push the active host's detail (and its banner) over the list.
+  viewHost(null, true);
+  if (sheet) openSheet(sheet);
+}
+const openPairing = () => openHost({ kind: "add", method: "pair" });
+const openHostDetail = () => openHost();
+
 function openResources() {
   useUi.getState().setTool("settings");
   useUi.getState().openSettings("resources");
@@ -48,7 +60,9 @@ export function HostToasts() {
   const conn = useDaemon((st) => st.conn);
   const url = useDaemon((st) => st.url);
   const droppedAt = useHostLink((st) => st.droppedAt);
-  const hostName = useHosts((st) => st.hosts.find((h) => h.id === st.activeId)?.name ?? "host");
+  const host = useHosts((st) => st.hosts.find((h) => h.id === st.activeId));
+  const hostName = host?.name ?? "host";
+  const error = useHostLink((st) => st.error);
   const offlineFor = useElapsed(conn === "online" ? null : droppedAt);
   const [version, setVersion] = useState<string | null>(null);
   const [storage, setStorage] = useState<{ level: string; bytes: number } | null>(null);
@@ -85,11 +99,22 @@ export function HostToasts() {
     });
   }, [older, url, version, hostName]);
 
-  // Offline / reconnecting.
-  const offTitle = `${conn === "connecting" ? "Connecting to" : "Disconnected from"} ${hostName}`;
-  const offDetail = offlineFor
+  // Offline / reconnecting. A refusal or the wrong daemon is not fixed by retrying: those toasts
+  // point at the fix the host's offline banner offers instead of Retry.
+  const refusal = authRefusal(error);
+  const wrongDaemon = identityMismatch(error);
+  let problem = "drop";
+  if (refusal) problem = `auth:${refusal.kind}`;
+  else if (wrongDaemon) problem = `identity:${wrongDaemon.actual}`;
+  let offTitle = `${conn === "connecting" ? "Connecting to" : "Disconnected from"} ${hostName}`;
+  let offDetail = offlineFor
     ? `Offline for ${offlineFor}. Reconnect before sending messages.`
     : "Reconnect before sending messages.";
+  if (refusal) ({ title: offTitle, detail: offDetail } = refusal.toast(hostName));
+  else if (wrongDaemon) {
+    offTitle = wrongDaemon.title(host?.endpoint ?? "this address");
+    offDetail = `It isn't ${hostName}, so its sessions stay off this host. Use this daemon or edit the address.`;
+  }
   const online = conn === "online";
   useEffect(() => {
     if (online) {
@@ -100,7 +125,7 @@ export function HostToasts() {
       if (wasUp) toast({ kind: "ok", title: `Reconnected to ${hostName}` });
       return undefined;
     }
-    const key = `offline:${url}:${onlineEpoch}`;
+    const key = `offline:${url}:${onlineEpoch}:${problem}`;
     if (key === offlineKey) return undefined;
     // A different incident (or host): the old toast no longer describes anything.
     retire("offline");
@@ -108,19 +133,23 @@ export function HostToasts() {
     const t = setTimeout(() => {
       announced.add(key);
       offlineKey = key;
+      let action: { label: string; onPress: () => void } = { label: "Retry now", onPress: retry };
+      if (refusal) action = { label: refusal.action, onPress: openPairing };
+      else if (wrongDaemon) action = { label: "Review host…", onPress: openHostDetail };
       live.offline = toast({
-        kind: "info",
+        kind: problem === "drop" ? "info" : "needs",
         sticky: true,
-        keepOnAction: true,
+        // Retry may need pressing again; the fixes open the Hosts tool, where the banner takes over.
+        keepOnAction: problem === "drop",
         title: offTitle,
         detail: offDetail,
-        action: { label: "Retry now", onPress: retry },
+        action,
       });
     }, GRACE_MS);
     return () => clearTimeout(t);
     // Copy changes go through the update effect below, not a new toast.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online, url]);
+  }, [online, url, problem]);
   useEffect(() => {
     if (live.offline && toastShowing(live.offline))
       updateToast(live.offline, { title: offTitle, detail: offDetail });
