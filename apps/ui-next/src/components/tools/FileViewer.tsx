@@ -1,7 +1,16 @@
 import { File, FilePlus, FolderPlus, MoreHorizontal, Plus, X } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
-import { addTab, closeTabs, fileParent, useFileTabs, useFiles } from "../../daemon/files";
+import {
+  addTab,
+  closeTabs,
+  fileParent,
+  pinTab,
+  previewTab,
+  useFileTabs,
+  useFiles,
+} from "../../daemon/files";
+import { usePrefs } from "../../prefs";
 
 import { color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
@@ -18,6 +27,9 @@ import { usePrompt } from "./Prompt";
 import { newEntrySpec } from "./fileActions";
 import { hasFileDraft, useFileDocument } from "./useFileDocument";
 // ---- Viewer -----------------------------------------------------------------------------------
+
+/** Two presses this close together count as a double-click (keeps a preview tab). */
+export const DOUBLE_MS = 320;
 
 type Mode = "source" | "edit";
 const MODES: Array<[Mode, string]> = [
@@ -61,9 +73,14 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
     [path, dirty, saving, reload, discardDraft],
   );
   useEffect(() => {
-    addTab(path);
+    if (usePrefs.getState().autoPinTabs) addTab(path);
+    else previewTab(path);
     setMode("source");
   }, [path]);
+  // Editing a preview keeps it.
+  useEffect(() => {
+    if (dirty || mode === "edit") pinTab(path);
+  }, [dirty, mode, path]);
   const text = doc && "text" in doc ? doc.text : null;
   const name = path.split("/").pop() ?? path;
   const crumbs = path.split("/").slice(0, -1);
@@ -105,9 +122,11 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
             disabled={!dirty || saving}
           />
         )}
-      </View>
-      <View ref={menu.ref} collapsable={false}>
-        <Button label="Editor actions" onPress={menu.open} />
+        <View ref={menu.ref} collapsable={false}>
+          <Pressable onPress={menu.open} accessibilityLabel="Editor actions" style={st.headIcon}>
+            <MoreHorizontal size={16} color={color.faint} />
+          </Pressable>
+        </View>
       </View>
       <Menu rect={menu.rect} onClose={menu.close} items={items} right width={240} />
       {saveError && (
@@ -187,6 +206,7 @@ function DocumentBody({
 
 function FileTabs({ active, dirty }: { active: string; dirty: boolean }) {
   const tabs = useFileTabs((s) => s.tabs);
+  const preview = useFileTabs((s) => s.preview);
   const anchor = useAnchor();
   const openFile = useUi((s) => s.openFile);
   const prompt = usePrompt();
@@ -209,7 +229,14 @@ function FileTabs({ active, dirty }: { active: string; dirty: boolean }) {
     <View style={st.tabs}>
       <ScrollView horizontal style={st.flex} contentContainerStyle={st.tabsIn}>
         {tabs.map((p) => (
-          <FileTab key={p} path={p} tabs={tabs} on={p === active} dirty={p === active && dirty} />
+          <FileTab
+            key={p}
+            path={p}
+            tabs={tabs}
+            on={p === active}
+            dirty={p === active && dirty}
+            preview={p === preview}
+          />
         ))}
       </ScrollView>
       <View ref={anchor.ref} collapsable={false}>
@@ -228,16 +255,25 @@ function FileTab({
   tabs,
   on,
   dirty,
+  preview,
 }: {
   path: string;
   tabs: string[];
   on: boolean;
   dirty: boolean;
+  preview: boolean;
 }) {
   const openFile = useUi((s) => s.openFile);
   const root = useFiles((s) => s.root);
   const anchor = useAnchor();
-  const select = useCallback(() => openFile(path), [openFile, path]);
+  // A second press within the double-click window keeps a preview tab.
+  const lastPress = useRef(0);
+  const select = useCallback(() => {
+    const now = Date.now();
+    if (now - lastPress.current < DOUBLE_MS) pinTab(path);
+    lastPress.current = now;
+    openFile(path);
+  }, [openFile, path]);
   const close = useCallback(
     () => closeAndPick([path], path, tabs, on, openFile),
     [path, tabs, on, openFile],
@@ -246,6 +282,9 @@ function FileTab({
   const items = useMemo<MenuEntry[]>(() => {
     const idx = tabs.indexOf(path);
     return [
+      ...(preview
+        ? ([{ label: "Keep open", onPress: () => pinTab(path) }, "-"] as MenuEntry[])
+        : []),
       { label: "Copy path", onPress: () => void copyText(root ? `${root}/${path}` : path) },
       { label: "Copy relative path", onPress: () => void copyText(path) },
       "-",
@@ -268,7 +307,7 @@ function FileTab({
         },
       },
     ];
-  }, [tabs, path, root, close, on, openFile, unsaved]);
+  }, [tabs, path, root, close, on, openFile, unsaved, preview]);
   const name = path.split("/").pop();
   return (
     <View ref={anchor.ref} collapsable={false}>
@@ -276,7 +315,7 @@ function FileTab({
         {({ hovered }) => (
           <View style={[st.tab, on && st.tabOn, hovered && !on && st.hovered]}>
             <File size={12} color={on ? color.cyan2 : color.faint} />
-            <T numberOfLines={1} style={[st.tabName, on && st.tabNameOn]}>
+            <T numberOfLines={1} style={[st.tabName, on && st.tabNameOn, preview && st.tabPreview]}>
               {name}
             </T>
             {dirty && <View style={st.dirtyDot} />}
@@ -345,6 +384,8 @@ const st = StyleSheet.create({
   tabOn: { backgroundColor: color.bg2, borderTopWidth: 2, borderTopColor: color.cyan },
   tabName: { fontSize: 12.5, color: color.muted, flexShrink: 1 },
   tabNameOn: { color: color.text },
+  tabPreview: { fontStyle: "italic" },
+  headIcon: { padding: 6 },
   dirtyDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: color.amber },
   tabPlus: { paddingHorizontal: 12, height: "100%", justifyContent: "center" },
   viewerHead: {

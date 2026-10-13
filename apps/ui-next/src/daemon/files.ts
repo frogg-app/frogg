@@ -169,15 +169,39 @@ export const deleteEntry = (path: string) =>
   entryOp(parentOf(path), (cwd, c) => c.deleteFileEntry({ cwd, path }));
 export const fileParent = parentOf;
 
-/** Open viewer tabs, in order. The active one is ui-store's `filePath`. */
-export const useFileTabs = create<{ tabs: string[] }>(() => ({ tabs: [] }));
+/**
+ * Open viewer tabs, in order. The active one is ui-store's `filePath`. `preview` is the one tab
+ * a single click opened: the next single click reuses its slot instead of adding a tab.
+ */
+export const useFileTabs = create<{ tabs: string[]; preview: string | null }>(() => ({
+  tabs: [],
+  preview: null,
+}));
+/** Opens `path` as a kept (pinned) tab. */
 export const addTab = (path: string) =>
-  useFileTabs.setState((s) => (s.tabs.includes(path) ? s : { tabs: [...s.tabs, path] }));
+  useFileTabs.setState((s) => ({
+    tabs: s.tabs.includes(path) ? s.tabs : [...s.tabs, path],
+    preview: s.preview === path ? null : s.preview,
+  }));
+/** Opens `path` in the preview slot, replacing the previous preview (an already-open tab stays). */
+export const previewTab = (path: string) =>
+  useFileTabs.setState((s) => {
+    if (s.tabs.includes(path)) return s;
+    const at = s.preview ? s.tabs.indexOf(s.preview) : -1;
+    const tabs = at < 0 ? [...s.tabs, path] : s.tabs.map((p, i) => (i === at ? path : p));
+    return { tabs, preview: path };
+  });
+/** Keeps a preview tab open (editing it, double-clicking it, or ⋯ → Keep open). */
+export const pinTab = (path: string) =>
+  useFileTabs.setState((s) => (s.preview === path ? { preview: null } : s));
 export const closeTabs = (paths: string[]) =>
-  useFileTabs.setState((s) => ({ tabs: s.tabs.filter((p) => !paths.includes(p)) }));
-onHostSwitch(() => useFileTabs.setState({ tabs: [] }));
+  useFileTabs.setState((s) => ({
+    tabs: s.tabs.filter((p) => !paths.includes(p)),
+    preview: s.preview && paths.includes(s.preview) ? null : s.preview,
+  }));
+onHostSwitch(() => useFileTabs.setState({ tabs: [], preview: null }));
 
 // Tabs belong to a checkout; relative paths must not leak into the next root.
 useFiles.subscribe((next, previous) => {
-  if (next.root !== previous.root) useFileTabs.setState({ tabs: [] });
+  if (next.root !== previous.root) useFileTabs.setState({ tabs: [], preview: null });
 });

@@ -26,6 +26,12 @@ export function FilesEditor() {
         <Row label="Open files from the explorer">
           <Seg options={WHERE} value={p.openFiles} onChange={prefSetter("openFiles")} />
         </Row>
+        <Row
+          label="Keep every opened file as a tab"
+          hint="Off: a single click opens a preview tab (italic) that the next click replaces; edit it or double-click its tab to keep it"
+        >
+          <Toggle value={p.autoPinTabs} onChange={prefSetter("autoPinTabs")} />
+        </Row>
         <Row label="Open diffs">
           <Seg options={WHERE} value={p.openDiffs} onChange={prefSetter("openDiffs")} />
         </Row>
