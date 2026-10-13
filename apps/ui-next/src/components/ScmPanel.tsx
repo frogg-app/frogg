@@ -26,11 +26,9 @@ import {
   useScm,
   useScmExtra,
   watchCheckout,
-  type Commit,
   type DiffFile,
   type Stash,
 } from "../daemon/scm";
-import { ago } from "../util";
 import { useFormFactor } from "../theme/layout";
 import { BranchMenu } from "./tools/BranchMenu";
 import { useConfirm, type ConfirmSpec } from "./tools/Confirm";
@@ -41,6 +39,8 @@ import { Button } from "./Button";
 import { Cut } from "./Cut";
 import { GroupHead, PanelHead } from "./PanelHead";
 import { Brackets, BracketScope } from "./Brackets";
+import { CommitGraph, ScmQuickSettings } from "./scm/CommitGraph";
+import { usePrefs } from "../prefs";
 import { T } from "./Text";
 
 /** The checkout source control works on: the open session's, else the most recent one. */
@@ -78,10 +78,11 @@ export function ScmPanel() {
     if (cwd) void watchCheckout(cwd).then(() => loadExtras().catch(() => {}));
   }, [cwd]);
   const git = status && status.isGit ? status : null;
-  const sessionCommits = useMemo(() => commits?.filter((c) => !c.isOnBase) ?? null, [commits]);
+  const showStashes = usePrefs((p) => p.scmStashes);
   return (
     <View style={s.fill}>
       <PanelHead title="Source control">
+        {git && <ScmQuickSettings base={git.baseRef ?? null} />}
         <Pressable onPress={refresh} accessibilityLabel="Refresh">
           <RefreshCw size={14} color={color.faint} />
         </Pressable>
@@ -125,16 +126,8 @@ export function ScmPanel() {
           {files?.map((f) => (
             <FileRow key={f.path} f={f} ask={ask} />
           ))}
-          {!!sessionCommits?.length && (
-            <GroupHead label="Session commits" count={sessionCommits.length} />
-          )}
-          {sessionCommits?.map((c) => (
-            <CommitRow key={c.sha} c={c} />
-          ))}
-          {!!stashes?.length && <GroupHead label="Stashes" count={stashes.length} />}
-          {stashes?.map((st) => (
-            <StashRow key={`${st.index}:${st.message}`} st={st} ask={ask} />
-          ))}
+          <CommitGraph commits={commits} base={git?.baseRef ?? null} />
+          {showStashes && <Stashes stashes={stashes} ask={ask} />}
         </ScrollView>
       </BracketScope>
       {dialog}
@@ -264,11 +257,23 @@ function BranchCard({ git, busy, dirty }: { git: Git; busy: Scm["busy"]; dirty: 
         dirty={dirty}
       />
       <View style={s.counts}>
-        <T v="mono" style={s.ahead}>
-          ↑{ab?.ahead ?? 0}
-        </T>
-        <T v="mono">↓{ab?.behind ?? 0}</T>
-        <T v="mono">vs {git.baseRef ?? "—"}</T>
+        {git.baseRef && git.currentBranch !== git.baseRef ? (
+          <T v="mono" style={s.countT}>
+            <T v="mono" style={s.ahead}>
+              {ab?.ahead ?? 0} ahead
+            </T>{" "}
+            of {git.baseRef} · {ab?.behind ?? 0} behind
+          </T>
+        ) : (
+          <T v="mono" style={s.countT}>
+            {git.baseRef ? `this is ${git.baseRef}` : "no base branch"}
+          </T>
+        )}
+        {ahead > 0 && (
+          <T v="mono" style={s.unpushed}>
+            {ahead} not pushed
+          </T>
+        )}
         {busy === "switch" && <T v="mono">switching…</T>}
         {busy === "stash" && <T v="mono">stashing…</T>}
         {busy === "merge" && <T v="mono">merging…</T>}
@@ -425,20 +430,15 @@ function FileRow({ f, ask }: { f: DiffFile; ask: Ask }) {
   );
 }
 
-function CommitRow({ c }: { c: Commit }) {
+function Stashes({ stashes, ask }: { stashes: Stash[] | null; ask: Ask }) {
+  if (!stashes?.length) return null;
   return (
-    <View style={s.line}>
-      <T v="mono" style={s.sha}>
-        {c.shortSha}
-      </T>
-      <T numberOfLines={1} style={s.lineText}>
-        {c.subject}
-      </T>
-      {!c.isOnRemote && <View style={s.localDot} />}
-      <T v="mono" style={s.when}>
-        {ago(c.authorDate)}
-      </T>
-    </View>
+    <>
+      <GroupHead label="Stashes" count={stashes.length} />
+      {stashes.map((st) => (
+        <StashRow key={`${st.index}:${st.message}`} st={st} ask={ask} />
+      ))}
+    </>
   );
 }
 
@@ -486,7 +486,17 @@ const s = StyleSheet.create({
   branchHead: { flexDirection: "row", alignItems: "center", gap: 8 },
   branchName: { color: color.text, fontSize: 13, fontWeight: "500", flexShrink: 1 },
   branchNameHover: { color: color.cyan2 },
-  counts: { flexDirection: "row", gap: 10, marginTop: 6, marginLeft: 22 },
+  counts: { flexDirection: "row", flexWrap: "wrap", columnGap: 10, marginTop: 6, marginLeft: 22 },
+  countT: { fontSize: 11, color: color.muted },
+  unpushed: { fontSize: 11, color: color.amber },
+  legend: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+  legendT: { fontSize: 10, color: color.faint },
   ahead: { color: color.cyan2 },
   syncRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
   commitBox: { paddingHorizontal: 12, gap: 8 },

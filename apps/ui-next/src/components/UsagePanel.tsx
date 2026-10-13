@@ -1,6 +1,13 @@
 import { ChevronDown, ChevronRight, RefreshCw, Settings as Gear } from "lucide-react-native";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View, type ViewStyle } from "react-native";
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  type LayoutChangeEvent,
+  type ViewStyle,
+} from "react-native";
 import { getClient, useDaemon } from "../daemon/store";
 import {
   accountName,
@@ -88,8 +95,14 @@ export function UsagePanel() {
   }, [conn]);
   const shown = groups?.filter(groupReports) ?? [];
   const unset = groups?.filter((g) => !groupReports(g)) ?? [];
+  // Full width (no chat beside it): accounts sit side by side instead of one long column.
+  const [wide, setWide] = useState(false);
+  const onLayout = useCallback(
+    (e: LayoutChangeEvent) => setWide(e.nativeEvent.layout.width >= WIDE),
+    [],
+  );
   return (
-    <View style={st.fill}>
+    <View style={st.fill} onLayout={onLayout}>
       <PanelHead title="Usage">
         <Pressable onPress={refresh} accessibilityLabel="Refresh usage" disabled={loading}>
           <RefreshCw size={14} color={loading ? color.cyan : color.faint} />
@@ -98,7 +111,7 @@ export function UsagePanel() {
           <Gear size={14} color={color.faint} />
         </Pressable>
       </PanelHead>
-      <ScrollView contentContainerStyle={st.content}>
+      <ScrollView contentContainerStyle={[st.content, wide && st.contentWide]}>
         {error && (
           <T v="mono" style={st.error}>
             {error}
@@ -114,7 +127,7 @@ export function UsagePanel() {
         )}
         <View onPointerEnter={refreshOnHover} style={st.cards}>
           {shown.map((g) => (
-            <ProviderCard key={g.providerId} group={g} />
+            <ProviderCard key={g.providerId} group={g} wide={wide} />
           ))}
         </View>
         {unset.length > 0 && (
@@ -127,7 +140,10 @@ export function UsagePanel() {
   );
 }
 
-function ProviderCard({ group: g }: { group: UsageGroup }) {
+/** Panel width from which account blocks lay out in columns. */
+const WIDE = 720;
+
+function ProviderCard({ group: g, wide }: { group: UsageGroup; wide: boolean }) {
   const [open, setOpen] = useState(true);
   const toggle = useCallback(() => setOpen((o) => !o), []);
   if (g.accounts.length === 0) {
@@ -167,9 +183,13 @@ function ProviderCard({ group: g }: { group: UsageGroup }) {
         </T>
       </Pressable>
       {open ? (
-        g.accounts.map((a, i) => (
-          <AccountBlock key={a.account.id} entry={a} tint={accountTint(a.account, i)} />
-        ))
+        <View style={wide ? st.grid : st.stack}>
+          {g.accounts.map((a, i) => (
+            <View key={a.account.id} style={wide && st.cell}>
+              <AccountBlock entry={a} tint={accountTint(a.account, i)} />
+            </View>
+          ))}
+        </View>
       ) : (
         <Summary group={g} />
       )}
@@ -339,6 +359,10 @@ const st = StyleSheet.create({
   fill: { flex: 1, backgroundColor: color.bg2 },
   content: { padding: 12, gap: 10 },
   cards: { gap: 10 },
+  contentWide: { padding: 20, gap: 14, maxWidth: 1240, width: "100%", alignSelf: "center" },
+  stack: { gap: 12 },
+  grid: { flexDirection: "row", flexWrap: "wrap", columnGap: 28, rowGap: 4 },
+  cell: { flexGrow: 1, flexBasis: 260, maxWidth: 420 },
   error: { color: color.coral },
   faint: { color: color.faint },
   card: { backgroundColor: color.panel, padding: 14, gap: 12 },

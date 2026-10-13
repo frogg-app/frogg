@@ -7,8 +7,9 @@ import {
   FolderPlus,
   MoreHorizontal,
   RefreshCw,
+  Search,
 } from "lucide-react-native";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
   closeTabs,
@@ -16,6 +17,7 @@ import {
   duplicateEntry,
   fileParent,
   loadDir,
+  pinTab,
   renameEntry,
   setRoot,
   toggleDir,
@@ -41,6 +43,8 @@ import { usePrompt, type PromptSpec } from "./tools/Prompt";
 export { FileViewer } from "./tools/FileViewer";
 
 import { newEntrySpec } from "./tools/fileActions";
+import { FileSearchField, FileSearchResults } from "./tools/FileSearch";
+import { DOUBLE_MS } from "./tools/FileViewer";
 
 type Ask = (spec: ConfirmSpec) => void;
 type Prompt = (spec: PromptSpec) => void;
@@ -69,6 +73,16 @@ export function FilesPanel() {
     if (cwd && conn === "online") void setRoot(cwd);
   }, [cwd, conn]);
   const marks = useChangeMarks();
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const toggleSearch = useCallback(() => {
+    setSearching((v) => !v);
+    setQuery("");
+  }, []);
+  const closeSearch = useCallback(() => {
+    setSearching(false);
+    setQuery("");
+  }, []);
   const refresh = useCallback(() => void loadDir("."), []);
   const newFile = useCallback(
     () => prompt.ask(newEntrySpec(".", "file", useUi.getState().openFile)),
@@ -81,6 +95,9 @@ export function FilesPanel() {
   return (
     <View style={st.fill}>
       <PanelHead title="Files">
+        <Pressable onPress={toggleSearch} accessibilityLabel="Search files" disabled={!cwd}>
+          <Search size={14} color={searching ? color.cyan2 : color.faint} />
+        </Pressable>
         <Pressable onPress={newFile} accessibilityLabel="New file" disabled={!cwd}>
           <FilePlus size={14} color={color.faint} />
         </Pressable>
@@ -101,11 +118,16 @@ export function FilesPanel() {
           </T>
         )}
       </View>
-      <ScrollView style={st.flex} contentContainerStyle={st.scrollPad}>
-        <BracketScope>
-          <Dir path="." depth={0} marks={marks} ask={confirm.ask} prompt={prompt.ask} />
-        </BracketScope>
-      </ScrollView>
+      {searching && <FileSearchField query={query} onChange={setQuery} onClose={closeSearch} />}
+      {searching && query.trim() ? (
+        <FileSearchResults query={query} />
+      ) : (
+        <ScrollView style={st.flex} contentContainerStyle={st.scrollPad}>
+          <BracketScope>
+            <Dir path="." depth={0} marks={marks} ask={confirm.ask} prompt={prompt.ask} />
+          </BracketScope>
+        </ScrollView>
+      )}
       {confirm.dialog}
       {prompt.dialog}
     </View>
@@ -181,10 +203,15 @@ function Node({
   const on = filePath === e.path;
   const Icon = iconFor(dir, open);
   const mark = marks[e.path];
-  const onPress = useCallback(
-    () => (dir ? toggleDir(e.path) : openFile(e.path)),
-    [dir, e.path, openFile],
-  );
+  // A double-click on a file keeps its tab instead of previewing it.
+  const lastPress = useRef(0);
+  const onPress = useCallback(() => {
+    if (dir) return toggleDir(e.path);
+    const now = Date.now();
+    openFile(e.path);
+    if (now - lastPress.current < DOUBLE_MS) pinTab(e.path);
+    lastPress.current = now;
+  }, [dir, e.path, openFile]);
   const indent = useMemo(() => ({ paddingLeft: 6 + depth * 14 }), [depth]);
   const enter = useMemo(() => [st.enter, enterDelay(i)], [i]);
   const markStyle = useMemo(() => [st.mark, { color: mark?.tint }], [mark?.tint]);

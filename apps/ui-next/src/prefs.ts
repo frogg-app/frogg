@@ -121,6 +121,16 @@ export const PREF_DEFAULTS = {
   staleCacheWarning: true,
   // Shell
   railPinned: false,
+  // Files: a single click opens a preview tab the next click replaces; true pins every file
+  autoPinTabs: false,
+  // Source control: commit list columns, density and what the panel lists
+  scmGraph: true,
+  scmSha: true,
+  scmAuthor: false,
+  scmDate: true,
+  scmCompact: false,
+  scmBaseCommits: true,
+  scmStashes: true,
 };
 
 export type Prefs = typeof PREF_DEFAULTS;

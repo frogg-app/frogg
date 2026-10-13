@@ -388,6 +388,8 @@ let localCommits = commits.map(([sha, subject, mins, isOnBase]) => ({
   authorName: "Frogg Agent",
   authorDate: ago(mins),
   isOnBase,
+  // The newest branch commit is local only; the rest are pushed.
+  isOnRemote: isOnBase || mins > 20,
 }));
 let stashes = [
   {
@@ -474,6 +476,14 @@ const catalog = () =>
         ["network"],
       ],
       [
+        "frogg.companion",
+        "Companion",
+        "Voice companion that talks you through your agents. Installing it switches on the Companion built into Frogg for this host.",
+        "features",
+        "1.0.0",
+        [],
+      ],
+      [
         "frogg-vercel",
         "Vercel previews",
         "Show deploy previews for each branch.",
@@ -549,46 +559,82 @@ let linearIssues = [
 
 // ---- todos, skills, companion ------------------------------------------------------------------
 
-const todos: Record<string, Array<Record<string, unknown>>> = {
+type LabTodo = Record<string, unknown> & { id: string; status: string; title: string };
+const claim = (agentId: string, mins: number, stale = false) => ({
+  agentId,
+  sessionId: null,
+  workspaceId: null,
+  branch: null,
+  claimedAt: ago(mins + 30),
+  lastHeartbeat: ago(mins),
+  stale,
+});
+const todo = (
+  id: string,
+  title: string,
+  status: string,
+  priority: string,
+  category: string | null,
+  description = "",
+  extra: Record<string, unknown> = {},
+): LabTodo => ({
+  id,
+  title,
+  description,
+  category,
+  priority,
+  status,
+  allowParallel: false,
+  claims: [],
+  progressCount: 0,
+  lastProgress: null,
+  createdAt: ago(60 * 30),
+  updatedAt: ago(60 * 2),
+  planUpdatedAt: null,
+  ...extra,
+});
+const todos: Record<string, LabTodo[]> = {
   "p-frogg": [
-    {
-      id: "t-1",
-      title: "Cap the session cache",
-      description: "Evict least-recently-used past sessionCache.maxEntries.",
-      priority: "high",
-      category: "perf",
-      status: "in_progress",
-      claims: [{ agentId: "s-working", stale: false }],
-    },
-    {
-      id: "t-2",
-      title: "Document the relay backoff",
-      description: "",
-      priority: "low",
-      category: "docs",
-      status: "ready",
-      claims: [],
-    },
-    {
-      id: "t-3",
-      title: "Flaky reconnect test",
-      description: "Fails ~1 in 20 on CI.",
-      priority: "medium",
-      category: "test",
-      status: "blocked",
-      claims: [],
-    },
-    {
-      id: "t-4",
-      title: "Bump zod to 4.1",
-      description: "",
-      priority: "low",
-      category: "deps",
-      status: "done",
-      claims: [],
-    },
+    todo(
+      "t-1",
+      "Cap the session cache",
+      "in_progress",
+      "high",
+      "perf",
+      "Evict least-recently-used past sessionCache.maxEntries.",
+      {
+        claims: [claim("s-working", 2)],
+        progressCount: 3,
+        lastProgress: { at: ago(4), agentId: "s-working", note: "LRU in place; writing tests" },
+      },
+    ),
+    todo("t-2", "Document the relay backoff", "ready", "low", "docs"),
+    todo("t-3", "Flaky reconnect test", "blocked", "medium", "test", "Fails ~1 in 20 on CI.", {
+      lastProgress: { at: ago(90), note: "Needs a CI runner with the old kernel to reproduce" },
+      progressCount: 1,
+    }),
+    todo("t-4", "Bump zod to 4.1", "done", "low", "deps"),
+    todo(
+      "t-5",
+      "Fix: relay drops the first frame after wake",
+      "review",
+      "urgent",
+      "bug",
+      "## What happens\nThe first frame after a laptop wakes is lost.\n\n## Done when\n- A test covers the wake path",
+      { claims: [claim("s-review", 40, true)] },
+    ),
+    todo("t-6", "Investigate: slow cold start on Android", "backlog", "medium", "research"),
+    todo("t-7", "Claim-conflict toast copy", "claimed", "low", "ui", "", {
+      claims: [claim("s-idle", 8)],
+    }),
+  ],
+  "p-billing": [
+    todo("t-8", "Retry failed invoice webhooks", "ready", "high", "bug"),
+    todo("t-9", "Export usage as CSV", "backlog", "medium", "feature"),
   ],
 };
+const todoChanged = (projectId: string, item: LabTodo) =>
+  emitEvent({ type: "project.todo.changed", payload: { kind: "upsert", projectId, item } });
 const skills = [
   {
     id: "frogg-dev",
@@ -657,7 +703,17 @@ interface LabTerminal {
   buffer: string;
   line: string;
 }
-const terminals: LabTerminal[] = [];
+// One terminal in a checkout no lab session uses, so the panel's host-wide group has a row.
+const terminals: LabTerminal[] = [
+  {
+    id: "term-billing",
+    name: "bash 1",
+    title: "npm run dev",
+    cwd: "/home/dev/billing",
+    buffer: "$ npm run dev\r\n\r\n  VITE ready in 412 ms\r\n  ➜  Local: http://localhost:5173/\r\n",
+    line: "",
+  },
+];
 const streamHandlers = new Set<(e: unknown) => void>();
 const encoder = new TextEncoder();
 const PROMPT =
@@ -688,6 +744,8 @@ const OUTPUTS: Record<string, string> = {
     "   Duration  1.84s",
   ].join("\r\n"),
   pwd: "/home/dev/frogg",
+  // Leaves mouse reporting on, like a TUI that exited without resetting it.
+  "mouse on": "\x1b[?1000h\x1b[?1006hmouse reporting on",
   whoami: "frogg",
 };
 
@@ -943,6 +1001,7 @@ export const miscRpcs: Record<string, Rpc> = {
         authorName: "Paz",
         authorDate: ago(0),
         isOnBase: false,
+        isOnRemote: false,
       },
       ...localCommits,
     ];
@@ -1390,32 +1449,59 @@ export const miscRpcs: Record<string, Rpc> = {
   },
   listProjectTodos: async (o: { projectId: string }) => {
     await latency();
-    return { items: todos[o.projectId] ?? [], error: null };
+    const items = todos[o.projectId] ?? [];
+    const categories = [...new Set(items.map((t) => t.category).filter(Boolean))].sort();
+    return { projectId: o.projectId, items: structuredClone(items), categories, error: null };
   },
   createProjectTodo: async (o: {
     projectId: string;
     title: string;
     description?: string;
     priority?: string;
+    status?: string;
+    category?: string | null;
   }) => {
     await latency(300);
-    const item = {
-      id: nextId("t"),
-      title: o.title,
-      description: o.description ?? "",
-      priority: o.priority ?? "medium",
-      category: null,
-      status: "backlog",
-      claims: [],
-    };
+    const item = todo(
+      nextId("t"),
+      o.title,
+      o.status ?? "backlog",
+      o.priority ?? "medium",
+      o.category ?? null,
+      o.description ?? "",
+      { createdAt: ago(0), updatedAt: ago(0) },
+    );
     todos[o.projectId] = [...(todos[o.projectId] ?? []), item];
-    return { item, error: null };
+    todoChanged(o.projectId, item);
+    return { item: { ...item }, error: null };
+  },
+  updateProjectTodo: async (o: { projectId: string; todoId: string } & Record<string, unknown>) => {
+    await latency(250);
+    const t = todos[o.projectId]?.find((x) => x.id === o.todoId);
+    if (!t) return { item: null, error: { code: "todo_not_found", message: "To-do not found" } };
+    for (const k of ["title", "description", "category", "priority", "allowParallel"])
+      if (o[k] !== undefined) t[k] = o[k];
+    t.updatedAt = ago(0);
+    todoChanged(o.projectId, t);
+    return { item: { ...t }, error: null };
   },
   setProjectTodoStatus: async (o: { projectId: string; todoId: string; status: string }) => {
     await latency(250);
     const t = todos[o.projectId]?.find((x) => x.id === o.todoId);
-    if (t) t.status = o.status;
-    return { error: null };
+    if (!t) return { item: null, error: { code: "todo_not_found", message: "To-do not found" } };
+    t.status = o.status;
+    t.updatedAt = ago(0);
+    todoChanged(o.projectId, t);
+    return { item: { ...t }, error: null };
+  },
+  deleteProjectTodo: async (o: { projectId: string; todoId: string }) => {
+    await latency(250);
+    todos[o.projectId] = (todos[o.projectId] ?? []).filter((x) => x.id !== o.todoId);
+    emitEvent({
+      type: "project.todo.changed",
+      payload: { kind: "remove", projectId: o.projectId, todoId: o.todoId },
+    });
+    return { projectId: o.projectId, todoId: o.todoId, error: null };
   },
 
   // Companion
@@ -1476,12 +1562,17 @@ export const miscRpcs: Record<string, Rpc> = {
           updateAvailable: null,
         },
       ];
+    emitEvent({ type: "plugins.changed", payload: { pluginId: o.id, reason: "installed" } });
     return { success: true, error: null };
   },
   pluginsSetEnabled: async (id: string, enabled: boolean) => {
     await latency(300);
     const p = plugins.find((x) => x.id === id);
     if (p) Object.assign(p, { enabled, status: enabled ? "active" : "disabled" });
+    emitEvent({
+      type: "plugins.changed",
+      payload: { pluginId: id, reason: enabled ? "enabled" : "disabled" },
+    });
     return { success: true };
   },
   pluginsGetContributions: async () => {
@@ -1577,7 +1668,16 @@ export const miscRpcs: Record<string, Rpc> = {
   // Terminals
   listTerminals: async (cwd?: string) => {
     await latency(80);
-    return { terminals: (cwd && simTerminals.get(cwd)) || labTerminals() };
+    // Per checkout when asked for one, every terminal on the host otherwise (like the daemon).
+    if (cwd)
+      return {
+        cwd,
+        terminals: [
+          ...(simTerminals.get(cwd) ?? []),
+          ...labTerminals().filter((t) => t.cwd === cwd),
+        ],
+      };
+    return { terminals: [...[...simTerminals.values()].flat(), ...labTerminals()] };
   },
   createTerminal: async (cwd: string) => {
     await latency(250);

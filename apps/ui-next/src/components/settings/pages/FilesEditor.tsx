@@ -26,6 +26,12 @@ export function FilesEditor() {
         <Row label="Open files from the explorer">
           <Seg options={WHERE} value={p.openFiles} onChange={prefSetter("openFiles")} />
         </Row>
+        <Row
+          label="Keep every opened file as a tab"
+          hint="Off: a single click opens a preview tab (italic) that the next click replaces; edit it or double-click its tab to keep it"
+        >
+          <Toggle value={p.autoPinTabs} onChange={prefSetter("autoPinTabs")} />
+        </Row>
         <Row label="Open diffs">
           <Seg options={WHERE} value={p.openDiffs} onChange={prefSetter("openDiffs")} />
         </Row>
@@ -37,6 +43,35 @@ export function FilesEditor() {
             width={180}
             up
           />
+        </Row>
+      </Section>
+      <Section title="Source control">
+        <Row
+          label="Branch graph column"
+          hint="This branch's commits on their own lane, joining the base"
+        >
+          <Toggle value={p.scmGraph} onChange={prefSetter("scmGraph")} />
+        </Row>
+        <Row label="Commit hash column">
+          <Toggle value={p.scmSha} onChange={prefSetter("scmSha")} />
+        </Row>
+        <Row label="Author column">
+          <Toggle value={p.scmAuthor} onChange={prefSetter("scmAuthor")} />
+        </Row>
+        <Row label="Age column">
+          <Toggle value={p.scmDate} onChange={prefSetter("scmDate")} />
+        </Row>
+        <Row label="Compact rows">
+          <Toggle value={p.scmCompact} onChange={prefSetter("scmCompact")} />
+        </Row>
+        <Row
+          label="Show the base branch under the branch"
+          hint="Its newest commits, to show where the branch forked"
+        >
+          <Toggle value={p.scmBaseCommits} onChange={prefSetter("scmBaseCommits")} />
+        </Row>
+        <Row label="Stashes" last>
+          <Toggle value={p.scmStashes} onChange={prefSetter("scmStashes")} />
         </Row>
       </Section>
       <Section title="Terminal">

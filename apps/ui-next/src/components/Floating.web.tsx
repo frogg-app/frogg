@@ -85,5 +85,6 @@ export function Floating({ anchor, up = false, right, width, gap = 4, children }
 }
 
 const s = StyleSheet.create({
-  layer: { position: "fixed" as "absolute", zIndex: 1000 },
+  // Above react-native-web's Modal layer (9999), so a Select inside a dialog opens over it.
+  layer: { position: "fixed" as "absolute", zIndex: 10000 },
 });

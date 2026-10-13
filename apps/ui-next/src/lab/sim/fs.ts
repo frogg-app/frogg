@@ -533,6 +533,39 @@ export function labPaths(): string[] {
   return [...fs().entries()].filter(([, n]) => n.kind === "file").map(([p]) => p);
 }
 
+/** Subsequence match, scored so name hits and tighter runs rank first (like the daemon's fuzzy). */
+function fuzzyScore(path: string, q: string): number | null {
+  const hay = path.toLowerCase();
+  let at = -1;
+  let gaps = 0;
+  for (const ch of q) {
+    const next = hay.indexOf(ch, at + 1);
+    if (next < 0) return null;
+    if (at >= 0) gaps += next - at - 1;
+    at = next;
+  }
+  return gaps + (baseName(hay).includes(q) ? 0 : 100) + path.length / 100;
+}
+
+/** Workspace file search (directory_suggestions_request with includeFiles), gitignore respected. */
+export async function getDirectorySuggestions(o: {
+  query: string;
+  limit?: number;
+  includeFiles?: boolean;
+}) {
+  await latency(120);
+  const q = o.query.trim().toLowerCase().replace(/\s+/g, "");
+  if (!o.includeFiles || !q) return { directories: [], entries: [], error: null };
+  const hits = labPaths()
+    .filter((p) => !p.split("/").some((part) => IGNORED.has(part)))
+    .map((p) => [p, fuzzyScore(p, q)] as const)
+    .filter((x): x is readonly [string, number] => x[1] !== null)
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, o.limit ?? 50)
+    .map(([path]) => ({ path, kind: "file" as const }));
+  return { directories: [], entries: hits, error: null };
+}
+
 // ---- contents ----------------------------------------------------------------------------------
 
 const KNOWN: Record<string, string> = {

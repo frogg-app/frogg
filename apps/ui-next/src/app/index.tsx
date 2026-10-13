@@ -1,7 +1,7 @@
 import { KeyboardFrame } from "../components/shell/KeyboardFrame";
 import { ToastHost } from "../components/toast/ToastHost";
 import { Banners } from "../components/toast/Banners";
-import { useCallback, useMemo, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, type ReactNode } from "react";
 import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,23 +16,26 @@ import { HostsPanel } from "../components/HostsPanel";
 import { HostDetail } from "../components/hosts/HostDetail";
 import { CiRunDetail, closeRun, PrsPanel, useOpenRun } from "../components/PrsPanel";
 import { TasksPanel } from "../components/TasksPanel";
+import { TodoBoard } from "../components/tasks/TodoBoard";
 import { PluginsPanel } from "../components/PluginsPanel";
 import { CompanionPanel } from "../components/CompanionPanel";
 import { Home } from "../components/Home";
 import { NewSession } from "../components/NewSession";
 import { Palette, useGlobalKeys } from "../components/Palette";
 import { PhoneTabs } from "../components/PhoneTabs";
-import { Rail } from "../components/Rail";
+import { Rail, useToolShown } from "../components/Rail";
 import { ScmPanel } from "../components/ScmPanel";
 import { SessionList, useBuckets } from "../components/SessionList";
 import { StatusBar } from "../components/StatusBar";
 import { TerminalSurface } from "../components/TerminalView";
 import { TerminalsPanel } from "../components/TerminalsPanel";
 import { ToolPane } from "../components/ToolPane";
+import { ToolEmpty } from "../components/shell/ToolEmpty";
 import { T } from "../components/Text";
 import { useHardwareBack } from "../components/shell/useHardwareBack";
 import { useKeyboardVisible } from "../components/shell/useKeyboardVisible";
 import { useDaemon } from "../daemon/store";
+import { useWatchPluginGate } from "../daemon/plugins";
 import type { Session } from "../daemon/types";
 import { useFormFactor } from "../theme/layout";
 import { color, motion } from "../theme/tokens";
@@ -72,6 +75,11 @@ function sidePanel(tool: Tool): ReactNode {
 }
 
 type UiState = ReturnType<typeof useUi.getState>;
+
+/** Tools whose main pane falls back to the open session's chat. */
+const CHAT_TOOLS: ReadonlySet<Tool> = new Set<Tool>(["sessions", "search"]);
+/** Tools with no detail view of their own: on wide layouts the panel takes the full width. */
+const FULL_TOOLS: ReadonlySet<Tool> = new Set<Tool>(["usage", "plugins", "companion"]);
 
 interface DetailProps {
   ui: UiState;
@@ -117,7 +125,19 @@ function MainDetail({ ui, phone, openRun, session }: DetailProps): ReactNode {
   if (tool === "inbox" && inboxId)
     return <InboxDetail id={inboxId} onBack={phone ? backInbox : undefined} />;
   if (tool === "hosts" && !phone) return <HostDetail />;
+  if (tool === "tasks" && !phone) return <TodoBoard />;
+  return fallbackDetail(tool, phone, session, backChat);
+}
+
+/** Nothing of the tool's own is open: the session's chat (chat tools only), else an empty pane. */
+function fallbackDetail(
+  tool: Tool,
+  phone: boolean,
+  session: Session | undefined,
+  backChat: () => void,
+): ReactNode {
   if (tool !== "sessions" && phone) return null;
+  if (!CHAT_TOOLS.has(tool)) return <ToolEmpty tool={tool} />;
   if (session) return <Chat session={session} onBack={phone ? backChat : undefined} />;
   return phone ? null : <Home />;
 }
@@ -128,13 +148,14 @@ function hasDetailFor(
   session: Session | undefined,
 ): boolean {
   const { tool } = ui;
-  if (session) return true;
+  if (session && CHAT_TOOLS.has(tool)) return true;
   if (tool === "scm") return !!ui.diffPath;
   if (tool === "terminals") return !!ui.terminalId;
   if (tool === "inbox") return !!ui.inboxId;
   if (tool === "settings") return !!ui.settingsPage;
   if (tool === "files") return !!ui.filePath;
   if (tool === "prs") return !!openRun;
+  if (tool === "tasks") return true;
   return false;
 }
 
@@ -157,6 +178,12 @@ export default function Shell() {
   );
   const phone = ff === "phone";
   useGlobalKeys();
+  useWatchPluginGate();
+  // A tool the host stops offering (the Companion plugin removed) falls back to Sessions.
+  const shown = useToolShown();
+  useEffect(() => {
+    if (!shown(tool)) useUi.getState().setTool("sessions");
+  }, [shown, tool]);
   const closeList = useCallback(() => setListOpen(false), [setListOpen]);
   const onHardwareBack = useCallback(() => popBack(phone, openRun), [phone, openRun]);
   useHardwareBack(onHardwareBack);
@@ -201,12 +228,14 @@ export default function Shell() {
         <Banners />
         <View style={s.row}>
           <Rail badges={badges} />
-          {docked ? (
+          {FULL_TOOLS.has(tool) && <View style={[s.fill, s.full]}>{side}</View>}
+          {!FULL_TOOLS.has(tool) && docked && (
             <>
               <View style={[s.side, ff === "tablet" && s.sideTablet]}>{side}</View>
               <View style={s.fill}>{detailEl}</View>
             </>
-          ) : (
+          )}
+          {!FULL_TOOLS.has(tool) && !docked && (
             // Portrait tablet: the side panel slides over the main pane; picking an item closes it.
             <View style={s.fill}>
               {detailEl}
@@ -267,6 +296,8 @@ function hasPhoneDetail(
   openRun: string | null | undefined,
   session: Session | undefined,
 ): boolean {
+  // Tasks keeps its board inside the tab on phones.
+  if (ui.tool === "tasks") return false;
   return hasDetailFor(ui, openRun, ui.tool === "sessions" ? session : undefined);
 }
 
@@ -297,6 +328,7 @@ const s = StyleSheet.create({
   fill: { flex: 1 },
   row: { flex: 1, flexDirection: "row" },
   sideTablet: { width: 300 },
+  full: { backgroundColor: color.bg2 },
   terminal: { flex: 1, backgroundColor: color.bg },
   termBack: {
     padding: 12,
