@@ -6,6 +6,7 @@ import { T } from "../../Text";
 import {
   prefSetter,
   setDelivery,
+  setPref,
   usePrefs,
   type ChannelKey,
   type NotifyKind,
@@ -23,6 +24,15 @@ const BADGE: Array<["attention" | "unread" | "none", string]> = [
   ["unread", "All unread"],
   ["none", "Nothing"],
 ];
+const TOAST_SECONDS: Array<[string, string]> = [
+  ["3", "3s"],
+  ["5", "5s"],
+  ["8", "8s"],
+  ["15", "15s"],
+  ["0", "Until dismissed"],
+];
+const setToastSeconds = (v: string) => setPref("toastSeconds", Number(v));
+
 const CHANNELS: Array<[ChannelKey, string]> = [
   ["inbox", "Inbox"],
   ["desktop", "Desktop"],
@@ -74,6 +84,15 @@ export function Notifications() {
         </Row>
         <Row label="Badge the rail with" last>
           <Seg options={BADGE} value={p.railBadge} onChange={prefSetter("railBadge")} />
+        </Row>
+      </Section>
+      <Section title="Toasts">
+        <Row
+          label="Show toasts for"
+          hint="Hovering a toast holds it; every toast is also kept in the Inbox"
+          last
+        >
+          <Seg options={TOAST_SECONDS} value={String(p.toastSeconds)} onChange={setToastSeconds} />
         </Row>
       </Section>
       <Section title="Deliver by type">

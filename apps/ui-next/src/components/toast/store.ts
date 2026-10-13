@@ -1,5 +1,7 @@
 import { create } from "zustand";
+import { usePrefs } from "../../prefs";
 import { toastMs } from "../../theme/tokens";
+import { recordToast } from "./history";
 import { isNative, nativeMotionOn } from "../nativeMotion";
 
 /** `ok` is a plain confirmation; the others borrow the session status glyphs. */
@@ -16,12 +18,16 @@ export interface Toast {
   action?: { label: string; onPress: () => void };
   /** Stays until dismissed instead of fading after a few seconds. */
   sticky?: boolean;
+  /** The action leaves the toast up (e.g. Retry on a condition that may persist). */
+  keepOnAction?: boolean;
   /** Where it came from (a session id), shown in the HUD header. */
   source?: string;
   /** Epoch ms it was raised. */
   at: number;
   /** Playing its exit; removed once that finishes. */
   leaving?: boolean;
+  /** Ms on screen before it fades (the drain line runs this long); unset when sticky. */
+  life?: number;
 }
 
 interface ToastState {
@@ -41,6 +47,13 @@ export const useToasts = create<ToastState>(() => ({
 }));
 
 export const LIFETIME_MS = toastMs.life;
+
+/** On-screen time from Settings → Notifications; 0 means stay until dismissed. */
+function lifetime(): number {
+  const sec = usePrefs.getState().toastSeconds;
+  if (typeof sec !== "number" || !Number.isFinite(sec) || sec < 0) return LIFETIME_MS;
+  return sec * 1000;
+}
 const MAX = 4;
 let seq = 0;
 
@@ -68,16 +81,20 @@ export function toastsAnimate(): boolean {
   return !g.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
-/** Shows a transient toast and returns its id. Toasts are copies; the Inbox stays the record. */
+/** Shows a transient toast and returns its id. Every toast is also kept in the Inbox history. */
 export function toast(
-  input: Omit<Toast, "id" | "kind" | "at" | "leaving"> & { kind?: ToastKind },
+  input: Omit<Toast, "id" | "kind" | "at" | "leaving" | "life"> & { kind?: ToastKind },
 ): string {
   seq += 1;
   const id = `t${seq}`;
+  const life = lifetime();
   const next: Toast = { kind: "ok", ...input, id, at: Date.now() };
+  if (!life) next.sticky = true;
+  if (!next.sticky) next.life = life;
   useToasts.setState((st) => ({ toasts: [...st.toasts, next] }));
-  if (!next.sticky) {
-    const t: Timer = { left: LIFETIME_MS, since: 0, handle: null };
+  recordToast(next);
+  if (next.life) {
+    const t: Timer = { left: next.life, since: 0, handle: null };
     timers.set(id, t);
     if (!useToasts.getState().paused) arm(id, t);
   }
@@ -85,6 +102,18 @@ export function toast(
   const live = useToasts.getState().toasts.filter((x) => !x.leaving);
   for (const old of live.slice(0, Math.max(0, live.length - MAX))) dismissToast(old.id);
   return id;
+}
+
+/** Live copy change on a toast already up (e.g. an offline timer); not re-recorded. */
+export function updateToast(id: string, patch: Partial<Pick<Toast, "title" | "detail">>): void {
+  useToasts.setState((st) => ({
+    toasts: st.toasts.map((x) => (x.id === id ? { ...x, ...patch } : x)),
+  }));
+}
+
+/** True while the toast is still up and not playing its exit. */
+export function toastShowing(id: string): boolean {
+  return useToasts.getState().toasts.some((x) => x.id === id && !x.leaving);
 }
 
 export function dismissToast(id: string): void {

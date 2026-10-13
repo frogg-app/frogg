@@ -152,7 +152,7 @@ function Slot(props: RowProps) {
 function Card({ t, phone, variant, paused, live }: RowProps & { live: boolean }) {
   const close = useCallback(() => dismissToast(t.id), [t.id]);
   const act = useCallback(() => {
-    dismissToast(t.id);
+    if (!t.keepOnAction) dismissToast(t.id);
     t.action?.onPress();
   }, [t]);
   let move: object = NONE;
@@ -160,10 +160,13 @@ function Card({ t, phone, variant, paused, live }: RowProps & { live: boolean })
     if (t.leaving) move = phone ? m.outDown : m.outSide;
     else move = phone ? m.inUp : m.inSide;
   }
+  const life = t.life ?? toastMs.life;
+  // The drain keyframes are compiled with the default lifetime; the setting stretches them.
+  const span = useMemo(() => web({ animationDuration: `${life}ms` }), [life]);
   let drain: ReactNode = null;
   if (!t.sticky && isNative)
     drain = live ? (
-      <NativeDrain ms={toastMs.life} paused={paused} style={[s.drain, tint[t.kind].bg]} />
+      <NativeDrain ms={life} paused={paused} style={[s.drain, tint[t.kind].bg]} />
     ) : (
       <View pointerEvents="none" style={[s.drain, tint[t.kind].bg]} />
     );
@@ -171,7 +174,7 @@ function Card({ t, phone, variant, paused, live }: RowProps & { live: boolean })
     drain = (
       <View
         pointerEvents="none"
-        style={[s.drain, tint[t.kind].bg, live && m.drain, paused && s.held]}
+        style={[s.drain, tint[t.kind].bg, live && m.drain, live && span, paused && s.held]}
       />
     );
   const mover = { move, live, phone, leaving: !!t.leaving };

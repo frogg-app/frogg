@@ -35,7 +35,7 @@ const APP_VERSION: string = require("../../package.json").version;
 
 type Listener = (event: unknown) => void;
 const listeners = new Set<Listener>();
-/** Sends a daemon event to whatever subscribed (Banners listens for storage alerts). */
+/** Sends a daemon event to whatever subscribed (HostToasts listens for storage alerts). */
 export function emit(event: unknown): void {
   for (const fn of listeners) fn(event);
 }
