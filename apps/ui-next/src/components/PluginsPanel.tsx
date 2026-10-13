@@ -1,8 +1,15 @@
 import { RefreshCw } from "lucide-react-native";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
-import { describePluginError, noteInstalled } from "../daemon/plugins";
-import { getClient, useDaemon } from "../daemon/store";
+import {
+  describePluginError,
+  installPlugin,
+  refreshWatchedPlugins,
+  usePlugins,
+  useWatchPlugins,
+  type CatalogPlugin as Catalog,
+  type PluginRepo as Repo,
+} from "../daemon/plugins";
 import { color, font } from "../theme/tokens";
 import { Button } from "./Button";
 import { GroupHead, PanelHead } from "./PanelHead";
@@ -11,64 +18,42 @@ import { T } from "./Text";
 import { Tabs } from "./tools/Tabs";
 import { useConfirm } from "./tools/Confirm";
 import { PluginSources } from "./tools/PluginSources";
-import { capabilityLine, InstalledRow, type Act, type Installed } from "./tools/PluginInstalled";
+import { capabilityLine, InstalledRow, type Act } from "./tools/PluginInstalled";
 
-type Client = NonNullable<ReturnType<typeof getClient>>;
-type Policy = Awaited<ReturnType<Client["pluginsList"]>>["policy"];
-type CatalogResult = Awaited<ReturnType<Client["pluginsGetCatalog"]>>;
-type Catalog = CatalogResult["plugins"][number];
-type Repo = CatalogResult["repos"][number];
+type Tab = "installed" | "browse" | "sources";
 
 export function PluginsPanel() {
   const [query, setQuery] = useState("");
-  const conn = useDaemon((s) => s.conn);
-  const [tab, setTab] = useState<"installed" | "browse" | "sources">("installed");
-  const [installed, setInstalled] = useState<Installed[] | null>(null);
-  const [policy, setPolicy] = useState<Policy | null>(null);
-  const [catalog, setCatalog] = useState<Catalog[] | null>(null);
-  const [repoErrors, setRepoErrors] = useState<Repo[]>([]);
-  const [busy, setBusy] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const load = useCallback(() => {
-    const c = getClient();
-    if (!c?.supportsPlugins()) return setError("This host's daemon has no plugin support.");
-    setError(null);
-    void c.pluginsList().then(
-      (r) => {
-        setInstalled(r.plugins);
-        setPolicy(r.policy);
-        return undefined;
-      },
-      (e: unknown) => setError(describePluginError(e)),
-    );
-    void c.pluginsGetCatalog().then(
-      (r) => {
-        setCatalog(r.plugins);
-        // Repos that failed to fetch or verify; the others still list their plugins.
-        setRepoErrors(r.repos.filter((x) => x.error));
-        return undefined;
-      },
-      (e: unknown) => setError(describePluginError(e)),
-    );
-  }, []);
-  useEffect(() => {
-    if (conn === "online") load();
-  }, [conn, load]);
-  const act = useCallback(
-    async (id: string, fn: () => Promise<unknown>) => {
-      setBusy(id);
-      try {
-        await fn();
-        load();
-      } catch (e) {
-        setError(describePluginError(e));
-      } finally {
-        setBusy(null);
-      }
-    },
-    [load],
+  const [tab, setTab] = useState<Tab>("installed");
+  // The lists live in the shared store and follow the host's plugins.changed events.
+  useWatchPlugins("installed");
+  useWatchPlugins("catalog", tab === "browse");
+  const installed = usePlugins((s) => s.installed);
+  const policy = usePlugins((s) => s.policy);
+  const catalog = usePlugins((s) => s.catalog);
+  const repoErrors = usePlugins((s) => s.catalogErrors);
+  const loadError = usePlugins(
+    (s) => s.errors.installed ?? (tab === "browse" ? s.errors.catalog : undefined),
   );
-  const segOptions = useMemo<Array<["installed" | "browse" | "sources", string]>>(
+  const [busy, setBusy] = useState<string | null>(null);
+  const [actError, setActError] = useState<string | null>(null);
+  const refresh = useCallback(() => {
+    setActError(null);
+    refreshWatchedPlugins();
+  }, []);
+  const act = useCallback(async (id: string, fn: () => Promise<unknown>) => {
+    setBusy(id);
+    setActError(null);
+    try {
+      await fn();
+    } catch (e) {
+      setActError(describePluginError(e));
+    } finally {
+      setBusy(null);
+    }
+  }, []);
+  const error = actError ?? loadError ?? null;
+  const segOptions = useMemo<Array<[Tab, string]>>(
     () => [
       ["installed", `Installed ${installed?.length ?? ""}`],
       ["browse", "Browse"],
@@ -87,7 +72,7 @@ export function PluginsPanel() {
   return (
     <View style={st.fill}>
       <PanelHead title="Plugins">
-        <Pressable onPress={load} accessibilityLabel="Refresh">
+        <Pressable onPress={refresh} accessibilityLabel="Refresh">
           <RefreshCw size={14} color={color.faint} />
         </Pressable>
       </PanelHead>
@@ -200,15 +185,14 @@ function CatalogRow({
         body: `Source: ${p.repoName}\nVersion: ${p.latest?.version ?? "unknown"}\n\nPermissions requested:\n${p.latest?.capabilities.map(capabilityLine(remoteControlForbidden)).join("\n") || "No additional capabilities"}\n\nHost plugins are not sandboxed. Only install plugins from sources you trust.`,
         action: "Grant and install",
         run: () =>
-          void act(p.id, async () => {
-            const r = await getClient()!.pluginsInstall({
+          void act(p.id, () =>
+            installPlugin({
               id: p.id,
               repoUrl: p.repoUrl,
               version: p.latest?.version,
               grantedCapabilities: p.latest?.capabilities ?? [],
-            });
-            noteInstalled(r.plugin);
-          }),
+            }),
+          ),
       }),
     [confirm, act, p, remoteControlForbidden],
   );

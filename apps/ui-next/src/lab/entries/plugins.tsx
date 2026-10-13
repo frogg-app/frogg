@@ -1,9 +1,10 @@
 import { PluginsPanel } from "../../components/PluginsPanel";
 import { Rail } from "../../components/Rail";
+import { Plugins as PluginsSettings } from "../../components/settings/pages/Plugins";
 import { VoiceCompanion } from "../../components/settings/pages/VoiceCompanion";
 import { useWatchPluginGate } from "../../daemon/plugins";
-import { Column, Row, type Entry } from "../kit";
-import { setLabRemoteControlForbidden } from "../sim/misc";
+import { Act, Column, Controls, Row, type Entry } from "../kit";
+import { setLabRemoteControlForbidden, simulateExternalPluginChange } from "../sim/misc";
 
 const NO_BADGES = {};
 
@@ -14,6 +15,25 @@ function Installed() {
         <PluginsPanel />
       </Column>
     </Row>
+  );
+}
+
+/** One shared store: a change made elsewhere lands in the tool and the settings page at once. */
+function Live() {
+  return (
+    <>
+      <Controls>
+        <Act label="Change from another client" run={simulateExternalPluginChange} primary />
+      </Controls>
+      <Row>
+        <Column width={360}>
+          <PluginsPanel />
+        </Column>
+        <Column width={480}>
+          <PluginsSettings />
+        </Column>
+      </Row>
+    </>
   );
 }
 
@@ -35,9 +55,9 @@ export const plugins: Entry[] = [
     id: "plugins",
     name: "Plugins (API v2)",
     category: "Rail tools & widgets",
-    path: "components/PluginsPanel.tsx · tools/PluginInstalled.tsx · daemon/plugins.ts",
+    path: "components/PluginsPanel.tsx · tools/PluginInstalled.tsx · tools/PluginSources.tsx · settings/pages/Plugins.tsx · daemon/plugins.ts",
     purpose:
-      "Installed plugins with granted capabilities and the per-plugin remote control switch (plugin API v2), update with consent, uninstall, v1 + v2 catalog entries, an incompatible one, a source whose signature fails, and the Companion gate read from server_info.",
+      "Installed plugins (shared store, live on plugins.changed) with granted capabilities and the per-plugin remote control switch (plugin API v2), update with consent, uninstall, v1 + v2 catalog entries, an incompatible one, a source whose signature fails, and the Companion gate read from server_info.",
     usedBy: 1,
     polish:
       "Toggle track .25s / knob .3s on ease (web); remote-control capabilities dim while it is off; dialogs use overlayMotion",
@@ -48,6 +68,14 @@ export const plugins: Entry[] = [
         note: "Slack bridge is v2: flip Remote control. Linear's update asks for a new capability. Browse lists Telegram (plugin API v3) as needing a newer host.",
         C: Installed,
         h: 720,
+        bleed: true,
+      },
+      {
+        id: "live",
+        label: "Live updates",
+        note: "Change from another client installs or removes Vercel previews and flips Sentry, pushing plugins.changed; the tool and the settings page both follow without a refresh.",
+        C: Live,
+        h: 760,
         bleed: true,
       },
       {

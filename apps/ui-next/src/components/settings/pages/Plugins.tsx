@@ -3,7 +3,8 @@ import { useHostRpc as useRpc } from "./host-state";
 import { useHostAction as useAction } from "./host-state";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { Puzzle } from "lucide-react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { refreshPlugins, usePlugins, useWatchPlugins } from "../../../daemon/plugins";
 import { useUi } from "../../../ui-store";
 import { Select } from "../../Select";
 import { Button } from "../../Button";
@@ -12,7 +13,6 @@ import { Row, Section, Toggle } from "../controls";
 import { need } from "./hostkit";
 import { Banner, Block, ErrorLine, Field, Status, useFeature } from "./kit";
 
-const load = (c: DaemonClient) => c.pluginsList();
 type Settings = Awaited<ReturnType<DaemonClient["pluginsSettingsGet"]>>;
 type Setting = Settings["fields"][number];
 const openPlugins = () => useUi.getState().setTool("plugins");
@@ -22,7 +22,15 @@ export function Plugins() {
 }
 function PageBody() {
   const supported = useFeature("plugins");
-  const rpc = useRpc(load, { enabled: supported === true });
+  // The shared list, kept live by plugins.changed: installs elsewhere show here at once.
+  useWatchPlugins("installed", supported === true);
+  const installed = usePlugins((s) => s.installed);
+  const error = usePlugins((s) => s.errors.installed ?? null);
+  const reload = useCallback(() => void refreshPlugins("installed"), []);
+  const rpc = useMemo(
+    () => ({ data: installed, error, loading: installed === null && !error, reload }),
+    [installed, error, reload],
+  );
   return (
     <>
       <Banner
@@ -36,14 +44,14 @@ function PageBody() {
         <T>Update this daemon to manage plugins.</T>
       ) : (
         <Status rpc={rpc} what="plugins">
-          {rpc.data?.plugins.length === 0 && (
+          {rpc.data?.length === 0 && (
             <Section title="Installed plugins">
               <Block last>
                 <T>No plugins installed on this host.</T>
               </Block>
             </Section>
           )}
-          {rpc.data?.plugins.map((p) => (
+          {rpc.data?.map((p) => (
             <PluginSettings key={p.id} id={p.id} name={p.name} />
           ))}
         </Status>
@@ -54,6 +62,15 @@ function PageBody() {
 function PluginSettings({ id, name }: { id: string; name: string }) {
   const loadSettings = useCallback((c: DaemonClient) => c.pluginsSettingsGet(id), [id]);
   const rpc = useRpc(loadSettings);
+  // Settings saved elsewhere (another client, the plugin itself) reload the form.
+  const rev = usePlugins((s) => s.settingsRev[id] ?? 0);
+  const seen = useRef(rev);
+  const { reload } = rpc;
+  useEffect(() => {
+    if (seen.current === rev) return;
+    seen.current = rev;
+    reload();
+  }, [rev, reload]);
   return (
     <Section title={name}>
       <Status rpc={rpc} what={`${name} settings`}>

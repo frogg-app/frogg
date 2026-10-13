@@ -5,9 +5,14 @@ import { StyleSheet, View } from "react-native";
 import {
   describeCapability,
   isRemoteControlCapability,
+  setPluginEnabled,
+  setPluginRemoteControl,
+  uninstallPlugin,
+  unlinkDevPlugin,
+  updatePlugin,
   wantsRemoteControl,
+  type InstalledPlugin,
 } from "../../daemon/plugins";
-import { getClient } from "../../daemon/store";
 import { color } from "../../theme/tokens";
 import { Button } from "../Button";
 import { Cut } from "../Cut";
@@ -16,15 +21,8 @@ import { T } from "../Text";
 import { useConfirm } from "./Confirm";
 import { PluginPanels } from "./PluginPanels";
 
-type Client = NonNullable<ReturnType<typeof getClient>>;
-export type Installed = Awaited<ReturnType<Client["pluginsList"]>>["plugins"][number];
+export type Installed = InstalledPlugin;
 export type Act = (id: string, fn: () => Promise<unknown>) => Promise<void>;
-
-const need = () => {
-  const c = getClient();
-  if (!c) throw new Error("Host is not connected.");
-  return c;
-};
 
 /** One installed plugin: enable, granted capabilities, remote control, update, uninstall. */
 export function InstalledRow({
@@ -43,18 +41,18 @@ export function InstalledRow({
   const isDev = p.source === "dev" || !!p.devPath;
   const togglePanels = useCallback(() => setExpanded((v) => !v), []);
   const onToggle = useCallback(
-    (v: boolean) => void act(p.id, () => need().pluginsSetEnabled(p.id, v)),
+    (v: boolean) => void act(p.id, () => setPluginEnabled(p.id, v)),
     [act, p.id],
   );
   const onRemoteControl = useCallback(
-    (v: boolean) => void act(p.id, () => need().pluginsSetRemoteControl(p.id, v)),
+    (v: boolean) => void act(p.id, () => setPluginRemoteControl(p.id, v)),
     [act, p.id],
   );
   const onUpdate = useCallback(
     () =>
       void act(p.id, async () => {
         try {
-          await need().pluginsUpdate({ id: p.id });
+          await updatePlugin({ id: p.id });
         } catch (e) {
           // An update that asks for more than was granted goes back through consent.
           if (!(e instanceof PluginRequestError) || e.code !== "consent_required") throw e;
@@ -66,7 +64,7 @@ export function InstalledRow({
             action: "Grant and update",
             run: () =>
               act(p.id, () =>
-                need().pluginsUpdate({
+                updatePlugin({
                   id: p.id,
                   grantedCapabilities: [...new Set([...p.grantedCapabilities, ...added])],
                 }),
@@ -83,14 +81,11 @@ export function InstalledRow({
         body: `${p.name} and its stored settings will be removed from this host.`,
         action: "Uninstall",
         danger: true,
-        run: () => act(p.id, () => need().pluginsUninstall(p.id)),
+        run: () => act(p.id, () => uninstallPlugin(p.id)),
       }),
     [act, confirm, p.id, p.name],
   );
-  const onUnlink = useCallback(
-    () => void act(p.id, () => need().pluginsDevUnlink(p.id)),
-    [act, p.id],
-  );
+  const onUnlink = useCallback(() => void act(p.id, () => unlinkDevPlugin(p.id)), [act, p.id]);
   return (
     <Cut size={10} flip style={s.card}>
       {confirm.dialog}

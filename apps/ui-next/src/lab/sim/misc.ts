@@ -522,6 +522,41 @@ export function resetPlugins(): void {
   plugins = startPlugins();
   setLabRemoteControlForbidden(false);
 }
+/**
+ * Lab button: a change made elsewhere (the CLI, another client). Installs Vercel previews, or
+ * uninstalls it if it is in, and flips Sentry on or off, then pushes plugins.changed.
+ */
+export function simulateExternalPluginChange(): void {
+  const row = CATALOG.find((x) => x[0] === "frogg-vercel")!;
+  const had = plugins.some((p) => p.id === row[0]);
+  plugins = had
+    ? plugins.filter((p) => p.id !== row[0])
+    : [
+        ...plugins,
+        simPlugin({
+          id: row[0],
+          name: row[1],
+          description: row[2],
+          version: row[4],
+          capabilities: row[5],
+          grantedCapabilities: row[5],
+        }),
+      ];
+  emitEvent({
+    type: "plugins.changed",
+    payload: { pluginId: row[0], reason: had ? "uninstalled" : "installed" },
+  });
+  const sentry = plugins.find((p) => p.id === "frogg-sentry");
+  if (!sentry) return;
+  Object.assign(sentry, {
+    enabled: !sentry.enabled,
+    status: sentry.enabled ? "disabled" : "active",
+  });
+  emitEvent({
+    type: "plugins.changed",
+    payload: { pluginId: sentry.id, reason: sentry.enabled ? "enabled" : "disabled" },
+  });
+}
 /** The host's Companion capability: locked, naming its plugin, until frogg.companion is on. */
 export function labCompanionCapability() {
   const on = plugins.some((p) => p.features.includes("companion") && p.enabled);
@@ -1839,6 +1874,7 @@ export const miscRpcs: Record<string, Rpc> = {
   pluginsSettingsSet: async (id: string, values: Record<string, unknown>) => {
     await latency(300);
     pluginSettings[id] = { ...pluginSettings[id], ...values };
+    emitEvent({ type: "plugins.changed", payload: { pluginId: id, reason: "settings" } });
     return { success: true };
   },
   pluginsReposList: async () => {
@@ -1858,11 +1894,13 @@ export const miscRpcs: Record<string, Rpc> = {
       removable: true,
     };
     repos = [...repos, repo];
+    emitEvent({ type: "plugins.changed", payload: { pluginId: null, reason: "repos" } });
     return { repo };
   },
   pluginsReposRemove: async (url: string) => {
     await latency(300);
     repos = repos.filter((r) => r.url !== url);
+    emitEvent({ type: "plugins.changed", payload: { pluginId: null, reason: "repos" } });
     return { success: true };
   },
 

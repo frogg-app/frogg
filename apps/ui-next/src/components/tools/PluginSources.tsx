@@ -1,35 +1,29 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { StyleSheet, TextInput, View } from "react-native";
-import { getClient } from "../../daemon/store";
+import {
+  addPluginRepo,
+  describePluginError,
+  removePluginRepo,
+  usePlugins,
+  useWatchPlugins,
+  type PluginRepo as Repo,
+} from "../../daemon/plugins";
 import { color, font } from "../../theme/tokens";
 import { Button } from "../Button";
 import { T } from "../Text";
 import { Dialog } from "./Dialog";
 import { useConfirm } from "./Confirm";
 
-type Repo = Awaited<
-  ReturnType<NonNullable<ReturnType<typeof getClient>>["pluginsReposList"]>
->["repos"][number];
 export function PluginSources() {
-  const [repos, setRepos] = useState<Repo[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  useWatchPlugins("repos");
+  const repos = usePlugins((s) => s.repos);
+  const loadError = usePlugins((s) => s.errors.repos);
+  const [actError, setError] = useState<string | null>(null);
+  const error = actError ?? loadError ?? null;
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState(false);
-  const load = useCallback(() => {
-    void getClient()
-      ?.pluginsReposList()
-      .then(
-        (r) => {
-          setRepos(r.repos);
-          setError(null);
-          return undefined;
-        },
-        (e: unknown) => setError(String(e)),
-      );
-  }, []);
-  useEffect(load, [load]);
   const show = useCallback(() => {
     setUrl("");
     setKey("");
@@ -39,21 +33,18 @@ export function PluginSources() {
     if (!busy) setOpen(false);
   }, [busy]);
   const add = useCallback(async () => {
-    const c = getClient();
-    if (!c || busy) return;
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
-      const r = await c.pluginsReposAdd({ url: url.trim(), publicKey: key.trim() || undefined });
-      if (!r.repo) throw new Error("Repository was not added.");
+      await addPluginRepo(url.trim(), key.trim() || undefined);
       setOpen(false);
-      load();
     } catch (e) {
-      setError(String(e));
+      setError(describePluginError(e));
     } finally {
       setBusy(false);
     }
-  }, [url, key, busy, load]);
+  }, [url, key, busy]);
   const footer = useMemo(
     () => (
       <Button
@@ -70,7 +61,7 @@ export function PluginSources() {
       {!repos && !error && <T>Loading sources…</T>}
       {repos?.length === 0 && <T>No plugin sources configured.</T>}
       {repos?.map((repo) => (
-        <Source key={repo.url} repo={repo} onDone={load} onError={setError} />
+        <Source key={repo.url} repo={repo} onError={setError} />
       ))}
       <Button label="Add repository" onPress={show} />
       {error && <T style={s.error}>{error}</T>}
@@ -96,15 +87,7 @@ export function PluginSources() {
     </View>
   );
 }
-function Source({
-  repo,
-  onDone,
-  onError,
-}: {
-  repo: Repo;
-  onDone: () => void;
-  onError: (e: string) => void;
-}) {
+function Source({ repo, onError }: { repo: Repo; onError: (e: string) => void }) {
   const confirm = useConfirm();
   const remove = useCallback(
     () =>
@@ -114,17 +97,10 @@ function Source({
         action: "Remove source",
         danger: true,
         run: () => {
-          void getClient()
-            ?.pluginsReposRemove(repo.url)
-            .then((r) => {
-              if (!r.success) throw new Error("Source could not be removed.");
-              onDone();
-              return undefined;
-            })
-            .catch((e: unknown) => onError(String(e)));
+          removePluginRepo(repo.url).catch((e: unknown) => onError(describePluginError(e)));
         },
       }),
-    [confirm, repo, onDone, onError],
+    [confirm, repo, onError],
   );
   return (
     <View style={s.card}>
