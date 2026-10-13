@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronRight, Copy, Loader, Scissors } from "lucide-react-native";
 import { Animated, Pressable, StyleSheet, View, type LayoutChangeEvent } from "react-native";
-import { connect } from "../../daemon/store";
-import { bucketOf, type Agent, type Bucket, type TimelineItem } from "../../daemon/types";
+import { useScm, watchCheckout } from "../../daemon/scm";
+import { connect, useDaemon } from "../../daemon/store";
+import { useSubWork } from "../../daemon/subwork";
+import {
+  bucketOf,
+  type Agent,
+  type Bucket,
+  type TimelineEntry,
+  type TimelineItem,
+} from "../../daemon/types";
 import { color, stateMotion, stateMs, stateWash, web } from "../../theme/tokens";
 import { usePrefs } from "../../prefs";
 import { useUi } from "../../ui-store";
@@ -34,9 +42,11 @@ import { toast, toastError } from "../toast/store";
 export type StateVariant = "edge" | "bracket" | "banner";
 export const DEFAULT_STATE_VARIANT: StateVariant = "edge";
 
-type Kind = "review" | "failed" | "offline";
+type Kind = "review" | "done" | "waiting" | "failed" | "offline";
 const KIND: Record<Kind, { c: string; wash: string; tag: string; glyph: Bucket }> = {
   review: { c: color.mint, wash: stateWash.mint, tag: "READY", glyph: "review" },
+  done: { c: color.mint, wash: stateWash.mint, tag: "DONE", glyph: "review" },
+  waiting: { c: color.cyan, wash: stateWash.cyan, tag: "WAITING", glyph: "working" },
   failed: { c: color.coral, wash: stateWash.coral, tag: "FAILED", glyph: "failed" },
   offline: { c: color.amber, wash: stateWash.amber, tag: "OFFLINE", glyph: "idle" },
 };
@@ -178,6 +188,11 @@ function Frame({
 
 const SAMPLE: Record<Kind, { title: string; detail: string; mono?: boolean }> = {
   review: { title: "Ready to review", detail: "Review the changes or send a follow-up below." },
+  done: { title: "Finished", detail: "No files changed. Send a follow-up below." },
+  waiting: {
+    title: "Waiting on background work",
+    detail: "1 background task still running. The agent picks up when it finishes.",
+  },
   failed: {
     title: "Session failed",
     detail: "Error: provider exited with code 1",
@@ -217,6 +232,8 @@ export function SessionState({
     void connect();
   }, []);
   const review = useCallback(() => useUi.getState().setTool("scm"), []);
+  const changed = useChangedFiles(agent, online && bucket === "review");
+  const pending = usePendingBackground(agent.id);
   if (!online)
     return (
       <Frame kind="offline" variant={variant}>
@@ -228,11 +245,31 @@ export function SessionState({
         </Row>
       </Frame>
     );
+  // The turn ended but work it started is still running and will wake the agent: not done yet.
+  if (bucket === "review" && pending)
+    return (
+      <Frame kind="waiting" variant={variant}>
+        <Row
+          title="Waiting on background work"
+          detail={`${pending === 1 ? "1 background task" : `${pending} background tasks`} still running. The agent picks up when ${pending === 1 ? "it finishes" : "they finish"}.`}
+        />
+      </Frame>
+    );
+  if (bucket === "review" && !changed)
+    return (
+      <Frame kind="done" variant={variant}>
+        <Row title="Finished" detail="No files changed. Send a follow-up below." />
+      </Frame>
+    );
   if (bucket === "review")
     return (
       <Frame kind="review" variant={variant}>
         <Row title="Ready to review" detail="Review the changes or send a follow-up below.">
-          <Button label="Review changes" kind="primary" onPress={review} />
+          <Button
+            label={changed === 1 ? "Review 1 file" : `Review ${changed} files`}
+            kind="primary"
+            onPress={review}
+          />
         </Row>
       </Frame>
     );
@@ -248,6 +285,37 @@ export function SessionState({
       />
     </Frame>
   );
+}
+
+/** Subagents and background commands this session started that are still running. */
+function usePendingBackground(agentId: string): number {
+  const { items } = useSubWork(agentId);
+  return items.filter(
+    (x) => x.status === "running" && (x.kind === "subagent" || x.kind === "background-task"),
+  ).length;
+}
+
+function editedFiles(entries: TimelineEntry[] | undefined): number {
+  const files = new Set<string>();
+  for (const e of entries ?? []) {
+    const t = e.item;
+    if (t.type === "tool_call" && (t.detail.type === "edit" || t.detail.type === "write"))
+      files.add((t.detail as { filePath?: string }).filePath ?? t.callId);
+  }
+  return files.size;
+}
+
+/**
+ * Files the review button would show: the checkout's live diff once it is loaded for this
+ * session's folder, else the files this session's timeline edited. 0 hides the button.
+ */
+function useChangedFiles(agent: Agent, active: boolean): number {
+  const diff = useScm((st) => (st.cwd === agent.cwd ? st.files : null));
+  const edited = useDaemon((st) => editedFiles(st.timelines[agent.id]));
+  useEffect(() => {
+    if (active) watchCheckout(agent.cwd).catch(() => {});
+  }, [active, agent.cwd]);
+  return diff ? diff.length : edited;
 }
 
 function Row({
