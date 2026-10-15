@@ -23,12 +23,12 @@ fix.
 | Stage       | Where it runs                        | Built by                  | Reaches                    | Updates           | Leaves when                            |
 | ----------- | ------------------------------------ | ------------------------- | -------------------------- | ----------------- | -------------------------------------- |
 | Development | a feature branch in its own worktree | you, locally (`dev:live`) | you, on the LAN            | edits reload live | it works and `verify --changed` passes |
-| Beta        | `main`                               | CI, on every green push   | testers, as **frogg beta** | auto-update       | a maintainer promotes it               |
+| Beta        | `main`                               | CI, on every green push   | testers, as **Frogg Next** | auto-update       | a maintainer promotes it               |
 | Stable      | `stable`                             | CI, on promote or patch   | everyone, as **frogg**     | auto-update       | —                                      |
 
 - **Development publishes nothing.** No tag, no update feed, no CI build. It runs from your
   checkout on its own ports and home (`.dev/live/home`), so it never touches an installed
-  frogg or frogg beta. Point the installed app at it by adding its daemon as a host.
+  frogg or Frogg Next. Point the installed app at it by adding its daemon as a host.
 - **Beta is release validation.** Packaging, installers and the update path get tested here.
   It is not the first time a change runs; if it is, go back to Development.
 - **Stable is never a default.** It moves only on an explicit instruction for that change.
@@ -61,8 +61,8 @@ fix.
 
 5. **Beta: CI builds it.** When the `main` run is green, CI's `beta` job cuts the next `X.Y.Z-beta.N`
    (`node scripts/release/streams.mjs beta`), pushes the tag and starts the release build for
-   every platform. Install the beta as **frogg beta**, beside your stable frogg, and test it
-   there ([frogg beta installs beside frogg](/docs/contributing/release-streams/#frogg-beta-installs-beside-frogg)).
+   every platform. Test it in **Frogg Next**, which installs beside your stable frogg, and on a
+   prerelease daemon ([what a release carries](/docs/contributing/release-streams/#what-a-release-carries)).
    A push that only cuts a release does not cut another beta.
 
 6. **Stable: promote or backport.** Stable moves only on an explicit decision: `npm run release:promote` on

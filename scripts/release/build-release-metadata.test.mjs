@@ -146,31 +146,178 @@ test("rejects two Mac payloads for the same architecture", async () => {
   }
 });
 
-test("Frogg Next assets on the same release stay out of the update feeds and checksums", async () => {
+test("prereleases carry Frogg Next and never a classic Electron feed", async () => {
   const dir = await mkdtemp(path.join(os.tmpdir(), "frogg-next-assets-"));
   const out = path.join(dir, "metadata");
-  const version = "1.6.13-beta.5";
+  const version = "1.6.14-beta.2";
   try {
     for (const suffix of ["win-x64.exe", "linux-x86_64.AppImage", "mac-x64.zip", "mac-arm64.zip"]) {
-      await writeFile(path.join(dir, `frogg-beta-${version}-${suffix}`), suffix);
+      await writeFile(path.join(dir, `Frogg-${version}-${suffix}`), suffix);
     }
-    const next = [
-      `Frogg-Next-${version}-win-x64.exe`,
-      `Frogg-Next-${version}-win-x64.zip`,
-      `Frogg-Next-${version}-mac-arm64.zip`,
-      `Frogg-Next-${version}-mac-arm64.dmg`,
-      `Frogg-Next-${version}-SHA256SUMS`,
-      `Frogg-Next-${version}-android-arm64-v8a-unsigned.apk`,
-    ];
-    for (const name of next) await writeFile(path.join(dir, name), name);
-    const descriptor = await buildReleaseMetadata({ version, assets: dir, out });
-    const urls = Object.values(descriptor.updatePaths["electron-updater"].platforms).flatMap(
-      (platform) => platform.files.map((file) => file.url),
+    await assert.rejects(
+      buildReleaseMetadata({ version, client: "classic", assets: dir, out }),
+      /cannot carry the classic client/,
     );
-    assert.equal(urls.length, 4);
-    assert.ok(urls.every((url) => url.startsWith("frogg-beta-")));
-    const sums = await readFile(path.join(out, "SHA256SUMS-desktop"), "utf8");
-    for (const name of next) assert.ok(!sums.includes(name), `${name} in SHA256SUMS-desktop`);
+    await assert.rejects(
+      buildReleaseMetadata({ version: "1.6.14", client: "frogg-next", out }),
+      /cannot carry the frogg-next client/,
+    );
+    const descriptor = await buildReleaseMetadata({ version, out });
+    assert.equal(descriptor.client, "frogg-next");
+    assert.equal(descriptor.channel, "beta");
+    assert.equal(descriptor.updatePaths["electron-updater"].mode, "manual");
+    assert.match(descriptor.updatePaths["electron-updater"].message, /Frogg Next/);
+    assert.deepEqual(descriptor.froggNext, {
+      artifactPrefix: "Frogg-Next",
+      feeds: ["frogg-next-latest.yml", "frogg-next-latest-mac.yml", "frogg-next-latest-linux.yml"],
+      checksums: `Frogg-Next-${version}-SHA256SUMS`,
+    });
+    assert.deepEqual(
+      JSON.parse(await readFile(path.join(out, "release.json"), "utf8")),
+      descriptor,
+    );
+    const fork = await buildReleaseMetadata({
+      version,
+      out,
+      next: { name: "Acme Next", artifactPrefix: "acme-next", feedPrefix: "acme-next" },
+    });
+    assert.equal(fork.froggNext.feeds[0], "acme-next-latest.yml");
+    assert.match(fork.updatePaths["electron-updater"].message, /Acme Next/);
+    const daemonOnly = await buildReleaseMetadata({ version, client: "none", out });
+    assert.equal(Object.hasOwn(daemonOnly, "froggNext"), false);
+
+    const brand = {
+      artifactPrefix: "frogg",
+      next: { artifactPrefix: "Frogg-Next", feedPrefix: "frogg-next" },
+    };
+    const payload = `Frogg-Next-${version}-win-x64.exe`;
+    const digest = createHash("sha256").update("exe").digest("hex");
+    const nextFeeds = {
+      "frogg-next-latest.yml": `version: ${version}\nfiles:\n  - url: ${payload}\n    sha512: x\npath: ${payload}\n`,
+      "frogg-next-latest-mac.yml": `files:\n  - url: Frogg-Next-${version}-mac-arm64.zip\n`,
+      "frogg-next-latest-linux.yml": `files:\n  - url: Frogg-Next-${version}-linux-x86_64.AppImage\n`,
+      [descriptor.froggNext.checksums]: `${digest}  ${payload}\n`,
+    };
+    const assets = [
+      "release.json",
+      ...Object.keys(nextFeeds),
+      `Frogg-Next-${version}-mac-arm64.zip`,
+      `Frogg-Next-${version}-linux-x86_64.AppImage`,
+      `frogg-${version}-linux-x86_64-daemon.tar.gz`,
+      `frogg-${version}-linux-x86_64-daemon.tar.gz.sha256`,
+      "install.sh",
+    ].map((name) => ({ name }));
+    assets.push({ name: payload, digest: `sha256:${digest}` });
+    const release = { tag_name: `v${version}`, assets };
+    verifyReleaseAssets({ descriptor, manifests: {}, release, brand, nextFeeds });
+    const withClassic = (name) => ({ ...release, assets: [...assets, { name }] });
+    assert.throws(
+      () =>
+        verifyReleaseAssets({
+          descriptor,
+          manifests: {},
+          release: withClassic("electron-beta.yml"),
+          brand,
+          nextFeeds,
+        }),
+      /Classic update feeds/,
+    );
+    assert.throws(
+      () =>
+        verifyReleaseAssets({
+          descriptor,
+          manifests: {},
+          release: withClassic(`Frogg-${version}-win-x64.exe`),
+          brand,
+          nextFeeds,
+        }),
+      /Classic app payloads/,
+    );
+    const missingFeed = {
+      ...release,
+      assets: assets.filter((asset) => asset.name !== "frogg-next-latest-mac.yml"),
+    };
+    assert.throws(
+      () => verifyReleaseAssets({ descriptor, manifests: {}, release: missingFeed, brand }),
+      /not uploaded: frogg-next-latest-mac\.yml/,
+    );
+    const missingPayload = {
+      ...release,
+      assets: assets.filter((asset) => !asset.name.endsWith("mac-arm64.zip")),
+    };
+    assert.throws(
+      () =>
+        verifyReleaseAssets({
+          descriptor,
+          manifests: {},
+          release: missingPayload,
+          brand,
+          nextFeeds,
+        }),
+      /names a missing payload/,
+    );
+    const badSum = structuredClone(release);
+    badSum.assets.find((asset) => asset.name === payload).digest = `sha256:${"0".repeat(64)}`;
+    assert.throws(
+      () => verifyReleaseAssets({ descriptor, manifests: {}, release: badSum, brand, nextFeeds }),
+      /Checksum mismatch/,
+    );
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("a stable release carries the classic app and no Frogg Next assets", async () => {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "frogg-classic-only-"));
+  const out = path.join(dir, "metadata");
+  try {
+    for (const suffix of ["win-x64.exe", "linux-x86_64.AppImage", "mac-x64.zip", "mac-arm64.zip"])
+      await writeFile(path.join(dir, `Frogg-1.6.14-${suffix}`), suffix);
+    const descriptor = await buildReleaseMetadata({ version: "1.6.14", assets: dir, out });
+    assert.equal(descriptor.client, "classic");
+    assert.equal(descriptor.updatePaths["electron-updater"].channel, "electron-latest");
+    const manifests = {};
+    const assets = [{ name: "release.json" }];
+    for (const platform of Object.values(descriptor.updatePaths["electron-updater"].platforms)) {
+      manifests[platform.manifest] = JSON.parse(
+        await readFile(path.join(out, platform.manifest), "utf8"),
+      );
+      assets.push({ name: platform.manifest });
+      for (const file of platform.files)
+        assets.push({ name: file.url, size: file.size, digest: `sha256:${file.sha256}` });
+    }
+    const release = { tag_name: "v1.6.14", assets };
+    const brand = {
+      artifactPrefix: "frogg",
+      next: { artifactPrefix: "Frogg-Next", feedPrefix: "frogg-next" },
+    };
+    verifyReleaseAssets({ descriptor, manifests, release, brand });
+    for (const name of ["Frogg-Next-1.6.14-win-x64.exe", "frogg-next-latest.yml"]) {
+      assert.throws(
+        () =>
+          verifyReleaseAssets({
+            descriptor,
+            manifests,
+            release: { ...release, assets: [...assets, { name }] },
+            brand,
+          }),
+        /Frogg Next assets on a classic release/,
+      );
+    }
+    // An automatic classic path on a prerelease is refused at publication too.
+    const beta = structuredClone(descriptor);
+    beta.version = "1.6.14-beta.1";
+    beta.channel = "beta";
+    delete beta.client;
+    assert.throws(
+      () =>
+        verifyReleaseAssets({
+          descriptor: beta,
+          manifests,
+          release: { ...release, tag_name: "v1.6.14-beta.1" },
+        }),
+      /stable releases only/,
+    );
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

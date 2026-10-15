@@ -211,19 +211,21 @@ git tag -d v0.6.20-beta.1 2>/dev/null   # npm version tagged the pre-amend commi
 npm run release:push                     # tags HEAD as v0.6.20-beta.1 and pushes
 ```
 
-The Release workflow creates a draft **Acme Studio 0.6.20-beta.1** prerelease, builds
-every platform as the beta channel, uploads `acme-beta-...` assets and the generated installers, then publishes.
+The Release workflow creates a draft **0.6.20-beta.1** prerelease, builds the daemon bundles
+for every platform, uploads them with the generated installers, then publishes. It carries no
+classic desktop app; with `next.enabled` on it also carries **Acme Studio Next**
+([`next`](/docs/fork-and-rebrand/brand-manifest/#next)).
 
-Install the daemon from it on a test host, and the desktop app from the release page:
+Install the daemon from it on a test host:
 
 ```sh
 curl -fsSL https://github.com/acme-corp/frogg/releases/download/v0.6.20-beta.1/install.sh | bash
 acme status
 ```
 
-This installs **Acme Studio Beta** (`acme-beta`, port 10098, `~/.acme-beta`) beside any
-stable install. Ship a second beta with `npm run release:beta` on `main` and confirm the beta
-desktop app and `acme-beta update` both move to it. Then promote it to stable from your
+This installs the prerelease daemon as `acme` (port 10099, `~/.acme`), the same install a
+stable release uses. Ship a second beta with `npm run release:beta` on `main` and confirm
+`acme update --channel beta` moves to it. Then promote it to stable from your
 `stable` branch with `npm run release:promote` (create the branch once with
 `npm run streams -- init --push`). See [release streams](/docs/contributing/release-streams/).
 

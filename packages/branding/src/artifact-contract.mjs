@@ -50,18 +50,33 @@ export const desktopArtifactSuffixes = [
 ];
 
 /**
- * Frogg Next (apps/ui-next) ships beside the classic app on the same release under its own fixed
- * prefix. It is not an update payload: no updater manifest, `release.json` or checksum list of the
- * classic app may pick these files up, and their prefix never equals a brand's `artifactPrefix`.
+ * Frogg Next (apps/ui-next) is the client prerelease tags ship, under the brand's `next` identity
+ * (`brand.next.artifactPrefix`, "Frogg-Next" for upstream frogg). Its installers and
+ * electron-updater feeds (`<feedPrefix>-latest*.yml`) never share a name with the classic app's
+ * (`<artifactPrefix>-*`, `electron-latest*.yml`), so neither client can pick up the other's update.
  */
 export const froggNextArtifactPrefix = "Frogg-Next";
+export const froggNextFeedPrefix = "frogg-next";
 
-/** @param {string} version @param {string} suffix */
-export function froggNextArtifactName(version, suffix) {
-  return `${froggNextArtifactPrefix}-${version}-${suffix}`;
+/** @param {string} version @param {string} suffix @param {string} [prefix] the brand's `next.artifactPrefix` */
+export function froggNextArtifactName(version, suffix, prefix = froggNextArtifactPrefix) {
+  return `${prefix}-${version}-${suffix}`;
 }
 
-/** @param {string} name */
-export function isFroggNextArtifact(name) {
-  return name.startsWith(`${froggNextArtifactPrefix}-`);
+/**
+ * @param {string} name @param {unknown} [prefix] the brand's `next.artifactPrefix`; anything but a
+ * string (an array index, when passed straight to `filter`) means the upstream prefix.
+ */
+export function isFroggNextArtifact(name, prefix) {
+  return name.startsWith(`${typeof prefix === "string" ? prefix : froggNextArtifactPrefix}-`);
+}
+
+/** electron-updater feed files of Frogg Next, Windows first. @param {string} [feedPrefix] */
+export function froggNextFeedNames(feedPrefix = froggNextFeedPrefix) {
+  return ["", "-mac", "-linux"].map((platform) => `${feedPrefix}-latest${platform}.yml`);
+}
+
+/** The checksum list the Frogg Next release job uploads. @param {string} version @param {string} [prefix] */
+export function froggNextChecksumsName(version, prefix = froggNextArtifactPrefix) {
+  return froggNextArtifactName(version, "SHA256SUMS", prefix);
 }

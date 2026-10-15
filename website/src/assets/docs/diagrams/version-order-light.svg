@@ -15,34 +15,34 @@
 <circle cx="100" cy="175" r="8" fill="#c77700" stroke="#ffffff" stroke-width="2"/>
 <text x="100" y="153" font-size="16.2" font-weight="600" fill="#18181b" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-beta.3</text>
 <text x="100" y="205" font-size="15.5" font-weight="400" fill="#5b6462" text-anchor="middle">upstream beta</text>
-<text x="100" y="223" font-size="15.5" font-weight="600" fill="#c77700" text-anchor="middle">beta app</text>
+<text x="100" y="223" font-size="15.5" font-weight="600" fill="#c77700" text-anchor="middle">prerelease</text>
 <circle cx="262" cy="175" r="8" fill="#c77700" stroke="#ffffff" stroke-width="2"/>
 <line x1="262" y1="165" x2="262" y2="127" stroke="#b8bfbd" stroke-width="1"/>
 <text x="262" y="121" font-size="16.2" font-weight="600" fill="#18181b" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-beta.3.acme.1</text>
 <text x="262" y="205" font-size="15.5" font-weight="400" fill="#5b6462" text-anchor="middle">fork build of it</text>
-<text x="262" y="223" font-size="15.5" font-weight="600" fill="#c77700" text-anchor="middle">beta app</text>
+<text x="262" y="223" font-size="15.5" font-weight="600" fill="#c77700" text-anchor="middle">prerelease</text>
 <circle cx="424" cy="175" r="8" fill="#c77700" stroke="#ffffff" stroke-width="2"/>
 <text x="424" y="153" font-size="16.2" font-weight="600" fill="#18181b" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-rc.1.acme.1</text>
 <text x="424" y="205" font-size="15.5" font-weight="400" fill="#5b6462" text-anchor="middle">fork candidate</text>
-<text x="424" y="223" font-size="15.5" font-weight="600" fill="#c77700" text-anchor="middle">beta app</text>
+<text x="424" y="223" font-size="15.5" font-weight="600" fill="#c77700" text-anchor="middle">prerelease</text>
 <circle cx="586" cy="175" r="8" fill="#1f8a55" stroke="#ffffff" stroke-width="2"/>
 <line x1="586" y1="165" x2="586" y2="127" stroke="#b8bfbd" stroke-width="1"/>
 <text x="586" y="121" font-size="16.2" font-weight="600" fill="#18181b" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0</text>
 <text x="586" y="205" font-size="15.5" font-weight="400" fill="#5b6462" text-anchor="middle">upstream release</text>
-<text x="586" y="223" font-size="15.5" font-weight="600" fill="#1f8a55" text-anchor="middle">stable app</text>
+<text x="586" y="223" font-size="15.5" font-weight="600" fill="#1f8a55" text-anchor="middle">stable</text>
 <circle cx="748" cy="175" r="8" fill="#1f8a55" stroke="#ffffff" stroke-width="2"/>
 <text x="748" y="153" font-size="16.2" font-weight="600" fill="#18181b" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-acme.1</text>
 <text x="748" y="205" font-size="15.5" font-weight="400" fill="#5b6462" text-anchor="middle">fork release</text>
-<text x="748" y="223" font-size="15.5" font-weight="600" fill="#1f8a55" text-anchor="middle">stable app</text>
+<text x="748" y="223" font-size="15.5" font-weight="600" fill="#1f8a55" text-anchor="middle">stable</text>
 <circle cx="910" cy="175" r="8" fill="#1f8a55" stroke="#ffffff" stroke-width="2"/>
 <line x1="910" y1="165" x2="910" y2="127" stroke="#b8bfbd" stroke-width="1"/>
 <text x="910" y="121" font-size="16.2" font-weight="600" fill="#18181b" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.8.0-acme.2</text>
 <text x="910" y="205" font-size="15.5" font-weight="400" fill="#5b6462" text-anchor="middle">fork fix</text>
-<text x="910" y="223" font-size="15.5" font-weight="600" fill="#1f8a55" text-anchor="middle">stable app</text>
+<text x="910" y="223" font-size="15.5" font-weight="600" fill="#1f8a55" text-anchor="middle">stable</text>
 <circle cx="1072" cy="175" r="8" fill="#c77700" stroke="#ffffff" stroke-width="2"/>
 <text x="1072" y="153" font-size="16.2" font-weight="600" fill="#18181b" text-anchor="middle" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">1.9.0-beta.1</text>
 <text x="1072" y="205" font-size="15.5" font-weight="400" fill="#5b6462" text-anchor="middle">next beta line</text>
-<text x="1072" y="223" font-size="15.5" font-weight="600" fill="#c77700" text-anchor="middle">beta app</text>
+<text x="1072" y="223" font-size="15.5" font-weight="600" fill="#c77700" text-anchor="middle">prerelease</text>
 <rect x="40" y="272" width="1100" height="50" rx="10" fill="#c62828" fill-opacity="0.08" stroke="#c62828" stroke-opacity="0.5"/>
 <text x="60" y="302" font-size="17.6" font-weight="700" fill="#c62828" text-anchor="start" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">✗  1.8.0-acme.1-beta.1</text>
 <text x="315" y="302" font-size="16.9" font-weight="400" fill="#18181b" text-anchor="start">reads as a rebuild of 1.8.0 and sorts above it. Put the channel part first: 1.8.0-beta.1.acme.1</text>

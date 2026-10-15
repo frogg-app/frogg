@@ -73,7 +73,7 @@ function devFlow(t) {
     laneLabel(t, {
       y: M,
       title: "main",
-      subtitle: "ships frogg beta",
+      subtitle: "ships Frogg Next betas",
       color: t.beta,
     }),
     laneLabel(t, {
@@ -123,7 +123,7 @@ function devFlow(t) {
     // betas on main
     node(t, { x: 380, y: M, color: t.beta, label: "1.6.6-beta.1" }),
     node(t, { x: 1010, y: M, color: t.beta, label: "1.6.6-beta.2" }),
-    text(t, 1010, M + 48, "test it in frogg beta", {
+    text(t, 1010, M + 48, "test it in Frogg Next", {
       size: 11.5,
       color: t.beta,
       anchor: "middle",
@@ -206,7 +206,7 @@ function testLadder(t) {
     },
     {
       rung: "beta build",
-      runs: ["CI cuts X.Y.Z-beta.N on a green", "push to main; install as frogg beta"],
+      runs: ["CI cuts X.Y.Z-beta.N on a green", "push to main; install Frogg Next"],
       use: ["packaging, installers,", "auto-update"],
       skill: "frogg-release",
       beta: true,
@@ -386,7 +386,7 @@ function devLoop(t) {
     card(xs[1], row2, {
       title: "Beta",
       color: t.beta,
-      lines: [["X.Y.Z-beta.N", true], "CI cuts it; test in frogg beta"],
+      lines: [["X.Y.Z-beta.N", true], "CI cuts it; test in Frogg Next"],
       skills: ["frogg-release"],
     }),
     card(xs[0], row2, {
@@ -474,7 +474,7 @@ function brandStreams(t) {
     laneLabel(t, {
       y: FM + 8,
       title: "main",
-      subtitle: "ships Acme Beta",
+      subtitle: "ships Acme Next betas",
       color: t.beta,
     }),
     laneLabel(t, {

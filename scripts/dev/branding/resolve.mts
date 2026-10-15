@@ -4,43 +4,31 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   BrandManifestSchema,
-  RELEASE_CHANNELS,
   resolveBrandManifest,
-  type ReleaseChannel,
 } from "../../../packages/branding/src/schema.js";
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 export const outputRoot = path.join(root, ".generated/branding");
 export const uiOutput = path.join(root, "apps/ui/.generated/branding");
 
-/**
- * The release channel to build: `--channel`, else FROGG_BRAND_CHANNEL (the release workflow sets
- * it from the tag), else stable. Local development builds stay stable unless asked.
- */
-export function resolveChannel(value?: string): ReleaseChannel {
-  const selected = value ?? (process.env.FROGG_BRAND_CHANNEL?.trim() || "stable");
-  if (!(RELEASE_CHANNELS as readonly string[]).includes(selected)) {
-    throw new Error(
-      `Unknown release channel "${selected}"; expected ${RELEASE_CHANNELS.join(" or ")}`,
-    );
-  }
-  return selected as ReleaseChannel;
-}
-
-export function resolveBrand(directory?: string, channelOption?: string) {
+export function resolveBrand(directory?: string) {
   const selected = path.resolve(root, directory ?? process.env.FROGG_BRAND_DIR ?? "brands/frogg");
   const manifest = BrandManifestSchema.parse(
     JSON.parse(readFileSync(path.join(selected, "brand.json"), "utf8")),
   );
   const official = realpathSync(selected) === realpathSync(path.join(root, "brands/frogg"));
-  const channel = resolveChannel(channelOption);
-  const brand = resolveBrandManifest(manifest, { channel });
+  const brand = resolveBrandManifest(manifest);
   if (
     !official &&
     (manifest.id === "frogg" ||
       [brand.cliName, brand.desktopBinaryName, brand.scheme].some((name) =>
         ["frogg"].includes(name),
       ) ||
+      [brand.next.scheme, brand.next.desktopBinaryName, brand.next.feedPrefix].some((name) =>
+        ["frogg", "frogg-next"].includes(name),
+      ) ||
+      brand.next.artifactPrefix.toLowerCase() === "frogg-next" ||
+      brand.next.applicationId.startsWith("app.frogg.") ||
       [".frogg"].includes(brand.homeDir) ||
       ["FROGG"].includes(brand.envPrefix) ||
       brand.applicationId.startsWith("app.frogg.") ||
@@ -65,7 +53,6 @@ export function resolveBrand(directory?: string, channelOption?: string) {
       : Buffer.from(data.toString("latin1").replaceAll("\r\n", "\n"), "latin1");
   };
   hash.update("frogg-brand-generator-v1\0");
-  hash.update(`channel:${channel}\0`);
   hash.update(JSON.stringify({ ...manifest, assets: Object.keys(manifest.assets).sort() }));
   const assetFiles: Record<string, string> = {};
   for (const [key, value] of Object.entries(manifest.assets)) {
@@ -116,7 +103,6 @@ export function resolveBrand(directory?: string, channelOption?: string) {
     assetFiles,
     selected,
     official,
-    channel,
     version,
     fingerprint: hash.digest("hex"),
   };

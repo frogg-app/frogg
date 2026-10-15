@@ -66,5 +66,15 @@
   },
   "plugins": {
     "allowUserRepos": true
+  },
+  "next": {
+    "enabled": true,
+    "name": "Frogg Next",
+    "applicationId": "app.frogg.next",
+    "scheme": "frogg-next",
+    "userDataDir": "Frogg Next",
+    "artifactPrefix": "Frogg-Next",
+    "desktopBinaryName": "frogg-next",
+    "feedPrefix": "frogg-next"
   }
 }

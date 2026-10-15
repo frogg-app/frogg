@@ -58,7 +58,7 @@
 <rect x="320" y="364" width="250" height="6" rx="3" fill="#c77700"/>
 <text x="338" y="398" font-size="18.9" font-weight="700" fill="#c77700" text-anchor="start">Beta</text>
 <text x="338" y="424" font-size="14.9" font-weight="400" fill="#18181b" font-family="'JetBrains Mono', 'SFMono-Regular', Menlo, Consolas, monospace">X.Y.Z-beta.N</text>
-<text x="338" y="445" font-size="14.9" font-weight="400" fill="#5b6462" textLength="214" lengthAdjust="spacingAndGlyphs">CI cuts it; test in frogg beta</text>
+<text x="338" y="445" font-size="14.9" font-weight="400" fill="#5b6462" textLength="214" lengthAdjust="spacingAndGlyphs">CI cuts it; test in Frogg Next</text>
 <text x="338" y="496" font-size="14.9" font-weight="600" fill="#6d28d9">frogg-release</text>
 <rect x="30" y="364" width="250" height="146" rx="12" fill="#f6f7f7" fill-opacity="1" stroke="#dfe3e2"/>
 <rect x="30" y="364" width="250" height="6" rx="3" fill="#1f8a55"/>

@@ -12,8 +12,10 @@ export function verifyElectronUpdatePath({ version, update, manifests, assets })
     !gte(descriptor.version, descriptor.minimumClientVersion)
   )
     throw new Error("Invalid minimum client version");
-  const channel =
-    channelOfVersion(descriptor.version) === "beta" ? "electron-beta" : "electron-latest";
+  // Classic Electron feeds are stable-only: a prerelease ships Frogg Next, not the classic app.
+  if (channelOfVersion(descriptor.version) !== "stable")
+    throw new Error("Classic Electron updates are published for stable releases only");
+  const channel = "electron-latest";
   if (descriptor.channel !== channel) throw new Error("Release channel mismatch");
 
   for (const [platform, count] of [

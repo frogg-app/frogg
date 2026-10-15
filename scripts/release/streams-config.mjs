@@ -100,7 +100,7 @@ export function branchForVersion(config, version) {
   return channelOfVersion(version) === "beta" ? config.development : config.stable;
 }
 
-/** Workflow builds of a branch: the stable branch builds the stable identity, anything else beta. */
+/** The release channel a branch ships: the stable branch ships stable releases, anything else betas. */
 export function channelForBranch(config, branch) {
   return branch === config.stable ? "stable" : "beta";
 }

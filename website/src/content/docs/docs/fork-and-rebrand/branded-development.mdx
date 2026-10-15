@@ -24,9 +24,9 @@ arrive from and fixes go back to.
 
 | Branch            | Holds                                                         | Ships                                  |
 | ----------------- | ------------------------------------------------------------- | -------------------------------------- |
-| `upstream/main`   | Upstream development                                          | frogg beta                             |
+| `upstream/main`   | Upstream development                                          | frogg betas (Frogg Next)               |
 | `upstream/stable` | Upstream releases                                             | frogg                                  |
-| `main`            | Upstream, plus your brand directory, `frogg.json` and features | Your beta (`<id>-beta`), cut by CI     |
+| `main`            | Upstream, plus your brand directory, `frogg.json` and features | Your betas, cut by CI                  |
 | `stable`          | Only promotions of `main` and backported fixes                | Your product                           |
 | `feature/*`       | Work in progress                                              | Nothing until it lands on `main`       |
 
@@ -175,8 +175,8 @@ second worktree.
    `1.8.0-beta.3.acme.1` when you follow upstream `main`. `npm run release:beta` cuts one by
    hand.
 
-4. **Test the beta** installed beside your stable app. It is `<id>-beta`, with its own app id,
-   port, data directory and CLI ([channels](/docs/fork-and-rebrand/brand-manifest/#channels)).
+4. **Test the beta**: a prerelease daemon (the Beta update channel) and, when `next.enabled` is
+   on, your Next app installed beside your stable app ([`next`](/docs/fork-and-rebrand/brand-manifest/#next)).
 
 5. **Promote** when it is ready, on `stable`:
 

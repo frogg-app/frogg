@@ -1,4 +1,3 @@
-import { isFroggNextArtifact } from "../../packages/branding/src/artifact-contract.mjs";
 import { channelOfVersion } from "./release-channel.mjs";
 import { createHash } from "node:crypto";
 import { createReadStream } from "node:fs";
@@ -30,12 +29,14 @@ export async function buildElectronReleaseManifests({
   platformVersions = {},
 }) {
   if (!/^\d+\.\d+\.\d+(?:-[\w.-]+)?$/.test(version)) throw new Error("Invalid release version");
+  // The classic app follows stable releases only; prereleases ship Frogg Next with its own feeds.
+  if (channelOfVersion(version) !== "stable")
+    throw new Error("Classic Electron update feeds are published for stable releases only");
   const { windowsVersion, linuxVersion, macVersion } = resolvePlatformVersions(
     version,
     platformVersions,
   );
-  // Frogg Next shares the release but not the update path; its names end like ours.
-  const names = (await readdir(assets)).filter((name) => !isFroggNextArtifact(name)).sort();
+  const names = (await readdir(assets)).sort();
   const groups = {
     "": names.filter((name) => name.endsWith(`-${windowsVersion}-win-x64.exe`)),
     "-linux": names.filter((name) => name.endsWith(`-${linuxVersion}-linux-x86_64.AppImage`)),
@@ -57,7 +58,7 @@ export async function buildElectronReleaseManifests({
     throw new Error("Electron Mac updates require one x64 and one arm64 payload");
   }
   await mkdir(out, { recursive: true });
-  const channel = channelOfVersion(version) === "beta" ? "electron-beta" : "electron-latest";
+  const channel = "electron-latest";
   const releaseDate = new Date().toISOString();
   const platforms = {};
   for (const [platform, groupNames] of Object.entries(groups)) {

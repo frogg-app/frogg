@@ -261,7 +261,7 @@ const commands = {
                               put fork commits on a branch off upstream and offer them back
   init [--push]               create the stable branch from the newest stable tag
   assert-tag <tag>            CI: fail unless the tag is on its stream's branch
-  channel-for-ref <branch>    CI: which brand channel a branch builds (stable or beta)
+  channel-for-ref <branch>    CI: which release channel a branch ships (stable or beta)
   tested-source <ref>         CI: the commit whose CI run vouches for <ref>
   tested-chain <ref>          CI: every commit whose CI run vouches for <ref>
   needs-tests <ref>           CI: "true" unless <ref> only adds release cuts to tested main code

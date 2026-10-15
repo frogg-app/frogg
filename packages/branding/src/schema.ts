@@ -90,44 +90,26 @@ const modelPolicy = z.strictObject({
 const applicationId = z.string().regex(/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}$/);
 const daemonPort = z.number().int().min(1024).max(65535);
 
-/** The release channels a distribution ships. Each one installs beside the others. */
-export const RELEASE_CHANNELS = ["stable", "beta"] as const;
-export type ReleaseChannel = (typeof RELEASE_CHANNELS)[number];
+const artifactPrefix = z.string().regex(/^[a-zA-Z][a-zA-Z0-9-]*$/);
 
 /**
- * Identity overrides for the beta channel build. Every field is optional: by default the beta
- * build derives a separate identity from the stable one (`<id>-beta`, `<applicationId>.beta`,
- * ports ten below stable's, `~/.<id>-beta`, ...) so both install side by side on one machine, and its
- * icons carry a "beta" badge.
+ * Identity of the Frogg Next client (apps/ui-next), which prereleases ship in place of the
+ * classic app. Every field is optional: a fork derives its own (`<name> Next`,
+ * `<applicationId>.next`, `<scheme>-next`, ...) so it never collides with the stable install.
+ * Promotion later builds Frogg Next under the brand's stable identity instead.
  */
-const channelOverrides = z.strictObject({
+const nextClient = z.strictObject({
+  /** Attach Frogg Next to prerelease tags. Default true for upstream frogg, false otherwise. */
+  enabled: z.boolean().optional(),
   name: text.optional(),
-  fullName: text.optional(),
   applicationId: applicationId.optional(),
-  daemonPort: daemonPort.optional(),
-  webPort: daemonPort.optional(),
-  cliName: slug.optional(),
-  desktopBinaryName: slug.optional(),
-  homeDir: z
-    .string()
-    .regex(/^\.[a-z][a-z0-9-]*$/)
-    .optional(),
-  envPrefix: z
-    .string()
-    .regex(/^[A-Z][A-Z0-9_]*$/)
-    .optional(),
   scheme: slug.optional(),
-  serviceName: slug.optional(),
-  launchdLabel: z
-    .string()
-    .regex(/^[a-z][a-z0-9.-]*$/)
-    .optional(),
-  artifactPrefix: z
-    .string()
-    .regex(/^[a-zA-Z][a-zA-Z0-9-]*$/)
-    .optional(),
-  /** Overlay a "beta" badge on the generated icons. Default true. */
-  badge: z.boolean().optional(),
+  /** Electron userData directory name. Default: the product name. */
+  userDataDir: text.optional(),
+  artifactPrefix: artifactPrefix.optional(),
+  desktopBinaryName: slug.optional(),
+  /** Stem of the electron-updater feed files: `<feedPrefix>-latest.yml`. */
+  feedPrefix: slug.optional(),
 });
 
 export const BrandManifestSchema = z.strictObject({
@@ -157,10 +139,7 @@ export const BrandManifestSchema = z.strictObject({
     .string()
     .regex(/^[a-z][a-z0-9.-]*$/)
     .optional(),
-  artifactPrefix: z
-    .string()
-    .regex(/^[a-zA-Z][a-zA-Z0-9-]*$/)
-    .optional(),
+  artifactPrefix: artifactPrefix.optional(),
   assets: z.strictObject({
     icon: assetPath,
     ios: assetPath.optional(),
@@ -205,8 +184,8 @@ export const BrandManifestSchema = z.strictObject({
         .optional(),
       iosStoreId: z.string().regex(/^\d+$/).optional(),
       expoProjectId: z.uuid().optional(),
-      // Attach the Frogg Next client (apps/ui-next) to each GitHub release. Default true for
-      // upstream frogg, false for any other brand.
+      // COMPAT: superseded by `next.enabled`; still read when that is unset so brand.json files
+      // written before the single-identity release model keep their choice.
       froggNext: z.boolean().optional(),
     })
     .optional(),
@@ -290,23 +269,18 @@ export const BrandManifestSchema = z.strictObject({
       remoteControl: z.enum(["allowed", "forbidden"]).optional(),
     })
     .optional(),
-  channels: z.strictObject({ beta: channelOverrides.optional() }).optional(),
+  next: nextClient.optional(),
+  // COMPAT: the separate beta channel identity was removed; every build now resolves to the one
+  // identity above and prereleases ship Frogg Next. Old brand.json files may still carry
+  // `channels.beta`, so it parses but is ignored.
+  channels: z.strictObject({ beta: z.record(z.string(), z.unknown()).optional() }).optional(),
 });
 export type BrandManifest = z.infer<typeof BrandManifestSchema>;
 
-export interface ResolveBrandOptions {
-  /** Which build of the distribution to resolve. Default "stable". */
-  channel?: ReleaseChannel;
-}
-
-export function resolveBrandManifest(input: unknown, options: ResolveBrandOptions = {}) {
-  const base = BrandManifestSchema.parse(input);
-  const channel = options.channel ?? "stable";
-  // Behaviour follows the product, identity follows the channel: frogg beta keeps upstream
-  // frogg's open defaults and theme, but installs under its own names beside frogg.
-  const stock = base.id === "frogg";
-  const manifest = channel === "beta" ? betaManifest(base) : base;
-  const distribution = resolveDistribution(manifest, stock);
+export function resolveBrandManifest(input: unknown) {
+  const manifest = BrandManifestSchema.parse(input);
+  const stock = manifest.id === "frogg";
+  const distribution = resolveDistribution(manifest);
   const repository = distribution.repository;
   const light = manifest.colors?.light ?? {
     accent: "#525252",
@@ -347,97 +321,46 @@ export function resolveBrandManifest(input: unknown, options: ResolveBrandOption
     // daemon or the apps reads it.
     mobile: { enabled: manifest.mobile?.enabled ?? true },
     plugins: resolvePlugins(manifest),
-    channel,
-    /** Built from the upstream frogg brand, whichever channel. Selects frogg's own theme. */
+    /** Built from the upstream frogg brand. Selects frogg's own theme. */
     stockFrogg: stock,
-    /** Overlay the beta badge on generated icons. */
-    channelBadge: channel === "beta" && (base.channels?.beta?.badge ?? true),
-    /** Every channel's install identity, so each build can point at its siblings. */
-    channels: {
-      stable: channelSummary(base),
-      beta: channelSummary(betaManifest(base)),
-    },
+    next: resolveNext(manifest, stock),
   };
 }
 
-function channelSummary(manifest: BrandManifest) {
+/** "acme" → "acme next", "Acme Studio" → "Acme Studio Next": follow the name's own casing. */
+function nextName(name: string): string {
+  return /[A-Z]/.test(name) ? `${name} Next` : `${name} next`;
+}
+
+/** The Frogg Next identity prerelease builds of apps/ui-next install under. */
+function resolveNext(manifest: BrandManifest, stock: boolean) {
   const identity = resolveIdentity(manifest);
-  return {
-    id: identity.id,
-    name: identity.name,
-    applicationId: identity.applicationId,
-    cliName: identity.cliName,
-    scheme: identity.scheme,
-    daemonPort: identity.daemonPort,
-    webPort: identity.webPort,
-    homeDir: identity.homeDir,
-    serviceName: identity.serviceName,
-    /** Desktop installer file prefix, so a build can find its sibling's release assets. */
-    artifactPrefix: identity.artifactPrefix,
+  const input = manifest.next ?? {};
+  const name = input.name ?? nextName(identity.name);
+  const next = {
+    enabled: input.enabled ?? manifest.distribution?.froggNext ?? stock,
+    name,
+    applicationId: input.applicationId ?? `${identity.applicationId}.next`,
+    scheme: input.scheme ?? `${identity.scheme}-next`,
+    userDataDir: input.userDataDir ?? name,
+    artifactPrefix: input.artifactPrefix ?? `${identity.artifactPrefix}-next`,
+    desktopBinaryName: input.desktopBinaryName ?? `${identity.cliName}-next`,
+    feedPrefix: input.feedPrefix ?? `${identity.id}-next`,
   };
-}
-
-/** "frogg" → "frogg beta", "Acme Studio" → "Acme Studio Beta": follow the name's own casing. */
-function betaName(name: string): string {
-  return /[A-Z]/.test(name) ? `${name} Beta` : `${name} beta`;
-}
-
-/**
- * The beta build's manifest: the stable manifest with every install identity moved aside, so a
- * beta daemon, CLI, desktop app and mobile app install next to the stable ones without sharing a
- * port, state directory, service, URL scheme, environment namespace or application id.
- */
-function betaManifest(base: BrandManifest): BrandManifest {
-  const overrides = base.channels?.beta ?? {};
-  const stable = resolveIdentity(base);
-  const id = `${base.id}-beta`;
-  const appId = overrides.applicationId ?? `${base.applicationId}.beta`;
-  const betaDaemonPort =
-    overrides.daemonPort ?? (base.daemonPort > 1035 ? base.daemonPort - 10 : base.daemonPort + 10);
-  const derived = {
-    ...base,
-    id,
-    name: overrides.name ?? betaName(base.name),
-    fullName: overrides.fullName ?? (base.fullName ? betaName(base.fullName) : undefined),
-    applicationId: appId,
-    daemonPort: betaDaemonPort,
-    webPort: overrides.webPort ?? betaDaemonPort - 1,
-    cliName: overrides.cliName ?? `${stable.cliName}-beta`,
-    desktopBinaryName: overrides.desktopBinaryName ?? `${stable.desktopBinaryName}-beta`,
-    homeDir: overrides.homeDir ?? `${stable.homeDir}-beta`,
-    envPrefix: overrides.envPrefix ?? `${stable.envPrefix}_BETA`,
-    scheme: overrides.scheme ?? `${stable.scheme}-beta`,
-    serviceName: overrides.serviceName ?? `${id}-daemon`,
-    launchdLabel: overrides.launchdLabel ?? `${appId}-daemon`,
-    artifactPrefix: overrides.artifactPrefix ?? `${stable.artifactPrefix}-beta`,
-    distribution: base.distribution
-      ? // A store listing belongs to one application id; the beta app has its own.
-        { ...base.distribution, iosStoreId: undefined }
-      : undefined,
-  };
-  const parsed = BrandManifestSchema.safeParse(derived);
-  if (!parsed.success) {
+  const clashes = (
+    [
+      ["applicationId", identity.applicationId],
+      ["scheme", identity.scheme],
+      ["artifactPrefix", identity.artifactPrefix],
+      ["desktopBinaryName", identity.desktopBinaryName],
+    ] as const
+  ).filter(([key, value]) => next[key].toLowerCase() === value.toLowerCase());
+  if (clashes.length > 0) {
     throw new Error(
-      `The beta channel identity derived from "${base.id}" is invalid; set it under channels.beta: ${parsed.error.issues
-        .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
-        .join("; ")}`,
+      `next.${clashes.map(([key]) => key).join(", next.")} must differ from the stable identity`,
     );
   }
-  if (parsed.data.daemonPort === base.daemonPort) {
-    throw new Error("channels.beta.daemonPort must differ from the stable daemonPort");
-  }
-  const ports = [
-    stable.daemonPort,
-    stable.webPort,
-    parsed.data.daemonPort,
-    resolveIdentity(parsed.data).webPort,
-  ];
-  if (new Set(ports).size !== ports.length) {
-    throw new Error(
-      `The stable and beta daemon and web ports must all differ (got ${ports.join(", ")}); set webPort / channels.beta.webPort`,
-    );
-  }
-  return parsed.data;
+  return next;
 }
 
 /**
@@ -578,7 +501,7 @@ function resolveProjects(manifest: BrandManifest) {
   return { defaultDirectory: manifest.projects?.defaultDirectory ?? "~" };
 }
 
-function resolveDistribution(manifest: BrandManifest, stock: boolean) {
+function resolveDistribution(manifest: BrandManifest) {
   const distribution = manifest.distribution ?? {};
   const updateMode =
     distribution.updates ?? (distribution.repository ? "github-release" : "disabled");
@@ -599,7 +522,6 @@ function resolveDistribution(manifest: BrandManifest, stock: boolean) {
     pairingImage: distribution.pairingImage ?? null,
     iosStoreId: distribution.iosStoreId ?? null,
     expoProjectId: distribution.expoProjectId ?? null,
-    froggNext: distribution.froggNext ?? stock,
   };
 }
 
