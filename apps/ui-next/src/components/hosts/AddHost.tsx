@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { DEFAULT_SSH_DAEMON_PORT } from "@frogg/protocol/ssh-transport";
 import { addHost, parseHostAddress, updateHost, useHosts, type Host } from "../../daemon/hosts";
 import { parsePairInput, usePendingPair } from "../../daemon/pairing";
-import { connect } from "../../daemon/store";
+import { connect, suggestedEndpoint, useUnpaired } from "../../daemon/store";
 import { color, font, web } from "../../theme/tokens";
 import { Button } from "../Button";
 import { T } from "../Text";
@@ -104,10 +104,14 @@ function PairForm() {
     [],
   );
   const codeOnly = !link.trim() && code.length > 0;
+  // A link names its host; a bare code goes to the typed address, else the daemon this app
+  // already points at (the active host, or the one the desktop shell names).
+  const unpaired = useUnpaired((st) => st.endpoint);
+  const fallback = useMemo(() => unpaired ?? suggestedEndpoint(), [unpaired]);
   const go = useCallback(() => {
     const target = link.trim()
       ? parsePairInput(link)
-      : parsePairInput(code, address.trim() || undefined);
+      : parsePairInput(code, address.trim() || fallback);
     if (!target) {
       setError(
         link.trim()
@@ -123,7 +127,7 @@ function PairForm() {
     setError(null);
     usePendingPair.setState({ target, invalid: null });
     openSheet({ kind: "confirm" });
-  }, [link, code, address]);
+  }, [link, code, address, fallback]);
   const cells = useMemo(() => Array.from({ length: CELLS }, (_, i) => code[i] ?? ""), [code]);
   return (
     <View style={s.form}>
@@ -157,7 +161,7 @@ function PairForm() {
         <TextInput
           value={address}
           onChangeText={setAddress}
-          placeholder="Host address  e.g. devbox.lan:6767"
+          placeholder={`Host address  (default ${fallback})`}
           placeholderTextColor={color.faint}
           style={s.input}
           autoCapitalize="none"

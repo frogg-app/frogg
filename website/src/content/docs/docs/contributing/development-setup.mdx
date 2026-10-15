@@ -305,11 +305,15 @@ builds and launches the dev client with `expo run:ios`. CI builds an unsigned si
 Next: [Architecture](/docs/contributing/architecture/) and [Testing](/docs/contributing/testing/).
 
 
-## Bracket + Rail prototype
+## Frogg Next
 
-The `frogg-interface-design-mockups` research branch contains `apps/ui-next`, an
-experimental Expo Router client. Its **Frogg Next** APK uses `app.frogg.next`, so it
-installs alongside Frogg and Frogg beta. This prototype is not a beta or stable release.
+`apps/ui-next` is **Frogg Next**, the Expo Router client that ships as the prerelease app:
+prerelease tags carry its desktop and Android builds, stable tags carry the classic app.
+Its identity (product name, app id, application-data folder, link scheme, artifact prefix,
+update-feed prefix) comes from the brand's `next` block in `.generated/branding/brand.json`,
+read by `apps/ui-next/desktop/identity.cjs`. Without one it is `Frogg Next`,
+`app.frogg.next`, a `Frogg Next` data folder, `frogg-next://` and `Frogg-Next-<version>-*`,
+so it installs beside the classic app.
 
 ### Android build
 
@@ -324,46 +328,74 @@ node apps/ui-next/scripts/build-apk.mjs release-assets/ui-next-local
 ```
 
 The script regenerates `apps/ui-next/android`, embeds the JavaScript bundle and fonts,
-and builds a debug-signed ARM64 release APK. Metro does not need to run on the phone.
-The APK appears under the chosen output directory. Keep builds in separate output
-directories; this command does not publish an artifact or require CI.
+and builds an ARM64 release APK: release-signed when `FROGG_ANDROID_KEYSTORE` and its
+password and alias are set, else debug-signed and named `-unsigned`. Release builds in CI use
+the classic app's keystore, so a build promoted to the stable app id can update the classic
+app in place. The app links the classic `FroggAppInstaller` module (through
+`apps/ui-next/modules`) and checks GitHub releases for a newer APK in **Settings → App
+updates**, then downloads it and hands it to the system installer.
 
-### Mac ARM desktop build
+### Desktop build
 
-The same prototype can be packaged as a standalone **Frogg Next** Electron app for
-Apple Silicon. It uses `app.frogg.next` and its own `Frogg Next` application-data directory,
-so it installs beside Frogg and Frogg beta. It bundles the prototype web UI and fonts;
-it connects to separately installed daemons and does not include a daemon or an updater.
-The first host defaults to `127.0.0.1:9999`; add a LAN or tailnet daemon in Hosts.
-This shell does not expose the production desktop native bridge or register pairing links.
+`build-desktop.mjs` packages the web UI in an Electron shell. Each target must be built on its
+own OS:
 
-On a Mac, after `npm ci`, run:
-
-```bash
-node apps/ui-next/scripts/build-desktop.mjs
-```
-
-The DMG, ZIP and `SHA256SUMS` appear in `release-assets/ui-next-mac-arm64/`.
-The build requires macOS; Docker on Linux cannot run this packaging command.
-To check the bundled UI on Linux without creating Mac artifacts, run:
+| Target                   | Output (`release-assets/…`) |
+| ------------------------ | --------------------------- |
+| `darwin-arm64` (default) | `ui-next-mac-arm64/`: DMG, ZIP |
+| `darwin-x64`             | `ui-next-mac-x64/`: DMG, ZIP |
+| `win32-x64`              | `ui-next-win-x64/`: NSIS installer, ZIP |
+| `linux-x64`              | `ui-next-linux-x64/`: AppImage, deb |
 
 ```bash
-node apps/ui-next/scripts/build-desktop.mjs --export-only
+node apps/ui-next/scripts/build-desktop.mjs --target linux-x64
 ```
 
-For a hosted build, changes to the desktop shell or its build tooling on the prototype
-branch trigger **ui-next Mac ARM prototype** automatically. You can also manually dispatch it
-(`.github/workflows/ui-next-desktop.yml`) on the prototype branch. It builds on
-`macos-15` and keeps the DMG, ZIP and checksums as workflow artifacts for 14 days.
-It does not create or publish a release. Mac builds use ad hoc signing without an Apple Developer ID and are not notarized;
-first launch may require approval in macOS Privacy & Security. A successful build
-still needs installation, launch and real-daemon validation on an Apple Silicon Mac.
+Each folder also gets blockmaps, a `SHA256SUMS`, `identity.json` and a
+`<feed>.<target>.feed.json` fragment of the update feed; the release job merges the
+fragments into `<feedPrefix>-latest.yml`, `-latest-mac.yml` and `-latest-linux.yml` with
+`apps/ui-next/scripts/merge-update-feeds.mjs`. `--export-only` stages the UI without
+packaging (any OS); `--skip-export` repackages an earlier export; `--dry-run` prints the
+asset names.
+
+The main process and preload are bundled with esbuild, and the build fails if `app.asar`
+lacks a file either of them loads at run time. To check that a package really starts, launch
+it headlessly:
+
+```bash
+xvfb-run -a node apps/ui-next/scripts/smoke-desktop.mjs \
+  release-assets/ui-next-linux-x64/linux-unpacked/frogg-next --no-sandbox
+```
+
+It checks that the window loads on the brand's scheme, that a fresh install asks to pair, and
+that a second launch hands its pairing link to the running window and exits.
+
+The shell is single-instance. On first start it looks for this machine's daemon at
+`127.0.0.1:9999` (the brand's daemon port) but does not connect until the app is paired: it
+opens **Hosts → Add a host** on the pairing form. Pairing links on `frogg://`,
+`frogg-next://` and `frogg-beta://` are accepted, and a bare 8-character code pairs with that
+daemon unless you type another address. The app registers its own scheme with the OS.
+
+Windows builds are signed with Azure Trusted Signing when the `TRUSTED_SIGNING_*` and `AZURE_*`
+variables are set, like the classic app. Mac builds use ad hoc signing without an Apple
+Developer ID and are not notarized; first launch may require approval in macOS Privacy &
+Security.
+
+**App updates.** Installed builds check the repository's GitHub releases on start and every
+few hours, following prereleases when the installed build is a prerelease. Windows and the
+AppImage download the update in the background and ask to restart. The Mac build and the deb
+cannot replace themselves, so they offer the new installer for download. **Settings → App
+updates** shows the state and has **Check for updates**, **Download** and **Restart to
+update**.
+
+CI builds every target on main pushes that touch the client (`ui-next-desktop.yml`,
+`ui-next-android.yml`, artifacts kept 14 days); the Release workflow calls both on
+prerelease tags to attach the assets.
 
 ![Frogg Next desktop shell showing the disconnected state](../../../../assets/docs/ui-next/desktop-shell.png)
 
-Add a daemon by its LAN or tailnet address in **Hosts → Add a host → Direct address**.
-The phone must be able to reach that address. Pairing remains experimental and is not
-part of this prototype's validated connection path.
+Add a daemon by its LAN or tailnet address in **Hosts → Add a host → Direct address**, or pair
+it with a link or code from an owner device.
 
 Host notifications have a **Dismiss notification** button. Dismissing a banner hides
 that incident; a new host, version or storage severity can show a new notice. Android
@@ -373,7 +405,7 @@ The prototype includes chat approval/session controls, file drafts and saves, pl
 panels, project to-dos, and personal, agent, host, project and app settings. Controls
 requiring daemon support are gated by its reported capabilities. Native attachment
 picking is currently unavailable; the menu reports that limitation. App updates are
-manual APK installations, independent of the daemon update controls.
+independent of the daemon update controls.
 
 Web screenshots and fixture checks do not establish Android acceptance. After installing,
 check daemon loading, the new-session form, keyboard positioning, Back navigation and

@@ -53,15 +53,34 @@ export function attachFixtureClient(fake: unknown): void {
   client = fake as DaemonClient;
 }
 
+/** The daemon the desktop shell names for this machine (`?daemon=`), if any. */
+function shellEndpoint(): string | null {
+  return typeof location !== "undefined"
+    ? new URLSearchParams(location.search).get("daemon")?.trim() || null
+    : null;
+}
+
 /** host:port used when nothing is saved yet: ?daemon=, then EXPO_PUBLIC_DAEMON, then this page's host. */
 function defaultEndpoint(): string {
-  const fromQuery =
-    typeof location !== "undefined" ? new URLSearchParams(location.search).get("daemon") : null;
+  const fromQuery = shellEndpoint();
   if (fromQuery) return fromQuery;
   const env = process.env.EXPO_PUBLIC_DAEMON?.trim();
   if (env) return env.replace(/^wss?:\/\//, "").replace(/\/ws$/, "");
   return typeof location !== "undefined" ? `${location.hostname}:6767` : "127.0.0.1:6767";
 }
+
+/** Where a typed pairing code is redeemed when no address is given: the active direct host, else the default. */
+export function suggestedEndpoint(): string {
+  const st = useHosts.getState();
+  const active = st.hosts.find((h) => h.id === st.activeId && !h.relay);
+  return active?.endpoint ?? defaultEndpoint();
+}
+
+/**
+ * Set when the desktop shell starts with no saved host: its `?daemon=` names where to look, but
+ * that daemon admits only paired devices, so the app asks to pair instead of dialing it bare.
+ */
+export const useUnpaired = create<{ endpoint: string | null }>(() => ({ endpoint: null }));
 
 /**
  * Every saved host keeps its own live connection, so sessions on all of them stay current.
@@ -313,6 +332,13 @@ export async function connect(host?: Host): Promise<void> {
   const generation = ++connectionGeneration;
   await Promise.all([hostsReady, clientIdReady]);
   if (generation !== connectionGeneration) return;
+  const shell = shellEndpoint();
+  if (!host && shell && !useHosts.getState().hosts.length) {
+    useDaemon.setState({ conn: "offline", url: "" });
+    useUnpaired.setState({ endpoint: shell });
+    return;
+  }
+  useUnpaired.setState({ endpoint: null });
   const target = host ?? activeHost(defaultEndpoint());
   startPool();
   const previous = activeHostId ? pool.get(activeHostId) : undefined;

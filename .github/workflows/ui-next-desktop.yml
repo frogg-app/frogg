@@ -1,9 +1,13 @@
 name: Frogg Next desktop
 
-# Unsigned Frogg Next (apps/ui-next) desktop clients for Mac ARM and Windows x64. Versioned with the
-# root package. On every main push that touches the client this uploads workflow artifacts; the
-# Release workflow also calls it with `release-tag` to attach Frogg-Next-<version>-* assets and a
-# Frogg-Next-<version>-SHA256SUMS to that tag's GitHub release (release-process.mdx).
+# Frogg Next (apps/ui-next) desktop clients: Mac ARM and Intel (ad-hoc signed), Windows x64
+# (Azure Trusted Signing when its secrets are set, like the classic app) and Linux x64 (AppImage,
+# deb). Name, app id, scheme and artifact prefix come from the brand's `next` identity. Versioned
+# with the root package. On every main push that touches the client this uploads workflow
+# artifacts; the Release workflow calls it with `release-tag` on prerelease tags to attach
+# <prefix>-<version>-* installers and blockmaps, the electron-updater feeds
+# <feedPrefix>-latest.yml / -latest-mac.yml / -latest-linux.yml and one
+# <prefix>-<version>-SHA256SUMS to that tag's GitHub release (release-process.mdx).
 on:
   push:
     branches: [main]
@@ -12,6 +16,7 @@ on:
       - "packages/client/**"
       - "packages/protocol/**"
       - "packages/highlight/**"
+      - "packages/branding/**"
       - "package-lock.json"
       - ".github/workflows/ui-next-desktop.yml"
   workflow_dispatch:
@@ -31,11 +36,37 @@ on:
         required: false
         default: true
         type: boolean
+      mac-x64:
+        description: "Build the Mac Intel client"
+        required: false
+        default: true
+        type: boolean
       windows:
         description: "Build the Windows x64 client"
         required: false
         default: true
         type: boolean
+      linux:
+        description: "Build the Linux x64 client"
+        required: false
+        default: true
+        type: boolean
+    # All optional: without them Windows builds unsigned and the stock brand is used.
+    secrets:
+      AZURE_TENANT_ID:
+        required: false
+      AZURE_CLIENT_ID:
+        required: false
+      AZURE_CLIENT_SECRET:
+        required: false
+      TRUSTED_SIGNING_ENDPOINT:
+        required: false
+      TRUSTED_SIGNING_ACCOUNT:
+        required: false
+      TRUSTED_SIGNING_PROFILE:
+        required: false
+      BRANDING_READ_TOKEN:
+        required: false
 
 permissions:
   contents: read
@@ -52,9 +83,12 @@ env:
   LEFTHOOK: "0"
   CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
+# Each build uploads its folder as frogg-next-<target>-<sha>: installers, blockmaps, the feed
+# fragment, SHA256SUMS and identity.json. Not `release-assets-*`: the Release workflow's
+# updater-manifest job merges every artifact with that prefix into the classic app's feeds.
 jobs:
   mac:
-    name: Mac ARM client (unsigned)
+    name: Mac ARM client
     if: inputs.release-tag == '' || inputs.mac
     runs-on: macos-15
     timeout-minutes: 45
@@ -63,34 +97,92 @@ jobs:
         with:
           ref: ${{ inputs.release-tag || github.ref }}
           persist-credentials: false
+      - uses: ./.github/actions/select-brand
+        with:
+          directory: ${{ vars.FROGG_BRAND_DIR }}
+          repository: ${{ vars.FROGG_BRAND_REPOSITORY }}
+          revision: ${{ vars.FROGG_BRAND_REVISION }}
+          subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
+          token: ${{ secrets.BRANDING_READ_TOKEN }}
       - uses: ./.github/actions/setup-node-deps
-      - run: node --test apps/ui-next/desktop/*.test.cjs
-      - name: Build standalone prototype
-        run: node apps/ui-next/scripts/build-desktop.mjs
-      # Not `release-assets-*`: the Release workflow's updater-manifest job merges every artifact
-      # with that prefix into the classic app's update feeds.
+      - run: node --test apps/ui-next/desktop/*.test.cjs apps/ui-next/scripts/*.test.mjs
+      - name: Build
+        run: node apps/ui-next/scripts/build-desktop.mjs --target darwin-arm64
       - uses: actions/upload-artifact@v7
         with:
           name: frogg-next-mac-arm64-${{ github.sha }}
           path: |
             release-assets/ui-next-mac-arm64/*.dmg
             release-assets/ui-next-mac-arm64/*.zip
+            release-assets/ui-next-mac-arm64/*.blockmap
+            release-assets/ui-next-mac-arm64/*.feed.json
+            release-assets/ui-next-mac-arm64/identity.json
             release-assets/ui-next-mac-arm64/SHA256SUMS
           if-no-files-found: error
           retention-days: 14
 
-  windows:
-    name: Windows x64 client (unsigned)
-    if: inputs.release-tag == '' || inputs.windows
-    runs-on: windows-latest
+  mac-x64:
+    name: Mac Intel client
+    if: inputs.release-tag == '' || inputs.mac-x64
+    # Cross-built on the ARM runner: the shell has no native modules.
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.release-tag || github.ref }}
           persist-credentials: false
+      - uses: ./.github/actions/select-brand
+        with:
+          directory: ${{ vars.FROGG_BRAND_DIR }}
+          repository: ${{ vars.FROGG_BRAND_REPOSITORY }}
+          revision: ${{ vars.FROGG_BRAND_REVISION }}
+          subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
+          token: ${{ secrets.BRANDING_READ_TOKEN }}
       - uses: ./.github/actions/setup-node-deps
-      - name: Build standalone prototype
+      - name: Build
+        run: node apps/ui-next/scripts/build-desktop.mjs --target darwin-x64
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-mac-x64-${{ github.sha }}
+          path: |
+            release-assets/ui-next-mac-x64/*.dmg
+            release-assets/ui-next-mac-x64/*.zip
+            release-assets/ui-next-mac-x64/*.blockmap
+            release-assets/ui-next-mac-x64/*.feed.json
+            release-assets/ui-next-mac-x64/identity.json
+            release-assets/ui-next-mac-x64/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  windows:
+    name: Windows x64 client
+    if: inputs.release-tag == '' || inputs.windows
+    runs-on: windows-latest
+    timeout-minutes: 45
+    # Azure Trusted Signing, the same secrets as the classic desktop job in release.yml;
+    # build-desktop.mjs passes them to electron-builder's azureSignOptions.
+    env:
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      TRUSTED_SIGNING_ENDPOINT: ${{ secrets.TRUSTED_SIGNING_ENDPOINT }}
+      TRUSTED_SIGNING_ACCOUNT: ${{ secrets.TRUSTED_SIGNING_ACCOUNT }}
+      TRUSTED_SIGNING_PROFILE: ${{ secrets.TRUSTED_SIGNING_PROFILE }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/select-brand
+        with:
+          directory: ${{ vars.FROGG_BRAND_DIR }}
+          repository: ${{ vars.FROGG_BRAND_REPOSITORY }}
+          revision: ${{ vars.FROGG_BRAND_REVISION }}
+          subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
+          token: ${{ secrets.BRANDING_READ_TOKEN }}
+      - uses: ./.github/actions/setup-node-deps
+      - name: Build
         run: node apps/ui-next/scripts/build-desktop.mjs --target win32-x64
       - uses: actions/upload-artifact@v7
         with:
@@ -98,14 +190,58 @@ jobs:
           path: |
             release-assets/ui-next-win-x64/*.exe
             release-assets/ui-next-win-x64/*.zip
+            release-assets/ui-next-win-x64/*.blockmap
+            release-assets/ui-next-win-x64/*.feed.json
+            release-assets/ui-next-win-x64/identity.json
             release-assets/ui-next-win-x64/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    name: Linux x64 client
+    if: inputs.release-tag == '' || inputs.linux
+    # Older glibc than ubuntu-latest, so the AppImage and deb run on more systems.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag || github.ref }}
+          persist-credentials: false
+      - uses: ./.github/actions/select-brand
+        with:
+          directory: ${{ vars.FROGG_BRAND_DIR }}
+          repository: ${{ vars.FROGG_BRAND_REPOSITORY }}
+          revision: ${{ vars.FROGG_BRAND_REVISION }}
+          subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
+          token: ${{ secrets.BRANDING_READ_TOKEN }}
+      - uses: ./.github/actions/setup-node-deps
+      - run: node --test apps/ui-next/desktop/*.test.cjs apps/ui-next/scripts/*.test.mjs
+      - name: Build
+        run: node apps/ui-next/scripts/build-desktop.mjs --target linux-x64
+      # Launches the packaged app: window loads, asks to pair, a second launch exits.
+      - name: Smoke packaged startup
+        run: |
+          dir=release-assets/ui-next-linux-x64
+          binary=$(node -p "require('./$dir/identity.json').desktopBinaryName")
+          xvfb-run -a node apps/ui-next/scripts/smoke-desktop.mjs "$dir/linux-unpacked/$binary" --no-sandbox
+      - uses: actions/upload-artifact@v7
+        with:
+          name: frogg-next-linux-x64-${{ github.sha }}
+          path: |
+            release-assets/ui-next-linux-x64/*.AppImage
+            release-assets/ui-next-linux-x64/*.deb
+            release-assets/ui-next-linux-x64/*.blockmap
+            release-assets/ui-next-linux-x64/*.feed.json
+            release-assets/ui-next-linux-x64/identity.json
+            release-assets/ui-next-linux-x64/SHA256SUMS
           if-no-files-found: error
           retention-days: 14
 
   # The only job with write access, and only on a release call: the builds above stay read-only.
   release:
     name: Attach to GitHub release
-    needs: [mac, windows]
+    needs: [mac, mac-x64, windows, linux]
     if: >-
       always() && inputs.release-tag != '' &&
       !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
@@ -114,11 +250,28 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.release-tag }}
+          persist-credentials: false
+          sparse-checkout: apps/ui-next/scripts
       - uses: actions/download-artifact@v8
         with:
           pattern: frogg-next-*-${{ github.sha }}
           path: frogg-next
           merge-multiple: true
+      - name: Merge update feeds
+        env:
+          MAC: ${{ needs.mac.result == 'success' || needs.mac-x64.result == 'success' }}
+          WINDOWS: ${{ needs.windows.result == 'success' }}
+          LINUX: ${{ needs.linux.result == 'success' }}
+        run: |
+          feed=$(node -p "require('./frogg-next/identity.json').feedPrefix")
+          expect=()
+          [ "$WINDOWS" = "true" ] && expect+=(--expect "$feed-latest.yml")
+          [ "$MAC" = "true" ] && expect+=(--expect "$feed-latest-mac.yml")
+          [ "$LINUX" = "true" ] && expect+=(--expect "$feed-latest-linux.yml")
+          node apps/ui-next/scripts/merge-update-feeds.mjs frogg-next "${expect[@]}"
       - name: Upload to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -127,18 +280,22 @@ jobs:
           CLOBBER: ${{ inputs.clobber }}
         run: |
           version="${RELEASE_TAG#v}"
+          prefix=$(node -p "require('./frogg-next/identity.json').artifactPrefix")
+          feed=$(node -p "require('./frogg-next/identity.json').feedPrefix")
           cd frogg-next
           # One checksum list for the whole family; the per-target SHA256SUMS would collide.
-          rm -f SHA256SUMS
+          rm -f SHA256SUMS identity.json
           shopt -s nullglob
-          files=(Frogg-Next-"$version"-*)
-          [ "${#files[@]}" -gt 0 ] || { echo "::error::No Frogg-Next-$version-* assets were built"; exit 1; }
-          sha256sum "${files[@]}" > "Frogg-Next-$version-SHA256SUMS"
-          cat "Frogg-Next-$version-SHA256SUMS"
+          files=("$prefix-$version"-* "$feed"-latest*.yml)
+          [ "${#files[@]}" -gt 0 ] || { echo "::error::No $prefix-$version-* assets were built"; exit 1; }
+          sums="$prefix-$version-SHA256SUMS"
+          sha256sum "${files[@]}" > "$sums"
+          cat "$sums"
           flags=()
           if [ "$CLOBBER" = "true" ]; then flags+=(--clobber); fi
           existing=$(gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name')
-          for f in Frogg-Next-"$version"-*; do
+          # Installers before feeds: an updater that sees the feed must find its files.
+          for f in "$prefix-$version"-* "$feed"-latest*.yml; do
             if [ "$CLOBBER" != "true" ] && grep -qx -- "$f" <<<"$existing"; then
               echo "::warning::$f already on $RELEASE_TAG; skipping"
               continue

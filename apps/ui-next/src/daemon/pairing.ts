@@ -22,8 +22,8 @@ import { deviceLabel } from "./client-id";
 import { upsertHost, useHosts, type Host } from "./hosts";
 
 /**
- * Pairing for ui-next. Every way in (pasted link, typed code, `frogg-next://` or
- * `frogg://` deep link, a scanned QR once a camera module lands) becomes a
+ * Pairing for ui-next. Every way in (pasted link, typed code, a `frogg://`, `frogg-next://` or
+ * `frogg-beta://` deep link, a scanned QR once a camera module lands) becomes a
  * `PairTarget`; nothing contacts the daemon to pair until `pair()` runs from a
  * button press.
  *
@@ -33,7 +33,8 @@ import { upsertHost, useHosts, type Host } from "./hosts";
  *   the single-use token is redeemed at `POST /api/setup/claim` for a device credential.
  * - direct link (`<scheme>://pair/direct?…`): identity proved with
  *   `/api/identity/proof`, then the link's pairing code (or claim mode) is redeemed.
- * - bare 8-character code: redeemed against an address the user types.
+ * - bare 8-character code: redeemed against an address the user types, else this app's
+ *   suggested daemon (the active host, or the one the desktop shell names).
  */
 
 export type PairTarget =
@@ -41,18 +42,28 @@ export type PairTarget =
   | { kind: "direct"; link: DirectPairingLink; raw: string }
   | { kind: "code"; code: string; endpoint: string | null; tls: boolean };
 
-const SCHEMES = ["frogg-next", "frogg"];
+/**
+ * Link schemes this app pairs from: its own (from the brand), the stable app's, Frogg Next's, and
+ * `frogg-beta`, which daemons from the retired beta channel still print.
+ */
+const OWN_SCHEME = process.env.EXPO_PUBLIC_FROGG_APP_SCHEME?.trim() || "frogg-next";
+export const PAIR_SCHEMES = [...new Set([OWN_SCHEME, "frogg", "frogg-next", "frogg-beta"])];
+const OTHER_SCHEME = new RegExp(
+  `^(${PAIR_SCHEMES.filter((x) => x !== "frogg")
+    .map((x) => x.replace(/[.+-]/g, "\\$&"))
+    .join("|")}):`,
+);
 
 /** Parses whatever the user pasted or a deep link carried. Null when it is not a pairing input. */
 export function parsePairInput(input: string, endpoint?: string, tls = false): PairTarget | null {
   const raw = input.trim();
   if (!raw) return null;
-  for (const scheme of SCHEMES) {
+  for (const scheme of PAIR_SCHEMES) {
     const link = parseDirectPairingDeepLink(raw, scheme);
     if (link) return { kind: "direct", link, raw };
   }
   try {
-    const offer = parseAnyConnectionOfferFromUrl(raw.replace(/^frogg-next:/, "frogg:"));
+    const offer = parseAnyConnectionOfferFromUrl(raw.replace(OTHER_SCHEME, "frogg:"));
     if (offer) return { kind: "offer", offer, raw };
   } catch {
     return null;
@@ -354,4 +365,5 @@ export const clearPendingPair = () => usePendingPair.setState({ target: null, in
 
 /** True for URLs this app should treat as pairing links. */
 export const isPairUrl = (url: string) =>
-  /^(frogg-next|frogg):\/\/pair/.test(url) || /\/code\/[\w-]+|#offer=/.test(url);
+  PAIR_SCHEMES.some((scheme) => url.startsWith(`${scheme}://pair`)) ||
+  /\/code\/[\w-]+|#offer=/.test(url);

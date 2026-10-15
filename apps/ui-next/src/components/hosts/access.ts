@@ -72,11 +72,11 @@ export function authRefusal(error: DaemonClientErrorInfo | null): AuthRefusal | 
     };
   return {
     kind: "missing",
-    title: "This host needs pairing or its password",
+    title: "This app isn't paired with this host",
     body: "The daemon only admits registered devices, from any network. Pair this app with a code from an owner device, or add the daemon password to this host.",
     action: "Pair this app…",
     toast: (host) => ({
-      title: `${host} needs pairing or its password`,
+      title: `This app isn't paired with ${host}`,
       detail: "It only admits registered devices. Pair this app or add the daemon password.",
     }),
   };

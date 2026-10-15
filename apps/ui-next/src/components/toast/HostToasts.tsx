@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useHostLink, useHosts } from "../../daemon/hosts";
-import { connect, getClient, useDaemon } from "../../daemon/store";
+import { connect, getClient, useDaemon, useUnpaired } from "../../daemon/store";
 import { useUi } from "../../ui-store";
 import { authRefusal, identityMismatch } from "../hosts/access";
 import { openSheet, viewHost } from "../hosts/state";
@@ -66,6 +66,12 @@ export function HostToasts() {
   const offlineFor = useElapsed(conn === "online" ? null : droppedAt);
   const [version, setVersion] = useState<string | null>(null);
   const [storage, setStorage] = useState<{ level: string; bytes: number } | null>(null);
+  const unpaired = useUnpaired((st) => st.endpoint);
+
+  // A first launch with nothing saved opens straight on pairing (with that daemon's address).
+  useEffect(() => {
+    if (unpaired) openPairing();
+  }, [unpaired]);
 
   useEffect(() => {
     setStorage(null);
