@@ -17,7 +17,13 @@ vi.mock("@frogg/branding", async () => {
   };
 });
 
-import { DEFAULT_SERVICE_LISTEN, resolveServicePlan, type ServicePlanInput } from "./plan.js";
+import {
+  DEFAULT_SERVICE_LISTEN,
+  LEGACY_WINDOWS_TASK_NAME,
+  WINDOWS_RUN_VALUE,
+  resolveServicePlan,
+  type ServicePlanInput,
+} from "./plan.js";
 
 const HOME_DIR = path.join("/scratch", "home", "dev");
 
@@ -50,4 +56,13 @@ test("launchd plist uses the brand env prefix for listen and web UI", () => {
   expect(contents).toContain("<key>ACME_LISTEN</key><string>127.0.0.1:10099</string>");
   expect(contents).toContain("<key>ACME_WEB_UI_ENABLED</key><string>true</string>");
   expect(contents).not.toMatch(/FROGG_(LISTEN|WEB_UI_ENABLED)/);
+});
+
+test("Windows login registration is named from the brand, without spaces", () => {
+  expect(WINDOWS_RUN_VALUE).toBe("acme-daemon");
+  expect(LEGACY_WINDOWS_TASK_NAME).toBe("Acme Studio Daemon");
+  const plan = resolveServicePlan(planInput({ platform: "win32" }));
+  expect(plan.label).toBe("acme-daemon");
+  expect(plan.file?.path).toBe(path.join(HOME_DIR, ".acme", "service", "acme-daemon.cmd"));
+  expect(plan.file?.contents).toContain("rem Starts the Acme Studio daemon");
 });

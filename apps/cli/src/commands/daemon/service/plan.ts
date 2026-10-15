@@ -14,7 +14,18 @@ const brandEnvKey = (suffix: string) => `${brand.envPrefix}_${suffix}`;
  */
 export const SERVICE_NAME = brand.serviceName;
 export const LAUNCHD_LABEL = brand.launchdLabel;
-export const WINDOWS_TASK_NAME = `${brand.name} Daemon`;
+/**
+ * The per-user Run key value that starts the daemon at login on Windows. It is
+ * the brand's service slug, so it never contains a space.
+ */
+export const WINDOWS_RUN_VALUE = brand.serviceName;
+export const WINDOWS_RUN_KEY = "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run";
+/**
+ * Earlier builds registered an ONLOGON scheduled task under this name. Creating
+ * one needs an elevated prompt, so on a normal account it failed silently and
+ * nothing started at login; it is only removed now, never created.
+ */
+export const LEGACY_WINDOWS_TASK_NAME = `${brand.name} Daemon`;
 export const DEFAULT_SERVICE_LISTEN = `${brand.daemon.bindHost}:${brand.daemonPort}`;
 
 export type ServicePlatform = "linux" | "darwin" | "win32";
@@ -22,6 +33,10 @@ export type ServicePlatform = "linux" | "darwin" | "win32";
 export interface ServiceCommand {
   program: string;
   args: string[];
+  /** A failure is expected on some machines (clearing a registration that may not exist). */
+  optional?: boolean;
+  /** Pass `args` to the Windows process untouched, for `cmd.exe /s /c` quoting. */
+  verbatim?: boolean;
 }
 
 export interface ServicePlanInput {
@@ -48,9 +63,9 @@ export interface ServiceFile {
 export interface ServicePlan {
   platform: ServicePlatform;
   label: string;
-  /** The unit/plist to write; absent on Windows, where the task is the record. */
+  /** The unit, plist or Windows launcher script to write. */
   file: ServiceFile | null;
-  /** Commands that register and start the service, in order. */
+  /** Commands that register and start the service, in order; any non-optional failure fails the install. */
   install: ServiceCommand[];
   /** Commands that stop and deregister it, in order. Failures are tolerated. */
   uninstall: ServiceCommand[];
@@ -58,10 +73,32 @@ export interface ServicePlan {
   hints: string[];
 }
 
-function quoteWindowsCommand(command: ServiceCommand): string {
-  return [command.program, ...command.args]
-    .map((part) => (part.includes(" ") ? `\\"${part}\\"` : part))
-    .join(" ");
+/** One argument for a `.cmd` line: always quoted, with `%` doubled so nothing expands. */
+function batchQuote(value: string): string {
+  if (value.includes('"') || /[\r\n]/.test(value)) {
+    throw new Error(`Cannot start the daemon at login from a path containing quotes: ${value}`);
+  }
+  return `"${value.replaceAll("%", "%%")}"`;
+}
+
+function windowsLauncherPath(input: ServicePlanInput): string {
+  const home = input.froggHome ?? path.join(input.homeDir, brand.homeDir);
+  return path.join(home, "service", `${WINDOWS_RUN_VALUE}.cmd`);
+}
+
+/**
+ * The script the Run key points at. A Run value is capped near 260 characters
+ * and has no quoting rules worth trusting, so the full command line (node, the
+ * CLI entry, `--home`, `--listen`) lives here and the value is just this path.
+ */
+function windowsLauncher(input: ServicePlanInput): string {
+  const line = ["call", ...[input.command.program, ...input.command.args].map(batchQuote)].join(
+    " ",
+  );
+  return `@echo off\r
+rem Starts the ${brand.name} daemon when you log in. Written by: ${brand.cliName} daemon install-service\r
+${line}\r
+`;
 }
 
 function systemdUnitPath(input: ServicePlanInput): string {
@@ -175,7 +212,7 @@ export function resolveServicePlan(input: ServicePlanInput): ServicePlan {
       label: SERVICE_NAME,
       file: { path: unitPath, contents: systemdUnit(input) },
       install: [
-        { program: "systemctl", args: ["--user", "daemon-reload"] },
+        { program: "systemctl", args: ["--user", "daemon-reload"], optional: true },
         { program: "systemctl", args: ["--user", "enable", SERVICE_NAME] },
         { program: "systemctl", args: ["--user", "restart", SERVICE_NAME] },
       ],
@@ -200,7 +237,8 @@ export function resolveServicePlan(input: ServicePlanInput): ServicePlan {
       label: LAUNCHD_LABEL,
       file: { path: plistPath, contents: launchdPlist(input) },
       install: [
-        { program: "launchctl", args: ["bootout", domain, plistPath] },
+        // Clears a previous registration; fails on a clean machine.
+        { program: "launchctl", args: ["bootout", domain, plistPath], optional: true },
         { program: "launchctl", args: ["bootstrap", domain, plistPath] },
       ],
       uninstall: [{ program: "launchctl", args: ["bootout", domain, plistPath] }],
@@ -208,34 +246,46 @@ export function resolveServicePlan(input: ServicePlanInput): ServicePlan {
     };
   }
 
+  const launcher = windowsLauncherPath(input);
+  const removeLegacyTask: ServiceCommand = {
+    program: "schtasks",
+    args: ["/Delete", "/TN", LEGACY_WINDOWS_TASK_NAME, "/F"],
+    optional: true,
+  };
   return {
     platform: "win32",
-    label: WINDOWS_TASK_NAME,
-    file: null,
+    label: WINDOWS_RUN_VALUE,
+    file: { path: launcher, contents: windowsLauncher(input) },
     install: [
+      removeLegacyTask,
       {
-        program: "schtasks",
+        program: "reg",
         args: [
-          "/Create",
-          "/SC",
-          "ONLOGON",
-          "/TN",
-          WINDOWS_TASK_NAME,
-          "/TR",
-          quoteWindowsCommand(input.command),
-          "/RL",
-          "LIMITED",
-          "/F",
+          "add",
+          WINDOWS_RUN_KEY,
+          "/v",
+          WINDOWS_RUN_VALUE,
+          "/t",
+          "REG_SZ",
+          "/d",
+          `"${launcher}"`,
+          "/f",
         ],
       },
-      { program: "schtasks", args: ["/Run", "/TN", WINDOWS_TASK_NAME] },
+      // Start it now too. `/s` strips the outer quotes and keeps the inner pair
+      // around the path; Node would escape them, so the line is passed verbatim.
+      { program: "cmd.exe", args: ["/d", "/s", "/c", `""${launcher}""`], verbatim: true },
     ],
     uninstall: [
       {
-        program: "schtasks",
-        args: ["/Delete", "/TN", WINDOWS_TASK_NAME, "/F"],
+        program: "reg",
+        args: ["delete", WINDOWS_RUN_KEY, "/v", WINDOWS_RUN_VALUE, "/f"],
+        optional: true,
       },
+      removeLegacyTask,
     ],
-    hints: [],
+    hints: [
+      `A daemon that was already running keeps its settings until: ${brand.cliName} daemon restart`,
+    ],
   };
 }

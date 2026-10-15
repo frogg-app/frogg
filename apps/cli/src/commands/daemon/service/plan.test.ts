@@ -5,7 +5,8 @@ import {
   LAUNCHD_LABEL,
   resolveServicePlan,
   SERVICE_NAME,
-  WINDOWS_TASK_NAME,
+  LEGACY_WINDOWS_TASK_NAME,
+  WINDOWS_RUN_VALUE,
   type ServicePlanInput,
 } from "./plan.js";
 
@@ -101,40 +102,183 @@ describe("launchd agent", () => {
   });
 });
 
-describe("Windows logon task", () => {
-  test("registers a schtasks ONLOGON task that runs the CLI", () => {
-    const plan = resolveServicePlan(
+/**
+ * Node (libuv) builds a Windows command line by quoting each argument; the
+ * child splits it again with the MSVCRT rules. Round-tripping through both
+ * shows exactly what `reg.exe` receives, which is how the old `/TR` value
+ * ended up with literal backslashes in it.
+ */
+function libuvQuote(arg: string): string {
+  if (arg === "") return '""';
+  if (!/[ \t"]/.test(arg)) return arg;
+  if (!/["\\]/.test(arg)) return `"${arg}"`;
+  let out = '"';
+  let quoteHit = true;
+  for (let i = arg.length - 1; i >= 0; i--) {
+    const char = arg[i]!;
+    out += char;
+    if (quoteHit && char === "\\") out += "\\";
+    else if (char === '"') {
+      quoteHit = true;
+      out += "\\";
+    } else quoteHit = false;
+  }
+  out += '"';
+  return [...out].toReversed().join("");
+}
+
+function msvcrtSplit(line: string): string[] {
+  const args: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  let started = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]!;
+    if (char === "\\") {
+      let count = 0;
+      while (line[i] === "\\") {
+        count++;
+        i++;
+      }
+      if (line[i] === '"') {
+        current += "\\".repeat(Math.floor(count / 2));
+        if (count % 2 === 1) current += '"';
+        else inQuotes = !inQuotes;
+      } else {
+        current += "\\".repeat(count);
+        i--;
+      }
+      started = true;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+      started = true;
+    } else if ((char === " " || char === "\t") && !inQuotes) {
+      if (started) args.push(current);
+      current = "";
+      started = false;
+    } else {
+      current += char;
+      started = true;
+    }
+  }
+  if (started) args.push(current);
+  return args;
+}
+
+function receivedArgs(args: string[]): string[] {
+  return msvcrtSplit(args.map(libuvQuote).join(" "));
+}
+
+describe("Windows login launcher", () => {
+  const froggHome = "C:\\Users\\Jo Smith\\.frogg";
+  const launcher = path.join(froggHome, "service", `${WINDOWS_RUN_VALUE}.cmd`);
+  const plan = resolveServicePlan(
+    planInput({
+      platform: "win32",
+      env: { PATH: "C:\\Windows" },
+      froggHome,
+      command: {
+        program: "C:\\Program Files\\nodejs\\node.exe",
+        args: [
+          "C:\\Users\\Jo Smith\\AppData\\Roaming\\npm\\node_modules\\@frogg\\cli\\dist\\index.js",
+          "daemon",
+          "start",
+          "--listen",
+          "127.0.0.1:9999",
+          "--home",
+          froggHome,
+        ],
+      },
+    }),
+  );
+
+  test("names the registration with a space-free brand slug", () => {
+    expect(plan.label).toBe(WINDOWS_RUN_VALUE);
+    expect(WINDOWS_RUN_VALUE).not.toMatch(/\s/);
+  });
+
+  test("writes a launcher that quotes every argument and escapes %", () => {
+    expect(plan.file?.path).toBe(launcher);
+    const lines = plan.file!.contents.split("\r\n");
+    expect(lines[0]).toBe("@echo off");
+    expect(lines[2]).toBe(
+      'call "C:\\Program Files\\nodejs\\node.exe" ' +
+        '"C:\\Users\\Jo Smith\\AppData\\Roaming\\npm\\node_modules\\@frogg\\cli\\dist\\index.js" ' +
+        '"daemon" "start" "--listen" "127.0.0.1:9999" "--home" "C:\\Users\\Jo Smith\\.frogg"',
+    );
+    const percent = resolveServicePlan(
       planInput({
         platform: "win32",
-        env: { PATH: "C:\\Windows" },
-        command: {
-          program: "C:\\Program Files\\Frogg\\frogg.exe",
-          args: ["daemon", "start", "--foreground", "--listen", "127.0.0.1:9991"],
-        },
+        froggHome,
+        command: { program: "C:\\100%\\frogg.exe", args: ["daemon", "start"] },
       }),
     );
+    expect(percent.file?.contents).toContain('call "C:\\100%%\\frogg.exe" "daemon" "start"');
+  });
 
-    expect(plan.file).toBeNull();
-    expect(plan.install[0]).toEqual({
-      program: "schtasks",
-      args: [
-        "/Create",
-        "/SC",
-        "ONLOGON",
-        "/TN",
-        WINDOWS_TASK_NAME,
-        "/TR",
-        '\\"C:\\Program Files\\Frogg\\frogg.exe\\" daemon start --foreground --listen 127.0.0.1:9991',
-        "/RL",
-        "LIMITED",
-        "/F",
-      ],
+  test("refuses a path a batch line cannot quote", () => {
+    expect(() =>
+      resolveServicePlan(
+        planInput({ platform: "win32", command: { program: 'C:\\a"b\\frogg.exe', args: [] } }),
+      ),
+    ).toThrow(/quotes/);
+  });
+
+  test("registers the launcher under the per-user Run key", () => {
+    const register = plan.install.find((command) => command.program === "reg")!;
+    expect(register.optional).toBeUndefined();
+    expect(receivedArgs(register.args)).toEqual([
+      "add",
+      "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+      "/v",
+      WINDOWS_RUN_VALUE,
+      "/t",
+      "REG_SZ",
+      "/d",
+      `"${launcher}"`,
+      "/f",
+    ]);
+  });
+
+  test("starts the launcher now through cmd with verbatim quoting", () => {
+    const start = plan.install.at(-1)!;
+    expect(start).toEqual({
+      program: "cmd.exe",
+      args: ["/d", "/s", "/c", `""${launcher}""`],
+      verbatim: true,
     });
+    // cmd /s drops the first and last quote of what follows /c.
+    const line = start.args.join(" ");
+    const afterC = line.slice(line.indexOf("/c ") + 3);
+    expect(afterC.slice(1, -1)).toBe(`"${launcher}"`);
+  });
+
+  test("never creates a scheduled task, and removes the legacy one", () => {
+    expect(
+      plan.install.some(
+        (command) => command.program === "schtasks" && command.args[0] === "/Create",
+      ),
+    ).toBe(false);
+    const legacy = {
+      program: "schtasks",
+      args: ["/Delete", "/TN", LEGACY_WINDOWS_TASK_NAME, "/F"],
+      optional: true,
+    };
+    expect(plan.install[0]).toEqual(legacy);
+    expect(receivedArgs(legacy.args)).toEqual(["/Delete", "/TN", LEGACY_WINDOWS_TASK_NAME, "/F"]);
     expect(plan.uninstall).toEqual([
       {
-        program: "schtasks",
-        args: ["/Delete", "/TN", WINDOWS_TASK_NAME, "/F"],
+        program: "reg",
+        args: [
+          "delete",
+          "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+          "/v",
+          WINDOWS_RUN_VALUE,
+          "/f",
+        ],
+        optional: true,
       },
+      legacy,
     ]);
   });
 });

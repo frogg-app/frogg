@@ -16,7 +16,7 @@ This page covers operating a daemon once it is there.
 | -------- | ------- | ---- |
 | Linux    | systemd user unit `frogg-daemon.service` | `journalctl --user -u frogg-daemon -f`, and `~/.frogg/daemon.log` |
 | macOS    | launchd agent `app.frogg.frogg-daemon` | `~/Library/Logs/app.frogg.frogg-daemon.log`, and `~/.frogg/daemon.log` |
-| Windows  | Scheduled task created by `frogg install-service` | `%USERPROFILE%\.frogg\daemon.log` |
+| Windows  | Run key `HKCU\…\CurrentVersion\Run\frogg-daemon`, pointing at `%USERPROFILE%\.frogg\service\frogg-daemon.cmd` | `%USERPROFILE%\.frogg\daemon.log` |
 
 ```sh
 frogg status

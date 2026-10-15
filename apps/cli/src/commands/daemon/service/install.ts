@@ -10,7 +10,6 @@ import {
   DEFAULT_SERVICE_LISTEN,
   resolveServicePlan,
   type ServiceCommand,
-  type ServicePlan,
   type ServicePlanInput,
   type ServicePlatform,
 } from "./plan.js";
@@ -27,13 +26,16 @@ export interface ServiceActionOptions {
   platform?: ServicePlatform;
   homeDir?: string;
   env?: NodeJS.ProcessEnv;
+  /** Runs one plan command; returns a failure description or null. Tests stub this. */
+  run?: (command: ServiceCommand) => string | null;
 }
 
 export interface ServiceActionResult {
-  action: "installed" | "uninstalled" | "not_installed";
+  /** `failed`: a required step did not succeed, so nothing will start at login. */
+  action: "installed" | "failed" | "uninstalled" | "not_installed";
   platform: ServicePlatform;
   label: string;
-  /** The unit/plist path, or null on Windows where the task is the record. */
+  /** The unit, plist or Windows launcher script. */
   file: string | null;
   listen: string;
   home: string | null;
@@ -89,8 +91,11 @@ function buildPlanInput(
   const listen = explicitListen ?? configuredListen;
   const persistListen = explicitListen !== undefined;
   const cli = resolveCliCommand(env);
-  const args = [...cli.args, "daemon", "start", "--foreground"];
-  // Windows tasks carry no environment block, so the settings ride on argv.
+  // Windows has no service manager to keep a foreground process: the login
+  // launcher starts a detached daemon and exits, so no console stays open.
+  const args = [...cli.args, "daemon", "start"];
+  if (platform !== "win32") args.push("--foreground");
+  // The Windows launcher carries no environment block, so the settings ride on argv.
   if (platform === "win32") {
     if (persistListen) args.push("--listen", listen);
     args.push("--home", froggHome);
@@ -109,7 +114,11 @@ function buildPlanInput(
 }
 
 function runCommand(command: ServiceCommand): string | null {
-  const result = spawnSync(command.program, command.args, { stdio: "ignore" });
+  const result = spawnSync(command.program, command.args, {
+    stdio: "ignore",
+    windowsHide: true,
+    windowsVerbatimArguments: command.verbatim === true,
+  });
   if (result.error) return `${command.program}: ${result.error.message}`;
   if (result.status !== 0) {
     return `${[command.program, ...command.args].join(" ")} exited with ${result.status ?? "a signal"}`;
@@ -117,38 +126,42 @@ function runCommand(command: ServiceCommand): string | null {
   return null;
 }
 
-function describeCommand(plan: ServicePlan, input: ServicePlanInput): string {
-  return [input.command.program, ...input.command.args].join(" ") + (plan.file ? "" : "");
+function describeCommand(input: ServicePlanInput): string {
+  return [input.command.program, ...input.command.args].join(" ");
 }
 
 export function installLoginService(options: ServiceActionOptions = {}): ServiceActionResult {
   const input = buildPlanInput(options, "install");
   const plan = resolveServicePlan(input);
+  const run = options.run ?? runCommand;
   const warnings: string[] = [];
+  let failure: string | null = null;
 
   if (plan.file) {
     mkdirSync(path.dirname(plan.file.path), { recursive: true });
     writeFileSync(plan.file.path, plan.file.contents);
   }
   for (const command of plan.install) {
-    const failure = runCommand(command);
-    // The first launchd/systemd step clears any previous registration and is
-    // expected to fail on a clean machine.
-    if (failure && command !== plan.install[0]) warnings.push(failure);
+    const error = run(command);
+    if (!error || command.optional) continue;
+    // A later step depends on this one, so stop rather than report half an install.
+    failure = error;
+    break;
   }
+  if (failure) warnings.push(failure);
 
   return {
-    action: "installed",
+    action: failure ? "failed" : "installed",
     platform: plan.platform,
     label: plan.label,
     file: plan.file?.path ?? null,
     listen: input.listen,
     home: input.froggHome ?? null,
-    command: describeCommand(plan, input),
+    command: describeCommand(input),
     warnings,
-    hints: plan.hints,
-    message: warnings.length
-      ? `Installed ${plan.label}, but some steps need attention: ${warnings.join("; ")}`
+    hints: failure ? [] : plan.hints,
+    message: failure
+      ? `Could not set up ${plan.label} to start ${brand.name} when you log in: ${failure}`
       : `${brand.name} will start when you log in (${plan.label}).`,
   };
 }
@@ -156,9 +169,13 @@ export function installLoginService(options: ServiceActionOptions = {}): Service
 export function uninstallLoginService(options: ServiceActionOptions = {}): ServiceActionResult {
   const input = buildPlanInput(options, "uninstall");
   const plan = resolveServicePlan(input);
-  const existed = plan.file ? existsSync(plan.file.path) : true;
+  const run = options.run ?? runCommand;
+  let existed = plan.file ? existsSync(plan.file.path) : true;
 
-  for (const command of plan.uninstall) runCommand(command);
+  for (const command of plan.uninstall) {
+    // On Windows a Run value or legacy task without a launcher still counts.
+    if (run(command) === null && plan.platform === "win32") existed = true;
+  }
   if (plan.file && existed) rmSync(plan.file.path, { force: true });
 
   return {
@@ -168,7 +185,7 @@ export function uninstallLoginService(options: ServiceActionOptions = {}): Servi
     file: plan.file?.path ?? null,
     listen: input.listen,
     home: input.froggHome ?? null,
-    command: describeCommand(plan, input),
+    command: describeCommand(input),
     warnings: [],
     hints: [],
     message: existed

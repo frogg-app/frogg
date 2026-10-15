@@ -1,7 +1,12 @@
 import { brand } from "@frogg/branding";
 import type { Command } from "commander";
 
-import type { CommandOptions, OutputSchema, SingleResult } from "../../../output/index.js";
+import type {
+  CommandError,
+  CommandOptions,
+  OutputSchema,
+  SingleResult,
+} from "../../../output/index.js";
 import { installLoginService, uninstallLoginService, type ServiceActionResult } from "./install.js";
 
 /**
@@ -42,11 +47,16 @@ export async function runInstallServiceCommand(
   options: CommandOptions,
   _command: Command,
 ): Promise<SingleResult<ServiceActionResult>> {
-  return {
-    type: "single",
-    data: installLoginService(readOptions(options)),
-    schema: serviceResultSchema,
-  };
+  const result = installLoginService(readOptions(options));
+  if (result.action === "failed") {
+    const error: CommandError = {
+      code: "SERVICE_INSTALL_FAILED",
+      message: result.message,
+      details: `Start the daemon by hand with: ${brand.cliName} daemon start`,
+    };
+    throw error;
+  }
+  return { type: "single", data: result, schema: serviceResultSchema };
 }
 
 export async function runUninstallServiceCommand(
