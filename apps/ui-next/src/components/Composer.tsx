@@ -1,16 +1,19 @@
-import { ArrowUp, Mic, Plus, Square } from "lucide-react-native";
+import { ArrowUp, Maximize2, Mic, Minimize2, Plus, Square } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
+  Animated,
   Pressable,
   StyleSheet,
   TextInput,
   View,
+  type LayoutChangeEvent,
   type NativeSyntheticEvent,
   type TextInputKeyPressEventData,
 } from "react-native";
-import { color, font, web } from "../theme/tokens";
+import { color, ease, font, web } from "../theme/tokens";
 import type { Attachment, SlashCommand } from "./chat/actions";
 import { AttachChips, AttachMenu } from "./chat/Attach";
+import { useComposerHeight } from "./chat/composerSize";
 import { usePasteImages } from "./chat/pasteImages";
 import { SlashMenu, matchCommands } from "./chat/SlashMenu";
 import { toastError } from "./toast/store";
@@ -32,6 +35,10 @@ export function Composer({
   notices,
   initialAttachments,
   right,
+  expandable,
+  sizeKey,
+  onTyping,
+  above,
   disabled = false,
 }: {
   placeholder: string;
@@ -52,6 +59,14 @@ export function Composer({
   initialAttachments?: Attachment[];
   /** Drawn at the right of the bar, before the mic (context meter). */
   right?: ReactNode;
+  /** A grip and an expand toggle: the input can be dragged taller or opened as a big editor. */
+  expandable?: boolean;
+  /** Remembers the input's size under this key (the session id). */
+  sizeKey?: string;
+  /** Called when the draft goes from empty to written and back (presence "typing"). */
+  onTyping?: (typing: boolean) => void;
+  /** Drawn above the box, on the composer column (who else is here). */
+  above?: ReactNode;
 }) {
   const [sending, setSending] = useState(false);
   const [commandError, setCommandError] = useState(false);
@@ -61,6 +76,18 @@ export function Composer({
   const [hi, setHi] = useState(0);
   const [slashClosed, setSlashClosed] = useState(false);
   const empty = !text.trim() && atts.length === 0;
+  const typing = !!text.trim();
+  useEffect(() => onTyping?.(typing), [onTyping, typing]);
+  useEffect(() => () => onTyping?.(false), [onTyping]);
+  const size = useComposerHeight(sizeKey, compact ? 40 : 48);
+  const { setContent } = size;
+  const measure = useCallback(
+    (e: LayoutChangeEvent) => setContent(e.nativeEvent.layout.height),
+    [setContent],
+  );
+  // The mirror wraps exactly like the input; a trailing newline needs a character to take a line.
+  const mirror = text.endsWith("\n") || !text ? `${text} ` : text;
+  const inputBox = useMemo(() => [s.inputBox, { height: size.height }], [size.height]);
   const sendState = useMemo(
     () => ({ disabled: disabled || sending || empty }),
     [disabled, sending, empty],
@@ -162,6 +189,7 @@ export function Composer({
   );
   return (
     <View style={s.wrap} ref={anchor}>
+      {above}
       {slashOpen && (
         <Floating anchor={anchor} up width={340} gap={6}>
           {slashMenu}
@@ -170,17 +198,32 @@ export function Composer({
       <Cut size={10} style={s.box}>
         {notices}
         {atts.length > 0 && <AttachChips items={atts} onRemove={removeAtt} />}
-        <TextInput
-          ref={input}
-          editable={!sending}
-          value={text}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          placeholderTextColor={color.faint}
-          multiline
-          style={[s.input, compact && s.compact]}
-          onKeyPress={onKeyPress}
-        />
+        {expandable && (
+          <View
+            {...size.grip}
+            style={s.grip}
+            accessibilityRole="adjustable"
+            accessibilityLabel="Drag to resize the message box"
+          >
+            <View style={[s.gripBar, size.dragging && s.gripOn]} />
+          </View>
+        )}
+        <Animated.View style={inputBox}>
+          <T pointerEvents="none" style={s.mirror} onLayout={measure}>
+            {mirror}
+          </T>
+          <TextInput
+            ref={input}
+            editable={!sending}
+            value={text}
+            onChangeText={onChange}
+            placeholder={placeholder}
+            placeholderTextColor={color.faint}
+            multiline
+            style={s.input}
+            onKeyPress={onKeyPress}
+          />
+        </Animated.View>
         <View style={s.bar}>
           {attach ? <AttachMenu onAdd={addAtts} /> : <Plus size={16} color={color.muted} />}
           {chips.map((c, n) => (
@@ -194,6 +237,24 @@ export function Composer({
           {children}
           <View style={s.spacer} />
           {right}
+          {expandable && (
+            <Pressable
+              onPress={size.toggle}
+              hitSlop={6}
+              accessibilityRole="button"
+              accessibilityLabel={
+                size.expanded ? "Shrink the message box" : "Expand the message box"
+              }
+            >
+              {({ hovered }) =>
+                size.expanded ? (
+                  <Minimize2 size={14} color={hovered ? color.text : color.muted} />
+                ) : (
+                  <Maximize2 size={14} color={hovered ? color.text : color.muted} />
+                )
+              }
+            </Pressable>
+          )}
           <Mic size={16} color={color.muted} />
           {onStop && empty ? (
             <Pressable onPress={onStop} accessibilityLabel="Stop">
@@ -230,15 +291,44 @@ const s = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 8,
   },
+  inputBox: { position: "relative", overflow: "hidden" },
   input: {
-    minHeight: 48,
+    flex: 1,
+    padding: 0,
     color: color.text,
     fontFamily: font.body,
     fontSize: 14,
     lineHeight: 20,
+    textAlignVertical: "top",
     ...web({ outlineStyle: "none", resize: "none" }),
   },
-  compact: { minHeight: 40 },
+  // Same type and width as the input, never seen: its height is the text's own height.
+  mirror: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    opacity: 0,
+    fontFamily: font.body,
+    fontSize: 14,
+    lineHeight: 20,
+    ...web({ whiteSpace: "pre-wrap", overflowWrap: "break-word", visibility: "hidden" }),
+  },
+  grip: {
+    alignSelf: "center",
+    marginTop: -8,
+    marginBottom: 2,
+    paddingHorizontal: 18,
+    paddingVertical: 4,
+    ...web({ cursor: "ns-resize", touchAction: "none" }),
+  },
+  gripBar: {
+    width: 28,
+    height: 3,
+    backgroundColor: color.line2,
+    ...web({ transition: `background-color 160ms ${ease}, width 200ms ${ease}` }),
+  },
+  gripOn: { width: 40, backgroundColor: color.cyan2 },
   bar: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6, flexWrap: "wrap" },
   spacer: { flex: 1 },
   chip: {

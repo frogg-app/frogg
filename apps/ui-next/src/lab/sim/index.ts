@@ -1,8 +1,13 @@
 // Simulated daemon RPCs for the lab, merged into the fixture client in ../client.ts.
 import { useFiles } from "../../daemon/files";
-import { makeListProviderSubagents, resetSubagents } from "./agents";
+import {
+  makeFetchProviderSubagentTimeline,
+  makeListProviderSubagents,
+  resetSubagents,
+} from "./agents";
 import * as files from "./fs";
 import { miscRpcs, resetPlugins, resetProjectConfigs, setLabEmitter } from "./misc";
+import { presenceRpcs, resetPresence } from "./presence";
 import { checkoutStreamsGetGraph } from "./streams";
 
 type Emit = (event: unknown) => void;
@@ -40,6 +45,8 @@ export function simulatedRpcs(emit: Emit): Rpcs {
     subscribeCheckoutDiff: async () => ({ files: files.labDiff(), error: null }),
     checkoutStreamsGetGraph,
     listProviderSubagents: makeListProviderSubagents(emitRaw),
+    fetchProviderSubagentTimeline: makeFetchProviderSubagentTimeline(),
+    ...presenceRpcs(emitRaw),
   } as Rpcs;
 }
 
@@ -50,4 +57,5 @@ export function resetSim(): void {
   resetSubagents();
   resetPlugins();
   resetProjectConfigs();
+  resetPresence();
 }

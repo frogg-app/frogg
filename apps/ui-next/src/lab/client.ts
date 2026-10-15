@@ -180,6 +180,7 @@ const features = {
   releaseStreams: true,
   providerSubagents: true,
   claudeExtraArgs: true,
+  sessionPresence: true,
 };
 
 /** Flip an advertised daemon feature, to see a screen as it looks against an older daemon. */

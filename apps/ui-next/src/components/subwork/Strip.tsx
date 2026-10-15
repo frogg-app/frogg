@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { useSubWork } from "../../daemon/subwork";
 import { color, subworkMs } from "../../theme/tokens";
-import { useUi } from "../../ui-store";
 import { Num } from "../CountUp";
 import { T } from "../Text";
 import { Collapse } from "./Collapse";
@@ -19,11 +18,9 @@ import { expandedState, statusColor, SubWorkTree, useLoop01, usePulse, useSettle
 export function SubWorkStripView({
   items,
   onOpen,
-  onAll,
 }: {
   items: SubWork[];
   onOpen?: (item: SubWork) => void;
-  onAll?: () => void;
 }) {
   const shown = useMemo(() => visibleItems(items), [items]);
   const r = rollup(shown);
@@ -131,11 +128,6 @@ export function SubWorkStripView({
         <Collapse open={open && visible}>
           <View style={s.list}>
             <SubWorkTree items={shown} onOpen={onOpen} max={8} />
-            {onAll && (
-              <Pressable onPress={onAll} style={s.all} accessibilityRole="link">
-                <T style={s.allT}>Open in Tasks</T>
-              </Pressable>
-            )}
           </View>
         </Collapse>
       </View>
@@ -152,8 +144,7 @@ function Chev({ open }: { open: boolean }) {
 export function SubWorkStrip({ sessionId }: { sessionId: string }) {
   const { items } = useSubWork(sessionId);
   const onOpen = useCallback((item: SubWork) => openSubWork(sessionId, item), [sessionId]);
-  const onAll = useCallback(() => useUi.getState().setTool("tasks"), []);
-  return <SubWorkStripView items={items} onOpen={onOpen} onAll={onAll} />;
+  return <SubWorkStripView items={items} onOpen={onOpen} />;
 }
 
 const s = StyleSheet.create({
@@ -179,6 +170,4 @@ const s = StyleSheet.create({
   chev: { transform: [{ rotate: "0deg" }] },
   chevOpen: { transform: [{ rotate: "180deg" }] },
   list: { paddingHorizontal: 24, paddingBottom: 8 },
-  all: { paddingVertical: 6, paddingLeft: 18 },
-  allT: { fontSize: 12, color: color.cyan2 },
 });

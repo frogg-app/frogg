@@ -40,7 +40,7 @@ const wash: Record<SubWorkStatus, string> = {
   done: "rgba(63,207,142,0.08)",
   idle: color.wash,
 };
-const bucketOfStatus: Record<SubWorkStatus, Bucket> = {
+export const bucketOfStatus: Record<SubWorkStatus, Bucket> = {
   running: "working",
   attention: "needs",
   failed: "failed",
@@ -212,7 +212,7 @@ export function useSettle(status: SubWorkStatus): Settle {
 
 // ---- one nested row -----------------------------------------------------------------------------
 
-function timeText(it: SubWork, now: number): string {
+export function timeText(it: SubWork, now: number): string {
   if (it.status === "running") return it.startedAt ? elapsed(it.startedAt, now) : "";
   if (it.status === "attention") return "needs you";
   if (it.status === "idle") return it.kind === "script" ? "stopped" : "";

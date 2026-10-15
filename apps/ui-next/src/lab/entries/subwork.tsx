@@ -14,7 +14,7 @@ import { StatusGlyph } from "../../components/StatusGlyph";
 import { T } from "../../components/Text";
 import { TasksPanel } from "../../components/TasksPanel";
 import { useDaemon } from "../../daemon/store";
-import { useNow, useSubWork } from "../../daemon/subwork";
+import { closeDetail, openDetail, useNow, useSubWork } from "../../daemon/subwork";
 import { color } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { setLabFeature } from "../client";
@@ -224,6 +224,26 @@ function RealChatDemo() {
   );
 }
 
+// ---- details ----
+
+const selectPreview = () => {
+  closeDetail();
+  useUi.setState({ selected: ID.preview });
+};
+/** The real chat with one subagent's details open in it. */
+function DetailChat({ parent, sub }: { parent: string; sub: string }) {
+  useState(() => openDetail(parent, `sub:${parent}-${sub}`));
+  const sess = useDaemon((st) => st.sessions[parent]);
+  if (!sess) return null;
+  return (
+    <Fill>
+      <Chat session={sess} />
+    </Fill>
+  );
+}
+const DetailRunning = () => <DetailChat parent={ID.preview} sub="explore" />;
+const DetailFailed = () => <DetailChat parent={ID.failed} sub="bench" />;
+
 // ---- model ----
 
 function ModelRow({ item }: { item: SubWork }) {
@@ -363,6 +383,28 @@ export const subwork: Entry[] = [
     variants: [
       { id: "cases", label: "At real widths", C: StripCases },
       { id: "chat", label: "In the real chat", C: RealChatDemo },
+    ],
+  },
+  {
+    id: "subwork-detail",
+    name: "Sub-work details",
+    category: "Chat",
+    path: "components/subwork/Detail.tsx · components/subwork/hooks.ts (openSubWork)",
+    purpose:
+      "Opening a subagent (session row, chat strip or its tool call) shows its details in the parent's chat pane: kind, live status and run time, a back link to the conversation, its to-do when it claimed one, and its own activity streamed live. Child sessions open as themselves, terminals and scripts in Terminals, a claimed to-do in Tasks.",
+    usedBy: 1,
+    polish:
+      "pane enters with motion.enter (200ms); activity loads under the timeline skeleton; new rows stream in; the activity line fades per change (motion.fade 150ms)",
+    setup: selectPreview,
+    variants: [
+      {
+        id: "running",
+        label: "Running subagent (streams a step every ~2s)",
+        C: DetailRunning,
+        h: 640,
+        bleed: true,
+      },
+      { id: "failed", label: "Failed subagent", C: DetailFailed, h: 640, bleed: true },
     ],
   },
   {

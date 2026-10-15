@@ -387,7 +387,7 @@ export async function disconnect(): Promise<void> {
 }
 
 /** Streamed chunks of one assistant message arrive as separate items; fold them together. */
-function mergeEntry(list: TimelineEntry[], entry: TimelineEntry): TimelineEntry[] {
+export function mergeEntry(list: TimelineEntry[], entry: TimelineEntry): TimelineEntry[] {
   const last = list[list.length - 1];
   const item = entry.item;
   if (

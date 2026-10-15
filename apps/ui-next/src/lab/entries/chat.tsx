@@ -10,6 +10,9 @@ import { SlashMenu } from "../../components/chat/SlashMenu";
 import { Composer } from "../../components/Composer";
 import { toast } from "../../components/toast/store";
 import { ToolCall } from "../../components/ToolCall";
+import { TimelineLoading } from "../../components/chat/TimelineLoading";
+import { ViewerList, ViewersRow } from "../../components/chat/Viewers";
+import type { Viewer } from "../../daemon/viewers";
 import { useDaemon } from "../../daemon/store";
 import type { TimelineItem } from "../../daemon/types";
 import { color } from "../../theme/tokens";
@@ -103,6 +106,73 @@ function Rendering() {
 const Needs = () => <LiveChat id={ID.needs} />;
 const Working = () => <LiveChat id={ID.working} />;
 const selectPreview = () => useUi.setState({ selected: ID.preview });
+
+// ---- loading and presence ----
+
+/** Replay to see the beat before it appears: a fast load never shows it. */
+const Loading = () => (
+  <Cases>
+    <Case
+      name="TimelineLoading"
+      props="(loading)"
+      note="Host online, conversation on its way."
+      w={CHAT}
+      plain
+    >
+      <TimelineLoading />
+    </Case>
+    <Case
+      name="TimelineLoading"
+      props="connecting"
+      note="Host not connected yet."
+      w={W.phone}
+      plain
+    >
+      <TimelineLoading connecting />
+    </Case>
+  </Cases>
+);
+
+const viewer = (
+  name: string,
+  activity: Viewer["activity"] = "viewing",
+  clientType = "browser",
+): Viewer => ({
+  id: name,
+  name,
+  key: `k-${name}`,
+  clientType,
+  activity,
+});
+const ONE = [viewer("Pixel 8", "viewing", "mobile")];
+const TWO = [viewer("Pixel 8", "viewing", "mobile"), viewer("MacBook Pro")];
+const TYPING = [viewer("MacBook Pro"), viewer("Pixel 8", "typing", "mobile")];
+const MANY = [
+  viewer("Pixel 8", "viewing", "mobile"),
+  viewer("MacBook Pro"),
+  viewer("Frogg Next on web"),
+  viewer("frogg cli", "idle", "cli"),
+  viewer("Office iMac"),
+];
+const Here = () => (
+  <Cases>
+    <Case name="ViewersRow" props="one" w={W.phone} plain>
+      <ViewersRow viewers={ONE} />
+    </Case>
+    <Case name="ViewersRow" props="two" w={W.phone} plain>
+      <ViewersRow viewers={TWO} />
+    </Case>
+    <Case name="ViewersRow" props="someone typing" w={W.phone} plain>
+      <ViewersRow viewers={TYPING} />
+    </Case>
+    <Case name="ViewersRow" props="five (+2 folded)" w={W.phone} plain>
+      <ViewersRow viewers={MANY} />
+    </Case>
+    <Case name="ViewerList" props="popover body" w={260} plain>
+      <ViewerList viewers={MANY} />
+    </Case>
+  </Cases>
+);
 
 // ---- tool calls ----
 
@@ -386,6 +456,30 @@ export const chat: Entry[] = [
         bleed: true,
       },
     ],
+  },
+  {
+    id: "timeline-loading",
+    name: "Timeline loading",
+    category: "Chat",
+    path: "components/chat/TimelineLoading.tsx",
+    purpose:
+      "What a chat shows while its timeline is on the way: the shape of a conversation under a soft sweep and a line saying whether the host is still connecting or the conversation is loading. Also used for a subagent's activity.",
+    usedBy: 2,
+    polish:
+      "groups enter with motion.enter 260ms after a 180ms hold, staggered 50ms; shapes sweep (shimmer 1.6s linear ∞, fixed attachment so all bars move together); loading line shimmers 2s, connecting line breathes 1.6s · native shows the still shapes",
+    variants: [{ id: "states", label: "Loading and connecting", C: Loading }],
+  },
+  {
+    id: "viewers",
+    name: "Who else is here",
+    category: "Chat",
+    path: "components/chat/Viewers.tsx · daemon/viewers.ts",
+    purpose:
+      "Above the composer: chamfered device avatars and one sentence naming who else has this session open on the host, led by whoever is typing; press for the full list. Reads the daemon's session presence (features.sessionPresence) and reports this app as viewing or typing. Hidden when nobody else is there or the host does not share presence.",
+    usedBy: 1,
+    polish:
+      "row enters with motion.enter 200ms; the typing mark breathes 1.6s; hover washes the row; the list opens in the shared popover (popDown/popUp)",
+    variants: [{ id: "cases", label: "One, two, typing, many, list", C: Here }],
   },
   {
     id: "tool-call",

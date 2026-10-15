@@ -1,5 +1,13 @@
 import { createContext, useCallback, useContext } from "react";
-import { setExpanded, useSubWork, useSubWorkStore, type UseSubWork } from "../../daemon/subwork";
+import {
+  closeDetail,
+  openDetail,
+  setExpanded,
+  useSubWork,
+  useSubWorkStore,
+  type UseSubWork,
+} from "../../daemon/subwork";
+import { openTodo, useTodos, type ScopedTodo } from "../../daemon/todos";
 import { usePrefs } from "../../prefs";
 import { useUi } from "../../ui-store";
 import { needsAttention, type SubWork } from "./model";
@@ -15,15 +23,48 @@ export interface RowSubWork extends UseSubWork {
   onOpen: (item: SubWork) => void;
 }
 
-/** Opens what a sub-work row stands for: a child session, or the parent's Tasks panel. */
+/** The provider's own id for a subagent row (`sub:<id>`), else null. */
+export const subagentIdOf = (item: SubWork): string | null =>
+  item.kind === "subagent" && item.id.startsWith("sub:") ? item.id.slice(4) : null;
+
+/** A loaded to-do this item's agent has claimed, if any. */
+export function linkedTodo(item: SubWork): ScopedTodo | null {
+  const ids = new Set([subagentIdOf(item), item.openId].filter((x): x is string => !!x));
+  if (!ids.size) return null;
+  for (const [projectId, list] of Object.entries(useTodos.getState().items))
+    for (const todo of list ?? [])
+      if (todo.claims.some((c) => ids.has(c.agentId))) return { projectId, todo };
+  return null;
+}
+
+// Details belong to their parent's pane: selecting any other session drops them.
+useUi.subscribe((st, prev) => {
+  if (st.selected !== prev.selected) closeDetail(undefined, st.selected);
+});
+
+/**
+ * Opens what a sub-work row stands for: a child session or a terminal as itself, a subagent linked
+ * to a to-do as that to-do in Tasks, anything else as its details in the parent's chat pane.
+ */
 export function openSubWork(sessionId: string, item: SubWork): void {
   const ui = useUi.getState();
   if (item.kind === "child-session" && item.openId) {
     ui.select(item.openId);
     return;
   }
+  const todo = linkedTodo(item);
+  if (todo) {
+    openTodo(todo.projectId, todo.todo.id);
+    ui.setTool("tasks");
+    return;
+  }
+  if ((item.kind === "terminal" || item.kind === "script") && item.openId) {
+    ui.setTool("terminals");
+    ui.openTerminal(item.openId);
+    return;
+  }
   ui.select(sessionId);
-  ui.setTool("tasks");
+  openDetail(sessionId, item.id);
 }
 
 /**
