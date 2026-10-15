@@ -3,6 +3,7 @@ import { Linking, Platform } from "react-native";
 import { version } from "../../../../package.json";
 import { useDaemon } from "../../../daemon/store";
 import { useUi } from "../../../ui-store";
+import { openOnboarding } from "../../onboarding/store";
 import { Button } from "../../Button";
 import { T } from "../../Text";
 import { Row, Section } from "../controls";
@@ -10,6 +11,7 @@ import { need } from "./hostkit";
 import { Block, ErrorLine, Value, useAction } from "./kit";
 
 const providers = () => useUi.getState().openSettings("providers");
+const gettingStarted = () => openOnboarding();
 export function About() {
   const host = useDaemon((s) => s.serverName);
   const conn = useDaemon((s) => s.conn);
@@ -33,6 +35,9 @@ export function About() {
           <Value>Prototype client</Value>
         </Row>
         <Row label="Connected host" hint={host ?? "No host connected"} />
+        <Row label="Getting started" hint="The first-run walkthrough, tailored to you">
+          <Button label="Open" onPress={gettingStarted} />
+        </Row>
         <Row label="Licenses" last>
           <Button label="View notices" onPress={licenses} />
         </Row>

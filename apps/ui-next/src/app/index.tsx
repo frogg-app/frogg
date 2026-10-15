@@ -22,6 +22,7 @@ import { PluginsPanel } from "../components/PluginsPanel";
 import { CompanionPanel } from "../components/CompanionPanel";
 import { Home } from "../components/Home";
 import { NewSession } from "../components/NewSession";
+import { Onboarding } from "../components/onboarding/Onboarding";
 import { Palette, useGlobalKeys } from "../components/Palette";
 import { PhoneTabs } from "../components/PhoneTabs";
 import { Rail, useToolShown } from "../components/Rail";
@@ -224,6 +225,7 @@ export default function Shell() {
         <Palette />
         <NewSession />
         <ToastHost />
+        <Onboarding phone chipBottom={phoneHasDetail ? 16 : 76} />
       </SafeAreaView>
     );
   }
@@ -268,6 +270,7 @@ export default function Shell() {
       <Palette />
       <NewSession />
       <ToastHost />
+      <Onboarding phone={false} chipBottom={40} chipLeft={224} />
     </SafeAreaView>
   );
 }

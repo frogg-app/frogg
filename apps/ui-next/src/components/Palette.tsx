@@ -15,6 +15,7 @@ import { answerPermission, useDaemon } from "../daemon/store";
 import { bucketOf } from "../daemon/types";
 import { color, font, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
+import { openOnboarding } from "./onboarding/store";
 import { Cut } from "./Cut";
 import { TOOLS, useToolShown } from "./Rail";
 import { modalOpen, useModalLayer } from "./shell/modalStack";
@@ -176,6 +177,13 @@ export function Palette() {
           ui.setTool("terminals");
           void newTerminal().then((id) => id && ui.openTerminal(id));
         },
+      },
+      {
+        id: "onboarding",
+        group: "Commands",
+        label: "Getting started",
+        hint: "walkthrough",
+        run: () => openOnboarding(),
       },
       {
         id: "home",

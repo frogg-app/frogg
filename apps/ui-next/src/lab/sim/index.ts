@@ -8,6 +8,7 @@ import {
 import * as files from "./fs";
 import { miscRpcs, resetPlugins, resetProjectConfigs, setLabEmitter } from "./misc";
 import { presenceRpcs, resetPresence } from "./presence";
+import { providerRpcs, resetProviderInstalls } from "./providers";
 import { checkoutStreamsGetGraph } from "./streams";
 
 type Emit = (event: unknown) => void;
@@ -28,6 +29,7 @@ export function simulatedRpcs(emit: Emit): Rpcs {
   });
   return {
     ...miscRpcs,
+    ...providerRpcs,
     supportsPlugins: () => true,
     subscribeRawMessages: (fn: Emit) => {
       raw.add(fn);
@@ -59,4 +61,5 @@ export function resetSim(): void {
   resetPlugins();
   resetProjectConfigs();
   resetPresence();
+  resetProviderInstalls();
 }
