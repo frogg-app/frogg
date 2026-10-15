@@ -29,64 +29,12 @@ async function resize(source: string, size: number): Promise<Buffer> {
     .toBuffer();
 }
 
-/**
- * The beta build's icons carry a "BETA" ribbon across the lower edge, so the two installs are
- * told apart at a glance in a dock, taskbar, launcher or browser tab.
- */
-export function betaBadgeSvg(size: number, safeZone = 0): Buffer {
-  // Adaptive launcher icons crop to the centre; keep the ribbon inside that safe zone.
-  const inset = Math.round(size * safeZone);
-  const width = size - inset * 2;
-  const height = Math.round(width * 0.24);
-  const top = size - inset - height;
-  const font = Math.round(height * 0.62);
-  return Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">` +
-      `<rect x="${inset}" y="${top}" width="${width}" height="${height}" rx="${Math.round(height * 0.3)}" fill="#f59e0b"/>` +
-      `<text x="${size / 2}" y="${top + height / 2}" dy="0.35em" text-anchor="middle" ` +
-      `font-family="DejaVu Sans, Helvetica, Arial, sans-serif" font-weight="700" ` +
-      `font-size="${font}" letter-spacing="${Math.round(font * 0.08)}" fill="#1c1917">BETA</text></svg>`,
-  );
-}
-
-async function withBetaBadge(source: string | Buffer, size: number, safeZone = 0): Promise<Buffer> {
-  const base = await sharp(source)
-    .resize(size, size, { fit: "contain", background: "#00000000" })
-    .png()
-    .toBuffer();
-  return sharp(base)
-    .composite([{ input: betaBadgeSvg(size, safeZone) }])
-    .png()
-    .toBuffer();
-}
-
-/** Badged copies of the colour artwork; the notification icon is a mask and stays plain. */
-async function channelAssetFiles(build: BrandBuild): Promise<BrandBuild["assetFiles"]> {
-  if (!build.brand.channelBadge) return build.assetFiles;
-  const directory = path.join(outputRoot, "channel-assets");
-  await mkdir(directory, { recursive: true });
-  const files: BrandBuild["assetFiles"] = { ...build.assetFiles };
-  for (const [key, file] of Object.entries(build.assetFiles)) {
-    if (key === "notification") continue;
-    // The stock artwork is framed for mobile safe zones; badge the mark, not the padding.
-    const source =
-      build.brand.stockFrogg && key === "icon"
-        ? await sharp(file).trim({ threshold: 1 }).png().toBuffer()
-        : file;
-    const target = path.join(directory, `${key}.png`);
-    await writeFile(target, await withBetaBadge(source, 1024, key === "foreground" ? 0.2 : 0));
-    files[key] = target;
-  }
-  return files;
-}
-
-export async function generateAssets(input: BrandBuild): Promise<void> {
+export async function generateAssets(build: BrandBuild): Promise<void> {
   const assets = path.join(uiOutput, "assets");
   const publicDir = path.join(uiOutput, "public");
   const icons = path.join(outputRoot, "icons");
   await Promise.all([assets, publicDir, icons].map((dir) => mkdir(dir, { recursive: true })));
-  await validateAssets(input);
-  const build = { ...input, assetFiles: await channelAssetFiles(input) };
+  await validateAssets(build);
   const sources = {
     "icon.png": "icon",
     "icon-ios.png": "ios",
