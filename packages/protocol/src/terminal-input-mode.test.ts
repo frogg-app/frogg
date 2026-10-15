@@ -125,4 +125,30 @@ describe("TerminalInputModeTracker", () => {
 
     expect(tracker.supportsModifiedEnter()).toBe(false);
   });
+
+  it("replays mouse reporting a full-screen program turned on, without changing input state", () => {
+    const tracker = new TerminalInputModeTracker();
+
+    // Claude Code's fullscreen mode, in the order it sends them.
+    expect(tracker.feed("\x1b[?1049h\x1b[?1000h\x1b[?1002h\x1b[?1003h\x1b[?1006h").changed).toBe(
+      false,
+    );
+    tracker.feed("\x1b[?1004h");
+    expect(tracker.getPreamble()).toBe("\x1b[?1003h\x1b[?1006h\x1b[?1004h");
+
+    tracker.feed("\x1b[?1000l");
+    expect(tracker.getPreamble()).toBe("\x1b[?1006h\x1b[?1004h");
+
+    tracker.feed("\x1b[?1006;1004l");
+    expect(tracker.getPreamble()).toBe("");
+  });
+
+  it("forgets mouse reporting on reset", () => {
+    const tracker = new TerminalInputModeTracker();
+    tracker.feed("\x1b[?1002;1006h");
+
+    tracker.reset();
+
+    expect(tracker.getPreamble()).toBe("");
+  });
 });

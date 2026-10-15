@@ -72,4 +72,20 @@ describe("terminal restore policy", () => {
     expect(frame?.slot).toBe(4);
     expect(new TextDecoder().decode(frame?.payload ?? new Uint8Array())).toContain("restored");
   });
+
+  test("puts a full-screen program's snapshot back on the alternate screen", () => {
+    const decode = (alternateScreen?: boolean) =>
+      new TextDecoder().decode(
+        decodeTerminalStreamFrame(
+          encodeTerminalRestoreFrame({
+            slot: 1,
+            snapshot: { state: terminalState("tui"), revision: 1, alternateScreen },
+          }),
+        )?.payload ?? new Uint8Array(),
+      );
+
+    expect(decode(true).startsWith("\u001b[?1049h\u001b[H")).toBe(true);
+    expect(decode(true)).toContain("tui");
+    expect(decode()).not.toContain("\u001b[?1049h");
+  });
 });

@@ -21,6 +21,11 @@ const ESC = String.fromCharCode(0x1b);
 const APPLICATION_CURSOR_KEYS_MODE = 1;
 const WIN32_INPUT_MODE = 9001;
 const BRACKETED_PASTE_MODE = 2004;
+// Mouse reporting: one tracking mode at a time (the last set wins; resetting any turns it off),
+// plus how reports are encoded. Replay-only: they don't change the input-mode state.
+const MOUSE_TRACKING_MODES = new Set([9, 1000, 1002, 1003]);
+const MOUSE_ENCODING_MODES = new Set([1006, 1016]);
+const FOCUS_REPORTING_MODE = 1004;
 const CSI_INPUT_MODE_SEQUENCE = new RegExp(
   `${ESC}\\[(?:([<>=?]?)([0-9;]*)u|\\?([0-9;]*)([hl]))`,
   "g",
@@ -74,6 +79,9 @@ export class TerminalInputModeTracker {
   private win32InputMode = false;
   private applicationCursorKeys = false;
   private bracketedPaste = false;
+  private mouseTracking: number | null = null;
+  private mouseEncoding: number | null = null;
+  private focusReporting = false;
   private readonly kittyKeyboardStack: number[] = [];
   private pending = "";
 
@@ -124,6 +132,9 @@ export class TerminalInputModeTracker {
     this.win32InputMode = false;
     this.applicationCursorKeys = false;
     this.bracketedPaste = false;
+    this.mouseTracking = null;
+    this.mouseEncoding = null;
+    this.focusReporting = false;
     this.kittyKeyboardStack.length = 0;
     this.pending = "";
   }
@@ -158,6 +169,17 @@ export class TerminalInputModeTracker {
     }
     if (this.bracketedPaste) {
       parts.push("\x1b[?2004h");
+    }
+    // A full-screen program (Claude Code, htop, less with mouse) turns these on once at start;
+    // a client attaching later must know them or the wheel scrolls its own buffer instead.
+    if (this.mouseTracking !== null) {
+      parts.push(`\x1b[?${this.mouseTracking}h`);
+    }
+    if (this.mouseEncoding !== null) {
+      parts.push(`\x1b[?${this.mouseEncoding}h`);
+    }
+    if (this.focusReporting) {
+      parts.push(`\x1b[?${FOCUS_REPORTING_MODE}h`);
     }
     return parts.join("");
   }
@@ -223,6 +245,20 @@ export class TerminalInputModeTracker {
       changed = this.bracketedPaste !== previous || changed;
     }
 
+    this.applyMouseModes(modes, final === "h");
     return changed;
+  }
+
+  private applyMouseModes(modes: Set<number>, set: boolean): void {
+    for (const mode of modes) {
+      if (MOUSE_TRACKING_MODES.has(mode)) {
+        this.mouseTracking = set ? mode : null;
+      } else if (MOUSE_ENCODING_MODES.has(mode)) {
+        if (set) this.mouseEncoding = mode;
+        else if (this.mouseEncoding === mode) this.mouseEncoding = null;
+      } else if (mode === FOCUS_REPORTING_MODE) {
+        this.focusReporting = set;
+      }
+    }
   }
 }
