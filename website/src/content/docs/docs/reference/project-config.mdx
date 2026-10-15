@@ -140,6 +140,35 @@ log with `gh`, drops GitHub's per-line timestamps and colour codes, saves it und
 path and reads the parts it needs, rather than the whole log landing in the prompt. Jenkins
 jobs and jobs still running do not offer it.
 
+## `agentDefaults`
+
+Launch defaults for new agents in this project, per provider id. Frogg Next fills the
+new-session form with them: the **Flags** field and the provider's feature rows (such as
+**Fast mode**). Both stay editable before launch, and **Save for project** writes the current
+values back here. Agents started from the CLI or by other agents do not read this block.
+
+```json
+{
+  "agentDefaults": {
+    "claude": {
+      "args": ["--chrome"],
+      "featureValues": { "fast_mode": true }
+    }
+  }
+}
+```
+
+| Key                         | Type     | Description |
+| --------------------------- | -------- | ----------- |
+| `<provider>.args`           | string[] | Extra CLI flags as typed, one token per entry: `["--add-dir", "/srv/data"]`. Long flags only |
+| `<provider>.featureValues`  | object   | Provider feature values by feature id, as the provider reports them |
+
+Extra flags reach Claude Code only, on daemons that advertise the `claudeExtraArgs` feature.
+They are sent as the agent's `providerOptions.extraArgs` and kept with the agent, so a resumed
+session launches with them again. Flags Frogg drives itself (`--resume`, `--output-format`,
+`--permission-mode`, `--model`, `--mcp-config` and similar) are refused when the agent is
+created.
+
 ## A real example
 
 Frogg's own repository uses `frogg.json` to install dependencies in new worktrees and to

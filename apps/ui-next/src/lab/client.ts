@@ -32,6 +32,7 @@ import { useLab } from "./store";
 // Simulated RPCs (lab/sim/): file system, streams graph, subagents and the rest of the host.
 import { resetSim, simulatedRpcs } from "./sim";
 import { labCompanionCapability } from "./sim/misc";
+import { releaseSource } from "../components/hosts/daemonVersions";
 
 export const LAB_URL = "lab://fixtures";
 const APP_VERSION: string = require("../../package.json").version;
@@ -178,6 +179,7 @@ const features = {
   projectTodos: true,
   releaseStreams: true,
   providerSubagents: true,
+  claudeExtraArgs: true,
 };
 
 /** Flip an advertised daemon feature, to see a screen as it looks against an older daemon. */
@@ -299,6 +301,23 @@ const client = new Proxy(known, {
 });
 
 /** Puts every store back to the lab's starting fixtures. Each demo calls this before it mounts. */
+/** Daemon releases for the host update picker: stable releases, then betas on top. */
+async function labReleases() {
+  const rel = (v: string, prerelease: boolean, days: number) => ({
+    tag_name: `v${v}`,
+    prerelease,
+    published_at: ago(60 * 24 * days),
+    assets: [{ name: `frogg-${v}-linux-x86_64-daemon.tar.gz` }],
+  });
+  return [
+    rel("1.6.14-beta.2", true, 1),
+    rel("1.6.14-beta.1", true, 4),
+    rel("1.6.13", false, 9),
+    rel("1.6.12", false, 21),
+    rel("1.6.11", false, 40),
+  ];
+}
+
 export function seedLab(): void {
   epoch += 1;
   cancelled.clear();
@@ -336,6 +355,7 @@ export function seedLab(): void {
     paletteOpen: false,
   });
   useToasts.setState({ toasts: [] });
+  releaseSource.load = labReleases;
   useConfig.setState({ providers: providers as never, config: {} as never, error: null });
   useUsage.setState({ groups: null, fetchedAt: null, loading: false, error: null });
   void loadUsage();

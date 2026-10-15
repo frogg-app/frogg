@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
-import { joinPath } from "./paths";
+import { isSystemFolder, isWindowsPath, joinPath } from "./paths";
 import { create } from "zustand";
 import {
   archiveSession,
@@ -51,7 +51,8 @@ export type Sheet =
   | { kind: "rename"; agentId: string }
   | { kind: "archive"; agentId: string }
   | { kind: "import" }
-  | { kind: "add-project" };
+  | { kind: "add-project" }
+  | { kind: "projects" };
 
 export const DEFAULT_PREFS: Prefs = {
   group: "attention",
@@ -281,11 +282,35 @@ export async function listDir(
 ): Promise<{ path: string; entries: Array<{ name: string; path: string }> }> {
   const res = await (client ?? need()).listDirectory(dir, ".");
   const path = res.absolutePath || dir;
+  const windows = isWindowsPath(path);
   const entries = res.entries
-    .filter((e) => e.kind === "directory" && !e.name.startsWith("."))
+    .filter(
+      (e) =>
+        e.kind === "directory" && !e.name.startsWith(".") && !(windows && isSystemFolder(e.name)),
+    )
     .map((e) => ({ name: e.name, path: joinPath(path, e.name) }))
     .sort((a, b) => a.name.localeCompare(b.name));
   return { path, entries };
+}
+
+const DRIVE_LETTERS = "CDEFGHIJKLMNOPQRSTUVWXYZAB".split("");
+
+/** The drive roots a Windows host can list, found by trying each letter. */
+export async function listDrives(
+  client?: DaemonClient | null,
+): Promise<Array<{ name: string; path: string }>> {
+  const c = client ?? need();
+  const found = await Promise.all(
+    DRIVE_LETTERS.map((l) =>
+      c.listDirectory(`${l}:\\`, ".").then(
+        () => ({ name: `${l}:`, path: `${l}:\\` }),
+        () => null,
+      ),
+    ),
+  );
+  return found
+    .filter((d): d is { name: string; path: string } => d !== null)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function makeDir(
@@ -298,7 +323,7 @@ export async function makeDir(
   if (err) throw new Error(err);
 }
 
-export { baseName, joinPath, parentDir, tildePath } from "./paths";
+export { baseName, isDriveRoot, joinPath, parentDir, tildePath, typedPath } from "./paths";
 
 export async function fetchHistory(input: {
   search?: string;

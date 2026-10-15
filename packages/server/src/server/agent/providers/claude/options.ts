@@ -42,12 +42,52 @@ const SandboxFilesystemSchema = z
   })
   .strict();
 
+/**
+ * Flags the SDK sets itself to drive the session's stream, resume and permission protocol.
+ * Passing them again as extra args would break or silently fork the session.
+ */
+export const CLAUDE_RESERVED_EXTRA_ARGS: ReadonlySet<string> = new Set([
+  "continue",
+  "fork-session",
+  "include-partial-messages",
+  "input-format",
+  "mcp-config",
+  "model",
+  "output-format",
+  "permission-mode",
+  "permission-prompt-tool",
+  "print",
+  "replay-user-messages",
+  "resume",
+  "session-id",
+  "setting-sources",
+  "verbose",
+]);
+
+/**
+ * Extra Claude Code CLI flags (`--chrome` → `{ chrome: null }`), as the SDK's `extraArgs`:
+ * names without the leading dashes, `null` for a bare switch.
+ */
+const ExtraArgsSchema = z.record(z.string(), z.string().nullable()).superRefine((args, ctx) => {
+  for (const name of Object.keys(args)) {
+    if (!/^[a-z][a-z0-9-]*$/.test(name))
+      ctx.addIssue({
+        code: "custom",
+        path: [name],
+        message: "Extra Claude flags are lower-case names without the leading dashes",
+      });
+    else if (CLAUDE_RESERVED_EXTRA_ARGS.has(name))
+      ctx.addIssue({ code: "custom", path: [name], message: "Frogg sets this Claude flag itself" });
+  }
+});
+
 // Claude Agent SDK Options, maintained against @anthropic-ai/claude-agent-sdk 0.3.246.
 export const ClaudeProviderOptionsSchema = z
   .object({
     allowedTools: z.array(z.string()).optional(),
     disallowedTools: z.array(z.string()).optional(),
     additionalDirectories: z.array(z.string()).optional(),
+    extraArgs: ExtraArgsSchema.optional(),
     sandbox: z
       .object({
         enabled: z.boolean().optional(),

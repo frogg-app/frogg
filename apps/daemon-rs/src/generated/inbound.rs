@@ -2286,6 +2286,8 @@ pub struct WriteProjectConfigRequestConfig {
     pub ci: Option<WriteProjectConfigRequestConfigCi>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub streams: Option<WriteProjectConfigRequestConfigStreams>,
+    #[serde(rename = "agentDefaults", skip_serializing_if = "Option::is_none")]
+    pub agent_defaults: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

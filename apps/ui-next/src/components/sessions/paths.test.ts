@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { baseName, isWindowsPath, joinPath, parentDir, tildePath } from "./paths";
+import {
+  baseName,
+  isDriveRoot,
+  isSystemFolder,
+  isWindowsPath,
+  joinPath,
+  parentDir,
+  tildePath,
+  typedPath,
+} from "./paths";
 
 describe("host paths", () => {
   it("joins with the host's separator", () => {
@@ -31,5 +40,20 @@ describe("host paths", () => {
   it("shortens home folders", () => {
     expect(tildePath("/home/dev/app")).toBe("~/app");
     expect(tildePath("C:\\Users\\dev\\app")).toBe("~\\app");
+  });
+  it("reads drive roots, typed or listed", () => {
+    expect(isDriveRoot("E:\\")).toBe(true);
+    expect(isDriveRoot("e:/")).toBe(true);
+    expect(isDriveRoot("E:")).toBe(true);
+    expect(isDriveRoot("E:\\Frogg-OW")).toBe(false);
+    expect(isDriveRoot("/")).toBe(false);
+    expect(typedPath(" e: ")).toBe("E:\\");
+    expect(typedPath("E:\\Frogg-OW")).toBe("E:\\Frogg-OW");
+    expect(typedPath("/home/dev")).toBe("/home/dev");
+  });
+  it("spots Windows system folders", () => {
+    expect(isSystemFolder("System Volume Information")).toBe(true);
+    expect(isSystemFolder("$RECYCLE.BIN")).toBe(true);
+    expect(isSystemFolder("Frogg-OW")).toBe(false);
   });
 });

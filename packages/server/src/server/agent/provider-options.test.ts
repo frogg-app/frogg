@@ -74,6 +74,21 @@ describe("provider-owned option schemas", () => {
     ).toThrow("providerOptions.sandbox.network.allowLocalBinding");
   });
 
+  test("accepts extra Claude CLI flags as SDK extraArgs", () => {
+    expect(
+      ClaudeProviderOptionsSchema.parse({ extraArgs: { chrome: null, "add-dir": "/srv/data" } }),
+    ).toEqual({ extraArgs: { chrome: null, "add-dir": "/srv/data" } });
+  });
+
+  test("refuses extra Claude flags Frogg drives itself or that are not plain names", () => {
+    expect(() =>
+      validateProviderOptions("claude", ClaudeProviderOptionsSchema, {
+        extraArgs: { "output-format": "text" },
+      }),
+    ).toThrow("Frogg sets this Claude flag itself");
+    expect(() => ClaudeProviderOptionsSchema.parse({ extraArgs: { "--chrome": null } })).toThrow();
+  });
+
   test("accepts OpenCode native permission patterns and external_directory", () => {
     expect(
       OpenCodeProviderOptionsSchema.parse({

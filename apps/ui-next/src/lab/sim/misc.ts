@@ -503,6 +503,26 @@ let pluginPolicy = {
 export function setLabRemoteControlForbidden(forbidden: boolean): void {
   pluginPolicy = { ...pluginPolicy, remoteControl: forbidden ? "forbidden" : "allowed" };
 }
+/** frogg.json per project root, as written in the lab; reads fall back to a seeded file. */
+let projectConfigs: Record<string, unknown> = {};
+function projectConfigOf(repoRoot: string): unknown {
+  return (
+    projectConfigs[repoRoot] ?? {
+      setup: ["npm ci", "npm run build --workspace=@frogg/protocol"],
+      scripts: {
+        dev: { command: "npm run dev", port: 7830 },
+        test: { command: "npm test" },
+      },
+      // Per-project launch defaults (#56): new Claude sessions here start with --chrome.
+      agentDefaults: { claude: { args: ["--chrome"] } },
+      repoRoot,
+    }
+  );
+}
+export function resetProjectConfigs(): void {
+  projectConfigs = {};
+}
+
 /** Back to the starting plugins (every reseed). */
 export function resetPlugins(): void {
   plugins = startPlugins();
@@ -1589,22 +1609,36 @@ export const miscRpcs: Record<string, Rpc> = {
   // Project config and to-dos
   readProjectConfig: async (repoRoot: string) => {
     await latency();
-    return {
-      ok: true,
-      revision: "rev-1",
-      config: {
-        setup: ["npm ci", "npm run build --workspace=@frogg/protocol"],
-        scripts: {
-          dev: { command: "npm run dev", port: 7830 },
-          test: { command: "npm test" },
-        },
-        repoRoot,
-      },
-    };
+    return { ok: true, revision: "rev-1", config: structuredClone(projectConfigOf(repoRoot)) };
   },
-  writeProjectConfig: async (o: { config: unknown; expectedRevision: string | null }) => {
+  writeProjectConfig: async (o: {
+    repoRoot: string;
+    config: unknown;
+    expectedRevision: string | null;
+  }) => {
     await latency(300);
+    projectConfigs[o.repoRoot] = structuredClone(o.config);
     return { ok: true, revision: nextId("rev"), config: o.config };
+  },
+  // New-session feature rows: Claude has fast mode, valued as the draft would launch.
+  listProviderFeatures: async (o: {
+    provider: string;
+    featureValues?: Record<string, unknown>;
+  }) => {
+    await latency();
+    const features =
+      o.provider === "claude"
+        ? [
+            {
+              type: "toggle",
+              id: "fast_mode",
+              label: "Fast mode",
+              description: "Faster output on supported models",
+              value: o.featureValues?.fast_mode === true,
+            },
+          ]
+        : [];
+    return { provider: o.provider, features, error: null, fetchedAt: ago(0), requestId: "lab" };
   },
   listProjectTodos: async (o: { projectId: string }) => {
     await latency();

@@ -42,11 +42,14 @@ import {
   type HostProviders,
 } from "./sessions/create";
 import { addProject, baseName } from "./sessions/directory";
+import { isLocalProject, useVisibleProjects } from "./sessions/localProjects";
+import { LaunchFields, useLaunch, type Launch, type LaunchInput } from "./sessions/LaunchFields";
 import { FolderBrowser } from "./sessions/sheets";
 import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
 
 type Isolation = "worktree" | "local";
+const NO_PROJECTS: Project[] = [];
 
 const slug = (text: string) =>
   text
@@ -222,8 +225,8 @@ function useHostProjects(
     const read = async () => {
       const r = await c.listProjects();
       if (!live) return;
+      // The sheet picks the first project of this device's list (pinned first) once merged.
       setProjects(r.projects);
-      setProjectId(r.projects[0]?.projectId ?? null);
     };
     read().catch((e: unknown) => live && setError(e instanceof Error ? e.message : String(e)));
     return () => {
@@ -320,7 +323,7 @@ async function startAgent(
     initialPrompt: string;
     drafts: Draft[];
     worktree?: { mode: "branch-off"; newBranch: string; base?: string };
-  },
+  } & LaunchInput,
 ): Promise<void> {
   const { drafts, provider, ...rest } = input;
   const { images, attachments } = await prepareDrafts(c, drafts);
@@ -355,6 +358,7 @@ function useSubmit(f: {
   mode: string | null;
   title: string;
   worktree: { newBranch: string; base: string } | null;
+  launch: LaunchInput;
   setBusy: (b: boolean) => void;
   setError: (e: string | null) => void;
   reset: () => void;
@@ -372,7 +376,11 @@ function useSubmit(f: {
       const cwd = project.projectRootPath;
       const name = title.trim() || undefined;
       if (kind === "terminal") await startTerminal(c, hostId, cwd, name);
-      else if (entry) await startAgent(c, hostId, agentInput(ref.current, entry, cwd, name));
+      else if (entry) {
+        // Agents run in daemon projects: a folder only this device lists is registered first.
+        if (isLocalProject(project)) await c.addProject(cwd);
+        await startAgent(c, hostId, agentInput(ref.current, entry, cwd, name));
+      }
       ref.current.reset();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -397,6 +405,7 @@ function agentInput(
     initialPrompt: f.prompt.trim(),
     drafts: f.drafts,
     worktree: f.worktree ? { mode: "branch-off", ...f.worktree } : undefined,
+    ...f.launch,
   };
 }
 
@@ -454,6 +463,7 @@ interface SheetFieldsProps {
   isGit: boolean;
   isolation: Isolation;
   kind: Kind;
+  launch: Launch["fields"];
   mode: string | null;
   modeOptions: Opt[];
   model: string | null;
@@ -503,6 +513,7 @@ function SheetFields({
   isGit,
   isolation,
   kind,
+  launch,
   mode,
   modeOptions,
   model,
@@ -588,6 +599,7 @@ function SheetFields({
           modeOptions={modeOptions}
         />
       )}
+      {agentKind && <LaunchFields {...launch} phone={phone} Field={Field} />}
       {agentKind && (
         <PromptBox
           phone={phone}
@@ -629,13 +641,19 @@ export function NewSession() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [browsing, setBrowsing] = useState(false);
-  const { projects, setProjects, projectId, setProjectId } = useHostProjects(
-    open,
-    hostId,
-    hostConn,
-    setError,
-    setBrowsing,
-  );
+  const {
+    projects: daemonProjects,
+    setProjects,
+    projectId,
+    setProjectId,
+  } = useHostProjects(open, hostId, hostConn, setError, setBrowsing);
+  // This device's list for the host: pinned first, hidden left out, its own folders added.
+  const visible = useVisibleProjects(hostId, daemonProjects ?? NO_PROJECTS);
+  const projects = daemonProjects ? visible : null;
+  useEffect(() => {
+    if (projects && !projects.some((p) => p.projectId === projectId))
+      setProjectId(projects[0]?.projectId ?? null);
+  }, [projects, projectId, setProjectId]);
 
   useOnOpen(open, setHostId, setPrompt);
   const { drafts, setDrafts, attachFiles, dropDraft } = useDrafts(setError);
@@ -643,6 +661,12 @@ export function NewSession() {
   const project = projects?.find((p) => p.projectId === projectId);
   const isGit = project?.projectKind === "git";
   const branches = useBranches(open, hostId, isGit ? project?.projectRootPath : undefined, setBase);
+  const launch = useLaunch({
+    client: open ? getHostClient(hostId) : null,
+    entry,
+    root: project?.projectRootPath,
+    flagsSupported: hostFeature(hostId, "claudeExtraArgs"),
+  });
 
   const browse = useCallback(() => setBrowsing(true), []);
   const stopBrowsing = useCallback(() => setBrowsing(false), []);
@@ -680,6 +704,7 @@ export function NewSession() {
     mode,
     title,
     worktree: isGit && isolation === "worktree" ? { newBranch: branch, base } : null,
+    launch: launch.input,
     setBusy,
     setError,
     reset,
@@ -719,6 +744,7 @@ export function NewSession() {
       isGit={isGit}
       isolation={isolation}
       kind={kind}
+      launch={launch.fields}
       mode={mode}
       modeOptions={modeOptions}
       model={model}
@@ -749,7 +775,10 @@ export function NewSession() {
   );
   const createLabel = actionLabel(agentKind, busy);
   const canCreate =
-    !busy && !!project && hostConn === "online" && (!agentKind || agentReady(prompt, entry));
+    !busy &&
+    !!project &&
+    hostConn === "online" &&
+    (!agentKind || (agentReady(prompt, entry) && !launch.error));
   const foot = [hostOptions.length > 1 ? hostName : null, footText(worktree, branch, base, project)]
     .filter(Boolean)
     .join(" · ");
@@ -768,6 +797,14 @@ export function NewSession() {
       {fields}
     </Shell>
   );
+}
+
+/** A `server_info.features` flag of any connected host. */
+function hostFeature(hostId: string | null, name: string): boolean {
+  const info = getHostClient(hostId)?.getLastServerInfoMessage() as {
+    features?: Record<string, unknown>;
+  } | null;
+  return info?.features?.[name] === true;
 }
 
 function agentReady(prompt: string, entry: unknown): boolean {
@@ -1153,7 +1190,10 @@ function FolderPick({
   onCancel: () => void;
   onAdded: (projects: Project[], path: string) => void;
 }) {
-  const [folder, setFolder] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [cwd, setCwd] = useState<string | null>(null);
+  // Nothing selected inside the listed folder means the listed folder itself.
+  const folder = picked ?? cwd;
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const client = getHostClient(hostId);
@@ -1175,8 +1215,9 @@ function FolderPick({
     <View style={s.browse}>
       <ScrollView style={s.browseList}>
         <FolderBrowser
-          picked={folder}
-          onPick={setFolder}
+          picked={picked}
+          onPick={setPicked}
+          onCwd={setCwd}
           from={from}
           client={client}
           hostName={hostName}

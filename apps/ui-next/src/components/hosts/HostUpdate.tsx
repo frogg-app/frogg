@@ -1,14 +1,16 @@
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import type { DaemonUpdateChannel } from "@frogg/protocol/messages";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { getClient, useDaemon } from "../../daemon/store";
 import { color } from "../../theme/tokens";
 import { agoText } from "../../util";
 import { Button } from "../Button";
+import { Select } from "../Select";
 import { Seg } from "../settings/controls";
 import { ErrorLine, Field, fmtBytes, useAction, useFeature } from "../settings/pages/kit";
 import { T } from "../Text";
+import { daemonVersions, useReleases } from "./daemonVersions";
 
 type Check = Awaited<ReturnType<DaemonClient["checkDaemonUpdate"]>>;
 type Status = Awaited<ReturnType<DaemonClient["getDaemonUpdateStatus"]>>;
@@ -41,6 +43,37 @@ function checkLine(c: Check): string {
   return c.latestVersion ? `Up to date on ${c.channel} (${c.latestVersion})` : "Up to date";
 }
 
+const LATEST = "";
+
+/** The version picker: latest, then every installable release on the channel, newest first. */
+function useVersionOptions(channel: DaemonUpdateChannel, current: string | null) {
+  const { releases, error } = useReleases();
+  const options = useMemo(
+    () => [
+      { value: LATEST, label: `Latest ${channel}` },
+      ...daemonVersions(releases ?? [], channel).map((v) => ({
+        value: v.version,
+        label: v.version,
+        hint: versionHint(v, current),
+      })),
+    ],
+    [releases, channel, current],
+  );
+  return { options, loading: releases === null, error };
+}
+
+function versionHint(
+  v: { version: string; prerelease: boolean; publishedAt: string | null },
+  current: string | null,
+): string | undefined {
+  const parts = [
+    v.version === current?.replace(/^v/, "") ? "installed" : null,
+    v.prerelease ? "beta" : null,
+    v.publishedAt ? agoText(v.publishedAt) : null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : undefined;
+}
+
 function runLine(run: NonNullable<Status["run"]>): string {
   const bytes =
     run.receivedBytes !== undefined
@@ -67,6 +100,9 @@ export function HostUpdate({ version }: { version: string | null }) {
   const [check, setCheck] = useState<Check | null>(null);
   const [status, setStatus] = useState<Status | null>(null);
   const act = useAction();
+  const versions = useVersionOptions(channel, version);
+  // A typed version that is not listed leaves the picker on neither entry.
+  const picked = versions.options.some((o) => o.value === pin.trim()) ? pin.trim() : null;
 
   // Another host, or a new channel, makes the last answer meaningless.
   useEffect(() => {
@@ -125,8 +161,23 @@ export function HostUpdate({ version }: { version: string | null }) {
       </View>
       <View style={s.line}>
         <T style={s.label}>Version</T>
-        <Field value={pin} onChangeText={setPin} placeholder="latest" mono />
+        <Select
+          width={190}
+          mono
+          label="Version"
+          value={picked}
+          onChange={setPin}
+          options={versions.options}
+          placeholder={versions.loading ? "Loading versions…" : "Typed version"}
+        />
       </View>
+      <View style={s.line}>
+        <View style={s.label} />
+        <Field value={pin} onChangeText={setPin} placeholder="or type one" mono />
+      </View>
+      {versions.error && (
+        <T style={s.muted}>Could not list releases ({versions.error}). Type a version instead.</T>
+      )}
       <View style={s.acts}>
         <Button
           label={act.pending === "check" ? "Checking…" : "Check for updates"}

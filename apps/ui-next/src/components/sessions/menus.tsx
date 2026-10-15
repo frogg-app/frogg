@@ -8,11 +8,13 @@ import {
   MessageSquare,
   Pencil,
   Pin,
+  SlidersHorizontal,
   Tag,
   Upload,
 } from "lucide-react-native";
 import { useCallback, useMemo } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import { useHosts } from "../../daemon/hosts";
 import { useDaemon } from "../../daemon/store";
 import { color } from "../../theme/tokens";
 import { Select } from "../Select";
@@ -33,6 +35,7 @@ import {
   type ShowKey,
   type Sort,
 } from "./directory";
+import { useVisibleProjects } from "./localProjects";
 
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
 
@@ -41,6 +44,9 @@ export function ScopeMenu({ rect, onClose }: { rect: Rect | null; onClose: () =>
   const sessions = useDaemon((s) => s.sessions);
   const host = useDaemon((s) => s.serverName) ?? "this host";
   const dir = useDirectory();
+  const hostId = useHosts((s) => s.activeId);
+  // This device's list: pinned first, hidden ones left out, its own folders added.
+  const projects = useVisibleProjects(hostId, dir.projects);
   const items = useMemo<MenuEntry[]>(() => {
     const counts = new Map<string, number>();
     let all = 0;
@@ -59,7 +65,7 @@ export function ScopeMenu({ rect, onClose }: { rect: Rect | null; onClose: () =>
         onPress: () => setScope("all"),
       },
     ];
-    for (const p of dir.projects)
+    for (const p of projects)
       out.push({
         label: p.projectDisplayName,
         hint: `${plural(counts.get(p.projectId) ?? 0, "session")} · ${host}`,
@@ -89,13 +95,19 @@ export function ScopeMenu({ rect, onClose }: { rect: Rect | null; onClose: () =>
         onPress: () => openSheet({ kind: "add-project" }),
       },
       {
+        label: "Manage projects…",
+        hint: "Pin, hide or list folders on this device",
+        icon: SlidersHorizontal,
+        onPress: () => openSheet({ kind: "projects" }),
+      },
+      {
         label: "Import conversations…",
         icon: Upload,
         onPress: () => openSheet({ kind: "import" }),
       },
     );
     return out;
-  }, [sessions, dir, host]);
+  }, [sessions, dir, host, projects]);
   return <Menu rect={rect} onClose={onClose} items={items} width={316} />;
 }
 

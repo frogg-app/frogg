@@ -490,6 +490,12 @@ export const providers = {
         { id: "claude-sonnet-4-5", label: "Sonnet 4.5", description: "Fast and capable" },
         { id: "claude-haiku-4-5", label: "Haiku 4.5", description: "Fastest" },
       ],
+      // Two sign-ins, so the new-session sheet offers an account picker.
+      accounts: [
+        { id: "default:claude", name: "work", authenticated: true },
+        { id: "claude-personal", name: "personal", authenticated: true },
+      ],
+      defaultAccountId: "default:claude",
     },
     {
       provider: "codex",
