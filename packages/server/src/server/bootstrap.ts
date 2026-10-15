@@ -2685,6 +2685,8 @@ export function createFixedAllowedOrigins(input: {
     `${input.scheme}://app`,
     // Keep the upstream scheme so a stock client can connect to a branded daemon.
     "frogg://app",
+    // Frogg Next's Electron renderer, the prerelease app, connects to any daemon by default.
+    "frogg-next://app",
     // The Frogg Tauri shell: WebKit reports `tauri://localhost`, WebView2 (Windows)
     // `http://tauri.localhost` (or https on newer builds).
     "tauri://localhost",

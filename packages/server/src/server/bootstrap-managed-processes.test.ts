@@ -45,6 +45,17 @@ describe("daemon managed process bootstrap", () => {
     ).not.toContain("https://evil.test");
   });
 
+  test("allows the Frogg Next renderer origin on every daemon", () => {
+    for (const listenTarget of [
+      { type: "tcp", host: "127.0.0.1", port: 9999 } as const,
+      { type: "socket", path: "/tmp/frogg.sock" } as const,
+    ]) {
+      expect(createFixedAllowedOrigins({ scheme: "glade", listenTarget })).toContain(
+        "frogg-next://app",
+      );
+    }
+  });
+
   test("reaps stale helper process records during daemon bootstrap", async () => {
     tempRoot = await mkdtemp(path.join(os.tmpdir(), "frogg-managed-bootstrap-"));
     staticDir = await mkdtemp(path.join(os.tmpdir(), "frogg-static-"));
