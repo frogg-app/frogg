@@ -29,6 +29,7 @@ import {
   Settings as SettingsIcon,
   Shield,
   Smartphone,
+  Sparkles,
   Tag,
   SquareTerminal,
   Wrench,
@@ -61,6 +62,7 @@ import { TerminalProfiles } from "./pages/TerminalProfiles";
 import { ResourcesStorage } from "./pages/ResourcesStorage";
 import { DaemonUpdates } from "./pages/DaemonUpdates";
 import { Providers } from "./pages/Providers";
+import { OnboardingSettings } from "../onboarding/OnboardingSettings";
 
 type Scope = "You" | "Agents" | "Host" | "Project" | "App";
 interface Page {
@@ -275,6 +277,13 @@ export const PAGES: Page[] = [
   { id: "ci", label: "CI & release streams", icon: RefreshCw, scope: "Project", body: Ci },
   { id: "metadata", label: "Generated text", icon: FileCode, scope: "Project", body: Metadata },
   { id: "plugins", label: "Plugins", icon: Wrench, scope: "App", body: Plugins },
+  {
+    id: "onboarding",
+    label: "Getting started",
+    icon: Sparkles,
+    scope: "App",
+    body: OnboardingSettings,
+  },
   { id: "about", label: "About & diagnostics", icon: Activity, scope: "App", body: About },
   { id: "developer", label: "Developer", icon: SquareTerminal, scope: "App", body: Developer },
   { id: "design", label: "Design options", icon: Palette, scope: "App", body: DesignOptions },

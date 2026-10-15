@@ -3,6 +3,7 @@ import { useFiles } from "../../daemon/files";
 import { makeListProviderSubagents, resetSubagents } from "./agents";
 import * as files from "./fs";
 import { miscRpcs, resetPlugins, setLabEmitter } from "./misc";
+import { providerRpcs, resetProviderInstalls } from "./providers";
 import { checkoutStreamsGetGraph } from "./streams";
 
 type Emit = (event: unknown) => void;
@@ -23,6 +24,7 @@ export function simulatedRpcs(emit: Emit): Rpcs {
   });
   return {
     ...miscRpcs,
+    ...providerRpcs,
     supportsPlugins: () => true,
     subscribeRawMessages: (fn: Emit) => {
       raw.add(fn);
@@ -49,4 +51,5 @@ export function resetSim(): void {
   useFiles.setState({ root: null, dirs: {}, expanded: { ".": true } });
   resetSubagents();
   resetPlugins();
+  resetProviderInstalls();
 }

@@ -6,6 +6,7 @@ import { data } from "./entries/data";
 import { feedback } from "./entries/feedback";
 import { foundations } from "./entries/foundations";
 import { interactions } from "./entries/interactions";
+import { onboarding } from "./entries/onboarding";
 import { plugins } from "./entries/plugins";
 import { primitives } from "./entries/primitives";
 import { settings } from "./entries/settings";
@@ -25,6 +26,7 @@ export const ENTRIES: Entry[] = [
   ...chat,
   textReveal,
   ...shell,
+  onboarding,
   ...subwork,
   ...settings,
   ...tools,
