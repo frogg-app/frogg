@@ -22,8 +22,8 @@ import {
   type SubWork,
   type TerminalSrc,
 } from "../components/subwork/model";
-import { getClient, onHostSwitch, useDaemon } from "./store";
-import { bucketOf } from "./types";
+import { getClient, mergeEntry, onHostSwitch, useDaemon } from "./store";
+import { bucketOf, type TimelineEntry } from "./types";
 
 const PARENT_LABEL = "frogg.parent-agent-id";
 const TTL = 20_000;
@@ -36,6 +36,18 @@ interface SubWorkState {
   children: Record<string, ChildSrc[]>;
   /** The user's own open/closed choice per session; absent means "automatic". */
   expanded: Record<string, boolean>;
+  /** Per parent session, the sub-work item whose details fill its chat pane instead of the timeline. */
+  detail: Record<string, string>;
+  /** Provider subagent timelines by `parent:subagent`, loaded when their details open. */
+  subTimelines: Record<string, SubTimeline>;
+}
+
+export interface SubTimeline {
+  /** Null while the first page loads. */
+  entries: TimelineEntry[] | null;
+  lastSeq: number;
+  epoch: string | null;
+  error: string | null;
 }
 
 export const useSubWorkStore = create<SubWorkState>(() => ({
@@ -44,6 +56,8 @@ export const useSubWorkStore = create<SubWorkState>(() => ({
   terminals: {},
   children: {},
   expanded: {},
+  detail: {},
+  subTimelines: {},
 }));
 
 // ---- persisted expansion ------------------------------------------------------------------------
@@ -135,6 +149,8 @@ export function ensureLive(): void {
         useSubWorkStore.setState((s) => ({
           subagents: { ...s.subagents, [parent]: upsert(s.subagents[parent], p.subagent) },
         }));
+      } else if (p.kind === "timeline") {
+        appendSubTimeline(p);
       } else if (p.kind === "remove") {
         useSubWorkStore.setState((s) => ({
           subagents: {
@@ -160,8 +176,120 @@ onHostSwitch(() => {
   unsubLive = null;
   liveClient = null;
   fetched.clear();
-  useSubWorkStore.setState({ subagents: {}, scripts: {}, terminals: {} });
+  useSubWorkStore.setState({
+    subagents: {},
+    scripts: {},
+    terminals: {},
+    detail: {},
+    subTimelines: {},
+  });
 });
+
+// ---- details: one item in the chat pane, a subagent's own timeline --------------------------------
+
+export function openDetail(parentId: string, itemId: string): void {
+  useSubWorkStore.setState((s) => ({ detail: { ...s.detail, [parentId]: itemId } }));
+}
+
+/** Closes one parent's details, or every open one (`keep` stays open). */
+export function closeDetail(parentId?: string, keep?: string | null): void {
+  useSubWorkStore.setState((s) => {
+    const ids = parentId ? [parentId] : Object.keys(s.detail).filter((id) => id !== keep);
+    if (!ids.some((id) => id in s.detail)) return s;
+    const detail = { ...s.detail };
+    for (const id of ids) delete detail[id];
+    return { detail };
+  });
+}
+
+export const subTimelineKey = (parentId: string, subagentId: string) => `${parentId}:${subagentId}`;
+
+interface SubTimelineRow {
+  item: TimelineEntry["item"];
+  timestamp: string;
+  seq: number;
+}
+
+function toEntry(provider: TimelineEntry["provider"], row: SubTimelineRow): TimelineEntry {
+  return {
+    provider,
+    item: row.item,
+    timestamp: row.timestamp,
+    seqStart: row.seq,
+    seqEnd: row.seq,
+    sourceSeqRanges: [],
+    collapsed: [],
+  };
+}
+
+/** Folds streamed rows the way the main timeline does (assistant chunks join, tool calls update). */
+export function foldRows(
+  provider: TimelineEntry["provider"],
+  rows: SubTimelineRow[],
+  into: TimelineEntry[] = [],
+): TimelineEntry[] {
+  let list = into;
+  for (const r of rows) list = mergeEntry(list, toEntry(provider, r));
+  return list;
+}
+
+function appendSubTimeline(p: {
+  parentAgentId: string;
+  subagentId: string;
+  provider: TimelineEntry["provider"];
+  item: TimelineEntry["item"];
+  timestamp: string;
+  seq: number;
+  epoch: string;
+}): void {
+  const key = subTimelineKey(p.parentAgentId, p.subagentId);
+  const cur = useSubWorkStore.getState().subTimelines[key];
+  // Only timelines someone opened are kept; a different epoch means the page in hand is void.
+  if (!cur?.entries || (cur.epoch && cur.epoch !== p.epoch) || p.seq <= cur.lastSeq) return;
+  const entries = foldRows(p.provider, [p], cur.entries);
+  useSubWorkStore.setState((s) => ({
+    subTimelines: { ...s.subTimelines, [key]: { ...cur, entries, lastSeq: p.seq } },
+  }));
+}
+
+/** Loads the tail of a subagent's timeline; live rows then arrive with the subagent updates. */
+export async function loadSubTimeline(parentId: string, subagentId: string): Promise<void> {
+  const client = getClient();
+  const key = subTimelineKey(parentId, subagentId);
+  const set = (t: SubTimeline) =>
+    useSubWorkStore.setState((s) => ({ subTimelines: { ...s.subTimelines, [key]: t } }));
+  if (!client || !supportsSubagents()) {
+    set({
+      entries: [],
+      lastSeq: 0,
+      epoch: null,
+      error: "This host does not share subagent activity.",
+    });
+    return;
+  }
+  ensureLive();
+  const prev = useSubWorkStore.getState().subTimelines[key];
+  if (!prev?.entries) set({ entries: null, lastSeq: 0, epoch: null, error: null });
+  try {
+    const r = await client.fetchProviderSubagentTimeline(parentId, subagentId, {
+      direction: "tail",
+      limit: 200,
+    });
+    if (getClient() !== client) return;
+    if (r.error) throw new Error(r.error);
+    const provider = r.provider ?? "claude";
+    const lastSeq = r.rows.reduce((n, x) => Math.max(n, x.seq), 0);
+    set({ entries: foldRows(provider, r.rows), lastSeq, epoch: r.epoch, error: null });
+  } catch (e) {
+    if (getClient() !== client) return;
+    set({
+      entries: prev?.entries ?? [],
+      lastSeq: prev?.lastSeq ?? 0,
+      epoch: prev?.epoch ?? null,
+      error: e instanceof Error ? e.message : String(e),
+    });
+  }
+}
 
 // ---- fetching -----------------------------------------------------------------------------------
 

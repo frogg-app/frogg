@@ -2,31 +2,31 @@ import { ArrowLeft } from "lucide-react-native";
 import { useCallback, useEffect, useMemo } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { loadConfig, useConfig } from "../daemon/config";
+import { useSubWorkStore } from "../daemon/subwork";
 import { cancelTurn, openTimeline, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
 import { bucketOf, type Agent, type Session, type TimelineEntry } from "../daemon/types";
-import { usePrefs } from "../prefs";
 import { color, motion } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { AccountChip } from "./chat/AccountChip";
 import { ContextMeter } from "./chat/ContextMeter";
 import { ComposerNotices } from "./chat/Notices";
 import { SessionMenu } from "./chat/SessionMenu";
-import { SessionState, Compaction } from "./chat/SessionState";
+import { SessionState } from "./chat/SessionState";
 import { headerTitle } from "./chat/title";
-import { UserMessage } from "./chat/UserMessage";
 import { forkDrafts, listCommands, sendWithAttachments, type Attachment } from "./chat/actions";
 import { useBottomAnchor } from "./chat/useBottomAnchor";
+import { SubWorkDetail } from "./subwork/Detail";
 import { SubWorkStrip } from "./subwork/Strip";
 import { toastError } from "./toast/store";
 import { Composer } from "./Composer";
-import { Markdown } from "./Markdown";
 import { ImageRoot } from "./markdown/HostImage";
 import { PermissionCard } from "./PermissionCard";
 import { Select } from "./Select";
 import { bucketColor, StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
-import { ToolCall } from "./ToolCall";
-import { RevealHeading, RevealMarkdown } from "./chat/TextReveal";
+import { RevealHeading } from "./chat/TextReveal";
+import { keyedEntries, TimelineItem } from "./chat/TimelineItem";
+import { TimelineLoading } from "./chat/TimelineLoading";
 
 const bucketText = {
   needs: "Needs you",
@@ -40,29 +40,18 @@ const bucketTextStyle = StyleSheet.create(
   Object.fromEntries(Object.entries(bucketColor).map(([b, c]) => [b, { color: c, fontSize: 12 }])),
 );
 
-/** Stable React keys for timeline rows: the item's own id where it has one, else its sequence. */
-function keyedEntries(entries: TimelineEntry[]): Array<{ key: string; e: TimelineEntry }> {
-  const seen = new Map<string, number>();
-  return entries.map((e) => {
-    const it = e.item;
-    let base = `${e.seqStart}:${it.type}`;
-    if (it.type === "tool_call") base = `tool:${it.callId}`;
-    else if ((it.type === "assistant_message" || it.type === "user_message") && it.messageId)
-      base = `${it.type}:${it.messageId}`;
-    const n = seen.get(base) ?? 0;
-    seen.set(base, n + 1);
-    return { key: n ? `${base}#${n}` : base, e };
-  });
-}
-
 export function Chat({ session, onBack }: { session: Session; onBack?: () => void }) {
   const a = session.agent;
   const conn = useDaemon((st) => st.conn);
   const entries = useDaemon((st) => st.timelines[a.id]);
   const anchor = useBottomAnchor();
+  const detail = useSubWorkStore((st) => st.detail[a.id]);
+  // Loads on open, and again once the host is back: a timeline opened while connecting has none.
+  const online = conn === "online";
   useEffect(() => {
+    if (!online) return;
     void openTimeline(a.id).catch((e) => toastError("Could not load conversation", e));
-  }, [a.id]);
+  }, [a.id, online]);
   const rows = useMemo(() => (entries ? keyedEntries(entries) : null), [entries]);
   const bucket = bucketOf(a);
   const branch = session.project?.checkout.isGit ? session.project.checkout.currentBranch : null;
@@ -118,63 +107,65 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
           )}
         </View>
       </View>
-      <SubWorkStrip sessionId={a.id} />
-      <ImageRoot.Provider value={a.cwd}>
-        <ScrollView
-          ref={anchor.ref}
-          style={s.scroll}
-          contentContainerStyle={s.body}
-          onScroll={anchor.onScroll}
-          onLayout={anchor.onLayout}
-          onContentSizeChange={anchor.onContentSizeChange}
-          scrollEventThrottle={anchor.scrollEventThrottle}
-        >
-          {!rows && (
-            <T v="label" style={s.empty}>
-              loading timeline…
-            </T>
-          )}
-          {rows?.length === 0 && !running && (
-            <T v="label" style={s.empty}>
-              no messages yet · say what to do below
-            </T>
-          )}
-          {rows?.map((r) => (
-            <Item
-              key={r.key}
-              e={r.e}
-              provider={provider}
-              streaming={running && r === rows[rows.length - 1]}
-            />
-          ))}
-          {a.pendingPermissions.map((p) => (
-            <PermissionCard key={p.id} agentId={a.id} p={p} />
-          ))}
-          <SessionState agent={a} online={conn === "online"} />
-          {running && conn === "online" && (
-            <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
-          )}
-        </ScrollView>
-      </ImageRoot.Provider>
-      <View style={s.composer}>
-        <Composer
-          key={a.id}
-          attach
-          disabled={conn !== "online"}
-          loadCommands={commands}
-          initialAttachments={initialAttachments}
-          notices={notices}
-          placeholder={`Message ${provider} — / commands`}
-          chips={chips}
-          onSend={onSend}
-          onStop={running ? stop : undefined}
-          compact={!!onBack}
-        >
-          <AgentControls agent={a} />
-          <AccountChip agent={a} />
-          <ContextMeter agent={a} />
-        </Composer>
-      </View>
+      {detail ? (
+        <SubWorkDetail key={detail} parentId={a.id} itemId={detail} provider={provider} />
+      ) : (
+        <>
+          <SubWorkStrip sessionId={a.id} />
+          <ImageRoot.Provider value={a.cwd}>
+            <ScrollView
+              ref={anchor.ref}
+              style={s.scroll}
+              contentContainerStyle={s.body}
+              onScroll={anchor.onScroll}
+              onLayout={anchor.onLayout}
+              onContentSizeChange={anchor.onContentSizeChange}
+              scrollEventThrottle={anchor.scrollEventThrottle}
+            >
+              {!rows && <TimelineLoading connecting={!online} />}
+              {rows?.length === 0 && !running && (
+                <T v="label" style={s.empty}>
+                  no messages yet · say what to do below
+                </T>
+              )}
+              {rows?.map((r) => (
+                <TimelineItem
+                  key={r.key}
+                  e={r.e}
+                  provider={provider}
+                  streaming={running && r === rows[rows.length - 1]}
+                />
+              ))}
+              {a.pendingPermissions.map((p) => (
+                <PermissionCard key={p.id} agentId={a.id} p={p} />
+              ))}
+              <SessionState agent={a} online={conn === "online"} />
+              {running && conn === "online" && (
+                <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
+              )}
+            </ScrollView>
+          </ImageRoot.Provider>
+          <View style={s.composer}>
+            <Composer
+              key={a.id}
+              attach
+              disabled={conn !== "online"}
+              loadCommands={commands}
+              initialAttachments={initialAttachments}
+              notices={notices}
+              placeholder={`Message ${provider} — / commands`}
+              chips={chips}
+              onSend={onSend}
+              onStop={running ? stop : undefined}
+              compact={!!onBack}
+            >
+              <AgentControls agent={a} />
+              <AccountChip agent={a} />
+              <ContextMeter agent={a} />
+            </Composer>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -217,71 +208,6 @@ function Thinking({
       </T>
     </View>
   );
-}
-
-function Todo({ items }: { items: Array<{ text: string; completed: boolean; id?: string }> }) {
-  const keyed = useMemo(() => items.map((t, n) => ({ ...t, key: t.id ?? `todo${n}` })), [items]);
-  return (
-    <View style={s.todo}>
-      {keyed.map((t) => (
-        <T key={t.key} v="mono" style={t.completed ? s.todoDone : s.todoOpen}>
-          {t.completed ? "■" : "□"} {t.text}
-        </T>
-      ))}
-    </View>
-  );
-}
-
-function Reply({ text, streaming }: { text: string; streaming: boolean }) {
-  const mode = usePrefs((p) => p.textReveal);
-  if (mode === "none") return <Markdown text={text} />;
-  return <RevealMarkdown text={text} mode={mode} streaming={streaming} />;
-}
-
-function Item({
-  e,
-  provider,
-  streaming,
-}: {
-  e: TimelineEntry;
-  provider: string;
-  streaming: boolean;
-}) {
-  const it = e.item;
-  switch (it.type) {
-    case "user_message":
-      return <UserMessage text={it.text} />;
-    case "assistant_message":
-      return (
-        <View style={s.reply}>
-          <View style={s.replyHead}>
-            <View style={s.diamond} />
-            <T style={s.replyWho}>{provider}</T>
-          </View>
-          <Reply text={it.text} streaming={streaming} />
-        </View>
-      );
-    case "reasoning":
-      return (
-        <T numberOfLines={3} style={s.reasoning}>
-          {it.text}
-        </T>
-      );
-    case "tool_call":
-      return <ToolCall item={it} />;
-    case "compaction":
-      return <Compaction item={it} />;
-    case "error":
-      return (
-        <T v="mono" style={s.error}>
-          {it.message}
-        </T>
-      );
-    case "todo":
-      return <Todo items={it.items} />;
-    default:
-      return null;
-  }
 }
 
 /** Model and mode pickers for a live session, fed by the host's provider snapshot. */
@@ -378,33 +304,6 @@ const s = StyleSheet.create({
     alignSelf: "center",
   },
   empty: { textAlign: "center", marginTop: 40 },
-  reply: { marginTop: 18 },
-  replyHead: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 6,
-  },
-  diamond: {
-    width: 6,
-    height: 6,
-    backgroundColor: color.cyan2,
-    transform: [{ rotate: "45deg" }],
-  },
-  replyWho: { fontSize: 12.5, color: color.muted, fontWeight: "500" },
-  reasoning: { marginTop: 12, color: color.faint, fontStyle: "italic" },
-  error: { color: color.coral, marginTop: 12 },
-  todo: {
-    marginTop: 8,
-    gap: 4,
-    backgroundColor: color.panel,
-    borderWidth: 1,
-    borderColor: color.line,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  todoOpen: { color: color.text },
-  todoDone: { color: color.faint },
   thinking: {
     flexDirection: "row",
     alignItems: "center",

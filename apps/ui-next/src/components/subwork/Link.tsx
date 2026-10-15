@@ -4,7 +4,8 @@ import { useNow, useSubWorkStore } from "../../daemon/subwork";
 import { color } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
 import { T } from "../Text";
-import { elapsed } from "./model";
+import { openSubWork } from "./hooks";
+import { elapsed, fromSubagent } from "./model";
 
 /** The live subagent row a Task/Agent tool call spawned, matched on its tool call id. */
 function useSpawned(callId: string) {
@@ -27,14 +28,17 @@ export function SpawnedElapsed({ callId }: { callId: string }) {
   );
 }
 
-/** Body link from a subagent tool call to its row in the Tasks panel. */
+/** Body link from a subagent tool call to its details (or its to-do, when it claimed one). */
 export function SpawnedLink({ callId }: { callId: string }) {
   const sub = useSpawned(callId);
-  const open = useCallback(() => useUi.getState().setTool("tasks"), []);
+  const open = useCallback(() => {
+    const parent = useUi.getState().selected;
+    if (sub && parent) openSubWork(parent, fromSubagent(parent, sub));
+  }, [sub]);
   if (!sub) return null;
   return (
     <Pressable onPress={open} style={s.link} accessibilityRole="link">
-      <T style={s.linkT}>{`Open in Tasks · ${sub.status}`}</T>
+      <T style={s.linkT}>{`Open subagent · ${sub.status}`}</T>
     </Pressable>
   );
 }
