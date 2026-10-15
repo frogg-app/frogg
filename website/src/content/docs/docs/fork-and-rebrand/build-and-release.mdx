@@ -248,7 +248,8 @@ those jobs require the full matrix. Use it for test builds.
 
 ## What a release contains
 
-For Acme, `artifactPrefix` is `acme` and the brand id is `acme`:
+For Acme, `artifactPrefix` is `acme` and the brand id is `acme`. A stable tag (`v0.6.20`)
+carries the classic app:
 
 | Asset                                                   | Built by           |
 | ------------------------------------------------------- | ------------------ |
@@ -257,19 +258,30 @@ For Acme, `artifactPrefix` is `acme` and the brand id is `acme`:
 | `acme-0.6.20-mac-arm64.dmg`, `acme-0.6.20-mac-x64.dmg`, `.zip` and `.blockmap` files | desktop (macOS) |
 | `acme-daemon-0.6.20-<linux\|darwin\|win>-<x64\|arm64>.tar.gz` or `.zip`, each with `.sha256` | daemon bundles (6 targets) |
 | `acme-0.6.20-android-arm64-v8a.apk` (or `-unsigned.apk`) and `.sha256` | android |
-| `electron-latest.yml`, `electron-latest-linux.yml`, `electron-latest-mac.yml` (`electron-beta*` for prereleases), `release.json`, `SHA256SUMS-desktop` | updater-manifest |
+| `electron-latest.yml`, `electron-latest-linux.yml`, `electron-latest-mac.yml`, `release.json`, `SHA256SUMS-desktop` | updater-manifest |
 | `install.sh`, `uninstall.sh`, `install-docker.sh`, `uninstall-docker.sh` | meta (generated for your brand) |
 | `acme/studio:0.6.20` on Docker Hub                      | docker (optional)  |
 
-### Frogg Next assets
+A prerelease tag (`v0.6.21-beta.1`) carries the same daemon bundles, install scripts and
+Docker tag, `release.json`, and the client below instead of the classic desktop and APK.
 
-Upstream Frogg also attaches **Frogg Next**, the new client in `apps/ui-next`, to every release
-as `Frogg-Next-<version>-*` files (see
-[Release process](/docs/contributing/release-process/#frogg-next)). Frogg Next keeps its own
-fixed name and application id (`app.frogg.next`); it is not rebranded. Any brand whose `id` is
-not `frogg` therefore skips these jobs. Set `distribution.froggNext` in `brand.json` to override:
-`true` ships Frogg Next from your fork as is, `false` turns it off for a fork that kept the
-`frogg` id.
+### Frogg Next
+
+Prereleases ship **Frogg Next**, the new client in `apps/ui-next`, under your brand's
+[`next`](/docs/fork-and-rebrand/brand-manifest/#next) identity (see
+[Release process](/docs/contributing/release-process/#frogg-next)). For Acme it derives to
+`Acme Studio Next`, `com.acme.studio.next`, `acme-next://` and `acme-next-<version>-*` assets,
+with update feeds `acme-next-latest*.yml`; set `next` fields in `brand.json` to rename it.
+
+`next.enabled` decides whether your prereleases carry it. It defaults to off for any brand
+other than upstream frogg, so a fork's prereleases carry only the daemon until it opts in:
+
+```json
+{ "next": { "enabled": true } }
+```
+
+Turning it on also requires the `ui-next-desktop.yml` and `ui-next-android.yml` jobs to pass
+before a prerelease publishes.
 
 :::note
 Upstream Frogg publishes daemon bundles under an `Frogg-<version>-<os>-<arch>-daemon` name
@@ -282,24 +294,25 @@ real release; the naming contract lives in `packages/branding/src/artifact-contr
 
 Everything keys off `distribution.repository` in your brand.
 
-- **Desktop app.** electron-updater reads
-  `https://github.com/<repository>/releases/latest/download/` in the stable build, then
-  pins to the version named in `release.json`. The beta build (`<id>-beta`, built for
-  `-beta.N` tags) picks the newest non-draft beta. There is no channel setting: each build
-  updates within its own channel, and the two install side by side
-  ([release streams](/docs/contributing/release-streams/)). Updates download in the
-  background and install when the app quits; AppImage builds do not install on quit. Set
+- **Classic desktop app.** electron-updater reads
+  `https://github.com/<repository>/releases/latest/download/`, then pins to the version named
+  in `release.json`. It only ever sees stable releases. Updates download in the background and
+  install when the app quits; AppImage builds do not install on quit. Set
   `FROGG_ELECTRON_UPDATE_URL` to test against another HTTPS feed.
+- **Frogg Next.** Updates from the newest prerelease's `<next.feedPrefix>-latest*.yml` feeds
+  ([release streams](/docs/contributing/release-streams/#what-a-release-carries)).
 - **Daemon.** `install.sh` from your release downloads your daemon bundles. On the host,
   `<cliName> update` (Acme: `acme update`) checks
   `https://api.github.com/repos/<repository>/releases`, verifies the `.sha256`, swaps
-  versions and rolls back if the new daemon fails its health check.
+  versions and rolls back if the new daemon fails its health check. The Beta update channel,
+  `ACME_CHANNEL=beta` or `ACME_VERSION=<prerelease>` for `install.sh` install a prerelease
+  daemon into the same home.
 - **No repository, no updates.** Without `distribution.repository` the update mode is
   `disabled`: the desktop reports updates as disabled and the daemon refuses to self-update. A custom
   build never falls back to Frogg's releases.
 
-Only a semver prerelease suffix (`0.6.20-beta.1`) marks a GitHub prerelease. Stable
-clients ignore prereleases.
+Only a channel suffix (`0.6.20-beta.1`, `-rc.N`, `-alpha.N`) marks a GitHub prerelease. The
+classic app and the stable daemon channel ignore prereleases.
 
 Users install the daemon from your release:
 
@@ -318,6 +331,6 @@ Be clear-eyed about coverage:
   desktop runners, a debug Android APK, an unsigned iOS simulator build, the daemon
   bundle, installer tests, runtime isolation between Frogg and Acme daemons, and Nix.
 - **Not validated upstream:** a full tagged `release.yml` run and a real installed update
-  under a custom brand. Upstream publishes only the Frogg brand. Run your first release as
-  a beta tag, install it, then ship a second beta and confirm the update path before you
-  announce a stable release.
+  under a custom brand. Upstream publishes only the Frogg brand. A beta tag tests the daemon
+  and Frogg Next, not the classic app, so confirm the classic app's update path with two
+  stable releases (a test repository works) before you announce one.

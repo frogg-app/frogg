@@ -308,8 +308,8 @@ Next: [Architecture](/docs/contributing/architecture/) and [Testing](/docs/contr
 ## Bracket + Rail prototype
 
 The `frogg-interface-design-mockups` research branch contains `apps/ui-next`, an
-experimental Expo Router client. Its **Frogg Next** APK uses `app.frogg.next`, so it
-installs alongside Frogg and Frogg beta. This prototype is not a beta or stable release.
+Expo Router client that prerelease tags ship. Its **Frogg Next** APK uses `app.frogg.next`
+(the brand's `next` identity), so it installs alongside Frogg.
 
 ### Android build
 
@@ -332,7 +332,7 @@ directories; this command does not publish an artifact or require CI.
 
 The same prototype can be packaged as a standalone **Frogg Next** Electron app for
 Apple Silicon. It uses `app.frogg.next` and its own `Frogg Next` application-data directory,
-so it installs beside Frogg and Frogg beta. It bundles the prototype web UI and fonts;
+so it installs beside Frogg. It bundles the prototype web UI and fonts;
 it connects to separately installed daemons and does not include a daemon or an updater.
 The first host defaults to `127.0.0.1:9999`; add a LAN or tailnet daemon in Hosts.
 This shell does not expose the production desktop native bridge or register pairing links.

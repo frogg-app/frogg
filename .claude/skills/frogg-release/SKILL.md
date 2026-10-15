@@ -96,8 +96,9 @@ Stable. Cut a beta only for a change that already ran in Development.
 For beta, verify explicit version routing independently of stable Latest. Do not
 mark a beta as Latest. Betas are cut only from `main` (`npm run release:beta`) and stable
 releases only from `stable` (`release:patch`, `release:promote`); fixes reach stable with
-`release:backport`. A beta tag builds frogg beta (`FROGG_BRAND_CHANNEL=beta`: its own app
-id, `frogg-beta-*` assets, `electron-beta*.yml`), so check those names on beta releases. See
+`release:backport`. A beta tag ships Frogg Next (`Frogg-Next-*` assets,
+`frogg-next-latest*.yml` feeds) plus the normal daemon bundles, and no classic desktop, APK or
+`electron-*` feeds; a stable tag ships the classic app and no Frogg Next. Check those names. See
 website/src/content/docs/docs/contributing/release-streams.mdx. Stop automatic retries when the same deterministic failure
 recurs; repair its cause before another attempt. Preserve tags when cleaning
 superseded drafts unless the user explicitly requests tag deletion.

@@ -22,7 +22,7 @@ function streams(t) {
   const F = 380;
   const body = [
     laneLabel(t, { y: S, title: "stable", subtitle: "ships frogg", color: t.stable }),
-    laneLabel(t, { y: M, title: "main", subtitle: "ships frogg beta", color: t.beta }),
+    laneLabel(t, { y: M, title: "main", subtitle: "ships Frogg Next betas", color: t.beta }),
     text(t, 32, F + 4, "feature branches", { size: 12, color: t.muted }),
     lane(t, { y: S, x1: 200, x2: 960, color: t.stable }),
     lane(t, { y: M, x1: 200, x2: 960, color: t.beta }),
@@ -103,8 +103,9 @@ function streams(t) {
   return svg(t, W, H, body.join("\n"));
 }
 
-// 2. frogg and frogg beta on one machine.
-function sideBySide(t) {
+// 2. What each kind of release carries: the classic app on stable, Frogg Next on a prerelease,
+//    the same daemon on both.
+function releaseContents(t) {
   const W = 1120;
   const H = 400;
   const column = (x, { title, color, rows, note }) => {
@@ -123,52 +124,52 @@ function sideBySide(t) {
     return out.join("\n");
   };
   const body = [
+    text(t, 40, 44, "One daemon identity; the client follows the version.", {
+      size: 14,
+      weight: 600,
+    }),
     text(
       t,
       40,
-      44,
-      "One machine, two installs. Nothing is shared: port, data, service, CLI, app id.",
+      66,
+      "Prereleases test Frogg Next and the next daemon; stable keeps the classic app.",
       {
-        size: 14,
-        weight: 600,
+        size: 13,
+        color: t.muted,
       },
     ),
-    text(t, 40, 66, "Run your agents in frogg; install each beta in frogg beta to try it.", {
-      size: 13,
-      color: t.muted,
-    }),
     column(40, {
-      title: "frogg",
+      title: "Stable release  vX.Y.Z",
       color: t.stable,
       rows: [
-        ["App", "frogg"],
+        ["Apps", "frogg desktop + APK"],
+        ["App id", "app.frogg.frogg"],
         ["Daemon", "frogg-daemon :9999"],
         ["Data", "~/.frogg"],
-        ["CLI", "frogg"],
-        ["App id", "app.frogg.frogg"],
+        ["Feeds", "electron-latest*.yml"],
       ],
-      note: "Updates to stable releases only",
+      note: "The classic app updates to stable releases only",
     }),
     column(640, {
-      title: "frogg beta",
+      title: "Prerelease  vX.Y.Z-beta.N",
       color: t.beta,
       rows: [
-        ["App", "frogg beta"],
-        ["Daemon", "frogg-beta-daemon :9989"],
-        ["Data", "~/.frogg-beta"],
-        ["CLI", "frogg-beta"],
-        ["App id", "app.frogg.frogg.beta"],
+        ["Apps", "Frogg Next desktop + APK"],
+        ["App id", "app.frogg.next"],
+        ["Daemon", "frogg-daemon :9999"],
+        ["Data", "~/.frogg"],
+        ["Feeds", "frogg-next-latest*.yml"],
       ],
-      note: "Updates to betas only",
+      note: "Frogg Next updates to prereleases",
     }),
-    `<path d="M 500 214 L 626 214" stroke="${t.muted}" stroke-width="2" marker-end="url(#arrow-muted)"/>`,
-    text(t, 560, 200, "agents build it", { size: 12, color: t.muted, anchor: "middle" }),
-    text(t, 560, 236, "you test it", { size: 12, color: t.muted, anchor: "middle" }),
+    `<path d="M 626 214 L 500 214" stroke="${t.muted}" stroke-width="2" marker-end="url(#arrow-muted)"/>`,
+    text(t, 563, 200, "promote", { size: 12, color: t.muted, anchor: "middle" }),
+    text(t, 563, 236, "a beta line", { size: 12, color: t.muted, anchor: "middle" }),
     text(
       t,
       40,
       372,
-      "Worktree dev daemons (npm run dev:server) use their own home and port, so they touch neither install.",
+      "A prerelease daemon is the normal daemon on a newer version: FROGG_CHANNEL=beta, or the Beta update channel.",
       {
         size: 12.5,
         color: t.muted,
@@ -192,7 +193,7 @@ function fork(t) {
       t,
       32,
       38,
-      "Upstream releases arrive on your main, ship to your testers as Acme Beta, then to your users.",
+      "Upstream releases arrive on your main, ship to your testers as Acme Next betas, then to your users.",
       {
         size: 13,
         color: t.muted,
@@ -205,7 +206,7 @@ function fork(t) {
     laneLabel(t, { y: US + 8, title: "stable", subtitle: "upstream/stable", color: t.upstream }),
     laneLabel(t, { y: UM + 8, title: "main", subtitle: "upstream/main", color: t.upstream }),
     laneLabel(t, { y: FS + 8, title: "stable", subtitle: "ships Acme", color: t.stable }),
-    laneLabel(t, { y: FM + 8, title: "main", subtitle: "ships Acme Beta", color: t.beta }),
+    laneLabel(t, { y: FM + 8, title: "main", subtitle: "ships Acme Next betas", color: t.beta }),
     lane(t, { y: US, x1: 220, x2: X2, color: t.upstream }),
     lane(t, { y: UM, x1: 220, x2: X2, color: t.upstream, dashed: true }),
     lane(t, { y: FS, x1: 220, x2: X2, color: t.stable }),
@@ -330,7 +331,7 @@ function versions(t) {
     body.push(text(t, x, labelY, version, { size: 12, mono: true, anchor: "middle", weight: 600 }));
     body.push(text(t, x, Y + 30, note, { size: 11.5, color: t.muted, anchor: "middle" }));
     body.push(
-      text(t, x, Y + 48, channel === "beta" ? "beta app" : "stable app", {
+      text(t, x, Y + 48, channel === "beta" ? "prerelease" : "stable", {
         size: 11.5,
         color,
         anchor: "middle",
@@ -362,7 +363,7 @@ function versions(t) {
 
 const DIAGRAMS = {
   "release-streams": streams,
-  "side-by-side": sideBySide,
+  "release-contents": releaseContents,
   "fork-streams": fork,
   "version-order": versions,
   ...WORKFLOW_DIAGRAMS,

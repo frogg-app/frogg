@@ -10,7 +10,7 @@
 </defs>
 <rect width="1000" height="440" rx="16" fill="#ffffff"/>
 <text x="32" y="116" font-size="20.3" font-weight="700" fill="#1f8a55" text-anchor="start">stable</text><text x="32" y="134" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">ships frogg</text>
-<text x="32" y="286" font-size="20.3" font-weight="700" fill="#c77700" text-anchor="start">main</text><text x="32" y="304" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">ships frogg beta</text>
+<text x="32" y="286" font-size="20.3" font-weight="700" fill="#c77700" text-anchor="start">main</text><text x="32" y="304" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">ships Frogg Next betas</text>
 <text x="32" y="384" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">feature branches</text>
 <line x1="200" y1="120" x2="960" y2="120" stroke="#1f8a55" stroke-width="4" stroke-linecap="round" stroke-opacity="0.8"/>
 <line x1="200" y1="290" x2="960" y2="290" stroke="#c77700" stroke-width="4" stroke-linecap="round" stroke-opacity="0.8"/>

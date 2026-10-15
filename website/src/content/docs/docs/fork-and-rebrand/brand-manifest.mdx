@@ -192,7 +192,7 @@ work.
 | `pairingImage`     | image name without tag       | none                                     | Pairing page image                              |
 | `iosStoreId`       | digits                       | none                                     | App Store Connect app ID for `eas submit`       |
 | `expoProjectId`    | UUID                         | none                                     | EAS project ID                                  |
-| `froggNext`        | boolean                      | `true` for upstream frogg, else `false`  | Attach the Frogg Next client to each release ([Build and release](/docs/fork-and-rebrand/build-and-release/#frogg-next-assets)) |
+| `froggNext`        | boolean                      | none                                     | Deprecated: use [`next.enabled`](#next). Still read when `next.enabled` is unset |
 
 Use `github-release` for Electron. `tauri-signed` is a legacy value: it requires
 `updaterPublicKey` and has no effect on Electron builds.
@@ -414,44 +414,40 @@ daemon bundle supplies the `frogg` CLI (sha256-checked) and whose tag supplies t
 API types. Without `FROGG_VERSION`, `FROGG_REF` names a branch, tag or commit of
 `frogg-app/frogg` to build the CLI from source.
 
-## Channels
+## Next
 
-Every brand builds twice: the **stable** build and a **beta** build that installs beside it
-(see [Release streams](/docs/contributing/release-streams/)). The release workflow builds the
-beta channel for `-beta.N` tags; locally, `FROGG_BRAND_CHANNEL=beta npm run brand:prepare`
-or `npm run brand:check -- --brand <dir> --channel beta` does the same.
+Every build has the brand's one identity: the fields above name the daemon, CLI, home, port and
+the classic app on every release. Prerelease tags (`-beta.N`) ship **Frogg Next**
+(`apps/ui-next`) instead of the classic app, under its own identity so it installs beside the
+classic app (see [Release streams](/docs/contributing/release-streams/#what-a-release-carries)).
+The `next` block names that identity. Every key is optional:
 
-The beta build derives its identity from the stable one. Override any of it under
-`channels.beta`:
+| Key                 | Default                                               | Example (`acme`)        |
+| ------------------- | ----------------------------------------------------- | ----------------------- |
+| `enabled`           | `true` for upstream frogg, else `false` (prereleases then carry only the daemon) | `true` |
+| `name`              | `<name> Next` (`<name> next` for an all-lowercase name) | `Acme Studio Next`    |
+| `applicationId`     | `<applicationId>.next`                                | `com.acme.studio.next`  |
+| `scheme`            | `<scheme>-next`                                       | `acme-next`             |
+| `userDataDir`       | the `name` above                                      | `Acme Studio Next`      |
+| `artifactPrefix`    | `<artifactPrefix>-next`                               | `acme-next`             |
+| `desktopBinaryName` | `<cliName>-next`                                      | `acme-next`             |
+| `feedPrefix`        | `<id>-next`: update feeds `<feedPrefix>-latest*.yml`  | `acme-next`             |
 
-| Key                 | Default                          | Example (`acme`)             |
-| ------------------- | -------------------------------- | ---------------------------- |
-| `name`, `fullName`  | `<name> Beta` (`<name> beta` for an all-lowercase name) | `Acme Studio Beta` |
-| `applicationId`     | `<applicationId>.beta`           | `com.acme.studio.beta`       |
-| `daemonPort`        | `daemonPort - 10`                | `10089`                      |
-| `webPort`           | beta `daemonPort - 1`; all four ports must differ | `10088`     |
-| `cliName`           | `<cliName>-beta`                 | `acme-beta`                  |
-| `desktopBinaryName` | `<desktopBinaryName>-beta`       | `acme-desktop-beta`          |
-| `homeDir`           | `<homeDir>-beta`                 | `.acme-beta`                 |
-| `envPrefix`         | `<envPrefix>_BETA`               | `ACME_BETA`                  |
-| `scheme`            | `<scheme>-beta`                  | `acme-beta`                  |
-| `serviceName`       | `<id>-beta-daemon`               | `acme-beta-daemon`           |
-| `launchdLabel`      | `<beta applicationId>-daemon`    | `com.acme.studio.beta-daemon` |
-| `artifactPrefix`    | `<artifactPrefix>-beta`          | `acme-beta`                  |
-| `badge`             | `true`: an amber BETA ribbon on the generated icons | |
+`applicationId`, `scheme`, `artifactPrefix` and `desktopBinaryName` must differ from the stable
+identity's. Upstream frogg sets them explicitly: `Frogg Next`, `app.frogg.next`, `frogg-next`,
+`Frogg-Next`. A custom brand may not use frogg's.
 
 ```json
 {
-  "channels": {
-    "beta": { "name": "Acme Preview", "daemonPort": 10200 }
-  }
+  "next": { "enabled": true, "name": "Acme Preview", "artifactPrefix": "Acme-Preview" }
 }
 ```
 
-Everything else (colours, links, distribution, daemon defaults, provider policy) is shared.
-The beta build drops `distribution.iosStoreId`, since a store listing belongs to one
-application id. Its resolved `id` is `<id>-beta`, so skills, storage keys and release assets
-are its own.
+When Frogg Next is promoted, it is built under the stable identity instead and replaces the
+classic app on stable releases; the `next` identity stays the prerelease one.
+
+`channels.beta` from older manifests is accepted and ignored: there is no separate beta
+identity any more. Remove it when convenient.
 
 ## Resolved output
 
@@ -466,11 +462,9 @@ adds derived values you cannot set directly:
 | `distribution.releaseBase`   | `https://github.com/<repository>/releases`              |
 | `distribution.updateMode`    | Resolved `updates`                                      |
 | `pairing.autoConfirmLocal`   | Resolved `autoConfirmLocal`                             |
-| `legacyFrogg`                  | `true` only for the stable build of `brands/frogg`        |
-| `channel`                    | `"stable"` or `"beta"`                                  |
-| `stockFrogg`                 | `true` for either build of `brands/frogg` (selects frogg's theme) |
-| `channelBadge`               | Whether the icons carry the beta ribbon                 |
-| `channels.stable`, `channels.beta` | Both builds' id, name, application id, CLI, scheme, port, home and service, so each can name the other |
+| `legacyFrogg`                  | `true` only for `brands/frogg`                           |
+| `stockFrogg`                 | `true` for a brand whose id is `frogg` (selects frogg's theme) |
+| `next`                       | The resolved [Frogg Next identity](#next), every key filled in; `apps/ui-next` reads it from `.generated/branding/brand.json` |
 | `daemon.bindHost`            | `0.0.0.0` for `bind: "all"`, `127.0.0.1` for `"loopback"`  |
 | `daemon.workspaceServicesBindHost` | `0.0.0.0` for `workspaceServicesBind: "all"`, else `127.0.0.1` |
 | `daemon.trustLan`            | `true` for `frogg`, else `false`                        |

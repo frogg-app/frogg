@@ -15,7 +15,7 @@
 <rect x="16" y="400" width="1148" height="186" rx="12" fill="#6d28d9" fill-opacity="0.06" stroke="#dfe3e2"/>
 <text x="32" y="426" font-size="16.2" font-weight="700" fill="#6d28d9" text-anchor="start">upstream  (frogg-app/frogg)</text>
 <text x="32" y="128" font-size="20.3" font-weight="700" fill="#1f8a55" text-anchor="start">stable</text><text x="32" y="146" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">ships Acme</text>
-<text x="32" y="228" font-size="20.3" font-weight="700" fill="#c77700" text-anchor="start">main</text><text x="32" y="246" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">ships Acme Beta</text>
+<text x="32" y="228" font-size="20.3" font-weight="700" fill="#c77700" text-anchor="start">main</text><text x="32" y="246" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">ships Acme Next betas</text>
 <text x="32" y="324" font-size="20.3" font-weight="700" fill="#8a9491" text-anchor="start">feature/*</text><text x="32" y="342" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">your changes</text>
 <text x="32" y="474" font-size="20.3" font-weight="700" fill="#6d28d9" text-anchor="start">main</text><text x="32" y="492" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">upstream/main</text>
 <text x="32" y="554" font-size="20.3" font-weight="700" fill="#6d28d9" text-anchor="start">stable</text><text x="32" y="572" font-size="16.2" font-weight="400" fill="#5b6462" text-anchor="start">upstream/stable</text>

@@ -1,6 +1,6 @@
 ---
 title: Updates
-description: Update daemons installed with install.sh, Docker or Nix, run a beta daemon beside the stable one, enable automatic updates and roll back.
+description: Update daemons installed with install.sh, Docker or Nix, follow prerelease daemons on the beta channel, enable automatic updates and roll back.
 sidebar:
   order: 5
 ---
@@ -16,15 +16,24 @@ frogg update
 frogg update --to 0.6.18        # pin a version, including older ones
 ```
 
-Each install updates within its own channel. `frogg` takes stable releases only; betas are
-a separate install, `frogg-beta` (service `frogg-beta-daemon`, port 9989 and web client 9988, state in
-`~/.frogg-beta`), which takes `-beta.N` releases only. Run both on one host if you like;
-install the beta with the `install.sh` attached to any beta release. `--channel` is kept
-for scripts, but naming the other channel is an error that points you at the other install.
+There is one daemon install. It updates on one of two channels: **stable** takes stable
+releases only; **beta** takes the newest release of either kind, prereleases (`-beta.N`)
+included, so a prerelease daemon moves on to the next stable release when that is newer. Both
+install into the same home, service and port. Without `--channel`, the CLI (and a client check
+that names no channel) uses the running version's channel: a `-beta.N` version is on beta,
+anything else on stable.
+
+```sh
+frogg update --channel beta                       # the newest release, prereleases included
+frogg update --channel stable --to 1.6.13         # back from a prerelease to a stable version
+```
+
+In the app, the host's **Daemon & updates** settings have a Stable/Beta **Release channel**
+switch. It writes `daemon.autoUpdate.channel`, and the check and update there use it.
 
 How it works:
 
-1. Finds the newest release on GitHub (`frogg-app/frogg`) for this install's channel.
+1. Finds the newest release on GitHub (`frogg-app/frogg`) on the selected channel.
 2. Downloads the daemon bundle, verifies its `.sha256`, and unpacks it to
    `~/.local/share/frogg/versions/<version>`.
 3. Switches the `current` link, restarts the service (from a transient `systemd-run` unit
@@ -55,6 +64,9 @@ The same update runs from the app: **host settings → Overview → Daemon updat
   }
 }
 ```
+
+Automatic updates follow `daemon.autoUpdate.channel`: `"stable"` when unset, `"beta"` to take
+prereleases too.
 
 The first check runs five minutes after start. Every check logs its result and the time of
 the next one, whether or not it found anything:
@@ -119,32 +131,21 @@ renames made since the upgrade are lost too. With no backup, the daemon either n
 version 1 file or was set up on 1.5.29 or later. In that case, remove `principals.json` and
 claim the daemon again after rolling back.
 
-## Installing the beta daemon from a client
+## Prerelease daemons
 
-A stable daemon can install, update and remove the beta daemon on its own host for a
-connected client. This is owner-only (`daemon.manage`) and advertised as
-`server_info.features.betaChannelManagement`. It powers the app's Developer settings.
+Prereleases carry the same daemon bundles as stable releases, under the same identity. Install
+one fresh with the install script:
 
-- **Status** (`daemon.beta_channel.get_status`): whether `frogg-beta` is installed and which
-  version (read from `~/.local/share/frogg-beta/current`), whether it answers on port 9989,
-  and the newest published beta release. The newest beta is the highest-versioned release
-  that is published (not a draft), marked prerelease on GitHub, and carries a channel suffix
-  such as `-beta.N`. The same lookup tells the desktop app which beta build to download.
-- **Install or update** (`daemon.beta_channel.install`, optionally a specific beta version):
-  downloads that release's `install.sh`, checks it against the sha256 digest GitHub records
-  for the asset, checks that its brand header is the beta build's, and runs it. The script
-  then downloads and verifies the beta bundle itself. The stable daemon's `FROGG_*`
-  environment (state directory, install directory, listen address) is removed first, so the
-  run cannot touch the stable install.
-- **Uninstall** (`daemon.beta_channel.uninstall`, optionally purging `~/.frogg-beta`): runs the
-  release's `uninstall.sh` with the same checks.
+```sh
+curl -fsSL https://frogg.app/install.sh | FROGG_CHANNEL=beta bash          # newest prerelease
+curl -fsSL https://frogg.app/install.sh | FROGG_VERSION=1.6.14-beta.2 bash # an exact one
+```
 
-A run reports progress and each installer output line on `daemon.beta_channel.run.progress`,
-and ends with `daemon.beta_channel.run.completed`. One run happens at a time. It is refused
-when the daemon is itself the beta, on Windows (there is no beta installer script; install
-the Windows beta bundle from the release page), in Docker, and for Nix installs. The status
-reports the reason. The run is a child of the stable daemon, so restarting the stable daemon
-mid-run ends it; run it again.
+For Docker, a prerelease image is pushed under its exact tag only:
+`FROGG_VERSION=1.6.14-beta.2 bash install-docker.sh --update`.
+
+A `frogg-beta` daemon from before this model (port 9989, state in `~/.frogg-beta`) no longer
+receives updates. Remove it with the `uninstall.sh` it was installed with.
 
 ## Not self-updatable
 
@@ -181,8 +182,9 @@ Desktop and mobile apps don't update in place across the rename; install them ag
 
 ## Desktop and mobile apps
 
-- **Desktop** checks GitHub releases and installs on quit; choose Stable or Beta. See
+- **Desktop** checks GitHub releases and installs on quit. The classic app follows stable
+  releases; Frogg Next, which prereleases ship, follows prereleases. See
   [desktop app](/docs/desktop-mobile-cli/desktop/#updates).
-- **Android** checks GitHub releases in the app and installs the new APK itself; choose
-  Stable or Beta. See [Android and iOS](/docs/desktop-mobile-cli/mobile/#updates).
+- **Android** checks GitHub releases in the app and installs the new APK itself, on the same
+  split. See [Android and iOS](/docs/desktop-mobile-cli/mobile/#updates).
 - The **web app** is served by the daemon, so it updates with the daemon.
