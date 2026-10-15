@@ -257,6 +257,8 @@ if (values["export-only"]) {
   ]);
   checkPackagedFiles(outDir);
   writeFeedFragment(outDir);
+  // The release job names the checksum list and feeds from this, without loading the brand.
+  writeFileSync(path.join(outDir, "identity.json"), `${JSON.stringify(identity, null, 2)}\n`);
   await writeElectronChecksums(outDir);
   console.log(`${target.label} artifacts: ${outDir}`);
 }

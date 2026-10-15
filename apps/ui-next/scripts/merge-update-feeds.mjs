@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Merges the per-target `<feed>.<target>.feed.json` fragments build-desktop.mjs leaves into the
 // electron-updater feeds `<feed>` (e.g. frogg-next-latest-mac.yml from the arm64 and x64 builds),
-// then deletes the fragments. The feeds are written as JSON, which is valid YAML to the updater.
+// then deletes the fragments. The feeds are written in electron-builder's own YAML layout.
 // No dependencies: the release job runs it straight from a checkout.
 // Usage: node apps/ui-next/scripts/merge-update-feeds.mjs <dir> [--expect name.yml ...]
 import { readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -32,6 +32,34 @@ export function mergeFeed(feed, fragments) {
   return { ...first, files, ...(releaseDate ? { releaseDate } : {}) };
 }
 
+/** File names stay plain like electron-builder writes them; anything else is single-quoted. */
+const scalar = (value) => {
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  const text = String(value);
+  if (/^[A-Za-z][\w.+-]*$/.test(text) && !/^(true|false|null|yes|no|on|off|y|n)$/i.test(text))
+    return text;
+  return `'${text.replaceAll("'", "''")}'`;
+};
+
+/** electron-builder's feed layout: top-level scalars, and `files` as a list of flat maps. */
+export function toYaml(feed) {
+  const lines = [];
+  for (const [key, value] of Object.entries(feed)) {
+    if (value === undefined || value === null) continue;
+    if (!Array.isArray(value)) {
+      lines.push(`${key}: ${scalar(value)}`);
+      continue;
+    }
+    lines.push(`${key}:`);
+    for (const item of value) {
+      Object.entries(item)
+        .filter(([, v]) => v !== undefined && v !== null)
+        .forEach(([k, v], i) => lines.push(`${i ? "    " : "  - "}${k}: ${scalar(v)}`));
+    }
+  }
+  return `${lines.join("\n")}\n`;
+}
+
 /** Groups the fragments in `dir` by feed and writes each merged feed; returns the feed names. */
 export function mergeUpdateFeeds(dir) {
   const groups = new Map();
@@ -44,7 +72,7 @@ export function mergeUpdateFeeds(dir) {
     rmSync(path.join(dir, entry));
   }
   for (const [feed, fragments] of groups)
-    writeFileSync(path.join(dir, feed), `${JSON.stringify(mergeFeed(feed, fragments), null, 2)}\n`);
+    writeFileSync(path.join(dir, feed), toYaml(mergeFeed(feed, fragments)));
   return [...groups.keys()].sort();
 }
 
