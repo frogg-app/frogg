@@ -1,4 +1,4 @@
-import { File, FilePlus, FolderPlus, MoreHorizontal, Plus, X } from "lucide-react-native";
+import { Download, File, FilePlus, FolderPlus, MoreHorizontal, Plus, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from "react-native";
 import {
@@ -24,7 +24,7 @@ import { useConfirm } from "./Confirm";
 import { Menu, useAnchor, type MenuEntry } from "./Menu";
 import { usePrompt } from "./Prompt";
 
-import { newEntrySpec } from "./fileActions";
+import { downloadEntry, newEntrySpec } from "./fileActions";
 import { hasFileDraft, useFileDocument } from "./useFileDocument";
 // ---- Viewer -----------------------------------------------------------------------------------
 
@@ -59,8 +59,10 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
       }),
     [confirm, revert],
   );
+  const download = useCallback(() => void downloadEntry(path, "file"), [path]);
   const items = useMemo<MenuEntry[]>(
     () => [
+      { label: "Download", icon: Download, onPress: download },
       { label: "Copy relative path", onPress: () => void copyText(path) },
       { label: "Reload from disk", disabled: dirty || saving, onPress: reload },
       {
@@ -70,7 +72,7 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
         onPress: discardDraft,
       },
     ],
-    [path, dirty, saving, reload, discardDraft],
+    [path, dirty, saving, reload, discardDraft, download],
   );
   useEffect(() => {
     if (usePrefs.getState().autoPinTabs) addTab(path);
@@ -122,6 +124,14 @@ function FileEditor({ path, onBack }: { path: string; onBack?: () => void }) {
             disabled={!dirty || saving}
           />
         )}
+        <Pressable
+          onPress={download}
+          accessibilityRole="button"
+          accessibilityLabel="Download file"
+          style={st.headIcon}
+        >
+          {({ hovered }) => <Download size={15} color={hovered ? color.text : color.faint} />}
+        </Pressable>
         <View ref={menu.ref} collapsable={false}>
           <Pressable onPress={menu.open} accessibilityLabel="Editor actions" style={st.headIcon}>
             <MoreHorizontal size={16} color={color.faint} />

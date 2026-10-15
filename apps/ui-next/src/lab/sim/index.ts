@@ -30,6 +30,7 @@ export function simulatedRpcs(emit: Emit): Rpcs {
     },
     listDirectory: files.listDirectory,
     readFile: files.readFile,
+    zipDirectory: files.zipDirectory,
     writeFile: files.writeFile,
     createFileEntry: files.createFileEntry,
     renameFileEntry: files.renameFileEntry,

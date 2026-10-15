@@ -1,7 +1,7 @@
 import { useEffect, type ComponentType } from "react";
 import { StyleSheet, View } from "react-native";
 import { CompanionPanel } from "../../components/CompanionPanel";
-import { FilesPanel } from "../../components/Files";
+import { FilesPanel, FileViewer } from "../../components/Files";
 import { HostsPanel } from "../../components/HostsPanel";
 import { HostDetail } from "../../components/hosts/HostDetail";
 import { PairDevice } from "../../components/hosts/PairDevice";
@@ -66,6 +66,20 @@ const panelVariants: Variant[] = PANELS.map(([id, label, P]) => ({
   h: 520,
   bleed: true,
 }));
+
+/** The Files tool: tree beside the viewer, so downloads run end to end (the lab shows toasts). */
+function FilesWithViewer() {
+  const filePath = useUi((s) => s.filePath);
+  useEffect(() => useUi.getState().openFile("packages/server/src/terminal/pty.ts"), []);
+  return (
+    <Row>
+      <Column width={340}>
+        <FilesPanel />
+      </Column>
+      <View style={s.viewer}>{filePath && <FileViewer path={filePath} />}</View>
+    </Row>
+  );
+}
 
 /** The Hosts tool's main pane, with its pairing dialog mounted; `view` picks what it shows. */
 function hostPane(view: { viewId: string | null; pair?: boolean }): ComponentType {
@@ -250,6 +264,17 @@ export const tools: Entry[] = [
     variants: panelVariants,
   },
   {
+    id: "files-viewer",
+    name: "Files tree and viewer",
+    category: "Rail tools & widgets",
+    path: "components/Files.tsx · components/tools/FileViewer.tsx",
+    purpose:
+      "The Files tool against the simulated checkout: tree menus (Download, Download as zip), the viewer's header download, and the toasts a download raises.",
+    polish: "tree rows: enter 220ms ease, 18ms stagger · chevron rotate 180ms ease",
+    setup: selectPreview,
+    variants: [{ id: "tree", label: "Tree + viewer", C: FilesWithViewer, h: 640, bleed: true }],
+  },
+  {
     id: "streams",
     name: "StreamList",
     category: "Rail tools & widgets",
@@ -270,4 +295,5 @@ const s = StyleSheet.create({
   split: { flex: 1, flexDirection: "row" },
   list: { width: 300 },
   fill: { flex: 1 },
+  viewer: { flex: 1, minHeight: 620 },
 });

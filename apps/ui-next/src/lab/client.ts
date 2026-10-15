@@ -178,6 +178,7 @@ const features = {
   projectTodos: true,
   releaseStreams: true,
   providerSubagents: true,
+  directoryZip: true,
 };
 
 /** Flip an advertised daemon feature, to see a screen as it looks against an older daemon. */
