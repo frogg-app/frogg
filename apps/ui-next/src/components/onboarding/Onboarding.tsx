@@ -54,20 +54,20 @@ function useFirstRun(): void {
 }
 
 /**
- * The step the user left to do finished in the app: come back on our own once its dialog has
- * closed (pairing is the one that ends somewhere the user would otherwise be stuck).
+ * Back from pairing: once the hosts dialog closes, reopen on the host step, which shows whether
+ * the host is now connected (pairing closes the dialog before the connection lands). Skipped if
+ * the welcome questions were never answered: the walkthrough resumes where it was.
  */
 function useAutoResume(): void {
   const status = useOnboarding((st) => st.status);
   const level = useOnboarding((st) => st.level);
   const awayStep = useAway((st) => st.step);
   const sheet = useHostView((st) => st.sheet);
-  const done = useDone();
   useEffect(() => {
-    if (status !== "minimised" || awayStep !== "host" || sheet || !done.has("host")) return;
+    if (status !== "minimised" || awayStep !== "host" || sheet) return;
     useAway.setState({ step: null });
-    openOnboarding(nextStep("host", done, level));
-  }, [status, awayStep, sheet, done, level]);
+    openOnboarding(level ? "host" : undefined);
+  }, [status, awayStep, sheet, level]);
   // A hosts dialog opened from elsewhere (the first-launch pairing prompt) takes precedence.
   useEffect(() => {
     if (status === "active" && sheet) {
@@ -77,14 +77,27 @@ function useAutoResume(): void {
   }, [status, sheet]);
 }
 
-export function Onboarding({ phone, chipBottom }: { phone: boolean; chipBottom: number }) {
+/**
+ * `chipLeft` places the resume chip bottom-left, clear of the toast stack (desktop passes the
+ * expanded rail's width: RN-web views each stack at z-index 0, so the rail can't cover it).
+ * Without it the chip sits bottom-right.
+ */
+export function Onboarding({
+  phone,
+  chipBottom,
+  chipLeft,
+}: {
+  phone: boolean;
+  chipBottom: number;
+  chipLeft?: number;
+}) {
   useFirstRun();
   useAutoResume();
   const status = useOnboarding((st) => st.status);
   return (
     <>
       <OnboardingModal phone={phone} open={status === "active"} />
-      {status === "minimised" && <ResumeChip bottom={chipBottom} />}
+      {status === "minimised" && <ResumeChip bottom={chipBottom} left={chipLeft} />}
     </>
   );
 }
@@ -143,7 +156,7 @@ function OnboardingModal({ phone, open }: { phone: boolean; open: boolean }) {
 }
 
 /** Bottom-right while minimised: progress, resume, dismiss. Turns mint when the step it left for is done. */
-export function ResumeChip({ bottom }: { bottom: number }) {
+export function ResumeChip({ bottom, left }: { bottom: number; left?: number }) {
   const done = useDone();
   const level = useOnboarding((st) => st.level);
   const status = useOnboarding((st) => st.status);
@@ -158,7 +171,10 @@ export function ResumeChip({ bottom }: { bottom: number }) {
     if (at && done.has(at)) openOnboarding(nextStep(at, done, level));
     else openOnboarding();
   }, [done, level]);
-  const place = useMemo(() => [s.chipPlace, { bottom }], [bottom]);
+  const place = useMemo(
+    () => [s.chipPlace, left === undefined ? s.chipRight : { left }, { bottom }],
+    [bottom, left],
+  );
   const format = useCallback((v: number) => `${Math.round(v)}/${total}`, [total]);
   if (status !== "minimised") return null;
   const label = STEPS.find((x) => x.id === awayStep)?.label;
@@ -207,7 +223,8 @@ const s = StyleSheet.create({
   },
   phone: { flex: 1, backgroundColor: color.bg2 },
   fill: { flex: 1 },
-  chipPlace: { position: "absolute", right: 16, zIndex: 50, elevation: 14 },
+  chipPlace: { position: "absolute", zIndex: 50, elevation: 14 },
+  chipRight: { right: 16 },
   chip: {
     flexDirection: "row",
     alignItems: "center",

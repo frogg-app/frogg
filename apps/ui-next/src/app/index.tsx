@@ -257,7 +257,7 @@ export default function Shell() {
       <Palette />
       <NewSession />
       <ToastHost />
-      <Onboarding phone={false} chipBottom={40} />
+      <Onboarding phone={false} chipBottom={40} chipLeft={224} />
     </SafeAreaView>
   );
 }

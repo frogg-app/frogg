@@ -19,6 +19,7 @@ type Entry = NonNullable<ReturnType<typeof useConfig.getState>["providers"]>["en
 
 /** Installs run npm on the host and can take a while. */
 const INSTALL_TIMEOUT = 10 * 60_000;
+const PROBE_MS = 2000;
 
 /** Sign-in command per provider, run once on the host as the daemon's user. */
 const SIGN_IN: Record<string, string> = { claude: "claude", codex: "codex login" };
@@ -61,6 +62,14 @@ export function ProvidersStep() {
       live = false;
     };
   }, [online]);
+
+  // A host still probing its CLIs answers "loading"; read again until every provider settles.
+  const probing = snapshot?.entries.some((e) => e.status === "loading") ?? false;
+  useEffect(() => {
+    if (!online || !probing) return;
+    const t = setTimeout(() => void loadConfig(), PROBE_MS);
+    return () => clearTimeout(t);
+  }, [online, probing, snapshot]);
 
   const install = useCallback(async (provider: string) => {
     const client = getClient();
@@ -165,7 +174,7 @@ function ProviderLine({
     <View style={[s.row, !last && s.rowLine]}>
       <View style={s.grow}>
         <T style={s.name}>{e.label ?? providerLabel(e.provider)}</T>
-        {(e.error || hint) && (
+        {!!(e.error || hint) && (
           <T style={s.sub} numberOfLines={2}>
             {hint || e.error}
           </T>

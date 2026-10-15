@@ -77,7 +77,7 @@ export function HostStep() {
         <Button label="Enter an address" icon={Link2} onPress={direct} />
       </View>
       <Para faint>
-        The walkthrough steps aside while you pair and comes back once you’re connected.
+        The walkthrough steps aside while you pair and comes back when the dialog closes.
       </Para>
     </>
   );

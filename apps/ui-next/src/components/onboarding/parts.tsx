@@ -90,7 +90,7 @@ export function Choice<K extends string>({
               </View>
             )}
           </View>
-          {sub && <T style={s.choiceSub}>{sub}</T>}
+          {sub && <T style={[s.choiceSub, on && s.choiceSubOn]}>{sub}</T>}
         </Cut>
       )}
     </Pressable>
@@ -195,6 +195,7 @@ const s = StyleSheet.create({
   choiceTitle: { flex: 1, fontWeight: "600" },
   choiceTitleOn: { color: color.cyan2 },
   choiceSub: { color: color.faint, fontSize: 12.5, lineHeight: 18 },
+  choiceSubOn: { color: color.muted },
   box: {
     width: 15,
     height: 15,
