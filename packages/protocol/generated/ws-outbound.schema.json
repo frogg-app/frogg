@@ -38742,6 +38742,31 @@
                                     }
                                   },
                                   "additionalProperties": {}
+                                },
+                                "agentDefaults": {
+                                  "type": "object",
+                                  "propertyNames": {
+                                    "type": "string"
+                                  },
+                                  "additionalProperties": {
+                                    "type": "object",
+                                    "properties": {
+                                      "args": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "string"
+                                        }
+                                      },
+                                      "featureValues": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {}
+                                      }
+                                    },
+                                    "additionalProperties": {}
+                                  }
                                 }
                               },
                               "additionalProperties": {}
@@ -39108,6 +39133,31 @@
                                 }
                               },
                               "additionalProperties": {}
+                            },
+                            "agentDefaults": {
+                              "type": "object",
+                              "propertyNames": {
+                                "type": "string"
+                              },
+                              "additionalProperties": {
+                                "type": "object",
+                                "properties": {
+                                  "args": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "featureValues": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                      "type": "string"
+                                    },
+                                    "additionalProperties": {}
+                                  }
+                                },
+                                "additionalProperties": {}
+                              }
                             }
                           },
                           "additionalProperties": {}

@@ -122,6 +122,22 @@ export const FroggStreamsConfigSchema = z
   })
   .passthrough();
 
+/**
+ * Per-provider launch defaults for new agents in this project, keyed by provider id. Clients
+ * pre-fill the new-session form with them; the values stay editable before launch.
+ * `args` are extra CLI flags as typed (`["--chrome"]`); `featureValues` are provider feature
+ * values (`{ "fast_mode": true }`).
+ */
+export const FroggAgentDefaultsSchema = z.record(
+  z.string(),
+  z
+    .object({
+      args: z.array(z.string()).optional(),
+      featureValues: z.record(z.string(), z.unknown()).optional(),
+    })
+    .passthrough(),
+);
+
 export const FroggConfigRawSchema = z
   .object({
     worktree: FroggWorktreeConfigRawSchema.optional(),
@@ -129,6 +145,7 @@ export const FroggConfigRawSchema = z
     metadataGeneration: FroggMetadataGenerationSchema.optional(),
     ci: FroggCiConfigSchema.optional(),
     streams: FroggStreamsConfigSchema.optional(),
+    agentDefaults: FroggAgentDefaultsSchema.optional(),
   })
   .passthrough();
 
@@ -149,6 +166,7 @@ export const FroggConfigSchema = FroggConfigRawSchema.extend({
   // A malformed ci block must not take the rest of the config down with it.
   ci: FroggCiConfigSchema.optional().catch(undefined),
   streams: FroggStreamsConfigSchema.optional().catch(undefined),
+  agentDefaults: FroggAgentDefaultsSchema.optional().catch(undefined),
 })
   .passthrough()
   .catch({});
@@ -182,5 +200,6 @@ export type FroggConfigRaw = z.infer<typeof FroggConfigRawSchema>;
 export type FroggConfig = z.infer<typeof FroggConfigSchema>;
 export type FroggCiConfig = z.infer<typeof FroggCiConfigSchema>;
 export type FroggStreamsConfig = z.infer<typeof FroggStreamsConfigSchema>;
+export type FroggAgentDefaults = z.infer<typeof FroggAgentDefaultsSchema>;
 export type FroggConfigRevision = z.infer<typeof FroggConfigRevisionSchema>;
 export type ProjectConfigRpcError = z.infer<typeof ProjectConfigRpcErrorSchema>;
