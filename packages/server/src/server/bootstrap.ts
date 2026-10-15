@@ -6,23 +6,13 @@ import { constants, existsSync, unlinkSync } from "fs";
 import { open, rm } from "fs/promises";
 import { randomUUID } from "node:crypto";
 import { daemonHostname as getHostname } from "./daemon-hostname.js";
-import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Logger } from "pino";
 import { z } from "zod";
 import { createBranchChangeRouteHandler } from "./script-route-branch-handler.js";
 
 import { parseListenString, type ListenTarget } from "./listen-target.js";
-
-/** The state homes of this host's other channel daemons (stable, beta), not this daemon's own. */
-function siblingChannelHomes(froggHome: string): string[] {
-  const self = path.resolve(froggHome);
-  return [brand.channels.stable, brand.channels.beta]
-    .map((channel) => path.join(os.homedir(), channel.homeDir))
-    .filter((home) => path.resolve(home) !== self);
-}
 
 export { parseListenString, type ListenTarget } from "./listen-target.js";
 import { createExecutionHttpServer } from "./execution-service/http-server.js";
@@ -280,7 +270,6 @@ import {
   DEFAULT_AUTO_UPDATE_CONFIG,
 } from "./session/daemon/daemon-auto-updater.js";
 import { describeDaemonInstall } from "./session/daemon/daemon-update-install.js";
-import { BetaChannelService } from "./session/daemon/beta-channel-service.js";
 import { DevDaemonService } from "./session/daemon/dev-daemon-service.js";
 import { WEB_UI_DEFAULT_HOST, WebUiServer } from "./web-ui-server.js";
 import { DaemonUpdateService } from "./session/daemon/daemon-update-service.js";
@@ -2368,16 +2357,7 @@ export async function createFroggDaemon(
               retainAcrossGatewayRestart: Boolean(config.executionService),
               logger,
             });
-            const betaChannelService = new BetaChannelService({
-              logger,
-              modulePath: fileURLToPath(import.meta.url),
-            });
-            const devDaemonService = new DevDaemonService({
-              logger,
-              siblingWorkspaceFiles: siblingChannelHomes(config.froggHome).map((home) =>
-                path.join(home, "projects", "workspaces.json"),
-              ),
-            });
+            const devDaemonService = new DevDaemonService({ logger });
             const runningVersionRoot = updateService.installInfo.runningRoot;
             const hostResources = createHostResources({
               froggHome: config.froggHome,
@@ -2494,7 +2474,6 @@ export async function createFroggDaemon(
                 },
                 desktopManaged: config.desktopManaged === true,
                 update: updateService,
-                betaChannel: betaChannelService,
                 devDaemon: devDaemonService,
                 webUi: webUiServer,
                 hostResources,
@@ -2533,7 +2512,6 @@ export async function createFroggDaemon(
             {
               const server = wsServer;
               updateService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
-              betaChannelService.setBroadcaster((msg) => server.broadcast(wrapSessionMessage(msg)));
             }
             {
               const server = wsServer;

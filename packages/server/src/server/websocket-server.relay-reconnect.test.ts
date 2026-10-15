@@ -720,6 +720,28 @@ describe("relay external socket reconnect behavior", () => {
     await server.close();
   });
 
+  test("answers a retired beta channel request with an unsupported rpc_error", async () => {
+    const server = createServer();
+    const socket = new MockSocket();
+    await attachDirectAndHello({ server, socket, clientId: "client-retired-rpc" });
+
+    socket.emit(
+      "message",
+      JSON.stringify({
+        type: "session",
+        message: { type: "daemon.beta_channel.get_status.request", requestId: "r-retired" },
+      }),
+    );
+    const reply = sentEnvelopes(socket).find((envelope) => envelope.message?.type === "rpc_error");
+    expect(reply?.message?.payload).toMatchObject({
+      requestId: "r-retired",
+      requestType: "daemon.beta_channel.get_status.request",
+      code: "unsupported",
+    });
+
+    await server.close();
+  });
+
   test("rejects session messages before hello", async () => {
     const server = createServer();
     const socket = new MockSocket();

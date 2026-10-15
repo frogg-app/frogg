@@ -574,16 +574,6 @@ pub enum SessionMessage {
     DaemonUpdateGetStatusResponse(DaemonUpdateGetStatusResponse),
     #[serde(rename = "daemon.update.run.progress")]
     DaemonUpdateRunProgress(DaemonUpdateRunProgress),
-    #[serde(rename = "daemon.beta_channel.get_status.response")]
-    DaemonBetaChannelGetStatusResponse(DaemonBetaChannelGetStatusResponse),
-    #[serde(rename = "daemon.beta_channel.install.response")]
-    DaemonBetaChannelInstallResponse(DaemonBetaChannelInstallResponse),
-    #[serde(rename = "daemon.beta_channel.uninstall.response")]
-    DaemonBetaChannelUninstallResponse(DaemonBetaChannelUninstallResponse),
-    #[serde(rename = "daemon.beta_channel.start.response")]
-    DaemonBetaChannelStartResponse(DaemonBetaChannelStartResponse),
-    #[serde(rename = "daemon.beta_channel.stop.response")]
-    DaemonBetaChannelStopResponse(DaemonBetaChannelStopResponse),
     #[serde(rename = "daemon.dev_daemon.get_status.response")]
     DaemonDevDaemonGetStatusResponse(DaemonDevDaemonGetStatusResponse),
     #[serde(rename = "daemon.dev_daemon.start.response")]
@@ -600,10 +590,6 @@ pub enum SessionMessage {
     DaemonWebUiStartResponse(DaemonWebUiStartResponse),
     #[serde(rename = "daemon.web_ui.stop.response")]
     DaemonWebUiStopResponse(DaemonWebUiStopResponse),
-    #[serde(rename = "daemon.beta_channel.run.progress")]
-    DaemonBetaChannelRunProgress(DaemonBetaChannelRunProgress),
-    #[serde(rename = "daemon.beta_channel.run.completed")]
-    DaemonBetaChannelRunCompleted(DaemonBetaChannelRunCompleted),
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -13437,115 +13423,6 @@ pub struct DaemonUpdateRunProgressPayload {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelGetStatusResponse {
-    pub payload: DaemonBetaChannelGetStatusResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelGetStatusResponsePayload {
-    pub supported: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub reason: Option<String>,
-    #[serde(rename = "selfIsBeta")]
-    pub self_is_beta: bool,
-    pub platform: String,
-    pub installed: bool,
-    #[serde(rename = "installedVersion", skip_serializing_if = "Option::is_none")]
-    pub installed_version: Option<String>,
-    #[serde(rename = "installDir", skip_serializing_if = "Option::is_none")]
-    pub install_dir: Option<String>,
-    pub running: bool,
-    #[serde(rename = "runningVersion", skip_serializing_if = "Option::is_none")]
-    pub running_version: Option<String>,
-    pub port: f64,
-    #[serde(rename = "webPort", skip_serializing_if = "Option::is_none")]
-    pub web_port: Option<f64>,
-    #[serde(rename = "webRunning", skip_serializing_if = "Option::is_none")]
-    pub web_running: Option<bool>,
-    #[serde(rename = "serviceName")]
-    pub service_name: String,
-    #[serde(rename = "cliName")]
-    pub cli_name: String,
-    #[serde(rename = "homeDir")]
-    pub home_dir: String,
-    #[serde(rename = "latestVersion", skip_serializing_if = "Option::is_none")]
-    pub latest_version: Option<String>,
-    #[serde(rename = "latestReleaseUrl", skip_serializing_if = "Option::is_none")]
-    pub latest_release_url: Option<String>,
-    #[serde(rename = "latestPublishedAt", skip_serializing_if = "Option::is_none")]
-    pub latest_published_at: Option<String>,
-    #[serde(rename = "latestError", skip_serializing_if = "Option::is_none")]
-    pub latest_error: Option<String>,
-    pub run: serde_json::Value,
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelInstallResponse {
-    pub payload: DaemonBetaChannelInstallResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelInstallResponsePayload {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    pub accepted: bool,
-    #[serde(rename = "runId", skip_serializing_if = "Option::is_none")]
-    pub run_id: Option<String>,
-    #[serde(rename = "targetVersion", skip_serializing_if = "Option::is_none")]
-    pub target_version: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelUninstallResponse {
-    pub payload: DaemonBetaChannelUninstallResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelUninstallResponsePayload {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    pub accepted: bool,
-    #[serde(rename = "runId", skip_serializing_if = "Option::is_none")]
-    pub run_id: Option<String>,
-    #[serde(rename = "targetVersion", skip_serializing_if = "Option::is_none")]
-    pub target_version: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelStartResponse {
-    pub payload: DaemonBetaChannelStartResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelStartResponsePayload {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelStopResponse {
-    pub payload: DaemonBetaChannelStopResponsePayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelStopResponsePayload {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DaemonDevDaemonGetStatusResponse {
     pub payload: DaemonDevDaemonGetStatusResponsePayload,
 }
@@ -13792,57 +13669,4 @@ pub struct DaemonWebUiStopResponsePayload {
 pub struct DaemonWebUiStopResponsePayloadInterfacesItem {
     pub address: String,
     pub name: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelRunProgress {
-    pub payload: DaemonBetaChannelRunProgressPayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelRunProgressPayload {
-    pub run: DaemonBetaChannelRunProgressPayloadRun,
-    #[serde(rename = "logLine", skip_serializing_if = "Option::is_none")]
-    pub log_line: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelRunProgressPayloadRun {
-    #[serde(rename = "runId")]
-    pub run_id: String,
-    pub action: String,
-    #[serde(rename = "targetVersion", skip_serializing_if = "Option::is_none")]
-    pub target_version: Option<String>,
-    pub phase: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub message: Option<String>,
-    #[serde(rename = "startedAt")]
-    pub started_at: String,
-    pub at: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelRunCompleted {
-    pub payload: DaemonBetaChannelRunCompletedPayload,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelRunCompletedPayload {
-    #[serde(rename = "runId")]
-    pub run_id: String,
-    pub action: String,
-    pub status: DaemonBetaChannelRunCompletedPayloadStatus,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error: Option<String>,
-    pub at: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum DaemonBetaChannelRunCompletedPayloadStatus {
-    #[serde(rename = "succeeded")]
-    Succeeded,
-    #[serde(rename = "failed")]
-    Failed,
 }

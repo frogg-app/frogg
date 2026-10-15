@@ -83,6 +83,16 @@ describe("selectRelease", () => {
     expect(picked?.version).toBe("0.2.0-beta.1");
   });
 
+  test("beta channel moves a prerelease daemon on to a newer stable release", () => {
+    const picked = selectRelease({
+      releases: [release("v0.2.0-beta.1", { prerelease: true }), release("v0.2.0")],
+      currentVersion: "0.2.0-beta.1",
+      channel: "beta",
+      assetName,
+    });
+    expect(picked?.version).toBe("0.2.0");
+  });
+
   test("returns null when nothing newer exists and honours an exact version", () => {
     expect(
       selectRelease({ releases, currentVersion: "0.1.13", channel: "stable", assetName }),

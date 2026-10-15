@@ -26,20 +26,13 @@ interface SelfUpdateCommandOptions {
 }
 
 /**
- * The channel is fixed by the build: stable and beta are separate installs (`frogg` and
- * `frogg-beta`) with their own daemons, so one cannot update itself into the other. The flag is
- * kept so existing scripts and older clients that pass it still work.
+ * Stable takes stable releases only; beta also takes prereleases. Both install the same daemon
+ * into the same install directory and home, so switching channel is just picking a version.
  */
 export function parseChannel(raw: string | undefined): UpdateChannel {
-  if (raw === undefined || raw === brand.channel) return brand.channel;
-  if (raw !== "stable" && raw !== "beta") {
-    throw new Error(`invalid channel "${raw}" (expected stable or beta)`);
-  }
-  const other = brand.channels[raw];
-  throw new Error(
-    `this is ${brand.name}, which updates on the ${brand.channel} channel only. ` +
-      `The ${raw} build is a separate install: ${other.name} (\`${other.cliName}\`).`,
-  );
+  if (raw === undefined || raw === "stable") return "stable";
+  if (raw === "beta") return "beta";
+  throw new Error(`invalid channel "${raw}" (expected stable or beta)`);
 }
 
 function exitCodeFor(status: SelfUpdateResult["status"]): number {
@@ -171,7 +164,7 @@ export function selfUpdateCommand(): Command {
       // `--version` is the root program's flag and commander accepts it anywhere,
       // so the exact-release option is `--to`.
       .option("--to <version>", "Install this exact release instead of the newest one")
-      .option("--channel <channel>", `Release channel; always ${brand.channel} for this build`)
+      .option("--channel <channel>", "Release channel: stable (default) or beta (prereleases too)")
       .option("--check", "Only report whether an update is available")
       .option("--json", "Output progress and the result as JSON lines")
       .option(

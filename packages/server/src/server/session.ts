@@ -2714,16 +2714,6 @@ export class Session {
         return this.daemonSession.handleSkillsSetEnabledRequest(msg);
       case "daemon.skills.get_content.request":
         return this.daemonSession.handleSkillsGetContentRequest(msg);
-      case "daemon.beta_channel.get_status.request":
-        return this.daemonSession.handleBetaChannelGetStatusRequest(msg);
-      case "daemon.beta_channel.install.request":
-        return this.daemonSession.handleBetaChannelInstallRequest(msg);
-      case "daemon.beta_channel.uninstall.request":
-        return this.daemonSession.handleBetaChannelUninstallRequest(msg);
-      case "daemon.beta_channel.start.request":
-        return this.daemonSession.handleBetaChannelStartRequest(msg);
-      case "daemon.beta_channel.stop.request":
-        return this.daemonSession.handleBetaChannelStopRequest(msg);
       case "daemon.dev_daemon.get_status.request":
         return this.daemonSession.handleDevDaemonGetStatusRequest(msg);
       case "daemon.dev_daemon.start.request":

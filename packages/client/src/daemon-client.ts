@@ -167,10 +167,6 @@ import type {
   DaemonUpdateChannel,
   DaemonUpdateCheckResponse,
   DaemonUpdateGetStatusResponse,
-  DaemonBetaChannelGetStatusResponse,
-  DaemonBetaChannelInstallResponse,
-  DaemonBetaChannelUninstallResponse,
-  DaemonBetaChannelStartResponse,
   DaemonDevDaemonGetStatusResponse,
   DaemonDevDaemonStartResponse,
   DaemonWebUiGetStatusResponse,
@@ -241,17 +237,11 @@ import type {
   BrowserAutomationExecuteResponse,
 } from "@frogg/protocol/browser-automation/rpc-schemas";
 
-export type DaemonBetaChannelStatusPayload = DaemonBetaChannelGetStatusResponse["payload"];
 export type DaemonDevDaemonStatusPayload = DaemonDevDaemonGetStatusResponse["payload"];
 /** Web client status; every web client action answers with it and its own `error`. */
 export type DaemonWebUiStatusPayload = DaemonWebUiGetStatusResponse["payload"];
-/** Start/stop of the beta or development daemon: `error` is null on success. */
-export type DaemonControlResultPayload =
-  | DaemonBetaChannelStartResponse["payload"]
-  | DaemonDevDaemonStartResponse["payload"];
-export type DaemonBetaChannelRunStartPayload =
-  | DaemonBetaChannelInstallResponse["payload"]
-  | DaemonBetaChannelUninstallResponse["payload"];
+/** Start/stop of the development daemon: `error` is null on success. */
+export type DaemonControlResultPayload = DaemonDevDaemonStartResponse["payload"];
 
 export interface Logger {
   debug(obj: object, msg?: string): void;
@@ -1051,7 +1041,7 @@ const DEFAULT_SESSION_RPC_TIMEOUT_MS = 60_000;
 const PUSH_TOKEN_REVOCATION_TIMEOUT_MS = 2_000;
 /** A clean cut waits for a model to write the summary before it answers. */
 const CLEAN_CUT_TIMEOUT_MS = 5 * 60_000;
-/** Beta CLI start/stop can take up to a minute on the daemon side. */
+/** Dev daemon start/stop can take up to a minute on the daemon side. */
 const DAEMON_CONTROL_TIMEOUT_MS = 90_000;
 // Synthesis may still be running when the app asks; the daemon waits up to 30s for it.
 const NOTIFICATION_AUDIO_TIMEOUT_MS = 45_000;
@@ -5624,65 +5614,6 @@ export class DaemonClient {
     });
   }
 
-  /** Side-by-side beta daemon on this host: installed/running state and the newest beta release. */
-  async getBetaChannelStatus(requestId?: string): Promise<DaemonBetaChannelStatusPayload> {
-    this.requireBetaChannelManagementSupport();
-    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.get_status.response">({
-      requestId,
-      message: { type: "daemon.beta_channel.get_status.request" },
-      timeout: 60_000,
-    });
-  }
-
-  /**
-   * Installs or updates the beta daemon (newest beta, or `version`). Returns once the run
-   * is accepted; follow `daemon.beta_channel.run.progress` and `.run.completed`.
-   */
-  async installBetaChannel(
-    options: { version?: string; requestId?: string } = {},
-  ): Promise<DaemonBetaChannelRunStartPayload> {
-    this.requireBetaChannelManagementSupport();
-    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.install.response">({
-      requestId: options.requestId,
-      message: {
-        type: "daemon.beta_channel.install.request",
-        ...(options.version ? { version: options.version } : {}),
-      },
-    });
-  }
-
-  /** Removes the beta daemon; `purge` also deletes its state directory. */
-  async uninstallBetaChannel(
-    options: { purge?: boolean; requestId?: string } = {},
-  ): Promise<DaemonBetaChannelRunStartPayload> {
-    this.requireBetaChannelManagementSupport();
-    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.uninstall.response">({
-      requestId: options.requestId,
-      message: {
-        type: "daemon.beta_channel.uninstall.request",
-        ...(options.purge ? { purge: true } : {}),
-      },
-    });
-  }
-
-  async startBetaChannel(requestId?: string): Promise<DaemonControlResultPayload> {
-    this.requireDaemonChannelControlSupport();
-    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.start.response">({
-      requestId,
-      message: { type: "daemon.beta_channel.start.request" },
-      timeout: DAEMON_CONTROL_TIMEOUT_MS,
-    });
-  }
-
-  async stopBetaChannel(requestId?: string): Promise<DaemonControlResultPayload> {
-    this.requireDaemonChannelControlSupport();
-    return this.sendNamespacedCorrelatedSessionRequest<"daemon.beta_channel.stop.response">({
-      requestId,
-      message: { type: "daemon.beta_channel.stop.request" },
-      timeout: DAEMON_CONTROL_TIMEOUT_MS,
-    });
-  }
-
   async getDevDaemonStatus(requestId?: string): Promise<DaemonDevDaemonStatusPayload> {
     this.requireDaemonChannelControlSupport();
     return this.sendNamespacedCorrelatedSessionRequest<"daemon.dev_daemon.get_status.response">({
@@ -6859,13 +6790,6 @@ export class DaemonClient {
     }
   }
 
-  private requireBetaChannelManagementSupport(): void {
-    // COMPAT(betaChannelManagement): added in v1.6.5, remove gate after 2027-09-27.
-    if (this.lastServerInfoMessage?.features?.betaChannelManagement !== true) {
-      throw new Error("Update the host to manage the beta daemon from the app.");
-    }
-  }
-
   private requireWebUiControlSupport(): void {
     // COMPAT(webUiControl): added in v1.6.7, remove gate after 2027-09-29.
     if (this.lastServerInfoMessage?.features?.webUiControl !== true) {
@@ -6876,7 +6800,7 @@ export class DaemonClient {
   private requireDaemonChannelControlSupport(): void {
     // COMPAT(daemonChannelControl): added in v1.6.7, remove gate after 2027-09-29.
     if (this.lastServerInfoMessage?.features?.daemonChannelControl !== true) {
-      throw new Error("Update the host to start and stop the beta and development daemons.");
+      throw new Error("Update the host to start and stop development daemons.");
     }
   }
 

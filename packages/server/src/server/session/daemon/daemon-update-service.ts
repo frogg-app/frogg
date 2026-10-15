@@ -165,10 +165,9 @@ export class DaemonUpdateService {
     };
   }
 
-  async check(_input: { channel?: DaemonUpdateChannel } = {}): Promise<CheckPayload> {
-    // The build's own channel, whatever an older client asks for: stable and beta are separate
-    // installs, and this daemon's bundles only exist in its own channel's releases.
-    const channel = brand.channel;
+  async check(input: { channel?: DaemonUpdateChannel } = {}): Promise<CheckPayload> {
+    // Beta installs prereleases of this same daemon into this same install; stable never does.
+    const channel = input.channel ?? "stable";
     const base: CheckPayload = {
       updatable: this.install.updatable,
       reason: this.install.reason,
@@ -228,7 +227,7 @@ export class DaemonUpdateService {
     const args = [
       "--no-wait",
       "--channel",
-      brand.channel,
+      input.channel ?? "stable",
       ...(input.version ? ["--to", input.version] : []),
     ];
     // Runs detached from the response: the CLI keeps reporting until it hands off.

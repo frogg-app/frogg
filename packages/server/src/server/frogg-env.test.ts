@@ -122,12 +122,12 @@ describe("frogg env contract", () => {
 
   test("a branded daemon keeps its own internal names out of launched commands", () => {
     const env = {
-      FROGG_HOME: "/home/me/.frogg-beta",
-      FROGG_BETA_HOME: "/home/me/.frogg-beta",
+      FROGG_HOME: "/home/me/.glade",
+      GLADE_HOME: "/home/me/.glade",
       PATH: "/usr/bin",
     };
-    expect(withoutInternalBrandEnv(env, "FROGG_BETA")).toEqual({
-      FROGG_BETA_HOME: "/home/me/.frogg-beta",
+    expect(withoutInternalBrandEnv(env, "GLADE")).toEqual({
+      GLADE_HOME: "/home/me/.glade",
       PATH: "/usr/bin",
     });
     // Stock frogg's names are its own; nothing to strip.

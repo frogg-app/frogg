@@ -14,7 +14,6 @@ import type { PersistedProjectRecord, PersistedWorkspaceRecord } from "../../wor
 import type { HubRelationshipManagement } from "../../hub/relationship-controller.js";
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
 import type { DaemonUpdateService } from "./daemon-update-service.js";
-import type { BetaChannelService, BetaChannelStartResult } from "./beta-channel-service.js";
 import type { DevDaemonService } from "./dev-daemon-service.js";
 import type { WebUiServer } from "../../web-ui-server.js";
 import type { MutableStorageAlertsConfig, SecurityPosture } from "@frogg/protocol/messages";
@@ -34,8 +33,6 @@ export interface DaemonRuntimeConfig {
   desktopManaged?: boolean;
   /** Versioned-install self-update; absent on daemons started without bootstrap wiring. */
   update?: DaemonUpdateService;
-  /** Side-by-side beta daemon install/uninstall; absent without bootstrap wiring. */
-  betaChannel?: BetaChannelService;
   /** Development daemon (`dev:live`) launch/stop; absent without bootstrap wiring. */
   devDaemon?: DevDaemonService;
   /** The web client's own server; absent without bootstrap wiring. */
@@ -556,8 +553,7 @@ export class DaemonSession {
       ? await update.check({ channel: msg.channel })
       : {
           ...this.updateUnavailable(),
-          // Each build updates on its own channel; see DaemonUpdateService.check.
-          channel: brand.channel,
+          channel: msg.channel ?? "stable",
           latestVersion: null,
           updateAvailable: false,
           releaseUrl: null,
@@ -597,85 +593,6 @@ export class DaemonSession {
     this.host.emit({
       type: "daemon.update.get_status.response",
       payload: { requestId: msg.requestId, ...payload },
-    });
-  }
-
-  async handleBetaChannelGetStatusRequest(
-    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.get_status.request" }>,
-  ): Promise<void> {
-    const service = this.daemonRuntimeConfig?.betaChannel;
-    if (!service) {
-      this.host.emit({
-        type: "rpc_error",
-        payload: {
-          requestId: msg.requestId,
-          requestType: msg.type,
-          error: "Beta channel management is not available on this daemon.",
-          code: "unsupported",
-        },
-      });
-      return;
-    }
-    try {
-      const status = await service.status();
-      this.host.emit({
-        type: "daemon.beta_channel.get_status.response",
-        payload: { requestId: msg.requestId, ...status, error: null },
-      });
-    } catch (error) {
-      this.logger.warn({ err: error }, "beta channel status failed");
-      this.host.emit({
-        type: "rpc_error",
-        payload: {
-          requestId: msg.requestId,
-          requestType: msg.type,
-          error: errorMessage(error),
-        },
-      });
-    }
-  }
-
-  async handleBetaChannelInstallRequest(
-    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.install.request" }>,
-  ): Promise<void> {
-    const service = this.daemonRuntimeConfig?.betaChannel;
-    const result = service ? service.install({ version: msg.version }) : BETA_CHANNEL_UNAVAILABLE;
-    this.host.emit({
-      type: "daemon.beta_channel.install.response",
-      payload: { requestId: msg.requestId, ...result },
-    });
-  }
-
-  async handleBetaChannelUninstallRequest(
-    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.uninstall.request" }>,
-  ): Promise<void> {
-    const service = this.daemonRuntimeConfig?.betaChannel;
-    const result = service ? service.uninstall({ purge: msg.purge }) : BETA_CHANNEL_UNAVAILABLE;
-    this.host.emit({
-      type: "daemon.beta_channel.uninstall.response",
-      payload: { requestId: msg.requestId, ...result },
-    });
-  }
-
-  async handleBetaChannelStartRequest(
-    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.start.request" }>,
-  ): Promise<void> {
-    const service = this.daemonRuntimeConfig?.betaChannel;
-    const error = service ? await service.setRunning(true) : BETA_CHANNEL_UNAVAILABLE.error;
-    this.host.emit({
-      type: "daemon.beta_channel.start.response",
-      payload: { requestId: msg.requestId, error },
-    });
-  }
-
-  async handleBetaChannelStopRequest(
-    msg: Extract<SessionInboundMessage, { type: "daemon.beta_channel.stop.request" }>,
-  ): Promise<void> {
-    const service = this.daemonRuntimeConfig?.betaChannel;
-    const error = service ? await service.setRunning(false) : BETA_CHANNEL_UNAVAILABLE.error;
-    this.host.emit({
-      type: "daemon.beta_channel.stop.response",
-      payload: { requestId: msg.requestId, error },
     });
   }
 
@@ -799,13 +716,6 @@ export class DaemonSession {
     };
   }
 }
-
-const BETA_CHANNEL_UNAVAILABLE: BetaChannelStartResult = {
-  accepted: false,
-  runId: null,
-  targetVersion: null,
-  error: "Beta channel management is not available on this daemon.",
-};
 
 const DEV_DAEMON_UNAVAILABLE = "Development daemon management is not available on this daemon.";
 

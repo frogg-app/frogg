@@ -21,10 +21,10 @@ function buildInternalProcessEnv<T extends ProcessEnvRecord>(baseEnv: T): T {
 }
 
 /**
- * A branded daemon (frogg beta, a fork) maps its own `<PREFIX>_*` settings onto the internal
+ * A branded daemon (a fork) maps its own `<PREFIX>_*` settings onto the internal
  * `FROGG_*` names at startup. Those internal copies describe this install, so a command it
- * launches must not inherit them: stock `frogg` run from a frogg beta agent's shell would read
- * frogg beta's FROGG_HOME and talk to the wrong daemon. The `<PREFIX>_*` originals stay, so this
+ * launches must not inherit them: stock `frogg` run from a fork's agent shell would read
+ * the fork's FROGG_HOME and talk to the wrong daemon. The `<PREFIX>_*` originals stay, so this
  * product's own CLI still finds its settings. Values a caller passes as an overlay are kept.
  */
 export function withoutInternalBrandEnv(

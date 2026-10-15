@@ -281,16 +281,6 @@ pub enum SessionMessage {
     DaemonUpdateStartRequest(DaemonUpdateStartRequest),
     #[serde(rename = "daemon.update.get_status.request")]
     DaemonUpdateGetStatusRequest(DaemonUpdateGetStatusRequest),
-    #[serde(rename = "daemon.beta_channel.get_status.request")]
-    DaemonBetaChannelGetStatusRequest(DaemonBetaChannelGetStatusRequest),
-    #[serde(rename = "daemon.beta_channel.install.request")]
-    DaemonBetaChannelInstallRequest(DaemonBetaChannelInstallRequest),
-    #[serde(rename = "daemon.beta_channel.uninstall.request")]
-    DaemonBetaChannelUninstallRequest(DaemonBetaChannelUninstallRequest),
-    #[serde(rename = "daemon.beta_channel.start.request")]
-    DaemonBetaChannelStartRequest(DaemonBetaChannelStartRequest),
-    #[serde(rename = "daemon.beta_channel.stop.request")]
-    DaemonBetaChannelStopRequest(DaemonBetaChannelStopRequest),
     #[serde(rename = "daemon.dev_daemon.get_status.request")]
     DaemonDevDaemonGetStatusRequest(DaemonDevDaemonGetStatusRequest),
     #[serde(rename = "daemon.dev_daemon.start.request")]
@@ -1881,40 +1871,6 @@ pub enum DaemonUpdateStartRequestChannel {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DaemonUpdateGetStatusRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelGetStatusRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelInstallRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub version: Option<String>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelUninstallRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub purge: Option<bool>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelStartRequest {
-    #[serde(rename = "requestId")]
-    pub request_id: String,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct DaemonBetaChannelStopRequest {
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

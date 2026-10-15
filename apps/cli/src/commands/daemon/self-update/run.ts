@@ -259,8 +259,8 @@ async function installCandidate(
 }
 
 function resolveHttpBase(options: SelfUpdateOptions, env: NodeJS.ProcessEnv): string | null {
-  // The brand's own LISTEN: a beta CLI run from a shell a stable daemon spawned inherits
-  // FROGG_LISTEN, which names the stable daemon, not this one.
+  // The brand's own LISTEN: a fork's CLI run from a shell a stock daemon spawned inherits
+  // FROGG_LISTEN, which names that daemon, not this one.
   const listen =
     brandEnv(brand, env, "LISTEN") || resolveLocalDaemonState({ home: options.home }).listen;
   return resolveLoopbackHttpBase(listen);
