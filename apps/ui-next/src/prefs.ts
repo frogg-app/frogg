@@ -121,6 +121,8 @@ export const PREF_DEFAULTS = {
   staleCacheWarning: true,
   // Shell
   railPinned: false,
+  // Terminals: the list beside an open terminal is collapsed (the rail stays)
+  terminalListHidden: false,
   // Files: a single click opens a preview tab the next click replaces; true pins every file
   autoPinTabs: false,
   // Source control: commit list columns, density and what the panel lists

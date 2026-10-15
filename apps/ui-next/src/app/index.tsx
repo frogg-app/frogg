@@ -28,18 +28,17 @@ import { Rail, useToolShown } from "../components/Rail";
 import { ScmPanel } from "../components/ScmPanel";
 import { SessionList, useBuckets } from "../components/SessionList";
 import { StatusBar } from "../components/StatusBar";
-import { TerminalSurface } from "../components/TerminalView";
-import { TerminalsPanel } from "../components/TerminalsPanel";
+import { TerminalDetail, TerminalsPanel } from "../components/TerminalsPanel";
 import { ToolPane } from "../components/ToolPane";
 import { ToolEmpty } from "../components/shell/ToolEmpty";
-import { T } from "../components/Text";
 import { useHardwareBack } from "../components/shell/useHardwareBack";
 import { useKeyboardVisible } from "../components/shell/useKeyboardVisible";
 import { useDaemon } from "../daemon/store";
 import { useWatchPluginGate } from "../daemon/plugins";
 import type { Session } from "../daemon/types";
 import { useFormFactor } from "../theme/layout";
-import { color, motion } from "../theme/tokens";
+import { usePrefs } from "../prefs";
+import { color, ease, motion, web } from "../theme/tokens";
 import { useUi, type Tool } from "../ui-store";
 
 function sidePanel(tool: Tool): ReactNode {
@@ -85,12 +84,13 @@ const FULL_TOOLS: ReadonlySet<Tool> = new Set<Tool>(["usage", "plugins", "compan
 interface DetailProps {
   ui: UiState;
   phone: boolean;
+  docked: boolean;
   openRun: string | null | undefined;
   session: Session | undefined;
 }
 
 /** What the main pane shows: a tool's own detail view when it has one open, else the session. */
-function MainDetail({ ui, phone, openRun, session }: DetailProps): ReactNode {
+function MainDetail({ ui, phone, docked, openRun, session }: DetailProps): ReactNode {
   const {
     tool,
     diffPath,
@@ -114,7 +114,9 @@ function MainDetail({ ui, phone, openRun, session }: DetailProps): ReactNode {
   if (tool === "scm" && diffPath)
     return <DiffView path={diffPath} onBack={phone ? backDiff : undefined} />;
   if (tool === "terminals" && terminalId)
-    return <TerminalDetail id={terminalId} onBack={phone ? backTerminal : undefined} />;
+    return (
+      <TerminalDetail id={terminalId} docked={docked} onBack={phone ? backTerminal : undefined} />
+    );
   if (tool === "prs" && openRun)
     return <CiRunDetail id={openRun} onBack={phone ? closeRun : undefined} />;
   if (tool === "files" && filePath)
@@ -191,7 +193,12 @@ export default function Shell() {
   const keyboard = useKeyboardVisible();
   const { crash } = useLocalSearchParams<{ crash?: string }>();
 
-  const detailEl = <MainDetail ui={ui} phone={phone} openRun={openRun} session={session} />;
+  const detailEl = (
+    <MainDetail ui={ui} phone={phone} docked={docked} openRun={openRun} session={session} />
+  );
+  // Terminals: the list beside an open terminal can be collapsed; the rail stays.
+  const termListHidden = usePrefs((p) => p.terminalListHidden);
+  const sideHidden = tool === "terminals" && !!ui.terminalId && termListHidden;
   const phoneHasDetail = phone && hasPhoneDetail(ui, openRun, session);
   // Keyed so switching tools replays a short enter; frequent, so it stays under 200ms.
   const side = (
@@ -233,7 +240,13 @@ export default function Shell() {
           {FULL_TOOLS.has(tool) && <View style={[s.fill, s.full]}>{side}</View>}
           {!FULL_TOOLS.has(tool) && docked && (
             <>
-              <View style={[s.side, ff === "tablet" && s.sideTablet]}>{side}</View>
+              <View
+                style={[s.side, ff === "tablet" && s.sideTablet, sideHidden && s.sideHidden]}
+                aria-hidden={sideHidden}
+              >
+                {/* Fixed width inside, so collapsing clips the panel instead of reflowing it. */}
+                <View style={[s.sideIn, ff === "tablet" && s.sideInTablet]}>{side}</View>
+              </View>
               <View style={s.fill}>{detailEl}</View>
             </>
           )}
@@ -310,6 +323,8 @@ const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: color.bg },
   side: {
     width: 340,
+    overflow: "hidden",
+    ...web({ transition: `width 200ms ${ease}` }),
     borderRightWidth: 1,
     borderRightColor: color.line,
     backgroundColor: color.bg2,
@@ -330,27 +345,8 @@ const s = StyleSheet.create({
   fill: { flex: 1 },
   row: { flex: 1, flexDirection: "row" },
   sideTablet: { width: 300 },
+  sideHidden: { width: 0, borderRightWidth: 0 },
+  sideIn: { flex: 1, width: 339 },
+  sideInTablet: { width: 299 },
   full: { backgroundColor: color.bg2 },
-  terminal: { flex: 1, backgroundColor: color.bg },
-  termBack: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: color.line,
-  },
-  termBackText: { color: color.cyan2 },
 });
-
-function TerminalDetail({ id, onBack }: { id: string; onBack?: () => void }) {
-  return (
-    <View style={s.terminal}>
-      {onBack && (
-        <Pressable onPress={onBack} style={s.termBack}>
-          <T v="mono" style={s.termBackText}>
-            ← terminals
-          </T>
-        </Pressable>
-      )}
-      <TerminalSurface terminalId={id} />
-    </View>
-  );
-}
