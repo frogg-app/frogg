@@ -101,7 +101,7 @@ merged (`scripts/release/streams-core.mjs`).
 | `daemon-build`     | Builds the server stack and bundles the shared web UI into the daemon                            |
 | `daemon-bundle`    | Matrix: `linux-x64`, `linux-arm64`, `darwin-arm64`, `darwin-x64`, `win-x64`, `win-arm64`. Packs each bundle with a `.sha256` sidecar |
 | `android`          | Stable only. Builds the arm64-v8a APK with `scripts/release/build-android-apk.mjs --serial`       |
-| `next-desktop`     | Prereleases only. Calls `ui-next-desktop.yml`: Frogg Next for Windows x64, macOS arm64 and x64, and Linux (AppImage, deb), with its update feeds and one checksum list (Windows only with `platforms: default`). See [Frogg Next](#frogg-next) |
+| `next-desktop`     | Prereleases only. Calls `ui-next-desktop.yml`: Frogg Next for Windows x64, macOS arm64 and x64, and Linux (AppImage, deb), with its update feeds and one checksum list (Windows only with `platforms: default`). Runs a packaged launch smoke test on Linux. See [Frogg Next](#frogg-next) |
 | `next-android`     | Prereleases only. Calls `ui-next-android.yml`: the Frogg Next arm64 APK                          |
 | `updater-manifest` | Full builds only. Generates `release.json` with the release's `client`. On stable it also generates the classic Electron feeds and `SHA256SUMS-desktop` from the uploaded binaries; on a Frogg Next prerelease it names Frogg Next's feeds and checksum list. Then runs `verify-release-assets.mjs` |
 | `docker`           | Only with Docker Hub credentials. Builds `deploy/docker/base/Dockerfile` for `linux/amd64` and pushes it |
@@ -158,8 +158,9 @@ prerelease carries the daemon bundles, `release.json`, the install scripts and F
 
 | Asset                                          | Source                                     |
 | ---------------------------------------------- | ------------------------------------------ |
-| `Frogg-Next-<v>-win-x64.exe`, `-mac-{arm64,x64}.{dmg,zip}`, `-linux-x86_64.{AppImage,deb}` | Frogg Next desktop (`next-desktop`) |
-| `frogg-next-latest.yml`, `frogg-next-latest-mac.yml`, `frogg-next-latest-linux.yml` + blockmaps | Frogg Next update feeds |
+| `Frogg-Next-<v>-win-x64.{exe,zip}`, `-mac-{arm64,x64}.{dmg,zip}`, `-linux-x86_64.{AppImage,deb}` | Frogg Next desktop (`next-desktop`) |
+| `<file>.blockmap` for the `.exe`, `.dmg` and Mac `.zip` files | differential updates (the AppImage embeds its own; the deb has none) |
+| `frogg-next-latest.yml`, `frogg-next-latest-mac.yml`, `frogg-next-latest-linux.yml` | Frogg Next update feeds, uploaded after the files they name |
 | `Frogg-Next-<v>-SHA256SUMS`                    | checksums of the Frogg Next assets         |
 | `Frogg-Next-<v>-android-arm64-v8a.apk` (`-unsigned` without a keystore) | Frogg Next APK (`next-android`) |
 
@@ -218,7 +219,8 @@ Frogg Next (`apps/ui-next`) is the client prereleases ship. It installs under th
   GitHub's digest, and no classic payload or `electron-*` feed is attached. On a stable release
   it checks no Frogg Next file is attached. `build-release-metadata.test.mjs` holds this.
 - Windows builds are signed with the same Azure Trusted Signing secrets as the classic app.
-  macOS builds are not signed. The APK is signed with the classic `FROGG_ANDROID_*` key (so a
+  macOS builds are ad-hoc signed (no Apple Developer ID) and not notarized; the x64 build is
+  cross-built on the arm64 runner. The APK is signed with the classic `FROGG_ANDROID_*` key (so a
   later promotion to the stable application id can update the classic app in place), unless the
   `FROGG_NEXT_ANDROID_*` override is set; without either it is debug-signed and `-unsigned`.
   Builds from `main` pushes are always debug-signed.
@@ -226,13 +228,18 @@ Frogg Next (`apps/ui-next`) is the client prereleases ship. It installs under th
   and off for any other brand; with it off, prereleases carry only the daemon (see
   [Build and release](/docs/fork-and-rebrand/build-and-release/#frogg-next)).
 
+An installed Frogg Next finds the newest prerelease that carries its platform's feed and points
+electron-updater at that release. The Windows installer and the AppImage update in the
+background and prompt for a restart; on macOS and with the deb the app offers the download
+instead. The Android app updates itself from the prerelease's APK the same way.
+
 Promotion later builds Frogg Next under the brand's stable identity as plain frogg and ships it
 on stable releases in place of the classic app.
 
 Check asset names without building:
 
 ```bash
-node apps/ui-next/scripts/build-desktop.mjs --dry-run [--target win32-x64]
+node apps/ui-next/scripts/build-desktop.mjs --dry-run [--target darwin-arm64|darwin-x64|win32-x64|linux-x64]
 node apps/ui-next/scripts/build-apk.mjs release-assets --dry-run
 ```
 
