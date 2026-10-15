@@ -4,6 +4,7 @@ import { Terminal } from "@xterm/xterm";
 import { useEffect, useRef } from "react";
 import { StyleSheet, View } from "react-native";
 import { getClient } from "../daemon/store";
+import { usePrefs } from "../prefs";
 import { color } from "../theme/tokens";
 
 const theme = {
@@ -30,6 +31,8 @@ const theme = {
   brightWhite: "#ffffff",
 };
 
+const PAGE_KEYS: Record<string, string> = { PageUp: "\u001b[5~", PageDown: "\u001b[6~" };
+
 export function TerminalSurface({ terminalId }: { terminalId: string }) {
   const host = useRef<View>(null);
   useEffect(() => {
@@ -43,7 +46,7 @@ export function TerminalSurface({ terminalId }: { terminalId: string }) {
       cursorBlink: true,
       theme,
       allowProposedApi: true,
-      scrollback: 5000,
+      scrollback: usePrefs.getState().scrollback,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -57,15 +60,28 @@ export function TerminalSurface({ terminalId }: { terminalId: string }) {
       term.focus();
     };
     el.addEventListener("mousedown", focus);
-    // Scrollback scrolls straight away: a program that left mouse reporting on (or a restored
-    // snapshot carrying it) would otherwise swallow the wheel until it was reset. Full-screen
-    // programs on the alternate buffer still get the wheel; Shift sends it to the program anyway.
+    // Who gets the wheel:
+    // - normal buffer: Frogg's scrollback, even when a program left mouse reporting on (or a
+    //   restored snapshot carries it); Shift sends it to the program instead.
+    // - alternate buffer (Claude Code's fullscreen mode, htop, less): the program, which keeps its
+    //   own history; the daemon replays the program's mouse modes on attach so it gets real wheel
+    //   reports, and xterm turns the wheel into arrow keys for programs without mouse reporting.
     term.attachCustomWheelEventHandler((e) => {
       if (e.shiftKey || term.buffer.active.type !== "normal") return true;
       if (term.modes.mouseTrackingMode === "none") return true;
       const lines = Math.round(e.deltaY / (e.deltaMode === 1 ? 1 : 40)) || Math.sign(e.deltaY);
       term.scrollLines(lines);
       e.preventDefault();
+      return false;
+    });
+    // Shift+PageUp/PageDown page Frogg's scrollback; on the alternate buffer there is none, so
+    // they reach the program as PageUp/PageDown (Claude Code scrolls its transcript with them).
+    term.attachCustomKeyEventHandler((e) => {
+      if (e.type !== "keydown" || !e.shiftKey || term.buffer.active.type === "normal") return true;
+      const page = PAGE_KEYS[e.key];
+      if (!page || e.ctrlKey || e.altKey || e.metaKey) return true;
+      e.preventDefault();
+      client.sendTerminalInput(terminalId, { type: "input", data: page });
       return false;
     });
     const off = client.onTerminalStreamEvent((e) => {

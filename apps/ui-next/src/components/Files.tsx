@@ -1,5 +1,6 @@
 import {
   ChevronRight,
+  Download,
   File,
   FilePlus,
   Folder,
@@ -42,7 +43,7 @@ import { usePrompt, type PromptSpec } from "./tools/Prompt";
 
 export { FileViewer } from "./tools/FileViewer";
 
-import { newEntrySpec } from "./tools/fileActions";
+import { downloadEntry, newEntrySpec } from "./tools/fileActions";
 import { FileSearchField, FileSearchResults } from "./tools/FileSearch";
 import { DOUBLE_MS } from "./tools/FileViewer";
 
@@ -84,6 +85,7 @@ export function FilesPanel() {
     setQuery("");
   }, []);
   const refresh = useCallback(() => void loadDir("."), []);
+  const downloadRoot = useCallback(() => void downloadEntry(".", "directory"), []);
   const newFile = useCallback(
     () => prompt.ask(newEntrySpec(".", "file", useUi.getState().openFile)),
     [prompt],
@@ -103,6 +105,13 @@ export function FilesPanel() {
         </Pressable>
         <Pressable onPress={newFolder} accessibilityLabel="New folder" disabled={!cwd}>
           <FolderPlus size={14} color={color.faint} />
+        </Pressable>
+        <Pressable
+          onPress={downloadRoot}
+          accessibilityLabel="Download folder as zip"
+          disabled={!cwd}
+        >
+          <Download size={14} color={color.faint} />
         </Pressable>
         <Pressable onPress={refresh} accessibilityLabel="Refresh files">
           <RefreshCw size={14} color={color.faint} />
@@ -283,6 +292,11 @@ function useEntryMenu(e: Entry, changed: boolean, ask: Ask, prompt: Prompt): Men
       );
     else items.push({ label: "Open", kbd: "↵", onPress: () => openFile(e.path) });
     items.push(
+      {
+        label: dir ? "Download as zip" : "Download",
+        icon: Download,
+        onPress: () => void downloadEntry(e.path, e.kind),
+      },
       "-",
       { label: "Copy path", onPress: () => void copyText(abs) },
       { label: "Copy relative path", onPress: () => void copyText(e.path) },

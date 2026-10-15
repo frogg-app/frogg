@@ -205,3 +205,40 @@ onHostSwitch(() => useFileTabs.setState({ tabs: [], preview: null }));
 useFiles.subscribe((next, previous) => {
   if (next.root !== previous.root) useFileTabs.setState({ tabs: [], preview: null });
 });
+
+// ---- Downloads -------------------------------------------------------------------------------
+
+/** Whether the host can zip a folder for download (`fs.directory.zip`, daemon 1.6.14+). */
+export const canZipFolders = (): boolean =>
+  getClient()?.getLastServerInfoMessage()?.features?.directoryZip === true;
+
+export interface Download {
+  name: string;
+  bytes: Uint8Array;
+  mime: string;
+  /** Folders: files packed, and what was left out (node_modules, .git, symlinks). */
+  fileCount?: number;
+  skipped?: string[];
+}
+
+/** Reads a file whole, or zips a folder, for saving on this device. */
+export async function fetchDownload(path: string, kind: Entry["kind"]): Promise<Download> {
+  const { root } = useFiles.getState();
+  const client = getClient();
+  if (!root || !client) throw new Error("not connected");
+  const base = (path === "." ? root : path).split("/").pop() || "file";
+  if (kind === "file") {
+    const res = await client.readFile(root, path);
+    return { name: base, bytes: res.bytes, mime: res.mime || "application/octet-stream" };
+  }
+  if (!canZipFolders()) throw new Error("Update the host's daemon to download folders.");
+  const res = await client.zipDirectory({ cwd: root, path });
+  if (res.error || !res.bytes) throw new Error(res.error ?? "The folder could not be zipped.");
+  return {
+    name: res.fileName ?? `${base}.zip`,
+    bytes: res.bytes,
+    mime: "application/zip",
+    fileCount: res.fileCount ?? undefined,
+    skipped: res.skipped,
+  };
+}

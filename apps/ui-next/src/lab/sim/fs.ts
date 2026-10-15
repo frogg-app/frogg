@@ -256,6 +256,50 @@ function attachmentSvg(name: string): Uint8Array {
   return new TextEncoder().encode(svg);
 }
 
+/**
+ * Folder download: counts what a real host would pack (ignored folders left out) and returns an
+ * empty but valid zip, so the save flow runs end to end.
+ */
+export async function zipDirectory(input: { cwd: string; path: string; includeIgnored?: boolean }) {
+  const dir = norm(input.path);
+  const node = fs().get(dir);
+  await latency(600);
+  const base = { cwd: input.cwd, path: input.path, requestId: "lab" };
+  if (!node || node.kind !== "directory")
+    return {
+      ...base,
+      fileName: null,
+      size: null,
+      fileCount: null,
+      skipped: [],
+      error: "Not a folder",
+      bytes: null,
+    };
+  const prefix = dir === "." ? "" : `${dir}/`;
+  const skipped = new Set<string>();
+  let fileCount = 0;
+  for (const [path, n] of fs()) {
+    if (!path.startsWith(prefix) || n.kind !== "file") continue;
+    const rel = path.slice(prefix.length);
+    const ignored = rel.split("/").find((part) => IGNORED.has(part));
+    if (ignored && !input.includeIgnored)
+      skipped.add(`${rel.slice(0, rel.indexOf(ignored) + ignored.length)}/`);
+    else fileCount += 1;
+  }
+  const bytes = new Uint8Array(22);
+  bytes.set([0x50, 0x4b, 0x05, 0x06]);
+  const name = dir === "." ? "frogg" : baseName(dir);
+  return {
+    ...base,
+    fileName: `${name}.zip`,
+    size: 22,
+    fileCount,
+    skipped: [...skipped],
+    error: null,
+    bytes,
+  };
+}
+
 export async function readFile(_cwd: string, path: string, _req?: string, maxBytes?: number) {
   if (path.startsWith(`${LAB_ATTACHMENTS}/`) || _cwd === LAB_ATTACHMENTS) {
     await latency(240);

@@ -434,6 +434,8 @@ pub enum SessionMessage {
     FsFileUnsubscribeResponse(FsFileUnsubscribeResponse),
     #[serde(rename = "fs.file.write.response")]
     FsFileWriteResponse(FsFileWriteResponse),
+    #[serde(rename = "fs.directory.zip.response")]
+    FsDirectoryZipResponse(FsDirectoryZipResponse),
     #[serde(rename = "fs.entry.create.response")]
     FsEntryCreateResponse(FsEntryCreateResponse),
     #[serde(rename = "fs.entry.rename.response")]
@@ -10468,6 +10470,28 @@ pub struct FsFileWriteResponse {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FsFileWriteResponsePayload {
     pub result: serde_json::Value,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FsDirectoryZipResponse {
+    pub payload: FsDirectoryZipResponsePayload,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FsDirectoryZipResponsePayload {
+    pub cwd: String,
+    pub path: String,
+    #[serde(rename = "fileName", skip_serializing_if = "Option::is_none")]
+    pub file_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub size: Option<f64>,
+    #[serde(rename = "fileCount", skip_serializing_if = "Option::is_none")]
+    pub file_count: Option<f64>,
+    pub skipped: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

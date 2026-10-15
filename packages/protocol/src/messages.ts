@@ -3364,6 +3364,17 @@ export const FileWriteRequestSchema = z.object({
   requestId: z.string(),
 });
 
+// Zips a folder in the checkout. The archive streams back as binary file-transfer frames under
+// the request's id (FileBegin/FileChunk/FileEnd), then the response reports the result.
+export const DirectoryZipRequestSchema = z.object({
+  type: z.literal("fs.directory.zip.request"),
+  cwd: z.string(),
+  path: z.string(),
+  // Also pack dependency and VCS folders (node_modules, .git, …), skipped by default.
+  includeIgnored: z.boolean().optional(),
+  requestId: z.string(),
+});
+
 export const FileEntryCreateRequestSchema = z.object({
   type: z.literal("fs.entry.create.request"),
   cwd: z.string(),
@@ -3945,6 +3956,7 @@ export const SessionInboundMessageSchema = z.discriminatedUnion("type", [
   FileSubscribeRequestSchema,
   FileUnsubscribeRequestSchema,
   FileWriteRequestSchema,
+  DirectoryZipRequestSchema,
   FileEntryCreateRequestSchema,
   FileEntryRenameRequestSchema,
   FileEntryDuplicateRequestSchema,
@@ -4370,6 +4382,9 @@ export const ServerInfoStatusPayloadSchema = z
         directorySync: z.boolean().optional(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         workspaceLabels: z.boolean().optional(),
+        // COMPAT(directoryZip): added in v1.6.14, remove after 2027-10-15.
+        // fs.directory.zip.request is available.
+        directoryZip: z.boolean().optional(),
         // COMPAT(projectTodos): added in v1.6.5, remove after 2027-09-27.
         // project.todo.* RPCs and the project.todo.changed push event.
         projectTodos: z.boolean().optional(),
@@ -7351,6 +7366,21 @@ export const FileWriteResponseSchema = z.object({
   }),
 });
 
+export const DirectoryZipResponseSchema = z.object({
+  type: z.literal("fs.directory.zip.response"),
+  payload: z.object({
+    cwd: z.string(),
+    path: z.string(),
+    fileName: z.string().nullable(),
+    size: z.number().nullable(),
+    fileCount: z.number().nullable(),
+    // Folders left out (dependency/VCS folders, symlinks), relative to the zipped folder.
+    skipped: z.array(z.string()),
+    error: z.string().nullable(),
+    requestId: z.string(),
+  }),
+});
+
 export const FileEntryCreateResponseSchema = z.object({
   type: z.literal("fs.entry.create.response"),
   payload: z.object({
@@ -8257,6 +8287,7 @@ export const SessionOutboundMessageSchema = z.discriminatedUnion("type", [
   FileSubscribeResponseSchema,
   FileUnsubscribeResponseSchema,
   FileWriteResponseSchema,
+  DirectoryZipResponseSchema,
   FileEntryCreateResponseSchema,
   FileEntryRenameResponseSchema,
   FileEntryDuplicateResponseSchema,
@@ -8850,6 +8881,8 @@ export type FileUnsubscribeRequest = z.infer<typeof FileUnsubscribeRequestSchema
 export type FileUnsubscribeResponse = z.infer<typeof FileUnsubscribeResponseSchema>;
 export type FileWriteRequest = z.infer<typeof FileWriteRequestSchema>;
 export type FileWriteResponse = z.infer<typeof FileWriteResponseSchema>;
+export type DirectoryZipRequest = z.infer<typeof DirectoryZipRequestSchema>;
+export type DirectoryZipResponse = z.infer<typeof DirectoryZipResponseSchema>;
 export type FileEntryCreateRequest = z.infer<typeof FileEntryCreateRequestSchema>;
 export type FileEntryCreateResponse = z.infer<typeof FileEntryCreateResponseSchema>;
 export type FileEntryRenameRequest = z.infer<typeof FileEntryRenameRequestSchema>;

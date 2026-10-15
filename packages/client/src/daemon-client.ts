@@ -79,6 +79,7 @@ import type {
   CreateAgentRequestMessage,
   CreateFroggWorktreeRequest,
   FileDownloadTokenResponse,
+  DirectoryZipResponse,
   FileUploadResponse,
   FileExplorerResponse,
   FileVersion,
@@ -611,6 +612,7 @@ export interface FileUploadInput {
 }
 export type FileUploadResult = FileUploadResponse["payload"];
 type FileDownloadTokenPayload = FileDownloadTokenResponse["payload"];
+type DirectoryZipPayload = DirectoryZipResponse["payload"];
 type ListProviderFeaturesPayload = ListProviderFeaturesResponseMessage["payload"];
 type ListProviderModelsPayload = ListProviderModelsResponseMessage["payload"];
 type ListProviderModesPayload = ListProviderModesResponseMessage["payload"];
@@ -5402,6 +5404,41 @@ export class DaemonClient {
     );
 
     return responsePromise;
+  }
+
+  /**
+   * Zips a folder in the checkout and returns the archive. Needs `features.directoryZip`.
+   * Large folders take a while to pack, hence the long timeout.
+   */
+  async zipDirectory(input: {
+    cwd: string;
+    path: string;
+    includeIgnored?: boolean;
+    requestId?: string;
+  }): Promise<DirectoryZipPayload & { bytes: Uint8Array | null }> {
+    const requestId = this.createRequestId(input.requestId);
+    this.pendingBinaryFileReads.set(requestId, { cwd: input.cwd, path: input.path });
+    try {
+      const payload =
+        await this.sendNamespacedCorrelatedSessionRequest<"fs.directory.zip.response">({
+          requestId,
+          message: {
+            type: "fs.directory.zip.request",
+            cwd: input.cwd,
+            path: input.path,
+            ...(input.includeIgnored ? { includeIgnored: true } : {}),
+          },
+          timeout: 300_000,
+        });
+      const bytes = payload.error
+        ? null
+        : (this.completedBinaryFileReads.get(requestId)?.bytes ?? null);
+      return { ...payload, bytes };
+    } finally {
+      this.pendingBinaryFileReads.delete(requestId);
+      this.activeBinaryFileTransfers.delete(requestId);
+      this.completedBinaryFileReads.delete(requestId);
+    }
   }
 
   async requestDownloadToken(

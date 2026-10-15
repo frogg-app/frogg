@@ -70,9 +70,14 @@ export function encodeTerminalRestoreFrame(input: {
   return encodeTerminalStreamFrame({
     opcode: TerminalStreamOpcode.Restore,
     slot: input.slot,
-    payload: renderTerminalSnapshotToAnsi(input.snapshot.state),
+    // A full-screen program's screen goes back on the client's alternate buffer, so the client
+    // treats it as one (no local scrollback; the wheel reaches the program) and returns to its
+    // normal buffer when the program exits.
+    payload: `${input.snapshot.alternateScreen ? ALTERNATE_SCREEN_ON : ""}${renderTerminalSnapshotToAnsi(input.snapshot.state)}`,
   });
 }
+
+const ALTERNATE_SCREEN_ON = "\u001b[?1049h\u001b[H";
 
 function resolveVisibleRestoreScrollbackLines(value: number | undefined): number {
   if (typeof value !== "number") {

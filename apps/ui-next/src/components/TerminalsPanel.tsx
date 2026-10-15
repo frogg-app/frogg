@@ -1,4 +1,4 @@
-import { Plus, SquareTerminal, X } from "lucide-react-native";
+import { PanelLeftClose, PanelLeftOpen, Plus, SquareTerminal, X } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useDaemon } from "../daemon/store";
@@ -9,7 +9,8 @@ import {
   useTerminals,
   watchTerminals,
 } from "../daemon/terminals";
-import { color } from "../theme/tokens";
+import { setPref, usePrefs } from "../prefs";
+import { color, ease, web } from "../theme/tokens";
 import { useUi } from "../ui-store";
 import { Button } from "./Button";
 import { GroupHead, PanelHead } from "./PanelHead";
@@ -17,6 +18,7 @@ import { useActiveCwd } from "./ScmPanel";
 import { Brackets, BracketScope } from "./Brackets";
 import { T } from "./Text";
 import { useConfirm } from "./tools/Confirm";
+import { TerminalSurface } from "./TerminalView";
 
 const short = (cwd: string) => "…/" + cwd.split("/").slice(-2).join("/");
 
@@ -221,6 +223,61 @@ function TerminalRow({
   );
 }
 
+/**
+ * An open terminal filling the main pane. Phone: a back row to the list. Wider: a header whose
+ * toggle collapses the terminals list (docked; remembered) or opens it as a drawer (portrait).
+ */
+export function TerminalDetail({
+  id,
+  docked,
+  onBack,
+}: {
+  id: string;
+  docked: boolean;
+  onBack?: () => void;
+}) {
+  const hidden = usePrefs((p) => p.terminalListHidden);
+  const t = useTerminals((s) => s.all?.find((x) => x.id === id));
+  const toggle = useCallback(() => {
+    if (docked) setPref("terminalListHidden", !usePrefs.getState().terminalListHidden);
+    else useUi.getState().setListOpen(true);
+  }, [docked]);
+  const shown = docked && !hidden;
+  const Icon = shown ? PanelLeftClose : PanelLeftOpen;
+  const label = shown ? "Hide terminals list" : "Show terminals list";
+  return (
+    <View style={st.terminal}>
+      {onBack ? (
+        <Pressable onPress={onBack} style={st.termBack}>
+          <T v="mono" style={st.termBackText}>
+            ← terminals
+          </T>
+        </Pressable>
+      ) : (
+        <View style={st.termHead}>
+          <Pressable onPress={toggle} accessibilityRole="button" accessibilityLabel={label}>
+            {({ hovered }) => (
+              <View style={[st.termToggle, hovered && st.rowHover]}>
+                <Icon size={15} strokeWidth={1.6} color={hovered ? color.text : color.faint} />
+              </View>
+            )}
+          </Pressable>
+          <SquareTerminal size={13} color={color.cyan2} />
+          <T numberOfLines={1} style={st.termTitle}>
+            {t?.title || t?.name || "terminal"}
+          </T>
+          {t?.title && t.name !== t.title && (
+            <T v="mono" numberOfLines={1} style={st.name}>
+              {t.name}
+            </T>
+          )}
+        </View>
+      )}
+      <TerminalSurface terminalId={id} />
+    </View>
+  );
+}
+
 const st = StyleSheet.create({
   fill: { flex: 1, backgroundColor: color.bg2 },
   flex: { flex: 1 },
@@ -239,4 +296,25 @@ const st = StyleSheet.create({
   rowHover: { backgroundColor: color.wash },
   rowOn: { backgroundColor: "rgba(127,217,230,0.05)" },
   name: { fontSize: 10.5, color: color.faint },
+  terminal: { flex: 1, backgroundColor: color.bg },
+  termBack: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: color.line,
+  },
+  termBackText: { color: color.cyan2 },
+  termHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: color.line,
+  },
+  termToggle: {
+    padding: 6,
+    ...web({ transition: `background-color 120ms ${ease}` }),
+  },
+  termTitle: { fontSize: 12.5, color: color.text, flexShrink: 1 },
 });

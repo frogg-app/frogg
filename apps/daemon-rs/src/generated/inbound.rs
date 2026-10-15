@@ -517,6 +517,8 @@ pub enum SessionMessage {
     FsFileUnsubscribeRequest(FsFileUnsubscribeRequest),
     #[serde(rename = "fs.file.write.request")]
     FsFileWriteRequest(FsFileWriteRequest),
+    #[serde(rename = "fs.directory.zip.request")]
+    FsDirectoryZipRequest(FsDirectoryZipRequest),
     #[serde(rename = "fs.entry.create.request")]
     FsEntryCreateRequest(FsEntryCreateRequest),
     #[serde(rename = "fs.entry.rename.request")]
@@ -3858,6 +3860,16 @@ pub struct FsFileWriteRequest {
     pub expected_modified_at: String,
     #[serde(rename = "expectedRevision", skip_serializing_if = "Option::is_none")]
     pub expected_revision: Option<String>,
+    #[serde(rename = "requestId")]
+    pub request_id: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct FsDirectoryZipRequest {
+    pub cwd: String,
+    pub path: String,
+    #[serde(rename = "includeIgnored", skip_serializing_if = "Option::is_none")]
+    pub include_ignored: Option<bool>,
     #[serde(rename = "requestId")]
     pub request_id: String,
 }

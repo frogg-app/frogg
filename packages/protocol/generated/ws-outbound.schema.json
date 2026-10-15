@@ -49311,6 +49311,75 @@
               "properties": {
                 "type": {
                   "type": "string",
+                  "const": "fs.directory.zip.response"
+                },
+                "payload": {
+                  "type": "object",
+                  "properties": {
+                    "cwd": {
+                      "type": "string"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "fileName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "size": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "fileCount": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "skipped": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "error": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "requestId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cwd",
+                    "path",
+                    "fileName",
+                    "size",
+                    "fileCount",
+                    "skipped",
+                    "error",
+                    "requestId"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "type",
+                "payload"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
                   "const": "fs.entry.create.response"
                 },
                 "payload": {

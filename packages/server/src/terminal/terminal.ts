@@ -44,6 +44,8 @@ export interface TerminalStateSnapshot {
   // Input-mode replay preamble at snapshot time. Populated by the terminal
   // worker so the daemon main loop doesn't have to re-derive it from output.
   replayPreamble?: string;
+  // The program is on the alternate screen (a full-screen TUI); the restore replays it there.
+  alternateScreen?: boolean;
 }
 
 export interface TerminalStateSnapshotOptions {
@@ -1265,6 +1267,7 @@ export async function createTerminal(options: CreateTerminalOptions): Promise<Te
     return {
       state: getState(snapshotOptions),
       revision: stateRevision,
+      ...(terminal.buffer.active.type === "alternate" ? { alternateScreen: true } : {}),
     };
   }
 
