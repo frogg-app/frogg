@@ -1,5 +1,6 @@
 import type { DaemonSelfUpdateResult } from "./daemon-self-updater.js";
 import { brand } from "@frogg/branding";
+import { isStableVersion } from "@frogg/protocol/release-version";
 import { spawn, type ChildProcess } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createInterface } from "node:readline";
@@ -107,6 +108,14 @@ const defaultSpawnCli: SpawnUpdateCli = (command, args, options) =>
     shell: process.platform === "win32",
   });
 
+/**
+ * The channel when a client names none: the one the running version came from. Beta installs
+ * prereleases of this same daemon into this same install and home; stable never does.
+ */
+export function defaultUpdateChannel(daemonVersion: string | undefined): DaemonUpdateChannel {
+  return daemonVersion && !isStableVersion(daemonVersion) ? "beta" : "stable";
+}
+
 export class DaemonUpdateService {
   private readonly install: DaemonInstallInfo;
   private readonly daemonVersion: string;
@@ -166,8 +175,7 @@ export class DaemonUpdateService {
   }
 
   async check(input: { channel?: DaemonUpdateChannel } = {}): Promise<CheckPayload> {
-    // Beta installs prereleases of this same daemon into this same install; stable never does.
-    const channel = input.channel ?? "stable";
+    const channel = input.channel ?? defaultUpdateChannel(this.daemonVersion);
     const base: CheckPayload = {
       updatable: this.install.updatable,
       reason: this.install.reason,
@@ -227,7 +235,7 @@ export class DaemonUpdateService {
     const args = [
       "--no-wait",
       "--channel",
-      input.channel ?? "stable",
+      input.channel ?? defaultUpdateChannel(this.daemonVersion),
       ...(input.version ? ["--to", input.version] : []),
     ];
     // Runs detached from the response: the CLI keeps reporting until it hands off.

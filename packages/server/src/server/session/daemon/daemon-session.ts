@@ -13,7 +13,7 @@ import type { ManagedAgent } from "../../agent/agent-manager.js";
 import type { PersistedProjectRecord, PersistedWorkspaceRecord } from "../../workspace-registry.js";
 import type { HubRelationshipManagement } from "../../hub/relationship-controller.js";
 import type { DaemonConfigReloadResult } from "../../daemon-config-store.js";
-import type { DaemonUpdateService } from "./daemon-update-service.js";
+import { defaultUpdateChannel, type DaemonUpdateService } from "./daemon-update-service.js";
 import type { DevDaemonService } from "./dev-daemon-service.js";
 import type { WebUiServer } from "../../web-ui-server.js";
 import type { MutableStorageAlertsConfig, SecurityPosture } from "@frogg/protocol/messages";
@@ -553,7 +553,7 @@ export class DaemonSession {
       ? await update.check({ channel: msg.channel })
       : {
           ...this.updateUnavailable(),
-          channel: msg.channel ?? "stable",
+          channel: msg.channel ?? defaultUpdateChannel(this.daemonVersion),
           latestVersion: null,
           updateAvailable: false,
           releaseUrl: null,

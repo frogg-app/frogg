@@ -15,6 +15,7 @@ import {
 } from "./daemon-update-install.js";
 import {
   DaemonUpdateService,
+  defaultUpdateChannel,
   type SpawnUpdateCli,
   type DaemonUpdateServiceOptions,
 } from "./daemon-update-service.js";
@@ -160,6 +161,14 @@ describe("describeDaemonInstall", () => {
       reason: "boom",
       at: "t",
     });
+  });
+});
+
+describe("defaultUpdateChannel", () => {
+  test("follows the running version when the client names no channel", () => {
+    expect(defaultUpdateChannel("1.6.14")).toBe("stable");
+    expect(defaultUpdateChannel("1.6.14-beta.2")).toBe("beta");
+    expect(defaultUpdateChannel(undefined)).toBe("stable");
   });
 });
 
