@@ -5,6 +5,8 @@ import {
   desktopArtifactName,
   desktopArtifactSuffixes,
   froggNextArtifactName,
+  froggNextChecksumsName,
+  froggNextFeedNames,
   isFroggNextArtifact,
   legacyDesktopSuffix,
 } from "../../packages/branding/src/artifact-contract.mjs";
@@ -113,12 +115,7 @@ test("Frogg Next is a separate, non-updater asset family", () => {
   assert.ok(next.every(isFroggNextArtifact));
   // No classic name of any brand or channel falls into the family, and the classic app's
   // updaters match on an exact `artifactPrefix`, which "Frogg-Next" never is.
-  const brands = [
-    official,
-    { ...official, artifactPrefix: "frogg" },
-    { ...official, artifactPrefix: "frogg-beta", daemonArtifactPrefix: "frogg-beta-daemon" },
-    custom,
-  ];
+  const brands = [official, { ...official, artifactPrefix: "frogg" }, custom];
   for (const brand of brands) {
     assert.notEqual(brand.artifactPrefix, "Frogg-Next");
     for (const suffix of desktopArtifactSuffixes) {
@@ -126,7 +123,22 @@ test("Frogg Next is a separate, non-updater asset family", () => {
     }
     assert.equal(isFroggNextArtifact(daemonArtifactName(brand, version, "win", "x64")), false);
   }
-  for (const name of ["SHA256SUMS-desktop", "release.json", "electron-beta.yml", "install.sh"]) {
+  for (const name of ["SHA256SUMS-desktop", "release.json", "electron-latest.yml", "install.sh"]) {
     assert.equal(isFroggNextArtifact(name), false);
   }
+  // Feeds never collide with the classic app's electron-latest*.yml / electron-beta*.yml.
+  assert.deepEqual(froggNextFeedNames(), [
+    "frogg-next-latest.yml",
+    "frogg-next-latest-mac.yml",
+    "frogg-next-latest-linux.yml",
+  ]);
+  assert.ok(froggNextFeedNames().every((name) => !name.startsWith("electron-")));
+  assert.equal(froggNextChecksumsName(version), "Frogg-Next-1.6.13-beta.5-SHA256SUMS");
+  // A fork's own Frogg Next identity.
+  assert.equal(
+    froggNextArtifactName(version, "win-x64.exe", "acme-next"),
+    "acme-next-1.6.13-beta.5-win-x64.exe",
+  );
+  assert.equal(isFroggNextArtifact("acme-next-1.0.0-win-x64.exe", "acme-next"), true);
+  assert.deepEqual(froggNextFeedNames("acme-next")[0], "acme-next-latest.yml");
 });

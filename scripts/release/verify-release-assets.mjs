@@ -1,4 +1,5 @@
 import { channelOfVersion } from "./release-channel.mjs";
+import { assertClientForVersion } from "./build-release-metadata.mjs";
 import { electronUpdateProtocol } from "./verify-electron-update-path.mjs";
 import { valid, lt, rcompare } from "semver";
 import { execFileSync } from "node:child_process";
@@ -8,7 +9,19 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { pathToFileURL } from "node:url";
 
-export function verifyReleaseAssets({ descriptor, manifests, release, previousDescriptor }) {
+/**
+ * `brand` (the generated brand.json, optional) names the two clients' asset families so a release
+ * can be checked to carry only its own client's: the classic app on stable, Frogg Next on a
+ * prerelease. `nextFeeds` holds the text of the Frogg Next feed files a prerelease names.
+ */
+export function verifyReleaseAssets({
+  descriptor,
+  manifests,
+  release,
+  previousDescriptor,
+  brand,
+  nextFeeds = {},
+}) {
   if (
     descriptor.schemaVersion !== 1 ||
     !valid(descriptor.version) ||
@@ -34,6 +47,101 @@ export function verifyReleaseAssets({ descriptor, manifests, release, previousDe
     verifyUpdateProtocol({ protocol, update, version: descriptor.version, manifests, assets });
   }
   if (!assets.has("release.json")) throw new Error("Release descriptor is not uploaded");
+  // Releases cut before the single-identity model carry no `client`.
+  if (descriptor.client !== undefined) {
+    assertClientForVersion(descriptor.version, descriptor.client);
+    verifyClientAssets({ descriptor, assets, brand, nextFeeds });
+  }
+}
+
+const lower = (value) => value.toLowerCase();
+
+function verifyClientAssets({ descriptor, assets, brand, nextFeeds }) {
+  const names = [...assets.keys()];
+  if (descriptor.client !== "frogg-next") {
+    const nextPrefix = brand?.next?.artifactPrefix;
+    const feedPrefix = brand?.next?.feedPrefix;
+    const stray = names.filter(
+      (name) =>
+        (nextPrefix && lower(name).startsWith(lower(`${nextPrefix}-`))) ||
+        (feedPrefix && name.startsWith(`${feedPrefix}-latest`)),
+    );
+    if (stray.length)
+      throw new Error(`Frogg Next assets on a ${descriptor.client} release: ${stray.join(", ")}`);
+    return;
+  }
+  verifyNoClassicAssets(descriptor.version, names, brand);
+  const { feeds, checksums } = descriptor.froggNext ?? {};
+  if (!Array.isArray(feeds) || !feeds.length || typeof checksums !== "string")
+    throw new Error("Frogg Next release descriptor names no feeds or checksum list");
+  for (const name of [...feeds, checksums]) {
+    if (!assets.has(name)) throw new Error(`Frogg Next asset is not uploaded: ${name}`);
+  }
+  for (const feed of feeds) verifyNextFeed(feed, nextFeeds[feed], assets);
+  verifyNextChecksums(checksums, nextFeeds[checksums], assets);
+}
+
+function verifyNoClassicAssets(version, names, brand) {
+  const feeds = names.filter((name) => /^electron-(latest|beta)(-\w+)?\.yml$/.test(name));
+  if (feeds.length)
+    throw new Error(`Classic update feeds on a Frogg Next release: ${feeds.join(", ")}`);
+  if (!brand) return;
+  // The classic desktop and Android payloads share the brand prefix with the daemon bundles.
+  const classic = names.filter(
+    (name) =>
+      lower(name).startsWith(lower(`${brand.artifactPrefix}-${version}-`)) &&
+      !/-daemon\.(tar\.gz|zip)(\.sha256)?$/.test(name),
+  );
+  if (classic.length)
+    throw new Error(`Classic app payloads on a Frogg Next release: ${classic.join(", ")}`);
+}
+
+/** Every payload an electron-updater feed names (`url:` / `path:`) is on the release. */
+function verifyNextFeed(feed, text, assets) {
+  if (typeof text !== "string") return;
+  const payloads = [
+    ...text.matchAll(/^\s*(?:-\s*)?(?:url|path):\s*['"]?([^'"\s]+)['"]?\s*$/gm),
+  ].map((match) => match[1]);
+  if (!payloads.length) throw new Error(`Frogg Next feed lists no payloads: ${feed}`);
+  const missing = payloads.find((payload) => !assets.has(payload));
+  if (missing) throw new Error(`${feed} names a missing payload: ${missing}`);
+}
+
+/** Every checksum line matches the SHA-256 digest GitHub reports for that asset. */
+function verifyNextChecksums(name, text, assets) {
+  if (typeof text !== "string") return;
+  for (const line of text.split("\n").filter((entry) => entry.trim())) {
+    const match = /^([a-f0-9]{64})\s+\*?(\S+)$/.exec(line.trim());
+    if (!match) throw new Error(`Malformed checksum line in ${name}: ${line}`);
+    const asset = assets.get(match[2]);
+    if (!asset) throw new Error(`${name} names a missing asset: ${match[2]}`);
+    if (asset.digest && asset.digest !== `sha256:${match[1]}`)
+      throw new Error(`Checksum mismatch for ${match[2]}`);
+  }
+}
+
+/** The Frogg Next feed and checksum files a prerelease names, as text, when uploaded. */
+async function downloadNextFeeds({ gh, values, release, descriptor, directory }) {
+  const { feeds = [], checksums } = descriptor.froggNext ?? {};
+  const names = [...feeds, checksums];
+  if (names.some((name) => typeof name !== "string" || path.basename(name) !== name))
+    throw new Error("Invalid Frogg Next asset filename");
+  const texts = {};
+  for (const name of names.filter((entry) => release.assets.some((a) => a.name === entry))) {
+    gh([
+      "release",
+      "download",
+      values.tag,
+      "--repo",
+      values.repo,
+      "--dir",
+      directory,
+      "--pattern",
+      name,
+    ]);
+    texts[name] = await readFile(path.join(directory, name), "utf8");
+  }
+  return texts;
 }
 
 function verifyRetainedPlatforms(descriptor, previousDescriptor) {
@@ -137,6 +245,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     options: {
       repo: { type: "string" },
       tag: { type: "string" },
+      brand: { type: "string" },
       "assets-dir": { type: "string" },
     },
   });
@@ -183,13 +292,18 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       ]);
       manifests[name] = JSON.parse(await readFile(path.join(directory, name), "utf8"));
     }
+    const nextFeeds =
+      descriptor.client === "frogg-next"
+        ? await downloadNextFeeds({ gh, values, release, descriptor, directory })
+        : {};
+    const brand = values.brand ? JSON.parse(await readFile(values.brand, "utf8")) : undefined;
     const previousDescriptor = await loadPreviousDescriptor(
       gh,
       values.repo,
       descriptor.version,
       directory,
     );
-    verifyReleaseAssets({ descriptor, manifests, release, previousDescriptor });
+    verifyReleaseAssets({ descriptor, manifests, release, previousDescriptor, brand, nextFeeds });
     if (!values["assets-dir"] && automaticUpdates(descriptor).length) {
       const payloadNames = automaticUpdates(descriptor).flatMap(({ adapter, update }) =>
         adapter.payloadNames(update),
@@ -210,7 +324,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     }
     await verifyReleasePayloads(descriptor, values["assets-dir"] ?? directory);
     console.log(
-      `Verified ${values.tag}: exact desktop payload names, sizes and SHA-256/SHA-512 hashes match payload bytes and GitHub assets.`,
+      descriptor.client === "frogg-next"
+        ? `Verified ${values.tag}: Frogg Next feeds and checksums match the uploaded assets, and no classic app payloads are attached.`
+        : `Verified ${values.tag}: exact desktop payload names, sizes and SHA-256/SHA-512 hashes match payload bytes and GitHub assets.`,
     );
   } finally {
     await rm(directory, { recursive: true, force: true });

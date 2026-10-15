@@ -60,6 +60,28 @@ test("desktop runners reuse the shared web export instead of rebuilding it", () 
   assert.equal(ancestors("desktop").has("ui"), true);
 });
 
+// Stable tags ship the classic app, prereleases Frogg Next; the daemon ships on both.
+test("each release builds and requires only its own client", () => {
+  assert.doesNotMatch(workflow, /FROGG_BRAND_CHANNEL/);
+  for (const name of ["desktop", "android"])
+    assert.match(jobs.get(name), /if: .*needs\.meta\.outputs\.client == 'classic'/, name);
+  for (const name of ["next-desktop", "next-android"])
+    assert.match(jobs.get(name), /if: .*needs\.meta\.outputs\.client == 'frogg-next'/, name);
+  for (const name of ["ui", "daemon-build", "daemon-bundle"])
+    assert.doesNotMatch(jobs.get(name), /outputs\.client/, name);
+  const publish = jobs.get("publish");
+  assert.match(
+    publish,
+    /client == 'classic' &&\s+needs\.desktop\.result == 'success' && needs\.android\.result == 'success'/,
+  );
+  assert.match(
+    publish,
+    /client == 'frogg-next' &&\s+needs\.next-desktop\.result == 'success' && needs\.next-android\.result == 'success'/,
+  );
+  assert.match(publish, /needs\.daemon-bundle\.result == 'success'/);
+  assert.match(jobs.get("updater-manifest"), /--client "\$CLIENT"/);
+});
+
 const selectedWorkflow = readFileSync(
   new URL("../../.github/workflows/build-selected.yml", import.meta.url),
   "utf8",

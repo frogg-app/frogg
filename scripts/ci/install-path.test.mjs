@@ -272,3 +272,47 @@ test("a refused systemd-run falls back to an inline restart", async (t) => {
   const commands = readFileSync(f.env.FROGG_TEST_COMMAND_LOG, "utf8");
   assert.match(commands, /systemctl --user start frogg-daemon/);
 });
+
+// Prereleases install the same daemon into the same home: by exact version or the beta channel.
+test("the installer resolves a prerelease daemon by channel or exact version", async (t) => {
+  let releases = JSON.stringify([
+    { tag_name: "v1.6.14-beta.2", prerelease: true },
+    { tag_name: "v1.6.14-beta.10", prerelease: true },
+    { tag_name: "v1.6.13", prerelease: false },
+  ]);
+  const run = async (overrides) => {
+    const f = fixture(t, "bash", { FROGG_BUNDLE_FILE: "", ...overrides });
+    const shimDir = path.join(f.home, "shim");
+    mkdirSync(shimDir);
+    writeFileSync(path.join(f.home, "releases.json"), releases);
+    // The releases API answers; every download fails, so the error names the resolved URL.
+    writeFileSync(
+      path.join(shimDir, "curl"),
+      `#!/bin/sh\ncase "$*" in *api.github.com*) cat "${path.join(f.home, "releases.json")}" ;; *) exit 22 ;; esac\n`,
+      { mode: 0o755 },
+    );
+    f.env.PATH = `${shimDir}:/usr/bin:/bin`;
+    return promisify(execFile)("bash", [installer], { env: f.env }).then(
+      () => assert.fail("expected the download to fail"),
+      (error) => error.stderr,
+    );
+  };
+  assert.match(
+    await run({ FROGG_CHANNEL: "beta" }),
+    /download failed: .*\/download\/v1\.6\.14-beta\.10\/frogg-1\.6\.14-beta\.10-/i,
+  );
+  assert.match(
+    await run({ FROGG_VERSION: "v1.6.14-beta.2" }),
+    /download failed: .*\/download\/v1\.6\.14-beta\.2\/frogg-1\.6\.14-beta\.2-/i,
+  );
+  assert.match(await run({ FROGG_CHANNEL: "nightly" }), /CHANNEL must be stable or beta/);
+  // A stable release newer than every prerelease is the beta channel's newest too.
+  releases = JSON.stringify([
+    { tag_name: "v1.6.14-beta.10", prerelease: true },
+    { tag_name: "v1.6.14", prerelease: false },
+  ]);
+  assert.match(
+    await run({ FROGG_CHANNEL: "beta" }),
+    /download failed: .*\/download\/v1\.6\.14\/frogg-1\.6\.14-/i,
+  );
+});

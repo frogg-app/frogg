@@ -1,14 +1,20 @@
 name: Release
 
-# Builds and publishes a GitHub release for a `vX.Y.Z` tag: desktop bundles for
-# Linux, Windows and macOS, the daemon bundles the install script downloads, the
-# Electron updater manifests, the Android APK (release-
-# signed when the keystore secrets are set, otherwise debug-signed and named
-# `-unsigned`; see the android job) and the
-# Docker image (when Docker Hub credentials are configured). It also attaches the
-# Frogg Next client (Frogg-Next-<version>-*, the next-desktop and next-android jobs)
-# unless the brand sets distribution.froggNext to false; those files are not part of
-# the classic app's update feeds.
+# Builds and publishes a GitHub release for a `v*` tag. Every release carries the daemon bundles
+# the install scripts download, the install scripts themselves and, when Docker Hub credentials are
+# configured, the Docker image, all under the brand's one identity. Which client it carries follows
+# the version (scripts/release/release-channel.mjs):
+#
+#   stable `vX.Y.Z`             the classic app: desktop bundles for Linux, Windows and macOS, their
+#                               Electron update feeds and the Android APK (release-signed when the
+#                               keystore secrets are set, otherwise debug-signed and `-unsigned`).
+#   prerelease `vX.Y.Z-beta.N`  Frogg Next (apps/ui-next, the next-desktop and next-android jobs)
+#                               under the brand's `next` identity, with its own update feeds; none
+#                               of the classic app's. A brand with `next.enabled` false ships
+#                               daemon-only prereleases.
+#
+# release.json records the client (`client`), so publication can check the release carries only
+# its own client's files.
 # website/src/content/docs/docs/contributing/release-process.mdx explains
 # the flow, the asset names and the secrets.
 
@@ -54,12 +60,6 @@ env:
   TRUSTED_SIGNING_ACCOUNT: ${{ secrets.TRUSTED_SIGNING_ACCOUNT }}
   TRUSTED_SIGNING_PROFILE: ${{ secrets.TRUSTED_SIGNING_PROFILE }}
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-  # A tag whose suffix starts with a channel name (v1.6.0-beta.1, v1.8.0-rc.1.acme.2) builds the
-  # beta channel's identity (frogg beta: its own app id, CLI, port and home), which installs
-  # beside the stable build; a fork rebuild (v1.8.0-acme.2) is stable. brand:prepare reads this in
-  # every job. Expressions have no regex, so this lists the common channel names; the meta job
-  # checks it against scripts/release/release-channel.mjs and fails on a mismatch.
-  FROGG_BRAND_CHANNEL: ${{ (contains(github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name, '-beta.') || contains(github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name, '-rc.') || contains(github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name, '-alpha.')) && 'beta' || 'stable' }}
 
 jobs:
   meta:
@@ -73,7 +73,8 @@ jobs:
       clobber: ${{ steps.release.outputs.clobber }}
       docker: ${{ steps.secrets.outputs.docker }}
       android_signing: ${{ steps.secrets.outputs.android_signing }}
-      frogg_next: ${{ steps.frogg-next.outputs.enabled }}
+      # classic (stable), frogg-next (prerelease) or none (prerelease of a brand without Frogg Next)
+      client: ${{ steps.client.outputs.client }}
       desktop_matrix: ${{ steps.platforms.outputs.desktop }}
       daemon_matrix: ${{ steps.platforms.outputs.daemon }}
       build_all: ${{ steps.platforms.outputs.build_all }}
@@ -106,11 +107,8 @@ jobs:
           # 1.8.0-rc.1.acme.2). A fork rebuild (1.8.0-acme.2) is a stable release: flagging it
           # would hide it from `self-update` on the stable channel, which requires
           # prerelease !== true. Same for a 0.x version, which is not a prerelease either.
+          # The version alone decides: every build has the brand's one identity.
           channel="$(node --input-type=module -e "import { channelOfVersion } from './scripts/release/release-channel.mjs'; process.stdout.write(channelOfVersion(process.argv[1]))" "$version")"
-          if [ "$channel" != "$FROGG_BRAND_CHANNEL" ]; then
-            echo "::error::$RELEASE_TAG is a $channel version but the workflow selected the $FROGG_BRAND_CHANNEL channel. Use -beta.N, -rc.N or -alpha.N for a channel part."
-            exit 1
-          fi
           prerelease=false
           [ "$channel" = "beta" ] && prerelease=true
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -167,14 +165,23 @@ jobs:
           echo "android_signing=$android_signing" >> "$GITHUB_OUTPUT"
           echo "docker push: $docker, android release keystore: $android_signing"
 
-      # distribution.froggNext in the brand: on for upstream frogg, off for other brands unless
-      # they opt in. A tag whose brand predates the flag resolves to false.
-      - name: Resolve Frogg Next assets
-        id: frogg-next
+      # Stable releases ship the classic app; prereleases ship Frogg Next when the brand's
+      # next.enabled is on (upstream frogg; other brands opt in), else no client at all.
+      - name: Resolve the release's client
+        id: client
+        env:
+          PRERELEASE: ${{ steps.version.outputs.prerelease }}
         run: |
-          enabled=$(node -p 'require("./.generated/branding/brand.json").distribution.froggNext === true')
-          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
-          echo "Frogg Next assets: $enabled"
+          next=$(node -p 'require("./.generated/branding/brand.json").next?.enabled === true')
+          if [ "$PRERELEASE" != "true" ]; then
+            client=classic
+          elif [ "$next" = "true" ]; then
+            client=frogg-next
+          else
+            client=none
+          fi
+          echo "client=$client" >> "$GITHUB_OUTPUT"
+          echo "Release client: $client"
 
       # Which platforms this run builds.
       #
@@ -245,6 +252,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.version.outputs.version }}
           PRERELEASE: ${{ steps.version.outputs.prerelease }}
+          CLIENT: ${{ steps.client.outputs.client }}
         run: |
           if gh release view "$RELEASE_TAG" --json body --jq .body > existing-body.txt 2>/dev/null; then
             if grep -q "frogg-release-run-id: $GITHUB_RUN_ID" existing-body.txt; then
@@ -255,7 +263,12 @@ jobs:
               echo "clobber=false" >> "$GITHUB_OUTPUT"
             fi
           else
-            product_name=$(node -p 'require("./.generated/branding/brand.json").name')
+            # A Frogg Next prerelease is titled after the client it ships.
+            if [ "$CLIENT" = "frogg-next" ]; then
+              product_name=$(node -p 'require("./.generated/branding/brand.json").next.name')
+            else
+              product_name=$(node -p 'require("./.generated/branding/brand.json").name')
+            fi
             args=(--title "$product_name $VERSION" --notes-file notes.md --verify-tag --draft)
             if [ "$PRERELEASE" = "true" ]; then args+=(--prerelease); fi
             gh release create "$RELEASE_TAG" "${args[@]}"
@@ -339,7 +352,8 @@ jobs:
     # instead of once per desktop runner. electron-builder still packs
     # ../ui/dist as extraResources, it just no longer builds it four times.
     needs: [meta, ui]
-    if: inputs.only != 'android'
+    # The classic app ships on stable releases only; prereleases carry Frogg Next.
+    if: inputs.only != 'android' && needs.meta.outputs.client == 'classic'
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
@@ -563,6 +577,7 @@ jobs:
   android:
     name: android apk ${{ matrix.abi }}
     needs: meta
+    if: needs.meta.outputs.client == 'classic'
     # The repo variable FROGG_ANDROID_RUNNER=self-hosted moves this onto a
     # self-hosted Windows runner labelled android-win (warm builds there take
     # about half as long as ubuntu-latest). Unset it to fall back to hosted.
@@ -715,14 +730,14 @@ jobs:
           path: release-assets
           retention-days: 7
 
-  # Frogg Next (apps/ui-next) beside the classic app: unsigned Mac ARM and Windows x64 clients
-  # (Windows only on a `platforms: default` run) and the arm64 APK. Their artifacts are named
-  # frogg-next-*, not release-assets-*, so updater-manifest never sees them, and
-  # electron-release-manifests.mjs skips Frogg-Next-* names on the release itself.
+  # Frogg Next (apps/ui-next): the client prerelease tags ship, under the brand's `next` identity,
+  # with its own electron-updater feeds (`<next.feedPrefix>-latest*.yml`) and checksum list. A
+  # `platforms: default` run builds Windows only. Its artifacts are not named release-assets-*, and
+  # the classic jobs and feeds do not run on a prerelease, so neither client sees the other's files.
   next-desktop:
     name: frogg next desktop
     needs: meta
-    if: inputs.only != 'android' && needs.meta.outputs.frogg_next == 'true'
+    if: inputs.only != 'android' && needs.meta.outputs.client == 'frogg-next'
     permissions:
       contents: write
     uses: ./.github/workflows/ui-next-desktop.yml
@@ -730,43 +745,82 @@ jobs:
       release-tag: ${{ needs.meta.outputs.tag }}
       clobber: ${{ needs.meta.outputs.clobber }}
       mac: ${{ needs.meta.outputs.build_all == 'true' }}
+      mac-x64: ${{ needs.meta.outputs.build_all == 'true' }}
+      linux: ${{ needs.meta.outputs.build_all == 'true' }}
       windows: true
+    # Windows signing uses the classic app's Azure Trusted Signing setup.
+    secrets:
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      TRUSTED_SIGNING_ENDPOINT: ${{ secrets.TRUSTED_SIGNING_ENDPOINT }}
+      TRUSTED_SIGNING_ACCOUNT: ${{ secrets.TRUSTED_SIGNING_ACCOUNT }}
+      TRUSTED_SIGNING_PROFILE: ${{ secrets.TRUSTED_SIGNING_PROFILE }}
 
   next-android:
     name: frogg next android
     needs: meta
-    if: needs.meta.outputs.frogg_next == 'true'
+    if: needs.meta.outputs.client == 'frogg-next'
     permissions:
       contents: write
     uses: ./.github/workflows/ui-next-android.yml
     with:
       release-tag: ${{ needs.meta.outputs.tag }}
       clobber: ${{ needs.meta.outputs.clobber }}
-    # Frogg Next's own key, never the classic FROGG_ANDROID_* one: a different app id.
+    # Signed with the classic app's key, so promotion to the stable application id can upgrade the
+    # classic app in place; FROGG_NEXT_ANDROID_* overrides it when set.
     secrets:
+      FROGG_ANDROID_KEYSTORE_BASE64: ${{ secrets.FROGG_ANDROID_KEYSTORE_BASE64 }}
+      FROGG_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_ANDROID_KEYSTORE_PASSWORD }}
+      FROGG_ANDROID_KEY_ALIAS: ${{ secrets.FROGG_ANDROID_KEY_ALIAS }}
+      FROGG_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_ANDROID_KEY_PASSWORD }}
       FROGG_NEXT_ANDROID_KEYSTORE_BASE64: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_BASE64 }}
       FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD }}
       FROGG_NEXT_ANDROID_KEY_ALIAS: ${{ secrets.FROGG_NEXT_ANDROID_KEY_ALIAS }}
       FROGG_NEXT_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEY_PASSWORD }}
 
+  # release.json for every release. A classic release also gets its Electron update feeds, built
+  # from the desktop payloads; a Frogg Next release names the feeds next-desktop uploaded, and
+  # publication checks they and their payloads are on the release.
   updater-manifest:
     name: Release metadata and update compatibility
-    needs: [meta, desktop]
-    if: inputs.only != 'android' && needs.meta.outputs.build_all == 'true'
+    needs: [meta, desktop, next-desktop]
+    if: >-
+      always() && needs.meta.result == 'success' &&
+      inputs.only != 'android' && needs.meta.outputs.build_all == 'true' &&
+      ((needs.meta.outputs.client == 'classic' && needs.desktop.result == 'success') ||
+      (needs.meta.outputs.client == 'frogg-next' && needs.next-desktop.result == 'success') ||
+      needs.meta.outputs.client == 'none')
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      CLIENT: ${{ needs.meta.outputs.client }}
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ env.RELEASE_TAG }}
+      - uses: ./.github/actions/select-brand
+        with:
+          directory: ${{ vars.FROGG_BRAND_DIR }}
+          repository: ${{ vars.FROGG_BRAND_REPOSITORY }}
+          revision: ${{ vars.FROGG_BRAND_REVISION }}
+          subdirectory: ${{ vars.FROGG_BRAND_SUBDIR }}
+          token: ${{ secrets.BRANDING_READ_TOKEN }}
       - uses: ./.github/actions/setup-node-deps
       - uses: actions/download-artifact@v8
+        if: needs.meta.outputs.client == 'classic'
         with:
           pattern: release-assets-*
           path: release-assets
           merge-multiple: true
       - name: Build release metadata and compatibility manifests
-        run: node scripts/release/build-release-metadata.mjs --version ${{ needs.meta.outputs.version }} --assets release-assets --out release-metadata
+        run: >-
+          node scripts/release/build-release-metadata.mjs
+          --version ${{ needs.meta.outputs.version }}
+          --client "$CLIENT"
+          --brand .generated/branding/brand.json
+          --assets release-assets
+          --out release-metadata
       - name: Upload metadata
         env:
           GH_TOKEN: ${{ github.token }}
@@ -778,7 +832,7 @@ jobs:
       - name: Verify uploaded update contract
         env:
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/release/verify-release-assets.mjs --repo "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG"
+        run: node scripts/release/verify-release-assets.mjs --repo "$GITHUB_REPOSITORY" --tag "$RELEASE_TAG" --brand .generated/branding/brand.json
   docker:
     name: docker image
     needs: meta
@@ -787,6 +841,7 @@ jobs:
     timeout-minutes: 40
     env:
       VERSION: ${{ needs.meta.outputs.version }}
+      PRERELEASE: ${{ needs.meta.outputs.prerelease }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -824,9 +879,9 @@ jobs:
             exit 0
           fi
           tags="$IMAGE:$VERSION"
-          # Betas never move the rolling tags. A fork rebuild (1.8.0-acme.2) moves them from its
-          # upstream version's numbers.
-          if [ "$FROGG_BRAND_CHANNEL" = "stable" ]; then
+          # Prereleases get only their exact tag (install-docker.sh with FROGG_VERSION=<it>), never
+          # the rolling ones. A fork rebuild (1.8.0-acme.2) moves them from its upstream numbers.
+          if [ "$PRERELEASE" != "true" ]; then
             core="${VERSION%%-*}"
             major="${core%%.*}"
             minor="${core%.*}"
@@ -846,7 +901,6 @@ jobs:
           file: deploy/docker/base/Dockerfile
           build-args: |
             FROGG_BRAND_DIR=${{ env.BRAND_BUILD_INPUT }}
-            FROGG_BRAND_CHANNEL=${{ env.FROGG_BRAND_CHANNEL }}
             FROGG_SOURCE_REVISION=${{ github.sha }}
             FROGG_VERSION=${{ env.VERSION }}
           platforms: linux/amd64
@@ -857,16 +911,20 @@ jobs:
 
   publish:
     name: publish completed release
-    # Waits for the Frogg Next jobs so the release is complete when it goes public, but does not
-    # require them: the prototype failing must not hold back the classic app's release.
+    # Every job of the release's client is required: the classic desktop and Android builds on a
+    # stable tag, Frogg Next's on a prerelease. The daemon bundles and metadata always are.
     needs:
       [meta, desktop, daemon-bundle, android, updater-manifest, docker, next-desktop, next-android]
     if: >-
       always() && needs.meta.result == 'success' &&
       needs.meta.outputs.build_all == 'true' &&
-      needs.desktop.result == 'success' && needs.daemon-bundle.result == 'success' &&
-      needs.android.result == 'success' && needs.updater-manifest.result == 'success' &&
-      (needs.docker.result == 'success' || needs.docker.result == 'skipped')
+      needs.daemon-bundle.result == 'success' && needs.updater-manifest.result == 'success' &&
+      (needs.docker.result == 'success' || needs.docker.result == 'skipped') &&
+      ((needs.meta.outputs.client == 'classic' &&
+      needs.desktop.result == 'success' && needs.android.result == 'success') ||
+      (needs.meta.outputs.client == 'frogg-next' &&
+      needs.next-desktop.result == 'success' && needs.next-android.result == 'success') ||
+      needs.meta.outputs.client == 'none')
     runs-on: ubuntu-latest
     steps:
       - name: Publish only after every required platform succeeds
