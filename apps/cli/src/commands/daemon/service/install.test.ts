@@ -4,12 +4,13 @@ import path from "node:path";
 import { describe, expect, test } from "vitest";
 
 import { installLoginService, uninstallLoginService } from "./install.js";
-import { LAUNCHD_LABEL } from "./plan.js";
+import { LAUNCHD_LABEL, WINDOWS_RUN_VALUE, type ServiceCommand } from "./plan.js";
 
 /**
- * Uses the launchd plan with a scratch home: `launchctl` does not exist here,
- * so the commands fail harmlessly and the file writing is what is under test.
+ * Uses the launchd plan with a scratch home. Commands are stubbed: `ok` makes
+ * every step succeed so the file writing is what is under test.
  */
+const ok = () => null;
 function scratchHome(): string {
   return mkdtempSync(path.join(tmpdir(), "frogg-service-home-"));
 }
@@ -22,6 +23,7 @@ describe("login service files", () => {
         platform: "darwin",
         homeDir,
         env: { PATH: "/usr/bin" },
+        run: ok,
       });
       expect(installed.listen).toBe("0.0.0.0:9999");
       const configPath = path.join(homeDir, ".frogg", "config.json");
@@ -55,6 +57,7 @@ describe("login service files", () => {
           homeDir,
           env: { PATH: "/usr/bin", FROGG_HOME: home, FROGG_LISTEN: envListen },
           listen,
+          run: ok,
         });
         expect(installed.listen).toBe(expected);
         expect(installed.home).toBe(home);
@@ -76,6 +79,7 @@ describe("login service files", () => {
         env: { PATH: "/usr/bin" },
         listen: "127.0.0.1:9991",
         home: path.join(homeDir, ".frogg"),
+        run: ok,
       });
 
       const plistPath = path.join(homeDir, "Library", "LaunchAgents", `${LAUNCHD_LABEL}.plist`);
@@ -88,12 +92,109 @@ describe("login service files", () => {
         platform: "darwin",
         homeDir,
         env: { PATH: "/usr/bin" },
+        run: ok,
       });
       expect(removed.action).toBe("uninstalled");
       expect(existsSync(plistPath)).toBe(false);
 
       expect(
         uninstallLoginService({ platform: "darwin", homeDir, env: { PATH: "/usr/bin" } }).action,
+      ).toBe("not_installed");
+    } finally {
+      rmSync(homeDir, { recursive: true, force: true });
+    }
+  });
+
+  test("a failed required step reports failure instead of success", () => {
+    const homeDir = scratchHome();
+    try {
+      const installed = installLoginService({
+        platform: "darwin",
+        homeDir,
+        env: { PATH: "/usr/bin" },
+        run: (command) =>
+          command.args[0] === "bootout" || command.args[0] === "bootstrap"
+            ? `launchctl ${command.args[0]} exited with 5`
+            : null,
+      });
+      expect(installed.action).toBe("failed");
+      expect(installed.message).toContain("launchctl bootstrap exited with 5");
+      expect(installed.message).not.toContain("will start when you log in");
+      expect(installed.hints).toEqual([]);
+    } finally {
+      rmSync(homeDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("Windows login service", () => {
+  function windowsInstall(homeDir: string, run: (command: ServiceCommand) => string | null) {
+    return installLoginService({
+      platform: "win32",
+      homeDir,
+      env: { PATH: "C:\\Windows" },
+      listen: "127.0.0.1:9999",
+      run,
+    });
+  }
+
+  test("writes the launcher, registers it and starts the daemon", () => {
+    const homeDir = scratchHome();
+    const ran: ServiceCommand[] = [];
+    try {
+      const installed = windowsInstall(homeDir, (command) => {
+        ran.push(command);
+        // No legacy task on a clean machine.
+        return command.program === "schtasks" ? "schtasks exited with 1" : null;
+      });
+      const launcher = path.join(homeDir, ".frogg", "service", `${WINDOWS_RUN_VALUE}.cmd`);
+      expect(installed.action).toBe("installed");
+      expect(installed.label).toBe(WINDOWS_RUN_VALUE);
+      expect(installed.file).toBe(launcher);
+      const script = readFileSync(launcher, "utf8");
+      expect(script).toContain('"daemon" "start" "--listen" "127.0.0.1:9999" "--home"');
+      expect(script).not.toContain("--foreground");
+      expect(ran.map((command) => command.program)).toEqual(["schtasks", "reg", "cmd.exe"]);
+    } finally {
+      rmSync(homeDir, { recursive: true, force: true });
+    }
+  });
+
+  test("a refused registry write fails the install and skips the start", () => {
+    const homeDir = scratchHome();
+    const ran: string[] = [];
+    try {
+      const installed = windowsInstall(homeDir, (command) => {
+        ran.push(command.program);
+        return command.program === "reg" ? "reg add exited with 1" : null;
+      });
+      expect(installed.action).toBe("failed");
+      expect(installed.message).toContain("reg add exited with 1");
+      expect(ran).toEqual(["schtasks", "reg"]);
+    } finally {
+      rmSync(homeDir, { recursive: true, force: true });
+    }
+  });
+
+  test("uninstall removes the Run value and launcher", () => {
+    const homeDir = scratchHome();
+    try {
+      const installed = windowsInstall(homeDir, ok);
+      const removed = uninstallLoginService({
+        platform: "win32",
+        homeDir,
+        env: { PATH: "C:\\Windows" },
+        run: ok,
+      });
+      expect(removed.action).toBe("uninstalled");
+      expect(existsSync(installed.file!)).toBe(false);
+      expect(
+        uninstallLoginService({
+          platform: "win32",
+          homeDir,
+          env: { PATH: "C:\\Windows" },
+          run: () => "not found",
+        }).action,
       ).toBe("not_installed");
     } finally {
       rmSync(homeDir, { recursive: true, force: true });
