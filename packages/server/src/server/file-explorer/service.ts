@@ -166,9 +166,14 @@ export async function listDirectoryEntries({
           kind,
         });
       } catch (error) {
-        // Directories can contain dangling links (e.g. AGENTS.md -> CLAUDE.md).
-        // Skip entries whose targets disappeared instead of failing the whole listing.
-        if (isMissingEntryError(error) || isOutsideWorkspaceError(error)) {
+        // Directories can contain dangling links (e.g. AGENTS.md -> CLAUDE.md) and entries the
+        // daemon may not stat (e.g. "E:\System Volume Information" on a Windows drive root).
+        // Skip those instead of failing the whole listing.
+        if (
+          isMissingEntryError(error) ||
+          isUnreadableEntryError(error) ||
+          isOutsideWorkspaceError(error)
+        ) {
           return null;
         }
         throw error;
@@ -853,6 +858,11 @@ async function buildEntryPayload({
 function isMissingEntryError(error: unknown): boolean {
   const code = (error as NodeJS.ErrnoException | null)?.code;
   return code === "ENOENT" || code === "ENOTDIR" || code === "ELOOP";
+}
+
+function isUnreadableEntryError(error: unknown): boolean {
+  const code = (error as NodeJS.ErrnoException | null)?.code;
+  return code === "EPERM" || code === "EACCES" || code === "EBUSY";
 }
 
 function isOutsideWorkspaceError(error: unknown): boolean {
