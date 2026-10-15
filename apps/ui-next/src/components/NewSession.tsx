@@ -42,6 +42,7 @@ import {
   type HostProviders,
 } from "./sessions/create";
 import { addProject, baseName } from "./sessions/directory";
+import { LaunchFields, useLaunch, type Launch, type LaunchInput } from "./sessions/LaunchFields";
 import { FolderBrowser } from "./sessions/sheets";
 import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
@@ -320,7 +321,7 @@ async function startAgent(
     initialPrompt: string;
     drafts: Draft[];
     worktree?: { mode: "branch-off"; newBranch: string; base?: string };
-  },
+  } & LaunchInput,
 ): Promise<void> {
   const { drafts, provider, ...rest } = input;
   const { images, attachments } = await prepareDrafts(c, drafts);
@@ -355,6 +356,7 @@ function useSubmit(f: {
   mode: string | null;
   title: string;
   worktree: { newBranch: string; base: string } | null;
+  launch: LaunchInput;
   setBusy: (b: boolean) => void;
   setError: (e: string | null) => void;
   reset: () => void;
@@ -397,6 +399,7 @@ function agentInput(
     initialPrompt: f.prompt.trim(),
     drafts: f.drafts,
     worktree: f.worktree ? { mode: "branch-off", ...f.worktree } : undefined,
+    ...f.launch,
   };
 }
 
@@ -454,6 +457,7 @@ interface SheetFieldsProps {
   isGit: boolean;
   isolation: Isolation;
   kind: Kind;
+  launch: Launch["fields"];
   mode: string | null;
   modeOptions: Opt[];
   model: string | null;
@@ -503,6 +507,7 @@ function SheetFields({
   isGit,
   isolation,
   kind,
+  launch,
   mode,
   modeOptions,
   model,
@@ -588,6 +593,7 @@ function SheetFields({
           modeOptions={modeOptions}
         />
       )}
+      {agentKind && <LaunchFields {...launch} phone={phone} Field={Field} />}
       {agentKind && (
         <PromptBox
           phone={phone}
@@ -643,6 +649,12 @@ export function NewSession() {
   const project = projects?.find((p) => p.projectId === projectId);
   const isGit = project?.projectKind === "git";
   const branches = useBranches(open, hostId, isGit ? project?.projectRootPath : undefined, setBase);
+  const launch = useLaunch({
+    client: open ? getHostClient(hostId) : null,
+    entry,
+    root: project?.projectRootPath,
+    flagsSupported: hostFeature(hostId, "claudeExtraArgs"),
+  });
 
   const browse = useCallback(() => setBrowsing(true), []);
   const stopBrowsing = useCallback(() => setBrowsing(false), []);
@@ -680,6 +692,7 @@ export function NewSession() {
     mode,
     title,
     worktree: isGit && isolation === "worktree" ? { newBranch: branch, base } : null,
+    launch: launch.input,
     setBusy,
     setError,
     reset,
@@ -719,6 +732,7 @@ export function NewSession() {
       isGit={isGit}
       isolation={isolation}
       kind={kind}
+      launch={launch.fields}
       mode={mode}
       modeOptions={modeOptions}
       model={model}
@@ -749,7 +763,10 @@ export function NewSession() {
   );
   const createLabel = actionLabel(agentKind, busy);
   const canCreate =
-    !busy && !!project && hostConn === "online" && (!agentKind || agentReady(prompt, entry));
+    !busy &&
+    !!project &&
+    hostConn === "online" &&
+    (!agentKind || (agentReady(prompt, entry) && !launch.error));
   const foot = [hostOptions.length > 1 ? hostName : null, footText(worktree, branch, base, project)]
     .filter(Boolean)
     .join(" · ");
@@ -768,6 +785,14 @@ export function NewSession() {
       {fields}
     </Shell>
   );
+}
+
+/** A `server_info.features` flag of any connected host. */
+function hostFeature(hostId: string | null, name: string): boolean {
+  const info = getHostClient(hostId)?.getLastServerInfoMessage() as {
+    features?: Record<string, unknown>;
+  } | null;
+  return info?.features?.[name] === true;
 }
 
 function agentReady(prompt: string, entry: unknown): boolean {
