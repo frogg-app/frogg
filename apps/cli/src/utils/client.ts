@@ -139,7 +139,12 @@ function isTcpDaemonHost(host: string | null): host is string {
   return host !== null && !isIpcDaemonHost(host);
 }
 
-function readPidSocketTarget(froggHome: string): string | null {
+interface PidFileTarget {
+  listen: string;
+  pid: number | null;
+}
+
+function readPidFileTarget(froggHome: string): PidFileTarget | null {
   const pidPath = path.join(froggHome, PID_FILENAME);
   if (!existsSync(pidPath)) {
     return null;
@@ -147,15 +152,48 @@ function readPidSocketTarget(froggHome: string): string | null {
 
   try {
     const parsed = JSON.parse(readFileSync(pidPath, "utf-8")) as {
+      pid?: unknown;
       listen?: unknown;
       sockPath?: unknown;
     };
-    if (typeof parsed.listen === "string") return parsed.listen;
-    if (typeof parsed.sockPath === "string") return parsed.sockPath;
+    const pid =
+      typeof parsed.pid === "number" && Number.isInteger(parsed.pid) && parsed.pid > 0
+        ? parsed.pid
+        : null;
+    if (typeof parsed.listen === "string") return { listen: parsed.listen, pid };
+    if (typeof parsed.sockPath === "string") return { listen: parsed.sockPath, pid };
     return null;
   } catch {
     return null;
   }
+}
+
+function readPidSocketTarget(froggHome: string): string | null {
+  return readPidFileTarget(froggHome)?.listen ?? null;
+}
+
+function isProcessAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // EPERM: the process exists but belongs to someone else.
+    return (error as NodeJS.ErrnoException).code === "EPERM";
+  }
+}
+
+/**
+ * Where the daemon that owns this home is actually listening, from its pid
+ * file. A daemon started with `--listen` (or `FROGG_LISTEN`) never writes that
+ * address to config.json, so without this the CLI dials the default port and a
+ * healthy daemon looks down. Only a live owner counts: a stale pid file must not
+ * outrank the configured address.
+ */
+function resolveRunningTcpDaemonHost(froggHome: string): string | null {
+  const target = readPidFileTarget(froggHome);
+  if (!target || target.pid === null || !isProcessAlive(target.pid)) return null;
+  const host = normalizeDaemonHost(target.listen);
+  return isTcpDaemonHost(host) ? host : null;
 }
 
 function resolveConfiguredIpcDaemonHost(env: NodeJS.ProcessEnv, froggHome: string): string | null {
@@ -188,6 +226,10 @@ export function resolveDefaultDaemonHosts(env: NodeJS.ProcessEnv = process.env):
   const configuredIpcHost = resolveConfiguredIpcDaemonHost(env, froggHome);
   if (configuredIpcHost) {
     candidates.push(configuredIpcHost);
+  }
+  const runningTcpHost = resolveRunningTcpDaemonHost(froggHome);
+  if (runningTcpHost) {
+    candidates.push(runningTcpHost);
   }
   const configuredTcpHost = resolveConfiguredTcpDaemonHost(env, froggHome);
   if (configuredTcpHost) {

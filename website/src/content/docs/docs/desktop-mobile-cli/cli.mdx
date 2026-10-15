@@ -33,7 +33,8 @@ frogg agent ls --host ssh://dev@build-box     # SSH to the host, then its local 
 ```
 
 Without `--host`, the CLI uses `FROGG_HOST`, then the local daemon's socket or pipe, then the
-configured listen address, then `localhost:9999`. Set `FROGG_PASSWORD` (`<PREFIX>_PASSWORD`
+address the running local daemon is listening on (so a daemon started with `--listen` is found),
+then the configured listen address, then `localhost:9999`. Set `FROGG_PASSWORD` (`<PREFIX>_PASSWORD`
 for a branded CLI) if the daemon has a password; there is no password flag. Without one, the
 CLI authenticates to a daemon on this machine (loopback, socket or pipe) with the
 `local-token` file in the daemon home, so run it as the user that owns that home. If the
@@ -51,7 +52,7 @@ daemon refuses the credential, `frogg auth pair` reports the error and exits 1
 | `frogg status`            | Home, listen address, PID, log path, versions, LAN trust, detected providers |
 | `frogg reload`            | Reload `config.json` without a restart |
 | `frogg update`            | Update a versioned install from releases, with rollback |
-| `frogg install-service`   | Start the daemon at login (systemd user unit or launchd agent) |
+| `frogg install-service`   | Start the daemon at login (systemd user unit, launchd agent, or Windows Run key) |
 | `frogg uninstall-service` | Remove that service |
 | `frogg config-format`     | Reformat `config.json` |
 | `frogg execution-status`  | Independent agent execution status |
