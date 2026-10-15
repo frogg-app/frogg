@@ -121,20 +121,6 @@ async function runUpdate(to: string): Promise<void> {
   lastResult = { to, status: "applied", reason: null, at: ago(0) };
 }
 
-const beta = {
-  supported: true,
-  installed: true,
-  installedVersion: "1.7.0-beta.4",
-  running: false,
-  port: 7921,
-  selfIsBeta: false,
-  latestVersion: "1.7.0-beta.5",
-  latestError: null as string | null,
-  reason: null as string | null,
-  run: null as { phase: string; message: string | null } | null,
-  error: null as string | null,
-};
-
 const devCheckouts = [
   { name: "frogg", cwd: "/home/dev/frogg", branch: "main" },
   {
@@ -1341,28 +1327,6 @@ export const miscRpcs: Record<string, Rpc> = {
     await latency(300);
     void runUpdate(o.version ?? LATEST);
     return { accepted: true, error: null };
-  },
-  getBetaChannelStatus: async () => {
-    await latency();
-    return { ...beta };
-  },
-  installBetaChannel: async () => {
-    beta.run = { phase: "downloading", message: `Fetching ${beta.latestVersion}` };
-    await labWait(1500);
-    beta.run = null;
-    beta.installed = true;
-    beta.installedVersion = beta.latestVersion;
-    return { success: true, error: null };
-  },
-  startBetaChannel: async () => {
-    await latency(700);
-    beta.running = true;
-    return { success: true, error: null };
-  },
-  stopBetaChannel: async () => {
-    await latency(500);
-    beta.running = false;
-    return { success: true, error: null };
   },
   getDevDaemonStatus: async () => {
     await latency();

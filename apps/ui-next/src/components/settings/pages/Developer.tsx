@@ -4,18 +4,12 @@ import { useHostAction as useAction } from "./host-state";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
 import { useCallback } from "react";
 import { version } from "../../../../package.json";
-import { useDaemon } from "../../../daemon/store";
 import { Button } from "../../Button";
 import { T } from "../../Text";
 import { Note, Row, Section } from "../controls";
 import { need } from "./hostkit";
 import { Block, Confirm, ErrorLine, Status, useFeature } from "./kit";
 
-const loadBeta = async (c: DaemonClient) => {
-  const r = await c.getBetaChannelStatus();
-  if (r.error) throw new Error(r.error);
-  return r;
-};
 const loadDev = async (c: DaemonClient) => {
   const r = await c.getDevDaemonStatus();
   if (r.error) throw new Error(r.error);
@@ -31,91 +25,9 @@ function PageBody() {
       <Section title="Channels">
         <Row label="This app" hint={`Frogg Next · ${version}`} last />
       </Section>
-      <Note>
-        Beta and development daemons run separately from the selected host. App installation is
-        managed outside this prototype.
-      </Note>
-      <Beta />
+      <Note>Development daemons run separately from the selected host.</Note>
       <DevBuilds />
     </>
-  );
-}
-function Beta() {
-  const supported = useFeature("betaChannelManagement");
-  const control = useFeature("daemonChannelControl");
-  const rpc = useRpc(loadBeta, { enabled: supported === true, pollMs: 10000 });
-  const host = useDaemon((s) => s.serverName) ?? "Selected host";
-  const act = useAction();
-  const run = useCallback(
-    (key: string, fn: (c: DaemonClient) => Promise<unknown>) => {
-      void act.run(key, () => fn(need())).then((ok) => ok && rpc.reload());
-    },
-    [act, rpc],
-  );
-  const install = useCallback(() => run("install", (c) => c.installBetaChannel()), [run]);
-  const uninstall = useCallback(() => run("uninstall", (c) => c.uninstallBetaChannel()), [run]);
-  const start = useCallback(() => run("start", (c) => c.startBetaChannel()), [run]);
-  const stop = useCallback(() => run("stop", (c) => c.stopBetaChannel()), [run]);
-  const b = rpc.data;
-  const busy = !!act.pending || !!b?.run;
-  return (
-    <Section title="Beta daemon on this host">
-      {supported === false ? (
-        <Block last>
-          <T>Update this daemon to manage its beta channel.</T>
-        </Block>
-      ) : (
-        <Status rpc={rpc} what="beta daemon">
-          {b && (
-            <>
-              <Row
-                label={host}
-                hint={
-                  b.installed
-                    ? `${b.installedVersion ?? "Unknown version"} · ${b.running ? `running on :${b.port}` : "stopped"}`
-                    : "Not installed"
-                }
-              >
-                {b.supported && (
-                  <Button
-                    label={b.installed ? "Update beta" : "Install"}
-                    onPress={install}
-                    disabled={busy || b.selfIsBeta}
-                  />
-                )}
-                {b.installed &&
-                  control &&
-                  !b.selfIsBeta &&
-                  (b.running ? (
-                    <Confirm
-                      label="Stop…"
-                      confirm="Stop beta daemon"
-                      onConfirm={stop}
-                      disabled={busy}
-                    />
-                  ) : (
-                    <Button label="Start" onPress={start} disabled={busy} />
-                  ))}
-                {b.installed && !b.selfIsBeta && (
-                  <Confirm
-                    label="Uninstall…"
-                    confirm="Uninstall beta"
-                    onConfirm={uninstall}
-                    disabled={busy}
-                  />
-                )}
-              </Row>
-              {b.run && <Row label={b.run.phase} hint={b.run.message ?? "Working…"} />}
-              <Row label="Latest beta" hint={b.latestError ?? b.latestVersion ?? "Unknown"} last />
-              {!b.supported && (
-                <Note>{b.reason ?? "Beta installation is unavailable on this host."}</Note>
-              )}
-            </>
-          )}
-        </Status>
-      )}
-      <ErrorLine text={act.error} />
-    </Section>
   );
 }
 function DevBuilds() {

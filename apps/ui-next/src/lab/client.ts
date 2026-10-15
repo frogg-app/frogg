@@ -166,7 +166,6 @@ const features = {
   securityPosture: true,
   securityAcknowledge: true,
   daemonUpdateRuns: true,
-  betaChannelManagement: true,
   daemonChannelControl: true,
   devDaemonRebuild: true,
   hostResources: true,
