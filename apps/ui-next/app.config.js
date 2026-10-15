@@ -1,6 +1,14 @@
-// Prototype identity: installs beside the stable and beta apps rather than over them.
-const PACKAGE_ID = "app.frogg.next";
+// Name, package id and scheme come from the brand's Frogg Next identity (desktop/identity.cjs):
+// the prerelease "Frogg Next" app beside the classic one now, the stable identity once promoted.
 const rootPkg = require("../../package.json");
+const { loadBrand } = require("../../scripts/dev/branding/load.cjs");
+const { resolveIdentity } = require("./desktop/identity.cjs");
+const identity = resolveIdentity(loadBrand());
+// Read by the web/native bundle (pairing schemes, the in-app updater); the build scripts set the
+// same values for the bundler processes they start.
+process.env.EXPO_PUBLIC_FROGG_APP_SCHEME = identity.scheme;
+process.env.EXPO_PUBLIC_FROGG_ARTIFACT_PREFIX = identity.artifactPrefix;
+process.env.EXPO_PUBLIC_FROGG_RELEASE_REPO = identity.repository;
 // Same env-driven release signing as the classic app; scripts/build-apk.mjs documents the variables.
 const withAndroidReleaseSigning = require("../ui/plugins/with-android-release-signing");
 
@@ -39,22 +47,26 @@ const families = [
 
 module.exports = {
   expo: {
-    name: "Frogg Next",
+    name: identity.name,
     slug: "frogg-ui-next",
-    scheme: "frogg-next",
+    scheme: identity.scheme,
     version: rootPkg.version.replace(/-.*$/, ""),
     userInterfaceStyle: "dark",
     backgroundColor: "#080b0d",
     android: {
-      package: PACKAGE_ID,
+      package: identity.applicationId,
       edgeToEdgeEnabled: true,
       softwareKeyboardLayoutMode: "resize",
       // Direct ws:// connections to daemons on the local network or a tailnet.
       usesCleartextTraffic: true,
     },
-    ios: { bundleIdentifier: PACKAGE_ID },
+    ios: { bundleIdentifier: identity.applicationId },
     web: { bundler: "metro", output: "single" },
-    autolinking: { searchPaths: ["../../node_modules", "./node_modules"] },
+    // ./modules links the classic app's FroggAppInstaller (APK self-update) by symlink.
+    autolinking: {
+      searchPaths: ["../../node_modules", "./node_modules"],
+      nativeModulesDir: "./modules",
+    },
     plugins: [
       "expo-router",
       ["expo-font", { android: { fonts: families } }],
