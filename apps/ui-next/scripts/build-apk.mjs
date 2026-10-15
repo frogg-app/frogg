@@ -27,6 +27,8 @@ Object.assign(process.env, {
   EXPO_PUBLIC_FROGG_APP_SCHEME: identity.scheme,
   EXPO_PUBLIC_FROGG_ARTIFACT_PREFIX: identity.artifactPrefix,
   EXPO_PUBLIC_FROGG_RELEASE_REPO: identity.repository,
+  EXPO_PUBLIC_FROGG_BRAND_ARTIFACT_PREFIX: loadBrand().artifactPrefix,
+  EXPO_PUBLIC_FROGG_DAEMON_ARTIFACT_PREFIX: loadBrand().daemonArtifactPrefix,
 });
 const { values, positionals } = parseArgs({
   options: { "dry-run": { type: "boolean", default: false } },
