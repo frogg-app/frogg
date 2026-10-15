@@ -756,6 +756,7 @@ jobs:
       TRUSTED_SIGNING_ENDPOINT: ${{ secrets.TRUSTED_SIGNING_ENDPOINT }}
       TRUSTED_SIGNING_ACCOUNT: ${{ secrets.TRUSTED_SIGNING_ACCOUNT }}
       TRUSTED_SIGNING_PROFILE: ${{ secrets.TRUSTED_SIGNING_PROFILE }}
+      BRANDING_READ_TOKEN: ${{ secrets.BRANDING_READ_TOKEN }}
 
   next-android:
     name: frogg next android
@@ -778,6 +779,7 @@ jobs:
       FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEYSTORE_PASSWORD }}
       FROGG_NEXT_ANDROID_KEY_ALIAS: ${{ secrets.FROGG_NEXT_ANDROID_KEY_ALIAS }}
       FROGG_NEXT_ANDROID_KEY_PASSWORD: ${{ secrets.FROGG_NEXT_ANDROID_KEY_PASSWORD }}
+      BRANDING_READ_TOKEN: ${{ secrets.BRANDING_READ_TOKEN }}
 
   # release.json for every release. A classic release also gets its Electron update feeds, built
   # from the desktop payloads; a Frogg Next release names the feeds next-desktop uploaded, and
