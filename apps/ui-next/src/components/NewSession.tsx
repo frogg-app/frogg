@@ -42,7 +42,7 @@ import {
   type HostProviders,
 } from "./sessions/create";
 import { addProject, baseName } from "./sessions/directory";
-import { useVisibleProjects } from "./sessions/localProjects";
+import { isLocalProject, useVisibleProjects } from "./sessions/localProjects";
 import { LaunchFields, useLaunch, type Launch, type LaunchInput } from "./sessions/LaunchFields";
 import { FolderBrowser } from "./sessions/sheets";
 import { useModalLayer } from "./shell/modalStack";
@@ -376,7 +376,11 @@ function useSubmit(f: {
       const cwd = project.projectRootPath;
       const name = title.trim() || undefined;
       if (kind === "terminal") await startTerminal(c, hostId, cwd, name);
-      else if (entry) await startAgent(c, hostId, agentInput(ref.current, entry, cwd, name));
+      else if (entry) {
+        // Agents run in daemon projects: a folder only this device lists is registered first.
+        if (isLocalProject(project)) await c.addProject(cwd);
+        await startAgent(c, hostId, agentInput(ref.current, entry, cwd, name));
+      }
       ref.current.reset();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
