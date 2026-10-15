@@ -34,6 +34,7 @@ import {
 } from "./directory";
 import { labelFill, labelHue } from "./labels";
 import { isWindowsPath } from "./paths";
+import { ProjectsDialog } from "./ProjectsDialog";
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -52,6 +53,8 @@ export function SessionSheets() {
       return <ImportDialog />;
     case "add-project":
       return <AddProjectDialog />;
+    case "projects":
+      return <ProjectsDialog />;
     default:
       return null;
   }

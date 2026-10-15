@@ -42,12 +42,14 @@ import {
   type HostProviders,
 } from "./sessions/create";
 import { addProject, baseName } from "./sessions/directory";
+import { useVisibleProjects } from "./sessions/localProjects";
 import { LaunchFields, useLaunch, type Launch, type LaunchInput } from "./sessions/LaunchFields";
 import { FolderBrowser } from "./sessions/sheets";
 import { useModalLayer } from "./shell/modalStack";
 import { T } from "./Text";
 
 type Isolation = "worktree" | "local";
+const NO_PROJECTS: Project[] = [];
 
 const slug = (text: string) =>
   text
@@ -223,8 +225,8 @@ function useHostProjects(
     const read = async () => {
       const r = await c.listProjects();
       if (!live) return;
+      // The sheet picks the first project of this device's list (pinned first) once merged.
       setProjects(r.projects);
-      setProjectId(r.projects[0]?.projectId ?? null);
     };
     read().catch((e: unknown) => live && setError(e instanceof Error ? e.message : String(e)));
     return () => {
@@ -635,13 +637,19 @@ export function NewSession() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [browsing, setBrowsing] = useState(false);
-  const { projects, setProjects, projectId, setProjectId } = useHostProjects(
-    open,
-    hostId,
-    hostConn,
-    setError,
-    setBrowsing,
-  );
+  const {
+    projects: daemonProjects,
+    setProjects,
+    projectId,
+    setProjectId,
+  } = useHostProjects(open, hostId, hostConn, setError, setBrowsing);
+  // This device's list for the host: pinned first, hidden left out, its own folders added.
+  const visible = useVisibleProjects(hostId, daemonProjects ?? NO_PROJECTS);
+  const projects = daemonProjects ? visible : null;
+  useEffect(() => {
+    if (projects && !projects.some((p) => p.projectId === projectId))
+      setProjectId(projects[0]?.projectId ?? null);
+  }, [projects, projectId, setProjectId]);
 
   useOnOpen(open, setHostId, setPrompt);
   const { drafts, setDrafts, attachFiles, dropDraft } = useDrafts(setError);

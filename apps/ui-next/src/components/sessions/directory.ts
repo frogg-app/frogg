@@ -51,7 +51,8 @@ export type Sheet =
   | { kind: "rename"; agentId: string }
   | { kind: "archive"; agentId: string }
   | { kind: "import" }
-  | { kind: "add-project" };
+  | { kind: "add-project" }
+  | { kind: "projects" };
 
 export const DEFAULT_PREFS: Prefs = {
   group: "attention",
