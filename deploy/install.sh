@@ -15,8 +15,11 @@
 # rolls back to when a new version fails to come up.
 #
 # Environment overrides:
-#   FROGG_VERSION       release to install (default: the newest release of this build's
-#                     channel: the Latest release for stable, the newest -beta.N for beta)
+#   FROGG_VERSION       release to install, prereleases included (FROGG_VERSION=1.6.14-beta.2)
+#                     (default: the newest release on FROGG_CHANNEL)
+#   FROGG_CHANNEL       stable (default: the Latest release) or beta (the newest release of
+#                     either kind, prereleases vX.Y.Z-beta.N included). Both install the same
+#                     daemon into the same home.
 #   FROGG_INSTALL_DIR   install root (default: ~/.local/share/frogg)
 #   FROGG_BIN_DIR       where frogg/frogg are linked (default: ~/.local/bin)
 #   FROGG_RELEASE_BASE  release download base (default: GitHub releases)
@@ -51,14 +54,13 @@ BRAND_BIND_HOST='0.0.0.0'
 BRAND_RELEASE_BASE='https://github.com/frogg-app/frogg/releases'
 BRAND_DOCKER_IMAGE='froggapp/frogg'
 BRAND_LEGACY='true'
-BRAND_CHANNEL='stable'
 BRAND_COMMANDS=(frogg frogg)
 # END BRAND DEFAULTS
 
 # Environment names inside this script remain implementation details. Only the
 # selected product's public overrides are imported for a custom distribution.
 if [ "${BRAND_LEGACY}" != "true" ]; then
-  for suffix in INSTALL_DIR BIN_DIR RELEASE_BASE LISTEN VERSION BUNDLE_FILE BUNDLE_URL NO_SERVICE NO_MODIFY_PATH HOME PURGE IMAGE PORT BIND WORKSPACE PASSWORD CONTAINER NO_PULL UPDATE HEALTH_TIMEOUT; do
+  for suffix in INSTALL_DIR BIN_DIR RELEASE_BASE LISTEN VERSION CHANNEL BUNDLE_FILE BUNDLE_URL NO_SERVICE NO_MODIFY_PATH HOME PURGE IMAGE PORT BIND WORKSPACE PASSWORD CONTAINER NO_PULL UPDATE HEALTH_TIMEOUT; do
     key="${BRAND_ENV_PREFIX}_${suffix}"
     printf -v "FROGG_${suffix}" '%s' "${!key-}"
   done
@@ -69,6 +71,8 @@ FROGG_BIN_DIR="${FROGG_BIN_DIR:-${HOME}/.local/bin}"
 FROGG_RELEASE_BASE="${FROGG_RELEASE_BASE:-${BRAND_RELEASE_BASE}}"
 FROGG_LISTEN="${FROGG_LISTEN:-${BRAND_BIND_HOST}:${BRAND_PORT}}"
 FROGG_VERSION="${FROGG_VERSION:-}"
+FROGG_VERSION="${FROGG_VERSION#v}"
+FROGG_CHANNEL="${FROGG_CHANNEL:-stable}"
 FROGG_BUNDLE_FILE="${FROGG_BUNDLE_FILE:-}"
 FROGG_BUNDLE_URL="${FROGG_BUNDLE_URL:-}"
 FROGG_NO_SERVICE="${FROGG_NO_SERVICE:-0}"
@@ -150,18 +154,21 @@ resolve_newest_stable_version() {
 # (scripts/release/release-channel.mjs has the same list).
 CHANNEL_SUFFIX='-(alpha|beta|rc|pre|preview|next|canary|dev|nightly|snapshot)(\.|$)'
 
-# The beta build installs betas only: newest vX.Y.Z-beta.N from the API. GitHub has
-# no "latest prerelease" alias, and a stable release carries no beta bundles.
+# The beta channel installs the newest release of either kind: the newest prerelease
+# (vX.Y.Z-beta.N), or a stable release once it is newer, so a beta install never strands below
+# stable. GitHub has no "latest prerelease" alias. Prerelease daemon bundles carry the normal
+# identity, so they install into the same home, service and port as a stable one.
 resolve_newest_beta_version() {
   local api body tag
   api="$(printf '%s' "${FROGG_RELEASE_BASE}" |
     sed -n 's#^https://github.com/\([^/]*\)/\([^/]*\)/releases/*$#https://api.github.com/repos/\1/\2/releases?per_page=30#p')"
   [ -n "${api}" ] || die "set ${BRAND_ENV_PREFIX}_VERSION: ${FROGG_RELEASE_BASE} is not a GitHub releases URL"
   body="$(curl -fsSL "${api}")" || die "could not list releases from ${api}"
-  # A beta's suffix starts with a channel name: v1.6.0-beta.2, or a fork's v1.8.0-rc.1.acme.2.
+  # `sort -V` ranks 1.6.14 below 1.6.14-beta.1; a `~` in place of the first `-` sorts a
+  # prerelease below its release, as semver does.
   tag="$(printf '%s\n' "${body}" | tr ',{' '\n\n' |
-    sed -nE 's/^ *"tag_name" *: *"(v[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z.]+)" *$/\1/p' |
-    grep -E -- "${CHANNEL_SUFFIX}" | sed 's/^v//' | sort -V | tail -n1)"
+    sed -nE 's/^ *"tag_name" *: *"v([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)" *$/\1/p' |
+    sed 's/-/~/' | sort -V | tail -n1 | sed 's/~/-/')"
   FROGG_VERSION="${tag}"
   [ -n "${FROGG_VERSION}" ] || die "no beta release found at ${api}"
 }
@@ -169,10 +176,14 @@ resolve_newest_beta_version() {
 resolve_latest_version() {
   [ -n "${FROGG_RELEASE_BASE}" ] || die "No release source configured; supply ${BRAND_ENV_PREFIX}_BUNDLE_FILE or ${BRAND_ENV_PREFIX}_BUNDLE_URL"
   need curl
-  if [ "${BRAND_CHANNEL}" = "beta" ]; then
-    resolve_newest_beta_version
-    return
-  fi
+  case "${FROGG_CHANNEL}" in
+    stable) ;;
+    beta)
+      resolve_newest_beta_version
+      return
+      ;;
+    *) die "${BRAND_ENV_PREFIX}_CHANNEL must be stable or beta (got ${FROGG_CHANNEL})" ;;
+  esac
   local effective candidate
   effective="$(curl -fsSL -o /dev/null -w '%{url_effective}' "${FROGG_RELEASE_BASE}/latest")" ||
     die "could not resolve the latest release from ${FROGG_RELEASE_BASE}/latest"
