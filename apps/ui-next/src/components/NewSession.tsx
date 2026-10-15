@@ -1153,7 +1153,10 @@ function FolderPick({
   onCancel: () => void;
   onAdded: (projects: Project[], path: string) => void;
 }) {
-  const [folder, setFolder] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [cwd, setCwd] = useState<string | null>(null);
+  // Nothing selected inside the listed folder means the listed folder itself.
+  const folder = picked ?? cwd;
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const client = getHostClient(hostId);
@@ -1175,8 +1178,9 @@ function FolderPick({
     <View style={s.browse}>
       <ScrollView style={s.browseList}>
         <FolderBrowser
-          picked={folder}
-          onPick={setFolder}
+          picked={picked}
+          onPick={setPicked}
+          onCwd={setCwd}
           from={from}
           client={client}
           hostName={hostName}

@@ -1,4 +1,4 @@
-import { Check, Folder, RotateCw } from "lucide-react-native";
+import { Check, Folder, HardDrive, RotateCw } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, TextInput, View } from "react-native";
 import type { DaemonClient } from "@frogg/client/internal/daemon-client";
@@ -16,13 +16,16 @@ import {
   closeSheet,
   fetchImportable,
   importSession,
+  isDriveRoot,
   listDir,
+  listDrives,
   loadDirectory,
   makeDir,
   parentDir,
   baseName,
   joinPath,
   tildePath,
+  typedPath,
   renameSession,
   setSessionLabel,
   useDirectory,
@@ -30,6 +33,7 @@ import {
   type RecentProviderSession,
 } from "./directory";
 import { labelFill, labelHue } from "./labels";
+import { isWindowsPath } from "./paths";
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -422,18 +426,21 @@ function ImportRow({
 function AddProjectDialog() {
   const host = useDaemon((st) => st.serverName) ?? "host";
   const [picked, setPicked] = useState<string | null>(null);
+  const [cwd, setCwd] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  // Nothing selected inside the listed folder means the listed folder itself.
+  const target = picked ?? cwd;
   const add = useCallback(() => {
-    if (!picked) return;
-    addProject(picked)
+    if (!target) return;
+    addProject(target)
       .then(() => {
         closeSheet();
         void loadDirectory();
         return undefined;
       })
       .catch((e: unknown) => setErr(errText(e)));
-  }, [picked]);
-  const pickedName = picked ? baseName(picked) : undefined;
+  }, [target]);
+  const pickedName = target ? baseName(target) || target : undefined;
   const footer = useMemo(
     () => (
       <View style={s.footRow}>
@@ -443,11 +450,11 @@ function AddProjectDialog() {
           kind="primary"
           label={pickedName ? `Add ${pickedName}` : "Add project"}
           onPress={add}
-          disabled={!picked}
+          disabled={!target}
         />
       </View>
     ),
-    [host, pickedName, add, picked],
+    [host, pickedName, add, target],
   );
   return (
     <Dialog
@@ -458,20 +465,26 @@ function AddProjectDialog() {
       footer={footer}
       width={740}
     >
-      <FolderBrowser picked={picked} onPick={setPicked} />
+      <FolderBrowser picked={picked} onPick={setPicked} onCwd={setCwd} />
       <ErrorLine text={err} />
     </Dialog>
   );
 }
 
+/** The folder browser's view above a Windows host's drive roots. */
+const DRIVES = "";
+
 /**
  * Browses folders on a host (the active one unless `client` names another). A tap selects a
  * folder (reported through onPick); tapping the selected one, or a folder that is already a
- * project, opens it. The path is editable, which is also how to reach another Windows drive.
+ * project, opens it. The folder being listed is reported through onCwd, so a picker can use it
+ * when nothing inside is selected. The path is editable; on a Windows host, Up from a drive root
+ * lists the host's drives.
  */
 export function FolderBrowser({
   picked,
   onPick,
+  onCwd,
   from,
   client,
   hostName,
@@ -479,6 +492,8 @@ export function FolderBrowser({
 }: {
   picked: string | null;
   onPick: (path: string | null) => void;
+  /** The listed folder once it loads; null while loading, on the drives view or on an error. */
+  onCwd?: (path: string | null) => void;
   /** A folder to start beside (its parent is listed); defaults to the first project's. */
   from?: string;
   /** The host to browse; the active host when omitted. */
@@ -505,15 +520,31 @@ export function FolderBrowser({
   const [newName, setNewName] = useState<string | null>(null);
   const [typed, setTyped] = useState<string | null>(null);
   const added = useMemo(() => new Set(roots), [roots]);
+  const drives = dir === DRIVES;
   const load = useCallback(
     (d: string, select?: string) => {
       setEntries(null);
       setErr(null);
       onPick(select ?? null);
+      onCwd?.(null);
+      if (d === DRIVES) {
+        listDrives(client)
+          .then((list) => {
+            setAbs(DRIVES);
+            setEntries(list);
+            return undefined;
+          })
+          .catch((e: unknown) => {
+            setEntries([]);
+            setErr(errText(e));
+          });
+        return;
+      }
       listDir(d, client)
         .then((res) => {
           setAbs(res.path);
           setEntries(res.entries);
+          onCwd?.(res.path);
           return undefined;
         })
         .catch((e: unknown) => {
@@ -521,10 +552,15 @@ export function FolderBrowser({
           setErr(errText(e));
         });
     },
-    [onPick, client],
+    [onPick, onCwd, client],
   );
   useEffect(() => load(dir), [dir, load]);
-  const up = useCallback(() => setDir(parentDir(abs)), [abs]);
+  // A Windows drive root's parent is the host's list of drives.
+  const canUp = !drives && (isWindowsPath(abs) || parentDir(abs) !== abs);
+  const up = useCallback(() => {
+    if (isWindowsPath(abs) && isDriveRoot(abs)) setDir(DRIVES);
+    else setDir(parentDir(abs));
+  }, [abs]);
   const refresh = useCallback(() => load(dir), [dir, load]);
   const startNew = useCallback(() => setNewName(""), []);
   const cancelNew = useCallback(() => setNewName(null), []);
@@ -542,7 +578,7 @@ export function FolderBrowser({
   }, [abs, dir, newName, load, client]);
   const editPath = useCallback(() => setTyped(abs), [abs]);
   const goTyped = useCallback(() => {
-    const t = typed?.trim();
+    const t = typed === null ? "" : typedPath(typed);
     setTyped(null);
     if (t) setDir(t);
   }, [typed]);
@@ -554,7 +590,7 @@ export function FolderBrowser({
         {typed === null ? (
           <Pressable onPress={editPath} style={s.pathPress} accessibilityLabel="Type a path">
             <T v="mono" style={s.path} numberOfLines={1} ellipsizeMode="head">
-              {host}:{tildePath(abs)}
+              {drives ? `${host}: drives` : `${host}:${tildePath(abs)}`}
             </T>
           </Pressable>
         ) : (
@@ -572,17 +608,19 @@ export function FolderBrowser({
             style={[s.input, s.pathInput]}
           />
         )}
-        <Pressable onPress={up} accessibilityLabel="Up one folder">
-          <T style={s.link}>Up</T>
+        <Pressable onPress={up} disabled={!canUp} accessibilityLabel="Up one folder">
+          <T style={canUp ? s.link : s.linkOff}>Up</T>
         </Pressable>
         <Pressable onPress={refresh} accessibilityLabel="Refresh">
           <RotateCw size={12} color={color.muted} />
         </Pressable>
-        <Pressable onPress={startNew}>
-          <T style={s.link}>New folder</T>
-        </Pressable>
+        {!drives && (
+          <Pressable onPress={startNew}>
+            <T style={s.link}>New folder</T>
+          </Pressable>
+        )}
       </View>
-      {newName !== null && (
+      {newName !== null && !drives && (
         <View style={s.newRow}>
           <TextInput
             value={newName}
@@ -603,13 +641,16 @@ export function FolderBrowser({
           <DirRow
             key={e.path}
             entry={e}
+            drive={drives}
             added={added.has(e.path)}
             on={picked === e.path}
             onPick={onPick}
             onOpen={setDir}
           />
         ))}
-        {entries?.length === 0 && !err && <T style={s.rowMeta}>No folders here.</T>}
+        {entries?.length === 0 && !err && (
+          <T style={s.rowMeta}>{drives ? "No drives found." : "No folders here."}</T>
+        )}
       </View>
       <ErrorLine text={err} />
     </View>
@@ -618,27 +659,34 @@ export function FolderBrowser({
 
 function DirRow({
   entry,
+  drive,
   added,
   on,
   onPick,
   onOpen,
 }: {
   entry: { name: string; path: string };
+  /** A drive on the drives view: a tap opens it. */
+  drive?: boolean;
   added: boolean;
   on: boolean;
   onPick: (p: string) => void;
   onOpen: (p: string) => void;
 }) {
-  // A tap selects; tapping the selected folder (or any added one) opens it.
+  // A tap selects; tapping the selected folder (or any added one, or a drive) opens it.
   const press = useCallback(() => {
-    if (on || added) onOpen(entry.path);
+    if (on || added || drive) onOpen(entry.path);
     else onPick(entry.path);
-  }, [on, added, entry.path, onPick, onOpen]);
+  }, [on, added, drive, entry.path, onPick, onOpen]);
   return (
     <Pressable onPress={press}>
       {({ hovered }) => (
         <View style={[s.dirRow, (on || hovered) && s.dirRowOn]}>
-          <Folder size={13} color={color.faint} />
+          {drive ? (
+            <HardDrive size={13} color={color.faint} />
+          ) : (
+            <Folder size={13} color={color.faint} />
+          )}
           <View style={s.flex}>
             <T style={s.rowTitle}>{entry.name}</T>
             {added && <T style={s.rowMeta}>already added</T>}
@@ -701,6 +749,7 @@ const s = StyleSheet.create({
   pathInput: { flex: 1, paddingVertical: 4, fontFamily: font.mono, fontSize: 12.5 },
   newRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   link: { fontSize: 12, color: color.muted },
+  linkOff: { fontSize: 12, color: color.faint },
   dirRow: {
     flexDirection: "row",
     alignItems: "center",

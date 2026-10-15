@@ -39,3 +39,19 @@ export function baseName(p: string): string {
 export function tildePath(p: string): string {
   return p.replace(/^\/(home|Users)\/[^/]+/, "~").replace(/^[a-zA-Z]:\\Users\\[^\\]+/i, "~");
 }
+
+/** A Windows drive root ("E:\", "E:/" or a bare "E:"). */
+export function isDriveRoot(p: string): boolean {
+  return /^[a-zA-Z]:[\\/]?$/.test(p.trim());
+}
+
+/** A typed path as the host should read it: a bare drive ("E:") means that drive's root. */
+export function typedPath(p: string): string {
+  const t = p.trim();
+  return /^[a-zA-Z]:$/.test(t) ? `${t.toUpperCase()}\\` : t;
+}
+
+/** Windows folders that are never projects: recycle bins and volume metadata. */
+export function isSystemFolder(name: string): boolean {
+  return name.startsWith("$") || name === "System Volume Information";
+}

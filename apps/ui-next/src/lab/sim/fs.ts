@@ -168,6 +168,9 @@ const HOST_DIRS: Record<string, string[]> = {
   "C:\\Users\\dev": ["frogg", "notes"],
   "C:\\Projects": [],
   "D:\\": ["work"],
+  // A second drive whose root holds a system folder the daemon skips or hides.
+  "E:\\": ["Frogg-OW", "System Volume Information", "$RECYCLE.BIN"],
+  "E:\\Frogg-OW": ["frogg", "assets"],
 };
 
 /** New-folder in the host browser: the folder lists under its parent until the next reseed. */
@@ -204,6 +207,8 @@ export async function listDirectory(cwd: string, path: string) {
         modifiedAt: stamp(hashAge(name)),
       })),
     };
+  // A drive letter the simulated Windows host does not have.
+  if (/^[a-zA-Z]:[\\/]?$/.test(cwd)) throw new Error(`ENOENT: no such directory '${cwd}'`);
   const dir = norm(path);
   const node = fs().get(dir);
   if (!node || node.kind !== "directory") throw new Error(`ENOENT: no such directory '${path}'`);
