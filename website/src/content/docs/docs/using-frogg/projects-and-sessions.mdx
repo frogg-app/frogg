@@ -157,6 +157,12 @@ frogg terminal capture <terminal-id> --scrollback
 A terminal shows the other devices watching or typing in it; see
 [shared sessions](/docs/using-frogg/shared-sessions/).
 
+A full-screen program (Claude Code's fullscreen mode, `htop`, `less`) keeps its own history, so
+the wheel goes to the program and scrolls it there, including on a device that opens the
+terminal after the program started. Otherwise the wheel scrolls the terminal's scrollback. In
+Frogg Next that also holds when a program left mouse reporting on (hold Shift to send the wheel
+to it), and Shift+PageUp / Shift+PageDown page the scrollback, or the full-screen program's view.
+
 ## Organize the sidebar
 
 The display menu at the top of the sidebar controls how sessions are arranged.
