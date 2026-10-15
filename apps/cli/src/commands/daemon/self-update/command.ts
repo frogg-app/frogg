@@ -6,6 +6,7 @@ import { resolveCliVersion } from "../../../version.js";
 import { getErrorMessage } from "../../../utils/errors.js";
 import { applyUpdate } from "./apply.js";
 import { resolveInstallDir } from "./layout.js";
+import { isStableVersion } from "./semver.js";
 import type { UpdateChannel } from "./releases.js";
 import { runSelfUpdate, type SelfUpdateProgress, type SelfUpdateResult } from "./run.js";
 import { resolveLocalDaemonState } from "../local-daemon.js";
@@ -28,9 +29,14 @@ interface SelfUpdateCommandOptions {
 /**
  * Stable takes stable releases only; beta also takes prereleases. Both install the same daemon
  * into the same install directory and home, so switching channel is just picking a version.
+ * Without `--channel`, the channel the running version came from.
  */
-export function parseChannel(raw: string | undefined): UpdateChannel {
-  if (raw === undefined || raw === "stable") return "stable";
+export function parseChannel(
+  raw: string | undefined,
+  currentVersion: string = resolveCliVersion(),
+): UpdateChannel {
+  if (raw === undefined) return isStableVersion(currentVersion) ? "stable" : "beta";
+  if (raw === "stable") return "stable";
   if (raw === "beta") return "beta";
   throw new Error(`invalid channel "${raw}" (expected stable or beta)`);
 }
@@ -164,7 +170,10 @@ export function selfUpdateCommand(): Command {
       // `--version` is the root program's flag and commander accepts it anywhere,
       // so the exact-release option is `--to`.
       .option("--to <version>", "Install this exact release instead of the newest one")
-      .option("--channel <channel>", "Release channel: stable (default) or beta (prereleases too)")
+      .option(
+        "--channel <channel>",
+        "Release channel: stable, or beta to take prereleases too (default: the running version's)",
+      )
       .option("--check", "Only report whether an update is available")
       .option("--json", "Output progress and the result as JSON lines")
       .option(
