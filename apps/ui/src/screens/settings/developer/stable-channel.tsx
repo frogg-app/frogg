@@ -8,9 +8,9 @@ import { SettingsSection } from "@/screens/settings/settings-section";
 import { useSessionStore } from "@/stores/session-store";
 import { settingsStyles } from "@/styles/settings";
 import type { HostProfile } from "@/types/host-connection";
-import { isBetaBuild, resolveAppVersion } from "@/utils/app-version";
+import { resolveAppVersion } from "@/utils/app-version";
 
-/** The stable app: this one, or a separate install when this is the beta. */
+/** This app, the released build. */
 export function StableAppCard() {
   const { t } = useTranslation();
   const version = resolveAppVersion();
@@ -19,11 +19,9 @@ export function StableAppCard() {
       <View style={settingsStyles.card}>
         <View style={settingsStyles.row}>
           <View style={settingsStyles.rowContent}>
-            <Text style={settingsStyles.rowTitle}>{brand.channels.stable.name}</Text>
+            <Text style={settingsStyles.rowTitle}>{brand.name}</Text>
             <Text style={settingsStyles.rowHint}>
-              {isBetaBuild()
-                ? t("settings.developer.stable.appSeparate")
-                : t("settings.developer.stable.thisApp", { version: version ?? "?" })}
+              {t("settings.developer.stable.thisApp", { version: version ?? "?" })}
             </Text>
           </View>
         </View>
@@ -32,20 +30,20 @@ export function StableAppCard() {
   );
 }
 
-/** Every added host's stable daemon, as far as this app's connection to it shows. */
+/** Every added host's daemon, as far as this app's connection to it shows. */
 export function StableDaemonHostsSection() {
   const { t } = useTranslation();
   const hosts = useHosts();
   return (
     <SettingsSection
       title={t("settings.developer.sections.daemons")}
-      info={t("settings.developer.stable.daemonInfo", { port: brand.channels.stable.daemonPort })}
+      info={t("settings.developer.stable.daemonInfo", { port: brand.daemonPort })}
       testID="developer-stable-daemon"
     >
       <View style={settingsStyles.card}>
         {hosts.length === 0 ? (
           <View style={settingsStyles.row}>
-            <Text style={settingsStyles.rowHint}>{t("settings.developer.betaDaemon.noHosts")}</Text>
+            <Text style={settingsStyles.rowHint}>{t("settings.developer.noHosts")}</Text>
           </View>
         ) : (
           hosts.map((host, index) => (
@@ -66,14 +64,9 @@ function StableDaemonHostRow({ host, showBorder }: { host: HostProfile; showBord
     [showBorder],
   );
 
-  let line: string;
-  if (!isConnected) {
-    line = t("settings.developer.betaDaemon.offline");
-  } else if (serverInfo?.brand?.id === brand.channels.beta.id) {
-    line = t("settings.developer.stable.viaBeta", { port: brand.channels.stable.daemonPort });
-  } else {
-    line = t("settings.developer.stable.connected", { version: serverInfo?.version ?? "?" });
-  }
+  const line = isConnected
+    ? t("settings.developer.stable.connected", { version: serverInfo?.version ?? "?" })
+    : t("settings.developer.offline");
 
   return (
     <View style={rowStyle} testID={`developer-stable-daemon-host-${host.serverId}`}>

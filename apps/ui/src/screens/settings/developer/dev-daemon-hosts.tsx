@@ -48,7 +48,7 @@ export function DevDaemonHostRow({
 
   let body: React.ReactNode;
   if (!isConnected) {
-    body = <Text style={settingsStyles.rowHint}>{t("settings.developer.betaDaemon.offline")}</Text>;
+    body = <Text style={settingsStyles.rowHint}>{t("settings.developer.offline")}</Text>;
   } else if (!supported) {
     body = (
       <Text style={settingsStyles.rowHint}>{t("settings.developer.devDaemon.needsUpdate")}</Text>

@@ -1,5 +1,4 @@
 import { i18n } from "@/localisation/i18next";
-import type { ReleaseChannel } from "@/hooks/use-settings";
 import type { AndroidApkInstallResult } from "@/mobile/updates/android-app-installer";
 import type {
   MobileAppUpdateCheckResult,
@@ -33,7 +32,7 @@ export interface MobileAppUpdaterSnapshot {
 }
 
 export interface MobileAppUpdaterPort {
-  check(input: { channel: ReleaseChannel }): Promise<MobileAppUpdateCheckResult>;
+  check(): Promise<MobileAppUpdateCheckResult>;
   /** Downloads the APK and resolves with the local file path. */
   download(
     asset: MobileUpdateAsset,
@@ -50,13 +49,8 @@ export interface MobileAppUpdaterDeps {
 export interface MobileAppUpdater {
   getSnapshot(): MobileAppUpdaterSnapshot;
   subscribe(listener: () => void): () => void;
-  checkForUpdates(options: {
-    channel: ReleaseChannel;
-    silent?: boolean;
-  }): Promise<MobileAppUpdateCheckResult | null>;
+  checkForUpdates(options?: { silent?: boolean }): Promise<MobileAppUpdateCheckResult | null>;
   downloadAndInstall(): Promise<AndroidApkInstallResult | null>;
-  /** Forgets the current offer, e.g. after a channel switch; no-op mid-download or install. */
-  discardAvailableUpdate(): void;
 }
 
 const INITIAL_SNAPSHOT: MobileAppUpdaterSnapshot = {
@@ -116,17 +110,16 @@ export function createMobileAppUpdater(deps: MobileAppUpdaterDeps): MobileAppUpd
     for (const listener of listeners) listener();
   }
 
-  async function checkForUpdates(options: {
-    channel: ReleaseChannel;
-    silent?: boolean;
-  }): Promise<MobileAppUpdateCheckResult | null> {
+  async function checkForUpdates(
+    options: { silent?: boolean } = {},
+  ): Promise<MobileAppUpdateCheckResult | null> {
     if (snapshot.status === "downloading" || snapshot.status === "installing") {
       return null;
     }
     const request = ++checkVersion;
     commit({ status: "checking", errorMessage: null, noticeMessage: null });
     try {
-      const result = await deps.port.check({ channel: options.channel });
+      const result = await deps.port.check();
       if (request !== checkVersion) return result;
       commit({
         status: result.hasUpdate ? "available" : "up-to-date",
@@ -218,10 +211,5 @@ export function createMobileAppUpdater(deps: MobileAppUpdaterDeps): MobileAppUpd
     },
     checkForUpdates,
     downloadAndInstall,
-    discardAvailableUpdate() {
-      if (snapshot.status === "downloading" || snapshot.status === "installing") return;
-      checkVersion++; // an in-flight check for the old channel must not land
-      commit({ status: "idle", availableUpdate: null });
-    },
   };
 }

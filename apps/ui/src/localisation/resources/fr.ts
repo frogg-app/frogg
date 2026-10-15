@@ -3436,21 +3436,16 @@ export const fr: TranslationResources = {
     },
     developer: {
       loading: "Chargement…",
-      retry: "Réessayer",
-      cancel: "Annuler",
-      upToDate: "À jour",
-      installVersion: "Installer {{version}}",
-      updateVersion: "Mettre à jour vers {{version}}",
+      noHosts: "Aucun hôte ajouté.",
+      offline: "Hors ligne",
       daemonControl: {
         start: "Démarrer",
         stop: "Arrêter",
         openWebUi: "Ouvrir l'interface web",
       },
-      manageOnHost:
-        "Démarrez-les, arrêtez-les et installez-les dans l'onglet Développeur de chaque hôte.",
+      manageOnHost: "Démarrez-les et arrêtez-les dans l'onglet Développeur de chaque hôte.",
       manage: "Gérer",
       sections: {
-        betaDaemon: "Daemon bêta",
         devDaemon: "Daemon de développement",
         app: "App",
         daemons: "Daemons",
@@ -3458,25 +3453,18 @@ export const fr: TranslationResources = {
       channels: {
         stable: {
           title: "Stable",
-          info: "L'app et le daemon publiés que tout le monde utilise. Chaque canal s'installe à côté des autres, avec son propre port, ses données et ses réglages.",
-        },
-        beta: {
-          title: "Bêta",
-          info: "Des versions préliminaires testées ici avant de passer en stable. L'app et le daemon bêta tournent à côté des versions stables sans toucher à leurs données.",
+          info: "L'app et le daemon publiés que tout le monde utilise.",
         },
         development: {
           title: "Développement",
-          info: "Un daemon et une app web lancés depuis une copie des sources sur un hôte, pour essayer des changements avant qu'ils deviennent une bêta.",
+          info: "Un daemon et une app web lancés depuis une copie des sources sur un hôte, pour essayer des changements avant leur publication.",
         },
       },
       stable: {
         thisApp: "Cette app · {{version}}",
-        appSeparate: "Installée séparément. Ceci est l'app bêta.",
         daemonInfo:
           "Le daemon auquel cette app se connecte sur chaque hôte. Le daemon stable écoute par défaut sur le port {{port}}.",
         connected: "Connecté · {{version}}",
-        viaBeta:
-          "Cette connexion mène au daemon bêta. Le daemon stable écoute sur le port {{port}}.",
       },
       devDaemon: {
         info: "Exécute npm run dev:live depuis une copie des sources sur l'hôte : le démon de cette copie sur des ports libres, avec les comptes, projets et conversations de l'hôte, et son application web. Un par copie ; plusieurs peuvent tourner en même temps.",
@@ -3487,83 +3475,11 @@ export const fr: TranslationResources = {
         noCheckouts: "Aucun espace de travail de cet hôte n'est une copie des sources de ce dépôt.",
         launch: "Lancer",
       },
-      betaApp: {
-        title: "App bêta",
-        info: "Installez {{name}} à côté de cette app. Elle garde ses propres réglages et données.",
-        webHint: "Les versions bêta de l'app sont publiées sur la page des versions.",
-        openReleases: "Ouvrir les versions",
-        installed: "Installée",
-        notInstalled: "Non installée",
-        installedVersion: "Installée : {{version}}",
-        statusFailed: "Impossible de lire l'état de l'app bêta : {{error}}",
-        latest: "Dernière bêta",
-        latestFailed: "Impossible de vérifier la dernière bêta : {{error}}",
-        open: "Ouvrir l'app bêta",
-        openFailed: "Impossible d'ouvrir l'app bêta : {{error}}",
-        downloaded: "{{received}} sur {{total}}",
-        failed: "Échec de l'installation : {{error}}",
-        phases: {
-          resolving: "Recherche de la dernière bêta…",
-          downloading: "Téléchargement de {{version}}…",
-          verifying: "Vérification de la somme de contrôle…",
-          installing: "Installation de {{version}}…",
-          launched: "{{version}} installée",
-          failed: "Échec de l'installation",
-          cancelled: "Installation annulée",
-        },
-        unsupported: {
-          "running-beta": "Ceci est déjà l'app bêta.",
-          "unsupported-platform": "L'app bêta ne peut pas être installée sur cette plateforme.",
-          "no-release-repository":
-            "Cette version n'a pas de dépôt de versions à partir duquel installer.",
-        },
-      },
-      betaDaemon: {
-        info: "Un hôte peut exécuter un daemon bêta à côté du daemon stable, sur son propre port et avec ses propres données. L'installer et le retirer nécessite le rôle de propriétaire.",
-        noHosts: "Aucun hôte ajouté.",
-        offline: "Hors ligne",
-        needsUpdate: "Mettez à jour cet hôte pour gérer les bêtas.",
-        loadFailed: "Impossible de charger l'état bêta : {{error}}",
-        unsupported: "Indisponible sur cet hôte : {{reason}}",
-        stopSelfConfirmTitle: "Arrêter le daemon bêta ?",
-        stopSelfConfirmMessage:
-          "Cette app atteint {{host}} via son daemon bêta : la connexion va tomber. Redémarrez-le depuis le daemon stable de l'hôte.",
-        selfConnected: "Connecté · {{version}} sur le port {{port}}",
-        installed: "Bêta {{version}} installée",
-        notInstalled: "Bêta non installée",
-        running: "En cours d'exécution sur le port {{port}}",
-        stopped: "Arrêté (port {{port}})",
-        latest: "Dernière bêta : {{version}}",
-        latestFailed: "Impossible de vérifier la dernière bêta : {{error}}",
-        install: "Installer la bêta",
-        uninstall: "Désinstaller",
-        purge: "Supprimer aussi les données bêta",
-        uninstallConfirmTitle: "Désinstaller le daemon bêta ?",
-        uninstallConfirmMessage:
-          "Cela retire le daemon bêta de {{host}}. Le daemon stable n'est pas affecté.",
-        uninstallConfirmPurgeMessage:
-          "Cela retire le daemon bêta et ses données de {{host}}. Le daemon stable n'est pas affecté.",
-        starting: "Démarrage…",
-        installSucceeded: "Bêta {{version}} installée.",
-        uninstallSucceeded: "Daemon bêta retiré.",
-        failed: "Échec : {{error}}",
-        showLog: "Afficher le journal",
-        hideLog: "Masquer le journal",
-        phases: {
-          resolve: "Recherche de la version…",
-          download: "Téléchargement…",
-          verify: "Vérification…",
-          install: "Installation…",
-          uninstall: "Désinstallation…",
-          done: "Terminé",
-          failed: "Échec",
-        },
-      },
     },
     about: {
       developerOptions: {
         title: "Options pour les développeurs",
-        hint: "Affiche la section Développeur pour installer des versions bêta.",
+        hint: "Affiche la section Développeur pour lancer des daemons de développement.",
       },
       attribution: "{{brandFullName}} est basé sur <upstream>frogg</upstream>.",
       attributionUpstream: "frogg est basé sur <upstream>Paseo</upstream>.",
@@ -3574,14 +3490,6 @@ export const fr: TranslationResources = {
       updateHost: "Mettre à jour",
       offline: "Hors ligne",
       versionDiffers: "La version diffère de cet appareil",
-      releaseChannel: {
-        label: "Canal de sortie",
-        stableHint: "Les bêtas sont une app distincte, {{beta}}, qui s’installe à côté de celle-ci",
-        betaHint:
-          "Cette bêta s’installe à côté de {{stable}} et ne se met à jour que vers des bêtas",
-        stable: "Stable",
-        beta: "Beta",
-      },
       updates: {
         label: "Mises à jour de l'application",
         readyToInstall: "Prêt à installer:{{version}}",
@@ -4294,6 +4202,9 @@ export const fr: TranslationResources = {
           autoUpdate: {
             title: "Mettre à jour automatiquement",
             hint: "Vérifie le canal chaque jour et met à jour quand aucun agent ne tourne. Le retour arrière protège contre un daemon qui ne démarre pas, pas contre une interface défectueuse, livrée avec l'app.",
+            channelLabel: "Canal de releases",
+            stable: "Stable",
+            beta: "Bêta",
           },
         },
         update: {

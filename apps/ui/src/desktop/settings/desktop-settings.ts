@@ -6,13 +6,11 @@ import {
   useDesktopIpcErrorReporter,
   useDesktopIpcQueryErrorToast,
 } from "@/desktop/hooks/desktop-ipc-error";
-import type { ReleaseChannel } from "@/hooks/use-settings";
 import { i18n } from "@/localisation/i18next";
 
 const DESKTOP_SETTINGS_QUERY_KEY = ["desktop-settings"] as const;
 
 export interface DesktopSettings {
-  releaseChannel: ReleaseChannel;
   notifications: {
     playSound: boolean;
   };
@@ -36,7 +34,6 @@ export interface DesktopSettings {
 export type DownloadMode = "ask" | "directory";
 
 export interface DesktopSettingsPatch {
-  releaseChannel?: ReleaseChannel;
   notifications?: Partial<DesktopSettings["notifications"]>;
   daemon?: Partial<DesktopSettings["daemon"]>;
   updates?: Partial<DesktopSettings["updates"]>;
@@ -44,7 +41,6 @@ export interface DesktopSettingsPatch {
 }
 
 export const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
-  releaseChannel: "stable",
   notifications: {
     playSound: true,
   },
@@ -164,7 +160,6 @@ export async function updatePersistedDesktopSettings(
 
 export async function migrateLegacyDesktopSettings(input: {
   manageBuiltInDaemon?: boolean;
-  releaseChannel?: ReleaseChannel;
 }): Promise<void> {
   if (!getIsElectron()) {
     return;
@@ -180,7 +175,6 @@ function parseDesktopSettings(raw: unknown): DesktopSettings {
   const downloads = isRecord(record.downloads) ? record.downloads : {};
 
   return {
-    releaseChannel: record.releaseChannel === "beta" ? "beta" : "stable",
     notifications: {
       playSound:
         typeof notifications.playSound === "boolean"
@@ -218,7 +212,6 @@ function mergeDesktopSettings(
   updates: DesktopSettingsPatch,
 ): DesktopSettings {
   return {
-    releaseChannel: updates.releaseChannel ?? current.releaseChannel,
     notifications: {
       ...current.notifications,
       ...updates.notifications,
@@ -240,7 +233,6 @@ function mergeDesktopSettings(
 
 function normalizePatch(updates: DesktopSettingsPatch): Record<string, unknown> {
   return {
-    ...(updates.releaseChannel ? { releaseChannel: updates.releaseChannel } : {}),
     ...(updates.notifications ? { notifications: updates.notifications } : {}),
     ...(updates.daemon ? { daemon: updates.daemon } : {}),
     ...(updates.updates ? { updates: updates.updates } : {}),

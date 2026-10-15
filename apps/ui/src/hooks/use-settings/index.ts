@@ -41,7 +41,6 @@ import {
   type PullRequestOpenLocation,
   type DesktopSettingsBridge,
   type KeyValueStorage,
-  type ReleaseChannel,
   type SendBehavior,
   type ServiceUrlBehavior,
   type Settings,
@@ -79,7 +78,6 @@ export type {
   PullRequestOpenLocation,
   DesktopSettingsBridge,
   KeyValueStorage,
-  ReleaseChannel,
   SendBehavior,
   ServiceUrlBehavior,
   Settings,
@@ -197,9 +195,6 @@ export function useSettings<TSelected>(
             manageBuiltInDaemon: updates.manageBuiltInDaemon,
           };
         }
-        if (updates.releaseChannel !== undefined) {
-          desktopUpdates.releaseChannel = updates.releaseChannel;
-        }
         if (Object.keys(desktopUpdates).length > 0) {
           promises.push(desktopSettings.updateSettings(desktopUpdates));
         }
@@ -222,7 +217,6 @@ export function useSettings<TSelected>(
     ...DEFAULT_APP_SETTINGS,
     ...appSettings.settings,
     manageBuiltInDaemon: desktopSettings.settings.daemon.manageBuiltInDaemon,
-    releaseChannel: desktopSettings.settings.releaseChannel,
   };
 
   if (selector) {

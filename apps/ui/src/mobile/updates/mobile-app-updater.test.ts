@@ -48,7 +48,7 @@ describe("mobile app updater — check", () => {
   it("publishes an available update and when it was found", async () => {
     const updater = createUpdater();
 
-    await updater.checkForUpdates({ channel: "stable" });
+    await updater.checkForUpdates();
 
     const snapshot = updater.getSnapshot();
     expect(snapshot.status).toBe("available");
@@ -61,7 +61,7 @@ describe("mobile app updater — check", () => {
       check: vi.fn(async () => buildCheckResult({ hasUpdate: false, asset: null })),
     });
 
-    await updater.checkForUpdates({ channel: "stable" });
+    await updater.checkForUpdates();
 
     expect(updater.getSnapshot().status).toBe("up-to-date");
     expect(updater.getSnapshot().availableUpdate).toBeNull();
@@ -73,43 +73,14 @@ describe("mobile app updater — check", () => {
     });
 
     const manual = createUpdater({ check: failing });
-    await manual.checkForUpdates({ channel: "stable" });
+    await manual.checkForUpdates();
     expect(manual.getSnapshot().status).toBe("error");
     expect(manual.getSnapshot().errorMessage).toContain("offline");
 
     const silent = createUpdater({ check: failing });
-    await silent.checkForUpdates({ channel: "stable", silent: true });
+    await silent.checkForUpdates({ silent: true });
     expect(silent.getSnapshot().status).toBe("idle");
     expect(silent.getSnapshot().errorMessage).toBeNull();
-  });
-
-  it("drops the offer when told to", async () => {
-    const updater = createUpdater();
-    await updater.checkForUpdates({ channel: "beta" });
-    expect(updater.getSnapshot().availableUpdate).not.toBeNull();
-
-    updater.discardAvailableUpdate();
-
-    expect(updater.getSnapshot()).toMatchObject({ availableUpdate: null, status: "idle" });
-  });
-
-  it("ignores a check for the old channel that lands after the offer is dropped", async () => {
-    let resolveCheck: (result: MobileAppUpdateCheckResult) => void = () => {};
-    const updater = createUpdater({
-      check: vi.fn(
-        () =>
-          new Promise<MobileAppUpdateCheckResult>((resolve) => {
-            resolveCheck = resolve;
-          }),
-      ),
-    });
-    const pending = updater.checkForUpdates({ channel: "beta" });
-
-    updater.discardAvailableUpdate();
-    resolveCheck(buildCheckResult({ latestVersion: "1.6.0-beta.1" }));
-    await pending;
-
-    expect(updater.getSnapshot()).toMatchObject({ availableUpdate: null, status: "idle" });
   });
 });
 
@@ -128,7 +99,7 @@ describe("mobile app updater — download and install", () => {
       },
     );
     const updater = createUpdater({ download, install });
-    await updater.checkForUpdates({ channel: "stable" });
+    await updater.checkForUpdates();
 
     const progressSeen: (number | null)[] = [];
     updater.subscribe(() => progressSeen.push(updater.getSnapshot().progress?.received ?? null));
@@ -144,7 +115,7 @@ describe("mobile app updater — download and install", () => {
     const updater = createUpdater({
       install: vi.fn(async () => ({ status: "cancelled" as const, message: null })),
     });
-    await updater.checkForUpdates({ channel: "stable" });
+    await updater.checkForUpdates();
 
     await updater.downloadAndInstall();
 
@@ -156,7 +127,7 @@ describe("mobile app updater — download and install", () => {
     const updater = createUpdater({
       install: vi.fn(async () => ({ status: "permission-required" as const, message: null })),
     });
-    await updater.checkForUpdates({ channel: "stable" });
+    await updater.checkForUpdates();
 
     await updater.downloadAndInstall();
 
@@ -170,7 +141,7 @@ describe("mobile app updater — download and install", () => {
         throw new Error("connection reset");
       }),
     });
-    await updater.checkForUpdates({ channel: "stable" });
+    await updater.checkForUpdates();
 
     await updater.downloadAndInstall();
 
@@ -185,7 +156,7 @@ describe("mobile app updater — download and install", () => {
       check: vi.fn(async () => buildCheckResult({ asset: null, signatureMismatch: true })),
       install,
     });
-    await updater.checkForUpdates({ channel: "stable" });
+    await updater.checkForUpdates();
 
     expect(await updater.downloadAndInstall()).toBeNull();
     expect(install).not.toHaveBeenCalled();

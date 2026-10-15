@@ -126,26 +126,22 @@ describe("selectApkAsset", () => {
 describe("selectRelease", () => {
   const releases = [release("1.5.17"), release("1.6.0-beta.1"), release("1.5.16")];
 
-  it("keeps betas out of the stable channel", () => {
-    expect(selectRelease(releases, "stable")?.tag_name).toBe("v1.5.17");
+  it("offers the newest stable release, never a beta", () => {
+    expect(selectRelease(releases)?.tag_name).toBe("v1.5.17");
   });
 
-  it("offers the newest build on the beta channel", () => {
-    expect(selectRelease(releases, "beta")?.tag_name).toBe("v1.6.0-beta.1");
-  });
-
-  it("skips a flagged prerelease on stable even without -beta in the tag", () => {
+  it("skips a flagged prerelease even without -beta in the tag", () => {
     const flagged = [{ ...release("1.6.0-rc.1"), prerelease: true }, release("1.5.45")];
-    expect(selectRelease(flagged, "stable")?.tag_name).toBe("v1.5.45");
+    expect(selectRelease(flagged)?.tag_name).toBe("v1.5.45");
   });
 
-  it("skips an unflagged prerelease tag on stable", () => {
+  it("skips an unflagged prerelease tag", () => {
     const unflagged = [{ ...release("1.6.0-rc.1"), prerelease: false }, release("1.5.45")];
-    expect(selectRelease(unflagged, "stable")?.tag_name).toBe("v1.5.45");
+    expect(selectRelease(unflagged)?.tag_name).toBe("v1.5.45");
   });
 
   it("ignores drafts", () => {
-    expect(selectRelease([{ ...release("9.9.9"), draft: true }], "stable")).toBeNull();
+    expect(selectRelease([{ ...release("9.9.9"), draft: true }])).toBeNull();
   });
 });
 
@@ -155,7 +151,6 @@ describe("resolveMobileAppUpdate", () => {
   it("offers a newer release with its matching package", () => {
     const result = resolveMobileAppUpdate({
       releases: [release("1.5.18", [apk])],
-      channel: "stable",
       currentVersion: "1.5.17",
       installer: device,
       checkedAt: 1000,
@@ -170,7 +165,6 @@ describe("resolveMobileAppUpdate", () => {
   it("reports no update when the installed build is current or newer", () => {
     const result = resolveMobileAppUpdate({
       releases: [release("1.5.18", [apk])],
-      channel: "stable",
       currentVersion: "1.5.18",
       installer: device,
       checkedAt: 1000,
@@ -182,7 +176,6 @@ describe("resolveMobileAppUpdate", () => {
   it("keeps a newer release without a usable package visible", () => {
     const result = resolveMobileAppUpdate({
       releases: [release("1.5.18", [asset(`${prefix}-1.5.18-android-x86-unsigned.apk`)])],
-      channel: "stable",
       currentVersion: "1.5.17",
       installer: device,
       checkedAt: 1000,

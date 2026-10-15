@@ -82,13 +82,11 @@ async function downloadApk(
 }
 
 async function checkForRelease(
-  channel: "stable" | "beta",
   installer: AndroidInstallerInfo,
 ): Promise<MobileAppUpdateCheckResult> {
   const releases = await fetchPublishedReleases();
   return resolveMobileAppUpdate({
     releases,
-    channel,
     currentVersion: resolveAppVersion(),
     installer,
     checkedAt: Date.now(),
@@ -108,8 +106,6 @@ export interface UseMobileAppUpdaterReturn {
   isBusy: boolean;
   checkForUpdates: (options?: { silent?: boolean }) => Promise<MobileAppUpdateCheckResult | null>;
   downloadAndInstall: () => Promise<AndroidApkInstallResult | null>;
-  /** Drops the current offer; call before switching channel so it cannot linger. */
-  discardAvailableUpdate: () => void;
 }
 
 // One updater per app run: the settings section and the callout show the same
@@ -119,12 +115,12 @@ let sharedUpdater: MobileAppUpdater | null = null;
 function getSharedUpdater(): MobileAppUpdater {
   sharedUpdater ??= createMobileAppUpdater({
     port: {
-      async check(input) {
+      async check() {
         const installer = getAndroidInstallerInfo();
         if (!installer) {
           throw new Error(i18n.t("mobile.updates.unsupported"));
         }
-        return checkForRelease(input.channel, installer);
+        return checkForRelease(installer);
       },
       download: downloadApk,
       install: installAndroidApk,
@@ -137,8 +133,6 @@ function getSharedUpdater(): MobileAppUpdater {
 export function useMobileAppUpdater(): UseMobileAppUpdaterReturn {
   const isSupported = shouldShowMobileUpdates();
   const { settings } = useSettings();
-  // The channel is the build's: frogg beta is a separate app that only takes betas.
-  const channel = brand.channel;
   const autoCheck = settings.mobileUpdateAutoCheck;
 
   const updater = useMemo(() => getSharedUpdater(), []);
@@ -152,17 +146,15 @@ export function useMobileAppUpdater(): UseMobileAppUpdaterReturn {
   const checkForUpdates = useCallback(
     async (options: { silent?: boolean } = {}) => {
       if (!isSupported) return null;
-      return updater.checkForUpdates({ channel, silent: options.silent });
+      return updater.checkForUpdates({ silent: options.silent });
     },
-    [channel, isSupported, updater],
+    [isSupported, updater],
   );
 
   const downloadAndInstall = useCallback(async () => {
     if (!isSupported) return null;
     return updater.downloadAndInstall();
   }, [isSupported, updater]);
-
-  const discardAvailableUpdate = useCallback(() => updater.discardAvailableUpdate(), [updater]);
 
   useEffect(() => {
     if (!isSupported || !autoCheck) return;
@@ -186,6 +178,5 @@ export function useMobileAppUpdater(): UseMobileAppUpdaterReturn {
     isBusy: snapshot.isBusy,
     checkForUpdates,
     downloadAndInstall,
-    discardAvailableUpdate,
   };
 }

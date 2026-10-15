@@ -31,7 +31,6 @@ export { APP_SETTINGS_KEY } from "./keys";
 export const APP_SETTINGS_QUERY_KEY = ["app-settings"];
 
 export type SendBehavior = ActiveTurnBehavior | "queue";
-export type ReleaseChannel = "stable" | "beta";
 export type ServiceUrlBehavior = "ask" | "in-app" | "external";
 export type WorkspaceTitleSource = "title" | "branch";
 export type PullRequestOpenLocation = "main" | "side" | "explorer";
@@ -93,7 +92,7 @@ export interface AppSettings {
   vimKeybindings: boolean;
   /** Show folders whose names start with "." in folder pickers. */
   showHiddenFolders: boolean;
-  /** Show the Developer settings section (beta app and beta daemons). Off by default. */
+  /** Show the Developer settings section (this app's daemons and development daemons). Off by default. */
   developerOptions: boolean;
   /** Hold animations still. Off by default; the OS reduced-motion setting is ignored. */
   reduceMotion: boolean;
@@ -106,8 +105,6 @@ export interface AppSettings {
   voiceReplyConfirm: boolean;
   /** Android only: look for a newer published APK when the app starts. */
   mobileUpdateAutoCheck: boolean;
-  /** Android only: which published releases the in-app updater offers. */
-  mobileUpdateChannel: ReleaseChannel;
   /** Device-level opt-in. Enabling exposes Start without starting a conversation. */
   companionEnabled: boolean;
   companionNativeVoice: boolean;
@@ -149,7 +146,6 @@ export const DEFAULT_OPEN_IN_SIDE_PANE_PREFERENCES: OpenInSidePanePreferences = 
 
 export interface Settings extends AppSettings {
   manageBuiltInDaemon: boolean;
-  releaseChannel: ReleaseChannel;
 }
 
 export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
@@ -182,7 +178,6 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
   spokenAlertsAutoPlay: DEFAULT_SPOKEN_ALERTS_AUTO_PLAY,
   voiceReplyConfirm: true,
   mobileUpdateAutoCheck: true,
-  mobileUpdateChannel: "stable",
   companionEnabled: false,
   companionNativeVoice: false,
   companionAnimated: true,
@@ -201,7 +196,6 @@ export const DEFAULT_CLIENT_SETTINGS: AppSettings = {
 export const DEFAULT_APP_SETTINGS: Settings = {
   ...DEFAULT_CLIENT_SETTINGS,
   manageBuiltInDaemon: true,
-  releaseChannel: "stable",
 };
 
 function clampedNumber(min: number, max: number) {
@@ -235,7 +229,6 @@ type StoredAppSettingsFallback = AppSettings & {
   uiFontSize?: number;
   compactToolCalls?: boolean;
   manageBuiltInDaemon?: boolean;
-  releaseChannel?: ReleaseChannel;
   needsWrite: boolean;
 };
 
@@ -318,7 +311,6 @@ const StoredAppSettingsSchema = z
     spokenAlertsAutoPlay: z.boolean().catch(DEFAULT_SPOKEN_ALERTS_AUTO_PLAY),
     voiceReplyConfirm: z.boolean().catch(true),
     mobileUpdateAutoCheck: z.boolean().catch(true),
-    mobileUpdateChannel: z.enum(["stable", "beta"]).catch("stable"),
     companionEnabled: z.boolean().catch(false),
     companionNativeVoice: z.boolean().catch(false),
     companionAnimated: z.boolean().catch(true),
@@ -364,7 +356,10 @@ const StoredAppSettingsSchema = z
     openSupportingTabsInSidePanel: z.boolean().optional().catch(undefined),
     // COMPAT(rendererDesktopSettings): these fields used to share this renderer-owned key.
     manageBuiltInDaemon: z.boolean().optional().catch(undefined),
-    releaseChannel: z.enum(["stable", "beta"]).optional().catch(undefined),
+    // COMPAT(retiredReleaseChannels): older builds stored a release-channel choice here. The
+    // classic app only follows stable now; the values stay in storage but are not settings.
+    releaseChannel: z.unknown().optional(),
+    mobileUpdateChannel: z.unknown().optional(),
   })
   .transform((stored) => {
     const { legacyPullRequestsInSidePane, ...openInSidePane } = stored.openInSidePane;
@@ -415,10 +410,7 @@ export interface KeyValueStorage {
 export interface DesktopSettingsBridge {
   isElectron(): boolean;
   loadDesktopSettings(): Promise<DesktopSettings>;
-  migrateLegacyDesktopSettings(input: {
-    manageBuiltInDaemon?: boolean;
-    releaseChannel?: ReleaseChannel;
-  }): Promise<void>;
+  migrateLegacyDesktopSettings(input: { manageBuiltInDaemon?: boolean }): Promise<void>;
 }
 
 export interface SettingsDeps {
@@ -523,7 +515,6 @@ export async function loadSettingsFromStorage(deps: SettingsDeps): Promise<Setti
     ...DEFAULT_APP_SETTINGS,
     ...appSettings,
     manageBuiltInDaemon: desktopSettings.daemon.manageBuiltInDaemon,
-    releaseChannel: desktopSettings.releaseChannel,
   };
 }
 
@@ -532,6 +523,7 @@ export function normalizeAppSettings(value: unknown): AppSettings {
     needsWrite: _needsWrite,
     manageBuiltInDaemon: _manageBuiltInDaemon,
     releaseChannel: _releaseChannel,
+    mobileUpdateChannel: _mobileUpdateChannel,
     compactToolCalls: _compactToolCalls,
     uiFontSize: _uiFontSize,
     ...settings
@@ -601,28 +593,14 @@ export function sanitizeFontFamily(value: unknown): string | null {
   return trimmed; // quotes/commas are legit in stacks
 }
 
-async function loadLegacyDesktopSettingsFromStorage(storage: KeyValueStorage): Promise<{
-  manageBuiltInDaemon?: boolean;
-  releaseChannel?: ReleaseChannel;
-} | null> {
+async function loadLegacyDesktopSettingsFromStorage(
+  storage: KeyValueStorage,
+): Promise<{ manageBuiltInDaemon: boolean } | null> {
   const stored = await loadRendererSettingsPayload(storage);
-  if (!stored) {
+  if (stored?.manageBuiltInDaemon === undefined) {
     return null;
   }
-
-  const result: {
-    manageBuiltInDaemon?: boolean;
-    releaseChannel?: ReleaseChannel;
-  } = {};
-
-  if (stored.manageBuiltInDaemon !== undefined) {
-    result.manageBuiltInDaemon = stored.manageBuiltInDaemon;
-  }
-  if (stored.releaseChannel !== undefined) {
-    result.releaseChannel = stored.releaseChannel;
-  }
-
-  return Object.keys(result).length > 0 ? result : null;
+  return { manageBuiltInDaemon: stored.manageBuiltInDaemon };
 }
 
 async function loadRendererSettingsPayload(

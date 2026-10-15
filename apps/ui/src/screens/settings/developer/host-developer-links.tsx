@@ -9,7 +9,7 @@ import { settingsStyles } from "@/styles/settings";
 import type { HostProfile } from "@/types/host-connection";
 import { buildSettingsHostSectionRoute } from "@/utils/host-routes";
 
-/** Each host, linking to its Developer tab, where its beta and development daemons are run. */
+/** Each host, linking to its Developer tab, where its development daemons are run. */
 export function HostDeveloperLinksSection({ testID }: { testID: string }) {
   const { t } = useTranslation();
   const hosts = useHosts();
@@ -22,7 +22,7 @@ export function HostDeveloperLinksSection({ testID }: { testID: string }) {
       <View style={settingsStyles.card}>
         {hosts.length === 0 ? (
           <View style={settingsStyles.row}>
-            <Text style={settingsStyles.rowHint}>{t("settings.developer.betaDaemon.noHosts")}</Text>
+            <Text style={settingsStyles.rowHint}>{t("settings.developer.noHosts")}</Text>
           </View>
         ) : (
           hosts.map((host, index) => (

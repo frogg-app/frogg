@@ -1,6 +1,6 @@
 import { brand } from "@frogg/branding";
 // Settings > Updates for the desktop shell: current version and update
-// strategy, release channel, automatic checks, "Check for updates" with the
+// strategy, automatic checks, "Check for updates" with the
 // last-checked time. A found release takes over that row: Download & install
 // enables once the background download lands, with its progress bar below.
 
@@ -33,7 +33,6 @@ import {
   type ReleaseBuildStatus,
 } from "@/desktop/updates/release-build-status";
 import { useReleaseBuildStatus } from "@/desktop/updates/use-release-build-status";
-import { ReleaseChannelRow } from "@/release-channel/release-channel-row";
 import { SettingsSection } from "@/screens/settings/settings-section";
 import { settingsStyles } from "@/styles/settings";
 import { openExternalUrl } from "@/utils/open-external-url";
@@ -402,7 +401,6 @@ export function DesktopUpdatesSection({ appVersion }: { appVersion: string | nul
             {formatVersionWithPrefix(appVersion)}
           </Text>
         </View>
-        <ReleaseChannelRow />
         <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
           <View style={settingsStyles.rowContent}>
             <Text style={settingsStyles.rowTitle}>
