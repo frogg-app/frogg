@@ -1,4 +1,4 @@
-// Settings > Updates on Android: the installed version, the release channel,
+// Settings > Updates on Android: the installed version,
 // automatic checks, a manual check, and the published APK with its notes and a
 // Download & install button that hands the file to the system installer.
 
@@ -13,7 +13,6 @@ import { Switch } from "@/components/ui/switch";
 import { formatBytes } from "@/desktop/daemon/local-daemon-install-progress";
 import { formatVersionWithPrefix } from "@/desktop/updates/desktop-updates";
 import { useSettings } from "@/hooks/use-settings";
-import { ReleaseChannelRow } from "@/release-channel/release-channel-row";
 import type { MobileUpdateProgress } from "@/mobile/updates/mobile-app-updater";
 import {
   RELEASES_PAGE_URL,
@@ -186,7 +185,6 @@ export function MobileUpdatesSection({ appVersion }: { appVersion: string | null
             {formatVersionWithPrefix(appVersion)}
           </Text>
         </View>
-        <ReleaseChannelRow />
         <View style={[settingsStyles.row, settingsStyles.rowBorder]}>
           <View style={settingsStyles.rowContent}>
             <Text style={settingsStyles.rowTitle}>

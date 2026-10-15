@@ -44,7 +44,6 @@ function createService(
   overrides: {
     alive?: Set<number>;
     env?: NodeJS.ProcessEnv;
-    siblingWorkspaceFiles?: string[];
   } = {},
 ) {
   const alive = overrides.alive ?? new Set<number>();
@@ -59,7 +58,6 @@ function createService(
   });
   const service = new DevDaemonService({
     logger: createTestLogger(),
-    siblingWorkspaceFiles: overrides.siblingWorkspaceFiles,
     platform: "linux",
     env: overrides.env ?? {
       FROGG_HOME: "/stable",
@@ -96,35 +94,6 @@ describe("DevDaemonService", () => {
       running: false,
       instances: [],
     });
-  });
-
-  test("also offers the checkouts in a sibling channel's workspace registry", async () => {
-    const checkout = await makeCheckout("frogg");
-    const registry = path.join(root, "stable-workspaces.json");
-    await writeFile(
-      registry,
-      JSON.stringify([
-        {
-          cwd: checkout,
-          title: null,
-          displayName: "frogg",
-          branch: "main",
-          archivedAt: null,
-        },
-        {
-          cwd: path.join(root, "missing"),
-          displayName: "missing",
-          archivedAt: null,
-        },
-      ]),
-    );
-    const { service } = createService({
-      siblingWorkspaceFiles: [registry, path.join(root, "absent.json")],
-    });
-
-    const status = await service.status([]);
-
-    expect(status.checkouts).toEqual([{ cwd: checkout, name: "frogg", branch: "main" }]);
   });
 
   test("launches dev:live without the stable daemon's own settings or ports", async () => {
@@ -298,7 +267,7 @@ describe("DevDaemonService", () => {
       method: "POST",
       auth: "Bearer t0k",
     });
-    expect(await service.stop(root)).toMatch(/stop it from the stable or beta daemon/);
+    expect(await service.stop(root)).toMatch(/stop it from the daemon that started it/);
   });
 
   test("adopts a dev:live started by hand in one of the checkouts", async () => {

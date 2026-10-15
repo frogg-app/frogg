@@ -39,7 +39,6 @@ import {
   getDaemonLogs,
   getCliDaemonStatus,
   getLocalDaemonVersion,
-  resolveRequestedReleaseChannel,
   resolveDesktopDaemonStatus,
   stopDesktopDaemon,
 } from "./daemon-manager.js";
@@ -98,21 +97,14 @@ export function createDaemonCommandHandlers(): Record<string, DesktopCommandHand
       const currentVersion = resolveDesktopAppVersion();
       return checkForAppUpdate({
         currentVersion,
-        releaseChannel: await resolveRequestedReleaseChannel(args),
         intent: parseAppUpdateCheckIntent(args),
       });
     },
-    install_app_update: async (args) => {
+    install_app_update: async () => {
       const currentVersion = resolveDesktopAppVersion();
-      return downloadAndInstallUpdate(
-        {
-          currentVersion,
-          releaseChannel: await resolveRequestedReleaseChannel(args),
-        },
-        async () => {
-          await stopDesktopDaemon("app_update");
-        },
-      );
+      return downloadAndInstallUpdate({ currentVersion }, async () => {
+        await stopDesktopDaemon("app_update");
+      });
     },
     get_local_daemon_version: () => getLocalDaemonVersion(),
   };

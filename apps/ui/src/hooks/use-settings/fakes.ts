@@ -1,5 +1,5 @@
 import type { DesktopSettings } from "@/desktop/settings/desktop-settings";
-import type { DesktopSettingsBridge, KeyValueStorage, ReleaseChannel } from "./storage";
+import type { DesktopSettingsBridge, KeyValueStorage } from "./storage";
 
 export interface InMemoryKeyValueStorage extends KeyValueStorage {
   readonly entries: Map<string, string>;
@@ -24,14 +24,10 @@ export function createInMemoryKeyValueStorage(
 }
 
 export interface FakeDesktopBridge extends DesktopSettingsBridge {
-  readonly migrationsApplied: Array<{
-    manageBuiltInDaemon?: boolean;
-    releaseChannel?: ReleaseChannel;
-  }>;
+  readonly migrationsApplied: Array<{ manageBuiltInDaemon?: boolean }>;
 }
 
 const DEFAULT_DESKTOP: DesktopSettings = {
-  releaseChannel: "stable",
   notifications: {
     playSound: true,
   },

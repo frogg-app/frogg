@@ -35,8 +35,6 @@ import type {
   WaitForFinishResult,
 } from "./daemon-client.js";
 export type {
-  DaemonBetaChannelRunStartPayload,
-  DaemonBetaChannelStatusPayload,
   DaemonControlResultPayload,
   DaemonDevDaemonStatusPayload,
   DaemonWebUiStatusPayload,

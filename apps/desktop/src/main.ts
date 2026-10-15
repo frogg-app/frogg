@@ -31,7 +31,6 @@ import { createQuitLifecycle, registerExternalQuitSignals } from "./quit-lifecyc
 import { runDesktopStartup } from "./desktop-startup.js";
 import { installAppUpdateOnQuit } from "./features/auto-updater.js";
 import { registerBrowserAutomationIpc } from "./features/browser-automation/ipc.js";
-import { registerBetaAppHandlers } from "./features/beta-app/ipc.js";
 import { registerDialogHandlers } from "./features/dialogs.js";
 import { registerEditorTargetHandlers } from "./features/editor-targets/ipc.js";
 import { setupApplicationMenu } from "./features/menu.js";
@@ -41,7 +40,6 @@ import {
 } from "./features/notifications.js";
 import { createExternalUrlOpener } from "./features/opener.js";
 import { parseOpenProjectPathFromArgv } from "./open-project-routing.js";
-import { getDesktopSettingsStore } from "./settings/desktop-settings-electron.js";
 import { resolveDesktopWindowChromeMode } from "./window/chrome.js";
 import {
   createDesktopWindowOwner,
@@ -316,7 +314,6 @@ async function bootstrap(): Promise<void> {
   handleDesktopIpc("frogg:opener:openUrl", (_event, value: unknown) => openExternalUrl(value));
   registerEditorTargetHandlers();
   registerBrowserAutomationIpc();
-  registerBetaAppHandlers();
 
   // In-app "Open in new window": opens a window that lands on the given project
   // via the same open-project flow as a CLI launch (no move, no ownership).
@@ -369,14 +366,8 @@ void runDesktopStartup({
 const quitLifecycle = createQuitLifecycle({
   app,
   closeTransportSessions: closeAllTransportSessions,
-  installAppUpdateOnQuit: async (signal) => {
-    const settings = await getDesktopSettingsStore().get();
-    return installAppUpdateOnQuit({
-      currentVersion: app.getVersion(),
-      releaseChannel: settings.releaseChannel,
-      signal,
-    });
-  },
+  installAppUpdateOnQuit: (signal) =>
+    installAppUpdateOnQuit({ currentVersion: app.getVersion(), signal }),
   createUpdateDeadlineSignal: () => AbortSignal.timeout(UPDATE_QUIT_DEADLINE_MS),
   onUpdateError: (error) => {
     log.error("[auto-updater] failed to validate downloaded update on quit", error);

@@ -174,7 +174,6 @@ describe("app update service", () => {
     const check = () =>
       service.checkForAppUpdate({
         currentVersion: "1.2.3",
-        releaseChannel: "stable",
         intent: "manual",
       });
     const throttled = () =>
@@ -217,7 +216,6 @@ describe("app update service", () => {
     const checkManually = () =>
       service.checkForAppUpdate({
         currentVersion: "1.2.3",
-        releaseChannel: "stable",
         intent: "manual",
       });
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
@@ -254,7 +252,6 @@ describe("app update service", () => {
     const check = () =>
       service.checkForAppUpdate({
         currentVersion: "1.2.3",
-        releaseChannel: "stable",
         intent: "automatic",
       });
 
@@ -280,7 +277,6 @@ describe("app update service", () => {
 
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -301,7 +297,6 @@ describe("app update service", () => {
 
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -316,7 +311,7 @@ describe("app update service", () => {
     });
   });
 
-  it("does not offer an older stable build to a beta install", async () => {
+  it("does not downgrade a prerelease install to an older stable build", async () => {
     const { runtime, service } = createService();
     // electron-updater reports an update for any version change once its channel
     // setter has turned allowDowngrade back on.
@@ -327,7 +322,6 @@ describe("app update service", () => {
 
     const result = await service.checkForAppUpdate({
       currentVersion: "1.6.0-beta.1",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -343,7 +337,6 @@ describe("app update service", () => {
 
     const result = await service.checkForAppUpdate({
       currentVersion: "1.5.45",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -356,7 +349,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     runtime.finishUpdateDownload(rolledOutUpdate);
@@ -364,7 +356,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -381,14 +372,12 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -405,7 +394,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     runtime.finishUpdateDownload(rolledOutUpdate);
@@ -413,7 +401,6 @@ describe("app update service", () => {
     runtime.nextCheck(null);
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -425,13 +412,11 @@ describe("app update service", () => {
     const automaticCheck = runtime.deferNextCheck();
     const automaticPending = service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
     const manualPending = service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -456,7 +441,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -466,7 +450,6 @@ describe("app update service", () => {
     });
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -487,7 +470,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     runtime.finishUpdateDownload(rolledOutUpdate);
@@ -496,7 +478,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -517,7 +498,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     runtime.finishUpdateDownload(rolledOutUpdate);
@@ -526,7 +506,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     const installed = await service.installUpdateOnQuit({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       signal: new AbortController().signal,
     });
 
@@ -549,7 +528,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     runtime.finishUpdateDownload(olderUpdate);
@@ -562,7 +540,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     const installed = await service.installUpdateOnQuit({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       signal: new AbortController().signal,
     });
 
@@ -576,7 +553,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     runtime.finishUpdateDownload(rolledOutUpdate);
@@ -589,7 +565,6 @@ describe("app update service", () => {
     });
     const installed = await service.installUpdateOnQuit({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       signal: deadline.signal,
     });
 
@@ -603,7 +578,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     runtime.finishUpdateDownload(rolledOutUpdate);
@@ -611,7 +585,6 @@ describe("app update service", () => {
     runtime.failNextCheck(new Error("offline"));
     const installed = await service.installUpdateOnQuit({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       signal: new AbortController().signal,
     });
 
@@ -625,7 +598,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     runtime.finishUpdateDownload(rolledOutUpdate);
@@ -634,7 +606,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     const result = await service.downloadAndInstallUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
     });
 
     expect(result.installed).toBe(true);
@@ -647,7 +618,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     const staleDownload = runtime.beginUpdateDownload(rolledOutUpdate);
@@ -656,7 +626,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     const installPending = service.downloadAndInstallUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
     });
     await Promise.resolve();
     expect(runtime.installedVersions).toEqual([]);
@@ -674,7 +643,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     const staleDownload = runtime.beginUpdateDownload(rolledOutUpdate);
@@ -683,7 +651,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     const installPending = service.downloadAndInstallUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
     });
     await new Promise<void>((resolve) => setImmediate(resolve));
     expect(runtime.downloadCallCount).toBe(1);
@@ -705,7 +672,6 @@ describe("app update service", () => {
 
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -726,7 +692,6 @@ describe("app update service", () => {
 
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -747,7 +712,6 @@ describe("app update service", () => {
 
     const firstResult = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     expect(firstResult.errorMessage).toBe("network down");
@@ -755,7 +719,6 @@ describe("app update service", () => {
     runtime.nextCheck(null);
     const retryResult = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -777,14 +740,12 @@ describe("app update service", () => {
 
     const checkResult = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     expect(checkResult.errorMessage).toBe("network down");
 
     const automaticResult = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -805,13 +766,11 @@ describe("app update service", () => {
     const firstCheck = runtime.deferNextCheck();
     const firstPending = service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     const secondCheck = runtime.deferNextCheck();
     const secondPending = service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -826,7 +785,6 @@ describe("app update service", () => {
     runtime.nextCheck(null);
     const automaticResult = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -848,7 +806,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     runtime.prepareUpdate(rolledOutUpdate);
@@ -857,7 +814,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
     const failedPreparation = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -875,7 +831,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -895,7 +850,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: rolledOutUpdate });
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     runtime.prepareUpdate(rolledOutUpdate);
@@ -904,7 +858,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
     runtime.failRuntime(new Error("old download failed"));
@@ -912,7 +865,6 @@ describe("app update service", () => {
     runtime.nextCheck({ isUpdateAvailable: true, updateInfo: newerUpdate });
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "automatic",
     });
 
@@ -926,7 +878,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     runtime.prepareUpdate(rolledOutUpdate);
@@ -938,7 +889,6 @@ describe("app update service", () => {
     });
     const result = await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
 
@@ -959,7 +909,6 @@ describe("app update service", () => {
 
     await service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     runtime.finishUpdateDownload(rolledOutUpdate);
@@ -967,7 +916,6 @@ describe("app update service", () => {
     const recheck = runtime.deferNextCheck();
     const pending = service.checkForAppUpdate({
       currentVersion: "1.2.3",
-      releaseChannel: "stable",
       intent: "manual",
     });
     runtime.prepareUpdate(rolledOutUpdate);

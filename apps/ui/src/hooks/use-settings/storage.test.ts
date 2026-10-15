@@ -508,14 +508,6 @@ describe("loadSettingsFromStorage", () => {
     expect(result).toEqual(DEFAULT_APP_SETTINGS);
   });
 
-  it("defaults release channel to stable when storage is empty", async () => {
-    const deps = makeDeps();
-
-    const result = await loadSettingsFromStorage(deps);
-
-    expect(result.releaseChannel).toBe("stable");
-  });
-
   it("ignores renderer-owned daemon management state outside Electron", async () => {
     const deps = makeDeps({
       storage: createInMemoryKeyValueStorage({
@@ -535,23 +527,26 @@ describe("loadSettingsFromStorage", () => {
     });
   });
 
-  it("ignores renderer-owned release channel outside Electron", async () => {
+  it("drops retired release-channel choices from settings but keeps them in storage", async () => {
+    const stored = JSON.stringify({ releaseChannel: "beta", mobileUpdateChannel: "beta" });
     const deps = makeDeps({
-      storage: createInMemoryKeyValueStorage({
-        [APP_SETTINGS_KEY]: JSON.stringify({ releaseChannel: "beta" }),
-      }),
+      storage: createInMemoryKeyValueStorage({ [APP_SETTINGS_KEY]: stored }),
     });
 
     const result = await loadSettingsFromStorage(deps);
 
-    expect(result.releaseChannel).toBe("stable");
+    expect(result).not.toHaveProperty("releaseChannel");
+    expect(result).not.toHaveProperty("mobileUpdateChannel");
+    expect(JSON.parse(deps.storage.entries.get(APP_SETTINGS_KEY) ?? "null")).toMatchObject({
+      releaseChannel: "beta",
+      mobileUpdateChannel: "beta",
+    });
   });
 
   it("migrates legacy desktop-owned settings through the bridge before reading effective settings", async () => {
     const desktop = createFakeDesktopBridge({
       isElectron: true,
       settings: {
-        releaseChannel: "beta",
         notifications: { playSound: true },
         daemon: { manageBuiltInDaemon: false, keepRunningAfterQuit: true },
         updates: { autoCheck: true },
@@ -571,15 +566,12 @@ describe("loadSettingsFromStorage", () => {
 
     const result = await loadSettingsFromStorage(deps);
 
-    expect(desktop.migrationsApplied).toEqual([
-      { manageBuiltInDaemon: false, releaseChannel: "beta" },
-    ]);
+    expect(desktop.migrationsApplied).toEqual([{ manageBuiltInDaemon: false }]);
     expect(result).toEqual({
       ...DEFAULT_APP_SETTINGS,
       theme: "light",
       contentFontSize: DEFAULT_UI_BASE_FONT_SIZE,
       manageBuiltInDaemon: false,
-      releaseChannel: "beta",
     });
   });
 

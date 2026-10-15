@@ -116,16 +116,11 @@ export function describeDaemonInstall(input: DescribeDaemonInstallInput): Daemon
 }
 
 /**
- * Launchers a versioned install may ship, preferring this build's own CLI name.
- * Beta bundles ship `bin/frogg-beta`, stable ones `bin/frogg`; accept either so
- * a bundle is never reported as not updatable over its launcher's name.
+ * Launchers a versioned install may ship, preferring this build's own CLI name; a fork's
+ * bundle may still carry the upstream `bin/frogg`.
  */
 export function launcherCandidates(runningRoot: string, platform: NodeJS.Platform): string[] {
-  const names = [
-    brand.cliName,
-    ...Object.values(brand.channels ?? {}).map((channel) => channel.cliName),
-    "frogg",
-  ];
+  const names = [brand.cliName, "frogg"];
   const ext = platform === "win32" ? ".cmd" : "";
   return [...new Set(names)].map((name) => path.join(runningRoot, "bin", `${name}${ext}`));
 }

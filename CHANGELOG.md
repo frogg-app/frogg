@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+- **No more side-by-side frogg beta.** Prereleases ship as Frogg Next. The classic desktop and
+  Android apps follow stable releases only: the beta update channel, the Release channel row
+  and the stable app's "install frogg beta beside this app" bridge are gone.
+- **Prerelease daemons are the same daemon.** The daemon's `daemon.beta_channel.*` RPCs that
+  installed and ran a separate `frogg-beta` daemon are removed; an older app that still sends
+  one gets an `unsupported` error saying why. Instead, a host's Daemon & updates settings have
+  a Stable/Beta release channel again: Beta installs prerelease versions of the same daemon
+  into the same install and `~/.frogg`. `frogg update --channel beta` does the same, and
+  without `--channel` the daemon follows the channel of the version it runs.
+- **Developer settings** keep the Stable and Development groups; the beta app card and beta
+  daemon controls are gone.
+- **Frogg Next connects to any daemon.** `frogg-next://app` is in the daemon's fixed CORS
+  allowlist.
+
 ## 1.6.13-beta.2 — prototype design options on device
 
 - **Settings → Design options (Frogg Next).** Every pending lab pick is switchable at runtime and

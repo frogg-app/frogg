@@ -3,7 +3,6 @@ import { isNewerVersion } from "@frogg/protocol/release-version";
 import {
   rolloutManifestSchema,
   shouldAdmitAppUpdate,
-  type AppReleaseChannel,
   type AppUpdateCheckIntent,
 } from "./app-update-rollout.js";
 import { isUpdateRateLimitError, UPDATE_RATE_LIMITED_MESSAGE } from "./app-update-config.js";
@@ -46,7 +45,6 @@ export interface RuntimeUpdateCheckResult {
 }
 
 export interface AppUpdateRuntimeConfiguration {
-  releaseChannel: AppReleaseChannel;
   shouldAdmitUpdate(info: RuntimeUpdateInfo): boolean | Promise<boolean>;
   onUpdateAvailable(info: RuntimeUpdateInfo): void;
   onUpdateDownloaded(info: RuntimeUpdateInfo): void;
@@ -63,21 +61,13 @@ export interface AppUpdateRuntime {
 export interface AppUpdateService {
   checkForAppUpdate(input: {
     currentVersion: string;
-    releaseChannel: AppReleaseChannel;
     intent: AppUpdateCheckIntent;
   }): Promise<AppUpdateCheckResult>;
   downloadAndInstallUpdate(
-    input: {
-      currentVersion: string;
-      releaseChannel: AppReleaseChannel;
-    },
+    input: { currentVersion: string },
     onBeforeQuit?: () => Promise<void>,
   ): Promise<AppUpdateInstallResult>;
-  installUpdateOnQuit(input: {
-    currentVersion: string;
-    releaseChannel: AppReleaseChannel;
-    signal: AbortSignal;
-  }): Promise<boolean>;
+  installUpdateOnQuit(input: { currentVersion: string; signal: AbortSignal }): Promise<boolean>;
 }
 
 export interface AppUpdateServiceDeps {
@@ -157,7 +147,6 @@ function buildDeferredInstallResult(currentVersion: string): AppUpdateInstallRes
 export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateService {
   let cachedUpdateInfo: RuntimeUpdateInfo | null = null;
   let downloadedUpdateVersion: string | null = null;
-  let configuredReleaseChannel: AppReleaseChannel | null = null;
   let preparationError: { version: string; message: string } | null = null;
   let preparingUpdateVersion: string | null = null;
   let checkQueue: Promise<void> = Promise.resolve();
@@ -230,18 +219,11 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
     });
   }
 
-  function configureRuntime(releaseChannel: AppReleaseChannel, intent: AppUpdateCheckIntent): void {
-    if (configuredReleaseChannel !== releaseChannel) {
-      clearUpdateState();
-      configuredReleaseChannel = releaseChannel;
-    }
-
+  function configureRuntime(intent: AppUpdateCheckIntent): void {
     deps.runtime.configure({
-      releaseChannel,
       shouldAdmitUpdate: async (info) => {
         const parsed = rolloutManifestSchema.parse(info);
         return shouldAdmitAppUpdate({
-          channel: releaseChannel,
           intent,
           rolloutHours: parsed.rolloutHours,
           releaseDate: parsed.releaseDate,
@@ -295,11 +277,9 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
 
   async function checkForAppUpdate({
     currentVersion,
-    releaseChannel,
     intent,
   }: {
     currentVersion: string;
-    releaseChannel: AppReleaseChannel;
     intent: AppUpdateCheckIntent;
   }): Promise<AppUpdateCheckResult> {
     if (!deps.isPackaged()) {
@@ -322,7 +302,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
         });
       }
 
-      configureRuntime(releaseChannel, intent);
+      configureRuntime(intent);
 
       try {
         const result = await deps.runtime.checkForUpdates();
@@ -401,13 +381,7 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
   }
 
   async function downloadAndInstallUpdate(
-    {
-      currentVersion,
-      releaseChannel,
-    }: {
-      currentVersion: string;
-      releaseChannel: AppReleaseChannel;
-    },
+    { currentVersion }: { currentVersion: string },
     onBeforeQuit?: () => Promise<void>,
   ): Promise<AppUpdateInstallResult> {
     if (!deps.isPackaged()) {
@@ -420,7 +394,6 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
 
     const check = await checkForAppUpdate({
       currentVersion,
-      releaseChannel,
       intent: "manual",
     });
     if (!check.hasUpdate) {
@@ -535,11 +508,9 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
 
   async function installUpdateOnQuit({
     currentVersion,
-    releaseChannel,
     signal,
   }: {
     currentVersion: string;
-    releaseChannel: AppReleaseChannel;
     signal: AbortSignal;
   }): Promise<boolean> {
     if (!deps.isPackaged() || !downloadedUpdateVersion) {
@@ -548,7 +519,6 @@ export function createAppUpdateService(deps: AppUpdateServiceDeps): AppUpdateSer
 
     const check = await checkForAppUpdate({
       currentVersion,
-      releaseChannel,
       intent: "automatic",
     });
     if (signal.aborted || !check.hasUpdate) {

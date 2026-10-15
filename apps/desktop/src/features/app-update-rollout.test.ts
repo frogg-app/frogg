@@ -6,7 +6,6 @@ describe("shouldAdmitAppUpdate", () => {
   it("keeps automatic stable updates behind the rollout window", () => {
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: 24,
         releaseDate: "2026-04-28T00:00:00.000Z",
@@ -19,7 +18,6 @@ describe("shouldAdmitAppUpdate", () => {
   it("lets manual stable checks bypass rollout admission", () => {
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "manual",
         rolloutHours: 24,
         releaseDate: "2026-04-28T00:00:00.000Z",
@@ -29,20 +27,9 @@ describe("shouldAdmitAppUpdate", () => {
     ).toBe(true);
   });
 
-  it("admits beta, missing rollout hours, zero-hour rollout, and missing release date", () => {
+  it("admits missing rollout hours, zero-hour rollout, and missing release date", () => {
     expect(
       shouldAdmitAppUpdate({
-        channel: "beta",
-        intent: "automatic",
-        rolloutHours: 24,
-        releaseDate: "2026-04-28T00:00:00.000Z",
-        now: Date.parse("2026-04-28T01:00:00.000Z"),
-        bucket: 0.99,
-      }),
-    ).toBe(true);
-    expect(
-      shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: undefined,
         releaseDate: "2026-04-28T00:00:00.000Z",
@@ -52,7 +39,6 @@ describe("shouldAdmitAppUpdate", () => {
     ).toBe(true);
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: 0,
         releaseDate: "2026-04-28T00:00:00.000Z",
@@ -62,7 +48,6 @@ describe("shouldAdmitAppUpdate", () => {
     ).toBe(true);
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: 24,
         releaseDate: undefined,
@@ -74,7 +59,6 @@ describe("shouldAdmitAppUpdate", () => {
 
   it("blocks future automatic releases and admits the same release manually", () => {
     const input = {
-      channel: "stable" as const,
       rolloutHours: 24,
       releaseDate: "2026-04-28T02:00:00.000Z",
       now: Date.parse("2026-04-28T01:00:00.000Z"),
@@ -88,7 +72,6 @@ describe("shouldAdmitAppUpdate", () => {
   it("blocks the bucket-zero client at exact release time, admits as soon as time advances", () => {
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: 24,
         releaseDate: "2026-04-28T00:00:00.000Z",
@@ -98,7 +81,6 @@ describe("shouldAdmitAppUpdate", () => {
     ).toBe(false);
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: 24,
         releaseDate: "2026-04-28T00:00:00.000Z",
@@ -112,7 +94,6 @@ describe("shouldAdmitAppUpdate", () => {
     const maxBucket = (0x100000000 - 1) / 0x100000000;
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: 24,
         releaseDate: "2026-04-28T00:00:00.000Z",
@@ -122,7 +103,6 @@ describe("shouldAdmitAppUpdate", () => {
     ).toBe(true);
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: 24,
         releaseDate: "2026-04-28T00:00:00.000Z",
@@ -135,7 +115,6 @@ describe("shouldAdmitAppUpdate", () => {
   it("admits when releaseDate is unparseable", () => {
     expect(
       shouldAdmitAppUpdate({
-        channel: "stable",
         intent: "automatic",
         rolloutHours: 24,
         releaseDate: "not a date",

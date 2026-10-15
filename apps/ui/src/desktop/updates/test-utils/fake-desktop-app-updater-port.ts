@@ -2,16 +2,13 @@ import type {
   DesktopAppUpdateCheckResult,
   DesktopAppUpdateCheckIntent,
   DesktopAppUpdateInstallResult,
-  DesktopReleaseChannel,
 } from "@/desktop/updates/desktop-updates";
 import type { DesktopAppUpdaterPort } from "@/desktop/updates/desktop-app-updater";
 
 export interface FakeDesktopAppUpdaterPort extends DesktopAppUpdaterPort {
-  readonly recordedChecks: Array<{
-    releaseChannel: DesktopReleaseChannel;
-    intent: DesktopAppUpdateCheckIntent;
-  }>;
-  readonly recordedInstalls: Array<{ releaseChannel: DesktopReleaseChannel }>;
+  readonly recordedChecks: Array<{ intent: DesktopAppUpdateCheckIntent }>;
+  /** Number of install calls the port received. */
+  readonly installCount: number;
   nextCheckResult(result: DesktopAppUpdateCheckResult): void;
   deferNextCheck(): {
     resolve(result: DesktopAppUpdateCheckResult): void;
@@ -72,17 +69,16 @@ function buildInstallResult(
 }
 
 export function createFakeDesktopAppUpdaterPort(): FakeDesktopAppUpdaterPort {
-  const recordedChecks: Array<{
-    releaseChannel: DesktopReleaseChannel;
-    intent: DesktopAppUpdateCheckIntent;
-  }> = [];
-  const recordedInstalls: Array<{ releaseChannel: DesktopReleaseChannel }> = [];
+  const recordedChecks: Array<{ intent: DesktopAppUpdateCheckIntent }> = [];
+  let installCount = 0;
   const checkOutcomes: CheckOutcome[] = [];
   const installOutcomes: InstallOutcome[] = [];
 
   return {
     recordedChecks,
-    recordedInstalls,
+    get installCount() {
+      return installCount;
+    },
     nextCheckResult(result) {
       checkOutcomes.push({ kind: "result", result });
     },
@@ -129,8 +125,8 @@ export function createFakeDesktopAppUpdaterPort(): FakeDesktopAppUpdaterPort {
       }
       return outcome.promise;
     },
-    async installDesktopAppUpdate(input) {
-      recordedInstalls.push(input);
+    async installDesktopAppUpdate() {
+      installCount += 1;
       const outcome = installOutcomes.shift();
       if (!outcome) {
         return buildInstallResult();

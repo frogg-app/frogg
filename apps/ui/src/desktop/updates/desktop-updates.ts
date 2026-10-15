@@ -55,7 +55,6 @@ export interface DesktopRuntimeInfo {
   updateStrategy: DesktopUpdateStrategy | null;
 }
 
-export type DesktopReleaseChannel = "stable" | "beta";
 export type DesktopAppUpdateCheckIntent = "automatic" | "manual";
 
 export interface LocalDaemonUpdateResult {
@@ -186,25 +185,16 @@ export function parseDesktopAppUpdateCheckResult(result: unknown): DesktopAppUpd
 }
 
 export async function checkDesktopAppUpdate({
-  releaseChannel,
   intent,
 }: {
-  releaseChannel: DesktopReleaseChannel;
   intent: DesktopAppUpdateCheckIntent;
 }): Promise<DesktopAppUpdateCheckResult> {
-  const result = await invokeDesktopCommand<unknown>("check_app_update", {
-    releaseChannel,
-    intent,
-  });
+  const result = await invokeDesktopCommand<unknown>("check_app_update", { intent });
   return parseDesktopAppUpdateCheckResult(result);
 }
 
-export async function installDesktopAppUpdate({
-  releaseChannel,
-}: {
-  releaseChannel: DesktopReleaseChannel;
-}): Promise<DesktopAppUpdateInstallResult> {
-  const result = await invokeDesktopCommand<unknown>("install_app_update", { releaseChannel });
+export async function installDesktopAppUpdate(): Promise<DesktopAppUpdateInstallResult> {
+  const result = await invokeDesktopCommand<unknown>("install_app_update");
   if (!isRecord(result)) {
     throw new Error("Unexpected response while installing desktop update.");
   }

@@ -4,6 +4,7 @@ import { WebSocket, WebSocketServer } from "ws";
 import type { IncomingMessage, Server as HTTPServer } from "http";
 import { join } from "path";
 import { daemonHostname as getHostname } from "./daemon-hostname.js";
+import { retiredRequestError } from "./retired-requests.js";
 import { randomUUID } from "node:crypto";
 import { monitorEventLoopDelay } from "node:perf_hooks";
 import type { AgentManager, AgentMetricsSnapshot, ManagedAgent } from "./agent/agent-manager.js";
@@ -2072,10 +2073,6 @@ export class VoiceAssistantWebSocketServer {
     this.broadcastCapabilitiesUpdate();
   }
 
-  private supportsBetaChannelManagement(): boolean {
-    return this.daemonRuntimeConfig?.betaChannel !== undefined;
-  }
-
   private buildServerInfoStatusPayload(session: Session): ServerInfoStatusPayload {
     return {
       status: "server_info",
@@ -2138,8 +2135,6 @@ export class VoiceAssistantWebSocketServer {
         ...this.pluginFeatureFlags(),
         // COMPAT(workspaceLabels): added in v0.5.0, remove after 2027-08-14.
         ...(this.workspaceLabelService ? { workspaceLabels: true } : {}),
-        // COMPAT(betaChannelManagement): added in v1.6.5, remove after 2027-09-27.
-        betaChannelManagement: this.supportsBetaChannelManagement(),
         // COMPAT(daemonChannelControl): added in v1.6.7, remove after 2027-09-29.
         ...(this.daemonRuntimeConfig?.devDaemon
           ? { daemonChannelControl: true, devDaemonRebuild: true }
@@ -2571,6 +2566,15 @@ export class VoiceAssistantWebSocketServer {
     );
 
     if (requestInfo) {
+      let error = isUnknownSchema
+        ? `Unknown request, try upgrading the daemon (currently v${this.daemonVersion})`
+        : "Invalid message";
+      let code = isUnknownSchema ? "unknown_schema" : "invalid_message";
+      const retiredError = isUnknownSchema ? retiredRequestError(requestInfo.requestType) : null;
+      if (retiredError) {
+        error = retiredError;
+        code = "unsupported";
+      }
       this.sendToClient(
         ws,
         wrapSessionMessage({
@@ -2578,10 +2582,8 @@ export class VoiceAssistantWebSocketServer {
           payload: {
             requestId: requestInfo.requestId,
             requestType: requestInfo.requestType,
-            error: isUnknownSchema
-              ? `Unknown request, try upgrading the daemon (currently v${this.daemonVersion})`
-              : "Invalid message",
-            code: isUnknownSchema ? "unknown_schema" : "invalid_message",
+            error,
+            code,
           },
         }),
       );

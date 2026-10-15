@@ -39,29 +39,29 @@ function createUpdater(
 }
 
 describe("desktop app updater — check", () => {
-  it("forwards manual check intent and the requested release channel to the port", async () => {
+  it("forwards manual check intent to the port by default", async () => {
     const { updater, port } = createUpdater();
     port.nextCheckResult(buildFakeCheckResult());
 
-    await updater.checkForUpdates({ releaseChannel: "beta" });
+    await updater.checkForUpdates();
 
-    expect(port.recordedChecks).toEqual([{ releaseChannel: "beta", intent: "manual" }]);
+    expect(port.recordedChecks).toEqual([{ intent: "manual" }]);
   });
 
   it("forwards automatic check intent independently from silent UI state", async () => {
     const { updater, port } = createUpdater();
     port.nextCheckResult(buildFakeCheckResult());
 
-    await updater.checkForUpdates({ releaseChannel: "stable", intent: "automatic", silent: true });
+    await updater.checkForUpdates({ intent: "automatic", silent: true });
 
-    expect(port.recordedChecks).toEqual([{ releaseChannel: "stable", intent: "automatic" }]);
+    expect(port.recordedChecks).toEqual([{ intent: "automatic" }]);
   });
 
   it("does not add manual last-checked feedback for automatic checks", async () => {
     const { updater, port } = createUpdater({ now: () => 42 });
     port.nextCheckResult(buildFakeCheckResult({ hasUpdate: true, readyToInstall: false }));
 
-    await updater.checkForUpdates({ releaseChannel: "stable", intent: "automatic", silent: true });
+    await updater.checkForUpdates({ intent: "automatic", silent: true });
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "pending",
@@ -73,7 +73,7 @@ describe("desktop app updater — check", () => {
     const { updater, port } = createUpdater();
     const deferred = port.deferNextCheck();
 
-    const pending = updater.checkForUpdates({ releaseChannel: "stable" });
+    const pending = updater.checkForUpdates();
     expect(updater.getSnapshot().status).toBe("checking");
     expect(updater.getSnapshot().isChecking).toBe(true);
 
@@ -84,12 +84,11 @@ describe("desktop app updater — check", () => {
   it("stays on the current status during a silent check", async () => {
     const { updater, port } = createUpdater();
     port.nextCheckResult(buildFakeCheckResult({ hasUpdate: true, readyToInstall: true }));
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
     expect(updater.getSnapshot().status).toBe("available");
 
     const deferred = port.deferNextCheck();
     const pending = updater.checkForUpdates({
-      releaseChannel: "stable",
       intent: "automatic",
       silent: true,
     });
@@ -105,7 +104,7 @@ describe("desktop app updater — check", () => {
       buildFakeCheckResult({ hasUpdate: true, readyToInstall: true, latestVersion: "1.2.3" }),
     );
 
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "available",
@@ -120,7 +119,7 @@ describe("desktop app updater — check", () => {
       buildFakeCheckResult({ hasUpdate: true, readyToInstall: false, latestVersion: "1.2.3" }),
     );
 
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "pending",
@@ -132,7 +131,7 @@ describe("desktop app updater — check", () => {
     const { updater, port } = createUpdater();
     port.nextCheckResult(buildFakeCheckResult({ hasUpdate: false, readyToInstall: false }));
 
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
 
     expect(updater.getSnapshot().status).toBe("up-to-date");
   });
@@ -141,7 +140,7 @@ describe("desktop app updater — check", () => {
     const { updater, port } = createUpdater();
     port.failNextCheck(new Error("network down"));
 
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "error",
@@ -153,7 +152,7 @@ describe("desktop app updater — check", () => {
     const { updater, port } = createUpdater({ now: () => 42 });
     port.nextCheckResult(buildFakeCheckResult({ errorMessage: "sha512 checksum mismatch" }));
 
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "error",
@@ -167,10 +166,10 @@ describe("desktop app updater — check", () => {
     port.nextCheckResult(
       buildFakeCheckResult({ hasUpdate: true, readyToInstall: true, latestVersion: "1.2.3" }),
     );
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
 
     port.nextCheckResult(buildFakeCheckResult({ errorMessage: "network down" }));
-    await updater.checkForUpdates({ releaseChannel: "stable", intent: "automatic", silent: true });
+    await updater.checkForUpdates({ intent: "automatic", silent: true });
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "available",
@@ -190,7 +189,7 @@ describe("desktop app updater — check", () => {
       }),
     );
 
-    await updater.checkForUpdates({ releaseChannel: "stable", intent: "automatic", silent: true });
+    await updater.checkForUpdates({ intent: "automatic", silent: true });
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "error",
@@ -203,14 +202,14 @@ describe("desktop app updater — check", () => {
     const { updater, port } = createUpdater();
     const deferred = port.deferNextCheck();
 
-    const manualCheck = updater.checkForUpdates({ releaseChannel: "stable" });
+    const manualCheck = updater.checkForUpdates();
     port.nextCheckResult(buildFakeCheckResult({ errorMessage: "network down" }));
-    await updater.checkForUpdates({ releaseChannel: "stable", intent: "automatic", silent: true });
+    await updater.checkForUpdates({ intent: "automatic", silent: true });
 
     deferred.resolve(buildFakeCheckResult({ hasUpdate: false, readyToInstall: false }));
     await manualCheck;
 
-    expect(port.recordedChecks).toEqual([{ releaseChannel: "stable", intent: "manual" }]);
+    expect(port.recordedChecks).toEqual([{ intent: "manual" }]);
     expect(updater.getSnapshot().status).toBe("up-to-date");
   });
 
@@ -218,13 +217,11 @@ describe("desktop app updater — check", () => {
     const { updater, port } = createUpdater();
     const olderCheck = port.deferNextCheck();
     const olderPending = updater.checkForUpdates({
-      releaseChannel: "stable",
       intent: "automatic",
       silent: true,
     });
     const newerCheck = port.deferNextCheck();
     const newerPending = updater.checkForUpdates({
-      releaseChannel: "stable",
       intent: "automatic",
       silent: true,
     });
@@ -251,13 +248,11 @@ describe("desktop app updater — check", () => {
     const { updater, port } = createUpdater();
     const olderCheck = port.deferNextCheck();
     const olderPending = updater.checkForUpdates({
-      releaseChannel: "stable",
       intent: "automatic",
       silent: true,
     });
     const newerCheck = port.deferNextCheck();
     const newerPending = updater.checkForUpdates({
-      releaseChannel: "stable",
       intent: "automatic",
       silent: true,
     });
@@ -280,11 +275,11 @@ describe("desktop app updater — check", () => {
   it("does not move to 'error' when a silent check throws", async () => {
     const { updater, port } = createUpdater();
     port.nextCheckResult(buildFakeCheckResult({ hasUpdate: true, readyToInstall: true }));
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
     const statusBeforeSilent = updater.getSnapshot().status;
 
     port.failNextCheck(new Error("boom"));
-    await updater.checkForUpdates({ releaseChannel: "stable", intent: "automatic", silent: true });
+    await updater.checkForUpdates({ intent: "automatic", silent: true });
 
     expect(updater.getSnapshot().status).toBe(statusBeforeSilent);
   });
@@ -294,8 +289,8 @@ describe("desktop app updater — check", () => {
     const firstDeferred = port.deferNextCheck();
     port.nextCheckResult(buildFakeCheckResult({ hasUpdate: true, readyToInstall: true }));
 
-    const firstPending = updater.checkForUpdates({ releaseChannel: "stable" });
-    const secondPending = updater.checkForUpdates({ releaseChannel: "stable" });
+    const firstPending = updater.checkForUpdates();
+    const secondPending = updater.checkForUpdates();
     await secondPending;
     expect(updater.getSnapshot().status).toBe("available");
 
@@ -307,22 +302,13 @@ describe("desktop app updater — check", () => {
 });
 
 describe("desktop app updater — install", () => {
-  it("forwards the requested release channel to the port", async () => {
-    const { updater, port } = createUpdater();
-    port.nextInstallResult(buildFakeInstallResult({ installed: true }));
-
-    await updater.installUpdate({ releaseChannel: "beta" });
-
-    expect(port.recordedInstalls).toEqual([{ releaseChannel: "beta" }]);
-  });
-
   it("moves to 'installed' when the install reports installation succeeded", async () => {
     const { updater, port } = createUpdater();
     port.nextInstallResult(
       buildFakeInstallResult({ installed: true, message: "Restart to finish" }),
     );
 
-    await updater.installUpdate({ releaseChannel: "stable" });
+    await updater.installUpdate();
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "installed",
@@ -335,7 +321,7 @@ describe("desktop app updater — install", () => {
     const { updater, port } = createUpdater();
     port.nextInstallResult(buildFakeInstallResult({ installed: false }));
 
-    await updater.installUpdate({ releaseChannel: "stable" });
+    await updater.installUpdate();
 
     expect(updater.getSnapshot().status).toBe("up-to-date");
   });
@@ -345,7 +331,7 @@ describe("desktop app updater — install", () => {
     const error = new Error("install failed");
     port.failNextInstall(error);
 
-    await updater.installUpdate({ releaseChannel: "stable" });
+    await updater.installUpdate();
 
     expect(updater.getSnapshot()).toMatchObject({
       status: "error",
@@ -372,7 +358,7 @@ describe("desktop app updater — subscribe", () => {
       notifications.push(updater.getSnapshot().status);
     });
 
-    await updater.checkForUpdates({ releaseChannel: "stable" });
+    await updater.checkForUpdates();
     unsubscribe();
 
     expect(notifications).toEqual(["checking", "available"]);
@@ -495,12 +481,12 @@ describe("desktop install responsiveness", () => {
   it("publishes busy state immediately and admits only one install", async () => {
     const { updater, port } = createUpdater();
     const pending = port.deferNextInstall();
-    const first = updater.installUpdate({ releaseChannel: "stable" });
+    const first = updater.installUpdate();
     expect(updater.getSnapshot().isInstalling).toBe(true);
     expect(updater.getSnapshot().status).toBe("installing");
-    await expect(updater.installUpdate({ releaseChannel: "stable" })).resolves.toBeNull();
-    await expect(updater.checkForUpdates({ releaseChannel: "stable" })).resolves.toBeNull();
-    expect(port.recordedInstalls).toEqual([{ releaseChannel: "stable" }]);
+    await expect(updater.installUpdate()).resolves.toBeNull();
+    await expect(updater.checkForUpdates()).resolves.toBeNull();
+    expect(port.installCount).toBe(1);
     expect(port.recordedChecks).toEqual([]);
     pending.resolve(buildFakeInstallResult({ installed: true }));
     await first;
@@ -511,9 +497,9 @@ describe("desktop install responsiveness", () => {
   it("does not let an earlier check overwrite installation progress", async () => {
     const { updater, port } = createUpdater();
     const checking = port.deferNextCheck();
-    const check = updater.checkForUpdates({ releaseChannel: "stable" });
+    const check = updater.checkForUpdates();
     const installing = port.deferNextInstall();
-    const install = updater.installUpdate({ releaseChannel: "stable" });
+    const install = updater.installUpdate();
     checking.resolve(buildFakeCheckResult({ hasUpdate: false }));
     await check;
     expect(updater.getSnapshot().status).toBe("installing");
@@ -522,7 +508,7 @@ describe("desktop install responsiveness", () => {
     expect(updater.getSnapshot().status).toBe("error");
     expect(updater.getSnapshot().errorMessage).toBe("Download failed");
     expect(updater.getSnapshot().isInstalling).toBe(false);
-    await updater.installUpdate({ releaseChannel: "stable" });
-    expect(port.recordedInstalls).toHaveLength(2);
+    await updater.installUpdate();
+    expect(port.installCount).toBe(2);
   });
 });

@@ -33,19 +33,10 @@ import { getDesktopSettingsStore } from "./settings/desktop-settings-electron.js
 import { isRunningUnderARM64Translation } from "./system/arm64-translation.js";
 import { getDesktopAppLogs } from "./diagnostics/app-logs.js";
 
-import type { AppReleaseChannel } from "./features/auto-updater.js";
-
 function unsupportedLocalServerCommand(): never {
   throw new Error(
     `${brand.name} is a client app. Install and manage the ${brand.name} server and CLI separately, then add a server connection in the app.`,
   );
-}
-
-/** Each build updates within its own channel; see daemon-manager's resolveRequestedReleaseChannel. */
-async function resolveRequestedReleaseChannel(
-  _args?: Record<string, unknown>,
-): Promise<AppReleaseChannel> {
-  return brand.channel;
 }
 
 export function createDesktopCommandHandlers(): Record<string, DesktopCommandHandler> {
@@ -101,17 +92,10 @@ export function createDesktopCommandHandlers(): Record<string, DesktopCommandHan
       const currentVersion = app.getVersion();
       return checkForAppUpdate({
         currentVersion,
-        releaseChannel: await resolveRequestedReleaseChannel(args),
         intent: args?.intent === "manual" ? "manual" : "automatic",
       });
     },
-    install_app_update: async (args) => {
-      const currentVersion = app.getVersion();
-      return downloadAndInstallUpdate({
-        currentVersion,
-        releaseChannel: await resolveRequestedReleaseChannel(args),
-      });
-    },
+    install_app_update: () => downloadAndInstallUpdate({ currentVersion: app.getVersion() }),
     client_plugins_list: () => clientPlugins.list(),
     client_plugins_put: (args) => clientPlugins.put(args),
     client_plugins_remove: (args) => clientPlugins.remove(args),

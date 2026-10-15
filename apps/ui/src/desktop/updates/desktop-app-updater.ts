@@ -2,7 +2,6 @@ import type {
   DesktopAppUpdateCheckResult,
   DesktopAppUpdateCheckIntent,
   DesktopAppUpdateInstallResult,
-  DesktopReleaseChannel,
 } from "@/desktop/updates/desktop-updates";
 import { i18n } from "@/localisation/i18next";
 
@@ -28,12 +27,9 @@ export interface DesktopAppUpdaterSnapshot {
 
 export interface DesktopAppUpdaterPort {
   checkDesktopAppUpdate(input: {
-    releaseChannel: DesktopReleaseChannel;
     intent: DesktopAppUpdateCheckIntent;
   }): Promise<DesktopAppUpdateCheckResult>;
-  installDesktopAppUpdate(input: {
-    releaseChannel: DesktopReleaseChannel;
-  }): Promise<DesktopAppUpdateInstallResult>;
+  installDesktopAppUpdate(): Promise<DesktopAppUpdateInstallResult>;
 }
 
 export interface DesktopAppUpdaterErrorReport {
@@ -52,13 +48,10 @@ export interface DesktopAppUpdater {
   getSnapshot(): DesktopAppUpdaterSnapshot;
   subscribe(listener: () => void): () => void;
   checkForUpdates(options?: {
-    releaseChannel: DesktopReleaseChannel;
     intent?: DesktopAppUpdateCheckIntent;
     silent?: boolean;
   }): Promise<DesktopAppUpdateCheckResult | null>;
-  installUpdate(options: {
-    releaseChannel: DesktopReleaseChannel;
-  }): Promise<DesktopAppUpdateInstallResult | null>;
+  installUpdate(): Promise<DesktopAppUpdateInstallResult | null>;
 }
 
 interface InternalState {
@@ -200,15 +193,16 @@ export function createDesktopAppUpdater(deps: DesktopAppUpdaterDeps): DesktopApp
     }
   }
 
-  async function checkForUpdates(options?: {
-    releaseChannel: DesktopReleaseChannel;
-    intent?: DesktopAppUpdateCheckIntent;
-    silent?: boolean;
-  }): Promise<DesktopAppUpdateCheckResult | null> {
-    if (!options || state.isInstalling) {
+  async function checkForUpdates(
+    options: {
+      intent?: DesktopAppUpdateCheckIntent;
+      silent?: boolean;
+    } = {},
+  ): Promise<DesktopAppUpdateCheckResult | null> {
+    if (state.isInstalling) {
       return null;
     }
-    const { releaseChannel, intent = "manual", silent = false } = options;
+    const { intent = "manual", silent = false } = options;
     if (silent && state.status === "checking") {
       return null;
     }
@@ -223,7 +217,7 @@ export function createDesktopAppUpdater(deps: DesktopAppUpdaterDeps): DesktopApp
     });
 
     try {
-      const result = await deps.port.checkDesktopAppUpdate({ releaseChannel, intent });
+      const result = await deps.port.checkDesktopAppUpdate({ intent });
       if (requestVersion !== state.requestVersion) {
         return result;
       }
@@ -290,9 +284,7 @@ export function createDesktopAppUpdater(deps: DesktopAppUpdaterDeps): DesktopApp
     }
   }
 
-  async function installUpdate(options: {
-    releaseChannel: DesktopReleaseChannel;
-  }): Promise<DesktopAppUpdateInstallResult | null> {
+  async function installUpdate(): Promise<DesktopAppUpdateInstallResult | null> {
     if (state.isInstalling) return null;
     commit({
       ...state,
@@ -303,9 +295,7 @@ export function createDesktopAppUpdater(deps: DesktopAppUpdaterDeps): DesktopApp
     });
 
     try {
-      const result = await deps.port.installDesktopAppUpdate({
-        releaseChannel: options.releaseChannel,
-      });
+      const result = await deps.port.installDesktopAppUpdate();
       const nextLastCheckedAt = deps.now();
       commit({
         ...state,

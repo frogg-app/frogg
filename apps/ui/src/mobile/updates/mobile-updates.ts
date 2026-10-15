@@ -1,6 +1,5 @@
 import { brand } from "@frogg/branding";
 import { compareVersionStrings, isStableVersion } from "@frogg/protocol/release-version";
-import type { ReleaseChannel } from "@/hooks/use-settings";
 import type { AndroidInstallerInfo } from "@/mobile/updates/android-app-installer";
 
 /** The published Android ABIs, plus the all-in-one build the release job can emit. */
@@ -130,21 +129,16 @@ export function selectApkAsset(
 }
 
 /**
- * The newest published release for the channel. The stable app never takes a beta, and the beta
- * app (its own install, `<applicationId>.beta`) takes betas only: a stable release carries none of
- * its APKs.
+ * The newest published stable release. The classic app only follows stable releases, so a
+ * prerelease (flagged, or with a prerelease version) is never offered.
  */
-export function selectRelease(
-  releases: readonly GithubRelease[],
-  channel: ReleaseChannel,
-): GithubRelease | null {
+export function selectRelease(releases: readonly GithubRelease[]): GithubRelease | null {
   let best: { release: GithubRelease; version: string } | null = null;
   for (const release of releases) {
     if (release.draft) continue;
     const version = normalizeVersion(release.tag_name);
     if (!version) continue;
-    const isPrerelease = release.prerelease === true || !isStableVersion(version);
-    if (isPrerelease !== (channel === "beta")) continue;
+    if (release.prerelease === true || !isStableVersion(version)) continue;
     if (!best || compareReleaseVersions(version, best.version) > 0) {
       best = { release, version };
     }
@@ -154,7 +148,6 @@ export function selectRelease(
 
 export interface CheckMobileAppUpdateInput {
   releases: readonly GithubRelease[];
-  channel: ReleaseChannel;
   currentVersion: string | null;
   installer: Pick<AndroidInstallerInfo, "supportedAbis" | "debugSigned" | "packageName">;
   checkedAt: number;
@@ -164,7 +157,7 @@ export function resolveMobileAppUpdate(
   input: CheckMobileAppUpdateInput,
 ): MobileAppUpdateCheckResult {
   const currentVersion = normalizeVersion(input.currentVersion);
-  const release = selectRelease(input.releases, input.channel);
+  const release = selectRelease(input.releases);
   const latestVersion = normalizeVersion(release?.tag_name ?? null);
   const hasUpdate = isNewerVersion(latestVersion, currentVersion);
   const selection = hasUpdate

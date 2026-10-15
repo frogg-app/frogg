@@ -1,4 +1,3 @@
-import { brand } from "@frogg/branding";
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import {
   checkDesktopAppUpdate,
@@ -46,8 +45,6 @@ export interface UseDesktopAppUpdaterReturn {
 
 export function useDesktopAppUpdater(): UseDesktopAppUpdaterReturn {
   const isDesktopApp = shouldShowDesktopUpdateSection();
-  // The channel is the build's: frogg beta is a separate install that only takes betas.
-  const releaseChannel = brand.channel;
   const reportError = useDesktopIpcErrorReporter();
   const [progress, setProgress] = useState<AppUpdateProgress>(IDLE_APP_UPDATE_PROGRESS);
 
@@ -56,7 +53,7 @@ export function useDesktopAppUpdater(): UseDesktopAppUpdaterReturn {
       createDesktopAppUpdater({
         port: {
           checkDesktopAppUpdate,
-          async installDesktopAppUpdate(input) {
+          async installDesktopAppUpdate() {
             // The updater publishes installing before entering this port, so
             // the bar shows immediately even before the first progress event.
             setProgress((current) =>
@@ -70,7 +67,7 @@ export function useDesktopAppUpdater(): UseDesktopAppUpdaterReturn {
                   },
             );
             try {
-              return await installDesktopAppUpdate(input);
+              return await installDesktopAppUpdate();
             } finally {
               setProgress((current) =>
                 current.status === "error" ? current : IDLE_APP_UPDATE_PROGRESS,
@@ -96,18 +93,17 @@ export function useDesktopAppUpdater(): UseDesktopAppUpdaterReturn {
         return null;
       }
       return updater.checkForUpdates({
-        releaseChannel,
         intent: options.intent ?? "manual",
         silent: options.silent,
       });
     },
-    [isDesktopApp, releaseChannel, updater],
+    [isDesktopApp, updater],
   );
 
   const installUpdate = useCallback(async () => {
     if (!isDesktopApp) return null;
-    return updater.installUpdate({ releaseChannel });
-  }, [isDesktopApp, releaseChannel, updater]);
+    return updater.installUpdate();
+  }, [isDesktopApp, updater]);
 
   useEffect(() => {
     if (!isDesktopApp) {

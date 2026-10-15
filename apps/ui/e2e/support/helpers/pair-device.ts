@@ -41,7 +41,6 @@ export async function prepareLocalPairingHost(
         }
         if (command === "get_desktop_settings") {
           return {
-            releaseChannel: "stable",
             daemon: { manageBuiltInDaemon: false, keepRunningAfterQuit: true },
           };
         }
