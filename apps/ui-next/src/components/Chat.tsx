@@ -1,8 +1,9 @@
 import { ArrowLeft } from "lucide-react-native";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { loadConfig, useConfig } from "../daemon/config";
 import { useSubWorkStore } from "../daemon/subwork";
+import { useViewers } from "../daemon/viewers";
 import { cancelTurn, openTimeline, setAgentMode, setAgentModel, useDaemon } from "../daemon/store";
 import { bucketOf, type Agent, type Session, type TimelineEntry } from "../daemon/types";
 import { color, motion } from "../theme/tokens";
@@ -27,6 +28,7 @@ import { T } from "./Text";
 import { RevealHeading } from "./chat/TextReveal";
 import { keyedEntries, TimelineItem } from "./chat/TimelineItem";
 import { TimelineLoading } from "./chat/TimelineLoading";
+import { Viewers } from "./chat/Viewers";
 
 const bucketText = {
   needs: "Needs you",
@@ -46,6 +48,9 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
   const entries = useDaemon((st) => st.timelines[a.id]);
   const anchor = useBottomAnchor();
   const detail = useSubWorkStore((st) => st.detail[a.id]);
+  const [typing, setTyping] = useState(false);
+  const viewers = useViewers(a.id, typing ? "typing" : "viewing");
+  const here = useMemo(() => <Viewers viewers={viewers} />, [viewers]);
   // Loads on open, and again once the host is back: a timeline opened while connecting has none.
   const online = conn === "online";
   useEffect(() => {
@@ -158,6 +163,10 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
               onSend={onSend}
               onStop={running ? stop : undefined}
               compact={!!onBack}
+              expandable
+              sizeKey={a.id}
+              onTyping={setTyping}
+              above={here}
             >
               <AgentControls agent={a} />
               <AccountChip agent={a} />
