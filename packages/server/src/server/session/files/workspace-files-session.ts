@@ -6,6 +6,7 @@ import {
   type FileTransferFrame,
 } from "@frogg/protocol/binary-frames/index";
 import type {
+  DirectoryZipRequest,
   FileDownloadTokenRequest,
   FileEntryCreateRequest,
   FileEntryDeleteRequest,
@@ -32,6 +33,7 @@ import {
   streamExplorerFile,
   writeExplorerFile,
 } from "../../file-explorer/service.js";
+import { zipDirectory } from "../../file-explorer/zip.js";
 import { workspaceFileObserver, type FileObserver } from "../../file-explorer/observer.js";
 import { canonicalizePath, DaemonHomeGuard } from "../../file-explorer/daemon-home-guard.js";
 import { expandUserPath, isSameOrDescendantPath } from "../../path-utils.js";
@@ -439,6 +441,84 @@ export class WorkspaceFilesSession {
     }
   }
 
+  /**
+   * Zips a folder for download. The archive goes out as binary file-transfer frames under the
+   * request id, then the response reports the name, size and what was left out.
+   */
+  async handleDirectoryZipRequest(request: DirectoryZipRequest, source?: object): Promise<void> {
+    const { requestId } = request;
+    const cwd = request.cwd.trim();
+    const respond = (
+      payload: Partial<
+        Extract<SessionOutboundMessage, { type: "fs.directory.zip.response" }>["payload"]
+      >,
+    ) =>
+      this.host.emit(
+        {
+          type: "fs.directory.zip.response",
+          payload: {
+            cwd: request.cwd,
+            path: request.path,
+            fileName: null,
+            size: null,
+            fileCount: null,
+            skipped: [],
+            error: null,
+            requestId,
+            ...payload,
+          },
+        },
+        source,
+      );
+    try {
+      if (!cwd) throw new Error("cwd is required");
+      if (!this.host.hasBinaryChannel()) throw new Error("This connection can't receive files");
+      await this.assertAccess(cwd, request.path);
+      const zip = await zipDirectory({
+        root: cwd,
+        relativePath: request.path,
+        includeIgnored: request.includeIgnored,
+        isProtected: (target) => this.homeGuard.isProtected(target).catch(() => true),
+      });
+      await this.host.emitBinary(
+        encodeFileTransferFrame({
+          opcode: FileTransferOpcode.FileBegin,
+          requestId,
+          metadata: {
+            mime: "application/zip",
+            size: zip.size,
+            encoding: "binary",
+            modifiedAt: new Date().toISOString(),
+          },
+        }),
+        source,
+      );
+      for (const chunk of rechunk(zip.chunks, ZIP_FRAME_BYTES)) {
+        await this.host.emitBinary(
+          encodeFileTransferFrame({
+            opcode: FileTransferOpcode.FileChunk,
+            requestId,
+            payload: chunk,
+          }),
+          source,
+        );
+      }
+      await this.host.emitBinary(
+        encodeFileTransferFrame({ opcode: FileTransferOpcode.FileEnd, requestId }),
+        source,
+      );
+      respond({
+        fileName: zip.fileName,
+        size: zip.size,
+        fileCount: zip.fileCount,
+        skipped: zip.skipped,
+      });
+    } catch (error) {
+      this.logger.warn({ err: error, cwd, path: request.path }, "Failed to zip folder");
+      respond({ error: getErrorMessage(error) });
+    }
+  }
+
   handleFileUploadRequest(request: FileUploadRequest): void {
     this.fileUploads.beginUpload(request);
   }
@@ -552,5 +632,14 @@ export class WorkspaceFilesSession {
         },
       });
     }
+  }
+}
+
+const ZIP_FRAME_BYTES = 256 * 1024;
+
+/** Re-slices the archive's parts into frames of at most `size` bytes. */
+function* rechunk(parts: Uint8Array[], size: number): Generator<Uint8Array> {
+  for (const part of parts) {
+    for (let at = 0; at < part.length; at += size) yield part.subarray(at, at + size);
   }
 }

@@ -2958,6 +2958,8 @@ export class Session {
         return undefined;
       case "fs.file.write.request":
         return this.workspaceFilesSession.handleFileWriteRequest(msg);
+      case "fs.directory.zip.request":
+        return this.workspaceFilesSession.handleDirectoryZipRequest(msg, source);
       case "fs.entry.create.request":
         return this.workspaceFilesSession.handleFileEntryCreateRequest(msg);
       case "fs.entry.rename.request":

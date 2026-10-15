@@ -162,6 +162,7 @@ const INBOUND_ROLE = {
   "forge.search.request": "viewer",
   frogg_worktree_archive_request: "operator",
   frogg_worktree_list_request: "viewer",
+  "fs.directory.zip.request": "viewer",
   "fs.entry.create.request": "operator",
   "fs.entry.delete.request": "operator",
   "fs.entry.duplicate.request": "operator",

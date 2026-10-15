@@ -2104,6 +2104,8 @@ export class VoiceAssistantWebSocketServer {
         directorySync: true,
         // COMPAT(ciJobLogs): added in v1.5.37, remove gate after 2027-09-24.
         ciJobLogs: true,
+        // COMPAT(directoryZip): added in v1.6.14, remove gate after 2027-10-15.
+        directoryZip: true,
         // COMPAT(hostResources): added in v1.6.0, remove gate after 2027-09-26.
         ...this.hostResourcesFeature(),
         // COMPAT(skillsManagement): added in v1.6.6, remove gate after 2027-09-27.
