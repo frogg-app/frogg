@@ -74,7 +74,7 @@ describe("desktop-settings", () => {
       JSON.stringify({
         version: 1,
         settings: {
-          releaseChannel: "nightly",
+          notifications: { playSound: "loud" },
           daemon: {
             manageBuiltInDaemon: "sometimes",
             keepRunningAfterQuit: false,
@@ -88,7 +88,6 @@ describe("desktop-settings", () => {
 
     expect(settings).toEqual({
       updates: { autoCheck: true },
-      releaseChannel: "stable",
       notifications: { playSound: true },
       daemon: {
         manageBuiltInDaemon: false,
@@ -105,14 +104,13 @@ describe("desktop-settings", () => {
 
     await store.get();
     const next = await store.patch({
-      releaseChannel: "beta",
+      updates: { autoCheck: false },
       daemon: { keepRunningAfterQuit: false },
     });
     const files = await readdir(userDataPath);
 
     expect(next).toEqual({
-      updates: { autoCheck: true },
-      releaseChannel: "beta",
+      updates: { autoCheck: false },
       notifications: { playSound: true },
       daemon: {
         manageBuiltInDaemon: false,
@@ -156,7 +154,6 @@ describe("desktop-settings", () => {
       JSON.stringify({
         version: 1,
         settings: {
-          releaseChannel: "stable",
           daemon: {
             manageBuiltInDaemon: true,
             keepRunningAfterQuit: false,
@@ -199,7 +196,6 @@ describe("desktop-settings", () => {
     });
     const migrated = await store.migrateLegacyRendererSettings({
       manageBuiltInDaemon: true,
-      releaseChannel: "beta",
     });
     const persisted = JSON.parse(await readFile(settingsFilePath(userDataPath), "utf8")) as {
       migrations: { legacyRendererSettingsImported: boolean };
@@ -208,7 +204,6 @@ describe("desktop-settings", () => {
 
     expect(patched.daemon.manageBuiltInDaemon).toBe(false);
     expect(migrated.daemon.manageBuiltInDaemon).toBe(false);
-    expect(migrated.releaseChannel).toBe("stable");
     expect(persisted.migrations.legacyRendererSettingsImported).toBe(true);
     expect(persisted.settings.daemon.manageBuiltInDaemon).toBe(false);
   });
@@ -219,7 +214,6 @@ describe("desktop-settings", () => {
     const raw = JSON.stringify({
       version: 1,
       settings: {
-        releaseChannel: "stable",
         daemon: {
           manageBuiltInDaemon: false,
           keepRunningAfterQuit: true,
@@ -247,7 +241,6 @@ describe("desktop-settings", () => {
       JSON.stringify({
         version: 1,
         settings: {
-          releaseChannel: "stable",
           daemon: { manageBuiltInDaemon: true, keepRunningAfterQuit: true },
         },
         migrations: { legacyRendererSettingsImported: true },
@@ -268,7 +261,6 @@ describe("desktop-settings", () => {
       JSON.stringify({
         version: 1,
         settings: {
-          releaseChannel: "stable",
           daemon: { manageBuiltInDaemon: true, keepRunningAfterQuit: true },
         },
         migrations: { legacyRendererSettingsImported: true },
@@ -295,18 +287,15 @@ describe("desktop-settings", () => {
     });
 
     const migrated = await store.migrateLegacyRendererSettings({
-      releaseChannel: "beta",
       manageBuiltInDaemon: false,
       theme: "dark",
     });
     const ignoredSecondMigration = await store.migrateLegacyRendererSettings({
-      releaseChannel: "stable",
       manageBuiltInDaemon: true,
     });
 
     expect(migrated).toEqual({
       updates: { autoCheck: true },
-      releaseChannel: "beta",
       notifications: { playSound: true },
       daemon: {
         manageBuiltInDaemon: false,
@@ -361,7 +350,6 @@ describe("desktop-settings", () => {
     expect(persisted.settings.releaseChannel).toBe("beta");
     expect(next).toEqual({
       updates: { autoCheck: true },
-      releaseChannel: "beta",
       notifications: { playSound: false },
       daemon: { manageBuiltInDaemon: false, keepRunningAfterQuit: false },
       downloads: DEFAULT_DESKTOP_SETTINGS.downloads,
@@ -384,13 +372,12 @@ describe("desktop-settings", () => {
     );
     const store = createDesktopSettingsStore({ userDataPath });
 
-    await store.migrateLegacyRendererSettings({ releaseChannel: "beta" });
+    await store.migrateLegacyRendererSettings({ manageBuiltInDaemon: false });
     const persisted = JSON.parse(await readFile(settingsFilePath(userDataPath), "utf8")) as {
-      settings: { releaseChannel: string; tray: unknown };
+      settings: { tray: unknown };
     };
 
     expect(persisted.settings.tray).toEqual({ enabled: true });
-    expect(persisted.settings.releaseChannel).toBe("beta");
   });
 
   it("replaces an unusable modelled value on the write path", async () => {
@@ -400,7 +387,7 @@ describe("desktop-settings", () => {
       settingsFilePath(userDataPath),
       JSON.stringify({
         version: 1,
-        settings: { releaseChannel: "nightly", tray: { enabled: true } },
+        settings: { downloads: { mode: "sometimes" }, tray: { enabled: true } },
         migrations: {
           legacyRendererSettingsImported: true,
           daemonStopOnQuitDefaultApplied: true,
@@ -411,10 +398,10 @@ describe("desktop-settings", () => {
 
     await store.patch({ notifications: { playSound: false } });
     const persisted = JSON.parse(await readFile(settingsFilePath(userDataPath), "utf8")) as {
-      settings: { releaseChannel: string; tray: unknown };
+      settings: { downloads: { mode: string }; tray: unknown };
     };
 
-    expect(persisted.settings.releaseChannel).toBe("stable");
+    expect(persisted.settings.downloads.mode).toBe("ask");
     expect(persisted.settings.tray).toEqual({ enabled: true });
   });
 });

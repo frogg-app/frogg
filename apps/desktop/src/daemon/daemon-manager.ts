@@ -1,7 +1,7 @@
 import { statusFromDaemonProbe, type DesktopDaemonStatus } from "./daemon-status.js";
 export type { DesktopDaemonStatus } from "./daemon-status.js";
 import { DaemonOwnership } from "./daemon-ownership.js";
-import type { AppReleaseChannel, AppUpdateCheckIntent } from "../features/auto-updater.js";
+import type { AppUpdateCheckIntent } from "../features/auto-updater.js";
 import { type ChildProcess } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -12,7 +12,6 @@ import { getBundledCliShimPath } from "../integrations/cli-install/index.js";
 import { createNodeEntrypointInvocation, resolveDaemonRunnerEntrypoint } from "./runtime-paths.js";
 import { runExternalCliJsonCommand, runExternalCliTextCommand } from "./cli/external.js";
 import type { DesktopSettings } from "../settings/desktop-settings.js";
-import { brand } from "@frogg/branding";
 import { getDesktopSettingsStore } from "../settings/desktop-settings-electron.js";
 import { tailFile } from "../diagnostics/tail-file.js";
 
@@ -453,17 +452,6 @@ export async function getLocalDaemonVersion(): Promise<{
     version: status.version,
     error: status.version ? null : "Running daemon did not report a version.",
   };
-}
-
-/**
- * The channel is the build's, not a setting: frogg beta is a separate install that only ever
- * updates to betas, and frogg to stable releases. A request naming another channel (an older UI
- * still sends its stored setting) is ignored rather than crossing installs.
- */
-export async function resolveRequestedReleaseChannel(
-  _args?: Record<string, unknown>,
-): Promise<AppReleaseChannel> {
-  return brand.channel;
 }
 
 export { createDaemonCommandHandlers, registerDaemonManager } from "./daemon-commands.js";

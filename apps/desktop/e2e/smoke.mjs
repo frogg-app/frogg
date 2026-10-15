@@ -15,7 +15,6 @@ await writeFile(
   JSON.stringify({
     version: 1,
     settings: {
-      releaseChannel: "stable",
       notifications: { playSound: true },
       daemon: { manageBuiltInDaemon: true, keepRunningAfterQuit: true },
       updates: { autoCheck: false },
@@ -68,7 +67,7 @@ try {
       localStorage.clear();
       localStorage.setItem("@frogg:e2e", "1");
     });
-    // The beta channel serves the app on its own scheme, so stay on the window's origin.
+    // A branded build serves the app on its own scheme, so stay on the window's origin.
     await page.goto(new URL("/welcome", page.url()).href);
     const errors = [];
     page.on("pageerror", (error) => errors.push(error.message));

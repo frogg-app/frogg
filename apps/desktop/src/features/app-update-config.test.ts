@@ -46,103 +46,20 @@ it("uses the production release feed unless an explicit override is configured",
 
 const releaseBase = "https://github.com/frogg-app/frogg/releases";
 
-it("discovers beta tags independently of GitHub's stable latest download alias", async () => {
-  const fetchReleases = vi.fn(async () => [
-    { tag_name: "v0.6.0", draft: false },
-    { tag_name: "v0.7.0-beta.2", draft: false },
-    { tag_name: "v0.7.0-beta.1", draft: false },
-    { tag_name: "v9.0.0", draft: true },
-    { tag_name: "not-semver", draft: false },
-  ]);
-  await expect(
-    resolveElectronUpdateFeed({ releaseBase, releaseChannel: "beta", fetchReleases }),
-  ).resolves.toEqual({
-    url: `${releaseBase}/download/v0.7.0-beta.2`,
-    channel: "electron-beta",
-  });
-  expect(fetchReleases).toHaveBeenCalledWith(
-    "https://api.github.com/repos/frogg-app/frogg/releases?per_page=100",
-  );
-});
-
-it("keeps the beta app on betas when a newer stable release exists", async () => {
-  // frogg beta is a separate install; a stable release carries none of its payloads.
-  await expect(
-    resolveElectronUpdateFeed({
-      releaseBase,
-      releaseChannel: "beta",
-      fetchReleases: async () => [
-        { tag_name: "v0.7.0-beta.2", draft: false },
-        { tag_name: "v0.7.0", draft: false },
-        { tag_name: "v0.7.1-acme.2", draft: false },
-      ],
-    }),
-  ).resolves.toEqual({ url: `${releaseBase}/download/v0.7.0-beta.2`, channel: "electron-beta" });
-});
-
-it("orders betas numerically", async () => {
-  await expect(
-    resolveElectronUpdateFeed({
-      releaseBase,
-      releaseChannel: "beta",
-      fetchReleases: async () => [
-        { tag_name: "v0.7.0-beta.9", draft: false },
-        { tag_name: "v0.7.0-beta.10", draft: false },
-      ],
-    }),
-  ).resolves.toEqual({ url: `${releaseBase}/download/v0.7.0-beta.10`, channel: "electron-beta" });
-});
-
-it("keeps stable, explicit generic feeds, and disabled distributions out of beta discovery", async () => {
-  const fetchReleases = vi.fn(async () => {
-    throw new Error("unexpected discovery");
-  });
-  await expect(
-    resolveElectronUpdateFeed({ releaseBase, releaseChannel: "stable", fetchReleases }),
-  ).resolves.toEqual({
+it("follows GitHub's stable latest alias, explicit generic feeds, and disabled distributions", async () => {
+  await expect(resolveElectronUpdateFeed({ releaseBase })).resolves.toEqual({
     url: `${releaseBase}/latest/download`,
     channel: "electron-latest",
   });
   await expect(
-    resolveElectronUpdateFeed({
-      releaseBase,
-      releaseChannel: "beta",
-      override: "https://updates.example.com",
-      fetchReleases,
-    }),
-  ).resolves.toEqual({
-    url: "https://updates.example.com",
-    channel: "electron-beta",
-  });
-  await expect(
-    resolveElectronUpdateFeed({ releaseBase: null, releaseChannel: "beta", fetchReleases }),
-  ).resolves.toBeNull();
-  expect(fetchReleases).not.toHaveBeenCalled();
+    resolveElectronUpdateFeed({ releaseBase, override: "https://updates.example.com" }),
+  ).resolves.toEqual({ url: "https://updates.example.com", channel: "electron-latest" });
+  await expect(resolveElectronUpdateFeed({ releaseBase: null })).resolves.toBeNull();
 });
 
-it("surfaces release discovery failures and rejects insecure overrides", async () => {
+it("rejects insecure overrides", async () => {
   await expect(
-    resolveElectronUpdateFeed({
-      releaseBase,
-      releaseChannel: "beta",
-      fetchReleases: async () => [],
-    }),
-  ).rejects.toThrow("No published beta release");
-  await expect(
-    resolveElectronUpdateFeed({
-      releaseBase,
-      releaseChannel: "beta",
-      fetchReleases: async () => {
-        throw new Error("offline");
-      },
-    }),
-  ).rejects.toThrow("offline");
-  await expect(
-    resolveElectronUpdateFeed({
-      releaseBase,
-      releaseChannel: "beta",
-      override: "http://updates.example.com",
-    }),
+    resolveElectronUpdateFeed({ releaseBase, override: "http://updates.example.com" }),
   ).rejects.toThrow("HTTPS");
 });
 
@@ -163,9 +80,10 @@ function descriptor(version = "0.6.9", minimumClientVersion = "0.6.0") {
 
 it("pins discovery through the product-level release.json", async () => {
   const fetchDescriptor = vi.fn(async () => descriptor());
-  await expect(
-    resolveElectronUpdateFeed({ releaseBase, releaseChannel: "stable", fetchDescriptor }),
-  ).resolves.toEqual({ url: `${releaseBase}/download/v0.6.9`, channel: "electron-latest" });
+  await expect(resolveElectronUpdateFeed({ releaseBase, fetchDescriptor })).resolves.toEqual({
+    url: `${releaseBase}/download/v0.6.9`,
+    channel: "electron-latest",
+  });
   expect(fetchDescriptor).toHaveBeenCalledWith(`${releaseBase}/latest/download/release.json`);
 });
 
@@ -174,7 +92,6 @@ it("rejects incompatible descriptors and propagates discovery failures", async (
     await expect(
       resolveElectronUpdateFeed({
         releaseBase,
-        releaseChannel: "stable",
         fetchDescriptor: async () => raw,
       }),
     ).rejects.toThrow();
@@ -182,7 +99,6 @@ it("rejects incompatible descriptors and propagates discovery failures", async (
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
-      releaseChannel: "stable",
       fetchDescriptor: async () => {
         throw new Error("offline");
       },
@@ -191,18 +107,15 @@ it("rejects incompatible descriptors and propagates discovery failures", async (
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
-      releaseChannel: "beta",
-      fetchReleases: async () => [{ tag_name: "v0.6.9-beta.2", draft: false }],
-      fetchDescriptor: async () => descriptor("0.6.9-beta.1"),
+      fetchDescriptor: async () => descriptor("0.7.0-beta.1"),
     }),
-  ).rejects.toThrow("does not match");
+  ).rejects.toThrow("points to a prerelease");
 });
 
 it("requires a manual migration when the supported path raises its minimum client version", async () => {
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
-      releaseChannel: "stable",
       currentVersion: "0.6.9",
       fetchDescriptor: async () => descriptor("0.8.0", "0.7.0"),
     }),
@@ -221,7 +134,6 @@ it("ignores unrelated future protocols while retaining this client's valid updat
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
-      releaseChannel: "stable",
       fetchDescriptor: async () => raw,
     }),
   ).resolves.toEqual({ url: `${releaseBase}/download/v0.6.9`, channel: "electron-latest" });
@@ -243,14 +155,12 @@ it("honors explicit migration instructions after the application architecture ch
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
-      releaseChannel: "stable",
       fetchDescriptor: async () => raw,
     }),
   ).rejects.toThrow("Download the new installer");
   await expect(
     resolveElectronUpdateFeed({
       releaseBase,
-      releaseChannel: "stable",
       fetchDescriptor: async () => ({
         ...raw,
         updatePaths: { "future-updater": raw.updatePaths["future-updater"] },

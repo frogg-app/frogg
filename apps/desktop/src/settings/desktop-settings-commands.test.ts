@@ -8,11 +8,11 @@ function createStoreMock(): DesktopSettingsStore {
     get: vi.fn(async () => DEFAULT_DESKTOP_SETTINGS),
     patch: vi.fn(async () => ({
       ...DEFAULT_DESKTOP_SETTINGS,
-      releaseChannel: "beta",
+      notifications: { playSound: false },
     })),
     migrateLegacyRendererSettings: vi.fn(async () => ({
       ...DEFAULT_DESKTOP_SETTINGS,
-      releaseChannel: "beta",
+      notifications: { playSound: false },
       daemon: {
         manageBuiltInDaemon: false,
         keepRunningAfterQuit: true,
@@ -35,7 +35,7 @@ describe("desktop-settings-commands", () => {
       }),
     ).resolves.toEqual({
       ...DEFAULT_DESKTOP_SETTINGS,
-      releaseChannel: "beta",
+      notifications: { playSound: false },
     });
 
     expect(store.get).toHaveBeenCalledTimes(1);
@@ -51,20 +51,18 @@ describe("desktop-settings-commands", () => {
     });
 
     const result = await handlers.migrate_legacy_desktop_settings({
-      releaseChannel: "beta",
       manageBuiltInDaemon: false,
     });
 
     expect(result).toEqual({
       ...DEFAULT_DESKTOP_SETTINGS,
-      releaseChannel: "beta",
+      notifications: { playSound: false },
       daemon: {
         manageBuiltInDaemon: false,
         keepRunningAfterQuit: true,
       },
     });
     expect(store.migrateLegacyRendererSettings).toHaveBeenCalledWith({
-      releaseChannel: "beta",
       manageBuiltInDaemon: false,
     });
   });

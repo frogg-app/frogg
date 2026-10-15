@@ -4,11 +4,8 @@ import path from "node:path";
 
 import { z } from "zod";
 
-import type { AppReleaseChannel } from "../features/auto-updater.js";
-
 export interface DesktopSettings {
   updates: { autoCheck: boolean };
-  releaseChannel: AppReleaseChannel;
   notifications: {
     playSound: boolean;
   };
@@ -29,7 +26,6 @@ export type DownloadMode = "ask" | "directory";
 
 interface DesktopSettingsPatch {
   updates?: Partial<DesktopSettings["updates"]>;
-  releaseChannel?: AppReleaseChannel;
   notifications?: Partial<DesktopSettings["notifications"]>;
   daemon?: Partial<DesktopSettings["daemon"]>;
   downloads?: Partial<Pick<DesktopSettings["downloads"], "mode" | "directory">>;
@@ -43,7 +39,6 @@ export interface DesktopSettingsStore {
 
 export const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
   updates: { autoCheck: true },
-  releaseChannel: "stable",
   notifications: {
     playSound: true,
   },
@@ -59,8 +54,6 @@ export const DEFAULT_DESKTOP_SETTINGS: DesktopSettings = {
 };
 
 const DESKTOP_SETTINGS_FILENAME = "desktop-settings.json";
-
-const ReleaseChannelSchema = z.enum(["stable", "beta"]);
 
 const NotificationsSchema = z
   .looseObject({
@@ -85,7 +78,6 @@ const DownloadsSchema = z
 const DesktopSettingsSchema = z
   .looseObject({
     updates: z.object({ autoCheck: z.boolean().catch(true) }).catch(() => ({ autoCheck: true })),
-    releaseChannel: ReleaseChannelSchema.catch(DEFAULT_DESKTOP_SETTINGS.releaseChannel),
     notifications: NotificationsSchema,
     daemon: DaemonSchema,
     downloads: DownloadsSchema,
@@ -117,11 +109,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function coerceReleaseChannel(value: unknown): AppReleaseChannel | null {
-  const result = ReleaseChannelSchema.safeParse(value);
-  return result.success ? result.data : null;
-}
-
 function coerceBoolean(value: unknown): boolean | null {
   return typeof value === "boolean" ? value : null;
 }
@@ -133,7 +120,6 @@ function isNodeError(error: unknown): error is NodeJS.ErrnoException {
 function buildDefaultSettings(): StoredDesktopSettings {
   return {
     updates: { ...DEFAULT_DESKTOP_SETTINGS.updates },
-    releaseChannel: DEFAULT_DESKTOP_SETTINGS.releaseChannel,
     notifications: { ...DEFAULT_DESKTOP_SETTINGS.notifications },
     daemon: { ...DEFAULT_DESKTOP_SETTINGS.daemon },
     downloads: { mode: DEFAULT_DESKTOP_SETTINGS.downloads.mode, directory: null },
@@ -157,7 +143,6 @@ function toDesktopSettings(
 ): DesktopSettings {
   return {
     updates: { autoCheck: stored.updates.autoCheck },
-    releaseChannel: stored.releaseChannel,
     notifications: { playSound: stored.notifications.playSound },
     // Preserve the bridge shape for older profiles without advertising server ownership.
     daemon: {
@@ -180,10 +165,6 @@ function coerceDesktopSettingsPatch(input: unknown): DesktopSettingsPatch {
   const patch: DesktopSettingsPatch = {};
   if (isRecord(input.updates) && typeof input.updates.autoCheck === "boolean")
     patch.updates = { autoCheck: input.updates.autoCheck };
-  const releaseChannel = coerceReleaseChannel(input.releaseChannel);
-  if (releaseChannel) {
-    patch.releaseChannel = releaseChannel;
-  }
 
   if (isRecord(input.notifications)) {
     const playSound = coerceBoolean(input.notifications.playSound);
@@ -233,11 +214,6 @@ function pickDesktopSettingsFromLegacyRendererSettings(
   }
 
   const patch: DesktopSettingsPatch = {};
-  const releaseChannel = coerceReleaseChannel(legacySettings.releaseChannel);
-  if (releaseChannel) {
-    patch.releaseChannel = releaseChannel;
-  }
-
   const manageBuiltInDaemon = coerceBoolean(legacySettings.manageBuiltInDaemon);
   if (manageBuiltInDaemon !== null) {
     patch.daemon = { manageBuiltInDaemon };
@@ -252,7 +228,6 @@ function mergeDesktopSettings(
 ): StoredDesktopSettings {
   return {
     ...current,
-    releaseChannel: patch.releaseChannel ?? current.releaseChannel,
     updates: { ...current.updates, ...patch.updates },
     notifications: { ...current.notifications, ...patch.notifications },
     daemon: { ...current.daemon, ...patch.daemon },
@@ -261,7 +236,7 @@ function mergeDesktopSettings(
 }
 
 function hasLegacyRendererOwnedPatch(patch: DesktopSettingsPatch): boolean {
-  return patch.releaseChannel !== undefined || patch.daemon?.manageBuiltInDaemon !== undefined;
+  return patch.daemon?.manageBuiltInDaemon !== undefined;
 }
 
 function coerceDocument(input: unknown): PersistedDesktopSettingsDocument {

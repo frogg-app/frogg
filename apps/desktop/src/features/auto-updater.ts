@@ -25,7 +25,6 @@ import {
   bucketFromStagingUserId,
   rolloutManifestSchema,
   shouldAdmitAppUpdate,
-  type AppReleaseChannel,
   type AppUpdateCheckIntent,
 } from "./app-update-rollout.js";
 
@@ -33,7 +32,6 @@ export {
   bucketFromStagingUserId,
   rolloutManifestSchema,
   shouldAdmitAppUpdate,
-  type AppReleaseChannel,
   type AppUpdateCheckIntent,
   type AppUpdateCheckResult,
   type AppUpdateInstallResult,
@@ -53,7 +51,6 @@ function isUpdateChannelNotPublished(error: unknown): boolean {
 }
 
 export function shouldAdmitToRollout(args: {
-  channel: AppReleaseChannel;
   rolloutHours: number | undefined;
   releaseDate: string | undefined;
   now: number;
@@ -106,10 +103,8 @@ export function shouldInstallAppUpdateOnQuit(input: {
 
 class ElectronAppUpdateRuntime implements AppUpdateRuntime {
   private configured = false;
-  private releaseChannel: AppReleaseChannel = "stable";
 
   configure(input: AppUpdateRuntimeConfiguration): void {
-    this.releaseChannel = input.releaseChannel;
     const updateUrl = resolveUpdateUrl();
     if (updateUrl && !this.configured) {
       autoUpdater.updateConfigPath = writeElectronUpdateConfig(
@@ -125,8 +120,9 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
     // Electron's built-in handler would install an older download without checking
     // whether a newer release has superseded it.
     autoUpdater.autoInstallOnAppQuit = false;
-    autoUpdater.allowPrerelease = input.releaseChannel === "beta";
-    autoUpdater.channel = input.releaseChannel === "beta" ? "electron-beta" : "electron-latest";
+    // The classic app only follows stable releases.
+    autoUpdater.allowPrerelease = false;
+    autoUpdater.channel = "electron-latest";
     autoUpdater.allowDowngrade = false;
     autoUpdater.isUserWithinRollout = async (info) => {
       try {
@@ -179,7 +175,6 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
       const feed = await resolveElectronUpdateFeed({
         override: process.env.FROGG_ELECTRON_UPDATE_URL,
         releaseBase: brand.distribution.releaseBase,
-        releaseChannel: this.releaseChannel,
         currentVersion: app.getVersion(),
       });
       if (feed) {
@@ -201,10 +196,9 @@ class ElectronAppUpdateRuntime implements AppUpdateRuntime {
       };
     } catch (error) {
       if (isUpdateChannelNotPublished(error)) {
-        throw new Error(
-          "No Electron update feed has been published for this release channel yet.",
-          { cause: error },
-        );
+        throw new Error("No Electron update feed has been published for this release yet.", {
+          cause: error,
+        });
       }
       if (isUpdateRateLimitError(error)) {
         throw new Error(UPDATE_RATE_LIMITED_MESSAGE, { cause: error });
@@ -264,11 +258,9 @@ const appUpdateService = createAppUpdateService({
 
 export async function checkForAppUpdate({
   currentVersion,
-  releaseChannel,
   intent,
 }: {
   currentVersion: string;
-  releaseChannel: AppReleaseChannel;
   intent: AppUpdateCheckIntent;
 }): Promise<AppUpdateCheckResult> {
   if (getAppUpdateStrategy() === "disabled")
@@ -283,22 +275,12 @@ export async function checkForAppUpdate({
       strategy: "disabled",
       checkedAt: Date.now(),
     };
-  const result = await appUpdateService.checkForAppUpdate({
-    currentVersion,
-    releaseChannel,
-    intent,
-  });
+  const result = await appUpdateService.checkForAppUpdate({ currentVersion, intent });
   return { ...result, strategy: "github-release", checkedAt: Date.now() };
 }
 
 export async function downloadAndInstallUpdate(
-  {
-    currentVersion,
-    releaseChannel,
-  }: {
-    currentVersion: string;
-    releaseChannel: AppReleaseChannel;
-  },
+  { currentVersion }: { currentVersion: string },
   onBeforeQuit?: () => Promise<void>,
 ): Promise<AppUpdateInstallResult> {
   if (getAppUpdateStrategy() === "disabled")
@@ -307,19 +289,14 @@ export async function downloadAndInstallUpdate(
       version: currentVersion,
       message: "Electron updates are not configured for this build.",
     };
-  return appUpdateService.downloadAndInstallUpdate(
-    { currentVersion, releaseChannel },
-    onBeforeQuit,
-  );
+  return appUpdateService.downloadAndInstallUpdate({ currentVersion }, onBeforeQuit);
 }
 
 export async function installAppUpdateOnQuit({
   currentVersion,
-  releaseChannel,
   signal,
 }: {
   currentVersion: string;
-  releaseChannel: AppReleaseChannel;
   signal: AbortSignal;
 }): Promise<boolean> {
   if (
@@ -332,11 +309,7 @@ export async function installAppUpdateOnQuit({
     return false;
   }
 
-  return appUpdateService.installUpdateOnQuit({
-    currentVersion,
-    releaseChannel,
-    signal,
-  });
+  return appUpdateService.installUpdateOnQuit({ currentVersion, signal });
 }
 
 function resolveUpdateUrl(): string | null {

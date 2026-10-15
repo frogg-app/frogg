@@ -1,7 +1,6 @@
 import { UUID } from "builder-util-runtime";
 import { z } from "zod";
 
-export type AppReleaseChannel = "stable" | "beta";
 export type AppUpdateCheckIntent = "automatic" | "manual";
 
 export const rolloutManifestSchema = z.object({
@@ -14,7 +13,6 @@ export const rolloutManifestSchema = z.object({
 });
 
 export function shouldAdmitAppUpdate(args: {
-  channel: AppReleaseChannel;
   intent: AppUpdateCheckIntent;
   rolloutHours: number | undefined;
   releaseDate: string | undefined;
@@ -22,7 +20,6 @@ export function shouldAdmitAppUpdate(args: {
   bucket: number;
 }): boolean {
   if (args.intent === "manual") return true;
-  if (args.channel !== "stable") return true;
   if (args.rolloutHours == null) return true;
   if (args.rolloutHours === 0) return true;
   if (!args.releaseDate) return true;
