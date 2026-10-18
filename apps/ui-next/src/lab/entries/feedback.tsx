@@ -328,6 +328,39 @@ const cutDone = {
     reason: "cold-cache",
   },
 } as Extract<TimelineItem, { type: "compaction" }>;
+const cutSwitched = {
+  type: "compaction",
+  status: "completed",
+  trigger: "manual",
+  cleanCut: {
+    summary: "## Summary\n\n- Session cache cap is configurable\n- Remaining: document the key",
+    previousSessionId: "8f1c2a7e-claude",
+    previousProvider: "claude",
+    previousModel: "opus",
+    provider: "codex",
+    model: "gpt-5",
+    summaryModel: "claude-haiku-4-5",
+    summaryUsage: { inputTokens: 41000, outputTokens: 900, totalCostUsd: 0.04 },
+    previousContextTokens: 182000,
+    reason: "manual",
+  },
+} as Extract<TimelineItem, { type: "compaction" }>;
+const cutReused = {
+  type: "compaction",
+  status: "completed",
+  trigger: "manual",
+  cleanCut: {
+    summary: "## Summary\n\n- Session cache cap is configurable\n- Remaining: document the key",
+    previousProvider: "codex",
+    previousModel: "gpt-5",
+    provider: "gemini",
+    model: "gemini-2.5-pro",
+    summaryModel: "claude-haiku-4-5",
+    previousContextTokens: 182000,
+    reusedSummary: true,
+    reason: "manual",
+  },
+} as Extract<TimelineItem, { type: "compaction" }>;
 const autoCompaction = {
   type: "compaction",
   status: "completed",
@@ -347,6 +380,25 @@ const CutDone = () => (
     w={CHAT}
   >
     <Compaction item={cutDone} />
+  </Case>
+);
+const CutSwitched = () => (
+  <Case
+    name="Compaction"
+    props={'cleanCut={previousProvider: "claude", provider: "codex", summaryUsage, …}'}
+    w={CHAT}
+  >
+    <Compaction item={cutSwitched} />
+  </Case>
+);
+const CutReused = () => (
+  <Case
+    name="Compaction"
+    props={'cleanCut={provider: "gemini", reusedSummary: true, …}'}
+    note="A cut straight after another: the summary carried over, no summariser ran."
+    w={CHAT}
+  >
+    <Compaction item={cutReused} />
   </Case>
 );
 const CutAuto = () => (
@@ -555,6 +607,8 @@ export const feedback: Entry[] = [
       { id: "offline", label: "Host offline", C: Offline },
       { id: "cut-loading", label: "Clean cut running", C: CutLoading },
       { id: "cut-done", label: "Clean cut with summary", C: CutDone },
+      { id: "cut-switched", label: "Clean cut onto another provider", C: CutSwitched },
+      { id: "cut-reused", label: "Clean cut reusing the last summary", C: CutReused },
       { id: "cut-auto", label: "Automatic compaction", C: CutAuto },
     ],
   },

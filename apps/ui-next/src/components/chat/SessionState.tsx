@@ -30,6 +30,7 @@ import { copyText } from "../shell/copy";
 import { StatusGlyph } from "../StatusGlyph";
 import { T } from "../Text";
 import { toast, toastError } from "../toast/store";
+import { cutMove } from "./cleanCut";
 
 /**
  * Visual treatment (lab compares them; the app uses the default):
@@ -356,9 +357,11 @@ type Cut = NonNullable<Extract<TimelineItem, { type: "compaction" }>["cleanCut"]
 
 function cutMeta(cut: Cut): string[] {
   const meta: string[] = [];
-  if (cut.provider && cut.previousProvider && cut.provider !== cut.previousProvider)
-    meta.push(`${cut.previousProvider} → ${cut.provider}`);
+  const move = cutMove(cut);
+  if (move) meta.push(move);
   if (cut.previousContextTokens) meta.push(`Replaced ${ktok(cut.previousContextTokens)} context`);
+  // A cut straight after another carried that summary over; there is no new usage to show.
+  if (cut.reusedSummary) meta.push("Summary carried over: no new cost");
   const u = cut.summaryUsage;
   if (u) {
     const io = `Summary ${ktok(u.inputTokens ?? 0)} in / ${ktok(u.outputTokens ?? 0)} out`;

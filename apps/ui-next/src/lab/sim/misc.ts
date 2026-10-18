@@ -4,7 +4,16 @@ import { PluginRequestError } from "@frogg/client/internal/daemon-client";
 import { useConfig } from "../../daemon/config";
 import { useDaemon } from "../../daemon/store";
 import type { Agent } from "../../daemon/types";
-import { accounts, agent as makeAgent, ago, ahead, placement, projects } from "../fixtures";
+import {
+  accounts,
+  agent as makeAgent,
+  ago,
+  ahead,
+  entry as timelineEntry,
+  placement,
+  projects,
+} from "../fixtures";
+import { endsAtCleanCut } from "../../components/chat/cleanCut";
 import { labWait, latency } from "./time";
 import { simTerminals } from "./agents";
 import { addHostDir } from "./fs";
@@ -1161,10 +1170,45 @@ export const miscRpcs: Record<string, Rpc> = {
       attachment: `<forked-conversation items="${items.length}">\n(conversation from ${agentId})\n</forked-conversation>`,
     };
   },
-  cleanCutAgent: async (agentId: string) => {
+  cleanCutAgent: async (
+    agentId: string,
+    target: { provider?: string; model?: string | null } = {},
+  ) => {
     await latency(400);
-    useDaemon.setState((st) => ({ timelines: { ...st.timelines, [agentId]: [] } }));
-    return { success: true };
+    useDaemon.setState((st) => {
+      const sess = st.sessions[agentId];
+      const list = st.timelines[agentId] ?? [];
+      if (!sess) return {};
+      const from = sess.agent;
+      // Mirrors the daemon: nothing said since the last cut carries that summary over.
+      const reused = endsAtCleanCut(list);
+      const agent = {
+        ...from,
+        provider: target.provider ?? from.provider,
+        model: target.model ?? from.model,
+        runtimeInfo: undefined,
+      } as Agent;
+      const marker = timelineEntry({
+        type: "compaction",
+        status: "completed",
+        trigger: "manual",
+        cleanCut: {
+          summary: "## Summary\n\n- Carried over from the previous provider",
+          previousProvider: from.provider,
+          ...(from.model ? { previousModel: from.model } : {}),
+          provider: agent.provider,
+          ...(agent.model ? { model: agent.model } : {}),
+          ...(reused ? { reusedSummary: true } : { summaryModel: "claude-haiku-4-5" }),
+          previousContextTokens: 120000,
+          reason: "manual",
+        },
+      });
+      return {
+        sessions: { ...st.sessions, [agentId]: { ...sess, agent } },
+        timelines: { ...st.timelines, [agentId]: [...list, marker] },
+      };
+    });
+    return { subagents: [] };
   },
   cancelAgentAutoResume: async () => {
     await latency();
