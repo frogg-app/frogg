@@ -236,7 +236,7 @@ describe("runCleanCut", () => {
       {
         type: "compaction",
         status: "completed",
-        cleanCut: { summary: "kept summary" },
+        cleanCut: { summary: "kept summary", previousContextTokens: 90_000 },
       },
     ]);
     await runCleanCut(deps, {
@@ -247,7 +247,11 @@ describe("runCleanCut", () => {
     expect(appendTimelineItem).toHaveBeenCalledWith(
       "agent-1",
       expect.objectContaining({
-        cleanCut: expect.objectContaining({ summary: "kept summary" }),
+        cleanCut: expect.objectContaining({
+          summary: "kept summary",
+          reusedSummary: true,
+          previousContextTokens: 90_000,
+        }),
       }),
     );
   });

@@ -10,6 +10,7 @@ import { color, motion } from "../theme/tokens";
 import { providerLabel } from "../util";
 import { AccountChip } from "./chat/AccountChip";
 import { ContextMeter } from "./chat/ContextMeter";
+import { ProviderChip } from "./chat/ProviderChip";
 import { ComposerNotices } from "./chat/Notices";
 import { SessionMenu } from "./chat/SessionMenu";
 import { SessionState } from "./chat/SessionState";
@@ -29,6 +30,9 @@ import { RevealHeading } from "./chat/TextReveal";
 import { keyedEntries, TimelineItem } from "./chat/TimelineItem";
 import { TimelineLoading } from "./chat/TimelineLoading";
 import { Viewers } from "./chat/Viewers";
+
+// The provider chip is live (ProviderChip), not a static composer chip.
+const NO_CHIPS: string[] = [];
 
 const bucketText = {
   needs: "Needs you",
@@ -79,7 +83,6 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
     void cancelTurn(a.id).catch((e) => toastError("Could not stop", e));
   }, [a.id]);
   const notices = useMemo(() => <ComposerNotices agent={a} />, [a]);
-  const chips = useMemo(() => (onBack ? [] : [provider]), [onBack, provider]);
   const title = useMemo(
     () => headerTitle(a.title || "Untitled session", entries),
     [a.title, entries],
@@ -159,7 +162,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
               initialAttachments={initialAttachments}
               notices={notices}
               placeholder={`Message ${provider} — / commands`}
-              chips={chips}
+              chips={NO_CHIPS}
               onSend={onSend}
               onStop={running ? stop : undefined}
               compact={!!onBack}
@@ -168,6 +171,7 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
               onTyping={setTyping}
               above={here}
             >
+              <ProviderChip agent={a} compact={!!onBack} />
               <AgentControls agent={a} />
               <AccountChip agent={a} />
               <ContextMeter agent={a} />

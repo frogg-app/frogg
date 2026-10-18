@@ -157,6 +157,15 @@ export async function cleanCut(agentId: string, providerAccountId?: string | nul
   );
 }
 
+/** A clean cut onto another provider (and model): summarise, then start fresh there. */
+export async function cleanCutToProvider(
+  agentId: string,
+  provider: string,
+  model: string | null,
+): Promise<void> {
+  await client().cleanCutAgent(agentId, { provider, model });
+}
+
 export async function cancelAutoResume(agentId: string): Promise<void> {
   await client().cancelAgentAutoResume(agentId);
 }
