@@ -471,6 +471,7 @@ export async function runCleanCut(
   let summaryModel: string | undefined;
   let summaryUsage: CleanCutUsage | undefined;
   let transcriptChars = 0;
+  let reusedSummary = false;
   if (selected.some((item) => item.type === "user_message")) {
     const transcript = buildCleanCutTranscript(items);
     transcriptChars = transcript.length;
@@ -486,6 +487,7 @@ export async function runCleanCut(
     if (!movesAgent(agent, target)) return "unchanged";
     summary = previousCut.summary;
     summaryModel = previousCut.summaryModel;
+    reusedSummary = true;
   } else {
     throw new Error("There is no conversation to summarise yet.");
   }
@@ -494,7 +496,10 @@ export async function runCleanCut(
     sessionId: agent.persistence?.sessionId,
     provider: agent.provider,
     model: agent.config.model,
-    contextTokens: agent.lastUsage?.contextWindowUsedTokens,
+    // A carried-over summary still stands for the context the earlier cut replaced.
+    contextTokens: reusedSummary
+      ? previousCut?.previousContextTokens
+      : agent.lastUsage?.contextWindowUsedTokens,
   };
   const overrides: Partial<AgentSessionConfig> = {
     ...(target.provider ? { provider: target.provider } : {}),
@@ -518,6 +523,7 @@ export async function runCleanCut(
     ...(summaryModel ? { summaryModel } : {}),
     ...(summaryUsage ? { summaryUsage } : {}),
     ...(previous.contextTokens ? { previousContextTokens: previous.contextTokens } : {}),
+    ...(reusedSummary ? { reusedSummary } : {}),
     reason: input.reason ?? "manual",
   };
   await deps.agentManager.appendTimelineItem(input.agentId, {
@@ -535,6 +541,7 @@ export async function runCleanCut(
       summaryChars: summary.length,
       summaryModel,
       summaryUsage,
+      reusedSummary,
       previousContextTokens: previous.contextTokens,
       reason: marker.reason,
     },

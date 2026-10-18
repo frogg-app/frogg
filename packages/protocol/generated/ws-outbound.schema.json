@@ -9583,6 +9583,9 @@
                                         "previousContextTokens": {
                                           "type": "number"
                                         },
+                                        "reusedSummary": {
+                                          "type": "boolean"
+                                        },
                                         "reason": {
                                           "type": "string"
                                         }
@@ -17091,6 +17094,9 @@
                                         },
                                         "previousContextTokens": {
                                           "type": "number"
+                                        },
+                                        "reusedSummary": {
+                                          "type": "boolean"
                                         },
                                         "reason": {
                                           "type": "string"
@@ -28080,6 +28086,9 @@
                                       "previousContextTokens": {
                                         "type": "number"
                                       },
+                                      "reusedSummary": {
+                                        "type": "boolean"
+                                      },
                                       "reason": {
                                         "type": "string"
                                       }
@@ -30762,6 +30771,9 @@
                                       "previousContextTokens": {
                                         "type": "number"
                                       },
+                                      "reusedSummary": {
+                                        "type": "boolean"
+                                      },
                                       "reason": {
                                         "type": "string"
                                       }
@@ -33213,6 +33225,9 @@
                                     },
                                     "previousContextTokens": {
                                       "type": "number"
+                                    },
+                                    "reusedSummary": {
+                                      "type": "boolean"
                                     },
                                     "reason": {
                                       "type": "string"

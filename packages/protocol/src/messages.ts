@@ -1014,6 +1014,9 @@ export const AgentTimelineItemPayloadSchema: z.ZodType<AgentTimelineItem, unknow
           })
           .optional(),
         previousContextTokens: z.number().optional(),
+        // The cut moved a conversation with nothing new since the previous cut, so that
+        // cut's summary carried over and no summariser ran. Older clients strip it.
+        reusedSummary: z.boolean().optional(),
         // Why the cut was made: "manual" (the user asked) or "cold-cache" (the
         // daemon cut automatically because the prompt cache had expired). A
         // string rather than an enum so a future reason cannot fail the item.

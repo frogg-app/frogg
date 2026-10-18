@@ -375,6 +375,11 @@ export interface CleanCutMarker {
   /** How much context the ended conversation held, when the provider reported it. */
   previousContextTokens?: number;
   /**
+   * The cut moved a conversation that had nothing new since the previous cut,
+   * so that cut's summary carried over and no summariser ran.
+   */
+  reusedSummary?: boolean;
+  /**
    * Why the cut was made. Absent on cuts recorded before this field existed,
    * which were all manual. Other strings may appear from newer daemons.
    */
