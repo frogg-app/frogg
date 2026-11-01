@@ -157,11 +157,30 @@ frogg terminal capture <terminal-id> --scrollback
 A terminal shows the other devices watching or typing in it; see
 [shared sessions](/docs/using-frogg/shared-sessions/).
 
+In Frogg Next the Terminals panel lists the active host's terminals first, then those on every
+other connected host, one group per host. Opening one switches to its host. To list only the
+active host's terminals, turn off **Settings > Files, editor & terminal > List terminals from
+every host**.
+
 A full-screen program (Claude Code's fullscreen mode, `htop`, `less`) keeps its own history, so
 the wheel goes to the program and scrolls it there, including on a device that opens the
 terminal after the program started. Otherwise the wheel scrolls the terminal's scrollback. In
 Frogg Next that also holds when a program left mouse reporting on (hold Shift to send the wheel
 to it), and Shift+PageUp / Shift+PageDown page the scrollback, or the full-screen program's view.
+
+## Files, review and uploads (Frogg Next)
+
+- **Files** browses the open session's checkout. Click the folder name to type a path:
+  `~/projects`, `/etc`, `C:/Users/Desktop`, or a path relative to the current folder. A file
+  path opens the file. The × beside the path, or opening another session, returns to the
+  checkout. In the editor, Ctrl+S (Cmd+S on macOS) saves.
+- **Source control** shows uncommitted changes. When there are none and the branch has commits
+  its base lacks, as when an agent committed its work, it compares against the base instead
+  until you pick a comparison.
+- **Attachments** that are not small images upload to the host in chunks, so large files do
+  not need to fit in memory. The chip shows progress, × cancels and the host deletes the
+  partial file, and a message waits until its uploads finish. Files over 4 GB are refused;
+  hosts on this release enforce the same limit.
 
 ## Organize the sidebar
 
