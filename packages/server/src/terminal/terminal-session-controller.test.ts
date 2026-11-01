@@ -9,7 +9,10 @@ import {
 } from "@frogg/protocol/binary-frames/index";
 import type { TerminalCell, TerminalState } from "@frogg/protocol/messages";
 import type { ServerMessage, TerminalSession, TerminalStateSnapshot } from "./terminal.js";
-import { TerminalSessionController } from "./terminal-session-controller.js";
+import {
+  PROVIDER_LOGIN_WORKSPACE_ID,
+  TerminalSessionController,
+} from "./terminal-session-controller.js";
 import type { TerminalManager, TerminalsChangedEvent } from "./terminal-manager.js";
 import { isSameOrDescendantPath } from "../server/path-utils.js";
 
@@ -313,6 +316,82 @@ describe("terminal-session-controller legacy terminal creation", () => {
     expect(createTerminal).toHaveBeenCalledWith(
       expect.objectContaining({ cwd: "/work/repo", workspaceId: "ws-1", rows: 55, cols: 136 }),
     );
+  });
+
+  test("starts a provider sign-in terminal on a host with no workspace", async () => {
+    const outboundMessages: SessionOutboundMessage[] = [];
+    const createTerminal = vi.fn(
+      async (options: Parameters<TerminalManager["createTerminal"]>[0]) =>
+        listSession({
+          id: "term-login",
+          name: options.name ?? "Terminal 1",
+          cwd: options.cwd,
+          workspaceId: options.workspaceId,
+        }),
+    );
+    const terminalManager = {
+      createTerminal,
+      subscribeTerminalsChanged: vi.fn(() => vi.fn()),
+      subscribeTerminalActivity: vi.fn(() => vi.fn()),
+      subscribeTerminalWorkspaceContributionChanged: vi.fn(() => vi.fn()),
+    } as unknown as TerminalManager;
+    const controller = new TerminalSessionController({
+      terminalManager,
+      emit: (message) => outboundMessages.push(message),
+      emitBinary: vi.fn(),
+      hasBinaryChannel: () => true,
+      isPathWithinRoot: isSameOrDescendantPath,
+      sessionLogger: createLogger(),
+      listTerminalWorkspaceRefs: async () => [],
+      resolveProviderAccountLaunch: () => ({
+        env: { CLAUDE_CONFIG_DIR: "/home/u/.claude-work" },
+        loginCommand: { command: "claude", args: [] },
+      }),
+    });
+
+    await controller.dispatch({
+      type: "create_terminal_request",
+      cwd: "/home/u/.claude-work",
+      providerAccountId: "acct-work",
+      command: "claude",
+      args: ["auth", "login"],
+      requestId: "req-login",
+    });
+
+    expect(createTerminal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: PROVIDER_LOGIN_WORKSPACE_ID,
+        command: "claude",
+        args: ["auth", "login"],
+        env: { CLAUDE_CONFIG_DIR: "/home/u/.claude-work" },
+      }),
+    );
+  });
+
+  test("still requires a workspace for a plain terminal outside any workspace", async () => {
+    const outboundMessages: SessionOutboundMessage[] = [];
+    const createTerminal = vi.fn();
+    const controller = new TerminalSessionController({
+      terminalManager: {
+        createTerminal,
+        subscribeTerminalsChanged: vi.fn(() => vi.fn()),
+        subscribeTerminalActivity: vi.fn(() => vi.fn()),
+        subscribeTerminalWorkspaceContributionChanged: vi.fn(() => vi.fn()),
+      } as unknown as TerminalManager,
+      emit: (message) => outboundMessages.push(message),
+      emitBinary: vi.fn(),
+      hasBinaryChannel: () => true,
+      isPathWithinRoot: isSameOrDescendantPath,
+      sessionLogger: createLogger(),
+      listTerminalWorkspaceRefs: async () => [],
+    });
+
+    await controller.dispatch({ type: "create_terminal_request", cwd: "/tmp", requestId: "r" });
+
+    expect(createTerminal).not.toHaveBeenCalled();
+    expect(outboundMessages[0]).toMatchObject({
+      payload: { terminal: null, error: "workspaceId is required" },
+    });
   });
 });
 

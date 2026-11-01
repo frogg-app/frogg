@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveAgentProviderAccountEnv,
   resolveProviderAccountConfigDir,
+  resolveProviderAccountEnvById,
 } from "./provider-account-env.js";
 import type { ProviderAccount } from "@frogg/protocol/provider-accounts";
 import { findProviderAccountCapability } from "@frogg/protocol/provider-accounts";
@@ -228,5 +229,28 @@ describe("resolveProviderAccountConfigDir", () => {
   it("leaves the fetcher on its default when accounts are disabled", () => {
     const store = createStore({ activeAccountId: "acct-work", enabled: false });
     expect(resolveProviderAccountConfigDir(store, "claude", "acct-peter")).toBeUndefined();
+  });
+});
+
+describe("resolveProviderAccountEnvById", () => {
+  it("points a stored account's login at its own config directory", () => {
+    expect(resolveProviderAccountEnvById(createStore({}), "acct-work")?.env).toEqual({
+      CLAUDE_CONFIG_DIR: "/home/u/.claude-work",
+    });
+  });
+
+  it("resolves a provider's default account to its primary config directory", () => {
+    expect(resolveProviderAccountEnvById(createStore({}), "default:claude")).toEqual({
+      env: { CLAUDE_CONFIG_DIR: "/home/u/.claude" },
+      loginCommand: { command: "claude", args: [] },
+    });
+  });
+
+  it("refuses unknown accounts and disabled capabilities", () => {
+    expect(resolveProviderAccountEnvById(createStore({}), "acct-gone")).toBeNull();
+    expect(resolveProviderAccountEnvById(createStore({}), "default:nope")).toBeNull();
+    expect(
+      resolveProviderAccountEnvById(createStore({ enabled: false }), "default:claude"),
+    ).toBeNull();
   });
 });
