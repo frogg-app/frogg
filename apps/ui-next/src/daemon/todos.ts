@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { getClient, listProjects, onHostSwitch, type Project } from "./store";
+import { toast, toastError } from "../components/toast/store";
 
 type Client = NonNullable<ReturnType<typeof getClient>>;
 export type Todo = Awaited<ReturnType<Client["listProjectTodos"]>>["items"][number];
@@ -41,6 +42,8 @@ interface TodoState {
   /** Filters shared by the list and the board: one project (null = all) and a text match. */
   scope: string | null;
   query: string;
+  /** The card the user just moved, so it can mark itself in its new column. */
+  moved: { projectId: string; todoId: string; seq: number } | null;
 }
 
 export const useTodos = create<TodoState>(() => ({
@@ -50,6 +53,7 @@ export const useTodos = create<TodoState>(() => ({
   open: null,
   scope: null,
   query: "",
+  moved: null,
 }));
 
 const watched = new Set<string>();
@@ -164,6 +168,45 @@ export async function deleteTodo(projectId: string, todoId: string): Promise<voi
   if (r.error) throw new Error(r.error.message);
   remove(projectId, todoId);
 }
+
+let moveSeq = 0;
+
+/**
+ * A move the user made (board arrows, the sheet's column): the card marks itself where it lands,
+ * and a toast names the column with an Undo, so a card leaving the view is never unexplained.
+ */
+export async function moveTodo(
+  projectId: string,
+  todoId: string,
+  status: TodoStatus,
+): Promise<void> {
+  const before = useTodos.getState().items[projectId]?.find((t) => t.id === todoId);
+  if (!before || before.status === status) return;
+  await setTodoStatus(projectId, todoId, status);
+  moveSeq += 1;
+  useTodos.setState({ moved: { projectId, todoId, seq: moveSeq } });
+  const label = STATUSES.find((x) => x.value === status)?.label ?? status;
+  toast({
+    title: `Moved to ${label}`,
+    detail: before.title,
+    action: {
+      label: "Undo",
+      onPress: () => {
+        void moveTodo(projectId, todoId, before.status).catch((e: unknown) =>
+          toastError("Couldn't undo the move", e),
+        );
+      },
+    },
+  });
+}
+
+/** How many to-dos the filters hide: shown against the total so a short list is explained. */
+export function filterSummary(s: TodoState): { shown: number; total: number } {
+  const total = Object.values(s.items).reduce((n, list) => n + (list?.length ?? 0), 0);
+  return { shown: filterTodos(s).length, total };
+}
+
+export const clearTodoFilters = () => useTodos.setState({ scope: null, query: "" });
 
 export const openTodo = (projectId: string, todoId: string) =>
   useTodos.setState({ open: { projectId, todoId } });

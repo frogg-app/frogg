@@ -7,7 +7,7 @@ import {
   createTodo,
   deleteTodo,
   PRIORITIES,
-  setTodoStatus,
+  moveTodo,
   STATUSES,
   updateTodo,
   useTodos,
@@ -221,7 +221,7 @@ function TodoEditor({
   const onSave = useCallback(() => void save(), [save]);
   const move = useCallback(
     (status: TodoStatus) =>
-      void setTodoStatus(projectId, todo.id, status).catch((e: unknown) =>
+      void moveTodo(projectId, todo.id, status).catch((e: unknown) =>
         toastError("Couldn't move the to-do", e),
       ),
     [projectId, todo.id],

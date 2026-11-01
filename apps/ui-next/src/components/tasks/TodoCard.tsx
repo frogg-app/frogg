@@ -1,17 +1,17 @@
 import { ChevronLeft, ChevronRight, Bot } from "lucide-react-native";
-import { useCallback } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useEffect, useRef } from "react";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useDaemon } from "../../daemon/store";
 import {
+  moveTodo,
   openTodo,
-  setTodoStatus,
   STATUSES,
   useTodos,
   type Todo,
   type TodoPriority,
   type TodoStatus,
 } from "../../daemon/todos";
-import { color, ease, web } from "../../theme/tokens";
+import { anim, color, ease, web } from "../../theme/tokens";
 import { Brackets } from "../Brackets";
 import { Cut } from "../Cut";
 import { T } from "../Text";
@@ -75,6 +75,16 @@ export function TodoCard({
   move?: boolean;
 }) {
   const on = useTodos((s) => s.open?.todoId === todo.id && s.open.projectId === projectId);
+  // Just moved by the user: glow where it landed and come into view.
+  const moved = useTodos((s) =>
+    s.moved?.todoId === todo.id && s.moved.projectId === projectId ? s.moved.seq : 0,
+  );
+  const ref = useRef<View>(null);
+  useEffect(() => {
+    if (!moved || Platform.OS !== "web") return;
+    const el = ref.current as unknown as HTMLElement | null;
+    el?.scrollIntoView?.({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [moved]);
   const claim = useClaimLabel(todo);
   const press = useCallback(() => openTodo(projectId, todo.id), [projectId, todo.id]);
   const at = STATUSES.findIndex((x) => x.value === todo.status);
@@ -82,7 +92,7 @@ export function TodoCard({
     (by: number) => {
       const next = STATUSES[at + by];
       if (!next) return;
-      setTodoStatus(projectId, todo.id, next.value).catch((e: unknown) =>
+      moveTodo(projectId, todo.id, next.value).catch((e: unknown) =>
         toastError(`Couldn't move “${todo.title}”`, e),
       );
     },
@@ -92,9 +102,10 @@ export function TodoCard({
   const fwd = useCallback(() => step(1), [step]);
   const pri = tintStyle(PRIORITY_TINT[todo.priority]);
   return (
-    <Pressable onPress={press} accessibilityRole="button" accessibilityLabel={todo.title}>
+    <Pressable ref={ref} onPress={press} accessibilityRole="button" accessibilityLabel={todo.title}>
       {({ hovered }) => (
-        <Cut size={8} style={[s.card, hovered && s.hover, on && s.on]}>
+        <Cut key={moved} size={8} style={[s.card, hovered && s.hover, on && s.on]}>
+          {moved > 0 && <Cut size={8} style={s.glow} pointerEvents="none" />}
           <Brackets on={on} />
           <View style={s.top}>
             <View style={[s.pri, pri.d]} />
@@ -165,7 +176,15 @@ export function TodoCard({
   );
 }
 
+/** The moved card's mark: a mint wash that fades out where it landed (web; native skips it). */
+const GLOW = { "0%": { opacity: 1 }, "100%": { opacity: 0 } };
+
 const s = StyleSheet.create({
+  glow: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(63,207,142,0.22)",
+    ...anim(GLOW, "1.4s", "ease-out", 1, "forwards"),
+  },
   card: {
     padding: 12,
     gap: 6,
