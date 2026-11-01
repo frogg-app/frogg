@@ -5,6 +5,7 @@ import { color, web } from "../theme/tokens";
 import { Brackets } from "./Brackets";
 import { ShapeFace, useShape, type ShapeLang } from "./Shape";
 import { T } from "./Text";
+import { kbd as formatKbd } from "../kbd";
 
 type Kind = "primary" | "ghost" | "danger";
 export type PrimaryStyle = ButtonStyle;
@@ -88,7 +89,7 @@ function ButtonFace({
       </T>
       {kbd && (
         <T v="mono" style={[s.k, primary && FILLED.has(alt) && s.kPrimary]}>
-          {kbd}
+          {formatKbd(kbd)}
         </T>
       )}
     </ShapeFace>

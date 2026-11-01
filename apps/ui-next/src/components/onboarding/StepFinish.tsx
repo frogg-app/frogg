@@ -9,6 +9,7 @@ import { away, openSettingsPage } from "./nav";
 import { Para, StepGlyph, StepHead } from "./parts";
 import { useDone } from "./progress";
 import { goStep, useOnboarding } from "./store";
+import { kbd } from "../../kbd";
 
 export function SettingsStep() {
   const level = useOnboarding((st) => st.level);
@@ -26,7 +27,8 @@ export function SettingsStep() {
         ))}
       </View>
       <Para faint>
-        Reopen this walkthrough any time from Settings → Getting started, or ⌘K → Getting started.
+        Reopen this walkthrough any time from Settings → Getting started, or {kbd("⌘K")} → Getting
+        started.
       </Para>
     </>
   );

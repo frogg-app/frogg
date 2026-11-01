@@ -21,6 +21,7 @@ import { TOOLS, useToolShown } from "./Rail";
 import { modalOpen, useModalLayer } from "./shell/modalStack";
 import { StatusGlyph } from "./StatusGlyph";
 import { T } from "./Text";
+import { kbd } from "../kbd";
 
 interface Item {
   id: string;
@@ -279,7 +280,7 @@ export function Palette() {
             {FOOT_HINTS.map(([k, l]) => (
               <View key={k} style={s.hint}>
                 <T v="mono" style={s.kbd}>
-                  {k}
+                  {kbd(k)}
                 </T>
                 <T style={s.hintText}>{l}</T>
               </View>
@@ -327,7 +328,7 @@ function PaletteRow({ item: i, index, head, on, pick, setCursor }: RowProps) {
           )}
           {i.kbd && (
             <T v="mono" style={s.kbd}>
-              {i.kbd}
+              {kbd(i.kbd)}
             </T>
           )}
         </View>
