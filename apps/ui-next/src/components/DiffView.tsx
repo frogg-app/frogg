@@ -34,7 +34,8 @@ export function DiffView({ path, onBack }: { path: string; onBack?: () => void }
     ],
     [base],
   );
-  if (empty) return <EmptyDiff compare={compare} base={base} onBack={onBack} />;
+  const ahead = status?.isGit ? (status.aheadBehind?.ahead ?? 0) : 0;
+  if (empty) return <EmptyDiff compare={compare} base={base} ahead={ahead} onBack={onBack} />;
   return (
     <View style={s.root}>
       <View style={s.head}>
@@ -281,13 +282,23 @@ function Split({ lines, o, n }: { lines: Line[]; o: number; n: number }) {
 }
 
 /** No changes: the round-4 empty-diff state, still offering the base comparison. */
+function emptyText(compare: "uncommitted" | "base", base: string | null, ahead: number): string {
+  if (compare === "base")
+    return `This branch has nothing that is not already on ${base ?? "its base"}.`;
+  if (ahead > 0 && base)
+    return `Nothing uncommitted. ${ahead === 1 ? "1 commit" : `${ahead} commits`} on this branch ${ahead === 1 ? "is" : "are"} not on ${base} yet.`;
+  return "The agent hasn't edited anything. Changes show up here as soon as a file is touched.";
+}
+
 function EmptyDiff({
   compare,
   base,
+  ahead,
   onBack,
 }: {
   compare: "uncommitted" | "base";
   base: string | null;
+  ahead: number;
   onBack?: () => void;
 }) {
   const vsBase = useCallback(
@@ -306,18 +317,16 @@ function EmptyDiff({
               </Pressable>
             )}
             <T v="display" style={s.name} numberOfLines={2}>
-              No changes in this worktree yet
+              {compare === "uncommitted" && ahead > 0
+                ? "Nothing uncommitted"
+                : "No changes in this worktree yet"}
             </T>
           </View>
         </View>
       </View>
       <View style={s.emptyBody}>
         <View style={s.emptyMark} />
-        <T style={s.emptyText}>
-          {compare === "base"
-            ? `This branch has nothing that is not already on ${base ?? "its base"}.`
-            : "The agent hasn't edited anything. Changes show up here as soon as a file is touched."}
-        </T>
+        <T style={s.emptyText}>{emptyText(compare, base, ahead)}</T>
         {!!base && (
           <Pressable onPress={vsBase} accessibilityRole="button">
             {({ hovered }) => (
