@@ -20,11 +20,13 @@ import type {
 } from "@frogg/protocol/messages";
 import { getParentAgentIdFromLabels, PARENT_AGENT_ID_LABEL } from "@frogg/protocol/agent-labels";
 import { createRealpathAwarePathMatcher } from "../../utils/path.js";
+import { CLEAN_CUT_SUMMARY_PROMPT_FIRST_LINE } from "./clean-cut.js";
 
 type ImportAgentRequestMessage = z.infer<typeof ImportAgentRequestMessageSchema>;
 
 const METADATA_GENERATION_PROMPT_PREFIX =
   "Generate metadata for a coding agent based on the user prompt.";
+
 export type ImportSessionAgentManager = AgentLoaderManager &
   Pick<
     AgentManager,
@@ -62,7 +64,8 @@ export class ImportSessionsRequestError extends Error {
 
 export interface ListImportableProviderSessionsInput {
   request: FetchRecentProviderSessionsRequestMessage;
-  agentManager: Pick<AgentManager, "listAgents" | "listImportableSessions">;
+  agentManager: Pick<AgentManager, "listAgents" | "listImportableSessions"> &
+    Partial<Pick<AgentManager, "getTimeline">>;
   agentStorage: Pick<AgentStorage, "list">;
   providerSnapshotManager: Pick<ProviderSnapshotManager, "getProviderLabel">;
 }
@@ -143,7 +146,7 @@ export async function listImportableProviderSessions(
     if (sinceTimestamp !== null && session.lastActivityAt.getTime() < sinceTimestamp) {
       continue;
     }
-    if (isMetadataGenerationSession(session)) {
+    if (isMetadataGenerationSession(session) || isCleanCutSummarySession(session)) {
       continue;
     }
     if (
@@ -326,7 +329,7 @@ function parseRecentProviderSessionsSince(since: string | undefined): number | n
 }
 
 async function collectImportedProviderSessions(
-  agentManager: Pick<AgentManager, "listAgents">,
+  agentManager: Pick<AgentManager, "listAgents"> & Partial<Pick<AgentManager, "getTimeline">>,
   agentStorage: Pick<AgentStorage, "list">,
   providerFilter: Set<string> | undefined,
 ): Promise<{ handles: Set<string>; count: number }> {
@@ -349,6 +352,13 @@ async function collectImportedProviderSessions(
       continue;
     }
     collect(agent.provider, agent.persistence);
+    // A clean cut moves the agent onto a fresh provider session; the one it replaced is still
+    // part of this conversation, not a separate one to import.
+    for (const previous of cleanCutPreviousSessions(agentManager, agent.id)) {
+      if (!providerFilter || providerFilter.has(previous.provider)) {
+        handles.add(toProviderSessionHandleKey(previous.provider, previous.sessionId));
+      }
+    }
   }
 
   for (const record of records) {
@@ -363,6 +373,32 @@ async function collectImportedProviderSessions(
 
 function toProviderSessionHandleKey(provider: string, providerHandleId: string): string {
   return `${provider}\0${providerHandleId}`;
+}
+
+function cleanCutPreviousSessions(
+  agentManager: Partial<Pick<AgentManager, "getTimeline">>,
+  agentId: string,
+): Array<{ provider: string; sessionId: string }> {
+  let items: ReturnType<AgentManager["getTimeline"]>;
+  try {
+    items = agentManager.getTimeline?.(agentId) ?? [];
+  } catch {
+    return [];
+  }
+  const out: Array<{ provider: string; sessionId: string }> = [];
+  for (const item of items) {
+    const cut = item.type === "compaction" ? item.cleanCut : undefined;
+    if (cut?.previousSessionId && cut.previousProvider) {
+      out.push({ provider: cut.previousProvider, sessionId: cut.previousSessionId });
+    }
+  }
+  return out;
+}
+
+function isCleanCutSummarySession(input: { firstPromptPreview: string | null }): boolean {
+  return (
+    input.firstPromptPreview?.trimStart().startsWith(CLEAN_CUT_SUMMARY_PROMPT_FIRST_LINE) ?? false
+  );
 }
 
 function isMetadataGenerationSession(input: { firstPromptPreview: string | null }): boolean {
