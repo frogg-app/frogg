@@ -7,7 +7,6 @@ import {
   createTodo,
   deleteTodo,
   PRIORITIES,
-  moveTodo,
   STATUSES,
   updateTodo,
   useTodos,
@@ -22,6 +21,7 @@ import { Button } from "../Button";
 import { Select } from "../Select";
 import { Field } from "../settings/pages/kit";
 import { T } from "../Text";
+import { moveTodo } from "./moves";
 import { toastError } from "../toast/store";
 import { useConfirm } from "../tools/Confirm";
 import { Dialog } from "../tools/Dialog";

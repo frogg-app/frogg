@@ -3,7 +3,6 @@ import { useCallback, useEffect, useRef } from "react";
 import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useDaemon } from "../../daemon/store";
 import {
-  moveTodo,
   openTodo,
   STATUSES,
   useTodos,
@@ -15,6 +14,7 @@ import { anim, color, ease, web } from "../../theme/tokens";
 import { Brackets } from "../Brackets";
 import { Cut } from "../Cut";
 import { T } from "../Text";
+import { moveTodo } from "./moves";
 import { toastError } from "../toast/store";
 
 /** Column tints. Green is kept for finished work only. */
