@@ -131,7 +131,11 @@ Some providers expose toggles in the composer: **Fast mode** (Claude, Codex), **
 
 ## Enable, disable, reorder
 
-Toggle providers in **host settings → Providers**, or in config:
+Host owners toggle providers in **host settings → Providers** (in Frogg Next, **Settings →
+Providers & models**); the change is saved to the host's config and applies at once. A provider
+that is off stays installed but cannot start new agents. A branded build that locks its
+provider list (`providers.allowed` in `brand.json`) hides the providers outside that list. Or
+set it in config:
 
 ```json title="~/.frogg/config.json"
 {
