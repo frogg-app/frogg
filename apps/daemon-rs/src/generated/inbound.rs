@@ -2783,6 +2783,8 @@ pub struct ProviderAccountImportRequestBundleAccountsItemAccountPreferences {
         skip_serializing_if = "Option::is_none"
     )]
     pub default_thinking_option_id: Option<String>,
+    #[serde(rename = "launchArgs", skip_serializing_if = "Option::is_none")]
+    pub launch_args: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

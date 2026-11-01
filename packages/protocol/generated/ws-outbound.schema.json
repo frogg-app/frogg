@@ -50653,6 +50653,15 @@
                                     "defaultThinkingOptionId": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "launchArgs": {
+                                      "maxItems": 50,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 500
+                                      }
                                     }
                                   },
                                   "additionalProperties": false
@@ -50789,6 +50798,15 @@
                                         "defaultThinkingOptionId": {
                                           "type": "string",
                                           "minLength": 1
+                                        },
+                                        "launchArgs": {
+                                          "maxItems": 50,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 500
+                                          }
                                         }
                                       },
                                       "additionalProperties": false
@@ -51151,6 +51169,15 @@
                                     "defaultThinkingOptionId": {
                                       "type": "string",
                                       "minLength": 1
+                                    },
+                                    "launchArgs": {
+                                      "maxItems": 50,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 500
+                                      }
                                     }
                                   },
                                   "additionalProperties": false
@@ -51287,6 +51314,15 @@
                                         "defaultThinkingOptionId": {
                                           "type": "string",
                                           "minLength": 1
+                                        },
+                                        "launchArgs": {
+                                          "maxItems": 50,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 500
+                                          }
                                         }
                                       },
                                       "additionalProperties": false
@@ -52166,6 +52202,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -52387,6 +52432,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -52608,6 +52662,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -52829,6 +52892,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -53050,6 +53122,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -53271,6 +53352,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -53506,6 +53596,15 @@
                                           "defaultThinkingOptionId": {
                                             "type": "string",
                                             "minLength": 1
+                                          },
+                                          "launchArgs": {
+                                            "maxItems": 50,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 500
+                                            }
                                           }
                                         },
                                         "additionalProperties": false
@@ -53662,6 +53761,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -53883,6 +53991,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
@@ -54104,6 +54221,15 @@
                               "defaultThinkingOptionId": {
                                 "type": "string",
                                 "minLength": 1
+                              },
+                              "launchArgs": {
+                                "maxItems": 50,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 500
+                                }
                               }
                             },
                             "additionalProperties": false
