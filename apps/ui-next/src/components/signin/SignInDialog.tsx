@@ -50,6 +50,18 @@ function SignIn({ target, onRetry }: { target: SignInTarget; onRetry: () => void
       width={520}
     >
       {phase === "starting" && <Busy text="Starting sign-in on the host…" />}
+      {phase === "confirm" && (
+        <View style={[s.steps, motion.enter]}>
+          <T style={s.muted}>
+            {account?.name ?? "This account"} is signed in on this host. Signing in again replaces
+            that sign-in: {name} may drop it as soon as the sign-in starts, so stopping part-way can
+            leave the account signed out.
+          </T>
+          <View style={s.actRow}>
+            <Button kind="primary" label="Sign in again" onPress={login.confirm} />
+          </View>
+        </View>
+      )}
       {phase === "failed" && <T style={s.err}>{login.error}</T>}
       {phase === "done" && (
         <View style={[s.doneRow, motion.enter]}>

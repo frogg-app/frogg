@@ -6,7 +6,7 @@ import type { SignInTarget } from "./store";
 
 type Account = Awaited<ReturnType<DaemonClient["listProviderAccounts"]>>["accounts"][number];
 
-export type Phase = "starting" | "waiting" | "done" | "failed";
+export type Phase = "starting" | "confirm" | "waiting" | "done" | "failed";
 
 export interface LoginSession {
   phase: Phase;
@@ -18,6 +18,8 @@ export interface LoginSession {
   tail: string;
   error: string | null;
   sendCode: (code: string) => void;
+  /** Starts the login after the user confirms replacing a working sign-in. */
+  confirm: () => void;
 }
 
 const EMPTY: LoginState = { url: null, userCode: null, wantsCode: false, done: false, error: null };
@@ -46,6 +48,7 @@ export function useLoginSession(target: SignInTarget): LoginSession {
   const [state, setState] = useState<LoginState>(EMPTY);
   const [tail, setTail] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
   const term = useRef<{ client: DaemonClient; id: string } | null>(null);
   const headless = Boolean(LOGIN_COMMANDS[target.provider]);
 
@@ -68,6 +71,13 @@ export function useLoginSession(target: SignInTarget): LoginSession {
         return fail("This provider has no sign-in accounts on this host. Turn accounts on first.");
       setAccount(acct);
       const wasSignedIn = acct.authenticated;
+      // Starting a provider's login can drop the account's current credential before the new
+      // one exists (Codex clears auth.json at once), so a signed-in account waits for consent.
+      if (wasSignedIn && !confirmed) {
+        setPhase("confirm");
+        return;
+      }
+      setPhase("starting");
       // Sign-in only uses the account's env, so it runs in the account's own config directory;
       // the daemon files it outside every workspace.
       const cmd = LOGIN_COMMANDS[target.provider];
@@ -120,12 +130,14 @@ export function useLoginSession(target: SignInTarget): LoginSession {
         void t.client.killTerminal(t.id).catch(() => undefined);
       }
     };
-  }, [target]);
+  }, [target, confirmed]);
 
   const sendCode = useCallback((code: string) => {
     const t = term.current;
     if (t) t.client.sendTerminalInput(t.id, { type: "input", data: `${code.trim()}\r` });
   }, []);
 
-  return { phase, account, state, headless, tail, error, sendCode };
+  const confirm = useCallback(() => setConfirmed(true), []);
+
+  return { phase, account, state, headless, tail, error, sendCode, confirm };
 }
