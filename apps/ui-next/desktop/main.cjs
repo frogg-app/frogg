@@ -14,9 +14,10 @@ app.setPath("userData", path.join(app.getPath("appData"), identity.userDataDir))
 
 // One instance per data folder: a second process would find the saved hosts locked by the first
 // and come up unpaired. A second launch focuses the running window instead, passing on any link.
-if (!app.requestSingleInstanceLock()) {
-  app.exit(0);
-}
+// The lock is taken before `ready`, so two launches racing from a double click still yield one
+// owner; the loser never registers handlers or opens a window while it exits.
+const primary = app.requestSingleInstanceLock();
+if (!primary) app.exit(0);
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -111,6 +112,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (!primary) return null;
   // macOS keeps its app menu (Edit carries copy/paste there); elsewhere the bar is gone.
   if (process.platform !== "darwin") Menu.setApplicationMenu(null);
   const root = path.join(__dirname, "web");
@@ -121,6 +123,8 @@ app.whenReady().then(() => {
       ? net.fetch(pathToFileURL(asset).href)
       : new Response("Not found", { status: 404 });
   });
+  // The window shows as soon as it exists (index.html paints a splash before the UI bundle
+  // parses), so a click on the taskbar or Start menu gets an answer at once.
   createWindow();
   createUpdater(identity);
   app.on("activate", () => {
