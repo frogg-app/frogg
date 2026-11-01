@@ -1,4 +1,4 @@
-// The only bridge the web UI gets: app updates and links the OS hands a running app.
+// The only bridge the web UI gets: app updates, session windows and links the OS hands the app.
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("froggNextDesktop", {
@@ -13,6 +13,9 @@ contextBridge.exposeInMainWorld("froggNextDesktop", {
       return () => ipcRenderer.removeListener("frogg-next:update-state", handler);
     },
   },
+  /** Pops a session out into its own window (focuses it when already open). */
+  openSessionWindow: (sessionId, hostId) =>
+    ipcRenderer.invoke("frogg-next:open-session-window", { sessionId, hostId }),
   onOpenUrl(listener) {
     const handler = (_event, url) => listener(url);
     ipcRenderer.on("frogg-next:open-url", handler);

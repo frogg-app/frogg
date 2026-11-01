@@ -1,4 +1,5 @@
 import {
+  AppWindow,
   Archive,
   Copy,
   GitFork,
@@ -9,7 +10,10 @@ import {
 } from "lucide-react-native";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
+import { useHosts } from "../../daemon/hosts";
 import { archiveSession, useDaemon } from "../../daemon/store";
+import { desktopBridge } from "../../desktop-bridge";
+import { popout } from "../../popout";
 import type { Session, TimelineEntry } from "../../daemon/types";
 import { color, font, web } from "../../theme/tokens";
 import { useUi } from "../../ui-store";
@@ -25,7 +29,7 @@ import { CUT, runSessionOp, useSessionOp } from "./sessionOps";
 
 type Open = null | "rename" | "archive" | "rewind";
 
-/** The chat header ⋯: rename, fork, rewind, clean cut, copy ID, archive. */
+/** The chat header ⋯: rename, fork, rewind, clean cut, new window (desktop), copy ID, archive. */
 export function SessionMenu({
   session,
   onArchived,
@@ -86,6 +90,18 @@ export function SessionMenu({
         disabled: a.status === "running" || !!op,
         onPress: doCut,
       });
+    const bridge = desktopBridge();
+    if (bridge?.openSessionWindow && !popout)
+      list.push({
+        label: "Open in new window",
+        icon: AppWindow,
+        hint: "Pop this session out",
+        onPress: () => {
+          bridge
+            .openSessionWindow?.(a.id, useHosts.getState().activeId)
+            ?.catch((e: unknown) => toastError("Could not open a window", e));
+        },
+      });
     list.push({ label: "Copy session ID", icon: Copy, onPress: copyId });
     list.push("-", {
       label: "Archive session…",
@@ -94,7 +110,7 @@ export function SessionMenu({
       onPress: () => setOpen("archive"),
     });
     return list;
-  }, [doFork, doCut, copyId, canRewind, target, a.status, op]);
+  }, [doFork, doCut, copyId, canRewind, target, a.id, a.status, op]);
   return (
     <>
       <View ref={anchor.ref} collapsable={false}>

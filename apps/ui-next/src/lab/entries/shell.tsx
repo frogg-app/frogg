@@ -8,6 +8,7 @@ import { Rail } from "../../components/Rail";
 import { SessionList, useBuckets } from "../../components/SessionList";
 import { SettingsNav, SettingsPage } from "../../components/settings/Settings";
 import { StatusBar } from "../../components/StatusBar";
+import { SessionWindow } from "../../components/shell/SessionWindow";
 import { T } from "../../components/Text";
 import { ToolPane } from "../../components/ToolPane";
 import { useDaemon } from "../../daemon/store";
@@ -75,6 +76,10 @@ function SessionListDemo() {
 }
 
 const StatusBarDemo = () => <StatusBar />;
+const PREVIEW_WINDOW = { session: ID.preview, host: null };
+const MISSING_WINDOW = { session: "agt_gone", host: null };
+const SessionWindowDemo = () => <SessionWindow route={PREVIEW_WINDOW} />;
+const MissingWindowDemo = () => <SessionWindow route={MISSING_WINDOW} />;
 const HomeDemo = () => (
   <Fill>
     <Home />
@@ -255,6 +260,20 @@ export const shell: Entry[] = [
     polish: "nav: Brackets slide between pages + lock on (170ms travel, 80ms lock)",
     setup: setupSettings,
     variants: [{ id: "default", label: "Appearance page", C: SettingsDemo, h: 660, bleed: true }],
+  },
+  {
+    id: "session-window",
+    name: "SessionWindow",
+    category: "Navigation & shell",
+    path: "components/shell/SessionWindow.tsx",
+    purpose:
+      "A session popped out into its own desktop window (chat header ⋯ → Open in new window): title strip, chat, toasts.",
+    usedBy: 1,
+    polish: "none",
+    variants: [
+      { id: "default", label: "Session", C: SessionWindowDemo, h: 640, bleed: true },
+      { id: "missing", label: "Session not found", C: MissingWindowDemo, h: 320, bleed: true },
+    ],
   },
   {
     id: "tool-pane",
