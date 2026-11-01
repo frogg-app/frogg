@@ -8174,6 +8174,11 @@ test("turn_failed surfaces provider code and diagnostic in system error message"
   expect(systemError?.text).toContain("Provider execution failed");
   expect(systemError?.text).toContain("code: 126");
   expect(systemError?.text).toContain("No preset version installed for command claude");
+
+  // A clean cut starts a fresh session past the failure: the old error does not carry over.
+  const fresh = await manager.startFreshAgentSession(agent.id, {});
+  expect(fresh.lastError).toBeUndefined();
+  expect(fresh.attention).toEqual({ requiresAttention: false });
 });
 
 test("permission request notifies once without forcing unread attention state", async () => {

@@ -1586,8 +1586,16 @@ export class AgentManager {
       lastUsage: preservedLastUsage,
       lastUsageAt: preservedLastUsageAt,
     } = resolveReloadSource(existing, overrides, options?.freshSession ?? false);
-    const preservedLastError = existing.lastError;
-    const preservedAttention = existing.attention;
+    // A fresh session (a clean cut) starts past whatever failed in the old one: carrying its
+    // error over would leave a "session failed" state on a conversation that is fine.
+    const fresh = options?.freshSession ?? false;
+    const preservedLastError = fresh ? undefined : existing.lastError;
+    const preservedAttention: AttentionState =
+      fresh &&
+      existing.attention.requiresAttention &&
+      existing.attention.attentionReason === "error"
+        ? { requiresAttention: false }
+        : existing.attention;
     const client = this.requireClient(provider);
     const refreshConfig = {
       ...existing.config,
