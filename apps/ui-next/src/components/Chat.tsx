@@ -157,12 +157,13 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
           )}
         </View>
       </View>
-      {detail ? (
-        <SubWorkDetail key={detail} parentId={a.id} itemId={detail} provider={provider} />
-      ) : (
-        <>
-          <SubWorkStrip sessionId={a.id} />
-          <ImageRoot.Provider value={a.cwd}>
+      {/* Relative image paths resolve from the session's folder, in details as in the timeline. */}
+      <ImageRoot.Provider value={a.cwd}>
+        {detail ? (
+          <SubWorkDetail key={detail} parentId={a.id} itemId={detail} provider={provider} />
+        ) : (
+          <>
+            <SubWorkStrip sessionId={a.id} />
             <ScrollView
               ref={anchor.ref}
               style={s.scroll}
@@ -194,34 +195,34 @@ export function Chat({ session, onBack }: { session: Session; onBack?: () => voi
                 <Thinking entries={entries} waiting={a.pendingPermissions.length > 0} />
               )}
             </ScrollView>
-          </ImageRoot.Provider>
-          <View style={s.composer}>
-            <Composer
-              key={a.id}
-              attach
-              disabled={conn !== "online"}
-              loadCommands={commands}
-              initialAttachments={initialAttachments}
-              notices={notices}
-              placeholder={`Message ${provider} — / commands`}
-              chips={NO_CHIPS}
-              onSend={onSend}
-              onStop={running ? stop : undefined}
-              compact={!!onBack}
-              expandable
-              sizeKey={a.id}
-              onTyping={setTyping}
-              above={here}
-              cut={cut}
-            >
-              <ProviderChip agent={a} compact={!!onBack} />
-              <AgentControls agent={a} />
-              <AccountChip agent={a} />
-              <ContextMeter agent={a} />
-            </Composer>
-          </View>
-        </>
-      )}
+            <View style={s.composer}>
+              <Composer
+                key={a.id}
+                attach
+                disabled={conn !== "online"}
+                loadCommands={commands}
+                initialAttachments={initialAttachments}
+                notices={notices}
+                placeholder={`Message ${provider} — / commands`}
+                chips={NO_CHIPS}
+                onSend={onSend}
+                onStop={running ? stop : undefined}
+                compact={!!onBack}
+                expandable
+                sizeKey={a.id}
+                onTyping={setTyping}
+                above={here}
+                cut={cut}
+              >
+                <ProviderChip agent={a} compact={!!onBack} />
+                <AgentControls agent={a} />
+                <AccountChip agent={a} />
+                <ContextMeter agent={a} />
+              </Composer>
+            </View>
+          </>
+        )}
+      </ImageRoot.Provider>
     </View>
   );
 }
